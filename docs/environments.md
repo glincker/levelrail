@@ -19,6 +19,8 @@ Four environments exist on every instance and cannot be deleted.
 | UAT | `uat` | No |
 | Production | `production` | Yes |
 
+Upgrading an existing install adds these four and keeps your earlier environments, with their apps still tagged, as custom environments. An upgrade test covers this on a local database; it is not a real host run.
+
 ## Kinds
 
 Every environment has a kind: `dev`, `test`, `uat`, `production`, `preview` or `custom`. Kinds are what [IAM policies](/access-control#iam-policies) and [AI control](/ai-control) match on, so a rule like "deny deploys on `environment-kind:production`" covers every production-kind environment, whatever its name.

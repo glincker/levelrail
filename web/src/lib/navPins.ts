@@ -1,12 +1,12 @@
-export const NAV_PINS_STORAGE_KEY = 'shell.nav.global.pins'
+import { NAV_DEFAULT_MAX_PINS } from './navConfig'
 
-const DEFAULT_MAX_PINS = 5
+export const NAV_PINS_STORAGE_KEY = 'shell.nav.global.pins'
 
 export function maxNavPins(
   raw: unknown = import.meta.env.VITE_NAV_MAX_PINS,
 ): number {
   const n = Number(raw)
-  return Number.isInteger(n) && n > 0 ? n : DEFAULT_MAX_PINS
+  return Number.isInteger(n) && n > 0 ? n : NAV_DEFAULT_MAX_PINS
 }
 
 // Keeps only unique strings, in stored order, up to the cap. Anything else

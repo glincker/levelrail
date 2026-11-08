@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -184,13 +185,35 @@ func scenarioStatus(rs []chaos.Result) string {
 	return s
 }
 
+// cleanOutputPath rejects empty, traversing or directory targets so a flag value cannot
+// escape the directory the operator named.
+func cleanOutputPath(path string) (string, error) {
+	if strings.TrimSpace(path) == "" {
+		return "", errors.New("benchreport: empty output path")
+	}
+	for _, seg := range strings.Split(filepath.ToSlash(path), "/") {
+		if seg == ".." {
+			return "", fmt.Errorf("benchreport: output path %q must not contain '..'", path)
+		}
+	}
+	clean := filepath.Clean(path)
+	if fi, err := os.Stat(clean); err == nil && fi.IsDir() {
+		return "", fmt.Errorf("benchreport: output path %q is a directory", path)
+	}
+	return clean, nil
+}
+
 // WriteJSON writes the report as indented JSON.
 func WriteJSON(path string, r Report) error {
 	b, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return fmt.Errorf("benchreport: encode: %w", err)
 	}
-	if err := os.WriteFile(path, append(b, '\n'), 0o644); err != nil { // #nosec G306 -- a results file is meant to be shared
+	clean, err := cleanOutputPath(path)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(clean, append(b, '\n'), 0o644); err != nil { //nolint:gosec // path validated by cleanOutputPath; results file is meant to be shared
 		return fmt.Errorf("benchreport: write %s: %w", path, err)
 	}
 	return nil
@@ -281,7 +304,11 @@ func Markdown(r Report) string {
 
 // WriteMarkdown writes Markdown(r) to path.
 func WriteMarkdown(path string, r Report) error {
-	if err := os.WriteFile(path, []byte(Markdown(r)), 0o644); err != nil { // #nosec G306 -- a results file is meant to be shared
+	clean, err := cleanOutputPath(path)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(clean, []byte(Markdown(r)), 0o644); err != nil { //nolint:gosec // path validated by cleanOutputPath; results file is meant to be shared
 		return fmt.Errorf("benchreport: write %s: %w", path, err)
 	}
 	return nil

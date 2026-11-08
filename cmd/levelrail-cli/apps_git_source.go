@@ -38,7 +38,11 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceRotateSecret(prog, args[1:], stdout, stderr, lookupEnv)
 	case "register-webhook":
 		return runAppsGitSourceRegisterWebhook(prog, args[1:], stdout, stderr, lookupEnv)
-	case "delete":
+	case "plan":
+		return runAppsGitSourcePlan(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploy":
+		return runAppsGitSourceDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete", "disconnect":
 		return runAppsGitSourceDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps git-source subcommand %q\n\n", prog, args[0])
@@ -52,7 +56,9 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source get <name> [flags]                              show an app's connected repo
   %[1]s apps git-source show <name> [flags]                             same as get
   %[1]s apps git-source commits <name> [--branch B] [flags]             newest commits with deploy status and suggestions
-  %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
+  %[1]s apps git-source plan <name> [--repo URL --branch B] [flags]     preview attaching a repo: what is kept, suggested build
+  %[1]s apps git-source set <name> --repo URL [--branch B --build-pack T --deploy]   connect (or edit) a repo, also for an app deployed from an image or upload
+  %[1]s apps git-source deploy <name> [--branch B] [flags]              build and deploy the connected branch now
   %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
   %[1]s apps git-source set <name> --build-type static [--build-command C --publish-dir D | --infer-build]   build a static site, then serve it
   %[1]s apps git-source validate <name> [flags]                         check repo access with the deploy credential and show the fix
@@ -62,7 +68,8 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   %[1]s apps git-source register-webhook <name> [flags]                 register the push webhook on the provider again
-  %[1]s apps git-source delete <name> [flags]                           disconnect an app's repo
+  %[1]s apps git-source disconnect <name> [flags]                       disconnect an app's repo, the running image keeps serving
+  %[1]s apps git-source delete <name> [flags]                           same as disconnect
 
 Run "%[1]s apps git-source <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -82,7 +89,11 @@ func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, l
 
 	gs, err := client.GetGitSource(context.Background(), name)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get git source for app %q: %w", name, err))
+		code := reportError(stdout, stderr, jsonOut, fmt.Errorf("get git source for app %q: %w", name, err))
+		if !jsonOut && isAPINotFound(err) {
+			_, _ = fmt.Fprint(stderr, noGitSourceHint(prog, name))
+		}
+		return code
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, gs, func() { printGitSourceHuman(stdout, gs) }); err != nil {
@@ -96,8 +107,12 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source set", "print the git source as JSON to stdout and nothing else", stderr)
 	var repoURL, branch, buildType, buildPath, token, triggerMode, baseDirectory string
 	fs.StringVar(&repoURL, "repo-url", "", "repo URL to connect (required)")
+	fs.StringVar(&repoURL, "repo", "", "alias for --repo-url")
+	var deployNow bool
+	fs.BoolVar(&deployNow, "deploy", false, "build and deploy the branch right after connecting; the running image serves until the build succeeds")
 	fs.StringVar(&branch, "branch", "", "branch to deploy on push (default: the server's default branch)")
 	fs.StringVar(&buildType, "build-type", "", "dockerfile, railpack, or static (default: dockerfile)")
+	fs.StringVar(&buildType, "build-pack", "", "alias for --build-type")
 	fs.StringVar(&buildPath, "build-path", "", "Dockerfile path, relative to the repository root")
 	fs.StringVar(&buildPath, "dockerfile", "", "alias for --build-path")
 	fs.StringVar(&baseDirectory, "base-directory", "", "build context directory, relative to the repository root (default: the root)")
@@ -158,9 +173,17 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source for app %q: %w", name, err))
 	}
 
-	if err := renderResult(stdout, of.Format, of.Query, gs, func() { printGitSourceHuman(stdout, gs) }); err != nil {
+	if err := renderResult(stdout, of.Format, of.Query, gs, func() {
+		printGitSourceHuman(stdout, gs)
+		if gs.WebhookSecret != "" {
+			_, _ = fmt.Fprintf(stdout, "webhook_secret: %s (shown once, will not be shown again)\n", gs.WebhookSecret)
+		}
+	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
+	}
+	if deployNow {
+		return startGitSourceDeploy(client, name, branch, stdout, stderr, jsonOut)
 	}
 	return exitOK
 }

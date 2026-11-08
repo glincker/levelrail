@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
 import { formatCores, formatSize } from '../../lib/format'
 import type { GroupBy, GroupRow, Reservation } from '../../lib/reservedUsage'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 const GROUP_OPTIONS: GroupBy[] = ['project', 'environment']
 
@@ -33,27 +33,15 @@ export function ReservedBreakdown({
           <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
             {t('fleet.reserved.breakdown')}
           </h3>
-          <div
-            role="group"
+          <SegmentedControl<GroupBy>
             aria-label={t('fleet.reserved.groupBy')}
-            className="flex flex-wrap gap-1"
-          >
-            {GROUP_OPTIONS.map((opt) => (
-              <Button
-                key={opt}
-                type="button"
-                size="sm"
-                variant={by === opt ? 'secondary' : 'ghost'}
-                aria-pressed={by === opt}
-                className="h-6 px-2 text-xs"
-                onClick={() => {
-                  setBy(opt)
-                }}
-              >
-                {t(`fleet.reserved.by.${opt}`)}
-              </Button>
-            ))}
-          </div>
+            value={by}
+            onValueChange={setBy}
+            options={GROUP_OPTIONS.map((opt) => ({
+              value: opt,
+              label: t(`fleet.reserved.by.${opt}`),
+            }))}
+          />
         </div>
         <table className="w-full text-sm">
           <caption className="sr-only">{t('fleet.reserved.breakdown')}</caption>

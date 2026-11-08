@@ -10,6 +10,7 @@ import {
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { BrandTile } from '@/components/BrandLogoBadge'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { organizationEnvQueryOptions } from '@/queries/organizationEnv'
 import { organizationListQueryOptions } from '@/queries/organizations'
@@ -158,6 +159,17 @@ function healthTone(status: string | undefined): Tone {
   return 'success'
 }
 
+// Brand marks come from the thesvg library through BrandTile, never vendored.
+const GIT_PROVIDER_BRAND: Record<GitProviderName, string> = {
+  github: 'github',
+  gitlab: 'gitlab',
+  bitbucket: 'bitbucket',
+  bitbucket_server: 'bitbucket',
+  gitea: 'gitea',
+  forgejo: 'forgejo',
+  azure_devops: 'azure',
+}
+
 export function SourcesHub() {
   const { t } = useTranslation('hubs', { keyPrefix: 'sources' })
   const providers = useQuery(gitProvidersQueryOptions())
@@ -185,7 +197,12 @@ export function SourcesHub() {
               : t(`status.${status ?? 'ok'}`)
             return (
               <li key={p.provider} className={ROW}>
-                <span className="text-sm font-medium">
+                <span className="flex items-center gap-2.5 text-sm font-medium">
+                  <BrandTile
+                    name={GIT_PROVIDER_BRAND[p.provider]}
+                    label={t(`provider.${p.provider}`)}
+                    size="sm"
+                  />
                   {t(`provider.${p.provider}`)}
                 </span>
                 <span className="flex items-center gap-3">

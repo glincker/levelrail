@@ -40,7 +40,7 @@ func startDeployProgress(w io.Writer, label string, interval time.Duration) (tou
 				return
 			case now := <-t.C:
 				if now.UnixNano()-last.Load() >= int64(interval) {
-					_, _ = fmt.Fprintf(w, "  still %s, %s elapsed\n", label, now.Sub(start).Round(time.Second))
+					_, _ = fmt.Fprintf(w, "  %sstill %s, %s elapsed\n", styleFor(w).symbol("… ", ""), label, now.Sub(start).Round(time.Second))
 					last.Store(now.UnixNano())
 				}
 			}

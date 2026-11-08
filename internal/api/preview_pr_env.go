@@ -98,6 +98,9 @@ func (rt *Router) handleSetPRPreviewEnv(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 			return
 		}
+		if !rt.allowProviderRefs(w, r, req.Value) {
+			return
+		}
 		if err := rt.secrets.SetValueGuarded(r.Context(), store.PRPreviewEnvSecretsKey(name, pr), req.Key, req.Value, true); err != nil {
 			rt.internalError(w, "api: set pr preview env: encrypt value failed", err, slog.String("name", name), slog.String("key", req.Key))
 			return

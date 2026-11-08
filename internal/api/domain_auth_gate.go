@@ -54,7 +54,7 @@ type setDomainAuthGateRequest struct {
 }
 
 func defaultAuthGateTimeoutSeconds() int {
-	d, _ := ingress.AuthGateTimeoutFromEnv(os.Getenv)
+	d, _ := ingress.CurrentAuthGateTimeout(context.Background(), os.Getenv)
 	return int(math.Ceil(d.Seconds()))
 }
 

@@ -8,22 +8,19 @@ import (
 	"math/rand/v2"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
-	envGitPollEnabled     = "APP_GIT_POLL_ENABLED"
-	envGitPollInterval    = "APP_GIT_POLL_INTERVAL"
-	envGitPollJitter      = "APP_GIT_POLL_JITTER"
-	envGitPollConcurrency = "APP_GIT_POLL_CONCURRENCY"
-	envGitPollMaxBackoff  = "APP_GIT_POLL_MAX_BACKOFF"
+	envGitPollJitter = "APP_GIT_POLL_JITTER"
 
 	defaultGitPollInterval    = 5 * time.Minute
 	defaultGitPollJitter      = 0.2
@@ -43,23 +40,25 @@ type gitPollConfig struct {
 	MaxBackoff  time.Duration
 }
 
-// gitPollConfigFromEnv reads the poller settings: on by default, every five
-// minutes with 20 percent jitter, four sources at a time.
-func gitPollConfigFromEnv() gitPollConfig {
+// gitPollConfig resolves the poller settings on every tick so a change in
+// settings applies live. Jitter stays env-only because it is a safety spread.
+func (rt *Router) gitPollConfig(ctx context.Context) gitPollConfig {
 	c := gitPollConfig{Enabled: true, Interval: defaultGitPollInterval, Jitter: defaultGitPollJitter, Concurrency: defaultGitPollConcurrency, MaxBackoff: defaultGitPollMaxBackoff}
-	if v := strings.ToLower(strings.TrimSpace(os.Getenv(envGitPollEnabled))); v == "0" || v == "false" || v == "off" {
-		c.Enabled = false
-	}
-	if d, err := time.ParseDuration(os.Getenv(envGitPollInterval)); err == nil && d > 0 {
-		c.Interval = d
-	}
 	if f, err := strconv.ParseFloat(os.Getenv(envGitPollJitter), 64); err == nil && f >= 0 && f <= 1 {
 		c.Jitter = f
 	}
-	if n, err := strconv.Atoi(os.Getenv(envGitPollConcurrency)); err == nil && n > 0 {
+	rs := rt.runtimeSettings
+	if rs == nil {
+		return c
+	}
+	c.Enabled = rs.Bool(ctx, runtimesettings.KeyGitPollEnabled)
+	if d := rs.Duration(ctx, runtimesettings.KeyGitPollInterval); d > 0 {
+		c.Interval = d
+	}
+	if n := rs.Int(ctx, runtimesettings.KeyGitPollConcurrency); n > 0 {
 		c.Concurrency = n
 	}
-	if d, err := time.ParseDuration(os.Getenv(envGitPollMaxBackoff)); err == nil && d > 0 {
+	if d := rs.Duration(ctx, runtimesettings.KeyGitPollMaxBackoff); d > 0 {
 		c.MaxBackoff = d
 	}
 	return c
@@ -127,21 +126,23 @@ func (c gitPollConfig) backoff(failures int, retryAfter time.Duration) time.Dura
 // returns when ctx is cancelled. Builds never run here: a missed head is
 // queued like a webhook push and the deploy queue runs it.
 func (rt *Router) RunGitPoller(ctx context.Context) {
-	cfg := gitPollConfigFromEnv()
-	if !cfg.Enabled {
-		rt.logger.Info("api: git poller disabled", slog.String("env", envGitPollEnabled))
-		return
-	}
 	state := newGitPollState()
-	tick := time.NewTicker(max(cfg.Interval/4, time.Second))
-	defer tick.Stop()
+	cfg := rt.gitPollConfig(ctx)
+	loop := footprint.Track("git-poller", cfg.Interval)
+	defer loop.Active()()
 	for {
-		rt.pollGitSourcesOnce(ctx, cfg, state, time.Now())
+		if cfg.Enabled {
+			start := time.Now()
+			rt.pollGitSourcesOnce(ctx, cfg, state, start)
+			loop.Observe(start, nil)
+		}
+		// A disabled poller keeps this cheap tick so enabling it later needs no restart.
 		select {
 		case <-ctx.Done():
 			return
-		case <-tick.C:
+		case <-time.After(max(cfg.Interval/4, time.Second)):
 		}
+		cfg = rt.gitPollConfig(ctx)
 	}
 }
 
@@ -252,7 +253,7 @@ func (rt *Router) gitPollHead(ctx context.Context, name string, gs store.GitSour
 	}
 	hctx, cancel := context.WithTimeout(ctx, gitPollHeadTimeout)
 	defer cancel()
-	head, err := rt.resolveBranchSHA(hctx, gs.RepoURL, gs.Branch, token)
+	head, err := rt.resolveBranchSHA(rt.gitAuthCtx(hctx, name, gs.RepoURL), gs.RepoURL, gs.Branch, token)
 	if err != nil {
 		return "", fmt.Errorf("resolve head: %w", err)
 	}

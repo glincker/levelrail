@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -34,11 +35,51 @@ type appJSON struct {
 		Quantity *int   `json:"quantity"`
 		Size     string `json:"size"`
 	} `json:"formation"`
-	Scripts      map[string]string `json:"scripts"`
-	Stack        string            `json:"stack"`
-	Healthchecks map[string][]struct {
-		Path string `json:"path"`
-	} `json:"healthchecks"`
+	Scripts      map[string]json.RawMessage `json:"scripts"`
+	Stack        string                     `json:"stack"`
+	Healthchecks map[string][]healthEntry   `json:"healthchecks"`
+	Cron         []cronEntry                `json:"cron"`
+}
+
+type cronEntry struct {
+	Command  string `json:"command"`
+	Schedule string `json:"schedule"`
+}
+
+// healthEntry keeps the probe fields that map to a spec probe and the names
+// of every other key so none is dropped without a finding.
+type healthEntry struct {
+	Type string
+	Path string
+	Rest []string
+}
+
+func (h *healthEntry) UnmarshalJSON(b []byte) error {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "type":
+			_ = json.Unmarshal(v, &h.Type)
+		case "path":
+			_ = json.Unmarshal(v, &h.Path)
+		case "name", "description":
+		default:
+			h.Rest = append(h.Rest, k)
+		}
+	}
+	sort.Strings(h.Rest)
+	return nil
+}
+
+// appJSONHandled lists top-level app.json keys that are translated or are
+// pure metadata; anything else gets an unsupported finding.
+var appJSONHandled = map[string]bool{
+	"env": true, "addons": true, "buildpacks": true, "formation": true, "scripts": true,
+	"stack": true, "healthchecks": true, "cron": true,
+	"name": true, "description": true, "keywords": true, "website": true, "repository": true, "logo": true,
 }
 
 type envObj struct {
@@ -59,6 +100,8 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 			add(Finding{Code: "heroku.appjson.invalid", Severity: SeverityBlocker, Source: fileAppJSON,
 				Message: "app.json is not valid JSON: " + err.Error(), Fix: "Fix the JSON syntax and run the translation again."})
 			app = appJSON{}
+		} else {
+			fs = append(fs, appJSONUnsupported(b)...)
 		}
 	}
 
@@ -76,7 +119,7 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 		}
 	}
 
-	build, bfs := herokuBuild(app)
+	build, bfs := herokuBuild(app, o)
 	fs = append(fs, bfs...)
 
 	for _, name := range sortedKeys(procs) {
@@ -90,13 +133,9 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 			add(Finding{Code: "heroku.web.port", Severity: SeverityInfo, Source: fileProcfile, Subject: "web",
 				Message: "Heroku injects $PORT, here the service listens on a fixed port and PORT is set to match",
 				Fix:     "Change port and the PORT env value together if your app expects another port."})
-			if hc := app.Healthchecks["web"]; len(hc) > 0 && hc[0].Path != "" {
-				svc.Health = &Health{Readiness: &Probe{Path: hc[0].Path}}
-			} else {
-				add(Finding{Code: "heroku.health.none", Severity: SeverityInfo, Source: fileAppJSON, Subject: "web",
-					Message: "no healthcheck is defined, so deploys are not readiness gated",
-					Fix:     "Add health.readiness with a cheap path such as /health."})
-			}
+			h, hfs := herokuWebHealth(files, app)
+			svc.Health = h
+			fs = append(fs, hfs...)
 		} else {
 			svc.Port = o.webPort
 			add(Finding{Code: "heroku.process.port", Severity: SeverityInfo, Source: fileProcfile, Subject: name,
@@ -111,10 +150,12 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 		fs = append(fs, herokuFormation(&svc, name, app)...)
 		frag.Services[name] = svc
 	}
+	fs = append(fs, herokuOrphans(procs, app)...)
 
-	fs = append(fs, herokuRelease(&frag, release)...)
-	fs = append(fs, herokuScripts(&frag, app)...)
-	dbFs := herokuAddons(&frag, app)
+	fs = append(fs, herokuRelease(&frag, release, o)...)
+	fs = append(fs, herokuScripts(&frag, app, o)...)
+	fs = append(fs, herokuCron(&frag, app, o)...)
+	dbFs := herokuAddons(&frag, app, o)
 	fs = append(fs, dbFs...)
 	fs = append(fs, herokuEnv(&frag, app)...)
 	return frag, fs
@@ -149,8 +190,19 @@ func parseProcfile(files map[string][]byte) (map[string]string, string, string) 
 	return procs, release, bad
 }
 
-func herokuBuild(app appJSON) (Build, []Finding) {
+func herokuBuild(app appJSON, o options) (Build, []Finding) {
 	var fs []Finding
+	if o.dockerfile {
+		fs = append(fs, Finding{Code: "heroku.dockerfile.command", Severity: SeverityInfo, Source: fileProcfile,
+			Message: "the repo has a Dockerfile, so it is built as is and each Procfile command replaces the image's CMD for its service",
+			Fix:     "Remove the Procfile line for a service that should run the image's own CMD."})
+		if len(app.Buildpacks) > 0 {
+			fs = append(fs, Finding{Code: "heroku.buildpack.ignored", Severity: SeverityInfo, Source: fileAppJSON,
+				Message: "buildpacks are ignored because a Dockerfile is present",
+				Fix:     "Delete the buildpacks key once the Dockerfile covers the build."})
+		}
+		return Build{Type: "dockerfile"}, fs
+	}
 	if app.Stack == "container" {
 		fs = append(fs, Finding{Code: "heroku.stack.container", Severity: SeverityInfo, Source: fileAppJSON,
 			Message: "container stack builds from a Dockerfile, but Railpack is proposed because heroku.yml is not read",
@@ -198,44 +250,236 @@ func herokuFormation(svc *Service, name string, app appJSON) []Finding {
 	return fs
 }
 
-func herokuRelease(frag *Fragment, release string) []Finding {
+func herokuRelease(frag *Fragment, release string, o options) []Finding {
 	if release == "" {
 		return nil
 	}
-	web, ok := frag.Services["web"]
+	target := hookTarget(frag, o)
+	web, ok := frag.Services[target]
 	if !ok {
 		return []Finding{{Code: "heroku.release.no-web", Severity: SeverityWarn, Source: fileProcfile, Subject: "release",
 			Message: "release phase found but there is no web service to attach a pre-deploy command to",
 			Fix:     "Run '" + release + "' by hand before the first deploy."}}
 	}
 	web.Hooks = &Hooks{PreDeploy: release}
-	frag.Services["web"] = web
+	frag.Services[target] = web
 	return []Finding{{Code: "heroku.release.predeploy", Severity: SeverityWarn, Source: fileProcfile, Subject: "release",
 		Message: "release phase becomes hooks.preDeploy, run in the new web container before readiness, not in a one-off dyno",
 		Fix:     "Make sure the command is idempotent and needs nothing but the built image."}}
 }
 
-func herokuScripts(frag *Fragment, app appJSON) []Finding {
+// hookTarget picks the service that carries deploy hooks: web, or at deploy
+// time the first process when the Procfile has no web line.
+func hookTarget(frag *Fragment, o options) string {
+	if _, ok := frag.Services["web"]; ok || !o.deploy {
+		return "web"
+	}
+	if keys := sortedKeys(frag.Services); len(keys) > 0 {
+		return keys[0]
+	}
+	return "web"
+}
+
+func herokuScripts(frag *Fragment, app appJSON, o options) []Finding {
 	var fs []Finding
+	target := hookTarget(frag, o)
 	for _, k := range sortedKeys(app.Scripts) {
-		cmd := app.Scripts[k]
+		raw := app.Scripts[k]
+		var cmd string
+		if json.Unmarshal(raw, &cmd) != nil && k != "dokku" {
+			fs = append(fs, Finding{Code: "heroku.script.unsupported", Severity: SeverityInfo, Source: fileAppJSON, Subject: k,
+				Message: "no equivalent: app.json script " + k + " is not a command string and is not translated",
+				Fix:     "Move the work to a manual step."})
+			continue
+		}
 		switch k {
 		case "postdeploy":
-			if web, ok := frag.Services["web"]; ok {
-				if web.Hooks == nil {
-					web.Hooks = &Hooks{}
-				}
-				web.Hooks.PostDeploy = cmd
-				frag.Services["web"] = web
-			}
+			setHook(frag, target, "", cmd)
 			fs = append(fs, Finding{Code: "heroku.script.postdeploy", Severity: SeverityWarn, Source: fileAppJSON, Subject: k,
 				Message: "Heroku runs postdeploy only when a review app is created, hooks.postDeploy runs on every deploy",
 				Fix:     "Drop it, or make the command safe to repeat."})
+		case "dokku":
+			fs = append(fs, dokkuScripts(frag, target, raw)...)
 		default:
 			fs = append(fs, Finding{Code: "heroku.script.unsupported", Severity: SeverityInfo, Source: fileAppJSON, Subject: k,
 				Message: "no equivalent: app.json script " + k + " is not translated",
 				Fix:     "Move test scripts to CI and teardown work to a manual step."})
 		}
+	}
+	return fs
+}
+
+// dokkuScripts maps scripts.dokku.predeploy and postdeploy to service hooks.
+func dokkuScripts(frag *Fragment, target string, raw json.RawMessage) []Finding {
+	var m map[string]string
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return []Finding{{Code: "heroku.script.unsupported", Severity: SeverityWarn, Source: fileAppJSON, Subject: "dokku",
+			Message: "scripts.dokku is not an object of command strings and is not translated",
+			Fix:     "Rewrite it as {\"predeploy\": \"cmd\", \"postdeploy\": \"cmd\"}."}}
+	}
+	var fs []Finding
+	for _, k := range sortedKeys(m) {
+		switch k {
+		case "predeploy":
+			setHook(frag, target, m[k], "")
+			fs = append(fs, Finding{Code: "heroku.script.dokku.predeploy", Severity: SeverityInfo, Source: fileAppJSON, Subject: "dokku.predeploy",
+				Message: "becomes hooks.preDeploy on " + target + ", chained after the release command when both exist",
+				Fix:     "Make sure the command is idempotent."})
+		case "postdeploy":
+			setHook(frag, target, "", m[k])
+			fs = append(fs, Finding{Code: "heroku.script.dokku.postdeploy", Severity: SeverityInfo, Source: fileAppJSON, Subject: "dokku.postdeploy",
+				Message: "becomes hooks.postDeploy on " + target + ", run on every deploy",
+				Fix:     "Make sure the command is safe to repeat."})
+		default:
+			fs = append(fs, Finding{Code: "heroku.script.unsupported", Severity: SeverityWarn, Source: fileAppJSON, Subject: "dokku." + k,
+				Message: "no equivalent: scripts.dokku." + k + " is not translated",
+				Fix:     "Run it by hand or from CI."})
+		}
+	}
+	return fs
+}
+
+// setHook adds a pre or post command, chaining with && when one is set.
+func setHook(frag *Fragment, target, pre, post string) {
+	svc, ok := frag.Services[target]
+	if !ok {
+		return
+	}
+	if svc.Hooks == nil {
+		svc.Hooks = &Hooks{}
+	}
+	if pre != "" {
+		svc.Hooks.PreDeploy = chain(svc.Hooks.PreDeploy, pre)
+	}
+	if post != "" {
+		svc.Hooks.PostDeploy = chain(svc.Hooks.PostDeploy, post)
+	}
+	frag.Services[target] = svc
+}
+
+func chain(a, b string) string {
+	if a == "" {
+		return b
+	}
+	return a + " && " + b
+}
+
+// herokuWebHealth lets app.json healthchecks win over a CHECKS file so one
+// source of truth is used when both exist.
+func herokuWebHealth(files map[string][]byte, app appJSON) (*Health, []Finding) {
+	b, ok := lookup(files, fileChecks)
+	if !ok {
+		return herokuHealth("web", app)
+	}
+	if len(app.Healthchecks["web"]) > 0 {
+		h, fs := herokuHealth("web", app)
+		return h, append(fs, checksFinding("checks.ignored", SeverityInfo, "web",
+			"app.json healthchecks are set, so the CHECKS file is ignored", "Remove the CHECKS file or the app.json healthchecks entry."))
+	}
+	return checksHealth(b)
+}
+
+// herokuHealth maps app.json healthchecks for one process type to probes.
+func herokuHealth(name string, app appJSON) (*Health, []Finding) {
+	var fs []Finding
+	h := &Health{}
+	for _, e := range app.Healthchecks[name] {
+		switch {
+		case e.Path == "":
+			fs = append(fs, Finding{Code: "heroku.healthcheck.unsupported", Severity: SeverityWarn, Source: fileAppJSON, Subject: name,
+				Message: "a " + e.Type + " healthcheck without a path (a command or port check) has no equivalent and is skipped",
+				Fix:     "Add health.readiness with an exec probe by hand."})
+			continue
+		case e.Type == "liveness":
+			if h.Liveness == nil {
+				h.Liveness = &Probe{Path: e.Path}
+			}
+		default:
+			if h.Readiness == nil {
+				h.Readiness = &Probe{Path: e.Path}
+			}
+		}
+		if len(e.Rest) > 0 {
+			fs = append(fs, Finding{Code: "heroku.healthcheck.option", Severity: SeverityInfo, Source: fileAppJSON, Subject: name,
+				Message: "healthcheck options " + strings.Join(e.Rest, ", ") + " are not translated, default probe timing applies",
+				Fix:     "Tune health.interval, timeout and failures if the defaults do not fit."})
+		}
+	}
+	if h.Readiness == nil && h.Liveness == nil {
+		if len(app.Healthchecks[name]) == 0 {
+			fs = append(fs, Finding{Code: "heroku.health.none", Severity: SeverityInfo, Source: fileAppJSON, Subject: name,
+				Message: "no healthcheck is defined, so deploys are not readiness gated",
+				Fix:     "Add health.readiness with a cheap path such as /health."})
+		}
+		return nil, fs
+	}
+	return h, fs
+}
+
+// herokuOrphans flags per-process settings for types the Procfile lacks.
+func herokuOrphans(procs map[string]string, app appJSON) []Finding {
+	var fs []Finding
+	for _, k := range sortedKeys(app.Formation) {
+		if _, ok := procs[k]; !ok {
+			fs = append(fs, Finding{Code: "heroku.formation.unknown", Severity: SeverityWarn, Source: fileAppJSON, Subject: k,
+				Message: "formation names process type " + k + " which the Procfile does not define, so it is skipped",
+				Fix:     "Add a " + k + ": line to the Procfile or remove the formation entry."})
+		}
+	}
+	for _, k := range sortedKeys(app.Healthchecks) {
+		if _, ok := procs[k]; !ok {
+			fs = append(fs, Finding{Code: "heroku.healthcheck.unknown", Severity: SeverityWarn, Source: fileAppJSON, Subject: k,
+				Message: "healthchecks names process type " + k + " which the Procfile does not define, so it is skipped",
+				Fix:     "Add a " + k + ": line to the Procfile or remove the entry."})
+		}
+	}
+	return fs
+}
+
+// herokuCron maps app.json cron entries to jobs on the hook target.
+func herokuCron(frag *Fragment, app appJSON, o options) []Finding {
+	if len(app.Cron) == 0 {
+		return nil
+	}
+	target := hookTarget(frag, o)
+	svc, ok := frag.Services[target]
+	if !ok {
+		return []Finding{{Code: "heroku.cron.no-service", Severity: SeverityWarn, Source: fileAppJSON, Subject: "cron",
+			Message: "cron entries found but there is no service to run them on, so they are skipped",
+			Fix:     "Add a web or worker process to the Procfile."}}
+	}
+	var fs []Finding
+	for i, c := range app.Cron {
+		if c.Command == "" || c.Schedule == "" {
+			fs = append(fs, Finding{Code: "heroku.cron.invalid", Severity: SeverityWarn, Source: fileAppJSON, Subject: "cron[" + strconv.Itoa(i) + "]",
+				Message: "cron entry needs both command and schedule, so it is skipped",
+				Fix:     "Set command and a five field cron schedule."})
+			continue
+		}
+		svc.Jobs = append(svc.Jobs, Job{Name: "cron-" + strconv.Itoa(i+1), Schedule: c.Schedule, Command: []string{"sh", "-c", c.Command}})
+		fs = append(fs, Finding{Code: "heroku.cron.job", Severity: SeverityInfo, Source: fileAppJSON, Subject: "cron[" + strconv.Itoa(i) + "]",
+			Message: "becomes job cron-" + strconv.Itoa(i+1) + " on " + target + ", run in a fresh container from the service image",
+			Fix:     "Check the schedule is in UTC, jobs default to it."})
+	}
+	frag.Services[target] = svc
+	return fs
+}
+
+// appJSONUnsupported reports each top-level key that is neither translated
+// nor plain metadata.
+func appJSONUnsupported(b []byte) []Finding {
+	var top map[string]json.RawMessage
+	if json.Unmarshal(b, &top) != nil {
+		return nil
+	}
+	var fs []Finding
+	for _, k := range sortedKeys(top) {
+		if appJSONHandled[k] {
+			continue
+		}
+		fs = append(fs, Finding{Code: "heroku.appjson.key.unsupported", Severity: SeverityWarn, Source: fileAppJSON, Subject: k,
+			Message: "no equivalent: app.json key " + k + " is not translated",
+			Fix:     "Recreate its effect by hand in app.yaml or CI, or remove it."})
 	}
 	return fs
 }
@@ -257,7 +501,7 @@ var addonRules = map[string]addonRule{
 
 var builtinAddons = map[string]bool{"papertrail": true, "logentries": true, "loggly": true, "coralogix": true}
 
-func herokuAddons(frag *Fragment, app appJSON) []Finding {
+func herokuAddons(frag *Fragment, app appJSON, o options) []Finding {
 	var fs []Finding
 	for _, raw := range app.Addons {
 		plan, as := addonPlan(raw)
@@ -266,6 +510,11 @@ func herokuAddons(frag *Fragment, app appJSON) []Finding {
 		}
 		name := strings.SplitN(plan, ":", 2)[0]
 		switch {
+		case addonRules[name].engine != "" && o.deploy:
+			r := addonRules[name]
+			fs = append(fs, Finding{Code: "heroku.addon.deploy-manual", Severity: SeverityWarn, Source: fileAppJSON, Subject: plan,
+				Message: "a deploy does not create databases, add-on " + name + " is skipped and " + r.env + " is not set",
+				Fix:     "Create a " + r.engine + " database, link it to the app with databases link, then redeploy."})
 		case addonRules[name].engine != "":
 			r := addonRules[name]
 			fs = append(fs, attachDatabase(frag, r, plan, as)...)

@@ -15,6 +15,7 @@ import {
   type UiIcon,
 } from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ import {
   useTeardownPreviewEnvironment,
   usePreviewEnvironments,
 } from '../queries/previewEnvironments'
+import { usePreviewPolicy } from '../queries/previewPolicy'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type {
@@ -79,13 +81,53 @@ const STATUS_ICON: Record<PreviewEnvironmentStatus, UiIcon> = {
   limit_reached: BanGlassIcon,
 }
 
+// Per-preview gate flag from the list API; the app-wide policy is only the
+// fallback when the flag is absent, so the list never claims Public blindly.
+function PreviewGateBadge({
+  appName,
+  gated: previewGated,
+}: {
+  appName: string
+  gated?: boolean
+}) {
+  const { t } = useTranslation('previews')
+  const policy = usePreviewPolicy(appName)
+  let gated: boolean
+  let needsPassword = false
+  if (previewGated !== undefined) {
+    gated = previewGated
+  } else if (policy.data) {
+    gated = policy.data.gate_basic_auth
+    needsPassword = gated && !policy.data.gate_password_set
+  } else {
+    return null
+  }
+  const variant = needsPassword ? 'warning' : gated ? 'success' : 'muted'
+  const label = needsPassword
+    ? t('row.gateNeedsPassword')
+    : gated
+      ? t('row.gateOn')
+      : t('row.gateOff')
+  return (
+    <>
+      <Badge variant={variant} className="rounded-full">
+        <ShieldCheckGlassIcon className="size-4.5" aria-hidden="true" />
+        {label}
+      </Badge>
+      <InfoTip label={t('row.gateTipLabel')}>{t('row.gateTip')}</InfoTip>
+    </>
+  )
+}
+
 function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
   const StatusIcon = STATUS_ICON[status]
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
       <StatusIcon
         className={
-          status === 'deploying' ? 'size-3.5 animate-spin' : 'size-3.5'
+          status === 'deploying'
+            ? 'size-3.5 animate-spin motion-reduce:animate-none'
+            : 'size-3.5'
         }
         aria-hidden="true"
       />
@@ -340,7 +382,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
         {enabled ? (
           previews.isLoading ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <LoaderGlassIcon className="size-5 animate-spin" />
+              <LoaderGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
               Loading previews...
             </p>
           ) : previews.data && previews.data.length > 0 ? (
@@ -364,6 +406,12 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                           />
                           Fork
                         </Badge>
+                      ) : null}
+                      {preview.domain ? (
+                        <PreviewGateBadge
+                          appName={app.name}
+                          gated={preview.gated}
+                        />
                       ) : null}
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">

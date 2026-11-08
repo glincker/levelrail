@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -88,12 +88,9 @@ func validateTagName(name string) (string, error) {
 	return name, nil
 }
 
-// maxTagsPerApp reads APP_MAX_TAGS_PER_APP (default 20).
-func maxTagsPerApp() int {
-	if n, err := strconv.Atoi(os.Getenv("APP_MAX_TAGS_PER_APP")); err == nil && n > 0 {
-		return n
-	}
-	return 20
+// maxTagsPerApp is the live per-app tag cap.
+func (rt *Router) maxTagsPerApp(ctx context.Context) int {
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyMaxTagsPerApp)
 }
 
 var errTooManyTags = errors.New("app has reached the maximum number of tags")
@@ -128,7 +125,7 @@ func (rt *Router) attachTagByName(ctx context.Context, appName, name string) (st
 	for _, t := range existing {
 		attached = attached || t.ID == tag.ID
 	}
-	if !attached && len(existing) >= maxTagsPerApp() {
+	if !attached && len(existing) >= rt.maxTagsPerApp(ctx) {
 		return store.Tag{}, errTooManyTags
 	}
 	if err := rt.tags.AttachAppTag(ctx, tag.ID, appName); err != nil {

@@ -360,6 +360,19 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 			recorded(ev)
 		}
 	}
+	if setter, ok := h.attempts.(interface {
+		SetDeployAttemptDetectedFramework(ctx context.Context, id, framework string) error
+	}); ok {
+		recorded := progress
+		progress = func(ev build.ProgressEvent) {
+			if ev.Log != "" && build.IsNextDetectedLine(ev.Log) {
+				if err := setter.SetDeployAttemptDetectedFramework(context.Background(), id, "Next.js"); err != nil {
+					h.log.Warn("webhook: record detected framework failed", "attempt_id", id, "error", err)
+				}
+			}
+			recorded(ev)
+		}
+	}
 	finish = func(_ string, deployErr error) {
 		// Background, not ctx: must still flush and finish even if the
 		// triggering request's own context is on its way out.

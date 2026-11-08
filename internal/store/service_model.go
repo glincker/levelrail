@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // DesiredService is what the application controller reconciles running
@@ -47,6 +49,12 @@ type DesiredService struct {
 	// compose-only sourcing as Command above, from
 	// internal/compose.Service.Entrypoint.
 	Entrypoint []string
+	// User and WorkingDir override the image's USER and WORKDIR inside the
+	// container; empty keeps the image's own.
+	User       string
+	WorkingDir string
+	// Runtime holds the allowlisted docker run options; nil means none.
+	Runtime *spec.RuntimeOptions
 	// DependsOn names sibling services (bare key, e.g. "db") this service waits
 	// on before its containers start, like compose depends_on service_started.
 	DependsOn []string

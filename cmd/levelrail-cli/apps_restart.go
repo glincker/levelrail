@@ -18,7 +18,8 @@ func runAppsRestart(prog string, args []string, stdout, stderr io.Writer, lookup
 	var queueOffline bool
 	fs.BoolVar(&queueOffline, "queue-while-offline", false, "if the app's node is offline, record the change as pending and apply it when the node returns (default: refuse)")
 	var wait bool
-	var timeoutStr string
+	var timeoutStr, service string
+	fs.StringVar(&service, "service", "", "restart only this service of a multi-service app (restarts <app>-<service>)")
 	fs.BoolVar(&wait, "wait", false, "wait for the new container to pass readiness and exit non-zero if the restart fails")
 	fs.StringVar(&timeoutStr, "timeout", "", "with --wait, give up after this long (default "+envRestartWaitTimeout+", then 10m)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRestartUsage(prog)) }
@@ -34,7 +35,7 @@ func runAppsRestart(prog string, args []string, stdout, stderr io.Writer, lookup
 		fs.Usage()
 		return exitUsage
 	}
-	name := rest[0]
+	name := serviceAppName(rest[0], service)
 	timeout := envDurationOr(lookupEnv, envRestartWaitTimeout, 10*time.Minute)
 	if timeoutStr != "" {
 		d, err := parseDurationOrZero(timeoutStr)
@@ -95,7 +96,7 @@ func waitForAppRestart(client *Client, prog, name string, timeout time.Duration,
 
 func appsRestartUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps restart <name> [flags]
+  %[1]s apps restart <name> [--service S] [flags]
 
 Forces an existing app's running container to be recreated with no image
 change. Different from "apps deploy" and "apps rollback": neither of
@@ -113,6 +114,7 @@ container is healthy: a failed restart exits non-zero, and a timeout exits
 with the deploy timeout code. With --json it prints the wait result.
 
 Flags:
+  --service string        restart only this service of a multi-service app
   --wait                  wait for the restart's real outcome before exiting
   --timeout duration      with --wait, how long to wait (default %[5]s env var, then 10m)
   --queue-while-offline   if the app's node is offline, record the change as pending (default: refuse)

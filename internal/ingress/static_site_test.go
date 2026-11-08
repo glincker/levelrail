@@ -124,3 +124,22 @@ func TestStaticRouteUsesRulesHandlerOnlyWhenPresent(t *testing.T) {
 		}
 	}
 }
+
+func TestStaticRouteBasicAuthOnlyWhenGated(t *testing.T) {
+	build := func(auth *BasicAuthAccount) string {
+		cfg, err := BuildRoutesConfig(RoutesOptions{ServerName: "srv", ListenAddr: ":80", StaticRoutes: []StaticRoute{{Hosts: []string{"a.example.com"}, RootDir: "/srv/a", BasicAuth: auth}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := json.Marshal(cfg)
+		return string(raw)
+	}
+	open := build(nil)
+	if strings.Contains(open, "http_basic") {
+		t.Fatalf("ungated static route has auth: %s", open)
+	}
+	gated := build(&BasicAuthAccount{Username: "op", Password: "$2a$10$fakehashfakehashfakehashfa"}) //nolint:gosec // fixture
+	if !strings.Contains(gated, "http_basic") || strings.Index(gated, "http_basic") > strings.Index(gated, "file_server") {
+		t.Fatalf("gated static route lacks auth ahead of file_server: %s", gated)
+	}
+}

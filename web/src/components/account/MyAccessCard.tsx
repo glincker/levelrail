@@ -88,7 +88,7 @@ export function MyAccessCard() {
                 </ul>
               )}
             </div>
-            <Table>
+            <Table aria-label={t('a11y.tables.myAccess', { ns: 'common' })}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('accountPage.access.colArea')}</TableHead>

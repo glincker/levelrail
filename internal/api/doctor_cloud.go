@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"io"
 	"net"
 	"net/http"
@@ -92,7 +93,7 @@ func realCloudMetadata(ctx context.Context, url string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer Oracle")
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := netclient.New().Do(req)
 	if err != nil {
 		return nil, err
 	}

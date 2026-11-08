@@ -101,7 +101,7 @@ export function AiUsagePanel({
         </p>
       </div>
       <Sparkline points={points} label={t('aiAssistantPage.usage.sparkline')} />
-      <Table>
+      <Table aria-label={t('a11y.tables.aiUsage', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('aiAssistantPage.usage.model')}</TableHead>

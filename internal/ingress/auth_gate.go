@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -8,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -80,6 +82,26 @@ func AuthGateTimeoutFromEnv(getenv func(string) string) (time.Duration, error) {
 		return defaultAuthGateTimeout, fmt.Errorf("ingress: %s=%q is not a positive duration", EnvAuthGateTimeout, raw)
 	}
 	return d, nil
+}
+
+// liveAuthGateTimeout feeds the saved setting in without this package importing the settings layer.
+var liveAuthGateTimeout atomic.Pointer[func(context.Context) time.Duration]
+
+// SetLiveAuthGateTimeout installs the saved-setting source. Nil restores env reads.
+func SetLiveAuthGateTimeout(f func(context.Context) time.Duration) {
+	if f == nil {
+		liveAuthGateTimeout.Store(nil)
+		return
+	}
+	liveAuthGateTimeout.Store(&f)
+}
+
+// CurrentAuthGateTimeout returns the saved default when a source is installed, else the env value.
+func CurrentAuthGateTimeout(ctx context.Context, getenv func(string) string) (time.Duration, error) {
+	if f := liveAuthGateTimeout.Load(); f != nil {
+		return (*f)(ctx), nil
+	}
+	return AuthGateTimeoutFromEnv(getenv)
 }
 
 // ValidateAuthGateURL checks an auth service URL: http or https, a host,

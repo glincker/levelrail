@@ -21,5 +21,4 @@ export const YELLOW: Palette = {
   r: 'fill-(--iso-accent-r)',
 }
 
-export const LABEL =
-  'fill-muted-foreground font-mono text-[14px] uppercase tracking-[0.06em]'
+export const LABEL = 'fill-muted-foreground font-mono text-[14px]'

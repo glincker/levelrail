@@ -141,6 +141,7 @@ export interface DatabaseRule {
 
 export interface DatabaseNetwork {
   database: string
+  can_edit?: boolean
   running: boolean
   internal: { host: string; address?: string; port: number }
   // Where apps on other nodes reach a remote database; absent otherwise.

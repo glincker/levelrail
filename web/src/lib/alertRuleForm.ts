@@ -40,6 +40,7 @@ export const ALERT_KIND_OPTIONS: {
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeGlassIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: RotateCcwGlassIcon },
+  { value: 'oom_killed', Icon: CpuGlassIcon },
   {
     value: 'cert_expiry',
     label: 'Certificate expiry',
@@ -116,6 +117,7 @@ export const ALERT_KIND_OPTIONS: {
     value: 'email_delivery_failing',
     Icon: MailGlassIcon,
   },
+  { value: 'cleanup_failing', Icon: ArchiveGlassIcon },
   { value: 'deploy_failed', Icon: RocketGlassIcon },
   { value: 'monitor_down', Icon: GlobeGlassIcon },
   { value: 'domain_traffic_drop', Icon: GaugeGlassIcon },
@@ -138,6 +140,7 @@ export const alertRuleFormSchema = z
     kind: z.enum([
       'threshold',
       'crashloop',
+      'oom_killed',
       'cert_expiry',
       'patch_status',
       'scheduled_task_failure',
@@ -159,6 +162,7 @@ export const alertRuleFormSchema = z
       'version_skew',
       'budget_threshold',
       'email_delivery_failing',
+      'cleanup_failing',
       'deploy_failed',
       'monitor_down',
       'domain_traffic_drop',
@@ -198,6 +202,7 @@ export const alertRuleFormSchema = z
       data.kind === 'log_archive_stale' ||
       data.kind === 'version_skew' ||
       data.kind === 'email_delivery_failing' ||
+      data.kind === 'cleanup_failing' ||
       data.kind === 'deploy_failed' ||
       data.kind === 'monitor_down' ||
       data.kind === 'budget_threshold'
@@ -458,7 +463,7 @@ export function buildAlertRuleRequest(
     req.comparator = values.comparator
     req.threshold = values.threshold
     req.for_duration = values.forDuration.trim() || undefined
-  } else if (values.kind === 'crashloop') {
+  } else if (values.kind === 'crashloop' || values.kind === 'oom_killed') {
     req.restart_count_threshold = values.restartCountThreshold
     req.restart_window = values.restartWindow.trim()
   } else if (isScheduledTaskKind(values.kind)) {

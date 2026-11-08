@@ -1,13 +1,14 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -21,12 +22,9 @@ import (
 // unbounded dump of the whole store.
 const defaultLogDownloadMaxLines = 5000
 
-// logDownloadMaxLines is the cap in effect, tunable with APP_LOG_EXPORT_MAX_LINES.
-func logDownloadMaxLines() int {
-	if n, err := strconv.Atoi(os.Getenv("APP_LOG_EXPORT_MAX_LINES")); err == nil && n > 0 {
-		return n
-	}
-	return defaultLogDownloadMaxLines
+// logDownloadMaxLines is the live cap on lines in one download.
+func (rt *Router) logDownloadMaxLines(ctx context.Context) int {
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyLogExportMaxLines)
 }
 
 // handleDownloadLogs handles GET /api/v1/apps/{name}/logs/download; see
@@ -94,7 +92,7 @@ func (rt *Router) downloadResourceLogs(w http.ResponseWriter, r *http.Request, l
 	if c := r.URL.Query().Get("container"); c != "" {
 		entries = filterLogsByContainer(entries, c)
 	}
-	if limit := logDownloadMaxLines(); len(entries) > limit {
+	if limit := rt.logDownloadMaxLines(r.Context()); len(entries) > limit {
 		entries = entries[len(entries)-limit:]
 		w.Header().Set("X-Log-Export-Truncated", "true")
 	}

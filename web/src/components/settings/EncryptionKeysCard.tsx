@@ -1,9 +1,11 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   KeyGlassIcon,
   RefreshCwGlassIcon,
   TriangleAlertGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import {
   Card,
@@ -305,7 +307,11 @@ export function EncryptionKeysCard() {
         <div className="space-y-2">
           <h3 className="text-sm font-medium">{t('apps.title')}</h3>
           {apps.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('apps.empty')}</p>
+            <EmptyState
+              compact
+              icon={<InboxGlassIcon className="size-5" />}
+              title={t('apps.empty')}
+            />
           ) : (
             <AppKeyList
               apps={apps}

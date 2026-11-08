@@ -115,7 +115,7 @@ export function PluginTable({
 
   return (
     <>
-      <Table>
+      <Table aria-label={t('a11y.tables.plugins', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('columns.name')}</TableHead>

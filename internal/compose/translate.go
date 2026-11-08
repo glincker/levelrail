@@ -32,6 +32,13 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if err := spec.ValidateLabels(svc.Labels); err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		// Fail instead of falling back: the image default is often root.
+		if err := spec.ValidateUser(svc.User); err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
+		if err := spec.ValidateWorkingDir(svc.WorkingDir); err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
 		pullPolicy, err := normalizePullPolicy(svc.PullPolicy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -45,11 +52,21 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			Labels:           svc.Labels,
 			Command:          svc.Command,
 			Entrypoint:       svc.Entrypoint,
+			User:             svc.User,
+			WorkingDir:       svc.WorkingDir,
 			PullPolicy:       pullPolicy,
 			DependsOn:        []string(svc.DependsOn),
 			DependsOnHealthy: svc.DependsOnHealthy,
 			Strategy:         svc.Strategy,
 		}
+		rt, rtWarns, err := runtimeFromService(svc)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
+		for _, w := range rtWarns {
+			warnings = append(warnings, fmt.Sprintf("service %q: %s", key, w))
+		}
+		d.Runtime = rt
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -65,6 +82,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if err := applyShmSize(&d, svc.ShmSize); err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		store.ApplyRuntimeOptions(&d, d.Runtime)
 		replicas, err := replicasFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -80,7 +98,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			d.Domains = []string{domain}
 		}
 		for _, cf := range svc.Files {
-			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
+			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Secret: cf.Secret, NoExpand: cf.NoExpand, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
 		}
 		for _, v := range svc.Volumes {
 			if v.HostPath != "" {

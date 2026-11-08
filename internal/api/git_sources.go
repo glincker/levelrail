@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -597,8 +598,8 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "repo_url is required")
 		return
 	}
-	if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil {
-		writeError(w, http.StatusBadRequest, "repo_url must use http or https")
+	if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil && !gitsshkey.IsSSHURL(req.RepoURL) {
+		writeError(w, http.StatusBadRequest, "repo_url must use http, https or ssh")
 		return
 	}
 	buildType, err := normalizeGitSourceBuildType(req.BuildType)

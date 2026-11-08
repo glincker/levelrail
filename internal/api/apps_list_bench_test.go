@@ -24,7 +24,7 @@ func benchBearer(method, target, token string) *http.Request {
 	return req
 }
 
-func mustDecodeBench(b *testing.B, rec *httptest.ResponseRecorder, want int, dst any) {
+func mustDecodeBench(b testing.TB, rec *httptest.ResponseRecorder, want int, dst any) {
 	b.Helper()
 	if rec.Code != want {
 		b.Fatalf("status = %d, want %d, body = %s", rec.Code, want, rec.Body.String())
@@ -34,7 +34,7 @@ func mustDecodeBench(b *testing.B, rec *httptest.ResponseRecorder, want int, dst
 	}
 }
 
-func benchSeedApps(b *testing.B, db *store.DB, n int) {
+func benchSeedApps(b testing.TB, db *store.DB, n int) {
 	b.Helper()
 	ctx := context.Background()
 	for i := 0; i < n; i++ {
@@ -46,7 +46,7 @@ func benchSeedApps(b *testing.B, db *store.DB, n int) {
 }
 
 // benchScopedToken mints a read token with a deny policy so the caller takes the filtered list path.
-func benchScopedToken(b *testing.B, rt *Router, cookie *http.Cookie) string {
+func benchScopedToken(b testing.TB, rt *Router, cookie *http.Cookie) string {
 	b.Helper()
 	do := func(method, target, body string) *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()
@@ -67,7 +67,7 @@ func benchScopedToken(b *testing.B, rt *Router, cookie *http.Cookie) string {
 
 // BenchmarkListApps compares the plain path with the scoped caller path that loads every app and pages in memory.
 func BenchmarkListApps(b *testing.B) {
-	for _, n := range []int{100, 500, 2000} {
+	for _, n := range []int{100, 500, 2000, 10000} {
 		rt, db := newTestRouter(b)
 		cookie, err := loginTestSessionSlow(rt, db)
 		if err != nil {

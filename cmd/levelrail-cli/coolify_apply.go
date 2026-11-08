@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -46,6 +47,16 @@ func applyMigration(ctx context.Context, client *Client, report *migrationReport
 			continue
 		}
 		a.Applied = true
+
+		if pv := a.Service.Previews; pv != nil {
+			req := apiclient.SetPreviewPolicyRequest{}
+			if pv.MaxPreviews > 0 {
+				req.MaxPreviews = &pv.MaxPreviews
+			}
+			if _, err := client.SetPreviewPolicy(ctx, created.Name, req); err != nil {
+				a.Issues = append(a.Issues, migrationIssue{Field: "previews", Severity: issueReview, Detail: "preview policy was not applied: " + err.Error()})
+			}
+		}
 
 		for key, value := range a.Service.EnvLiteral {
 			if err := client.SetSecret(ctx, created.Name, key, value, false); err != nil {

@@ -98,7 +98,7 @@ export function RetentionOverviewCard() {
         <p className="text-sm text-muted-foreground">{t('overview.intro')}</p>
       </CardHeader>
       <CardContent>
-        <ul className="divide-y divide-border text-sm">
+        <ul data-slot="grouped-list" className="text-sm">
           {KNOBS.map((k) => {
             const current = k.setting ? valueOf(k.setting) : null
             return (

@@ -25,10 +25,11 @@ var hfRepoRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,95}/[A-Za-z0-9][
 type DiskFactsFunc func(ctx context.Context, nodeID string) (free, total int64, ok bool)
 
 type preflightDeps struct {
-	hf       *HFClient
-	fit      FitConfig
-	diskFree DiskFactsFunc
-	maxFiles int
+	hf           *HFClient
+	fit          FitConfig
+	diskFree     DiskFactsFunc
+	maxFiles     int
+	maxFilesLive func() int
 }
 
 // SetHuggingFace enables Preflight. Call once at startup.
@@ -38,6 +39,16 @@ func (s *Service) SetHuggingFace(c *HFClient, fit FitConfig) {
 	if n, err := strconv.Atoi(os.Getenv("APP_HF_MAX_LISTED_FILES")); err == nil && n > 0 {
 		s.preflight.maxFiles = n
 	}
+}
+
+// SetListedFilesSource makes the preflight file cap follow a live setting.
+func (s *Service) SetListedFilesSource(fn func() int) { s.preflight.maxFilesLive = fn }
+
+func (p *preflightDeps) fileCap() int {
+	if p.maxFilesLive != nil {
+		return p.maxFilesLive()
+	}
+	return p.maxFiles
 }
 
 // SetDiskFacts registers the source of node disk facts.
@@ -232,8 +243,8 @@ func (s *Service) describePreflight(res *PreflightResult, info *HFRepo, in Prefl
 	}
 	res.FileCount = len(files)
 	listed := files
-	if len(listed) > s.preflight.maxFiles {
-		listed, res.FilesTruncated = listed[:s.preflight.maxFiles], true
+	if len(listed) > s.preflight.fileCap() {
+		listed, res.FilesTruncated = listed[:s.preflight.fileCap()], true
 	}
 	for _, f := range listed {
 		res.Files = append(res.Files, PreflightFile(f))

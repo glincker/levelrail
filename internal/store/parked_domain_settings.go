@@ -23,6 +23,7 @@ var parkedSettingTables = []string{
 	"domain_error_page",
 	"domain_search_visibility",
 	"domain_traffic_policies",
+	"domain_limits",
 }
 
 var settingColumnName = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)

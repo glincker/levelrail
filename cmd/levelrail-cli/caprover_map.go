@@ -18,6 +18,7 @@ func mapCaproverApplication(app caproverAppDefinition, rootDomain string, includ
 	out.Service.Port = app.ContainerHTTPPort
 	out.Issues = mapCaproverPorts(app.Ports, out.Issues)
 	out.Issues = mapCaproverVolumes(app, out.Issues)
+	out.Issues = mapCaproverProxyFlags(app, out.Issues)
 	out.Issues = mapCaproverInstanceCount(app.InstanceCount, out.Issues)
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapCaproverEnv(app.EnvVars, includeSecretValues, out.Issues)
 
@@ -112,4 +113,22 @@ func mapCaproverEnv(envVars []caproverEnvVar, includeSecretValues bool, issues [
 		literal[e.Key] = e.Value
 	}
 	return keys, literal, issues
+}
+
+// mapCaproverProxyFlags flags per-app proxy settings: domain policies are not
+// written by this tool, so each one is a review item to set after import.
+func mapCaproverProxyFlags(app caproverAppDefinition, issues []migrationIssue) []migrationIssue {
+	if app.ForceSSL {
+		issues = appendIssue(issues, "forceSsl", issueReview, "force-HTTPS was on; enable the redirect-to-HTTPS policy on each imported domain")
+	}
+	if app.WebsocketSupport {
+		issues = appendIssue(issues, "websocketSupport", issueReview, "websocket support was on; confirm upgrade requests pass through the imported domain policy")
+	}
+	if app.RedirectDomain != "" {
+		issues = appendIssue(issues, "redirectDomain", issueReview, fmt.Sprintf("requests were redirected to %s; add a redirect policy to the imported domain", app.RedirectDomain))
+	}
+	if app.HTTPAuth != nil && app.HTTPAuth.User != "" {
+		issues = appendIssue(issues, "httpAuth", issueReview, fmt.Sprintf("basic auth was enabled for user %s; the password hash is not imported, add basic auth to the domain policy and set a new password", app.HTTPAuth.User))
+	}
+	return issues
 }

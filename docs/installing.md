@@ -582,7 +582,7 @@ Pick the path that matches how you installed. The self-update (next section) is 
 
 ### Check first, then upgrade
 
-`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or you turned on automatic upgrades (off by default, see [Upgrade safely](/upgrade-safely#automatic-upgrades)).
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or automatic upgrades fire in their nightly window (on by default until you save a policy; turn off with `levelrail-cli upgrade auto set --mode off`, see [Upgrade safely](/upgrade-safely#automatic-upgrades)).
 
 | Check | Detail |
 | --- | --- |

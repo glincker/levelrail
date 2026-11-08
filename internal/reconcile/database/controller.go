@@ -459,7 +459,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 
 	switch desired.Engine {
 	case store.EngineRedis:
-		command, containerPort := redisCommandAndPort(c.tls)
+		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
 		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EnginePostgres:
@@ -545,18 +545,21 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		// under a new name. See the package doc comment for why an
 		// unauthenticated Redis-family database is an accepted posture
 		// here.
-		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
+		command, containerPort := redisCommandAndPort(c.tls, keydbServerBin)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EngineValkey:
 		// Same /data path, port and image defaults (RDB snapshots, no
-		// password) as Redis; the image ships redis-server and redis-cli symlinks.
-		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
+		// password) as Redis; the image ships redis-server and redis-cli symlinks,
+		// and the TLS flags are the same, so the Redis command is reused.
+		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
 		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
 		// own default (dump-{timestamp}) never matches that path.
-		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand(os.Getenv(EnvDragonflyProactorThreads)), redisDataPath, redisContainerPort, nil)
+		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand(os.Getenv(EnvDragonflyProactorThreads), c.tls), redisDataPath, redisContainerPort, c.tls)
 
 	case store.EngineClickHouse:
 		if c.clickhouseCreds == nil {
@@ -617,6 +620,10 @@ func (c *Controller) Teardown(ctx context.Context) error {
 		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
 			return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
 		}
+	}
+	// A foreign container on the network must not block deleting the database.
+	if err := c.runtime.RemoveNetwork(ctx, PrivateNetworkName(c.dbName)); err != nil && !errors.Is(err, docker.ErrNetworkInUse) {
+		return fmt.Errorf("database/%s: remove private network: %w", c.dbName, err)
 	}
 	return c.removeCertsHelpers(ctx)
 }
@@ -707,6 +714,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// Newer official images drop privileges with setpriv, which needs SETPCAP
 	// to shrink the bounding set; the minimal cap list leaves it out.
 	spec.CapAdd = append(spec.CapAdd, "SETPCAP")
+	attachPrivateNetwork(&spec, c.dbName)
 	for _, fn := range customize {
 		fn(&spec)
 	}
@@ -866,11 +874,24 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
+	case !outdated && state.Running && onDefaultBridge(state) && len(spec.Ports) > 0:
+		// Published ports follow the create-time gateway network, so a
+		// container with ports is recreated rather than moved live.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return replaceFailure(c.dbName, err)
+		}
+		justDeployed = true
+
 	case !state.Running:
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
 			return notReady("StartFailed", err), fmt.Errorf("database/%s: restart %q: %w", c.dbName, target, err)
 		}
 		justDeployed = true
+	}
+	if !justDeployed && state.Running {
+		if err := c.leaveDefaultBridge(ctx, state); err != nil {
+			return notReady("PrivateNetworkFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
 	}
 
 	if justDeployed {
@@ -943,6 +964,11 @@ func (e *startAfterCreateError) Unwrap() error { return e.err }
 
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
 	c.prov.Start(dbprovision.StepCreateContainer, spec.Name)
+	if spec.Network != nil {
+		if _, err := c.runtime.EnsureNetwork(ctx, spec.Network.Name); err != nil {
+			return fmt.Errorf("ensure private network %q: %w", spec.Network.Name, err)
+		}
+	}
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
@@ -1111,6 +1137,13 @@ func mongoCommand(tls *TLSMaterial) []string {
 	}
 }
 
+// Server binaries for the Redis TLS flag builder; the KeyDB image ships no redis-server.
+const (
+	redisServerBin = "redis-server"
+	keydbServerBin = "keydb-server"
+	keydbConfPath  = "/etc/keydb/keydb.conf"
+)
+
 // redisCommandAndPort returns Redis's own container command and the port
 // it should be reached on. With tls nil this is nil/redisContainerPort,
 // byte-identical to every Redis database before this feature existed.
@@ -1119,18 +1152,23 @@ func mongoCommand(tls *TLSMaterial) []string {
 // no skips requiring a CA certificate no client here needs, since
 // resolveDatabaseURL (internal/reconcile/application) never verifies
 // this certificate's issuer, only that the connection is encrypted.
-func redisCommandAndPort(tls *TLSMaterial) ([]string, int) {
+func redisCommandAndPort(tls *TLSMaterial, bin string) ([]string, int) {
 	if tls == nil {
 		return nil, redisContainerPort
 	}
-	command := []string{
-		"redis-server",
+	command := []string{bin}
+	if bin == keydbServerBin {
+		// The KeyDB image turns protected mode off only inside its conf file, which a bare
+		// flag command would drop, so keep the conf and disable it explicitly.
+		command = append(command, keydbConfPath, "--protected-mode", "no")
+	}
+	command = append(command,
 		"--tls-port", strconv.Itoa(redisTLSContainerPort),
 		"--port", "0",
-		"--tls-cert-file", certsMountPath + "/" + tlsCertFile,
-		"--tls-key-file", certsMountPath + "/" + tlsKeyFile,
+		"--tls-cert-file", certsMountPath+"/"+tlsCertFile,
+		"--tls-key-file", certsMountPath+"/"+tlsKeyFile,
 		"--tls-auth-clients", "no",
-	}
+	)
 	return command, redisTLSContainerPort
 }
 
@@ -1138,12 +1176,26 @@ func redisCommandAndPort(tls *TLSMaterial) ([]string, int) {
 // prepends the "dragonfly" binary itself whenever the first arg starts
 // with "-", so this is passed as flags only, matching Dragonfly's own
 // documented invocation (--dbfilename without a "dragonfly" prefix).
-func dragonflyCommand(threads string) []string {
+func dragonflyCommand(threads string, tls *TLSMaterial) []string {
 	cmd := []string{"--dbfilename", "dump"}
 	if n, err := strconv.Atoi(threads); err == nil && n > 0 {
 		cmd = append(cmd, "--proactor_threads", strconv.Itoa(n))
 	}
-	return cmd
+	return append(cmd, dragonflyTLSFlags(tls)...)
+}
+
+// dragonflyTLSFlags serves TLS on the normal port. Dragonfly 1.27 refuses to
+// start with TLS and no password, so the toggle stays closed for it.
+func dragonflyTLSFlags(tls *TLSMaterial) []string {
+	if tls == nil {
+		return nil
+	}
+	return []string{
+		"--tls",
+		"--tls_cert_file", certsMountPath + "/" + tlsCertFile,
+		"--tls_key_file", certsMountPath + "/" + tlsKeyFile,
+		"--no_tls_on_admin_port",
+	}
 }
 
 // EnvDragonflyProactorThreads caps Dragonfly's io threads (default: one per

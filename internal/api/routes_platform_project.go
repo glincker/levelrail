@@ -82,16 +82,16 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	// resolved effective env vars for two of this project's environments,
 	// secret values always redacted.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments/compare", rt.requireAbility(AbilityRead, rt.handleCompareEnvironmentEnv))
-	mux.HandleFunc("PATCH /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateEnvironment))
-	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
+	mux.HandleFunc("PATCH /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.requireEnvironmentGrant(AbilityWrite, rt.handleUpdateEnvironment)))
+	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.requireEnvironmentGrant(AbilityWrite, rt.handleDeleteEnvironment)))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppEnvironment))
 
 	// Clone environment (environment_clone.go): copy a whole
 	// environment's app set plus config into a brand-new environment,
 	// AbilityDeploy-gated like promote.go's own trigger route since it
 	// actually deploys real containers, not just database rows.
-	mux.HandleFunc("GET /api/v1/environments/{id}/clone/preview", rt.requireAbility(AbilityRead, rt.handleEnvironmentClonePreview))
-	mux.HandleFunc("POST /api/v1/environments/{id}/clone", rt.requireAbility(AbilityDeploy, rt.handleEnvironmentClone))
+	mux.HandleFunc("GET /api/v1/environments/{id}/clone/preview", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleEnvironmentClonePreview)))
+	mux.HandleFunc("POST /api/v1/environments/{id}/clone", rt.requireAbility(AbilityDeploy, rt.requireEnvironmentGrant(AbilityDeploy, rt.handleEnvironmentClone)))
 
 	// Deploy approvals (deploy_approvals.go): the real two-person gate
 	// behind a protected environment's confirm: true, replacing a
@@ -115,15 +115,15 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	// Shared env vars every service tagged with this environment inherits
 	// (environment_env.go): the tier between organizations/{id}/env and
 	// projects/{id}/env above and a service's own env below.
-	mux.HandleFunc("GET /api/v1/environments/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetEnvironmentEnv))
-	mux.HandleFunc("PUT /api/v1/environments/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetEnvironmentEnv))
+	mux.HandleFunc("GET /api/v1/environments/{id}/env", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleGetEnvironmentEnv)))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/env", rt.requireAbility(AbilityWrite, rt.requireEnvironmentGrant(AbilityWrite, rt.handleSetEnvironmentEnv)))
 
 	// Secret-backed shared env vars at the environment tier, mirroring
 	// the organization tier's own four routes above.
-	mux.HandleFunc("GET /api/v1/environments/{id}/env/all", rt.requireAbility(AbilityRead, rt.handleListEnvironmentEnvAll))
-	mux.HandleFunc("GET /api/v1/environments/{id}/env/secrets", rt.requireAbility(AbilityRead, rt.handleListEnvironmentEnvSecretKeys))
-	mux.HandleFunc("PUT /api/v1/environments/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetEnvironmentEnvSecret))
-	mux.HandleFunc("DELETE /api/v1/environments/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironmentEnvSecret))
+	mux.HandleFunc("GET /api/v1/environments/{id}/env/all", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleListEnvironmentEnvAll)))
+	mux.HandleFunc("GET /api/v1/environments/{id}/env/secrets", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleListEnvironmentEnvSecretKeys)))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.requireEnvironmentGrant(AbilityWrite, rt.handleSetEnvironmentEnvSecret)))
+	mux.HandleFunc("DELETE /api/v1/environments/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.requireEnvironmentGrant(AbilityWrite, rt.handleDeleteEnvironmentEnvSecret)))
 
 	// Shared env vars every app filed under this project inherits
 	// (project_env.go): same AbilityRead/AbilityWrite boundary as the

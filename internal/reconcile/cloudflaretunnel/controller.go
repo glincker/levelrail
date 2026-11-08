@@ -91,6 +91,7 @@ type Controller struct {
 	tokens  TokenResolver
 	runtime docker.Runtime
 	prefix  string
+	enabled func() bool
 }
 
 // Option configures optional Controller behavior.
@@ -103,6 +104,12 @@ type Option func(*Controller)
 // ContainerName falls back to defaultPrefix.
 func WithContainerPrefix(prefix string) Option {
 	return func(c *Controller) { c.prefix = prefix }
+}
+
+// WithEnabled gates reconciling on a live switch (the Settings toggle). When
+// it reports false the controller leaves the container as it is.
+func WithEnabled(fn func() bool) Option {
+	return func(c *Controller) { c.enabled = fn }
 }
 
 // New builds a Controller. tokens may be nil (no secrets master key
@@ -136,6 +143,11 @@ func ContainerName(prefix string) string {
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	if c.enabled != nil && !c.enabled() {
+		return reconcile.Result{Conditions: []reconcile.Condition{{
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "FeatureOff",
+		}}}, nil
+	}
 	settings, err := c.store.GetCloudflareTunnelSettings(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("cloudflare-tunnel: get settings: %w", err)

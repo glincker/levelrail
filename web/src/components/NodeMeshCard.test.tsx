@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { NodeMeshCard } from './NodeMeshCard'
+import { AllI18n } from '../test/allI18n'
 
 vi.mock('./RejoinMeshButton', () => ({ RejoinMeshButton: () => null }))
 vi.mock('./RotateMeshKeyDialog', () => ({ RotateMeshKeyDialog: () => null }))
@@ -44,7 +45,11 @@ vi.mock('../queries/mesh', () => ({
 
 describe('NodeMeshCard', () => {
   it('shows a remote node its own mesh identity, not the control plane', () => {
-    render(<NodeMeshCard nodeId="node-b" nodeName="node-b" />)
+    render(
+      <AllI18n>
+        <NodeMeshCard nodeId="node-b" nodeName="node-b" />
+      </AllI18n>,
+    )
     expect(screen.getByText('10.77.0.3', { selector: 'dd' })).toBeVisible()
     expect(screen.getByText('B-PUBLIC-KEY')).toBeVisible()
     expect(
@@ -56,7 +61,11 @@ describe('NodeMeshCard', () => {
   })
 
   it('shows the control plane identity and all peers for the local node', () => {
-    render(<NodeMeshCard nodeId="cp" nodeName="local" />)
+    render(
+      <AllI18n>
+        <NodeMeshCard nodeId="cp" nodeName="local" />
+      </AllI18n>,
+    )
     expect(screen.getByText('CP-PUBLIC-KEY')).toBeVisible()
     expect(screen.getByText('node-a')).toBeVisible()
   })

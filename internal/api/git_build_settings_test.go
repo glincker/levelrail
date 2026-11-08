@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -241,5 +242,44 @@ func TestGitSourceBuild_StaticSPAIsStoredAndReported(t *testing.T) {
 	rec = layoutReq(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/git-source/build", `{"build_type":"static","static_spa":false}`)
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"static_spa":false`) {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGitBuildSettingsDefinitionFile(t *testing.T) {
+	def := func(body string) map[string]string {
+		return map[string]string{"levelrail-definition.json": body, "docker/app.Dockerfile": "FROM scratch"}
+	}
+	cases := []struct {
+		name     string
+		files    map[string]string
+		base     string
+		wantFile string
+		wantNote string
+	}{
+		{"path", def(`{"schemaVersion":2,"dockerfilePath":"docker/app.Dockerfile"}`), "", "docker/app.Dockerfile", ""},
+		{"base dir", map[string]string{"svc/levelrail-definition.json": `{"schemaVersion":2,"dockerfilePath":"Dockerfile.x"}`, "svc/Dockerfile.x": "x"}, "svc", "svc/Dockerfile.x", ""},
+		{"traversal", def(`{"schemaVersion":2,"dockerfilePath":"../etc/passwd"}`), "", "", "stay inside"},
+		{"absent file", def(`{"schemaVersion":2,"dockerfilePath":"missing"}`), "", "", "not a file"},
+		{"no definition", map[string]string{}, "", "", ""},
+		{"image name", def(`{"schemaVersion":2,"imageName":"nginx"}`), "", "", "imageName"},
+		{"dockerfile lines", def(`{"schemaVersion":2,"dockerfileLines":["FROM x"]}`), "", "", "dockerfileLines"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			read := func(p string, _ int) ([]byte, error) {
+				b, ok := tc.files[p]
+				if !ok {
+					return nil, errors.New("missing")
+				}
+				return []byte(b), nil
+			}
+			got := resolveDefinitionBuild(read, tc.base)
+			if got.Dockerfile != tc.wantFile {
+				t.Fatalf("dockerfile %q, want %q", got.Dockerfile, tc.wantFile)
+			}
+			if !strings.Contains(got.Note, tc.wantNote) || (tc.wantNote == "" && got.Note != "") {
+				t.Fatalf("note %q, want containing %q", got.Note, tc.wantNote)
+			}
+		})
 	}
 }

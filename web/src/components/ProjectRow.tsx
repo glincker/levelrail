@@ -63,10 +63,10 @@ export function RowSkeleton() {
       className={`${PROJECT_LIST_GRID} border-b border-border px-4 py-3`}
       aria-hidden="true"
     >
-      <div className="size-8 animate-pulse rounded-md bg-muted" />
-      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-      <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-      <div className="h-6 w-28 animate-pulse justify-self-end rounded bg-muted" />
+      <div className="size-8 animate-pulse motion-reduce:animate-none rounded-md bg-muted" />
+      <div className="h-4 w-32 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-4 w-24 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-6 w-28 animate-pulse motion-reduce:animate-none justify-self-end rounded bg-muted" />
     </div>
   )
 }

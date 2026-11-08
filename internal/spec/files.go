@@ -29,6 +29,9 @@ type File struct {
 	Content string `yaml:"content" json:"content"`
 	Mode    string `yaml:"mode,omitempty" json:"mode,omitempty"`
 	Secret  bool   `yaml:"secret,omitempty" json:"secret,omitempty"`
+	// NoExpand skips placeholder expansion for a secret file; set only by
+	// the compose translation, the files API keeps expanding.
+	NoExpand bool `yaml:"no_expand,omitempty" json:"no_expand,omitempty"`
 }
 
 // FileLimits caps one file, the file count and the total bytes per service.

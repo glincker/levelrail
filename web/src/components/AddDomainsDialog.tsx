@@ -318,7 +318,11 @@ function AddDomainsBody({
             >
               <RefreshCwGlassIcon
                 size="1.4em"
-                className={verifying ? 'animate-spin' : undefined}
+                className={
+                  verifying
+                    ? 'animate-spin motion-reduce:animate-none'
+                    : undefined
+                }
               />
               {verifying
                 ? t('page.addDialog.verifying')
@@ -447,7 +451,7 @@ function AddDomainsBody({
           {isSubmitting ? (
             <LoaderCircleGlassIcon
               size="1.4em"
-              className="animate-spin"
+              className="animate-spin motion-reduce:animate-none"
               aria-hidden="true"
             />
           ) : null}

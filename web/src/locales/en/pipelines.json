@@ -65,6 +65,7 @@
   "artifacts": {
     "title": "Artifacts",
     "empty": "This run stored no artifacts. Add artifacts: [path] to a job to keep its output for later jobs and for download.",
+    "emptyTitle": "No artifacts",
     "loadFailed": "Artifacts could not be loaded",
     "job": "Job",
     "size": "Size",
@@ -97,6 +98,7 @@
     "never": "never",
     "deliveries": "Recent deliveries",
     "noDeliveries": "No deliveries yet.",
+    "noDeliveriesHint": "Deliveries show here after the webhook first fires.",
     "time": "Time",
     "outcome": "Outcome",
     "status": "Status",
@@ -170,5 +172,16 @@
     "before": "Before",
     "now": "Now",
     "change": "Change"
+  },
+  "holdGate": {
+    "body": "Nothing has run and no secret has been read. Approve only if you have reviewed the pull request's changes.",
+    "approve": "Approve and run",
+    "reject": "Reject"
+  },
+  "attention": {
+    "title": "Needs attention",
+    "failed": "Failed",
+    "approve": "Approve",
+    "reject": "Reject"
   }
 }

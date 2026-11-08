@@ -1,8 +1,9 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
+import { ShieldCheckGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -211,7 +212,11 @@ function DeployPoliciesPage() {
       <section className="space-y-2">
         <h2 className="text-sm font-medium">{t('stored.title')}</h2>
         {!isPending && data?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('stored.empty')}</p>
+          <EmptyState
+            compact
+            icon={<InboxGlassIcon className="size-5" />}
+            title={t('stored.empty')}
+          />
         ) : null}
         {data?.map((p) => (
           <Card key={`${p.scope}/${p.scope_id}`}>

@@ -54,6 +54,15 @@ type caproverAppDefinition struct {
 	Volumes                           []caproverVolume       `json:"volumes"`
 	Ports                             []caproverPort         `json:"ports"`
 	CustomDomain                      []caproverCustomDomain `json:"customDomain"`
+	ForceSSL                          bool                   `json:"forceSsl"`
+	WebsocketSupport                  bool                   `json:"websocketSupport"`
+	RedirectDomain                    string                 `json:"redirectDomain"`
+	HTTPAuth                          *caproverHTTPAuth      `json:"httpAuth"`
+}
+
+// caproverHTTPAuth carries only the username; the hashed password is never read.
+type caproverHTTPAuth struct {
+	User string `json:"user"`
 }
 
 // Every CapRover response is HTTP 200; the real result is in Status and Description.

@@ -42,7 +42,7 @@ export function AppsStatusChips({
               onChange(on ? null : bucket)
             }}
             className={cn(
-              'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors duration-150',
+              'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 pointer-coarse:min-h-10 text-sm transition-colors duration-150',
               on
                 ? 'border-ring bg-tone-accent-soft text-foreground'
                 : 'border-border text-muted-foreground hover:bg-muted/60 hover:text-foreground',

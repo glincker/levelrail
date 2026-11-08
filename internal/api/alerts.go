@@ -144,7 +144,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown,
+	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindOOMKilled, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindCleanupFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving,
 		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry:
@@ -212,12 +212,12 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 			return alerting.Rule{}, fmt.Errorf("comparator must be one of %q, %q, %q, %q",
 				alerting.GreaterThan, alerting.LessThan, alerting.GreaterOrEqual, alerting.LessOrEqual)
 		}
-	case alerting.KindCrashloop:
+	case alerting.KindCrashloop, alerting.KindOOMKilled:
 		if r.RestartCountThreshold <= 0 {
-			return alerting.Rule{}, errors.New("restart_count_threshold must be a positive integer for a crashloop rule")
+			return alerting.Rule{}, fmt.Errorf("restart_count_threshold must be a positive integer for a %s rule", kind)
 		}
 		if r.RestartWindow <= 0 {
-			return alerting.Rule{}, errors.New("restart_window must be a positive duration for a crashloop rule")
+			return alerting.Rule{}, fmt.Errorf("restart_window must be a positive duration for a %s rule", kind)
 		}
 	case alerting.KindScheduledTaskFailure:
 		if r.ScheduledTaskID == "" {

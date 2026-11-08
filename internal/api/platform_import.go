@@ -174,10 +174,33 @@ func (rt *Router) importPlanOptions(ctx context.Context, req platformImportReque
 	for _, d := range dbs {
 		opts.ExistingDatabases[d.Name] = d.Engine + ":" + d.Version
 	}
+	if opts.ExistingEnvironments, err = rt.existingImportEnvironments(ctx); err != nil {
+		return platformimport.PlanOptions{}, nil, err
+	}
 	if opts.DBVersions, opts.LatestDBVersions, err = rt.importDBVersions(req.DBVersions); err != nil {
 		return platformimport.PlanOptions{}, nil, err
 	}
 	return opts, domains, nil
+}
+
+// existingImportEnvironments keys every environment as "project/environment"
+// so a re-run skips the ones an earlier run created.
+func (rt *Router) existingImportEnvironments(ctx context.Context) (map[string]bool, error) {
+	out := map[string]bool{}
+	projects, err := rt.projects.ListProjects(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list projects: %w", err)
+	}
+	for _, p := range projects {
+		envs, err := rt.environments.ListEnvironmentsByProject(ctx, p.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list environments: %w", err)
+		}
+		for _, e := range envs {
+			out[platformimport.EnvironmentKey(p.Name, e.Name)] = true
+		}
+	}
+	return out, nil
 }
 
 func (rt *Router) writeImportError(w http.ResponseWriter, err error, token string) {
@@ -234,14 +257,15 @@ func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
-	report := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt})
+	report := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt, providerRefs: rt.callerHasAbility(r, AbilityRoot)})
 	rt.nudgeReconciler()
 	rt.logger.Info("api: platform import applied", slog.String("platform", req.Platform), slog.Any("counts", report.Counts))
 	writeJSON(w, http.StatusOK, report)
 }
 
-// stripBindMounts drops host bind mounts for callers without the root
-// ability, since persisting one is a host-filesystem capability.
+// stripBindMounts drops host bind mounts and cron jobs for callers without the
+// root ability: a bind mount is a host-filesystem capability and an imported cron
+// runs "sh -c" in the app, which the console exec rule reserves for root.
 func stripBindMounts(rt *Router, r *http.Request, plan *platformimport.Plan) {
 	if rt.callerHasAbility(r, AbilityRoot) {
 		return
@@ -257,15 +281,24 @@ func stripBindMounts(rt *Router, r *http.Request, plan *platformimport.Plan) {
 			kept = append(kept, v)
 		}
 		plan.Apps[i].Volumes = kept
-		if dropped == 0 {
+		droppedJobs := len(plan.Apps[i].Crons)
+		plan.Apps[i].Crons = nil
+		if dropped == 0 && droppedJobs == 0 {
 			continue
 		}
 		for j := range plan.Report.Items {
 			it := &plan.Report.Items[j]
-			if it.Kind == "app" && it.SourceID == plan.Apps[i].SourceID {
-				it.Status = platformimport.StatusNeedsAttention
+			if it.Kind != "app" || it.SourceID != plan.Apps[i].SourceID {
+				continue
+			}
+			it.Status = platformimport.StatusNeedsAttention
+			if dropped > 0 {
 				it.Reasons = append(it.Reasons, fmt.Sprintf("%d bind mount(s) were skipped: they need the root ability", dropped))
 				it.Manual = append(it.Manual, "re-run with a root token or add the bind mounts by hand")
+			}
+			if droppedJobs > 0 {
+				it.Reasons = append(it.Reasons, fmt.Sprintf("%d scheduled job(s) were skipped: jobs run a shell command and need the root ability", droppedJobs))
+				it.Manual = append(it.Manual, "a root token can re-run the import or add the jobs in the app's Jobs tab")
 			}
 		}
 	}
@@ -280,6 +313,8 @@ type importApplier struct {
 	// connect lists the managed databases each app (by target name) must join
 	// the network of, because a rewritten hostname only resolves there.
 	connect map[string][]string
+	// providerRefs lets imported secrets hold provider references; only a root caller sets it.
+	providerRefs bool
 }
 
 func (a *importApplier) projectID(ctx context.Context, name string) (string, error) {
@@ -306,13 +341,50 @@ func (a *importApplier) projectID(ctx context.Context, name string) (string, err
 	return id, nil
 }
 
+// environmentID returns the id of the named environment in the named project,
+// creating it when missing. It is "" when either name is empty.
+func (a *importApplier) environmentID(ctx context.Context, project, name string) (string, error) {
+	if project == "" || name == "" {
+		return "", nil
+	}
+	projectID, err := a.projectID(ctx, project)
+	if err != nil {
+		return "", err
+	}
+	envs, err := a.rt.environments.ListEnvironmentsByProject(ctx, projectID)
+	if err != nil {
+		return "", fmt.Errorf("list environments: %w", err)
+	}
+	for _, e := range envs {
+		if strings.EqualFold(e.Name, name) {
+			return e.ID, nil
+		}
+	}
+	id, err := randomEnvironmentID()
+	if err != nil {
+		return "", fmt.Errorf("generate environment id: %w", err)
+	}
+	e := store.Environment{ID: id, ProjectID: projectID, Name: name, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+	if err := a.rt.environments.SaveEnvironment(ctx, e); err != nil {
+		return "", fmt.Errorf("create environment: %w", err)
+	}
+	return id, nil
+}
+
+// CreateEnvironment makes the project and environment if they are missing,
+// so a re-run is a no-op.
+func (a *importApplier) CreateEnvironment(ctx context.Context, p platformimport.EnvironmentPlan) ([]string, error) {
+	_, err := a.environmentID(ctx, p.Project, p.Name)
+	return nil, err
+}
+
 func planToAppResource(p platformimport.AppPlan) appResource {
 	res := appResource{Name: p.Name, Image: p.Image, Port: p.Port, Domains: p.Domains, Env: p.Env, Replicas: p.Replicas, Labels: p.Labels}
 	if p.MemoryBytes > 0 || p.NanoCPUs > 0 {
 		res.Resources = &store.ServiceResources{MemoryBytes: p.MemoryBytes, NanoCPUs: p.NanoCPUs}
 	}
 	if h := p.Health; h != nil {
-		probe := &store.ServiceProbe{Path: h.Path, Interval: time.Duration(h.IntervalSeconds) * time.Second, Timeout: time.Duration(h.TimeoutSeconds) * time.Second, Failures: h.Failures}
+		probe := &store.ServiceProbe{Path: h.Path, Exec: h.Exec, Interval: time.Duration(h.IntervalSeconds) * time.Second, Timeout: time.Duration(h.TimeoutSeconds) * time.Second, Failures: h.Failures}
 		res.Health = &store.ServiceHealth{Readiness: probe}
 	}
 	return res
@@ -343,6 +415,11 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		return nil, errors.New("an app with this name already exists")
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
 		return nil, fmt.Errorf("check existing app: %w", err)
+	}
+	for k, v := range p.Secrets {
+		if !a.providerRefs && rt.resolvesThroughProvider(ctx, v) {
+			return nil, fmt.Errorf("secret %q: %s", k, providerRefNeedsRoot)
+		}
 	}
 	secretKeys := make([]string, 0, len(p.Secrets))
 	for k, v := range p.Secrets {
@@ -376,6 +453,15 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	if projectID != "" {
 		if err := rt.apps.UpdateServiceProject(ctx, p.Name, projectID); err != nil {
 			return warnings, fmt.Errorf("assign project: %w", err)
+		}
+	}
+	envID, err := a.environmentID(ctx, p.Project, p.Environment)
+	if err != nil {
+		return warnings, err
+	}
+	if envID != "" {
+		if err := rt.environments.SetServiceEnvironment(ctx, p.Name, envID); err != nil {
+			return warnings, fmt.Errorf("assign environment: %w", err)
 		}
 	}
 	// Linking stays under the lock: a delete's orphan sweep must not drop the App row between lookup and link.
@@ -415,6 +501,15 @@ func (a *importApplier) CreateDatabase(ctx context.Context, p platformimport.Dat
 	if projectID != "" {
 		if err := rt.databases.UpdateDatabaseProject(ctx, p.Name, projectID); err != nil {
 			return nil, fmt.Errorf("assign project: %w", err)
+		}
+	}
+	envID, err := a.environmentID(ctx, p.Project, p.Environment)
+	if err != nil {
+		return nil, err
+	}
+	if envID != "" {
+		if err := a.rt.setDatabaseEnvironment(ctx, p.Name, envID); err != nil {
+			return nil, fmt.Errorf("assign environment: %w", err)
 		}
 	}
 	return nil, nil

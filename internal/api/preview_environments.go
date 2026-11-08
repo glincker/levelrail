@@ -35,6 +35,7 @@ type PreviewEnvironmentStore interface {
 	SetPreviewEnvironmentExtendedUntil(ctx context.Context, id, until string) error
 	GetPreviewAppSettings(ctx context.Context, appName string) (store.PreviewAppSettings, error)
 	ListPreviewAppSettings(ctx context.Context) (map[string]store.PreviewAppSettings, error)
+	GatedDomains(ctx context.Context, domains []string) (map[string]bool, error)
 	SavePreviewAppSettings(ctx context.Context, s store.PreviewAppSettings) error
 
 	// The PR env override methods back per-pull-request env overrides
@@ -125,7 +126,7 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 // fork gate.
 func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	envURL := ""
-	if d := rt.previewDomain(ctx, appName, ev.Number); d != "" {
+	if d := rt.previewDomainForBranch(ctx, appName, ev.Number, ev.HeadRef); d != "" {
 		envURL = rt.publicHTTPSURL(ctx, d)
 	}
 	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, previewScope(ev.Number), envURL)
@@ -137,6 +138,9 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	previewName := previewAppName(appName, ev.Number)
 	started := time.Now()
+
+	// Deliveries for one PR run one at a time so they cannot restore into or tear down each other's database.
+	defer rt.previewDeployLocks.lock(previewName)()
 
 	preview, done, status, message := rt.beginPreview(ctx, appName, gs, ev, approved)
 	if done {
@@ -161,7 +165,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	}
 	defer cleanup()
 
-	wantDomain := rt.previewDomain(ctx, appName, ev.Number)
+	wantDomain := rt.previewDomainForBranch(ctx, appName, ev.Number, ev.HeadRef)
 	policy := rt.previewSettings(ctx, appName)
 	if forkSecretsApproved(ctx) {
 		policy.AllowForkSecrets = true
@@ -178,7 +182,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	case len(gs.Services) > 0:
 		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	case static:
-		usedDomain, domainConflict, deployErr = rt.deployPreviewStatic(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
+		usedDomain, domainConflict, deployErr = rt.deployPreviewStatic(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, policy)
 	default:
 		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	}
@@ -219,13 +223,31 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 
 	var notes []string
 	if static {
-		notes = rt.finishStaticPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+		var exposeErr error
+		notes, exposeErr = rt.finishStaticPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+		if exposeErr != nil {
+			rt.logger.Error("api: pull request webhook: static preview exposure failed", slog.String("error", exposeErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
+			rt.teardownPreviewStatic(ctx, previewName)
+			rt.finishPreviewFailed(ctx, gs, preview, "preview not published: "+exposeErr.Error())
+			return http.StatusInternalServerError, "deploy failed\n"
+		}
 	} else {
 		notes = rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
 		notes = append(notes, seedNotes...)
-		notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
-		migrateNote, migrateErr := rt.runPreviewMigrate(ctx, previewName, policy, len(gs.Databases) > 0)
+		strategyNotes, createdDB, migrateErr := rt.applyPreviewDatabaseStrategyReady(ctx, preview, appName, previewName, gs, policy, policy.MigrateCommand != "")
+		notes = append(notes, strategyNotes...)
+		var migrateNote string
+		if migrateErr == nil {
+			migrateNote, migrateErr = rt.runPreviewMigrate(ctx, previewName, policy, len(gs.Databases) > 0)
+		}
 		if migrateErr != nil {
+			// Fail closed, but only a database this run created goes: an earlier push's seeded one stays.
+			if createdDB {
+				rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)
+				if clearErr := rt.apps.UpdateServiceDatabaseAttachment(ctx, previewName, nil); clearErr != nil {
+					rt.logger.Error("api: clear preview database attachment failed", slog.String("error", clearErr.Error()), slog.String("preview_app", previewName))
+				}
+			}
 			rt.logger.Error("api: pull request webhook: preview migrate failed", slog.String("error", migrateErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 			rt.finishPreviewFailed(ctx, gs, preview, migrateErr.Error())
 			return http.StatusInternalServerError, "preview migration failed\n"
@@ -499,6 +521,10 @@ func previewServicesSpec(services map[string]spec.Service, domain string) (map[s
 // domain is configured (reachable by host:port only).
 func (rt *Router) previewDomain(ctx context.Context, appName string, prNumber int) string {
 	return rt.previewHost(ctx, appName, prNumber)
+}
+
+func (rt *Router) previewDomainForBranch(ctx context.Context, appName string, prNumber int, branch string) string {
+	return rt.previewHostFor(ctx, appName, prNumber, branch)
 }
 
 // ensurePreviewEnvironmentTier returns appName's dedicated preview

@@ -124,6 +124,22 @@ printf 'keys|%s\n' "$n"`
 	return []string{"sh", "-c", script}, nil
 }
 
+// TargetEmptinessCommand is TargetCountCommand except Redis sums the keys of every
+// logical database, so data held only in db 1 or higher still counts as data.
+func TargetEmptinessCommand(engine string) ([]string, error) {
+	if engine != EngineRedis {
+		return TargetCountCommand(engine)
+	}
+	script := `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi
+info=$(redis-cli $RTLS INFO keyspace) || exit 1
+# Anything but a real keyspace reply (LOADING, NOAUTH, empty) must not read as an empty target.
+if ! printf '%s\n' "$info" | grep -q '^# Keyspace'; then printf 'keys|unknown\n'; exit 0; fi
+n=0
+for k in $(printf '%s\n' "$info" | sed -n 's/^db[0-9][0-9]*:keys=\([0-9][0-9]*\).*/\1/p'); do n=$((n+k)); done
+printf 'keys|%s\n' "$n"`
+	return []string{"sh", "-c", script}, nil
+}
+
 // TargetCountCommand is SourceCountCommand for the managed database, run in its
 // own container where the engine's own credential variables are already set.
 func TargetCountCommand(engine string) ([]string, error) {

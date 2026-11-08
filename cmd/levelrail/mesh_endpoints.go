@@ -24,10 +24,19 @@ type meshEndpointBook struct {
 	target  endpointRecorder
 	skip    string
 	logger  *slog.Logger
+	last    map[string]string
+	wake    func()
 }
 
 func newMeshEndpointBook(logger *slog.Logger) *meshEndpointBook {
-	return &meshEndpointBook{pending: map[string]string{}, logger: logger}
+	return &meshEndpointBook{pending: map[string]string{}, last: map[string]string{}, logger: logger}
+}
+
+// SetWake makes a node reconnecting from a new address request a mesh pass; wake must not block.
+func (b *meshEndpointBook) SetWake(wake func()) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.wake = wake
 }
 
 // Observe is the agent.WithSessionObserver callback.
@@ -66,5 +75,12 @@ func (b *meshEndpointBook) Attach(rec endpointRecorder, localNodeID string) {
 func (b *meshEndpointBook) record(nodeID, endpoint string) {
 	if err := b.target.SetObservedEndpoint(nodeID, endpoint); err != nil {
 		b.logger.Warn("mesh: record observed agent endpoint failed", slog.String("node_id", nodeID), slog.String("endpoint", endpoint), slog.String("error", err.Error()))
+		return
+	}
+	if prev, seen := b.last[nodeID]; prev != endpoint {
+		b.last[nodeID] = endpoint
+		if seen && b.wake != nil {
+			b.wake()
+		}
 	}
 }

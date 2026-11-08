@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -281,4 +282,130 @@ func stripPortSuffix(key string) string {
 		return key
 	}
 	return key[:i]
+}
+
+// ExpandOption configures ExpandBuildService.
+type ExpandOption func(*expandConfig)
+
+type expandConfig struct {
+	generate func(kind, key string, length int) (string, error)
+	persist  func(serviceKey, envKey, value string) error
+	cache    map[string]string
+}
+
+// WithMagicSecrets lets ExpandBuildService resolve generated SERVICE_
+// variables with the same generate and persist hooks ResolveMagicVars
+// takes. Without it, a generated variable is rejected (fail closed).
+func WithMagicSecrets(generate func(kind, key string, length int) (string, error), persist func(serviceKey, envKey, value string) error) ExpandOption {
+	return func(c *expandConfig) { c.generate, c.persist = generate, persist }
+}
+
+// resolveEnv expands every SERVICE_ token in one service's environment.
+// Domain variables never need storage; generated ones become secret-backed
+// keys whose value is handed to persist and kept out of the returned map.
+func (c *expandConfig) resolveEnv(f *File, svcKey string, env Environment) (map[string]string, map[string]bool, []string, error) {
+	out := make(map[string]string, len(env))
+	var secretKeys map[string]bool
+	var warnings []string
+	for _, envKey := range sortedEnvKeys(env) {
+		value := env[envKey]
+		secret := false
+		for _, v := range FindMagicVars(value) {
+			val, isSecret, warn, err := c.resolveOne(f, svcKey, envKey, v)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if warn != "" {
+				warnings = append(warnings, warn)
+			}
+			secret = secret || isSecret
+			value = strings.Replace(value, v.Token, val, 1)
+		}
+		if secret {
+			if err := c.persist(svcKey, envKey, value); err != nil {
+				return nil, nil, nil, fmt.Errorf("compose: service %q: env %q: persist generated value: %w", svcKey, envKey, err)
+			}
+			if secretKeys == nil {
+				secretKeys = map[string]bool{}
+			}
+			secretKeys[envKey] = true
+			out[envKey] = ""
+			continue
+		}
+		out[envKey] = value
+	}
+	return out, secretKeys, warnings, nil
+}
+
+func (c *expandConfig) resolveOne(f *File, svcKey, envKey string, v MagicVar) (val string, secret bool, warning string, err error) {
+	switch {
+	case v.Kind == "FQDN" || v.Kind == "URL":
+		target := svcKey
+		if k := matchServiceKey(f, stripPortSuffix(v.Key)); k != "" {
+			target = k
+		}
+		domain := f.Domains[target]
+		if domain == "" {
+			domain = f.RuntimeDomains[target]
+		}
+		if domain != "" && !strings.Contains(domain, "*") {
+			if v.Kind == "URL" {
+				return "https://" + domain, false, "", nil
+			}
+			return domain, false, "", nil
+		}
+		if v.HasDefault {
+			return v.Default, false, "", nil
+		}
+		warning = fmt.Sprintf("service %q: env %q: %s has no domain assigned, using the internal name %q", svcKey, envKey, v.Token, target)
+		if v.Kind == "URL" {
+			// Keep the port the token named so the fallback still reaches the service.
+			if i := strings.LastIndex(v.Key, "_"); i >= 0 && stripPortSuffix(v.Key) != v.Key {
+				return "http://" + target + ":" + v.Key[i+1:], false, warning, nil
+			}
+			return "http://" + target, false, warning, nil
+		}
+		return target, false, warning, nil
+	case v.Generatable:
+		if c.generate == nil || c.persist == nil {
+			return "", false, "", fmt.Errorf("compose: service %q: env %q: magic var %q is not supported here: generated variables need secret storage, which this deploy path does not provide", svcKey, envKey, v.Token)
+		}
+		ck := fmt.Sprintf("%s_%s_%d", v.Kind, v.Key, v.Length)
+		if cached, ok := c.cache[ck]; ok {
+			return cached, true, "", nil
+		}
+		gen, gerr := c.generate(v.Kind, v.Key, v.Length)
+		if gerr != nil {
+			return "", false, "", fmt.Errorf("compose: service %q: env %q: %w", svcKey, envKey, gerr)
+		}
+		if c.cache == nil {
+			c.cache = map[string]string{}
+		}
+		c.cache[ck] = gen
+		return gen, true, "", nil
+	case v.HasDefault:
+		return v.Default, false, "", nil
+	}
+	return "", false, "", fmt.Errorf("compose: service %q: env %q: magic var %q cannot be resolved, use a literal value or a ${...:-default}", svcKey, envKey, v.Token)
+}
+
+// matchServiceKey finds the compose service a SERVICE_FQDN_<NAME> token
+// names, comparing case-insensitively with "-" read as "_".
+func matchServiceKey(f *File, name string) string {
+	want := strings.ToUpper(name)
+	for _, k := range sortedServiceNames(f) {
+		if strings.ToUpper(strings.ReplaceAll(k, "-", "_")) == want {
+			return k
+		}
+	}
+	return ""
+}
+
+func sortedEnvKeys(env Environment) []string {
+	keys := make([]string, 0, len(env))
+	for k := range env {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

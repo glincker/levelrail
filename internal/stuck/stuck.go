@@ -182,7 +182,8 @@ var table = []row{
 	},
 	{
 		code: CauseNodePending, title: "The node has not finished joining",
-		explanation: "The node was enrolled but has not sent its first heartbeat yet.",
+		explanation: "The node was enrolled but has not sent its first heartbeat yet, or its WireGuard mesh is not healthy yet. The app starts on its own once the node is ready.",
+		reasons:     []string{"WaitingForMesh"},
 		ctxMatch:    func(c Context) (string, bool) { return "node status: " + c.NodeStatus, c.NodeStatus == "pending" },
 		actions:     nodeActions,
 	},

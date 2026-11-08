@@ -1000,3 +1000,15 @@ func TestHandleListDatabases_ProjectFilter(t *testing.T) {
 		t.Fatalf("list = %+v, want only in-proj", list)
 	}
 }
+
+func TestCreateDatabaseBodyLimit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	body := `{"name":"` + strings.Repeat("a", maxCreateBody) + `"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusRequestEntityTooLarge)
+	}
+}

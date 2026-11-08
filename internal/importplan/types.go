@@ -92,6 +92,8 @@ type ServicePlan struct {
 	Restart     string        `json:"restart,omitempty"`
 	MemoryBytes int64         `json:"memory_bytes,omitempty"`
 	NanoCPUs    int64         `json:"nano_cpus,omitempty"`
+	// runtime holds compose keys for supported docker run tuning flags.
+	runtime map[string]any
 }
 
 // DeploymentPlan is the full preview returned before anything is created.

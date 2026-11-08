@@ -163,7 +163,7 @@ describe('Pipelines page', () => {
     expect(screen.getByText('75%')).toBeTruthy()
     expect(screen.getByText('Failed (24h)')).toBeTruthy()
     expect(screen.getByText(/ci #7/)).toBeTruthy()
-    expect(screen.queryByText('Needs attention')).toBeNull()
+    expect(screen.queryByText('attention.title')).toBeNull()
   })
 
   it('shows the attention strip and posts an approval inline', async () => {
@@ -189,7 +189,7 @@ describe('Pipelines page', () => {
     }
     stubApi(fx)
     renderPage()
-    expect(await screen.findByText('Needs attention')).toBeTruthy()
+    expect(await screen.findByText('attention.title')).toBeTruthy()
     expect(screen.getByText('job test failed')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: /approve/i }))
     await waitFor(() =>
@@ -213,7 +213,7 @@ describe('Pipelines page', () => {
       posts: [],
     })
     renderPage()
-    expect(await screen.findByText('Needs attention')).toBeTruthy()
+    expect(await screen.findByText('attention.title')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /approve/i })).toBeNull()
   })
 

@@ -553,6 +553,17 @@ levelrail-cli domains standalone add <domain> --target 127.0.0.1:3000 --confirm
 
 The same page explains the **Server address** card, which shows the public IPv4 and IPv6 your DNS records must point at, with a manual override.
 
+## Unmatched hosts and the bare server address
+
+A request for a host no app or standalone domain claims, including the server's bare IP, gets the help page by default. Two runtime settings change that:
+
+- `ingress.unmatched_mode`: `diagnostic` (default) shows the help page, `not_found` answers a plain 404 with no detail, `redirect` sends the visitor to `ingress.unmatched_redirect_url`.
+- `ingress.unmatched_redirect_url`: an absolute http or https URL. With `redirect` mode and no URL, the help page stays.
+
+```bash
+levelrail-cli settings runtime set ingress.unmatched_mode not_found
+```
+
 ## Firewall: ports 80 and 443
 
 Public traffic and ACME's HTTP-01 challenge need your server reachable from the internet on **ports 80 and 443**. Port 80 is also how Let's Encrypt validates domain ownership. If it is blocked, issuance fails even if everything else is configured correctly.
@@ -834,7 +845,7 @@ A visitor who sends `X-User: admin` themselves gets that header removed before t
 | Auth URL | required | `http` or `https`, a host, no username or password, no query. Internal addresses are allowed. A base path is kept: `https://auth.example.com/api` plus `/check` calls `/api/check`. |
 | Check path | `/` | Absolute path, may carry its own query. |
 | Copy headers | none | Up to 16 header names. `Cookie`, `Authorization`, `Host` and the `X-Forwarded-*` headers cannot be copied. |
-| Timeout | `APP_AUTH_GATE_TIMEOUT` (default `5s`) | Per domain override in seconds. The env var takes a Go duration (`3s`) or whole seconds. |
+| Timeout | runtime setting `domains.auth_gate_timeout` (default `5s`, 1s to 1m) | Per domain override in seconds, which wins over the setting. `APP_AUTH_GATE_TIMEOUT` only seeds the setting and takes a Go duration (`3s`) or whole seconds. A changed setting applies at the next ingress refresh. |
 
 <Tabs>
 <Tab title="Dashboard">
@@ -1251,3 +1262,7 @@ Proxy a domain to a port or URL with no app behind it.
 - [Diagnose a domain](/domain-diagnosis)
 - [Move a domain with no downtime](/move-a-domain-with-no-downtime)
 - [Firewall](/firewall) and [host firewall](/host-firewall)
+
+## Request limits per domain
+
+`levelrail-cli domains limits set <app> <domain> --max-body 100MiB --read-timeout 120 --write-timeout 120` caps the request body of one domain and bounds the ingress read and write time on the connection to the app. A domain cap beats the app cap and the instance cap. 0 or unset keeps today's behavior. Allowed ranges come from the runtime settings `domains.limits_max_body_bytes` and `domains.limits_max_timeout_seconds`. Limits apply to app and standalone proxy domains. A redirect-only or maintenance-mode domain renders no proxy route, so its limits have no effect. The timeouts apply to the main upstream, not to path forwarders, and a read timeout shorter than a websocket idle period cuts that websocket. A lowered ceiling also tightens limits already stored. `domains limits clear` removes them.

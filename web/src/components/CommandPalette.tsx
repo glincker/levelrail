@@ -1,3 +1,4 @@
+import '@/styles/palette-tokens.css'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
@@ -294,7 +295,8 @@ export function CommandPalette({
               }}
               onKeyDown={handleInputKeyDown}
               placeholder={ps.chips.length > 0 ? '' : t('placeholder')}
-              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent"
+              data-bare
+              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent look-glass:border-transparent look-glass:bg-transparent look-glass:dark:border-transparent look-glass:dark:bg-transparent look-glass:focus-visible:border-transparent"
             />
           </div>
           <div className="banner-edge relative overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-4 motion-safe:delay-75 motion-safe:duration-300 motion-safe:fill-mode-backwards palette-panel">

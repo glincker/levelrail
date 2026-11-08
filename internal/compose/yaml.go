@@ -24,7 +24,7 @@ type rawFile struct {
 	// just their keys (same reasoning as Networks): File.HasSecrets/
 	// HasConfigs only need to know either block was declared at all, not
 	// its shape.
-	Secrets map[string]struct{}  `yaml:"secrets"`
+	Secrets map[string]rawConfig `yaml:"secrets"`
 	Configs map[string]rawConfig `yaml:"configs"`
 }
 
@@ -41,6 +41,8 @@ type rawService struct {
 	DependsOn   DependsOn         `yaml:"depends_on"`
 	Command     Command           `yaml:"command"`
 	Entrypoint  Command           `yaml:"entrypoint"`
+	User        string            `yaml:"user"`
+	WorkingDir  string            `yaml:"working_dir"`
 	PullPolicy  string            `yaml:"pull_policy"`
 	Deploy      *Deploy           `yaml:"deploy"`
 	Secrets     []any             `yaml:"secrets"`
@@ -50,8 +52,19 @@ type rawService struct {
 	MemLimit    yamlScalarString  `yaml:"mem_limit"`
 	CPUs        yamlScalarString  `yaml:"cpus"`
 	ShmSize     yamlScalarString  `yaml:"shm_size"`
-	HostAccess  HostAccess        `yaml:",inline"`
-	Strategy    string            `yaml:"x-levelrail-strategy"`
+	// Allowlisted runtime tuning keys, mapped by runtimeFromService.
+	Tmpfs           stringList             `yaml:"tmpfs"`
+	Ulimits         map[string]spec.Ulimit `yaml:"ulimits"`
+	Init            *bool                  `yaml:"init"`
+	StopGracePeriod string                 `yaml:"stop_grace_period"`
+	ExtraHosts      hostList               `yaml:"extra_hosts"`
+	DNS             stringList             `yaml:"dns"`
+	Sysctls         sysctlMap              `yaml:"sysctls"`
+	CapDrop         []string               `yaml:"cap_drop"`
+	PidsLimit       int                    `yaml:"pids_limit"`
+	ReadOnly        bool                   `yaml:"read_only"`
+	HostAccess      HostAccess             `yaml:",inline"`
+	Strategy        string                 `yaml:"x-levelrail-strategy"`
 	// StrategyReason is shown next to the strategy so an operator knows why a template pinned it.
 	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
 	// PlatformProbe replaces healthcheck: with a probe run from outside the container.
@@ -62,6 +75,8 @@ type rawService struct {
 	DependsOnHealthy []string `yaml:"-"`
 	// DependsOnCompleted is filled by Parse from depends_on's long form.
 	DependsOnCompleted []string `yaml:"-"`
+	// EnvFiles is filled by Parse from the raw env_file entries.
+	EnvFiles []EnvFileRef `yaml:"-"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own

@@ -12,4 +12,6 @@ export interface AppResourceUsage {
   memory_limit_bytes?: number
   network_rx_bytes?: number
   network_tx_bytes?: number
+  disk_read_bytes?: number
+  disk_write_bytes?: number
 }

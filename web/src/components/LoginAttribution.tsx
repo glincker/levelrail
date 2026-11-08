@@ -60,7 +60,7 @@ function TheAuthMark(props: SVGProps<SVGSVGElement>) {
 }
 
 const linkClass =
-  'inline-flex items-center gap-1.5 rounded-sm transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+  'inline-flex items-center gap-1.5 max-sm:min-h-10 rounded-sm transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 export function LoginAttribution() {
   const { t } = useTranslation('signIn')

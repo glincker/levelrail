@@ -1,0 +1,48 @@
+@keyframes cleanup-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes cleanup-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes cleanup-flash {
+  from {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.cleanup-grow {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: cleanup-grow var(--motion-slow) var(--motion-ease) both;
+}
+.cleanup-sheen {
+  animation: cleanup-sheen 1.2s linear infinite;
+}
+.cleanup-flash {
+  animation: cleanup-flash 1.6s var(--motion-ease) both;
+}
+
+/* data-motion: 'on' forces reduced motion, 'off' opts out of the system preference. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='off']) :is(.cleanup-grow, .cleanup-sheen, .cleanup-flash) {
+    animation: none !important;
+  }
+}
+:root[data-motion='on'] :is(.cleanup-grow, .cleanup-sheen, .cleanup-flash) {
+  animation: none !important;
+}

@@ -7,12 +7,6 @@ import type { LoadBalancerAlgorithm } from './appLoadBalancer'
 
 export type LoadBalancerOverviewState = 'balancing' | 'degraded' | 'none'
 
-export const LB_STATE_LABEL: Record<LoadBalancerOverviewState, string> = {
-  balancing: 'Balancing',
-  degraded: 'Degraded',
-  none: 'No upstreams',
-}
-
 export interface LoadBalancerSummary {
   app: string
   service: string

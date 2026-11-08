@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CheckGlassIcon,
   CopyGlassIcon,
@@ -19,14 +20,14 @@ const FORMATS: {
   value: LoadBalancerExportFormat
   label: string
   apply: (file: string, app: string) => string
-  hint?: string
+  hint?: 'lb.export.cdkHint'
 }[] = [
   { value: 'terraform', label: 'Terraform', apply: () => 'terraform apply' },
   {
     value: 'cdk',
     label: 'CDK',
     apply: () => '',
-    hint: 'This is a stack class. Add it to a CDK app and instantiate it in your app entry point, then run cdk deploy.',
+    hint: 'lb.export.cdkHint',
   },
   {
     value: 'cloudformation',
@@ -63,6 +64,7 @@ function Preview({
   appName: string
   format: (typeof FORMATS)[number]
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const artifact = useLoadBalancerExport(appName, format.value, true)
   const { copied, copy } = useCopyToClipboard()
   if (artifact.isLoading) {
@@ -99,7 +101,7 @@ function Preview({
             ) : (
               <CopyGlassIcon size="1.4em" data-icon="inline-start" />
             )}
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? t('lb.export.copied') : t('lb.export.copy')}
           </Button>
           <Button
             type="button"
@@ -108,12 +110,12 @@ function Preview({
             onClick={() => download(data.filename, data.body)}
           >
             <DownloadGlassIcon size="1.4em" data-icon="inline-start" />
-            Download
+            {t('lb.export.download')}
           </Button>
         </div>
       </div>
       <pre
-        aria-label={`${data.filename} contents`}
+        aria-label={t('lb.export.contents', { file: data.filename })}
         className="max-h-96 overflow-auto rounded-xl border bg-muted/40 p-3 font-mono text-xs leading-relaxed"
       >
         <code>
@@ -125,9 +127,11 @@ function Preview({
         </code>
       </pre>
       <p className="text-xs text-muted-foreground">
-        {format.hint ?? (
+        {format.hint ? (
+          t(format.hint)
+        ) : (
           <>
-            Apply with{' '}
+            {t('lb.export.applyWith')}{' '}
             <code className="rounded bg-muted px-1.5 py-0.5">
               {format.apply(data.filename, appName)}
             </code>
@@ -146,6 +150,7 @@ function Preview({
 }
 
 export function ExportTabs({ appName }: { appName: string }) {
+  const { t } = useTranslation('statePlaceholders')
   const [value, setValue] = useState<LoadBalancerExportFormat>('terraform')
   const format = FORMATS.find((f) => f.value === value) ?? FORMATS[0]
   return (
@@ -154,7 +159,10 @@ export function ExportTabs({ appName }: { appName: string }) {
         value={value}
         onValueChange={(v) => setValue(v as LoadBalancerExportFormat)}
       >
-        <TabsList className="max-w-full overflow-x-auto">
+        <TabsList
+          aria-label={t('lb.export.formats')}
+          className="max-w-full overflow-x-auto"
+        >
           {FORMATS.map((f) => (
             <TabsTrigger key={f.value} value={f.value}>
               {f.label}

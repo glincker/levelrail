@@ -265,3 +265,14 @@ func TestRun_Templates_List_FilterQuery(t *testing.T) {
 		t.Errorf("table = %q", out)
 	}
 }
+
+func TestRun_Templates_List_CategoryFilter(t *testing.T) {
+	srv := newListEchoServer(t, nil, []serviceTemplateListItem{
+		{ID: "grafana", Name: "Grafana", Category: "Monitoring"},
+		{ID: "ghost", Name: "Ghost", Category: "CMS"},
+	})
+	out, _ := runCLIExpectOK(t, []string{"templates", "list", "--category", "monitoring", "--api-url", srv.URL})
+	if !strings.Contains(out, "grafana") || strings.Contains(out, "ghost") {
+		t.Errorf("--category list = %q, want only grafana", out)
+	}
+}

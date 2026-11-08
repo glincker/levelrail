@@ -62,3 +62,5 @@ Every route here is in the generated OpenAPI document at `docs/public/openapi.js
 ## Audit
 
 Pairing code created, device paired, failed pairing and device revoked each write an audit entry (`mobile.pairing_created`, `mobile.paired`, `mobile.pair_failed`, `mobile.revoked`).
+
+An end to end test covers pairing, a refused reused code, revoke, and the audit entries over real HTTP. It does not use a real phone; that run is still to do.

@@ -155,10 +155,10 @@ export function ManualEnrollFields({
           <DialogDescription>{t('join.createdDescription')}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+        <Alert variant="warning" className="flex items-start gap-2">
           <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
           <p className="text-sm">{t('join.singleUse', { time: expires })}</p>
-        </div>
+        </Alert>
 
         {commands ? (
           <Tabs

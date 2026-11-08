@@ -4,7 +4,7 @@ description: Push a branch to a git remote on your own server and it builds and 
 "og:url": "https://docs.levelrail.com/git-push-deploy"
 ---
 
-Add your server as a git remote, push, and the app builds and deploys the commit you pushed. There is no git provider, webhook or SSH key involved: the control plane speaks git over HTTPS on the address you already use for the dashboard.
+If you are used to deploying with a plain `git push`, this is that flow: add your server as a git remote, push, and the app builds and deploys the commit you pushed. There is no git provider, webhook or SSH key involved: the control plane speaks git over HTTPS on the address you already use for the dashboard.
 
 <Warning>
 Beta. It is off by default, it only accepts pushes, and it has not run in production for long. Read [Limits](#limits) before relying on it.
@@ -27,11 +27,15 @@ git remote add levelrail https://git:gp_...@cp.example.com/api/v1/git/my-app.git
 git push levelrail main
 ```
 
+Add `--apply` (to `git remote add` or `git remote rotate`) to let the CLI set the remote in the current repository, or in `--dir PATH`, for you. It runs `git remote add`, or `git remote set-url` when a remote with that name already points at this app's address. If the name is taken by a remote that points somewhere else, it stops and changes nothing. By default the token is kept out of `.git/config` (see the tip below). Pass `--store-token-in-config` to write the token URL into `.git/config` instead; it is then stored unencrypted in the repository config and anyone who can read that repository can read it. If git or the repository is missing, the command prints the line above so the one-time token is not lost. `--apply` is unit tested with fakes (`cmd/levelrail-cli/git_remote_test.go`) and has not run against a live control plane.
+
 On the **Source** tab the card shows the remote, a copy button, the deploy branch, the last push and the rotate and revoke buttons.
 
 <Tip>
 To keep the token out of `.git/config`, add the remote without it and let a git credential helper ask once. The user name is `git`, the password is the token.
 </Tip>
+
+With `--apply` the token stays out of `.git/config` by default (`--credential-helper` is still accepted and does nothing extra). The remote URL is written with the user name only, and a fixed git credential helper for this server reads the token from the `LEVELRAIL_GIT_TOKEN` environment variable at push time. The one-time token is printed once so you can export it, and the command refuses a server URL whose host differs from the API address. `rotate --apply` also replaces any remote URL an older version wrote with the token inline. Without `--apply` nothing changes: the command prints the add line. This is unit tested with fakes and has not pushed to a live git server.
 
 ## What a push does
 
@@ -46,6 +50,7 @@ remote: Deploy succeeded: 3f2a9c1 is rolling out.
 - The image is tagged by the pushed commit, and the deploy shows in the app's deploy history with the commit, message and author. Rollback works as for any other deploy.
 - If the build fails, git shows `[remote rejected] ... deploy failed`, the previous release keeps running, and the branch on the server does not move. After fixing the build, run the same `git push` again.
 - A Dockerfile at the repository root is built as a Dockerfile, anything else with Railpack. If the app has a connected [git source](/git-integrations) its build settings are used instead.
+- A `Procfile` is not read at deploy time. A Dockerfile uses its own `CMD`, and a Railpack build uses the start command it detects. To run several process types, describe them as services in `app.yaml`; `levelrail-cli import config` turns a `Procfile` into a first draft. See [Buildpack apps](/importing-apps#buildpack-apps).
 - One deploy per app at a time. A push during a running deploy or a deploy freeze is refused with a message.
 
 Other branches, tags, deletes and pushes of several branches at once are rejected with a message that names the deploy branch. Change it with:

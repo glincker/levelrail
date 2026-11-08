@@ -1,0 +1,16 @@
+{
+  "replicas": "Replicas",
+  "decrease": "Decrease replicas for {{name}}",
+  "increase": "Increase replicas for {{name}}",
+  "apply": "Apply",
+  "applying": "Applying",
+  "restart": "Restart {{name}}",
+  "restartTitle": "Restart {{name}}?",
+  "restartBody": "This recreates the containers of this service. Other services keep running.",
+  "restartConfirm": "Restart",
+  "restarting": "Restarting",
+  "readOnly": "You need the deploy ability to change a service",
+  "actions": "Actions",
+  "scaleFailed": "Could not scale this service.",
+  "restartFailed": "Could not restart this service."
+}

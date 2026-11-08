@@ -74,7 +74,7 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         initialFocus={focusCancel ? cancelRef : undefined}
-        className="sm:max-w-sm"
+        size="confirm"
       >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -189,9 +190,12 @@ export function LogSignaturesPanel({
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : shown.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            {onlyNew ? t('explorer.noNew') : t('explorer.empty')}
-          </p>
+          <EmptyState
+            kind="no-results"
+            icon={<FileSearchGlassIcon className="size-5" aria-hidden="true" />}
+            title={onlyNew ? t('explorer.noNew') : t('explorer.empty')}
+            description={t('explorer.emptyHint')}
+          />
         ) : (
           <ul className="space-y-2">
             {shown.map((sig) => (

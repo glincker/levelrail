@@ -69,6 +69,9 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "value is required")
 		return
 	}
+	if !rt.allowProviderRefs(w, r, req.Value) {
+		return
+	}
 
 	err = rt.secrets.SetValueGuarded(r.Context(), name, key, req.Value, req.OverwriteLocked)
 	if errors.Is(err, secrets.ErrSecretLocked) {

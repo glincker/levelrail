@@ -1,4 +1,6 @@
 import { ThumbsDownGlassIcon, ThumbsUpGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDecidePipelineRunHold } from '../queries/pipelines'
@@ -15,40 +17,30 @@ export function PipelineHoldGate({
   runId: string
   hold: PipelineHold
 }) {
+  const { t } = useTranslation('pipelines')
   const decide = useDecidePipelineRunHold(app, runId)
   const act = (decision: 'approved' | 'rejected') =>
     decide.mutate(decision, {
       onError: (e) => toast.add({ title: e.message, type: 'error' }),
     })
   return (
-    <div
-      role="alert"
-      className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/30"
-    >
+    <Alert variant="warning" className="flex flex-wrap items-center gap-2 p-3">
       <div className="min-w-48 flex-1">
         <p className="font-medium text-foreground">{hold.reason}</p>
-        <p className="text-xs text-muted-foreground">
-          Nothing has run and no secret has been read. Approve only if you have
-          reviewed the pull request&apos;s changes.
-        </p>
+        <p className="text-xs text-muted-foreground">{t('holdGate.body')}</p>
       </div>
-      <Button
-        size="sm"
-        disabled={decide.isPending}
-        onClick={() => act('approved')}
-      >
+      <Button disabled={decide.isPending} onClick={() => act('approved')}>
         <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
-        Approve and run
+        {t('holdGate.approve')}
       </Button>
       <Button
-        size="sm"
         variant="destructive"
         disabled={decide.isPending}
         onClick={() => act('rejected')}
       >
         <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
-        Reject
+        {t('holdGate.reject')}
       </Button>
-    </div>
+    </Alert>
   )
 }

@@ -1,4 +1,5 @@
 {
+  "readOnlyNotice": "You have read-only access. Ask an admin for deploy access to change these settings.",
   "authGate": {
     "badgeOn": "Auth gate on",
     "badgeOff": "No auth gate",
@@ -1789,5 +1790,20 @@
       "wwwTitle": "Also connect www",
       "wwwBody": "Visitors often type www. One click connects it and sends them to {{domain}}."
     }
+  },
+  "limits": {
+    "title": "Traffic limits",
+    "configured": "Configured",
+    "default": "Default",
+    "bodyLabel": "Max upload (MB)",
+    "readLabel": "Read timeout (s)",
+    "writeLabel": "Write timeout (s)",
+    "bodyHint": "Empty = no limit. {{min}} to {{max}} MB.",
+    "timeoutHint": "Empty = default. Up to {{max}} s.",
+    "save": "Save",
+    "reset": "Reset to default",
+    "saved": "Traffic limits saved",
+    "resetDone": "Traffic limits reset",
+    "note": "Applies on the next ingress reconcile."
   }
 }

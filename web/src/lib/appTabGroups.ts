@@ -41,6 +41,7 @@ export const APP_TAB_GROUPS: readonly AppTabGroupDef[] = [
       'resources',
       'volumes',
       'health',
+      'containers',
       'scheduled-tasks',
       'feature-flags',
       'split-testing',
@@ -74,6 +75,7 @@ export const CONFIG_MORE_SLUGS: readonly string[] = [
 // Tabs with nothing to show for a static site (no container, volume or shell).
 export const STATIC_HIDDEN_SLUGS: readonly string[] = [
   'volumes',
+  'containers',
   'exec',
   'scheduled-tasks',
 ]

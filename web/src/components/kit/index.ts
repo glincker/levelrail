@@ -1,4 +1,5 @@
-export type { Tone } from './tone'
+export type { Tone, StatusState } from './tone'
+export { StatusShape } from './StatusShape'
 export { StatusPill, type StatusPillProps } from './StatusPill'
 export { Sparkline, type SparklineProps } from './Sparkline'
 export { MetricTile, type MetricTileProps } from './MetricTile'

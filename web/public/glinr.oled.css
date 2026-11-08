@@ -1,0 +1,25 @@
+/* GLINR design tokens, generated from tokens/glinr.tokens.json, do not edit. Run `npm run tokens`. */
+
+.dark.oled, [data-mode="oled"][data-mode] {
+  --glinr-bg: oklch(0 0 0);
+  --glinr-surface: oklch(0.17 0.008 250);
+  --glinr-border: oklch(1 0 0 / 10%);
+  --glinr-color-border-strong: oklch(1 0 0 / 16%);
+  --glinr-color-fg: oklch(0.92 0.004 250);
+  --glinr-color-fg-muted: oklch(0.7 0.012 250);
+  --glinr-color-fg-subtle: oklch(0.58 0.012 250);
+  --glinr-elev-1: 0 0 0 0 transparent;
+  --glinr-surface-bg: oklch(0 0 0);
+  --glinr-surface-raised: oklch(0.17 0.008 250);
+  --glinr-surface-sunken: oklch(0 0 0);
+  --glinr-surface-overlay: oklch(0.22 0.01 250);
+  --glinr-border-control: oklch(0.52 0.012 250);
+  --glinr-seg-thumb: oklch(0.28 0.012 250);
+  --glinr-status-success-soft: oklch(0.72 0.16 155 / 18%);
+  --glinr-status-warning-soft: oklch(0.78 0.15 75 / 18%);
+  --glinr-status-danger-soft: oklch(0.68 0.19 25 / 18%);
+  --glinr-status-info-soft: oklch(0.72 0.13 235 / 18%);
+  --glinr-status-neutral-soft: oklch(0.62 0.015 250 / 18%);
+  --glinr-mesh: radial-gradient(60% 45% at 8% 0%, oklch(0.19 0.03 230 / 0.6), transparent 70%);
+  --glinr-field-focus-bg: oklch(0.2 0.008 250);
+}

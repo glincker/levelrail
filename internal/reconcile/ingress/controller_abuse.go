@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"os"
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/abuse"
@@ -57,7 +56,7 @@ func (c *Controller) applyAbusePolicies(ctx context.Context, routes []ingress.Pr
 	if !ok {
 		return routes
 	}
-	limits := abuse.LimitsFromEnv(os.Getenv)
+	limits := abuse.CurrentLimits(ctx)
 	rows, err := ps.ListAppAbusePolicies(ctx)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: abuse policies unavailable, serving without them", slog.String("error", err.Error()))

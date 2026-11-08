@@ -107,3 +107,22 @@ func TestCutoverVerifyReadsSavedThenEnvAndClamps(t *testing.T) {
 		t.Fatal("timeout range not enforced")
 	}
 }
+
+func TestAccessLogSizeSetting(t *testing.T) {
+	ctx := t.Context()
+	svc := New(newFakeStore(), envOf(nil))
+	if got := svc.Limit(ctx, KeyAccessLogSize); got != 1000 {
+		t.Fatalf("default = %d", got)
+	}
+	for _, bad := range []int{-1, 100001} {
+		if _, err := svc.Set(ctx, KeyAccessLogSize, json.RawMessage(strconv.Itoa(bad)), "t"); err == nil {
+			t.Errorf("%d accepted outside the range", bad)
+		}
+	}
+	if _, err := svc.Set(ctx, KeyAccessLogSize, json.RawMessage("0"), "t"); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.Limit(ctx, KeyAccessLogSize); got != 0 {
+		t.Fatalf("0 must disable, got %d", got)
+	}
+}

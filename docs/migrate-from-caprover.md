@@ -37,6 +37,7 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - Images built on CapRover: there is no recoverable image through its API. Rebuild from source.
 - Databases as a feature. CapRover runs databases as ordinary apps or one-click apps, so nothing maps to a managed database. Create a [managed database](/managing-databases) here and copy the data.
 - Certificates, DNS records, deploy history, logs and metrics.
+- `captain-definition` files and one-click app definitions. Neither has an importer yet. The [feature map](/caprover-alternative) lists where each CapRover feature lives here.
 
 ## Steps
 

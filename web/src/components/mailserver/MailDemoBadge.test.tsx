@@ -14,7 +14,7 @@ void i18n.use(initReactI18next).init({
 })
 
 describe('MailDemoBadge', () => {
-  it('shows an unmistakable DEMO DATA badge and a reset button', () => {
+  it('shows an unmistakable Demo data badge and a reset button', () => {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <I18nextProvider i18n={i18n}>
@@ -22,7 +22,7 @@ describe('MailDemoBadge', () => {
         </I18nextProvider>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('DEMO DATA')).toBeTruthy()
+    expect(screen.getByText('Demo data')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Reset demo' })).toBeTruthy()
   })
 })

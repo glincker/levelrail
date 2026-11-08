@@ -41,7 +41,7 @@ function CategoryPill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+        'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 pointer-coarse:min-h-10 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
         active
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border bg-card text-foreground/70 hover:text-foreground',
@@ -135,7 +135,7 @@ export function TemplateToolbar({
           }}
           title={t('verified.hint')}
           className={cn(
-            'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+            'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 pointer-coarse:min-h-10 text-sm font-medium focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
             verifiedOnly
               ? 'border-primary bg-primary/10 text-primary'
               : 'border-border text-foreground/70 hover:text-foreground',
@@ -167,7 +167,7 @@ export function TemplateToolbar({
                 onDensity(key)
               }}
               className={cn(
-                'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1 pointer-coarse:min-h-10 text-sm font-medium focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                 density === key
                   ? 'bg-muted text-foreground'
                   : 'text-foreground/70 hover:text-foreground',
@@ -184,7 +184,7 @@ export function TemplateToolbar({
       <div
         role="group"
         aria-label={t('marketplace.categories.filterLabel')}
-        className="flex gap-2 overflow-x-auto pb-1 lg:hidden"
+        className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 lg:hidden [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)]"
       >
         <CategoryPill
           label={t('marketplace.categories.all')}

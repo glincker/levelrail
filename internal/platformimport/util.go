@@ -185,3 +185,53 @@ func gitURLFromRepo(repo, host string) string {
 	}
 	return "https://" + host + "/" + repo
 }
+
+// sensitiveRepoQueryKeys are query parameters that commonly carry a git token.
+var sensitiveRepoQueryKeys = map[string]struct{}{
+	"access_token": {}, "token": {}, "private_token": {}, "oauth_token": {},
+	"password": {}, "secret": {}, "key": {}, "api_key": {}, "apikey": {}, "auth": {},
+}
+
+// DisplayRepoURL returns raw without userinfo, secret query values or fragment,
+// and whether anything was removed. An unparseable URL form yields "" so the
+// original is never echoed.
+func DisplayRepoURL(raw string) (string, bool) {
+	raw = strings.TrimSpace(raw)
+	if !strings.Contains(raw, "://") {
+		// scp-style git@host:path carries a login name, not a secret, unless it has a password.
+		if at := strings.Index(raw, "@"); at > 0 && strings.Contains(raw[:at], ":") {
+			return "", true
+		}
+		return raw, false
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", true
+	}
+	changed := u.User != nil || u.Fragment != ""
+	u.User = nil
+	u.Fragment = ""
+	u.RawFragment = ""
+	if u.RawQuery != "" {
+		q := u.Query()
+		for k := range q {
+			if _, bad := sensitiveRepoQueryKeys[strings.ToLower(k)]; bad {
+				q.Del(k)
+				changed = true
+			}
+		}
+		u.RawQuery = q.Encode()
+	}
+	return u.String(), changed
+}
+
+// scrubGitURL drops inline credentials from the app's git URL and notes it,
+// so plans and reports never carry a token.
+func (a *App) scrubGitURL() {
+	clean, changed := DisplayRepoURL(a.GitURL)
+	if !changed {
+		return
+	}
+	a.GitURL = clean
+	a.Notes = append(a.Notes, Note{Reason: "a credential was removed from the repository URL", Manual: "supply it with the git credential helper or a deploy key instead of inline"})
+}

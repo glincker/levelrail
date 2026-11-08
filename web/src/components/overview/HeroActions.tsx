@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronDownGlassIcon,
@@ -33,11 +34,13 @@ export function HeroActions({
   url,
   onDeploy,
   primary = 'deploy',
+  gitMissing = false,
 }: {
   app: AppDetail
   url: string | null
   onDeploy: (tab: DeployTab) => void
   primary?: HeroPrimary
+  gitMissing?: boolean
 }) {
   const actions = useOverviewActions(app, url)
   const [promoteOpen, setPromoteOpen] = useState(false)
@@ -48,7 +51,17 @@ export function HeroActions({
   const { t } = useTranslation('common')
 
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      {gitMissing ? (
+        <Link
+          to="/apps/$name/source"
+          params={{ name: app.name }}
+          className={buttonVariants({ variant: 'outline', size: 'lg' })}
+        >
+          <GitBranchGlassIcon size="1.4em" aria-hidden="true" />
+          {t('overview.connectGitSource')}
+        </Link>
+      ) : null}
       {url ? (
         <a
           href={url}

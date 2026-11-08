@@ -33,6 +33,12 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "validate":
 		return runAppsValidate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "validate-spec":
+		return runAppsValidateSpec(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "listening-ports":
+		return runAppsListeningPorts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "next-advisor":
+		return runAppsNextAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
 		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "group":
@@ -43,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "freeze":
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "protect", "unprotect":
+		return runAppsProtect(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "lock", "unlock", "publish":
 		return runAppsLock(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "ci":
@@ -75,6 +83,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAccess(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-host":
 		return runAppsAutoHost(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runtime":
+		return runAppsRuntime(prog, args[1:], stdout, stderr, lookupEnv)
 	case "visitors":
 		return runAppsVisitors(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traces":
@@ -123,6 +133,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScale(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "maintenance":
+		return runAppsMaintenance(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "keep":
 		return runAppsKeep(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
@@ -157,6 +169,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsResourceUsage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "overview":
 		return runAppsOverview(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "run":
+		return runAppsRun(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "console":
@@ -175,6 +189,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScan(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "cache":
 		return runAppsCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "backups":
+		return runAppsBackups(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "build-stats":
@@ -273,6 +289,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsEgress(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health":
 		return runAppsHealth(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "containers":
+		return runAppsContainers(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health-score":
 		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "skew":
@@ -299,7 +317,11 @@ func appsUsage(prog string) string {
   %[1]s apps create [flags]         create an app (existing image, git build, --file, or --interactive)
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
+  %[1]s apps validate-spec <app> --file PATH|- [flags]   check an app.yaml on the server without deploying
+  %[1]s apps listening-ports <app> [flags]   show which ports the running container listens on
+  %[1]s apps next-advisor <app> [flags]   check a Next.js app's saved config and list what to fix
   %[1]s apps skew <name> [flags]      show skew protection and the held previous release
+  %[1]s apps maintenance show|set|clear <app> [flags]   maintenance page on every domain of the app, all or none
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps ci token|trust <name> [flags]   deploy from any CI with OIDC: mint a deploy token, manage which pipelines are trusted
   %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)
@@ -328,6 +350,7 @@ func appsUsage(prog string) string {
   %[1]s apps abuse get|set|dry-run <name> [flags]   per app rate limit and deny lists, log_only first, with a replay of recent traffic
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
   %[1]s apps auto-host <name> [--on|--off]   show or stop the automatic hostname and its certificate (saves certificate budget)
+  %[1]s apps runtime show|set <name>         container options (tmpfs, ulimits, init, stop timeout, hosts, dns, sysctls, pids)
   %[1]s apps visitors <name> [--domain D] [--window 1h|24h|7d|30d]   privacy-safe visitors, requests, status classes, top pages and referrers
   %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
   %[1]s apps log-pipeline get|set|clear|preview <name> [flags]   redact, parse, drop or join log lines before they are stored
@@ -359,6 +382,7 @@ func appsUsage(prog string) string {
   %[1]s apps keep <name> [flags]        keep a one-click trial deployment as a permanent app
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps scale <name> --replicas N [--strategy S] [flags]   change replica count and/or deploy strategy
+  %[1]s apps scale <name> web=2 worker=1 [flags]   set replicas per service
   %[1]s apps delete <name> [flags]      remove an app and stop its containers
   %[1]s apps tree <name> [flags]     show what an app consists of as a tree (--watch to redraw)
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
@@ -375,6 +399,7 @@ func appsUsage(prog string) string {
   %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps overview [name ...] [flags]   CPU, memory, traffic and errors for every app in one request
   %[1]s apps exec <name> --<cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps run <name> [--service S] -- <cmd> [args...]   run a command once in a fresh container, exits with its exit code
   %[1]s apps console <name> [-- command...]   open the console its template declares (for example rcon-cli)
   %[1]s apps tunnel <name> [--service s] [--port p] [--local-port n]   reach a private app port from 127.0.0.1
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default
@@ -383,6 +408,7 @@ func appsUsage(prog string) string {
   %[1]s apps sbom <app> [deploy-id] [--download]   show a deploy's software bill of materials
   %[1]s apps scan <verb> <app> [flags]    enable/disable/status/run/gate/override vulnerability scanning
   %[1]s apps cache <show|clear> <name>    show or clear one app's BuildKit build cache on the builder
+  %[1]s apps backups restore <app> <service> <run> [--yes]   restore a compose database service from a backup run
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
   %[1]s apps build-stats <name> [--limit N]   build duration trend (p50, p95) and cache hits
   %[1]s apps build-speed <name> [--fix]   time saved by build cache and speedup suggestions
@@ -428,6 +454,7 @@ func appsUsage(prog string) string {
   %[1]s apps files <ls|set|rm> <name> [flags]   manage an app's inline config files
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
   %[1]s apps health <verb> [flags]        get/set/clear an app's readiness and liveness probes
+  %[1]s apps containers <name> [flags]    per replica container: state, image, ports, usage
   %[1]s apps health-score <name> [flags]  pass/warn/fail readiness verdict: deploy, security, resilience, observability
   %[1]s apps vitals <name> [flags]        p75 web vitals (LCP, INP, CLS, TTFB, FCP) overall and per route
   %[1]s apps volumes <verb> [flags]       get/attach/detach a named Docker volume outside a redeploy

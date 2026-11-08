@@ -71,6 +71,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "pooler":
 		return runDatabasesPooler(prog, rest, stdout, stderr, lookupEnv)
+	case "export":
+		return runDatabasesExport(prog, rest, stdout, stderr, lookupEnv)
+	case "import":
+		return runDatabasesImport(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
+	case "clone":
+		return runDatabasesClone(prog, rest, stdout, stderr, lookupEnv)
 	case "branch":
 		return runDatabasesBranch(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
@@ -83,6 +89,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "network":
 		return runDatabasesNetwork(prog, rest, stdout, stderr, lookupEnv)
+	case "engine-stats":
+		return runDatabasesEngineStats(prog, rest, stdout, stderr, lookupEnv)
+	case "query-history":
+		return runDatabasesQueryHistory(prog, rest, stdout, stderr, lookupEnv)
+	case "saved-queries":
+		return runDatabasesSavedQueries(prog, rest, stdout, stderr, lookupEnv)
 	case "set-resources":
 		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
 	case "set-version":
@@ -125,6 +137,9 @@ func databasesUsage(prog string) string {
   %[1]s databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
   %[1]s databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
+  %[1]s databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
+  %[1]s databases import <name> --in FILE|- [--force] [--yes] [flags]  restore a dump into a database
+  %[1]s databases clone <source> <new-name> [--backup ID] [flags]  new database from a fresh or chosen backup
   %[1]s databases link <name> <app> [--env-var VAR] [--field F] [flags]  connect an app: injects the connection env var
   %[1]s databases links <name> [flags]  list the apps connected to a database
   %[1]s databases probe <name> [flags]  re-check an external database's connectivity
@@ -153,6 +168,9 @@ func databasesUsage(prog string) string {
   %[1]s databases rotate-password <name> [--dry-run|--status|--every-days N] [flags]  rotate the owner password, restart linked apps
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
   %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
+  %[1]s databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
+  %[1]s databases query-history list|clear <name> ...  your recent statements (clear needs --yes)
+  %[1]s databases saved-queries list|add|delete <name> ...  your saved statements (delete needs --yes)
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
   %[1]s databases set-version <name> <version> [flags]  minor or patch image change, same data
   %[1]s databases major-upgrade <name> --version V [flags]  guarded Postgres major upgrade with rollback snapshot

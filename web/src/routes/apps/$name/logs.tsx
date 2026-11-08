@@ -19,6 +19,7 @@ import {
 import { AppLogBudgetField } from '../../../components/logBudgets/AppLogBudgetField'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { parseLogsSearch, type LogsTab } from '../../../lib/observabilitySearch'
+import { LogsServiceSelect } from '../../../components/LogsServiceSelect'
 import { SavedLogQueriesMenu } from '../../../components/SavedLogQueriesMenu'
 import { rangeSeconds, signatureToRegex } from '../../../lib/logExplorer'
 import type { LogQuerySpec } from '../../../types/logExplorer'
@@ -106,7 +107,10 @@ function LogsSection() {
           />
         ) : null}
       </div>
-      <AppLogBudgetField app={name} />
+      <div className="flex flex-wrap items-center gap-2">
+        <LogsServiceSelect name={name} />
+        <AppLogBudgetField app={name} />
+      </div>
 
       <TabsContent value="live" className="flex-1">
         <LiveLogViewer appName={name} conditions={conditions} />

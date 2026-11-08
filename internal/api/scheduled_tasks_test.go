@@ -430,10 +430,8 @@ func TestScheduledTaskRoutes_RequireAuth(t *testing.T) {
 	}
 }
 
-// TestHandleRunScheduledTaskNow_PlainWriteToken_Forbidden proves run-now
-// sits behind AbilityDeploy, not AbilityWrite: a token scoped only to
-// AbilityWrite can manage scheduled tasks (create/update/delete) but
-// must not be able to actually trigger one running.
+// TestHandleRunScheduledTaskNow_PlainWriteToken_Forbidden proves a token
+// scoped only to AbilityWrite cannot trigger a scheduled task run.
 func TestHandleRunScheduledTaskNow_PlainWriteToken_Forbidden(t *testing.T) {
 	runner := newFakeScheduledTaskRunner()
 	rt, db := newTestRouterWithScheduledTaskRunner(t, runner)

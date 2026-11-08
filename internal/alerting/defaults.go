@@ -91,6 +91,7 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"node-offline", "Node offline", KindNodeOffline, SeverityCritical},
 		{"node-disk-space", "Node disk space critical", KindNodeDiskSpace, SeverityCritical},
 		{"email-delivery-failing", "Outbound email is failing", KindEmailDeliveryFailing, SeverityWarning},
+		{"cleanup-failing", "Data cleanup is failing", KindCleanupFailing, SeverityWarning},
 		{"node-cert-expiring", "Node certificate expiring", KindNodeCertExpiring, SeverityWarning},
 		{"backup-copy-behind", "Backup copy is behind", KindBackupCopyBehind, SeverityWarning},
 		{"export-behind", "Export destination failing", KindExportBehind, SeverityWarning},

@@ -8,7 +8,7 @@ description: Create and manage databases with backups, point-in-time restore, an
 
 ## What this covers
 
-Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense, or Memcached database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
+Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense, or Memcached database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
 
 | I want to | Go to |
 | --- | --- |
@@ -76,9 +76,9 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 | --- | --- | --- | --- |
 | Postgres | `postgres` | `16` | on by default |
 | Redis | `redis` | `7` | on by default |
-| MySQL | `mysql` | `8` | on for databases created after TLS support landed |
-| MongoDB | `mongodb` | `7` | on for databases created after TLS support landed |
-| MariaDB | `mariadb` | `11` | on for databases created after TLS support landed |
+| MySQL | `mysql` | `8` | on for new databases; older ones can be switched with `PUT /api/v1/databases/{name}/tls` |
+| MongoDB | `mongodb` | `7` | on for new databases; older ones can be switched with `PUT /api/v1/databases/{name}/tls` |
+| MariaDB | `mariadb` | `11` | on for new databases; older ones can be switched with `PUT /api/v1/databases/{name}/tls` |
 | KeyDB | `keydb` | `latest` | no |
 | Valkey | `valkey` | `8` | no |
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
@@ -174,6 +174,8 @@ levelrail-cli databases create --name cache --engine memcached --version 1.6
 ```
 
 ### Planned engines
+
+Message queues and document or time-series stores such as RabbitMQ, NATS, CouchDB and InfluxDB are catalog templates, not managed engines; see the [coverage table](/migrate-from-dokku#datastore-coverage).
 
 Not available yet: CockroachDB. It needs a reconciler case, a backup dump, a restore path, a verify runner and viewer support before it can be offered.
 
@@ -281,6 +283,29 @@ bkh_p93kd7z1q   bkt_ax7f2j1kd  succeeded  2148291  2026-09-12T03:00:01Z  2026-09
 ```
 
 On the dashboard, use the target picker and **Back up now** button in the **Backups** card on a database's Overview tab. A manual backup is refused with `507` when the control plane's data directory has less than `APP_MIN_BACKUP_DISK_MB` free (default 256), because the backup history row is written there.
+
+### Export, import and clone
+
+```bash
+levelrail-cli databases export <database> --out main.dump
+levelrail-cli databases export <database> --latest --out - > main.dump
+levelrail-cli databases import <database> --in main.dump
+levelrail-cli databases import <database> --in - --force --yes < main.dump
+levelrail-cli databases clone <database> <new-name>
+levelrail-cli databases clone <database> <new-name> --backup <backup-id>
+```
+
+`export` takes a new backup and downloads it once it succeeds. Add `--latest` to skip the new backup and download the newest succeeded one. The dump is the backup object as stored, so an encrypted backup stays encrypted, and the format is whatever that engine's backup runner writes. Downloading needs `read:sensitive`, the same as `backups download`.
+
+The command waits up to `--wait` for the fresh backup. The default is 15 minutes, and the `LEVELRAIL_EXPORT_WAIT` environment variable sets a different default. Progress goes to stderr and stdout carries only the dump. The command refuses to print a dump to a terminal, writes the file with mode `0600`, and replaces an existing file only with `--force`. If the backup fails or the wait runs out, it exits with an error that names the backup to check. `--target` picks the backup target when more than one is configured.
+
+`import` is the reverse of `export`: it streams a dump from a file or stdin into a running database of the same engine (Postgres, MySQL, MariaDB, MongoDB or Redis). The dump is never printed or logged. A database that already holds data is refused unless you pass `--force`, which also asks you to type the database name; `--yes` skips that prompt and is required with `--in -`. The route is `POST /api/v1/databases/{name}/import` and needs the root ability, like an in-place restore. The largest accepted dump is the `databases.import_max_bytes` setting (default 1 GiB), and the upload is received in full first, so a bigger or interrupted one fails with `413` or `400` before anything is restored. The audit log records the database name, byte count and outcome, never the dump.
+
+`clone` creates a new database from a backup of the source. Without `--backup` it takes a fresh backup first and waits for it, the same as `export`. It can also set `--version` for a different engine version and `--project` for the project the new database joins. The source is never changed. The command prints the started clone and returns. Check progress with `levelrail-cli databases get <new-name>`.
+
+On the dashboard, the **Data transfer** card on a database's Overview page offers the same three actions plus **Back up now**. **Back up now** picks a backup target (the first one by default) and starts a backup through the existing backup endpoint; the button shows as running while the newest history row is running, and it needs `write:sensitive`. **Download latest dump** streams the newest succeeded backup (it does not take a new one, so run a backup first for current data) and needs `read:sensitive`. **Clone** is prefilled with `<name>-clone` and starts a restore into a new database from that backup, which needs `write:sensitive`. **Import** takes a dump file, checks first whether the database already holds data, and for a non-empty database asks you to type its name before replacing it. It shows upload progress and the server's own error text, and needs `root`. Controls you lack the ability for are disabled with one line saying why.
+
+Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). It has not run against a live control plane, and `import` has not restored into a real database.
 
 ### Scheduled backups
 
@@ -542,9 +567,9 @@ When the database has a running container, new limits apply live. If the contain
 
 Postgres and Redis get TLS enabled automatically at creation, with a self-signed certificate generated once and persisted through the secrets mechanism. TLS shows as on once a certificate exists for the database.
 
-MySQL, MariaDB and MongoDB databases created from this release on get the same certificate and the server offers TLS (MongoDB with `preferTLS`), but plaintext connections are still accepted, so existing clients keep working and a client opts in with its own TLS setting. Databases created before this release are not switched: they have no stored TLS mode and keep running as they were. `PUT /api/v1/databases/{name}/tls` turns it on or off for MySQL, MariaDB, MongoDB and Redis.
+MySQL, MariaDB and MongoDB databases created from this release on get the same certificate and the server offers TLS (MongoDB with `preferTLS`), but plaintext connections are still accepted, so existing clients keep working and a client opts in with its own TLS setting. Databases created before this release are not switched automatically: they have no stored TLS mode and keep running as they were. `PUT /api/v1/databases/{name}/tls` with `{"enabled": true}` turns it on for an existing MySQL, MariaDB, MongoDB, Redis, Valkey or KeyDB database and `false` turns it off (the stored certificate is deleted); the reconciler then replaces the container, and data lives on its volume. Valkey and KeyDB are plaintext until switched on, then run the same TLS-only setup as Redis (plaintext port disabled, TLS on port 6380, `rediss://` for attached apps); backups and the health probes detect the certificate and use the TLS port. Postgres is always on and cannot be switched. Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense and Memcached have no TLS. The certificate is self-signed, generated once and never rotated automatically. It is built and tested with fakes and local Docker, not proven on a real host.
 
-Both engines have an "encrypt without verifying" mode in their standard connection URI (Postgres `sslmode=require`, Redis `rediss://`), which mainstream client libraries honor with no app-side change. When an app attaches to a TLS-enabled database, it automatically gets the TLS form of the connection string: `?sslmode=require` appended for Postgres, or `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this.
+Both engines have an "encrypt without verifying" mode in their standard connection URI (Postgres `sslmode=require`, Redis `rediss://`), which mainstream client libraries honor with no app-side change. When an app attaches to a TLS-enabled database, it automatically gets the TLS form of the connection string: `?sslmode=require` appended for Postgres, or `rediss://` on the TLS-only port for Redis, Valkey and KeyDB. Nothing in `app.yaml` opts into this.
 
 <Accordion title="Certificate details">
 The certificate is self-signed ECDSA P-256 and valid for ten years. It is never presented to a party that verifies its issuer, so rotation is a deliberate operator action, not forced by expiry. It is ECDSA rather than ed25519 because libpq's SCRAM channel binding fails on an ed25519 certificate, which broke `psql`, psycopg2, and other libpq clients using the default `sslmode=require` URL. Databases created by an earlier release get a new certificate and are recreated once, automatically, the next time the reconciler sees them.
@@ -651,7 +676,7 @@ Backups are DDL plus rows as SQL. The image's entrypoint puts `CLICKHOUSE_DB` an
 </Accordion>
 <Accordion title="KeyDB and Dragonfly">
 
-Backups are RDB snapshots. Dragonfly starts one io thread per CPU and refuses to start when the threads times 256MiB exceed the available memory, which a many-core host with little RAM can hit and loop on forever. Set `APP_DRAGONFLY_PROACTOR_THREADS` (for example `2`) on the control plane to cap it for Dragonfly databases created or recreated afterward. An existing container keeps the command it was created with: remove it so the reconciler recreates it (the data volume is kept).
+Backups are RDB snapshots. KeyDB images ship `keydb-cli` instead of `redis-cli`, so the upgrade health check and the connection probe use whichever client the image has and report a failure if it has neither. This was checked against the repo's local Docker KeyDB test, not on a real host. The Dragonfly image ships no client, so its health check and connection probe send PING, INFO and CONFIG GET over a bash `/dev/tcp` socket on port 6379 inside the container, and report a failure if the image has no bash. Only the script text and its parsing are tested; it has not been run against the real Dragonfly image. Dragonfly starts one io thread per CPU and refuses to start when the threads times 256MiB exceed the available memory, which a many-core host with little RAM can hit and loop on forever. Set `APP_DRAGONFLY_PROACTOR_THREADS` (for example `2`) on the control plane to cap it for Dragonfly databases created or recreated afterward. An existing container keeps the command it was created with: remove it so the reconciler recreates it (the data volume is kept).
 
 </Accordion>
 <Accordion title="Redis, KeyDB, and Dragonfly authentication">
@@ -837,7 +862,7 @@ The backup schedule has no `databases` subcommand: use `backups schedule set`, o
 - Deleting a backup target leaves its stored credentials in the secrets store, unreferenced but not erased at rest.
 - A scheduled backup missed while the control plane is down is not replayed on restart.
 - Physical base backups for point-in-time restore follow each scheduled dump unless the database has its own base backup schedule (`pitr enable --base-backup-cron`, the API `base_backup_schedule` field, or the dashboard field), which runs independently of the dump schedule. Without either, they are manual.
-- Connection strings only switch to the TLS form for Postgres and Redis. MySQL, MariaDB and MongoDB serve TLS next to plaintext and leave the client to ask for it.
+- Connection strings only switch to the TLS form for Postgres, Redis and Valkey. MySQL, MariaDB and MongoDB serve TLS next to plaintext and leave the client to ask for it.
 - MongoDB has no point-in-time restore.
 
 ## Next steps

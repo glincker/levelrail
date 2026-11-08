@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
@@ -24,22 +25,26 @@ export function LbConfigure({
   onOpenChange,
   onPreset,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const [tab, setTab] = useState('traffic')
   return (
-    <section aria-label="Configure" className="rounded-2xl border">
+    <section
+      aria-label={t('lb.configure.section')}
+      className="rounded-2xl border"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 p-3">
         <button
           type="button"
           aria-expanded={open}
           aria-controls="lb-configure-body"
           onClick={() => onOpenChange(!open)}
-          className="flex items-center gap-2 rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+          className="flex min-h-(--glinr-control-h) items-center gap-2 rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <ChevronDownGlassIcon
             className={cn('size-5 transition-transform', !open && '-rotate-90')}
             aria-hidden
           />
-          Configure
+          {t('lb.configure.toggle')}
         </button>
         <PresetPicker onPick={onPreset} />
       </div>
@@ -47,9 +52,15 @@ export function LbConfigure({
         <div id="lb-configure-body" className="border-t p-4">
           <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
             <TabsList>
-              <TabsTrigger value="traffic">Traffic</TabsTrigger>
-              <TabsTrigger value="health">Health</TabsTrigger>
-              <TabsTrigger value="resilience">Resilience</TabsTrigger>
+              <TabsTrigger value="traffic">
+                {t('lb.configure.traffic')}
+              </TabsTrigger>
+              <TabsTrigger value="health">
+                {t('lb.configure.health')}
+              </TabsTrigger>
+              <TabsTrigger value="resilience">
+                {t('lb.configure.resilience')}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="traffic" className="space-y-4 pt-3">
               <AlgorithmCards
@@ -60,8 +71,8 @@ export function LbConfigure({
                 <div className="max-w-56">
                   <LbTextField
                     id="lb-cookie-name"
-                    label="Cookie name"
-                    info="The cookie that pins a browser to one replica."
+                    label={t('lb.configure.cookieName')}
+                    info={t('lb.configure.cookieNameInfo')}
                     value={form.cookieName}
                     placeholder="lb"
                     onChange={(cookieName) => onChange({ cookieName })}

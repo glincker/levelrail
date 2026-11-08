@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -244,6 +245,8 @@ type Pipeline struct {
 	spendGuard  SpendGuardHook  // nil skips the block_deploys spend cap guard
 
 	locks PublishLocks // nil is valid: no publish lock is ever consulted
+
+	procfilePort func(context.Context) int // nil keeps the translator default web port
 }
 
 // New builds a Pipeline.
@@ -329,6 +332,12 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		}
 	}
 
+	if dockerfilePath == "" {
+		if _, err := os.Stat(filepath.Join(buildRoot, "Dockerfile")); err != nil {
+			dockerfilePath = definitionDockerfile(req.SourceDir, buildRoot)
+		}
+	}
+
 	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {
 		return "", err
 	}
@@ -398,7 +407,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
 	}
 	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
-	req.nextImageCacheMount = nextImageCacheTarget(req, build.DetectNext(buildRoot))
+	req.nextImageCacheMount = nextImageCacheTarget(req, build.DetectNext(buildRoot), build.NextRunsStandalone(buildRoot))
 	if id := nextBuildID(buildRoot, deployIDFor(req), req.Service); id != "" {
 		buildEnv[nextBuildIDEnvVar] = id
 		req.nextBuildID = id

@@ -86,17 +86,11 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// router already exposes separately (deploys, crashloop, TLS,
 	// secrets, backups, health checks, alerting). See
 	// app_health_score.go's own doc comment.
+	mux.HandleFunc("GET /api/v1/apps/{name}/containers", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppContainers))
 	mux.HandleFunc("GET /api/v1/apps/{name}/health-score", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealthScore))
 
-	// Scheduled tasks: run an arbitrary command inside this app's
-	// container on a cron schedule (internal/scheduledtask). CRUD sits at
-	// AbilityWrite, the same config-mutation tier alert rules above and
-	// env var updates already use; "run now" sits one tier up at
-	// AbilityDeploy, matching restart/stop/start above, since it has the
-	// identical immediate side effect (a real command actually runs
-	// inside a running container right now), not just a config change.
+	// Scheduled jobs and one-off runs: access tiers live in routes_jobs.go.
 	rt.registerJobRoutes(mux)
-	rt.registerOneShotJobRoutes(mux)
 
 	// Feature flags: CRUD at AbilityWrite/AbilityRead. Evaluate is a flat AbilityRead route an app
 	// calls at runtime with a read-only token.

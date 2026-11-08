@@ -27,6 +27,11 @@ const ConnectionCard = lazy(() =>
     default: m.ConnectionCard,
   })),
 )
+const DatabaseDataActionsCard = lazy(() =>
+  import('../../../components/databases/DatabaseDataActionsCard').then((m) => ({
+    default: m.DatabaseDataActionsCard,
+  })),
+)
 const ProvisioningPanel = lazy(() =>
   import('../../../components/databases/ProvisioningPanel').then((m) => ({
     default: m.ProvisioningPanel,
@@ -150,6 +155,9 @@ function OverviewSection() {
       )}
 
       <DatabaseLinksCard database={database.name} />
+      <Suspense fallback={null}>
+        <DatabaseDataActionsCard database={database.name} />
+      </Suspense>
 
       <DatabasePublicAccessCard database={database} />
 

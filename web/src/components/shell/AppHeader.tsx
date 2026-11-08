@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { loadDeferredStyles } from '@/lib/deferredStyles'
+import '@/styles/material.css'
 import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -30,6 +33,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
   const { t } = useTranslation()
   const scrolled = useMainScrolled()
   const pageTitle = usePageTitle()
+  useEffect(loadDeferredStyles, [])
 
   return (
     <>
@@ -40,13 +44,14 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
       >
         <div
           aria-hidden="true"
+          data-slot="bar-surface"
           className="absolute inset-0 origin-top border-b border-border bg-background transition-transform duration-150 group-data-[scrolled=true]/bar:@4xl:scale-y-90 motion-reduce:transition-none"
         />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 shadow-header transition-opacity duration-150 not-group-data-[scrolled=true]/bar:opacity-0 motion-reduce:transition-none"
         />
-        <div className="relative flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @max-md:flex-nowrap @xl:gap-x-2 @xl:px-4 @5xl:flex-nowrap @5xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
+        <div className="relative flex min-h-14 look-glass:min-h-(--glinr-bar-h) flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @max-md:flex-nowrap @xl:gap-x-2 @xl:px-4 @5xl:flex-nowrap @5xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
           <SidebarTrigger
             className="-ml-1 @max-md:size-10"
             aria-label={t('shell.toggleSidebar')}

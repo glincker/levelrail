@@ -6,26 +6,22 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"net/http"
-	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 const (
-	batchMetricsWindow     = time.Hour
-	batchMetricsStep       = 5 * time.Minute
-	defaultBatchMetricsMax = 200
+	batchMetricsWindow = time.Hour
+	batchMetricsStep   = 5 * time.Minute
 )
 
-func batchMetricsMax() int {
-	if v, err := strconv.Atoi(os.Getenv("APP_APPS_METRICS_MAX")); err == nil && v > 0 {
-		return v
-	}
-	return defaultBatchMetricsMax
+func (rt *Router) batchMetricsMax(ctx context.Context) int {
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyAppsMetricsMax)
 }
 
 // appMetricsSummary is one app's row in GET /api/v1/apps-metrics.
@@ -73,7 +69,7 @@ func (rt *Router) handleBatchAppMetrics(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	sort.Strings(names)
-	if limit := batchMetricsMax(); len(names) > limit {
+	if limit := rt.batchMetricsMax(r.Context()); len(names) > limit {
 		names = names[:limit]
 	}
 

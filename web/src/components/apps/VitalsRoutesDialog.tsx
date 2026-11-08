@@ -144,7 +144,7 @@ export default function VitalsRoutesDialog({
           </div>
         ) : (
           <div className="min-h-0 overflow-auto">
-            <Table>
+            <Table aria-label={t('a11y.tables.vitalsRoutes', { ns: 'common' })}>
               <TableHeader>
                 <TableRow>
                   {header('route', t('route'))}

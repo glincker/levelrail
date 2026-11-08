@@ -1,6 +1,16 @@
-import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react'
+import {
+  Fragment,
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { PinGlassIcon } from '@thesvg/ui-react'
+import type * as NavPrefsModule from '@/lib/navPrefs'
+import { useNavPrefsRaw, useNavRecentRaw } from './useNavPrefs'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarGroup,
@@ -29,8 +39,8 @@ import {
   defaultGroupOpen,
   isGlobalItemActive,
   isItemDisclosed,
+  isSingleItemGroup,
   itemBadgeCount,
-  FOLDED_GLOBAL_PAGES,
   linkTarget,
   pinnedGlobalItems,
   resolveOpen,
@@ -45,9 +55,13 @@ import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 import { GetStartedNavItem } from './GetStartedNavItem'
 import { useNavPins } from './useNavPins'
-import { hueClasses, hueForGroup, hueForItem } from './navHues'
 
 const GLOBAL_NAV_STORAGE_KEY = 'shell.nav.global.open'
+
+type PrefsApi = typeof NavPrefsModule
+const NavRecentGroup = lazy(() =>
+  import('./NavRecentGroup').then((m) => ({ default: m.NavRecentGroup })),
+)
 
 interface PinControl {
   pinned: boolean
@@ -145,15 +159,15 @@ function LockedNavLinkItem({
 
 function NavLinkItem({
   item,
+  groupName,
   active,
   counts,
   experimental,
   pin,
   beta,
-  groupId,
 }: {
   item: GlobalNavItem
-  groupId?: string
+  groupName?: string
   active: boolean
   counts: Record<string, number>
   experimental: readonly string[]
@@ -166,7 +180,6 @@ function NavLinkItem({
   if (isFeatureLocked(item.feature, experimental)) {
     return <LockedNavLinkItem item={item} feature={item.feature} pin={pin} />
   }
-  const hue = hueClasses(hueForItem(item.id, groupId))
   const chord = chordFor(item.to)
   const count = itemBadgeCount(item, counts)
   const trafficKey =
@@ -191,13 +204,22 @@ function NavLinkItem({
           />
         }
         isActive={active}
-        className={cn(NAV_ROW_CLASS, hue?.icon)}
+        className={NAV_ROW_CLASS}
         title={label}
         tooltip={{
           children: (
-            <span className="flex items-center gap-2">
-              {label}
-              {chord ? <Kbd keys={chord} /> : null}
+            <span className="flex flex-col gap-0.5">
+              <span className="flex items-center gap-2">
+                {label}
+                {beta ? <BetaBadge /> : null}
+                {count > 0 ? (
+                  <span className="tabular-nums">{count}</span>
+                ) : null}
+                {chord ? <Kbd keys={chord} /> : null}
+              </span>
+              {groupName ? (
+                <span className="text-xs opacity-70">{groupName}</span>
+              ) : null}
             </span>
           ),
         }}
@@ -249,17 +271,29 @@ export function GlobalNav() {
   const counts = useNavCounts()
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
-  const groups = visibleGlobalGroups(routeAvailable)
-  const projectsItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'projects')
-  const templatesItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'templates')
+  const baseGroups = visibleGlobalGroups(routeAvailable)
   const { pins, toggle, full, max } = useNavPins()
-  const pinned = pinnedGlobalItems(groups, pins)
+  const prefsRaw = useNavPrefsRaw()
+  const recentRaw = useNavRecentRaw()
+  // The ordering code loads only for users who stored prefs or have recents.
+  const [prefsApi, setPrefsApi] = useState<PrefsApi | null>(null)
+  const needsApi = prefsRaw !== null
+  useEffect(() => {
+    if (needsApi && !prefsApi) void import('@/lib/navPrefs').then(setPrefsApi)
+  }, [needsApi, prefsApi])
   const activeId = activeGlobalItemId(pathname, [
-    ...groups.flatMap((gr) => gr.items),
+    ...baseGroups.flatMap((gr) => gr.items),
     ...visibleGlobalFooter(),
-    ...(projectsItem ? [projectsItem] : []),
-    ...(templatesItem ? [templatesItem] : []),
   ])
+  const groups =
+    prefsApi && prefsRaw !== null
+      ? prefsApi.applyNavPrefs(
+          baseGroups,
+          prefsApi.parseNavPrefs(prefsRaw),
+          activeId,
+        )
+      : baseGroups
+  const pinned = pinnedGlobalItems(groups, pins)
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
     full,
@@ -269,7 +303,15 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
+    Object.fromEntries(
+      groups.map((gr) => [
+        gr.id,
+        defaultGroupOpen(
+          window.innerHeight,
+          gr.items.some((i) => isGlobalItemActive(pathname, i)),
+        ),
+      ]),
+    ),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -286,69 +328,85 @@ export function GlobalNav() {
     <div className="flex max-h-full min-h-0 flex-col">
       <div
         data-sidebar-scroll=""
-        className="no-scrollbar flex min-h-0 flex-col gap-2 overflow-y-auto p-2"
+        className="nav-scroll flex min-h-0 flex-col gap-0 overflow-x-hidden overflow-y-auto p-2 pt-0 group-data-[collapsible=icon]:items-center"
       >
         <GetStartedNavItem />
-        {!rail && pinned.length > 0 ? (
+        {pinned.length > 0 ? (
           <CollapsibleSection
             id="global-pinned"
-            open={resolveOpen(stored, 'pinned', true)}
+            open={rail || resolveOpen(stored, 'pinned', true)}
             onOpenChange={(open) => setOpen('pinned', open)}
             header={t('shell.pins.group')}
+            railFlat={rail}
           >
             <SidebarMenu>
               {pinned.map((item) => (
                 <NavLinkItem
                   key={item.id}
                   item={item}
-                  groupId={groups.find((gr) => gr.items.includes(item))?.id}
                   active={item.id === activeId}
                   counts={counts}
                   experimental={experimental}
-                  pin={pinFor(item.id)}
+                  pin={rail ? undefined : pinFor(item.id)}
                 />
               ))}
             </SidebarMenu>
           </CollapsibleSection>
         ) : null}
-        {groups.map((group) => {
+        {!rail && recentRaw !== null ? (
+          <Suspense fallback={null}>
+            <NavRecentGroup
+              raw={recentRaw}
+              pathname={pathname}
+              open={resolveOpen(stored, 'recent', false)}
+              onOpenChange={(open) => setOpen('recent', open)}
+            />
+          </Suspense>
+        ) : null}
+        {groups.map((group, index) => {
+          const groupName = t(`shell.navGroup.${group.id}`, {
+            defaultValue: group.label,
+          })
           const menu = (
             <SidebarMenu>
               {group.items
                 .filter((item) => isItemDisclosed(item, counts, pathname))
+                .filter(
+                  (item) => !(rail && pinned.some((p) => p.id === item.id)),
+                )
                 .map((item) => (
                   <Fragment key={item.id}>
-                    <NavLinkItem
-                      item={item}
-                      groupId={group.id}
-                      active={item.id === activeId}
-                      counts={counts}
-                      experimental={experimental}
-                      pin={pinFor(item.id)}
-                    />
-                    {item.id === 'apps' && projectsItem ? (
+                    {item.id === 'projects' ? (
                       <ProjectsNavItem
-                        item={projectsItem}
+                        item={item}
                         pathname={pathname}
-                        active={projectsItem.id === activeId}
+                        active={item.id === activeId}
                       />
-                    ) : null}
-                    {item.id === 'apps' && templatesItem ? (
+                    ) : (
                       <NavLinkItem
-                        item={templatesItem}
-                        groupId={group.id}
-                        active={templatesItem.id === activeId}
+                        item={item}
+                        groupName={group.ungrouped ? undefined : groupName}
+                        active={item.id === activeId}
                         counts={counts}
                         experimental={experimental}
+                        pin={pinFor(item.id)}
                       />
-                    ) : null}
+                    )}
                   </Fragment>
                 ))}
             </SidebarMenu>
           )
-          if (rail || group.ungrouped) {
+          if (rail || group.ungrouped || isSingleItemGroup(group)) {
             return (
-              <SidebarGroup key={group.id} className="p-0">
+              <SidebarGroup
+                key={group.id}
+                className={cn(
+                  'p-0',
+                  rail &&
+                    index > 0 &&
+                    'mt-2 border-t border-sidebar-border pt-2',
+                )}
+              >
                 <SidebarGroupContent>{menu}</SidebarGroupContent>
               </SidebarGroup>
             )
@@ -367,7 +425,6 @@ export function GlobalNav() {
                 defaultValue: group.label,
               })}
               active={group.items.some((i) => isGlobalItemActive(pathname, i))}
-              chevronClassName={hueClasses(hueForGroup(group.id))?.text}
               hint={<GroupAttention group={group} counts={counts} />}
             >
               {menu}
@@ -376,8 +433,8 @@ export function GlobalNav() {
         })}
       </div>
       {/* The group list above scrolls on its own; this block never shrinks or clips. */}
-      <SidebarGroup className="shrink-0 px-2 pb-2 pt-2">
-        <SidebarGroupContent className="rounded-lg border border-sidebar-border bg-sidebar-raised p-1">
+      <SidebarGroup className="shrink-0 px-2 pb-1 pt-1">
+        <SidebarGroupContent className="border-t border-sidebar-border pt-1">
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (
               <NavLinkItem

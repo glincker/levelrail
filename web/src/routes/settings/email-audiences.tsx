@@ -73,7 +73,10 @@ function EmailAudiencesPage() {
           />
         ) : null}
         {groups.length > 0 ? (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul
+            data-slot="grouped-list"
+            className="rounded-lg border border-border"
+          >
             {groups.map((g) => (
               <li
                 key={g.id}

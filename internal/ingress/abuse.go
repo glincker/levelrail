@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"context"
 	"net/http"
 	"net/netip"
 	"os"
@@ -68,7 +69,7 @@ func (abuseModule) CaddyModule() caddy.ModuleInfo {
 // Provision compiles the policy. A policy that does not compile is not an
 // error: the route keeps serving and every request is counted as fail-open.
 func (m *abuseModule) Provision(caddy.Context) error {
-	limits := abuse.LimitsFromEnv(os.Getenv)
+	limits := abuse.CurrentLimits(context.Background())
 	m.state = abuse.DefaultRegistry().For(m.App, limits)
 	m.trusted, _ = abuse.ParseTrusted(os.Getenv(EnvTrustedProxies))
 	if eng, err := abuse.NewEngine(m.Policy, m.state, limits); err == nil {

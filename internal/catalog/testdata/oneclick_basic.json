@@ -1,0 +1,18 @@
+{
+  "captainVersion": 4,
+  "services": {
+    "web": {
+      "image": "ghcr.io/example/app:1.2",
+      "environment": {"DB_PASS": "$$cap_db_pass", "MODE": "prod"},
+      "volumes": ["appdata:/data"],
+      "ports": ["8080:80"],
+      "vendorExtra": {"notExposeAsWebApp": "true"},
+      "restart": "always"
+    }
+  },
+  "vendorOneClickApp": {
+    "displayName": "Example",
+    "description": "An example app",
+    "variables": [{"id": "db_pass", "defaultValue": "x"}]
+  }
+}

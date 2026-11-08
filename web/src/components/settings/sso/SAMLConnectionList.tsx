@@ -115,7 +115,10 @@ export function SAMLConnectionList({
         />
       ) : (
         <>
-          <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4">
+          <ul
+            data-slot="grouped-list"
+            className="rounded-lg border border-border bg-card px-4"
+          >
             {connections.map((c) => {
               const state = stateOf(c)
               const soonest = c.certificates

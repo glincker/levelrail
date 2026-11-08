@@ -56,3 +56,15 @@ func init() {
 		Description: "Most images one remove request may name or select, from 1 to 2000. Guards against a mistaken select-all. The next request uses a changed value.",
 	})
 }
+
+// KeyImagesPullConcurrency caps how many distinct image pulls run at once on a node.
+const KeyImagesPullConcurrency = "images.pull_concurrency"
+
+func init() {
+	Register(Definition{
+		Key: KeyImagesPullConcurrency, Category: CategoryDeploys, Kind: KindInt, Default: "3",
+		Env: "APP_IMAGES_PULL_CONCURRENCY", Apply: ApplyLive, CheckValue: intRangeCheck(1, 32),
+		Title:       "Image pulls at once",
+		Description: "Most distinct image pulls a node runs at the same time, from 1 to 32. Deploys that need the same image share one pull.",
+	})
+}

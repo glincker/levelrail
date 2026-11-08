@@ -131,6 +131,7 @@ type Registry struct {
 	byID     map[string]Transport
 	localID  string
 	localTpt Transport
+	onChange func(nodeID string)
 }
 
 // NewRegistry builds an empty Registry.
@@ -142,8 +143,20 @@ func NewRegistry() *Registry {
 // that ID. Safe for concurrent use.
 func (r *Registry) Register(nodeID string, t Transport) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.byID[nodeID] = t
+	hook := r.onChange
+	r.mu.Unlock()
+	if hook != nil {
+		hook(nodeID)
+	}
+}
+
+// SetChangeHook calls f with the node ID after every Register and
+// Unregister, outside the lock. f runs on the session goroutine, so it must not block.
+func (r *Registry) SetChangeHook(f func(nodeID string)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.onChange = f
 }
 
 // Unregister removes nodeID's entry, if any. Not an error if nodeID was
@@ -151,8 +164,12 @@ func (r *Registry) Register(nodeID string, t Transport) {
 // delete convention (store.DeleteDesiredService, store.DeleteNode).
 func (r *Registry) Unregister(nodeID string) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	delete(r.byID, nodeID)
+	hook := r.onChange
+	r.mu.Unlock()
+	if hook != nil {
+		hook(nodeID)
+	}
 }
 
 // Get returns the Transport registered for nodeID, or

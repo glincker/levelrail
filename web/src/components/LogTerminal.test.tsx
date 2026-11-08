@@ -1,8 +1,20 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { initReactI18next } from 'react-i18next'
+import uiSharedEn from '../locales/en/uiShared.json'
 import { LogTerminal } from './LogTerminal'
 import type { LogLine } from '../hooks/useLogStream'
+
+void i18next.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['uiShared'],
+  defaultNS: 'uiShared',
+  resources: { en: { uiShared: uiSharedEn } },
+  interpolation: { escapeValue: false },
+})
 
 // Scroll-position behavior (auto-scroll-to-bottom, pausing on manual
 // scroll, isFinished stopping auto-scroll) is deliberately not covered
@@ -40,17 +52,14 @@ describe('LogTerminal level chips', () => {
     const user = userEvent.setup()
     renderTerminal()
 
-    await user.click(screen.getByRole('button', { name: 'Errors' }))
+    await user.click(screen.getByRole('radio', { name: 'Errors' }))
     expect(screen.getByText('1 of 2 lines')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Errors' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(screen.getByRole('radio', { name: 'Errors' })).toBeChecked()
 
-    await user.click(screen.getByRole('button', { name: 'Warnings' }))
+    await user.click(screen.getByRole('radio', { name: 'Warnings' }))
     expect(screen.getByText('0 of 2 lines')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'All' }))
+    await user.click(screen.getByRole('radio', { name: 'All' }))
     expect(screen.queryByText(/of 2 lines/)).not.toBeInTheDocument()
   })
 

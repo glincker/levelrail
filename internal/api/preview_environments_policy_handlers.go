@@ -110,6 +110,8 @@ type previewPolicyResource struct {
 	MigrateTimeoutSeconds          int    `json:"migrate_timeout_seconds"`
 	EffectiveMigrateTimeoutSeconds int    `json:"effective_migrate_timeout_seconds"`
 	ImageTagTemplate               string `json:"image_tag_template"`
+	HostTemplate                   string `json:"host_template"`
+	WildcardDomain                 string `json:"wildcard_domain"`
 }
 
 func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (previewPolicyResource, error) {
@@ -137,6 +139,7 @@ func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (preview
 		GateBasicAuth: s.GateBasicAuth, GateUsername: s.GateUsername, GatePasswordSet: gateSet, AllowIndexing: s.AllowIndexing,
 		MigrateCommand: s.MigrateCommand, MigrateTimeoutSeconds: s.MigrateTimeoutSeconds,
 		EffectiveMigrateTimeoutSeconds: int(previewMigrateTimeoutOr(s, rt.previewMigratePlatformTimeout(ctx)) / time.Second), ImageTagTemplate: s.ImageTagTemplate,
+		HostTemplate: s.HostTemplate, WildcardDomain: s.WildcardDomain,
 	}, nil
 }
 
@@ -170,6 +173,9 @@ type setPreviewPolicyRequest struct {
 	MigrateCommand        *string `json:"migrate_command,omitempty"`
 	MigrateTimeoutSeconds *int    `json:"migrate_timeout_seconds,omitempty"`
 	ImageTagTemplate      *string `json:"image_tag_template,omitempty"`
+	// HostTemplate and WildcardDomain take an empty string to clear them.
+	HostTemplate   *string `json:"host_template,omitempty"`
+	WildcardDomain *string `json:"wildcard_domain,omitempty"`
 }
 
 // handleSetPreviewPolicy handles PUT /api/v1/apps/{name}/preview-policy.
@@ -214,6 +220,10 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 		s.TTLHours = *req.TTLHours
 	}
 	if msg := rt.applyPreviewPolicyLifecycleFields(ctx, name, &s, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if msg := rt.applyPreviewHostFields(ctx, name, &s, req); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}

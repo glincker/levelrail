@@ -12,6 +12,7 @@ import type {
 } from '../../queries/iamBuilder'
 import { ActionPicker } from './ActionPicker'
 import { ResourcePicker } from './ResourcePicker'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 function FieldIssues({ issues }: { issues: FieldIssue[] }) {
   if (issues.length === 0) return null
@@ -89,24 +90,15 @@ export function StatementEditor({
         <p className="text-xs font-medium text-muted-foreground">
           {t('builder.effect.label')}
         </p>
-        <div
-          role="group"
+        <SegmentedControl
           aria-label={t('builder.effect.label')}
-          className="flex gap-2"
-        >
-          {effects.map((e) => (
-            <Button
-              key={e}
-              type="button"
-              size="sm"
-              variant={statement.effect === e ? 'default' : 'outline'}
-              aria-pressed={statement.effect === e}
-              onClick={() => onChange({ ...statement, effect: e })}
-            >
-              {t(`builder.effect.${e === 'Allow' ? 'allow' : 'deny'}`)}
-            </Button>
-          ))}
-        </div>
+          value={statement.effect}
+          onValueChange={(e) => onChange({ ...statement, effect: e })}
+          options={effects.map((e) => ({
+            value: e,
+            label: t(`builder.effect.${e === 'Allow' ? 'allow' : 'deny'}`),
+          }))}
+        />
         <p className="text-xs text-muted-foreground">
           {statement.effect === 'Allow'
             ? t('builder.effect.allowHint')

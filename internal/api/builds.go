@@ -212,6 +212,10 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 // cloneCredential is tokenForRepo plus a stable scope naming whose credential
 // the token is (not the token value, which rotates), for source mirror keys.
 func (rt *Router) cloneCredential(ctx context.Context, name, repoURL string, allowPrivateRepoAuth bool) (token, scope string) {
+	// An SSH deploy key carries no token; the scope alone keeps its mirror private.
+	if rt.hasSSHDeployKey(ctx, name, repoURL) {
+		return "", "app:" + name
+	}
 	if t := rt.storedGitSourceToken(ctx, name, repoURL); t != "" {
 		return t, "app:" + name
 	}

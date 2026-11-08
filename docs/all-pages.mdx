@@ -96,6 +96,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploy from your computer](/deploy-from-cli): Deploy the current directory with one command, no git remote and no registry needed.
 - [Drop deploy for static sites](/drop-deploy): Drag a folder or a .zip onto a static site and it goes live, with no git and no build.
 - [Compose apps](/compose-apps): Run a Docker Compose file as one app with per-service status, start order, rollback to an earlier compose file, teardown, and installable templates.
+- [Runtime options](/runtime-options): The allowlisted container options a service can set under runtime, with their bounds, and how compose keys map onto them.
 - [App files](/app-files): Ship inline config files with a service so apps that need a file on disk at start can run without a custom image.
 - [UDP published ports](/udp-ports): Publish a UDP port from a compose service directly on the host, with the accepted syntax, safety rules, errors and what is not supported yet.
 - [New app wizard](/new-app-wizard): How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
@@ -156,15 +157,17 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Mail backup and restore](/mail-backup): Back up, verify and restore the mox mail server from the Mail page, the CLI or the API. Everything here needs APP_EXPERIMENTAL=mail on the control plane.
 - [Mail storage](/mail-storage): Each mail service brings its own S3 compatible bucket for backups, mailbox archives and exports. Mailbox addresses appear only as hashes in keys.
 - [Diagnose a domain](/domain-diagnosis): Find out why a domain is not working, see the exact DNS record to create, and fix it from the dashboard, the CLI or the API.
-- [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API.
+- [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects, raw ports, and body and timeout limits, from the UI, CLI or API.
 - [Ingress abuse defense](/abuse-defense): Per-app rate limits by client address, address and User-Agent deny lists, and a log only mode that replays recent traffic before you enforce.
 - [CDN and caching](/cdn-and-caching): The response cache in the ingress: what it stores, what it never stores, cache rules, purge by URL, prefix or tag, and a third party CDN in front.
 - [Forms](/forms): Collect submissions from HTML forms on a static site with a public endpoint, a spam trap, per-address rate limits, a CSV export and alert channel notifications.
 - [Firewall](/firewall): Filter web requests at the embedded ingress with ordered rules, IP lists, automatic bans, a browser challenge, bot handling and attack mode.
 - [Verifying real ACME issuance against a live domain](/acme-verification-runbook): Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA: what to check, common failures, a recorded run.
 - [Multi-node: adding and managing nodes](/multi-node): Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
+- [Server patching](/server-patching): Preview and install OS package updates on a server, with holds for kernel and container runtime upgrades.
 - [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 - [Add a node anywhere](/add-node-anywhere): Add an EC2 instance, Google Cloud VM, VPS or home server as a node in one guided flow, with zone auto-detect, preflight checks and failure-domain placement.
+- [Add a server over SSH](/add-node-over-ssh): Adopt a Linux machine you already have by letting the control plane SSH in, install Docker if needed and install the node agent. Commands, host key checks and fixes for common failures.
 - [Run Levelrail on home hardware](/home-hardware): Install notes for a Raspberry Pi, an old laptop or a mini PC, and what to do when your home connection has no public address.
 - [Resource-aware placement](/resource-aware-placement): How new apps and databases are placed on nodes with room for them, how to read the "why here" explanation, and how to set the overcommit policy.
 - [Node scheduling: taints, tolerations, affinity and score mode](/node-scheduling): Keep workloads off a node with taints, let chosen apps onto it with tolerations, place apps near or away from each other with affinity, and pick spread or bin-pack scoring live.
@@ -306,7 +309,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): How migrate coolify stages a Coolify one-click service as a Compose file with its magic variables translated, what it leaves for you to fix, and a manual path when you need one.
 - [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
 - [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
-- [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by importing the env dump or a docker inspect snapshot. Live Dokku over SSH is not supported, so some steps are manual.
+- [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by reading the Dokku host's Docker over SSH, or from an env dump as the fallback. Includes a Dokku command map.
 - [Migrate from Docker Compose](/migrate-from-docker-compose): Turn a docker-compose.yml into Levelrail apps and managed databases with a plan first, then copy data and switch DNS while the old stack keeps running.
 - [Import Kubernetes manifests](/import-kubernetes): Convert existing Kubernetes YAML into Levelrail apps with levelrail-cli import k8s. The conversion is text only: no fetch, no execution, no cluster contact.
 - [Migration reference](/migration-reference): Flags, mapping tables, database copy and hub details, cutover verdicts and environment variables for the Levelrail migration importer.
@@ -382,6 +385,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Run behind an existing proxy](/behind-an-existing-proxy): Run Levelrail behind the proxy that already owns ports 80 and 443, with managed routes for Traefik (including Coolify) and Nginx.
 - [Run behind Cloudflare](/behind-cloudflare): Put Cloudflare's proxy in front of Levelrail: SSL mode, certificates, websockets, upload limits, real client IPs, cache purge, and an honest list of what the proxy does not hide.
 - [Cloudflare in front checklist](/cloudflare-in-front): The order to set up Cloudflare's proxy in front of a Levelrail server: SSL mode, client addresses, the per-app proxy, cache purge, and what a rollback does not change.
+- [Cloudflare Tunnel](/cloudflare-tunnel): Expose the control plane through a Cloudflare Tunnel with no open inbound port. Experimental: how to enable it, set the token, check status and remove it.
 - [Shared hosts](/shared-hosts): What Levelrail touches and does not touch on a server that already runs other containers or a control panel.
 - [Security advisories](/security-advisories): Every security issue Levelrail has found and fixed, with a stable ID, severity, affected versions, the fix, and how we disclose.
 - [Advisory feed](/advisory-feed): Match the images your apps run against a local, optionally signed advisory feed.
@@ -411,6 +415,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Roadmap](/roadmap): What Levelrail has shipped by area, what is still open, and what is out of scope.
 - [Feature status](/feature-status): Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
+- [Feature coverage](/feature-coverage): What Levelrail covers, one row per capability, with a status label and a link to the page that explains it. Written from the code and the existing docs.
 - [Experimental features](/experimental-features): Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
 - [Support policy (draft)](/support-policy): Draft compatibility and support policy for a future stable line. Not yet in force.
 - [Performance](/performance): Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.

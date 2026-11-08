@@ -100,6 +100,12 @@ func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (
 	if spec.NeedsSecurityCapability() && !t.caps.has(CapContainerSpecSecurity) {
 		return "", ErrAgentLacksCapability
 	}
+	if spec.WorkingDir != "" && !t.caps.has(CapContainerSpecWorkdir) {
+		return "", fmt.Errorf("%w: working_dir needs %s", ErrAgentLacksCapability, CapContainerSpecWorkdir)
+	}
+	if spec.NeedsRuntimeCapability() && !t.caps.has(CapContainerSpecRuntime) {
+		return "", fmt.Errorf("%w: runtime options need %s", ErrAgentLacksCapability, CapContainerSpecRuntime)
+	}
 	if spec.NeedsFilesCapability() && !t.caps.has(CapContainerSpecFiles) {
 		return "", ErrAgentLacksCapability
 	}
@@ -487,6 +493,17 @@ func execFailureToError(f *agentpb.ExecFailure) error {
 func (t *GRPCTransport) EnsureNetwork(ctx context.Context, name string) (string, error) {
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_EnsureNetwork{EnsureNetwork: &agentpb.EnsureNetworkRequest{Name: name}},
+	})
+	if err != nil {
+		return "", err
+	}
+	return resp.GetEnsureNetwork().GetId(), nil
+}
+
+// EnsureLabeledNetwork implements docker.LabeledNetworkEnsurer over the agent stream.
+func (t *GRPCTransport) EnsureLabeledNetwork(ctx context.Context, name string, labels map[string]string) (string, error) {
+	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_EnsureNetwork{EnsureNetwork: &agentpb.EnsureNetworkRequest{Name: name, Labels: labels}},
 	})
 	if err != nil {
 		return "", err

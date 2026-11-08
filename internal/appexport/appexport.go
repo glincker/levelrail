@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // SecretPlaceholder stands in for every value that must not leave the server.
@@ -57,6 +59,9 @@ type Service struct {
 	Image            string
 	Command          []string
 	Entrypoint       []string
+	User             string
+	WorkingDir       string
+	Runtime          *spec.RuntimeOptions
 	Port             int
 	Domains          []string
 	Env              map[string]string
@@ -344,6 +349,13 @@ func writeService(b *strings.Builder, s Service, vars []envVar) {
 	if len(s.Command) > 0 {
 		fmt.Fprintf(b, "    command: %s\n", ysList(s.Command))
 	}
+	if s.User != "" {
+		fmt.Fprintf(b, "    user: %s\n", ys(s.User))
+	}
+	if s.WorkingDir != "" {
+		fmt.Fprintf(b, "    working_dir: %s\n", ys(s.WorkingDir))
+	}
+	writeRuntime(b, s.Runtime)
 	fmt.Fprintf(b, "    restart: %s\n", restartPolicy(s.Restart))
 	if len(vars) > 0 {
 		b.WriteString("    environment:\n")

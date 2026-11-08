@@ -59,9 +59,10 @@ type Volume struct {
 	SizeBytes int64
 }
 
-// HealthCheck is an HTTP probe.
+// HealthCheck is an HTTP probe, or an exec probe when Exec is set.
 type HealthCheck struct {
 	Path            string
+	Exec            []string
 	IntervalSeconds int
 	TimeoutSeconds  int
 	Retries         int
@@ -193,14 +194,22 @@ type Unsupported struct {
 
 // Discovery is everything read from a source.
 type Discovery struct {
-	Platform    Platform
-	Projects    []string
-	Apps        []App
-	Databases   []Database
-	Unsupported []Unsupported
+	Platform Platform
+	Projects []string
+	// Environments lists every source environment, including empty ones.
+	Environments []SourceEnvironment
+	Apps         []App
+	Databases    []Database
+	Unsupported  []Unsupported
 	// Services holds each one-click service's masked compose body and env.
 	Services []Service
 	Servers  []Server
 	// Warnings are source reads that failed softly, so the plan lacks that detail.
 	Warnings []string
+}
+
+// SourceEnvironment is one environment of a source project.
+type SourceEnvironment struct {
+	Project string
+	Name    string
 }

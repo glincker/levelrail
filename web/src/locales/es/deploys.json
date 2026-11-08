@@ -645,5 +645,19 @@
       "helpProjectMissing": "Este archivo lee un token guardado. La app apunta a un proyecto que ya no existe, así que el token no se puede limitar a un proyecto y puede desplegar cualquier app de este servidor. Solo puede: {{abilities}}. Corrige primero el proyecto de la app o prefiere un pipeline OIDC."
     },
     "apiUrl": "Define LEVELRAIL_API_URL como {{url}} en tu CI."
+  },
+  "approvalBanner": {
+    "approved": "Aprobado: {{app}} ahora apunta a {{image}}.",
+    "approveError": "No se pudo aprobar.",
+    "rejected": "Aprobación de despliegue rechazada.",
+    "rejectError": "No se pudo rechazar.",
+    "titleDeploy": "Despliegue de",
+    "titlePromote": "Promoción de",
+    "awaiting": "está esperando aprobación.",
+    "requestedBy": "Solicitado por {{name}}. Este entorno está protegido: otro usuario con permisos suficientes debe aprobarlo antes de desplegar.",
+    "reject": "Rechazar",
+    "approve": "Aprobar",
+    "approving": "Aprobando...",
+    "viewQueue": "Ver cola"
   }
 }

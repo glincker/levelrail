@@ -100,49 +100,68 @@ type coolifyBackup struct {
 }
 
 type coolifyApp struct {
-	UUID                string `json:"uuid"`
-	Name                string `json:"name"`
-	FQDN                string `json:"fqdn"`
-	BuildPack           string `json:"build_pack"`
-	GitRepository       string `json:"git_repository"`
-	GitBranch           string `json:"git_branch"`
-	DockerImage         string `json:"docker_registry_image_name"`
-	DockerTag           string `json:"docker_registry_image_tag"`
-	DockerfileLocation  string `json:"dockerfile_location"`
-	BaseDirectory       string `json:"base_directory"`
-	PortsExposes        string `json:"ports_exposes"`
-	HealthCheckEnabled  bool   `json:"health_check_enabled"`
-	HealthCheckPath     string `json:"health_check_path"`
-	HealthCheckType     string `json:"health_check_type"`
-	HealthCheckInterval int    `json:"health_check_interval"`
-	HealthCheckTimeout  int    `json:"health_check_timeout"`
-	HealthCheckRetries  int    `json:"health_check_retries"`
-	LimitsMemory        string `json:"limits_memory"`
-	LimitsCPUs          string `json:"limits_cpus"`
-	PreDeployment       string `json:"pre_deployment_command"`
-	PostDeployment      string `json:"post_deployment_command"`
-	InstallCommand      string `json:"install_command"`
-	BuildCommand        string `json:"build_command"`
-	StartCommand        string `json:"start_command"`
-	PublishDirectory    string `json:"publish_directory"`
-	DockerRunOptions    string `json:"custom_docker_run_options"`
-	CustomLabels        string `json:"custom_labels"`
-	Redirect            string `json:"redirect"`
-	InlineDockerfile    string `json:"dockerfile"`
-	BasicAuthEnabled    bool   `json:"is_http_basic_auth_enabled"`
-	PreviewsEnabled     bool   `json:"is_preview_deployments_enabled"`
-	WebhookGithub       string `json:"manual_webhook_secret_github"`
-	WebhookGitlab       string `json:"manual_webhook_secret_gitlab"`
-	WebhookBitbucket    string `json:"manual_webhook_secret_bitbucket"`
-	WebhookGitea        string `json:"manual_webhook_secret_gitea"`
-	PrivateKeyID        int    `json:"private_key_id"`
-	SourceID            int    `json:"source_id"`
-	ServerName          string `json:"server_name"`
-	Destination         struct {
-		Server struct {
-			Name string `json:"name"`
-		} `json:"server"`
-	} `json:"destination"`
+	UUID               string `json:"uuid"`
+	Name               string `json:"name"`
+	FQDN               string `json:"fqdn"`
+	BuildPack          string `json:"build_pack"`
+	GitRepository      string `json:"git_repository"`
+	GitBranch          string `json:"git_branch"`
+	DockerImage        string `json:"docker_registry_image_name"`
+	DockerTag          string `json:"docker_registry_image_tag"`
+	DockerfileLocation string `json:"dockerfile_location"`
+	BaseDirectory      string `json:"base_directory"`
+	PortsExposes       string `json:"ports_exposes"`
+	HealthCheckEnabled bool   `json:"health_check_enabled"`
+	HealthCheckPath    string `json:"health_check_path"`
+	HealthCheckType    string `json:"health_check_type"`
+	// Field name is a best guess, unverified against a real instance.
+	HealthCheckCommand  string             `json:"health_check_command"`
+	HealthCheckInterval int                `json:"health_check_interval"`
+	HealthCheckTimeout  int                `json:"health_check_timeout"`
+	HealthCheckRetries  int                `json:"health_check_retries"`
+	LimitsMemory        string             `json:"limits_memory"`
+	LimitsCPUs          string             `json:"limits_cpus"`
+	LimitsSwap          string             `json:"limits_memory_swap"`
+	LimitsSwappiness    int                `json:"limits_memory_swappiness"`
+	LimitsReservation   string             `json:"limits_memory_reservation"`
+	PreDeployment       string             `json:"pre_deployment_command"`
+	PostDeployment      string             `json:"post_deployment_command"`
+	InstallCommand      string             `json:"install_command"`
+	BuildCommand        string             `json:"build_command"`
+	StartCommand        string             `json:"start_command"`
+	PublishDirectory    string             `json:"publish_directory"`
+	DockerRunOptions    string             `json:"custom_docker_run_options"`
+	CustomLabels        string             `json:"custom_labels"`
+	Redirect            string             `json:"redirect"`
+	InlineDockerfile    string             `json:"dockerfile"`
+	BasicAuthEnabled    bool               `json:"is_http_basic_auth_enabled"`
+	PreviewsEnabled     bool               `json:"is_preview_deployments_enabled"`
+	WebhookGithub       string             `json:"manual_webhook_secret_github"`
+	WebhookGitlab       string             `json:"manual_webhook_secret_gitlab"`
+	WebhookBitbucket    string             `json:"manual_webhook_secret_bitbucket"`
+	WebhookGitea        string             `json:"manual_webhook_secret_gitea"`
+	PrivateKeyID        int                `json:"private_key_id"`
+	SourceID            int                `json:"source_id"`
+	ServerName          string             `json:"server_name"`
+	Destination         coolifyDestination `json:"destination"`
+}
+
+// coolifyDestination is the docker destination a resource runs on; its network is read from the
+// resource payload already fetched, so network detection costs no extra request.
+type coolifyDestination struct {
+	Network string `json:"network"`
+	Server  struct {
+		Name string `json:"name"`
+	} `json:"server"`
+}
+
+// customNetwork returns the destination network when it is not the instance default.
+func (d coolifyDestination) customNetwork() string {
+	n := strings.TrimSpace(d.Network)
+	if n == "" || n == "coolify" {
+		return ""
+	}
+	return n
 }
 
 func (a coolifyApp) server() string {
@@ -153,21 +172,18 @@ func (a coolifyApp) server() string {
 }
 
 type coolifyDatabase struct {
-	UUID  string `json:"uuid"`
-	Name  string `json:"name"`
-	Image string `json:"image"`
+	UUID        string             `json:"uuid"`
+	Name        string             `json:"name"`
+	Image       string             `json:"image"`
+	Destination coolifyDestination `json:"destination"`
 }
 
 type coolifyService struct {
-	UUID        string `json:"uuid"`
-	Name        string `json:"name"`
-	ServiceType string `json:"service_type"`
-	ServerName  string `json:"server_name"`
-	Destination struct {
-		Server struct {
-			Name string `json:"name"`
-		} `json:"server"`
-	} `json:"destination"`
+	UUID        string             `json:"uuid"`
+	Name        string             `json:"name"`
+	ServiceType string             `json:"service_type"`
+	ServerName  string             `json:"server_name"`
+	Destination coolifyDestination `json:"destination"`
 }
 
 // ComposeRaw is the field name assumed from the Coolify API docs, not confirmed against a live instance.
@@ -218,6 +234,7 @@ func (c *CoolifySource) Discover(ctx context.Context) (*Discovery, error) {
 	d := &Discovery{Platform: Coolify}
 	c.readServers(ctx, d)
 	details := c.readDatabaseDetails(ctx, d)
+	nets := &networkTally{byNet: map[string][]string{}, appIdx: map[int]string{}}
 	for _, p := range projects {
 		d.Projects = append(d.Projects, p.Name)
 		var envs []coolifyEnvironment
@@ -225,14 +242,47 @@ func (c *CoolifySource) Discover(ctx context.Context) (*Discovery, error) {
 			return nil, fmt.Errorf("list environments of project %q: %w", p.Name, err)
 		}
 		for _, e := range envs {
+			d.Environments = append(d.Environments, SourceEnvironment{Project: p.Name, Name: e.Name})
 			var res coolifyEnvResources
 			if err := c.r.get(ctx, "/api/v1/projects/"+url.PathEscape(p.UUID)+"/"+url.PathEscape(e.Name), nil, &res); err != nil {
 				return nil, fmt.Errorf("read environment %q of project %q: %w", e.Name, p.Name, err)
 			}
-			c.collect(ctx, d, p.Name, e.Name, res, details)
+			c.collect(ctx, d, p.Name, e.Name, res, details, nets)
 		}
 	}
+	nets.annotate(d)
 	return d, nil
+}
+
+// networkTally records which imported resources sit on each custom network, so apps that
+// share one can be flagged after every environment is read.
+type networkTally struct {
+	byNet  map[string][]string
+	appIdx map[int]string
+}
+
+func (n *networkTally) add(net, label string) {
+	if net != "" {
+		n.byNet[net] = append(n.byNet[net], label)
+	}
+}
+
+func (n *networkTally) annotate(d *Discovery) {
+	for i, net := range n.appIdx {
+		members := n.byNet[net]
+		if len(members) < 2 {
+			continue
+		}
+		var others []string
+		for _, m := range members {
+			if m != d.Apps[i].Name {
+				others = append(others, m)
+			}
+		}
+		d.Apps[i].Notes = append(d.Apps[i].Notes, Note{Area: "network",
+			Reason: "shares the custom network " + net + " with " + strings.Join(others, ", ") + ", other resources may reach it by container name",
+			Manual: "put the related resources in one project here and use the service name or the internal host from the report as the address"})
+	}
 }
 
 func (c *CoolifySource) readServers(ctx context.Context, d *Discovery) {
@@ -275,14 +325,18 @@ func backupSchedules(backups []coolifyBackup) []BackupSchedule {
 	return out
 }
 
-func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, environment string, res coolifyEnvResources, details map[string]coolifyDatabaseDetail) {
+func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, environment string, res coolifyEnvResources, details map[string]coolifyDatabaseDetail, nets *networkTally) {
 	for _, a := range res.Applications {
 		app, unsup := c.mapApp(ctx, project, a)
 		app.Environment = environment
+		nets.add(a.Destination.customNetwork(), a.Name)
 		if unsup != nil {
 			unsup.Environment = environment
 			d.Unsupported = append(d.Unsupported, *unsup)
 			continue
+		}
+		if n := a.Destination.customNetwork(); n != "" {
+			nets.appIdx[len(d.Apps)] = n
 		}
 		d.Apps = append(d.Apps, app)
 	}
@@ -292,6 +346,7 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, envi
 	}{{"postgres", res.Postgresqls}, {"redis", res.Redis}, {"mongodb", res.Mongodbs}, {"mysql", res.Mysqls}, {"mariadb", res.Mariadbs}}
 	for _, g := range dbs {
 		for _, db := range g.list {
+			nets.add(db.Destination.customNetwork(), db.Name)
 			_, ver := engineFromImage(db.Image)
 			row := Database{SourceID: db.UUID, Name: db.Name, Project: project, Engine: g.engine, Version: ver,
 				Environment: environment, InternalHost: db.UUID}
@@ -318,6 +373,7 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, envi
 		}
 	}
 	for _, s := range res.Services {
+		nets.add(s.Destination.customNetwork(), s.Name)
 		server := s.Destination.Server.Name
 		if server == "" {
 			server = s.ServerName
@@ -469,6 +525,7 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 	}
 	if app.Kind == SourceGit {
 		app.GitURL = gitURLFromRepo(a.GitRepository, "github.com")
+		app.scrubGitURL()
 		app.GitBranch = a.GitBranch
 		app.BuildPath = strings.Trim(a.BaseDirectory, "/")
 		if app.BuildMethod == "dockerfile" {
@@ -478,6 +535,8 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 	httpCheck := a.HealthCheckType == "" || strings.EqualFold(a.HealthCheckType, "http")
 	if a.HealthCheckEnabled && httpCheck {
 		app.Health = &HealthCheck{Path: a.HealthCheckPath, IntervalSeconds: a.HealthCheckInterval, TimeoutSeconds: a.HealthCheckTimeout, Retries: a.HealthCheckRetries}
+	} else if argv := coolifyHealthExec(a); a.HealthCheckEnabled && argv != nil {
+		app.Health = &HealthCheck{Exec: argv, IntervalSeconds: a.HealthCheckInterval, TimeoutSeconds: a.HealthCheckTimeout, Retries: a.HealthCheckRetries}
 	} else if a.HealthCheckEnabled {
 		app.Notes = append(app.Notes, Note{Reason: "command-based health check is not supported", Manual: "add an HTTP health check after import"})
 	}
@@ -487,6 +546,16 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 }
 
 // sourceSettingNotes lists settings that have no field here, each with the value so nothing is lost silently.
+// coolifyHealthExec returns the sh -c argv for a usable command check, else nil.
+func coolifyHealthExec(a coolifyApp) []string {
+	t := strings.ToLower(a.HealthCheckType)
+	cmd := strings.TrimSpace(a.HealthCheckCommand)
+	if (t != "cmd" && t != "command") || cmd == "" || len(cmd) > 4096 {
+		return nil
+	}
+	return []string{"/bin/sh", "-c", cmd}
+}
+
 func sourceSettingNotes(a coolifyApp) []Note {
 	var notes []Note
 	add := func(area, reason, manual string) {
@@ -517,6 +586,9 @@ func sourceSettingNotes(a coolifyApp) []Note {
 	}
 	if a.WebhookGithub != "" || a.WebhookGitlab != "" || a.WebhookBitbucket != "" || a.WebhookGitea != "" {
 		add("webhook", "a git webhook secret is set, so the git host calls the source to auto deploy", "add a webhook for this app on the git host pointing here, then remove the old one")
+	}
+	if swapSet(a.LimitsSwap) || swapSet(a.LimitsReservation) {
+		add("limits", "memory swap or reservation is set ("+swapSummary(a)+") and has no setting here, only the memory limit is imported", "none needed unless the app relies on swap, then size the memory limit for it")
 	}
 	if a.PreviewsEnabled {
 		add("preview", "preview deployments were enabled and are not imported", "enable preview environments on the app after cutover")
@@ -581,4 +653,21 @@ func (c *CoolifySource) readDetails(ctx context.Context, app *App) {
 			app.Crons = append(app.Crons, Cron{Name: t.Name, Schedule: t.Frequency, Command: t.Command})
 		}
 	}
+}
+
+// swapSet is true for a value other than empty or zero, the source defaults.
+func swapSet(v string) bool {
+	v = strings.TrimSpace(v)
+	return v != "" && v != "0"
+}
+
+func swapSummary(a coolifyApp) string {
+	var parts []string
+	if swapSet(a.LimitsSwap) {
+		parts = append(parts, "swap "+strings.TrimSpace(a.LimitsSwap))
+	}
+	if swapSet(a.LimitsReservation) {
+		parts = append(parts, "reservation "+strings.TrimSpace(a.LimitsReservation))
+	}
+	return strings.Join(parts, ", ")
 }

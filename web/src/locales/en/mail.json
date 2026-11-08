@@ -74,7 +74,9 @@
       "dark": "Dark",
       "frameTitle": "Email preview",
       "plain": "Plain text version",
-      "error": "The preview needs a valid template: {{message}}"
+      "error": "The preview needs a valid template: {{message}}",
+      "deviceLabel": "Preview device",
+      "schemeLabel": "Preview colour scheme"
     },
     "history": {
       "title": "Version history",

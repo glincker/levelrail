@@ -102,7 +102,7 @@ func volumesFromPB(vs []*agentpb.VolumeMount) []docker.VolumeMount {
 }
 
 func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
-	return &agentpb.ContainerSpec{
+	return runtimeToPB(s, &agentpb.ContainerSpec{
 		Name:         s.Name,
 		Image:        s.Image,
 		Ports:        portBindingsToPB(s.Ports),
@@ -124,9 +124,10 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		SecurityOpt:  s.SecurityOpt,
 		Devices:      s.Devices,
 		User:         s.User,
+		WorkingDir:   s.WorkingDir,
 		BindMounts:   bindMountsToPB(s.BindMounts),
 		Files:        fileMountsToPB(s.Files),
-	}
+	})
 }
 
 func fileMountsToPB(fs []docker.FileMount) []*agentpb.FileMount {
@@ -212,7 +213,7 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 	if s == nil {
 		return docker.ContainerSpec{}
 	}
-	return docker.ContainerSpec{
+	return runtimeFromPB(s, docker.ContainerSpec{
 		Name:         s.Name,
 		Image:        s.Image,
 		Ports:        portBindingsFromPB(s.Ports),
@@ -233,9 +234,10 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		SecurityOpt:  s.SecurityOpt,
 		Devices:      s.Devices,
 		User:         s.User,
+		WorkingDir:   s.WorkingDir,
 		BindMounts:   bindMountsFromPB(s.BindMounts),
 		Files:        fileMountsFromPB(s.Files),
-	}
+	})
 }
 
 func containerStateToPB(s *docker.ContainerState) *agentpb.ContainerState {

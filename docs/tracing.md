@@ -81,7 +81,7 @@ an upstream proxy or browser SDK stays in the same trace. The request id is
 also returned on the response.
 
 The control plane keeps the most recent requests per app in memory (default
-1000 per route, `APP_ACCESS_LOG_SIZE`, `0` turns it off). A restart clears
+1000 per route, setting `telemetry.access_log_size`, seeded by `APP_ACCESS_LOG_SIZE`, `0` turns it off; a change applies within a second). A restart clears
 them. Query strings and client addresses are never recorded.
 
 ```sh

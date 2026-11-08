@@ -33,7 +33,10 @@ function HourlyStats({ test }: { test: SplitTest }) {
         <p className="text-xs text-muted-foreground">{t('stats.none')}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table
+            aria-label={t('a11y.tables.splitTests', { ns: 'common' })}
+            className="w-full text-xs"
+          >
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th scope="col" className="py-1 pr-3 font-medium">

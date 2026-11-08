@@ -155,7 +155,7 @@ export function GitBuildSourceFields({
                 }}
               >
                 {branchesQuery.isFetching ? (
-                  <LoaderGlassIcon className="size-5 animate-spin" />
+                  <LoaderGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
                 ) : null}
                 {t('sourceFields.loadBranches')}
               </Button>

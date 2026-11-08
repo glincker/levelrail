@@ -62,9 +62,11 @@ const gitSource = {
 describe('PreviewPolicyCard', () => {
   let policy: PreviewPolicy
   let puts: unknown[]
+  let imageSource: 'registry' | 'built'
 
   beforeEach(() => {
     puts = []
+    imageSource = 'built'
     policy = {
       on_limit: 'evict_oldest',
       allow_fork_previews: false,
@@ -101,6 +103,16 @@ describe('PreviewPolicyCard', () => {
         if (url === '/api/v1/apps/web/git-source') {
           return Promise.resolve(jsonResponse(gitSource))
         }
+        if (url === '/api/v1/apps/web/image-status') {
+          return Promise.resolve(
+            jsonResponse({
+              image: 'web',
+              source: imageSource,
+              update_available: false,
+              arch_mismatch: false,
+            }),
+          )
+        }
         if (url === '/api/v1/apps/web/preview-policy' && method === 'GET') {
           return Promise.resolve(jsonResponse(policy))
         }
@@ -131,6 +143,20 @@ describe('PreviewPolicyCard', () => {
         name: 'Deploy previews for pull requests from forks',
       }),
     ).not.toBeChecked()
+  })
+
+  it('shows the image tag template only for registry image apps', async () => {
+    renderWithClient(<PreviewPolicyCard appName="web" />)
+    await screen.findByText('3 live of 10')
+    expect(screen.queryByLabelText('Image tag template')).toBeNull()
+  })
+
+  it('shows the image tag template for a registry image app', async () => {
+    imageSource = 'registry'
+    renderWithClient(<PreviewPolicyCard appName="web" />)
+    expect(
+      await screen.findByLabelText('Image tag template'),
+    ).toBeInTheDocument()
   })
 
   it('saves the fork policy and warns when it is turned on', async () => {

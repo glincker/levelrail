@@ -7,12 +7,12 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -104,7 +104,7 @@ func (a fixitAttemptStore) RecordAttempt(ctx context.Context, at fixit.Attempt) 
 
 func (rt *Router) fixitEngine() *fixit.Engine {
 	rt.fixit.once.Do(func() {
-		maxPer, _ := strconv.Atoi(os.Getenv("APP_FIXIT_MAX_PER_HOUR"))
+		maxPer := rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyFixitMaxPerHour)
 		e := fixit.NewEngine(fixitAttemptStore{rt.fixit.store}, fixit.WithMaxPerHour(maxPer))
 		for _, f := range rt.fixitFixes() {
 			if err := e.Register(f); err != nil {

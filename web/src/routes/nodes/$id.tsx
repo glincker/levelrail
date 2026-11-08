@@ -226,7 +226,11 @@ function NodeDetailPage() {
       <NodeDrainsCard nodeId={id} />
       <NodeFailureCard nodeId={id} />
 
-      <NodePatchStatusCard nodeId={id} />
+      <NodePatchStatusCard
+        nodeId={id}
+        nodeName={node.name}
+        isLocal={node.is_local}
+      />
       <NodeEventsCard nodeId={id} />
       <NodeCapacityCard nodeId={id} />
       <NodeCapacityForecastCard nodeId={id} />

@@ -5,6 +5,7 @@
 // handleDeploySpec).
 
 import {
+  type QueryClient,
   queryOptions,
   useMutation,
   useQueryClient,
@@ -21,6 +22,13 @@ import type {
 
 export const appGroupKeys = {
   detail: (appName: string) => [...appKeys.detail(appName), 'group'] as const,
+}
+
+// Refetch the group after a per-service scale or restart.
+export function invalidateAppGroup(queryClient: QueryClient, appName: string) {
+  return queryClient.invalidateQueries({
+    queryKey: appGroupKeys.detail(appName),
+  })
 }
 
 export async function fetchAppGroup(appName: string): Promise<AppGroup> {

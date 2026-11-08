@@ -1,3 +1,5 @@
+import { InboxGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -50,7 +52,11 @@ export function MigrationVolumesCard() {
           </Alert>
         ) : null}
         {guide.data && guide.data.guides.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('volumes.none')}</p>
+          <EmptyState
+            compact
+            icon={<InboxGlassIcon className="size-5" />}
+            title={t('volumes.none')}
+          />
         ) : null}
         {guide.data && guide.data.guides.length > 0 ? (
           <div className="space-y-3">

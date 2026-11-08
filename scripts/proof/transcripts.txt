@@ -1,0 +1,5 @@
+# path-glob[,glob] | command (read-only; --help or list; levelrail-cli is resolved to the built binary)
+internal/clitree/*,cmd/levelrail-cli/* | levelrail-cli apps --help
+cmd/levelrail-cli/*,internal/clitree/* | levelrail-cli databases --help
+cmd/levelrail-cli/*,internal/clitree/* | levelrail-cli domains limits --help
+internal/runtimesettings/*,cmd/levelrail-cli/* | levelrail-cli settings runtime --help

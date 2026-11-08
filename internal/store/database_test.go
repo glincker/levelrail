@@ -1135,3 +1135,43 @@ func TestOwnsBackup_LegacyRowRules(t *testing.T) {
 		}
 	}
 }
+
+func TestPausedScheduleKeepsConfig(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	target := seedBackupTarget(t, db)
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7, 30); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
+	}
+	if err := db.SetServiceVolumeBackupSchedule(ctx, "web", "data", target.ID, "0 4 * * *", 3, 0, ""); err != nil {
+		t.Fatalf("SetServiceVolumeBackupSchedule() error = %v", err)
+	}
+	if err := db.SetDatabaseBackupPaused(ctx, "main", true); err != nil {
+		t.Fatalf("SetDatabaseBackupPaused() error = %v", err)
+	}
+	if err := db.SetServiceVolumeBackupPaused(ctx, "web", "data", true); err != nil {
+		t.Fatalf("SetServiceVolumeBackupPaused() error = %v", err)
+	}
+	if dbs, _ := db.ListScheduledDatabases(ctx); len(dbs) != 0 {
+		t.Errorf("paused database still scheduled: %+v", dbs)
+	}
+	if vols, _ := db.ListScheduledServiceVolumes(ctx); len(vols) != 0 {
+		t.Errorf("paused volume still scheduled: %+v", vols)
+	}
+	got, _ := db.GetDesiredDatabase(ctx, "main")
+	if !got.BackupPaused || got.BackupSchedule != "0 3 * * *" || got.BackupRetain != 7 {
+		t.Errorf("paused config = %+v, want kept schedule and paused flag", got)
+	}
+	if err := db.SetDatabaseBackupPaused(ctx, "main", false); err != nil {
+		t.Fatalf("resume error = %v", err)
+	}
+	if dbs, _ := db.ListScheduledDatabases(ctx); len(dbs) != 1 {
+		t.Errorf("resumed database not scheduled: %+v", dbs)
+	}
+	if err := db.SetServiceVolumeBackupPaused(ctx, "web", "none", true); !errors.Is(err, ErrServiceVolumeBackupNotFound) {
+		t.Errorf("missing volume error = %v, want ErrServiceVolumeBackupNotFound", err)
+	}
+}

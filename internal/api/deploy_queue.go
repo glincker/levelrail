@@ -89,7 +89,15 @@ func (rt *Router) deployBlocker(ctx context.Context, name string) bool {
 	if limit := rt.deployCap(ctx); limit > 0 && total >= limit {
 		return true
 	}
-	return false
+	return rt.projectBuildFull(ctx, name, rt.runningApps(attemptApps(running)))
+}
+
+func attemptApps(as []store.DeployAttempt) []string {
+	out := make([]string, 0, len(as))
+	for _, a := range as {
+		out = append(out, a.ServiceName)
+	}
+	return out
 }
 
 // queueIfBusy parks a webhook deploy behind a running one. When it does not
@@ -279,6 +287,9 @@ func (rt *Router) startQueued(ctx context.Context) []store.DeployAttempt {
 			busy[a.ServiceName] = true
 			continue
 		}
+		if rt.projectBuildFull(ctx, a.ServiceName, append(rt.runningApps(attemptApps(running)), attemptApps(started)...)) {
+			continue
+		}
 		moved, err := rt.deploySafety.StartQueuedDeployAttempt(ctx, a.ID, time.Now())
 		if err != nil || !moved {
 			if err != nil {
@@ -428,6 +439,11 @@ func (rt *Router) waitFor(ctx context.Context, a store.DeployAttempt, app []stor
 	if limit := rt.deployCap(ctx); limit > 0 && rt.deploySafety != nil {
 		if running, err := rt.deploySafety.ListRunningDeployAttempts(ctx); err == nil {
 			full = len(running) >= limit
+		}
+	}
+	if !full && rt.deploySafety != nil {
+		if running, err := rt.deploySafety.ListRunningDeployAttempts(ctx); err == nil {
+			full = rt.projectBuildFull(ctx, a.ServiceName, rt.runningApps(attemptApps(running)))
 		}
 	}
 	return computeWait(a, app, frozen, frozenUntil, full)

@@ -22,6 +22,9 @@ type appUpdateResponse struct {
 // keeps its stored value; an explicit empty value or null clears it.
 func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.refuseIfProtected(w, r, name) {
+		return
+	}
 
 	var req appResource
 	sent, ok := decodeAppUpdate(w, r, &req)
@@ -46,6 +49,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	mergeOmittedAppFields(&req, *existing, sent)
 
 	if err := validateAppUpdate(req, *existing); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
+	if err := rt.checkReplicaCap(r.Context(), req.Replicas); err != nil {
 		writeAppInvalid(w, err)
 		return
 	}

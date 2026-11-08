@@ -106,6 +106,7 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 	if err := checkDiskSpace(req.ContextDir, c.cache.Dir); err != nil {
 		return nil, err
 	}
+	progress(ProgressEvent{Step: "builder", Log: DockerfileNote(req.ContextDir, req.DockerfilePath), Stream: "stderr"})
 	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
 		return c.solveDockerfile(solveCtx, req, c.cache, out, progress)
 	})

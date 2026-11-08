@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/storage/memory"
@@ -90,6 +91,11 @@ func (c *Cache) Unreachable() []HostStatus {
 }
 
 func defaultProbe(ctx context.Context, repoURL string) error {
+	// No credential is available to a probe, and the ssh transport would fall
+	// back to the control plane's agent and known_hosts.
+	if gitsshkey.IsSSHURL(repoURL) {
+		return ErrSSHAuthRequired
+	}
 	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{Name: remoteName, URLs: []string{cleanURL(repoURL)}})
 	_, err := rem.ListContext(ctx, &git.ListOptions{})
 	return err

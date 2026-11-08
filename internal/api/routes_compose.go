@@ -17,6 +17,10 @@ func (rt *Router) registerComposeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/template-upgrade/run", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTemplateUpgradeRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackCompose))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/redeploy", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRedeployCompose))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleRestartApp)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/stop", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleStopApp)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/start", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleStartApp)))
+	mux.HandleFunc("GET /api/v1/apps/{name}/compose/services/{service}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.composeServiceAction(rt.handleQueryLogs)))
 	mux.HandleFunc("POST /api/v1/service-templates/{id}/install", rt.requireAbility(AbilityDeploy, rt.handleInstallServiceTemplate))
 	// Same tier as DELETE /apps/{name}; ?volumes=true also needs write-sensitive, checked in the handler.
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleComposeDown))

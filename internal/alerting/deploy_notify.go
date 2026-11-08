@@ -261,7 +261,11 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
-		return postJSON(ctx, client, t.NotifyURL, telegramPayload{ChatID: chatID, Text: deployText(t.NotifyKind, ev)})
+		thread, err := parseTelegramThreadID(t.NotifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		return postJSON(ctx, client, t.NotifyURL, telegramPayload{ChatID: chatID, ThreadID: thread, Text: deployText(t.NotifyKind, ev)})
 	case NotifyPushover:
 		token, user, err := parsePushoverCreds(t.NotifyURL)
 		if err != nil {

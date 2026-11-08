@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { CountdownGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -31,6 +33,7 @@ import { canDecideApproval } from '../lib/deployApprovalStatus'
 // dashboard session has no per-request principal identity to compare
 // against ahead of time).
 export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
+  const { t } = useTranslation('deploys')
   const pending = useDeployApprovalsOptional('pending', appName)
   const approve = useApproveDeployApproval()
   const reject = useRejectDeployApproval()
@@ -46,13 +49,16 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
     approve.mutate(approval.id, {
       onSuccess: () => {
         toast.add({
-          title: `Approved: ${appName} now targets ${approval.image}.`,
+          title: t('approvalBanner.approved', {
+            app: appName,
+            image: approval.image,
+          }),
           type: 'success',
         })
       },
       onError: (err) => {
         toast.add({
-          title: 'Could not approve.',
+          title: t('approvalBanner.approveError'),
           description: err instanceof ApiError ? err.message : String(err),
           type: 'error',
         })
@@ -66,11 +72,14 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
       { id: approval.id },
       {
         onSuccess: () => {
-          toast.add({ title: 'Deploy approval rejected.', type: 'success' })
+          toast.add({
+            title: t('approvalBanner.rejected'),
+            type: 'success',
+          })
         },
         onError: (err) => {
           toast.add({
-            title: 'Could not reject.',
+            title: t('approvalBanner.rejectError'),
             description: err instanceof ApiError ? err.message : String(err),
             type: 'error',
           })
@@ -80,7 +89,11 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+    <Alert
+      variant="warning"
+      role="status"
+      className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
+    >
       <div className="flex items-start gap-2">
         <CountdownGlassIcon
           className="mt-0.5 size-5 shrink-0"
@@ -88,47 +101,51 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
         />
         <div className="text-sm">
           <p className="font-medium">
-            {approval.action === 'promote' ? 'Promotion' : 'Deploy'} to{' '}
+            {t(
+              approval.action === 'promote'
+                ? 'approvalBanner.titlePromote'
+                : 'approvalBanner.titleDeploy',
+            )}{' '}
             <span className="break-all font-mono">
               {unpinnedImage(approval.image)}
             </span>
             {digest ? (
               <PinnedDigestBadge digest={digest} className="mx-1" />
             ) : null}{' '}
-            is awaiting approval.
+            {t('approvalBanner.awaiting')}
           </p>
-          <p className="text-amber-800/90 dark:text-amber-200/80">
-            Requested by {approval.requested_by_name}. This environment is
-            protected: a different, sufficiently privileged user must approve it
-            before it deploys.
+          <p className="text-muted-foreground">
+            {t('approvalBanner.requestedBy', {
+              name: approval.requested_by_name,
+            })}
           </p>
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Button
           type="button"
-          size="sm"
           variant="outline"
           disabled={approve.isPending || reject.isPending}
           onClick={handleReject}
         >
-          Reject
+          {t('approvalBanner.reject')}
         </Button>
         <Button
           type="button"
-          size="sm"
           disabled={approve.isPending || reject.isPending}
           onClick={handleApprove}
         >
-          {approve.isPending ? 'Approving...' : 'Approve'}
+          {approve.isPending
+            ? t('approvalBanner.approving')
+            : t('approvalBanner.approve')}
         </Button>
         <Link
           to="/approvals"
-          className="text-xs text-amber-800 underline underline-offset-2 dark:text-amber-200"
+          className="inline-flex min-h-10 items-center text-xs underline underline-offset-2"
         >
-          View queue
+          {t('approvalBanner.viewQueue')}
         </Link>
       </div>
-    </div>
+    </Alert>
   )
 }

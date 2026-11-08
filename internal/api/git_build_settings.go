@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/defparse"
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -276,4 +277,42 @@ func (rt *Router) repoLayoutHosts(ctx context.Context) repolayout.Hosts {
 		}
 	}
 	return hosts
+}
+
+// definitionBuild is what a definition file in the checkout asks a git build to do.
+type definitionBuild struct {
+	// Dockerfile is relative to the repository root, empty when there is no usable file.
+	Dockerfile string
+	// Note explains why the file cannot drive a git build; empty when it can or is absent.
+	Note string
+}
+
+// resolveDefinitionBuild reads the definition file under base through read
+// (size-capped by the caller's limit) and keeps the Dockerfile inside the checkout.
+func resolveDefinitionBuild(read func(p string, limit int) ([]byte, error), base string) definitionBuild {
+	base = strings.Trim(base, "/")
+	b, err := read(path.Join(base, defparse.FileName), defparse.MaxBytes+1)
+	if err != nil || len(b) == 0 {
+		return definitionBuild{}
+	}
+	def, err := defparse.Parse(b)
+	if err != nil {
+		return definitionBuild{Note: err.Error()}
+	}
+	switch {
+	case def.ImageName != "":
+		return definitionBuild{Note: defparse.FileName + " sets imageName, which git builds do not support; deploy a prebuilt image with the image source instead"}
+	case len(def.DockerfileLines) > 0:
+		return definitionBuild{Note: defparse.FileName + " sets dockerfileLines, which git builds do not support; commit a Dockerfile and set dockerfilePath"}
+	case def.DockerfilePath == "":
+		return definitionBuild{}
+	}
+	full := path.Join(base, def.DockerfilePath)
+	if full == ".." || strings.HasPrefix(full, "../") || path.IsAbs(full) {
+		return definitionBuild{Note: defparse.FileName + " dockerfilePath leaves the checkout"}
+	}
+	if _, err := read(full, 1); err != nil {
+		return definitionBuild{Note: fmt.Sprintf("%s dockerfilePath %q is not a file in the repository", defparse.FileName, def.DockerfilePath)}
+	}
+	return definitionBuild{Dockerfile: full}
 }

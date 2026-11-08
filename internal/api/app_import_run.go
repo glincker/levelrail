@@ -125,7 +125,7 @@ func (rt *Router) handleStageAppImport(w http.ResponseWriter, r *http.Request) {
 	defer rt.appImportLive.end(sess.ID)
 
 	ctx := r.Context()
-	applier := &importApplier{rt: rt, sessionID: sess.ID, connect: calc.connect}
+	applier := &importApplier{rt: rt, sessionID: sess.ID, connect: calc.connect, providerRefs: rt.callerHasAbility(r, AbilityRoot)}
 	for _, planned := range calc.plan.Apps {
 		i := itemByPlan(items, planned.SourceID)
 		if i < 0 || !items[i].Selected || !stageable(items[i].State) || !wantedItem(req.Items, items[i]) {

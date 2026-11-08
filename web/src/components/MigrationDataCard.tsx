@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { DatabaseGlassIcon } from '@thesvg/ui-react'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -232,7 +234,12 @@ export function MigrationDataCard() {
           </Alert>
         ) : null}
         {!isPending && data?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('data.empty')}</p>
+          <EmptyState
+            kind="first-run"
+            icon={<DatabaseGlassIcon className="size-5" aria-hidden="true" />}
+            title={t('data.emptyTitle')}
+            description={t('data.empty')}
+          />
         ) : null}
         <ul className="space-y-2">
           {data?.map((db) => (

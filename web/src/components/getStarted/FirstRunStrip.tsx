@@ -17,7 +17,8 @@ import type {
   FirstRunStepState,
 } from '../../lib/firstRunSteps'
 
-const LINK = 'text-xs text-foreground underline-offset-2 hover:underline'
+const LINK =
+  'inline-flex items-center pointer-coarse:min-h-10 text-xs text-foreground underline-offset-2 hover:underline'
 
 function StateIcon({ state }: { state: FirstRunStepState }) {
   const base = 'size-5 shrink-0'

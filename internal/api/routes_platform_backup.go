@@ -46,6 +46,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// No GET: handleGetDatabase already returns these fields.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleSetBackupSchedule))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleClearBackupSchedule))
+	mux.HandleFunc("POST /api/v1/databases/{name}/backup-schedule/pause", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handlePauseBackupSchedule))
+	mux.HandleFunc("POST /api/v1/databases/{name}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleResumeBackupSchedule))
 
 	// Public host access per database: AbilityWriteSensitive, it changes network exposure.
 	// No GET: handleGetDatabase already returns the fields.
@@ -116,6 +118,17 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/import", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleImportVolume))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePauseVolumeBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleResumeVolumeBackupSchedule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBServices))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetComposeDBBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePauseComposeDBBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleResumeComposeDBBackupSchedule))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteComposeDBBackupSchedule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBBackupRuns))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerComposeDBBackup))
+	// AbilityRoot like the volume restore: it replaces the live database in place.
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRestoreComposeDBBackup))
 
 	// Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write plus read:sensitive, so an operator can fix a config file without SSH.
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/files", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListVolumeFiles))
@@ -141,6 +154,9 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// for why this endpoint doesn't need the top tier the in-place
 	// restore route does. History listing is ordinary AbilityRead, the
 	// same boundary the in-place restore history route above draws.
+	// Import (database_import.go): a dump streamed into the database; AbilityRoot like restore since it can replace live data.
+	mux.HandleFunc("GET /api/v1/databases/{name}/import", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseImportCheck))
+	mux.HandleFunc("POST /api/v1/databases/{name}/import", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseImport))
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListCloneRestores))
 	// Branch (database_branch.go): a new independent database from a backup or point in time, same tier as restore-as-new.

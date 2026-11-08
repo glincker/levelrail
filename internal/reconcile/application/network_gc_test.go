@@ -30,8 +30,8 @@ func TestClassifyNetworks(t *testing.T) {
 		{"orphan in use", docker.NetworkDetail{Name: "p-app-gone", Labels: own, Created: old, Attached: 1}, apps, NetworkKeepInUse, false, true},
 		{"orphan within grace", docker.NetworkDetail{Name: "p-app-gone", Labels: own, Created: now.Add(-time.Minute)}, apps, NetworkKeepGrace, false, true},
 		{"foreign instance", docker.NetworkDetail{Name: "p-app-gone", Labels: other, Created: old}, apps, NetworkKeepForeign, false, false},
-		{"legacy unlabeled removable", docker.NetworkDetail{Name: "p-app-gone", Created: old}, apps, NetworkRemovable, true, true},
-		{"legacy unlabeled, empty store", docker.NetworkDetail{Name: "p-app-gone", Created: old}, nil, NetworkKeepNoApps, false, true},
+		{"unlabeled never removable", docker.NetworkDetail{Name: "p-app-gone", Created: old}, apps, NetworkKeepUnlabeled, false, true},
+		{"unlabeled, empty store", docker.NetworkDetail{Name: "p-app-gone", Created: old}, nil, NetworkKeepUnlabeled, false, true},
 		{"not our pattern", docker.NetworkDetail{Name: "other-app-gone", Created: old}, apps, "", false, false},
 	}
 	for _, tc := range tests {

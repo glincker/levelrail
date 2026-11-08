@@ -75,7 +75,7 @@ A role's visibility is `all` (the default) or `granted`.
 - With `all`, a user sees every app and database their abilities allow.
 - With `granted`, a user sees only apps and databases in the environments granted to that user. A role with `granted` visibility may hold only the `read` ability.
 
-Anything a guest cannot see answers 404, not 403, so they cannot even tell it exists. Resources with no environment are hidden from guests. API tokens follow the visibility of the user who owns them. The apps, databases, deployments and approvals lists are filtered the same way.
+Anything a guest cannot see answers 404, not 403, so they cannot even tell it exists. Resources with no environment are hidden from guests. API tokens follow the visibility of the user who owns them. The apps, databases, deployments and approvals lists are filtered the same way. Environment grants also limit the direct environment routes and the environment list.
 
 ### Environment grants
 

@@ -1,3 +1,5 @@
+import { lazy, Suspense, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
@@ -7,16 +9,29 @@ import {
 } from '@thesvg/ui-react'
 import { useNodePatchStatus } from '../queries/nodes'
 import type { NodePatchStatusResource } from '../types/nodeDetail'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { RoleGate } from '@/components/ui/RoleGate'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { VariantProps } from 'class-variance-authority'
+
+const NodePatchDialog = lazy(() => import('./nodes/NodePatchDialog'))
+const NodePatchRuns = lazy(() => import('./nodes/NodePatchRuns'))
 
 type PatchState = 'loading' | 'unknown' | 'up-to-date' | 'updates' | 'security'
 
 type PatchStatusConfig = {
   icon: UiIcon
   variant: VariantProps<typeof badgeVariants>['variant']
-  label: string
+  labelKey:
+    'patch.checking' | 'patch.unknown' | 'patch.upToDate' | 'patch.updates'
 }
 
 function resolvePatchState(
@@ -31,84 +46,119 @@ function resolvePatchState(
   return 'updates'
 }
 
-function updatesLabel(data: NodePatchStatusResource | undefined): string {
-  if (!data?.checked) return ''
-  return `${data.total} update${data.total === 1 ? '' : 's'} available`
-}
-
-function securityLabel(data: NodePatchStatusResource | undefined): string {
-  if (!data?.checked) return ''
-  return `${data.total} update${data.total === 1 ? '' : 's'} available, ${data.security} security`
-}
-
 // GET /api/v1/nodes/{id}/patch-status (internal/api/node_patch_status.go):
-// this node's latest available-OS-updates reading
-// (internal/telemetry/hostpatch.go's HostPatchCollector). A dedicated
-// small status card, not a chart: this is one current fact ("3 updates
-// available, 1 security"), the same reasoning that handler's own doc
-// comment gives for reading the sample directly instead of through the
-// generic /metrics time-series query NodeMetricsDashboard uses.
-function patchStatusConfig(
-  state: PatchState,
-  data: NodePatchStatusResource | undefined,
-): PatchStatusConfig {
+// one current fact ("3 updates available, 1 security"), read from the latest
+// sample rather than the generic metrics time-series.
+function patchStatusConfig(state: PatchState): PatchStatusConfig {
   switch (state) {
     case 'loading':
       return {
         icon: CircleQuestionMarkGlassIcon,
         variant: 'muted',
-        label: 'Checking...',
+        labelKey: 'patch.checking',
       }
     case 'unknown':
       return {
         icon: CircleQuestionMarkGlassIcon,
         variant: 'muted',
-        label: 'Unknown, not checked',
+        labelKey: 'patch.unknown',
       }
     case 'up-to-date':
       return {
         icon: CircleCheckGlassIcon,
         variant: 'success',
-        label: 'Up to date',
+        labelKey: 'patch.upToDate',
       }
     case 'security':
       return {
         icon: CircleAlertGlassIcon,
         variant: 'destructive',
-        label: securityLabel(data),
+        labelKey: 'patch.updates',
       }
     default:
       return {
         icon: TriangleAlertGlassIcon,
         variant: 'warning',
-        label: updatesLabel(data),
+        labelKey: 'patch.updates',
       }
   }
 }
 
-export function NodePatchStatusCard({ nodeId }: Readonly<{ nodeId: string }>) {
+interface Props {
+  nodeId: string
+  nodeName: string
+  isLocal: boolean
+}
+
+export function NodePatchStatusCard({
+  nodeId,
+  nodeName,
+  isLocal,
+}: Readonly<Props>) {
+  const { t } = useTranslation('nodes')
   const { data, isPending, isError } = useNodePatchStatus(nodeId)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const state = resolvePatchState(isPending, isError, data)
-  const { icon: StatusIcon, variant, label } = patchStatusConfig(state, data)
+  const { icon: StatusIcon, variant, labelKey } = patchStatusConfig(state)
+  const count = data?.checked ? data.total : 0
 
   return (
-    <Card>
+    <Card id="node-patching">
       <CardHeader>
-        <CardTitle>OS patches</CardTitle>
+        <CardTitle>{t('patch.title')}</CardTitle>
+        <CardDescription>{t('patch.description')}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-2">
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant={variant}>
             <StatusIcon className="size-3.5" />
-            {label}
+            {t(labelKey, { count })}
           </Badge>
+          {state === 'security' && data ? (
+            <Badge variant="destructive">
+              {t('patch.security', { count: data.security })}
+            </Badge>
+          ) : null}
           {data?.checked_at ? (
             <span className="text-xs text-muted-foreground">
-              Checked {new Date(data.checked_at).toLocaleString()}
+              {t('patch.checkedAt', {
+                time: new Date(data.checked_at).toLocaleString(),
+              })}
+            </span>
+          ) : null}
+          {isLocal ? (
+            <span className="ml-auto">
+              <RoleGate ability="root">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setPreviewOpen(true)}
+                >
+                  {t('patch.preview')}
+                </Button>
+              </RoleGate>
             </span>
           ) : null}
         </div>
+        {isLocal ? (
+          <Suspense fallback={<Skeleton className="h-10 w-full" />}>
+            <NodePatchRuns nodeId={nodeId} />
+          </Suspense>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {t('patch.remoteNote')}
+          </p>
+        )}
       </CardContent>
+      {previewOpen ? (
+        <Suspense fallback={null}>
+          <NodePatchDialog
+            nodeId={nodeId}
+            nodeName={nodeName}
+            onClose={() => setPreviewOpen(false)}
+          />
+        </Suspense>
+      ) : null}
     </Card>
   )
 }

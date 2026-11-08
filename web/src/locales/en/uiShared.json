@@ -3,5 +3,43 @@
     "saving": "Saving",
     "saved": "Saved",
     "error": "Could not save"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "status": "Page {{page}} of {{count}}",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "stepper": {
+    "decrease": "Decrease",
+    "increase": "Increase"
+  },
+  "chip": {
+    "remove": "Remove {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "Time range",
+    "refresh": "Refresh"
+  },
+  "logToolbar": {
+    "level": "Log level",
+    "levels": {
+      "all": "All",
+      "errors": "Errors",
+      "warnings": "Warnings",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "filterPlaceholder": "Filter lines",
+    "filterLabel": "Filter log lines",
+    "jumpToError": "Jump to first error",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copiedAnnounce": "Copied to clipboard",
+    "download": "Download",
+    "shownOf": "{{shown}} of {{total}} lines"
   }
 }

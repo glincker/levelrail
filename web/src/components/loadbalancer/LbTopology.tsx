@@ -1,4 +1,12 @@
-import { PauseGlassIcon, PlayGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import {
+  PauseGlassIcon,
+  PlayGlassIcon,
+  ServerGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { EmptyState } from '@/components/ui/empty-state'
 import { InfoTip, useReducedMotion } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -35,6 +43,7 @@ export function LbTopology({
   onPausedChange,
   onSelect,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const reduced = useReducedMotion()
   const animate = !paused && !reduced
   const shown = upstreams.slice(0, MAX_NODES)
@@ -49,11 +58,9 @@ export function LbTopology({
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1 text-sm font-medium">
-          Traffic
-          <InfoTip label="How to read the diagram" side="right">
-            Line density shows each replica&apos;s share of open connections.
-            Faster motion means lower latency. Shapes and labels show health:
-            check circle is healthy, triangle is draining, square is down.
+          {t('lb.topology.traffic')}
+          <InfoTip label={t('lb.topology.howToRead')} side="right">
+            {t('lb.topology.howToReadBody')}
           </InfoTip>
         </span>
         <Button
@@ -69,13 +76,20 @@ export function LbTopology({
           ) : (
             <PlayGlassIcon size="1.4em" data-icon="inline-start" />
           )}
-          {reduced ? 'Motion off' : animate ? 'Pause' : 'Play'}
+          {reduced
+            ? t('lb.topology.motionOff')
+            : animate
+              ? t('lb.topology.pause')
+              : t('lb.topology.play')}
         </Button>
       </div>
 
       <svg
         role="group"
-        aria-label={`Traffic from clients through the proxy to ${upstreams.length} upstreams, ${rollup.healthy} healthy`}
+        aria-label={t('lb.topology.diagram', {
+          total: upstreams.length,
+          healthy: rollup.healthy,
+        })}
         viewBox={`0 0 ${VIEW_W} ${height}`}
         className="h-auto w-full max-w-[560px]"
       >
@@ -137,7 +151,12 @@ export function LbTopology({
               <g
                 role="button"
                 tabIndex={0}
-                aria-label={`${u.dial || `Replica ${u.replica}`}: ${view.label}, ${view.reason}. Open details`}
+                aria-label={t('lb.topology.node', {
+                  name:
+                    u.dial || t('lb.topology.replica', { replica: u.replica }),
+                  label: view.label,
+                  reason: view.reason,
+                })}
                 data-node={u.id}
                 className="group cursor-pointer outline-none"
                 onClick={() => onSelect(u.id)}
@@ -171,7 +190,7 @@ export function LbTopology({
                   y={cy - 3}
                   className="fill-foreground text-xs font-medium"
                 >
-                  {`Replica ${u.replica}`}
+                  {t('lb.topology.replica', { replica: u.replica })}
                 </text>
                 <text
                   x={UP.x + 38}
@@ -190,7 +209,9 @@ export function LbTopology({
             x={UP.x}
             y={height - 8}
             className="fill-muted-foreground text-xs"
-          >{`+${hidden} more in the table below`}</text>
+          >
+            {t('lb.topology.more', { count: hidden })}
+          </text>
         ) : null}
 
         <g>
@@ -208,7 +229,7 @@ export function LbTopology({
             textAnchor="middle"
             className="fill-foreground text-xs font-medium"
           >
-            Clients
+            {t('lb.topology.clients')}
           </text>
         </g>
         <g>
@@ -226,7 +247,7 @@ export function LbTopology({
             textAnchor="middle"
             className="fill-foreground text-xs font-medium"
           >
-            Proxy
+            {t('lb.topology.proxy')}
           </text>
           <text
             x={PROXY.x + PROXY.w / 2}
@@ -240,25 +261,29 @@ export function LbTopology({
       </svg>
 
       {rollup.total === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No upstreams yet. They appear as replicas start.
-        </p>
+        <EmptyState
+          kind="no-results"
+          icon={<ServerGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('lb.topology.noUpstreams')}
+          description={t('lb.topology.noUpstreamsHint')}
+        />
       ) : null}
       {rollup.allDown ? (
-        <p role="status" className="text-sm text-tone-danger">
-          Nothing is passing checks. Requests may fail until a replica recovers.
-        </p>
+        <Alert variant="danger" role="status">
+          <TriangleAlertGlassIcon aria-hidden="true" />
+          <AlertDescription>{t('lb.topology.allDown')}</AlertDescription>
+        </Alert>
       ) : null}
 
       <table className="sr-only">
-        <caption>Upstream status</caption>
+        <caption>{t('lb.topology.caption')}</caption>
         <thead>
           <tr>
-            <th scope="col">Upstream</th>
-            <th scope="col">State</th>
-            <th scope="col">Reason</th>
-            <th scope="col">Share</th>
-            <th scope="col">Connections</th>
+            <th scope="col">{t('lb.topology.upstream')}</th>
+            <th scope="col">{t('lb.topology.state')}</th>
+            <th scope="col">{t('lb.topology.reason')}</th>
+            <th scope="col">{t('lb.topology.share')}</th>
+            <th scope="col">{t('lb.topology.connections')}</th>
           </tr>
         </thead>
         <tbody>
@@ -266,7 +291,9 @@ export function LbTopology({
             const view = upstreamView(u)
             return (
               <tr key={u.id}>
-                <th scope="row">{u.dial || `Replica ${u.replica}`}</th>
+                <th scope="row">
+                  {u.dial || t('lb.topology.replica', { replica: u.replica })}
+                </th>
                 <td>{view.label}</td>
                 <td>{view.reason}</td>
                 <td>{formatShare(pct.get(u.id) ?? 0, algorithm)}</td>

@@ -138,7 +138,7 @@ function StatusBody({
     return (
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-sm" role="status">
-          <LoaderCircleGlassIcon className="size-5 animate-spin" />
+          <LoaderCircleGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
           {t('card.pending', { domain: status.domain })}
         </p>
         {closed.length > 0 ? (

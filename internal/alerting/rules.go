@@ -65,6 +65,14 @@ const (
 	// KindEmailDeliveryFailing is platform-wide: it fires while most recent
 	// outbound emails are failing (email_delivery_failing.go).
 	KindEmailDeliveryFailing Kind = "email_delivery_failing"
+
+	// KindCleanupFailing is platform-wide: it fires while the cleanup center
+	// has failed real runs in its look-back window (cleanup_failing.go).
+	KindCleanupFailing Kind = "cleanup_failing"
+
+	// KindOOMKilled is per-app: it fires when the kernel OOM-kills the app
+	// RestartCountThreshold times inside RestartWindow (oom_killed.go).
+	KindOOMKilled Kind = "oom_killed"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

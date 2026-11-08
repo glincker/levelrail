@@ -444,3 +444,28 @@ func TestImageRef_EnvOverridesPinnedDefault(t *testing.T) {
 		t.Errorf("imageRef() = %q, want env override", got)
 	}
 }
+
+func TestReconcile_FeatureSwitchedLive(t *testing.T) {
+	rt := newFakeRuntime()
+	on := false
+	c := New(&fakeStore{settings: store.CloudflareTunnelSettings{Enabled: true}}, &fakeTokens{value: "tok", set: true}, rt,
+		WithEnabled(func() bool { return on }))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil || rt.count() != 0 {
+		t.Fatalf("feature off must not reconcile: err=%v containers=%d", err, rt.count())
+	}
+	if cond := conditionOf(t, result); cond.Reason != "FeatureOff" {
+		t.Errorf("reason = %q, want FeatureOff", cond.Reason)
+	}
+
+	on = true
+	if _, err := c.Reconcile(context.Background()); err != nil || rt.count() != 1 {
+		t.Fatalf("switching on must converge without a restart: err=%v containers=%d", err, rt.count())
+	}
+
+	on = false
+	if _, err := c.Reconcile(context.Background()); err != nil || rt.count() != 1 {
+		t.Fatalf("switching off must stop reconciling and leave the container: err=%v containers=%d", err, rt.count())
+	}
+}

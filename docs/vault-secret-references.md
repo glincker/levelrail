@@ -13,7 +13,9 @@ An env var can point at a secret in an external Vault instead of holding a value
 | Built in encrypted store | Supported | The default. Use `{ secret: true }` or the **Secret** type. See [Environment variables and secrets](/environment-and-secrets). |
 | HashiCorp Vault | Supported | KV v2 engine, token or AppRole login. |
 | OpenBao | Not tested | OpenBao serves the same KV v2 HTTP API, so the same settings should work. Levelrail has no OpenBao specific test for app references. Try it on a non production app first. |
-| 1Password | Not supported yet | There is no 1Password backend. |
+| Doppler | Beta | Read only. Service token, one project and config per provider. See [Doppler and Infisical](#doppler-and-infisical). |
+| Infisical | Beta | Read only. Access token, one workspace and environment per provider. Cloud or self-hosted. |
+| 1Password | Beta | Read only, through a 1Password Connect server you run. Connect token, `op://` references. See [1Password Connect](#1password-connect). |
 
 The Vault Transit engine (Vault or OpenBao) can also wrap the master key. That is a separate feature, set with the `APP_VAULT_*` variables in [Environment variables](/environment-variables). It does not enable app references.
 
@@ -101,3 +103,65 @@ vault kv get -mount=secret myapp/config
 ```
 
 The second command uses the Vault CLI with the same token, to confirm the path and field exist.
+
+## Doppler and Infisical
+
+Doppler and Infisical are read only providers. Levelrail never writes to them. Connect one or more providers by name:
+
+```bash
+levelrail-cli secrets provider add prod --type doppler --project web --environment prd --provider-token-file ./doppler-token
+levelrail-cli secrets provider add infra --type infisical --project WORKSPACE_ID --environment prod --provider-token-file -
+levelrail-cli secrets provider add lab --type infisical --project WORKSPACE_ID --environment dev --base-url https://infisical.internal --provider-token-file ./token
+levelrail-cli secrets provider list
+levelrail-cli secrets provider test prod
+levelrail-cli secrets provider remove prod
+```
+
+`--type vault` on `add` and `remove` uses the Vault settings above. The token is stored encrypted, is write-only, and is never returned by the API or the CLI. Saving a new token keeps the old one working for the rotation grace window. Adding and removing providers and the connection test need the root or admin role and are audited. The API is `GET /api/v1/settings/secret-providers`, `PUT` and `DELETE /api/v1/settings/secret-providers/{name}`, and `POST /api/v1/settings/secret-providers/{name}/test`.
+
+In the dashboard, a 1Password provider row shows the Connect server address (scheme, host and port only) and the default vault. The token is never shown.
+
+To use a value, store a reference as an app secret:
+
+```bash
+levelrail-cli apps secrets set web API_KEY doppler://prod/API_KEY
+levelrail-cli apps secrets set web STRIPE_KEY infisical://infra/billing/STRIPE_KEY
+```
+
+The Infisical form is `infisical://PROVIDER/[folder/...]/NAME`. Without a folder the provider's `--path` is used, `/` by default.
+
+The value is read when the container is created and kept only in memory for the cache time. It is masked in build and deploy logs. A deploy fails, and never starts with an empty value, when the provider is missing, rejects the token, does not answer in time, does not have the secret, or returns an empty value. The error names the variable and the reference.
+
+Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or the `--base-url` an admin set for self-hosted Infisical. Private and loopback addresses are refused unless they come from that explicit base URL. Link-local addresses such as cloud metadata are always refused. A redirect to another host or scheme is refused.
+
+Provider references (`doppler://`, `infisical://`, and `op://` values that name a configured provider) are set by root, the same tier that manages providers. A provider `path` on Infisical is a limit: a reference may only point at that path or below it. Changing a provider's `base_url` or project needs a new token.
+
+| Runtime setting | Default | Meaning |
+| --- | --- | --- |
+| `secrets.provider_timeout_seconds` | 10 | Time limit for one provider read. |
+| `secrets.provider_cache_ttl_seconds` | 60 | Seconds a read value is reused. 0 reads on every container start. |
+| `secrets.provider_max_response_kib` | 1024 | Largest provider response read. |
+
+### Infisical machine identity
+
+Instead of a long-lived access token, an Infisical provider can use a machine identity with universal auth. Give the two values separately: `--client-id ID --client-secret-file PATH|-` on the CLI, or the Client ID and Client secret fields in the dashboard form. They cannot be combined with an access token. The server stores them as `infisical-identity:CLIENT_ID:CLIENT_SECRET` (you can also pass that string as the provider token), encrypted like any token. The client ID is shown again when you edit the provider (the client secret never is); changing the ID needs the client secret entered again, and saving with neither changed keeps the stored credential.
+
+Levelrail logs in when it first needs to read, keeps the short-lived access token in memory (one per provider), and logs in again lazily once about 90 percent of its lifetime has passed. There is no background refresh. A rejected login fails the read closed, and neither the client secret nor the access token appears in errors or logs. Replacing the credential triggers a new login on the next read.
+
+Status: Beta. Tested against a local stand-in server only, not yet against a real Infisical instance.
+
+## 1Password Connect
+
+1Password is a read only provider that talks to a Connect server you host. It is set up in Settings > Secret providers, through the API or the CLI. The Connect server URL is required, the default vault (`--project`) is optional through the API and CLI, but the dashboard form requires it. No environment is used. Connect it with the Connect server URL and an access token:
+
+```bash
+levelrail-cli secrets provider add vaults --type onepassword --base-url https://connect.internal:8080 --project Prod --provider-token-file -
+levelrail-cli apps secrets set web STRIPE_KEY op://vaults/Stripe/api_key
+levelrail-cli apps secrets set web OTHER_KEY op://vaults/Staging/Stripe/api_key
+```
+
+The form is `op://PROVIDER/[VAULT/]ITEM/FIELD`. Without a vault, the provider's `--project` is the vault. When the provider sets `--project`, a reference naming any other vault is refused. A value starting with `op://` whose first part is not a configured 1Password provider stays a literal, so apps that resolve `op://` themselves keep working. Vault and item can be a name or a Connect ID, and the field is matched by its label or ID. Names with quotes or backslashes are refused. A name that matches no item or more than one item fails the read.
+
+`--base-url` is required and its address may be private, because the Connect server is yours. Link-local addresses are always refused and a redirect to another host is refused. The same rules, fail closed behavior and runtime settings as above apply. Each read makes up to three requests (vault, item, item detail) and is cached for the cache time.
+
+Not verified against a real Connect server yet: the tests use a local fake of the Connect API.

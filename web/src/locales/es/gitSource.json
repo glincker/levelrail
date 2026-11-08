@@ -1,4 +1,54 @@
 {
+  "connect": {
+    "title": "Conectar origen Git",
+    "intro": "Vincula un repositorio a esta app sin recrearla. Elige un repositorio de un proveedor o pega una URL pública, revisa el build y vincúlalo o despliega al momento.",
+    "planTitle": "Qué cambia",
+    "planLoading": "Revisando esta app y el repositorio...",
+    "current": {
+      "image": "Esta app se ejecuta hoy desde una imagen.",
+      "upload": "Esta app se sirve hoy desde archivos subidos.",
+      "none": "Esta app aún no se ha desplegado.",
+      "git": "Esta app ya tiene un repositorio; vincular lo reemplaza."
+    },
+    "keepsImage": "{{image}} sigue sirviendo hasta que el primer build termine bien, y queda en el historial para revertir.",
+    "keepsNothingRunning": "Aún no hay nada en marcha, el primer build inicia la app.",
+    "keptEnv_one": "{{count}} variable de entorno se conserva",
+    "keptEnv_other": "{{count}} variables de entorno se conservan",
+    "keptSecrets_one": "{{count}} secreto se conserva",
+    "keptSecrets_other": "{{count}} secretos se conservan",
+    "keptDomains_one": "{{count}} dominio se conserva",
+    "keptDomains_other": "{{count}} dominios se conservan",
+    "keptVolumes_one": "{{count}} volumen se conserva",
+    "keptVolumes_other": "{{count}} volúmenes se conservan",
+    "warning": {
+      "group_member": "Esta app forma parte de un grupo: solo este servicio se construye desde el repositorio.",
+      "replaces_git_source": "Se reemplazan el repositorio actual y su secreto de webhook.",
+      "uploads_stop": "Las subidas desde la CLI siguen funcionando, pero el siguiente push las reemplaza con un build.",
+      "never_deployed": "No hay una versión en marcha a la que volver hasta que el primer build termine bien.",
+      "protected_environment": "Esta app está protegida: los despliegues pasan por aprobación, así que haz push a la rama en lugar de desplegar ahora."
+    },
+    "detectError": {
+      "not_found": "No se encontró el repositorio o la rama. Revisa la URL y la rama, o añade un token para un repositorio privado.",
+      "access_denied": "El proveedor denegó el acceso. Añade un token de despliegue o instala la app en este repositorio.",
+      "unreadable": "No se pudo leer el repositorio. Aún puedes elegir el build a mano.",
+      "ssh_not_detectable": "Una URL SSH no se puede leer antes de conectar. Conéctala con una clave de despliegue y luego ejecuta la detección desde la configuración del build, o elige el build a mano.",
+      "unsupported_host": "Este host no se puede leer antes de conectar. Elige el build a mano, o conecta primero y ejecuta la detección desde la configuración del build."
+    },
+    "buildType": {
+      "railpack": "detección automática",
+      "dockerfile": "Dockerfile",
+      "static": "sitio estático"
+    },
+    "suggested": "Build sugerido: {{build}} en {{where}}",
+    "useSuggestion": "Usar esta configuración",
+    "pickRepoToDetect": "Elige un repositorio para detectar el build.",
+    "deployHint": "Despliega ahora el commit más reciente, o déjalo vinculado y despliega en el siguiente push.",
+    "deployNow": "Desplegar ahora",
+    "deployStarted": "Build iniciado desde {{branch}}.",
+    "deployFailed": "No se pudo iniciar el despliegue.",
+    "deployRunning": "Construyendo. La versión actual sirve hasta que el build termine bien.",
+    "viewDeploy": "Ver despliegue"
+  },
   "card": {
     "title": "Origen Git",
     "loading": "Cargando...",
@@ -98,5 +148,34 @@
     "healthEnable": "Activar una comprobación de salud",
     "healthPath": "Ruta",
     "healthHint": "Se comprueba antes de pasar el tráfico a un contenedor nuevo, y para detectar después uno caído. Las apps detectadas por Railpack que no sirvan esta ruta deberían desactivarla."
+  },
+  "sshKey": {
+    "title": "Clave de despliegue SSH",
+    "loading": "Cargando...",
+    "none": "Aún sin clave",
+    "fingerprint": "Huella {{fingerprint}}",
+    "publicKey": "Clave pública",
+    "hint": "Añádela como clave de despliegue de solo lectura en el host del repositorio.",
+    "hostPinned": "Clave de host fijada {{fingerprint}}",
+    "hostKeyChoice": "Cómo fijar la clave del host",
+    "mode": {
+      "paste": "Pegar clave del host",
+      "tofu": "Confiar en el primer uso"
+    },
+    "hostKeyLabel": "Clave del host",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "Confía en lo primero que responda. Verifica después la huella mostrada.",
+    "generate": "Generar clave",
+    "saved": "Clave de despliegue SSH guardada.",
+    "removed": "Clave de despliegue SSH eliminada.",
+    "rotate": "Rotar",
+    "rotateTitle": "¿Rotar la clave de despliegue SSH?",
+    "rotateBody": "Una clave nueva sustituye a la actual. Añade la nueva clave pública en el host del repositorio o las descargas fallarán.",
+    "rotateConfirm": "Rotar clave",
+    "remove": "Eliminar",
+    "removeTitle": "¿Eliminar la clave de despliegue SSH?",
+    "removeBody": "Las descargas por SSH fallarán hasta generar una clave nueva.",
+    "removeConfirm": "Eliminar clave",
+    "cancel": "Cancelar"
   }
 }

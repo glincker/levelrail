@@ -47,7 +47,7 @@ export function FunctionVersionsTab({ name }: Readonly<{ name: string }>) {
           {t('detail.versions.help')}
         </p>
         {isPending ? (
-          <div className="h-16 animate-pulse rounded-md bg-muted" />
+          <div className="h-16 animate-pulse motion-reduce:animate-none rounded-md bg-muted" />
         ) : null}
         {versions?.length === 0 ? (
           <p className="text-sm text-muted-foreground">

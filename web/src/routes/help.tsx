@@ -108,7 +108,7 @@ function HelpLayout() {
         <button
           type="button"
           onClick={() => toggleSection(sectionKey)}
-          className="mb-1.5 w-full flex items-center gap-1.5 px-2 py-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="mb-1.5 w-full flex items-center gap-1.5 px-2 py-1.5 pointer-coarse:min-h-10 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           aria-expanded={isExpanded}
         >
           {isExpanded ? (
@@ -163,7 +163,7 @@ function HelpLayout() {
                 setShowTroubleshootingOnly(!showTroubleshootingOnly)
               }
               className={cn(
-                'rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                'rounded-md px-2 py-1 text-xs font-medium transition-colors max-sm:min-h-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 showTroubleshootingOnly
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',

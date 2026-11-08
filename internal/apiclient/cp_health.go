@@ -50,7 +50,14 @@ type CPHealth struct {
 		LastPassMS  float64 `json:"last_pass_ms"`
 		P95MS       float64 `json:"p95_ms"`
 		LagSeconds  float64 `json:"lag_seconds"`
-		Guard       struct {
+		Costs       []struct {
+			Name    string  `json:"name"`
+			Runs    int64   `json:"runs"`
+			Errors  int64   `json:"errors"`
+			TotalMS float64 `json:"total_ms"`
+			MaxMS   float64 `json:"max_ms"`
+		} `json:"costs"`
+		Guard struct {
 			PassesDeferred int64             `json:"passes_deferred"`
 			RecentLimited  int               `json:"recent_limited"`
 			OpenBreakers   int               `json:"open_breakers"`

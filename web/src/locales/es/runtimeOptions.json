@@ -1,0 +1,38 @@
+{
+  "service": "Servicio",
+  "title": "Opciones de ejecucion de {{service}}",
+  "description": "Opciones de contenedor que este servicio puede definir. Todo lo demas, como capacidades extra o dispositivos, queda fuera de alcance.",
+  "tmpfs": {
+    "label": "Montajes tmpfs",
+    "hint": "Uno por linea, /ruta:size=64m. Hasta {{max}}."
+  },
+  "ulimits": {
+    "label": "Ulimits",
+    "hint": "Uno por linea, nombre=soft:hard. Hasta {{max}} de {{names}}."
+  },
+  "extraHosts": {
+    "label": "Hosts extra",
+    "hint": "Uno por linea, host:ip. Hasta {{max}}."
+  },
+  "dns": {
+    "label": "Servidores DNS",
+    "hint": "Una IP por linea. Hasta {{max}}."
+  },
+  "sysctls": {
+    "label": "Sysctls",
+    "hint": "Uno por linea, clave=valor. Permitidos: {{names}}."
+  },
+  "stopTimeout": { "label": "Tiempo de parada (s)", "hint": "Hasta {{max}}." },
+  "pids": { "label": "Limite de procesos", "hint": "Hasta {{max}}." },
+  "init": {
+    "label": "Proceso init",
+    "hint": "Ejecuta un init minimo como PID 1."
+  },
+  "badUlimit": "Usa nombre=soft o nombre=soft:hard en cada linea.",
+  "badSysctl": "Usa clave=valor en cada linea.",
+  "save": "Guardar",
+  "saving": "Guardando",
+  "saved": "Opciones de ejecucion guardadas",
+  "recreates": "Al guardar se vuelve a crear el contenedor.",
+  "readOnly": "Necesitas la capacidad de escritura sensible para cambiar las opciones de ejecucion."
+}

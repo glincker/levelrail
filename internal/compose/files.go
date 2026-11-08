@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -65,4 +67,89 @@ func configRef(ref any) (source, target, mode string) {
 		}
 	}
 	return source, target, mode
+}
+
+// RedactedSecretMarker replaces an inline secret body in stored compose
+// history; the real value lives only in the secrets store.
+const RedactedSecretMarker = //nolint:gosec // a placeholder, not a credential
+"__levelrail_redacted__"
+
+// resolveSecretFiles turns service secrets: references to inline top-level
+// secrets into secret files under /run/secrets, delivered verbatim.
+func resolveSecretFiles(f *File, top map[string]rawConfig) error {
+	for name, svc := range f.Services {
+		var left []any
+		for _, ref := range svc.Secrets {
+			source, target, mode := configRef(ref)
+			sec, ok := top[source]
+			if !ok || sec.Content == "" {
+				left = append(left, ref)
+				continue
+			}
+			if target == "" {
+				target = "/run/secrets/" + source
+			} else if !path.IsAbs(target) {
+				target = "/run/secrets/" + target
+			}
+			if mode == "" {
+				mode = "0400"
+			}
+			if err := spec.ValidateFilePath(target); err != nil {
+				return fmt.Errorf("compose: service %q: secrets %q: %w", name, source, err)
+			}
+			svc.Files = append(svc.Files, spec.File{Path: path.Clean(target), Content: sec.Content, Mode: mode, Secret: true, NoExpand: true})
+		}
+		svc.Secrets = left
+		f.Services[name] = svc
+	}
+	f.HasSecrets = false
+	for _, sec := range top {
+		if sec.Content == "" {
+			f.HasSecrets = true
+			return nil
+		}
+	}
+	return nil
+}
+
+// RedactSecretContent blanks every inline top-level secrets: body so a
+// stored revision never holds plaintext. It returns the body unchanged when
+// nothing needed redacting.
+func RedactSecretContent(body []byte) ([]byte, bool, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(body, &doc); err != nil {
+		return nil, false, fmt.Errorf("compose: redact: %w", err)
+	}
+	if len(doc.Content) == 0 || doc.Content[0].Kind != yaml.MappingNode {
+		return body, false, nil
+	}
+	changed := false
+	root := doc.Content[0]
+	for i := 0; i+1 < len(root.Content); i += 2 {
+		if root.Content[i].Value != "secrets" || root.Content[i+1].Kind != yaml.MappingNode {
+			continue
+		}
+		entries := root.Content[i+1].Content
+		for j := 0; j+1 < len(entries); j += 2 {
+			entry := entries[j+1]
+			if entry.Kind != yaml.MappingNode {
+				continue
+			}
+			for k := 0; k+1 < len(entry.Content); k += 2 {
+				val := entry.Content[k+1]
+				if entry.Content[k].Value == "content" && val.Value != "" && val.Value != RedactedSecretMarker {
+					val.Value, val.Style, val.Tag = RedactedSecretMarker, 0, "!!str"
+					changed = true
+				}
+			}
+		}
+	}
+	if !changed {
+		return body, false, nil
+	}
+	out, err := yaml.Marshal(&doc)
+	if err != nil {
+		return nil, false, fmt.Errorf("compose: redact: %w", err)
+	}
+	return out, true, nil
 }

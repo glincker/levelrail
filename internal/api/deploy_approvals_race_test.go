@@ -117,7 +117,7 @@ func TestDeployApprovalRace_FailedApplyReleasesClaim(t *testing.T) {
 
 func TestDeployApprovalRace_CrashLeftClaimRecovered(t *testing.T) {
 	rt, db, _, _, id := raceFixture(t)
-	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT", "1m")
+	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS", "60")
 	ctx := context.Background()
 	stale := store.FormatAuditTime(time.Now().Add(-2 * time.Minute))
 	if ok, err := db.ClaimDeployApproval(ctx, id, store.PrincipalTypeUser, "someone", "someone", stale); err != nil || !ok {
@@ -142,7 +142,7 @@ func TestDeployApprovalRace_CrashLeftClaimRecovered(t *testing.T) {
 
 func TestDeployApprovalRace_CrashAfterApplyRecoversAsApproved(t *testing.T) {
 	rt, db, _, _, id := raceFixture(t)
-	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT", "1m")
+	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS", "60")
 	ctx := context.Background()
 	stale := store.FormatAuditTime(time.Now().Add(-2 * time.Minute))
 	if ok, _ := db.ClaimDeployApproval(ctx, id, store.PrincipalTypeUser, "someone", "someone", stale); !ok {
@@ -169,7 +169,7 @@ func TestDeployApprovalRace_CrashAfterApplyRecoversAsApproved(t *testing.T) {
 // so a crash before the apply must return the row to pending.
 func TestDeployApprovalRace_SameTagCrashBeforeApplyIsPending(t *testing.T) {
 	rt, db, _, _, id := raceFixture(t)
-	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT", "1m")
+	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS", "60")
 	ctx := context.Background()
 	svc, _ := db.GetDesiredService(ctx, "web")
 	svc.Image = requestPendingApprovalImage

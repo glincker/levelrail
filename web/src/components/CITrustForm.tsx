@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { CI_PROVIDERS, type CIProvider } from '../lib/ciProviders'
 import { useAddCITrust, type CITrustInput } from '../queries/ciDeploy'
+import { SegmentedControl } from './ui/segmented-control'
 
 const DEFAULT_REF = 'refs/heads/main'
 const FIELD = 'pointer-coarse:min-h-11'
@@ -67,26 +68,15 @@ export function CIProviderPicker({
 }) {
   const { t } = useTranslation('deploys')
   return (
-    <div
-      role="group"
+    <SegmentedControl
       aria-label={t('ciDeploy.providerLabel')}
-      className="flex flex-wrap gap-1.5"
-    >
-      {CI_PROVIDERS.map((p) => (
-        <Button
-          key={p}
-          type="button"
-          size="sm"
-          variant={p === provider ? 'default' : 'outline'}
-          aria-pressed={p === provider}
-          onClick={() => {
-            onChange(p)
-          }}
-        >
-          {t(`ciDeploy.providers.${p}`)}
-        </Button>
-      ))}
-    </div>
+      value={provider}
+      onValueChange={onChange}
+      options={CI_PROVIDERS.map((p) => ({
+        value: p,
+        label: t(`ciDeploy.providers.${p}`),
+      }))}
+    />
   )
 }
 

@@ -1,4 +1,54 @@
 {
+  "connect": {
+    "title": "Connect Git source",
+    "intro": "Attach a repository to this app without recreating it. Pick a provider repo or paste a public URL, check the build, then link it or deploy right away.",
+    "planTitle": "What changes",
+    "planLoading": "Checking this app and the repository...",
+    "current": {
+      "image": "This app runs from an image today.",
+      "upload": "This app is served from uploaded files today.",
+      "none": "This app has not been deployed yet.",
+      "git": "This app already has a repository; linking replaces it."
+    },
+    "keepsImage": "{{image}} keeps serving until the first build succeeds, and stays in deploy history for rollback.",
+    "keepsNothingRunning": "Nothing is running yet, the first build starts the app.",
+    "keptEnv_one": "{{count}} env var kept",
+    "keptEnv_other": "{{count}} env vars kept",
+    "keptSecrets_one": "{{count}} secret kept",
+    "keptSecrets_other": "{{count}} secrets kept",
+    "keptDomains_one": "{{count}} domain kept",
+    "keptDomains_other": "{{count}} domains kept",
+    "keptVolumes_one": "{{count}} volume kept",
+    "keptVolumes_other": "{{count}} volumes kept",
+    "warning": {
+      "group_member": "This app is part of a group: only this service builds from the repository.",
+      "replaces_git_source": "The current repository and its webhook secret are replaced.",
+      "uploads_stop": "Later CLI uploads still work, but the next push replaces them with a build.",
+      "never_deployed": "There is no running version to fall back on until the first build succeeds.",
+      "protected_environment": "This app is protected: deploys go through approval, so push to the branch instead of deploying now."
+    },
+    "detectError": {
+      "not_found": "The repository or branch was not found. Check the URL and branch, or add a token for a private repo.",
+      "access_denied": "The provider refused access. Add a deploy token or install the app on this repository.",
+      "unreadable": "The repository could not be read. You can still pick the build by hand.",
+      "ssh_not_detectable": "An SSH URL cannot be read before connecting. Connect it with a deploy key, then run detect from the build settings, or pick the build by hand.",
+      "unsupported_host": "This host cannot be read before connecting. Pick the build by hand, or connect first and run detect from the build settings."
+    },
+    "buildType": {
+      "railpack": "auto-detect",
+      "dockerfile": "Dockerfile",
+      "static": "static site"
+    },
+    "suggested": "Suggested build: {{build}} in {{where}}",
+    "useSuggestion": "Use these settings",
+    "pickRepoToDetect": "Pick a repository to detect the build.",
+    "deployHint": "Deploy the newest commit now, or keep it linked and deploy on the next push.",
+    "deployNow": "Deploy now",
+    "deployStarted": "Build started from {{branch}}.",
+    "deployFailed": "Could not start the deploy.",
+    "deployRunning": "Building. The current version serves until the build succeeds.",
+    "viewDeploy": "View deploy"
+  },
   "card": {
     "title": "Git source",
     "loading": "Loading...",
@@ -98,5 +148,34 @@
     "healthEnable": "Enable a health check",
     "healthPath": "Path",
     "healthHint": "Checked before cutting traffic to a new container, and to detect a crashed one afterward. Railpack-detected apps that don't serve this path should turn it off."
+  },
+  "sshKey": {
+    "title": "SSH deploy key",
+    "loading": "Loading...",
+    "none": "No key yet",
+    "fingerprint": "Fingerprint {{fingerprint}}",
+    "publicKey": "Public key",
+    "hint": "Add this as a read-only deploy key on the repository host.",
+    "hostPinned": "Pinned host key {{fingerprint}}",
+    "hostKeyChoice": "How to pin the host key",
+    "mode": {
+      "paste": "Paste host key",
+      "tofu": "Trust on first use"
+    },
+    "hostKeyLabel": "Host key",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "Trusts whatever answers first. Verify the fingerprint shown afterwards.",
+    "generate": "Generate key",
+    "saved": "SSH deploy key saved.",
+    "removed": "SSH deploy key removed.",
+    "rotate": "Rotate",
+    "rotateTitle": "Rotate the SSH deploy key?",
+    "rotateBody": "A new key replaces the current one. Add the new public key on the repository host, or fetches will fail.",
+    "rotateConfirm": "Rotate key",
+    "remove": "Remove",
+    "removeTitle": "Remove the SSH deploy key?",
+    "removeBody": "Fetches over SSH will fail until a new key is generated.",
+    "removeConfirm": "Remove key",
+    "cancel": "Cancel"
   }
 }

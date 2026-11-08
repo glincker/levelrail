@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { InfoTip } from '@/components/kit'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,11 +23,14 @@ interface FieldProps {
 }
 
 export function LbField({ id, label, info, error, children }: FieldProps) {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
         <Label htmlFor={id}>{label}</Label>
-        <InfoTip label={`About ${label}`}>{info}</InfoTip>
+        <InfoTip label={t('lb.configure.about', { name: label })}>
+          {info}
+        </InfoTip>
       </div>
       {children}
       {error ? (
@@ -93,6 +97,7 @@ export function LbToggleBlock({
   children,
   footer,
 }: ToggleProps) {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -101,7 +106,9 @@ export function LbToggleBlock({
           className="flex items-center gap-1 text-sm font-medium"
         >
           {title}
-          <InfoTip label={`About ${title}`}>{info}</InfoTip>
+          <InfoTip label={t('lb.configure.about', { name: title })}>
+            {info}
+          </InfoTip>
         </h3>
         <Switch
           checked={checked}

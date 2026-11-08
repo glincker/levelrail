@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -6,6 +7,7 @@ import {
   ClipboardListGlassIcon,
   PlayGlassIcon,
   RotateCcwGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import { PageHeader } from '@/components/shell/PageHeader'
 import {
@@ -155,7 +157,11 @@ function DrReportPage() {
       {isLoading ? null : report ? (
         <ReportCard report={report} />
       ) : (
-        <p className="text-sm text-muted-foreground">{t('rehydrate.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('rehydrate.empty')}
+        />
       )}
     </div>
   )

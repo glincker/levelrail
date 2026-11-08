@@ -544,20 +544,20 @@ func (rt *Router) copyScheduledTasks(ctx context.Context, sourceApp, newApp stri
 	}
 	now := time.Now().UTC()
 	for _, t := range tasks {
+		if isOneShotTask(t) {
+			continue
+		}
 		id, err := randomScheduledTaskID()
 		if err != nil {
 			return fmt.Errorf("generate scheduled task id: %w", err)
 		}
-		if err := rt.scheduledTasks.SaveScheduledTask(ctx, store.ScheduledTask{
-			ID:                id,
-			ServiceName:       newApp,
-			Command:           append([]string(nil), t.Command...),
-			Schedule:          t.Schedule,
-			Enabled:           t.Enabled,
-			ConcurrencyPolicy: t.ConcurrencyPolicy,
-			CreatedAt:         now,
-			UpdatedAt:         now,
-		}); err != nil {
+		// Copy the whole task so limits, retries and mode survive; only identity and history reset.
+		c := t
+		c.ID, c.ServiceName, c.CreatedAt, c.UpdatedAt = id, newApp, now, now
+		c.Command = append([]string(nil), t.Command...)
+		c.LastRunAt, c.LastRunStatus, c.LastRunOutput, c.ConsecutiveFailures, c.RunningSince = nil, "", "", 0, nil
+		c.LastScheduledFor, c.ArmedAt, c.ConsecutiveMissed = nil, nil, 0
+		if err := rt.scheduledTasks.SaveScheduledTask(ctx, c); err != nil {
 			return fmt.Errorf("save scheduled task %q: %w", t.ID, err)
 		}
 	}
@@ -623,6 +623,9 @@ func cloneDesiredService(source store.DesiredService, newName string, domains []
 		Env:                  env,
 		Command:              append([]string(nil), source.Command...),
 		Entrypoint:           append([]string(nil), source.Entrypoint...),
+		User:                 source.User,
+		WorkingDir:           source.WorkingDir,
+		Runtime:              cloneRuntime(source.Runtime),
 		PullPolicy:           source.PullPolicy,
 		RegistryCredentialID: source.RegistryCredentialID,
 		SecretEnv:            secretEnv,

@@ -5,7 +5,8 @@
     "bg": {
       "$value": {
         "light": "oklch(1 0 0)",
-        "dark": "oklch(0.145 0 0)"
+        "dark": "oklch(0.145 0 0)",
+        "oled": "oklch(0 0 0)"
       },
       "$description": "Page canvas.",
       "$extensions": {
@@ -19,7 +20,8 @@
     "surface": {
       "$value": {
         "light": "oklch(1 0 0)",
-        "dark": "oklch(0.205 0 0)"
+        "dark": "oklch(0.205 0 0)",
+        "oled": "oklch(0.17 0.008 250)"
       },
       "$description": "Raised surface such as a card or panel.",
       "$extensions": {
@@ -32,8 +34,9 @@
     },
     "border": {
       "$value": {
-        "light": "oklch(0.922 0 0)",
-        "dark": "oklch(1 0 0 / 10%)"
+        "light": "oklch(0.21 0.02 250 / 11%)",
+        "dark": "oklch(1 0 0 / 9%)",
+        "oled": "oklch(1 0 0 / 10%)"
       },
       "$description": "Default hairline border.",
       "$extensions": {
@@ -46,8 +49,9 @@
     },
     "border-strong": {
       "$value": {
-        "light": "oklch(0.87 0 0)",
-        "dark": "oklch(1 0 0 / 16%)"
+        "light": "oklch(0.21 0.02 250 / 20%)",
+        "dark": "oklch(1 0 0 / 15%)",
+        "oled": "oklch(1 0 0 / 16%)"
       },
       "$description": "Emphasised border for inputs and dividers that must read at a glance.",
       "$extensions": {
@@ -72,8 +76,9 @@
     },
     "fg": {
       "$value": {
-        "light": "oklch(0.145 0 0)",
-        "dark": "oklch(0.985 0 0)"
+        "light": "oklch(0.21 0.02 250)",
+        "dark": "oklch(0.96 0.004 250)",
+        "oled": "oklch(0.92 0.004 250)"
       },
       "$description": "Primary text.",
       "$extensions": {
@@ -85,8 +90,9 @@
     },
     "fg-muted": {
       "$value": {
-        "light": "oklch(0.556 0 0)",
-        "dark": "oklch(0.708 0 0)"
+        "light": "oklch(0.47 0.02 250)",
+        "dark": "oklch(0.72 0.015 250)",
+        "oled": "oklch(0.7 0.012 250)"
       },
       "$description": "Secondary text and labels.",
       "$extensions": {
@@ -99,7 +105,8 @@
     "fg-subtle": {
       "$value": {
         "light": "oklch(0.708 0 0)",
-        "dark": "oklch(0.556 0 0)"
+        "dark": "oklch(0.556 0 0)",
+        "oled": "oklch(0.58 0.012 250)"
       },
       "$description": "Tertiary text, placeholders and units.",
       "$extensions": {
@@ -228,7 +235,6 @@
     }
   },
   "space": {
-    "$type": "dimension",
     "1": {
       "$value": "0.25rem",
       "$description": "4px rhythm step.",
@@ -310,6 +316,7 @@
         }
       }
     },
+    "$type": "dimension",
     "page-gap": {
       "$value": "{space.5}",
       "$description": "Vertical gap between page sections (compact default).",
@@ -331,7 +338,7 @@
       }
     },
     "card-pad": {
-      "$value": "{space.4}",
+      "$value": "1rem",
       "$description": "Card and panel padding (compact default).",
       "$extensions": {
         "glinr": {
@@ -389,6 +396,76 @@
           "stability": "stable"
         }
       }
+    },
+    "gutter": {
+      "$value": "1rem",
+      "$description": "Page edge and shell gutter.",
+      "$extensions": {
+        "glinr": {
+          "name": "gutter",
+          "stability": "experimental"
+        }
+      }
+    },
+    "section-gap": {
+      "$value": "1.5rem",
+      "$description": "Gap between sections, toolbar and table.",
+      "$extensions": {
+        "glinr": {
+          "name": "section-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "group-gap": {
+      "$value": "3rem",
+      "$description": "Gap between groups on a long sheet.",
+      "$extensions": {
+        "glinr": {
+          "name": "group-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "label-gap": {
+      "$value": "0.5rem",
+      "$description": "Label to field.",
+      "$extensions": {
+        "glinr": {
+          "name": "label-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "help-gap": {
+      "$value": "0.25rem",
+      "$description": "Field to help text.",
+      "$extensions": {
+        "glinr": {
+          "name": "help-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "control-gap": {
+      "$value": "0.5rem",
+      "$description": "Toolbar, button rows and actions.",
+      "$extensions": {
+        "glinr": {
+          "name": "control-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "nav-row-gap": {
+      "$value": "0.25rem",
+      "$description": "Gap between sidebar nav rows.",
+      "$extensions": {
+        "glinr": {
+          "name": "nav-row-gap",
+          "stability": "experimental"
+        }
+      }
     }
   },
   "size": {
@@ -420,6 +497,229 @@
         "glinr": {
           "name": "hero-tile-size-comfortable",
           "stability": "stable"
+        }
+      }
+    },
+    "look-bar-h": {
+      "$value": "3rem",
+      "$description": "Top bar height in the glass-forward look.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "bar-h"
+        }
+      }
+    },
+    "large-title": {
+      "$value": "1.875rem",
+      "$description": "Large page title on list pages in the glass-forward look.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "large-title"
+        }
+      }
+    }
+  },
+  "density": {
+    "$type": "dimension",
+    "control-h": {
+      "$value": "2rem",
+      "$description": "Height of buttons, inputs and selects (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "control-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "control-h-comfortable": {
+      "$value": "2.25rem",
+      "$description": "Control height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "control-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "row-h": {
+      "$value": "2.25rem",
+      "$description": "Table body row height (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "row-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "row-h-comfortable": {
+      "$value": "2.75rem",
+      "$description": "Table row height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "row-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "table-header-h": {
+      "$value": "2.25rem",
+      "$description": "Table header row height (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "table-header-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "table-header-h-comfortable": {
+      "$value": "2.25rem",
+      "$description": "Table header height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "table-header-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "badge-h": {
+      "$value": "1.375rem",
+      "$description": "Badge height (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "badge-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "badge-h-comfortable": {
+      "$value": "1.5rem",
+      "$description": "Badge height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "badge-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-pad": {
+      "$value": "1.5rem",
+      "$description": "Dialog padding, 24px for every density.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-pad",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-w-confirm": {
+      "$value": "25rem",
+      "$description": "Confirm dialog width, 400px.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-w-confirm",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-w-form": {
+      "$value": "30rem",
+      "$description": "Form dialog width, 480px.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-w-form",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-w-rich": {
+      "$value": "35rem",
+      "$description": "Rich dialog width, 560px.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-w-rich",
+          "stability": "stable"
+        }
+      }
+    },
+    "sheet-w": {
+      "$value": "30rem",
+      "$description": "Side sheet width, 480px.",
+      "$extensions": {
+        "glinr": {
+          "name": "sheet-w",
+          "stability": "stable"
+        }
+      }
+    },
+    "capsule-h": {
+      "$value": "2rem",
+      "$description": "Capsule button height.",
+      "$extensions": {
+        "glinr": {
+          "name": "capsule-h",
+          "stability": "experimental"
+        }
+      }
+    },
+    "capsule-h-sm": {
+      "$value": "1.75rem",
+      "$description": "Small capsule button height.",
+      "$extensions": {
+        "glinr": {
+          "name": "capsule-h-sm",
+          "stability": "experimental"
+        }
+      }
+    },
+    "segment-h": {
+      "$value": "2rem",
+      "$description": "Segmented control track height.",
+      "$extensions": {
+        "glinr": {
+          "name": "segment-h",
+          "stability": "experimental"
+        }
+      }
+    },
+    "nav-row-h": {
+      "$value": "2.25rem",
+      "$description": "Sidebar nav row height.",
+      "$extensions": {
+        "glinr": {
+          "name": "nav-row-h",
+          "stability": "experimental"
+        }
+      }
+    },
+    "table-row-h-dense": {
+      "$value": "2.25rem",
+      "$description": "Dense table row height.",
+      "$extensions": {
+        "glinr": {
+          "name": "table-row-h-dense",
+          "stability": "experimental"
+        }
+      }
+    },
+    "capsule-h-lg": {
+      "$value": "2.5rem",
+      "$description": "Large capsule button height.",
+      "$extensions": {
+        "glinr": {
+          "name": "capsule-h-lg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "count-h": {
+      "$value": "1.25rem",
+      "$description": "Count badge height and min width.",
+      "$extensions": {
+        "glinr": {
+          "name": "count-h",
+          "stability": "experimental"
         }
       }
     }
@@ -532,6 +832,65 @@
           "tailwind": "radius-glinr-xl"
         }
       }
+    },
+    "control": {
+      "$value": "{radius.lg}",
+      "$description": "Corner radius of buttons, inputs and selects. Follows the radius appearance setting.",
+      "$extensions": {
+        "glinr": {
+          "stability": "stable"
+        }
+      }
+    },
+    "xs": {
+      "$value": "0.375rem",
+      "$description": "kbd and inner rows.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-xs",
+          "stability": "experimental"
+        }
+      }
+    },
+    "menu": {
+      "$value": "0.875rem",
+      "$description": "Menus and popovers.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-menu",
+          "stability": "experimental"
+        }
+      }
+    },
+    "group": {
+      "$value": "1rem",
+      "$description": "Grouped inset lists.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-group",
+          "stability": "experimental"
+        }
+      }
+    },
+    "card": {
+      "$value": "1.25rem",
+      "$description": "Table card, sheets, dialogs.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-card",
+          "stability": "experimental"
+        }
+      }
+    },
+    "pill": {
+      "$value": "999px",
+      "$description": "Capsules: badges, segmented, toggles, toasts.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-pill",
+          "stability": "experimental"
+        }
+      }
     }
   },
   "elev": {
@@ -591,13 +950,66 @@
           "tailwind": "shadow-dialog"
         }
       }
+    },
+    "1": {
+      "$value": {
+        "light": "0 1px 1px oklch(0.3 0.05 250 / 4%), 0 2px 2px oklch(0.3 0.05 250 / 4%), 0 4px 4px oklch(0.3 0.05 250 / 3%)",
+        "dark": "0 1px 1px oklch(0.05 0.02 250 / 30%), 0 2px 4px oklch(0.05 0.02 250 / 25%)",
+        "oled": "0 0 0 0 transparent"
+      },
+      "$description": "Cards at rest: layered tinted shadow, none on OLED.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "elev-1"
+        }
+      }
+    },
+    "2": {
+      "$value": {
+        "light": "0 1px 2px oklch(0.3 0.05 250 / 5%), 0 4px 8px oklch(0.3 0.05 250 / 5%), 0 8px 16px oklch(0.3 0.05 250 / 4%)",
+        "dark": "0 1px 2px oklch(0.05 0.02 250 / 35%), 0 4px 10px oklch(0.05 0.02 250 / 30%), 0 8px 20px oklch(0.05 0.02 250 / 25%)"
+      },
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "elev-2"
+        }
+      },
+      "$description": "Raised object cards and selected rows."
+    },
+    "3": {
+      "$value": {
+        "light": "0 2px 4px oklch(0.3 0.05 250 / 6%), 0 8px 16px oklch(0.3 0.05 250 / 7%), 0 16px 32px oklch(0.3 0.05 250 / 6%)",
+        "dark": "0 2px 4px oklch(0.05 0.02 250 / 40%), 0 8px 20px oklch(0.05 0.02 250 / 38%), 0 16px 40px oklch(0.05 0.02 250 / 32%)"
+      },
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "elev-3"
+        }
+      },
+      "$description": "Floating bars and menus."
+    },
+    "4": {
+      "$value": {
+        "light": "0 4px 8px oklch(0.3 0.05 250 / 8%), 0 16px 32px oklch(0.3 0.05 250 / 10%), 0 32px 64px oklch(0.3 0.05 250 / 8%)",
+        "dark": "0 4px 8px oklch(0.05 0.02 250 / 45%), 0 16px 40px oklch(0.05 0.02 250 / 45%), 0 32px 80px oklch(0.05 0.02 250 / 40%)"
+      },
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "elev-4"
+        }
+      },
+      "$description": "Sheets and modal surfaces."
     }
   },
   "font": {
     "$type": "fontFamily",
     "body": {
-      "$value": "system-ui, 'Segoe UI', Roboto, sans-serif",
-      "$description": "Body copy. Stays on the system stack for speed and native feel.",
+      "$value": "'Geist', 'Geist Fallback', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif",
+      "$description": "Body copy. Geist with a metric-adjusted fallback so the swap does not shift layout.",
       "$extensions": {
         "glinr": {
           "stability": "experimental"
@@ -605,7 +1017,7 @@
       }
     },
     "display": {
-      "$value": "'Geist Variable', system-ui, 'Segoe UI', Roboto, sans-serif",
+      "$value": "'Geist', 'Geist Fallback', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif",
       "$description": "Display and heading role.",
       "$extensions": {
         "glinr": {
@@ -616,13 +1028,31 @@
       }
     },
     "eyebrow": {
-      "$value": "'Geist Mono Variable', ui-monospace, Consolas, monospace",
+      "$value": "'Geist Mono', 'Geist Mono Fallback', ui-monospace, Consolas, monospace",
       "$description": "Eyebrow, label and numeric role.",
       "$extensions": {
         "glinr": {
           "name": "font-eyebrow",
           "stability": "stable",
           "tailwind": "font-glinr-eyebrow"
+        }
+      }
+    },
+    "sans": {
+      "$value": "'Geist', 'Geist Fallback', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif",
+      "$description": "Default UI sans stack.",
+      "$extensions": {
+        "glinr": {
+          "stability": "stable"
+        }
+      }
+    },
+    "mono": {
+      "$value": "'Geist Mono', 'Geist Mono Fallback', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+      "$description": "Default monospace stack for code, logs and ids.",
+      "$extensions": {
+        "glinr": {
+          "stability": "stable"
         }
       }
     }
@@ -899,6 +1329,86 @@
           "tailwind": "ease-glinr"
         }
       }
+    },
+    "ease-spring": {
+      "$value": "linear(0, 0.2 6%, 0.55 16%, 0.8 28%, 0.93 40%, 0.99 56%, 1)",
+      "$description": "Spring easing for sheets, popovers, toggles and press.",
+      "$extensions": {
+        "glinr": {
+          "name": "ease-spring",
+          "stability": "experimental"
+        }
+      }
+    },
+    "ease-out": {
+      "$value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+      "$description": "Fallback where linear() is missing.",
+      "$extensions": {
+        "glinr": {
+          "name": "ease-out",
+          "stability": "experimental"
+        }
+      }
+    },
+    "dur-press": {
+      "$value": "200ms",
+      "$description": "Press scale duration.",
+      "$extensions": {
+        "glinr": {
+          "name": "dur-press",
+          "stability": "experimental"
+        }
+      }
+    },
+    "dur-toggle": {
+      "$value": "300ms",
+      "$description": "Switch and segmented thumb.",
+      "$extensions": {
+        "glinr": {
+          "name": "dur-toggle",
+          "stability": "experimental"
+        }
+      }
+    },
+    "dur-popover": {
+      "$value": "280ms",
+      "$description": "Menu scale and fade.",
+      "$extensions": {
+        "glinr": {
+          "name": "dur-popover",
+          "stability": "experimental"
+        }
+      }
+    },
+    "dur-sheet": {
+      "$value": "380ms",
+      "$description": "Dialog and sheet enter.",
+      "$extensions": {
+        "glinr": {
+          "name": "dur-sheet",
+          "stability": "experimental"
+        }
+      }
+    },
+    "press-scale": {
+      "$value": "0.97",
+      "$description": "Scale applied while a control is pressed.",
+      "$extensions": {
+        "glinr": {
+          "name": "press-scale",
+          "stability": "experimental"
+        }
+      }
+    },
+    "dur-ping": {
+      "$value": "1600ms",
+      "$description": "Ping ring period for in-progress status dots.",
+      "$extensions": {
+        "glinr": {
+          "name": "dur-ping",
+          "stability": "experimental"
+        }
+      }
     }
   },
   "appearance": {
@@ -939,6 +1449,872 @@
         "glinr": {
           "name": "accent-dark",
           "stability": "experimental"
+        }
+      }
+    }
+  },
+  "ui": {
+    "surface-bg": {
+      "$value": {
+        "light": "oklch(0.975 0.005 245)",
+        "dark": "oklch(0.155 0.012 250)",
+        "oled": "oklch(0 0 0)"
+      },
+      "$description": "Page background.",
+      "$extensions": {
+        "glinr": {
+          "name": "surface-bg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "surface-raised": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245)",
+        "dark": "oklch(0.195 0.014 250)",
+        "oled": "oklch(0.17 0.008 250)"
+      },
+      "$description": "Panels, tables and cards.",
+      "$extensions": {
+        "glinr": {
+          "name": "surface-raised",
+          "stability": "experimental"
+        }
+      }
+    },
+    "surface-sunken": {
+      "$value": {
+        "light": "oklch(0.955 0.007 245)",
+        "dark": "oklch(0.13 0.012 250)",
+        "oled": "oklch(0 0 0)"
+      },
+      "$description": "Log viewers and segmented tracks.",
+      "$extensions": {
+        "glinr": {
+          "name": "surface-sunken",
+          "stability": "experimental"
+        }
+      }
+    },
+    "surface-overlay": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245)",
+        "dark": "oklch(0.235 0.016 250)",
+        "oled": "oklch(0.22 0.01 250)"
+      },
+      "$description": "Menus, dialogs and the glass tint base.",
+      "$extensions": {
+        "glinr": {
+          "name": "surface-overlay",
+          "stability": "experimental"
+        }
+      }
+    },
+    "surface-glass": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245 / 86%)",
+        "dark": "oklch(0.235 0.016 250 / 88%)",
+        "oled": "oklch(0.22 0.01 250 / 90%)"
+      },
+      "$description": "Glass fill for floating surfaces.",
+      "$extensions": {
+        "glinr": {
+          "name": "surface-glass",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "surface-glass-solid": {
+      "$value": "{ui.surface-overlay}",
+      "$description": "Opaque fallback for glass when blur or transparency is unavailable.",
+      "$extensions": {
+        "glinr": {
+          "name": "surface-glass-solid",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "border-control": {
+      "$value": {
+        "light": "oklch(0.64 0.015 250)",
+        "dark": "oklch(0.52 0.015 250)",
+        "oled": "oklch(0.52 0.012 250)"
+      },
+      "$description": "Field edge, at least 3:1 on raised.",
+      "$extensions": {
+        "glinr": {
+          "name": "border-control",
+          "stability": "experimental"
+        }
+      }
+    },
+    "divider": {
+      "$value": {
+        "light": "oklch(0.21 0.02 250 / 7%)",
+        "dark": "oklch(1 0 0 / 6%)",
+        "oled": "oklch(1 0 0 / 6%)"
+      },
+      "$description": "Row separators, lighter than borders.",
+      "$extensions": {
+        "glinr": {
+          "name": "divider",
+          "stability": "experimental"
+        }
+      }
+    },
+    "hover": {
+      "$value": {
+        "light": "oklch(0.21 0.02 250 / 5%)",
+        "dark": "oklch(1 0 0 / 5%)",
+        "oled": "oklch(1 0 0 / 5%)"
+      },
+      "$description": "Ghost and list hover fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "hover",
+          "stability": "experimental"
+        }
+      }
+    },
+    "press": {
+      "$value": {
+        "light": "oklch(0.21 0.02 250 / 9%)",
+        "dark": "oklch(1 0 0 / 9%)",
+        "oled": "oklch(1 0 0 / 9%)"
+      },
+      "$description": "Ghost and list pressed fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "press",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-solid": {
+      "$value": {
+        "light": "oklch(0.52 0.15 232)",
+        "dark": "oklch(0.72 0.13 228)",
+        "oled": "oklch(0.72 0.13 228)"
+      },
+      "$description": "Accent fill, rails and selected edges.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-solid",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-solid-hover": {
+      "$value": {
+        "light": "oklch(0.47 0.15 232)",
+        "dark": "oklch(0.76 0.13 228)",
+        "oled": "oklch(0.76 0.13 228)"
+      },
+      "$description": "Accent fill on hover.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-solid-hover",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-solid-active": {
+      "$value": {
+        "light": "oklch(0.43 0.15 232)",
+        "dark": "oklch(0.79 0.13 228)",
+        "oled": "oklch(0.79 0.13 228)"
+      },
+      "$description": "Accent fill when pressed.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-solid-active",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-fg": {
+      "$value": {
+        "light": "oklch(0.44 0.15 232)",
+        "dark": "oklch(0.82 0.1 228)",
+        "oled": "oklch(0.82 0.1 228)"
+      },
+      "$description": "Links and accent text.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-fg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-ink": {
+      "$value": {
+        "light": "oklch(0.99 0.004 232)",
+        "dark": "oklch(0.17 0.03 240)",
+        "oled": "oklch(0.17 0.03 240)"
+      },
+      "$description": "Text on an accent fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-ink",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-ring": {
+      "$value": {
+        "light": "oklch(0.55 0.17 232)",
+        "dark": "oklch(0.78 0.12 228)",
+        "oled": "oklch(0.78 0.12 228)"
+      },
+      "$description": "Focus ring.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-ring",
+          "stability": "experimental"
+        }
+      }
+    },
+    "accent-soft": {
+      "$value": {
+        "light": "oklch(0.52 0.15 232 / 10%)",
+        "dark": "oklch(0.72 0.13 228 / 14%)",
+        "oled": "oklch(0.72 0.13 228 / 14%)"
+      },
+      "$description": "Selected row fill, fill only.",
+      "$extensions": {
+        "glinr": {
+          "name": "accent-soft",
+          "stability": "experimental"
+        }
+      }
+    },
+    "seg-thumb": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245)",
+        "dark": "oklch(0.3 0.018 250)",
+        "oled": "oklch(0.28 0.012 250)"
+      },
+      "$description": "Segmented control thumb fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "seg-thumb",
+          "stability": "experimental"
+        }
+      }
+    }
+  },
+  "status": {
+    "success-fg": {
+      "$value": {
+        "light": "oklch(0.42 0.11 155)",
+        "dark": "oklch(0.8 0.14 155)",
+        "oled": "oklch(0.8 0.14 155)"
+      },
+      "$description": "success text on its soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-success-fg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "success-solid": {
+      "$value": {
+        "light": "oklch(0.6 0.15 155)",
+        "dark": "oklch(0.72 0.16 155)",
+        "oled": "oklch(0.72 0.16 155)"
+      },
+      "$description": "success dot and solid fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-success-solid",
+          "stability": "experimental"
+        }
+      }
+    },
+    "success-soft": {
+      "$value": {
+        "light": "oklch(0.6 0.15 155 / 12%)",
+        "dark": "oklch(0.72 0.16 155 / 16%)",
+        "oled": "oklch(0.72 0.16 155 / 18%)"
+      },
+      "$description": "success soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-success-soft",
+          "stability": "experimental"
+        }
+      }
+    },
+    "success-border": {
+      "$value": {
+        "light": "oklch(0.6 0.15 155 / 28%)",
+        "dark": "oklch(0.72 0.16 155 / 30%)",
+        "oled": "oklch(0.72 0.16 155 / 30%)"
+      },
+      "$description": "success soft border.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-success-border",
+          "stability": "experimental"
+        }
+      }
+    },
+    "warning-fg": {
+      "$value": {
+        "light": "oklch(0.47 0.11 70)",
+        "dark": "oklch(0.84 0.13 80)",
+        "oled": "oklch(0.84 0.13 80)"
+      },
+      "$description": "warning text on its soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-warning-fg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "warning-solid": {
+      "$value": {
+        "light": "oklch(0.64 0.15 65)",
+        "dark": "oklch(0.78 0.15 75)",
+        "oled": "oklch(0.78 0.15 75)"
+      },
+      "$description": "warning dot and solid fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-warning-solid",
+          "stability": "experimental"
+        }
+      }
+    },
+    "warning-soft": {
+      "$value": {
+        "light": "oklch(0.64 0.15 65 / 12%)",
+        "dark": "oklch(0.78 0.15 75 / 16%)",
+        "oled": "oklch(0.78 0.15 75 / 18%)"
+      },
+      "$description": "warning soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-warning-soft",
+          "stability": "experimental"
+        }
+      }
+    },
+    "warning-border": {
+      "$value": {
+        "light": "oklch(0.64 0.15 65 / 28%)",
+        "dark": "oklch(0.78 0.15 75 / 30%)",
+        "oled": "oklch(0.78 0.15 75 / 30%)"
+      },
+      "$description": "warning soft border.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-warning-border",
+          "stability": "experimental"
+        }
+      }
+    },
+    "danger-fg": {
+      "$value": {
+        "light": "oklch(0.48 0.19 25)",
+        "dark": "oklch(0.81 0.13 25)",
+        "oled": "oklch(0.81 0.13 25)"
+      },
+      "$description": "danger text on its soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-danger-fg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "danger-solid": {
+      "$value": {
+        "light": "oklch(0.57 0.21 25)",
+        "dark": "oklch(0.68 0.19 25)",
+        "oled": "oklch(0.68 0.19 25)"
+      },
+      "$description": "danger dot and solid fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-danger-solid",
+          "stability": "experimental"
+        }
+      }
+    },
+    "danger-soft": {
+      "$value": {
+        "light": "oklch(0.57 0.21 25 / 12%)",
+        "dark": "oklch(0.68 0.19 25 / 16%)",
+        "oled": "oklch(0.68 0.19 25 / 18%)"
+      },
+      "$description": "danger soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-danger-soft",
+          "stability": "experimental"
+        }
+      }
+    },
+    "danger-border": {
+      "$value": {
+        "light": "oklch(0.57 0.21 25 / 28%)",
+        "dark": "oklch(0.68 0.19 25 / 30%)",
+        "oled": "oklch(0.68 0.19 25 / 30%)"
+      },
+      "$description": "danger soft border.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-danger-border",
+          "stability": "experimental"
+        }
+      }
+    },
+    "info-fg": {
+      "$value": {
+        "light": "oklch(0.45 0.13 240)",
+        "dark": "oklch(0.8 0.11 235)",
+        "oled": "oklch(0.8 0.11 235)"
+      },
+      "$description": "info text on its soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-info-fg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "info-solid": {
+      "$value": {
+        "light": "oklch(0.58 0.14 240)",
+        "dark": "oklch(0.72 0.13 235)",
+        "oled": "oklch(0.72 0.13 235)"
+      },
+      "$description": "info dot and solid fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-info-solid",
+          "stability": "experimental"
+        }
+      }
+    },
+    "info-soft": {
+      "$value": {
+        "light": "oklch(0.58 0.14 240 / 12%)",
+        "dark": "oklch(0.72 0.13 235 / 16%)",
+        "oled": "oklch(0.72 0.13 235 / 18%)"
+      },
+      "$description": "info soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-info-soft",
+          "stability": "experimental"
+        }
+      }
+    },
+    "info-border": {
+      "$value": {
+        "light": "oklch(0.58 0.14 240 / 28%)",
+        "dark": "oklch(0.72 0.13 235 / 30%)",
+        "oled": "oklch(0.72 0.13 235 / 30%)"
+      },
+      "$description": "info soft border.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-info-border",
+          "stability": "experimental"
+        }
+      }
+    },
+    "neutral-fg": {
+      "$value": {
+        "light": "oklch(0.45 0.02 250)",
+        "dark": "oklch(0.8 0.015 250)",
+        "oled": "oklch(0.8 0.015 250)"
+      },
+      "$description": "neutral text on its soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-neutral-fg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "neutral-solid": {
+      "$value": {
+        "light": "oklch(0.6 0.02 250)",
+        "dark": "oklch(0.62 0.015 250)",
+        "oled": "oklch(0.62 0.015 250)"
+      },
+      "$description": "neutral dot and solid fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-neutral-solid",
+          "stability": "experimental"
+        }
+      }
+    },
+    "neutral-soft": {
+      "$value": {
+        "light": "oklch(0.6 0.02 250 / 12%)",
+        "dark": "oklch(0.62 0.015 250 / 16%)",
+        "oled": "oklch(0.62 0.015 250 / 18%)"
+      },
+      "$description": "neutral soft fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-neutral-soft",
+          "stability": "experimental"
+        }
+      }
+    },
+    "neutral-border": {
+      "$value": {
+        "light": "oklch(0.6 0.02 250 / 28%)",
+        "dark": "oklch(0.62 0.015 250 / 30%)",
+        "oled": "oklch(0.62 0.015 250 / 30%)"
+      },
+      "$description": "neutral soft border.",
+      "$extensions": {
+        "glinr": {
+          "name": "status-neutral-border",
+          "stability": "experimental"
+        }
+      }
+    }
+  },
+  "material": {
+    "ultrathin": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245 / 55%)",
+        "dark": "oklch(0.235 0.016 250 / 55%)",
+        "oled": "oklch(0.22 0.01 250 / 60%)"
+      },
+      "$description": "Scroll edge scrim, no text.",
+      "$extensions": {
+        "glinr": {
+          "name": "material-ultrathin",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "thin": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245 / 72%)",
+        "dark": "oklch(0.235 0.016 250 / 72%)",
+        "oled": "oklch(0.22 0.01 250 / 82%)"
+      },
+      "$description": "Floating sidebar over the fixed backdrop.",
+      "$extensions": {
+        "glinr": {
+          "name": "material-thin",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "regular": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245 / 86%)",
+        "dark": "oklch(0.235 0.016 250 / 88%)",
+        "oled": "oklch(0.22 0.01 250 / 90%)"
+      },
+      "$description": "Top bar, toasts, bulk bar, menus.",
+      "$extensions": {
+        "glinr": {
+          "name": "material-regular",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "thick": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245 / 94%)",
+        "dark": "oklch(0.235 0.016 250 / 95%)",
+        "oled": "oklch(0.22 0.01 250 / 94%)"
+      },
+      "$description": "Dialogs and sheets.",
+      "$extensions": {
+        "glinr": {
+          "name": "material-thick",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "tinted": {
+      "$value": "color-mix(in oklab, var(--glinr-accent-solid) 8%, var(--glinr-material-regular))",
+      "$description": "Bulk bar while a selection is active.",
+      "$extensions": {
+        "glinr": {
+          "name": "material-tinted",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    }
+  },
+  "blur": {
+    "ultrathin": {
+      "$value": "8px",
+      "$description": "Backdrop blur for the ultrathin material.",
+      "$extensions": {
+        "glinr": {
+          "name": "blur-ultrathin",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "thin": {
+      "$value": "16px",
+      "$description": "Backdrop blur for the thin material.",
+      "$extensions": {
+        "glinr": {
+          "name": "blur-thin",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "regular": {
+      "$value": "20px",
+      "$description": "Backdrop blur for the regular material.",
+      "$extensions": {
+        "glinr": {
+          "name": "blur-regular",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "thick": {
+      "$value": "28px",
+      "$description": "Backdrop blur for the thick material.",
+      "$extensions": {
+        "glinr": {
+          "name": "blur-thick",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "tinted": {
+      "$value": "20px",
+      "$description": "Backdrop blur for the tinted material.",
+      "$extensions": {
+        "glinr": {
+          "name": "blur-tinted",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    }
+  },
+  "saturate": {
+    "ultrathin": {
+      "$value": "1.6",
+      "$description": "Backdrop saturation for the ultrathin material.",
+      "$extensions": {
+        "glinr": {
+          "name": "saturate-ultrathin",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "thin": {
+      "$value": "1.8",
+      "$description": "Backdrop saturation for the thin material.",
+      "$extensions": {
+        "glinr": {
+          "name": "saturate-thin",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "regular": {
+      "$value": "1.8",
+      "$description": "Backdrop saturation for the regular material.",
+      "$extensions": {
+        "glinr": {
+          "name": "saturate-regular",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "thick": {
+      "$value": "1.4",
+      "$description": "Backdrop saturation for the thick material.",
+      "$extensions": {
+        "glinr": {
+          "name": "saturate-thick",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "tinted": {
+      "$value": "1.8",
+      "$description": "Backdrop saturation for the tinted material.",
+      "$extensions": {
+        "glinr": {
+          "name": "saturate-tinted",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    }
+  },
+  "shadow": {
+    "rest": {
+      "$value": {
+        "light": "0 1px 2px oklch(0.3 0.05 250 / 6%)",
+        "dark": "none",
+        "oled": "none"
+      },
+      "$description": "Resting card shadow. Dark modes use an edge instead.",
+      "$extensions": {
+        "glinr": {
+          "name": "shadow-1",
+          "stability": "experimental"
+        }
+      }
+    },
+    "float": {
+      "$value": {
+        "light": "0 1px 2px oklch(0.3 0.05 250 / 6%), 0 12px 32px -12px oklch(0.3 0.05 250 / 18%)",
+        "dark": "0 12px 32px -12px oklch(0 0 0 / 55%)",
+        "oled": "none"
+      },
+      "$description": "Floating glass surfaces.",
+      "$extensions": {
+        "glinr": {
+          "name": "shadow-float",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "glass-edge": {
+      "$value": {
+        "light": "oklch(1 0 0 / 60%)",
+        "dark": "oklch(1 0 0 / 12%)",
+        "oled": "oklch(1 0 0 / 14%)"
+      },
+      "$description": "1px rim colour of a glass surface.",
+      "$extensions": {
+        "glinr": {
+          "name": "glass-edge",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "specular": {
+      "$value": {
+        "light": "inset 0 1px 0 oklch(1 0 0 / 75%)",
+        "dark": "inset 0 1px 0 oklch(1 0 0 / 12%)",
+        "oled": "inset 0 1px 0 oklch(1 0 0 / 8%)"
+      },
+      "$description": "Top inner highlight of a glass surface.",
+      "$extensions": {
+        "glinr": {
+          "name": "specular",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "glass-inner": {
+      "$value": {
+        "light": "inset 0 -10px 20px -14px oklch(0.21 0.02 250 / 10%)",
+        "dark": "inset 0 -10px 20px -14px oklch(0 0 0 / 40%)",
+        "oled": "none"
+      },
+      "$description": "Soft inner shade of a glass surface.",
+      "$extensions": {
+        "glinr": {
+          "name": "glass-inner",
+          "stability": "experimental",
+          "chunk": "material"
+        }
+      }
+    },
+    "layer-edge": {
+      "$value": "0 3px 0 -1px color-mix(in oklab, var(--glinr-accent-solid) 30%, transparent)",
+      "$description": "Peeking layer under selectable object cards.",
+      "$extensions": {
+        "glinr": {
+          "name": "layer-edge",
+          "stability": "experimental"
+        }
+      }
+    }
+  },
+  "look": {
+    "$type": "color",
+    "mesh": {
+      "$value": {
+        "light": "radial-gradient(60% 55% at 8% 0%, oklch(0.92 0.045 215 / 0.85), transparent 70%), radial-gradient(45% 50% at 95% 15%, oklch(0.91 0.05 190 / 0.6), transparent 70%), radial-gradient(60% 60% at 55% 105%, oklch(0.9 0.045 255 / 0.7), transparent 72%)",
+        "dark": "radial-gradient(60% 55% at 8% 0%, oklch(0.28 0.055 215 / 0.8), transparent 70%), radial-gradient(45% 50% at 95% 15%, oklch(0.27 0.05 190 / 0.55), transparent 70%), radial-gradient(60% 60% at 55% 105%, oklch(0.27 0.055 255 / 0.7), transparent 72%)",
+        "oled": "radial-gradient(60% 45% at 8% 0%, oklch(0.19 0.03 230 / 0.6), transparent 70%)"
+      },
+      "$description": "Calm fixed backdrop wash behind the app shell. Static; the restrained look turns it off.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "mesh"
+        }
+      }
+    },
+    "focus-halo": {
+      "$value": {
+        "light": "oklch(0.52 0.15 232 / 20%)",
+        "dark": "oklch(0.72 0.13 228 / 22%)",
+        "oled": "oklch(0.72 0.13 228 / 22%)"
+      },
+      "$description": "Soft 3px halo around a focused field, accent at about 20% alpha.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "focus-halo"
+        }
+      }
+    },
+    "focus-halo-danger": {
+      "$value": {
+        "light": "oklch(0.57 0.21 25 / 18%)",
+        "dark": "oklch(0.68 0.19 25 / 22%)",
+        "oled": "oklch(0.68 0.19 25 / 22%)"
+      },
+      "$description": "Halo for a focused invalid field.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "focus-halo-danger"
+        }
+      }
+    },
+    "field-focus-bg": {
+      "$value": {
+        "light": "oklch(1 0 0)",
+        "dark": "oklch(0.215 0.014 250)",
+        "oled": "oklch(0.2 0.008 250)"
+      },
+      "$description": "Field background one surface step up while focused.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "field-focus-bg"
         }
       }
     }

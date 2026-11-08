@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"time"
@@ -86,6 +87,7 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
+	defer footprint.Attribute("deployments-stream")()
 	_, _ = fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 

@@ -159,6 +159,14 @@ so on). Passwords never appear in the audit log, application logs or API list
 responses, and are sent to the database as SCRAM verifiers, so even a failed
 statement logged by the server carries no plaintext.
 
+A user without `root` on a database can still open its Network tab and read the
+reachability, rules, scope and TLS state. The change controls are disabled, and a
+one-line notice says that changing network exposure needs root on that database.
+The API enforces the same rule: the scope, TLS, rules and make-private routes
+require root, so a disabled control is not the only protection. The page is built
+and unit tested. It has not been checked in a browser or against a real viewer
+account.
+
 ## Configuration
 
 | Variable | Default | Meaning |

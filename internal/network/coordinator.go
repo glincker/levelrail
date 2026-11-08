@@ -161,6 +161,10 @@ type Coordinator struct {
 	// this; guarded by the same mu as observedEndpoints for the identical
 	// reason (RotateKey and Distribute are genuinely concurrent callers).
 	rotations map[string]*RotationStatus
+
+	// applyFailures holds each node's last apply error so a node that stays
+	// unreachable is logged once, not on every pass. Guarded by mu.
+	applyFailures map[string]string
 }
 
 // CoordinatorOption configures NewCoordinator.
@@ -189,6 +193,7 @@ func NewCoordinator(sink ConfigSink, opts PlanOptions, options ...CoordinatorOpt
 		opts:              opts,
 		logger:            slog.Default(),
 		observedEndpoints: map[string]string{},
+		applyFailures:     map[string]string{},
 	}
 	for _, o := range options {
 		o(c)
@@ -276,11 +281,9 @@ func (c *Coordinator) Distribute(ctx context.Context, nodes []NodeInfo) ([]NodeI
 		switch {
 		case applyErr != nil:
 			nr.Err = fmt.Errorf("apply mesh config on node %q: %w", n.ID, applyErr)
-			c.logger.Warn("node did not accept its mesh config this pass",
-				slog.String("node_id", n.ID),
-				slog.Int("peers", len(cfg.Peers)),
-				slog.String("error", applyErr.Error()))
+			c.noteApplyFailure(n.ID, len(cfg.Peers), applyErr)
 		default:
+			c.noteApplySuccess(n.ID)
 			nr.Identity = identity
 			if changed := c.foldIdentity(&inventory[byID[n.ID]], identity); changed {
 				result.Updated = append(result.Updated, n.ID)
@@ -296,6 +299,34 @@ func (c *Coordinator) Distribute(ctx context.Context, nodes []NodeInfo) ([]NodeI
 		slog.Int("updated", len(result.Updated)))
 	c.noteDistributeResult(result)
 	return inventory, result, nil
+}
+
+// noteApplyFailure logs a node's apply error only when it is new or changed,
+// so an offline node does not repeat the same line every pass.
+func (c *Coordinator) noteApplyFailure(nodeID string, peers int, err error) {
+	msg := err.Error()
+	c.mu.Lock()
+	prev, seen := c.applyFailures[nodeID]
+	c.applyFailures[nodeID] = msg
+	c.mu.Unlock()
+	if seen && prev == msg {
+		return
+	}
+	c.logger.Warn("node did not accept its mesh config",
+		slog.String("node_id", nodeID),
+		slog.Int("peers", peers),
+		slog.String("error", msg))
+}
+
+// noteApplySuccess logs recovery once after a failure streak.
+func (c *Coordinator) noteApplySuccess(nodeID string) {
+	c.mu.Lock()
+	_, was := c.applyFailures[nodeID]
+	delete(c.applyFailures, nodeID)
+	c.mu.Unlock()
+	if was {
+		c.logger.Info("node accepted its mesh config again", slog.String("node_id", nodeID))
+	}
 }
 
 // applyObservedEndpoints overwrites each node's self-reported endpoint

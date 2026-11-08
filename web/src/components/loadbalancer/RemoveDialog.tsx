@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -21,14 +22,14 @@ export function RemoveDialog({
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
 }) {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Remove load balancer?</DialogTitle>
+          <DialogTitle>{t('lb.remove.title')}</DialogTitle>
           <DialogDescription>
-            Domains for {appName} go back to a single upstream. Running replicas
-            are not touched.
+            {t('lb.remove.description', { app: appName })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -37,7 +38,7 @@ export function RemoveDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t('lb.remove.cancel')}
           </Button>
           <Button
             type="button"
@@ -45,7 +46,7 @@ export function RemoveDialog({
             disabled={pending}
             onClick={onConfirm}
           >
-            Remove
+            {t('lb.remove.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

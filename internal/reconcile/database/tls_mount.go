@@ -15,7 +15,7 @@ import (
 const (
 	// certsMountPath is where a TLS-enabled database's cert/key volume
 	// is mounted inside its own container, shared by every TLS-capable
-	// engine (only Postgres and Redis today, see SupportsTLS).
+	// engine (see SupportsTLS and ServerTLSEngine).
 	certsMountPath = "/certs"
 	tlsCertFile    = "tls.crt"
 	tlsKeyFile     = "tls.key"

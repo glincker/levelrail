@@ -41,6 +41,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		_ = os.Setenv(envNoColor, "1")
 	}
 	args, debug := extractDebugFlag(args)
+	args, noColorFlag = extractNoColorFlag(args)
 	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
@@ -408,7 +409,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n", prog, args[0])
-		_, _ = fmt.Fprint(stderr, unknownVerbHint(prog, nil, args[0]))
+		_, _ = fmt.Fprint(stderr, unknownCommandHint(prog, args))
 		return exitUsage
 	}
 }
@@ -437,6 +438,7 @@ Usage:
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps run <name> [--service S] -- <cmd> [args...]   run a command once in a fresh container, exits with its exit code
   %[1]s deploy <name> [flags]        convenience alias for apps deploy
   %[1]s rollback <name> [flags]      convenience alias for apps rollback
   %[1]s restart <name> [--wait]      convenience alias for apps restart

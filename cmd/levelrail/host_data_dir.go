@@ -15,6 +15,7 @@ const (
 var hostCommands = map[string]bool{
 	"setup-token": true, "recover-admin": true, "approve-signin": true, "emergency-token": true,
 	"access-policy-reset": true, "restore-db": true, "wrap-master-key": true, "restore-snapshot": true, "restore": true, "enable-https": true,
+	"self-upgrade": true, "rollback": true, "restore-point": true,
 }
 
 // adoptInstalledDataDir lets a host subcommand run from a login shell on an

@@ -162,7 +162,7 @@ function MobileDevicesPage() {
           description={t('mobileDevices.emptyDescription')}
         />
       ) : (
-        <Table>
+        <Table aria-label={t('a11y.tables.mobileDevices', { ns: 'common' })}>
           <TableHeader>
             <TableRow>
               <TableHead>{t('mobileDevices.colName')}</TableHead>

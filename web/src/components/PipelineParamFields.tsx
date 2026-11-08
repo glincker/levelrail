@@ -1,3 +1,5 @@
+import { InboxGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,7 +25,11 @@ export function PipelineParamFields({
   const { t } = useTranslation('pipelines')
   if (params.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">{t('run.noParameters')}</p>
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('run.noParameters')}
+      />
     )
   }
   return (

@@ -143,7 +143,10 @@ func (p Policy) validateTarget() error {
 		}
 	case MetricRequestsPerReplica:
 	default:
-		return fmt.Errorf("metric must be %s, %s or %s", MetricCPUPercent, MetricMemoryPercent, MetricRequestsPerReplica)
+		if IsGaugeMetric(p.Metric) {
+			return validGaugeMetric(p.Metric)
+		}
+		return fmt.Errorf("metric must be %s, %s, %s or %s<name>", MetricCPUPercent, MetricMemoryPercent, MetricRequestsPerReplica, MetricGaugePrefix)
 	}
 	return nil
 }

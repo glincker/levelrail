@@ -149,6 +149,9 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 	if key := idempotencyKeyFrom(ctx); key != "" {
 		req.Header.Set(headerIdempotencyKey, key)
 	}
+	if rev := ifMatchFrom(ctx); rev != "" {
+		req.Header.Set("If-Match", `"`+rev+`"`)
+	}
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
@@ -1870,6 +1873,27 @@ func (c *Client) SetVolumeBackupSchedule(ctx context.Context, name, volume strin
 // service volume counterpart of ClearBackupSchedule.
 func (c *Client) ClearVolumeBackupSchedule(ctx context.Context, name, volume string) error {
 	return c.do(ctx, http.MethodDelete, volumeBackupSchedulePath(name, volume), nil, nil)
+}
+
+// PauseBackupSchedule and ResumeBackupSchedule call POST .../databases/{name}/backup-schedule/pause|resume.
+func (c *Client) PauseBackupSchedule(ctx context.Context, name string, paused bool) (BackupScheduleResource, error) {
+	var out BackupScheduleResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/backup-schedule/"+pauseVerb(paused), nil, &out)
+	return out, err
+}
+
+// PauseVolumeBackupSchedule calls POST .../volumes/{volume}/backup-schedule/pause|resume.
+func (c *Client) PauseVolumeBackupSchedule(ctx context.Context, name, volume string, paused bool) (VolumeBackupScheduleResource, error) {
+	var out VolumeBackupScheduleResource
+	err := c.do(ctx, http.MethodPost, volumeBackupSchedulePath(name, volume)+"/"+pauseVerb(paused), nil, &out)
+	return out, err
+}
+
+func pauseVerb(paused bool) string {
+	if paused {
+		return "pause"
+	}
+	return "resume"
 }
 
 // VerifyVolumeBackup calls

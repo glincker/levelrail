@@ -13,15 +13,21 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 )
 
 // GitFetcher reads pipeline files with a shallow, in-memory clone, so
 // nothing is written to disk and no checkout is needed.
 type GitFetcher struct{}
+
+// RepoAuther is an optional Source extension: it returns the app's ssh deploy
+// key auth (nil for a non-ssh URL) so a sync never relies on ambient ssh auth.
+type RepoAuther interface {
+	RepoAuth(ctx context.Context, app, repoURL string) (transport.AuthMethod, error)
+}
 
 // shaFallbackDepth bounds the branch history fetched when a server refuses a
 // fetch of one exact commit.
@@ -32,14 +38,13 @@ const shaFallbackDepth = 100
 // when empty); otherwise it reads that exact commit and returns
 // ErrSHAUnavailable when the commit cannot be fetched.
 func (GitFetcher) FetchFiles(ctx context.Context, url, token, branch, sha string, dirs []string) (RepoFiles, error) {
-	var auth transport.AuthMethod
-	if token != "" {
-		auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	auth, err := sourcecache.RemoteAuth(ctx, url, token)
+	if err != nil {
+		return RepoFiles{}, err
 	}
 	var (
 		repo *git.Repository
 		hash plumbing.Hash
-		err  error
 	)
 	if sha == "" {
 		repo, hash, err = cloneTip(ctx, url, branch, auth)

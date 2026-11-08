@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
 import { BroomGlassIcon } from '@thesvg/ui-react'
 import {
@@ -59,7 +60,12 @@ export function OrphanReaperCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {report.findings.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('orphans.empty')}</p>
+          <EmptyState
+            kind="no-results"
+            icon={<BroomGlassIcon className="size-5" aria-hidden="true" />}
+            title={t('orphans.emptyTitle')}
+            description={t('orphans.empty')}
+          />
         ) : (
           <ul className="divide-y divide-border">
             {shown.map((f) => (

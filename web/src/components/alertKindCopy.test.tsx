@@ -20,6 +20,7 @@ describe('alert kind copy', () => {
     ['database_connections_high', 'Database connections high'],
     ['node_disk_space', 'Node disk space'],
     ['email_delivery_failing', 'Email delivery failing'],
+    ['cleanup_failing', 'Data cleanup failing'],
   ])('labels %s as %s', (kind, label) => {
     expect(isAlertKindCopyKind(kind)).toBe(true)
     render(

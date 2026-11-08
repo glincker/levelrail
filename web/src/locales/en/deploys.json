@@ -645,5 +645,19 @@
       "helpProjectMissing": "This file reads a stored token. The app names a project that no longer exists, so the token cannot be limited to a project and can deploy any app on this server. It can only: {{abilities}}. Fix the app's project first, or prefer an OIDC pipeline."
     },
     "apiUrl": "Set LEVELRAIL_API_URL to {{url}} in your CI."
+  },
+  "approvalBanner": {
+    "approved": "Approved: {{app}} now targets {{image}}.",
+    "approveError": "Could not approve.",
+    "rejected": "Deploy approval rejected.",
+    "rejectError": "Could not reject.",
+    "titleDeploy": "Deploy to",
+    "titlePromote": "Promotion to",
+    "awaiting": "is awaiting approval.",
+    "requestedBy": "Requested by {{name}}. This environment is protected: a different, sufficiently privileged user must approve it before it deploys.",
+    "reject": "Reject",
+    "approve": "Approve",
+    "approving": "Approving...",
+    "viewQueue": "View queue"
   }
 }

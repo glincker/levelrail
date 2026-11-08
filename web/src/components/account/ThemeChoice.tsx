@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export type ThemeValue = 'system' | 'light' | 'dark'
+export type ThemeChoiceValue = ThemeValue | 'oled'
 
 const CHOICES: readonly {
-  value: ThemeValue
+  value: ThemeChoiceValue
   key:
     | 'preferences.themeBrowser'
     | 'preferences.themeLight'
     | 'preferences.themeDark'
+    | 'preferences.themeOled'
   swatch: string
 }[] = [
   {
@@ -19,19 +21,26 @@ const CHOICES: readonly {
   },
   { value: 'light', key: 'preferences.themeLight', swatch: 'bg-neutral-100' },
   { value: 'dark', key: 'preferences.themeDark', swatch: 'bg-neutral-900' },
+  { value: 'oled', key: 'preferences.themeOled', swatch: 'bg-black' },
 ]
 
 /** ThemeChoice is a three-option radio group with a live swatch per theme. */
-export function ThemeChoice({
+export function ThemeChoice<V extends ThemeChoiceValue = ThemeValue>({
   value,
   onChange,
   labelledBy,
+  includeOled = false,
 }: {
-  value: ThemeValue
-  onChange: (next: ThemeValue) => void
+  value: V
+  onChange: (next: V) => void
   labelledBy: string
+  /** OLED is a local display mode, so only surfaces that do not sync the choice to the server offer it. */
+  includeOled?: boolean
 }) {
   const { t } = useTranslation('account')
+  const choices = includeOled
+    ? CHOICES
+    : CHOICES.filter((c) => c.value !== 'oled')
   const refs = useRef<(HTMLButtonElement | null)[]>([])
 
   const onKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -43,8 +52,8 @@ export function ThemeChoice({
           : 0
     if (step === 0) return
     e.preventDefault()
-    const next = (index + step + CHOICES.length) % CHOICES.length
-    onChange(CHOICES[next]?.value ?? value)
+    const next = (index + step + choices.length) % choices.length
+    onChange((choices[next]?.value as V | undefined) ?? value)
     refs.current[next]?.focus()
   }
 
@@ -52,9 +61,15 @@ export function ThemeChoice({
     <div
       role="radiogroup"
       aria-labelledby={labelledBy}
-      className="grid grid-cols-[1.7fr_1fr_1fr] gap-1 rounded-lg border border-input p-1"
+      className={cn(
+        'grid gap-1',
+        includeOled
+          ? 'grid-cols-[1.7fr_1fr_1fr_1.2fr]'
+          : 'grid-cols-[1.7fr_1fr_1fr]',
+        'rounded-lg border border-input p-1',
+      )}
     >
-      {CHOICES.map((c, i) => {
+      {choices.map((c, i) => {
         const active = c.value === value
         return (
           <button
@@ -66,7 +81,7 @@ export function ThemeChoice({
             role="radio"
             aria-checked={active}
             tabIndex={active ? 0 : -1}
-            onClick={() => onChange(c.value)}
+            onClick={() => onChange(c.value as V)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cn(
               'flex h-8 items-center justify-center gap-1.5 rounded-md px-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',

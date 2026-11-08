@@ -5,6 +5,7 @@
     "title": "Copy database data",
     "description": "Streams a dump from the source database into the managed one and compares row counts. Repeating it replaces the target's contents, so a failed copy is safe to retry.",
     "empty": "No managed databases yet. Import from a platform first.",
+    "emptyTitle": "No managed databases",
     "copy": "Copy data",
     "cancel": "Cancel",
     "start": "Start copy",

@@ -38,6 +38,7 @@ type RestartTracker struct {
 	mu       sync.Mutex
 	restarts map[string][]time.Time // resourceID -> restart timestamps, oldest first
 	byName   map[string][]time.Time // container name -> restart timestamps, oldest first
+	ooms     map[string][]time.Time // resourceID -> kernel OOM kill timestamps, oldest first
 	seen     map[string]bool        // container names whose first start has already been observed
 	recorder RestartRecorder        // optional: persists each restart as a metric sample, nil in every existing test in this package
 	logger   *slog.Logger
@@ -48,6 +49,7 @@ func NewRestartTracker() *RestartTracker {
 	return &RestartTracker{
 		restarts: make(map[string][]time.Time),
 		byName:   make(map[string][]time.Time),
+		ooms:     make(map[string][]time.Time),
 		seen:     make(map[string]bool),
 	}
 }
@@ -138,6 +140,7 @@ func (t *RestartTracker) Prune(olderThan time.Time) {
 			t.byName[name] = kept
 		}
 	}
+	pruneTimes(t.ooms, olderThan)
 	for id, times := range t.restarts {
 		kept := times[:0]
 		for _, ts := range times {
@@ -190,12 +193,16 @@ func (t *RestartTracker) Run(ctx context.Context, source EventSource, services S
 			if !ok {
 				return nil
 			}
-			if ev.Action != docker.EventStart {
+			if ev.Action != docker.EventStart && ev.Action != docker.EventOOM {
 				continue
 			}
 			resourceID, ok := resolveResourceID(known, ev.ContainerName)
 			if !ok {
 				continue // not a container this tracker's known services own (someone else's container, or a service deleted since the last refresh)
+			}
+			if ev.Action == docker.EventOOM {
+				t.ObserveOOM(resourceID, ev.Time)
+				continue
 			}
 			t.Observe(resourceID, ev.ContainerName, ev.Time)
 		}

@@ -1,3 +1,4 @@
+import { ProgressBar } from '@/components/ui/progress-ring'
 import {
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
@@ -66,7 +67,10 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
       return (
         <LoaderCircleGlassIcon
           size="1.4em"
-          className={cn(base, 'animate-spin text-muted-foreground')}
+          className={cn(
+            base,
+            'animate-spin motion-reduce:animate-none text-muted-foreground',
+          )}
           aria-hidden="true"
         />
       )
@@ -158,11 +162,10 @@ function TraceRow({ ev }: { ev: DeployStepEvent }) {
           ) : null}
         </div>
         {percent !== null ? (
-          <progress
-            className="mt-1 h-1.5 w-full max-w-xs"
+          <ProgressBar
+            className="mt-1 max-w-xs"
             value={percent}
-            max={100}
-            aria-label={t('trace.pullProgress')}
+            label={t('trace.pullProgress')}
           />
         ) : null}
         {ev.detail ? (

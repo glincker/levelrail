@@ -28,6 +28,8 @@ func runSystem(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runSystemIntegrity(prog, args[1:], stdout, stderr, lookupEnv)
 	case "networks":
 		return runSystemNetworks(prog, args[1:], stdout, stderr, lookupEnv)
+	case "disk":
+		return runSystemDiskHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown system subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, systemUsage(prog))
@@ -47,6 +49,7 @@ func systemUsage(prog string) string {
   %[1]s system integrity --restore NAME|latest   stage a verified snapshot for the next start
   %[1]s system networks [--orphans]             list app networks, owners and pool usage
   %[1]s system networks prune --dry-run|--yes    remove orphaned, empty app networks
+  %[1]s system disk history [--days N]           disk use over time and a days-until-full forecast
 
 With --domain, also prints the exact DNS records to create for that name.
 `, prog)

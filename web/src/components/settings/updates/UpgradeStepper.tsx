@@ -33,7 +33,10 @@ function StatusIcon({
       return (
         <LoaderCircleGlassIcon
           size="1.4em"
-          className={cn(cls, motion && 'animate-spin')}
+          className={cn(
+            cls,
+            motion && 'animate-spin motion-reduce:animate-none',
+          )}
           aria-hidden
         />
       )

@@ -24,7 +24,11 @@ function StepIcon({
     return (
       <LoaderCircleGlassIcon
         size="1.4em"
-        className={cn(cls, 'text-primary', motion && 'animate-spin')}
+        className={cn(
+          cls,
+          'text-primary',
+          motion && 'animate-spin motion-reduce:animate-none',
+        )}
         aria-hidden
       />
     )

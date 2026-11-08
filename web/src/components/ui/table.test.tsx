@@ -18,4 +18,21 @@ describe('Table', () => {
     const table = container.querySelector('table')
     expect(table?.className).toContain('max-md:[&_tr>:first-child]:sticky')
   })
+
+  it('marks the container scrolled and keeps the selected row state', () => {
+    const { container } = render(
+      <Table>
+        <TableBody>
+          <TableRow data-state="selected">
+            <TableCell>name</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    )
+    const wrapper = container.querySelector('[data-slot="table-container"]')
+    expect(wrapper?.hasAttribute('data-scrolled')).toBe(false)
+    expect(container.querySelector('tr')?.getAttribute('data-state')).toBe(
+      'selected',
+    )
+  })
 })

@@ -16,11 +16,32 @@ const (
 	KeyCDNPurgeHistory               = "cdn.purge_history"
 	KeyDeployExplainLogLines         = "deploy.explain_log_lines"
 	KeyUpdateOfferedChannels         = "updates.offered_channels"
+	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
+	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
+	KeyAppsContainersInspectTimeout  = "apps.containers_inspect_timeout"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyAppsContainersInspectTimeout, Category: CategoryObservability, Kind: KindDuration, Default: "5s",
+		Env: "APP_CONTAINERS_INSPECT_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, 2*time.Minute),
+		Title:       "Container inspect timeout",
+		Description: "How long the app containers view waits for a node's live inspect (health, restarts, networks, mounts), from 1s to 2m. When it runs out the view still answers, with those fields marked unavailable. The next request uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyMeshReadyRetrySeconds, Category: CategoryNetworking, Kind: KindInt, Default: "10",
+		Env: "APP_MESH_READY_RETRY_SECONDS", Apply: ApplyLive, CheckValue: intRangeCheck(2, 300),
+		Title:       "Mesh wait retry ceiling",
+		Description: "The longest gap, in seconds from 2 to 300, between checks of an app waiting for its node's WireGuard mesh. Checks start at 2 seconds and double up to this value; the app starts as soon as the mesh is healthy. The next check uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyNetworkGCMaxRemovals, Category: CategoryNetworking, Kind: KindInt, Default: "20",
+		Env: "APP_NETWORK_GC_MAX_REMOVALS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 1000),
+		Title:       "Network cleanup removals per pass",
+		Description: "The most orphaned app networks one cleanup pass removes on a node, from 1 to 1000. Only networks labeled with this control plane are ever removed. The next pass uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyProjectCloneMaxApps, Category: CategoryDeploys, Kind: KindInt, Default: "50",
 		Env: "APP_PROJECT_CLONE_MAX_APPS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 1000),

@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +15,12 @@ export function RollbackTargetsList({ appName }: { appName: string }) {
     <section className="space-y-2" aria-label={t('targets.title')}>
       <SectionTitle as="h3">{t('targets.title')}</SectionTitle>
       {!targets || targets.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('targets.empty')}</p>
+        <EmptyState
+          kind="no-results"
+          icon={<PinGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('targets.emptyTitle')}
+          description={t('targets.empty')}
+        />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">
           {targets.map((target) => (

@@ -12,6 +12,10 @@ import (
 // jobNameLike mirrors the job-name rule the HTTP API applies.
 var jobNameLike = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)
 
+// ReservedJobNamePrefix starts the names of one-off run rows, so no declared
+// or API job may use it.
+const ReservedJobNamePrefix = "oneshot-"
+
 // Job modes and catch-up values accepted in app.yaml.
 const (
 	JobModeFresh      = "fresh"
@@ -36,6 +40,9 @@ func (svc *Service) validateJobs(name string) error {
 		where := fmt.Sprintf("spec: service %q: jobs[%d]", name, i)
 		if !jobNameLike.MatchString(j.Name) {
 			return fmt.Errorf("%s: name %q must be lowercase letters, digits, hyphens or underscores", where, j.Name)
+		}
+		if strings.HasPrefix(j.Name, ReservedJobNamePrefix) {
+			return fmt.Errorf("%s: name %q must not start with %q, which is reserved for one-off runs", where, j.Name, ReservedJobNamePrefix)
 		}
 		if _, dup := seen[j.Name]; dup {
 			return fmt.Errorf("%s: duplicate job name %q", where, j.Name)

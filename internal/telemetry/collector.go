@@ -46,6 +46,11 @@ type Collector struct {
 	interval time.Duration
 	logger   *slog.Logger
 
+	// presence and idleInterval slow polling while nobody watches; nil presence keeps the fixed cadence.
+	presence     *Presence
+	idleInterval time.Duration
+	now          func() time.Time
+
 	// prevCPU replaces a one-shot stats response's own PreCPUStats (see
 	// docker.ContainerStats.CPUPercent): a container's first sample
 	// reads 0 and self-corrects next tick.
@@ -78,7 +83,21 @@ func NewCollector(source StatsSource, store *DB, interval time.Duration, logger 
 		interval: interval,
 		logger:   logger,
 		prevCPU:  make(map[string]docker.CPUStatsRaw),
+		now:      time.Now,
 	}
+}
+
+// SetPresence makes Run poll at most every idle while p reports no viewer. Call before Run.
+func (c *Collector) SetPresence(p *Presence, idle time.Duration) {
+	c.presence, c.idleInterval = p, idle
+}
+
+// dueAt reports whether a tick should collect: always with a viewer, else only once idleInterval passed since the last run.
+func (c *Collector) dueAt(last time.Time) bool {
+	if c.presence == nil || c.idleInterval <= c.interval || c.presence.Active() {
+		return true
+	}
+	return c.now().Sub(last) >= c.idleInterval
 }
 
 // CollectOnce polls every target once and writes whatever succeeded.
@@ -157,12 +176,17 @@ func (c *Collector) pruneCPUCache(targets []Target) {
 func (c *Collector) Run(ctx context.Context, targetsFunc func(context.Context) ([]Target, error)) error {
 	ticker := time.NewTicker(c.interval)
 	defer ticker.Stop()
+	var last time.Time
 
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
+			if !c.dueAt(last) {
+				continue
+			}
+			last = c.now()
 			targets, err := targetsFunc(ctx)
 			if err != nil {
 				c.logger.Error("telemetry: list collection targets failed", slog.String("error", err.Error()))

@@ -1,0 +1,7 @@
+{
+  "applicationId": "a-pv", "name": "web", "sourceType": "github", "buildType": "dockerfile",
+  "owner": "acme", "repository": "web", "branch": "main", "buildPath": "/", "dockerfile": "Dockerfile",
+  "autoDeploy": false, "cleanCache": true,
+  "isPreviewDeploymentsActive": true, "previewLimit": 4, "previewWildcard": "*.pv.example.com",
+  "domains": [{"host": "web.example.com", "port": 3000}]
+}

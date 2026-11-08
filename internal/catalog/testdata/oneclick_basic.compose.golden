@@ -1,0 +1,11 @@
+services:
+    web:
+        environment:
+            DB_PASS: ${DB_PASS}
+            MODE: prod
+        image: ghcr.io/example/app:1.2
+        ports:
+            - 8080:80
+        restart: always
+        volumes:
+            - appdata:/data

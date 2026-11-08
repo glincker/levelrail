@@ -108,3 +108,14 @@ func init() {
 		Description: "How many deploys may run at once across all apps; extra deploys wait in the queue and start when one finishes. 0 means no limit. A change applies to the next queue decision.",
 	}, 0, deployMaxConcurrentCeiling)
 }
+
+// KeyAppsMaxReplicasPerService caps the replica count one service may be given.
+const KeyAppsMaxReplicasPerService = "apps.max_replicas_per_service"
+
+func init() {
+	registerLimit(Definition{
+		Key: KeyAppsMaxReplicasPerService, Category: CategoryDeploys, Default: "100", Env: "APP_MAX_REPLICAS_PER_SERVICE", Apply: ApplyLive,
+		Title:       "Replica cap per service",
+		Description: "Largest replica count the API accepts for one service when an app is created, updated or scaled; a bigger count is refused with HTTP 400. Between 1 and 1000; a change applies to the next request, running apps keep their count.",
+	}, 1, 1000)
+}

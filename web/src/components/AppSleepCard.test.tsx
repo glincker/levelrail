@@ -296,7 +296,7 @@ describe('AppSleepCard', () => {
     )
     const user = userEvent.setup()
     renderCard()
-    await user.click(await screen.findByRole('button', { name: '60 minutes' }))
+    await user.click(await screen.findByRole('radio', { name: '60 minutes' }))
     expect(sentBody(fetchMock, 'PUT')).toEqual({
       idle_minutes: 60,
     })

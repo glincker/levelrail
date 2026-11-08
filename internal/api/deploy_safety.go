@@ -54,6 +54,10 @@ type freezeOverride struct {
 // override, otherwise the note recorded on the attempt. ok false means a
 // response was already written.
 func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string, o freezeOverride) (note string, ok bool) {
+	// Protection has no override: a protected app takes no deploy path at all.
+	if rt.refuseIfProtected(w, r, name) {
+		return "", false
+	}
 	if rt.deploySafety == nil {
 		return "", true
 	}
@@ -152,9 +156,25 @@ func (rt *Router) finishSuperseded(ctx context.Context, id string, deployErr err
 	return true
 }
 
+type freezeOverrideNoteKey struct{}
+
+// withFreezeOverrideNote carries an operator's accepted freeze override to the
+// attempt row, and stops holdIfFrozen parking the deploy it already allowed.
+func withFreezeOverrideNote(ctx context.Context, note string) context.Context {
+	if note == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, freezeOverrideNoteKey{}, note)
+}
+
+func freezeOverrideNoteFrom(ctx context.Context) string {
+	note, _ := ctx.Value(freezeOverrideNoteKey{}).(string)
+	return note
+}
+
 // holdIfFrozen parks an automatic git deploy during a freeze window.
 func (rt *Router) holdIfFrozen(ctx context.Context, name string, req deploy.HeldRequest, image string) (bool, string) {
-	if rt.deploySafety == nil {
+	if rt.deploySafety == nil || freezeOverrideNoteFrom(ctx) != "" {
 		return false, ""
 	}
 	status, err := deploy.CheckFreeze(ctx, rt.deploySafety, name, time.Now())

@@ -1,4 +1,6 @@
 import { SnowflakeGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +18,7 @@ export function DeploySafetyOptions({
   values: DeploySafetyValues
   onChange: (next: DeploySafetyValues) => void
 }) {
+  const { t } = useTranslation('deploySafety')
   const freeze = useDeployFreezeOptional(appName)
   const frozen = freeze.data?.status.frozen === true
   const until = freeze.data?.status.until
@@ -34,31 +37,32 @@ export function DeploySafetyOptions({
           htmlFor={`deploy-pull-${appName}`}
           className="text-sm font-normal text-muted-foreground"
         >
-          Require a fresh registry lookup: fail instead of deploying the cached
-          image if the registry is unreachable.
+          {t('pullFresh')}
         </Label>
       </div>
       {frozen ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
-          <p className="flex items-center gap-2 text-sm font-medium text-amber-900 dark:text-amber-200">
-            <SnowflakeGlassIcon className="size-5" />
-            Deploy freeze active
-            {until ? ` until ${new Date(until).toLocaleString()}` : ''}
-          </p>
-          <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-200/80">
-            A manual deploy now overrides the freeze. Say why; the reason is
-            recorded on the deploy.
-          </p>
+        <Alert variant="warning" role="status" className="p-3">
+          <SnowflakeGlassIcon className="size-5" aria-hidden="true" />
+          <AlertTitle>
+            {until
+              ? t('freezeBanner.titleUntil', {
+                  when: new Date(until).toLocaleString(),
+                })
+              : t('freezeBanner.title')}
+          </AlertTitle>
+          <AlertDescription className="text-xs">
+            {t('freezeBanner.body')}
+          </AlertDescription>
           <Input
-            className="mt-2"
-            aria-label="Freeze override reason"
-            placeholder="e.g. hotfix for a security issue"
+            className="col-span-full mt-2"
+            aria-label={t('freezeBanner.reasonLabel')}
+            placeholder={t('freezeBanner.reasonPlaceholder')}
             value={values.overrideReason}
             onChange={(e) =>
               onChange({ ...values, overrideReason: e.target.value })
             }
           />
-        </div>
+        </Alert>
       ) : null}
     </div>
   )

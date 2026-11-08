@@ -8,18 +8,22 @@ import (
 
 const passWindow = 128
 
+// statsCostRows bounds the per-controller cost list the health page carries.
+const statsCostRows = 5
+
 // Stats summarizes recent reconcile passes for the control plane health page.
 type Stats struct {
-	Passes         int64         `json:"passes"`
-	Controllers    int           `json:"controllers"`
-	LastPassAt     time.Time     `json:"last_pass_at"`
-	LastPass       time.Duration `json:"last_pass_ns"`
-	P50            time.Duration `json:"p50_ns"`
-	P95            time.Duration `json:"p95_ns"`
-	SlowestName    string        `json:"slowest_controller"`
-	SlowestElapsed time.Duration `json:"slowest_ns"`
-	Pending        bool          `json:"pending"`
-	Queue          *QueueStats   `json:"queue,omitempty"`
+	Passes         int64            `json:"passes"`
+	Controllers    int              `json:"controllers"`
+	LastPassAt     time.Time        `json:"last_pass_at"`
+	LastPass       time.Duration    `json:"last_pass_ns"`
+	P50            time.Duration    `json:"p50_ns"`
+	P95            time.Duration    `json:"p95_ns"`
+	SlowestName    string           `json:"slowest_controller"`
+	SlowestElapsed time.Duration    `json:"slowest_ns"`
+	Pending        bool             `json:"pending"`
+	Queue          *QueueStats      `json:"queue,omitempty"`
+	Costs          []ControllerCost `json:"costs,omitempty"`
 }
 
 type passStats struct {
@@ -65,6 +69,7 @@ func (e *Engine) Stats() Stats {
 		s.Queue = &qs
 	}
 	e.qmu.Unlock()
+	s.Costs = e.costs.top(statsCostRows)
 	e.mu.RLock()
 	win := append([]time.Duration(nil), e.ring...)
 	s.SlowestName, s.SlowestElapsed = e.slowestName, e.slowest

@@ -13,10 +13,10 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,7 +27,13 @@ func (rt *Router) protectedEnvironmentOf(ctx context.Context, name string) (env 
 		return store.Environment{}, false, nil
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, name)
-	if err != nil || svc == nil || svc.EnvironmentID == "" {
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return store.Environment{}, false, nil
+	}
+	if err != nil {
+		return store.Environment{}, false, fmt.Errorf("load service: %w", err)
+	}
+	if svc == nil || svc.EnvironmentID == "" {
 		return store.Environment{}, false, nil
 	}
 	e, err := rt.environments.GetEnvironment(ctx, svc.EnvironmentID)
@@ -99,7 +105,7 @@ func (rt *Router) pinBranchSHA(ctx context.Context, name, branch string) (string
 	if err != nil {
 		return "", fmt.Errorf("resolve deploy token: %w", err)
 	}
-	sha, err := rt.resolveBranchSHA(ctx, gs.RepoURL, branch, token)
+	sha, err := rt.resolveBranchSHA(rt.gitAuthCtx(ctx, name, gs.RepoURL), gs.RepoURL, branch, token)
 	if err != nil {
 		return "", fmt.Errorf("resolve latest commit: %w", err)
 	}
@@ -114,11 +120,11 @@ var resolveTagSHA resolveTagSHAFunc = resolveRemoteTagSHA
 // resolveRemoteTagSHA returns the commit a tag points at, peeling annotated tags.
 func resolveRemoteTagSHA(ctx context.Context, repoURL, tag, token string) (string, error) {
 	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{Name: "origin", URLs: []string{repoURL}})
-	opts := &git.ListOptions{PeelingOption: git.AppendPeeled}
-	if token != "" {
-		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	auth, err := sourcecache.RemoteAuth(ctx, repoURL, token)
+	if err != nil {
+		return "", fmt.Errorf("list refs: %w", err)
 	}
-	refs, err := remote.ListContext(ctx, opts)
+	refs, err := remote.ListContext(ctx, &git.ListOptions{PeelingOption: git.AppendPeeled, Auth: auth})
 	if err != nil {
 		return "", fmt.Errorf("list refs: %w", err)
 	}
@@ -143,7 +149,7 @@ func (rt *Router) pinTagSHA(ctx context.Context, name, repoURL, tag string) (str
 	if err != nil {
 		return "", fmt.Errorf("resolve deploy token: %w", err)
 	}
-	return resolveTagSHA(ctx, repoURL, tag, token)
+	return resolveTagSHA(rt.gitAuthCtx(ctx, name, repoURL), repoURL, tag, token)
 }
 
 // holdGitPush parks a validated push on a protected app. The pushed commit is
@@ -201,7 +207,7 @@ func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.Hel
 	if err != nil {
 		return errors.New("the held commit is no longer stored, push again")
 	}
-	buildType, path, base := rt.gitPushBuildConfig(ctx, name, commit)
+	buildType, path, base, _ := rt.gitPushBuildConfig(ctx, name, commit)
 	treq := triggerBuildRequest{
 		RepoURL: req.PushMirror, Ref: req.CommitSHA,
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},

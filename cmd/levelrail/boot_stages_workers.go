@@ -154,8 +154,13 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetCertExpiryPolicy(certPolicy)
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetLogRulePolicySource(func() alerting.LogRulePolicy {
+		l := apiRouter.RuntimeSettings().LogRuleLimits(context.Background())
+		return alerting.LogRulePolicy{EvalEvery: l.EvalEvery, MaxWindow: l.MaxWindow, MaxRows: l.MaxRows, Samples: l.Samples}
+	})
 	alertingEngine.SetDomainTraffic(apiRouter)
 	alertingEngine.SetEmailDelivery(db)
+	alertingEngine.SetCleanup(apiRouter)
 	alertingEngine.SetDatabaseHealth(apiRouter)
 	if src := s.deployDispatcher.Outcomes(); src != nil {
 		alertingEngine.SetDeployFailures(src)
@@ -167,7 +172,13 @@ func (s *bootState) startAlerting() {
 		}
 	}()
 	go runUsageRollup(ctx, apiRouter)
-	go footprint.RunTrim(ctx, logger, os.Getenv)
+	rs := apiRouter.RuntimeSettings()
+	go footprint.RunTrim(ctx, logger, os.Getenv, &footprint.LiveSettings{
+		GCPercent:       func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintGCPercent) },
+		MemLimitPercent: func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintMemLimitPercent) },
+		TrimInterval:    func(c context.Context) time.Duration { return rs.Duration(c, runtimesettings.KeyFootprintTrimInterval) },
+		TrimMinIdleMB:   func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintTrimMinIdleMB) },
+	})
 	go func() {
 		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("database teardown retry stopped", slog.String("error", err.Error()))
@@ -255,6 +266,7 @@ func (s *bootState) startSchedulers() {
 		scheduler.DefaultRetentionHours = func(ctx context.Context) int {
 			return s.apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyBackupDefaultRetentionHours)
 		}
+		scheduler.ComposeServices = newComposeServiceBackupRunner(db, client, agentRegistry, backupRunner)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
 			return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID)

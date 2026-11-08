@@ -24,6 +24,8 @@ export interface PreviewEnvironment {
   extended?: boolean
   is_fork: boolean
   head_repo?: string
+  // Absent on older servers; the card then falls back to the app policy.
+  gated?: boolean
   ephemeral_databases?: PreviewEphemeralDatabase[]
   database_isolations?: PreviewDatabaseIsolation[]
 }

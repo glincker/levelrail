@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -208,6 +209,15 @@ func (s *Syncer) run(ctx context.Context, app, sha string, gs *store.GitSource, 
 	url, token, err := s.cfg.Source.RepoInfo(ctx, app)
 	if err != nil {
 		return SyncResult{}, fmt.Errorf("pipeline sync: resolve repository: %w", err)
+	}
+	if ra, ok := s.cfg.Source.(RepoAuther); ok {
+		auth, err := ra.RepoAuth(ctx, app, url)
+		if err != nil {
+			return SyncResult{}, fmt.Errorf("pipeline sync: repository auth: %w", err)
+		}
+		if auth != nil {
+			ctx = sourcecache.WithAuth(ctx, auth)
+		}
 	}
 	files, err := s.cfg.Fetcher.FetchFiles(ctx, url, token, gs.Branch, sha, DiscoverDirs(s.cfg.BrandName))
 	if err != nil {

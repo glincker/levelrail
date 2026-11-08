@@ -83,6 +83,9 @@ import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
 import type scheduledDeploy from '../locales/en/scheduledDeploy.json'
 import type gitBuild from '../locales/en/gitBuild.json'
+import type appServices from '../locales/en/appServices.json'
+import type runtimeOptions from '../locales/en/runtimeOptions.json'
+import type appRun from '../locales/en/appRun.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
 import type compose from '../locales/en/compose.json'
@@ -104,6 +107,7 @@ import type archives from '../locales/en/archives.json'
 import type jobs from '../locales/en/jobs.json'
 import type pipelines from '../locales/en/pipelines.json'
 import type budget from '../locales/en/budget.json'
+import type sidebarCustomize from '../locales/en/sidebarCustomize.json'
 import type inbox from '../locales/en/inbox.json'
 import type controlPlaneReplica from '../locales/en/controlPlaneReplica.json'
 import type autoscale from '../locales/en/autoscale.json'
@@ -143,8 +147,10 @@ import type models from '../locales/en/models.json'
 import type hubs from '../locales/en/hubs.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
+import type statePlaceholders from '../locales/en/statePlaceholders.json'
 import type secretScan from '../locales/en/secretScan.json'
 import type appFiles from '../locales/en/appFiles.json'
+import type appContainers from '../locales/en/appContainers.json'
 import type sso from '../locales/en/sso.json'
 import type cdn from '../locales/en/cdn.json'
 
@@ -222,6 +228,9 @@ declare module 'i18next' {
       splitTesting: typeof splitTesting
       scheduledDeploy: typeof scheduledDeploy
       gitBuild: typeof gitBuild
+      appServices: typeof appServices
+      runtimeOptions: typeof runtimeOptions
+      appRun: typeof appRun
       frameworks: typeof frameworks
       teams: typeof teams
       compose: typeof compose
@@ -237,6 +246,7 @@ declare module 'i18next' {
       jobs: typeof jobs
       pipelines: typeof pipelines
       budget: typeof budget
+      sidebarCustomize: typeof sidebarCustomize
       inbox: typeof inbox
       controlPlaneReplica: typeof controlPlaneReplica
       autoscale: typeof autoscale
@@ -274,8 +284,10 @@ declare module 'i18next' {
       templates: typeof templates
       aiAssistant: typeof aiAssistant
       demo: typeof demo
+      statePlaceholders: typeof statePlaceholders
       secretScan: typeof secretScan
       appFiles: typeof appFiles
+      appContainers: typeof appContainers
       maintenance: typeof maintenance
       appBuildCache: typeof appBuildCache
       buildPerformance: typeof buildPerformance

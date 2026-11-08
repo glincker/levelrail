@@ -77,7 +77,7 @@ function ItemLink({
           data-locked="true"
           className={cn(
             'text-sidebar-foreground/75',
-            sub && 'h-7 pl-6 text-[13px]',
+            sub && 'h-7 pl-6 text-sm',
           )}
         >
           {item.icon}
@@ -94,7 +94,7 @@ function ItemLink({
         isActive={activeId === item.id}
         tooltip={label ?? item.label}
         title={label ?? item.label}
-        className={cn(sub && 'h-7 pl-6 text-[13px]')}
+        className={cn(sub && 'h-7 pl-6 text-sm')}
       >
         {item.icon}
         <span>{label ?? item.label}</span>
@@ -222,7 +222,7 @@ export function AppNav({ name }: { name: string }) {
                     header={
                       <span
                         className={cn(
-                          'flex items-center gap-2 text-[13px]',
+                          'flex items-center gap-2 text-sm',
                           containsActive && 'text-sidebar-foreground',
                         )}
                       >
@@ -255,7 +255,7 @@ export function AppNav({ name }: { name: string }) {
                               setOpen(`${section.id}-more`, open)
                             }
                             header={
-                              <span className="flex items-center gap-2 pl-2 text-[13px] text-sidebar-foreground/70">
+                              <span className="flex items-center gap-2 pl-2 text-sm text-sidebar-foreground/70">
                                 {t('appTabs.more')}
                               </span>
                             }

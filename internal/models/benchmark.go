@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"io"
 	"log/slog"
 	"net/http"
@@ -96,7 +97,7 @@ type benchDeps struct {
 // SetBenchmark enables the benchmark. stats may be nil (memory then reads 0).
 func (s *Service) SetBenchmark(cfg BenchConfig, client *http.Client, stats BenchStatsFunc) {
 	if client == nil {
-		client = &http.Client{}
+		client = netclient.New()
 	}
 	s.bench = benchDeps{cfg: &cfg, client: client, stats: stats, now: time.Now, last: map[string]time.Time{}, running: map[string]bool{}}
 }

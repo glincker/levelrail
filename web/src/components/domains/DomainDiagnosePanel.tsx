@@ -354,7 +354,9 @@ export function DomainDiagnosePanel({ domain }: { domain: string }) {
         >
           <RefreshCwGlassIcon
             size="1.4em"
-            className={running ? 'animate-spin' : undefined}
+            className={
+              running ? 'animate-spin motion-reduce:animate-none' : undefined
+            }
           />
           {t('diagnose.recheck')}
         </Button>

@@ -120,6 +120,8 @@ type databaseNetworkResponse struct {
 	Scope     databaseScopeResource       `json:"scope"`
 	TLS       databaseTLSResource         `json:"tls"`
 	Caveats   []string                    `json:"caveats"`
+	// CanEdit is the caller's root on this database, policies included.
+	CanEdit bool `json:"can_edit"`
 }
 
 func networkKind(name string) string {
@@ -296,6 +298,7 @@ func (rt *Router) handleGetDatabaseNetwork(w http.ResponseWriter, r *http.Reques
 		resp.Verdict.Text = privateText(resp.Verdict.Clients)
 	}
 	rt.fillTLS(ctx, &resp, d, settings)
+	resp.CanEdit = rt.stillAuthorized(ctx, r, AbilityRoot, databaseResourceFromPath(r))
 	writeJSON(w, http.StatusOK, resp)
 }
 

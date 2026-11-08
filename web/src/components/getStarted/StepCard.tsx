@@ -77,6 +77,7 @@ export function StepCard({
           <Button
             size="sm"
             variant="ghost"
+            className="pointer-coarse:min-h-10"
             render={<Link to={step.href} />}
             nativeButton={false}
           >
@@ -140,6 +141,7 @@ export function StepCard({
               <Button
                 size="sm"
                 variant={highlighted ? 'default' : 'outline'}
+                className="pointer-coarse:min-h-10"
                 render={<Link to={step.href} />}
                 nativeButton={false}
               >

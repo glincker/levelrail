@@ -117,6 +117,15 @@ func (db *DB) SetDeployAttemptCacheWarning(ctx context.Context, id, warning stri
 	return nil
 }
 
+// SetDeployAttemptDetectedFramework records the framework found server side.
+// A name the client already sent is kept.
+func (db *DB) SetDeployAttemptDetectedFramework(ctx context.Context, id, framework string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE deploy_attempts SET detected_framework = ? WHERE id = ? AND detected_framework = ''`, framework, id); err != nil {
+		return fmt.Errorf("store: set deploy attempt %q detected framework: %w", id, err)
+	}
+	return nil
+}
+
 // ListDeployAttemptCacheWarnings maps attempt id to its cache warning for a service.
 func (db *DB) ListDeployAttemptCacheWarnings(ctx context.Context, serviceName string) (map[string]string, error) {
 	rows, err := db.QueryContext(ctx, `SELECT id, cache_warning FROM deploy_attempts WHERE service_name = ? AND cache_warning != ''`, serviceName)

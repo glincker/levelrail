@@ -7,7 +7,7 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 export type MailSection = 'templates' | 'audiences' | 'messages'
 
 const TAB_CLASS =
-  'relative -mb-px border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:border-state-active-bar aria-[current=page]:font-medium aria-[current=page]:text-foreground'
+  'relative -mb-px shrink-0 border-b-2 border-transparent px-3 py-2 whitespace-nowrap pointer-coarse:min-h-10 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:border-state-active-bar aria-[current=page]:font-medium aria-[current=page]:text-foreground'
 
 /** MailPageShell is the hero and section links shared by the email templates, audiences and messages pages. */
 export function MailPageShell({
@@ -27,7 +27,7 @@ export function MailPageShell({
   const tabs = (
     <nav
       aria-label={t('nav.label')}
-      className="flex flex-wrap border-b border-border"
+      className="flex overflow-x-auto overscroll-x-contain border-b border-border [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)]"
     >
       <Link to="/settings/email" className={TAB_CLASS}>
         {t('nav.delivery')}

@@ -16,6 +16,8 @@ const jobsRunOneShotUsage = `Usage:
   %[1]s jobs run <app> <job>        run an existing scheduled job now
 
 Run a command once, to completion, in a fresh container built from the app.
+One-off runs and scheduled jobs follow console exec access rules: this needs
+the root ability on the app and exec enabled for it.
 
 Flags:
   --command STR       command to run (quotes group words; no shell involved)

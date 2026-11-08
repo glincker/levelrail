@@ -116,3 +116,27 @@ func TestNextSkewRouteKeepsAuthChain(t *testing.T) {
 		t.Errorf("auth must run before the proxy: %s", skew)
 	}
 }
+
+func TestNextSkewRouteKeepsAuthGateAddress(t *testing.T) {
+	cfg, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "s", ListenAddr: ":443",
+		Routes: []ProxyRoute{{
+			Hosts: []string{"gated.example.com"}, BackendDial: "127.0.0.1:9000",
+			AuthGate: &AuthGate{URL: "http://auth.internal:9091"},
+			NextSkew: []NextSkewRoute{{HeldDial: "127.0.0.1:9001", DeploymentIDs: []string{"old-1"}}},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	skew := findSkewRoute(t, cfg)
+	if got := strings.Count(skew, `"dial":"auth.internal:9091"`); got != 1 {
+		t.Errorf("auth proxy must keep its address exactly once, found %d: %s", got, skew)
+	}
+	if got := strings.Count(skew, "127.0.0.1:9001"); got != 1 {
+		t.Errorf("only the app proxy may dial the held release, found %d: %s", got, skew)
+	}
+	if strings.Contains(skew, "127.0.0.1:9000") {
+		t.Errorf("skew route must not dial the current release: %s", skew)
+	}
+}

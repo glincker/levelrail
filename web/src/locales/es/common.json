@@ -284,6 +284,9 @@
       "pin": "Fijar {{label}}",
       "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
     },
+    "customize": {
+      "open": "Personalizar barra lateral"
+    },
     "locked": {
       "badge": "Beta",
       "description": "Esta es una función beta y está desactivada. Ábrela para ir a Funciones beta y activarla.",
@@ -322,6 +325,7 @@
       "menu": "Elegir tema",
       "light": "Claro",
       "dark": "Oscuro",
+      "oled": "Negro OLED",
       "system": "Sistema"
     },
     "help": {
@@ -352,6 +356,7 @@
       "data": "Datos",
       "traffic": "Red",
       "infrastructure": "Flota y costes",
+      "platform": "Plataforma",
       "access": "Seguridad",
       "ai": "IA"
     },
@@ -495,6 +500,7 @@
         "servers": "Secciones de servidores",
         "registry": "Secciones del registro",
         "cost": "Secciones de uso y coste",
+        "alerts": "Secciones de alertas",
         "security": "Secciones de seguridad"
       },
       "tab": {
@@ -518,7 +524,13 @@
         "loadBalancers": "Balanceadores de carga",
         "cdn": "CDN",
         "firewall": "Cortafuegos",
-        "nodes": "Nodos",
+        "nodes": "Servidores",
+        "privateNetworks": "Red privada",
+        "topology": "Topologia",
+        "certificates": "Certificados",
+        "channels": "Canales",
+        "status": "Estado",
+        "alerts": "Alertas",
         "providers": "Proveedores cloud",
         "images": "Imágenes",
         "registry": "Registro",
@@ -823,6 +835,21 @@
     "envKey": "Nombre de variable, fila {{row}}",
     "envValue": "Valor de variable, fila {{row}}"
   },
+  "projectsPage": {
+    "list": {
+      "name": "Nombre",
+      "created": "Creado"
+    },
+    "empty": {
+      "title": "Aún no hay proyectos",
+      "description": "Los proyectos agrupan una app con su base de datos y caché. Crea uno para empezar a organizar."
+    },
+    "error": {
+      "title": "No se pudieron cargar los proyectos",
+      "description": "{{error}}",
+      "retry": "Reintentar"
+    }
+  },
   "apiError": {
     "copied": "Copiado",
     "copyRequestId": "Copiar ID de solicitud",
@@ -987,6 +1014,9 @@
       "deploy": "Despliegue",
       "observe": "Observar",
       "traffic": "Tráfico"
+    },
+    "items": {
+      "containers": "Contenedores"
     },
     "more": "Más",
     "overview": "Resumen",
@@ -1412,5 +1442,65 @@
   "roleGate": {
     "needsAdmin": "Requiere administrador",
     "needsOperator": "Requiere operador"
+  },
+  "overview": {
+    "connectGitSource": "Conectar origen Git"
+  },
+  "a11y": {
+    "routeNotFound": {
+      "title": "Página no encontrada",
+      "body": "Esta dirección no corresponde a ninguna página. Puede haberse movido o el enlace está desactualizado.",
+      "suggestions": "Páginas con un nombre parecido",
+      "home": "Volver al panel"
+    },
+    "tables": {
+      "alertHistory": "Historial de alertas",
+      "appExposure": "Puertos expuestos",
+      "appReplicas": "Réplicas de la app",
+      "archiveFiles": "Archivos del archivo comprimido",
+      "dnsRecords": "Registros DNS",
+      "importEnv": "Variables de entorno importadas",
+      "investigationMetrics": "Métricas de la investigación",
+      "investigationEvents": "Eventos de la investigación",
+      "modelUsage": "Uso de modelos",
+      "pipelineInsights": "Datos de pipelines",
+      "pipelineSlowSteps": "Pasos de pipeline más lentos",
+      "splitTests": "Variantes de prueba dividida",
+      "statusWebhooks": "Webhooks de la página de estado",
+      "myAccess": "Mi acceso",
+      "agentConnect": "Conexiones de agentes",
+      "aiUsage": "Uso de IA",
+      "appAnalysis": "Análisis de la app",
+      "vitalsRoutes": "Web vitals por ruta",
+      "cleanupHistory": "Historial de limpieza",
+      "engineStats": "Estadísticas del motor de base de datos",
+      "buildReport": "Informe de compilación",
+      "dnsDelegation": "Delegación DNS",
+      "dnsPropagation": "Resultados de propagación DNS",
+      "redirects": "Redirecciones",
+      "serverAddresses": "Direcciones del servidor",
+      "exposure": "Exposición",
+      "firewallPorts": "Puertos abiertos",
+      "functionKv": "Entradas clave valor de la función",
+      "mailQueue": "Cola de correo",
+      "importPlan": "Plan de importación",
+      "importPlanServices": "Servicios del plan de importación",
+      "nodePatches": "Parches del nodo",
+      "pluginPanel": "Datos del plugin",
+      "plugins": "Plugins",
+      "trustedKeys": "Claves de firma de confianza",
+      "findingChanges": "Cambios propuestos",
+      "benchmarkCompare": "Comparación de benchmarks",
+      "benchmarkResults": "Resultados del benchmark",
+      "benchmarkSteps": "Pasos del benchmark",
+      "benchmarkSamples": "Muestras del benchmark",
+      "benchmarkRuns": "Ejecuciones de benchmark",
+      "trafficDiff": "Vista previa del cambio de tráfico",
+      "trafficTopPaths": "Rutas principales",
+      "trafficBreakdown": "Desglose del tráfico",
+      "trafficErrors": "Errores de tráfico",
+      "firewallRules": "Reglas del firewall",
+      "mobileDevices": "Dispositivos móviles"
+    }
   }
 }

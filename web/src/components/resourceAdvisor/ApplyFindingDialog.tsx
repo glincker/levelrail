@@ -53,7 +53,10 @@ function PreviewTable({ preview }: { preview: AdvisorApplyResult }) {
   const { t } = useTranslation('resourceAdvisor')
   const row = useRow(preview)
   return (
-    <table className="w-full text-sm">
+    <table
+      aria-label={t('a11y.tables.findingChanges', { ns: 'common' })}
+      className="w-full text-sm"
+    >
       <thead>
         <tr className="text-left text-xs text-muted-foreground">
           <th className="pb-1 font-medium">{t('apply.setting')}</th>

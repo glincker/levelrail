@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CoinsGlassIcon } from '@thesvg/ui-react'
@@ -20,6 +20,12 @@ import type {
   CostGroupBy,
   CostPeriod,
 } from '../types/costExplorer'
+
+const AppCapsCard = lazy(() =>
+  import('../components/costs/AppCapsCard').then((m) => ({
+    default: m.AppCapsCard,
+  })),
+)
 
 export const Route = createFileRoute('/costs')({
   component: CostsPage,
@@ -175,6 +181,9 @@ function CostsPage() {
           <CostBreakdown data={data} />
         </>
       ) : null}
+      <Suspense fallback={<Skeleton className="h-24 w-full rounded-lg" />}>
+        <AppCapsCard />
+      </Suspense>
       <CostBudgetsPanel />
     </PageTemplate>
   )

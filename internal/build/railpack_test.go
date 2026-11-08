@@ -411,6 +411,72 @@ func TestClient_BuildRailpack_Live_Python(t *testing.T) {
 	assertContainerServes(ctx, t, docker, tag, "8000", "levelrail railpack python django fixture")
 }
 
+// TestClient_BuildRailpack_Live_Ruby builds testdata/railpack-ruby-serve, a tiny Sinatra app,
+// and runs the image to check it serves HTTP, like the Python live test.
+func TestClient_BuildRailpack_Live_Ruby(t *testing.T) {
+	docker, bk := liveRailpackClient(t)
+
+	tag := "levelrail-railpack-spike:ruby-test"
+	t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	progress := &collectProgress{}
+	res, err := bk.BuildRailpack(ctx, RailpackRequest{
+		SourceDir: "testdata/railpack-ruby-serve",
+		Tag:       tag,
+	}, progress.fn())
+	if err != nil {
+		t.Fatalf("BuildRailpack() error = %v", err)
+	}
+	if res.Tag != tag {
+		t.Errorf("Result.Tag = %q, want %q", res.Tag, tag)
+	}
+	if progress.count() == 0 {
+		t.Error("expected at least one ProgressEvent from a real build, got none")
+	}
+
+	assertContainerServes(ctx, t, docker, tag, "3000", "levelrail railpack ruby sinatra fixture")
+}
+
+// TestClient_BuildRailpack_Live_PHP builds testdata/railpack-php-serve, a tiny plain PHP app,
+// and runs the image to check it serves HTTP, like the Python live test.
+func TestClient_BuildRailpack_Live_PHP(t *testing.T) {
+	docker, bk := liveRailpackClient(t)
+
+	tag := "levelrail-railpack-spike:php-test"
+	t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	progress := &collectProgress{}
+	res, err := bk.BuildRailpack(ctx, RailpackRequest{
+		SourceDir: "testdata/railpack-php-serve",
+		Tag:       tag,
+	}, progress.fn())
+	if err != nil {
+		t.Fatalf("BuildRailpack() error = %v", err)
+	}
+	if res.Tag != tag {
+		t.Errorf("Result.Tag = %q, want %q", res.Tag, tag)
+	}
+	if progress.count() == 0 {
+		t.Error("expected at least one ProgressEvent from a real build, got none")
+	}
+
+	assertContainerServes(ctx, t, docker, tag, "80", "levelrail railpack php fixture")
+}
+
 // assertContainerServes runs image as a container with containerPort
 // published to a random host port, polls it until it answers or ctx
 // expires, and asserts the response body contains want. It is the "run

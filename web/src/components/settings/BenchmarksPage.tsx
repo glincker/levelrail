@@ -81,6 +81,7 @@ function ComparePane({ base, head }: { base: string; head: string }) {
 }
 
 export function BenchmarksPage() {
+  const { t: tc } = useTranslation('common')
   const { t } = useTranslation('resilience', { keyPrefix: 'benchmarks' })
   const brand = useBrand()
   const { data, isPending, error, refetch, isFetching } = useBenchmarkRuns()
@@ -195,7 +196,7 @@ export function BenchmarksPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table aria-label={tc('a11y.tables.benchmarkRuns')}>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">

@@ -9,6 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -44,6 +45,9 @@ func (s *bootState) wireStorageSettings() {
 	ingressdriver.DefaultAccessLog().SetRetentionSource(func() time.Duration {
 		return rs().AccessLogRetention(context.Background())
 	})
+	ingressdriver.DefaultAccessLog().SetCapacitySource(func() int {
+		return rs().Limit(context.Background(), runtimesettings.KeyAccessLogSize)
+	})
 	ingressdriver.DefaultAccessLog().SetVisitorRotationSource(func() time.Duration {
 		return rs().VisitorSaltRotation(context.Background())
 	})
@@ -55,7 +59,30 @@ func (s *bootState) wireStorageSettings() {
 	backup.SetLocalRootSource(func() string {
 		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
 	})
+	store.SetReadConnsSource(func() int {
+		return rs().Limit(context.Background(), runtimesettings.KeyReadConns)
+	})
+	store.SetTuningSource(func() store.Tuning {
+		c := context.Background()
+		return store.Tuning{
+			CacheSizeMB: rs().Int(c, runtimesettings.KeyDBCacheSizeMB),
+			MmapSizeMB:  rs().Int(c, runtimesettings.KeyDBMmapSizeMB),
+			TempStore:   dbTuningName(rs().String(c, runtimesettings.KeyDBTempStore)),
+			Synchronous: dbTuningName(rs().String(c, runtimesettings.KeyDBSynchronous)),
+		}
+	})
+	go s.db.RunOptimize(s.ctx, func() time.Duration {
+		return rs().Duration(context.Background(), runtimesettings.KeyDBOptimizeInterval)
+	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes
 	})
+}
+
+// dbTuningName maps the "default" setting value to empty, meaning leave SQLite alone.
+func dbTuningName(v string) string {
+	if v == runtimesettings.DBTuningDefault {
+		return ""
+	}
+	return v
 }

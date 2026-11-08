@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -133,5 +134,28 @@ func TestNextAdvisorHealthyAndNotNext(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, loginTestSession(t, rt, db), http.MethodGet, "/api/v1/apps/missing/next-advisor", ""))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("missing app status = %d", rec.Code)
+	}
+}
+
+// An upload deploy never sends detected_framework, so the build log note is
+// what must mark the attempt and flip the advisor.
+func TestNextAdvisorDetectsFromUploadBuildLog(t *testing.T) {
+	rt, db := newTestRouter(t)
+	rt.deployAttempts = db
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "up", Image: "levelrail/up:1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: "dep_up", ServiceName: "up", Image: "levelrail/up:1", Status: store.DeployAttemptStatusRunning, StartedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := nextAdvisorGet(t, rt, db, "up"); got.Detected {
+		t.Fatal("detected before any Next.js log line")
+	}
+	progress := rt.recordDetectedFramework("dep_up", func(build.ProgressEvent) {})
+	progress(build.ProgressEvent{Step: "x", Log: "go build ok"})
+	progress(build.ProgressEvent{Step: "next.js", Log: "next.js 16 detected (standalone: yes, app router: yes)", Stream: "stderr"})
+	if got, _ := nextAdvisorGet(t, rt, db, "up"); !got.Detected {
+		t.Fatal("not detected after the Next.js build log line")
 	}
 }

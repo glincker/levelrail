@@ -242,6 +242,7 @@ type genService struct {
 	Ports       []string          `yaml:"ports,omitempty"`
 	Environment map[string]string `yaml:"environment,omitempty"`
 	Volumes     []string          `yaml:"volumes,omitempty"`
+	Runtime     map[string]any    `yaml:",inline"`
 }
 
 type genFile struct {
@@ -295,6 +296,7 @@ func generateCompose(services []ServicePlan, supplied map[string]string) string 
 			}
 			g.Volumes = append(g.Volumes, spec)
 		}
+		g.Runtime = s.runtime
 		f.Services[s.Name] = g
 	}
 	out, err := yaml.Marshal(f)

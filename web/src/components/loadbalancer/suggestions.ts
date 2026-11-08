@@ -6,6 +6,7 @@ import type {
 } from '../../queries/loadBalancerLive'
 import { parseDuration } from './duration'
 import { presetById } from './presets'
+import { lbT } from '../../lib/lbText'
 
 export interface LbSuggestion {
   id: string
@@ -74,9 +75,12 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'no-health',
       tone: 'warning',
       priority: 100,
-      title: 'No health check',
-      detail: 'A failed replica keeps receiving traffic.',
-      actionLabel: 'Add /healthz check',
+      title: lbT('suggest.noHealth.title', 'No health check'),
+      detail: lbT(
+        'suggest.noHealth.detail',
+        'A failed replica keeps receiving traffic.',
+      ),
+      actionLabel: lbT('suggest.noHealth.action', 'Add /healthz check'),
       apply: (cfg) => ({
         ...cfg,
         active_health: preset?.active_health,
@@ -89,9 +93,9 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'single-replica',
       tone: 'info',
       priority: 90,
-      title: 'One replica, nothing to balance',
-      detail: 'Run two replicas for failover.',
-      actionLabel: 'Set replicas',
+      title: lbT('suggest.single.title', 'One replica, nothing to balance'),
+      detail: lbT('suggest.single.detail', 'Run two replicas for failover.'),
+      actionLabel: lbT('suggest.single.action', 'Set replicas'),
       apply: null,
       href: 'scale',
     })
@@ -105,9 +109,12 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'flapping',
       tone: 'warning',
       priority: 95,
-      title: 'An upstream is flapping',
-      detail: '3 or more state changes in 10 minutes.',
-      actionLabel: 'Require 3 failures',
+      title: lbT('suggest.flapping.title', 'An upstream is flapping'),
+      detail: lbT(
+        'suggest.flapping.detail',
+        '3 or more state changes in 10 minutes.',
+      ),
+      actionLabel: lbT('suggest.flapping.action', 'Require 3 failures'),
       apply: (cfg) => ({
         ...cfg,
         active_health: cfg.active_health && {
@@ -128,9 +135,15 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
           id: 'timeout-tight',
           tone: 'warning',
           priority: 85,
-          title: 'Health timeout is tight',
-          detail: `Checks take ${Math.round(latency * 1000)}ms at p95, timeout is ${health.timeout ?? '5s'}.`,
-          actionLabel: `Raise to ${next}s`,
+          title: lbT('suggest.timeout.title', 'Health timeout is tight'),
+          detail: lbT(
+            'suggest.timeout.detail',
+            'Checks take {{ms}}ms at p95, timeout is {{timeout}}.',
+            { ms: Math.round(latency * 1000), timeout: health.timeout ?? '5s' },
+          ),
+          actionLabel: lbT('suggest.timeout.action', 'Raise to {{next}}s', {
+            next,
+          }),
           apply: (cfg) => ({
             ...cfg,
             active_health: cfg.active_health && {
@@ -147,9 +160,12 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'iphash-proxy',
       tone: 'info',
       priority: 60,
-      title: 'IP hash behind a proxy',
-      detail: 'Clients behind a CDN or shared proxy land on one replica.',
-      actionLabel: 'Use sticky cookie',
+      title: lbT('suggest.ipHash.title', 'IP hash behind a proxy'),
+      detail: lbT(
+        'suggest.ipHash.detail',
+        'Clients behind a CDN or shared proxy land on one replica.',
+      ),
+      actionLabel: lbT('suggest.ipHash.action', 'Use sticky cookie'),
       apply: (cfg) => ({
         ...cfg,
         algorithm: 'cookie',
@@ -167,9 +183,12 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'weights-ignored',
       tone: 'warning',
       priority: 80,
-      title: 'Weights are ignored',
-      detail: 'Only the weighted algorithm uses them.',
-      actionLabel: 'Use weighted',
+      title: lbT('suggest.weights.title', 'Weights are ignored'),
+      detail: lbT(
+        'suggest.weights.detail',
+        'Only the weighted algorithm uses them.',
+      ),
+      actionLabel: lbT('suggest.weights.action', 'Use weighted'),
       apply: (cfg) => ({ ...cfg, algorithm: 'weighted' }),
     })
   }
@@ -179,9 +198,12 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'passive-off',
       tone: 'info',
       priority: 50,
-      title: 'Passive checks are off',
-      detail: 'Real request failures could eject a replica sooner.',
-      actionLabel: 'Enable',
+      title: lbT('suggest.passive.title', 'Passive checks are off'),
+      detail: lbT(
+        'suggest.passive.detail',
+        'Real request failures could eject a replica sooner.',
+      ),
+      actionLabel: lbT('suggest.passive.action', 'Enable'),
       apply: (cfg) => ({ ...cfg, passive_health: preset }),
     })
   }
@@ -190,9 +212,12 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'slow-start',
       tone: 'info',
       priority: 40,
-      title: 'No slow start',
-      detail: 'A new replica gets its full share at once.',
-      actionLabel: 'Ramp over 30s',
+      title: lbT('suggest.slowStart.title', 'No slow start'),
+      detail: lbT(
+        'suggest.slowStart.detail',
+        'A new replica gets its full share at once.',
+      ),
+      actionLabel: lbT('suggest.slowStart.action', 'Ramp over 30s'),
       apply: (cfg) => ({ ...cfg, slow_start: '30s' }),
     })
   }
@@ -201,9 +226,9 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       id: 'drain',
       tone: 'info',
       priority: 30,
-      title: 'Deploys cut open streams',
-      detail: 'No drain time is set.',
-      actionLabel: 'Drain for 15s',
+      title: lbT('suggest.drain.title', 'Deploys cut open streams'),
+      detail: lbT('suggest.drain.detail', 'No drain time is set.'),
+      actionLabel: lbT('suggest.drain.action', 'Drain for 15s'),
       apply: (cfg) => ({ ...cfg, drain_timeout: '15s' }),
     })
   }

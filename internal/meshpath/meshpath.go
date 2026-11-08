@@ -115,7 +115,7 @@ func (t *Tracker) Path(ctx context.Context, nodeID string) (Path, error) {
 		}
 		return Path{Usable: true, Address: addr.String()}, nil
 	}
-	return Path{Reason: "the control plane has no WireGuard peer for the node yet, the mesh reconciler will add it on its next pass"}, nil
+	return Path{Reason: "the control plane has no WireGuard peer for the node yet: if this lasts more than a minute the node's agent has not accepted its mesh config, so restart it with APP_MESH_ENABLED=1, NET_ADMIN and /dev/net/tun (the join command from `levelrail-cli nodes add` has them), then check `levelrail-cli nodes mesh`"}, nil
 }
 
 var _ Resolver = (*Tracker)(nil)

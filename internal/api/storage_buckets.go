@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/spool"
 	"io"
 	"log/slog"
 	"mime"
@@ -535,7 +536,7 @@ func (rt *Router) handleUploadBucketObject(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "invalid key")
 		return
 	}
-	tmp, err := os.CreateTemp("", "bucket-upload-*")
+	tmp, err := spool.Create("bucket-upload")
 	if err != nil {
 		rt.internalError(w, "api: bucket upload: temp file failed", err)
 		return

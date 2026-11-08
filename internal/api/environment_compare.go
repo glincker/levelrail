@@ -91,6 +91,11 @@ func (rt *Router) handleCompareEnvironmentEnv(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Same 404 for ungranted and unknown ids, so grants are no existence oracle.
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "environment not found"), environmentRef(aID), environmentRef(bID)) {
+		return
+	}
+
 	envA, ok := rt.loadProjectEnvironmentForCompare(w, r, project, aID, "a")
 	if !ok {
 		return

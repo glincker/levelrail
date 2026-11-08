@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/GLINCKER/levelrail/internal/spool"
 	"log/slog"
 	"net/http"
 	"os"
@@ -104,6 +105,7 @@ type cpHealthResource struct {
 	Reconcile  cpReconcile          `json:"reconcile"`
 	Streams    cpStreams            `json:"streams"`
 	Footprint  cpFootprint          `json:"footprint"`
+	Spool      spool.Stats          `json:"spool"`
 	Idle       footprint.Assessment `json:"idle_footprint"`
 	Thresholds cphealth.Thresholds  `json:"thresholds"`
 	Findings   []cphealth.Finding   `json:"findings"`
@@ -127,9 +129,20 @@ type cpReconcile struct {
 	LagSeconds  float64 `json:"lag_seconds"`
 	Pending     bool    `json:"pending"`
 
+	// Costs lists the most expensive controllers by total time since start.
+	Costs []cpControllerCost `json:"costs,omitempty"`
+
 	// Queue is set only while the concurrent worker pool runs.
 	Queue *cpQueue              `json:"queue,omitempty"`
 	Guard reconcile.GuardStatus `json:"guard"`
+}
+
+type cpControllerCost struct {
+	Name    string  `json:"name"`
+	Runs    int64   `json:"runs"`
+	Errors  int64   `json:"errors"`
+	TotalMS float64 `json:"total_ms"`
+	MaxMS   float64 `json:"max_ms"`
 }
 
 type cpQueue struct {
@@ -140,13 +153,14 @@ type cpQueue struct {
 }
 
 type cpFootprint struct {
-	RSSBytes       uint64                `json:"rss_bytes"`
-	Threads        int                   `json:"threads"`
-	OpenFDs        int                   `json:"open_fds"`
-	CPUPercent     float64               `json:"cpu_percent"`
-	TelemetryBytes int64                 `json:"telemetry_bytes"`
-	MemoryLimit    footprint.MemoryLimit `json:"memory_limit"`
-	Loops          []footprint.LoopInfo  `json:"loops"`
+	RSSBytes       uint64                     `json:"rss_bytes"`
+	Threads        int                        `json:"threads"`
+	OpenFDs        int                        `json:"open_fds"`
+	CPUPercent     float64                    `json:"cpu_percent"`
+	TelemetryBytes int64                      `json:"telemetry_bytes"`
+	MemoryLimit    footprint.MemoryLimit      `json:"memory_limit"`
+	Loops          []footprint.LoopInfo       `json:"loops"`
+	Goroutines     []footprint.SubsystemCount `json:"goroutines_by_subsystem"`
 }
 
 type cpStreams struct {
@@ -173,10 +187,11 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		DB:      p.DB.Metrics(),
 		Streams: cpStreams{Active: rt.cpHealth.streams.Load(), Cap: rt.cpHealth.streamCap()},
 	}
+	res.Spool = spool.Usage()
 	proc := footprint.ReadProc()
 	res.Footprint = cpFootprint{
 		RSSBytes: proc.RSSBytes, Threads: proc.Threads, OpenFDs: proc.OpenFDs, CPUPercent: proc.CPUPercent,
-		MemoryLimit: p.MemoryLimit, Loops: footprint.Loops(),
+		MemoryLimit: p.MemoryLimit, Loops: footprint.Loops(), Goroutines: footprint.Subsystems(),
 	}
 	if p.Telemetry != nil {
 		if n, err := p.Telemetry.FileBytes(context.Background()); err == nil {
@@ -190,6 +205,9 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		res.Reconcile = cpReconcile{
 			Passes: rs.Passes, Controllers: rs.Controllers, LastPassMS: durMS(rs.LastPass),
 			P50MS: durMS(rs.P50), P95MS: durMS(rs.P95), Slowest: rs.SlowestName, Pending: rs.Pending,
+		}
+		for _, c := range rs.Costs {
+			res.Reconcile.Costs = append(res.Reconcile.Costs, cpControllerCost{Name: c.Name, Runs: c.Runs, Errors: c.Errors, TotalMS: durMS(c.Total), MaxMS: durMS(c.Max)})
 		}
 		if q := rs.Queue; q != nil {
 			res.Reconcile.Queue = &cpQueue{Workers: q.Workers, Depth: q.Depth, InFlight: q.InFlight, OldestWaitSeconds: q.OldestWait.Seconds()}
@@ -319,7 +337,10 @@ func (rt *Router) idleAssessment(p *ControlPlaneProbe) footprint.Assessment {
 	}
 	cur := footprint.Snapshot(footprint.CPUWindowFromEnv(os.Getenv), apps)
 	tol, err := footprint.ToleranceFromEnv(os.Getenv)
-	return footprint.Assess(cur, footprint.Baseline(), runtime.GOOS, runtime.GOARCH, tol, err)
+	a := footprint.Assess(cur, footprint.Baseline(), runtime.GOOS, runtime.GOARCH, tol, err)
+	a.BootStages = footprint.BootStages()
+	a.BootTotalMS = float64(footprint.BootTotal()) / float64(time.Millisecond)
+	return a
 }
 
 func (rt *Router) handleGetIdleFootprint(w http.ResponseWriter, _ *http.Request) {

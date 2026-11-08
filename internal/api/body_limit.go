@@ -18,7 +18,7 @@ func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
 		enginePrefix = rt.authEngine.Prefix()
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) || isAssetObjectUpload(r) || isVolumeImport(r) {
+		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) || isAssetObjectUpload(r) || isVolumeImport(r) || isDatabaseImport(r) {
 			next.ServeHTTP(w, r)
 			return
 		}

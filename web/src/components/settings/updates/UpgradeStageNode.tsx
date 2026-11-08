@@ -78,7 +78,7 @@ export function UpgradeStageNode({
           <span
             className={cn(
               'absolute inset-0 rounded-full border-2 border-transparent border-t-primary',
-              motion && 'animate-spin',
+              motion && 'animate-spin motion-reduce:animate-none',
             )}
             aria-hidden
           />

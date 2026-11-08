@@ -50,6 +50,8 @@ type PreviewPolicyResource struct {
 	MigrateTimeoutSeconds          int    `json:"migrate_timeout_seconds"`
 	EffectiveMigrateTimeoutSeconds int    `json:"effective_migrate_timeout_seconds"`
 	ImageTagTemplate               string `json:"image_tag_template"`
+	HostTemplate                   string `json:"host_template"`
+	WildcardDomain                 string `json:"wildcard_domain"`
 }
 
 // SetPreviewPolicyRequest is PUT .../preview-policy's body; nil fields are left unchanged.
@@ -73,6 +75,8 @@ type SetPreviewPolicyRequest struct {
 	MigrateCommand        *string `json:"migrate_command,omitempty"`
 	MigrateTimeoutSeconds *int    `json:"migrate_timeout_seconds,omitempty"`
 	ImageTagTemplate      *string `json:"image_tag_template,omitempty"`
+	HostTemplate          *string `json:"host_template,omitempty"`
+	WildcardDomain        *string `json:"wildcard_domain,omitempty"`
 }
 
 type approvePreviewRequest struct {

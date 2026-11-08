@@ -127,8 +127,18 @@ func (c *Client) GetPendingChanges(ctx context.Context, name string) (PendingCha
 
 // ApplyPendingChanges calls POST /api/v1/apps/{name}/apply-pending.
 func (c *Client) ApplyPendingChanges(ctx context.Context, name string) (ApplyPendingResult, error) {
+	return c.ApplyPendingChangesFor(ctx, name, "")
+}
+
+// ApplyPendingChangesFor is ApplyPendingChanges with a reason the audit trail
+// records; the server only accepts its known reasons.
+func (c *Client) ApplyPendingChangesFor(ctx context.Context, name, reason string) (ApplyPendingResult, error) {
 	var out ApplyPendingResult
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/apply-pending", nil, &out)
+	path := "/api/v1/apps/" + PathEscape(name) + "/apply-pending"
+	if reason != "" {
+		path += "?reason=" + url.QueryEscape(reason)
+	}
+	err := c.do(ctx, http.MethodPost, path, nil, &out)
 	return out, err
 }
 

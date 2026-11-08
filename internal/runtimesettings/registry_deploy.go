@@ -13,15 +13,23 @@ const (
 	KeyDeployCIGateMaxWaits = "deploy.ci_gate_max_waits_per_app"
 	// KeyDeployReceiptApprovalWindow is the longest gap between an approval and the deploy it released.
 	KeyDeployReceiptApprovalWindow = "deploy.receipt_approval_window"
-	minDeployDrainTimeout          = time.Second
-	maxDeployDrainTimeout          = 10 * time.Minute
-	maxDeployPreviousReleaseHold   = time.Hour
-	minDeployStableWindow          = time.Second
-	maxDeployStableWindow          = 10 * time.Minute
-	maxDeployWatchWindow           = 24 * time.Hour
+	// KeyDeployProcfileDefaultPort is the port a Procfile web process gets, since a Procfile cannot declare one.
+	KeyDeployProcfileDefaultPort = "deploy.procfile_default_port"
+	minDeployDrainTimeout        = time.Second
+	maxDeployDrainTimeout        = 10 * time.Minute
+	maxDeployPreviousReleaseHold = time.Hour
+	minDeployStableWindow        = time.Second
+	maxDeployStableWindow        = 10 * time.Minute
+	maxDeployWatchWindow         = 24 * time.Hour
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyDeployProcfileDefaultPort, Category: CategoryDeploys, Kind: KindInt, Default: "8080",
+		Env: "APP_DEPLOY_PROCFILE_DEFAULT_PORT", Apply: ApplyLive, CheckValue: intRangeCheck(1, 65535),
+		Title:       "Procfile web port",
+		Description: "The port given to the web process of an app deployed from a Procfile, since a Procfile cannot declare one, from 1 to 65535. The next deploy uses a changed value; apps already deployed keep their port.",
+	})
 	Register(Definition{
 		Key: KeyDeployCIGateMaxWaits, Category: CategoryDeploys, Kind: KindInt, Default: "4",
 		Env: "APP_CI_GATE_MAX_WAITS_PER_APP", Apply: ApplyLive, CheckValue: intRangeCheck(1, 50),

@@ -19,6 +19,8 @@ const ConnectionHint = "database connection string, created empty here: set it a
 func (p *Plan) EmitInput() EmitInput {
 	in := EmitInput{Source: string(p.Report.Platform)}
 	notes := map[string][]string{}
+	// Only sources that map real project environments override the stack scope.
+	perAppScope := p.Report.Platform == Coolify
 	for _, it := range p.Report.Items {
 		switch {
 		case it.Kind == "app" && it.Target != "":
@@ -38,11 +40,16 @@ func (p *Plan) EmitInput() EmitInput {
 	for _, a := range p.Apps {
 		app := EmitApp{Name: a.Name, Port: a.Port, Replicas: a.Replicas, Env: a.Env, Domains: a.Domains,
 			MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs, Notes: notes[a.Name]}
+		if perAppScope {
+			app.Project, app.Environment = sanitizeOptional(a.Project), sanitizeOptional(a.Environment)
+		}
 		if a.Image != "" && !strings.HasSuffix(a.Image, ":pending") {
 			app.Image = a.Image
 		}
 		if a.Health != nil {
 			app.HealthPath = a.Health.Path
+			app.HealthExec = a.Health.Exec
+			app.HealthInterval, app.HealthTimeout, app.HealthRetries = a.Health.IntervalSeconds, a.Health.TimeoutSeconds, a.Health.Failures
 		}
 		names := map[string]bool{}
 		for k := range a.Secrets {
@@ -71,8 +78,17 @@ func (p *Plan) EmitInput() EmitInput {
 		app.Connections = matchConnections(names, a.Env, p.Databases)
 		in.Apps = append(in.Apps, app)
 	}
+	if perAppScope {
+		for _, e := range p.Environments {
+			in.Environments = append(in.Environments, SourceEnvironment{Project: sanitizeOptional(e.Project), Name: sanitizeOptional(e.Name)})
+		}
+	}
 	for _, d := range p.Databases {
-		in.Databases = append(in.Databases, EmitDatabase{Name: d.Name, Engine: d.Engine, Version: d.Version})
+		ed := EmitDatabase{Name: d.Name, Engine: d.Engine, Version: d.Version}
+		if perAppScope {
+			ed.Project = sanitizeOptional(d.Project)
+		}
+		in.Databases = append(in.Databases, ed)
 	}
 	return in
 }
@@ -155,4 +171,12 @@ func sortedMapKeys(m map[string]bool) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// sanitizeOptional keeps an empty name empty so the stack-wide default applies.
+func sanitizeOptional(s string) string {
+	if s == "" {
+		return ""
+	}
+	return SanitizeName(s)
 }

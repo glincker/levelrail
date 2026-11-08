@@ -52,6 +52,7 @@ import {
   type JobFormValues,
 } from '../lib/jobForm'
 import { toCron } from '../lib/cronSchedule'
+import { jobErrorMessage } from '../lib/jobAccess'
 import { CronScheduleFields } from './CronScheduleFields'
 import { CronPreview } from './CronPreview'
 import { JobHttpFields } from './JobHttpFields'
@@ -389,7 +390,9 @@ export function JobDialog({
           </Field>
 
           {mutation.isError ? (
-            <p className="text-sm text-destructive">{mutation.error.message}</p>
+            <p className="text-sm text-destructive">
+              {jobErrorMessage(mutation.error, t('accessRule'))}
+            </p>
           ) : null}
 
           <SheetFooter>

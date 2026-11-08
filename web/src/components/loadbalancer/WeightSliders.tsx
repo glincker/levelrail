@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { InfoTip } from '@/components/kit'
 import { MAX_WEIGHT, type LbFormState } from '../../lib/loadBalancer'
 import { weightShares } from './detection'
@@ -5,11 +6,16 @@ import { LbTextField, type LbPatch } from './LbField'
 import type { LbFormErrors } from '../../lib/loadBalancer'
 
 export function DistributionBar({ weights }: { weights: number[] }) {
+  const { t } = useTranslation('statePlaceholders')
   const shares = weightShares(weights)
   return (
     <div
       role="img"
-      aria-label={`Traffic split: ${shares.map((s, i) => `replica ${i} ${s}%`).join(', ')}`}
+      aria-label={t('lb.weights.split', {
+        parts: shares
+          .map((s, i) => t('lb.weights.part', { index: i, share: s }))
+          .join(', '),
+      })}
       className="flex h-8 w-full overflow-hidden rounded-lg border"
     >
       {weights.map((w, i) => (
@@ -31,6 +37,7 @@ export function DistributionBar({ weights }: { weights: number[] }) {
 }
 
 function SlowStartRamp({ seconds }: { seconds: string }) {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <svg viewBox="0 0 48 16" className="h-4 w-12" aria-hidden="true">
@@ -43,7 +50,7 @@ function SlowStartRamp({ seconds }: { seconds: string }) {
           className="stroke-primary"
         />
       </svg>
-      New replicas ramp up over {seconds}
+      {t('lb.weights.ramp', { duration: seconds })}
     </div>
   )
 }
@@ -57,14 +64,14 @@ export function WeightSliders({
   errors: LbFormErrors
   onChange: LbPatch
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const shares = weightShares(form.weights)
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1 text-sm font-medium">
-        Traffic split
-        <InfoTip label="About weights">
-          Weights follow replica index. A replica with weight 3 gets three times
-          the traffic of one with weight 1.
+        {t('lb.weights.title')}
+        <InfoTip label={t('lb.weights.about')}>
+          {t('lb.weights.aboutBody')}
         </InfoTip>
       </div>
       <DistributionBar weights={form.weights} />
@@ -72,14 +79,14 @@ export function WeightSliders({
         {form.weights.map((weight, index) => (
           <li key={index} className="flex items-center gap-3">
             <span className="w-16 text-sm text-muted-foreground">
-              Replica {index}
+              {t('lb.weights.replica', { index })}
             </span>
             <input
               type="range"
               min={1}
               max={MAX_WEIGHT}
               value={weight}
-              aria-label={`Weight for replica ${index}`}
+              aria-label={t('lb.weights.weightFor', { index })}
               className="h-2 flex-1 cursor-pointer accent-primary"
               onChange={(e) => {
                 const next = [...form.weights]
@@ -99,8 +106,8 @@ export function WeightSliders({
       <div className="max-w-56">
         <LbTextField
           id="lb-slow-start"
-          label="Slow start"
-          info="A new replica ramps from zero up to its weight over this time instead of taking its full share at once."
+          label={t('lb.weights.slowStart')}
+          info={t('lb.weights.slowStartInfo')}
           value={form.slowStart}
           error={errors.slowStart}
           placeholder="30s"

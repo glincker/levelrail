@@ -3,6 +3,11 @@ import type { TFunction } from 'i18next'
 // Locale keys (observability.json, alertKinds) for each alert kind that
 // needs a friendly label, description and "what to do" hint.
 export const ALERT_KIND_COPY = {
+  oom_killed: {
+    label: 'alertKinds.oom_killed.label',
+    description: 'alertKinds.oom_killed.description',
+    action: 'alertKinds.oom_killed.action',
+  },
   backup_failed: {
     label: 'alertKinds.backup_failed.label',
     description: 'alertKinds.backup_failed.description',
@@ -47,6 +52,11 @@ export const ALERT_KIND_COPY = {
     label: 'alertKinds.email_delivery_failing.label',
     description: 'alertKinds.email_delivery_failing.description',
     action: 'alertKinds.email_delivery_failing.action',
+  },
+  cleanup_failing: {
+    label: 'alertKinds.cleanup_failing.label',
+    description: 'alertKinds.cleanup_failing.description',
+    action: 'alertKinds.cleanup_failing.action',
   },
 } as const
 

@@ -69,6 +69,8 @@ type HTTPTransport struct {
 	TLS                   *UpstreamTLSConfig `json:"tls,omitempty"`
 	DialTimeout           string             `json:"dial_timeout,omitempty"`
 	ResponseHeaderTimeout string             `json:"response_header_timeout,omitempty"`
+	ReadTimeout           string             `json:"read_timeout,omitempty"`
+	WriteTimeout          string             `json:"write_timeout,omitempty"`
 }
 
 // LBRoute is one route's upstream pool and balancing settings. A

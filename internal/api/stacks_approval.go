@@ -95,7 +95,7 @@ func expiredResult() []byte {
 // expireStackApprovals marks stale pending revisions failed; reads call it so
 // no background job is needed.
 func (rt *Router) expireStackApprovals(ctx context.Context, ss StackStore, s store.StackRecord) {
-	revs, err := ss.ListStackRevisions(ctx, s.ID, stackHistoryLimit())
+	revs, err := ss.ListStackRevisions(ctx, s.ID, rt.stackHistoryLimit(ctx))
 	if err != nil {
 		return
 	}

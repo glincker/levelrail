@@ -51,6 +51,9 @@ func printCPHealth(out io.Writer, h apiclient.CPHealth) {
 	_, _ = fmt.Fprintf(out, "db queue:    %d waits, %.0f ms total\nwal:         %d MiB of %d MiB db\n", h.DB.WaitCount, h.DB.WaitMS, h.DB.WALBytes>>20, h.DB.DBBytes>>20)
 	_, _ = fmt.Fprintln(out, readPoolLine(h))
 	_, _ = fmt.Fprintf(out, "reconcile:   %d controllers, last pass %.0f ms, p95 %.0f ms, %.0f s since last pass\n", h.Reconcile.Controllers, h.Reconcile.LastPassMS, h.Reconcile.P95MS, h.Reconcile.LagSeconds)
+	for _, c := range h.Reconcile.Costs {
+		_, _ = fmt.Fprintf(out, "  controller %-24s runs %-6d errors %-4d total %8.0f ms max %6.0f ms\n", c.Name, c.Runs, c.Errors, c.TotalMS, c.MaxMS)
+	}
 	_, _ = fmt.Fprintf(out, "streams:     %d of %d\n", h.Streams.Active, h.Streams.Cap)
 	fp := h.Footprint
 	_, _ = fmt.Fprintf(out, "footprint:   rss %d MiB, %d threads, cpu %.1f%%, metrics db %d MiB, memory limit %d MiB (%s)\n", fp.RSSBytes>>20, fp.Threads, fp.CPUPercent, fp.TelemetryBytes>>20, fp.MemoryLimit.LimitBytes>>20, fp.MemoryLimit.Source)
@@ -82,6 +85,12 @@ func printIdleFootprint(out io.Writer, a footprint.Assessment) {
 		a.Status, a.Platform, a.Current.RSSBytes>>20, a.Current.CPUPercent, a.Current.CPUWindowSeconds, a.Current.Goroutines, a.Current.OpenFDs)
 	if a.Detail != "" {
 		_, _ = fmt.Fprintf(out, "  %s\n", a.Detail)
+	}
+	if len(a.BootStages) > 0 {
+		_, _ = fmt.Fprintf(out, "  boot: %.0f ms in %d stages\n", a.BootTotalMS, len(a.BootStages))
+		for _, st := range a.BootStages {
+			_, _ = fmt.Fprintf(out, "    %-24s %8.1f ms\n", st.Name, st.DurationMS)
+		}
 	}
 	for _, c := range a.Checks {
 		mark := "ok  "

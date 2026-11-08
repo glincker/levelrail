@@ -86,6 +86,7 @@ func (l *Loop) Active() func() {
 func Every(ctx context.Context, name string, interval time.Duration, logger *slog.Logger, tick func(context.Context) error) error {
 	l := Track(name, interval)
 	defer l.Active()()
+	defer Attribute("loop:" + name)()
 	timer := time.NewTimer(interval + jitter(interval))
 	defer timer.Stop()
 	for {

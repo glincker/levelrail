@@ -53,7 +53,7 @@ export function TunnelHint({ appName, port, publishedPorts }: TunnelHintProps) {
   if (ports.length === 0) return null
   return (
     <div className="mt-5 rounded-md bg-muted p-3">
-      <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <PlugGlassIcon className="size-5" aria-hidden="true" />
         {t('tunnel.title')}
       </p>

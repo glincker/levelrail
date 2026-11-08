@@ -66,6 +66,7 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `deploy.replicas`, `deploy.resources.reservations.devices` | Replica count and GPU reservations. Other Swarm keys are rejected. |
 | `mem_limit`, `cpus`, `deploy.resources.limits.memory`, `deploy.resources.limits.cpus` | Hard memory and CPU caps for the service (`512m`, `1g`, `0.5`). The shorthand wins when both are set. |
 | `shm_size` | Size of `/dev/shm` (`1gb`, `256m`), for Chromium based apps that crash with Docker's 64 MB default. Changing it recreates the container. |
+| `ulimits`, `init`, `extra_hosts`, `dns`, `sysctls`, `pids_limit`, `tmpfs`, `cap_drop`, `read_only`, `stop_grace_period` | Applied to the container, using the same allowlist as the `runtime:` block of an app spec. `stop_grace_period` sets the stop timeout; a value that does not parse as a duration is skipped with a warning. An invalid `cap_drop` or `read_only` fails the deploy, so a hardening setting is never dropped silently. Without `pids_limit`, the container gets the platform default (`APP_CONTAINER_PIDS_LIMIT`, 4096). Bounds come from the `runtime.*` runtime settings. A change recreates the container. See [Runtime options](/runtime-options) for each key and its allowed values. |
 | `networks` | Parsed and reported as a notice. Every service shares one app network. |
 
 Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES` and `APP_COMPOSE_MAX_CPUS` on the control plane to lower the cap; unset keeps only the built-in overflow guard. `shm_size` is capped at 2 GiB by default; set `APP_COMPOSE_MAX_SHM_BYTES` (bytes) to raise or lower it. A service with `shm_size` and no memory limit counts its `/dev/shm` size against the project memory quota, since that memory comes from the host.
@@ -74,18 +75,54 @@ Values that are not finite, round to zero, are negative or exceed the cap are re
 
 A key outside the table above does not stop the deploy, but it is never dropped silently. Every ignored key is reported as a warning that names the service, the key and what to do instead. `levelrail-cli apps deploy-compose` prints each one with the file path, `compose preview` and `apps validate` list them, and the deploy API returns them in `notices` (level `warning`).
 
-Common ones and their alternatives:
+The warning has one fixed shape, with `top-level` in place of the service name for a top-level key:
+
+```text
+service "web": container_name: is not supported and was ignored; the custom name is not applied; containers are named <app>-<service> and other services reach this one by its service key, so use that as the hostname
+```
+
+A key with no specific advice gets `remove it, or bake the setting into the image; it has no effect on how this service runs`.
+
+### env_file and extends
+
+`env_file` (a path, a list, or `{path, required}` entries) is read only for git deploys with `build.type: compose`. Paths are relative to the compose file's directory and must stay inside the repository: absolute paths, `..` escapes and symlinks leaving the checkout are rejected, as is a file larger than `APP_COMPOSE_MAX_ENV_FILE_BYTES` (default 256 KiB; the variable can only lower it). A missing file is an error naming the service and path, unless the entry has `required: false`. Files apply in order, later files win, and `environment:` overrides them all. Lines are `KEY=VALUE` with optional `export`, `#` comments and single or double quotes. Values are used as written, with no `${VAR}` expansion, the same as `environment:` in a git deploy. Error messages carry line numbers, never values.
+
+`extends: {service: name}` pointing at a service in the same file is merged before the file is read. `command` and `entrypoint` are replaced, `environment` and `labels` merge by key, `ports`, `expose` and `env_file` are concatenated, `volumes` merge by mount path, other maps merge deeply, and `depends_on`, `links` and `volumes_from` are not inherited. A missing parent or a cycle is an error. `extends` with `file:` is still ignored with a warning.
+
+### Supported subset
+
+These service keys are read. Everything else is ignored with a warning, or rejected (see below). The list comes from the parser in `internal/compose`.
+
+| Group | Keys |
+| --- | --- |
+| Run | `image`, `command`, `entrypoint`, `user`, `working_dir`, `environment`, `env_file` (git deploys), `extends` (same file), `restart`, `pull_policy`, `profiles`, `labels` |
+| Network and storage | `ports`, `volumes`, `networks` (reported only) |
+| Readiness and order | `healthcheck` (`test`, `interval`, `timeout`, `retries`, `start_period`), `depends_on` |
+| Resources | `mem_limit`, `cpus`, `shm_size`, `deploy` (`replicas`, `resources.limits`, `resources.reservations.devices`) |
+| Runtime | `ulimits`, `init`, `extra_hosts`, `dns`, `sysctls`, `pids_limit`, `tmpfs`, `cap_drop`, `read_only`, `stop_grace_period`; see [Runtime options](/runtime-options) |
+| Levelrail extensions | `x-levelrail-domains`, `x-levelrail-strategy`, `x-levelrail-strategy-reason`, `x-levelrail-healthcheck`, `x-levelrail-published-ports` |
+| Top level | `services`, `version`, `networks`, `volumes` (names only) |
+
+`build`, `secrets`, `configs` and the host access keys listed under "What is rejected" are parsed only so they can be refused or redirected with a clear message. They are not supported. `SERVICE_FQDN_*`, `SERVICE_URL_*` and `SERVICE_PASSWORD_*` style variables from imported templates are rewritten into literal values or generated secrets before the file is parsed.
+
+The ignored keys people paste most, and the fix for each:
+
+| Key | Fix |
+| --- | --- |
+| `env_file` | Read for git deploys (`build.type: compose`), then overridden by `environment:`. In a pasted file it is not read: move the values into `environment:` or the app's env vars. |
+| `extends` | Same-file `extends: {service: name}` is merged. Only `extends` with `file:` is ignored: inline those keys. |
+| `container_name` | Not applied. Containers are named `<app>-<service>`; other services reach this one by its service key. |
+
+More ignored keys and their alternatives:
 
 | Ignored key | Instead |
 | --- | --- |
-| `extends` | Inline the extended service's keys. |
-| `env_file` | Move the values into `environment:` or the app's env vars. |
-| `container_name`, `hostname`, `links` | Not needed: containers are named `<app>-<service>` and services reach each other by name. |
-| `user`, `working_dir` | Set `USER` or `WORKDIR` in the image. |
-| `cap_drop`, `pids_limit` | Not needed: every container already drops all capabilities except a minimal set and gets a process limit (`APP_CONTAINER_PIDS_LIMIT`, default 4096). |
+| `extends` with `file:` | Inline the keys from the other file. |
+| `env_file` in a pasted file | Move the values into `environment:` or the app's env vars. |
+| `container_name`, `hostname`, `links` | Not applied or needed: containers are named `<app>-<service>` and services reach each other by name. |
 | `expose` | Add `ports:` for the port ingress should route to. |
 | `deploy.resources.reservations` CPU and memory | Only limits are applied. |
-| `tty`, `stdin_open`, `logging`, `ulimits`, `stop_grace_period` | Remove them, they have no effect. |
+| `tty`, `stdin_open`, `logging` | Remove them, they have no effect. |
 | Top-level `volumes:` options, `name:` | Named volumes are always created for the app. |
 | `healthcheck.disable`, `healthcheck.start_interval`, `depends_on.restart`, `depends_on.required`, long-form `ports` `host_ip`, long-form `volumes` `bind` or `tmpfs` | Remove them. |
 
@@ -114,7 +151,7 @@ These keys widen a container's access to the host, so a compose file that sets a
   - `stopped`
 - Each service's ready state with the reconciler's reason, for example `WaitingForDependency`, `WaitingForDependencyHealthy` or `CreateFailed`, plus its message.
 
-Logs and metrics stay per service. Each member is a normal app, named `<app>-<service>`, with all the usual app pages.
+Logs and metrics stay per service. Each member is a normal app, named `<app>-<service>`, with all the usual app pages. In the dashboard, the Logs tab of a multi-service app shows a Service selector that opens the logs of another member service.
 
 ```bash
 levelrail-cli compose logs shop                    # recent lines from every service, merged
@@ -122,6 +159,17 @@ levelrail-cli compose logs shop --service api -f   # follow one service
 levelrail-cli compose redeploy shop                # recreate every service
 levelrail-cli compose redeploy shop --service api  # recreate one
 ```
+
+Restart, stop, start or read the logs of one service without touching the rest of the stack. The service key is the name used in the compose file, and an unknown key returns 404.
+
+```bash
+curl -X POST  $URL/api/v1/apps/shop/compose/services/api/restart -H "Authorization: Bearer $TOKEN"
+curl -X POST  $URL/api/v1/apps/shop/compose/services/api/stop    -H "Authorization: Bearer $TOKEN"
+curl -X POST  $URL/api/v1/apps/shop/compose/services/api/start   -H "Authorization: Bearer $TOKEN"
+curl          $URL/api/v1/apps/shop/compose/services/api/logs    -H "Authorization: Bearer $TOKEN"
+```
+
+Restart, stop and start need deploy access to the app. Logs need read access.
 
 ## Rollback
 
@@ -246,3 +294,53 @@ For help with compose files, run `levelrail-cli compose preview <name> -f compos
 | `POST` | `/api/v1/apps/{name}/compose/redeploy` | `deploy` |
 | `DELETE` | `/api/v1/apps/{name}/compose[?volumes=true]` | `write` (plus `write-sensitive` with volumes) |
 | `POST` | `/api/v1/service-templates/{id}/install` | `deploy` |
+
+## Backing up a database service
+
+Postgres, MySQL and MariaDB services in a compose app (detected by image name: `postgres`, `postgis`, `mysql`, `mariadb`) can be dumped on a cron schedule. The dump runs inside the service container with the engine's own tool (`pg_dump`, `mysqldump`, `mariadb-dump`), using the credentials already in the container's environment (`POSTGRES_USER`, `POSTGRES_DB`, `MYSQL_ROOT_PASSWORD`, `MARIADB_ROOT_PASSWORD`). The MySQL family password goes through `MYSQL_PWD`, never a command line. The dump then uses the same backup target, encryption, upload and retention as managed database backups. Dumps run on the control plane node, so the service must run there.
+
+Schedules and run history for compose services are stored apart from managed database history. Each run is recorded with its status, size, object key and error.
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `GET` | `/api/v1/apps/{name}/compose-db-services` | `read` (detected database services and their schedules) |
+| `PUT` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule` | `write-sensitive` (`target_id`, `schedule`, `retain`, `retain_days`, `enabled`) |
+| `DELETE` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule` | `write-sensitive` |
+| `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause` | `write-sensitive` (keeps the schedule, the scheduler skips it; `resume` undoes it) |
+| `GET` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `read` (run history) |
+| `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `write-sensitive` (run now, `target_id` optional when a schedule exists) |
+
+In the dashboard, the **Database backups** card on the app's **Volumes** tab lists each detected database service with its engine, its schedule and what its retention settings keep. Only users with the `write-sensitive` ability can change anything. They choose a backup target, set a cron schedule, set how many backups to keep (`Keep last`) and an optional maximum age in days, pause or resume the schedule, remove it, or run a backup now. A new schedule starts with `Keep last` at 7. A value of 0 turns that limit off, and 0 for both keeps every backup. Read-only users see the schedule and the recent runs. If no backup target exists yet, the card links to Settings. The card does not appear for an app with no detected database service. There is no CLI command for these schedules yet. The card and these endpoints are built and unit tested, but not yet run against a live server.
+
+Restore replaces a database service's live data from one succeeded backup run. It needs the `root` ability.
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore` | `root` (`confirm`, `preview`) |
+
+Send `{"preview": true}` first. It changes nothing and returns the run, object key, size, engine and the exact confirm phrase, which is `restore <app>/<service>`. A real restore needs `confirm` to equal that phrase, otherwise the call answers 400. Only a succeeded run can be restored (a failed or running one answers 409). Restoring into a new service (`as_new`) is not supported and answers 400.
+
+Before it touches the database, the control plane checks the stored object against its recorded checksum, then takes a safety dump of the current data to the same backup target. If the checksum check or the safety dump fails, the restore stops and the database is left as it was. The safety dump shows up in the run history. The restore itself runs in the background and the outcome is written to the audit log as `compose_db.restore`.
+
+In the dashboard, each succeeded run in the **Database backups** card has a **Restore** button. It opens a dialog that runs the preview, shows the engine, backup object and size, and asks you to type the confirm phrase exactly as the server returned it. The button is disabled for users without the `root` ability, with one line saying why. The dialog only reports that the restore was accepted and shows the safety dump id. Check run history and the audit log for the outcome. It has not been tried against a real database or in a browser yet.
+
+From the CLI:
+
+```sh
+levelrail-cli apps backups services <app>                       # detected databases and schedules
+levelrail-cli apps backups schedule set <app> <service> --target ID --cron "0 3 * * *"
+levelrail-cli apps backups schedule clear <app> <service>       # existing backups are kept
+levelrail-cli apps backups runs <app> <service>
+levelrail-cli apps backups run <app> <service> --target ID      # back up now
+levelrail-cli apps backups restore <app> <service> <run>        # preview, then type the phrase
+levelrail-cli apps backups restore <app> <service> <run> --yes  # for scripts
+```
+
+Without `--yes` and without a terminal the command sends no restore request. Postgres is replayed in one transaction after the `public` schema is reset, and the commit is only sent when the whole dump streamed cleanly and still matches its recorded checksum, so a damaged or cut-off dump rolls back. MySQL and MariaDB drop and recreate the service's named database (`MYSQL_DATABASE` or `MARIADB_DATABASE`) before the replay; a service without one is refused, because a server-wide dump would rewrite the system schema and root credentials. A stream that fails midway is reported as failed, but MySQL and MariaDB cannot roll back, so the safety dump is the way back. Only one restore per service runs at a time; a second answers 409. This is built and unit tested but has not run against a real database container and bucket. To load a dump by hand instead, download the object from the backup target (decrypt it first if the target encrypts dumps) and use:
+
+```sh
+# Postgres
+docker exec -i <container> sh -c 'psql -U "${POSTGRES_USER:-postgres}" "${POSTGRES_DB:-${POSTGRES_USER:-postgres}}"' < dump.sql
+# MySQL or MariaDB
+docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" mysql -uroot' < dump.sql
+```

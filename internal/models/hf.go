@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/kit/netguard"
@@ -41,6 +42,28 @@ type HFConfig struct {
 // LoadHFConfig reads APP_HF_BASE_URL, APP_HF_TIMEOUT, APP_HF_CACHE_TTL and
 // APP_HF_MAX_RESPONSE_BYTES, falling back to defaults on missing or bad values.
 func LoadHFConfig() HFConfig {
+	cfg := loadHFConfigEnv()
+	if p := hfLimitsLive.Load(); p != nil {
+		cfg.Timeout, cfg.MaxResponseBytes = (*p)()
+	}
+	return cfg
+}
+
+var hfLimitsLive atomic.Pointer[func() (time.Duration, int64)]
+
+// SetHFLimitSource makes the hub timeout and response cap follow a live setting.
+func SetHFLimitSource(fn func() (time.Duration, int64)) { hfLimitsLive.Store(&fn) }
+
+// maxResponseBytes is the cap in effect for this fetch.
+func (c *HFClient) maxResponseBytes() int64 {
+	if p := hfLimitsLive.Load(); p != nil {
+		_, n := (*p)()
+		return n
+	}
+	return c.cfg.MaxResponseBytes
+}
+
+func loadHFConfigEnv() HFConfig {
 	cfg := HFConfig{BaseURL: "https://huggingface.co", Timeout: 10 * time.Second, CacheTTL: 5 * time.Minute, MaxResponseBytes: 16 << 20, CacheEntries: 256}
 	if v := strings.TrimRight(os.Getenv("APP_HF_BASE_URL"), "/"); v != "" {
 		cfg.BaseURL = v
@@ -214,7 +237,7 @@ func (c *HFClient) fetch(ctx context.Context, repo, token string) (*HFRepo, *HFE
 	case resp.StatusCode != http.StatusOK:
 		return nil, &HFError{Status: HFStatusUnavailable, Message: "unexpected Hugging Face response (" + strconv.Itoa(resp.StatusCode) + ")"}
 	}
-	limited := &io.LimitedReader{R: resp.Body, N: c.cfg.MaxResponseBytes + 1}
+	limited := &io.LimitedReader{R: resp.Body, N: c.maxResponseBytes() + 1}
 	var info hubModelInfo
 	if err := json.NewDecoder(limited).Decode(&info); err != nil {
 		if limited.N <= 0 {

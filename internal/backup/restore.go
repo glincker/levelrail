@@ -151,7 +151,7 @@ const (
 // moment before the process exits.
 var (
 	redisDisableAutoSaveCmd = []string{"sh", "-c", redisTLSProbe + ` exec redis-cli $RTLS CONFIG SET save ""`}
-	keydbDisableAutoSaveCmd = []string{keydbCLIBin, "CONFIG", "SET", "save", ""}
+	keydbDisableAutoSaveCmd = []string{"sh", "-c", redisTLSProbe + ` exec keydb-cli $RTLS CONFIG SET save ""`}
 )
 
 // dragonflyDisableAutoSaveCmd suppresses Dragonfly's shutdown snapshot,

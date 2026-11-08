@@ -164,5 +164,9 @@ func (rt *Router) keepStoredDomains(ctx context.Context, desired *store.DesiredS
 		return err
 	}
 	desired.Domains = cur.Domains
+	// A git build carries no volumes of its own: keep the ones attached to the running app.
+	if len(desired.Volumes) == 0 {
+		desired.Volumes = cur.Volumes
+	}
 	return nil
 }

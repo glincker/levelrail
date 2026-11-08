@@ -18,7 +18,7 @@ const (
 	headerRequestID   = "X-Request-Id"
 	headerTraceparent = "Traceparent"
 	// defaultAccessCapacity is the per-route-key ring size when
-	// APP_ACCESS_LOG_SIZE is unset; 0 turns the log off.
+	// APP_ACCESS_LOG_SIZE is unset (seed for telemetry.access_log_size); 0 turns the log off.
 	defaultAccessCapacity = 1000
 )
 
@@ -85,9 +85,29 @@ func (r *accessRing) add(rec AccessRecord) {
 	}
 }
 
+func (r *accessRing) resize(n int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	old := r.ordered()
+	if len(old) > n {
+		old = old[len(old)-n:]
+	}
+	r.buf = make([]AccessRecord, n)
+	r.next = copy(r.buf, old)
+	r.full = r.next == n
+	if r.full {
+		r.next = 0
+	}
+}
+
 func (r *accessRing) snapshot() []AccessRecord {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	return r.ordered()
+}
+
+// ordered returns the records oldest first; the caller holds r.mu.
+func (r *accessRing) ordered() []AccessRecord {
 	if !r.full {
 		return append([]AccessRecord(nil), r.buf[:r.next]...)
 	}
@@ -101,7 +121,9 @@ func (r *accessRing) snapshot() []AccessRecord {
 // which is the point: it answers "what just happened", not history.
 type AccessLog struct {
 	mu           sync.RWMutex
-	cap          int
+	cap          atomic.Int64
+	capSrc       atomic.Pointer[func() int]
+	capChecked   atomic.Int64
 	retention    time.Duration
 	retentionSrc atomic.Pointer[func() time.Duration]
 	rings        map[string]*accessRing
@@ -187,7 +209,51 @@ func DefaultAccessLog() *AccessLog { return defaultAccessLog }
 // NewAccessLog returns a log holding capacity records per key; capacity <= 0
 // disables recording.
 func NewAccessLog(capacity int) *AccessLog {
-	return &AccessLog{cap: capacity, rings: make(map[string]*accessRing)}
+	l := &AccessLog{rings: make(map[string]*accessRing)}
+	l.cap.Store(int64(capacity))
+	return l
+}
+
+// SetCapacitySource lets a saved ring size apply live; it is polled at most once a second from Record.
+func (l *AccessLog) SetCapacitySource(fn func() int) {
+	if l != nil {
+		l.capSrc.Store(&fn)
+	}
+}
+
+// capacityNow returns the ring size, asking the source at most once a second and resizing only on change.
+func (l *AccessLog) capacityNow() int {
+	p := l.capSrc.Load()
+	if p == nil {
+		return int(l.cap.Load())
+	}
+	now, last := time.Now().UnixNano(), l.capChecked.Load()
+	if now-last >= int64(time.Second) && l.capChecked.CompareAndSwap(last, now) {
+		if n := max((*p)(), 0); int64(n) != l.cap.Load() {
+			l.resize(n)
+		}
+	}
+	return int(l.cap.Load())
+}
+
+// resize keeps the newest entries of every ring; zero drops the rings so the memory is freed.
+// The global lock covers only the map, so each copy blocks just its own ring.
+func (l *AccessLog) resize(n int) {
+	l.mu.Lock()
+	l.cap.Store(int64(n))
+	if n == 0 {
+		clear(l.rings)
+		l.mu.Unlock()
+		return
+	}
+	rings := make([]*accessRing, 0, len(l.rings))
+	for _, r := range l.rings {
+		rings = append(rings, r)
+	}
+	l.mu.Unlock()
+	for _, r := range rings {
+		r.resize(n)
+	}
 }
 
 func newAccessLogWithRetention(capacity int, retention time.Duration) *AccessLog {
@@ -239,7 +305,8 @@ func (l *AccessLog) Record(key string, rec AccessRecord) {
 	if l.hist.on.Load() {
 		l.trackRollup(key, rec)
 	}
-	if l.cap <= 0 {
+	c := l.capacityNow()
+	if c <= 0 {
 		l.notify(key, rec)
 		return
 	}
@@ -249,7 +316,7 @@ func (l *AccessLog) Record(key string, rec AccessRecord) {
 	if r == nil {
 		l.mu.Lock()
 		if r = l.rings[key]; r == nil {
-			r = &accessRing{buf: make([]AccessRecord, l.cap)}
+			r = &accessRing{buf: make([]AccessRecord, c)}
 			l.rings[key] = r
 		}
 		l.mu.Unlock()

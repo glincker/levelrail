@@ -9,6 +9,8 @@ import (
 // The server refuses with 409 while services or databases are placed on the node; its message is shown as-is.
 func runNodesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	// Delete never prompts; the flag only keeps scripts written for other destructive commands working.
+	fs.Bool("yes", false, "accepted for scripts; nodes delete does not ask for confirmation")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesDeleteUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -44,6 +46,7 @@ Deletes a node. Refused (409) while any service or database is still
 placed on it; drain it first with "%[1]s nodes drain <id>".
 
 Flags:
+  --yes                     accepted for scripts; this command does not prompt
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -39,7 +39,14 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 	}
 
 	id := r.PathValue("id")
-	if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
+	guardID := rt.guardKey(id)
+	if rt.isLocalGuardNode(id) {
+		// The collector keys the control plane host by its mesh node id, so the
+		// "local" alias must map to it like the patch preview and apply routes do.
+		if rt.localNodeID != "" {
+			id = rt.localNodeID
+		}
+	} else if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
@@ -56,6 +63,10 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if len(total) == 0 {
+		if resp, ok := rt.patchStatusFromRun(guardID, time.Time{}); ok {
+			writeJSON(w, http.StatusOK, resp)
+			return
+		}
 		writeJSON(w, http.StatusOK, nodePatchStatusResponse{Checked: false})
 		return
 	}
@@ -73,10 +84,34 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 
 	latest := total[len(total)-1]
 	checkedAt := latest.Timestamp
+	// The collector only samples hourly, so a finished run's own after-count is fresher.
+	if resp, ok := rt.patchStatusFromRun(guardID, checkedAt); ok {
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
 	writeJSON(w, http.StatusOK, nodePatchStatusResponse{
 		Checked:   true,
 		Total:     int(latest.Value),
 		Security:  securityCount,
 		CheckedAt: &checkedAt,
 	})
+}
+
+// patchStatusFromRun returns the newest successful run's after-count when it
+// finished later than the stored sample, so the status does not stay stale.
+func (rt *Router) patchStatusFromRun(nodeKey string, newerThan time.Time) (nodePatchStatusResponse, bool) {
+	p := rt.patcher()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for _, run := range p.runs[nodeKey] {
+		if run.Status != patchRunSucceeded || run.PatchStatusAfter == nil || run.FinishedAt == nil {
+			continue
+		}
+		if !run.FinishedAt.After(newerThan) {
+			return nodePatchStatusResponse{}, false
+		}
+		at := *run.FinishedAt
+		return nodePatchStatusResponse{Checked: true, Total: run.PatchStatusAfter.Total, Security: run.PatchStatusAfter.Security, CheckedAt: &at}, true
+	}
+	return nodePatchStatusResponse{}, false
 }

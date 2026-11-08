@@ -1185,6 +1185,7 @@ type BackupScheduleResource struct {
 	Schedule     string `json:"schedule,omitempty"`
 	Retain       int    `json:"retain,omitempty"`
 	RetainDays   int    `json:"retain_days,omitempty"`
+	Paused       bool   `json:"paused,omitempty"`
 }
 
 // SetBackupScheduleRequest mirrors internal/api's setBackupScheduleRequest.
@@ -1488,6 +1489,7 @@ type VolumeBackupScheduleResource struct {
 	Retain      int    `json:"retain,omitempty"`
 	RetainDays  int    `json:"retain_days,omitempty"`
 	SqlitePath  string `json:"sqlite_path,omitempty"`
+	Paused      bool   `json:"paused,omitempty"`
 }
 
 // SetVolumeBackupScheduleRequest mirrors internal/api's
@@ -2297,6 +2299,8 @@ type ScheduledTaskResource struct {
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
 	LastRunOutput string     `json:"last_run_output,omitempty"`
+	// LastRunOutputWithheld means the last run printed output this token may not read.
+	LastRunOutputWithheld bool `json:"last_run_output_withheld,omitempty"`
 	// ConsecutiveFailures mirrors internal/api's own field: what a
 	// kind=scheduled_task_failure alert rule watches.
 	ConsecutiveFailures int `json:"consecutive_failures"`
@@ -2349,6 +2353,8 @@ type JobRunResource struct {
 	Mode         string     `json:"mode,omitempty"`
 	Message      string     `json:"message,omitempty"`
 	Output       string     `json:"output,omitempty"`
+	// OutputWithheld means the run printed output this token may not read (it lacks read_sensitive).
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 // ScheduledTaskRequest mirrors the fields internal/api's
@@ -3059,6 +3065,7 @@ type PreviewEnvironmentResource struct {
 	Branch       string `json:"branch"`
 	HeadSHA      string `json:"head_sha"`
 	Domain       string `json:"domain,omitempty"`
+	Gated        bool   `json:"gated"`
 	Status       string `json:"status"`
 	StatusReason string `json:"status_reason,omitempty"`
 	CreatedAt    string `json:"created_at"`
@@ -3921,6 +3928,8 @@ type AppResourceUsageResource struct {
 	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
 	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
 	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
+	DiskReadBytes    *float64 `json:"disk_read_bytes,omitempty"`
+	DiskWriteBytes   *float64 `json:"disk_write_bytes,omitempty"`
 }
 
 // NodeMetricsResource mirrors internal/api's nodeMetricsResponse

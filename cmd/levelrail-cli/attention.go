@@ -51,7 +51,7 @@ func runAttention(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 func printAttentionHuman(out io.Writer, items []attentionItem) {
 	if len(items) == 0 {
-		_, _ = fmt.Fprintln(out, "All systems healthy.")
+		_, _ = fmt.Fprintln(out, styleFor(out).paint(ansiGreen, styleFor(out).symbol("✔ ", "")+"All systems healthy."))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)

@@ -154,12 +154,14 @@ levelrail-cli import config ./my-app --out app.yaml --strict
 levelrail-cli import config ./my-app --emit stack --out ./review --db-version postgres=16
 ```
 
-`import config` reads `Procfile`, `app.json` and `vercel.json` from a folder and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It needs no token and creates nothing.
+`import config` reads `Procfile`, `app.json`, `vercel.json` and `CHECKS` from a folder and prints a proposed `app.yaml`. A folder with only a `CHECKS` file still counts: the web service gets its readiness probe. Findings go to stderr, blockers first, each with a fix. It needs no token and creates nothing.
 
 - `--out FILE` writes the proposed file instead of printing it.
 - `--strict` exits `2` when any finding is a blocker.
 - `--json` prints `detected`, `spec` and `findings` as JSON.
 - `--emit stack --out DIR` writes Stack, Project, Database, App and Domain documents, a `SECRETS.md` listing secret names only, and a `MIGRATION.md`. Review them in a pull request. `--force` overwrites existing files.
+
+The same translation runs at deploy time for a repo that has a `Procfile` and no app spec: one service per process type, `release:` as a pre-deploy hook, a `Dockerfile` build when one exists, and `app.json` healthchecks, cron, scripts and formation mapped to health, jobs, hooks and replicas. Unsupported keys come back as findings in the deploy log. A `CHECKS` file in the repo root becomes a readiness probe when `app.json` sets none; lines it cannot express come back as findings. See the Procfile and app.json section of the app spec reference.
 
 ### Monorepo packages
 

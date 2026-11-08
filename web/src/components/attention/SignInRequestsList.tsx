@@ -1,6 +1,7 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyGlassIcon } from '@thesvg/ui-react'
+import { KeyGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { SignInRequestCard } from '../signin/SignInRequestCard'
@@ -35,7 +36,11 @@ export function SignInRequestsList({
   ]
   if (codes.length === 0 && shown.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">{t('requests.empty')}</p>
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('requests.empty')}
+      />
     )
   }
   return (

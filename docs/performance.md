@@ -164,6 +164,8 @@ The same baseline is compiled into the control plane, so a running instance can 
 
 The status is `tolerance_unset` until all four `IDLE_TOL_*` variables are set on the control plane, and `no_baseline` on a platform with no committed row (for example macOS). The node agent's footprint is not measured by this card.
 
+The same payload carries `boot_stages` (one entry per startup step with `duration_ms`) and `boot_total_ms`, the sum of those steps. `system health` prints them under the idle line. These numbers are unmeasured: no baseline row records boot time yet, and no real host has been timed.
+
 ## Caveats
 
 - One machine, one run per configuration. Expect run-to-run variance of roughly 10 to 15% on RSS and CPU.
@@ -219,5 +221,27 @@ Where it stands:
 - Apps, nodes, deployments, the audit log and the search palette were already paged or debounced server side, and the long lists are virtualized. The palette row above is within run to run noise, not a regression.
 - Update: the dashboard and apps page now use `GET /api/v1/apps-summary` (status, environment and attention counts) and a server paged `GET /api/v1/apps` (`limit`, `offset`, `q`, `status`, repeated `environment`, `tag` with `tag_match=any`, `X-Total-Count`); the nodes page is paged and carries `resource_count` per node; brand logos load one chunk per mark. Numbers below were not re-measured after this change.
 - Compression: GET JSON under `/api/` is gzipped when the client accepts it (`APP_API_COMPRESSION=off` disables). SSE, NDJSON and text streams, responses that set a cookie, `Cache-Control: no-store` responses (the secret-bearing ones) and `/api/v1/auth/` are never compressed, which avoids BREACH on secrets.
+- Conditional GET: read JSON under `/api/` carries a strong `ETag` and answers a matching `If-None-Match` with `304` and no body, so a dashboard poll that finds nothing changed costs a hash and a header. The `api.conditional_get` runtime setting (default on, seeded by `APP_API_CONDITIONAL_GET`) switches it live. Responses over `APP_API_CONDITIONAL_GET_MAX_BYTES` (4 MiB) skip it. `Cache-Control: no-store` responses (the secret-bearing ones), cookie setters, `/api/v1/auth/` and audited sensitive reads never get an ETag.
 - Previously not fixed: the dashboard and apps list still fetch the whole apps list (about 314 kB at 1000 apps) because status tiles and filters count client side. A server side summary endpoint is the next step. The thesvg brand logo chunks (about 250 kB each) still load on home, databases and nodes. `npm run check-bundle-size` already fails on the diagram `elk` chunk (1463 kB against a 720 kB budget) before this change.
 - Apps seeded here have no running containers, so this measures list rendering and fetching, not live metrics streaming.
+
+## Database read pool
+
+The control plane keeps a pool of read-only SQLite connections beside the single writer. Size it with the runtime setting `store.read_connections` (1 to 32, default 4; `APP_DB_READ_CONNS` only seeds it). A saved change resizes the pool on the next WAL maintenance tick, with no restart. Setting `APP_DB_READ_CONNS=0` at boot sends reads to the writer and stays boot-only.
+
+SQLite connection tuning is also a runtime setting, applied to the writer and read connections on the same tick: `store.cache_size_mb` (0 to 4096, `APP_DB_CACHE_SIZE_MB`), `store.mmap_size_mb` (0 to 16384, `APP_DB_MMAP_SIZE_MB`), `store.temp_store` (`default`, `file`, `memory`, `APP_DB_TEMP_STORE`) and `store.synchronous` (`default`, `normal`, `full`, `APP_DB_SYNCHRONOUS`). The default value of each keeps the SQLite built-in. Env only seeds the defaults.
+
+## Goroutine attribution
+
+`GET /api/v1/system/cp-health` lists `goroutines_by_subsystem` under `footprint`: live counts for each background loop (`loop:<name>`) and for long lived streams (`live-logs`, `terminal`, `deployments-stream`). Goroutines started through `footprint.Run` also carry a pprof `subsystem` label, so a goroutine profile groups them by owner.
+
+## Image pulls
+
+Deploys that need the same image and registry credentials share one pull, and
+a node runs at most `images.pull_concurrency` distinct pulls at once (default
+3). A deploy that joins a pull already in flight waits for it and shows no
+layer progress of its own.
+
+## Reconcile cost
+
+`GET /api/v1/system/control-plane-health` and `levelrail-cli system health` list the five controllers with the most total time since start (runs, errors, total and max milliseconds), so a slow controller shows up without a profiler. The interval between full resync passes is the `reconcile.resync_seconds` runtime setting (default 30, from 5 to 3600, seeded by `APP_RECONCILE_RESYNC_SECONDS`); the engine re-reads it on each resync tick.

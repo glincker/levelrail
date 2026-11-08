@@ -57,7 +57,18 @@ levelrail-cli databases query main --sql "select id, email from users order by i
 levelrail-cli databases query main --file report.sql --json
 levelrail-cli databases query main --sql "select * from orders where total > 100" --explain
 levelrail-cli databases query main --sql "update users set plan = 'free' where id = 7" --write --confirm main
+levelrail-cli databases engine-stats search-main
+levelrail-cli databases query-history list main --limit 20
+levelrail-cli databases query-history clear main --yes
+levelrail-cli databases saved-queries add main --name recent-orders --sql-file orders.sql
+levelrail-cli databases saved-queries list main
+levelrail-cli databases saved-queries delete main <id> --yes
 ```
+
+History and saved queries are yours alone. Tables show each statement as one
+truncated line (`--width`, default 80); `--json` prints them in full. `clear`
+and `delete` send nothing without `--yes`. A saved statement may be at most
+64 KiB. `engine-stats` works for search engines and Memcached only.
 
 `db` works as a short alias for `databases`.
 

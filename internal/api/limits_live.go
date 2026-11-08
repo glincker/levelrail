@@ -2,7 +2,11 @@ package api
 
 import (
 	"context"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
@@ -11,6 +15,7 @@ func (rt *Router) attachLiveLimits() {
 	if rt.runtimeSettings == nil {
 		return
 	}
+	rt.attachGuardSources()
 	if rt.apiRateLimit != nil {
 		rt.limitSource(rt.apiRateLimit.reads, runtimesettings.KeyAPIRateLimitRead)
 		rt.limitSource(rt.apiRateLimit.writes, runtimesettings.KeyAPIRateLimitWrite)
@@ -42,4 +47,19 @@ func (rt *Router) deployCap(ctx context.Context) int {
 		return rt.deployMaxConcurrent
 	}
 	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyDeployMaxConcurrent)
+}
+
+// attachGuardSources points the lower packages' limits at the runtime settings; each reads the clamped value per use.
+func (rt *Router) attachGuardSources() {
+	lim := func(key string) func() int {
+		return func() int { return rt.runtimeSettings.Limit(context.Background(), key) }
+	}
+	iac.SetPlanValueSource(lim(runtimesettings.KeyIaCPlanValueMax))
+	pct, cnt := lim(runtimesettings.KeyStackPruneMaxPercent), lim(runtimesettings.KeyStackPruneMaxCount)
+	iac.SetPruneGuardSource(func() iac.PruneGuard { return iac.PruneGuard{MaxPercent: pct(), MaxCount: cnt()} })
+	placement.SetAffinityTermsSource(lim(runtimesettings.KeyPlacementAffinityTerms))
+	models.SetHFLimitSource(func() (time.Duration, int64) {
+		sec := rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFTimeoutSeconds)
+		return time.Duration(sec) * time.Second, int64(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFMaxResponseBytes))
+	})
 }

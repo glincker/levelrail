@@ -35,7 +35,7 @@ func (rt *Router) SourceCache() *sourcecache.Cache { return rt.sourceCache }
 // gitCheckout is the fetchFunc: it resolves ref (branch, tag or commit) and
 // returns the commit it resolved to along with the checked out tree.
 func (rt *Router) gitCheckout(ctx context.Context, repoURL, ref, token string) (dir, commit string, cleanup func(), err error) {
-	co, err := rt.sourceCache.Checkout(ctx, repoURL, ref, token)
+	co, err := rt.sourceCache.Checkout(rt.withSSHDeployKey(ctx, repoURL), repoURL, ref, token)
 	if err != nil {
 		return "", "", nil, err
 	}
@@ -45,7 +45,7 @@ func (rt *Router) gitCheckout(ctx context.Context, repoURL, ref, token string) (
 // gitCheckoutWithToken is the gitSourceFetchFunc for push, release and
 // preview deploys.
 func (rt *Router) gitCheckoutWithToken(ctx context.Context, repoURL, checkoutRef, token string) (dir string, cleanup func(), err error) {
-	co, err := rt.sourceCache.Checkout(ctx, repoURL, checkoutRef, token)
+	co, err := rt.sourceCache.Checkout(rt.withSSHDeployKey(ctx, repoURL), repoURL, checkoutRef, token)
 	if err != nil {
 		return "", nil, err
 	}

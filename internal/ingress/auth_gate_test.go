@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"os"
@@ -236,5 +237,18 @@ func TestAuthGate_InvalidConfigFailsBuild(t *testing.T) {
 	}}})
 	if err == nil {
 		t.Fatal("BuildRoutesConfig() accepted an auth url with userinfo")
+	}
+}
+
+func TestCurrentAuthGateTimeout_LiveSourceWinsOverEnv(t *testing.T) {
+	env := func(string) string { return "9" }
+	t.Cleanup(func() { SetLiveAuthGateTimeout(nil) })
+
+	if got, _ := CurrentAuthGateTimeout(t.Context(), env); got != 9*time.Second {
+		t.Fatalf("without a source got %v, want the env value 9s", got)
+	}
+	SetLiveAuthGateTimeout(func(context.Context) time.Duration { return 2 * time.Second })
+	if got, err := CurrentAuthGateTimeout(t.Context(), env); err != nil || got != 2*time.Second {
+		t.Fatalf("with a source got (%v, %v), want 2s", got, err)
 	}
 }

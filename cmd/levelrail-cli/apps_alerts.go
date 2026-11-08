@@ -141,6 +141,8 @@ func alertRuleCondition(r alertRuleResource) string {
 			cond += " for " + r.ForDuration
 		}
 		return cond
+	case "oom_killed":
+		return fmt.Sprintf("%d kernel out-of-memory kills in %s", r.RestartCountThreshold, r.RestartWindow)
 	case "crashloop":
 		return fmt.Sprintf("%d restarts in %s", r.RestartCountThreshold, r.RestartWindow)
 	case "cert_expiry":
@@ -211,12 +213,12 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		if comparator == "" {
 			return newValidationError("--comparator is required for --kind threshold")
 		}
-	case "crashloop":
+	case "crashloop", "oom_killed":
 		if restartCountThreshold <= 0 {
-			return newValidationError("--restart-count-threshold must be a positive integer for --kind crashloop")
+			return newValidationError("--restart-count-threshold must be a positive integer for --kind %s", kind)
 		}
 		if restartWindow == "" {
-			return newValidationError("--restart-window is required for --kind crashloop")
+			return newValidationError("--restart-window is required for --kind %s", kind)
 		}
 	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_offline", "node_cert_expiring":
 		// These kinds watch platform-wide resources, so no app-specific flags apply.

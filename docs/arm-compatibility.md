@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 36 unknown, of 444 templates.
+393 listed, 15 amd64 only, 40 unknown, of 448 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -65,6 +65,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `calibre-web` | listed | not tested |
 | `campfire` | listed | not tested |
 | `cap-captcha` | listed | not tested |
+| `cassandra` | unknown | not tested |
 | `castopod` | listed | not tested |
 | `changedetection` | listed | pass |
 | `chatwoot` | listed | not tested |
@@ -264,6 +265,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `mkdocs-material` | unknown | not tested |
 | `mlflow` | listed | not tested |
 | `mongo-express` | listed | not tested |
+| `mongodb` | unknown | not tested |
 | `monica` | listed | not tested |
 | `moodle` | listed | not tested |
 | `mosquitto` | listed | pass |
@@ -315,6 +317,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `orangehrm` | amd64 only | not tested |
 | `organizr` | listed | not tested |
 | `osticket` | unknown | not tested |
+| `otel-lgtm` | unknown | not tested |
 | `outline` | listed | pass |
 | `overseerr` | listed | not tested |
 | `owncast` | listed | not tested |
@@ -396,6 +399,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `snapdrop` | unknown | pull_failed |
 | `snipe-it` | listed | not tested |
 | `soketi` | listed | not tested |
+| `solr` | unknown | not tested |
 | `sonarqube` | listed | pass |
 | `sonarr` | listed | not tested |
 | `sparkyfitness` | listed | not tested |

@@ -18,6 +18,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 )
 
 const lastUsedFile = ".last_used"
@@ -60,6 +62,58 @@ type scopeKey struct{}
 func WithScope(ctx context.Context, scope string) context.Context {
 	return context.WithValue(ctx, scopeKey{}, scope)
 }
+
+type authKey struct{}
+
+// WithAuth overrides the token-derived auth for one Checkout, used for SSH
+// deploy keys so the key never travels as a token string.
+func WithAuth(ctx context.Context, auth transport.AuthMethod) context.Context {
+	return context.WithValue(ctx, authKey{}, auth)
+}
+
+type authErrKey struct{}
+
+// WithAuthError makes every fetch under ctx fail with err, so a caller that
+// could not build the credential it promised never falls back to ambient auth.
+func WithAuthError(ctx context.Context, err error) context.Context {
+	return context.WithValue(ctx, authErrKey{}, err)
+}
+
+func authErrOf(ctx context.Context) error {
+	err, _ := ctx.Value(authErrKey{}).(error)
+	return err
+}
+
+// ErrSSHAuthRequired is returned for an SSH repository with no deploy key.
+// The ssh transport would otherwise use the ssh-agent and known_hosts of the
+// control plane's own user.
+var ErrSSHAuthRequired = errors.New("sourcecache: ssh repository needs a deploy key with a pinned host key")
+
+func authOf(ctx context.Context) transport.AuthMethod {
+	v, _ := ctx.Value(authKey{}).(transport.AuthMethod)
+	return v
+}
+
+// RemoteAuth is the auth a one-off remote call outside the cache uses: the
+// ctx auth or its error, ErrSSHAuthRequired for ssh with none, else the token.
+func RemoteAuth(ctx context.Context, repoURL, token string) (transport.AuthMethod, error) {
+	if err := authErrOf(ctx); err != nil {
+		return nil, err
+	}
+	if a := authOf(ctx); a != nil {
+		return a, nil
+	}
+	if gitsshkey.IsSSHURL(repoURL) {
+		return nil, ErrSSHAuthRequired
+	}
+	if token != "" {
+		return &githttp.BasicAuth{Username: "x-access-token", Password: token}, nil
+	}
+	return nil, nil
+}
+
+// ScopeOf returns the credential scope WithScope attached, if any.
+func ScopeOf(ctx context.Context) string { return scopeOf(ctx) }
 
 func scopeOf(ctx context.Context) string {
 	v, _ := ctx.Value(scopeKey{}).(string)

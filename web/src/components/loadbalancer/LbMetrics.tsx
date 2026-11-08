@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { MetricTile } from '@/components/kit'
 import type {
   LiveUpstream,
@@ -26,28 +27,29 @@ export function LbMetrics({
   rollup: PoolRollup
   history: Map<string, UpstreamHistory>
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const latency = medianLatency(upstreams)
   const conns = upstreams.reduce((s, u) => s + u.active_connections, 0)
   const trend = aggregateLatency(history)
   return (
     <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
       <MetricTile
-        label="Healthy"
+        label={t('lb.metrics.healthy')}
         value={`${rollup.healthy}/${rollup.total}`}
         tone={rollup.tone}
       />
       <MetricTile
-        label="Latency"
+        label={t('lb.metrics.latency')}
         value={latency ?? '-'}
         unit={latency === null ? undefined : 'ms'}
         series={trend}
         tone="info"
-        info="Median of the last health check across healthy replicas."
+        info={t('lb.metrics.latencyInfo')}
       />
       <MetricTile
-        label="Connections"
+        label={t('lb.metrics.connections')}
         value={conns}
-        info="Open requests right now, across all replicas."
+        info={t('lb.metrics.connectionsInfo')}
       />
     </div>
   )

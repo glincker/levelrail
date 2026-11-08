@@ -1,6 +1,11 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ClipboardCopyGlassIcon, DownloadGlassIcon } from '@thesvg/ui-react'
+import {
+  ClipboardCopyGlassIcon,
+  DownloadGlassIcon,
+  InboxGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import type { IacExportResult } from '../queries/iac'
@@ -87,7 +92,11 @@ export function IacExportView({ result, fileName }: IacExportViewProps) {
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">{t('iacExport.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('iacExport.empty')}
+        />
       )}
       {result.warnings?.map((w) => (
         <p key={w} className="text-xs text-amber-700 dark:text-amber-400">

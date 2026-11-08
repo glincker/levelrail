@@ -93,11 +93,12 @@ func TestSupportsTLS(t *testing.T) {
 	}{
 		{engine: "postgres", want: true},
 		{engine: "redis", want: true},
+		{engine: "valkey", want: true},
 		{engine: "mysql", want: false},
 		{engine: "mariadb", want: false},
 		{engine: "mongodb", want: false},
 		{engine: "clickhouse", want: false},
-		{engine: "keydb", want: false},
+		{engine: "keydb", want: true},
 		{engine: "dragonfly", want: false},
 		{engine: "unknown-engine", want: false},
 	}
@@ -118,6 +119,7 @@ func TestTLSContainerPort(t *testing.T) {
 	}{
 		{engine: "postgres", wantPort: 5432, wantOK: true},
 		{engine: "redis", wantPort: 6380, wantOK: true},
+		{engine: "valkey", wantPort: 6380, wantOK: true},
 		{engine: "mysql", wantPort: 0, wantOK: false},
 		{engine: "unknown-engine", wantPort: 0, wantOK: false},
 	}

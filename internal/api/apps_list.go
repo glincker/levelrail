@@ -127,22 +127,10 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	)
 	if rank != nil {
 		svcs, total, err = listRankedApps(r.Context(), fs, f, rank, canRead)
+	} else if filtered {
+		svcs, total, err = listVisibleAppsPaged(r.Context(), fs, f, canRead)
 	} else {
-		dbFilter := f
-		if filtered {
-			dbFilter.Limit, dbFilter.Offset = 0, 0
-		}
-		svcs, total, err = fs.ListDesiredServicesFiltered(r.Context(), dbFilter)
-		if err == nil && filtered {
-			visible := svcs[:0:0]
-			for _, s := range svcs {
-				if canRead(s.Name) {
-					visible = append(visible, s)
-				}
-			}
-			total = len(visible)
-			svcs = pageSlice(visible, f.Limit, f.Offset)
-		}
+		svcs, total, err = fs.ListDesiredServicesFiltered(r.Context(), f)
 	}
 	if err != nil {
 		rt.internalError(w, "api: list apps failed", err)
@@ -200,7 +188,41 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-func pageSlice(in []store.DesiredService, limit, offset int) []store.DesiredService {
+// listVisibleAppsPaged gates names before loading rows, so a scoped caller
+// decodes one page of services instead of every app; canRead stays the
+// only authorization decision and is re-applied to the loaded page.
+func listVisibleAppsPaged(ctx context.Context, fs appFilterStore, f store.AppListFilter, canRead func(string) bool) ([]store.DesiredService, int, error) {
+	nf := f
+	nf.Limit, nf.Offset = 0, 0
+	names, err := fs.ListAppNamesFiltered(ctx, nf)
+	if err != nil {
+		return nil, 0, err
+	}
+	visible := make([]string, 0, len(names))
+	for _, n := range names {
+		if canRead(n) {
+			visible = append(visible, n)
+		}
+	}
+	page := pageSlice(visible, f.Limit, f.Offset)
+	if len(page) == 0 {
+		return nil, len(visible), nil
+	}
+	nf.Names = page
+	svcs, _, err := fs.ListDesiredServicesFiltered(ctx, nf)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := svcs[:0]
+	for _, s := range svcs {
+		if canRead(s.Name) {
+			out = append(out, s)
+		}
+	}
+	return out, len(visible), nil
+}
+
+func pageSlice[T any](in []T, limit, offset int) []T {
 	if offset >= len(in) {
 		return nil
 	}

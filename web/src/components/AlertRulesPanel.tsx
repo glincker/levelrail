@@ -106,7 +106,8 @@ function buildColumns(
                 {t('rules.silenced')}
               </Badge>
             ) : null}
-            {rule.kind === 'crashloop' && state === 'firing' ? (
+            {(rule.kind === 'crashloop' || rule.kind === 'oom_killed') &&
+            state === 'firing' ? (
               <Link
                 to="/apps/$name/logs"
                 params={{ name: appName }}
@@ -124,7 +125,13 @@ function buildColumns(
       header: t('rules.colKind'),
       priority: 2,
       cell: (rule) => (
-        <Badge variant={rule.kind === 'crashloop' ? 'destructive' : 'outline'}>
+        <Badge
+          variant={
+            rule.kind === 'crashloop' || rule.kind === 'oom_killed'
+              ? 'destructive'
+              : 'outline'
+          }
+        >
           {rule.kind}
         </Badge>
       ),

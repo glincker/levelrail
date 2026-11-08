@@ -1,5 +1,6 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
-import { RotateCwGlassIcon } from '@thesvg/ui-react'
+import { RotateCwGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -40,7 +41,11 @@ export function EventWebhookDeliveries({ webhookId }: { webhookId: string }) {
   }
   if (data.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">{t('deliveries.empty')}</p>
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('deliveries.empty')}
+      />
     )
   }
 

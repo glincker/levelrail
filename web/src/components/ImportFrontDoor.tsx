@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SectionTitle } from '@/components/ui/typography'
 import { useMutation } from '@tanstack/react-query'
 import { UploadGlassIcon } from '@thesvg/ui-react'
@@ -29,6 +30,7 @@ export function ImportFrontDoor({
 }: {
   onPlan: (plan: ImportPlan, request: ImportPlanRequest) => void
 }) {
+  const { t } = useTranslation('databases')
   const [text, setText] = useState('')
   const [fileError, setFileError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -51,7 +53,7 @@ export function ImportFrontDoor({
     setFileError(null)
     if (!file) return
     if (file.size > MAX_UPLOAD_BYTES) {
-      setFileError('That file is larger than 512 KB.')
+      setFileError(t('wizard.fileTooLarge'))
       return
     }
     void file.text().then(setText)
@@ -60,7 +62,7 @@ export function ImportFrontDoor({
   return (
     <section className="space-y-2" aria-labelledby="import-front-door-title">
       <SectionTitle as="h3" id="import-front-door-title">
-        Import anything
+        {t('wizard.importTitle')}
       </SectionTitle>
       <Textarea
         value={text}
@@ -72,8 +74,8 @@ export function ImportFrontDoor({
         }}
         rows={4}
         spellCheck={false}
-        aria-label="Repository URL, image, docker run command, compose file or Dockerfile"
-        placeholder="Paste a repo URL, an image, a docker run command, a docker-compose.yml or a Dockerfile"
+        aria-label={t('wizard.importLabel')}
+        placeholder={t('wizard.importPlaceholder')}
         className="font-mono text-xs"
       />
       <div className="flex flex-wrap items-center gap-2">
@@ -82,7 +84,7 @@ export function ImportFrontDoor({
           onClick={submit}
           disabled={!text.trim() || plan.isPending}
         >
-          {plan.isPending ? 'Reading...' : 'Preview plan'}
+          {plan.isPending ? t('wizard.reading') : t('wizard.previewPlan')}
         </Button>
         <Button
           type="button"
@@ -92,13 +94,13 @@ export function ImportFrontDoor({
           }}
         >
           <UploadGlassIcon size="1.4em" aria-hidden="true" />
-          Upload file
+          {t('wizard.uploadFile')}
         </Button>
         <input
           ref={fileRef}
           type="file"
           className="sr-only"
-          aria-label="Upload a compose file or Dockerfile"
+          aria-label={t('wizard.uploadLabel')}
           onChange={(e) => {
             onFile(e.target.files?.[0])
             e.target.value = ''
@@ -106,17 +108,17 @@ export function ImportFrontDoor({
         />
         {guess ? (
           <Badge variant="muted" data-testid="import-guess">
-            Looks like: {IMPORT_SOURCE_LABEL[guess]}
+            {t('wizard.looksLike', { source: IMPORT_SOURCE_LABEL[guess] })}
           </Badge>
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>Try:</span>
+        <span>{t('wizard.tryLabel')}</span>
         {IMPORT_EXAMPLES.map((ex) => (
           <button
             key={ex.label}
             type="button"
-            className="rounded-md border border-border px-2 py-0.5 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            className="min-h-6 rounded-md border border-border px-2 py-0.5 pointer-coarse:min-h-10 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             onClick={() => {
               setText(ex.value)
             }}

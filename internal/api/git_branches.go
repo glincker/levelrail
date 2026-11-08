@@ -11,10 +11,10 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 )
 
 // listBranchesFunc lists every branch name a git remote advertises, with
@@ -135,11 +135,11 @@ func resolveRemoteBranchSHA(ctx context.Context, repoURL, branch, token string) 
 		Name: "origin",
 		URLs: []string{repoURL},
 	})
-	opts := &git.ListOptions{}
-	if token != "" {
-		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	auth, err := sourcecache.RemoteAuth(ctx, repoURL, token)
+	if err != nil {
+		return "", fmt.Errorf("api: resolve branch %q on %q: %w", branch, redactURLCredentials(repoURL), err)
 	}
-	refs, err := remote.ListContext(ctx, opts)
+	refs, err := remote.ListContext(ctx, &git.ListOptions{Auth: auth})
 	if err != nil {
 		return "", fmt.Errorf("api: resolve branch %q on %q: %w", branch, repoURL, err)
 	}

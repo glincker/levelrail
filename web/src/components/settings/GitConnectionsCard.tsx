@@ -45,7 +45,7 @@ export function GitConnectionsCard({
           />
         ) : (
           <>
-            <ul className="divide-y divide-border">
+            <ul data-slot="grouped-list">
               {connections.map((c) => (
                 <GitConnectionRow
                   key={c.id}

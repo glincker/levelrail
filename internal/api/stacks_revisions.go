@@ -53,7 +53,7 @@ func (rt *Router) handleStackRevisions(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	limit := stackHistoryLimit()
+	limit := rt.stackHistoryLimit(r.Context())
 	if n, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && n > 0 && n < limit {
 		limit = n
 	}

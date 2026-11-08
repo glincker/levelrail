@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { VaultGlassIcon } from '@thesvg/ui-react'
@@ -21,6 +22,10 @@ import {
 // own { vault: { path, key } } env vars. Declaring which env var on
 // which app resolves from Vault happens on that app's own Environment
 // tab (VaultEnvEditor), not here.
+const SecretProvidersSection = lazy(
+  () => import('../../components/settings/SecretProvidersSection'),
+)
+
 export const Route = createFileRoute('/settings/vault')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(vaultSettingsQueryOptions()),
@@ -50,6 +55,9 @@ function VaultSettingsPage() {
       <div className="space-y-6">
         <VaultSettingsCard settings={settings} />
         <VaultRotateCredentialCard settings={settings} />
+        <Suspense fallback={null}>
+          <SecretProvidersSection />
+        </Suspense>
       </div>
     </PageTemplate>
   )

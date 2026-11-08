@@ -128,6 +128,9 @@ export function formatCondition(rule: AlertRule): string {
     const grace = rule.for_duration || '6h (default)'
     return `${target} has no successful backup within its schedule plus ${grace}`
   }
+  if (rule.kind === 'oom_killed') {
+    return `${rule.restart_count_threshold} OOM kills in ${rule.restart_window ?? '?'}`
+  }
   return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
 }
 
@@ -141,6 +144,9 @@ export function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'crashloop') {
     return `${rule.last_value} restarts`
+  }
+  if (rule.kind === 'oom_killed') {
+    return `${rule.last_value} OOM kills`
   }
   if (rule.kind === 'cert_expiry') {
     return `${rule.last_value.toFixed(1)} days to earliest expiry`

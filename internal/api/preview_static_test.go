@@ -7,12 +7,14 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -228,4 +230,160 @@ func TestStaticPreview_TeardownIgnoresNonPreviewName(t *testing.T) {
 		t.Fatalf("teardownPreviewStatic(web) failed = %v", failed)
 	}
 	assertMainSiteIntact(t, db, mainDir)
+}
+
+func TestStaticPreview_GateCreatesRowAndFailsClosed(t *testing.T) {
+	rt, db, _, _, _, _ := setUpStaticPreviewApp(t)
+	withPreviewSecrets(t, rt)
+	mgr, ok := rt.secrets.(*secrets.Manager)
+	if !ok {
+		t.Fatalf("secrets = %T, want *secrets.Manager", rt.secrets)
+	}
+	rt.domainBasicAuthSecrets = mgr
+	ctx := context.Background()
+	const domain = "pr-42.web.example.com"
+	if err := db.SaveStaticSite(ctx, store.StaticSite{Name: "web-pr-42", Domains: []string{domain}, RootDir: t.TempDir()}); err != nil {
+		t.Fatalf("seed static site domain owner: %v", err)
+	}
+	s := store.PreviewAppSettings{GateBasicAuth: true, GateUsername: "reviewer"}
+
+	// No stored password: the gate cannot be created, so the preview must not publish.
+	notes, err := rt.finishStaticPreviewExposure(ctx, "web", "web-pr-42", domain, s)
+	if err == nil {
+		t.Fatalf("notes = %v, err nil; want an error when the gate cannot be created", notes)
+	}
+	if _, found, _ := db.GetDomainBasicAuth(ctx, domain); found {
+		t.Fatal("gate row exists after a failed gate creation")
+	}
+
+	if err := mgr.SetValue(ctx, previewGateSecretPrefix+"web", previewGateSecretKey, "pw-for-test"); err != nil {
+		t.Fatalf("store gate password: %v", err)
+	}
+	notes, err = rt.finishStaticPreviewExposure(ctx, "web", "web-pr-42", domain, s)
+	if err != nil {
+		t.Fatalf("finishStaticPreviewExposure() error = %v", err)
+	}
+	for _, n := range notes {
+		if strings.Contains(n, "not enforced") {
+			t.Fatalf("note %q must not be reported once the gate is enforced", n)
+		}
+	}
+	auth, found, err := db.GetDomainBasicAuth(ctx, domain)
+	if err != nil || !found || auth.Username != "reviewer" {
+		t.Fatalf("gate row = %+v, found %v, err %v; want reviewer", auth, found, err)
+	}
+}
+
+func TestStaticPreview_TeardownRemovesGateRowAndSecret(t *testing.T) {
+	rt, db, _, _, _, _ := setUpStaticPreviewApp(t)
+	withPreviewSecrets(t, rt)
+	mgr, ok := rt.secrets.(*secrets.Manager)
+	if !ok {
+		t.Fatalf("secrets = %T, want *secrets.Manager", rt.secrets)
+	}
+	rt.domainBasicAuthSecrets = mgr
+	ctx := context.Background()
+	const domain = "pr-42.web.example.com"
+	if err := db.SaveStaticSite(ctx, store.StaticSite{Name: "web-pr-42", Domains: []string{domain}, RootDir: t.TempDir()}); err != nil {
+		t.Fatalf("seed static site: %v", err)
+	}
+	if err := mgr.SetValue(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey, "pw-for-test"); err != nil {
+		t.Fatalf("store gate password: %v", err)
+	}
+	if err := db.SetDomainBasicAuth(ctx, domain, "reviewer"); err != nil {
+		t.Fatalf("create gate row: %v", err)
+	}
+
+	if failed := rt.teardownPreviewStatic(ctx, "web-pr-42"); len(failed) != 0 {
+		t.Fatalf("teardownPreviewStatic failed = %v", failed)
+	}
+	if _, found, err := db.GetDomainBasicAuth(ctx, domain); err != nil || found {
+		t.Fatalf("gate row found = %v, err %v; want removed", found, err)
+	}
+	if has, err := mgr.Exists(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey); err != nil || has {
+		t.Fatalf("gate password exists = %v, err %v; want removed", has, err)
+	}
+}
+
+// gateProbeBuilder records whether the gate row and its secret exist at Deploy time.
+type gateProbeBuilder struct {
+	inner   *staticPreviewBuilder
+	check   func() (row, secret bool)
+	row     bool
+	secret  bool
+	deploys int
+	failErr error
+}
+
+func (b *gateProbeBuilder) Deploy(ctx context.Context, req deploy.Request, p func(build.ProgressEvent)) (string, error) {
+	b.deploys++
+	b.row, b.secret = b.check()
+	if b.failErr != nil {
+		return "", b.failErr
+	}
+	return b.inner.Deploy(ctx, req, p)
+}
+
+func (b *gateProbeBuilder) DeploySpec(ctx context.Context, r deploy.MultiRequest, p func(string, build.ProgressEvent)) ([]deploy.ServiceOutcome, error) {
+	return b.inner.DeploySpec(ctx, r, p)
+}
+
+func setUpGatedDeploy(t *testing.T, failErr error) (rt *Router, db *store.DB, probe *gateProbeBuilder, domain string) {
+	t.Helper()
+	rt, db, _, builder, _, _ := setUpStaticPreviewApp(t)
+	withPreviewSecrets(t, rt)
+	mgr, ok := rt.secrets.(*secrets.Manager)
+	if !ok {
+		t.Fatalf("secrets = %T, want *secrets.Manager", rt.secrets)
+	}
+	rt.domainBasicAuthSecrets = mgr
+	ctx := context.Background()
+	domain = "pr-7.web.example.com"
+	if err := mgr.SetValue(ctx, previewGateSecretPrefix+"web", previewGateSecretKey, "pw-for-test"); err != nil {
+		t.Fatalf("store gate password: %v", err)
+	}
+	probe = &gateProbeBuilder{inner: builder, failErr: failErr}
+	probe.check = func() (bool, bool) {
+		_, row, _ := db.GetDomainBasicAuth(ctx, domain)
+		has, _ := mgr.Exists(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey)
+		return row, has
+	}
+	rt.builder = probe
+	return rt, db, probe, domain
+}
+
+func TestStaticPreview_GateExistsBeforeDeploy(t *testing.T) {
+	rt, db, probe, domain := setUpGatedDeploy(t, nil)
+	ctx := context.Background()
+	// A redeploy: the preview already owns the domain, so the gate can be written first.
+	if err := db.SaveStaticSite(ctx, store.StaticSite{Name: "web-pr-7", Domains: []string{domain}, RootDir: t.TempDir()}); err != nil {
+		t.Fatalf("seed owner: %v", err)
+	}
+	s := store.PreviewAppSettings{GateBasicAuth: true, GateUsername: "reviewer"}
+	gs := store.GitSource{ServiceName: "web", BuildType: spec.BuildStatic}
+
+	if _, _, err := rt.deployPreviewStatic(ctx, "web", "web-pr-7", gs, t.TempDir(), "sha7", domain, s); err != nil {
+		t.Fatalf("deployPreviewStatic() error = %v", err)
+	}
+	if probe.deploys != 1 || !probe.row || !probe.secret {
+		t.Fatalf("at deploy: deploys=%d row=%v secret=%v; want the gate row and secret written first", probe.deploys, probe.row, probe.secret)
+	}
+}
+
+func TestStaticPreview_FirstDeployWithoutOwnerStillDeploysAndFailureLeavesNoGate(t *testing.T) {
+	rt, db, probe, domain := setUpGatedDeploy(t, errors.New("build failed"))
+	s := store.PreviewAppSettings{GateBasicAuth: true, GateUsername: "reviewer"}
+	gs := store.GitSource{ServiceName: "web", BuildType: spec.BuildStatic}
+	ctx := context.Background()
+
+	_, _, err := rt.deployPreviewStatic(ctx, "web", "web-pr-7", gs, t.TempDir(), "sha7", domain, s)
+	if err == nil || !strings.Contains(err.Error(), "build failed") {
+		t.Fatalf("error = %v, want the deploy failure (not a gate error)", err)
+	}
+	if probe.deploys != 1 {
+		t.Fatalf("deploys = %d, want Deploy reached on a first deploy", probe.deploys)
+	}
+	if _, found, _ := db.GetDomainBasicAuth(ctx, domain); found {
+		t.Fatal("gate row left behind after a failed deploy")
+	}
 }

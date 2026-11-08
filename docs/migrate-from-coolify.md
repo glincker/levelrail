@@ -19,7 +19,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 
 | Item | Result |
 | --- | --- |
-| Applications | Created stopped and not routed. Image or git source, build method (Nixpacks becomes Railpack), first exposed port, replicas, health check and memory and CPU limits |
+| Applications | Created stopped and not routed. Image or git source, build method (Nixpacks becomes Railpack), first exposed port, replicas, HTTP and command health checks (a command check becomes an exec probe) and memory and CPU limits |
 | Environment variables | Imported, secret-looking names through the encrypted secrets store. Preview duplicates are dropped |
 | Domains | Read and held back until you enable routing |
 | Databases | PostgreSQL, MySQL, MariaDB, MongoDB and Redis, created empty with the major version from the image tag |
@@ -34,7 +34,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - **Git-built apps** do not build by themselves. Connect the repository (with credentials for a private one) and run a build, or let verify do it.
 - **Old database hostnames** in env vars are only rewritten through a mapping you confirm.
 - **Secrets the token could not read** are skipped and flagged.
-- **Extra ports, raw host port mappings, command-style health checks, custom build and start commands, basic auth, custom labels, webhooks and backup schedules** are called out as needs attention. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
+- **Extra ports, raw host port mappings, custom build and start commands, basic auth, custom labels, webhooks and backup schedules** are called out as needs attention. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
 
 ## What does not move
 

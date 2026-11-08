@@ -1,6 +1,7 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
+import { PlusGlassIcon, TrashGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -114,7 +115,13 @@ export function MonitorsList({
 }) {
   const { t } = useTranslation('monitors')
   if (monitors.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t('empty')}</p>
+    return (
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('empty')}
+      />
+    )
   }
   return (
     <ul

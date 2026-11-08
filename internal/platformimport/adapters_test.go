@@ -201,6 +201,15 @@ func TestCapRoverDiscover(t *testing.T) {
 	if !envOf(blog, "DB_PASSWORD").Secret || envOf(blog, "url").Secret {
 		t.Errorf("env: %+v", blog.Env)
 	}
+	proxyNotes := 0
+	for _, n := range blog.Notes {
+		if strings.Contains(n.Reason, "forced HTTPS") || strings.Contains(n.Reason, "websocket") || strings.Contains(n.Reason, "redirected") || strings.Contains(n.Reason, "basic auth") {
+			proxyNotes++
+		}
+	}
+	if proxyNotes != 4 {
+		t.Errorf("proxy notes=%d: %+v", proxyNotes, blog.Notes)
+	}
 	job := d.Apps[1]
 	if len(job.Domains) != 0 || job.Replicas != 1 || job.Port != 80 || len(job.Notes) < 2 {
 		t.Errorf("job: %+v", job)

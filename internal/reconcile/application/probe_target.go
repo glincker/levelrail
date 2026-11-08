@@ -85,7 +85,7 @@ func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerSta
 		return probe.Target{Addr: addr}, nil
 	}
 	if !path.Usable {
-		return probe.Target{}, fmt.Errorf("node %s is not reachable over the mesh: %s", nodeID, path.Reason)
+		return probe.Target{}, fmt.Errorf("the control plane cannot reach node %s over the WireGuard mesh, so the readiness probe never ran (the app itself was not checked): %s", nodeID, path.Reason)
 	}
 	primary, _ := docker.PrimaryPort(state.Ports, port)
 	bound := primary.HostIP

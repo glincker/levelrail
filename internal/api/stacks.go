@@ -19,14 +19,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
-	defaultStackLockTTL      = 10 * time.Minute
-	defaultStackHistoryLimit = 50
-	stackCIPrefix            = "ci:"
+	defaultStackLockTTL = 10 * time.Minute
+	stackCIPrefix       = "ci:"
 )
 
 // Audit action names for stack verbs.
@@ -138,11 +139,8 @@ func stackLockTTL() time.Duration {
 	return defaultStackLockTTL
 }
 
-func stackHistoryLimit() int {
-	if n, err := strconv.Atoi(os.Getenv("APP_STACK_HISTORY_LIMIT")); err == nil && n > 0 {
-		return n
-	}
-	return defaultStackHistoryLimit
+func (rt *Router) stackHistoryLimit(ctx context.Context) int {
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyStackHistoryLimit)
 }
 
 // Wire types.

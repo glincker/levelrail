@@ -214,6 +214,7 @@ func planDockerRun(in Input) (*DeploymentPlan, error) {
 		Name: name, Image: dr.Image, Build: BuildImage, BuildReason: "image from the docker run command",
 		Ports: dr.Ports, Command: dr.Command, Entrypoint: dr.Entrypoint, Env: dr.Env,
 		Volumes: dr.Volumes, Restart: dr.Restart, MemoryBytes: dr.Memory, NanoCPUs: dr.NanoCPUs,
+		runtime: dr.runtimeKeys(),
 	}
 	warns := append(imageWarnings(dr.Image), dr.Warnings...)
 	switch {
@@ -230,7 +231,7 @@ func planDockerRun(in Input) (*DeploymentPlan, error) {
 		warns = append(warns, Warning{Code: "extra_ports", Message: "only the first published port is routed through the ingress; other ports are published on the host"})
 	}
 	deploy := DeployApp
-	if len(dr.Volumes) > 0 || len(dr.Command) > 0 || len(dr.Entrypoint) > 0 || dr.Restart != "" {
+	if len(dr.Volumes) > 0 || len(dr.Command) > 0 || len(dr.Entrypoint) > 0 || dr.Restart != "" || len(svc.runtime) > 0 {
 		deploy = DeployCompose
 	}
 	return &DeploymentPlan{Source: SourceDockerRun, SuggestedName: name, Deploy: deploy, Services: []ServicePlan{svc}, Warnings: warns}, nil

@@ -81,7 +81,7 @@ func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 	return writeScheduledTaskResult(stdout, stderr, of, conditions, func() {
 		printConditionsHuman(stdout, conditions)
 		if line := statusOutcomeLine(status, conditions); line != "" {
-			_, _ = fmt.Fprintf(stdout, "\n%s\n", line)
+			_, _ = fmt.Fprintf(stdout, "\n%s\n", styleFor(stdout).paint(ansiGreen, line))
 		}
 		printStatusExtras(context.Background(), client, prog, name, stdout, conditions)
 	})

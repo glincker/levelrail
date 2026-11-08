@@ -114,6 +114,9 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
 | `jobs` | list of `Job` | no | none | Cron-scheduled commands, each run in a fresh container of this service's image or exec'd into it. See [Scheduled jobs](/scheduled-jobs). Not meaningful when `build.type` is `static` or `compose`. |
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
+| `user` | string | no | image's `USER` | Container user as a name or uid, optionally `:group` or `:gid` (no spaces or shell characters, max `APP_SERVICE_USER_MAX_LEN`, default 64). Applies inside the container only; `root` is allowed, as in Docker. |
+| `working_dir` | string | no | image's `WORKDIR` | Absolute working directory (max `APP_SERVICE_WORKING_DIR_MAX_LEN`, default 1024). Changing either recreates the container. |
+| `runtime` | object | no | none | Allowlisted docker options, see [Runtime options](runtime-options.md) |
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](/load-balancing). |
 | `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
@@ -414,6 +417,24 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 | --- | --- | --- | --- | --- |
 | `schedule` | string | yes | none | A cron expression, for example `"0 3 * * *"`. |
 | `retain` | integer | no | none | Minimum 1 if set. |
+
+### Procfile and app.json at deploy
+
+A repo with a `Procfile` and no app spec (`app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`) is translated at deploy time. A repo that has an app spec is never touched. The offline `import config` command uses the same rules, so you can preview the result first.
+
+```text
+web: bundle exec puma
+worker: bundle exec sidekiq
+release: bundle exec rake db:migrate
+```
+
+- One service per process type. `web` gets the port (default 8080, set by the `deploy.procfile_default_port` runtime setting) and `PORT` set to match. Other types are workers; the port the spec requires on every service is set but nothing needs to listen on it.
+- `release:` becomes `hooks.preDeploy` on `web`, or on the first process when there is no `web` line.
+- With a `Dockerfile` in the repo, services build from it and each Procfile command replaces the image `CMD` for that service. Without one, Railpack builds the app.
+- `app.json` keys: `healthchecks` map to `health` (`startup` and `readiness` to readiness, `liveness` to liveness), `cron` entries to `jobs`, `scripts.dokku.predeploy` and `postdeploy` (and `scripts.postdeploy`) to hooks, `formation.<type>.quantity` to `replicas`, `env` values to service env.
+- A `CHECKS` file, when it is among the translated files and `app.json` has no `healthchecks` for `web`, maps its first path line to `health.readiness`, with `TIMEOUT` as `timeout` and `ATTEMPTS` as `failures`. Text matches, host-prefixed lines, `WAIT` and extra paths produce findings. `app.json` healthchecks win when both exist.
+- Add-on databases are not created at deploy. Each one produces a finding telling you to create and link the database.
+- Anything else, such as `environments`, other scripts or healthcheck command checks, produces a finding. Findings appear as log lines in the deploy output and as warnings on the deploy result; nothing is dropped silently.
 
 ## Bind addresses and exposure
 
