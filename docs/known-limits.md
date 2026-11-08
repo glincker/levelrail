@@ -19,6 +19,7 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 ## Not verified on real infrastructure
 
 - A stable label means tests plus a live end-to-end run on one machine. It does not mean a run on a fresh production host. Source: [feature status](feature-status.md).
+- The build log's builder line (Dockerfile or Railpack, plus the buildpack file warning) is unit tested through its helper only. No real BuildKit build has run with it, because the build client has no seam to run without BuildKit. Source: [importing apps](importing-apps.md), [feature status](feature-status.md).
 - Public ACME has one recorded run on a live VPS. Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live. Source: [roadmap](roadmap.md), [ACME runbook](acme-verification-runbook.md).
 - Idle footprint was measured in a Docker Desktop container. A bare metal or VPS number is still open. Source: [roadmap](roadmap.md).
 - Load and failover numbers have no published results yet. Source: [roadmap](roadmap.md), [benchmarks](benchmarks.md).
