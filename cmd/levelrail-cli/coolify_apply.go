@@ -34,6 +34,9 @@ func applyMigration(ctx context.Context, client *Client, report *migrationReport
 				body.Resources = res
 			}
 		}
+		if a.Service.PreDeploy != "" || a.Service.PostDeploy != "" {
+			body.Hooks = &serviceHooks{PreDeploy: a.Service.PreDeploy, PostDeploy: a.Service.PostDeploy}
+		}
 		if a.Service.Health != nil {
 			if h, err := toServiceHealth(healthMappedToSpec(*a.Service.Health)); err == nil {
 				body.Health = h

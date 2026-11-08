@@ -539,6 +539,7 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 	} else if a.HealthCheckEnabled {
 		app.Notes = append(app.Notes, Note{Reason: "command-based health check is not supported", Manual: "add an HTTP health check after import"})
 	}
+	app.PreDeploy, app.PostDeploy = strings.TrimSpace(a.PreDeployment), strings.TrimSpace(a.PostDeployment)
 	app.Notes = append(app.Notes, sourceSettingNotes(a)...)
 	c.readDetails(ctx, &app)
 	return app, nil
@@ -559,9 +560,6 @@ func sourceSettingNotes(a coolifyApp) []Note {
 	var notes []Note
 	add := func(area, reason, manual string) {
 		notes = append(notes, Note{Area: area, Reason: reason, Manual: manual})
-	}
-	if a.PreDeployment != "" || a.PostDeployment != "" {
-		add("command", "pre or post deployment commands are not imported", "add them as deploy hooks in the app settings")
 	}
 	for _, c := range []struct{ name, val string }{{"install", a.InstallCommand}, {"build", a.BuildCommand}, {"start", a.StartCommand}} {
 		if strings.TrimSpace(c.val) != "" {

@@ -69,14 +69,16 @@ type mappedApp struct {
 }
 
 type mappedService struct {
-	BuildType string        `json:"build_type,omitempty"`
-	BuildPath string        `json:"build_path,omitempty"`
-	Domains   []string      `json:"domains,omitempty"`
-	Port      int           `json:"port,omitempty"`
-	Health    *mappedHealth `json:"health,omitempty"`
-	Memory    string        `json:"memory,omitempty"`
-	CPU       float64       `json:"cpu,omitempty"`
-	EnvKeys   []string      `json:"env_keys,omitempty"`
+	BuildType  string        `json:"build_type,omitempty"`
+	BuildPath  string        `json:"build_path,omitempty"`
+	Domains    []string      `json:"domains,omitempty"`
+	Port       int           `json:"port,omitempty"`
+	Health     *mappedHealth `json:"health,omitempty"`
+	PreDeploy  string        `json:"pre_deploy,omitempty"`
+	PostDeploy string        `json:"post_deploy,omitempty"`
+	Memory     string        `json:"memory,omitempty"`
+	CPU        float64       `json:"cpu,omitempty"`
+	EnvKeys    []string      `json:"env_keys,omitempty"`
 	// EnvLiteral is set only when includeSecretValues was requested; it is never serialized or written to app.yaml.
 	EnvLiteral map[string]string `json:"-"`
 }
@@ -147,6 +149,7 @@ func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, include
 	out.Service.Domains, out.Issues = mapDomains(app.FQDN, out.Issues)
 	out.Service.Port, out.Issues = mapPort(app.PortsExposes, buildType, out.Issues)
 	out.Service.Health, out.Issues = mapHealth(app, out.Issues)
+	out.Service.PreDeploy, out.Service.PostDeploy = strings.TrimSpace(app.PreDeployment), strings.TrimSpace(app.PostDeployment)
 	out.Service.Memory, out.Issues = mapMemory(app.LimitsMemory, out.Issues)
 	out.Service.CPU, out.Issues = mapCPU(app.LimitsCPUs, out.Issues)
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapEnv(envs, includeSecretValues, out.Issues)

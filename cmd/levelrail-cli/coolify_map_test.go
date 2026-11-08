@@ -339,3 +339,17 @@ func TestCoolifyMapService(t *testing.T) {
 		t.Errorf("report leaks compose body: %s", b)
 	}
 }
+
+func TestCoolifyMapDeployHooks(t *testing.T) {
+	got := mapCoolifyApplication(coolifyApplication{
+		Name: "web", BuildPack: "railpack", PortsExposes: "8080",
+		PreDeployment: " php artisan migrate ", PostDeployment: "curl -f https://hooks.example.com/done",
+	}, nil, false)
+	if got.Service.PreDeploy != "php artisan migrate" || got.Service.PostDeploy == "" {
+		t.Fatalf("hooks not mapped: %+v", got.Service)
+	}
+	y, err := buildAppYAML(got)
+	if err != nil || !strings.Contains(string(y), "preDeploy: php artisan migrate") {
+		t.Fatalf("yaml missing hooks: %v\n%s", err, y)
+	}
+}

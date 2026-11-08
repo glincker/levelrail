@@ -58,6 +58,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// since deployComposeBody is the same create-and-deploy core.
 	mux.HandleFunc("POST /api/v1/service-templates/{id}/deploy", rt.requireAbility(AbilityDeploy, rt.handleDeployServiceTemplateNow))
 
+	mux.HandleFunc("GET /api/v1/size-presets", rt.requireAbility(AbilityRead, rt.handleSizePresets))
+
 	// Custom templates (service_templates_custom.go): operator-defined
 	// templates captured from a running app. Deploy reuses the
 	// service-templates/{id}/deploy route above, no second deploy path.

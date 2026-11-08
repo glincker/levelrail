@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { CpuGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail, ServiceResources } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { useSizePresets } from '../queries/sizePresets'
+import { NativeSelect } from '@/components/ui/native-select'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -182,7 +184,8 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('common')
   const updateApp = useUpdateApp(app.name, { inlineError: true })
   const notifyRestartRequired = useRestartRequiredToast()
-  const { control, register, handleSubmit, formState } =
+  const { data: presets } = useSizePresets()
+  const { control, register, handleSubmit, formState, setValue } =
     useForm<ResourcesFormValues>({
       resolver: zodResolver(resourcesSchema),
       values: toFieldValues(app.resources),
@@ -230,6 +233,38 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
           }}
           className="space-y-6"
         >
+          {presets && presets.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="size-preset">Size preset</FieldLabel>
+              <NativeSelect
+                id="size-preset"
+                defaultValue=""
+                onChange={(e) => {
+                  const p = presets.find((x) => x.name === e.target.value)
+                  if (!p) return
+                  const opts = { shouldDirty: true, shouldValidate: true }
+                  setValue('memoryEnabled', true, opts)
+                  setValue(
+                    'memoryMib',
+                    String(Math.round(p.memory_bytes / 1_048_576)),
+                    opts,
+                  )
+                  setValue('cpuEnabled', true, opts)
+                  setValue('cpuCores', String(p.cpu), opts)
+                }}
+              >
+                <option value="">Custom</option>
+                {presets.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name} ({p.cpu} CPU, {formatBytes(p.memory_bytes)})
+                  </option>
+                ))}
+              </NativeSelect>
+              <FieldDescription>
+                Fills the memory and CPU limits below. Save to apply.
+              </FieldDescription>
+            </Field>
+          ) : null}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="rounded-md border border-border p-3">
               <Field orientation="horizontal">

@@ -59,6 +59,9 @@ type createFlags struct {
 	attachDatabaseEnvVar string
 	attachDatabaseField  string
 
+	// size backs --size; resolved against the server's presets after planning.
+	size string
+
 	// secrets back --secret; applied to CreateBody after planning, whichever path built the plan.
 	secrets map[string]string
 
@@ -738,6 +741,16 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if f.nodeIDSet {
 		plan.CreateBody.NodeID = f.nodeID
 	}
+	if f.size != "" {
+		res := serviceResources{}
+		if plan.CreateBody.Resources != nil {
+			res = *plan.CreateBody.Resources
+		}
+		if err := applySizePreset(ctx, client, f.size, &res); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
+		plan.CreateBody.Resources = &res
+	}
 	if f.replicas > 0 {
 		plan.CreateBody.Replicas = f.replicas
 	}
@@ -926,6 +939,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 
 	var f createFlags
 	fs.StringVar(&f.name, "name", "", "app name (default: the repo name on the git-build path, or the single service key with --file)")
+	fs.StringVar(&f.size, "size", "", "size preset such as small or large, sets the CPU and memory limits (see the server's size presets)")
 	fs.StringVar(&f.image, "image", "", "existing image to deploy, e.g. registry.example.com/org/app:tag (existing-image path)")
 	fs.IntVar(&f.port, "port", 0, "container port the app listens on (git-build default: detected from the checkout, the Dockerfile or the server's scan)")
 	fs.IntVar(&f.hostPort, "host-port", 0, "host port to pin the container port to (default: auto-assigned by Docker)")

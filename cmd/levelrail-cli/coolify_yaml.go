@@ -31,6 +31,9 @@ func buildAppYAML(m mappedApp) ([]byte, error) {
 	if svc.Memory != "" || svc.CPU > 0 {
 		servicePairs = append(servicePairs, scalarNode("resources"), resourcesNode(svc))
 	}
+	if svc.PreDeploy != "" || svc.PostDeploy != "" {
+		servicePairs = append(servicePairs, scalarNode("hooks"), hooksNode(svc))
+	}
 	if len(svc.EnvKeys) > 0 {
 		servicePairs = append(servicePairs, scalarNode("env"), envNode(svc.EnvKeys))
 	}
@@ -70,6 +73,17 @@ func probeNode(h mappedHealth) *yaml.Node {
 	}
 	if h.Failures > 0 {
 		pairs = append(pairs, scalarNode("failures"), intNode(h.Failures))
+	}
+	return mappingNode(pairs...)
+}
+
+func hooksNode(svc mappedService) *yaml.Node {
+	var pairs []*yaml.Node
+	if svc.PreDeploy != "" {
+		pairs = append(pairs, scalarNode("preDeploy"), scalarNode(svc.PreDeploy))
+	}
+	if svc.PostDeploy != "" {
+		pairs = append(pairs, scalarNode("postDeploy"), scalarNode(svc.PostDeploy))
 	}
 	return mappingNode(pairs...)
 }

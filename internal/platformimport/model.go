@@ -105,10 +105,12 @@ type App struct {
 	Volumes     []Volume
 	Replicas    int
 	Health      *HealthCheck
-	Crons       []Cron
-	MemoryBytes int64
-	NanoCPUs    int64
-	Notes       []Note
+	// PreDeploy and PostDeploy are shell commands run around a deploy.
+	PreDeploy, PostDeploy string
+	Crons                 []Cron
+	MemoryBytes           int64
+	NanoCPUs              int64
+	Notes                 []Note
 }
 
 // BackupSchedule is one scheduled database backup on the source.

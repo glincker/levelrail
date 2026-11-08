@@ -26,6 +26,8 @@ type coolifyApplication struct {
 	HealthCheckInterval int    `json:"health_check_interval"`
 	HealthCheckTimeout  int    `json:"health_check_timeout"`
 	HealthCheckRetries  int    `json:"health_check_retries"`
+	PreDeployment       string `json:"pre_deployment_command"`
+	PostDeployment      string `json:"post_deployment_command"`
 	LimitsMemory        string `json:"limits_memory"`
 	LimitsCPUs          string `json:"limits_cpus"`
 }

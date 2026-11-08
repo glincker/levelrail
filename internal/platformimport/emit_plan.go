@@ -46,6 +46,7 @@ func (p *Plan) EmitInput() EmitInput {
 		if a.Image != "" && !strings.HasSuffix(a.Image, ":pending") {
 			app.Image = a.Image
 		}
+		app.PreDeploy, app.PostDeploy = a.PreDeploy, a.PostDeploy
 		if a.Health != nil {
 			app.HealthPath = a.Health.Path
 			app.HealthExec = a.Health.Exec
