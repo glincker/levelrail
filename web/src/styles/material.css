@@ -69,11 +69,6 @@
   }
 }
 
-/* Inner shapes inside a padded glass shell keep a concentric radius. */
-.glass-concentric {
-  border-radius: max(0.25rem, calc(var(--glass-radius) - var(--glass-pad)));
-}
-
 /* Overlay motion: transform and opacity only, exit faster than enter.
    Uses the per-primitive starting/ending attributes plus @starting-style for first paint. */
 .motion-overlay {
