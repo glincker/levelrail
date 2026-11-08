@@ -93,6 +93,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
+| `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |
@@ -251,6 +252,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
+| `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |

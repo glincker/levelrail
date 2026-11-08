@@ -18,6 +18,9 @@ import (
 // tombstone (application.DeleteFinalizer). An emptied store.App row is removed too.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.refuseIfProtected(w, r, name) {
+		return
+	}
 	if rt.retainedDeployServices(r.Context())[name] {
 		writeError(w, http.StatusConflict, "this is a retained copy of an earlier deploy that the platform manages; it is removed automatically")
 		return

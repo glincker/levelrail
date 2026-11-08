@@ -184,3 +184,13 @@ The commenter must have `write` or `admin` permission on the repository, checked
 - **Migration step with `shared`, `app.yaml` databases or a non-PostgreSQL `fresh` database.** `migrate_command` works with the `none` and `seed` strategies, and with `fresh` on PostgreSQL. With the others the preview fails with a message saying so.
 - **Preview databases for branch deploys.** Branch deploys are app-only. The branch deploy code path never creates, seeds or removes a database, so a branch deploy uses the app's own database env. Database strategies apply to pull request previews only.
 - **Comment commands outside GitHub.** GitLab, Gitea and Bitbucket pull requests do not accept comment commands.
+
+## Preview host templates
+
+By default a preview is served on a generated host. To choose the pattern, set a host template and the domain it renders under:
+
+```
+levelrail-cli apps previews settings web --host-template 'pr-{number}.{domain}' --wildcard-domain example.com
+```
+
+This renders `pr-12.example.com` for pull request 12. `{branch}` (reduced to one DNS label) works too. The template must contain `{number}` or `{branch}`, and the domain must be one of the app's own domains or a subdomain of one, so a template can never put a preview on a host the app does not own. The domain is checked again at deploy time; if it no longer matches, the preview falls back to the default host. Point a wildcard DNS record at the server for the domain, or let automatic DNS handle each host. An empty template clears the setting.

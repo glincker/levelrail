@@ -728,6 +728,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/compose/services/{service}/stop | AbilityDeploy | handleStopApp |
 | POST | /api/v1/apps/{name}/compose/services/{service}/start | AbilityDeploy | handleStartApp |
 | GET | /api/v1/apps/{name}/compose/services/{service}/logs | AbilityRead | handleQueryLogs |
+| GET | /api/v1/apps/{name}/protection | AbilityRead | handleGetAppProtection |
+| PUT | /api/v1/apps/{name}/protection | AbilityWriteSensitive | handlePutAppProtection |
+| DELETE | /api/v1/apps/{name}/protection | AbilityWriteSensitive | handleDeleteAppProtection |
 
 </Accordion>
 

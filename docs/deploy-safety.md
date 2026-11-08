@@ -490,3 +490,15 @@ Pruning removes only dangling (untagged) images, and Docker itself refuses to re
 ### Still stuck
 
 For all failure codes and their meanings, see [Deploy failures](deploy-failures.md). Run `levelrail-cli apps diagnose <name>` for system details.
+
+## Protecting an app
+
+A protected app refuses deploys, rollbacks, promotes, scaling, config writes and deletion with HTTP 423 until someone unprotects it. Unlike a freeze window there is no override flag: unprotect first. Reads, logs and metrics keep working.
+
+```
+levelrail-cli apps protect web --reason "customer demo week"
+levelrail-cli apps protect web --status
+levelrail-cli apps unprotect web
+```
+
+Protecting needs a reason, and both protect and unprotect appear in the app's event history. This is separate from `apps lock`, which only holds new builds back from going live. The API is `GET`, `PUT` and `DELETE /api/v1/apps/{name}/protection`.

@@ -49,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "freeze":
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "protect", "unprotect":
+		return runAppsProtect(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "lock", "unlock", "publish":
 		return runAppsLock(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "ci":

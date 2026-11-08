@@ -126,7 +126,7 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 // fork gate.
 func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	envURL := ""
-	if d := rt.previewDomain(ctx, appName, ev.Number); d != "" {
+	if d := rt.previewDomainForBranch(ctx, appName, ev.Number, ev.HeadRef); d != "" {
 		envURL = rt.publicHTTPSURL(ctx, d)
 	}
 	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, previewScope(ev.Number), envURL)
@@ -165,7 +165,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	}
 	defer cleanup()
 
-	wantDomain := rt.previewDomain(ctx, appName, ev.Number)
+	wantDomain := rt.previewDomainForBranch(ctx, appName, ev.Number, ev.HeadRef)
 	policy := rt.previewSettings(ctx, appName)
 	if forkSecretsApproved(ctx) {
 		policy.AllowForkSecrets = true
@@ -521,6 +521,10 @@ func previewServicesSpec(services map[string]spec.Service, domain string) (map[s
 // domain is configured (reachable by host:port only).
 func (rt *Router) previewDomain(ctx context.Context, appName string, prNumber int) string {
 	return rt.previewHost(ctx, appName, prNumber)
+}
+
+func (rt *Router) previewDomainForBranch(ctx context.Context, appName string, prNumber int, branch string) string {
+	return rt.previewHostFor(ctx, appName, prNumber, branch)
 }
 
 // ensurePreviewEnvironmentTier returns appName's dedicated preview

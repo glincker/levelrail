@@ -221,6 +221,7 @@ Where it stands:
 - Apps, nodes, deployments, the audit log and the search palette were already paged or debounced server side, and the long lists are virtualized. The palette row above is within run to run noise, not a regression.
 - Update: the dashboard and apps page now use `GET /api/v1/apps-summary` (status, environment and attention counts) and a server paged `GET /api/v1/apps` (`limit`, `offset`, `q`, `status`, repeated `environment`, `tag` with `tag_match=any`, `X-Total-Count`); the nodes page is paged and carries `resource_count` per node; brand logos load one chunk per mark. Numbers below were not re-measured after this change.
 - Compression: GET JSON under `/api/` is gzipped when the client accepts it (`APP_API_COMPRESSION=off` disables). SSE, NDJSON and text streams, responses that set a cookie, `Cache-Control: no-store` responses (the secret-bearing ones) and `/api/v1/auth/` are never compressed, which avoids BREACH on secrets.
+- Conditional GET: read JSON under `/api/` carries a strong `ETag` and answers a matching `If-None-Match` with `304` and no body, so a dashboard poll that finds nothing changed costs a hash and a header. The `api.conditional_get` runtime setting (default on, seeded by `APP_API_CONDITIONAL_GET`) switches it live. Responses over `APP_API_CONDITIONAL_GET_MAX_BYTES` (4 MiB) skip it. `Cache-Control: no-store` responses (the secret-bearing ones), cookie setters, `/api/v1/auth/` and audited sensitive reads never get an ETag.
 - Previously not fixed: the dashboard and apps list still fetch the whole apps list (about 314 kB at 1000 apps) because status tiles and filters count client side. A server side summary endpoint is the next step. The thesvg brand logo chunks (about 250 kB each) still load on home, databases and nodes. `npm run check-bundle-size` already fails on the diagram `elk` chunk (1463 kB against a 720 kB budget) before this change.
 - Apps seeded here have no running containers, so this measures list rendering and fetching, not live metrics streaming.
 
@@ -240,3 +241,7 @@ Deploys that need the same image and registry credentials share one pull, and
 a node runs at most `images.pull_concurrency` distinct pulls at once (default
 3). A deploy that joins a pull already in flight waits for it and shows no
 layer progress of its own.
+
+## Reconcile cost
+
+`GET /api/v1/system/control-plane-health` and `levelrail-cli system health` list the five controllers with the most total time since start (runs, errors, total and max milliseconds), so a slow controller shows up without a profiler. The interval between full resync passes is the `reconcile.resync_seconds` runtime setting (default 30, from 5 to 3600, seeded by `APP_RECONCILE_RESYNC_SECONDS`); the engine re-reads it on each resync tick.

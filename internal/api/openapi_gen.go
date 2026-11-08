@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2035 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2038 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -388,6 +388,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/preview/prune", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePrunePreview", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/promote", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromoteApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/promote/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromotePreview", Description: "Promotion (promote.go): move a known-good image from this app to a sibling app tagged with another environment in the same project, through the exact same deploy path a plain trigger uses. Preview is AbilityRead like the comparison view above; the trigger itself is AbilityDeploy, matching POST .../deploys."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/protection", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteAppProtection", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/protection", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppProtection", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/protection", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppProtection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeletePublishLock", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPublishLock", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutPublishLock", Description: ""},

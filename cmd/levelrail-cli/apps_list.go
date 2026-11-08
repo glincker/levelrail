@@ -15,6 +15,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	maxItemsFlag := fs.Int("max-items", 0, "cap the number of apps returned by this call (server-side limit, AWS CLI's own --max-items); 0 means every app, same as omitting it")
 	environmentFlag := fs.String("environment", "", "only apps in this environment (name or id)")
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
+	lo := registerListOpts(fs)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. --json always prints a bare\narray. With --max-items or --starting-token, next_token and total_count go\nto stderr as \"next_token=N total_count=M\", so a script can page through a\nlarge fleet without the stdout shape changing.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -38,6 +39,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
 		}
+		apps = applyListOpts(apps, lo)
 		if err := renderResult(stdout, of.Format, of.Query, apps, func() { printAppsTable(stdout, apps) }); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitCodeForError(err)
@@ -62,6 +64,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
 	}
+	page.Items = applyListOpts(page.Items, lo)
 	nextToken := ""
 	if page.NextOffset > 0 {
 		nextToken = strconv.Itoa(page.NextOffset)

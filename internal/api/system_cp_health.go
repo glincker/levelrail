@@ -129,9 +129,20 @@ type cpReconcile struct {
 	LagSeconds  float64 `json:"lag_seconds"`
 	Pending     bool    `json:"pending"`
 
+	// Costs lists the most expensive controllers by total time since start.
+	Costs []cpControllerCost `json:"costs,omitempty"`
+
 	// Queue is set only while the concurrent worker pool runs.
 	Queue *cpQueue              `json:"queue,omitempty"`
 	Guard reconcile.GuardStatus `json:"guard"`
+}
+
+type cpControllerCost struct {
+	Name    string  `json:"name"`
+	Runs    int64   `json:"runs"`
+	Errors  int64   `json:"errors"`
+	TotalMS float64 `json:"total_ms"`
+	MaxMS   float64 `json:"max_ms"`
 }
 
 type cpQueue struct {
@@ -194,6 +205,9 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		res.Reconcile = cpReconcile{
 			Passes: rs.Passes, Controllers: rs.Controllers, LastPassMS: durMS(rs.LastPass),
 			P50MS: durMS(rs.P50), P95MS: durMS(rs.P95), Slowest: rs.SlowestName, Pending: rs.Pending,
+		}
+		for _, c := range rs.Costs {
+			res.Reconcile.Costs = append(res.Reconcile.Costs, cpControllerCost{Name: c.Name, Runs: c.Runs, Errors: c.Errors, TotalMS: durMS(c.Total), MaxMS: durMS(c.Max)})
 		}
 		if q := rs.Queue; q != nil {
 			res.Reconcile.Queue = &cpQueue{Workers: q.Workers, Depth: q.Depth, InFlight: q.InFlight, OldestWaitSeconds: q.OldestWait.Seconds()}

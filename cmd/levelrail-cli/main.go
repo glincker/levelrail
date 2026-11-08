@@ -409,7 +409,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n", prog, args[0])
-		_, _ = fmt.Fprint(stderr, unknownVerbHint(prog, nil, args[0]))
+		_, _ = fmt.Fprint(stderr, unknownCommandHint(prog, args))
 		return exitUsage
 	}
 }

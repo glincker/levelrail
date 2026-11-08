@@ -54,6 +54,10 @@ type freezeOverride struct {
 // override, otherwise the note recorded on the attempt. ok false means a
 // response was already written.
 func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string, o freezeOverride) (note string, ok bool) {
+	// Protection has no override: a protected app takes no deploy path at all.
+	if rt.refuseIfProtected(w, r, name) {
+		return "", false
+	}
 	if rt.deploySafety == nil {
 		return "", true
 	}
