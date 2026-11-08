@@ -10,7 +10,12 @@
   "row": {
     "extended": "Extended",
     "logs": "Build logs",
-    "logsLabel": "Open the logs of the preview for pull request {{number}}"
+    "logsLabel": "Open the logs of the preview for pull request {{number}}",
+    "gateOn": "Basic auth on",
+    "gateOff": "Public",
+    "gateNeedsPassword": "Gate needs a password",
+    "gateTipLabel": "About the preview gate",
+    "gateTip": "App-wide preview setting, change it under Preview lifecycle."
   },
   "approve": {
     "button": "Approve preview",

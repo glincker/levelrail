@@ -15,6 +15,7 @@ import {
   type UiIcon,
 } from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ import {
   useTeardownPreviewEnvironment,
   usePreviewEnvironments,
 } from '../queries/previewEnvironments'
+import { usePreviewPolicy } from '../queries/previewPolicy'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type {
@@ -77,6 +79,31 @@ const STATUS_ICON: Record<PreviewEnvironmentStatus, UiIcon> = {
   failed: CircleAlertGlassIcon,
   awaiting_approval: HandGlassIcon,
   limit_reached: BanGlassIcon,
+}
+
+// App-wide gate state shown per row. No badge until the policy loads, so
+// the list never claims Public without data.
+function PreviewGateBadge({ appName }: { appName: string }) {
+  const { t } = useTranslation('previews')
+  const policy = usePreviewPolicy(appName)
+  if (!policy.data) return null
+  const { gate_basic_auth: gated, gate_password_set: hasPassword } = policy.data
+  const needsPassword = gated && !hasPassword
+  const variant = needsPassword ? 'warning' : gated ? 'success' : 'muted'
+  const label = needsPassword
+    ? t('row.gateNeedsPassword')
+    : gated
+      ? t('row.gateOn')
+      : t('row.gateOff')
+  return (
+    <>
+      <Badge variant={variant} className="rounded-full">
+        <ShieldCheckGlassIcon className="size-4.5" aria-hidden="true" />
+        {label}
+      </Badge>
+      <InfoTip label={t('row.gateTipLabel')}>{t('row.gateTip')}</InfoTip>
+    </>
+  )
 }
 
 function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
@@ -364,6 +391,9 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                           />
                           Fork
                         </Badge>
+                      ) : null}
+                      {preview.domain ? (
+                        <PreviewGateBadge appName={app.name} />
                       ) : null}
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">

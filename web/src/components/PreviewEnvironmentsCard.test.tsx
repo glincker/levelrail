@@ -2,6 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import previewsEn from '@/locales/en/previews.json'
 import { PreviewEnvironmentsCard } from './PreviewEnvironmentsCard'
 import type { AppDetail } from '../types/appDetail'
 import { createTestQueryClient } from '@/test/testQueryClient'
@@ -18,6 +21,16 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
       params?: { name: string }
     }) => <a href={`/apps/${params?.name ?? ''}/logs`}>{children}</a>,
   }
+})
+
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['previews'],
+  defaultNS: 'previews',
+  resources: { en: { previews: previewsEn } },
+  interpolation: { escapeValue: false },
 })
 
 function requestUrlOf(input: RequestInfo | URL): string {
@@ -65,7 +78,9 @@ function renderCard() {
   const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
-      <PreviewEnvironmentsCard app={app} />
+      <I18nextProvider i18n={testI18n}>
+        <PreviewEnvironmentsCard app={app} />
+      </I18nextProvider>
     </QueryClientProvider>,
   )
 }
@@ -77,6 +92,7 @@ describe('PreviewEnvironmentsCard', () => {
   let gitSourceConnected: boolean
   let staleFixture: boolean
   let ephemeralDatabasesFixture: unknown[]
+  let gateFixture: { gate_basic_auth: boolean; gate_password_set: boolean }
 
   beforeEach(() => {
     previewEnabled = false
@@ -84,6 +100,7 @@ describe('PreviewEnvironmentsCard', () => {
     gitSourceConnected = true
     staleFixture = false
     ephemeralDatabasesFixture = []
+    gateFixture = { gate_basic_auth: true, gate_password_set: true }
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrlOf(input)
       const method = init?.method ?? 'GET'
@@ -142,6 +159,9 @@ describe('PreviewEnvironmentsCard', () => {
             200,
           ),
         )
+      }
+      if (url === '/api/v1/apps/demo-app/preview-policy' && method === 'GET') {
+        return Promise.resolve(fakeJsonResponse(gateFixture, 200))
       }
       if (
         url === '/api/v1/apps/demo-app/previews/42/teardown' &&
@@ -337,5 +357,25 @@ describe('PreviewEnvironmentsCard', () => {
       expect(body.post_pr_comments).toBe(true)
       expect(body.enabled).toBeUndefined()
     })
+  })
+
+  it('shows the app-wide gate state on a preview with a domain', async () => {
+    const user = userEvent.setup()
+    renderCard()
+    const toggle = await screen.findByRole('switch', {
+      name: 'Preview environments enabled',
+    })
+    await waitFor(() => {
+      expect(toggle).not.toHaveAttribute('aria-disabled', 'true')
+    })
+    await user.click(toggle)
+    expect(await screen.findByText('Basic auth on')).toBeInTheDocument()
+  })
+
+  it('shows Public when the gate is off', async () => {
+    previewEnabled = true
+    gateFixture = { gate_basic_auth: false, gate_password_set: false }
+    renderCard()
+    expect(await screen.findByText('Public')).toBeInTheDocument()
   })
 })

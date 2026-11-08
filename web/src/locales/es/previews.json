@@ -10,7 +10,12 @@
   "row": {
     "extended": "Extendida",
     "logs": "Registros de compilación",
-    "logsLabel": "Abrir los registros de la vista previa del pull request {{number}}"
+    "logsLabel": "Abrir los registros de la vista previa del pull request {{number}}",
+    "gateOn": "Autenticación básica activa",
+    "gateOff": "Público",
+    "gateNeedsPassword": "La barrera necesita contraseña",
+    "gateTipLabel": "Acerca de la barrera de la vista previa",
+    "gateTip": "Ajuste común a toda la app, cámbialo en Ciclo de vida de las vistas previas."
   },
   "approve": {
     "button": "Aprobar vista previa",
