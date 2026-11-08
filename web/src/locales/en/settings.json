@@ -3187,7 +3187,7 @@
     "openSettings": "Provider settings",
     "scopes": "Scopes: {{scopes}}",
     "banner": {
-      "description": "Connect GitHub, GitLab, Bitbucket, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
+      "description": "Connect GitHub, GitLab, Bitbucket, Azure DevOps, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
       "whatFor": "Connect one account per person, team or organization. Apps stay tied to the account they were created from, so you can add or remove accounts without touching your apps.",
       "diagram": {
         "repos": "Repos",

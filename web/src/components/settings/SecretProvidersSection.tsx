@@ -101,6 +101,8 @@ function ProviderForm({
           <FieldLabel htmlFor="sp-name">{t('secretProviders.name')}</FieldLabel>
           <Input
             id="sp-name"
+            aria-invalid={message ? true : undefined}
+            aria-describedby={message ? 'sp-error' : undefined}
             value={name}
             disabled={initial !== null || put.isPending}
             autoComplete="off"
@@ -209,7 +211,7 @@ function ProviderForm({
         </Field>
       </div>
       {message ? (
-        <p role="alert" className="text-destructive text-sm">
+        <p id="sp-error" role="alert" className="text-destructive text-sm">
           {message}
         </p>
       ) : null}

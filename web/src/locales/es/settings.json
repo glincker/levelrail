@@ -2349,7 +2349,7 @@
     "attention_one": "{{count}} cuenta requiere atención. Reconéctala para que sus aplicaciones sigan desplegándose.",
     "attention_other": "{{count}} cuentas requieren atención. Reconéctalas para que sus aplicaciones sigan desplegándose.",
     "banner": {
-      "description": "Conecta cuentas de GitHub, GitLab, Bitbucket, Gitea o Forgejo, todas las que necesites, y elige repositorios de cualquiera de ellas.",
+      "description": "Conecta cuentas de GitHub, GitLab, Bitbucket, Azure DevOps, Gitea o Forgejo, todas las que necesites, y elige repositorios de cualquiera de ellas.",
       "diagram": {
         "branches": "Ramas",
         "repos": "Repos",
