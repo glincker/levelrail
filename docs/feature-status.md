@@ -4,7 +4,7 @@ description: Per-feature maturity labels (stable, beta, hide-behind-flag) with t
 "og:url": "https://docs.levelrail.com/feature-status"
 ---
 
-This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last updated 2026-11-05 (v0.9.1). Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
+This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last updated 2026-11-07 (release/v0.9.5 branch). Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
 
 ## How to read the labels
 
@@ -12,7 +12,7 @@ This page labels every major feature by how much evidence backs it today. The ev
 | --- | --- |
 | **stable** | Unit tests, a doc page, and either a live end-to-end test in `test/e2e` or a documented live verification. |
 | **beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. Expect rough edges. |
-| **hide-behind-flag** | (called experimental in the flag table and in [Experimental features](/experimental-features)) Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). |
+| **hide-behind-flag** | (called experimental in the flag table and in [Experimental features](/experimental-features)) Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default. Turn it on in Settings, Beta features, with `levelrail-cli settings beta-features set`, or list it in `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). Beta features behind a toggle are off by default too. |
 
 **Stable scope.** Single node is stable. Multi-node, stacks and flagged features are beta or experimental. A stable label means tests plus a live end-to-end run on one machine; it does not mean a run on a fresh production host, which tier 4 below tracks. The upgrade, resilience and template rows are beta for that reason. A draft of the terms a stable line would carry is in [Support policy](/support-policy).
 
@@ -65,7 +65,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Multi-cloud node onboarding | beta | Unit tests for metadata parsing (fake servers per provider), preflight judging, provider and zone spread, API, CLI, MCP read tool and dashboard; the two-Docker-daemon join test also checks preflight facts and label hand-off. No real cloud metadata endpoint and no real WAN mesh have been exercised. See [add a node anywhere](/add-node-anywhere). |
 | Multi-node and WireGuard | beta | Opt-in node failure policy (fakes only, no real hosts). Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
 | AI assistant (MCP server) | beta | over 240 tools in toolsets an agent enables on demand (exact, generated numbers on the [MCP tool surface](/mcp-tool-surface) page), 31 test files in `internal/mcptools`, no e2e. |
-| AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
+| AI assistant (in-app chat) | beta (behind the `ai-chat` toggle) | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
 | Platform as code (iac) | experimental (behind the `iac` flag) | Live e2e covers export, plan and apply (`test/e2e/iac_apply_test.go`), but the apply path changes many resources in one run and stays gated behind `iac`. |
@@ -135,7 +135,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - E2E: `test/e2e/ai_chat_test.go` drives create/send-message/get/list/delete over real HTTP against a real `*api.Router` and `ai.Engine`, with a fake `ai.Provider` and `ai.ToolExecutor` (no live Anthropic call). MCP server itself: none.
 - Docs: `docs/ai-assistant.md` covers `levelrail-mcp`; `docs/ai-assistant-chat.md` covers the in-app chat.
 - Real infra: none found.
-- Label: MCP server beta (the tool registry is well tested, but the surface is large and unexercised end to end). In-app chat hide-behind-flag (depends on an external model provider, no evidence beyond fakes).
+- Label: MCP server beta (the tool registry is well tested, but the surface is large and unexercised end to end). In-app chat beta, behind the `ai-chat` toggle (depends on an external model provider, no evidence beyond fakes).
 
 ### AI models (GPU inference)
 

@@ -1,6 +1,6 @@
 # Known limits
 
-Last updated 2026-11-05 (v0.9.1).
+Last updated 2026-11-07 (release/v0.9.5 branch).
 
 Current limits, each with the page it comes from. Labels and evidence change with every release, so check [feature status](feature-status.md) for the latest.
 
@@ -41,5 +41,5 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 
 ## Behind flags or beta
 
-- In-app AI chat, AI models on GPU nodes, the load balancer, platform as code and Cloudflare Tunnel are off unless `APP_EXPERIMENTAL` is set. Source: [roadmap](roadmap.md), [experimental features](experimental-features.md).
+- Seventeen features sit behind the platform gate and are off by default. Ten are experimental: AI models on GPU nodes, the load balancer, platform as code, Cloudflare Tunnel, access roles, global environments, AI control, plugins, mail DNS and remote MCP. Seven are beta: AI assistant chat, resource advisor, CLI console, mobile API, git push deploy, canvas, and SAML and SCIM. Turn one on in Settings, Beta features, with `levelrail-cli settings beta-features set <feature> on`, or list it in `APP_EXPERIMENTAL`. Features that are not live until restart need `--restart`. Source: [experimental features](experimental-features.md), [feature status](feature-status.md).
 - The `pause` spend cap action serves a maintenance response and does not stop containers. Source: [roadmap](roadmap.md).
