@@ -41,3 +41,4 @@ cmd/levelrail-stress/phases.go | developer stress harness: builds and starts the
 cmd/levelrail-stress/proc_unix.go | developer stress harness: ps -o rss= -p <pid> with a literal argv and an integer pid to sample memory of its own child process
 cmd/levelrail-stress/proc_windows.go | developer stress harness: process group helpers for its own child process on Windows, no command is built from input
 internal/cliupdate/install.go | cli update: runs a global npm, pnpm or yarn install of levelrail-cli@<spec> where the caller (cmd/levelrail-cli/update.go) first requires selfupgrade.ValidTag (v plus alphanumerics and . - _, no / or :, so no URL or path spec), the spec is one argv element, no shell; also runs the CLI's own executable with version --json
+cmd/levelrail-cli/git_remote.go | git remote add or set-url for the opt-in --apply flag, literal "git" resolved by LookPath, argv form after "--", remote name regexp-validated and URL parsed as http(s), no shell
