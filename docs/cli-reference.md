@@ -493,6 +493,7 @@ levelrail-cli apps previews pr-status disable <app-name> [flags]
 levelrail-cli apps previews sweep [flags]
 ```
 
+- `git remote add <app>` and `git remote rotate <app>` issue the git push deploy remote (beta, `git-push`); `--apply` (with optional `--dir PATH`) sets the remote in a local repository instead of printing the token line.
 - `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters and forge status reporting; `rotate-secret` mints a fresh webhook secret, shown once.
 - `apps webhook-deliveries` lists recent inbound webhook requests, verified or not. `replay` re-runs a stored delivery's payload and can trigger a real build and deploy.
 - `apps previews` manages preview environments per pull request, see [Preview environments per pull request](/previews). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
@@ -679,6 +680,8 @@ levelrail-cli databases stop <name> [flags]
 levelrail-cli databases metrics <name> --metric NAME [flags]
 levelrail-cli databases logs <name> [flags]
 levelrail-cli databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
+levelrail-cli databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]
+levelrail-cli databases clone <source> <new-name> [--backup ID] [flags]
 levelrail-cli databases slow-queries <name> [flags]
 levelrail-cli databases schema <name> [--columns] [flags]
 levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --confirm <name>] [flags]

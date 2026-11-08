@@ -435,5 +435,43 @@
     "download": "Descargar {{name}}",
     "delete": "Eliminar {{name}}",
     "confirm": "Confirmar"
+  },
+  "composeDb": {
+    "title": "Copias de seguridad de bases de datos",
+    "description": "Servicios de base de datos detectados en esta app compose.",
+    "loadFailed": "No se pudieron cargar los servicios de base de datos: {{error}}",
+    "notScheduled": "Sin programar",
+    "scheduledSummary": "{{schedule}}, {{retention}}",
+    "paused": "En pausa",
+    "target": "Destino",
+    "targetPlaceholder": "Elige un destino",
+    "enabled": "Activada",
+    "retain": "Conservar las últimas",
+    "retainDays": "Antigüedad máx. (días)",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "remove": "Quitar",
+    "removing": "Quitando...",
+    "backUpNow": "Copiar ahora",
+    "starting": "Iniciando...",
+    "noTargets": "Aún no hay destinos de copia.",
+    "connectTarget": "Conecta un bucket en Ajustes",
+    "saved": "Programación de copias guardada.",
+    "saveFailed": "No se pudo guardar la programación.",
+    "removed": "Programación de copias eliminada.",
+    "removeFailed": "No se pudo eliminar la programación.",
+    "started": "Copia iniciada.",
+    "startFailed": "No se pudo iniciar la copia.",
+    "removeTitle": "¿Quitar la programación de copias de {{service}}?",
+    "removeDescription": "Las copias programadas se detienen. Las copias existentes se conservan.",
+    "runs": "Ejecuciones recientes",
+    "runsHide": "Ocultar ejecuciones",
+    "noRuns": "Aún no hay copias.",
+    "runsFailed": "No se pudieron cargar las ejecuciones: {{error}}",
+    "status": {
+      "running": "En curso",
+      "succeeded": "Correcta",
+      "failed": "Fallida"
+    }
   }
 }

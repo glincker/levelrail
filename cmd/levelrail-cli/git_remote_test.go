@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -58,5 +59,88 @@ func TestRun_GitRemote(t *testing.T) {
 	runCLIExpectOK(t, []string{"git", "remote", "revoke", "web", "--api-url", srv.URL})
 	if calls[len(calls)-1] != "DELETE /api/v1/apps/web/git-remote" {
 		t.Errorf("last call = %q", calls[len(calls)-1])
+	}
+}
+
+func gitRemoteApplyServer(t *testing.T, remoteName, rawURL string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"configured":false}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"configured":true,"url":"` + rawURL + `","remote_name":"` + remoteName + `","username":"git","branch":"trunk","max_push_bytes":1048576,"token":"gp_abc","add_command":"git remote add ` + remoteName + ` https://git:gp_abc@cp.example.com/x.git"}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func gitInitDir(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	dir := t.TempDir()
+	if out, err := exec.Command("git", "-C", dir, "init", "-q").CombinedOutput(); err != nil { //nolint:gosec // test-only literal git
+		t.Fatalf("git init: %v %s", err, out)
+	}
+	return dir
+}
+
+func gitRemoteURL(t *testing.T, dir, name string) string {
+	t.Helper()
+	out, err := exec.Command("git", "-C", dir, "remote", "get-url", name).Output() //nolint:gosec // test-only literal git
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func TestRun_GitRemoteApply(t *testing.T) {
+	srv := gitRemoteApplyServer(t, "deploy", "https://cp.example.com/api/v1/git/web.git")
+	dir := gitInitDir(t)
+
+	out, _ := runCLIExpectOK(t, []string{"git", "remote", "add", "web", "--apply", "--dir", dir, "--api-url", srv.URL})
+	if strings.Contains(out, "gp_abc") || !strings.Contains(out, "remote deploy configured in") || !strings.Contains(out, "git push deploy trunk") {
+		t.Errorf("apply output = %q", out)
+	}
+	if got := gitRemoteURL(t, dir, "deploy"); got != "https://git:gp_abc@cp.example.com/api/v1/git/web.git" { //nolint:gosec // fake test token
+		t.Errorf("remote url = %q", got)
+	}
+
+	// rotate on an existing remote must replace it, not fail.
+	out, _ = runCLIExpectOK(t, []string{"git", "remote", "rotate", "web", "--apply", "--dir", dir, "--api-url", srv.URL})
+	if strings.Contains(out, "gp_abc") {
+		t.Errorf("rotate output leaked token: %q", out)
+	}
+}
+
+func TestRun_GitRemoteApplyNotARepo(t *testing.T) {
+	srv := gitRemoteApplyServer(t, "deploy", "https://cp.example.com/api/v1/git/web.git")
+	var outBuf, errBuf strings.Builder
+	got := run("levelrail-cli-test", []string{"git", "remote", "add", "web", "--apply", "--dir", t.TempDir(), "--api-url", srv.URL}, &outBuf, &errBuf, envMap())
+	if got == exitOK || !strings.Contains(outBuf.String(), "git remote add deploy https://git:gp_abc@") {
+		t.Errorf("exit=%d stdout=%q, want failure with the token line still printed", got, outBuf.String())
+	}
+	if strings.Contains(errBuf.String(), "gp_abc") {
+		t.Errorf("stderr leaked token: %q", errBuf.String())
+	}
+}
+
+func TestRun_GitRemoteApplyRejectsBadInput(t *testing.T) {
+	dir := gitInitDir(t)
+	for name, c := range map[string][2]string{
+		"bad name": {"-evil", "https://cp.example.com/x.git"},
+		"bad url":  {"deploy", "file:///etc/passwd"},
+	} {
+		srv := gitRemoteApplyServer(t, c[0], c[1])
+		var outBuf, errBuf strings.Builder
+		got := run("levelrail-cli-test", []string{"git", "remote", "add", "web", "--apply", "--dir", dir, "--api-url", srv.URL}, &outBuf, &errBuf, envMap())
+		if got == exitOK {
+			t.Errorf("%s: exit ok, want failure", name)
+		}
+		if out, _ := exec.Command("git", "-C", dir, "remote").Output(); strings.TrimSpace(string(out)) != "" { //nolint:gosec // test-only literal git
+			t.Errorf("%s: git ran, remotes = %q", name, out)
+		}
 	}
 }

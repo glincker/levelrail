@@ -39,3 +39,5 @@ services:
 ```
 
 Compose files map `tmpfs`, `ulimits`, `init`, `stop_grace_period` (to `stop_timeout`), `extra_hosts`, `dns`, `sysctls`, `cap_drop`, `pids_limit` and `read_only` onto the same keys. An invalid `cap_drop` or `read_only` fails the deploy. Any other invalid set is skipped with a warning that names it, and the rest of the block still applies. Nodes with an older agent refuse the deploy until upgraded.
+
+A `tmpfs` entry in a compose file with no `size=` gets a default size of 64 MiB. Set `APP_RUNTIME_TMPFS_DEFAULT_BYTES` to change it, up to `APP_RUNTIME_TMPFS_MAX_BYTES` (1 GiB unless set). The `runtime:` block still requires `size=` on every entry.

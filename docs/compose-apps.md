@@ -298,6 +298,8 @@ Schedules and run history for compose services are stored apart from managed dat
 | `GET` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `read` (run history) |
 | `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `write-sensitive` (run now, `target_id` optional when a schedule exists) |
 
+In the dashboard, the **Database backups** card on the app's **Volumes** tab lists each detected database service with its engine, its schedule and what its retention settings keep. Only users with the `write-sensitive` ability can change anything. They choose a backup target, set a cron schedule, set how many backups to keep (`Keep last`) and an optional maximum age in days, pause or resume the schedule, remove it, or run a backup now. A new schedule starts with `Keep last` at 7. A value of 0 turns that limit off, and 0 for both keeps every backup. Read-only users see the schedule and the recent runs. If no backup target exists yet, the card links to Settings. The card does not appear for an app with no detected database service. There is no CLI command for these schedules yet. The card and these endpoints are built and unit tested, but not yet run against a live server.
+
 Restore is not automated for compose services yet. Download the dump object from the backup target (decrypt it first if the target encrypts dumps), then load it into the running service by hand:
 
 ```sh
@@ -307,4 +309,4 @@ docker exec -i <container> sh -c 'psql -U "${POSTGRES_USER:-postgres}" "${POSTGR
 docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" mysql -uroot' < dump.sql
 ```
 
-Take a fresh dump first, since loading over live data can overwrite it. Dashboard and CLI controls for these schedules are not part of this change.
+Take a fresh dump first, since loading over live data can overwrite it.

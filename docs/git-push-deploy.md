@@ -27,6 +27,8 @@ git remote add levelrail https://git:gp_...@cp.example.com/api/v1/git/my-app.git
 git push levelrail main
 ```
 
+Add `--apply` (to `git remote add` or `git remote rotate`) to let the CLI set the remote in the current repository, or in `--dir PATH`, for you. It runs `git remote add`, or `git remote set-url` when a remote with that name already points at this app's address. If the name is taken by a remote that points somewhere else, it stops and changes nothing. The token URL is written to `.git/config` in plain text and is not printed. Anyone who can read that repository can read the token, so rotate it if the repository is shared. If git or the repository is missing, the command prints the line above so the one-time token is not lost. `--apply` is unit tested with fakes (`cmd/levelrail-cli/git_remote_test.go`) and has not run against a live control plane.
+
 On the **Source** tab the card shows the remote, a copy button, the deploy branch, the last push and the rotate and revoke buttons.
 
 <Tip>

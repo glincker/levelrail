@@ -1,9 +1,16 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { AppVolumesEditor } from '../../../components/AppVolumesEditor'
 import { AppVolumeBackupsSection } from '../../../components/AppVolumeBackupsSection'
 import { AppVolumeFilesSection } from '../../../components/AppVolumeFilesSection'
 import { AppBindMountsSection } from '../../../components/AppBindMountsSection'
+
+const ComposeDbBackupsCard = lazy(() =>
+  import('../../../components/ComposeDbBackupsCard').then((m) => ({
+    default: m.ComposeDbBackupsCard,
+  })),
+)
 
 // Real deep-linkable route for an app's named Docker volumes: attach/
 // detach (AppVolumesEditor, PUT /api/v1/apps/{name}/volumes) plus the
@@ -26,6 +33,9 @@ function VolumesSection() {
     <div className="space-y-6">
       <AppVolumesEditor appName={name} volumes={app.volumes} />
       <AppVolumeBackupsSection appName={name} volumes={app.volumes} />
+      <Suspense fallback={null}>
+        <ComposeDbBackupsCard appName={name} />
+      </Suspense>
       <AppVolumeFilesSection appName={name} volumes={app.volumes} />
       <AppBindMountsSection bindMounts={app.bind_mounts} />
     </div>

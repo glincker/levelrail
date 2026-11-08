@@ -70,6 +70,8 @@ A new push from the fork needs a new approval.
 
 Turn on the gate to put one username and password in front of every preview of an app. The password is stored encrypted with the app's other secrets and copied to each preview domain when it is deployed. It needs the control plane master key.
 
+Static site previews get the same gate. If it cannot be created (no username, no stored password or no master key), the preview is not published and is marked failed with the reason.
+
 ## CLI
 
 ```

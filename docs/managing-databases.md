@@ -282,6 +282,23 @@ bkh_p93kd7z1q   bkt_ax7f2j1kd  succeeded  2148291  2026-09-12T03:00:01Z  2026-09
 
 On the dashboard, use the target picker and **Back up now** button in the **Backups** card on a database's Overview tab. A manual backup is refused with `507` when the control plane's data directory has less than `APP_MIN_BACKUP_DISK_MB` free (default 256), because the backup history row is written there.
 
+### Export and clone
+
+```bash
+levelrail-cli databases export <database> --out main.dump
+levelrail-cli databases export <database> --latest --out - > main.dump
+levelrail-cli databases clone <database> <new-name>
+levelrail-cli databases clone <database> <new-name> --backup <backup-id>
+```
+
+`export` takes a new backup and downloads it once it succeeds. Add `--latest` to skip the new backup and download the newest succeeded one. The dump is the backup object as stored, so an encrypted backup stays encrypted, and the format is whatever that engine's backup runner writes. Downloading needs `read:sensitive`, the same as `backups download`.
+
+The command waits up to `--wait` for the fresh backup. The default is 15 minutes, and the `LEVELRAIL_EXPORT_WAIT` environment variable sets a different default. Progress goes to stderr and stdout carries only the dump. The command refuses to print a dump to a terminal, writes the file with mode `0600`, and replaces an existing file only with `--force`. If the backup fails or the wait runs out, it exits with an error that names the backup to check. `--target` picks the backup target when more than one is configured.
+
+`clone` creates a new database from a backup of the source. Without `--backup` it takes a fresh backup first and waits for it, the same as `export`. It can also set `--version` for a different engine version and `--project` for the project the new database joins. The source is never changed. The command prints the started clone and returns. Check progress with `levelrail-cli databases get <new-name>`.
+
+Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`). It has not run against a live control plane.
+
 ### Scheduled backups
 
 ```bash

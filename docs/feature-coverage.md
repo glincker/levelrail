@@ -14,9 +14,11 @@ Most rows say **Built and tested**. That means the code is in the repository and
 | --- | --- |
 | **Built and tested** | The code exists and has unit or integration tests. No real host run is cited. This is the default for a row that has no stated run. |
 | **Proven on a real host** | A run on real infrastructure is recorded in the docs. The row says what was and was not covered. |
-| **Beta** | Listed as beta in the experimental catalog (`internal/experimental/catalog.go`), or as beta in the page the row links to. Gated behind a switch. See [Experimental features](/experimental-features). |
-| **Experimental** | Listed as experimental in the experimental catalog. Gated behind a switch. See [Experimental features](/experimental-features). |
+| **Beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. This is the beta label in [Feature status](/feature-status). Some beta features also sit behind a Settings switch. The linked page says which. |
+| **Experimental** | Listed as experimental in the experimental catalog (`internal/experimental/catalog.go`). Off by default and gated behind a switch. See [Experimental features](/experimental-features). |
 | **Plan only** | Planning or plan generation exists, but the build or deploy path has not run live. |
+
+The labels on this page are a summary. [Feature status](/feature-status) holds the evidence tiers behind them.
 
 ## Deploy sources
 
@@ -28,7 +30,7 @@ Most rows say **Built and tested**. That means the code is in the repository and
 | CI deploy trust through OIDC for GitHub Actions, GitLab CI and CircleCI | Built and tested | [Pipelines and OIDC](/pipelines-oidc) |
 | SSH deploy key for private git repositories | Built and tested | [Git integrations](/git-integrations) |
 | Container image deploy, with promotion by digest and signature checks | Built and tested | [Images](/images) |
-| Docker Compose file as one app, with per-service status | Built and tested | [Compose apps](/compose-apps) |
+| Docker Compose file as one app, with per-service status | Beta | [Compose apps](/compose-apps) |
 | Upload a folder or a zip to a static site | Built and tested | [Drop deploy](/drop-deploy) |
 | Deploy the current directory from the CLI, with no git remote | Built and tested | [Deploy from the CLI](/deploy-from-cli) |
 | Import from a repo URL, a `docker run` command, an image, a compose file or a Dockerfile | Built and tested | [Importing apps](/importing-apps) |
@@ -55,13 +57,14 @@ Ruby and PHP projects get a plan from Railpack, but the docs say no live build h
 | --- | --- | --- |
 | Managed databases for postgres, redis, mysql, mongodb, mariadb, keydb, dragonfly, clickhouse, valkey, meilisearch, qdrant, typesense and memcached | Built and tested | [Managed databases](/managed-databases) |
 | Version upgrades with security checks and automatic rollback on failure | Built and tested | [Database upgrades](/database-upgrades) |
-| TLS on new MySQL, MariaDB and MongoDB instances | Built and tested | [Database access](/database-access) |
+| TLS for Postgres and Redis databases, and Valkey once switched on | Built and tested | [Managing databases](/managing-databases) |
+| TLS on new MySQL, MariaDB and MongoDB instances, and on older ones through the API | Beta | [Managing databases](/managing-databases) |
 | Point-in-time restore for Postgres | Built and tested | [Backups and storage](/backups-and-storage) |
-| Point-in-time restore for MySQL and MariaDB, from binlog | Built and tested | [Backups and storage](/backups-and-storage) |
-| MongoDB dump, verify and restore as a new database (no point-in-time restore) | Built and tested | [Backups and storage](/backups-and-storage) |
+| Point-in-time restore for MySQL and MariaDB, from binlog | Beta | [Backups and storage](/backups-and-storage) |
+| MongoDB dump, verify and restore as a new database (no point-in-time restore) | Beta | [Backups and storage](/backups-and-storage) |
 | Backup targets referenced by ID, with schedules and retention | Built and tested | [Backups and storage](/backups-and-storage) |
-| Scheduled dumps of compose database services (Postgres, MySQL and MariaDB images) | Built and tested | [Compose apps](/compose-apps) |
-| Encrypted database dumps, sealed per target with age | Built and tested | [Backups and storage](/backups-and-storage) |
+| Scheduled dumps of compose database services (Postgres, MySQL and MariaDB images) | Beta | [Compose apps](/compose-apps) |
+| Encrypted database dumps, sealed per target with age | Beta | [Backups and storage](/backups-and-storage) |
 | Restore drills that prove a backup can be restored | Built and tested | [Prove your backups work](/prove-your-backups-work) |
 
 Compose database dumps run on a cron schedule. Restoring one is a manual step today. The compose apps page lists the commands.
@@ -75,6 +78,7 @@ Compose database dumps run on a cron schedule. Restoring one is a manual step to
 | Cloudflare Tunnel, with no open inbound port | Experimental | [Cloudflare Tunnel](/cloudflare-tunnel) |
 | Load balancing across an app's replicas, with health checks and sticky sessions | Experimental | [Load balancing](/load-balancing) |
 | Forward auth in front of a domain | Built and tested | [Domains and ingress](/domains-and-ingress) |
+| Per-domain request body cap and upstream read and write timeouts | Built and tested | [Domain traffic controls](/domain-traffic-controls) |
 | WAF, rate limiting and redirects | Built and tested | [Domains and ingress](/domains-and-ingress) |
 | Private networks that group apps and allow named app-to-app paths | Built and tested | [Private networks](/private-networks) |
 | WireGuard mesh between nodes | Built and tested | [Multi-node](/multi-node) |
@@ -109,6 +113,7 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | Global environments and the environment switcher | Experimental | [Environments](/environments) |
 | Sign-in with OAuth providers and generic OpenID Connect, with group to role mapping | Built and tested | [SSO with OIDC](/sso-oidc) |
 | SAML 2.0 single sign-on and SCIM 2.0 provisioning | Beta | [SSO with SAML](/sso-saml) |
+| Container runtime options per service: read-only root, capability drop, pids, tmpfs, ulimits, init and stop timeout | Built and tested | [Runtime options](/runtime-options) |
 
 ## Multi-server
 
@@ -154,4 +159,4 @@ These are the rest of the experimental catalog. Each one is switched on separate
 
 ## Keeping this page current
 
-When a capability changes, update its row in the same change. The Beta and Experimental labels should match `internal/experimental/catalog.go`. A new Proven on a real host row needs a recorded run in the docs first.
+When a capability changes, update its row in the same change. The Experimental labels should match `internal/experimental/catalog.go`, and Beta labels follow [Feature status](/feature-status). A new Proven on a real host row needs a recorded run in the docs first.

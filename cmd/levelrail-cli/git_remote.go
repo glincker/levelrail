@@ -2,8 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -30,9 +38,9 @@ func runGit(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 
 func gitUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s git remote add <app> [flags]            enable git push deploy and print the exact remote line (token shown once)
+  %[1]s git remote add <app> [flags]            enable git push deploy and print the exact remote line (token shown once); --apply sets it in the current repo
   %[1]s git remote show <app> [flags]           show the remote URL, deploy branch and last push
-  %[1]s git remote rotate <app> [flags]         issue a new token, the old one stops working at once
+  %[1]s git remote rotate <app> [flags]         issue a new token, the old one stops working at once; --apply updates the repo's remote
   %[1]s git remote branch <app> <branch> [flags]   choose the branch that deploys (default main)
   %[1]s git remote revoke <app> [flags]         turn the remote off and invalidate its token
 
@@ -83,8 +91,10 @@ func shortCommit(c string) string {
 func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	label := "git remote " + verb
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the remote, including the one-time token, as JSON to stdout and nothing else", stderr)
+	applyFlag := fs.Bool("apply", false, "set the remote in a local git repository (add, or set-url if it exists); the token URL is then kept only in .git/config and not printed")
+	dirFlag := fs.String("dir", "", "repository directory for --apply (default: the current directory)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <app> [flags]\n\nIssues the push token and prints the exact git remote add line. The token is\nshown once. Pushing the deploy branch builds and deploys that commit.\n\nFlags:\n", prog, label)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <app> [flags]\n\nIssues the push token and prints the exact git remote add line. The token is\nshown once. Pushing the deploy branch builds and deploys that commit.\nWith --apply the remote is configured in the repository for you.\n\nFlags:\n", prog, label)
 		fs.PrintDefaults()
 	}
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, label, "app name"}, lookupEnv)
@@ -105,14 +115,82 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("issue git remote token for app %q: %w", name, err))
 	}
+	var applyErr error
+	var appliedDir string
+	if *applyFlag {
+		appliedDir, applyErr = applyGitRemote(ctx, *dirFlag, g.RemoteName, g.URL, g.Username, g.Token)
+	}
 	if err := renderResult(stdout, of.Format, of.Query, g, func() {
 		printGitRemoteHuman(stdout, g)
+		if *applyFlag && applyErr == nil {
+			_, _ = fmt.Fprintf(stdout, "\nremote %s configured in %s\n\nDeploy with:\n  git push %s %s\n", g.RemoteName, appliedDir, g.RemoteName, g.Branch)
+			return
+		}
 		_, _ = fmt.Fprintf(stdout, "\nRun this in your repository (the token is shown once):\n  %s\n\nThen deploy with:\n  git push %s %s\n", g.AddCommand, g.RemoteName, g.Branch)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if applyErr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: --apply failed: %v\n", prog, applyErr)
+		return exitValidation
+	}
 	return exitOK
+}
+
+var gitRemoteNameRe = regexp.MustCompile(`^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,63}$`)
+
+// applyGitRemote sets the push remote with git in argv form. Errors never carry
+// the URL or token: git output is dropped because it can echo the URL.
+func applyGitRemote(ctx context.Context, dir, name, rawURL, username, token string) (string, error) {
+	if !gitRemoteNameRe.MatchString(name) || name == "." || name == ".." {
+		return "", errors.New("invalid remote name from the server")
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return "", errors.New("invalid remote URL from the server")
+	}
+	if token != "" {
+		if username == "" {
+			username = "git"
+		}
+		u.User = url.UserPassword(username, token)
+	}
+	if dir == "" {
+		dir = "."
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return "", errors.New("cannot resolve the repository directory")
+	}
+	if st, err := os.Stat(abs); err != nil || !st.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", abs)
+	}
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		return "", errors.New("git was not found in PATH")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	inside := exec.CommandContext(ctx, gitBin, "-C", abs, "rev-parse", "--is-inside-work-tree") //nolint:gosec // argv form, literal git, validated name and URL
+	out, err := inside.Output()
+	if err != nil || strings.TrimSpace(string(out)) != "true" {
+		return "", fmt.Errorf("%s is not inside a git work tree", abs)
+	}
+	verb := "add"
+	cur, curErr := exec.CommandContext(ctx, gitBin, "-C", abs, "remote", "get-url", "--", name).Output() //nolint:gosec // argv form, literal git, validated name and URL
+	if curErr == nil {
+		// Only rotate a remote that already points at this server and path; never repoint an unrelated one.
+		cu, perr := url.Parse(strings.TrimSpace(string(cur)))
+		if perr != nil || cu.Host != u.Host || cu.Path != u.Path {
+			return "", fmt.Errorf("remote %q already exists and points elsewhere; remove it or pick another name first", name)
+		}
+		verb = "set-url"
+	}
+	if err := exec.CommandContext(ctx, gitBin, "-C", abs, "remote", verb, "--", name, u.String()).Run(); err != nil { //nolint:gosec // argv form, literal git, validated name and URL
+		return "", fmt.Errorf("git remote %s failed", verb)
+	}
+	return abs, nil
 }
 
 func runGitRemoteShow(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
