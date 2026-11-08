@@ -2,17 +2,30 @@
 # Helper for curated issue tracking: create an issue, add it to the org project, comment shipped shas.
 set -euo pipefail
 
-OWNER="glincker"
-PROJECT=1
+GLINR_OWNER="${GLINR_OWNER:-glincker}"
+GLINR_PROJECT="${GLINR_PROJECT:-7}"
 
 usage() {
-  echo "usage: track.sh issue <title> <body-file> [--labels a,b] [--milestone vX] [--size S|M|L] [--surface API|CLI|Dashboard|Multi]" >&2
+  echo "usage: track.sh issue <title> <body-file> [--labels a,b] [--milestone vX] [--size XS|S|M|L|XL] [--surface API|CLI|Dashboard|Agent|Docs|Multi]" >&2
   echo "       track.sh ship <issue> <sha>" >&2
   exit 2
 }
 
+# Product is derived from the origin repo name so the shared board can filter by repo.
+product_for_repo() {
+  local url name
+  url=$(git remote get-url origin 2>/dev/null || true)
+  name=$(basename "${url%.git}")
+  case "$name" in
+    levelrail) echo Levelrail ;;
+    thesvg) echo Thesvg ;;
+    kelvo) echo Kelvo ;;
+    *) echo Other ;;
+  esac
+}
+
 need_scopes() {
-  if ! gh project field-list "$PROJECT" --owner "$OWNER" --format json >/dev/null 2>&1; then
+  if ! gh project field-list "$GLINR_PROJECT" --owner "$GLINR_OWNER" --format json >/dev/null 2>&1; then
     echo "gh cannot read the project. Run: gh auth refresh -s project,read:project" >&2
     exit 1
   fi
@@ -20,7 +33,7 @@ need_scopes() {
 
 # Resolve "<field> <option>" to ids from live field data; nothing is cached.
 option_ids() {
-  gh project field-list "$PROJECT" --owner "$OWNER" --format json |
+  gh project field-list "$GLINR_PROJECT" --owner "$GLINR_OWNER" --format json |
     jq -r --arg f "$1" --arg o "$2" '.fields[] | select(.name==$f) | [.id, (.options[]? | select(.name==$o) | .id)] | @tsv'
 }
 
@@ -55,10 +68,11 @@ cmd_issue() {
   [ -z "$milestone" ] || args+=(--milestone "$milestone")
   local url item proj
   url=$(gh "${args[@]}")
-  item=$(gh project item-add "$PROJECT" --owner "$OWNER" --url "$url" --format json | jq -r .id)
-  proj=$(gh project view "$PROJECT" --owner "$OWNER" --format json | jq -r .id)
+  item=$(gh project item-add "$GLINR_PROJECT" --owner "$GLINR_OWNER" --url "$url" --format json | jq -r .id)
+  proj=$(gh project view "$GLINR_PROJECT" --owner "$GLINR_OWNER" --format json | jq -r .id)
   [ -z "$size" ] || set_field "$item" "$proj" Size "$size"
   [ -z "$surface" ] || set_field "$item" "$proj" Surface "$surface"
+  set_field "$item" "$proj" Product "$(product_for_repo)"
   echo "$url"
 }
 

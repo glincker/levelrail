@@ -52,8 +52,8 @@ Issues and PRs are public and curated. An issue exists only for a shippable feat
 - One issue per shippable feature, from the Tracked feature form. Epics use the Epic form and list child issues.
 - Each issue gets a milestone per release (for example v0.9.5) and the labels area/*, type/*, size/* and priority/*.
 - The commit carries an `Issue: #N` trailer. The PR description says `Closes #N`.
-- Project fields on the [org project](https://github.com/orgs/glincker/projects/1): Status, Priority (P0 to P2), Size (XS to XL), Product, Surface.
-- Helper: `scripts/track.sh issue <title> <body-file> [--labels a,b] [--milestone vX] [--size S|M|L] [--surface API|CLI|Dashboard|Multi]` creates the issue and adds it to the project. `scripts/track.sh ship <issue> <sha>` comments the commit. It needs `gh auth refresh -s project,read:project`.
+- Project fields on the [GLINR Projects board](https://github.com/orgs/glincker/projects/7): Status, Priority (P0 to P2), Size (XS, S, M, L, XL), Product (Levelrail, Thesvg, Kelvo, Other, set from the repo name), Surface (API, CLI, Dashboard, Agent, Docs, Multi). The board is public and shared with other glincker repos, so filter by Product.
+- Helper: `scripts/track.sh issue <title> <body-file> [--labels a,b] [--milestone vX] [--size XS|S|M|L|XL] [--surface API|CLI|Dashboard|Agent|Docs|Multi]` creates the issue and adds it to the board. `scripts/track.sh ship <issue> <sha>` comments the commit. It needs `gh auth refresh -s project,read:project`. Set `GLINR_PROJECT` (default 7) and `GLINR_OWNER` (default glincker) to target another board.
 
 ## Generated files
 
