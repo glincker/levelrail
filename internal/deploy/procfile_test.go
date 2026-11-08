@@ -111,3 +111,21 @@ func TestProcfileServicesAppJSONParsesAsSpec(t *testing.T) {
 		t.Errorf("health = %+v", web.Health)
 	}
 }
+
+func TestProcfileServicesReadsChecksFile(t *testing.T) {
+	dir := writeRepo(t, map[string]string{
+		"Procfile": "web: node server.js\n",
+		"CHECKS":   "TIMEOUT=5\nATTEMPTS=10\n/health\n",
+	})
+	svcs, _, ok, err := ProcfileServices(dir)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	h := svcs["web"].Health
+	if h == nil || h.Readiness == nil {
+		t.Fatalf("health = %+v", h)
+	}
+	if h.Readiness.Path != "/health" || h.Readiness.Timeout == "" || h.Readiness.Failures != 10 {
+		t.Errorf("readiness = %+v", h.Readiness)
+	}
+}

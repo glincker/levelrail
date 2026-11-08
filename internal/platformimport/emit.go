@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -49,9 +50,14 @@ type EmitApp struct {
 	Memory     string
 	NanoCPUs   int64
 	HealthPath string
-	Command    []string
-	PreDeploy  string
-	PostDeploy string
+	// HealthExec, when set, emits an exec probe instead of the HTTP path.
+	HealthExec     []string
+	HealthInterval int
+	HealthTimeout  int
+	HealthRetries  int
+	Command        []string
+	PreDeploy      string
+	PostDeploy     string
 	// Connections maps an env var to the emitted database it reads from.
 	Connections map[string]EmitConnection
 	Jobs        []EmitJob
@@ -177,7 +183,11 @@ type emitHealth struct {
 }
 
 type emitProbe struct {
-	Path string `yaml:"path"`
+	Path     string   `yaml:"path,omitempty"`
+	Exec     []string `yaml:"exec,omitempty,flow"`
+	Interval string   `yaml:"interval,omitempty"`
+	Timeout  string   `yaml:"timeout,omitempty"`
+	Failures int      `yaml:"failures,omitempty"`
 }
 
 type emitHooks struct {
@@ -318,7 +328,16 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 		}
 		svc.Resources = r
 	}
-	if a.HealthPath != "" {
+	if len(a.HealthExec) > 0 {
+		p := emitProbe{Exec: a.HealthExec, Failures: a.HealthRetries}
+		if a.HealthInterval > 0 {
+			p.Interval = (time.Duration(a.HealthInterval) * time.Second).String()
+		}
+		if a.HealthTimeout > 0 {
+			p.Timeout = (time.Duration(a.HealthTimeout) * time.Second).String()
+		}
+		svc.Health = &emitHealth{Readiness: p}
+	} else if a.HealthPath != "" {
 		svc.Health = &emitHealth{Readiness: emitProbe{Path: a.HealthPath}}
 	}
 	if a.PreDeploy != "" || a.PostDeploy != "" {

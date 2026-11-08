@@ -133,7 +133,7 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 			add(Finding{Code: "heroku.web.port", Severity: SeverityInfo, Source: fileProcfile, Subject: "web",
 				Message: "Heroku injects $PORT, here the service listens on a fixed port and PORT is set to match",
 				Fix:     "Change port and the PORT env value together if your app expects another port."})
-			h, hfs := herokuHealth("web", app)
+			h, hfs := herokuWebHealth(files, app)
 			svc.Health = h
 			fs = append(fs, hfs...)
 		} else {
@@ -362,6 +362,21 @@ func chain(a, b string) string {
 		return b
 	}
 	return a + " && " + b
+}
+
+// herokuWebHealth lets app.json healthchecks win over a CHECKS file so one
+// source of truth is used when both exist.
+func herokuWebHealth(files map[string][]byte, app appJSON) (*Health, []Finding) {
+	b, ok := lookup(files, fileChecks)
+	if !ok {
+		return herokuHealth("web", app)
+	}
+	if len(app.Healthchecks["web"]) > 0 {
+		h, fs := herokuHealth("web", app)
+		return h, append(fs, checksFinding("checks.ignored", SeverityInfo, "web",
+			"app.json healthchecks are set, so the CHECKS file is ignored", "Remove the CHECKS file or the app.json healthchecks entry."))
+	}
+	return checksHealth(b)
 }
 
 // herokuHealth maps app.json healthchecks for one process type to probes.

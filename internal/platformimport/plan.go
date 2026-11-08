@@ -55,9 +55,10 @@ type PlanOptions struct {
 	LatestDBVersions map[string]string
 }
 
-// HealthPlan is an HTTP readiness probe.
+// HealthPlan is an HTTP readiness probe, or an exec probe when Exec is set.
 type HealthPlan struct {
 	Path            string
+	Exec            []string
 	IntervalSeconds int
 	TimeoutSeconds  int
 	Failures        int
@@ -323,8 +324,8 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 	if len(plan.Volumes) > 0 {
 		attention("volumes are created empty, their data is not migrated", "copy the data into the new volumes before starting (CLI: migrate volumes --source user@host prints the commands)")
 	}
-	if a.Health != nil && a.Health.Path != "" {
-		plan.Health = &HealthPlan{Path: a.Health.Path, IntervalSeconds: a.Health.IntervalSeconds, TimeoutSeconds: a.Health.TimeoutSeconds, Failures: a.Health.Retries}
+	if a.Health != nil && (a.Health.Path != "" || len(a.Health.Exec) > 0) {
+		plan.Health = &HealthPlan{Path: a.Health.Path, Exec: a.Health.Exec, IntervalSeconds: a.Health.IntervalSeconds, TimeoutSeconds: a.Health.TimeoutSeconds, Failures: a.Health.Retries}
 	}
 	for _, c := range a.Crons {
 		plan.Crons = append(plan.Crons, CronPlan{Name: SanitizeJobName(c.Name), Schedule: NormalizeSchedule(c.Schedule), Command: c.Command})

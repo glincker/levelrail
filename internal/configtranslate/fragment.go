@@ -45,7 +45,9 @@ type Health struct {
 
 // Probe is an HTTP readiness check path.
 type Probe struct {
-	Path string `yaml:"path" json:"path"`
+	Path     string `yaml:"path" json:"path"`
+	Timeout  string `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Failures int    `yaml:"failures,omitempty" json:"failures,omitempty"`
 }
 
 // Resources holds proposed container limits.

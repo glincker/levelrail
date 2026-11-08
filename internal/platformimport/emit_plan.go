@@ -48,6 +48,8 @@ func (p *Plan) EmitInput() EmitInput {
 		}
 		if a.Health != nil {
 			app.HealthPath = a.Health.Path
+			app.HealthExec = a.Health.Exec
+			app.HealthInterval, app.HealthTimeout, app.HealthRetries = a.Health.IntervalSeconds, a.Health.TimeoutSeconds, a.Health.Failures
 		}
 		names := map[string]bool{}
 		for k := range a.Secrets {

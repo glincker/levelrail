@@ -17,7 +17,7 @@ A Dokku host is a Docker host. Its apps run as plain containers, so Levelrail ca
 
 | Route | What it reads | Result |
 | --- | --- | --- |
-| Live SSH (`--from docker-ssh`) | The running containers through the Docker socket | Apps from containers: image, env, ports, volumes and mounts, limits, health check. Host built images and named volumes can be streamed through the same tunnel. Database containers are recognized by image |
+| Live SSH (`--from docker-ssh`) | The running containers through the Docker socket | Apps from containers: image, env, ports, volumes and mounts, limits, health check. Host built images and named volumes can be streamed through the same tunnel. Database containers are recognized by image. When containers carry Dokku's app-name and process-type labels, they are grouped into one app named after the Dokku app, with one app per process type (the web process takes the Dokku app name, others are named app-process, and scaled containers become replicas). Domains and per-app config are not readable over the socket, so the report flags them for you to copy |
 | Env dump (`--from dokku`) | `dokku config:export APP`, one app per run | One app with the variables. `DOKKU_*` and `GIT_REV` are dropped. Secret-looking names are masked in the plan and stored as secrets |
 | Docker snapshot (`--from docker`) | `docker inspect` output you save yourself | Same mapping as the SSH route, from a file |
 

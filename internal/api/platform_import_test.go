@@ -215,3 +215,19 @@ func TestImportApplierPlacesAppsAndDatabasesInEnvironments(t *testing.T) {
 		t.Errorf("app members: %d %v", n, err)
 	}
 }
+
+func TestPlanToAppResourceKeepsExecProbe(t *testing.T) {
+	res := planToAppResource(platformimport.AppPlan{
+		Name: "db", Image: "postgres:16", Port: 5432,
+		Health: &platformimport.HealthPlan{Exec: []string{"pg_isready", "-U", "app"}, IntervalSeconds: 10, TimeoutSeconds: 5, Failures: 3},
+	})
+	if res.Health == nil || res.Health.Readiness == nil {
+		t.Fatal("expected a readiness probe")
+	}
+	if got := strings.Join(res.Health.Readiness.Exec, " "); got != "pg_isready -U app" {
+		t.Fatalf("exec = %q", got)
+	}
+	if err := validateAppResource(res); err != nil {
+		t.Fatalf("exec-only probe must validate: %v", err)
+	}
+}

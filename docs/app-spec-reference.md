@@ -432,6 +432,7 @@ release: bundle exec rake db:migrate
 - `release:` becomes `hooks.preDeploy` on `web`, or on the first process when there is no `web` line.
 - With a `Dockerfile` in the repo, services build from it and each Procfile command replaces the image `CMD` for that service. Without one, Railpack builds the app.
 - `app.json` keys: `healthchecks` map to `health` (`startup` and `readiness` to readiness, `liveness` to liveness), `cron` entries to `jobs`, `scripts.dokku.predeploy` and `postdeploy` (and `scripts.postdeploy`) to hooks, `formation.<type>.quantity` to `replicas`, `env` values to service env.
+- A `CHECKS` file, when it is among the translated files and `app.json` has no `healthchecks` for `web`, maps its first path line to `health.readiness`, with `TIMEOUT` as `timeout` and `ATTEMPTS` as `failures`. Text matches, host-prefixed lines, `WAIT` and extra paths produce findings. `app.json` healthchecks win when both exist.
 - Add-on databases are not created at deploy. Each one produces a finding telling you to create and link the database.
 - Anything else, such as `environments`, other scripts or healthcheck command checks, produces a finding. Findings appear as log lines in the deploy output and as warnings on the deploy result; nothing is dropped silently.
 

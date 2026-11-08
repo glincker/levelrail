@@ -41,6 +41,11 @@ func ProcfileServices(sourceDir string) (services map[string]spec.Service, findi
 	} else if has {
 		files["app.json"] = b
 	}
+	if b, has, rerr := readRepoFile(sourceDir, "CHECKS"); rerr != nil {
+		return nil, nil, false, rerr
+	} else if has {
+		files["CHECKS"] = b
+	}
 	_, dockerErr := os.Stat(filepath.Join(sourceDir, "Dockerfile"))
 
 	res := configtranslate.Translate(files,

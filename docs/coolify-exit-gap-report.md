@@ -41,7 +41,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Scheduled tasks (cron) | moves | Was report-only. Enabled tasks become scheduled jobs that run `sh -c COMMAND` inside the app. Disabled tasks are skipped. Staged apps get their jobs disabled until cutover so a job never runs on both hosts |
 | Git webhook secrets (auto deploy) | reported | New. The git host still calls Coolify until you add a webhook pointing here |
 | HTTP health checks | moves | Path, interval, timeout and retries |
-| Command health checks | reported | Exec probes exist here (see the [app spec](/app-spec-reference)), but the import does not convert a Coolify command check. It adds a note to set an `exec` probe on the app by hand |
+| Command health checks | moves | Built, unit tested, source field name not verified against a real instance. A command check becomes an `exec` probe (`sh -c COMMAND`, see the [app spec](/app-spec-reference)) with interval, timeout and retries. A missing, oversized or unrecognised command keeps a note to add the probe by hand |
 | Memory and CPU limits | moves | Swap and reservations are not mapped |
 | Preview deployments | reported | Flag only. Previews are not recreated |
 | Projects and environments | moves | Each Coolify project becomes a project and each of its environments (empty ones too) becomes an environment of it. Apps and databases keep their own environment. The dry run lists every environment, and a re-run skips the ones that exist |

@@ -372,7 +372,7 @@ func planToAppResource(p platformimport.AppPlan) appResource {
 		res.Resources = &store.ServiceResources{MemoryBytes: p.MemoryBytes, NanoCPUs: p.NanoCPUs}
 	}
 	if h := p.Health; h != nil {
-		probe := &store.ServiceProbe{Path: h.Path, Interval: time.Duration(h.IntervalSeconds) * time.Second, Timeout: time.Duration(h.TimeoutSeconds) * time.Second, Failures: h.Failures}
+		probe := &store.ServiceProbe{Path: h.Path, Exec: h.Exec, Interval: time.Duration(h.IntervalSeconds) * time.Second, Timeout: time.Duration(h.TimeoutSeconds) * time.Second, Failures: h.Failures}
 		res.Health = &store.ServiceHealth{Readiness: probe}
 	}
 	return res

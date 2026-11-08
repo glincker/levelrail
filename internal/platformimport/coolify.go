@@ -100,20 +100,22 @@ type coolifyBackup struct {
 }
 
 type coolifyApp struct {
-	UUID                string `json:"uuid"`
-	Name                string `json:"name"`
-	FQDN                string `json:"fqdn"`
-	BuildPack           string `json:"build_pack"`
-	GitRepository       string `json:"git_repository"`
-	GitBranch           string `json:"git_branch"`
-	DockerImage         string `json:"docker_registry_image_name"`
-	DockerTag           string `json:"docker_registry_image_tag"`
-	DockerfileLocation  string `json:"dockerfile_location"`
-	BaseDirectory       string `json:"base_directory"`
-	PortsExposes        string `json:"ports_exposes"`
-	HealthCheckEnabled  bool   `json:"health_check_enabled"`
-	HealthCheckPath     string `json:"health_check_path"`
-	HealthCheckType     string `json:"health_check_type"`
+	UUID               string `json:"uuid"`
+	Name               string `json:"name"`
+	FQDN               string `json:"fqdn"`
+	BuildPack          string `json:"build_pack"`
+	GitRepository      string `json:"git_repository"`
+	GitBranch          string `json:"git_branch"`
+	DockerImage        string `json:"docker_registry_image_name"`
+	DockerTag          string `json:"docker_registry_image_tag"`
+	DockerfileLocation string `json:"dockerfile_location"`
+	BaseDirectory      string `json:"base_directory"`
+	PortsExposes       string `json:"ports_exposes"`
+	HealthCheckEnabled bool   `json:"health_check_enabled"`
+	HealthCheckPath    string `json:"health_check_path"`
+	HealthCheckType    string `json:"health_check_type"`
+	// Field name is a best guess, unverified against a real instance.
+	HealthCheckCommand  string `json:"health_check_command"`
 	HealthCheckInterval int    `json:"health_check_interval"`
 	HealthCheckTimeout  int    `json:"health_check_timeout"`
 	HealthCheckRetries  int    `json:"health_check_retries"`
@@ -479,6 +481,8 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 	httpCheck := a.HealthCheckType == "" || strings.EqualFold(a.HealthCheckType, "http")
 	if a.HealthCheckEnabled && httpCheck {
 		app.Health = &HealthCheck{Path: a.HealthCheckPath, IntervalSeconds: a.HealthCheckInterval, TimeoutSeconds: a.HealthCheckTimeout, Retries: a.HealthCheckRetries}
+	} else if argv := coolifyHealthExec(a); a.HealthCheckEnabled && argv != nil {
+		app.Health = &HealthCheck{Exec: argv, IntervalSeconds: a.HealthCheckInterval, TimeoutSeconds: a.HealthCheckTimeout, Retries: a.HealthCheckRetries}
 	} else if a.HealthCheckEnabled {
 		app.Notes = append(app.Notes, Note{Reason: "command-based health check is not supported", Manual: "add an HTTP health check after import"})
 	}
@@ -488,6 +492,16 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 }
 
 // sourceSettingNotes lists settings that have no field here, each with the value so nothing is lost silently.
+// coolifyHealthExec returns the sh -c argv for a usable command check, else nil.
+func coolifyHealthExec(a coolifyApp) []string {
+	t := strings.ToLower(a.HealthCheckType)
+	cmd := strings.TrimSpace(a.HealthCheckCommand)
+	if (t != "cmd" && t != "command") || cmd == "" || len(cmd) > 4096 {
+		return nil
+	}
+	return []string{"/bin/sh", "-c", cmd}
+}
+
 func sourceSettingNotes(a coolifyApp) []Note {
 	var notes []Note
 	add := func(area, reason, manual string) {

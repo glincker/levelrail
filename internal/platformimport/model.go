@@ -59,9 +59,10 @@ type Volume struct {
 	SizeBytes int64
 }
 
-// HealthCheck is an HTTP probe.
+// HealthCheck is an HTTP probe, or an exec probe when Exec is set.
 type HealthCheck struct {
 	Path            string
+	Exec            []string
 	IntervalSeconds int
 	TimeoutSeconds  int
 	Retries         int

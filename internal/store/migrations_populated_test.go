@@ -54,6 +54,7 @@ func TestMigrationsPopulated_UpgradeFromV092(t *testing.T) {
 		`INSERT INTO backup_targets (id, name, provider, bucket, created_at) VALUES ('t1', 'main', 'aws', 'bkt', '2026-10-01T00:00:00Z')`,
 		`INSERT INTO secret_rotation_policies (service_name, env_key, interval_days, created_at, updated_at) VALUES ('web', 'KEY', 30, '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z')`,
 	}
+	seed = append(seed, populatedPostTagSeed...)
 	for _, q := range seed {
 		if _, err := old.ExecContext(ctx, q); err != nil {
 			t.Fatalf("seed %q: %v", q, err)
@@ -75,6 +76,7 @@ func TestMigrationsPopulated_UpgradeFromV092(t *testing.T) {
 			t.Errorf("%s rows = %d (err %v), want 1", tbl, n, err)
 		}
 	}
+	assertPopulatedPostTag(ctx, t, cur)
 	var ct, dek []byte
 	if err := cur.QueryRowContext(ctx, `SELECT ciphertext FROM service_secret_values WHERE service_name='web'`).Scan(&ct); err != nil {
 		t.Fatal(err)

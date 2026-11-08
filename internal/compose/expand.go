@@ -12,7 +12,11 @@ import (
 // ExpandBuildService parses the compose file at svc.Build.Path (relative
 // to sourceDir) and returns one spec.Service per compose service, plus a
 // warning for each healthcheck left untranslated.
-func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string]spec.Service, warnings []string, err error) {
+func ExpandBuildService(svc spec.Service, sourceDir string, opts ...ExpandOption) (services map[string]spec.Service, warnings []string, err error) {
+	var cfg expandConfig
+	for _, o := range opts {
+		o(&cfg)
+	}
 	if svc.Build.Type != spec.BuildCompose {
 		return nil, nil, fmt.Errorf("compose: expand: build.type is %q, not %q", svc.Build.Type, spec.BuildCompose)
 	}
@@ -48,13 +52,11 @@ func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string
 	out := make(map[string]spec.Service, len(f.Services))
 	for _, key := range sortedServiceNames(f) {
 		csvc := f.Services[key]
-		expanded, warning, err := toSpecService(key, csvc, f.Domains[key], composeDir)
+		expanded, svcWarnings, err := toSpecService(f, key, csvc, composeDir, &cfg)
 		if err != nil {
 			return nil, nil, err
 		}
-		if warning != "" {
-			warnings = append(warnings, warning)
-		}
+		warnings = append(warnings, svcWarnings...)
 		out[key] = expanded
 	}
 	return out, warnings, nil
@@ -62,21 +64,13 @@ func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string
 
 // toSpecService converts one compose.Service, already validated by
 // ValidateForBuild, into the spec.Service ExpandBuildService returns
-// for it, plus a non-empty warning when its healthcheck: has to be left
-// untranslated (see resolveHealthcheck).
-func toSpecService(key string, csvc Service, domain string, composeDir string) (spec.Service, string, error) {
-	for envKey, v := range csvc.Environment {
-		if vars := FindMagicVars(v); len(vars) > 0 {
-			// Magic vars (SERVICE_PASSWORD_*, SERVICE_FQDN_*, ...) need
-			// generation and secret persistence (ResolveMagicVars),
-			// meaningful for the direct-import path's own deploy flow
-			// (internal/api's compose-import handler already wires that
-			// up). This build-from-source path has no equivalent wiring
-			// yet: passing the token through unresolved would silently
-			// start a container with a literal "${SERVICE_...}" string
-			// in its env, a worse failure than rejecting it loudly here.
-			return spec.Service{}, "", fmt.Errorf("compose: service %q: env %q: magic var %q is not supported for build.type: compose, use a literal value or a real secret instead", key, envKey, vars[0].Token)
-		}
+// for it, plus warnings (an untranslated healthcheck:, or a domain
+// variable with no domain assigned).
+func toSpecService(f *File, key string, csvc Service, composeDir string, cfg *expandConfig) (spec.Service, []string, error) {
+	domain := f.Domains[key]
+	env, secretKeys, warnings, err := cfg.resolveEnv(f, key, csvc.Environment)
+	if err != nil {
+		return spec.Service{}, nil, err
 	}
 
 	var build spec.Build
@@ -103,13 +97,18 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 	}
 	main, published, err := splitPorts(csvc.Ports, csvc.PublishedTCP)
 	if err != nil {
-		return spec.Service{}, "", fmt.Errorf("compose: service %q: %w", key, err)
+		return spec.Service{}, nil, fmt.Errorf("compose: service %q: %w", key, err)
 	}
 	s.Port = main
 	s.PublishedPorts = published
-	if len(csvc.Environment) > 0 {
-		s.Env = make(map[string]spec.EnvVar, len(csvc.Environment))
-		for k, v := range csvc.Environment {
+	if len(env) > 0 {
+		s.Env = make(map[string]spec.EnvVar, len(env))
+		for k, v := range env {
+			if secretKeys[k] {
+				// The value lives in encrypted storage, never in the spec.
+				s.Env[k] = spec.EnvVar{Secret: true}
+				continue
+			}
 			s.Env[k] = spec.EnvVar{Value: v}
 		}
 	}
@@ -119,14 +118,17 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 
 	health, warning, err := resolveServiceHealth(key, csvc.Healthcheck, csvc.PlatformProbe, main)
 	if err != nil {
-		return spec.Service{}, "", err
+		return spec.Service{}, nil, err
+	}
+	if warning != "" {
+		warnings = append(warnings, warning)
 	}
 	s.Health = health.toSpecHealth()
 	if policy, err := spec.ParseRestartPolicy(csvc.Restart); err == nil && store.IsRunToCompletionRestart(policy) {
 		s.Restart = policy
 	}
 
-	return s, warning, nil
+	return s, warnings, nil
 }
 
 // buildContext defaults an unset build.context (Compose's own rule: a
