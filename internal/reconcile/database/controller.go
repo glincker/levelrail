@@ -621,6 +621,10 @@ func (c *Controller) Teardown(ctx context.Context) error {
 			return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
 		}
 	}
+	// A foreign container on the network must not block deleting the database.
+	if err := c.runtime.RemoveNetwork(ctx, PrivateNetworkName(c.dbName)); err != nil && !errors.Is(err, docker.ErrNetworkInUse) {
+		return fmt.Errorf("database/%s: remove private network: %w", c.dbName, err)
+	}
 	return c.removeCertsHelpers(ctx)
 }
 
@@ -710,6 +714,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// Newer official images drop privileges with setpriv, which needs SETPCAP
 	// to shrink the bounding set; the minimal cap list leaves it out.
 	spec.CapAdd = append(spec.CapAdd, "SETPCAP")
+	attachPrivateNetwork(&spec, c.dbName)
 	for _, fn := range customize {
 		fn(&spec)
 	}
@@ -869,11 +874,24 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
+	case !outdated && state.Running && onDefaultBridge(state) && len(spec.Ports) > 0:
+		// Published ports follow the create-time gateway network, so a
+		// container with ports is recreated rather than moved live.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return replaceFailure(c.dbName, err)
+		}
+		justDeployed = true
+
 	case !state.Running:
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
 			return notReady("StartFailed", err), fmt.Errorf("database/%s: restart %q: %w", c.dbName, target, err)
 		}
 		justDeployed = true
+	}
+	if !justDeployed && state.Running {
+		if err := c.leaveDefaultBridge(ctx, state); err != nil {
+			return notReady("PrivateNetworkFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
 	}
 
 	if justDeployed {
@@ -946,6 +964,11 @@ func (e *startAfterCreateError) Unwrap() error { return e.err }
 
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
 	c.prov.Start(dbprovision.StepCreateContainer, spec.Name)
+	if spec.Network != nil {
+		if _, err := c.runtime.EnsureNetwork(ctx, spec.Network.Name); err != nil {
+			return fmt.Errorf("ensure private network %q: %w", spec.Network.Name, err)
+		}
+	}
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)

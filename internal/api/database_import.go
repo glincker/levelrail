@@ -213,6 +213,13 @@ func (rt *Router) handleDatabaseImport(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusBadRequest, "the dump is empty; nothing was restored")
 		return
 	}
+	if msg, herr := sealedImportReason(spool.f, db.Engine); herr != nil || msg != "" {
+		if herr != nil {
+			msg = "the upload could not be read back; nothing was restored"
+		}
+		fail(http.StatusBadRequest, msg)
+		return
+	}
 	// Writers outside this import (the app itself) may have added data while the upload spooled.
 	if !holds && !force {
 		again, perr := databaseHoldsDataNow(r.Context(), db, runtime)
@@ -232,7 +239,8 @@ func (rt *Router) handleDatabaseImport(w http.ResponseWriter, r *http.Request) {
 			fail(http.StatusGatewayTimeout, "the import ran past the time limit")
 			return
 		}
-		rt.logger.Error("api: database import failed", slog.String("error", err.Error()), slog.String("database", name))
+		class, exit := importErrorClass(err)
+		rt.logger.Error("api: database import failed", slog.String("engine", db.Engine), slog.String("database", name), slog.Int("exit_status", exit), slog.String("error_class", class))
 		fail(http.StatusBadGateway, "the restore failed; check that the dump matches this database engine")
 		return
 	}
