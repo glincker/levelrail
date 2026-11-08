@@ -93,16 +93,16 @@ Flags that are not supported are listed as warnings and ignored, never dropped s
 
 | Flag | Note |
 | --- | --- |
-| `--privileged`, `--cap-add`, `--cap-drop`, `--device`, `--security-opt` | privilege and device changes |
+| `--privileged`, `--cap-add`, `--device`, `--security-opt` | privilege and device changes |
 | `--pid`, `--ipc`, `--uts`, `--userns`, `--cgroupns` | shared namespaces (`--pid host` is called out explicitly) |
 | `--network host` | host networking; ports are published instead |
-| `--sysctl`, `--ulimit`, `--tmpfs`, `--mount`, `--shm-size`, `--read-only`, `--init` | runtime tuning |
-| `--link`, `--volumes-from`, `--add-host`, `--dns`, `--dns-search`, `--dns-option`, `--ip`, `--mac-address`, `--network-alias` | legacy links and network detail |
-| `--user`/`-u`, `--workdir`/`-w`, `--hostname`/`-h`, `--group-add`, `--stop-signal`, `--stop-timeout` | process settings |
+| `--mount` | runtime tuning |
+| `--link`, `--volumes-from`, `--dns-search`, `--dns-option`, `--ip`, `--mac-address`, `--network-alias` | legacy links and network detail |
+| `--user`/`-u`, `--workdir`/`-w`, `--hostname`/`-h`, `--group-add`, `--stop-signal` | process settings |
 | `--log-driver`, `--log-opt`, `--label`/`-l`, `--label-file`, `--annotation`, `--cidfile` | metadata and logging |
 | `--gpus` | set GPUs on the app after it exists |
 | `--health-cmd` and other health flags | add an HTTP health check on the app afterwards |
-| `--runtime`, `--platform`, `--cpuset-cpus`, `--memory-swap`, `--pids-limit`, `--cpu-shares`, `--oom-score-adj`, `--kernel-memory`, `--storage-opt` | runtime and resource tuning |
+| `--runtime`, `--platform`, `--cpuset-cpus`, `--memory-swap`, `--cpu-shares`, `--oom-score-adj`, `--kernel-memory`, `--storage-opt` | runtime and resource tuning |
 
 ## Run an import
 

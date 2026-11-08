@@ -295,6 +295,32 @@ type ContainerSpec struct {
 	Devices []string
 	// Files are inline files written into the container before it starts.
 	Files []FileMount
+	// Tmpfs is "path:opts" in-memory mounts; the spec layer requires a size.
+	Tmpfs []string
+	// Ulimits are per-process resource limits.
+	Ulimits []Ulimit
+	// Init runs a minimal init as PID 1.
+	Init bool
+	// StopTimeoutSeconds is applied at create and used by Stop; nil keeps the caller's grace.
+	StopTimeoutSeconds *int
+	// Sysctls are namespaced kernel settings, already limited to a safe list upstream.
+	Sysctls map[string]string
+	// CapDrop lists capabilities removed on top of any hardening profile.
+	CapDrop []string
+}
+
+// Ulimit is one soft and hard resource limit.
+type Ulimit struct {
+	Name string
+	Soft int64
+	Hard int64
+}
+
+// NeedsRuntimeCapability reports whether the spec sets a runtime option an
+// older agent would silently drop, so it must fail closed instead.
+func (s ContainerSpec) NeedsRuntimeCapability() bool {
+	return len(s.Tmpfs) > 0 || len(s.Ulimits) > 0 || s.Init || s.StopTimeoutSeconds != nil ||
+		len(s.Sysctls) > 0 || len(s.CapDrop) > 0 || s.PidsLimit > 0
 }
 
 // NeedsFilesCapability reports whether the spec carries files an agent that

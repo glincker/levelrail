@@ -116,6 +116,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
 | `user` | string | no | image's `USER` | Container user as a name or uid, optionally `:group` or `:gid` (no spaces or shell characters, max `APP_SERVICE_USER_MAX_LEN`, default 64). Applies inside the container only; `root` is allowed, as in Docker. |
 | `working_dir` | string | no | image's `WORKDIR` | Absolute working directory (max `APP_SERVICE_WORKING_DIR_MAX_LEN`, default 1024). Changing either recreates the container. |
+| `runtime` | object | no | none | Allowlisted docker options, see [Runtime options](runtime-options.md) |
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](/load-balancing). |
 | `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |

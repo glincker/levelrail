@@ -75,6 +75,9 @@ func exportServiceBody(appName, serviceKey string, d store.DesiredService) map[s
 	if d.WorkingDir != "" {
 		body["working_dir"] = d.WorkingDir
 	}
+	for k, v := range d.Runtime.ComposeKeys() {
+		body[k] = v
+	}
 	if d.PullPolicy != "" {
 		body["pull_policy"] = d.PullPolicy
 	}

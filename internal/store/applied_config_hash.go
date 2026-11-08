@@ -18,6 +18,7 @@ const (
 	AppliedFieldEntrypoint = "entrypoint"
 	AppliedFieldUser       = "user"
 	AppliedFieldWorkingDir = "working_dir"
+	AppliedFieldRuntime    = "runtime"
 	AppliedFieldLabels     = "labels"
 	AppliedFieldHostPort   = "host_port"
 	AppliedFieldBindAddr   = "bind_address"
@@ -56,7 +57,7 @@ func AppEnvHashes(serviceName string, literal, secretValues map[string]string) m
 // AppliedFields summarizes the scalar settings baked into a container at
 // creation. Resources and health are applied live, so they are not here.
 func AppliedFields(svc DesiredService) map[string]string {
-	return map[string]string{
+	fields := map[string]string{
 		AppliedFieldPort:        strconv.Itoa(svc.Port),
 		AppliedFieldCommand:     shortJSONHash(svc.Command),
 		AppliedFieldEntrypoint:  shortJSONHash(svc.Entrypoint),
@@ -69,6 +70,11 @@ func AppliedFields(svc DesiredService) map[string]string {
 		AppliedFieldVolumes:     shortJSONHash(svc.Volumes),
 		AppliedFieldFiles:       filesAppliedHash(svc.Files),
 	}
+	// Only present when set, so apps without runtime options hash exactly as before.
+	if svc.Runtime != nil {
+		fields[AppliedFieldRuntime] = shortJSONHash(svc.Runtime)
+	}
+	return fields
 }
 
 func hostPortField(p *int) string {

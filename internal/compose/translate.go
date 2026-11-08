@@ -59,6 +59,11 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			DependsOnHealthy: svc.DependsOnHealthy,
 			Strategy:         svc.Strategy,
 		}
+		if rt, warn := runtimeFromService(svc); warn != "" {
+			warnings = append(warnings, fmt.Sprintf("service %q: %s", key, warn))
+		} else {
+			d.Runtime = rt
+		}
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)

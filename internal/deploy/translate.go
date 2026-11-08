@@ -80,6 +80,8 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.Resources.ReadOnlyRootfs = &on
 	}
 
+	applyRuntimeOptions(&d, svc.Runtime)
+
 	if svc.Health != nil {
 		health, err := toServiceHealth(*svc.Health)
 		if err != nil {

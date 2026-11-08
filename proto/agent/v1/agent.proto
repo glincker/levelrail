@@ -456,6 +456,22 @@ message ContainerSpec {
   // working_dir mirrors internal/docker.ContainerSpec.WorkingDir. Sent only to
   // agents advertising "container_spec_workdir".
   string working_dir = 24;
+  // The runtime options mirror the same-named internal/docker.ContainerSpec
+  // fields. Sent only to agents advertising "container_spec_runtime"; an older
+  // agent would ignore them and run the container without the limits.
+  repeated string tmpfs = 25;
+  repeated Ulimit ulimits = 26;
+  bool init = 27;
+  optional int32 stop_timeout_seconds = 28;
+  map<string, string> sysctls = 29;
+  repeated string cap_drop = 30;
+  int64 pids_limit = 31;
+}
+
+message Ulimit {
+  string name = 1;
+  int64 soft = 2;
+  int64 hard = 3;
 }
 
 message FileMount {

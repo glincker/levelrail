@@ -10,7 +10,7 @@ import (
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled, depends_on_healthy, published_ports, template_id, files, maintenance_hold, incarnation, tolerations, affinity, next_cache, next_image_cache, run_user, working_dir"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled, depends_on_healthy, published_ports, template_id, files, maintenance_hold, incarnation, tolerations, affinity, next_cache, next_image_cache, run_user, working_dir, runtime_options"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -22,9 +22,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                                                      sql.NullString
 		hostPort                                                                                                                                                                            sql.NullInt64
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
-		dependsOnJSON, dependsOnHealthyJSON, publishedPortsJSON, filesJSON, tolerationsJSON, affinityJSON                                                                                   string
+		dependsOnJSON, dependsOnHealthyJSON, publishedPortsJSON, filesJSON, tolerationsJSON, affinityJSON, runtimeJSON                                                                      string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled, &dependsOnHealthyJSON, &publishedPortsJSON, &svc.TemplateID, &filesJSON, &svc.MaintenanceHold, &svc.Incarnation, &tolerationsJSON, &affinityJSON, &svc.NextCache, &svc.NextImageCache, &svc.User, &svc.WorkingDir); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled, &dependsOnHealthyJSON, &publishedPortsJSON, &svc.TemplateID, &filesJSON, &svc.MaintenanceHold, &svc.Incarnation, &tolerationsJSON, &affinityJSON, &svc.NextCache, &svc.NextImageCache, &svc.User, &svc.WorkingDir, &runtimeJSON); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -87,6 +87,11 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := decodeJSONCol(bindMounts, &svc.BindMounts); err != nil {
 		return nil, fmt.Errorf("unmarshal bind_mounts: %w", err)
+	}
+	if runtimeJSON != "" {
+		if err := json.Unmarshal([]byte(runtimeJSON), &svc.Runtime); err != nil {
+			return nil, fmt.Errorf("unmarshal runtime_options: %w", err)
+		}
 	}
 	if err := decodeJSONCol(entrypoint, &svc.Entrypoint); err != nil {
 		return nil, fmt.Errorf("unmarshal entrypoint: %w", err)

@@ -130,8 +130,19 @@ type Service struct {
 	MemLimit yamlScalarString
 	CPUs     yamlScalarString
 	// ShmSize is shm_size:, the /dev/shm size Chromium based apps need.
-	ShmSize    yamlScalarString
-	HostAccess HostAccess
+	ShmSize yamlScalarString
+	// Allowlisted runtime tuning keys, mapped by runtimeFromService.
+	Tmpfs           stringList
+	Ulimits         map[string]spec.Ulimit
+	Init            *bool
+	StopGracePeriod string
+	ExtraHosts      hostList
+	DNS             stringList
+	Sysctls         sysctlMap
+	CapDrop         []string
+	PidsLimit       int
+	ReadOnly        bool
+	HostAccess      HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
 	// such as recreate for an app that locks its state volume. Empty means default.
 	Strategy       string

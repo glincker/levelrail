@@ -52,8 +52,19 @@ type rawService struct {
 	MemLimit    yamlScalarString  `yaml:"mem_limit"`
 	CPUs        yamlScalarString  `yaml:"cpus"`
 	ShmSize     yamlScalarString  `yaml:"shm_size"`
-	HostAccess  HostAccess        `yaml:",inline"`
-	Strategy    string            `yaml:"x-levelrail-strategy"`
+	// Allowlisted runtime tuning keys, mapped by runtimeFromService.
+	Tmpfs           stringList             `yaml:"tmpfs"`
+	Ulimits         map[string]spec.Ulimit `yaml:"ulimits"`
+	Init            *bool                  `yaml:"init"`
+	StopGracePeriod string                 `yaml:"stop_grace_period"`
+	ExtraHosts      hostList               `yaml:"extra_hosts"`
+	DNS             stringList             `yaml:"dns"`
+	Sysctls         sysctlMap              `yaml:"sysctls"`
+	CapDrop         []string               `yaml:"cap_drop"`
+	PidsLimit       int                    `yaml:"pids_limit"`
+	ReadOnly        bool                   `yaml:"read_only"`
+	HostAccess      HostAccess             `yaml:",inline"`
+	Strategy        string                 `yaml:"x-levelrail-strategy"`
 	// StrategyReason is shown next to the strategy so an operator knows why a template pinned it.
 	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
 	// PlatformProbe replaces healthcheck: with a probe run from outside the container.

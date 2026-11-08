@@ -442,6 +442,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	}
 	c.hardening.apply(hostConfig, spec)
 	c.hardening.applyReadOnlyRootfs(hostConfig, spec)
+	applyRuntimeOptions(hostConfig, spec)
 
 	release := c.declare(spec)
 	defer release()
@@ -455,6 +456,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Entrypoint:   spec.Entrypoint,
 			User:         spec.User,
 			WorkingDir:   spec.WorkingDir,
+			StopTimeout:  spec.StopTimeoutSeconds,
 		},
 		hostConfig,
 		toNetworkingConfig(spec.Network), nil,
@@ -933,6 +935,7 @@ func (c *Client) Start(ctx context.Context, id string) error {
 
 // Stop implements Runtime.
 func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) error {
+	timeout = c.configuredStopTimeout(ctx, id, timeout)
 	opts := container.StopOptions{}
 	if timeout >= 0 {
 		seconds := int(timeout.Seconds())

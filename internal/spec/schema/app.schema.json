@@ -127,6 +127,7 @@
         },
         "user": { "description": "Container user as a name or uid, optionally :group or :gid.", "type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*(:[A-Za-z0-9_][A-Za-z0-9_.-]*)?$" },
         "working_dir": { "description": "Absolute working directory that overrides the image's WORKDIR.", "type": "string", "pattern": "^/" },
+        "runtime": { "description": "Allowlisted docker run options.", "$ref": "#/$defs/runtime" },
         "egress": { "description": "Outbound network allowlist for the container.", "$ref": "#/$defs/egress" },
         "tolerations": {
           "description": "Node taints this service may be placed despite.",
@@ -574,6 +575,32 @@
     "statusCode": { "type": "integer", "minimum": 100, "maximum": 599 },
     "statusRange": { "type": "string", "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?$" },
     "statusList": { "type": "string", "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?([ ,]+[1-5][0-9]{2}(-[1-5][0-9]{2})?)*$" },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shm_size": { "description": "Size of /dev/shm, such as 256m or 1g.", "type": "string", "pattern": "^[0-9]+[kKmMgG]?$" },
+        "read_only": { "description": "Mount the root filesystem read-only (same as security.read_only_rootfs).", "type": "boolean" },
+        "tmpfs": { "description": "In-memory mounts as /path:size=64m[,mode=1777,...]; size is required.", "type": "array", "items": { "type": "string", "pattern": "^/" } },
+        "ulimits": {
+          "description": "Resource limits: nofile, nproc, cpu, core, stack, memlock, fsize. An integer sets soft and hard.",
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "integer", "minimum": 0 },
+              { "type": "object", "additionalProperties": false, "required": ["soft", "hard"], "properties": { "soft": { "type": "integer", "minimum": 0 }, "hard": { "type": "integer", "minimum": 0 } } }
+            ]
+          }
+        },
+        "init": { "description": "Run a minimal init as PID 1 to reap zombies and forward signals.", "type": "boolean" },
+        "stop_timeout": { "description": "Seconds to wait after SIGTERM before SIGKILL.", "type": "integer", "minimum": 0 },
+        "extra_hosts": { "description": "Extra /etc/hosts entries as hostname:ip.", "type": "array", "items": { "type": "string" } },
+        "dns": { "description": "DNS servers (IP addresses).", "type": "array", "items": { "type": "string" } },
+        "sysctls": { "description": "Namespaced kernel settings from a fixed net.* allowlist.", "type": "object", "additionalProperties": { "type": ["string", "integer"] } },
+        "cap_drop": { "description": "Linux capabilities to drop, such as NET_RAW or ALL.", "type": "array", "items": { "type": "string" } },
+        "pids_limit": { "description": "Maximum processes in the container.", "type": "integer", "minimum": 1 }
+      }
+    },
     "security": {
       "type": "object",
       "additionalProperties": false,

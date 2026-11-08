@@ -1424,11 +1424,13 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	traceRegistryAuth(ctx, tr, desired, spec.RegistryAuth)
 	if c.meshDNSAddr != "" {
-		spec.DNS = []string{c.meshDNSAddr}
+		spec.DNS = append([]string{c.meshDNSAddr}, spec.DNS...)
 	}
-	if spec.ExtraHosts, err = c.databaseExtraHosts(ctx, desired); err != nil {
+	meshHosts, err := c.databaseExtraHosts(ctx, desired)
+	if err != nil {
 		return fmt.Errorf("database mesh hosts: %w", err)
 	}
+	spec.ExtraHosts = append(meshHosts, spec.ExtraHosts...)
 	if err := traceStep(ctx, tr, deploytrace.StepEnsureNetwork, deploytrace.StepEnsureNetwork, "ensuring app network",
 		func() error { return c.ensureAppNetwork(ctx, desired) }, "EnsureNetworkFailed", networkTraceLabel(c.networkPrefix, desired)); err != nil {
 		return err
@@ -2858,6 +2860,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		spec.Entrypoint = desired.Entrypoint
 	}
 	spec.User, spec.WorkingDir = desired.User, desired.WorkingDir
+	applyRuntimeOptions(&spec, desired.Runtime)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

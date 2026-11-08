@@ -273,6 +273,7 @@ func composeConfigChanged(prev, next store.DesiredService) bool {
 		!slices.Equal(prev.Command, next.Command) ||
 		!slices.Equal(prev.Entrypoint, next.Entrypoint) ||
 		prev.User != next.User || prev.WorkingDir != next.WorkingDir ||
+		!jsonEqual(prev.Runtime, next.Runtime) ||
 		prev.Port != next.Port ||
 		!ptrIntEqual(prev.HostPort, next.HostPort) ||
 		!slices.Equal(prev.PublishedPorts, next.PublishedPorts)

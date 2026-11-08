@@ -103,6 +103,9 @@ func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (
 	if spec.WorkingDir != "" && !t.caps.has(CapContainerSpecWorkdir) {
 		return "", fmt.Errorf("%w: working_dir needs %s", ErrAgentLacksCapability, CapContainerSpecWorkdir)
 	}
+	if spec.NeedsRuntimeCapability() && !t.caps.has(CapContainerSpecRuntime) {
+		return "", fmt.Errorf("%w: runtime options need %s", ErrAgentLacksCapability, CapContainerSpecRuntime)
+	}
 	if spec.NeedsFilesCapability() && !t.caps.has(CapContainerSpecFiles) {
 		return "", ErrAgentLacksCapability
 	}

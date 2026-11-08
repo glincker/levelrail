@@ -173,6 +173,7 @@ func configChangeEvent(name string, old, next store.DesiredService) (store.AppEv
 	structured("command", !slices.Equal(old.Command, next.Command))
 	structured("user", old.User != next.User)
 	structured("working_dir", old.WorkingDir != next.WorkingDir)
+	structured("runtime", !jsonEqual(old.Runtime, next.Runtime))
 	structured("labels", !maps.Equal(old.Labels, next.Labels))
 	if added, removed := sliceDiff(old.Domains, next.Domains); len(added)+len(removed) > 0 {
 		fields = append(fields, "domains")
