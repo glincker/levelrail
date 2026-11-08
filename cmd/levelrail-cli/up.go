@@ -57,7 +57,7 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	fs.Float64Var(&f.cpu, "cpu", 0, "CPU limit in cores, e.g. 0.5 (default: the app spec's, then unlimited)")
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (default: the directory's remote \"origin\")")
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the project directory (overrides levelrail-definition.json)")
-	fs.StringVar(&f.image, "image", "", "ignore levelrail-definition.json and use detection")
+	fs.StringVar(&f.image, "image", "", "skip levelrail-definition.json and detect the stack (value unused; use deploy --image for a prebuilt image)")
 	fs.StringVar(&f.ref, "ref", "", "git branch to build (default: the current branch, then main)")
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var as KEY=VALUE, repeatable, for a required secret the app spec declares")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the inferred settings and the exact commands, change nothing")
@@ -486,6 +486,8 @@ spec, detection, default.
 Flags:
   --name string       app name (default: the directory name)
   --port int          container port (default: app spec, Dockerfile EXPOSE or framework)
+  --dockerfile string Dockerfile path relative to the project directory (overrides levelrail-definition.json)
+  --image string      skip levelrail-definition.json and detect the stack (value unused; use deploy --image for a prebuilt image)
   --domain string     domain to add once the app is live (default: none)
   --with list         databases to create and connect, e.g. --with postgres,redis or postgres:16
   --replicas int      number of container replicas (default 1)
