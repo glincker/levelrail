@@ -2,9 +2,13 @@ package api
 
 import (
 	"context"
+	"errors"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,15 +41,17 @@ func TestRunPreviewMigrateDatabaseReadiness(t *testing.T) {
 		t.Fatalf("no command must be a no-op, got %q %v", note, err)
 	}
 	s.MigrateCommand = "npm run migrate"
-	for _, strategy := range []string{store.PreviewDatabaseStrategyShared, store.PreviewDatabaseStrategyFresh} {
+	for _, strategy := range []string{store.PreviewDatabaseStrategyShared} {
 		s.DatabaseStrategy = strategy
 		if _, err := rt.runPreviewMigrate(context.Background(), "a-pr-1", s, false); err == nil || !strings.Contains(err.Error(), "cannot be verified") {
 			t.Fatalf("%s: err = %v", strategy, err)
 		}
 	}
-	s.DatabaseStrategy = store.PreviewDatabaseStrategySeed
-	if err := previewMigrateDatabaseGuard(s, false); err != nil {
-		t.Fatalf("seed must be allowed: %v", err)
+	for _, strategy := range []string{store.PreviewDatabaseStrategySeed, store.PreviewDatabaseStrategyFresh} {
+		s.DatabaseStrategy = strategy
+		if err := previewMigrateDatabaseGuard(s, false); err != nil {
+			t.Fatalf("%s must be allowed: %v", strategy, err)
+		}
 	}
 	s.DatabaseStrategy = store.PreviewDatabaseStrategyNone
 	if _, err := rt.runPreviewMigrate(context.Background(), "a-pr-1", s, true); err == nil {
@@ -58,5 +64,24 @@ func TestRunPreviewMigrateDatabaseReadiness(t *testing.T) {
 	}
 	if notes, err := rt.seedPreviewDatabase(context.Background(), "main", store.PreviewEphemeralDatabase{DatabaseName: "a-pr-1-db"}, "postgres", false); err != nil || len(notes) != 1 {
 		t.Fatalf("seed without runner, no migrate: %v %v", notes, err)
+	}
+}
+
+func TestWaitPreviewDatabaseReady(t *testing.T) {
+	ctx := context.Background()
+	up := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}, execReader: io.NopCloser(strings.NewReader(""))}
+	if err := waitPreviewDatabaseReady(ctx, up, "db-x", "postgres", time.Second); err != nil || up.gotCmd[0] != "pg_isready" {
+		t.Fatalf("ready database: err=%v cmd=%v", err, up.gotCmd)
+	}
+	down := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}, execErr: errors.New("refused")}
+	if err := waitPreviewDatabaseReady(ctx, down, "db-x", "postgres", time.Millisecond); err == nil || !strings.Contains(err.Error(), "not ready") {
+		t.Fatalf("unready database must time out: %v", err)
+	}
+	stopped := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1"}}
+	if err := waitPreviewDatabaseReady(ctx, stopped, "db-x", "postgres", time.Millisecond); err == nil || stopped.execCalls != 0 {
+		t.Fatalf("stopped container must not be probed: %v", err)
+	}
+	if err := waitPreviewDatabaseReady(ctx, up, "db-x", "redis", time.Second); err == nil || !strings.Contains(err.Error(), "cannot be verified") {
+		t.Fatalf("unprobed engine must fail closed: %v", err)
 	}
 }

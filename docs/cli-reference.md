@@ -357,12 +357,15 @@ levelrail-cli apps egress get <name> [flags]
 levelrail-cli apps egress set <name> --allow host:port [--allow host:port ...] [flags]
 levelrail-cli apps egress clear <name> [flags]
 levelrail-cli apps exec-access enable|disable|status <name> [flags]
+levelrail-cli apps runtime show <name> [--service NAME] [flags]
+levelrail-cli apps runtime set <name> [--service NAME] [--tmpfs P:size=64m] [--ulimit nofile=65536] [--init] [--stop-timeout N] [--extra-host H:IP] [--dns IP] [--sysctl K=V] [--pids-limit N] [--unset KEYS] [flags]
 ```
 
 - `apps domains add` creates the DNS record when a provider is connected (`--dns off` skips it, `--dns preview` shows it); `--wait` prints the go-live steps and exits non-zero when the domain is not live within `--timeout`. See [Add a domain and go live](/domains-and-ingress#add-a-domain-and-go-live).
 - `apps domains` shows or changes an app's domains; a domain already used by another app is refused and nothing is changed. Per-domain TLS, redirects, WAF and the like are under [Domains](#domains).
 - `apps streams` forwards a host port to one container port as raw TCP (only `tcp` is supported). A stream change takes effect on the app's next container recreation, such as an image change or `apps restart`.
 - `apps egress` restricts an app's outbound traffic to the declared `host:port` pairs; with nothing configured, egress is unrestricted. DNS and loopback traffic stay open regardless.
+- `apps runtime` shows or changes a service's container options (see [Runtime options](/runtime-options)). A flag replaces that option and the rest stay; `--unset` clears options. A change recreates the container.
 - `apps exec-access` is on by default. When disabled, `apps exec` and the interactive terminal are refused whatever abilities the token has.
 
 ### Run, logs and metrics

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// SecretProviderResource is one Doppler or Infisical connection; the token is never returned.
+// SecretProviderResource is one Doppler, Infisical or 1Password connection; the token is never returned.
 type SecretProviderResource struct {
 	Name        string     `json:"name"`
 	Type        string     `json:"type"`

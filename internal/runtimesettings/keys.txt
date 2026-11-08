@@ -72,6 +72,7 @@ disk.reserve_mb
 dns.verify_provider_on_save
 doctor.reachability_dialback_allow_private
 doctor.reachability_dialback_url
+domains.auth_gate_timeout
 domains.batch_max_items
 domains.canonical
 domains.dns_wait_budget

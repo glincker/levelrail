@@ -180,7 +180,7 @@ type SecretResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
-// EnvResolver wraps the app secret resolver so a stored doppler:// or infisical:// value resolves live.
+// EnvResolver wraps the app secret resolver so a stored doppler://, infisical:// or op:// provider value resolves live.
 type EnvResolver struct {
 	Inner     SecretResolver
 	Providers Store

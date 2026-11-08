@@ -30,3 +30,14 @@ func TestSecretProviderResourceNeverSerializesToken(t *testing.T) {
 		}
 	}
 }
+
+func TestSecretProviderOnePasswordNeedsNoProjectOrEnvironment(t *testing.T) {
+	cfg := secretprovider.Config{Name: "vaults", Type: secretprovider.TypeOnePassword, BaseURL: "https://connect.internal:8080"}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("onepassword without project and environment: %v", err)
+	}
+	cfg.BaseURL = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("onepassword without base_url must fail")
+	}
+}

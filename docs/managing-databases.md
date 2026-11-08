@@ -674,7 +674,7 @@ Backups are DDL plus rows as SQL. The image's entrypoint puts `CLICKHOUSE_DB` an
 </Accordion>
 <Accordion title="KeyDB and Dragonfly">
 
-Backups are RDB snapshots. Dragonfly starts one io thread per CPU and refuses to start when the threads times 256MiB exceed the available memory, which a many-core host with little RAM can hit and loop on forever. Set `APP_DRAGONFLY_PROACTOR_THREADS` (for example `2`) on the control plane to cap it for Dragonfly databases created or recreated afterward. An existing container keeps the command it was created with: remove it so the reconciler recreates it (the data volume is kept).
+Backups are RDB snapshots. KeyDB images ship `keydb-cli` instead of `redis-cli`, so the upgrade health check and the connection probe use whichever client the image has and report a failure if it has neither. This was checked against the repo's local Docker KeyDB test, not on a real host. Dragonfly starts one io thread per CPU and refuses to start when the threads times 256MiB exceed the available memory, which a many-core host with little RAM can hit and loop on forever. Set `APP_DRAGONFLY_PROACTOR_THREADS` (for example `2`) on the control plane to cap it for Dragonfly databases created or recreated afterward. An existing container keeps the command it was created with: remove it so the reconciler recreates it (the data volume is kept).
 
 </Accordion>
 <Accordion title="Redis, KeyDB, and Dragonfly authentication">

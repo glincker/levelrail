@@ -79,6 +79,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAccess(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-host":
 		return runAppsAutoHost(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runtime":
+		return runAppsRuntime(prog, args[1:], stdout, stderr, lookupEnv)
 	case "visitors":
 		return runAppsVisitors(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traces":
@@ -343,6 +345,7 @@ func appsUsage(prog string) string {
   %[1]s apps abuse get|set|dry-run <name> [flags]   per app rate limit and deny lists, log_only first, with a replay of recent traffic
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
   %[1]s apps auto-host <name> [--on|--off]   show or stop the automatic hostname and its certificate (saves certificate budget)
+  %[1]s apps runtime show|set <name>         container options (tmpfs, ulimits, init, stop timeout, hosts, dns, sysctls, pids)
   %[1]s apps visitors <name> [--domain D] [--window 1h|24h|7d|30d]   privacy-safe visitors, requests, status classes, top pages and referrers
   %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
   %[1]s apps log-pipeline get|set|clear|preview <name> [flags]   redact, parse, drop or join log lines before they are stored

@@ -89,6 +89,11 @@ func (rt *Router) applyPreviewDatabaseStrategyReady(ctx context.Context, preview
 		return nil, created, errors.New("migration skipped: the preview database could not be attached to the preview")
 	}
 	if s.DatabaseStrategy == store.PreviewDatabaseStrategyFresh {
+		if ready {
+			if err := rt.waitFreshPreviewDatabase(ctx, s, db, src.Engine); err != nil {
+				return nil, created, err
+			}
+		}
 		return []string{"empty " + src.Engine + " database " + db.DatabaseName + " created for this preview"}, created, nil
 	}
 	notes, seedErr := rt.seedPreviewDatabase(ctx, source, db, src.Engine, ready)

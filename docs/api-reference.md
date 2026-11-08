@@ -720,6 +720,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/compose-db-services/{service}/backups | AbilityRead | handleListComposeDBBackupRuns |
 | POST | /api/v1/apps/{name}/compose-db-services/{service}/backups | AbilityWriteSensitive | handleTriggerComposeDBBackup |
 | POST | /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore | AbilityRoot | handleRestoreComposeDBBackup |
+| GET | /api/v1/apps/{name}/services/{service}/runtime | AbilityRead | handleGetServiceRuntime |
+| PUT | /api/v1/apps/{name}/services/{service}/runtime | AbilityWriteSensitive | handlePutServiceRuntime |
 
 </Accordion>
 

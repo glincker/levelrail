@@ -149,6 +149,9 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 	if key := idempotencyKeyFrom(ctx); key != "" {
 		req.Header.Set(headerIdempotencyKey, key)
 	}
+	if rev := ifMatchFrom(ctx); rev != "" {
+		req.Header.Set("If-Match", `"`+rev+`"`)
+	}
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}

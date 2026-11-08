@@ -58,3 +58,10 @@ func TestConnectionsScriptValkeyMatchesRedis(t *testing.T) {
 		t.Fatalf("valkey script = %q ok=%v, want redis script %q", got, gok, want)
 	}
 }
+
+func TestConnectionsScriptKeyDBUsesItsClient(t *testing.T) {
+	got, ok := connectionsScript(store.EngineKeyDB)
+	if !ok || !strings.Contains(got, "command -v keydb-cli") {
+		t.Fatalf("keydb script = %q ok=%v", got, ok)
+	}
+}

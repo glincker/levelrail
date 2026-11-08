@@ -32,3 +32,21 @@ func TestChecksAppJSONHealthchecksWin(t *testing.T) {
 		t.Fatalf("health = %+v codes = %v", h, codes(res))
 	}
 }
+
+func TestChecksAloneIsASource(t *testing.T) {
+	res := Translate(map[string][]byte{"CHECKS": []byte("/up\n")}, ForDeploy(false))
+	if len(res.Detected) != 1 || res.Detected[0] != FormatHeroku {
+		t.Fatalf("detected = %v, want the heroku format", res.Detected)
+	}
+	if res.Fragment.Services["web"].Health == nil {
+		t.Error("a lone CHECKS file should still give web a readiness probe")
+	}
+}
+
+func TestChecksWithVercelAddsNoPhantomService(t *testing.T) {
+	files := map[string][]byte{"vercel.json": []byte(`{}`), "CHECKS": []byte("/up\n")}
+	got := Detect(files)
+	if len(got) != 1 || got[0] != FormatVercel {
+		t.Fatalf("Detect = %v, want only vercel", got)
+	}
+}

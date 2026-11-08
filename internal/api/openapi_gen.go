@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2020 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2022 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -406,6 +406,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/secret-scan/allow", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAllowSecretScan", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/secret-scan/allow/{fingerprint}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUnallowSecretScan", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secret-scan/run", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunSecretScan", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/services/{service}/runtime", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetServiceRuntime", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/services/{service}/runtime", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutServiceRuntime", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/shield/recommended", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyRecommendedShield", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSleep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSleep", Description: ""},

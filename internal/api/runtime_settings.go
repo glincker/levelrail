@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/abuse"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -46,6 +47,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	wireNextSkewSettings(svc)
 	wireDiagnosticSettings(svc)
 	abuse.SetLiveLimits(svc.AbuseLimits)
+	ingress.SetLiveAuthGateTimeout(svc.AuthGateTimeout)
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 

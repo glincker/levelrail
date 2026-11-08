@@ -40,14 +40,17 @@ func secretsProviderUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s secrets provider add NAME --type doppler --project P --environment CONFIG --provider-token-file PATH|-
   %[1]s secrets provider add NAME --type infisical --project WORKSPACE_ID --environment ENV [--path /dir] [--base-url URL] --provider-token-file PATH|-
+  %[1]s secrets provider add NAME --type onepassword --base-url CONNECT_URL [--project VAULT] --provider-token-file PATH|-
   %[1]s secrets provider add vault --type vault --address URL --provider-token-file PATH|-
   %[1]s secrets provider list [flags]
   %[1]s secrets provider test NAME [flags]
   %[1]s secrets provider remove NAME [flags]
 
 Connects read-only external secret providers. An app secret whose value is
-doppler://NAME/SECRET or infisical://NAME/[dir/]SECRET is read live from the
-provider when its container is created. Tokens are stored encrypted and never
+doppler://NAME/SECRET, infisical://NAME/[dir/]SECRET or
+op://NAME/[VAULT/]ITEM/FIELD is read live from the provider when its container
+is created. For onepassword, --environment is not used and --project is the
+default vault. Tokens are stored encrypted and never
 shown. For Vault, NAME is ignored and the existing vault settings are used.
 `, prog)
 }
@@ -64,11 +67,11 @@ func secretsProviderName(prog string, fs interface{ Arg(int) string }, stderr io
 func runSecretsProviderAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "secrets provider add", secretsProviderJSONUsage, stderr)
 	var typeFlag, projectFlag, envFlag, pathFlag, baseURLFlag, tokenFileFlag, addressFlag string
-	fs.StringVar(&typeFlag, "type", "", "provider type: doppler, infisical or vault")
-	fs.StringVar(&projectFlag, "project", "", "Doppler project, or Infisical workspace ID")
-	fs.StringVar(&envFlag, "environment", "", "Doppler config, or Infisical environment slug")
+	fs.StringVar(&typeFlag, "type", "", "provider type: doppler, infisical, onepassword or vault")
+	fs.StringVar(&projectFlag, "project", "", "Doppler project, Infisical workspace ID, or default 1Password vault")
+	fs.StringVar(&envFlag, "environment", "", "Doppler config, or Infisical environment slug (not used by onepassword)")
 	fs.StringVar(&pathFlag, "path", "", "Infisical folder path (default /)")
-	fs.StringVar(&baseURLFlag, "base-url", "", "self-hosted Infisical URL; private addresses are allowed only here")
+	fs.StringVar(&baseURLFlag, "base-url", "", "self-hosted Infisical URL, or the 1Password Connect URL (required); private addresses are allowed only here")
 	fs.StringVar(&addressFlag, "address", "", "Vault address (--type vault)")
 	fs.StringVar(&tokenFileFlag, "provider-token-file", "", "file holding the provider token, or - for stdin; omit to keep the stored token")
 	fs.Usage = func() {

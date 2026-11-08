@@ -28,3 +28,13 @@ func TestHealthCommand_SearchEngines(t *testing.T) {
 		})
 	}
 }
+
+func TestHealthCommand_KeyDBFindsItsClient(t *testing.T) {
+	cmd, err := HealthCommand(store.EngineKeyDB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(cmd[2], "command -v redis-cli || command -v keydb-cli") || strings.Contains(cmd[2], "$(redis-cli") {
+		t.Fatalf("health command = %q", cmd)
+	}
+}

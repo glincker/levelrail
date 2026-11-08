@@ -834,7 +834,7 @@ A visitor who sends `X-User: admin` themselves gets that header removed before t
 | Auth URL | required | `http` or `https`, a host, no username or password, no query. Internal addresses are allowed. A base path is kept: `https://auth.example.com/api` plus `/check` calls `/api/check`. |
 | Check path | `/` | Absolute path, may carry its own query. |
 | Copy headers | none | Up to 16 header names. `Cookie`, `Authorization`, `Host` and the `X-Forwarded-*` headers cannot be copied. |
-| Timeout | `APP_AUTH_GATE_TIMEOUT` (default `5s`) | Per domain override in seconds. The env var takes a Go duration (`3s`) or whole seconds. |
+| Timeout | runtime setting `domains.auth_gate_timeout` (default `5s`, 1s to 1m) | Per domain override in seconds, which wins over the setting. `APP_AUTH_GATE_TIMEOUT` only seeds the setting and takes a Go duration (`3s`) or whole seconds. A changed setting applies at the next ingress refresh. |
 
 <Tabs>
 <Tab title="Dashboard">

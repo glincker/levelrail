@@ -154,7 +154,7 @@ levelrail-cli import config ./my-app --out app.yaml --strict
 levelrail-cli import config ./my-app --emit stack --out ./review --db-version postgres=16
 ```
 
-`import config` reads `Procfile`, `app.json`, `vercel.json` and `CHECKS` from a folder and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It needs no token and creates nothing.
+`import config` reads `Procfile`, `app.json`, `vercel.json` and `CHECKS` from a folder and prints a proposed `app.yaml`. A folder with only a `CHECKS` file still counts: the web service gets its readiness probe. Findings go to stderr, blockers first, each with a fix. It needs no token and creates nothing.
 
 - `--out FILE` writes the proposed file instead of printing it.
 - `--strict` exits `2` when any finding is a blocker.

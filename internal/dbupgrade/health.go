@@ -9,7 +9,9 @@ import (
 )
 
 // redisTLS mirrors internal/backup's probe: use the TLS port when certs are mounted.
-const redisTLS = `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi; `
+// The KeyDB image ships keydb-cli instead of redis-cli, so pick whichever exists and fail closed if neither does.
+const redisTLS = `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi; ` +
+	`RCLI=$(command -v redis-cli || command -v keydb-cli) || { echo "no redis-compatible client in image"; exit 1; }; `
 
 // HealthCommand returns the in-container check for engine. It connects,
 // runs a trivial query, checks the server is not a read-only replica where
@@ -30,8 +32,8 @@ printf '%s\n' "$out" | sed -n 1p`
 	case store.EngineMongoDB:
 		script = `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'if (db.adminCommand({ping: 1}).ok !== 1) { quit(1) }; print(db.version())'`
 	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly, store.EngineValkey:
-		script = redisTLS + `info=$(redis-cli $RTLS INFO | tr -d '\r') || exit 1
-[ "$(redis-cli $RTLS PING | tr -d '\r')" = "PONG" ] || { echo "PING failed"; exit 1; }
+		script = redisTLS + `info=$("$RCLI" $RTLS INFO | tr -d '\r') || exit 1
+[ "$("$RCLI" $RTLS PING | tr -d '\r')" = "PONG" ] || { echo "PING failed"; exit 1; }
 role=$(printf '%s\n' "$info" | sed -n 's/^role://p')
 [ "$role" = "master" ] || { echo "role is $role"; exit 1; }
 v=$(printf '%s\n' "$info" | sed -n 's/^dragonfly_version:df-//p')

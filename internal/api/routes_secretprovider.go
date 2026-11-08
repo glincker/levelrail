@@ -98,6 +98,7 @@ func (rt *Router) handlePutSecretProvider(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	// Validate decides which fields each type needs; project and environment are not required for onepassword.
 	cfg := secretprovider.Config{
 		Name: r.PathValue("name"), Type: req.Type, Project: req.Project,
 		Environment: req.Environment, Path: req.Path, BaseURL: req.BaseURL,

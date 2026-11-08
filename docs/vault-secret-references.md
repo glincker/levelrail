@@ -142,7 +142,7 @@ Infisical machine identity login (client ID and secret) is not supported yet. Us
 
 ## 1Password Connect
 
-1Password is a read only provider that talks to a Connect server you host. It is set up through the API and CLI. The dashboard form does not list it yet. Connect it with the Connect server URL and an access token:
+1Password is a read only provider that talks to a Connect server you host. It is set up through the API and CLI, where `--environment` is not used and `--project` is optional. The dashboard form does not list it yet. Connect it with the Connect server URL and an access token:
 
 ```bash
 levelrail-cli secrets provider add vaults --type onepassword --base-url https://connect.internal:8080 --project Prod --provider-token-file -

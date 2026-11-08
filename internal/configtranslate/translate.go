@@ -124,10 +124,12 @@ func Translate(files map[string][]byte, opts ...Option) Result {
 }
 
 // Detect reports which formats have at least one input file present, in a
-// fixed order.
+// fixed order. A lone CHECKS file counts only without vercel.json, so it
+// cannot add a phantom service next to the Vercel one.
 func Detect(files map[string][]byte) []Format {
 	var out []Format
-	if has(files, "Procfile") || has(files, "app.json") {
+	if has(files, "Procfile") || has(files, "app.json") ||
+		(has(files, fileChecks) && !has(files, "vercel.json")) {
 		out = append(out, FormatHeroku)
 	}
 	if has(files, "vercel.json") {
