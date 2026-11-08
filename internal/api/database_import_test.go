@@ -202,3 +202,33 @@ func TestDatabaseImport_NonRootAndAnonymousDenied(t *testing.T) {
 		t.Fatal("a denied request reached the handler")
 	}
 }
+
+// seqProbeRuntime answers each emptiness probe from a list, last one repeating.
+type seqProbeRuntime struct {
+	*importFakeRuntime
+	probes []string
+	n      int
+}
+
+func (f *seqProbeRuntime) Exec(context.Context, string, []string) (io.ReadCloser, error) {
+	i := f.n
+	if i >= len(f.probes) {
+		i = len(f.probes) - 1
+	}
+	f.n++
+	return io.NopCloser(strings.NewReader(f.probes[i])), nil
+}
+
+func TestDatabaseImport_DataArrivingDuringUploadIs409(t *testing.T) {
+	rt, _, base, tok := newImportFixture(t, "")
+	fake := &seqProbeRuntime{importFakeRuntime: base, probes: []string{"", "users|3\n"}}
+	rt.execRuntime = func(string) (docker.Runtime, error) { return fake, nil }
+
+	rec := incTokenPost(rt, tok, "/api/v1/databases/main/import", "select 1;")
+	if rec.Code != http.StatusConflict || base.restores != 0 {
+		t.Fatalf("import = %d restores=%d body=%s, want 409 and no restore", rec.Code, base.restores, rec.Body.String())
+	}
+	if fake.n != 2 {
+		t.Fatalf("probes = %d, want 2 (before and after spooling)", fake.n)
+	}
+}

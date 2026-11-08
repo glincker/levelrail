@@ -45,16 +45,14 @@ func (rt *Router) preGateStaticPreview(ctx context.Context, appName, previewName
 	if err != nil {
 		return false, fmt.Errorf("check owner of %q: %w", domain, err)
 	}
-	if found && owner != previewName {
+	// The gate row references the domain claim, which Deploy creates, so only an already owned domain can be gated first.
+	if !found || owner != previewName {
 		return false, nil
 	}
 	if err := rt.gatePreviewDomain(ctx, appName, domain, store.PreviewAppSettings{GateUsername: s.GateUsername}); err != nil {
-		if !found {
-			rt.removePreviewGates(ctx, []string{domain})
-		}
 		return false, fmt.Errorf("apply basic auth gate: %w", err)
 	}
-	return !found, nil
+	return false, nil
 }
 
 // deployPreviewStatic publishes the PR's head commit as its own static site

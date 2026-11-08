@@ -124,3 +124,9 @@ func TestComposeDBRestore_PreviewConfirmAndAudit(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+func TestAuditComposeDBRestore_NilAuditLogReturnsEarly(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.auditLog = nil
+	rt.auditComposeDBRestore("/api/v1/apps/x/db/restore", "user", "u1", "tester", map[string]string{"k": "v"}, http.StatusOK)
+}
