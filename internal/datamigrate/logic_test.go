@@ -1,6 +1,9 @@
 package datamigrate
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -227,5 +230,48 @@ func TestTargetEmptinessCommandCoversAllRedisDatabases(t *testing.T) {
 	want, _ := TargetCountCommand(EnginePostgres)
 	if strings.Join(pg, " ") != strings.Join(want, " ") {
 		t.Error("other engines keep the plain count command")
+	}
+}
+
+func TestTargetEmptinessCommandFailsClosedOnOddReplies(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("sh unavailable")
+	}
+	cmd, err := TargetEmptinessCommand(EngineRedis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	cases := map[string]struct{ reply, want string }{
+		"loading": {"-LOADING Redis is loading the dataset in memory\n", "keys|unknown"},
+		"noauth":  {"NOAUTH Authentication required.\n", "keys|unknown"},
+		"empty":   {"", "keys|unknown"},
+		"no dbs":  {"# Keyspace\n", "keys|0"},
+		"two dbs": {"# Keyspace\r\ndb0:keys=3,expires=0,avg_ttl=0\r\ndb1:keys=4,expires=0,avg_ttl=0\r\n", "keys|7"},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			// A fake redis-cli on PATH stands in for the server reply.
+			fake := "#!/bin/sh\ncat \"$0.reply\"\n"
+			bin := filepath.Join(dir, name)
+			if err := os.MkdirAll(bin, 0o750); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(bin, "redis-cli.reply"), []byte(c.reply), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(bin, "redis-cli"), []byte(fake), 0o700); err != nil { //nolint:gosec // test stub must be executable
+				t.Fatal(err)
+			}
+			c2 := exec.Command("sh", "-c", cmd[len(cmd)-1]) //nolint:gosec // script under test
+			c2.Env = []string{"PATH=" + bin + ":/usr/bin:/bin"}
+			got, err := c2.Output()
+			if err != nil {
+				t.Fatalf("run: %v", err)
+			}
+			if strings.TrimSpace(string(got)) != c.want {
+				t.Errorf("got %q, want %q", got, c.want)
+			}
+		})
 	}
 }

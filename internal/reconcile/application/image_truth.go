@@ -48,10 +48,6 @@ func NameImage(svc store.DesiredService) string {
 	if id := svc.LocalImageID(); id != "" {
 		key += "\x00id:" + id
 	}
-	// Runtime options are create-time container settings, so they are part of the identity.
-	if rk := svc.Runtime.IdentityKey(); rk != "" {
-		key += "\x00rt:" + rk
-	}
 	return key
 }
 

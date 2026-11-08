@@ -188,6 +188,10 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		unlockSweep := lockAppName(name)
 		orphaned := rt.deleteAppIfOrphaned(ctx, existing.AppID)
 		unlockSweep()
+		if orphaned {
+			// Compose schedules are keyed by app id; a recreated app of the same name must not inherit them.
+			rt.deleteComposeBackupsFor(ctx, existing.AppID)
+		}
 		if orphaned && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
 			if err := finalizer.RemoveAppNetwork(nctx, existing.AppID, existing.NodeID); err != nil {
@@ -303,6 +307,18 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 			rt.logger.Error("api: teardown containers pending, will retry", slog.String("error", err.Error()), slog.String("name", name), slog.String("node_id", nodeID))
 		}
 	}()
+}
+
+func (rt *Router) deleteComposeBackupsFor(ctx context.Context, app string) {
+	cd, ok := rt.composeDBBackups.(interface {
+		DeleteComposeServiceBackupsForApp(ctx context.Context, app string) error
+	})
+	if !ok {
+		return
+	}
+	if err := cd.DeleteComposeServiceBackupsForApp(ctx, app); err != nil {
+		rt.logger.Warn("api: delete app: remove compose backup schedules failed", slog.String("error", err.Error()), slog.String("app_id", app))
+	}
 }
 
 // deleteAppIfOrphaned deletes the store.App row identified by appID once

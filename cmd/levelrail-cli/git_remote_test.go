@@ -202,3 +202,12 @@ func TestRun_GitRemoteApplyRejectsBadInput(t *testing.T) {
 		}
 	}
 }
+
+func TestRun_GitRemoteRejectsHelperWithStoreToken(t *testing.T) {
+	srv := gitRemoteApplyServer(t, "deploy", "https://cp.example.com/x.git")
+	var o, e strings.Builder
+	got := run("levelrail-cli-test", []string{"git", "remote", "add", "web", "--apply", "--credential-helper", "--store-token-in-config", "--dir", t.TempDir(), "--api-url", srv.URL}, &o, &e, envMap())
+	if got == exitOK || !strings.Contains(o.String()+e.String(), "cannot be combined") {
+		t.Errorf("exit=%d out=%q err=%q, want usage error", got, o.String(), e.String())
+	}
+}

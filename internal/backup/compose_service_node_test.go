@@ -64,7 +64,7 @@ func TestComposeResolverAndDumperUseServiceNode(t *testing.T) {
 }
 
 func TestComposePostgresPreludeClearsAllUserSchemas(t *testing.T) {
-	for _, want := range []string{"BEGIN;", "format('DROP SCHEMA %I CASCADE', s)", "!~ '^pg_'", "'information_schema'", "CREATE SCHEMA public"} {
+	for _, want := range []string{"BEGIN;", "pg_catalog.format('DROP SCHEMA IF EXISTS %I CASCADE', s)", "pg_catalog.pg_namespace", "pg_catalog.pg_depend", "!~ '^pg_'", "'information_schema'", "CREATE SCHEMA public"} {
 		if !strings.Contains(composePostgresPrelude, want) {
 			t.Fatalf("prelude missing %q", want)
 		}

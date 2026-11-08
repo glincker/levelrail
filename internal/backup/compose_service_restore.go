@@ -180,11 +180,11 @@ DO $lr_reset$
 DECLARE s name;
 BEGIN
   FOR s IN
-    SELECT n.nspname FROM pg_namespace n
+    SELECT n.nspname FROM pg_catalog.pg_namespace n
     WHERE n.nspname <> 'information_schema' AND n.nspname !~ '^pg_'
-      AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_namespace'::regclass AND d.objid = n.oid AND d.deptype = 'e')
+      AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_depend d WHERE d.classid = 'pg_catalog.pg_namespace'::regclass AND d.objid = n.oid AND d.deptype = 'e')
   LOOP
-    EXECUTE format('DROP SCHEMA %I CASCADE', s);
+    EXECUTE pg_catalog.format('DROP SCHEMA IF EXISTS %I CASCADE', s);
   END LOOP;
   CREATE SCHEMA public;
 END

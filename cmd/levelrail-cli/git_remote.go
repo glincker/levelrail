@@ -93,7 +93,7 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the remote, including the one-time token, as JSON to stdout and nothing else", stderr)
 	applyFlag := fs.Bool("apply", false, "set the remote in a local git repository (add, or set-url if it exists); the token is kept out of .git/config (see --store-token-in-config)")
 	dirFlag := fs.String("dir", "", "repository directory for --apply (default: the current directory)")
-	fs.Bool("credential-helper", false, "accepted for compatibility; with --apply this is now the default (the remote URL has no token and a git credential helper reads it from "+gitTokenEnv+" at push time)")
+	helperFlag := fs.Bool("credential-helper", false, "accepted for compatibility; with --apply this is now the default (the remote URL has no token and a git credential helper reads it from "+gitTokenEnv+" at push time)")
 	storeFlag := fs.Bool("store-token-in-config", false, "with --apply: write the token into .git/config, where it is stored unencrypted in the repo config and readable by anyone who can read the repository")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <app> [flags]\n\nIssues the push token and prints the exact git remote add line. The token is\nshown once. Pushing the deploy branch builds and deploys that commit.\nWith --apply the remote is configured in the repository for you.\n\nFlags:\n", prog, label)
@@ -102,6 +102,9 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, label, "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
+	}
+	if *helperFlag && *storeFlag {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("usage: --credential-helper and --store-token-in-config cannot be combined"))
 	}
 	ctx := context.Background()
 	if verb == "add" {

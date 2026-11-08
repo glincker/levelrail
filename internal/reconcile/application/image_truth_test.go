@@ -363,7 +363,7 @@ func TestImageIDCache_NilAndEmptyAreNeverCached(t *testing.T) {
 	}
 }
 
-func TestNameImageFoldsRuntimeOptions(t *testing.T) {
+func TestNameImageIgnoresRuntimeOptions(t *testing.T) {
 	init := true
 	a := store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{Tmpfs: []string{"/tmp"}, Init: &init}}
 	same := store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{Tmpfs: []string{"/tmp"}, Init: &init}}
@@ -371,8 +371,8 @@ func TestNameImageFoldsRuntimeOptions(t *testing.T) {
 	if ContainerName("a", NameImage(a), "") != ContainerName("a", NameImage(same), "") {
 		t.Error("the same options must keep the same container name")
 	}
-	if ContainerName("a", NameImage(a), "") == ContainerName("a", NameImage(other), "") {
-		t.Error("different options must replace the container")
+	if ContainerName("a", NameImage(a), "") != ContainerName("a", NameImage(other), "") {
+		t.Error("option changes recreate through label drift, so the name must not move")
 	}
 	if NameImage(store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{ShmSize: "1g"}}) != "app:1" {
 		t.Error("unset editable options must not change an existing name")

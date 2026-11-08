@@ -997,6 +997,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	if runtimeOptionsDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonRuntimeOptionsDriftRecreate}, fmt.Errorf("remove %q to apply its changed runtime options: %w", target, err)
+		}
+		state = nil
+	}
+
 	meshIP, _ := c.meshBindIP(ctx, desired)
 	streamPorts, _ := c.streamHostPorts(ctx, desired.Name) // a list error just skips this drift check
 	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, effectiveDesired(desired, streamPorts), streamPorts) {
@@ -2910,6 +2917,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 	}
 	spec.ShmSizeBytes, spec.Labels = shmSpec(desired, spec.Labels)
 	spec.Labels = readOnlyRootfsSpec(desired, spec.Labels)
+	spec.Labels = runtimeOptionsSpec(desired, spec.Labels)
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}

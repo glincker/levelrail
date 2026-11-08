@@ -491,8 +491,8 @@ func (r *RuntimeOptions) Sanitize() (*RuntimeOptions, []string, error) {
 	return out, warns, nil
 }
 
-// IdentityKey is a stable string of the editable options, so a change to any of
-// them gives the container a new name and replaces it. It is empty when none are set.
+// IdentityKey is a stable string of the editable options, stamped as a label so a
+// change to any of them recreates the container in place. It is empty when none are set.
 func (r *RuntimeOptions) IdentityKey() string {
 	if r == nil {
 		return ""
