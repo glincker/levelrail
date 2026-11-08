@@ -244,6 +244,8 @@ type Pipeline struct {
 	spendGuard  SpendGuardHook  // nil skips the block_deploys spend cap guard
 
 	locks PublishLocks // nil is valid: no publish lock is ever consulted
+
+	procfilePort func(context.Context) int // nil keeps the translator default web port
 }
 
 // New builds a Pipeline.

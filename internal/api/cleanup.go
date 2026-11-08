@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/cleanup"
 	"github.com/GLINCKER/levelrail/internal/eventhook"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -25,6 +27,19 @@ const (
 
 // SetCleanup enables the /api/v1/cleanup routes.
 func (rt *Router) SetCleanup(c *cleanup.Center) { rt.cleanup = c }
+
+// CleanupFailures feeds the cleanup_failing alert from the center's run history and the failing_* settings.
+func (rt *Router) CleanupFailures(ctx context.Context, now time.Time) (alerting.CleanupFailures, error) {
+	if rt.cleanup == nil {
+		return alerting.CleanupFailures{}, nil
+	}
+	window := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyCleanupFailingWindow)
+	n, last, err := rt.cleanup.FailedRealRuns(ctx, now.Add(-window))
+	if err != nil {
+		return alerting.CleanupFailures{}, fmt.Errorf("cleanup failures: %w", err)
+	}
+	return alerting.CleanupFailures{Failed: n, Window: window, DefaultFloor: rt.runtimeSettings.Int(ctx, runtimesettings.KeyCleanupFailingFloor), LastTarget: last}, nil
+}
 
 // EmitEvent queues a platform event for the event webhooks; it is a no-op when none are configured.
 func (rt *Router) EmitEvent(eventType string, data map[string]any) {

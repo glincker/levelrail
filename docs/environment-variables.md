@@ -157,6 +157,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_PHASES_SAMPLES` | [`deploy.phases_samples`](/runtime-settings#deploys) | `5` |
 | `APP_DEPLOY_PREVIEW_CACHE_MODE` | [`deploy.preview_cache_mode`](/runtime-settings#deploys) | `isolated` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
+| `APP_DEPLOY_PROCFILE_DEFAULT_PORT` | [`deploy.procfile_default_port`](/runtime-settings#deploys) | `8080` |
 | `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
@@ -198,6 +199,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `APP_GC_PERCENT` | [`footprint.gc_percent`](/runtime-settings#observability) | `50` |
+| `APP_GOMEMLIMIT_PERCENT` | [`footprint.memlimit_percent`](/runtime-settings#observability) | `80` |
+| `APP_MEM_TRIM_INTERVAL` | [`footprint.trim_interval`](/runtime-settings#observability) | `2m0s` |
+| `APP_MEM_TRIM_MIN_IDLE_MB` | [`footprint.trim_min_idle_mb`](/runtime-settings#observability) | `24` |
 | `APP_HEARTBEAT_JOB_BACKOFF_BASE` | [`heartbeat.job_backoff_base`](/runtime-settings#observability) | `2s` |
 | `APP_HEARTBEAT_JOB_BACKOFF_MAX` | [`heartbeat.job_backoff_max`](/runtime-settings#observability) | `30s` |
 | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | [`heartbeat.job_max_attempts`](/runtime-settings#observability) | `3` |
@@ -229,6 +234,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
+| `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |
+| `APP_CLEANUP_FAILING_WINDOW` | [`cleanup.failing_window`](/runtime-settings#data-retention) | `24h` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
 | `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |

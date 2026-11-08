@@ -544,6 +544,8 @@ export function CreateAlertRuleDialog({
             />
           ) : kind === 'email_delivery_failing' ? (
             <AlertKindGuidance kind="email_delivery_failing" />
+          ) : kind === 'cleanup_failing' ? (
+            <AlertKindGuidance kind="cleanup_failing" />
           ) : kind === 'deploy_failed' || kind === 'monitor_down' ? (
             <AlertKindGuidance kind={kind} />
           ) : kind === 'budget_threshold' ? (

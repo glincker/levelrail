@@ -2,6 +2,7 @@ package certflow
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"os"
 	"sync"
@@ -143,14 +144,8 @@ func (w *Watchdog) retry(ctx context.Context, c Candidate, now time.Time) {
 
 // Run ticks until ctx ends.
 func (w *Watchdog) Run(ctx context.Context) {
-	t := time.NewTicker(w.interval)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			w.Tick(ctx)
-		}
-	}
+	_ = footprint.Every(ctx, "cert watchdog", w.interval, nil, func(ctx context.Context) error {
+		w.Tick(ctx)
+		return nil
+	})
 }

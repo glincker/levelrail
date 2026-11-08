@@ -2,6 +2,7 @@ package ddns
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"sync"
 	"time"
@@ -83,17 +84,11 @@ func StartFromEnv(ctx context.Context, getenv func(string) string, log *slog.Log
 
 // Run ticks until ctx ends.
 func (u *Updater) Run(ctx context.Context) {
-	t := time.NewTicker(u.cfg.Interval)
-	defer t.Stop()
 	u.Tick(ctx)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			u.Tick(ctx)
-		}
-	}
+	_ = footprint.Every(ctx, "ddns update", u.cfg.Interval, u.log, func(ctx context.Context) error {
+		u.Tick(ctx)
+		return nil
+	})
 }
 
 // Status returns a copy of the current state.

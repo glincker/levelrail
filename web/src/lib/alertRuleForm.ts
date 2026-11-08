@@ -116,6 +116,7 @@ export const ALERT_KIND_OPTIONS: {
     value: 'email_delivery_failing',
     Icon: MailGlassIcon,
   },
+  { value: 'cleanup_failing', Icon: ArchiveGlassIcon },
   { value: 'deploy_failed', Icon: RocketGlassIcon },
   { value: 'monitor_down', Icon: GlobeGlassIcon },
   { value: 'domain_traffic_drop', Icon: GaugeGlassIcon },
@@ -159,6 +160,7 @@ export const alertRuleFormSchema = z
       'version_skew',
       'budget_threshold',
       'email_delivery_failing',
+      'cleanup_failing',
       'deploy_failed',
       'monitor_down',
       'domain_traffic_drop',
@@ -198,6 +200,7 @@ export const alertRuleFormSchema = z
       data.kind === 'log_archive_stale' ||
       data.kind === 'version_skew' ||
       data.kind === 'email_delivery_failing' ||
+      data.kind === 'cleanup_failing' ||
       data.kind === 'deploy_failed' ||
       data.kind === 'monitor_down' ||
       data.kind === 'budget_threshold'

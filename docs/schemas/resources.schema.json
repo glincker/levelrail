@@ -87,6 +87,7 @@
             "cert_expiring",
             "cert_expiry",
             "cert_renewal_stalled",
+            "cleanup_failing",
             "control_plane_backup_stale",
             "crashloop",
             "database_backup_failing",
@@ -1480,6 +1481,104 @@
       ],
       "type": "object"
     },
+    "runtime": {
+      "additionalProperties": false,
+      "properties": {
+        "cap_drop": {
+          "description": "Linux capabilities to drop, such as NET_RAW or ALL.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "dns": {
+          "description": "DNS servers (IP addresses).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "extra_hosts": {
+          "description": "Extra /etc/hosts entries as hostname:ip.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "init": {
+          "description": "Run a minimal init as PID 1 to reap zombies and forward signals.",
+          "type": "boolean"
+        },
+        "pids_limit": {
+          "description": "Maximum processes in the container.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "read_only": {
+          "description": "Mount the root filesystem read-only (same as security.read_only_rootfs).",
+          "type": "boolean"
+        },
+        "shm_size": {
+          "description": "Size of /dev/shm, such as 256m or 1g.",
+          "pattern": "^[0-9]+[kKmMgG]?$",
+          "type": "string"
+        },
+        "stop_timeout": {
+          "description": "Seconds to wait after SIGTERM before SIGKILL.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sysctls": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "description": "Namespaced kernel settings from a fixed net.* allowlist.",
+          "type": "object"
+        },
+        "tmpfs": {
+          "description": "In-memory mounts as /path:size=64m[,mode=1777,...]; size is required.",
+          "items": {
+            "pattern": "^/",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ulimits": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "hard": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "soft": {
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "soft",
+                  "hard"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "description": "Resource limits: nofile, nproc, cpu, core, stack, memlock, fsize. An integer sets soft and hard.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "security": {
       "additionalProperties": false,
       "properties": {
@@ -1751,6 +1850,10 @@
             "$ref": "#/$defs/route"
           },
           "type": "array"
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtime",
+          "description": "Allowlisted docker run options."
         },
         "security": {
           "$ref": "#/$defs/security",

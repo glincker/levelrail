@@ -109,6 +109,7 @@ type Engine struct {
 	versionSkewCache    *upgrade.Cache
 
 	emailDelivery EmailDeliverySource
+	cleanup       CleanupSource
 
 	budgets       BudgetSource
 	budgetTracker *budgetTracker
@@ -223,6 +224,9 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 
 // SetEmailDelivery enables kind=email_delivery_failing rules.
 func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
+// SetCleanup enables kind=cleanup_failing rules.
+func (e *Engine) SetCleanup(src CleanupSource) { e.cleanup = src }
 
 // SetMonitorDowns wires the source the monitor_down rule reads; unset keeps the rule inert.
 func (e *Engine) SetMonitorDowns(src MonitorDownSource) { e.monitorDowns = src }
@@ -591,6 +595,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, backupMissingNoticeText, err = EvaluateEmailDeliveryFailing(ctx, e.emailDelivery, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindCleanupFailing:
+			if e.cleanup == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateCleanupFailing(ctx, e.cleanup, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue

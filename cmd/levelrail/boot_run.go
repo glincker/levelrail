@@ -58,36 +58,32 @@ func bootAndServe(ctx context.Context, stop context.CancelFunc, logger *slog.Log
 	s := &bootState{ctx: ctx, stop: stop, logger: logger, ledger: ledger, bootPolicy: policy}
 	defer s.runDeferred()
 
-	if err := s.openStore(); err != nil {
-		return err
+	stages := []struct {
+		name string
+		fn   func() error
+	}{
+		{"store", s.openStore},
+		{"docker", s.openDocker},
+		{"identity", s.bootIdentity},
+		{"telemetry_stores", s.openTelemetryStores},
+		{"agent_server", s.startAgentServer},
+		{"secrets_notifiers", func() error { s.loadSecretsAndNotifiers(); return nil }},
+		{"runners", s.buildRunners},
+		{"build_ingress", func() error { s.startBuildAndIngress(); return nil }},
+		{"router", func() error { s.wireRouter(); s.wireProcfilePort(); return nil }},
+		{"mesh", s.startMesh},
+		{"reconciler", func() error { s.startReconciler(); return nil }},
+		{"telemetry", func() error { s.startTelemetry(); return nil }},
+		{"alerting", func() error { s.startAlerting(); return nil }},
+		{"heartbeat", func() error { s.startHeartbeat(); return nil }},
+		{"monitors", func() error { s.startMonitors(); return nil }},
+		{"disk_history", func() error { s.startDiskHistory(); return nil }},
+		{"schedulers", func() error { s.startSchedulers(); return nil }},
 	}
-	if err := s.openDocker(); err != nil {
-		return err
+	for _, st := range stages {
+		if err := footprint.TimeBootStage(st.name, st.fn); err != nil {
+			return err
+		}
 	}
-	if err := s.bootIdentity(); err != nil {
-		return err
-	}
-	if err := s.openTelemetryStores(); err != nil {
-		return err
-	}
-	if err := s.startAgentServer(); err != nil {
-		return err
-	}
-	s.loadSecretsAndNotifiers()
-	if err := s.buildRunners(); err != nil {
-		return err
-	}
-	s.startBuildAndIngress()
-	s.wireRouter()
-	if err := s.startMesh(); err != nil {
-		return err
-	}
-	s.startReconciler()
-	s.startTelemetry()
-	s.startAlerting()
-	s.startHeartbeat()
-	s.startMonitors()
-	s.startDiskHistory()
-	s.startSchedulers()
 	return s.serve()
 }

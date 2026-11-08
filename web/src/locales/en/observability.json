@@ -234,6 +234,11 @@
       "label": "Email delivery failing",
       "description": "Fires while outbound emails keep failing to send.",
       "action": "Check the email provider's settings and recent delivery errors, then send a test email."
+    },
+    "cleanup_failing": {
+      "label": "Data cleanup failing",
+      "description": "Fires while scheduled or manual data cleanup runs keep failing.",
+      "action": "Open Cleanup, read the error on the failed run, then run that data type again."
     }
   },
   "budgetThreshold": {

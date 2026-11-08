@@ -3,6 +3,7 @@ package footprint
 
 import (
 	"log/slog"
+	"math"
 	"os"
 	"runtime/debug"
 	"strconv"
@@ -64,9 +65,15 @@ func ApplyMemoryLimit(getenv func(string) string, logger *slog.Logger) MemoryLim
 		applied = MemoryLimit{LimitBytes: debug.SetMemoryLimit(-1), Source: "env", Percent: pct}
 		return applied
 	}
+	return ApplyMemoryLimitPercent(pct, logger)
+}
+
+// ApplyMemoryLimitPercent sets the soft limit to pct of system memory, or lifts it when pct is 0 or the result is too small to be safe. The caller checks GOMEMLIMIT first.
+func ApplyMemoryLimitPercent(pct int, logger *slog.Logger) MemoryLimit {
 	total, source := systemMemory()
 	limit := LimitFor(total, pct)
 	if limit == 0 {
+		debug.SetMemoryLimit(math.MaxInt64)
 		applied = MemoryLimit{Source: "none", Percent: pct}
 		return applied
 	}

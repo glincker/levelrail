@@ -164,6 +164,8 @@ The same baseline is compiled into the control plane, so a running instance can 
 
 The status is `tolerance_unset` until all four `IDLE_TOL_*` variables are set on the control plane, and `no_baseline` on a platform with no committed row (for example macOS). The node agent's footprint is not measured by this card.
 
+The same payload carries `boot_stages` (one entry per startup step with `duration_ms`) and `boot_total_ms`, the sum of those steps. `system health` prints them under the idle line. These numbers are unmeasured: no baseline row records boot time yet, and no real host has been timed.
+
 ## Caveats
 
 - One machine, one run per configuration. Expect run-to-run variance of roughly 10 to 15% on RSS and CPU.

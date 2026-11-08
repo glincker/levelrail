@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"os"
@@ -37,19 +38,14 @@ func (rt *Router) imagePruneSchedule(ctx context.Context) string {
 // schedule. It does nothing while the schedule is off.
 func (rt *Router) RunImagePrune(ctx context.Context) {
 	last := time.Now()
-	t := time.NewTicker(imagePruneTick)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case now := <-t.C:
-			if rt.imagePruneDue(ctx, last, now) {
-				last = now
-				rt.pruneImagesOnce(ctx)
-			}
+	_ = footprint.Every(ctx, "image prune", imagePruneTick, rt.logger, func(ctx context.Context) error {
+		now := time.Now()
+		if rt.imagePruneDue(ctx, last, now) {
+			last = now
+			rt.pruneImagesOnce(ctx)
 		}
-	}
+		return nil
+	})
 }
 
 func (rt *Router) imagePruneDue(ctx context.Context, last, now time.Time) bool {

@@ -319,7 +319,10 @@ func (rt *Router) idleAssessment(p *ControlPlaneProbe) footprint.Assessment {
 	}
 	cur := footprint.Snapshot(footprint.CPUWindowFromEnv(os.Getenv), apps)
 	tol, err := footprint.ToleranceFromEnv(os.Getenv)
-	return footprint.Assess(cur, footprint.Baseline(), runtime.GOOS, runtime.GOARCH, tol, err)
+	a := footprint.Assess(cur, footprint.Baseline(), runtime.GOOS, runtime.GOARCH, tol, err)
+	a.BootStages = footprint.BootStages()
+	a.BootTotalMS = float64(footprint.BootTotal()) / float64(time.Millisecond)
+	return a
 }
 
 func (rt *Router) handleGetIdleFootprint(w http.ResponseWriter, _ *http.Request) {

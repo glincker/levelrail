@@ -48,6 +48,11 @@ export const ALERT_KIND_COPY = {
     description: 'alertKinds.email_delivery_failing.description',
     action: 'alertKinds.email_delivery_failing.action',
   },
+  cleanup_failing: {
+    label: 'alertKinds.cleanup_failing.label',
+    description: 'alertKinds.cleanup_failing.description',
+    action: 'alertKinds.cleanup_failing.action',
+  },
 } as const
 
 export type AlertKindCopyKind = keyof typeof ALERT_KIND_COPY

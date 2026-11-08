@@ -426,17 +426,22 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	defer cleanup()
 
 	// Services fan out via DeploySpec. validateGitSourceServices makes them mutually exclusive with AdditionalServices, so this is the one decision point.
-	if len(gs.Services) > 0 {
+	// A never-deployed app whose repo has only a Procfile fans out too; a deployed app keeps its single-service route.
+	if len(gs.Services) > 0 || rt.procfileFanout(ctx, existing, gs, sourceDir) {
 		appName := existing.AppID
 		if appName == "" {
 			appName = name
 		}
-		failed := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, commitLabel)
+		failed, warnings := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, commitLabel)
 		status := http.StatusOK
 		if failed > 0 {
 			status = http.StatusMultiStatus
 		}
-		return status, fmt.Sprintf("services deploy triggered for app %q (%d service(s) failed)\n", appName, failed)
+		msg := fmt.Sprintf("services deploy triggered for app %q (%d service(s) failed)\n", appName, failed)
+		for _, w := range warnings {
+			msg += "warning: " + w + "\n"
+		}
+		return status, msg
 	}
 
 	gitBuild, err := gs.SpecBuild()
@@ -647,9 +652,18 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 	return failed
 }
 
+// procfileFanout reports whether a push should take the DeploySpec fan-out only because the checkout has a Procfile and no app spec.
+func (rt *Router) procfileFanout(ctx context.Context, existing *store.DesiredService, gs store.GitSource, sourceDir string) bool {
+	if existing.Image != "" || len(gs.AdditionalServices) > 0 || len(gs.Databases) > 0 {
+		return false
+	}
+	_, _, ok, err := deploy.ProcfileServices(sourceDir, rt.procfileWebPort(ctx))
+	return err == nil && ok
+}
+
 // Routes a webhook push through the same DeploySpec fan-out as the manual deploy-spec API.
 // appName matches DeploySpec's default so a push reuses the existing app group. Returns the failed key count.
-func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, gs store.GitSource, sourceDir, commitSHA string) int {
+func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, gs store.GitSource, sourceDir, commitSHA string) (int, []string) {
 	progress := func(serviceKey string, ev build.ProgressEvent) {
 		rt.logger.Info("api: git push webhook: services fan-out build progress", slog.String("app_name", appName), slog.String("service_key", serviceKey), slog.String("step", ev.Step), slog.Bool("completed", ev.Completed), slog.String("error", ev.Error))
 	}
@@ -663,9 +677,16 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 	}, progress)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: services fan-out failed", slog.String("app_name", appName), slog.String("error", err.Error()))
-		return len(gs.Services)
+		return max(len(gs.Services), 1), nil
 	}
+	var warnings []string
 
+	if len(outcomes) > 0 {
+		warnings = outcomes[0].Warnings
+		for _, w := range warnings {
+			rt.logger.Warn("api: git push webhook: services fan-out: translation finding", slog.String("app_name", appName), slog.String("finding", w))
+		}
+	}
 	failed := 0
 	for _, o := range outcomes {
 		if o.Err != nil {
@@ -675,7 +696,7 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 		}
 		rt.logger.Info("api: git push webhook: services fan-out: service deployed", slog.String("app_name", appName), slog.String("service_key", o.ServiceKey), slog.String("image", o.Image))
 	}
-	return failed
+	return failed, warnings
 }
 
 // Checks a push webhook against secret using the scheme the headers indicate: GitHub and Bitbucket sign the body (HMAC),

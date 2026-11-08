@@ -39,6 +39,8 @@ builds.memory_limit_mb
 cdn.purge_history
 certificates.weekly_issue_warn
 cleanup.enabled
+cleanup.failing_floor
+cleanup.failing_window
 cleanup.interval
 compose.depends_on_timeout
 containers.restart_policy
@@ -56,6 +58,7 @@ deploy.drain_timeout
 deploy.explain_log_lines
 deploy.max_concurrent
 deploy.previous_release_hold
+deploy.procfile_default_port
 deploy.receipt_approval_window
 deploy.stable_window
 deploy.watch_window
@@ -86,6 +89,10 @@ domains.parked_retention_days
 domains.rollback_window_minutes
 domains.www_mode
 firewall.confirm_window
+footprint.gc_percent
+footprint.memlimit_percent
+footprint.trim_interval
+footprint.trim_min_idle_mb
 games.status_cache
 games.status_timeout
 git.ssh_scan_allow_internal

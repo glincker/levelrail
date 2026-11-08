@@ -428,7 +428,7 @@ worker: bundle exec sidekiq
 release: bundle exec rake db:migrate
 ```
 
-- One service per process type. `web` gets the port (default 8080, seeded by `LEVELRAIL_PROCFILE_PORT`) and `PORT` set to match. Other types are workers; the port the spec requires on every service is set but nothing needs to listen on it.
+- One service per process type. `web` gets the port (default 8080, set by the `deploy.procfile_default_port` runtime setting) and `PORT` set to match. Other types are workers; the port the spec requires on every service is set but nothing needs to listen on it.
 - `release:` becomes `hooks.preDeploy` on `web`, or on the first process when there is no `web` line.
 - With a `Dockerfile` in the repo, services build from it and each Procfile command replaces the image `CMD` for that service. Without one, Railpack builds the app.
 - `app.json` keys: `healthchecks` map to `health` (`startup` and `readiness` to readiness, `liveness` to liveness), `cron` entries to `jobs`, `scripts.dokku.predeploy` and `postdeploy` (and `scripts.postdeploy`) to hooks, `formation.<type>.quantity` to `replicas`, `env` values to service env.

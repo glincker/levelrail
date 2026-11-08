@@ -56,6 +56,8 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	fs.StringVar(&f.memory, "memory", "", "memory limit, e.g. 512Mi or 2Gi (default: the app spec's, then unlimited)")
 	fs.Float64Var(&f.cpu, "cpu", 0, "CPU limit in cores, e.g. 0.5 (default: the app spec's, then unlimited)")
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (default: the directory's remote \"origin\")")
+	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the project directory (overrides levelrail-definition.json)")
+	fs.StringVar(&f.image, "image", "", "ignore levelrail-definition.json and use detection")
 	fs.StringVar(&f.ref, "ref", "", "git branch to build (default: the current branch, then main)")
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var as KEY=VALUE, repeatable, for a required secret the app spec declares")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the inferred settings and the exact commands, change nothing")

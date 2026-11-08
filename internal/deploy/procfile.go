@@ -7,15 +7,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/configtranslate"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
-
-// EnvProcfilePort seeds the port given to a Procfile web service, which the
-// source has no way to declare.
-const EnvProcfilePort = "LEVELRAIL_PROCFILE_PORT"
 
 // maxProcfileBytes bounds a Procfile or app.json read from an untrusted checkout.
 const maxProcfileBytes = 1 << 20
@@ -23,8 +18,10 @@ const maxProcfileBytes = 1 << 20
 // ProcfileServices translates a checkout's Procfile and app.json into a
 // services map when the checkout has no app spec. ok is false when the
 // fallback does not apply, so existing behavior is untouched. The findings
-// list every unsupported or lossy key, so the caller can show them.
-func ProcfileServices(sourceDir string) (services map[string]spec.Service, findings []configtranslate.Finding, ok bool, err error) {
+// list every unsupported or lossy key, so the caller can show them. webPort is
+// the port given to the web process, which a Procfile cannot declare; 0 keeps
+// the translator default.
+func ProcfileServices(sourceDir string, webPort int) (services map[string]spec.Service, findings []configtranslate.Finding, ok bool, err error) {
 	if sourceDir == "" {
 		return nil, nil, false, nil
 	}
@@ -50,7 +47,7 @@ func ProcfileServices(sourceDir string) (services map[string]spec.Service, findi
 
 	res := configtranslate.Translate(files,
 		configtranslate.ForDeploy(dockerErr == nil),
-		configtranslate.WithWebPort(procfilePort()))
+		configtranslate.WithWebPort(webPort))
 	for _, f := range res.Findings {
 		if f.Severity == configtranslate.SeverityBlocker {
 			return nil, res.Findings, false, fmt.Errorf("deploy: %s: %s", f.Source, f.Message)
@@ -104,13 +101,4 @@ func readRepoFile(dir, name string) ([]byte, bool, error) {
 		return nil, false, fmt.Errorf("deploy: read %s: %w", name, err)
 	}
 	return b, true, nil
-}
-
-func procfilePort() int {
-	if v := os.Getenv(EnvProcfilePort); v != "" {
-		if p, err := strconv.Atoi(v); err == nil && p > 0 && p < 65536 {
-			return p
-		}
-	}
-	return configtranslate.DefaultWebPort
 }

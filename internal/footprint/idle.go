@@ -144,6 +144,9 @@ type Assessment struct {
 	Baseline  *BaselineRow  `json:"baseline,omitempty"`
 	Tolerance *Tolerance    `json:"tolerance,omitempty"`
 	Checks    []MetricCheck `json:"checks"`
+	// BootStages and BootTotalMS are additive and filled by the API layer; unmeasured until a real host reports them.
+	BootStages  []BootStage `json:"boot_stages,omitempty"`
+	BootTotalMS float64     `json:"boot_total_ms,omitempty"`
 }
 
 // Assess compares a reading with the baseline row for this platform. The baseline records a peak RSS, so live RSS is held to the peak limit.

@@ -1,13 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/defparse"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/kit/stackdetect"
 )
@@ -19,16 +22,19 @@ const (
 	srcDetected = "detected"
 	srcGit      = "git remote"
 	srcDefault  = "default"
+	srcDefFile  = "definition file"
 )
 
 // upFlags are the values `up` takes from the command line; zero means unset.
 type upFlags struct {
 	name, domain, repo, ref, strategy, memory string
-	port, replicas                            int
-	cpu                                       float64
-	with                                      []string
-	secrets                                   map[string]string
-	upload                                    bool
+	// dockerfile and image are explicit overrides; they win over a definition file.
+	dockerfile, image string
+	port, replicas    int
+	cpu               float64
+	with              []string
+	secrets           map[string]string
+	upload            bool
 }
 
 // upDatabase is one --with entry. An empty Version means the server's default for the engine.
@@ -75,7 +81,7 @@ func inferUp(dir string, f upFlags, git gitSource) (upInference, error) {
 		if err := inf.applySpec(path, f, git); err != nil {
 			return inf, err
 		}
-	} else if err := inf.applyDetection(f, git); err != nil {
+	} else if err := inf.applyDetectionOrDefinition(f, git); err != nil {
 		return inf, err
 	}
 
@@ -91,6 +97,9 @@ func inferUp(dir string, f upFlags, git gitSource) (upInference, error) {
 		inf.Flags.imageRepo, inf.Sources["image repo"] = inf.Flags.name, srcDefault
 	}
 	inf.Flags.secrets = f.secrets
+	if f.dockerfile != "" {
+		inf.Flags.dockerfile, inf.Sources["dockerfile"] = f.dockerfile, srcFlag
+	}
 
 	inf.applyOverrides(f)
 	if err := inf.parseResources(f); err != nil {
@@ -176,6 +185,76 @@ func firstPort(flagPort, specPort, detected int, static bool) (int, string) {
 		return detected, srcDetected
 	}
 	return 0, ""
+}
+
+// applyDetectionOrDefinition prefers a definition file in the project directory
+// unless an explicit --dockerfile or --image was given.
+func (inf *upInference) applyDetectionOrDefinition(f upFlags, git gitSource) error {
+	if f.dockerfile != "" || f.image != "" {
+		return inf.applyDetection(f, git)
+	}
+	data, err := readDefinition(inf.Dir)
+	if err != nil {
+		return err
+	}
+	if data == nil {
+		return inf.applyDetection(f, git)
+	}
+	def, err := defparse.Parse(data)
+	if err != nil {
+		return newValidationError("%v", err)
+	}
+	return inf.applyDefinition(def, f, git)
+}
+
+// readDefinition returns nil when the file is absent. Reads one byte past the cap so
+// Parse can report an oversize file without buffering all of it.
+func readDefinition(dir string) ([]byte, error) {
+	fh, err := os.Open(filepath.Join(dir, defparse.FileName)) //nolint:gosec // the project directory the operator pointed at
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read %s: %w", defparse.FileName, err)
+	}
+	defer func() { _ = fh.Close() }()
+	buf := make([]byte, defparse.MaxBytes+1)
+	n, err := io.ReadFull(fh, buf)
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("read %s: %w", defparse.FileName, err)
+	}
+	return buf[:n], nil
+}
+
+func (inf *upInference) applyDefinition(def defparse.Def, f upFlags, git gitSource) error {
+	switch {
+	case def.DockerfilePath == "" && len(def.DockerfileLines) > 0:
+		return newValidationError("%s has dockerfileLines (first: %q); up never writes a Dockerfile into your folder, put the lines in a Dockerfile and set dockerfilePath", defparse.FileName, def.DockerfileLines[0])
+	case def.DockerfilePath == "":
+		return newValidationError("%s sets imageName %q; up builds from git, use \"deploy NAME --image IMAGE\" for a prebuilt image", defparse.FileName, def.ImageName)
+	}
+	if st, err := os.Stat(filepath.Join(inf.Dir, filepath.FromSlash(def.DockerfilePath))); err != nil || st.IsDir() {
+		return newValidationError("%s dockerfilePath %q is not a file in %s", defparse.FileName, def.DockerfilePath, inf.Dir)
+	}
+	inf.Notes = append(inf.Notes, "using the definition file "+defparse.FileName)
+	if def.ImageName != "" {
+		inf.Notes = append(inf.Notes, "definition file imageName is ignored, the Dockerfile build wins")
+	}
+	inf.Sources["build"], inf.Sources["dockerfile"] = srcDefFile, srcDefFile
+	inf.Flags = createFlags{buildType: spec.BuildDockerfile, baseDirectory: git.RelDir, dockerfile: def.DockerfilePath}
+	name := inf.Stack.Name
+	if name == "" {
+		name = strings.Trim(dbNamePattern.ReplaceAllString(strings.ToLower(filepath.Base(inf.Dir)), "-"), "-")
+	}
+	inf.Flags.name, inf.Sources["name"] = name, srcDetected
+	if f.name != "" {
+		inf.Flags.name, inf.Sources["name"] = f.name, srcFlag
+	}
+	inf.Flags.port, inf.Sources["port"] = firstPort(f.port, 0, inf.Stack.Port, false)
+	if inf.Flags.port == 0 {
+		return newValidationError("no port found for %s, pass --port N", inf.Dir)
+	}
+	return nil
 }
 
 func (inf *upInference) applyDetection(f upFlags, git gitSource) error {

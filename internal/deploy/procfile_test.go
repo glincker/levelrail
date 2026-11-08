@@ -22,7 +22,7 @@ func writeRepo(t *testing.T, files map[string]string) string {
 
 func TestProcfileServicesFanOut(t *testing.T) {
 	dir := writeRepo(t, map[string]string{"Procfile": "web: node server.js\nworker: node jobs.js\n"})
-	svcs, findings, ok, err := ProcfileServices(dir)
+	svcs, findings, ok, err := ProcfileServices(dir, 0)
 	if err != nil || !ok {
 		t.Fatalf("ok=%v err=%v", ok, err)
 	}
@@ -42,21 +42,21 @@ func TestProcfileServicesFanOut(t *testing.T) {
 
 func TestProcfileServicesSkippedWithAppSpec(t *testing.T) {
 	dir := writeRepo(t, map[string]string{"Procfile": "web: x\n", "app.yaml": "version: 1\n"})
-	if _, _, ok, err := ProcfileServices(dir); ok || err != nil {
+	if _, _, ok, err := ProcfileServices(dir, 0); ok || err != nil {
 		t.Fatalf("ok=%v err=%v, want skipped", ok, err)
 	}
 }
 
 func TestProcfileServicesSkippedWithoutProcfile(t *testing.T) {
 	dir := writeRepo(t, map[string]string{"app.json": "{}"})
-	if _, _, ok, err := ProcfileServices(dir); ok || err != nil {
+	if _, _, ok, err := ProcfileServices(dir, 0); ok || err != nil {
 		t.Fatalf("ok=%v err=%v, want skipped", ok, err)
 	}
 }
 
 func TestProcfileServicesBadAppJSON(t *testing.T) {
 	dir := writeRepo(t, map[string]string{"Procfile": "web: x\n", "app.json": "{nope"})
-	_, _, ok, err := ProcfileServices(dir)
+	_, _, ok, err := ProcfileServices(dir, 0)
 	if ok || err == nil || !strings.Contains(err.Error(), "app.json") {
 		t.Fatalf("ok=%v err=%v", ok, err)
 	}
@@ -67,7 +67,7 @@ func TestProcfileServicesSkipsDatabases(t *testing.T) {
 		"Procfile": "web: x\n",
 		"app.json": `{"addons":["heroku-postgresql:essential-0"]}`,
 	})
-	svcs, findings, ok, err := ProcfileServices(dir)
+	svcs, findings, ok, err := ProcfileServices(dir, 0)
 	if err != nil || !ok {
 		t.Fatalf("ok=%v err=%v", ok, err)
 	}
@@ -85,7 +85,7 @@ func TestProcfileServicesSkipsDatabases(t *testing.T) {
 
 func TestProcfileServicesDockerfile(t *testing.T) {
 	dir := writeRepo(t, map[string]string{"Procfile": "web: serve\n", "Dockerfile": "FROM scratch\n"})
-	svcs, _, ok, err := ProcfileServices(dir)
+	svcs, _, ok, err := ProcfileServices(dir, 0)
 	if err != nil || !ok {
 		t.Fatalf("ok=%v err=%v", ok, err)
 	}
@@ -99,7 +99,7 @@ func TestProcfileServicesAppJSONParsesAsSpec(t *testing.T) {
 		"Procfile": "web: serve\nrelease: migrate\n",
 		"app.json": `{"healthchecks":{"web":[{"type":"startup","path":"/up"}]},"cron":[{"command":"tidy","schedule":"0 3 * * *"}],"formation":{"web":{"quantity":2}},"scripts":{"dokku":{"postdeploy":"warm"}}}`,
 	})
-	svcs, _, ok, err := ProcfileServices(dir)
+	svcs, _, ok, err := ProcfileServices(dir, 0)
 	if err != nil || !ok {
 		t.Fatalf("ok=%v err=%v", ok, err)
 	}
@@ -117,7 +117,7 @@ func TestProcfileServicesReadsChecksFile(t *testing.T) {
 		"Procfile": "web: node server.js\n",
 		"CHECKS":   "TIMEOUT=5\nATTEMPTS=10\n/health\n",
 	})
-	svcs, _, ok, err := ProcfileServices(dir)
+	svcs, _, ok, err := ProcfileServices(dir, 0)
 	if err != nil || !ok {
 		t.Fatalf("ok=%v err=%v", ok, err)
 	}
@@ -127,5 +127,16 @@ func TestProcfileServicesReadsChecksFile(t *testing.T) {
 	}
 	if h.Readiness.Path != "/health" || h.Readiness.Timeout == "" || h.Readiness.Failures != 10 {
 		t.Errorf("readiness = %+v", h.Readiness)
+	}
+}
+
+func TestProcfileServicesUsesGivenWebPort(t *testing.T) {
+	dir := writeRepo(t, map[string]string{"Procfile": "web: node server.js\n"})
+	svcs, _, ok, err := ProcfileServices(dir, 9123)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	if got := svcs["web"].Port; got != 9123 {
+		t.Fatalf("web port = %d, want 9123", got)
 	}
 }

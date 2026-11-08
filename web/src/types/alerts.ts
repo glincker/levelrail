@@ -49,6 +49,7 @@ export type AlertRuleKind =
   | 'log_level_rate'
   | 'budget_threshold'
   | 'email_delivery_failing'
+  | 'cleanup_failing'
   | 'deploy_failed'
   | 'monitor_down'
   | 'database_disk_high'

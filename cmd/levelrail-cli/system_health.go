@@ -83,6 +83,12 @@ func printIdleFootprint(out io.Writer, a footprint.Assessment) {
 	if a.Detail != "" {
 		_, _ = fmt.Fprintf(out, "  %s\n", a.Detail)
 	}
+	if len(a.BootStages) > 0 {
+		_, _ = fmt.Fprintf(out, "  boot: %.0f ms in %d stages\n", a.BootTotalMS, len(a.BootStages))
+		for _, st := range a.BootStages {
+			_, _ = fmt.Fprintf(out, "    %-24s %8.1f ms\n", st.Name, st.DurationMS)
+		}
+	}
 	for _, c := range a.Checks {
 		mark := "ok  "
 		if !c.OK {

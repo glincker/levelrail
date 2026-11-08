@@ -81,6 +81,8 @@ type deploySpecResponse struct {
 	AppID        string                    `json:"app_id"`
 	Services     []deploySpecServiceResult `json:"services"`
 	AllSucceeded bool                      `json:"all_succeeded"`
+	// Warnings are config translation findings, one line each, such as keys a Procfile or app.json deploy could not carry over.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Builds run in sequence and block the response, since no build-progress stream exists yet.
@@ -215,6 +217,9 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 			rt.logger.Error("api: deploy spec: service failed", slog.String("name", name), slog.String("service_key", o.ServiceKey), slog.String("error", o.Err.Error()))
 		}
 		resp.Services = append(resp.Services, result)
+		if len(resp.Warnings) == 0 {
+			resp.Warnings = o.Warnings
+		}
 	}
 
 	if app, err := rt.appGroups.GetAppByName(r.Context(), name); err == nil {

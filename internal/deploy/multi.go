@@ -93,7 +93,7 @@ var ErrNoServices = errors.New("deploy: no services to deploy")
 func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]ServiceOutcome, error) {
 	var warnings []string
 	if len(req.Services) == 0 {
-		svcs, findings, ok, err := ProcfileServices(req.SourceDir)
+		svcs, findings, ok, err := ProcfileServices(req.SourceDir, p.webPort(ctx))
 		if err != nil {
 			return nil, fmt.Errorf("deploy: app %q: %w", req.AppName, err)
 		}
@@ -182,6 +182,17 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 		outcomes[i].Warnings = warnings
 	}
 	return outcomes, nil
+}
+
+// SetProcfilePort wires the live Procfile web port source, read on every
+// deploy so a changed runtime setting applies to the next one.
+func (p *Pipeline) SetProcfilePort(f func(context.Context) int) { p.procfilePort = f }
+
+func (p *Pipeline) webPort(ctx context.Context) int {
+	if p.procfilePort == nil {
+		return 0
+	}
+	return p.procfilePort(ctx)
 }
 
 // staticOutcomeImage is a static site's ServiceOutcome.Image: the commit
