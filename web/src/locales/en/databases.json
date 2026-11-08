@@ -648,7 +648,24 @@
     "custom": {
       "title": "Not in the list? Run any database image",
       "description": "Deploy it as a regular app with a volume for its data. You get deploys, logs, metrics and rollbacks, but not the managed features of the databases above: backups with restore checks, the data browser and the database commands in the CLI."
-    }
+    },
+    "planTitle": "Deployment plan",
+    "planDescription": "Review what will be created. Nothing exists until you deploy.",
+    "searchPlaceholder": "Search resources...",
+    "searchLabel": "Search resources",
+    "tabAll": "All",
+    "tabApplications": "Applications",
+    "tabDatabases": "Databases",
+    "importTitle": "Import anything",
+    "importLabel": "Repository URL, image, docker run command, compose file or Dockerfile",
+    "importPlaceholder": "Paste a repo URL, an image, a docker run command, a docker-compose.yml or a Dockerfile",
+    "previewPlan": "Preview plan",
+    "reading": "Reading...",
+    "uploadFile": "Upload file",
+    "uploadLabel": "Upload a compose file or Dockerfile",
+    "looksLike": "Looks like: {{source}}",
+    "tryLabel": "Try:",
+    "fileTooLarge": "That file is larger than 512 KB."
   },
   "noBackups": {
     "title": "Backups",

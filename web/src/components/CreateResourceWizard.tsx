@@ -301,9 +301,9 @@ export function CreateResourceWizard({
         {importState !== null ? (
           <div className="contents">
             <DialogHeader>
-              <DialogTitle>Deployment plan</DialogTitle>
+              <DialogTitle>{t('wizard.planTitle')}</DialogTitle>
               <DialogDescription>
-                Review what will be created. Nothing exists until you deploy.
+                {t('wizard.planDescription')}
               </DialogDescription>
             </DialogHeader>
             <ImportPlanPreview
@@ -334,8 +334,8 @@ export function CreateResourceWizard({
                   onChange={(e) => {
                     setSearch(e.target.value)
                   }}
-                  placeholder="Search resources..."
-                  aria-label="Search resources"
+                  placeholder={t('wizard.searchPlaceholder')}
+                  aria-label={t('wizard.searchLabel')}
                   className="pl-8"
                 />
               </div>
@@ -347,9 +347,13 @@ export function CreateResourceWizard({
                   }}
                 >
                   <TabsList>
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="applications">Applications</TabsTrigger>
-                    <TabsTrigger value="databases">Databases</TabsTrigger>
+                    <TabsTrigger value="all">{t('wizard.tabAll')}</TabsTrigger>
+                    <TabsTrigger value="applications">
+                      {t('wizard.tabApplications')}
+                    </TabsTrigger>
+                    <TabsTrigger value="databases">
+                      {t('wizard.tabDatabases')}
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               ) : null}
@@ -363,7 +367,9 @@ export function CreateResourceWizard({
             ) : null}
             {filteredApplications.length > 0 ? (
               <div className="space-y-2">
-                <SectionTitle as="h3">Applications</SectionTitle>
+                <SectionTitle as="h3">
+                  {t('wizard.tabApplications')}
+                </SectionTitle>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {filteredApplications.map((option) => (
                     <OptionCard
@@ -381,7 +387,9 @@ export function CreateResourceWizard({
             {showDatabases ? (
               <div className="space-y-2">
                 {scope !== 'databases' && pickerEntries.length > 0 ? (
-                  <SectionTitle as="h3">Databases</SectionTitle>
+                  <SectionTitle as="h3">
+                    {t('wizard.tabDatabases')}
+                  </SectionTitle>
                 ) : null}
                 <DatabasePicker
                   entries={pickerEntries}
