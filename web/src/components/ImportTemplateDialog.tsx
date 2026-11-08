@@ -102,9 +102,21 @@ export function ImportTemplateDialog() {
     )
   })
 
-  const err = (key: keyof FormValues) => {
-    const m = formState.errors[key]?.message
-    return m ? [{ message: t(`importTemplate.${m}`) }] : []
+  const err = (key: keyof FormValues): { message?: string }[] => {
+    const m: unknown = formState.errors[key]?.message
+    if (typeof m !== 'string') return []
+    switch (m) {
+      case 'idInvalid':
+        return [{ message: t('importTemplate.idInvalid') }]
+      case 'nameRequired':
+        return [{ message: t('importTemplate.nameRequired') }]
+      case 'composeRequired':
+        return [{ message: t('importTemplate.composeRequired') }]
+      case 'variablesInvalid':
+        return [{ message: t('importTemplate.variablesInvalid') }]
+      default:
+        return [{ message: m }]
+    }
   }
 
   return (
