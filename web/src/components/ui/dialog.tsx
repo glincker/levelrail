@@ -1,5 +1,6 @@
 'use client'
 
+import '@/styles/material.css'
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -44,7 +45,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        'fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
+        'motion-scrim fixed inset-0 isolate z-50 bg-black/20 data-starting-style:opacity-0 data-ending-style:opacity-0',
         className,
       )}
       {...props}
@@ -81,7 +82,7 @@ function DialogOverlay({
 // treatment rather than a true edge-to-edge one, and sidesteps the
 // mismatch entirely by never changing the radius at all.
 const dialogContentVariants = cva(
-  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 rounded-xl bg-popover p-(--glinr-dialog-pad) text-sm text-popover-foreground shadow-dialog ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 glass glass-thick motion-overlay rounded-xl p-(--glinr-dialog-pad) text-sm text-popover-foreground outline-none',
   {
     variants: {
       size: {
@@ -124,14 +125,12 @@ function DialogContent({
   children,
   showCloseButton = true,
   size,
-  glass = false,
+  glass = true,
   ...props
 }: DialogPrimitive.Popup.Props &
   VariantProps<typeof dialogContentVariants> & {
     showCloseButton?: boolean
-    /** Opt into the glinui blurred glass surface (adr/024) instead of the
-     * default solid popover background. Additive: existing dialogs keep
-     * their current look unless they pass this explicitly. */
+    /** Glass is the default; pass false for a solid surface. */
     glass?: boolean
   }) {
   return (
@@ -141,7 +140,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           dialogContentVariants({ size, className }),
-          glass && 'glinui-glass-surface',
+          !glass && 'glass-solid',
         )}
         {...props}
       >

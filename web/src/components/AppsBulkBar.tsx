@@ -1,3 +1,4 @@
+import '@/styles/material.css'
 import { useEffect, useRef, useState } from 'react'
 import { TriangleAlertGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import {
@@ -209,7 +210,7 @@ export function AppsBulkBar({
         role="region"
         aria-label="Bulk actions"
         data-dock-avoid=""
-        className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex w-max max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-lg"
+        className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex w-max max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 glass glass-thick rounded-xl px-3 py-2"
       >
         <span className="text-sm font-medium">{selected.length} selected</span>
         <select

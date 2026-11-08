@@ -1,0 +1,144 @@
+/* Glass material tiers and overlay motion. Solid by default, glass only where
+   backdrop-filter exists and the user has not asked for less transparency. */
+
+.glass {
+  --glass-fill: var(--glinr-surface-glass-solid);
+  --glass-blur: 0px;
+  --glass-sat: 1;
+  --glass-radius: 1rem;
+  --glass-pad: 0px;
+  background-color: var(--glass-fill);
+  border: 1px solid var(--glinr-glass-edge);
+  box-shadow:
+    var(--glinr-specular),
+    var(--glinr-glass-inner),
+    var(--glinr-shadow-float);
+}
+
+.glass-ultrathin {
+  --glass-fill: var(--glinr-material-ultrathin);
+  --glass-blur: var(--glinr-blur-ultrathin);
+  --glass-sat: var(--glinr-saturate-ultrathin);
+}
+.glass-thin {
+  --glass-fill: var(--glinr-material-thin);
+  --glass-blur: var(--glinr-blur-thin);
+  --glass-sat: var(--glinr-saturate-thin);
+}
+.glass-regular {
+  --glass-fill: var(--glinr-material-regular);
+  --glass-blur: var(--glinr-blur-regular);
+  --glass-sat: var(--glinr-saturate-regular);
+}
+.glass-thick {
+  --glass-fill: var(--glinr-material-thick);
+  --glass-blur: var(--glinr-blur-thick);
+  --glass-sat: var(--glinr-saturate-thick);
+}
+.glass-tinted {
+  --glass-fill: var(--glinr-material-tinted);
+  --glass-blur: var(--glinr-blur-tinted);
+  --glass-sat: var(--glinr-saturate-tinted);
+}
+
+/* Without backdrop-filter the translucent fills would show content through, so keep them solid. */
+.glass:not(.glass-solid) {
+  background-color: var(--glinr-surface-glass-solid);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass:not(.glass-solid) {
+    background-color: var(--glass-fill);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass:not(.glass-solid) {
+    background-color: var(--glinr-surface-glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .glass:not(.glass-solid) {
+    background-color: var(--glinr-surface-glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--glinr-color-border-strong);
+  }
+}
+
+/* Inner shapes inside a padded glass shell keep a concentric radius. */
+.glass-concentric {
+  border-radius: max(0.25rem, calc(var(--glass-radius) - var(--glass-pad)));
+}
+
+/* Overlay motion: transform and opacity only, exit faster than enter.
+   Uses the per-primitive starting/ending attributes plus @starting-style for first paint. */
+.motion-overlay {
+  transition-property: opacity, scale, translate, display, overlay;
+  transition-behavior: allow-discrete;
+  transition-duration: var(--glinr-dur-popover);
+  transition-timing-function: var(--glinr-ease-spring);
+  scale: 1;
+  opacity: 1;
+}
+.motion-overlay[data-starting-style] {
+  opacity: 0;
+  scale: 0.96;
+}
+.motion-overlay[data-ending-style] {
+  opacity: 0;
+  scale: 0.96;
+  transition-duration: var(--glinr-motion-fast);
+  transition-timing-function: var(--glinr-ease-out);
+}
+@starting-style {
+  .motion-overlay[data-open] {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+.motion-sheet {
+  transition-property: opacity, translate, display, overlay;
+  transition-behavior: allow-discrete;
+  transition-duration: var(--glinr-dur-sheet);
+  transition-timing-function: var(--glinr-ease-spring);
+}
+.motion-sheet[data-ending-style] {
+  transition-duration: var(--glinr-motion-base);
+  transition-timing-function: var(--glinr-ease-out);
+}
+
+.motion-scrim {
+  transition-property: opacity;
+  transition-duration: var(--glinr-dur-popover);
+  transition-timing-function: var(--glinr-motion-ease);
+}
+.motion-scrim[data-ending-style] {
+  transition-duration: var(--glinr-motion-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-overlay,
+  .motion-sheet {
+    transition-property: opacity, display, overlay;
+    transition-duration: var(--glinr-motion-fast);
+    transition-timing-function: linear;
+  }
+  .motion-overlay[data-starting-style],
+  .motion-overlay[data-ending-style] {
+    scale: 1;
+  }
+  .motion-sheet[data-starting-style],
+  .motion-sheet[data-ending-style] {
+    translate: 0 0;
+  }
+  @starting-style {
+    .motion-overlay[data-open] {
+      scale: 1;
+    }
+  }
+}
