@@ -241,9 +241,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if deps.secretsManager != nil {
 			tunnelTokens = deps.secretsManager
 		}
-		if experimental.Enabled(experimental.CloudflareTunnel) {
-			controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
-		}
+		// Always registered; the live switch decides each pass, so Settings needs no restart.
+		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime,
+			cloudflaretunnel.WithContainerPrefix(deps.networkPrefix),
+			cloudflaretunnel.WithEnabled(func() bool { return experimental.Enabled(experimental.CloudflareTunnel) })))
 
 		// The registry credential is generated when an operator enables the registry, so this only resolves an existing one.
 		var registryCreds registryreconcile.CredentialResolver

@@ -21,16 +21,9 @@ It is a different credential from the DNS-01 token in `domains cloudflare-dns`, 
 
 ## Turn the feature on
 
-Today the gate is startup-wired, not a runtime switch. The reconciler only starts when the control plane boots with the feature on, so set the variable and restart:
+Switch it on in Settings under beta features, or with `levelrail-cli settings beta-features set cloudflare-tunnel on`. It applies at once, with no restart: the reconciler is always registered and checks the switch on every pass. `APP_EXPERIMENTAL=cloudflare-tunnel` still works as a seed. With the switch off the API answers `404` with `experimental_feature_disabled`.
 
-```
-sudo systemctl edit levelrail
-# [Service]
-# Environment=APP_EXPERIMENTAL=cloudflare-tunnel
-sudo systemctl restart levelrail
-```
-
-Add `cloudflare-tunnel` to an existing comma separated `APP_EXPERIMENTAL` list if you already use one. The CLI reads its own environment, so set `APP_EXPERIMENTAL=cloudflare-tunnel` in the shell you run it from too. With the flag off the API answers `404` with `experimental_feature_disabled`.
+Switching it off stops reconciling and leaves any running container untouched. To remove the container, disconnect first (it deletes the token and removes the container), then switch the feature off.
 
 The control plane also needs its secrets master key. Without one, `PUT` and `DELETE` answer `501`.
 
@@ -76,5 +69,4 @@ This disables the tunnel, deletes the stored token and removes the container. It
 ## Known gaps
 
 - Not proven on a real host or a real account.
-- Enabling is gated by `APP_EXPERIMENTAL` and a restart, not a live Settings switch.
 - Status reflects the local container only.
