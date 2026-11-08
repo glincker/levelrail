@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-export type SecretProviderType = 'doppler' | 'infisical'
+export type SecretProviderType = 'doppler' | 'infisical' | 'onepassword'
 
 export interface SecretProvider {
   name: string
@@ -27,7 +27,7 @@ export interface SecretProvider {
 export interface PutSecretProviderRequest {
   type: SecretProviderType
   project: string
-  environment: string
+  environment?: string
   path?: string
   base_url?: string
   // Empty or omitted keeps the stored token.

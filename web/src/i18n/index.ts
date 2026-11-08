@@ -64,6 +64,7 @@ export const NAMESPACES = [
   'forms',
   'gitBuild',
   'appServices',
+  'runtimeOptions',
   'appRun',
   'frameworks',
   'teams',

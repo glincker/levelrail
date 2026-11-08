@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { LayersGlassIcon, RocketGlassIcon } from '@thesvg/ui-react'
 import { appGroupQueryOptions, useAppGroup } from '../../../queries/appGroup'
@@ -7,6 +8,10 @@ import { DeploySpecForm } from '../../../components/DeploySpecForm'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { Skeleton } from '@/components/ui/skeleton'
+
+const RuntimeOptionsPanel = lazy(
+  () => import('../../../components/apps/RuntimeOptionsCard'),
+)
 
 // Safe to visit for a single-service app too, see AppServicesPanel's own comment.
 export const Route = createFileRoute('/apps/$name/services')({
@@ -25,7 +30,24 @@ function ServicesSection() {
       <ComposeStackPanel appId={group.app_id} />
       <AppServicesPanel appName={name} />
       <DeploySpecForm appName={name} />
+      <Suspense fallback={null}>
+        <RuntimeOptionsPanel
+          appName={name}
+          services={serviceKeys(name, group.services)}
+        />
+      </Suspense>
     </div>
+  )
+}
+
+// The API addresses a compose member by its service key, the app itself by its name.
+function serviceKeys(app: string, services: { name: string }[]): string[] {
+  return services.map((s) =>
+    s.name === app
+      ? app
+      : s.name.startsWith(`${app}-`)
+        ? s.name.slice(app.length + 1)
+        : s.name,
   )
 }
 

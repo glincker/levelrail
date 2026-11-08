@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useIsRoot } from '../../hooks/useIsRoot'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,14 +30,17 @@ const NAME_RE = /^[a-z][a-z0-9_]{0,39}$/
 const TYPE_OPTIONS: { value: SecretProviderType; label: string }[] = [
   { value: 'doppler', label: 'Doppler' },
   { value: 'infisical', label: 'Infisical' },
+  { value: 'onepassword', label: '1Password' },
 ]
 
 function ProviderForm({
   initial,
   onDone,
+  canEdit,
 }: {
   initial: SecretProvider | null
   onDone: () => void
+  canEdit: boolean
 }) {
   const { t } = useTranslation('settings')
   const put = usePutSecretProvider()
@@ -51,6 +55,7 @@ function ProviderForm({
   const [token, setToken] = useState('')
   const [error, setError] = useState<string | null>(null)
   const isDoppler = type === 'doppler'
+  const isOnePassword = type === 'onepassword'
 
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -58,7 +63,12 @@ function ProviderForm({
       setError(t('secretProviders.errName'))
       return
     }
-    if (!project.trim() || !environment.trim()) {
+    if (isOnePassword) {
+      if (!baseUrl.trim()) {
+        setError(t('secretProviders.errBaseUrl'))
+        return
+      }
+    } else if (!project.trim() || !environment.trim()) {
       setError(t('secretProviders.errScope'))
       return
     }
@@ -73,8 +83,10 @@ function ProviderForm({
         body: {
           type,
           project: project.trim(),
-          environment: environment.trim(),
-          path: path.trim() || undefined,
+          environment: isOnePassword
+            ? undefined
+            : environment.trim() || undefined,
+          path: isOnePassword ? undefined : path.trim() || undefined,
           base_url: !isDoppler ? baseUrl.trim() || undefined : undefined,
           token: token.trim() || undefined,
         },
@@ -137,7 +149,9 @@ function ProviderForm({
           <FieldLabel htmlFor="sp-project">
             {isDoppler
               ? t('secretProviders.projectDoppler')
-              : t('secretProviders.projectInfisical')}
+              : isOnePassword
+                ? t('secretProviders.projectOnePassword')
+                : t('secretProviders.projectInfisical')}
           </FieldLabel>
           <Input
             id="sp-project"
@@ -149,46 +163,58 @@ function ProviderForm({
             }}
           />
         </Field>
-        <Field>
-          <FieldLabel htmlFor="sp-env">
-            {isDoppler
-              ? t('secretProviders.envDoppler')
-              : t('secretProviders.envInfisical')}
-          </FieldLabel>
-          <Input
-            id="sp-env"
-            value={environment}
-            disabled={put.isPending}
-            autoComplete="off"
-            onChange={(e) => {
-              setEnvironment(e.target.value)
-            }}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="sp-path">{t('secretProviders.path')}</FieldLabel>
-          <Input
-            id="sp-path"
-            value={path}
-            disabled={put.isPending}
-            autoComplete="off"
-            placeholder="/"
-            onChange={(e) => {
-              setPath(e.target.value)
-            }}
-          />
-        </Field>
+        {!isOnePassword ? (
+          <Field>
+            <FieldLabel htmlFor="sp-env">
+              {isDoppler
+                ? t('secretProviders.envDoppler')
+                : t('secretProviders.envInfisical')}
+            </FieldLabel>
+            <Input
+              id="sp-env"
+              value={environment}
+              disabled={put.isPending}
+              autoComplete="off"
+              onChange={(e) => {
+                setEnvironment(e.target.value)
+              }}
+            />
+          </Field>
+        ) : null}
+        {!isOnePassword ? (
+          <Field>
+            <FieldLabel htmlFor="sp-path">
+              {t('secretProviders.path')}
+            </FieldLabel>
+            <Input
+              id="sp-path"
+              value={path}
+              disabled={put.isPending}
+              autoComplete="off"
+              placeholder="/"
+              onChange={(e) => {
+                setPath(e.target.value)
+              }}
+            />
+          </Field>
+        ) : null}
         {!isDoppler ? (
           <Field>
             <FieldLabel htmlFor="sp-base">
-              {t('secretProviders.baseUrl')}
+              {isOnePassword
+                ? t('secretProviders.baseUrlConnect')
+                : t('secretProviders.baseUrl')}
             </FieldLabel>
             <Input
               id="sp-base"
               value={baseUrl}
               disabled={put.isPending}
               autoComplete="off"
-              placeholder="https://infisical.internal"
+              placeholder={
+                isOnePassword
+                  ? 'https://connect.internal:8080'
+                  : 'https://infisical.internal'
+              }
               onChange={(e) => {
                 setBaseUrl(e.target.value)
               }}
@@ -216,7 +242,7 @@ function ProviderForm({
         </p>
       ) : null}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={put.isPending}>
+        <Button type="submit" size="sm" disabled={put.isPending || !canEdit}>
           {put.isPending
             ? t('secretProviders.saving')
             : t('secretProviders.save')}
@@ -239,7 +265,7 @@ function ProviderRow({
   const { t } = useTranslation('settings')
   const test = useTestSecretProvider()
   const del = useDeleteSecretProvider()
-  const scheme = provider.type
+  const scheme = provider.type === 'onepassword' ? 'op' : provider.type
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2">
@@ -255,10 +281,16 @@ function ProviderRow({
           ) : null}
         </div>
         <p className="text-muted-foreground truncate text-xs">
-          {provider.project} / {provider.environment}
+          {provider.type === 'onepassword'
+            ? provider.project
+            : `${provider.project} / ${provider.environment}`}
           {provider.path ? ` ${provider.path}` : ''}
           {' · '}
-          <code>{`${scheme}://${provider.name}/SECRET`}</code>
+          <code>
+            {provider.type === 'onepassword'
+              ? `${scheme}://${provider.name}/ITEM/FIELD`
+              : `${scheme}://${provider.name}/SECRET`}
+          </code>
         </p>
         {test.data ? (
           <p
@@ -319,6 +351,7 @@ function ProviderRow({
 export default function SecretProvidersSection() {
   const { t } = useTranslation('settings')
   const { data, isPending, isError, error } = useSecretProviders()
+  const canEdit = useIsRoot()
   const [editing, setEditing] = useState<SecretProvider | 'new' | null>(null)
 
   return (
@@ -331,13 +364,15 @@ export default function SecretProvidersSection() {
             </h2>
             <p className="text-muted-foreground text-sm">
               {t('secretProviders.hint')} <code>doppler://NAME/SECRET</code>{' '}
-              <code>infisical://NAME/[dir/]SECRET</code>
+              <code>infisical://NAME/[dir/]SECRET</code>{' '}
+              <code>op://NAME/[VAULT/]ITEM/FIELD</code>
             </p>
           </div>
           {editing === null ? (
             <Button
               size="sm"
               variant="outline"
+              disabled={!canEdit}
               onClick={() => {
                 setEditing('new')
               }}
@@ -346,9 +381,15 @@ export default function SecretProvidersSection() {
             </Button>
           ) : null}
         </div>
+        {!canEdit ? (
+          <p className="text-muted-foreground text-xs">
+            {t('secretProviders.readOnly')}
+          </p>
+        ) : null}
         {editing !== null ? (
           <ProviderForm
             key={editing === 'new' ? 'new' : editing.name}
+            canEdit={canEdit}
             initial={editing === 'new' ? null : editing}
             onDone={() => {
               setEditing(null)

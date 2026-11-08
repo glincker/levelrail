@@ -26,6 +26,8 @@ Counts and sizes are bounded by the `APP_RUNTIME_*` variables, for example `APP_
 
 `GET /api/v1/apps/{name}/services/{service}/runtime` returns the options, the keys that can be changed this way, the live limits and a `revision`. `PUT` to the same path takes an object with any of `tmpfs`, `ulimits`, `init`, `stop_timeout`, `extra_hosts`, `dns`, `sysctls` and `pids_limit`; a key left out or set to `null` is cleared. Send the revision as `If-Match`: a missing header gets 428 and a stale one 412. A bad value gets 422 with an `errors` object naming each bad key. `{service}` is the app name, or a compose service name. Reading needs the read ability, writing the sensitive-write ability, and a change is recorded in the app timeline and recreates the container.
 
+In the dashboard, the app's Services tab has a Runtime options card for the same keys. It reads the editable keys and limits from the API, shows a server error at its field, and sends the revision with the save. It is read-only without the sensitive-write ability.
+
 From the CLI: `levelrail-cli apps runtime show <app>` and `apps runtime set <app> --dns 1.1.1.1 --stop-timeout 30`. `shm_size`, `read_only` and `cap_drop` are set in the spec only and are kept as they are.
 
 Refused: `cap_add`, `privileged`, `devices`, `security_opt`, host `pid`, `ipc`, `uts`, `network_mode` and `userns_mode`, and host bind mounts. Each fails validation with the key named.
