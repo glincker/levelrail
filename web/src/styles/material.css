@@ -1,3 +1,5 @@
+@import "./tokens/glinr.material.css";
+
 /* Glass material tiers and overlay motion. Solid by default, glass only where
    backdrop-filter exists and the user has not asked for less transparency. */
 
