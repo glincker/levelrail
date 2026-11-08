@@ -308,3 +308,51 @@ func specServiceNames(appName, single string, services map[string]spec.Service) 
 	}
 	return out
 }
+
+// requireEnvironmentGrant refuses a path-named environment the caller's
+// grants, team scope or IAM hide, answering like an unknown id so the 404
+// never reveals the environment exists.
+func (rt *Router) requireEnvironmentGrant(ability string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !rt.authorizeRefs(w, r, ability, notFoundAs(http.StatusNotFound, "environment not found"), environmentRef(r.PathValue("id"))) {
+			return
+		}
+		next(w, r)
+	}
+}
+
+// filterEnvironmentGrants drops environments a granted-visibility caller was
+// not given, before any paging. Unrestricted callers skip the per-row check.
+func (rt *Router) filterEnvironmentGrants(r *http.Request, envs []store.EnvironmentWithCounts) ([]store.EnvironmentWithCounts, error) {
+	return filterByEnvironmentGrant(rt, r, envs, func(e store.EnvironmentWithCounts) string { return e.ID })
+}
+
+// filterProjectEnvironmentGrants is the per-project list variant.
+func (rt *Router) filterProjectEnvironmentGrants(r *http.Request, envs []store.Environment) ([]store.Environment, error) {
+	return filterByEnvironmentGrant(rt, r, envs, func(e store.Environment) string { return e.ID })
+}
+
+func filterByEnvironmentGrant[T any](rt *Router, r *http.Request, envs []T, id func(T) string) ([]T, error) {
+	c, err := rt.newRefCaller(r)
+	if err != nil {
+		return nil, err
+	}
+	vis, err := rt.principalVisibility(r.Context(), c.principalType, c.principalID)
+	if err != nil {
+		return nil, err
+	}
+	if !vis.Restricted {
+		return envs, nil
+	}
+	out := envs[:0:0]
+	for _, e := range envs {
+		ok, err := rt.environmentRefAllowed(r.Context(), c, AbilityRead, id(e))
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}

@@ -57,6 +57,11 @@ func (rt *Router) handleListEnvironments(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: list environments failed", err, slog.String("project_id", projectID))
 		return
 	}
+	envs, err = rt.filterProjectEnvironmentGrants(r, envs)
+	if err != nil {
+		rt.internalError(w, "api: list environments: grant filter failed", err, slog.String("project_id", projectID))
+		return
+	}
 	owners := rt.loadStackOwners(r.Context())
 	out := make([]environmentResource, 0, len(envs))
 	for _, e := range envs {

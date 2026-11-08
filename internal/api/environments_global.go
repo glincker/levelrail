@@ -76,6 +76,9 @@ func (rt *Router) handleListAllEnvironments(w http.ResponseWriter, r *http.Reque
 	if err == nil {
 		envs, err = rt.filterEnvironments(r, envs)
 	}
+	if err == nil {
+		envs, err = rt.filterEnvironmentGrants(r, envs)
+	}
 	if err != nil {
 		rt.internalError(w, "api: list all environments failed", err)
 		return

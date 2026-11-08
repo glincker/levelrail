@@ -161,17 +161,18 @@ The commands you used every day, and where they went. Levelrail commands are wri
 | `letsencrypt:enable`, auto-renew | Nothing to run | Certificates are issued on first use and renewed. `domains tls-cert renew` forces it |
 | `ps:restart`, `ps:stop`, `ps:start` | `apps restart`, `apps stop`, `apps start` | One command acts on the whole app |
 | `ps:rebuild` | `apps builds trigger APP --repo URL --ref REF` | Or push again |
-| `ps:scale web=2 worker=1` | `apps scale APP --replicas N` | The `apps scale APP web=2 worker=1` form is **from v0.9.5** |
-| `run APP cmd` | `jobs run APP --command "cmd" --wait` | Runs in a fresh container. `apps run APP -- cmd` is **from v0.9.5** |
+| `ps:scale web=2 worker=1` | `apps scale APP web=2 worker=1` or `apps scale APP --replicas N` | The `service=count` pairs set one count per service of a multi-service app, can not be combined with `--replicas`, and a failed update sets the earlier services back. The pairs form is **from v0.9.5** |
+| `run APP cmd` | `apps run APP -- cmd` or `jobs run APP --command "cmd" --wait` | Runs once in a fresh container with the app's env and waits. `--service` picks a service. `apps run` is **from v0.9.5** |
 | `enter APP`, `ps:exec` | `apps exec APP -- cmd`, `apps console APP` | |
 | `logs APP -t` | `apps logs APP --follow` | `--tail N` and `--since 1h` also work. `--service` to pick one service is **from v0.9.5** |
 | `storage:mount` | `apps volumes attach APP --name N --path P` | Named volumes. A host path needs root approval and a spec file |
-| `docker-options:add` | Not available yet | Only some `docker run` flags are honoured, see [Importing apps](/importing-apps#docker-run-flags) |
+| `docker-options:add` | `apps runtime set APP --ulimit nofile=65536 --tmpfs /tmp:size=64m --init --dns IP` | Runtime options: tmpfs, ulimits, init, stop timeout, extra hosts, DNS, sysctls and pids limit. A change recreates the container. See [Runtime options](/runtime-options). Not available: `cap_add`, `privileged`, devices, `security_opt`, host namespaces and host bind mounts, which are refused with the key named |
+| `nginx:set client-max-body-size`, `proxy-read-timeout` | `domains limits set APP DOMAIN --max-body 100MiB --read-timeout 120 --write-timeout 120` | Per domain, bounded by instance ceilings. See [Domain traffic controls](/domain-traffic-controls) |
 | `network:*` | `apps connect APP DATABASE` and private networks | Different on purpose: services reach each other by name on a private network |
 | `maintenance:on`, `maintenance:off` | `domains maintenance set`, `domains maintenance clear` | Per domain, and the container keeps running |
 | `apps:lock` | `apps freeze set` | A freeze window with a reason, instead of a permanent lock |
 | `git:from-image` | `deploy APP --image IMAGE` | |
-| `git push dokku` | `git remote add` for the app, then a normal push | Beta, see [Deploy with git push](/git-push-deploy) |
+| `git push dokku` | `git remote add APP --apply`, then a normal push | `--apply` sets the remote in your local repository. Beta, see [Deploy with git push](/git-push-deploy) |
 | `postgres:create` | `databases create --name N --engine postgres --version V` | Same for the other engines in the catalog |
 | `postgres:link`, `postgres:unlink` | `apps connect APP DATABASE`, `apps disconnect APP ENV_VAR` | Injects the connection value as an env var |
 | `postgres:info`, `postgres:logs` | `databases get`, `databases logs` | |
