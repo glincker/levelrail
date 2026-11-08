@@ -3,6 +3,7 @@ import { PlayGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRunScheduledTaskNow } from '../queries/scheduledTasks'
+import { jobErrorMessage } from '../lib/jobAccess'
 import type { ScheduledTask } from '../types/scheduledTasks'
 
 // One job's "run now" trigger: a one-click action like a manual restart,
@@ -33,7 +34,10 @@ export function RunScheduledTaskButton({
             })
           },
           onError: (error) => {
-            toast.add({ title: error.message, type: 'error' })
+            toast.add({
+              title: jobErrorMessage(error, t('accessRule')),
+              type: 'error',
+            })
           },
         })
       }}

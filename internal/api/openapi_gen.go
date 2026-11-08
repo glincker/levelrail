@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2038 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2060 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -316,6 +316,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/integrations/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppIntegration", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/investigate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleInvestigate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/job-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTaskRuns", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/jobs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTasks", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/jobs", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateScheduledTask", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/jobs/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteScheduledTask", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/jobs/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledTask", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/jobs/{id}", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateScheduledTask", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/jobs/{id}/disable", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetScheduledTaskEnabled", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/jobs/{id}/enable", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetScheduledTaskEnabled", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/jobs/{id}/run", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunScheduledTaskNow", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/jobs/{id}/runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTaskRuns", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/jobs/{id}/runs/{run}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledTaskRun", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/keep", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleKeepTrialApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/listening-ports", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppListeningPorts", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLoadBalancer", Description: ""},
@@ -411,6 +421,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-deploys", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateScheduledDeploy", Description: "One-shot scheduled deploys by id (scheduled_deploys.go): create and cancel need the deploy ability, reads need read."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/scheduled-deploys/{id}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelScheduledDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-deploys/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledDeploy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTasks", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateScheduledTask", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteScheduledTask", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledTask", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateScheduledTask", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/disable", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetScheduledTaskEnabled", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/enable", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetScheduledTaskEnabled", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/run", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunScheduledTaskNow", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTaskRuns", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/runs/{run}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledTaskRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-rotation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListSecretRotation", Description: "Rotation policies hold schedule and progress only, never a value."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSecretScan", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSecretScan", Description: ""},
@@ -1328,6 +1348,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/instance/confirm-same", Ability: "AbilityRoot", Group: "Other", Handler: "handleConfirmSameInstance", Description: ""},
 	{Method: "GET", Path: "/api/v1/instance/identity", Ability: "AbilityRead", Group: "Other", Handler: "handleInstanceIdentity", Description: ""},
 	{Method: "GET", Path: "/api/v1/integrations", Ability: "AbilityRead", Group: "Other", Handler: "handleListIntegrationCatalog", Description: "Integrations (app_integrations.go): the curated internal/integrations catalog (PostHog, Sentry, etc), env-var injection only. The catalog itself is global and read-only (AbilityRead, no store involved, same shape service-templates uses); attach/detach store a field value through the app's own secrets namespace, AbilityWriteSensitive like PUT .../secrets/{key} above."},
+	{Method: "POST", Path: "/api/v1/jobs/runs", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartOneShotJob", Description: ""},
+	{Method: "GET", Path: "/api/v1/jobs/runs/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetOneShotJob", Description: ""},
 	{Method: "GET", Path: "/api/v1/loadbalancers", Ability: "AbilityRead", Group: "Other", Handler: "handleListLoadBalancers", Description: ""},
 	{Method: "GET", Path: "/api/v1/local-mode", Ability: "AbilityRead", Group: "Other", Handler: "handleGetLocalMode", Description: ""},
 	{Method: "POST", Path: "/api/v1/local-mode/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleLocalModeReset", Description: "A reset deletes every app, secret and database record of the instance, so AbilityRoot."},

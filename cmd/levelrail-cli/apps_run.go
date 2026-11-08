@@ -152,6 +152,9 @@ command's own exit code. No terminal is needed. Output is shown when the
 command finishes. Secret values are redacted from the output. Use
 "apps exec" to run inside the live container instead.
 
+Access: one-off runs and scheduled jobs follow console exec access rules,
+so this needs the root ability on the app and exec enabled for it.
+
 Exit codes: the command's code when it failed, %[5]d on timeout, 5 when the
 job failed without a command exit code (for example the container could not start).
 

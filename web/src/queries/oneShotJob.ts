@@ -109,6 +109,10 @@ export function useOneShotRun() {
   return {
     run,
     job,
+    startForbidden:
+      start.isError &&
+      start.error instanceof ApiError &&
+      start.error.status === 403,
     startError: start.isError ? start.error.message : undefined,
     pollError,
     running: start.isPending || polling,

@@ -11,5 +11,6 @@
   "state": "Estado",
   "output": "Salida",
   "empty": "(sin salida)",
-  "truncated": "La salida era más larga de lo que guarda el servidor; solo se muestra la última parte."
+  "truncated": "La salida era más larga de lo que guarda el servidor; solo se muestra la última parte.",
+  "accessRule": "Las ejecuciones puntuales y las tareas programadas siguen las reglas de acceso de la consola exec: ejecutar un comando requiere acceso root en esta app y exec activado para ella."
 }

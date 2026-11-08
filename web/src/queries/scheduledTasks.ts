@@ -191,6 +191,41 @@ export function useUpdateScheduledTask(appName: string) {
   })
 }
 
+export async function setScheduledTaskEnabled(
+  appName: string,
+  id: string,
+  enabled: boolean,
+): Promise<ScheduledTask> {
+  const action = enabled ? 'enable' : 'disable'
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}/${action}`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `${action} scheduled task failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as ScheduledTask
+}
+
+export function useSetScheduledTaskEnabled(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      setScheduledTaskEnabled(appName, id, enabled),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: scheduledTaskKeys.list(appName),
+      })
+    },
+  })
+}
+
 export async function deleteScheduledTask(
   appName: string,
   id: string,

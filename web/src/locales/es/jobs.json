@@ -180,5 +180,6 @@
     "invalid": "Introduce un número entero de {{min}} a {{max}}."
   },
   "nextRunNever": "Nunca",
-  "nextRunNeverHint": "Esta programación no tiene próxima ejecución"
+  "nextRunNeverHint": "Esta programación no tiene próxima ejecución",
+  "accessRule": "Las ejecuciones puntuales y las tareas programadas siguen las reglas de acceso de la consola exec: crear, editar o ejecutar una tarea requiere acceso root en esta app y exec activado para ella."
 }

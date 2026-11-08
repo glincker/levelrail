@@ -544,6 +544,9 @@ func (rt *Router) copyScheduledTasks(ctx context.Context, sourceApp, newApp stri
 	}
 	now := time.Now().UTC()
 	for _, t := range tasks {
+		if isOneShotTask(t) {
+			continue
+		}
 		id, err := randomScheduledTaskID()
 		if err != nil {
 			return fmt.Errorf("generate scheduled task id: %w", err)

@@ -71,13 +71,6 @@ func oneShotInit() {
 	})
 }
 
-// registerOneShotJobRoutes serves one-shot jobs. Starting one runs a command
-// right now, so it needs AbilityDeploy on the app, like "run now".
-func (rt *Router) registerOneShotJobRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/v1/jobs/runs", rt.requireAbilityForResource(AbilityDeploy, oneShotAppFromBody, rt.handleStartOneShotJob))
-	mux.HandleFunc("GET /api/v1/jobs/runs/{id}", rt.requireAbilityForResource(AbilityRead, rt.oneShotAppFromID, rt.handleGetOneShotJob))
-}
-
 // oneShotAppFromBody names the app resource from the JSON body without
 // consuming it, so the policy check sees the app the job will run against.
 func oneShotAppFromBody(r *http.Request) string {
@@ -198,11 +191,6 @@ func fromStoredOneShot(j store.OneShotJob) oneShotResponse {
 // lands in the normal run history; the answer is 202 with the job to poll.
 func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) {
 	oneShotInit()
-	attempter, ok := rt.scheduledTaskRunner.(oneShotAttempter)
-	if !ok {
-		writeError(w, http.StatusNotImplemented, "scheduled task execution is not configured on this control plane")
-		return
-	}
 	var req oneShotRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -215,7 +203,12 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.App)) {
 		return
 	}
-	if !rt.requireJobApp(w, r, req.App, "start one-shot job") {
+	if !rt.requireJobApp(w, r, req.App, "start one-shot job") || !rt.requireJobExecAccess(w, r, req.App) {
+		return
+	}
+	attempter, ok := rt.scheduledTaskRunner.(oneShotAttempter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "scheduled task execution is not configured on this control plane")
 		return
 	}
 	spec := scheduledtask.OneShotSpec{
@@ -246,8 +239,8 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 	}
 	now := time.Now().UTC()
 	task := store.ScheduledTask{
-		ID: taskID, ServiceName: req.App, Command: req.Command, Schedule: "@yearly", Enabled: false,
-		Name: "oneshot-" + jobID, Mode: store.ScheduledTaskModeFresh, TimeoutSeconds: timeout,
+		ID: taskID, ServiceName: req.App, Command: req.Command, Schedule: oneShotTaskSchedule, Enabled: false,
+		Name: oneShotTaskNamePrefix + jobID, Mode: store.ScheduledTaskModeFresh, TimeoutSeconds: timeout,
 		Source: store.ScheduledTaskSourceAPI, CreatedAt: now, UpdatedAt: now,
 	}
 	if err := rt.scheduledTasks.SaveScheduledTask(r.Context(), task); err != nil {

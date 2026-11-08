@@ -43,7 +43,7 @@ The dashboard has the same thing on an app's **Exec** tab, in the **Run in a fre
 
 ### API
 
-`POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. Starting needs the same permission as running a scheduled job now (deploy on the app); reading needs read. The `GET` answer also carries the newest attempt's `exit_code`, `run_status` and `output` (at most `APP_JOBS_MAX_OUTPUT_BYTES` bytes, default 65536, the same limit a run keeps; `output_truncated` is set when the output was cut), so one call is enough to see what the command printed.
+`POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. One-off runs and scheduled jobs follow console exec access rules: starting a one-off run, and creating, updating or running a scheduled job now, needs the root ability on the app and exec enabled for that app (`PUT /api/v1/apps/{name}/exec-access`). Reading needs read. The `GET` answer also carries the newest attempt's `exit_code`, `run_status` and `output` (at most `APP_JOBS_MAX_OUTPUT_BYTES` bytes, default 65536, the same limit a run keeps; `output_truncated` is set when the output was cut), so one call is enough to see what the command printed.
 
 ```json
 { "app": "web", "command": ["node", "scripts/backfill.js"], "completions": 10, "parallelism": 3, "backoff_limit": 4, "timeout_seconds": 900 }

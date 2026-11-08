@@ -34,6 +34,9 @@ and network, and removes it afterwards (--mode exec runs it inside the
 running container instead). <job> is the job's name or its ID. <command> is
 a real argv, no shell involved; use "sh -c '...'" for a shell pipeline.
 
+One-off runs and scheduled jobs follow console exec access rules: create,
+update and run need the root ability on the app and exec enabled for it.
+
 Flags for create and update:
   --schedule CRON        5-field cron expression
   --timezone ZONE        IANA zone the schedule is read in (default UTC)

@@ -180,5 +180,6 @@
     "invalid": "Enter a whole number from {{min}} to {{max}}."
   },
   "nextRunNever": "Never",
-  "nextRunNeverHint": "This schedule has no future run"
+  "nextRunNeverHint": "This schedule has no future run",
+  "accessRule": "One-off runs and scheduled jobs follow console exec access rules: creating, editing or running a job needs root access on this app and exec enabled for it."
 }

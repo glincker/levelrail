@@ -114,7 +114,7 @@ describe('RunCommandCard', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Run' }))
     expect(
-      await screen.findByText(/no permission to run here/),
+      await screen.findByText(/follow console exec access rules/),
     ).toBeInTheDocument()
   })
 })

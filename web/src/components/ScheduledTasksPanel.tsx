@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { nextRunDisplay } from '../lib/nextRun'
+import { jobErrorMessage } from '../lib/jobAccess'
 import { HistoryKeptCard } from './HistoryKeptCard'
 import { JobDialog } from './JobDialog'
 import { JobRunsPanel } from './JobRunsPanel'
@@ -24,7 +25,7 @@ import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
 import {
   useScheduledTasks,
-  useUpdateScheduledTask,
+  useSetScheduledTaskEnabled,
 } from '../queries/scheduledTasks'
 import type { ScheduledTask } from '../types/scheduledTasks'
 
@@ -93,8 +94,8 @@ function NextRunCell({ task }: { task: ScheduledTask }) {
   )
 }
 
-// EnabledToggle flips Enabled through the same PUT the edit dialog uses;
-// the server merges the body over the stored job, so only enabled is sent.
+// EnabledToggle uses the enable and disable actions, not the edit PUT, so
+// pausing a job needs only write access.
 function EnabledToggle({
   appName,
   task,
@@ -103,26 +104,22 @@ function EnabledToggle({
   task: ScheduledTask
 }) {
   const { t } = useTranslation('jobs')
-  const updateTask = useUpdateScheduledTask(appName)
+  const setEnabled = useSetScheduledTaskEnabled(appName)
 
   return (
     <Switch
       aria-label={t('toggle.label', { name: jobLabel(task) })}
       checked={task.enabled}
-      disabled={updateTask.isPending}
+      disabled={setEnabled.isPending}
       onCheckedChange={(checked) => {
-        updateTask.mutate(
-          {
-            id: task.id,
-            req: {
-              command: task.command,
-              schedule: task.schedule,
-              enabled: checked,
-            },
-          },
+        setEnabled.mutate(
+          { id: task.id, enabled: checked },
           {
             onError: (error) => {
-              toast.add({ title: error.message, type: 'error' })
+              toast.add({
+                title: jobErrorMessage(error, t('accessRule')),
+                type: 'error',
+              })
             },
           },
         )

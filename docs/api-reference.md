@@ -731,6 +731,26 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/protection | AbilityRead | handleGetAppProtection |
 | PUT | /api/v1/apps/{name}/protection | AbilityWriteSensitive | handlePutAppProtection |
 | DELETE | /api/v1/apps/{name}/protection | AbilityWriteSensitive | handleDeleteAppProtection |
+| POST | /api/v1/apps/{name}/jobs | AbilityRoot | handleCreateScheduledTask |
+| GET | /api/v1/apps/{name}/jobs | AbilityRead | handleListScheduledTasks |
+| GET | /api/v1/apps/{name}/jobs/{id} | AbilityRead | handleGetScheduledTask |
+| PUT | /api/v1/apps/{name}/jobs/{id} | AbilityRoot | handleUpdateScheduledTask |
+| DELETE | /api/v1/apps/{name}/jobs/{id} | AbilityWrite | handleDeleteScheduledTask |
+| POST | /api/v1/apps/{name}/jobs/{id}/run | AbilityRoot | handleRunScheduledTaskNow |
+| POST | /api/v1/apps/{name}/jobs/{id}/enable | AbilityRoot | handleSetScheduledTaskEnabled |
+| POST | /api/v1/apps/{name}/jobs/{id}/disable | AbilityWrite | handleSetScheduledTaskEnabled |
+| GET | /api/v1/apps/{name}/jobs/{id}/runs | AbilityRead | handleListScheduledTaskRuns |
+| GET | /api/v1/apps/{name}/jobs/{id}/runs/{run} | AbilityRead | handleGetScheduledTaskRun |
+| POST | /api/v1/apps/{name}/scheduled-tasks | AbilityRoot | handleCreateScheduledTask |
+| GET | /api/v1/apps/{name}/scheduled-tasks | AbilityRead | handleListScheduledTasks |
+| GET | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityRead | handleGetScheduledTask |
+| PUT | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityRoot | handleUpdateScheduledTask |
+| DELETE | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityWrite | handleDeleteScheduledTask |
+| POST | /api/v1/apps/{name}/scheduled-tasks/{id}/run | AbilityRoot | handleRunScheduledTaskNow |
+| POST | /api/v1/apps/{name}/scheduled-tasks/{id}/enable | AbilityRoot | handleSetScheduledTaskEnabled |
+| POST | /api/v1/apps/{name}/scheduled-tasks/{id}/disable | AbilityWrite | handleSetScheduledTaskEnabled |
+| GET | /api/v1/apps/{name}/scheduled-tasks/{id}/runs | AbilityRead | handleListScheduledTaskRuns |
+| GET | /api/v1/apps/{name}/scheduled-tasks/{id}/runs/{run} | AbilityRead | handleGetScheduledTaskRun |
 
 </Accordion>
 
@@ -2262,6 +2282,8 @@ Routes that do not fit an existing group.
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
 | POST | /api/v1/templates/custom | AbilityWrite | handleImportCustomTemplate |
+| POST | /api/v1/jobs/runs | AbilityRoot | handleStartOneShotJob |
+| GET | /api/v1/jobs/runs/{id} | AbilityRead | handleGetOneShotJob |
 | POST | /mcp | Public |  |
 
 ## See also

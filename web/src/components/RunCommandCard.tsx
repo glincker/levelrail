@@ -38,7 +38,8 @@ export function RunCommandCard({
   const { t } = useTranslation('appRun')
   const [line, setLine] = useState('')
   const [service, setService] = useState(services?.[0] ?? '')
-  const { run, job, startError, pollError, running } = useOneShotRun()
+  const { run, job, startError, startForbidden, pollError, running } =
+    useOneShotRun()
 
   const multi = (services?.length ?? 0) >= 2
   const target = multi && service ? `${name}-${service}` : name
@@ -50,7 +51,7 @@ export function RunCommandCard({
     run(target, argv)
   }
 
-  const error = startError ?? pollError
+  const error = startForbidden ? t('accessRule') : (startError ?? pollError)
   const done = job && job.state !== 'Running' && job.state !== ''
 
   return (
