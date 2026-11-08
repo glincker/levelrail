@@ -62,6 +62,8 @@ type rawService struct {
 	DependsOnHealthy []string `yaml:"-"`
 	// DependsOnCompleted is filled by Parse from depends_on's long form.
 	DependsOnCompleted []string `yaml:"-"`
+	// EnvFiles is filled by Parse from the raw env_file entries.
+	EnvFiles []EnvFileRef `yaml:"-"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own

@@ -30,6 +30,9 @@ func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := f.ResolveEnvFiles(sourceDir, filepath.Dir(svc.Build.Path)); err != nil {
+		return nil, nil, err
+	}
 	if err := f.ValidateForBuild(); err != nil {
 		return nil, nil, err
 	}

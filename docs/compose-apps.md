@@ -77,10 +77,16 @@ A key outside the table above does not stop the deploy, but it is never dropped 
 The warning has one fixed shape, with `top-level` in place of the service name for a top-level key:
 
 ```text
-service "web": env_file: is not supported and was ignored; move the values into environment: or the app's env vars; env_file is not read
+service "web": user: is not supported and was ignored; not applied (no per-service user field yet); set USER in the image, or wrap the start command with entrypoint:
 ```
 
 A key with no specific advice gets `remove it, or bake the setting into the image; it has no effect on how this service runs`.
+
+### env_file and extends
+
+`env_file` (a path, a list, or `{path, required}` entries) is read only for git deploys with `build.type: compose`. Paths are relative to the compose file's directory and must stay inside the repository: absolute paths, `..` escapes and symlinks leaving the checkout are rejected, as is a file larger than `APP_COMPOSE_MAX_ENV_FILE_BYTES` (default 256 KiB; the variable can only lower it). A missing file is an error naming the service and path, unless the entry has `required: false`. Files apply in order, later files win, and `environment:` overrides them all. Lines are `KEY=VALUE` with optional `export`, `#` comments and single or double quotes. Values are used as written, with no `${VAR}` expansion, the same as `environment:` in a git deploy. Error messages carry line numbers, never values.
+
+`extends: {service: name}` pointing at a service in the same file is merged before the file is read. `command` and `entrypoint` are replaced, `environment` and `labels` merge by key, `ports`, `expose` and `env_file` are concatenated, `volumes` merge by mount path, other maps merge deeply, and `depends_on`, `links` and `volumes_from` are not inherited. A missing parent or a cycle is an error. `extends` with `file:` is still ignored with a warning.
 
 ### Supported subset
 
@@ -88,7 +94,7 @@ These service keys are read. Everything else is ignored with a warning, or rejec
 
 | Group | Keys |
 | --- | --- |
-| Run | `image`, `command`, `entrypoint`, `environment`, `restart`, `pull_policy`, `profiles`, `labels` |
+| Run | `image`, `command`, `entrypoint`, `environment`, `env_file` (git deploys), `extends` (same file), `restart`, `pull_policy`, `profiles`, `labels` |
 | Network and storage | `ports`, `volumes`, `networks` (reported only) |
 | Readiness and order | `healthcheck` (`test`, `interval`, `timeout`, `retries`, `start_period`), `depends_on` |
 | Resources | `mem_limit`, `cpus`, `shm_size`, `deploy` (`replicas`, `resources.limits`, `resources.reservations.devices`) |
@@ -101,19 +107,19 @@ The five ignored keys people paste most, and the fix for each:
 
 | Key | Fix |
 | --- | --- |
-| `env_file` | Move the values into `environment:` or the app's env vars. The file is not read. |
-| `extends` | Inline the extended service's keys into the service. |
-| `container_name` | Delete it. Containers are named `<app>-<service>`. |
-| `user` | Set `USER` in the image, or wrap the start command with `entrypoint:`. |
-| `working_dir` | Set `WORKDIR` in the image, or `cd` inside `command:`. |
+| `env_file` | Read for git deploys (`build.type: compose`), then overridden by `environment:`. In a pasted file it is not read: move the values into `environment:` or the app's env vars. |
+| `extends` | Same-file `extends: {service: name}` is merged. Only `extends` with `file:` is ignored: inline those keys. |
+| `container_name` | Not applied. Containers are named `<app>-<service>`; other services reach this one by its service key. |
+| `user` | Not applied (the app spec has no per-service user field yet). Set `USER` in the image, or wrap the start command with `entrypoint:`. |
+| `working_dir` | Not applied (no per-service working directory field yet). Set `WORKDIR` in the image, or `cd` inside `command:`. |
 
 More ignored keys and their alternatives:
 
 | Ignored key | Instead |
 | --- | --- |
-| `extends` | Inline the extended service's keys. |
-| `env_file` | Move the values into `environment:` or the app's env vars. |
-| `container_name`, `hostname`, `links` | Not needed: containers are named `<app>-<service>` and services reach each other by name. |
+| `extends` with `file:` | Inline the keys from the other file. |
+| `env_file` in a pasted file | Move the values into `environment:` or the app's env vars. |
+| `container_name`, `hostname`, `links` | Not applied or needed: containers are named `<app>-<service>` and services reach each other by name. |
 | `user`, `working_dir` | Set `USER` or `WORKDIR` in the image. |
 | `cap_drop`, `pids_limit` | Not needed: every container already drops all capabilities except a minimal set and gets a process limit (`APP_CONTAINER_PIDS_LIMIT`, default 4096). |
 | `expose` | Add `ports:` for the port ingress should route to. |

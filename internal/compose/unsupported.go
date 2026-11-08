@@ -31,11 +31,11 @@ const defaultAlternative = "remove it, or bake the setting into the image; it ha
 
 // alternatives names the documented replacement for the keys users paste most.
 var alternatives = map[string]string{
-	"extends":                              "inline the extended service's keys into this service; extends is not resolved",
-	"env_file":                             "move the values into environment: or the app's env vars; env_file is not read",
-	"container_name":                       "containers are named <app>-<service>; remove it",
-	"user":                                 "set USER in the image, or wrap the start command with entrypoint:",
-	"working_dir":                          "set WORKDIR in the image, or cd inside command:",
+	"extends":                              "only same-file extends: {service: name} is resolved; inline the keys from the other file",
+	"env_file":                             "read only for git deploys (build.type: compose), from files inside the repository; for a pasted file move the values into environment: or the app's env vars",
+	"container_name":                       "the custom name is not applied; containers are named <app>-<service> and other services reach this one by its service key, so use that as the hostname",
+	"user":                                 "not applied (no per-service user field yet); set USER in the image, or wrap the start command with entrypoint:",
+	"working_dir":                          "not applied (no per-service working directory field yet); set WORKDIR in the image, or cd inside command:",
 	"hostname":                             "services reach each other by service name; remove it",
 	"expose":                               "internal-only ports need no declaration; add ports: for the one ingress should route to",
 	"stop_grace_period":                    "the reconciler's own stop timeout applies; remove it",

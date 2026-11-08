@@ -145,6 +145,8 @@ type Service struct {
 	// DependsOnCompleted lists the DependsOn entries declared with
 	// condition: service_completed_successfully, which wait for exit 0.
 	DependsOnCompleted []string
+	// EnvFiles is env_file:, read by ResolveEnvFiles when a checkout exists.
+	EnvFiles []EnvFileRef
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value
@@ -199,6 +201,14 @@ type rawBuild struct {
 
 // Parse decodes a compose.yaml document.
 func Parse(data []byte) (*File, error) {
+	data, err := resolveExtends(data)
+	if err != nil {
+		return nil, err
+	}
+	envFiles, err := envFileRefsByService(data)
+	if err != nil {
+		return nil, err
+	}
 	var raw rawFile
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("compose: parse: %w", err)
@@ -219,6 +229,7 @@ func Parse(data []byte) (*File, error) {
 	for name, svc := range raw.Services {
 		svc.DependsOnHealthy = healthy[name]
 		svc.DependsOnCompleted = completed[name]
+		svc.EnvFiles = envFiles[name]
 		f.Services[name] = Service(svc)
 	}
 	if err := resolveConfigFiles(f, raw.Configs); err != nil {

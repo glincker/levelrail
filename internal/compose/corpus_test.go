@@ -16,7 +16,7 @@ import (
 var wantUnsupported = map[string][]string{
 	"nginx_php.yaml":            {"php:expose", "php:user", "php:working_dir", "web:container_name"},
 	"wordpress_mysql.yaml":      {"db:env_file", "wordpress:links"},
-	"profiles_extends.yaml":     {"debug:extends", "debug:stdin_open", "debug:tty", "migrate:depends_on.restart"},
+	"profiles_extends.yaml":     {"debug:stdin_open", "debug:tty", "migrate:depends_on.restart"},
 	"secrets_configs.yaml":      {},
 	"deploy_resources.yaml":     {"gpu:ulimits", "worker:deploy.resources.reservations.cpus", "worker:deploy.resources.reservations.memory"},
 	"healthcheck_variants.yaml": {"http:healthcheck.start_interval", "off:healthcheck.disable"},
@@ -86,7 +86,10 @@ func assertNothingSilent(t *testing.T, data []byte, f *compose.File) {
 		reported[u.Service+":"+u.Key] = true
 	}
 	for svc, body := range doc.Services {
-		for key := range body {
+		for key, val := range body {
+			if ext, ok := val.(map[string]any); key == "extends" && ok && ext["file"] == nil {
+				continue
+			}
 			if !read[key] && !strings.HasPrefix(key, "x-") && !reported[svc+":"+key] {
 				t.Errorf("service %q key %q is ignored without being reported", svc, key)
 			}
