@@ -343,5 +343,12 @@
       "dynamic": "Dinámica",
       "unknown": "Desconocida"
     }
+  },
+  "failureCard": {
+    "title": "Qué falló",
+    "stage": "Etapa fallida",
+    "error": "Error",
+    "showLess": "Mostrar menos",
+    "showMore": "Mostrar más"
   }
 }
