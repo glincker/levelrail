@@ -30,6 +30,8 @@ The response holds `public_key` (an ed25519 key in `authorized_keys` format), it
 
 - The private key is generated on the control plane, stored encrypted with the same envelope encryption as every secret, and never returned by any route or written to a log. Clones hold it in memory only, so no key file touches disk and no shell command is built from user input.
 - Host keys are always pinned. Send `host_key` (the server's public key in `authorized_keys` format, for example from `ssh-keyscan`) to pin one you verified yourself, or `trust_on_first_use: true` to scan once and pin what the host presents; compare the returned `host_fingerprint` with the host's published fingerprint. A later clone that sees a different host key fails. There is no option to skip host key checking.
+- An SSH repository with no stored deploy key is refused before any connection. The control plane never falls back to its own ssh-agent or `known_hosts`.
+- Trust-on-first-use scans refuse loopback, private and link-local addresses, so a git URL cannot be used to probe your internal network. For a self-hosted git server on a private range, either paste its `host_key` or list its IP or CIDR in the `git.ssh_scan_allow_internal` runtime setting. Cloud metadata addresses are never allowed.
 - Keys are per app, so one compromised key exposes only that app's repository. The scan timeout comes from `APP_GIT_SSH_SCAN_TIMEOUT` (default 10s).
 
 <Note>

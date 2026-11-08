@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitsshkey"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -52,8 +53,9 @@ func (rt *Router) hasSSHDeployKey(ctx context.Context, name, repoURL string) boo
 }
 
 // withSSHDeployKey attaches the app's deploy key auth to ctx for an SSH repo
-// URL. The app comes from the credential scope; on any miss ctx is unchanged
-// and the clone fails closed with an auth error.
+// URL. If the key is stored but cannot be used, the context carries an auth
+// error so the fetch fails; it never falls back to the host's ssh-agent. With
+// no stored key the source cache itself refuses SSH URLs lacking auth.
 func (rt *Router) withSSHDeployKey(ctx context.Context, repoURL string) context.Context {
 	scope := sourcecache.ScopeOf(ctx)
 	name, ok := strings.CutPrefix(scope, "app:")
@@ -63,17 +65,27 @@ func (rt *Router) withSSHDeployKey(ctx context.Context, repoURL string) context.
 	secretsKey := store.GitSourceSecretsKey(name)
 	priv, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSSHPrivateKey)
 	if err != nil {
-		return ctx
+		return sourcecache.WithAuthError(ctx, errSSHKeyUnusable)
 	}
 	host, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSSHHostKey)
 	if err != nil {
-		return ctx
+		return sourcecache.WithAuthError(ctx, errSSHKeyUnusable)
 	}
 	auth, err := gitsshkey.AuthMethod([]byte(priv), host)
 	if err != nil {
-		return ctx
+		return sourcecache.WithAuthError(ctx, errSSHKeyUnusable)
 	}
 	return sourcecache.WithAuth(ctx, auth)
+}
+
+// errSSHKeyUnusable carries no detail so nothing about the key can leak.
+var errSSHKeyUnusable = errors.New("ssh deploy key or pinned host key is missing or unreadable; set the key again")
+
+func (rt *Router) sshScanAllow(ctx context.Context) []string {
+	if rt.runtimeSettings == nil {
+		return nil
+	}
+	return rt.runtimeSettings.List(ctx, runtimesettings.KeyGitSSHScanAllowInternal)
 }
 
 func (rt *Router) sshKeyResource(ctx context.Context, name string) (gitSSHKeyResource, bool, error) {
@@ -153,12 +165,16 @@ func (rt *Router) handleSetGitSSHKey(w http.ResponseWriter, r *http.Request) {
 	hostKey := strings.TrimSpace(req.HostKey)
 	switch {
 	case hostKey != "":
-		if _, err := gitsshkey.Fingerprint(strings.SplitN(hostKey, "\n", 2)[0]); err != nil {
-			writeError(w, http.StatusBadRequest, "host_key must be a public key in authorized_keys format")
+		if _, err := gitsshkey.HostKeyCallback(hostKey); err != nil {
+			writeError(w, http.StatusBadRequest, "host_key must be public keys in authorized_keys format, one per line")
 			return
 		}
 	case req.TrustOnFirstUse:
-		hostKey, err = gitsshkey.ScanHostKey(r.Context(), hostPort, envDuration(envGitSSHScanTTL, defaultSSHScan))
+		hostKey, err = gitsshkey.ScanHostKey(r.Context(), hostPort, envDuration(envGitSSHScanTTL, defaultSSHScan), rt.sshScanAllow(r.Context()))
+		if errors.Is(err, gitsshkey.ErrBlockedScanTarget) {
+			writeError(w, http.StatusBadRequest, "that host resolves to an internal address; paste its host_key instead, or list the network in the git.ssh_scan_allow_internal setting")
+			return
+		}
 		if err != nil {
 			writeError(w, http.StatusBadGateway, "could not read the host key from "+hostPort)
 			return

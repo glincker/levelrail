@@ -11,8 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
+	"net/netip"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -66,40 +68,32 @@ func Fingerprint(authorizedKey string) (string, error) {
 	return ssh.FingerprintSHA256(pub), nil
 }
 
-// IsSSHURL reports whether repoURL is an ssh:// or scp-like (user@host:path) URL.
+// IsSSHURL reports whether go-git would use its ssh transport for repoURL.
+// It is deliberately broader than Host's validation so a malformed ssh URL
+// still counts as ssh and cannot slip past a fail-closed auth check.
 func IsSSHURL(repoURL string) bool {
-	_, err := Host(repoURL)
-	return err == nil
+	ep, err := transport.NewEndpoint(strings.TrimSpace(repoURL))
+	return err == nil && ep.Protocol == "ssh"
 }
 
 // Host returns the host:port an SSH repo URL dials, defaulting to port 22.
+// It uses go-git's own endpoint parser so the scanner and the cloner always
+// agree on the target.
 func Host(repoURL string) (string, error) {
 	raw := strings.TrimSpace(repoURL)
-	var host, port string
-	switch {
-	case strings.HasPrefix(raw, "ssh://"):
-		u, err := url.Parse(raw)
-		if err != nil || u.Hostname() == "" {
-			return "", errors.New("gitsshkey: invalid ssh url")
-		}
-		host, port = u.Hostname(), u.Port()
-	case strings.Contains(raw, "://"):
+	ep, err := transport.NewEndpoint(raw)
+	if err != nil || ep.Protocol != "ssh" {
 		return "", errors.New("gitsshkey: not an ssh url")
-	default:
-		at := strings.LastIndex(raw, "@")
-		colon := strings.Index(raw, ":")
-		if at < 0 || colon < at {
-			return "", errors.New("gitsshkey: not an ssh url")
-		}
-		host = raw[at+1 : colon]
 	}
-	if host == "" || strings.HasPrefix(host, "-") || strings.ContainsAny(host, " \t\r\n/\\") {
+	host := ep.Host
+	if host == "" || strings.HasPrefix(host, "-") || strings.ContainsAny(host, " \t\r\n/\\@") {
 		return "", errors.New("gitsshkey: invalid ssh host")
 	}
-	if port == "" {
-		port = "22"
+	port := ep.Port
+	if port == 0 {
+		port = 22
 	}
-	return net.JoinHostPort(host, port), nil
+	return net.JoinHostPort(host, strconv.Itoa(port)), nil
 }
 
 // HostKeyCallback accepts only the pinned key(s). An empty pin is an error,
@@ -150,10 +144,59 @@ func AuthMethod(privatePEM []byte, pinnedHostKey string) (transport.AuthMethod, 
 
 var errCaptured = errors.New("gitsshkey: host key captured")
 
+// ErrBlockedScanTarget marks a host key scan refused because the resolved
+// address is internal and not on the operator allowlist.
+var ErrBlockedScanTarget = errors.New("gitsshkey: scan target is an internal address")
+
+var cgnat = netip.MustParsePrefix("100.64.0.0/10")
+
+// checkScanAddr refuses loopback, link-local (including cloud metadata),
+// private, CGNAT, multicast and unspecified addresses unless allow lists a
+// CIDR or IP covering it. Metadata, multicast and unspecified are never allowable.
+func checkScanAddr(addr netip.Addr, allow []string) error {
+	addr = addr.Unmap()
+	if !addr.IsValid() || addr.IsUnspecified() || addr.IsMulticast() || addr.IsLinkLocalMulticast() {
+		return fmt.Errorf("%w: %s", ErrBlockedScanTarget, addr)
+	}
+	if addr.IsLinkLocalUnicast() {
+		return fmt.Errorf("%w: %s is a link-local or metadata address", ErrBlockedScanTarget, addr)
+	}
+	if !addr.IsLoopback() && !addr.IsPrivate() && !cgnat.Contains(addr) {
+		return nil
+	}
+	for _, entry := range allow {
+		entry = strings.TrimSpace(entry)
+		if p, err := netip.ParsePrefix(entry); err == nil && p.Contains(addr) {
+			return nil
+		}
+		if ip, err := netip.ParseAddr(entry); err == nil && ip.Unmap() == addr {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: %s (list it in the git.ssh_scan_allow_internal setting to permit)", ErrBlockedScanTarget, addr)
+}
+
+// scanControl runs after DNS resolution on every dial, so a name that
+// resolves or rebinds to an internal address is refused too.
+func scanControl(allow []string) func(network, address string, c syscall.RawConn) error {
+	return func(_, address string, _ syscall.RawConn) error {
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			return err
+		}
+		ip, err := netip.ParseAddr(host)
+		if err != nil {
+			return err
+		}
+		return checkScanAddr(ip, allow)
+	}
+}
+
 // ScanHostKey fetches the server's host key for an explicit trust on first
-// use. The caller records the returned key and shows its fingerprint.
-func ScanHostKey(ctx context.Context, hostPort string, timeout time.Duration) (string, error) {
-	d := net.Dialer{Timeout: timeout}
+// use. The caller records the returned key and shows its fingerprint. allow
+// lists internal CIDRs or IPs the operator permits scanning.
+func ScanHostKey(ctx context.Context, hostPort string, timeout time.Duration, allow []string) (string, error) {
+	d := net.Dialer{Timeout: timeout, Control: scanControl(allow)}
 	conn, err := d.DialContext(ctx, "tcp", hostPort)
 	if err != nil {
 		return "", fmt.Errorf("gitsshkey: dial %s: %w", hostPort, err)

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -36,6 +37,12 @@ func defaultFetch(ctx context.Context, repo *git.Repository, auth transport.Auth
 // refresh fetches repoURL into the mirror, retrying transient failures with
 // exponential backoff. Fetches of one mirror are serialized.
 func (c *Cache) refresh(ctx context.Context, repoURL, token, mirrorDir string, repo *git.Repository) error {
+	if err := authErrOf(ctx); err != nil {
+		return err
+	}
+	if authOf(ctx) == nil && gitsshkey.IsSSHURL(repoURL) {
+		return ErrSSHAuthRequired
+	}
 	if c.cfg.Dir != "" {
 		st := c.stateFor(filepath.Base(mirrorDir))
 		st.fetchMu.Lock()

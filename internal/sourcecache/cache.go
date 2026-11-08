@@ -69,6 +69,24 @@ func WithAuth(ctx context.Context, auth transport.AuthMethod) context.Context {
 	return context.WithValue(ctx, authKey{}, auth)
 }
 
+type authErrKey struct{}
+
+// WithAuthError makes every fetch under ctx fail with err, so a caller that
+// could not build the credential it promised never falls back to ambient auth.
+func WithAuthError(ctx context.Context, err error) context.Context {
+	return context.WithValue(ctx, authErrKey{}, err)
+}
+
+func authErrOf(ctx context.Context) error {
+	err, _ := ctx.Value(authErrKey{}).(error)
+	return err
+}
+
+// ErrSSHAuthRequired is returned for an SSH repository with no deploy key.
+// The ssh transport would otherwise use the ssh-agent and known_hosts of the
+// control plane's own user.
+var ErrSSHAuthRequired = errors.New("sourcecache: ssh repository needs a deploy key with a pinned host key")
+
 func authOf(ctx context.Context) transport.AuthMethod {
 	v, _ := ctx.Value(authKey{}).(transport.AuthMethod)
 	return v

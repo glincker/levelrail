@@ -66,6 +66,7 @@ domains.www_mode
 firewall.confirm_window
 games.status_cache
 games.status_timeout
+git.ssh_scan_allow_internal
 heartbeat.job_backoff_base
 heartbeat.job_backoff_max
 heartbeat.job_max_attempts
