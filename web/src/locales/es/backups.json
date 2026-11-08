@@ -147,7 +147,8 @@
     "loadFailedHint": "Verifica que el servidor sea accesible y vuelve a intentarlo.",
     "retry": "Reintentar",
     "noResourcesTitle": "Aún no hay nada que respaldar",
-    "noResourcesDescription": "Las bases de datos y los volúmenes de aplicación aparecen aquí en cuanto los creas."
+    "noResourcesDescription": "Las bases de datos y los volúmenes de aplicación aparecen aquí en cuanto los creas.",
+    "manageTargets": "Gestionar destinos de respaldo"
   },
   "summary": {
     "protected": "{{protected}} de {{total}} recursos protegidos",

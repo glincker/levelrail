@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { EmptyState } from '@/components/ui/empty-state'
 import { PageBanner } from '../../components/PageBanner'
 import { HelpLink } from '../../components/HelpLink'
 import { LazyBackupsDiagram } from '../../components/banners/LazyDiagrams'
@@ -102,6 +103,22 @@ function BackupsPage() {
         <FirstRunSetup unprotected={data.summary.total} />
       ) : (
         <>
+          {data.resources.length === 0 ? (
+            <EmptyState
+              icon={<UploadGlassIcon className="size-6" />}
+              title={t('page.noResourcesTitle')}
+              description={t('page.noResourcesDescription')}
+              action={
+                <Button
+                  size="sm"
+                  render={<Link to="/settings/backup-targets" />}
+                  nativeButton={false}
+                >
+                  {t('page.manageTargets')}
+                </Button>
+              }
+            />
+          ) : null}
           {isEmpty ? null : (
             <CoverageSummary summary={data.summary} showAction={false} />
           )}

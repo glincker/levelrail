@@ -35,7 +35,7 @@ export function EmptyState({
 }: {
   /** Left aligned, action beside the copy, tone by situation. Omit for the centred default. */
   kind?: EmptyStateKind
-  /** A single UI icon element, e.g. `<PackageGlassIcon className="size-6" />`. */
+  /** A single `@thesvg/ui-react` icon element, e.g. `<PackageGlassIcon className="size-6" />`. */
   icon: ReactNode
   /** Decorative SVG shown in place of the icon on higher-emphasis, top-of-funnel zero states (e.g. the first-ever app). */
   illustration?: IllustrationName

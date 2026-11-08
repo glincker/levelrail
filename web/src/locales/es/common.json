@@ -832,6 +832,18 @@
     "envKey": "Nombre de variable, fila {{row}}",
     "envValue": "Valor de variable, fila {{row}}"
   },
+  "projectsPage": {
+    "list": { "name": "Nombre", "created": "Creado" },
+    "empty": {
+      "title": "Aún no hay proyectos",
+      "description": "Los proyectos agrupan una app con su base de datos y caché. Crea uno para empezar a organizar."
+    },
+    "error": {
+      "title": "No se pudieron cargar los proyectos",
+      "description": "{{error}}",
+      "retry": "Reintentar"
+    }
+  },
   "apiError": {
     "copied": "Copiado",
     "copyRequestId": "Copiar ID de solicitud",
