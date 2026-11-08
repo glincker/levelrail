@@ -435,5 +435,43 @@
     "download": "Download {{name}}",
     "delete": "Delete {{name}}",
     "confirm": "Confirm"
+  },
+  "composeDb": {
+    "title": "Database backups",
+    "description": "Database services detected in this compose app.",
+    "loadFailed": "Could not load database services: {{error}}",
+    "notScheduled": "Not scheduled",
+    "scheduledSummary": "{{schedule}}, {{retention}}",
+    "paused": "Paused",
+    "target": "Target",
+    "targetPlaceholder": "Choose a target",
+    "enabled": "Enabled",
+    "retain": "Keep last",
+    "retainDays": "Max age (days)",
+    "save": "Save",
+    "saving": "Saving...",
+    "remove": "Remove",
+    "removing": "Removing...",
+    "backUpNow": "Back up now",
+    "starting": "Starting...",
+    "noTargets": "No backup targets yet.",
+    "connectTarget": "Connect a bucket in Settings",
+    "saved": "Backup schedule saved.",
+    "saveFailed": "Could not save backup schedule.",
+    "removed": "Backup schedule removed.",
+    "removeFailed": "Could not remove backup schedule.",
+    "started": "Backup started.",
+    "startFailed": "Could not start backup.",
+    "removeTitle": "Remove backup schedule for {{service}}?",
+    "removeDescription": "Scheduled backups stop. Existing backups are kept.",
+    "runs": "Recent runs",
+    "runsHide": "Hide runs",
+    "noRuns": "No backups yet.",
+    "runsFailed": "Could not load runs: {{error}}",
+    "status": {
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    }
   }
 }
