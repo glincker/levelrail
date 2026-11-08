@@ -44,6 +44,29 @@ Pick the node in an app's create form, run `levelrail-cli apps set-node <name> <
 </Step>
 </Steps>
 
+## Three steps with the agent installer
+
+`scripts/install-agent.sh` turns the manual enrollment into one command on the second server. It installs Docker if it is missing, downloads the agent for the host architecture, checks its SHA-256 (and the release signature when `cosign` is installed), writes `/etc/levelrail-agent/agent.env` with mode 0600, installs a systemd unit and starts it.
+
+1. Install the control plane (see [install](/install)) and set `APP_AGENT_ADVERTISE_HOST`.
+2. Mint a token on the control plane: `levelrail-cli nodes add --name worker-1` (add `--mesh` for the WireGuard mesh). It prints the installer command with your token and CA fingerprint filled in.
+3. Run that command on the second server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/scripts/install-agent.sh -o install-agent.sh
+printf '%s' '<join token>' | sudo sh install-agent.sh --server <host>:9443 --ca-fingerprint <fingerprint> --token-stdin --name worker-1
+```
+
+The control plane does not serve the script itself, so the download is a separate step. The token goes through stdin so it never appears in the process list, and it is removed from the env file once the node has enrolled.
+
+Options: `--mesh` (sets `APP_MESH_ENABLED=1` and adds `CAP_NET_ADMIN` and `/dev/net/tun` to the unit), `--version vX.Y.Z`, `--wait SECONDS` (default 60), `--token-file FILE`, and `--dry-run` to print every action without changing anything. Re-running it on an enrolled node upgrades the binary and needs no token.
+
+- Logs: `journalctl -u levelrail-agent -f`
+- Uninstall: `sudo sh install-agent.sh --uninstall` removes the unit, binary and env file. It never touches Docker data or other software, and keeps the node identity so a reinstall rejoins as the same node.
+- Firewall: allow TCP 9443 from the node to the control plane (agent mTLS), and UDP 51820 between nodes when the mesh is on.
+
+Not yet verified on a real host: the installer has been checked with `--dry-run` and `shellcheck` only. The enrollment wait looks for the agent identity and an active service on the node; confirm the node shows `online` with `levelrail-cli nodes list` on the control plane.
+
 ## What has been verified
 
 The join flow was run with two real agent processes, each with its own Docker daemon, against a real control plane binary. Enrollment, cordon, drain with real container relocation, and explicit placement pinning all behaved as documented.

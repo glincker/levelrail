@@ -434,4 +434,21 @@ func printJoinCommands(out io.Writer, created apiclient.CreateNodeJoinTokenRespo
 		_, _ = fmt.Fprintf(out, "With Podman (rootful; first run: sudo systemctl enable --now podman.socket):\n\n%s\n\n", c.Podman)
 	}
 	_, _ = fmt.Fprintf(out, "Or, with the agent binary installed (it auto-detects Docker or Podman):\n\n%s\n\n", c.Binary)
+	printInstallAgentScript(out, created)
+}
+
+// installAgentScriptURL is where the installer lives: the control plane does not serve it.
+const installAgentScriptURL = "https://raw.githubusercontent.com/glincker/levelrail/main/scripts/install-agent.sh"
+
+// printInstallAgentScript prints the two-step installer form. The token goes
+// through stdin so it stays out of the installed host's process list.
+func printInstallAgentScript(out io.Writer, created apiclient.CreateNodeJoinTokenResponse) {
+	if created.ControlPlaneAddr == "" || created.Token == "" {
+		return
+	}
+	cmd := "sudo sh install-agent.sh --server " + created.ControlPlaneAddr + " --token-stdin"
+	if created.CAFingerprint != "" {
+		cmd += " --ca-fingerprint " + created.CAFingerprint
+	}
+	_, _ = fmt.Fprintf(out, "Or, as a systemd service (the control plane does not serve the script, so download it first; add --mesh for the WireGuard mesh):\n\ncurl -fsSL %s -o install-agent.sh\nprintf '%%s' '%s' | %s\n\n", installAgentScriptURL, created.Token, cmd)
 }
