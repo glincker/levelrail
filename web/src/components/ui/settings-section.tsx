@@ -32,7 +32,13 @@ export function SettingsSection({
   children,
 }: SettingsSectionProps) {
   return (
-    <Card id={id} className={cn('scroll-mt-20', className)}>
+    <Card
+      id={id}
+      className={cn(
+        'scroll-mt-20 look-glass:rounded-(--glinr-radius-group)',
+        className,
+      )}
+    >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}

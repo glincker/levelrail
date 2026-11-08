@@ -7,8 +7,10 @@
 @import './styles/glinr-tokens.css';
 @import './styles/glinr-theme.css';
 @import './styles/routeTransitions.css';
+@import './styles/look.css';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant look-glass (html:not([data-look='restrained']) &);
 
 /* Tailwind skips node_modules and a file-path @source duplicated the whole sheet, so list the
    classes of the published Skeleton variants we map to (see components/ui/skeleton.tsx). */
@@ -443,13 +445,7 @@ body {
   }
 }
 :root[data-motion='on']
-  :is(
-    .kit-shimmer,
-    .kit-pulse-ring,
-    .kit-enter,
-    .kit-tile-enter,
-    .kit-exit
-  ) {
+  :is(.kit-shimmer, .kit-pulse-ring, .kit-enter, .kit-tile-enter, .kit-exit) {
   animation: none !important;
 }
 

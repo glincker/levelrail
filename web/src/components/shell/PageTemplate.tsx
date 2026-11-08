@@ -105,7 +105,10 @@ export function PageTemplate({
       )}
     >
       {banner ?? (
-        <header className="space-y-3">
+        <header
+          data-large-title={!breadcrumb && titleSize === 'page'}
+          className="space-y-3"
+        >
           {breadcrumb ? <div>{breadcrumb}</div> : null}
           <div
             data-slot="page-hero"

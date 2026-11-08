@@ -1,0 +1,113 @@
+/* Glass-forward look (default). The restrained look sets html[data-look='restrained'] and skips every rule here that is keyed on :not([data-look='restrained']). */
+
+/* Field focus, both looks: accent border plus a soft halo, instant, never a thick ring. */
+:is(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file']),
+    textarea,
+    select,
+    [data-slot='select-trigger']
+  ):focus-visible {
+  outline: none;
+  border-color: var(--glinr-accent-ring);
+  background-color: var(--glinr-field-focus-bg);
+  box-shadow: 0 0 0 3px var(--glinr-focus-halo);
+  transition: none;
+}
+:is(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file']),
+    textarea,
+    select,
+    [data-slot='select-trigger']
+  )[aria-invalid='true']:focus-visible {
+  border-color: var(--glinr-status-danger-solid);
+  box-shadow: 0 0 0 3px var(--glinr-focus-halo-danger);
+}
+@media (forced-colors: active), (prefers-contrast: more) {
+  :is(
+      input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file']),
+      textarea,
+      select,
+      [data-slot='select-trigger']
+    ):focus-visible {
+    outline: 2px solid var(--glinr-accent-ring);
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
+@media (forced-colors: active) {
+  :is(input, textarea, select, [data-slot='select-trigger']):focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/* Backdrop wash: static gradient on the body, the shell layers above it go transparent. */
+html:not([data-look='restrained']) body {
+  background-color: var(--background);
+  background-image: var(--glinr-mesh);
+}
+html:not([data-look='restrained']) [data-slot='sidebar-wrapper'],
+html:not([data-look='restrained']) [data-slot='sidebar-inset'] {
+  background-color: transparent;
+  box-shadow: none;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html:not([data-look='restrained']) body {
+    background-image: none;
+  }
+}
+
+/* Top bar: bare at rest, regular material once the page scrolls. */
+html:not([data-look='restrained']) [data-slot='bar-surface'] {
+  background-color: transparent;
+  border-color: transparent;
+}
+html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+  background-color: var(--glinr-surface-glass-solid);
+  border-color: var(--glinr-divider);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+    background-color: var(--glinr-material-regular);
+    -webkit-backdrop-filter: blur(var(--glinr-blur-regular)) saturate(var(--glinr-saturate-regular));
+    backdrop-filter: blur(var(--glinr-blur-regular)) saturate(var(--glinr-saturate-regular));
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+    background-color: var(--glinr-surface-glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Large title on list pages; collapses with the scroll where scroll-driven animation exists. */
+html:not([data-look='restrained']) header[data-large-title='true'] h1 {
+  font-size: var(--glinr-large-title);
+  line-height: 1.2;
+  font-weight: var(--glinr-type-heading-weight);
+  letter-spacing: -0.02em;
+}
+@keyframes lr-title-out {
+  to {
+    transform: scale(0.82);
+    opacity: 0.2;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-look='restrained']):not([data-motion='off']) header[data-large-title='true'] h1 {
+      transform-origin: left center;
+      animation: lr-title-out linear both;
+      animation-timeline: scroll();
+      animation-range: 0 88px;
+    }
+  }
+}
+
+/* Restrained: flatter corners and the denser radius set. */
+html[data-look='restrained'] {
+  --glinr-radius-control: 0.5rem;
+  --glinr-radius-menu: 0.625rem;
+  --glinr-radius-group: 0.75rem;
+  --glinr-radius-card: 0.75rem;
+}

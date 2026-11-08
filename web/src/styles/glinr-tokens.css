@@ -47,6 +47,8 @@
   --glinr-tile-size: 2.5rem;
   --glinr-hero-tile-size: 2.5rem;
   --glinr-hero-tile-size-comfortable: 2.5rem;
+  --glinr-bar-h: 3rem;
+  --glinr-large-title: 1.875rem;
   --glinr-control-h: 2rem;
   --glinr-control-h-comfortable: 2.25rem;
   --glinr-row-h: 2.25rem;
@@ -83,6 +85,7 @@
   --glinr-radius-group: 1rem;
   --glinr-radius-card: 1.25rem;
   --glinr-radius-pill: 999px;
+  --glinr-elev-1: 0 1px 1px oklch(0.3 0.05 250 / 4%), 0 2px 2px oklch(0.3 0.05 250 / 4%), 0 4px 4px oklch(0.3 0.05 250 / 3%);
   --glinr-elev-header: 0 1px 0 oklch(0.2 0.01 260 / 6%), 0 4px 12px -4px oklch(0.2 0.01 260 / 12%);
   --glinr-elev-card: 0 1px 2px oklch(0.2 0.01 260 / 6%), 0 1px 1px oklch(0.2 0.01 260 / 4%);
   --glinr-elev-popover: 0 8px 24px oklch(0.2 0.01 260 / 12%), 0 2px 6px oklch(0.2 0.01 260 / 8%);
@@ -170,6 +173,10 @@
   --glinr-status-neutral-border: oklch(0.6 0.02 250 / 28%);
   --glinr-shadow-1: 0 1px 2px oklch(0.3 0.05 250 / 6%);
   --glinr-layer-edge: 0 3px 0 -1px color-mix(in oklab, var(--glinr-accent-solid) 30%, transparent);
+  --glinr-mesh: radial-gradient(60% 55% at 8% 0%, oklch(0.92 0.045 215 / 0.85), transparent 70%), radial-gradient(45% 50% at 95% 15%, oklch(0.91 0.05 190 / 0.6), transparent 70%), radial-gradient(60% 60% at 55% 105%, oklch(0.9 0.045 255 / 0.7), transparent 72%);
+  --glinr-focus-halo: oklch(0.52 0.15 232 / 20%);
+  --glinr-focus-halo-danger: oklch(0.57 0.21 25 / 18%);
+  --glinr-field-focus-bg: oklch(1 0 0);
 }
 
 .dark, [data-mode="dark"] {
@@ -184,6 +191,7 @@
   --glinr-color-accent: var(--brand-accent-dark);
   --glinr-highlight: oklch(1 0 0 / 7%);
   --glinr-shadow-color: oklch(0 0 0);
+  --glinr-elev-1: 0 1px 1px oklch(0.05 0.02 250 / 30%), 0 2px 4px oklch(0.05 0.02 250 / 25%);
   --glinr-elev-header: inset 0 -1px 0 oklch(1 0 0 / 8%), 0 8px 16px -8px oklch(0 0 0 / 70%);
   --glinr-elev-card: inset 0 1px 0 var(--glinr-highlight), 0 1px 2px oklch(0 0 0 / 50%), 0 2px 8px oklch(0 0 0 / 30%);
   --glinr-elev-popover: inset 0 1px 0 var(--glinr-highlight), 0 0 0 1px oklch(1 0 0 / 8%), 0 12px 32px oklch(0 0 0 / 65%);
@@ -225,4 +233,8 @@
   --glinr-status-neutral-soft: oklch(0.62 0.015 250 / 16%);
   --glinr-status-neutral-border: oklch(0.62 0.015 250 / 30%);
   --glinr-shadow-1: none;
+  --glinr-mesh: radial-gradient(60% 55% at 8% 0%, oklch(0.28 0.055 215 / 0.8), transparent 70%), radial-gradient(45% 50% at 95% 15%, oklch(0.27 0.05 190 / 0.55), transparent 70%), radial-gradient(60% 60% at 55% 105%, oklch(0.27 0.055 255 / 0.7), transparent 72%);
+  --glinr-focus-halo: oklch(0.72 0.13 228 / 22%);
+  --glinr-focus-halo-danger: oklch(0.68 0.19 25 / 22%);
+  --glinr-field-focus-bg: oklch(0.215 0.014 250);
 }

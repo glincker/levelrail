@@ -499,6 +499,26 @@
           "stability": "stable"
         }
       }
+    },
+    "look-bar-h": {
+      "$value": "3rem",
+      "$description": "Top bar height in the glass-forward look.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "bar-h"
+        }
+      }
+    },
+    "large-title": {
+      "$value": "1.875rem",
+      "$description": "Large page title on list pages in the glass-forward look.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "large-title"
+        }
+      }
     }
   },
   "density": {
@@ -928,6 +948,20 @@
           "name": "elev-dialog",
           "stability": "stable",
           "tailwind": "shadow-dialog"
+        }
+      }
+    },
+    "1": {
+      "$value": {
+        "light": "0 1px 1px oklch(0.3 0.05 250 / 4%), 0 2px 2px oklch(0.3 0.05 250 / 4%), 0 4px 4px oklch(0.3 0.05 250 / 3%)",
+        "dark": "0 1px 1px oklch(0.05 0.02 250 / 30%), 0 2px 4px oklch(0.05 0.02 250 / 25%)",
+        "oled": "0 0 0 0 transparent"
+      },
+      "$description": "Cards at rest: layered tinted shadow, none on OLED.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "elev-1"
         }
       }
     }
@@ -2183,6 +2217,65 @@
         "glinr": {
           "name": "layer-edge",
           "stability": "experimental"
+        }
+      }
+    }
+  },
+  "look": {
+    "$type": "color",
+    "mesh": {
+      "$value": {
+        "light": "radial-gradient(60% 55% at 8% 0%, oklch(0.92 0.045 215 / 0.85), transparent 70%), radial-gradient(45% 50% at 95% 15%, oklch(0.91 0.05 190 / 0.6), transparent 70%), radial-gradient(60% 60% at 55% 105%, oklch(0.9 0.045 255 / 0.7), transparent 72%)",
+        "dark": "radial-gradient(60% 55% at 8% 0%, oklch(0.28 0.055 215 / 0.8), transparent 70%), radial-gradient(45% 50% at 95% 15%, oklch(0.27 0.05 190 / 0.55), transparent 70%), radial-gradient(60% 60% at 55% 105%, oklch(0.27 0.055 255 / 0.7), transparent 72%)",
+        "oled": "radial-gradient(60% 45% at 8% 0%, oklch(0.19 0.03 230 / 0.6), transparent 70%)"
+      },
+      "$description": "Calm fixed backdrop wash behind the app shell. Static; the restrained look turns it off.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "mesh"
+        }
+      }
+    },
+    "focus-halo": {
+      "$value": {
+        "light": "oklch(0.52 0.15 232 / 20%)",
+        "dark": "oklch(0.72 0.13 228 / 22%)",
+        "oled": "oklch(0.72 0.13 228 / 22%)"
+      },
+      "$description": "Soft 3px halo around a focused field, accent at about 20% alpha.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "focus-halo"
+        }
+      }
+    },
+    "focus-halo-danger": {
+      "$value": {
+        "light": "oklch(0.57 0.21 25 / 18%)",
+        "dark": "oklch(0.68 0.19 25 / 22%)",
+        "oled": "oklch(0.68 0.19 25 / 22%)"
+      },
+      "$description": "Halo for a focused invalid field.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "focus-halo-danger"
+        }
+      }
+    },
+    "field-focus-bg": {
+      "$value": {
+        "light": "oklch(1 0 0)",
+        "dark": "oklch(0.215 0.014 250)",
+        "oled": "oklch(0.2 0.008 250)"
+      },
+      "$description": "Field background one surface step up while focused.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "name": "field-focus-bg"
         }
       }
     }

@@ -8,6 +8,7 @@
   --glinr-color-fg: oklch(0.92 0.004 250);
   --glinr-color-fg-muted: oklch(0.7 0.012 250);
   --glinr-color-fg-subtle: oklch(0.58 0.012 250);
+  --glinr-elev-1: 0 0 0 0 transparent;
   --glinr-surface-bg: oklch(0 0 0);
   --glinr-surface-raised: oklch(0.17 0.008 250);
   --glinr-surface-sunken: oklch(0 0 0);
@@ -19,4 +20,6 @@
   --glinr-status-danger-soft: oklch(0.68 0.19 25 / 18%);
   --glinr-status-info-soft: oklch(0.72 0.13 235 / 18%);
   --glinr-status-neutral-soft: oklch(0.62 0.015 250 / 18%);
+  --glinr-mesh: radial-gradient(60% 45% at 8% 0%, oklch(0.19 0.03 230 / 0.6), transparent 70%);
+  --glinr-field-focus-bg: oklch(0.2 0.008 250);
 }
