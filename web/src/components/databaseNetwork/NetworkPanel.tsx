@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAbilities } from '../../hooks/useAbilities'
 import { useDatabaseNetwork } from '../../queries/databaseAccess'
 import { AllowedSourcesCard } from './AllowedSourcesCard'
 import { ReachabilityCard } from './ReachabilityCard'
@@ -11,6 +12,9 @@ import { TlsCard } from './TlsCard'
 export function NetworkPanel({ databaseName }: { databaseName: string }) {
   const { t } = useTranslation('databaseAccess')
   const { data, isLoading, error } = useDatabaseNetwork(databaseName)
+  // The network mutation routes require the root ability.
+  const { role, can } = useAbilities()
+  const canEdit = can('root')
 
   return (
     <div className="space-y-4">
@@ -32,14 +36,24 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
         </Alert>
       ) : (
         <>
-          <ReachabilityCard databaseName={databaseName} network={data} />
-          <AllowedSourcesCard databaseName={databaseName} network={data} />
-          <ScopeCard
-            key={data.scope.current}
-            databaseName={databaseName}
-            network={data}
-          />
-          <TlsCard databaseName={databaseName} network={data} />
+          {role !== null && !canEdit ? (
+            <p className="text-muted-foreground text-xs">
+              {t('network.readOnlyNotice')}
+            </p>
+          ) : null}
+          <fieldset
+            disabled={!canEdit}
+            className="m-0 min-w-0 space-y-4 border-0 p-0"
+          >
+            <ReachabilityCard databaseName={databaseName} network={data} />
+            <AllowedSourcesCard databaseName={databaseName} network={data} />
+            <ScopeCard
+              key={data.scope.current}
+              databaseName={databaseName}
+              network={data}
+            />
+            <TlsCard databaseName={databaseName} network={data} />
+          </fieldset>
         </>
       )}
     </div>
