@@ -76,12 +76,13 @@ All three routes need the root ability.
 | `nodes.patch_output_tail_lines` | `200` | Output lines kept per run |
 | `nodes.patch_run_history` | `20` | Runs listed per node |
 | `nodes.patch_poll_interval` | `2s` | How often a detached upgrade unit is checked |
+| `nodes.patch_adopt_limit` | `20` | Upgrade units left by a previous control plane process that are adopted again (1 to 200) |
 
 ## Known limits
 
-- A docker or containerd upgrade restarts the control plane through its `Requires=docker.service` dependency, so the in-memory run record and its final audit entry can be lost. The upgrade itself finishes in its own unit; leftover `<name>-patch-*` units are not yet adopted on startup.
-- The one-run-per-node lock lives in memory, as does run history.
-- Version pinning covers the named packages, not the dependencies the package manager pulls in for them.
+- A docker or containerd upgrade restarts the control plane through its `Requires=docker.service` dependency. The upgrade finishes in its own `<name>-patch-<run>` unit, which records the package list in its description. After a restart the control plane adopts those units (up to `nodes.patch_adopt_limit`) the first time the patch API is used: it rebuilds the run record, waits for a unit that is still running, writes the finish audit entry and only then stops and resets the unit. The start time of an adopted run is the adoption time.
+- Run history lives in memory. The one-run-per-node lock follows the upgrade itself: after a timeout, or for an adopted unit, the node stays busy until the unit or child process ends, and a timed out run is updated with its real result (no reboot follows a late success).
+- Before installing, the exact install command is simulated (`apt-get -s install`, `dnf` or `yum --assumeno`). If it would install, upgrade or remove any package outside the preview, the apply is refused with `preview_mismatch` and the extra names; a simulation that fails refuses with `simulation_failed`.
 - A failed unit, or one whose result is not success, is always recorded as failed, and a reboot only follows a succeeded run.
 
 The control plane must run with permission to use the package manager (root, as the standard install does).

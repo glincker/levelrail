@@ -72,10 +72,12 @@ var (
 	// Debian and RPM names and versions; anything else in parsed output is dropped, never passed to argv.
 	patchPackageName    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9+._:~-]*$`)
 	patchPackageVersion = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9+._:~-]*$`)
-	patchSecretKV       = regexp.MustCompile(`(?i)((?:password|passwd|token|secret|api[_-]?key|authorization)\s*[=:]\s*)\S+`)
-	patchURLCreds       = regexp.MustCompile(`(://[^/\s:@]+:)[^@\s/]+@`)
-	aptInstLine         = regexp.MustCompile(`^Inst (\S+) (?:\[([^\]]+)\] )?\((\S+) (.*?)(?: \[[^\]]*\])?\)`)
-	unitNameUnsafe      = regexp.MustCompile(`[^a-z0-9-]`)
+	// RPM versions may carry "^" (snapshot ordering); argv never reaches a shell, so it is safe to pass.
+	patchRPMVersion = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9+._:~^-]*$`)
+	patchSecretKV   = regexp.MustCompile(`(?i)((?:password|passwd|token|secret|api[_-]?key|authorization)\s*[=:]\s*)\S+`)
+	patchURLCreds   = regexp.MustCompile(`(://[^/\s:@]+:)[^@\s/]+@`)
+	aptInstLine     = regexp.MustCompile(`^Inst (\S+) (?:\[([^\]]+)\] )?\((\S+) (.*?)(?: \[[^\]]*\])?\)`)
+	unitNameUnsafe  = regexp.MustCompile(`[^a-z0-9-]`)
 )
 
 // patchChildEnv is the whole child environment: the control plane's own env may hold the master key or LD_ vars.
@@ -169,7 +171,7 @@ func parseCheckUpdate(out string) []nodePatchPackage {
 			break
 		}
 		f := strings.Fields(line)
-		if len(f) != 3 || !strings.Contains(f[0], ".") || !patchPackageName.MatchString(f[0]) || !patchPackageVersion.MatchString(f[1]) {
+		if len(f) != 3 || !strings.Contains(f[0], ".") || !patchPackageName.MatchString(f[0]) || !patchRPMVersion.MatchString(f[1]) {
 			continue
 		}
 		p := nodePatchPackage{Name: f[0], NewVersion: f[1], Source: f[2]}
@@ -242,7 +244,7 @@ func patchPlanFingerprint(manager string, includeAll bool, apply, held []nodePat
 func patchInstallArgv(manager, bin string, pkgs []nodePatchPackage) []string {
 	specs := make([]string, 0, len(pkgs))
 	for _, p := range pkgs {
-		if !patchPackageName.MatchString(p.Name) || !patchPackageVersion.MatchString(p.NewVersion) {
+		if !patchPackageName.MatchString(p.Name) || !patchVersionOK(manager, p.NewVersion) {
 			continue
 		}
 		if manager == patchManagerAPT {
@@ -262,16 +264,26 @@ func patchInstallArgv(manager, bin string, pkgs []nodePatchPackage) []string {
 
 // patchUnitName is the transient systemd unit an install runs in, outside the control plane's cgroup.
 func patchUnitName(shortName, runID string) string {
-	stem := unitNameUnsafe.ReplaceAllString(strings.ToLower(shortName), "")
-	if stem == "" {
-		stem = "os"
+	return patchStem(shortName) + "-patch-" + unitNameUnsafe.ReplaceAllString(strings.ToLower(runID), "")
+}
+
+func patchStem(shortName string) string {
+	if stem := unitNameUnsafe.ReplaceAllString(strings.ToLower(shortName), ""); stem != "" {
+		return stem
 	}
-	return stem + "-patch-" + unitNameUnsafe.ReplaceAllString(strings.ToLower(runID), "")
+	return "os"
+}
+
+func patchVersionOK(manager, v string) bool {
+	if manager == patchManagerAPT {
+		return patchPackageVersion.MatchString(v)
+	}
+	return patchRPMVersion.MatchString(v)
 }
 
 // patchSystemdRunArgv starts the install detached: a docker restart cannot take dpkg down with the control plane.
-func patchSystemdRunArgv(unit string, install []string) []string {
-	args := []string{"--unit=" + unit, "--description=OS package upgrade", "--quiet", "-p", "RemainAfterExit=yes"}
+func patchSystemdRunArgv(unit, desc string, install []string) []string {
+	args := []string{"--unit=" + unit, "--description=" + desc, "--quiet", "-p", "RemainAfterExit=yes"}
 	for _, kv := range patchChildEnv() {
 		args = append(args, "--setenv="+kv)
 	}

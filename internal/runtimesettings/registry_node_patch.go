@@ -13,6 +13,8 @@ const (
 	KeyNodesPatchRunHistory = "nodes.patch_run_history"
 	// KeyNodesPatchPollInterval is how often a detached upgrade unit's state is read.
 	KeyNodesPatchPollInterval = "nodes.patch_poll_interval"
+	// KeyNodesPatchAdoptLimit caps how many leftover upgrade units a restarted control plane adopts.
+	KeyNodesPatchAdoptLimit = "nodes.patch_adopt_limit"
 )
 
 func init() {
@@ -45,5 +47,11 @@ func init() {
 		Env: "APP_NODES_PATCH_POLL_INTERVAL", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, time.Minute),
 		Title:       "Server patch status poll interval",
 		Description: "How often the control plane reads the state of a package upgrade running as its own systemd unit. Clamped to 500ms through 60s.",
+	})
+	Register(Definition{
+		Key: KeyNodesPatchAdoptLimit, Category: CategorySecurity, Kind: KindInt, Default: "20",
+		Env: "APP_NODES_PATCH_ADOPT_LIMIT", Apply: ApplyLive, CheckValue: intRangeCheck(1, 200),
+		Title:       "Server patch units adopted after a restart",
+		Description: "How many package upgrade units left by a previous control plane process are picked up again, with their result recorded and audited. A unit still running keeps the node locked until it ends.",
 	})
 }

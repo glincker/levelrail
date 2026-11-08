@@ -56,6 +56,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
+| `APP_NODES_PATCH_ADOPT_LIMIT` | [`nodes.patch_adopt_limit`](/runtime-settings#security) | `20` |
 | `APP_NODES_PATCH_APPLY_TIMEOUT` | [`nodes.patch_apply_timeout`](/runtime-settings#security) | `30m` |
 | `APP_NODES_PATCH_PREVIEW_TTL` | [`nodes.patch_preview_ttl`](/runtime-settings#security) | `10m` |
 | `APP_NODES_PROTECTED_TAINT_KEYS` | [`nodes.protected_taint_keys`](/runtime-settings#security) | empty |

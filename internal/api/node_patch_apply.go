@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -102,22 +101,35 @@ type nodePatcher struct {
 	previews map[string]patchPreviewRecord
 	busy     map[string]bool
 	runs     map[string][]nodePatchRun
-	done     chan string // tests wait on finished run ids; nil in production
-	// timeout and pollEvery override the runtime settings in tests only.
+	// live maps a running upgrade unit (or direct child) to its node; it outlives the request lock.
+	live      map[string]string
+	scanned   chan struct{} // closed once leftover units from a previous process are tracked
+	scanDone  bool
+	adoptOnce sync.Once
+	done      chan string // tests wait on finished run ids; nil in production
+	// timeout, pollEvery and adoptMax override the runtime settings in tests only.
 	timeout, pollEvery time.Duration
+	adoptMax           int
 }
 
 func newNodePatcher(r hostPatchRunner) *nodePatcher {
-	return &nodePatcher{runner: r, previews: map[string]patchPreviewRecord{}, busy: map[string]bool{}, runs: map[string][]nodePatchRun{}}
+	return &nodePatcher{runner: r, previews: map[string]patchPreviewRecord{}, busy: map[string]bool{}, runs: map[string][]nodePatchRun{},
+		live: map[string]string{}, scanned: make(chan struct{})}
 }
 
-func (rt *Router) patcher() *nodePatcher {
+func (rt *Router) buildPatcher() *nodePatcher {
 	rt.nodePatchOnce.Do(func() {
 		if rt.nodePatch == nil {
 			rt.nodePatch = newNodePatcher(realHostPatchRunner{})
 		}
 	})
 	return rt.nodePatch
+}
+
+func (rt *Router) patcher() *nodePatcher {
+	p := rt.buildPatcher()
+	rt.startNodePatchAdoption(context.Background(), p)
+	return p
 }
 
 // patchNode resolves the path node; only the control plane's own host is patchable today.
@@ -175,7 +187,7 @@ func (rt *Router) handleNodePatchPreview(w http.ResponseWriter, r *http.Request)
 	}
 	p := rt.patcher()
 	p.mu.Lock()
-	busy := p.busy[id]
+	busy := p.nodeBusyLocked(id)
 	p.mu.Unlock()
 	if busy && req.Refresh {
 		writeCodedError(w, http.StatusConflict, "patch_in_progress", "a patch run is in progress on this node; refresh after it finishes")
@@ -257,8 +269,13 @@ func (rt *Router) handleNodePatchApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := rt.patcher()
+	select {
+	case <-p.scanned:
+	case <-r.Context().Done():
+		return
+	}
 	p.mu.Lock()
-	if p.busy[id] {
+	if p.nodeBusyLocked(id) {
 		p.mu.Unlock()
 		writeCodedError(w, http.StatusConflict, "patch_in_progress", "a patch run is already in progress on this node")
 		return
@@ -322,6 +339,16 @@ func (rt *Router) handleNodePatchApply(w http.ResponseWriter, r *http.Request) {
 			"kernel, docker and containerd upgrades need the control plane to run under systemd with systemd-run, so the upgrade survives a docker restart; apply without include_all")
 		return
 	}
+	extras, err := rt.patchDependencyCheck(r.Context(), p, plan)
+	if err != nil {
+		writeCodedError(w, http.StatusConflict, "simulation_failed", err.Error())
+		return
+	}
+	if len(extras) > 0 {
+		writeCodedError(w, http.StatusConflict, "preview_mismatch", "the install would also change packages outside the preview: "+
+			strings.Join(extras, ", ")+"; run a new patch preview or upgrade those packages yourself")
+		return
+	}
 	run := nodePatchRun{ID: ids.MustHex(8), NodeID: id, Actor: rt.actorForRequest(r), Manager: plan.Manager, IncludeAll: req.IncludeAll,
 		RebootIfRequired: req.RebootIfRequired, Status: patchRunRunning, StartedAt: time.Now(),
 		Packages: patchNames(plan.Packages), Held: patchNames(plan.Held)}
@@ -332,8 +359,12 @@ func (rt *Router) handleNodePatchApply(w http.ResponseWriter, r *http.Request) {
 	bg := context.WithoutCancel(r.Context())
 	go func() {
 		defer p.release(id)
-		run = rt.executePatchRun(bg, p, run, plan)
+		var late <-chan patchInstallResult
+		run, late = rt.executePatchRun(bg, p, run, plan)
 		rt.saveNodePatchAudit(bg, actor, "", "", run, "finish")
+		if late != nil {
+			go rt.settleLatePatchRun(bg, p, actor, run, late)
+		}
 		if p.done != nil {
 			p.done <- run.ID
 		}
@@ -394,6 +425,7 @@ type patchInstallResult struct {
 	err      error
 	timedOut bool
 	note     string
+	late     <-chan patchInstallResult // set on timeout: delivers the result once the upgrade really ends
 }
 
 // runPatchInstall never signals the upgrade: on timeout it stops waiting and the install keeps going.
@@ -403,56 +435,41 @@ func (rt *Router) runPatchInstall(ctx context.Context, p *nodePatcher, run nodeP
 	deadline := time.NewTimer(p.applyTimeout(ctx, rt))
 	defer deadline.Stop()
 	if !p.runner.UnderSystemd() {
+		key := "direct-" + run.ID
+		p.track(key, run.NodeID)
 		ch := make(chan patchInstallResult, 1)
 		go func() {
 			out, code, err := p.runner.Run(bg, nil, install[0], install[1:]...)
+			p.untrack(key)
 			ch <- patchInstallResult{out: string(out), exitCode: code, err: err}
 		}()
 		select {
 		case res := <-ch:
 			return res
 		case <-deadline.C:
-			return patchInstallResult{timedOut: true, exitCode: -1, note: "the upgrade is still running on the host; check patch-status later"}
+			return patchInstallResult{timedOut: true, exitCode: -1, late: ch,
+				note: "the upgrade is still running on the host; the node stays locked until it finishes"}
 		}
 	}
-	short := ""
-	if rt.brand != nil {
-		short = rt.brand.ShortName
-	}
-	unit := patchUnitName(short, run.ID)
-	if out, code, err := p.runner.Run(bg, nil, patchBinSystemdRun, patchSystemdRunArgv(unit, install)...); err != nil || code != 0 {
+	unit := patchUnitName(rt.patchBrandShort(), run.ID)
+	desc := patchUnitDescription(run.IncludeAll, run.Packages)
+	if out, code, err := p.runner.Run(bg, nil, patchBinSystemdRun, patchSystemdRunArgv(unit, desc, install)...); err != nil || code != 0 {
 		return patchInstallResult{out: string(out), exitCode: code, err: err, note: "could not start the upgrade unit " + unit}
 	}
-	tick := time.NewTicker(p.pollInterval(ctx, rt))
-	defer tick.Stop()
-	for {
-		select {
-		case <-deadline.C:
-			return patchInstallResult{timedOut: true, exitCode: -1, note: "the upgrade is still running as unit " + unit + "; check patch-status later"}
-		case <-tick.C:
-		}
-		show, err := p.unitQuery(ctx, rt, patchBinSystemctl, "show", "--property=LoadState,ActiveState,SubState,Result,ExecMainStatus", "--", unit)
-		if err != nil {
-			continue
-		}
-		st := parsePatchUnitShow(string(show))
-		if !st.done {
-			continue
-		}
-		lines := strconv.Itoa(max(rt.runtimeSettings.Int(ctx, runtimesettings.KeyNodesPatchOutputTailLines), 1))
-		logs, _ := p.unitQuery(ctx, rt, patchBinJournalctl, "--unit="+unit, "--output=cat", "--no-pager", "--lines="+lines)
-		_, _ = p.unitQuery(ctx, rt, patchBinSystemctl, "stop", "--quiet", "--", unit)
-		_, _ = p.unitQuery(ctx, rt, patchBinSystemctl, "reset-failed", "--quiet", "--", unit)
-		res := patchInstallResult{out: string(logs), exitCode: st.exitCode}
-		if st.lost {
-			res.err = errors.New("the upgrade unit's final status was lost")
-		}
-		return res
+	p.track(unit, run.NodeID)
+	if st, ok := p.waitPatchUnit(ctx, rt, unit, deadline.C); ok {
+		return p.finishPatchUnit(ctx, rt, unit, st)
 	}
+	late := make(chan patchInstallResult, 1)
+	go func() {
+		st, _ := p.waitPatchUnit(bg, rt, unit, nil)
+		late <- p.finishPatchUnit(bg, rt, unit, st)
+	}()
+	return patchInstallResult{timedOut: true, exitCode: -1, late: late,
+		note: "the upgrade is still running as unit " + unit + "; the node stays locked until it finishes"}
 }
 
-func (rt *Router) executePatchRun(ctx context.Context, p *nodePatcher, run nodePatchRun, plan nodePatchPreviewResponse) nodePatchRun {
-	res := rt.runPatchInstall(ctx, p, run, plan)
+func (rt *Router) classifyPatchRun(ctx context.Context, run *nodePatchRun, res patchInstallResult) {
 	run.ExitCode = res.exitCode
 	run.OutputTail = lastPatchLines(res.out, rt.runtimeSettings.Int(ctx, runtimesettings.KeyNodesPatchOutputTailLines))
 	run.RebootNote = res.note
@@ -466,6 +483,11 @@ func (rt *Router) executePatchRun(ctx context.Context, p *nodePatcher, run nodeP
 	default:
 		run.Status = patchRunSucceeded
 	}
+}
+
+func (rt *Router) executePatchRun(ctx context.Context, p *nodePatcher, run nodePatchRun, plan nodePatchPreviewResponse) (nodePatchRun, <-chan patchInstallResult) {
+	res := rt.runPatchInstall(ctx, p, run, plan)
+	rt.classifyPatchRun(ctx, &run, res)
 	if run.Status == patchRunSucceeded {
 		run.RebootNote = ""
 		run.RebootRequired = plan.RebootLikely || (plan.Manager == patchManagerAPT && p.runner.FileExists(aptRebootMarkerPath))
@@ -489,7 +511,7 @@ func (rt *Router) executePatchRun(ctx context.Context, p *nodePatcher, run nodeP
 	p.update(run)
 	rt.logger.Info("api: node patch run finished", slog.String("node_id", run.NodeID), slog.String("run_id", run.ID),
 		slog.String("status", run.Status), slog.Int("packages", len(run.Packages)), slog.Bool("reboot_scheduled", run.RebootScheduled))
-	return run
+	return run, res.late
 }
 
 // maybeRebootAfterPatch re-checks workloads and deploys right before rebooting, since time passed during the upgrade.

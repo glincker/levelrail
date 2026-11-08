@@ -30,6 +30,9 @@ type fakePatchRunner struct {
 	systemd bool
 	block   chan struct{} // non-nil makes a direct install wait until closed
 	hang    bool          // systemctl show blocks until its context ends
+	extra   string        // extra lines the install simulation prints beyond the requested names
+	units   string        // systemctl list-units output
+	states  map[string]string
 }
 
 const patchFakeOutput = "Setting up libssl3\nurl https://user:hunter2@mirror.example\npassword=hunter2\n" //nolint:gosec // fake value that proves masking, not a credential
@@ -41,22 +44,61 @@ func (f *fakePatchRunner) UnderSystemd() bool { return f.systemd }
 func (f *fakePatchRunner) Run(ctx context.Context, _ []string, name string, args ...string) ([]byte, int, error) {
 	f.mu.Lock()
 	f.calls = append(f.calls, append([]string{name}, args...))
-	block, sim, hang := f.block, f.sim, f.hang
+	block, sim, hang, extra, units := f.block, f.sim, f.hang, f.extra, f.units
+	first, state, hasState := "", "", false
+	if len(args) > 0 {
+		first = args[0]
+		state, hasState = f.states[args[len(args)-1]]
+	}
 	f.mu.Unlock()
 	switch {
-	case hang && name == patchBinSystemctl && len(args) > 0 && args[0] == "show":
+	case hang && name == patchBinSystemctl && first == "show":
 		<-ctx.Done()
 		return nil, -1, ctx.Err()
-	case name == patchBinAptGet && len(args) > 0 && args[0] == "-s":
+	case name == patchBinAptGet && first == "-s" && len(args) > 1 && args[1] == "install":
+		return []byte(fakeInstallSim(args) + extra), 0, nil
+	case name == patchBinAptGet && first == "-s":
 		return []byte(sim), 0, nil
 	case name == patchBinAptGet && block != nil:
 		<-block
-	case name == patchBinSystemctl && len(args) > 0 && args[0] == "show":
+	case name == patchBinSystemctl && first == "show" && hasState:
+		return []byte(state), 0, nil
+	case name == patchBinSystemctl && first == "show":
 		return []byte("LoadState=loaded\nActiveState=active\nSubState=exited\nResult=success\nExecMainStatus=0\n"), 0, nil
+	case name == patchBinSystemctl && first == "list-units":
+		return []byte(units), 0, nil
 	case name == patchBinSystemctl, name == patchBinSystemdRun:
 		return nil, 0, nil
 	}
 	return []byte(patchFakeOutput), 0, nil
+}
+
+// fakeInstallSim prints one Inst line per pinned name=version spec, as apt-get -s install would.
+func fakeInstallSim(args []string) string {
+	out := ""
+	for _, a := range args {
+		if n, v, ok := strings.Cut(a, "="); ok && !strings.HasPrefix(a, "-") && !strings.Contains(n, "::") {
+			out += "Inst " + n + " [0] (" + v + " Ubuntu:22.04/jammy-security [amd64])\n"
+		}
+	}
+	return out
+}
+
+func (f *fakePatchRunner) callContaining(sub string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, c := range f.calls {
+		if strings.Contains(strings.Join(c, " "), sub) {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *fakePatchRunner) setState(unit, state string) {
+	f.mu.Lock()
+	f.states[unit] = state
+	f.mu.Unlock()
 }
 
 func (f *fakePatchRunner) call(bin, first string) []string {
@@ -294,7 +336,7 @@ func TestNodePatchDetachedUnitArgvIsFixed(t *testing.T) {
 	joined := strings.Join(argv, " ")
 	if len(argv) < 2 || !strings.HasPrefix(argv[1], "--unit=") || !strings.Contains(argv[1], "-patch-") ||
 		!strings.Contains(joined, "--setenv=NEEDRESTART_MODE=l") || !strings.Contains(joined, "-- "+patchBinAptGet+" install --only-upgrade --no-remove") ||
-		!strings.Contains(joined, "docker-ce=5:24.0.7-1") {
+		!strings.Contains(joined, "docker-ce=5:24.0.7-1") || !strings.Contains(joined, "--description=all=true pkgs=libssl3,") {
 		t.Fatalf("systemd-run argv = %q", joined)
 	}
 	for _, a := range argv {
@@ -312,7 +354,6 @@ func TestNodePatchDetachedUnitArgvIsFixed(t *testing.T) {
 func TestNodePatchTimeoutStopsWaitingWithoutKilling(t *testing.T) {
 	rt, cookie, fake := patchTestRouter(t)
 	fake.block = make(chan struct{})
-	defer close(fake.block)
 	rt.nodePatch.timeout = 20 * time.Millisecond
 	p := patchPreview(t, rt, cookie, `{}`)
 	rec := patchDo(t, rt, cookie, http.MethodPost, "/api/v1/nodes/local/patch/apply", patchApplyBody(p.PreviewID, false, false))
@@ -324,6 +365,14 @@ func TestNodePatchTimeoutStopsWaitingWithoutKilling(t *testing.T) {
 	var runs []nodePatchRun
 	if err := json.Unmarshal(rec.Body.Bytes(), &runs); err != nil || len(runs) != 1 || runs[0].Status != patchRunTimedOut {
 		t.Fatalf("runs = %s (%v)", rec.Body.String(), err)
+	}
+	if !patchLocalBusy(rt) {
+		t.Fatal("node not busy while the timed out install still runs")
+	}
+	close(fake.block)
+	<-rt.nodePatch.done
+	if r := adoptedRuns(rt)[runs[0].ID]; patchLocalBusy(rt) || r.Status != patchRunSucceeded {
+		t.Fatalf("late result not settled: %+v", r)
 	}
 }
 
@@ -400,5 +449,19 @@ func TestNodePatchHungUnitQueryReleasesLock(t *testing.T) {
 	}
 	if fake.call(patchBinShutdown, "") != nil {
 		t.Fatal("rebooted after a run that did not succeed")
+	}
+	if !patchLocalBusy(rt) || fake.callContaining("stop --quiet") {
+		t.Fatal("the lock left with the request, but the still running unit must keep the node busy and unstopped")
+	}
+	fake.mu.Lock()
+	fake.hang = false
+	fake.mu.Unlock()
+	select {
+	case <-rt.nodePatch.done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("watcher never settled the unit")
+	}
+	if patchLocalBusy(rt) || !fake.callContaining("stop --quiet") || fake.call(patchBinShutdown, "") != nil {
+		t.Fatal("finished unit not released, not cleaned up, or rebooted late")
 	}
 }

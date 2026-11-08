@@ -93,6 +93,7 @@ monitors.raw_retention
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+nodes.patch_adopt_limit
 nodes.patch_apply_timeout
 nodes.patch_output_tail_lines
 nodes.patch_poll_interval
