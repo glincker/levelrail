@@ -1,5 +1,6 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
+internal/abuse 68
 internal/autoscale 180
 internal/bindaddr 180
 internal/bindmount 182

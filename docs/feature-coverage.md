@@ -82,7 +82,7 @@ Compose database dumps run on a cron schedule. Restoring one is a manual step to
 | Forward auth in front of a domain | Built and tested | [Domains and ingress](/domains-and-ingress) |
 | Per-domain request body cap and upstream read and write timeouts | Built and tested | [Domain traffic controls](/domain-traffic-controls) |
 | WAF, rate limiting and redirects | Built and tested | [Domains and ingress](/domains-and-ingress) |
-| Abuse limits as runtime settings (`abuse.*`). The ingress limiter still reads environment values, so saved values do not change it yet | Beta | [Ingress abuse defense](/abuse-defense) |
+| Abuse limits as runtime settings (`abuse.*`). Saved values reach the ingress limiter on the next policy save and proxy refresh | Beta | [Ingress abuse defense](/abuse-defense) |
 | Private networks that group apps and allow named app-to-app paths | Built and tested | [Private networks](/private-networks) |
 | WireGuard mesh between nodes | Built and tested | [Multi-node](/multi-node) |
 | Mail DNS records (SPF, DKIM, DMARC, MX), add-only by default | Experimental | [Mail DNS](/mail-dns) |
