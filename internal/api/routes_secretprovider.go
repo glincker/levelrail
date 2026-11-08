@@ -18,16 +18,18 @@ func (rt *Router) registerSecretProviderRoutes(mux *http.ServeMux) {
 
 // secretProviderResource is one provider connection; the token is write-only and never returned.
 type secretProviderResource struct {
-	Name        string     `json:"name"`
-	Type        string     `json:"type"`
-	Project     string     `json:"project"`
-	Environment string     `json:"environment"`
-	Path        string     `json:"path,omitempty"`
-	BaseURL     string     `json:"base_url,omitempty"`
-	SelfHosted  bool       `json:"self_hosted"`
-	HasToken    bool       `json:"has_token"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	GraceUntil  *time.Time `json:"rotation_grace_until,omitempty"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Project     string `json:"project"`
+	Environment string `json:"environment"`
+	Path        string `json:"path,omitempty"`
+	BaseURL     string `json:"base_url,omitempty"`
+	SelfHosted  bool   `json:"self_hosted"`
+	HasToken    bool   `json:"has_token"`
+	// ClientID is the non-secret Infisical machine identity ID; the client secret is never returned.
+	ClientID   string     `json:"client_id,omitempty"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	GraceUntil *time.Time `json:"rotation_grace_until,omitempty"`
 }
 
 type secretProviderListResponse struct {
@@ -80,9 +82,16 @@ func (rt *Router) handleListSecretProviders(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: list secret providers failed", err)
 		return
 	}
+	// The client ID needs a credential decrypt, so only root callers (the PUT tier) get it.
+	abilities, aerr := rt.callerAbilities(r)
+	canSeeID := aerr == nil && hasAbility(abilities, AbilityRoot)
 	out := secretProviderListResponse{Providers: make([]secretProviderResource, 0, len(cfgs))}
 	for _, c := range cfgs {
-		out.Providers = append(out.Providers, toSecretProviderResource(c, st.HasToken(r.Context(), c.Name)))
+		res := toSecretProviderResource(c, st.HasToken(r.Context(), c.Name))
+		if canSeeID {
+			res.ClientID = identityClientID(r, st, c)
+		}
+		out.Providers = append(out.Providers, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -113,7 +122,25 @@ func (rt *Router) handlePutSecretProvider(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, toSecretProviderResource(saved, st.HasToken(r.Context(), saved.Name)))
+	res := toSecretProviderResource(saved, st.HasToken(r.Context(), saved.Name))
+	res.ClientID = identityClientID(r, st, saved)
+	writeJSON(w, http.StatusOK, res)
+}
+
+// identityClientID returns only the client ID half of a stored machine identity credential; any failure yields "".
+func identityClientID(r *http.Request, st secretprovider.Store, cfg secretprovider.Config) string {
+	if cfg.Type != secretprovider.TypeInfisical {
+		return ""
+	}
+	tok, _, err := st.Tokens(r.Context(), cfg, time.Now())
+	if err != nil {
+		return ""
+	}
+	id, _, ok := secretprovider.ParseIdentity(tok)
+	if !ok {
+		return ""
+	}
+	return id
 }
 
 func (rt *Router) handleDeleteSecretProvider(w http.ResponseWriter, r *http.Request) {

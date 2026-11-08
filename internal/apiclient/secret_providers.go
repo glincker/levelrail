@@ -17,6 +17,7 @@ type SecretProviderResource struct {
 	BaseURL     string     `json:"base_url,omitempty"`
 	SelfHosted  bool       `json:"self_hosted"`
 	HasToken    bool       `json:"has_token"`
+	ClientID    string     `json:"client_id,omitempty"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	GraceUntil  *time.Time `json:"rotation_grace_until,omitempty"`
 }

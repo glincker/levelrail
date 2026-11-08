@@ -20,6 +20,7 @@ export interface SecretProvider {
   base_url?: string
   self_hosted: boolean
   has_token: boolean
+  client_id?: string
   updated_at: string
   rotation_grace_until?: string
 }

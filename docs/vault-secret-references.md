@@ -142,7 +142,7 @@ Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or
 
 ### Infisical machine identity
 
-Instead of a long-lived access token, an Infisical provider can use a machine identity with universal auth. Give the two values separately: `--client-id ID --client-secret-file PATH|-` on the CLI, or the Client ID and Client secret fields in the dashboard form. They cannot be combined with an access token. The server stores them as `infisical-identity:CLIENT_ID:CLIENT_SECRET` (you can also pass that string as the provider token), encrypted like any token and never returned.
+Instead of a long-lived access token, an Infisical provider can use a machine identity with universal auth. Give the two values separately: `--client-id ID --client-secret-file PATH|-` on the CLI, or the Client ID and Client secret fields in the dashboard form. They cannot be combined with an access token. The server stores them as `infisical-identity:CLIENT_ID:CLIENT_SECRET` (you can also pass that string as the provider token), encrypted like any token. The client ID is shown again when you edit the provider (the client secret never is); changing the ID needs the client secret entered again, and saving with neither changed keeps the stored credential.
 
 Levelrail logs in when it first needs to read, keeps the short-lived access token in memory (one per provider), and logs in again lazily once about 90 percent of its lifetime has passed. There is no background refresh. A rejected login fails the read closed, and neither the client secret nor the access token appears in errors or logs. Replacing the credential triggers a new login on the next read.
 
@@ -150,7 +150,7 @@ Status: Beta. Tested against a local stand-in server only, not yet against a rea
 
 ## 1Password Connect
 
-1Password is a read only provider that talks to a Connect server you host. It is set up in Settings > Secret providers, through the API or the CLI. The Connect server URL is required, the default vault (`--project`) is optional and no environment is used. Connect it with the Connect server URL and an access token:
+1Password is a read only provider that talks to a Connect server you host. It is set up in Settings > Secret providers, through the API or the CLI. The Connect server URL is required, the default vault (`--project`) is optional through the API and CLI, but the dashboard form requires it. No environment is used. Connect it with the Connect server URL and an access token:
 
 ```bash
 levelrail-cli secrets provider add vaults --type onepassword --base-url https://connect.internal:8080 --project Prod --provider-token-file -

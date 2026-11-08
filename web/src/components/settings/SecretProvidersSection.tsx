@@ -56,7 +56,7 @@ function ProviderForm({
   const [path, setPath] = useState(initial?.path ?? '')
   const [baseUrl, setBaseUrl] = useState(initial?.base_url ?? '')
   const [token, setToken] = useState('')
-  const [clientId, setClientId] = useState('')
+  const [clientId, setClientId] = useState(initial?.client_id ?? '')
   const [clientSecret, setClientSecret] = useState('')
   const [error, setError] = useState<string | null>(null)
   const isDoppler = type === 'doppler'
@@ -75,16 +75,26 @@ function ProviderForm({
         setError(t('secretProviders.errBaseUrl'))
         return
       }
+      if (!project.trim()) {
+        setError(t('secretProviders.errVault'))
+        return
+      }
     } else if (!project.trim() || !environment.trim()) {
       setError(t('secretProviders.errScope'))
       return
     }
     const id = clientId.trim()
     const secret = clientSecret.trim()
-    const useIdentity = isInfisical && (id !== '' || secret !== '')
+    // An untouched prefilled ID with no new secret keeps the stored credential.
+    const idChanged = id !== (initial?.client_id ?? '')
+    const useIdentity = isInfisical && (secret !== '' || idChanged)
     if (useIdentity) {
       if (!id || !secret || /[:\s]/.test(id)) {
-        setError(t('secretProviders.errIdentity'))
+        setError(
+          initial?.client_id
+            ? t('secretProviders.errIdentityReenter')
+            : t('secretProviders.errIdentity'),
+        )
         return
       }
       if (token.trim()) {
@@ -116,7 +126,6 @@ function ProviderForm({
       {
         onSuccess: () => {
           setToken('')
-          setClientId('')
           setClientSecret('')
           onDone()
         },

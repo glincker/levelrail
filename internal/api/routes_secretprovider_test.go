@@ -31,6 +31,21 @@ func TestSecretProviderResourceNeverSerializesToken(t *testing.T) {
 	}
 }
 
+func TestIdentityClientIDReturnsOnlyTheID(t *testing.T) {
+	id, secret, ok := secretprovider.ParseIdentity(secretprovider.IdentityPrefix + "cid-1:s3cret-value")
+	if !ok || id != "cid-1" {
+		t.Fatalf("parse: %q %v", id, ok)
+	}
+	res := secretProviderResource{Name: "inf", Type: secretprovider.TypeInfisical, ClientID: id}
+	raw, err := json.Marshal(res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"client_id":"cid-1"`) || strings.Contains(string(raw), secret) {
+		t.Fatalf("resource must carry the ID and never the secret: %s", raw)
+	}
+}
+
 func TestSecretProviderOnePasswordNeedsNoProjectOrEnvironment(t *testing.T) {
 	cfg := secretprovider.Config{Name: "vaults", Type: secretprovider.TypeOnePassword, BaseURL: "https://connect.internal:8080"}
 	if err := cfg.Validate(); err != nil {
