@@ -24,15 +24,24 @@ levelrail-cli jobs run web --command "node scripts/backfill.js" \
 | `--timeout D` | Timeout of each attempt. |
 | `--wait` | Block until the job settles. The exit code is 5 when it failed. |
 
-`jobs run` is the way to run a one-off command today, for example a migration or a console task. A shorter `apps run APP -- COMMAND` form that streams the output and exits with the command's code is **from v0.9.5**.
+`jobs run` is the way to run a one-off command today, for example a migration or a console task. The shorter form below is the usual way.
 
 A failed attempt is retried after an exponentially growing delay (first delay `APP_JOBS_RETRY_BACKOFF`, capped by `APP_JOBS_RETRY_BACKOFF_MAX`). Every attempt is a normal run: it appears in `jobs history <app>` with its output and exit code. An attempt that has to wait because the app already has `APP_JOBS_MAX_CONCURRENT_PER_APP` jobs running is not a failure and spends none of the backoff budget.
 
 The job ends `Succeeded` when all completions succeeded, or `Failed` once more than `backoff-limit` attempts have failed. The status carries the counts: completions succeeded, failed attempts, runs in flight and the IDs of the runs.
 
+### Run a command with `apps run`
+
+```bash
+levelrail-cli apps run web -- bin/rails db:migrate
+levelrail-cli apps run shop --service worker --timeout 5m -- node scripts/backfill.js
+```
+
+`apps run` starts a one-shot job, waits for it, prints the output and exits with the command's own exit code, so it works in scripts and CI. No terminal is needed. The output is printed when the command finishes, not line by line. A timeout exits 124, and a job that failed without a command exit code (the container could not start) exits 5. Secret values are redacted from the output, and the command line is never echoed. `--service S` targets one service of a multi-service app. `--json` prints the finished job, output included, and nothing else. Use `apps exec` instead to run inside the live container.
+
 ### API
 
-`POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. Starting needs the same permission as running a scheduled job now (deploy on the app); reading needs read.
+`POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. Starting needs the same permission as running a scheduled job now (deploy on the app); reading needs read. The `GET` answer also carries the newest attempt's `exit_code`, `run_status` and `output` (the last `APP_ONESHOT_OUTPUT_TAIL_BYTES` bytes, default 65536, with `output_truncated` set when it was cut), so one call is enough to see what the command printed.
 
 ```json
 { "app": "web", "command": ["node", "scripts/backfill.js"], "completions": 10, "parallelism": 3, "backoff_limit": 4, "timeout_seconds": 900 }
@@ -46,6 +55,7 @@ The job ends `Succeeded` when all completions succeeded, or `Failed` once more t
 | `APP_JOB_DEFAULT_TIMEOUT` | `10m` | Per-attempt timeout when the request gives none. |
 | `APP_JOB_MAX_COMPLETIONS` | `100` | Largest `completions` accepted. |
 | `APP_JOB_MAX_PARALLELISM` | `10` | Largest `parallelism` accepted. |
+| `APP_ONESHOT_OUTPUT_TAIL_BYTES` | `65536` | Output bytes kept in a job answer. The full output stays in the run history. |
 | `APP_JOB_ONESHOT_KEEP` | `100` | Finished jobs whose status is kept. Older ones are pruned together with their hidden task row. |
 
 ### Limits today

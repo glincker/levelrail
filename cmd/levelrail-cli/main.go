@@ -437,6 +437,7 @@ Usage:
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps run <name> [--service S] -- <cmd> [args...]   run a command once in a fresh container, exits with its exit code
   %[1]s deploy <name> [flags]        convenience alias for apps deploy
   %[1]s rollback <name> [flags]      convenience alias for apps rollback
   %[1]s restart <name> [--wait]      convenience alias for apps restart

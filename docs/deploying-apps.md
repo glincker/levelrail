@@ -604,6 +604,19 @@ levelrail-cli apps exec NAME --interactive [-- sh]   # a real terminal
 
 The interactive terminal is `GET /api/v1/apps/{name}/terminal` over WebSocket: a full PTY with resize, a shell kept alive across requests, arrow keys and Ctrl-C working, behind the same `root` gate. In the dashboard, the **Exec** tab shows the terminal above the one-shot runner. The one-shot endpoint is deliberately not a shell. A remote command stuck on a container-side read is not guaranteed to stop the instant the timeout fires, only the HTTP handler is guaranteed to return on time.
 
+### Scale, restart and read logs per service
+
+A multi-service app keeps each service as its own app named `<app>-<service>`. The CLI takes the service key so you do not have to spell that out:
+
+```bash
+levelrail-cli apps scale shop web=3 worker=1      # replicas per service, all keys checked first
+levelrail-cli apps restart shop --service web     # recreate one service only
+levelrail-cli apps logs shop --service web --since 10m -n 100
+levelrail-cli apps run shop --service worker -- bin/migrate
+```
+
+`apps logs` follows live by default when stdout is a terminal and you gave no search flag; `--no-follow` prints stored entries instead. Piped output and `--json` never follow, so scripts keep the same stable output. The same actions are in the API (`PUT /api/v1/apps/{name}`, `POST /api/v1/apps/{name}/restart`, `GET /api/v1/apps/{name}/logs`, `POST /api/v1/jobs/runs`). See [Jobs](/jobs#run-a-command-with-apps-run) for `apps run`.
+
 ### Scheduled tasks
 
 A scheduled task runs an argv command, with no shell, inside an app's currently running container on a standard 5-field cron expression. It is cron inside a container.

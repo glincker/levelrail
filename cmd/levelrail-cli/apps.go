@@ -157,6 +157,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsResourceUsage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "overview":
 		return runAppsOverview(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "run":
+		return runAppsRun(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "console":
@@ -361,6 +363,7 @@ func appsUsage(prog string) string {
   %[1]s apps keep <name> [flags]        keep a one-click trial deployment as a permanent app
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps scale <name> --replicas N [--strategy S] [flags]   change replica count and/or deploy strategy
+  %[1]s apps scale <name> web=2 worker=1 [flags]   set replicas per service
   %[1]s apps delete <name> [flags]      remove an app and stop its containers
   %[1]s apps tree <name> [flags]     show what an app consists of as a tree (--watch to redraw)
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
@@ -377,6 +380,7 @@ func appsUsage(prog string) string {
   %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps overview [name ...] [flags]   CPU, memory, traffic and errors for every app in one request
   %[1]s apps exec <name> --<cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps run <name> [--service S] -- <cmd> [args...]   run a command once in a fresh container, exits with its exit code
   %[1]s apps console <name> [-- command...]   open the console its template declares (for example rcon-cli)
   %[1]s apps tunnel <name> [--service s] [--port p] [--local-port n]   reach a private app port from 127.0.0.1
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 )
 
 // runAppsScale implements "apps scale <name> --replicas N [--strategy S]":
@@ -24,9 +26,18 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if !ok {
 		return exitCode
 	}
-	name, ok := requireOneArg(fs, stderr, prog, "apps scale", "app name")
-	if !ok {
+	rest := fs.Args()
+	if len(rest) == 0 {
+		_, _ = fmt.Fprintf(stderr, "%s: apps scale requires an app name\n\n", prog)
+		fs.Usage()
 		return exitUsage
+	}
+	name := rest[0]
+	if len(rest) > 1 {
+		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("service=count pairs cannot be combined with --replicas, --strategy, --memory or --cpu"))
+		}
+		return scaleServices(prog, name, rest[1:], apiURLFlag, tokenFlag, profileFlag, jsonOut, of, stdout, stderr, lookupEnv)
 	}
 	if replicas < 0 || cpu < 0 || (replicas == 0 && strategy == "" && memory == "" && cpu == 0) {
 		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1), --strategy, --memory and/or --cpu"))
@@ -79,6 +90,87 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	return exitOK
 }
 
+// parseScalePairs turns "web=2" arguments into ordered service/count pairs, rejecting every malformed one up front.
+func parseScalePairs(args []string) ([]scalePair, error) {
+	seen := map[string]bool{}
+	var out []scalePair
+	for _, a := range args {
+		key, val, found := strings.Cut(a, "=")
+		if !found || key == "" || val == "" {
+			return nil, newValidationError("%q is not service=count, e.g. web=2 worker=1", a)
+		}
+		n, err := strconv.Atoi(val)
+		if err != nil || n < 1 {
+			return nil, newValidationError("%q: the count must be a whole number of at least 1 (use \"apps stop\" to run none)", a)
+		}
+		if seen[key] {
+			return nil, newValidationError("service %q is given twice", key)
+		}
+		seen[key] = true
+		out = append(out, scalePair{service: key, replicas: n})
+	}
+	return out, nil
+}
+
+type scalePair struct {
+	service  string
+	replicas int
+}
+
+// scaleServices resolves each service key through the app group, then sets every replica count.
+// All keys are checked before the first change so a typo never leaves a half-scaled app.
+func scaleServices(prog, app string, pairArgs []string, apiURLFlag, tokenFlag, profileFlag string, jsonOut bool, of outputFlags, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	pairs, err := parseScalePairs(pairArgs)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	ctx := context.Background()
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	group, err := client.GetAppGroup(ctx, app)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get services of app %q: %w", app, err))
+	}
+	known := map[string]bool{}
+	var keys []string
+	for _, s := range group.Services {
+		if key, ok := strings.CutPrefix(s.Name, app+"-"); ok {
+			known[s.Name] = true
+			keys = append(keys, key)
+		}
+	}
+	for _, p := range pairs {
+		if !known[serviceAppName(app, p.service)] {
+			if len(keys) == 0 {
+				return reportError(stdout, stderr, jsonOut, newValidationError("app %q has no named services; use --replicas N", app))
+			}
+			return reportError(stdout, stderr, jsonOut, newValidationError("app %q has no service %q (services: %s)", app, p.service, strings.Join(keys, ", ")))
+		}
+	}
+	updated := make([]appResource, 0, len(pairs))
+	for _, p := range pairs {
+		target := serviceAppName(app, p.service)
+		res, err := client.GetApp(ctx, target)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", target, err))
+		}
+		res.Replicas = p.replicas
+		if res, err = client.UpdateApp(ctx, target, res); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("scale service %q: %w", p.service, err))
+		}
+		updated = append(updated, res)
+	}
+	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
+		for _, u := range updated {
+			_, _ = fmt.Fprintf(stdout, "%s scaled to %d replica(s)\n", u.Name, u.Replicas)
+		}
+		_, _ = fmt.Fprintf(stderr, "reconcile is asynchronous, check \"%s apps status %s\"\n", prog, app)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
 func parseOptionalMemory(s string) (int64, error) {
 	if s == "" {
 		return 0, nil
@@ -89,10 +181,15 @@ func parseOptionalMemory(s string) (int64, error) {
 func appsScaleUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
+  %[1]s apps scale <name> web=2 worker=1 [flags]
 
 Sets an app's replica count, deploy strategy and/or resource limits. Works
 for any app, including one running a prebuilt image. Limits apply to a
 running container live when Docker allows it, otherwise at the next restart.
+
+With service=count pairs, each named service of a multi-service app gets its
+own replica count (counts of at least 1; every service is checked before any
+change). Pairs cannot be combined with the flags below.
 
 Flags:
   --replicas int          number of container replicas (at least 1)

@@ -114,6 +114,7 @@ var Tree = map[string]*Node{
 		"resource-usage":          nil,
 		"overview":                nil,
 		"exec":                    nil,
+		"run":                     nil,
 		"console":                 nil,
 		"exec-access":             {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
 		"log-drain":               {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},

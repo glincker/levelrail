@@ -128,6 +128,48 @@ type oneShotResponse struct {
 	Message        string     `json:"message,omitempty"`
 	StartedAt      time.Time  `json:"started_at"`
 	FinishedAt     *time.Time `json:"finished_at,omitempty"`
+	// Latest attempt's result, filled on GET so a caller needs no second lookup.
+	ExitCode        *int   `json:"exit_code,omitempty"`
+	RunStatus       string `json:"run_status,omitempty"`
+	Output          string `json:"output,omitempty"`
+	OutputTruncated bool   `json:"output_truncated,omitempty"`
+}
+
+const (
+	envOneShotOutputTail     = "APP_ONESHOT_OUTPUT_TAIL_BYTES"
+	defaultOneShotOutputTail = 64 * 1024
+)
+
+// oneShotOutputTail is how many trailing output bytes a job response carries.
+func oneShotOutputTail() int {
+	if v, ok := os.LookupEnv(envOneShotOutputTail); ok {
+		var n int
+		if _, err := fmt.Sscanf(v, "%d", &n); err == nil && n > 0 {
+			return n
+		}
+	}
+	return defaultOneShotOutputTail
+}
+
+// attachOneShotOutput adds the newest attempt's exit code and output tail.
+// Output was redacted when the run was recorded; a lookup failure leaves the status-only answer.
+func (rt *Router) attachOneShotOutput(ctx context.Context, taskID string, resp *oneShotResponse) {
+	if taskID == "" || rt.scheduledTasks == nil {
+		return
+	}
+	runs, err := rt.scheduledTasks.ListScheduledTaskRuns(ctx, store.ScheduledTaskRunFilter{ServiceName: resp.App, TaskID: taskID, Limit: 1})
+	if err != nil || len(runs) == 0 {
+		return
+	}
+	run, err := rt.scheduledTasks.GetScheduledTaskRun(ctx, runs[0].ID)
+	if err != nil {
+		return
+	}
+	resp.ExitCode, resp.RunStatus = run.ExitCode, run.Status
+	resp.Output = run.Output
+	if limit := oneShotOutputTail(); len(resp.Output) > limit {
+		resp.Output, resp.OutputTruncated = resp.Output[len(resp.Output)-limit:], true
+	}
 }
 
 func toOneShotResponse(e *scheduledtask.OneShotEntry) oneShotResponse {
@@ -254,13 +296,17 @@ func (rt *Router) handleGetOneShotJob(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	p := rt.oneShotPersister(r.Context())
 	if entry, ok := oneShotRegistry.Get(id); ok {
-		writeJSON(w, http.StatusOK, toOneShotResponse(entry))
+		resp := toOneShotResponse(entry)
+		rt.attachOneShotOutput(r.Context(), entry.TaskID, &resp)
+		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 	if p != nil {
 		j, err := p.GetOneShotJob(r.Context(), id)
 		if err == nil {
-			writeJSON(w, http.StatusOK, fromStoredOneShot(j))
+			resp := fromStoredOneShot(j)
+			rt.attachOneShotOutput(r.Context(), j.TaskID, &resp)
+			writeJSON(w, http.StatusOK, resp)
 			return
 		}
 		if !errors.Is(err, store.ErrOneShotJobNotFound) {

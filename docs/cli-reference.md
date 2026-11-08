@@ -223,12 +223,13 @@ levelrail-cli apps builds trigger <name> --repo URL --ref REF [flags]
 levelrail-cli apps rollback <name> [--image IMAGE | --release RELEASE_ID] [flags]
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--release RELEASE_ID] [--preview] [flags]
 levelrail-cli apps wait <name> [--attempt-id ID] [--timeout 5m] [--poll-interval 3s] [flags]
-levelrail-cli apps restart <name> [flags]
+levelrail-cli apps restart <name> [--service S] [flags]
 levelrail-cli apps apply <name> [flags]
 levelrail-cli apps stop <name> [flags]
 levelrail-cli apps keep <name> [flags]
 levelrail-cli apps start <name> [flags]
 levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
+levelrail-cli apps scale <name> web=2 worker=1 [flags]
 levelrail-cli apps group <name> [flags]
 levelrail-cli apps hook-runs <name> [flags]
 levelrail-cli apps images <name> [flags]
@@ -246,7 +247,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps promote` promotes the app's image onto a sibling app in another environment. `--release` promotes a specific release id from `releases list` instead of the one the app is bound to.
 - `apps rollback --release ID` redeploys that release by its digest pinned ref and retargets the binding. Both `--release` flags need `APP_RELEASE_BINDINGS=on` on the server and answer 404 for a release that does not belong to the app.
 - `apps apply` restarts an app so saved env, secret and config changes reach the running container; it does nothing when nothing is pending.
-- `apps scale` changes the replica count and/or the deploy strategy.
+- `apps scale` changes the replica count and/or the deploy strategy. With `service=count` pairs it sets replicas per service of a multi-service app; every key is checked before anything changes. `apps restart --service S` recreates one service.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
 - `apps set` changes app settings. `--pr-comment-commands on|off` lets write-access users run `/levelrail` commands from pull request comments (see [Pull request comment commands](/pr-comment-commands)).
 - `apps set-node` and `apps clear-node` move an app to another node, or back to the control plane's own local node. With `--with-volumes` the named volumes move too, and `apps moves` shows the history of those moves.
@@ -361,6 +362,7 @@ levelrail-cli apps exec-access enable|disable|status <name> [flags]
 
 ```
 levelrail-cli apps exec <name> -- <command> [args...] [flags]
+levelrail-cli apps run <name> [--service S] [--timeout D] -- <command> [args...] [flags]
 levelrail-cli apps console <name> [-- <command> [args...]] [flags]
 levelrail-cli apps export <name> [--format compose] [--out DIR|-] [flags]
 levelrail-cli apps logs <name> [flags]
@@ -384,9 +386,10 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 ```
 
 - `apps exec` runs a command in the app's container and exits with its real exit code.
+- `apps run` runs a command once in a fresh container with the app's env and secrets, waits, prints the output and exits with the command's exit code (124 on timeout, 5 when the job failed without one). See [Jobs](/jobs#run-a-command-with-apps-run).
 - `apps console <app>` opens the console the app's template declares (Minecraft: `rcon-cli`) through the same exec path. With no command it opens a terminal; with `-- list` it runs once and prints the output. Templates that declare no console are refused with a pointer to `apps exec`. The console reads its credentials from the container's environment, nothing secret is passed on the command line.
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
-- `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
+- `apps logs` searches an app's stored log entries (`--since 10m`, `--tail N` or `-n N`, `--service S`), or streams live with `--follow`. On a terminal with no search flag it follows live by default; `--no-follow` and piped or `--json` output give stored entries. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `releases list APP` shows the app's release snapshots, newest first, with image digest, creation time, source reason and the current release marked. The list stays empty unless `APP_RELEASE_BINDINGS` is `shadow` or `on`; `--json` prints the raw response.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
