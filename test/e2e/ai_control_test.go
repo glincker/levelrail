@@ -160,4 +160,23 @@ func TestAIControl_Live_AdminModeBlocksAgentAllowsReal(t *testing.T) {
 	if st, raw := agentDo(t, http.MethodPut, freezeURL(e2eAIControlDevApp), token, e2eAIControlFreezeBody); st != http.StatusForbidden || !strings.Contains(raw, "limited by the current AI control mode") {
 		t.Fatalf("observe mode, write: status = %d, want 403 mode limit, body = %s", st, raw)
 	}
+
+	// The pinned session link is refused by the same mode limit and the
+	// refusal leaves one more agent-attributed audit row.
+	devRefusals := regexp.MustCompile(`"path":"/api/v1/apps/` + e2eAIControlDevApp + `/deploy-freeze","status_code":403[^{}]*"agent_name":"e2e-agent"`)
+	devRows := func() int {
+		t.Helper()
+		st, raw := requestJSON(t, admin, http.MethodGet, ts.URL+"/api/v1/audit-log?limit=100", "")
+		if st != http.StatusOK {
+			t.Fatalf("audit log: status = %d, body = %.400s", st, raw)
+		}
+		return len(devRefusals.FindAll(raw, -1))
+	}
+	devBefore := devRows()
+	if st, raw := requestJSON(t, pinned, http.MethodPut, freezeURL(e2eAIControlDevApp), e2eAIControlFreezeBody); st != http.StatusForbidden || !strings.Contains(string(raw), "limited by the current AI control mode") {
+		t.Fatalf("observe mode, pinned session write: status = %d, want 403 mode limit, body = %s", st, raw)
+	}
+	if after := devRows(); after != devBefore+1 {
+		t.Fatalf("observe mode pinned refusals = %d, want %d (one new audit row)", after, devBefore+1)
+	}
 }
