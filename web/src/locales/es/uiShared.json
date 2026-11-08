@@ -3,5 +3,21 @@
     "saving": "Guardando",
     "saved": "Guardado",
     "error": "No se pudo guardar"
+  },
+  "breadcrumb": {
+    "label": "Ruta de navegación"
+  },
+  "pagination": {
+    "label": "Paginación",
+    "status": "Página {{page}} de {{count}}",
+    "previous": "Página anterior",
+    "next": "Página siguiente"
+  },
+  "stepper": {
+    "decrease": "Disminuir",
+    "increase": "Aumentar"
+  },
+  "chip": {
+    "remove": "Quitar {{label}}"
   }
 }

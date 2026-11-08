@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { CheckGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 
@@ -25,5 +26,39 @@ export function SelectedMark({ selected }: { selected: boolean }) {
       aria-hidden="true"
       className="pointer-events-none absolute top-1.5 right-1.5 size-3.5 text-state-accent"
     />
+  )
+}
+
+// Pick-one card: layer edge, aria-pressed and a check mark, so selection never relies on colour alone.
+export function SelectableCard({
+  selected,
+  onSelect,
+  children,
+  className,
+  disabled,
+}: {
+  selected: boolean
+  onSelect: () => void
+  children: ReactNode
+  className?: string
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      className={selectableCardClass(
+        selected,
+        cn(
+          'banner-edge rounded-glinr-card p-4 text-left disabled:opacity-50',
+          className,
+        ),
+      )}
+    >
+      {children}
+      <SelectedMark selected={selected} />
+    </button>
   )
 }

@@ -3,5 +3,21 @@
     "saving": "Saving",
     "saved": "Saved",
     "error": "Could not save"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "status": "Page {{page}} of {{count}}",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "stepper": {
+    "decrease": "Decrease",
+    "increase": "Increase"
+  },
+  "chip": {
+    "remove": "Remove {{label}}"
   }
 }

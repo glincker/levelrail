@@ -100,6 +100,22 @@ describe('EmptyState', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
+  it('renders a left aligned kind with the action beside the copy', () => {
+    vi.mocked(useBrand).mockReturnValue(baseBrand)
+    render(
+      <EmptyState
+        kind="permission"
+        icon={<PackageGlassIcon className="size-5" />}
+        title="Ask an admin"
+        description="You cannot view this."
+        action={<button type="button">Request access</button>}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Request access' }),
+    ).toBeInTheDocument()
+  })
+
   it('renders the illustration instead of the icon when set', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
