@@ -10,6 +10,8 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -117,6 +119,40 @@ func TestAIControl_Live_AdminModeBlocksAgentAllowsReal(t *testing.T) {
 	}
 	if st, raw := agentDo(t, http.MethodPost, ts.URL+"/api/v1/deploy-approvals/da_missing/approve", token, ""); st != http.StatusForbidden || !strings.Contains(raw, "a human must") {
 		t.Fatalf("agent approve: status = %d, want 403, body = %s", st, raw)
+	}
+
+	// A session link minted from the agent token stays an agent: redeeming
+	// it must not widen what the agent may do, and the refusal is audited.
+	status, body = agentDo(t, http.MethodPost, ts.URL+"/api/v1/auth/session-links", token, "")
+	if status != http.StatusCreated && status != http.StatusOK {
+		t.Fatalf("agent mint session link: status = %d, body = %s", status, body)
+	}
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("cookiejar.New() error = %v", err)
+	}
+	pinned := &http.Client{Jar: jar, Timeout: e2eHTTPTimeout}
+	linkToken := decodeField(t, []byte(body), "token")
+	if st, raw := postJSON(t, pinned, ts.URL+"/api/v1/auth/session-links/consume", `{"token":"`+linkToken+`"}`); st != http.StatusOK && st != http.StatusCreated {
+		t.Fatalf("consume agent session link: status = %d, body = %s", st, raw)
+	}
+	// The direct refusal above already left an agent-attributed row, so only
+	// a delta proves the pinned refusal is audited too.
+	agentRefusals := regexp.MustCompile(`"path":"/api/v1/apps/` + e2eAIControlProdApp + `/deploy-freeze","status_code":403[^{}]*"agent_name":"e2e-agent"`)
+	refusedRows := func() int {
+		t.Helper()
+		st, raw := requestJSON(t, admin, http.MethodGet, ts.URL+"/api/v1/audit-log?limit=100", "")
+		if st != http.StatusOK {
+			t.Fatalf("audit log: status = %d, body = %.400s", st, raw)
+		}
+		return len(agentRefusals.FindAll(raw, -1))
+	}
+	before := refusedRows()
+	if st, raw := requestJSON(t, pinned, http.MethodPut, freezeURL(e2eAIControlProdApp), e2eAIControlFreezeBody); st != http.StatusForbidden || !strings.Contains(string(raw), "not allowed in this environment") {
+		t.Fatalf("pinned session, production app: status = %d, want 403 env limit, body = %s", st, raw)
+	}
+	if after := refusedRows(); after != before+1 {
+		t.Fatalf("agent-attributed refusals = %d, want %d (one new audit row for the pinned write)", after, before+1)
 	}
 
 	// A person tightens the mode and the same write is now refused.
