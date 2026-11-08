@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAbilities } from '../../hooks/useAbilities'
 import { useDatabaseNetwork } from '../../queries/databaseAccess'
 import { AllowedSourcesCard } from './AllowedSourcesCard'
 import { ReachabilityCard } from './ReachabilityCard'
@@ -12,9 +11,8 @@ import { TlsCard } from './TlsCard'
 export function NetworkPanel({ databaseName }: { databaseName: string }) {
   const { t } = useTranslation('databaseAccess')
   const { data, isLoading, error } = useDatabaseNetwork(databaseName)
-  // The network mutation routes require the root ability.
-  const { role, can } = useAbilities()
-  const canEdit = can('root')
+  // The server decides root on this database, policies included.
+  const canEdit = data?.can_edit === true
 
   return (
     <div className="space-y-4">
@@ -36,7 +34,7 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
         </Alert>
       ) : (
         <>
-          {role !== null && !canEdit ? (
+          {!canEdit ? (
             <p className="text-muted-foreground text-xs">
               {t('network.readOnlyNotice')}
             </p>

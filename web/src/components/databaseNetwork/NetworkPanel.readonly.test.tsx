@@ -5,21 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import databaseAccess from '../../locales/en/databaseAccess.json'
 import { NetworkPanel } from './NetworkPanel'
 
-interface AbilityState {
-  role: string | null
-  can: (ability: string) => boolean
-}
-
-const abilities = vi.hoisted((): { value: AbilityState } => ({
-  value: { role: null, can: () => false },
+const network = vi.hoisted((): { canEdit: boolean | undefined } => ({
+  canEdit: undefined,
 }))
 
-vi.mock('../../hooks/useAbilities', () => ({
-  useAbilities: () => abilities.value,
-}))
 vi.mock('../../queries/databaseAccess', () => ({
   useDatabaseNetwork: () => ({
-    data: { scope: { current: 'x' } },
+    data: { scope: { current: 'x' }, can_edit: network.canEdit },
     isLoading: false,
     error: null,
   }),
@@ -49,11 +41,11 @@ function renderPanel() {
 
 describe('NetworkPanel read-only gate', () => {
   beforeEach(() => {
-    abilities.value = { role: null, can: () => false }
+    network.canEdit = undefined
   })
 
   it('disables controls and explains it for a viewer', () => {
-    abilities.value = { role: 'viewer', can: (a) => a === 'read' }
+    network.canEdit = false
     renderPanel()
     expect(screen.getByRole('button', { name: 'Save scope' })).toBeDisabled()
     expect(
@@ -62,14 +54,14 @@ describe('NetworkPanel read-only gate', () => {
   })
 
   it('enables controls and hides the notice for an admin', () => {
-    abilities.value = { role: 'admin', can: () => true }
+    network.canEdit = true
     renderPanel()
     expect(screen.getByRole('button', { name: 'Save scope' })).toBeEnabled()
     expect(screen.queryByText(databaseAccess.network.readOnlyNotice)).toBeNull()
   })
 
-  it('shows no notice while the role is unknown', () => {
+  it('fails closed when the server omits can_edit', () => {
     renderPanel()
-    expect(screen.queryByText(databaseAccess.network.readOnlyNotice)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Save scope' })).toBeDisabled()
   })
 })
