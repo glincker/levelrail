@@ -147,7 +147,8 @@
     "loadFailedHint": "Verifica que el servidor sea accesible y vuelve a intentarlo.",
     "retry": "Reintentar",
     "noResourcesTitle": "Aún no hay nada que respaldar",
-    "noResourcesDescription": "Las bases de datos y los volúmenes de aplicación aparecen aquí en cuanto los creas."
+    "noResourcesDescription": "Las bases de datos y los volúmenes de aplicación aparecen aquí en cuanto los creas.",
+    "manageTargets": "Gestionar destinos de respaldo"
   },
   "summary": {
     "protected": "{{protected}} de {{total}} recursos protegidos",
@@ -472,6 +473,20 @@
       "running": "En curso",
       "succeeded": "Correcta",
       "failed": "Fallida"
-    }
+    },
+    "restore": "Restaurar",
+    "restoreNeedsRoot": "Solo un administrador puede restaurar una copia de una base de datos.",
+    "restoreTitle": "Restaurar {{service}} desde esta copia",
+    "restoreWarning": "Esto reemplaza la base de datos en vivo. Antes se hace una copia de seguridad de los datos actuales, que aparece en el historial.",
+    "restoreEngine": "Motor",
+    "restoreObject": "Objeto de la copia",
+    "restoreSize": "Tamaño",
+    "restoreLoading": "Comprobando la copia...",
+    "restorePhraseLabel": "Escribe {{phrase}} para confirmar",
+    "restoreConfirm": "Reemplazar base de datos",
+    "restoreStarting": "Iniciando...",
+    "restoreCancel": "Cancelar",
+    "restoreClose": "Cerrar",
+    "restoreAccepted": "Restauración iniciada. Copia de seguridad previa: {{id}}. Se ejecuta en segundo plano, revisa el historial y el registro de auditoría para ver el resultado."
   }
 }

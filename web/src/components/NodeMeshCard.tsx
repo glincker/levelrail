@@ -178,23 +178,19 @@ export function NodeMeshCard({
       <CardContent className="space-y-4">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <dt className="text-xs text-muted-foreground uppercase">Backend</dt>
+            <dt className="text-xs text-muted-foreground">Backend</dt>
             <dd className="mt-1 text-sm text-foreground">
               {data.backend || 'Unknown'}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground uppercase">
-              Mesh address
-            </dt>
+            <dt className="text-xs text-muted-foreground">Mesh address</dt>
             <dd className="mt-1 break-all font-mono text-sm text-foreground">
               {meshAddress || 'Not assigned'}
             </dd>
           </div>
           <div className="col-span-2 min-w-0">
-            <dt className="text-xs text-muted-foreground uppercase">
-              Public key
-            </dt>
+            <dt className="text-xs text-muted-foreground">Public key</dt>
             <dd className="mt-1 truncate font-mono text-sm text-foreground">
               {publicKey || 'Not generated yet'}
             </dd>
@@ -202,15 +198,13 @@ export function NodeMeshCard({
           {!isLocalNode ? (
             <>
               <div>
-                <dt className="text-xs text-muted-foreground uppercase">
-                  Endpoint
-                </dt>
+                <dt className="text-xs text-muted-foreground">Endpoint</dt>
                 <dd className="mt-1 break-all font-mono text-sm text-foreground">
                   {self?.endpoint || 'Unknown'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground uppercase">
+                <dt className="text-xs text-muted-foreground">
                   Last handshake
                 </dt>
                 <dd className="mt-1 text-sm text-foreground">

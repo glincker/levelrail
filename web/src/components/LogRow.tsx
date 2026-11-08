@@ -132,7 +132,7 @@ export function LogRow({
         type="button"
         onClick={handleCopy}
         aria-label={t('logs.copyLineAria')}
-        className="absolute -top-0.5 right-2 flex h-6 min-w-6 items-center justify-center rounded bg-neutral-800 px-1.5 text-neutral-300 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:text-neutral-100"
+        className="absolute top-1/2 right-2 flex h-6 min-w-6 -translate-y-1/2 items-center justify-center rounded bg-neutral-800 px-1.5 text-neutral-400 pointer-coarse:h-10 pointer-coarse:min-w-10 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:text-neutral-100"
       >
         {copied ? (
           <CheckGlassIcon className="size-4.5" aria-hidden="true" />
@@ -148,7 +148,7 @@ export function LogRow({
           <button
             type="button"
             onClick={handleCopy}
-            className="mt-1 flex min-h-6 items-center gap-1 rounded px-1.5 py-0.5 text-xs focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+            className="mt-1 flex min-h-6 pointer-coarse:min-h-10 items-center gap-1 rounded px-1.5 py-0.5 text-xs focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           >
             {copied ? (
               <CheckGlassIcon className="size-4.5" aria-hidden="true" />

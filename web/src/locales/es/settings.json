@@ -346,6 +346,10 @@
     "groupCount": "{{count}} páginas",
     "noMatchTitle": "Ninguna configuración coincide con \"{{query}}\"",
     "noMatchDescription": "Prueba con otra palabra o borra la búsqueda para ver todas las áreas.",
+    "searchLoading": "Buscando configuración",
+    "searchFailedTitle": "La búsqueda no pudo terminar",
+    "searchFailedDescription": "Se muestran las coincidencias del menú. Vuelve a intentar la búsqueda completa.",
+    "retry": "Reintentar",
     "title": "Configuración",
     "description": "Configuración de la cuenta, el equipo y la plataforma.",
     "jumpTo": "Ir a un área"

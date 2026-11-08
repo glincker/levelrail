@@ -310,6 +310,8 @@ Send `{"preview": true}` first. It changes nothing and returns the run, object k
 
 Before it touches the database, the control plane checks the stored object against its recorded checksum, then takes a safety dump of the current data to the same backup target. If the checksum check or the safety dump fails, the restore stops and the database is left as it was. The safety dump shows up in the run history. The restore itself runs in the background and the outcome is written to the audit log as `compose_db.restore`.
 
+In the dashboard, each succeeded run in the **Database backups** card has a **Restore** button. It opens a dialog that runs the preview, shows the engine, backup object and size, and asks you to type the confirm phrase exactly as the server returned it. The button is disabled for users without the `root` ability, with one line saying why. The dialog only reports that the restore was accepted and shows the safety dump id. Check run history and the audit log for the outcome. It has not been tried against a real database or in a browser yet.
+
 From the CLI:
 
 ```sh

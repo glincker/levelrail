@@ -42,7 +42,9 @@ describe('page banners', () => {
   it('shows the projects hero with its action when there are no projects', () => {
     renderProjects()
     expect(screen.getByTestId('page-banner-full')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'New project' })).toBeTruthy()
+    expect(
+      screen.getAllByRole('button', { name: 'New project' })[0],
+    ).toBeTruthy()
   })
 
   it('shows the compact projects banner once projects exist', () => {

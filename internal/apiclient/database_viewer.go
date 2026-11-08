@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"strconv"
 )
 
 // DatabaseColumnResource is one column in GET /databases/{name}/schema.
@@ -87,4 +88,82 @@ func (c *Client) ExplainDatabaseQuery(ctx context.Context, name string, req Data
 	var out DatabaseQueryResult
 	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/explain", req, &out)
 	return out, err
+}
+
+// DatabaseEngineObject is one index or collection and its count.
+type DatabaseEngineObject struct {
+	Name  string `json:"name"`
+	Count int64  `json:"count"`
+}
+
+// DatabaseEngineStats is GET /api/v1/databases/{name}/engine-stats.
+type DatabaseEngineStats struct {
+	Engine  string                 `json:"engine"`
+	Objects []DatabaseEngineObject `json:"objects"`
+	Total   int64                  `json:"total"`
+	Metrics map[string]int64       `json:"metrics,omitempty"`
+}
+
+// DatabaseQueryHistoryEntry is one row of GET /databases/{name}/query-history.
+type DatabaseQueryHistoryEntry struct {
+	ID          string `json:"id"`
+	Mode        string `json:"mode"`
+	SQL         string `json:"sql"`
+	Fingerprint string `json:"fingerprint"`
+	OK          bool   `json:"ok"`
+	Error       string `json:"error,omitempty"`
+	DurationMs  int64  `json:"duration_ms"`
+	RowCount    int    `json:"row_count"`
+	CreatedAt   string `json:"created_at"`
+}
+
+// DatabaseSavedQuery is one row of GET /databases/{name}/saved-queries.
+type DatabaseSavedQuery struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	SQL       string `json:"sql"`
+	CreatedAt string `json:"created_at"`
+}
+
+// GetDatabaseEngineStats calls GET /api/v1/databases/{name}/engine-stats.
+func (c *Client) GetDatabaseEngineStats(ctx context.Context, name string) (DatabaseEngineStats, error) {
+	var out DatabaseEngineStats
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/engine-stats", nil, &out)
+	return out, err
+}
+
+// ListDatabaseQueryHistory calls GET /api/v1/databases/{name}/query-history.
+func (c *Client) ListDatabaseQueryHistory(ctx context.Context, name string, limit int) ([]DatabaseQueryHistoryEntry, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/query-history"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out []DatabaseQueryHistoryEntry
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// ClearDatabaseQueryHistory calls DELETE /api/v1/databases/{name}/query-history.
+func (c *Client) ClearDatabaseQueryHistory(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/query-history", nil, nil)
+}
+
+// ListDatabaseSavedQueries calls GET /api/v1/databases/{name}/saved-queries.
+func (c *Client) ListDatabaseSavedQueries(ctx context.Context, name string) ([]DatabaseSavedQuery, error) {
+	var out []DatabaseSavedQuery
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/saved-queries", nil, &out)
+	return out, err
+}
+
+// SaveDatabaseQuery calls POST /api/v1/databases/{name}/saved-queries.
+func (c *Client) SaveDatabaseQuery(ctx context.Context, name, title, sql string) (DatabaseSavedQuery, error) {
+	var out DatabaseSavedQuery
+	body := map[string]string{"name": title, "sql": sql}
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/saved-queries", body, &out)
+	return out, err
+}
+
+// DeleteDatabaseSavedQuery calls DELETE /api/v1/databases/{name}/saved-queries/{id}.
+func (c *Client) DeleteDatabaseSavedQuery(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/saved-queries/"+PathEscape(id), nil, nil)
 }

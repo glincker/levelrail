@@ -69,35 +69,39 @@ export function DelegationPanel({
         </p>
       ) : null}
       {compact ? null : (
-        <table className="w-full text-sm">
-          <thead className="text-left text-xs text-muted-foreground uppercase">
-            <tr>
-              <th className="py-1 font-medium">
-                {t('delegation.col.resolver')}
-              </th>
-              <th className="py-1 font-medium">
-                {t('delegation.col.verdict')}
-              </th>
-              <th className="py-1 font-medium">{t('delegation.col.answer')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {d.resolvers.map((r) => (
-              <tr key={r.server} className="border-t border-border">
-                <td className="py-1.5 font-mono">
-                  {r.server === 'system' ? t('delegation.system') : r.server}
-                </td>
-                <td className="py-1.5">
-                  {t(`delegation.verdict.${r.verdict}`)}
-                </td>
-                <td className="py-1.5 font-mono text-xs break-all">
-                  {r.error ??
-                    (r.name_servers?.join(', ') || t('delegation.noAnswer'))}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="py-1 font-medium">
+                  {t('delegation.col.resolver')}
+                </th>
+                <th className="py-1 font-medium">
+                  {t('delegation.col.verdict')}
+                </th>
+                <th className="py-1 font-medium">
+                  {t('delegation.col.answer')}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {d.resolvers.map((r) => (
+                <tr key={r.server} className="border-t border-border">
+                  <td className="py-1.5 font-mono">
+                    {r.server === 'system' ? t('delegation.system') : r.server}
+                  </td>
+                  <td className="py-1.5">
+                    {t(`delegation.verdict.${r.verdict}`)}
+                  </td>
+                  <td className="py-1.5 font-mono text-xs break-all">
+                    {r.error ??
+                      (r.name_servers?.join(', ') || t('delegation.noAnswer'))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )

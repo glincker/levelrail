@@ -343,5 +343,12 @@
       "dynamic": "Dynamic",
       "unknown": "Unknown"
     }
+  },
+  "failureCard": {
+    "title": "What went wrong",
+    "stage": "Failing stage",
+    "error": "Error",
+    "showLess": "Show less",
+    "showMore": "Show more"
   }
 }

@@ -1090,6 +1090,18 @@
       }
     }
   },
+  "projectsPage": {
+    "list": { "name": "Name", "created": "Created" },
+    "empty": {
+      "title": "No projects yet",
+      "description": "Projects group an app with its database and cache. Create one to start organizing."
+    },
+    "error": {
+      "title": "Projects could not load",
+      "description": "{{error}}",
+      "retry": "Retry"
+    }
+  },
   "apiError": {
     "recheckDocker": "Re-check Docker",
     "rechecking": "Checking...",

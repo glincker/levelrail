@@ -648,7 +648,24 @@
     "custom": {
       "title": "¿No está en la lista? Ejecuta cualquier imagen de base de datos",
       "description": "Despliégala como una aplicación normal con un volumen para sus datos. Obtienes despliegues, logs, métricas y rollbacks, pero no las funciones administradas de las bases de datos de arriba: copias de seguridad con comprobaciones de restauración, el explorador de datos y los comandos de base de datos en la CLI."
-    }
+    },
+    "planTitle": "Plan de despliegue",
+    "planDescription": "Revisa lo que se creará. No existe nada hasta que despliegues.",
+    "searchPlaceholder": "Buscar recursos...",
+    "searchLabel": "Buscar recursos",
+    "tabAll": "Todos",
+    "tabApplications": "Aplicaciones",
+    "tabDatabases": "Bases de datos",
+    "importTitle": "Importa lo que sea",
+    "importLabel": "URL de repositorio, imagen, comando docker run, archivo compose o Dockerfile",
+    "importPlaceholder": "Pega una URL de repositorio, una imagen, un comando docker run, un docker-compose.yml o un Dockerfile",
+    "previewPlan": "Vista previa del plan",
+    "reading": "Leyendo...",
+    "uploadFile": "Subir archivo",
+    "uploadLabel": "Subir un archivo compose o Dockerfile",
+    "looksLike": "Parece: {{source}}",
+    "tryLabel": "Prueba:",
+    "fileTooLarge": "Ese archivo supera los 512 KB."
   },
   "noBackups": {
     "title": "Copias de seguridad",
