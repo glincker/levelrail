@@ -269,9 +269,9 @@ func (rt *Router) handleNodePatchApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := rt.patcher()
-	select {
-	case <-p.scanned:
-	case <-r.Context().Done():
+	if !p.waitScanned(r.Context(), rt) {
+		writeCodedError(w, http.StatusConflict, "adoption_pending",
+			"upgrade units left by a previous control plane process are still being checked; the node stays locked until that succeeds, try again shortly")
 		return
 	}
 	p.mu.Lock()
@@ -346,7 +346,7 @@ func (rt *Router) handleNodePatchApply(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(extras) > 0 {
 		writeCodedError(w, http.StatusConflict, "preview_mismatch", "the install would also change packages outside the preview: "+
-			strings.Join(extras, ", ")+"; run a new patch preview or upgrade those packages yourself")
+			strings.Join(extras, ", ")+"; dependencies that are not security updates are only planned with include_all, so preview again with include_all, or upgrade them yourself")
 		return
 	}
 	run := nodePatchRun{ID: ids.MustHex(8), NodeID: id, Actor: rt.actorForRequest(r), Manager: plan.Manager, IncludeAll: req.IncludeAll,
@@ -415,7 +415,10 @@ func (p *nodePatcher) pollInterval(ctx context.Context, rt *Router) time.Duratio
 func (p *nodePatcher) unitQuery(ctx context.Context, rt *Router, bin string, args ...string) ([]byte, error) {
 	qctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), patchUnitQueryPolls*p.pollInterval(ctx, rt))
 	defer cancel()
-	out, _, err := p.runner.Run(qctx, nil, bin, args...)
+	out, code, err := p.runner.Run(qctx, nil, bin, args...)
+	if err == nil && code != 0 {
+		err = fmt.Errorf("%s exited with code %d", bin, code)
+	}
 	return out, err
 }
 

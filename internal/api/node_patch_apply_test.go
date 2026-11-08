@@ -23,16 +23,18 @@ Conf libssl3 (3.0.2-0ubuntu1.12 Ubuntu:22.04/jammy-updates [amd64])
 `
 
 type fakePatchRunner struct {
-	mu      sync.Mutex
-	sim     string
-	calls   [][]string
-	reboot  bool
-	systemd bool
-	block   chan struct{} // non-nil makes a direct install wait until closed
-	hang    bool          // systemctl show blocks until its context ends
-	extra   string        // extra lines the install simulation prints beyond the requested names
-	units   string        // systemctl list-units output
-	states  map[string]string
+	mu       sync.Mutex
+	sim      string
+	calls    [][]string
+	reboot   bool
+	systemd  bool
+	block    chan struct{} // non-nil makes a direct install wait until closed
+	hang     bool          // systemctl show blocks until its context ends
+	extra    string        // extra lines the install simulation prints beyond the requested names
+	units    string        // systemctl list-units output
+	states   map[string]string
+	listFail int  // list-units fails this many more times
+	simFail  bool // the install simulation exits 100
 }
 
 const patchFakeOutput = "Setting up libssl3\nurl https://user:hunter2@mirror.example\npassword=hunter2\n" //nolint:gosec // fake value that proves masking, not a credential
@@ -44,14 +46,22 @@ func (f *fakePatchRunner) UnderSystemd() bool { return f.systemd }
 func (f *fakePatchRunner) Run(ctx context.Context, _ []string, name string, args ...string) ([]byte, int, error) {
 	f.mu.Lock()
 	f.calls = append(f.calls, append([]string{name}, args...))
-	block, sim, hang, extra, units := f.block, f.sim, f.hang, f.extra, f.units
+	block, sim, hang, extra, units, simFail := f.block, f.sim, f.hang, f.extra, f.units, f.simFail
 	first, state, hasState := "", "", false
 	if len(args) > 0 {
 		first = args[0]
 		state, hasState = f.states[args[len(args)-1]]
 	}
+	listFailing := name == patchBinSystemctl && first == "list-units" && f.listFail > 0
+	if listFailing {
+		f.listFail--
+	}
 	f.mu.Unlock()
 	switch {
+	case listFailing:
+		return []byte("Failed to connect to bus"), 1, nil
+	case simFail && name == patchBinAptGet && first == "-s" && len(args) > 1 && args[1] == "install":
+		return []byte("E: Unable to correct problems, you have held broken packages."), 100, nil
 	case hang && name == patchBinSystemctl && first == "show":
 		<-ctx.Done()
 		return nil, -1, ctx.Err()

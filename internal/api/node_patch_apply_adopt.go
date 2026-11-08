@@ -18,6 +18,7 @@ const (
 	// patchUnitDescriptionMax keeps the unit description short; names past it are left out of the record.
 	patchUnitDescriptionMax = 2048
 	maxPatchAdoptLimit      = 200
+	patchAdoptBackoffPolls  = 32
 )
 
 var (
@@ -106,21 +107,42 @@ type adoptedPatchUnit struct {
 	run  nodePatchRun
 }
 
-// adoptPatchUnits tracks every leftover unit before the scan closes, so no apply can start beside one.
+// adoptPatchUnits keeps the node busy until one scan sees every leftover unit; a failed or capped scan retries.
 func (rt *Router) adoptPatchUnits(ctx context.Context, p *nodePatcher) {
-	found := rt.scanPatchUnits(ctx, p)
-	p.markScanned()
-	for _, a := range found {
-		go rt.settleAdoptedUnit(ctx, p, a)
+	delay := p.pollInterval(ctx, rt)
+	for {
+		found, complete := rt.scanPatchUnits(ctx, p)
+		for _, a := range found {
+			go rt.settleAdoptedUnit(ctx, p, a)
+		}
+		if complete {
+			p.markScanned()
+			return
+		}
+		time.Sleep(delay)
+		delay = min(delay*2, min(patchAdoptBackoffPolls*p.pollInterval(ctx, rt), maxPatchPollInterval))
 	}
 }
 
-func (rt *Router) scanPatchUnits(ctx context.Context, p *nodePatcher) []adoptedPatchUnit {
+// waitScanned bounds how long an apply waits for the startup scan before refusing.
+func (p *nodePatcher) waitScanned(ctx context.Context, rt *Router) bool {
+	t := time.NewTimer(patchUnitQueryPolls*p.pollInterval(ctx, rt) + time.Second)
+	defer t.Stop()
+	select {
+	case <-p.scanned:
+		return true
+	case <-t.C:
+	case <-ctx.Done():
+	}
+	return false
+}
+
+func (rt *Router) scanPatchUnits(ctx context.Context, p *nodePatcher) ([]adoptedPatchUnit, bool) {
 	stem := patchStem(rt.patchBrandShort())
 	out, err := p.unitQuery(ctx, rt, patchBinSystemctl, "list-units", "--all", "--plain", "--no-legend", "--type=service", "--", stem+"-patch-*")
 	if err != nil {
 		rt.logger.Warn("api: node patch: list leftover upgrade units failed", slog.String("error", err.Error()))
-		return nil
+		return nil, false
 	}
 	unitRe := regexp.MustCompile(`^` + regexp.QuoteMeta(stem) + `-patch-([0-9a-f]{16})\.service$`)
 	limit := p.adoptLimit(ctx, rt)
@@ -128,6 +150,7 @@ func (rt *Router) scanPatchUnits(ctx context.Context, p *nodePatcher) []adoptedP
 	node := rt.guardKey(NodeGuardrailLocalID)
 	history := rt.runtimeSettings.Int(ctx, runtimesettings.KeyNodesPatchRunHistory)
 	var found []adoptedPatchUnit
+	complete := true
 	for _, line := range strings.Split(string(out), "\n") {
 		f := strings.Fields(line)
 		if len(f) == 0 {
@@ -139,10 +162,11 @@ func (rt *Router) scanPatchUnits(ctx context.Context, p *nodePatcher) []adoptedP
 		}
 		if len(found) >= limit {
 			rt.logger.Warn("api: node patch: more leftover upgrade units than the adopt limit", slog.Int("limit", limit))
-			break
+			return found, false
 		}
 		show, err := p.unitQuery(ctx, rt, patchBinSystemctl, "show", "--property="+patchUnitProps+",Description", "--", f[0])
 		if err != nil {
+			complete = false
 			continue
 		}
 		includeAll, names := parsePatchUnitDescription(patchShowValue(string(show), "Description"))
@@ -155,7 +179,7 @@ func (rt *Router) scanPatchUnits(ctx context.Context, p *nodePatcher) []adoptedP
 		p.record(run, history)
 		found = append(found, adoptedPatchUnit{unit: f[0], st: st, run: run})
 	}
-	return found
+	return found, complete
 }
 
 func (rt *Router) settleAdoptedUnit(ctx context.Context, p *nodePatcher, a adoptedPatchUnit) {
@@ -322,30 +346,50 @@ func patchSimulationExtras(manager, out string, code int, planned []string) (ext
 		return extras, true
 	}
 	// dnf and yum exit 1 on --assumeno; only their own abort message marks that as a clean dry run.
-	if code != 0 && (code != 1 || !strings.Contains(out, "Operation aborted")) {
+	aborted := strings.Contains(out, "Operation aborted") || (manager == patchManagerYUM && strings.Contains(out, "Exiting on user command"))
+	if code != 0 && (code != 1 || !aborted) {
 		return nil, false
 	}
-	section := ""
+	section, pending := "", ""
 	for _, line := range lines {
 		t := strings.TrimSpace(line)
+		if t == "" || strings.Trim(t, "=") == "" {
+			continue
+		}
 		if strings.HasPrefix(t, "Transaction Summary") {
 			break
 		}
-		if strings.HasSuffix(t, ":") {
+		if strings.HasSuffix(t, ":") && pending == "" {
 			section = t
 			continue
 		}
-		f := strings.Fields(t)
-		if section == "" || len(f) < 4 || !patchRPMArches[f[1]] || !patchPackageName.MatchString(f[0]) {
+		if section == "" {
 			continue
+		}
+		f := strings.Fields(t)
+		// Without a TTY dnf wraps a long name onto its own line; the arch starts the next one.
+		if pending != "" {
+			f, pending = append([]string{pending}, f...), ""
+		} else if len(f) == 1 {
+			pending = f[0]
+			continue
+		}
+		if f[0] == "replacing" {
+			continue
+		}
+		if len(f) < 4 || !patchRPMArches[f[1]] || !patchPackageName.MatchString(f[0]) {
+			return nil, false
 		}
 		name := f[0] + "." + f[1]
 		switch {
-		case strings.HasPrefix(section, "Removing"), strings.HasPrefix(section, "Downgrading"):
+		case strings.HasPrefix(section, "Removing"), strings.HasPrefix(section, "Erasing"), strings.HasPrefix(section, "Downgrading"):
 			add(name + " (" + strings.ToLower(strings.TrimSuffix(section, ":")) + ")")
 		case !want[name]:
 			add(name)
 		}
+	}
+	if pending != "" {
+		return nil, false
 	}
 	return extras, true
 }

@@ -144,9 +144,94 @@ func TestNodePatchAdoptIsBounded(t *testing.T) {
 		fake.units += prefix + id + ".service loaded active exited x\n"
 	}
 	rt.StartNodePatchAdoption(context.Background())
-	waitPatchDone(t, rt, 2)
-	if n := len(adoptedRuns(rt)); n != 2 || fake.callContaining("3333333333333333") {
-		t.Fatalf("adopted %d runs past the limit", n)
+	waitPatchDone(t, rt, 3)
+	<-rt.nodePatch.scanned
+	fake.mu.Lock()
+	lists := 0
+	for _, c := range fake.calls {
+		if len(c) > 1 && c[1] == "list-units" {
+			lists++
+		}
+	}
+	fake.mu.Unlock()
+	if n := len(adoptedRuns(rt)); n != 3 || lists < 2 {
+		t.Fatalf("adopted %d runs in %d scans; a capped scan must rescan before releasing the node", n, lists)
+	}
+}
+
+func TestNodePatchAdoptScanFailureKeepsNodeBusy(t *testing.T) {
+	env := patchAdoptRouter(t)
+	rt, fake := env.rt, env.fake
+	fake.listFail = 1 << 30
+	rt.StartNodePatchAdoption(context.Background())
+	p := patchPreview(t, rt, env.cookie, `{}`)
+	rec := patchDo(t, rt, env.cookie, http.MethodPost, "/api/v1/nodes/local/patch/apply", patchApplyBody(p.PreviewID, false, false))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "adoption_pending") || !patchLocalBusy(rt) {
+		t.Fatalf("apply during a failing scan: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	fake.mu.Lock()
+	fake.listFail = 0
+	fake.mu.Unlock()
+	select {
+	case <-rt.nodePatch.scanned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("scan never retried")
+	}
+	if patchLocalBusy(rt) || fake.call(patchBinSystemdRun, "") != nil {
+		t.Fatal("node still busy after a good scan, or an install started during the failing scan")
+	}
+}
+
+func TestNodePatchApplySimulationFailedRefuses(t *testing.T) {
+	rt, cookie, fake := patchTestRouter(t)
+	fake.simFail = true
+	p := patchPreview(t, rt, cookie, `{}`)
+	rec := patchDo(t, rt, cookie, http.MethodPost, "/api/v1/nodes/local/patch/apply", patchApplyBody(p.PreviewID, false, false))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "simulation_failed") || fake.installCall() != nil {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+const dnf4WrappedFixture = `Dependencies resolved.
+================================================================================
+ Package                         Arch    Version              Repository  Size
+================================================================================
+Upgrading:
+ foo                             x86_64  1.2-1                updates    1.0 M
+     replacing  foo.x86_64 1.1-1
+Installing weak dependencies:
+ weakdep                         noarch  1-1                  updates      5 k
+Removing dependent packages:
+ a-very-long-package-name-that-wraps-past-eighty-columns-in-dnf4
+                                 x86_64  3.0-1                @System      1 M
+
+Transaction Summary
+================================================================================
+Upgrade  1 Package
+Operation aborted.
+`
+
+func TestPatchSimulationExtrasDNFWrappedAndUnparseable(t *testing.T) {
+	extras, ok := patchSimulationExtras(patchManagerDNF, dnf4WrappedFixture, 1, []string{"foo.x86_64"})
+	want := "weakdep.noarch,a-very-long-package-name-that-wraps-past-eighty-columns-in-dnf4.x86_64 (removing dependent packages)"
+	if !ok || strings.Join(extras, ",") != want {
+		t.Fatalf("extras = %v ok = %t", extras, ok)
+	}
+	for _, bad := range []string{
+		strings.Replace(dnf4WrappedFixture, " weakdep                         noarch", " weakdep  ???", 1),
+		strings.Replace(dnf4WrappedFixture, "                                 x86_64  3.0-1", "                                 3.0-1  x86_64", 1),
+		strings.Replace(dnf4WrappedFixture, " foo                             x86_64  1.2-1                updates    1.0 M\n", " foo  x86_64\n", 1),
+	} {
+		if _, ok := patchSimulationExtras(patchManagerDNF, bad, 1, []string{"foo.x86_64"}); ok {
+			t.Fatalf("an unparseable table row was accepted:\n%s", bad)
+		}
+	}
+	yum := strings.Replace(dnf4WrappedFixture, "Operation aborted.", "Exiting on user command", 1)
+	if _, ok := patchSimulationExtras(patchManagerYUM, yum, 1, []string{"foo.x86_64"}); !ok {
+		t.Fatal("yum 3 --assumeno exit not accepted")
+	}
+	if _, ok := patchSimulationExtras(patchManagerDNF, yum, 1, []string{"foo.x86_64"}); ok {
+		t.Fatal("dnf accepted the yum abort message")
 	}
 }
 
