@@ -87,6 +87,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "network":
 		return runDatabasesNetwork(prog, rest, stdout, stderr, lookupEnv)
+	case "engine-stats":
+		return runDatabasesEngineStats(prog, rest, stdout, stderr, lookupEnv)
+	case "query-history":
+		return runDatabasesQueryHistory(prog, rest, stdout, stderr, lookupEnv)
+	case "saved-queries":
+		return runDatabasesSavedQueries(prog, rest, stdout, stderr, lookupEnv)
 	case "set-resources":
 		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
 	case "set-version":
@@ -159,6 +165,9 @@ func databasesUsage(prog string) string {
   %[1]s databases rotate-password <name> [--dry-run|--status|--every-days N] [flags]  rotate the owner password, restart linked apps
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
   %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
+  %[1]s databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
+  %[1]s databases query-history list|clear <name> ...  your recent statements (clear needs --yes)
+  %[1]s databases saved-queries list|add|delete <name> ...  your saved statements (delete needs --yes)
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
   %[1]s databases set-version <name> <version> [flags]  minor or patch image change, same data
   %[1]s databases major-upgrade <name> --version V [flags]  guarded Postgres major upgrade with rollback snapshot
