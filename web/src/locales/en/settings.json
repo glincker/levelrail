@@ -3807,6 +3807,38 @@
       "reset": "Reset size",
       "sample": "$ deploy --app web\n12:00:01 INFO build ok",
       "sampleLabel": "Code sample"
+    },
+    "hub": {
+      "saved": "Saved",
+      "resetDone": "Reset to defaults",
+      "theme": {
+        "title": "Theme",
+        "system": "System",
+        "systemHint": "Follows your device",
+        "light": "Light",
+        "lightHint": "Bright surfaces",
+        "dark": "Dark",
+        "darkHint": "Low glare",
+        "oled": "OLED",
+        "oledHint": "True black, this device"
+      },
+      "preview": {
+        "title": "Live preview",
+        "nav": "Sample navigation",
+        "apps": "Apps",
+        "deployments": "Deployments",
+        "servers": "Servers",
+        "running": "Running",
+        "stopped": "Stopped",
+        "field": "App name",
+        "fieldValue": "web",
+        "primary": "Deploy",
+        "secondary": "Cancel",
+        "toast": "Deployed web in 12s",
+        "dialogTitle": "Delete app?",
+        "dialogBody": "This cannot be undone.",
+        "danger": "Delete"
+      }
     }
   },
   "secretProviders": {

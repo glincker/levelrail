@@ -7,7 +7,6 @@ import {
   MoonGlassIcon,
   PaletteGlassIcon,
   RefreshCwGlassIcon,
-  RotateCcwGlassIcon,
   SparklesGlassIcon,
   TypeGlassIcon,
 } from '@thesvg/ui-react'
@@ -29,7 +28,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { SettingRow, SettingRows } from '@/components/ui/setting-row'
-import { ThemeChoice } from '@/components/account/ThemeChoice'
+import { AppearanceHub } from './appearance/AppearanceHub'
 import { useTheme } from '@/components/ThemeProvider'
 import {
   APPEARANCE_RECOMMENDED as REC,
@@ -437,7 +436,6 @@ export function AppearanceSettings() {
   const appearance = useAppearance()
   const width = usePageWidth()
   const density = useDensity()
-  const themeLabelId = useId()
 
   const common = {
     defaultLabel: t('appearancePage.defaultBadge'),
@@ -589,6 +587,7 @@ export function AppearanceSettings() {
 
   return (
     <SettingsLayout sections={sections}>
+      <AppearanceHub onReset={onReset} />
       <SettingsSection
         id="presets"
         title={t('appearancePage.presets.title')}
@@ -609,15 +608,6 @@ export function AppearanceSettings() {
                   {t('appearancePage.presets.custom')}
                 </Badge>
               )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={onReset}
-              >
-                <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
-                {t('appearancePage.reset')}
-              </Button>
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -680,20 +670,6 @@ export function AppearanceSettings() {
           }
           title={t('appearancePage.sections.color')}
         >
-          <SettingRow
-            className={ROW}
-            title={
-              <span id={themeLabelId}>{t('appearancePage.theme.title')}</span>
-            }
-            description={t('appearancePage.theme.description')}
-          >
-            <ThemeChoice
-              value={theme}
-              onChange={setTheme}
-              includeOled
-              labelledBy={themeLabelId}
-            />
-          </SettingRow>
           <SettingRow
             wide
             className={ROW}

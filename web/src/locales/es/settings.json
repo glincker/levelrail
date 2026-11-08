@@ -3775,6 +3775,38 @@
       "reset": "Restablecer tamaño",
       "sample": "$ deploy --app web\n12:00:01 INFO build ok",
       "sampleLabel": "Ejemplo de código"
+    },
+    "hub": {
+      "saved": "Guardado",
+      "resetDone": "Valores restablecidos",
+      "theme": {
+        "title": "Tema",
+        "system": "Sistema",
+        "systemHint": "Sigue tu dispositivo",
+        "light": "Claro",
+        "lightHint": "Superficies luminosas",
+        "dark": "Oscuro",
+        "darkHint": "Menos deslumbramiento",
+        "oled": "OLED",
+        "oledHint": "Negro puro, este dispositivo"
+      },
+      "preview": {
+        "title": "Vista previa en vivo",
+        "nav": "Navegacion de ejemplo",
+        "apps": "Apps",
+        "deployments": "Despliegues",
+        "servers": "Servidores",
+        "running": "En ejecucion",
+        "stopped": "Detenida",
+        "field": "Nombre de la app",
+        "fieldValue": "web",
+        "primary": "Desplegar",
+        "secondary": "Cancelar",
+        "toast": "web desplegada en 12 s",
+        "dialogTitle": "Eliminar la app?",
+        "dialogBody": "No se puede deshacer.",
+        "danger": "Eliminar"
+      }
     }
   },
   "secretProviders": {
