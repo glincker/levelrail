@@ -104,7 +104,8 @@ func mapDokployRepo(app dokployApplication, issues []migrationIssue) (repoURL, r
 		}
 	case "git":
 		if app.CustomGitURL != "" {
-			return app.CustomGitURL, app.CustomGitBranch, out
+			clean, out := sanitizeRepoForReport(app.CustomGitURL, out)
+			return clean, app.CustomGitBranch, out
 		}
 	case "gitlab":
 		if app.GitlabOwner != "" && app.GitlabRepository != "" {

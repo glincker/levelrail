@@ -525,6 +525,7 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 	}
 	if app.Kind == SourceGit {
 		app.GitURL = gitURLFromRepo(a.GitRepository, "github.com")
+		app.scrubGitURL()
 		app.GitBranch = a.GitBranch
 		app.BuildPath = strings.Trim(a.BaseDirectory, "/")
 		if app.BuildMethod == "dockerfile" {

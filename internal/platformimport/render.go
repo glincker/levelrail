@@ -210,6 +210,7 @@ func (s *RenderSource) collect(ctx context.Context, d *Discovery, svc renderServ
 		app.Kind, app.Image = SourceImage, svc.ImagePath
 	case svc.Repo != "":
 		app.Kind, app.GitURL, app.GitBranch = SourceGit, svc.Repo, svc.Branch
+		app.scrubGitURL()
 		app.BuildPath = strings.Trim(svc.RootDir, "/")
 	default:
 		app.Notes = append(app.Notes, Note{Reason: "Render service has no repository or image path", Manual: "import the repository with `import <repo>` and attach it to this app"})

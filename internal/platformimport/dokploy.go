@@ -235,6 +235,7 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 	case "git":
 		app.Kind, app.GitURL, app.GitBranch = SourceGit, a.CustomGitURL, a.CustomGitBranch
 	}
+	app.scrubGitURL()
 	if app.Kind == SourceGit {
 		switch strings.ToLower(a.BuildType) {
 		case "dockerfile":

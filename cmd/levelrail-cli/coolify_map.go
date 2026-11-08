@@ -131,10 +131,10 @@ func mapServiceName(providerName, rawName string, issues []migrationIssue) (stri
 func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, includeSecretValues bool) mappedApp {
 	out := mappedApp{
 		SourceName: app.Name,
-		RepoURL:    app.GitRepository,
 		Ref:        app.GitBranch,
 	}
 
+	out.RepoURL, out.Issues = sanitizeRepoForReport(app.GitRepository, out.Issues)
 	out.ServiceName, out.Issues = mapServiceName("Coolify", app.Name, out.Issues)
 
 	buildType, buildIssue, blocking := mapBuildPack(app.BuildPack)
