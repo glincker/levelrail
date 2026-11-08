@@ -14,6 +14,7 @@ abuse.shards
 abuse.suggest_burst_seconds
 abuse.suggest_client_share
 account.preferences_max_bytes
+api.apps_metrics_max
 api.max_body_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
@@ -21,6 +22,7 @@ api.rate_limit_write_rpm
 apps.containers_inspect_timeout
 apps.env_apply_on_set
 apps.max_replicas_per_service
+apps.size_presets
 assets.upload_max_bytes
 audit.anchor_webhook_secret
 audit.anchor_webhook_url
@@ -43,6 +45,8 @@ cleanup.failing_floor
 cleanup.failing_window
 cleanup.interval
 compose.depends_on_timeout
+containers.log_max_files
+containers.log_max_size_mb
 containers.restart_policy
 cutover.verify_cert_fail_days
 cutover.verify_cert_warn_days
@@ -50,13 +54,22 @@ cutover.verify_hsts_min_age
 cutover.verify_min_interval
 cutover.verify_slow_ttfb
 cutover.verify_timeout
+database_viewer.max_bytes
+database_viewer.max_cell_bytes
+database_viewer.max_rows
+database_viewer.max_sql_bytes
+database_viewer.query_timeout
+database_viewer.schema_max_rows
 databases.import_max_bytes
 databases.pooler_default
 databases.pooler_image
+deploy.approval_claim_timeout_seconds
+deploy.approve_digest_check_timeout_seconds
 deploy.ci_gate_max_waits_per_app
 deploy.drain_timeout
 deploy.explain_log_lines
 deploy.max_concurrent
+deploy.max_concurrent_per_project
 deploy.previous_release_hold
 deploy.procfile_default_port
 deploy.receipt_approval_window
@@ -89,6 +102,7 @@ domains.parked_retention_days
 domains.rollback_window_minutes
 domains.www_mode
 firewall.confirm_window
+fixit.max_per_hour
 footprint.gc_percent
 footprint.memlimit_percent
 footprint.trim_interval
@@ -104,8 +118,10 @@ heartbeat.job_backoff_base
 heartbeat.job_backoff_max
 heartbeat.job_max_attempts
 heartbeat.job_queue
+iac.plan_value_max
 images.keep_per_app
 images.prune_schedule
+images.pull_concurrency
 images.remove_max_per_request
 ingress.ca_switch_retry_base
 ingress.ca_switch_retry_max
@@ -118,6 +134,13 @@ ingress.fallback_certs
 ingress.max_body_bytes
 ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
+ingress.unmatched_mode
+ingress.unmatched_redirect_url
+log_rules.eval_interval
+log_rules.max_rows
+log_rules.max_window
+log_rules.samples
+logs.export_max_lines
 mesh.apply_retries
 mesh.apply_retry_delay
 mesh.apply_timeout
@@ -125,6 +148,9 @@ mesh.hub_resolve_ttl
 mesh.hub_stale_max
 mesh.ready_retry_seconds
 mesh.wake_debounce
+models.hf_max_listed_files
+models.hf_max_response_bytes
+models.hf_timeout_seconds
 monitors.raw_retention
 net.outbound_timeout
 network.gc_max_removals
@@ -146,6 +172,7 @@ orgs.avatar_max_dimension
 orgs.provisioned_default_membership
 orgs.strict_isolation
 pipelines.oidc_listen_port
+placement.affinity_max_terms
 previews.migrate_timeout
 previews.migrate_wait
 projects.clone_max_apps
@@ -190,6 +217,9 @@ security.protected_silence_max_days
 security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window
+stacks.history_limit
+stacks.prune_max_count
+stacks.prune_max_percent
 storage.critical_free_percent
 storage.large_unmanaged_image_mb
 storage.low_free_percent
@@ -201,6 +231,7 @@ store.synchronous
 store.temp_store
 supply_chain.default_enabled
 supply_chain.default_gate
+tags.max_per_app
 telemetry.access_log_retention
 telemetry.access_log_size
 telemetry.log_budget_mb
@@ -216,7 +247,9 @@ ui.outbound_utm
 updates.offered_channels
 upgrade.verify_backup
 volumes.import_overwrite
+volumes.size_history_retention
 volumes.transfer_max_bytes
 volumes.transfer_max_concurrent
 volumes.transfer_spool_dir
 volumes.transfer_timeout
+volumes.usage_alert_percent
