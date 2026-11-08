@@ -59,6 +59,7 @@ export function build(tree) {
 
   const light = []
   const dark = []
+  const oled = []
   for (const t of tokens) {
     const modal =
       typeof t.value === 'object' && t.value !== null && 'light' in t.value
@@ -67,9 +68,13 @@ export function build(tree) {
     if (modal && t.value.dark !== t.value.light) {
       dark.push(`  ${t.name}: ${resolve(t.value.dark, byPath)};`)
     }
+    // .oled always rides on .dark, so only values that differ from dark are emitted.
+    if (modal && t.value.oled !== undefined && t.value.oled !== t.value.dark) {
+      oled.push(`  ${t.name}: ${resolve(t.value.oled, byPath)};`)
+    }
   }
 
-  const tokensCss = `${HEADER}\n\n:root {\n${light.join('\n')}\n}\n\n.dark {\n${dark.join('\n')}\n}\n`
+  const tokensCss = `${HEADER}\n\n:root {\n${light.join('\n')}\n}\n\n.dark {\n${dark.join('\n')}\n}\n\n.oled {\n${oled.join('\n')}\n}\n`
 
   const mapped = tokens.filter((t) => t.tailwind)
   const themeCss = `${HEADER}\n\n@theme inline {\n${mapped
