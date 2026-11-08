@@ -44,7 +44,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Command health checks | reported | Exec probes exist here (see the [app spec](/app-spec-reference)), but the import does not convert a Coolify command check. It adds a note to set an `exec` probe on the app by hand |
 | Memory and CPU limits | moves | Swap and reservations are not mapped |
 | Preview deployments | reported | Flag only. Previews are not recreated |
-| Projects and environments | partial | The project becomes a project. The environment name is recorded in the report but several environments of one project share it |
+| Projects and environments | moves | Each Coolify project becomes a project and each of its environments (empty ones too) becomes an environment of it. Apps and databases keep their own environment. The dry run lists every environment, and a re-run skips the ones that exist |
 | Servers and destinations | reported | New. The report lists every server, the proxy that holds ports 80 and 443, and warns when there is more than one deploy server. Staged apps land on the control plane node |
 | Docker networks | invisible | Apps that rely on a custom Coolify network are not detected |
 | Team members, roles, API tokens | invisible | Not migrated by design. Recreate users and tokens here |
@@ -62,6 +62,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 
 ## Not proven yet
 
+- The environment create step in the guided import API (the planner and Apply are ready, the API applier still has to implement `CreateEnvironment`).
 - A run against a real Coolify instance, including large instances with many environments.
 - That Coolify's API returns the fields above for every build pack and version.
 - Restoring a backup copied across, and the write pause needed for a database that takes writes during the final copy.
@@ -70,8 +71,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 
 ## Next gaps, by value
 
-1. Map Coolify environments to Levelrail environments instead of one project.
-2. Import database backup schedules and S3 targets instead of listing them.
-3. Detect apps that depend on a custom Docker network.
-4. Per-server node placement for multi-server instances.
-5. Recreate git webhooks through the git provider integration. GitHub, GitLab, Bitbucket, Gitea and Azure DevOps (`azure_devops`, access token plus service hook) are all supported git sources here, so every provider has a target.
+1. Import database backup schedules and S3 targets instead of listing them.
+2. Detect apps that depend on a custom Docker network.
+3. Per-server node placement for multi-server instances.
+4. Recreate git webhooks through the git provider integration. GitHub, GitLab, Bitbucket, Gitea and Azure DevOps (`azure_devops`, access token plus service hook) are all supported git sources here, so every provider has a target.

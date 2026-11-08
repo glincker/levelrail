@@ -12,6 +12,12 @@ type Applier interface {
 	CreateDatabase(ctx context.Context, p DatabasePlan) (warnings []string, err error)
 }
 
+// EnvironmentApplier is implemented by an Applier that can create project
+// environments. Appliers without it keep the old single-environment behavior.
+type EnvironmentApplier interface {
+	CreateEnvironment(ctx context.Context, p EnvironmentPlan) (warnings []string, err error)
+}
+
 // Apply creates every planned resource, continuing past individual
 // failures so a re-run (which skips what already exists) can finish the
 // rest. It returns the plan's report with created and failed statuses.
@@ -42,6 +48,16 @@ func Apply(ctx context.Context, plan *Plan, ap Applier) Report {
 		}
 		rep.Items[i].Reasons = append(rep.Items[i].Reasons, "created")
 		rep.Items[i].Status = StatusCreated
+	}
+	if ea, ok := ap.(EnvironmentApplier); ok {
+		for _, e := range plan.Environments {
+			if err := ctx.Err(); err != nil {
+				mark("environment", e.SourceID, nil, fmt.Errorf("stopped: %w", err))
+				continue
+			}
+			w, err := ea.CreateEnvironment(ctx, e)
+			mark("environment", e.SourceID, w, err)
+		}
 	}
 	for _, a := range plan.Apps {
 		if err := ctx.Err(); err != nil {

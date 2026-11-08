@@ -34,6 +34,9 @@ type EmitSecret struct {
 // EmitApp is one app to write as a kind: App document.
 type EmitApp struct {
 	Name string
+	// Project and Environment override the stack-wide ones when set.
+	Project     string
+	Environment string
 	// Image is the prebuilt image. Empty means use EmitOptions.ImageRepo.
 	Image       string
 	Port        int
@@ -75,6 +78,7 @@ type EmitJob struct {
 // EmitDatabase is one kind: Database document.
 type EmitDatabase struct {
 	Name    string
+	Project string
 	Engine  string
 	Version string
 }
@@ -87,6 +91,8 @@ type EmitInput struct {
 	Databases []EmitDatabase
 	// Notes are source-wide follow-ups for MIGRATION.md.
 	Notes []string
+	// Environments are extra project environments to declare.
+	Environments []SourceEnvironment
 }
 
 // EmitOptions name the stack and fill what the source does not know.
@@ -247,12 +253,27 @@ func EmitStack(in EmitInput, o EmitOptions) ([]EmitFile, error) {
 		}
 	}
 	for _, d := range dbs {
-		dbDocs = append(dbDocs, emitDoc{Version: 1, Kind: "Database", Metadata: emitMeta{Name: d.Name}, Spec: emitDBSpec{Engine: d.Engine, Version: d.Version, Project: o.Project}})
+		dbDocs = append(dbDocs, emitDoc{Version: 1, Kind: "Database", Metadata: emitMeta{Name: d.Name}, Spec: emitDBSpec{Engine: d.Engine, Version: d.Version, Project: firstNonEmpty(d.Project, o.Project)}})
 	}
 
 	head := []emitDoc{{Version: 1, Kind: "Project", Metadata: emitMeta{Name: o.Project}, Spec: map[string]string{}}}
 	if o.Environment != "" {
 		head = append(head, emitDoc{Version: 1, Kind: "Environment", Metadata: emitMeta{Name: o.Environment}, Spec: emitEnvSpec{Project: o.Project}})
+	}
+	declared := map[string]bool{o.Project: true}
+	seenEnv := map[string]bool{EnvironmentKey(o.Project, o.Environment): true}
+	for _, e := range in.Environments {
+		if e.Project != "" && !declared[e.Project] {
+			declared[e.Project] = true
+			head = append(head, emitDoc{Version: 1, Kind: "Project", Metadata: emitMeta{Name: e.Project}, Spec: map[string]string{}})
+		}
+	}
+	for _, e := range in.Environments {
+		if e.Project == "" || e.Name == "" || seenEnv[EnvironmentKey(e.Project, e.Name)] {
+			continue
+		}
+		seenEnv[EnvironmentKey(e.Project, e.Name)] = true
+		head = append(head, emitDoc{Version: 1, Kind: "Environment", Metadata: emitMeta{Name: e.Name}, Spec: emitEnvSpec{Project: e.Project}})
 	}
 	var files []EmitFile
 	for _, g := range []struct {
@@ -342,7 +363,7 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 		svc.Jobs = append(svc.Jobs, emitJob(j))
 	}
 	sort.SliceStable(svc.Jobs, func(i, j int) bool { return svc.Jobs[i].Name < svc.Jobs[j].Name })
-	spec := emitAppSpec{Project: o.Project, Environment: o.Environment, Service: svc}
+	spec := emitAppSpec{Project: firstNonEmpty(a.Project, o.Project), Environment: firstNonEmpty(a.Environment, o.Environment), Service: svc}
 	return emitDoc{Version: 1, Kind: "App", Metadata: emitMeta{Name: a.Name}, Spec: spec}, out, nil
 }
 
@@ -461,4 +482,11 @@ func sortedKeysOf[V any](m map[string]V) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func firstNonEmpty(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
 }

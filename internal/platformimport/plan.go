@@ -46,6 +46,8 @@ type PlanOptions struct {
 	TakenApps    map[string]bool
 	// ExistingDatabases maps a database name to "engine:version".
 	ExistingDatabases map[string]string
+	// ExistingEnvironments holds "project/environment" keys that already exist.
+	ExistingEnvironments map[string]bool
 	// DBVersions is the engine version the user chose per engine, and
 	// LatestDBVersions the newest catalog version per engine. Both fill in
 	// databases whose source reports no version.
@@ -87,6 +89,7 @@ type AppPlan struct {
 	NanoCPUs    int64             `json:"nano_cpus,omitempty"`
 	Labels      map[string]string `json:"labels"`
 	Project     string            `json:"project,omitempty"`
+	Environment string            `json:"environment,omitempty"`
 	GitURL      string            `json:"git_url,omitempty"`
 	GitBranch   string            `json:"git_branch,omitempty"`
 	BuildMethod string            `json:"build_method,omitempty"`
@@ -105,12 +108,20 @@ type CronPlan struct {
 
 // DatabasePlan is one managed database create request (empty, no data).
 type DatabasePlan struct {
-	SourceID   string `json:"source_id"`
-	SourceName string `json:"source_name"`
-	Name       string `json:"name"`
-	Engine     string `json:"engine"`
-	Version    string `json:"version"`
-	Project    string `json:"project,omitempty"`
+	SourceID    string `json:"source_id"`
+	SourceName  string `json:"source_name"`
+	Name        string `json:"name"`
+	Engine      string `json:"engine"`
+	Version     string `json:"version"`
+	Project     string `json:"project,omitempty"`
+	Environment string `json:"environment,omitempty"`
+}
+
+// EnvironmentPlan is one project environment to create before its apps.
+type EnvironmentPlan struct {
+	SourceID string `json:"source_id"`
+	Project  string `json:"project"`
+	Name     string `json:"name"`
 }
 
 // Item is one report row.
@@ -134,9 +145,10 @@ type Report struct {
 
 // Plan is the mapped result of a Discovery.
 type Plan struct {
-	Apps      []AppPlan
-	Databases []DatabasePlan
-	Report    Report
+	Environments []EnvironmentPlan
+	Apps         []AppPlan
+	Databases    []DatabasePlan
+	Report       Report
 }
 
 // DataNote is added to every report that contains databases.
@@ -215,6 +227,7 @@ func BuildPlan(d *Discovery, o PlanOptions) *Plan {
 		}
 		p.planDatabase(db, o, dbTaken)
 	}
+	p.planEnvironments(d, o)
 	for _, u := range d.Unsupported {
 		if !wanted(o.Only, u.SourceID, u.Name) {
 			continue
@@ -267,7 +280,7 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 	taken[name] = true
 	item.Target = name
 	plan := AppPlan{SourceID: a.SourceID, SourceName: a.Name, Name: name, Port: a.Port, Replicas: a.Replicas,
-		Domains: a.Domains, MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs, Project: a.Project,
+		Domains: a.Domains, MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs, Project: a.Project, Environment: a.Environment,
 		GitURL: a.GitURL, GitBranch: a.GitBranch, BuildMethod: a.BuildMethod, BuildPath: a.BuildPath,
 		Labels: map[string]string{LabelSourceID: key, LabelSourcePlatform: string(platform), LabelSourceName: a.Name}}
 	attention := func(reason, manual string) {
@@ -395,6 +408,38 @@ func (p *Plan) planDatabase(db Database, o PlanOptions, taken map[string]bool) {
 	item.Status = StatusNeedsAttention
 	item.Reasons = append(item.Reasons, "created empty, data is not migrated")
 	item.Manual = []string{"copy the data into " + name + " with the data copy step (CLI: migrate db-copy " + name + "), then update the app's connection settings"}
-	p.Databases = append(p.Databases, DatabasePlan{SourceID: db.SourceID, SourceName: db.Name, Name: name, Engine: db.Engine, Version: db.Version, Project: db.Project})
+	p.Databases = append(p.Databases, DatabasePlan{SourceID: db.SourceID, SourceName: db.Name, Name: name, Engine: db.Engine, Version: db.Version, Project: db.Project, Environment: db.Environment})
 	p.add(item)
+}
+
+// EnvironmentKey is the identity of a project environment in plans and reports.
+func EnvironmentKey(project, name string) string { return project + "/" + name }
+
+// planEnvironments lists each source environment once. With Only set it keeps
+// just the environments the planned apps and databases use.
+func (p *Plan) planEnvironments(d *Discovery, o PlanOptions) {
+	used := map[string]bool{}
+	for _, a := range p.Apps {
+		used[EnvironmentKey(a.Project, a.Environment)] = true
+	}
+	for _, db := range p.Databases {
+		used[EnvironmentKey(db.Project, db.Environment)] = true
+	}
+	seen := map[string]bool{}
+	for _, e := range d.Environments {
+		key := EnvironmentKey(e.Project, e.Name)
+		if seen[key] || (len(o.Only) > 0 && !used[key]) {
+			continue
+		}
+		seen[key] = true
+		item := Item{Kind: "environment", SourceID: key, SourceName: key, Target: key, Status: StatusMapped}
+		if o.ExistingEnvironments[key] {
+			item.Status = StatusAlready
+			item.Reasons = []string{"this environment already exists, assumed to be from an earlier run"}
+			p.add(item)
+			continue
+		}
+		p.Environments = append(p.Environments, EnvironmentPlan{SourceID: key, Project: e.Project, Name: e.Name})
+		p.add(item)
+	}
 }

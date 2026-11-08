@@ -225,6 +225,7 @@ func (c *CoolifySource) Discover(ctx context.Context) (*Discovery, error) {
 			return nil, fmt.Errorf("list environments of project %q: %w", p.Name, err)
 		}
 		for _, e := range envs {
+			d.Environments = append(d.Environments, SourceEnvironment{Project: p.Name, Name: e.Name})
 			var res coolifyEnvResources
 			if err := c.r.get(ctx, "/api/v1/projects/"+url.PathEscape(p.UUID)+"/"+url.PathEscape(e.Name), nil, &res); err != nil {
 				return nil, fmt.Errorf("read environment %q of project %q: %w", e.Name, p.Name, err)
