@@ -127,7 +127,7 @@ func (rt *Router) handleDatabaseImportCheck(w http.ResponseWriter, r *http.Reque
 }
 
 func databaseHoldsDataNow(ctx context.Context, db *store.DesiredDatabase, runtime docker.Runtime) (bool, error) {
-	cmd, err := datamigrate.TargetCountCommand(db.Engine)
+	cmd, err := datamigrate.TargetEmptinessCommand(db.Engine)
 	if err != nil {
 		return false, err
 	}

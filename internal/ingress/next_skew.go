@@ -58,7 +58,9 @@ func (n *NextSkewRoute) route(hosts []string, chain []any) (Route, bool) {
 }
 
 // withUpstream deep-copies a handler chain through JSON and points every
-// reverse_proxy in it at dial. It reports false when the copy fails or no proxy was found.
+// app backend reverse_proxy in it at dial. The auth gate's subrequest proxy keeps its
+// own address, or the forward-auth check would go to the held app. It reports false
+// when the copy fails or no backend proxy was found.
 func withUpstream(chain []any, dial string) ([]any, bool) {
 	raw, err := json.Marshal(chain)
 	if err != nil {
@@ -73,7 +75,7 @@ func withUpstream(chain []any, dial string) ([]any, bool) {
 	walk = func(v any) {
 		switch t := v.(type) {
 		case map[string]any:
-			if t["handler"] == "reverse_proxy" {
+			if t["handler"] == "reverse_proxy" && !isAuthSubrequest(t) {
 				t["upstreams"] = []any{map[string]any{"dial": dial}}
 				swapped = true
 			}
@@ -88,4 +90,18 @@ func withUpstream(chain []any, dial string) ([]any, bool) {
 	}
 	walk(out)
 	return out, swapped
+}
+
+// isAuthSubrequest spots the AuthGate check proxy: it is the only host-chain proxy that
+// rewrites the request to a GET and forwards the original method in a header.
+func isAuthSubrequest(proxy map[string]any) bool {
+	rw, _ := proxy["rewrite"].(map[string]any)
+	if rw == nil || rw["method"] == nil {
+		return false
+	}
+	hdrs, _ := proxy["headers"].(map[string]any)
+	req, _ := hdrs["request"].(map[string]any)
+	set, _ := req["set"].(map[string]any)
+	_, ok := set["X-Forwarded-Method"]
+	return ok
 }

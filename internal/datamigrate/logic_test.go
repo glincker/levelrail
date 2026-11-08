@@ -213,3 +213,19 @@ func TestSourceScrub(t *testing.T) {
 		t.Fatalf("empty password must not alter text, got %q", got)
 	}
 }
+
+func TestTargetEmptinessCommandCoversAllRedisDatabases(t *testing.T) {
+	cmd, err := TargetEmptinessCommand(EngineRedis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := cmd[len(cmd)-1]
+	if !strings.Contains(script, "INFO keyspace") || strings.Contains(script, "DBSIZE") {
+		t.Fatalf("redis emptiness probe must read every database, got %q", script)
+	}
+	pg, _ := TargetEmptinessCommand(EnginePostgres)
+	want, _ := TargetCountCommand(EnginePostgres)
+	if strings.Join(pg, " ") != strings.Join(want, " ") {
+		t.Error("other engines keep the plain count command")
+	}
+}

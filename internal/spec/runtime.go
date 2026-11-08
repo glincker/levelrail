@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/netip"
 	"path"
@@ -488,4 +489,27 @@ func (r *RuntimeOptions) Sanitize() (*RuntimeOptions, []string, error) {
 		return nil, warns, nil
 	}
 	return out, warns, nil
+}
+
+// IdentityKey is a stable string of the editable options, so a change to any of
+// them gives the container a new name and replaces it. It is empty when none are set.
+func (r *RuntimeOptions) IdentityKey() string {
+	if r == nil {
+		return ""
+	}
+	v := struct {
+		Tmpfs       []string          `json:"tmpfs,omitempty"`
+		Ulimits     map[string]Ulimit `json:"ulimits,omitempty"`
+		Init        *bool             `json:"init,omitempty"`
+		StopTimeout *int              `json:"stop_timeout,omitempty"`
+		ExtraHosts  []string          `json:"extra_hosts,omitempty"`
+		DNS         []string          `json:"dns,omitempty"`
+		Sysctls     map[string]string `json:"sysctls,omitempty"`
+		PidsLimit   int               `json:"pids_limit,omitempty"`
+	}{r.Tmpfs, r.Ulimits, r.Init, r.StopTimeout, r.ExtraHosts, r.DNS, r.Sysctls, r.PidsLimit}
+	raw, err := json.Marshal(v)
+	if err != nil || string(raw) == "{}" {
+		return ""
+	}
+	return string(raw)
 }

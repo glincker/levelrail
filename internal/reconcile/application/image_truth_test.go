@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -359,5 +360,21 @@ func TestImageIDCache_NilAndEmptyAreNeverCached(t *testing.T) {
 	c.put("n", "r", "id")
 	if _, ok := c.get("other", "r"); ok {
 		t.Error("entries must not leak across nodes")
+	}
+}
+
+func TestNameImageFoldsRuntimeOptions(t *testing.T) {
+	init := true
+	a := store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{Tmpfs: []string{"/tmp"}, Init: &init}}
+	same := store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{Tmpfs: []string{"/tmp"}, Init: &init}}
+	other := store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{Tmpfs: []string{"/run"}, Init: &init}}
+	if ContainerName("a", NameImage(a), "") != ContainerName("a", NameImage(same), "") {
+		t.Error("the same options must keep the same container name")
+	}
+	if ContainerName("a", NameImage(a), "") == ContainerName("a", NameImage(other), "") {
+		t.Error("different options must replace the container")
+	}
+	if NameImage(store.DesiredService{Image: "app:1", Runtime: &spec.RuntimeOptions{ShmSize: "1g"}}) != "app:1" {
+		t.Error("unset editable options must not change an existing name")
 	}
 }

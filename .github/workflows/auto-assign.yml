@@ -53,7 +53,7 @@ jobs:
           fi
 
           from_body=$(printf '%s\n' "$PR_BODY" | grep -Eio '(closes|fixes|resolves|tracks)[[:space:]]+#[0-9]+' | grep -Eo '[0-9]+$' || true)
-          from_commits=$(gh api "repos/$REPO/pulls/$PR_NUMBER/commits?per_page=100" --jq '.[].commit.message' 2>/dev/null \
+          from_commits=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/commits?per_page=100" --jq '.[].commit.message' 2>/dev/null \
             | grep -Eio '^Issue:[[:space:]]*#[0-9]+' | grep -Eo '[0-9]+$' || true)
 
           for n in $(printf '%s\n%s\n' "$from_body" "$from_commits" | grep -E '^[0-9]+$' | sort -un); do
