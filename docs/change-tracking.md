@@ -45,6 +45,16 @@ For a release PR, build the description from the merged PR sections:
 
 Update the matching row in the same commit that changes the behaviour. A claim without a row or evidence does not ship as stable.
 
+## Issues and project
+
+Issues and PRs are public and curated. An issue exists only for a shippable feature or epic with acceptance criteria, never for scratch notes.
+
+- One issue per shippable feature, from the Tracked feature form. Epics use the Epic form and list child issues.
+- Each issue gets a milestone per release (for example v0.9.5) and the labels area/*, type/*, size/* and priority/*.
+- The commit carries an `Issue: #N` trailer. The PR description says `Closes #N`.
+- Project fields on the [org project](https://github.com/orgs/glincker/projects/1): Status, Priority (P0 to P2), Size (XS to XL), Product, Surface.
+- Helper: `scripts/track.sh issue <title> <body-file> [--labels a,b] [--milestone vX] [--size S|M|L] [--surface API|CLI|Dashboard|Multi]` creates the issue and adds it to the project. `scripts/track.sh ship <issue> <sha>` comments the commit. It needs `gh auth refresh -s project,read:project`.
+
 ## Generated files
 
 Regenerate, never hand merge. On a conflict in a generated file (API reference, OpenAPI, route tree, locale catalogs), take either side, then run the repo generator and commit the result.
