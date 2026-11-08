@@ -3,6 +3,7 @@ api.max_body_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
+apps.containers_inspect_timeout
 assets.upload_max_bytes
 audit.anchor_webhook_secret
 audit.anchor_webhook_url

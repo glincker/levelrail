@@ -181,6 +181,14 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = &agentpb.AgentResponse_Stats{Stats: &agentpb.StatsResponse{Stats: containerStatsToPB(stats)}}
 
+	case *agentpb.AgentRequest_InspectContainers:
+		out, err := executeInspectContainers(ctx, rt, op.InspectContainers)
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_InspectContainers{InspectContainers: out}
+
 	case *agentpb.AgentRequest_ListNetworksByPrefix:
 		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
 		if err != nil {

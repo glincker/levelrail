@@ -18,11 +18,18 @@ const (
 	KeyUpdateOfferedChannels         = "updates.offered_channels"
 	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
 	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
+	KeyAppsContainersInspectTimeout  = "apps.containers_inspect_timeout"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyAppsContainersInspectTimeout, Category: CategoryObservability, Kind: KindDuration, Default: "5s",
+		Env: "APP_CONTAINERS_INSPECT_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, 2*time.Minute),
+		Title:       "Container inspect timeout",
+		Description: "How long the app containers view waits for a node's live inspect (health, restarts, networks, mounts), from 1s to 2m. When it runs out the view still answers, with those fields marked unavailable. The next request uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyMeshReadyRetrySeconds, Category: CategoryNetworking, Kind: KindInt, Default: "10",
 		Env: "APP_MESH_READY_RETRY_SECONDS", Apply: ApplyLive, CheckValue: intRangeCheck(2, 300),

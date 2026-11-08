@@ -157,6 +157,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
@@ -635,6 +636,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_AGENT_ADVERTISE_HOST` | ``127.0.0.1`` | Host name or IP agents dial for the gRPC server. It must match the server's TLS certificate, so the default only works on one machine. Control plane. |
 | `APP_AGENT_IDENTITY_FILE` | ``./levelrail-agent-identity.json`` | File where the agent stores its enrolled identity. Agent. |
 | `APP_AGENT_LOG_BATCH_MAX` | ``5000`` | Most log lines the agent sends in one relay batch. Agent. |
+| `APP_AGENT_INSPECT_MAX_CONTAINERS` | ``50`` | Most containers the agent returns from one live container inspect, whatever the control plane asks for. Agent. |
+| `APP_AGENT_INSPECT_MAX_BYTES` | ``262144`` | Largest live container inspect answer, in bytes, capped at 1048576; containers past it are left out and the answer is marked truncated. Agent. |
 | `APP_AGENT_MIN_SAFE_VERSION` | ``0.8.5`` | Oldest agent version a node may run before database changes on it are held back. Control plane. |
 | `APP_AGENT_STORAGE_DIR` | computed | Directory for the agent's file storage. Unset keeps the agent's default storage. Agent. |
 | `APP_JOIN_TOKEN` | computed | Join token the agent uses to enroll on first start, and only when no identity file exists yet. Agent. |

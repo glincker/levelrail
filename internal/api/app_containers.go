@@ -2,13 +2,26 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sort"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+const (
+	envContainersInspectTimeout     = "APP_CONTAINERS_INSPECT_TIMEOUT"
+	defaultContainersInspectTimeout = 5 * time.Second
+	minContainersInspectTimeout     = time.Second
+	maxContainersInspectTimeout     = 2 * time.Minute
+	// managedMountSource replaces host paths of binds the platform injected.
+	managedMountSource = "(managed)"
 )
 
 // shortContainerIDLen matches the abbreviation docker ps shows.
@@ -25,6 +38,9 @@ const (
 	unavailableImageDigest  = "image_digest"
 	unavailableStats        = "stats"
 	unavailableAliases      = "networks.aliases"
+	// unavailableLiveInspect marks a replica the live inspect did not
+	// cover (timeout, node error or a bound), so its fields come from the listing.
+	unavailableLiveInspect = "live_inspect"
 )
 
 type appContainerHealth struct {
@@ -124,14 +140,77 @@ func (rt *Router) handleListAppContainers(w http.ResponseWriter, r *http.Request
 	if !rt.isLocalNode(svc.NodeID) {
 		node = svc.NodeID
 	}
+	details, attempted := rt.liveContainerDetails(ctx, lister, svc, owned)
 	out := make([]appContainerResource, 0, len(owned))
 	for _, s := range owned {
-		out = append(out, buildAppContainer(ctx, lister, svc, s, node))
+		var d *docker.ContainerDetail
+		if v, ok := details[s.ID]; ok {
+			d = &v
+		}
+		c := buildAppContainer(ctx, lister, svc, s, node, d)
+		if attempted && d == nil {
+			c.Unavailable = append(c.Unavailable, unavailableLiveInspect)
+		}
+		out = append(out, c)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-func buildAppContainer(ctx context.Context, lister ContainerLister, svc *store.DesiredService, s docker.ContainerState, node string) appContainerResource {
+// liveContainerDetails runs one scoped live inspect. attempted is false when
+// the node cannot do it at all, so the response keeps today's markers.
+func (rt *Router) liveContainerDetails(parent context.Context, lister ContainerLister, svc *store.DesiredService, owned []docker.ContainerState) (map[string]docker.ContainerDetail, bool) {
+	inspector, ok := lister.(docker.ContainerDetailInspector)
+	if !ok || len(owned) == 0 {
+		return nil, false
+	}
+	src, ok := rt.appGroups.(interface {
+		GetOrCreateInstanceID(ctx context.Context) (string, error)
+	})
+	if !ok {
+		return nil, false
+	}
+	instanceID, err := src.GetOrCreateInstanceID(parent)
+	if err != nil || instanceID == "" {
+		return nil, false
+	}
+	timeout := min(max(rt.tunableDuration(parent, runtimesettings.KeyAppsContainersInspectTimeout, envContainersInspectTimeout, defaultContainersInspectTimeout),
+		minContainersInspectTimeout), maxContainersInspectTimeout)
+	// Leave half of the request budget for the per-replica stats samples.
+	if dl, ok := parent.Deadline(); ok {
+		timeout = min(timeout, time.Until(dl)/2)
+	}
+	ctx, cancel := context.WithTimeout(parent, timeout)
+	defer cancel()
+	ids := make([]string, 0, len(owned))
+	for _, s := range owned {
+		ids = append(ids, s.ID)
+	}
+	list, err := inspector.InspectContainerDetails(ctx, docker.DetailQuery{
+		NamePrefix: svc.Name + "-", LabelKey: spec.InstanceLabelKey, LabelValue: instanceID, Limit: len(owned), IDs: ids,
+	})
+	if errors.Is(err, docker.ErrDetailUnsupported) {
+		return nil, false
+	}
+	if err != nil {
+		rt.logger.Warn("api: live container inspect incomplete", "name", svc.Name, "node", svc.NodeID, "error", err.Error())
+	}
+	out := make(map[string]docker.ContainerDetail, len(list))
+	for _, d := range list {
+		if d.InstanceID == instanceID && application.OwnsContainer(svc.Name, d.Name) {
+			out[d.ID] = d
+		}
+	}
+	return out, true
+}
+
+func buildAppContainer(ctx context.Context, lister ContainerLister, svc *store.DesiredService, s docker.ContainerState, node string, d *docker.ContainerDetail) appContainerResource {
+	if d != nil {
+		c := buildInspectedContainer(svc, s, node, d)
+		if c.Stats = containerStats(ctx, lister, s); c.Stats == nil {
+			c.Unavailable = append(c.Unavailable, unavailableStats)
+		}
+		return c
+	}
 	c := appContainerResource{
 		ID: shortContainerID(s.ID), Name: s.Name, Image: s.Image, ImageDigest: s.ImageID,
 		State: "stopped", Node: node,
@@ -184,6 +263,68 @@ func buildAppContainer(ctx context.Context, lister ContainerLister, svc *store.D
 	if c.Stats == nil {
 		c.Unavailable = append(c.Unavailable, unavailableStats)
 	}
+	return c
+}
+
+// buildInspectedContainer fills a replica from the node's live inspect.
+func buildInspectedContainer(svc *store.DesiredService, s docker.ContainerState, node string, d *docker.ContainerDetail) appContainerResource {
+	c := appContainerResource{
+		ID: shortContainerID(s.ID), Name: s.Name, Image: s.Image, ImageDigest: d.ImageID,
+		State: "stopped", Node: node,
+		Ports: []appContainerPort{}, Networks: []appContainerNetwork{}, Mounts: []appContainerMount{},
+		Unavailable: []string{},
+	}
+	if s.Running {
+		c.State = "running"
+	}
+	if len(d.RepoDigests) > 0 {
+		c.ImageDigest = d.RepoDigests[0]
+	}
+	if c.ImageDigest == "" {
+		c.Unavailable = append(c.Unavailable, unavailableImageDigest)
+	}
+	if d.Health != nil {
+		c.Health = &appContainerHealth{Status: d.Health.Status, FailingStreak: d.Health.FailingStreak, LastOutput: docker.CutUTF8(secretmask.Mask(d.Health.LastOutput), docker.HealthOutputMaxBytes)}
+	}
+	rc := d.RestartCount
+	c.RestartCount = &rc
+	if !d.StartedAt.IsZero() {
+		started := d.StartedAt
+		c.StartedAt = &started
+	}
+	ports := d.Ports
+	if len(ports) == 0 {
+		ports = s.Ports
+	}
+	for _, p := range ports {
+		bind, proto := p.HostIP, p.Protocol
+		if bind == "" {
+			bind = "0.0.0.0"
+		}
+		if proto == "" {
+			proto = "tcp"
+		}
+		c.Ports = append(c.Ports, appContainerPort{Container: p.ContainerPort, Host: p.HostPort, Proto: proto, Bind: bind})
+	}
+	for _, n := range d.Networks {
+		aliases := n.Aliases
+		if aliases == nil {
+			aliases = []string{}
+		}
+		c.Networks = append(c.Networks, appContainerNetwork{Name: n.Name, IP: n.IP, Aliases: aliases})
+	}
+	declared := map[string]bool{}
+	for _, b := range svc.BindMounts {
+		declared[b.HostPath] = true
+	}
+	for _, m := range d.Mounts {
+		src := m.Source
+		if m.Type == "bind" && !declared[src] {
+			src = managedMountSource
+		}
+		c.Mounts = append(c.Mounts, appContainerMount{Type: m.Type, Source: src, Target: m.Target, RO: m.ReadOnly})
+	}
+	c.Limits = appContainerLimits{CPU: float64(d.NanoCPUs) / 1e9, MemoryBytes: d.MemoryBytes}
 	return c
 }
 

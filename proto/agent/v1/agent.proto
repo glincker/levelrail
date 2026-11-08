@@ -319,6 +319,9 @@ message AgentRequest {
     LogsRequest logs = 24;
     // RemoveVolume deletes a named volume, used only for an explicit delete-data request.
     RemoveVolumeRequest remove_volume = 25;
+    // InspectContainers reads live detail for this control plane's own
+    // containers only. Sent only to agents advertising "container_inspect".
+    InspectContainersRequest inspect_containers = 26;
   }
 }
 
@@ -350,6 +353,7 @@ message AgentResponse {
     // ArchiveStat acknowledges a copy-out ExecRequest with the path stat.
     ArchiveStat archive_stat = 15;
     LogsResponse logs = 16;
+    InspectContainersResponse inspect_containers = 17;
   }
 }
 
@@ -669,6 +673,64 @@ message ContainerStats {
   uint64 network_tx_bytes = 6;
   uint64 disk_read_bytes = 7;
   uint64 disk_write_bytes = 8;
+}
+
+// InspectContainersRequest scopes a live inspect to one name prefix and
+// one control plane: the agent refuses a request without both, so a
+// shared daemon never reveals another tenant's containers.
+message InspectContainersRequest {
+  string name_prefix = 1;
+  string instance_id = 2;
+  // limit is the caller's cap; the agent applies its own lower bound too.
+  uint32 limit = 3;
+  // container_ids, when set, narrows the answer to these containers before
+  // the limit applies, so a sibling app sharing the prefix cannot crowd it out.
+  repeated string container_ids = 4;
+}
+
+message ContainerHealthDetail {
+  string status = 1;
+  int32 failing_streak = 2;
+  // last_output is the last line of the newest probe, at most 256 bytes.
+  string last_output = 3;
+}
+
+message ContainerNetworkDetail {
+  string name = 1;
+  string ip = 2;
+  repeated string aliases = 3;
+}
+
+message ContainerMountDetail {
+  string type = 1;
+  string source = 2;
+  string target = 3;
+  bool read_only = 4;
+}
+
+// ContainerDetail is a fixed allowlist of inspect fields: no env, command,
+// labels or raw inspect JSON ever travel in it.
+message ContainerDetail {
+  string id = 1;
+  string image = 2;
+  string image_id = 3;
+  repeated string repo_digests = 4;
+  string state = 5;
+  ContainerHealthDetail health = 6;
+  int32 restart_count = 7;
+  google.protobuf.Timestamp started_at = 8;
+  google.protobuf.Timestamp finished_at = 9;
+  repeated PortBinding ports = 10;
+  repeated ContainerNetworkDetail networks = 11;
+  repeated ContainerMountDetail mounts = 12;
+  int64 nano_cpus = 13;
+  int64 memory_bytes = 14;
+}
+
+message InspectContainersResponse {
+  repeated ContainerDetail containers = 1;
+  // truncated is set when the agent's count or size bound cut the list.
+  bool truncated = 2;
 }
 
 message StatsRequest {
