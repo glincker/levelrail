@@ -15,10 +15,13 @@
 # v0.9.4: deploysafety is imported by the API rollout state routes, the application reconciler, cmd/levelrail, failure, deploywatch, chaos/live, scheduledtask and the CLI.
 # v0.9.4: deploytrace is read by the API explain routes, the application reconciler, deploy and deploytimeline; changes by the API, alerting, investigate and deploywatch.
 # v0.9.1: internal/runtimesettings is the shared live settings registry that every feature registers keys in, so 51 packages read it by design (stack Setting kind, token verbs, node settings).
+# v0.9.5: the Coolify environments import (internal/platformimport) is used by the API applier and the CLI, so every dependent of the API now depends on it (39 dependents).
+# v0.9.5: the Procfile and app.json translation at deploy (internal/configtranslate) is imported by the deploy path and the API (26 dependents).
+# v0.9.5: kit/diskspace, internal/build and internal/version each gained one or two dependents from the remote build dispatch, the agent installer and the server patching host code; not traced per package.
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
-internal/build 34
+internal/build 40
 internal/canarypolicy 162
 internal/changes 26
 internal/chaos 156
@@ -55,9 +58,9 @@ internal/spendcap 164
 internal/store 153
 internal/telemetry 54
 internal/usagecost 155
-internal/version 31
+internal/version 37
 kit/cronexpr 162
-kit/diskspace 40
+kit/diskspace 48
 kit/ids 76
 kit/netguard 178
 kit/probe 162
@@ -66,3 +69,5 @@ kit/ticker 32
 kit/timeutil 156
 kit/upgrade 25
 internal/runtimesettings/registrymirror 67
+internal/platformimport 45
+internal/configtranslate 30
