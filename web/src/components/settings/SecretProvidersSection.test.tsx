@@ -210,4 +210,73 @@ describe('SecretProvidersSection', () => {
     })
     expect(document.body.textContent).not.toContain('tok-123')
   })
+
+  it('maps the Infisical client ID and secret to the prefixed credential', async () => {
+    window.HTMLElement.prototype.hasPointerCapture = () => false
+    window.HTMLElement.prototype.scrollIntoView = () => undefined
+    const calls: { url: string; init?: RequestInit }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        calls.push({ url, init })
+        if (init?.method === 'PUT') return Promise.resolve(new Response('{}'))
+        return Promise.resolve(new Response(JSON.stringify({ providers: [] })))
+      }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SecretProvidersSection />
+      </QueryClientProvider>,
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'secretProviders.add' }),
+    )
+    await userEvent.type(screen.getByLabelText('secretProviders.name'), 'inf')
+    await userEvent.click(screen.getByLabelText('secretProviders.type'))
+    await userEvent.click(
+      await screen.findByRole('option', { name: '1Password' }),
+    )
+    fireEvent.change(screen.getByLabelText('secretProviders.baseUrlConnect'), {
+      target: { value: 'https://connect.internal:8080' },
+    })
+    await userEvent.type(screen.getByLabelText('secretProviders.token'), 'tok')
+    await userEvent.click(screen.getByLabelText('secretProviders.type'))
+    await userEvent.click(
+      await screen.findByRole('option', { name: 'Infisical' }),
+    )
+    await userEvent.type(
+      screen.getByLabelText('secretProviders.projectInfisical'),
+      'ws1',
+    )
+    await userEvent.type(
+      screen.getByLabelText('secretProviders.envInfisical'),
+      'prod',
+    )
+    await userEvent.clear(
+      screen.getByLabelText('secretProviders.tokenOrIdentity'),
+    )
+    await userEvent.type(
+      screen.getByLabelText('secretProviders.clientId'),
+      'cid',
+    )
+    await userEvent.type(
+      screen.getByLabelText('secretProviders.clientSecret'),
+      'shh',
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'secretProviders.save' }),
+    )
+    await waitFor(() => {
+      expect(calls.some((c) => c.init?.method === 'PUT')).toBe(true)
+    })
+    const put = calls.find((c) => c.init?.method === 'PUT')
+    expect(JSON.parse(put?.init?.body as string)).toMatchObject({
+      type: 'infisical',
+      token: 'infisical-identity:cid:shh',
+    })
+    await waitFor(() => {
+      expect(screen.queryByRole('form')).toBeNull()
+    })
+    expect(document.body.textContent).not.toContain('shh')
+  })
 })

@@ -142,7 +142,7 @@ Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or
 
 ### Infisical machine identity
 
-Instead of a long-lived access token, an Infisical provider can use a machine identity with universal auth. Pass the credential as the provider token in the form `infisical-identity:CLIENT_ID:CLIENT_SECRET`, for example with `--provider-token-file -`. It is stored encrypted like any token and is never returned.
+Instead of a long-lived access token, an Infisical provider can use a machine identity with universal auth. Give the two values separately: `--client-id ID --client-secret-file PATH|-` on the CLI, or the Client ID and Client secret fields in the dashboard form. They cannot be combined with an access token. The server stores them as `infisical-identity:CLIENT_ID:CLIENT_SECRET` (you can also pass that string as the provider token), encrypted like any token and never returned.
 
 Levelrail logs in when it first needs to read, keeps the short-lived access token in memory (one per provider), and logs in again lazily once about 90 percent of its lifetime has passed. There is no background refresh. A rejected login fails the read closed, and neither the client secret nor the access token appears in errors or logs. Replacing the credential triggers a new login on the next read.
 

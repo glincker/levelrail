@@ -1923,11 +1923,12 @@ Global environments exist across the entire instance (Development, Test, UAT, Pr
 ```
 levelrail-cli secrets generate-master-key --out PATH
 levelrail-cli secrets rotate-master-key --new-key-file PATH [flags]
+levelrail-cli secrets provider add NAME --type infisical --project WORKSPACE_ID --environment ENV --client-id ID --client-secret-file PATH|- [flags]
 levelrail-cli secrets binding-status [flags]
 levelrail-cli secrets rebind [flags]
 ```
 
-`generate-master-key` writes a new master key to a file (mode 0600, never overwrites), locally, without contacting the control plane. `rotate-master-key` re-wraps every stored data encryption key under a new master key in one atomic step, live, then binds any legacy values. `binding-status` counts stored secret values not yet bound to their slot, and `rebind` binds them (safe to rerun). Read [Master key rotation](/master-key-rotation) before running these in production.
+`generate-master-key` writes a new master key to a file (mode 0600, never overwrites), locally, without contacting the control plane. `rotate-master-key` re-wraps every stored data encryption key under a new master key in one atomic step, live, then binds any legacy values. `binding-status` counts stored secret values not yet bound to their slot, and `rebind` binds them (safe to rerun). `provider add` with `--client-id` and `--client-secret-file` stores an Infisical machine identity (the secret is read from a file or stdin, never echoed). Read [Master key rotation](/master-key-rotation) before running these in production.
 
 ## Migrate
 

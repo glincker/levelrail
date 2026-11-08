@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/secretprovider"
 )
 
 const secretsProviderJSONUsage = "print the result as JSON to stdout and nothing else"
@@ -40,6 +41,7 @@ func secretsProviderUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s secrets provider add NAME --type doppler --project P --environment CONFIG --provider-token-file PATH|-
   %[1]s secrets provider add NAME --type infisical --project WORKSPACE_ID --environment ENV [--path /dir] [--base-url URL] --provider-token-file PATH|-
+  %[1]s secrets provider add NAME --type infisical --project WORKSPACE_ID --environment ENV --client-id ID --client-secret-file PATH|-
   %[1]s secrets provider add NAME --type onepassword --base-url CONNECT_URL [--project VAULT] --provider-token-file PATH|-
   %[1]s secrets provider add vault --type vault --address URL --provider-token-file PATH|-
   %[1]s secrets provider list [flags]
@@ -50,7 +52,8 @@ Connects read-only external secret providers. An app secret whose value is
 doppler://NAME/SECRET, infisical://NAME/[dir/]SECRET or
 op://NAME/[VAULT/]ITEM/FIELD is read live from the provider when its container
 is created. For onepassword, --environment is not used and --project is the
-default vault. Tokens are stored encrypted and never
+default vault. For infisical, --client-id with --client-secret-file stores a machine
+identity instead of an access token. Credentials are stored encrypted and never
 shown. For Vault, NAME is ignored and the existing vault settings are used.
 `, prog)
 }
@@ -66,7 +69,7 @@ func secretsProviderName(prog string, fs interface{ Arg(int) string }, stderr io
 
 func runSecretsProviderAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "secrets provider add", secretsProviderJSONUsage, stderr)
-	var typeFlag, projectFlag, envFlag, pathFlag, baseURLFlag, tokenFileFlag, addressFlag string
+	var typeFlag, projectFlag, envFlag, pathFlag, baseURLFlag, tokenFileFlag, addressFlag, clientIDFlag, clientSecretFileFlag string
 	fs.StringVar(&typeFlag, "type", "", "provider type: doppler, infisical, onepassword or vault")
 	fs.StringVar(&projectFlag, "project", "", "Doppler project, Infisical workspace ID, or default 1Password vault")
 	fs.StringVar(&envFlag, "environment", "", "Doppler config, or Infisical environment slug (not used by onepassword)")
@@ -74,6 +77,8 @@ func runSecretsProviderAdd(prog string, args []string, stdout, stderr io.Writer,
 	fs.StringVar(&baseURLFlag, "base-url", "", "self-hosted Infisical URL, or the 1Password Connect URL (required); private addresses are allowed only here")
 	fs.StringVar(&addressFlag, "address", "", "Vault address (--type vault)")
 	fs.StringVar(&tokenFileFlag, "provider-token-file", "", "file holding the provider token, or - for stdin; omit to keep the stored token")
+	fs.StringVar(&clientIDFlag, "client-id", "", "Infisical machine identity client ID (use with --client-secret-file)")
+	fs.StringVar(&clientSecretFileFlag, "client-secret-file", "", "file holding the Infisical machine identity client secret, or - for stdin")
 	fs.Usage = func() {
 		_, _ = fmt.Fprint(stderr, secretsProviderUsage(prog)+"\nFlags:\n")
 		fs.PrintDefaults()
@@ -95,6 +100,14 @@ func runSecretsProviderAdd(prog string, args []string, stdout, stderr io.Writer,
 		}
 		providerToken = strings.TrimSpace(v)
 	}
+	if clientIDFlag != "" || clientSecretFileFlag != "" {
+		cred, err := infisicalIdentityCredential(typeFlag, clientIDFlag, clientSecretFileFlag, tokenFileFlag)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
+			return exitUsage
+		}
+		providerToken = cred
+	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if typeFlag == "vault" {
 		settings, err := client.SetVault(context.Background(), updateVaultSettingsRequest{Enabled: true, Address: addressFlag, AuthMethod: "token", Credential: providerToken})
@@ -114,6 +127,29 @@ func runSecretsProviderAdd(prog string, args []string, stdout, stderr io.Writer,
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save secret provider: %w", err))
 	}
 	return renderOrFail(stdout, stderr, of, res, func() { printSecretProviders(stdout, []apiclient.SecretProviderResource{res}) })
+}
+
+// infisicalIdentityCredential builds the prefixed credential the server stores for universal auth.
+func infisicalIdentityCredential(typ, clientID, secretFile, tokenFile string) (string, error) {
+	switch {
+	case typ != "infisical":
+		return "", fmt.Errorf("--client-id and --client-secret-file apply to --type infisical only")
+	case tokenFile != "":
+		return "", fmt.Errorf("use either --provider-token-file or the client ID and secret pair, not both")
+	case clientID == "" || secretFile == "":
+		return "", fmt.Errorf("--client-id and --client-secret-file must be given together")
+	case strings.ContainsAny(clientID, ": \t\r\n"):
+		return "", fmt.Errorf("--client-id must not contain colons or whitespace")
+	}
+	v, err := readSecretFileOrStdin(secretFile)
+	if err != nil {
+		return "", fmt.Errorf("read client secret: %w", err)
+	}
+	secret := strings.TrimSpace(v)
+	if secret == "" {
+		return "", fmt.Errorf("client secret is empty")
+	}
+	return secretprovider.IdentityPrefix + clientID + ":" + secret, nil
 }
 
 func runSecretsProviderList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

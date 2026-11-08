@@ -27,6 +27,9 @@ import {
 // Mirrors the server's name rule so bad names fail before the round trip.
 const NAME_RE = /^[a-z][a-z0-9_]{0,39}$/
 
+// Stored credential format the server parses for Infisical machine identities.
+const IDENTITY_PREFIX = 'infisical-identity:'
+
 const TYPE_OPTIONS: { value: SecretProviderType; label: string }[] = [
   { value: 'doppler', label: 'Doppler' },
   { value: 'infisical', label: 'Infisical' },
@@ -53,9 +56,13 @@ function ProviderForm({
   const [path, setPath] = useState(initial?.path ?? '')
   const [baseUrl, setBaseUrl] = useState(initial?.base_url ?? '')
   const [token, setToken] = useState('')
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
   const [error, setError] = useState<string | null>(null)
   const isDoppler = type === 'doppler'
   const isOnePassword = type === 'onepassword'
+  const isInfisical = type === 'infisical'
+  const locked = put.isPending || !canEdit
 
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -72,10 +79,25 @@ function ProviderForm({
       setError(t('secretProviders.errScope'))
       return
     }
-    if (!initial?.has_token && !token.trim()) {
+    const id = clientId.trim()
+    const secret = clientSecret.trim()
+    const useIdentity = isInfisical && (id !== '' || secret !== '')
+    if (useIdentity) {
+      if (!id || !secret || /[:\s]/.test(id)) {
+        setError(t('secretProviders.errIdentity'))
+        return
+      }
+      if (token.trim()) {
+        setError(t('secretProviders.errIdentityOrToken'))
+        return
+      }
+    } else if (!initial?.has_token && !token.trim()) {
       setError(t('secretProviders.errToken'))
       return
     }
+    const credential = useIdentity
+      ? `${IDENTITY_PREFIX}${id}:${secret}`
+      : token.trim() || undefined
     setError(null)
     put.mutate(
       {
@@ -88,12 +110,14 @@ function ProviderForm({
             : environment.trim() || undefined,
           path: isOnePassword ? undefined : path.trim() || undefined,
           base_url: !isDoppler ? baseUrl.trim() || undefined : undefined,
-          token: token.trim() || undefined,
+          token: credential,
         },
       },
       {
         onSuccess: () => {
           setToken('')
+          setClientId('')
+          setClientSecret('')
           onDone()
         },
       },
@@ -116,7 +140,7 @@ function ProviderForm({
             aria-invalid={message ? true : undefined}
             aria-describedby={message ? 'sp-error' : undefined}
             value={name}
-            disabled={initial !== null || put.isPending}
+            disabled={initial !== null || locked}
             autoComplete="off"
             placeholder={t('secretProviders.namePlaceholder')}
             onChange={(e) => {
@@ -128,7 +152,7 @@ function ProviderForm({
           <FieldLabel htmlFor="sp-type">{t('secretProviders.type')}</FieldLabel>
           <Select
             value={type}
-            disabled={put.isPending}
+            disabled={locked}
             onValueChange={(v) => {
               setType(v as SecretProviderType)
             }}
@@ -156,7 +180,7 @@ function ProviderForm({
           <Input
             id="sp-project"
             value={project}
-            disabled={put.isPending}
+            disabled={locked}
             autoComplete="off"
             onChange={(e) => {
               setProject(e.target.value)
@@ -173,7 +197,7 @@ function ProviderForm({
             <Input
               id="sp-env"
               value={environment}
-              disabled={put.isPending}
+              disabled={locked}
               autoComplete="off"
               onChange={(e) => {
                 setEnvironment(e.target.value)
@@ -189,7 +213,7 @@ function ProviderForm({
             <Input
               id="sp-path"
               value={path}
-              disabled={put.isPending}
+              disabled={locked}
               autoComplete="off"
               placeholder="/"
               onChange={(e) => {
@@ -208,7 +232,7 @@ function ProviderForm({
             <Input
               id="sp-base"
               value={baseUrl}
-              disabled={put.isPending}
+              disabled={locked}
               autoComplete="off"
               placeholder={
                 isOnePassword
@@ -221,15 +245,48 @@ function ProviderForm({
             />
           </Field>
         ) : null}
+        {isInfisical ? (
+          <>
+            <Field>
+              <FieldLabel htmlFor="sp-client-id">
+                {t('secretProviders.clientId')}
+              </FieldLabel>
+              <Input
+                id="sp-client-id"
+                value={clientId}
+                disabled={locked}
+                autoComplete="off"
+                onChange={(e) => {
+                  setClientId(e.target.value)
+                }}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="sp-client-secret">
+                {t('secretProviders.clientSecret')}
+              </FieldLabel>
+              <SecretInput
+                id="sp-client-secret"
+                value={clientSecret}
+                disabled={locked}
+                onChange={(e) => {
+                  setClientSecret(e.target.value)
+                }}
+              />
+            </Field>
+          </>
+        ) : null}
         <Field className="sm:col-span-2">
           <FieldLabel htmlFor="sp-token">
-            {t('secretProviders.token')}
+            {isInfisical
+              ? t('secretProviders.tokenOrIdentity')
+              : t('secretProviders.token')}
           </FieldLabel>
           <SecretInput
             id="sp-token"
             value={token}
             hasExistingValue={initial?.has_token}
-            disabled={put.isPending}
+            disabled={locked}
             onChange={(e) => {
               setToken(e.target.value)
             }}
@@ -241,8 +298,13 @@ function ProviderForm({
           {message}
         </p>
       ) : null}
+      {!canEdit ? (
+        <p className="text-muted-foreground text-xs">
+          {t('secretProviders.readOnly')}
+        </p>
+      ) : null}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={put.isPending || !canEdit}>
+        <Button type="submit" size="sm" disabled={locked}>
           {put.isPending
             ? t('secretProviders.saving')
             : t('secretProviders.save')}
