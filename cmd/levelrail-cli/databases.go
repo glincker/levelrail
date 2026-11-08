@@ -71,6 +71,10 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "pooler":
 		return runDatabasesPooler(prog, rest, stdout, stderr, lookupEnv)
+	case "export":
+		return runDatabasesExport(prog, rest, stdout, stderr, lookupEnv)
+	case "clone":
+		return runDatabasesClone(prog, rest, stdout, stderr, lookupEnv)
 	case "branch":
 		return runDatabasesBranch(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
@@ -125,6 +129,8 @@ func databasesUsage(prog string) string {
   %[1]s databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
   %[1]s databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
+  %[1]s databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
+  %[1]s databases clone <source> <new-name> [--backup ID] [flags]  new database from a fresh or chosen backup
   %[1]s databases link <name> <app> [--env-var VAR] [--field F] [flags]  connect an app: injects the connection env var
   %[1]s databases links <name> [flags]  list the apps connected to a database
   %[1]s databases probe <name> [flags]  re-check an external database's connectivity

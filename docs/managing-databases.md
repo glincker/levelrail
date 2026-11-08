@@ -282,6 +282,16 @@ bkh_p93kd7z1q   bkt_ax7f2j1kd  succeeded  2148291  2026-09-12T03:00:01Z  2026-09
 
 On the dashboard, use the target picker and **Back up now** button in the **Backups** card on a database's Overview tab. A manual backup is refused with `507` when the control plane's data directory has less than `APP_MIN_BACKUP_DISK_MB` free (default 256), because the backup history row is written there.
 
+### Export and clone
+
+```bash
+levelrail-cli databases export <database> --out main.dump
+levelrail-cli databases export <database> --latest --out -  > main.dump
+levelrail-cli databases clone <database> <new-name> [--backup <id>]
+```
+
+`export` takes a new backup (or with `--latest` reuses the newest succeeded one) and downloads that backup object. It needs the same ability as a backup download, refuses to print a dump to a terminal, writes the file with mode `0600`, and replaces an existing file only with `--force`. The wait for a fresh backup is bounded by `--wait` or the `LEVELRAIL_EXPORT_WAIT` environment variable. An encrypted backup stays encrypted. `clone` creates a new database from a backup of the source and never changes the source.
+
 ### Scheduled backups
 
 ```bash
