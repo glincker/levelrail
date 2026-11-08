@@ -1,6 +1,6 @@
 # Known limits
 
-Last updated 2026-11-07 (release/v0.9.5 branch).
+Last updated 2026-11-08 (release/v0.9.5 branch).
 
 Current limits, each with the page it comes from. Labels and evidence change with every release, so check [feature status](feature-status.md) for the latest.
 
@@ -27,19 +27,23 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 - The 15 vendor notification kinds have never had a real vendor accept a send. Source: [feature status](feature-status.md).
 - SAML and SCIM were run against Keycloak and SimpleSAMLphp in a local lab, not against Okta or Entra ID. Source: [feature status](feature-status.md).
 
+## App controls
+
+- The one-off command, per-service replica and restart controls, and the Logs service selector are unit and component tested with mocked fetch. None has run against a live server, and none has a browser check at phone or desktop width. The Logs selector's navigate-on-change path has no test. Source: [feature status](feature-status.md).
+
 ## Upgrades
 
 - Upgrade restore points are beta. Systemd and agent reconnection after an upgrade, and a live host run, are not yet proven. Source: [feature status](feature-status.md), [upgrade safely](upgrade-safely.md).
 - Restoring across a schema change discards data written since the pre-upgrade snapshot. The attempt records how many minutes that was. Source: [upgrade safely](upgrade-safely.md).
 - A release older than your database schema is blocked and not offered. Source: [upgrade safely](upgrade-safely.md).
 - After the first verified release signature, an upgrade to a release without a signature bundle is refused. Source: [upgrade safely](upgrade-safely.md).
-- Upgrade and downgrade testing across versions with real data is still part of the work toward a stable release. Source: [roadmap](roadmap.md).
+- Upgrade and downgrade testing across versions with real data is still part of the work toward a stable release. The populated-database SQLite test uses synthetic rows, and the domains table is not seeded yet. Source: [roadmap](roadmap.md).
 
 ## Templates and databases
 
 - The last local catalog smoke (2026-10-25, plus eight hand-booted on 2026-10-27) passed 101 of 108 templates that need no operator configuration. The rest of the catalog is untested. Source: [feature status](feature-status.md), [templates status](templates-status.md).
 - Point-in-time restore covers Postgres, MySQL and MariaDB only. MongoDB has no oplog here. TLS is built for Postgres, Redis, Valkey, MySQL, MariaDB and MongoDB (on at creation for Postgres, Redis and, from the TLS release on, MySQL, MariaDB and MongoDB; older MySQL, MariaDB and MongoDB databases, Redis and every Valkey database can be switched with `PUT /api/v1/databases/{name}/tls`, and Valkey stays plaintext until switched). KeyDB, Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense and Memcached have no TLS, and no TLS path, Valkey included, was run on a real host. Source: [roadmap](roadmap.md), [feature status](feature-status.md).
-- Database backups for compose services (Postgres, MySQL, MariaDB) have no restore control in the dashboard or CLI. Restore is a manual load of the dump, covered in [compose apps](compose-apps.md). The schedules, run history and dashboard card are built and unit tested, but not yet run against a live server or a real compose app with a database. Source: [compose apps](compose-apps.md), [feature status](feature-status.md).
+- Database backups for compose services (Postgres, MySQL, MariaDB) have no restore control in the dashboard or CLI. Restore is a manual load of the dump, covered in [compose apps](compose-apps.md). The schedules, run history and dashboard card are built and unit tested, but not yet run against a live server or a real compose app with a database. A restore path is not part of this release. Source: [compose apps](compose-apps.md), [feature status](feature-status.md).
 
 - `databases export` and `databases clone` are built and unit tested with fakes. Nothing has run against a live control plane or a real backup object. Source: [managing databases](managing-databases.md), [feature status](feature-status.md).
 

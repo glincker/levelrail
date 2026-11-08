@@ -128,6 +128,14 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | Migrate apps with their volumes between nodes | Built and tested | [Multi-node](/multi-node) |
 | Data plane keeps serving routes while the control plane is stalled | Built and tested | [Resilience](/resilience) |
 
+## App controls
+
+| Capability | Status | Read more |
+| --- | --- | --- |
+| Run a one-off command in a fresh container from the app's Exec tab | Beta | [Jobs](/jobs) |
+| Per-service replica count and restart on the Services tab of multi-service apps | Beta | [Deploying apps](/deploying-apps) |
+| Service selector on the Logs tab of multi-service apps | Beta | [Log explorer](/log-explorer) |
+
 ## Observability
 
 | Capability | Status | Read more |
