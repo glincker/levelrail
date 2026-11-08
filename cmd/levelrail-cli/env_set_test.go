@@ -77,6 +77,8 @@ func TestEnvSetValueForms(t *testing.T) {
 		{"hash", "A=#c", "#c"},
 		{"file", "A=@" + pem, "line1\nline2"},
 		{"escape", "A=@@x", "@x"},
+		{"bare at word", "A=@oncall", "@oncall"},
+		{"bare at empty", "A=@", "@"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -114,7 +116,6 @@ func TestEnvSetValueSourceStdinAndErrors(t *testing.T) {
 		{"A=@" + filepath.Join(dir, "missing")},
 		{"A=@" + big},
 		{"A=@" + nul},
-		{"A=@"},
 	} {
 		msg := runCLIExpectValidationError(t, cliArgs(srv, append([]string{"env", "set", "web"}, args...)...))
 		if strings.Contains(msg, "a\x00b") {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 )
@@ -104,7 +105,8 @@ func kvKeyHint(kv string) string {
 	return k
 }
 
-// resolveEnvValue expands the "@path", "@-" and "@@literal" value forms; errors name the key and path, never the content.
+// resolveEnvValue expands "@-", "@./path", "@/abs" and "@@literal"; a bare "@word" stays literal so existing values keep working.
+// Errors name the key and path, never the content.
 func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
 	if !strings.HasPrefix(v, "@") {
 		return v, nil
@@ -113,8 +115,8 @@ func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
 		return v[1:], nil
 	}
 	src := v[1:]
-	if src == "" {
-		return "", newValidationError("%s: empty value source after @; use @@ for a literal leading @", key)
+	if src != "-" && !isExplicitPath(src) {
+		return v, nil
 	}
 	var raw []byte
 	var err error
@@ -137,6 +139,12 @@ func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
 		return "", newValidationError("%s: value from %s must be valid UTF-8 without NUL bytes", key, src)
 	}
 	return strings.TrimSuffix(string(raw), "\n"), nil
+}
+
+// isExplicitPath keeps a value like "@oncall" literal: only absolute or ./ ../ forms read a file.
+func isExplicitPath(p string) bool {
+	return filepath.IsAbs(p) || strings.HasPrefix(p, "./") || strings.HasPrefix(p, "../") ||
+		strings.HasPrefix(p, ".\\") || strings.HasPrefix(p, "..\\")
 }
 
 func readEnvValueFile(path string) ([]byte, error) {
@@ -195,8 +203,8 @@ func envSetUsage(prog string) string {
 
 Sets plain environment variables on an app, creating or changing them.
 Only the first "=" splits, so values may contain "=", spaces and quotes (quote them for your shell).
-KEY=@path reads the value from a file (one trailing newline is dropped), KEY=@- reads stdin (once per call),
-and KEY=@@text sets the literal "@text". Sources are limited to 64 KiB of UTF-8 text.
+KEY=@./path or KEY=@/abs/path reads the value from a file (one trailing newline is dropped), KEY=@- reads stdin (once per call),
+and KEY=@@text sets the literal "@text". Any other leading @ (for example @oncall) is stored as typed. Sources are limited to 64 KiB of UTF-8 text.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
 Changes reach the running container at the next restart, or now with --apply.
 NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s deploy <app> --latest", an upload app "%[1]s deploy <dir>".
