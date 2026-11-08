@@ -1,4 +1,5 @@
 {
+  "readOnlyNotice": "Tienes acceso de solo lectura. Pide a un administrador acceso para cambiar estos ajustes.",
   "deployNote": {
     "queueLabel": "Sobre la cola",
     "queueBody": "Los despliegues de una app se ejecutan de uno en uno. Este empieza solo cuando termina o se cancela el que tiene delante."

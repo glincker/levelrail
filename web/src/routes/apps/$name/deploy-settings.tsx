@@ -24,6 +24,7 @@ import { BadgeSettingsCard } from '../../../components/BadgeSettingsCard'
 import { GitHubActionsCard } from '../../../components/GitHubActionsCard'
 import { CIDeployCard } from '../../../components/CIDeployCard'
 import { CITemplatesCard } from '../../../components/CITemplatesCard'
+import { ReadOnlyFieldset } from '../../../components/ReadOnlyFieldset'
 import { SettingsGroup } from '../../../components/deploySettings/SettingsGroup'
 import { SettingsSectionNav } from '../../../components/deploySettings/SettingsSectionNav'
 import { DeployFlowStrip } from '../../../components/deploySettings/DeployFlowStrip'
@@ -61,87 +62,89 @@ function DeploySettingsSection() {
     <div className="space-y-6">
       <DeployFlowStrip />
       <SettingsSectionNav />
-      <SettingsGroup id="build">
-        <CardHelp card="buildHooks">
-          <BuildHooksCard appName={name} />
-        </CardHelp>
-        <CardHelp card="buildCache">
-          <BuildCacheCard appName={name} />
-        </CardHelp>
-      </SettingsGroup>
-      <SettingsGroup id="run">
-        <CardHelp card="port" recommended>
-          <PortEditor app={app} />
-        </CardHelp>
-        <CardHelp card="strategy">
-          <DeployStrategyEditor app={app} />
-        </CardHelp>
-        <CardHelp card="rolloutPolicy">
-          <RolloutPolicyCard appName={name} />
-        </CardHelp>
-        <CardHelp card="hooks">
-          <HooksEditor app={app} />
-        </CardHelp>
-      </SettingsGroup>
-      <SettingsGroup id="safety">
-        <CardHelp card="safety" recommended>
-          <DeploySafetyCard appName={name} />
-        </CardHelp>
-        <CardHelp card="watch" recommended>
-          <PostDeployWatchCard appName={name} />
-        </CardHelp>
-        <CardHelp card="autoRollback">
-          <AutoRollbackCard appName={name} />
-        </CardHelp>
-        <CardHelp card="predeploySnapshot">
-          <PredeploySnapshotCard appName={name} />
-        </CardHelp>
-        <CardHelp card="sloBurn">
-          <AutoRollbackSLOBurnCard appName={name} />
-        </CardHelp>
-        <CardHelp card="canary">
-          <CanaryCard appName={name} />
-        </CardHelp>
-        <CardHelp card="freeze">
-          <DeployFreezeCard appName={name} />
-        </CardHelp>
-        <CardHelp card="supplyChain">
-          <SupplyChainSettingsCard appName={name} />
-        </CardHelp>
-        <CardHelp card="secretScan">
-          <SecretScanSettingsCard appName={name} />
-        </CardHelp>
-      </SettingsGroup>
-      <SettingsGroup id="automation">
-        <CardHelp card="scheduled">
-          <ScheduledDeployCard appName={name} />
-        </CardHelp>
-        <CardHelp card="cancelSuperseded">
-          <CancelSupersededCard appName={name} />
-        </CardHelp>
-        <CardHelp card="preview">
-          <PreviewSettingsCard appName={name} />
-        </CardHelp>
-        <CardHelp card="imageAutoUpdate">
-          <ImageAutoUpdateCard appName={name} />
-        </CardHelp>
-        <CardHelp card="badge">
-          <BadgeSettingsCard appName={name} />
-        </CardHelp>
-        <CardHelp card="githubActions">
-          <Suspense fallback={<CardSkeleton titleWidth="w-44" rows={2} />}>
-            <GitHubActionsCard appName={name} />
+      <ReadOnlyFieldset ability="deploy">
+        <SettingsGroup id="build">
+          <CardHelp card="buildHooks">
+            <BuildHooksCard appName={name} />
+          </CardHelp>
+          <CardHelp card="buildCache">
+            <BuildCacheCard appName={name} />
+          </CardHelp>
+        </SettingsGroup>
+        <SettingsGroup id="run">
+          <CardHelp card="port" recommended>
+            <PortEditor app={app} />
+          </CardHelp>
+          <CardHelp card="strategy">
+            <DeployStrategyEditor app={app} />
+          </CardHelp>
+          <CardHelp card="rolloutPolicy">
+            <RolloutPolicyCard appName={name} />
+          </CardHelp>
+          <CardHelp card="hooks">
+            <HooksEditor app={app} />
+          </CardHelp>
+        </SettingsGroup>
+        <SettingsGroup id="safety">
+          <CardHelp card="safety" recommended>
+            <DeploySafetyCard appName={name} />
+          </CardHelp>
+          <CardHelp card="watch" recommended>
+            <PostDeployWatchCard appName={name} />
+          </CardHelp>
+          <CardHelp card="autoRollback">
+            <AutoRollbackCard appName={name} />
+          </CardHelp>
+          <CardHelp card="predeploySnapshot">
+            <PredeploySnapshotCard appName={name} />
+          </CardHelp>
+          <CardHelp card="sloBurn">
+            <AutoRollbackSLOBurnCard appName={name} />
+          </CardHelp>
+          <CardHelp card="canary">
+            <CanaryCard appName={name} />
+          </CardHelp>
+          <CardHelp card="freeze">
+            <DeployFreezeCard appName={name} />
+          </CardHelp>
+          <CardHelp card="supplyChain">
+            <SupplyChainSettingsCard appName={name} />
+          </CardHelp>
+          <CardHelp card="secretScan">
+            <SecretScanSettingsCard appName={name} />
+          </CardHelp>
+        </SettingsGroup>
+        <SettingsGroup id="automation">
+          <CardHelp card="scheduled">
+            <ScheduledDeployCard appName={name} />
+          </CardHelp>
+          <CardHelp card="cancelSuperseded">
+            <CancelSupersededCard appName={name} />
+          </CardHelp>
+          <CardHelp card="preview">
+            <PreviewSettingsCard appName={name} />
+          </CardHelp>
+          <CardHelp card="imageAutoUpdate">
+            <ImageAutoUpdateCard appName={name} />
+          </CardHelp>
+          <CardHelp card="badge">
+            <BadgeSettingsCard appName={name} />
+          </CardHelp>
+          <CardHelp card="githubActions">
+            <Suspense fallback={<CardSkeleton titleWidth="w-44" rows={2} />}>
+              <GitHubActionsCard appName={name} />
+            </Suspense>
+          </CardHelp>
+          <CardHelp card="ciDeploy">
+            <Suspense fallback={<CardSkeleton titleWidth="w-36" rows={4} />}>
+              <CIDeployCard appName={name} />
+            </Suspense>
+          </CardHelp>
+          <Suspense fallback={<CardSkeleton titleWidth="w-44" rows={4} />}>
+            <CITemplatesCard appName={name} />
           </Suspense>
-        </CardHelp>
-        <CardHelp card="ciDeploy">
-          <Suspense fallback={<CardSkeleton titleWidth="w-36" rows={4} />}>
-            <CIDeployCard appName={name} />
-          </Suspense>
-        </CardHelp>
-        <Suspense fallback={<CardSkeleton titleWidth="w-44" rows={4} />}>
-          <CITemplatesCard appName={name} />
-        </Suspense>
-      </SettingsGroup>
+        </SettingsGroup>
+      </ReadOnlyFieldset>
     </div>
   )
 }

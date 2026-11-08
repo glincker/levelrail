@@ -5,6 +5,7 @@ import { appNetworkQueryOptions } from '../../../queries/appNetwork'
 import { AppNetworkPanel } from '../../../components/AppNetworkPanel'
 import { AppEgressPolicyCard } from '../../../components/AppEgressPolicyCard'
 import { AppExposurePanel } from '../../../components/AppExposurePanel'
+import { ReadOnlyFieldset } from '../../../components/ReadOnlyFieldset'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -31,8 +32,10 @@ function NetworkSection() {
   return (
     <div className="space-y-6">
       <AppNetworkPanel app={app} />
-      <AppExposurePanel appName={name} />
-      <AppEgressPolicyCard appName={name} />
+      <ReadOnlyFieldset ability="write:sensitive">
+        <AppExposurePanel appName={name} />
+        <AppEgressPolicyCard appName={name} />
+      </ReadOnlyFieldset>
     </div>
   )
 }

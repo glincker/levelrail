@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ReadOnlyFieldset } from '../ReadOnlyFieldset'
 import { useDatabaseNetwork } from '../../queries/databaseAccess'
 import { AllowedSourcesCard } from './AllowedSourcesCard'
 import { ReachabilityCard } from './ReachabilityCard'
@@ -31,7 +32,7 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
           </AlertDescription>
         </Alert>
       ) : (
-        <>
+        <ReadOnlyFieldset ability="root">
           <ReachabilityCard databaseName={databaseName} network={data} />
           <AllowedSourcesCard databaseName={databaseName} network={data} />
           <ScopeCard
@@ -40,7 +41,7 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
             network={data}
           />
           <TlsCard databaseName={databaseName} network={data} />
-        </>
+        </ReadOnlyFieldset>
       )}
     </div>
   )
