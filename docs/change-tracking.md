@@ -73,6 +73,10 @@ Move a label up only with the evidence in the same change, and link the test or 
 
 New tunables are runtime settings: reachable from the API, CLI and dashboard, applied live where possible. Environment variables only seed defaults and never lock a value. Thresholds are never hardcoded. Record the key, default and whether it applies live or needs a restart in the PR.
 
+## Assignment
+
+When a PR opens, the auto-assign workflow assigns the PR author. Issues linked from the PR body (`Closes`, `Fixes`, `Resolves`, `Tracks #N`) or from `Issue: #N` commit trailers get the same assignee if they have none. Bots and fork PRs are skipped for issues, and human-opened issues are left to triage. Project board fields are set by the project's own automation, not by this workflow.
+
 ## Reviewing a change
 
 A reviewer should be able to answer from the PR alone: what changed, which surfaces got it, what migrates, what is new to configure, what is unproven, and how to roll back.

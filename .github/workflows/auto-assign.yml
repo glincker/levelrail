@@ -1,0 +1,75 @@
+name: Auto assign
+
+# pull_request_target runs with the base repo token, so this job never checks
+# out or executes anything from the PR. PR text only reaches the shell as env.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: auto-assign-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    # Human-opened issues are left for triage, so only PR events do work.
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Assign author and linked issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -u
+          shopt -s nocasematch
+          if [[ "$AUTHOR" == *"[bot]" || "$AUTHOR" == "dependabot" || "$AUTHOR" == "github-actions" || "$AUTHOR" == "greptile" || "$AUTHOR" == "greptile-apps" ]]; then
+            echo "Author $AUTHOR is a bot, nothing to assign."
+            exit 0
+          fi
+          shopt -u nocasematch
+
+          assigned=$(gh api "repos/$REPO/issues/$PR_NUMBER" --jq '.assignees | length' 2>/dev/null || echo 0)
+          if [[ "$assigned" == "0" ]]; then
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/assignees" -f "assignees[]=$AUTHOR" >/dev/null \
+              || echo "::warning::Could not assign $AUTHOR to PR $PR_NUMBER"
+          fi
+
+          if [[ "$HEAD_REPO" != "$REPO" ]]; then
+            echo "PR is from a fork, leaving linked issues alone."
+            exit 0
+          fi
+
+          from_body=$(printf '%s\n' "$PR_BODY" | grep -Eio '(closes|fixes|resolves|tracks)[[:space:]]+#[0-9]+' | grep -Eo '[0-9]+$' || true)
+          from_commits=$(gh api "repos/$REPO/pulls/$PR_NUMBER/commits?per_page=100" --jq '.[].commit.message' 2>/dev/null \
+            | grep -Eio '^Issue:[[:space:]]*#[0-9]+' | grep -Eo '[0-9]+$' || true)
+
+          for n in $(printf '%s\n%s\n' "$from_body" "$from_commits" | grep -E '^[0-9]+$' | sort -un); do
+            if [[ "$n" == "$PR_NUMBER" ]]; then
+              continue
+            fi
+            info=$(gh api "repos/$REPO/issues/$n" --jq '[(.pull_request != null), (.assignees | length)] | @tsv' 2>/dev/null) || {
+              echo "Issue #$n not found, skipping."
+              continue
+            }
+            is_pr=${info%%$'\t'*}
+            count=${info##*$'\t'}
+            if [[ "$is_pr" == "true" || "$count" != "0" ]]; then
+              echo "Issue #$n is a PR or already assigned, skipping."
+              continue
+            fi
+            gh api -X POST "repos/$REPO/issues/$n/assignees" -f "assignees[]=$AUTHOR" >/dev/null \
+              || echo "::warning::Could not assign $AUTHOR to issue #$n"
+          done
