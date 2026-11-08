@@ -20,12 +20,16 @@ var envSetStdin io.Reader = os.Stdin
 // runEnvSet implements "env set <app> KEY=VALUE...": the plain-env counterpart of "env push" for a few values.
 func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "env set", "print the plan as JSON to stdout and nothing else", stderr)
-	var apply bool
+	var apply, noApply bool
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
+	fs.BoolVar(&noApply, "no-apply", false, "leave the change pending even when apps.env_apply_on_set is on")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, envSetUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonOutP, outputP, queryP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	if envApplyConflict(stderr, prog, apply, noApply) {
+		return exitUsage
 	}
 	rest := fs.Args()
 	if len(rest) < 2 {
@@ -92,7 +96,8 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			gitApp = gerr == nil
 		}
 		printRebuildHint(hintOut, prog, name, rebuildKeys, gitApp)
-		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
+		doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
+		if applyCode := afterConfigWriteReason(ctx, client, prog, name, doApply, reason, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}
 	}
@@ -211,6 +216,7 @@ NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s d
 
 Flags:
   --apply             restart the app now so the new env reaches the running container
+  --no-apply          leave the change pending even when apps.env_apply_on_set is on
   --token string      API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")

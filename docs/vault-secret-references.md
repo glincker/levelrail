@@ -138,7 +138,13 @@ Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or
 | `secrets.provider_cache_ttl_seconds` | 60 | Seconds a read value is reused. 0 reads on every container start. |
 | `secrets.provider_max_response_kib` | 1024 | Largest provider response read. |
 
-Infisical machine identity login (client ID and secret) is not supported yet. Use an access token.
+### Infisical machine identity
+
+Instead of a long-lived access token, an Infisical provider can use a machine identity with universal auth. Pass the credential as the provider token in the form `infisical-identity:CLIENT_ID:CLIENT_SECRET`, for example with `--provider-token-file -`. It is stored encrypted like any token and is never returned.
+
+Levelrail logs in when it first needs to read, keeps the short-lived access token in memory (one per provider), and logs in again lazily once about 90 percent of its lifetime has passed. There is no background refresh. A rejected login fails the read closed, and neither the client secret nor the access token appears in errors or logs. Replacing the credential triggers a new login on the next read.
+
+Status: Beta. Tested against a local stand-in server only, not yet against a real Infisical instance.
 
 ## 1Password Connect
 

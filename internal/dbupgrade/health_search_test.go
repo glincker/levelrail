@@ -38,3 +38,13 @@ func TestHealthCommand_KeyDBFindsItsClient(t *testing.T) {
 		t.Fatalf("health command = %q", cmd)
 	}
 }
+
+func TestHealthCommand_DragonflyNeedsNoCLI(t *testing.T) {
+	cmd, err := HealthCommand(store.EngineDragonfly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cmd[0] != "bash" || !strings.Contains(cmd[2], "/dev/tcp/127.0.0.1/6379") || strings.Contains(cmd[2], "-cli") {
+		t.Fatalf("health command = %q", cmd)
+	}
+}

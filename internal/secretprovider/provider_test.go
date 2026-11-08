@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -386,3 +387,95 @@ func TestOnePasswordNativeValuePassesThrough(t *testing.T) {
 		}
 	}
 }
+
+func TestSecretProviderInfisicalIdentityLogin(t *testing.T) {
+	const cred = IdentityPrefix + "cid:csecret-fake"
+	logins, reads := 0, 0
+	ttl := 100
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/auth/universal-auth/login":
+			logins++
+			if !strings.Contains(readBody(r), `"clientSecret":"csecret-fake"`) {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			_, _ = w.Write([]byte(`{"accessToken":"short-lived-` + itoa(logins) + `","expiresIn":` + itoa(ttl) + `}`))
+		default:
+			reads++
+			if r.Header.Get("Authorization") != "Bearer short-lived-"+itoa(logins) {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			_, _ = w.Write([]byte(`{"secret":{"secretValue":"v` + itoa(reads) + `"}}`))
+		}
+	}))
+	defer srv.Close()
+	now := time.Now()
+	r := NewResolver()
+	r.now = func() time.Time { return now }
+	tun := tunables()
+	tun.CacheTTL = 0
+	ref, _, _ := ParseRef("infisical://inf/API_KEY")
+	for i := 0; i < 2; i++ {
+		if _, err := r.Fetch(context.Background(), selfHosted(srv.URL), cred, ref, tun); err != nil {
+			t.Fatalf("read %d: %v", i, err)
+		}
+	}
+	if logins != 1 {
+		t.Fatalf("want one login for two reads, got %d", logins)
+	}
+	now = now.Add(95 * time.Second)
+	if _, err := r.Fetch(context.Background(), selfHosted(srv.URL), cred, ref, tun); err != nil || logins != 2 {
+		t.Fatalf("expiry should trigger exactly one relogin, logins=%d err=%v", logins, err)
+	}
+	bad := IdentityPrefix + "cid:wrong-secret-fake"
+	_, err := r.Fetch(context.Background(), selfHosted(srv.URL), bad, ref, tun)
+	if !errors.Is(err, ErrUnauthorized) || strings.Contains(err.Error(), "wrong-secret-fake") || strings.Contains(err.Error(), "short-lived") {
+		t.Fatalf("bad credentials must fail closed without leaking, got %v", err)
+	}
+}
+
+func TestSecretProviderInfisicalRevokedTokenRelogin(t *testing.T) {
+	const cred = IdentityPrefix + "cid:csecret-fake"
+	logins, revoked := 0, ""
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/universal-auth/login" {
+			logins++
+			_, _ = w.Write([]byte(`{"accessToken":"tok-` + itoa(logins) + `","expiresIn":99999999999}`))
+			return
+		}
+		if revoked == "all" || r.Header.Get("Authorization") == "Bearer "+revoked {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_, _ = w.Write([]byte(`{"secret":{"secretValue":"ok"}}`))
+	}))
+	defer srv.Close()
+	r := NewResolver()
+	tun := tunables()
+	tun.CacheTTL = 0
+	ref, _, _ := ParseRef("infisical://inf/API_KEY")
+	if _, err := r.Fetch(context.Background(), selfHosted(srv.URL), cred, ref, tun); err != nil {
+		t.Fatal(err)
+	}
+	if e := r.idents[""]; e.expires.After(time.Now().Add(25 * time.Hour)) {
+		t.Fatalf("expiresIn must be clamped, got %v", e.expires)
+	}
+	revoked = "tok-1"
+	if v, err := r.Fetch(context.Background(), selfHosted(srv.URL), cred, ref, tun); err != nil || v != "ok" || logins != 2 {
+		t.Fatalf("revoked token should relogin once, logins=%d v=%q err=%v", logins, v, err)
+	}
+	revoked = "all"
+	if _, err := r.Fetch(context.Background(), selfHosted(srv.URL), cred, ref, tun); !errors.Is(err, ErrUnauthorized) || logins != 3 {
+		t.Fatalf("rejection must fail after one retry, logins=%d err=%v", logins, err)
+	}
+}
+
+func readBody(r *http.Request) string {
+	b := new(bytes.Buffer)
+	_, _ = b.ReadFrom(r.Body)
+	return b.String()
+}
+
+func itoa(n int) string { return strconv.Itoa(n) }

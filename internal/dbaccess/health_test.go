@@ -65,3 +65,10 @@ func TestConnectionsScriptKeyDBUsesItsClient(t *testing.T) {
 		t.Fatalf("keydb script = %q ok=%v", got, ok)
 	}
 }
+
+func TestHealthConnectionsScriptDragonflyNeedsNoCLI(t *testing.T) {
+	got, ok := connectionsScript(store.EngineDragonfly)
+	if !ok || !strings.Contains(got, "/dev/tcp/127.0.0.1/6379") || strings.Contains(got, "-cli") {
+		t.Fatalf("dragonfly script = %q ok=%v", got, ok)
+	}
+}

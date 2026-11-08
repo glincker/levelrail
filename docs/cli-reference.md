@@ -154,7 +154,7 @@ levelrail-cli logs <app> [flags]
 Same as `apps logs <app>`. The log archive and search commands keep their names (`logs archive`, `logs search`, `logs dump`).
 
 ```
-levelrail-cli env set <app> KEY=VALUE... [--apply] [flags]
+levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [flags]
 ```
 Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those.
 
@@ -449,7 +449,7 @@ levelrail-cli apps build-cache remove <name>|--global
 ### Environment, secrets and Vault
 
 ```
-levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--apply] [flags]
+levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--apply|--no-apply] [flags]
 levelrail-cli apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]
 levelrail-cli apps env get <name> <KEY> [--reveal] [flags]
 levelrail-cli apps env diff <app-a> <app-b> [flags]
@@ -472,7 +472,7 @@ levelrail-cli apps contexts list|clear|show <name> [flags]
 levelrail-cli apps contexts set <name> --context CTX [--env K=V]... [--build-command CMD] [--publish DIR] [--build-arg K=V]... [flags]
 ```
 
-- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
+- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`. `--no-apply` keeps the change pending when `apps.env_apply_on_set` is on.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
 - `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](/environment-and-secrets).
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
@@ -1556,6 +1556,14 @@ levelrail-cli system networks prune --dry-run|--yes [flags]
 ```
 
 Lists the per-app Docker networks with owner, subnet, attached container count and whether the owning app still exists, plus how full the `APP_NETWORK_POOL` block is. `prune` removes only orphaned networks that are past `APP_NETWORK_GC_GRACE`, empty, and not owned by another instance; pass exactly one of `--dry-run` or `--yes`. The API is `GET /api/v1/system/networks` and `POST /api/v1/system/networks/prune`. See [Troubleshooting](/troubleshooting#app-network-pool).
+
+## System disk history {#system-disk-history}
+
+```
+levelrail-cli system disk history [--days N] [--rows N] [flags]
+```
+
+Prints how full the data disk has been over time: free and total bytes plus the Docker images, containers, volumes and build cache share of each sample, and the days-until-full forecast when disk use is growing. `--days` limits the window and never exceeds the retention setting. The table shows at most `--rows` samples spread evenly over the window; `--json` returns every sample. Docker columns show 0 for samples taken while Docker usage was unavailable. The API is `GET /api/v1/system/disk/history`.
 
 ## Readiness
 

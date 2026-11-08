@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
 
@@ -33,7 +34,14 @@ func TestAuthzDeny_AIControlAgentTokens(t *testing.T) {
 	for _, mode := range []string{store.AIControlModeOff, store.AIControlModeObserve, store.AIControlModeOperate, store.AIControlModeAdmin} {
 		t.Run(mode, func(t *testing.T) {
 			rt, db, tokens := gateFixture(t, mode, []string{"dev"})
-			for label, tok := range tokens {
+			// Sorted so the human root (which really revokes agent tokens) runs after every agent.
+			labels := make([]string, 0, len(tokens))
+			for label := range tokens {
+				labels = append(labels, label)
+			}
+			sort.Strings(labels)
+			for _, label := range labels {
+				tok := tokens[label]
 				agent := label != "human-root"
 				for _, r := range aiControlDenyFeature().routes {
 					if r.method == http.MethodGet {

@@ -99,7 +99,7 @@ The strategy applies to single-service apps. A multi-service app, or an app whos
 - Each preview gets 256Mi of memory and 0.25 CPU by default. Change them with `--memory` and `--cpu`.
 - A preview sleeps after 30 minutes without requests. Change it with `--idle-sleep-minutes`, or for the control plane with `APP_PREVIEW_IDLE_SLEEP_MINUTES`.
 - Search engines do not index preview URLs by default. Add `--allow-indexing` to allow it.
-- Put basic auth in front of every preview of an app with `--gate`, plus `--gate-username` and `--gate-password`. The password is write-only: it is stored, not shown again. The previews list shows an app-wide badge per preview with a domain: Basic auth on, Public, or Gate needs a password (gate on, no password stored). It reflects the app setting, not each preview's live route.
+- Put basic auth in front of every preview of an app with `--gate`, plus `--gate-username` and `--gate-password`. The password is write-only: it is stored, not shown again. The previews list shows an app-wide badge per preview with a domain: Basic auth on, Public, or Gate needs a password (gate on, no password stored). It reflects the app setting, not each preview's live route. The previews list API and the CLI table also carry a per-preview `gated` flag (GATED column), true when that preview's own domain currently sits behind basic auth or a sign-in gate. It is a flag only, never the credentials, and read-only users see it too.
 
 ```sh
 levelrail-cli apps previews settings web --memory 512Mi --cpu 0.5 --idle-sleep-minutes 60

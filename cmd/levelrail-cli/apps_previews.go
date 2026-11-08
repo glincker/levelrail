@@ -126,11 +126,15 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tEXPIRES\tSTALE\tEPHEMERAL DATABASES\tISOLATED DATABASES")
+	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tGATED\tUPDATED\tEXPIRES\tSTALE\tEPHEMERAL DATABASES\tISOLATED DATABASES")
 	for _, p := range previews {
 		domain := p.Domain
 		if domain == "" {
 			domain = "-"
+		}
+		gated := "no"
+		if p.Gated {
+			gated = "yes"
 		}
 		stale := "no"
 		if p.Stale {
@@ -140,7 +144,7 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		if expires == "" {
 			expires = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, expires, stale,
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, gated, p.UpdatedAt, expires, stale,
 			previewEphemeralDatabasesSummary(p.EphemeralDatabases), previewDatabaseIsolationsSummary(p.DatabaseIsolations))
 	}
 	_ = tw.Flush()

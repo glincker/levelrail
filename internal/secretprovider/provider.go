@@ -5,6 +5,7 @@
 package secretprovider
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -165,6 +166,9 @@ type Tunables struct {
 	MaxResponseBytes int64
 }
 
+// maxIdentityLifeSeconds bounds a provider supplied expiresIn so it cannot overflow or pin a token.
+const maxIdentityLifeSeconds int64 = 24 * 60 * 60
+
 type cacheEntry struct {
 	value   string
 	expires time.Time
@@ -175,6 +179,9 @@ type Resolver struct {
 	mu    sync.Mutex
 	cache map[string]cacheEntry
 	now   func() time.Time
+	// idents holds one short-lived Infisical login per provider name; loginMu serializes relogins.
+	loginMu sync.Mutex
+	idents  map[string]identEntry
 	// defaultBase overrides the public API hosts, for tests only.
 	defaultBase map[string]string
 }
@@ -187,7 +194,7 @@ func Default() *Resolver { return shared }
 
 // NewResolver returns a Resolver with an empty cache.
 func NewResolver() *Resolver {
-	return &Resolver{cache: map[string]cacheEntry{}, now: time.Now}
+	return &Resolver{cache: map[string]cacheEntry{}, idents: map[string]identEntry{}, now: time.Now}
 }
 
 func (r *Resolver) endpoint(cfg Config) (*url.URL, bool, error) {
@@ -235,6 +242,37 @@ func httpClient(base *url.URL, selfHosted bool, timeout time.Duration) *http.Cli
 }
 
 func (r *Resolver) get(ctx context.Context, cfg Config, token, path string, query url.Values, t Tunables, out any) error {
+	if cfg.Type == TypeInfisical && strings.HasPrefix(token, IdentityPrefix) {
+		access, err := r.identityToken(ctx, cfg, token, t)
+		if err != nil {
+			return err
+		}
+		err = r.call(ctx, cfg, http.MethodGet, access, path, query, nil, t, out)
+		if !errors.Is(err, ErrUnauthorized) {
+			return err
+		}
+		// A revoked or used-up token must not stay cached; log in once more, never loop.
+		r.dropIdentity(cfg.Name, access)
+		access, lerr := r.identityToken(ctx, cfg, token, t)
+		if lerr != nil {
+			return lerr
+		}
+		return r.call(ctx, cfg, http.MethodGet, access, path, query, nil, t, out)
+	}
+	return r.call(ctx, cfg, http.MethodGet, token, path, query, nil, t, out)
+}
+
+// dropIdentity evicts the cached login only if it still holds the rejected token, so a
+// concurrent fresh login is kept.
+func (r *Resolver) dropIdentity(name, access string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if e, ok := r.idents[name]; ok && e.access == access {
+		delete(r.idents, name)
+	}
+}
+
+func (r *Resolver) call(ctx context.Context, cfg Config, method, token, path string, query url.Values, payload []byte, t Tunables, out any) error {
 	base, selfHosted, err := r.endpoint(cfg)
 	if err != nil {
 		return err
@@ -244,11 +282,20 @@ func (r *Resolver) get(ctx context.Context, cfg Config, token, path string, quer
 	u := *base
 	u.Path = strings.TrimSuffix(base.Path, "/") + path
 	u.RawQuery = query.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	var body io.Reader
+	if payload != nil {
+		body = bytes.NewReader(payload)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
 		return fmt.Errorf("%s: build request: %w", cfg.Type, err)
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 	req.Header.Set("Accept", "application/json")
 	resp, err := httpClient(base, selfHosted, t.Timeout).Do(req)
 	if err != nil {
@@ -269,20 +316,91 @@ func (r *Resolver) get(ctx context.Context, cfg Config, token, path string, quer
 	case resp.StatusCode != http.StatusOK:
 		return fmt.Errorf("%s: provider answered HTTP %d", cfg.Type, resp.StatusCode)
 	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, t.MaxResponseBytes+1))
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, t.MaxResponseBytes+1))
 	if err != nil {
 		return fmt.Errorf("%s: read response: %w", cfg.Type, err)
 	}
-	if int64(len(body)) > t.MaxResponseBytes {
+	if int64(len(raw)) > t.MaxResponseBytes {
 		return fmt.Errorf("%s: response larger than %d bytes", cfg.Type, t.MaxResponseBytes)
 	}
 	if out == nil {
 		return nil
 	}
-	if err := json.Unmarshal(body, out); err != nil {
+	if err := json.Unmarshal(raw, out); err != nil {
 		return fmt.Errorf("%s: unexpected response shape", cfg.Type)
 	}
 	return nil
+}
+
+// IdentityPrefix marks a stored Infisical credential as machine identity universal auth:
+// "infisical-identity:<clientId>:<clientSecret>". Anything else is used as an access token.
+const IdentityPrefix = "infisical-identity:"
+
+type identEntry struct {
+	cred    string
+	access  string
+	expires time.Time
+}
+
+// ParseIdentity splits a stored identity credential; ok is false when it is not one.
+func ParseIdentity(token string) (id, secret string, ok bool) {
+	rest, found := strings.CutPrefix(token, IdentityPrefix)
+	if !found {
+		return "", "", false
+	}
+	id, secret, found = strings.Cut(rest, ":")
+	if !found || id == "" || secret == "" {
+		return "", "", false
+	}
+	return id, secret, true
+}
+
+// identityToken returns a cached access token for the provider, logging in lazily when it is
+// missing, expired or minted from different credentials. No goroutine, one entry per provider.
+func (r *Resolver) identityToken(ctx context.Context, cfg Config, cred string, t Tunables) (string, error) {
+	cached := func() (string, bool) {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		e, ok := r.idents[cfg.Name]
+		if ok && e.cred == cred && r.now().Before(e.expires) {
+			return e.access, true
+		}
+		return "", false
+	}
+	if a, ok := cached(); ok {
+		return a, nil
+	}
+	r.loginMu.Lock()
+	defer r.loginMu.Unlock()
+	if a, ok := cached(); ok {
+		return a, nil
+	}
+	id, secret, ok := ParseIdentity(cred)
+	if !ok {
+		return "", fmt.Errorf("infisical: machine identity credential must be %s<clientId>:<clientSecret>", IdentityPrefix)
+	}
+	payload, err := json.Marshal(map[string]string{"clientId": id, "clientSecret": secret})
+	if err != nil {
+		return "", fmt.Errorf("infisical: encode login")
+	}
+	var out struct {
+		AccessToken string `json:"accessToken"`
+		ExpiresIn   int64  `json:"expiresIn"`
+	}
+	if err := r.call(ctx, cfg, http.MethodPost, "", "/api/v1/auth/universal-auth/login", nil, payload, t, &out); err != nil {
+		return "", fmt.Errorf("machine identity login: %w", err)
+	}
+	if out.AccessToken == "" || out.ExpiresIn <= 0 {
+		return "", fmt.Errorf("infisical: machine identity login returned no usable token")
+	}
+	secretmask.Add(out.AccessToken)
+	// Refresh at 90 percent of the lifetime so a read never starts on a token about to lapse.
+	secs := min(out.ExpiresIn, maxIdentityLifeSeconds)
+	life := time.Duration(secs) * time.Second * 9 / 10
+	r.mu.Lock()
+	r.idents[cfg.Name] = identEntry{cred: cred, access: out.AccessToken, expires: r.now().Add(life)}
+	r.mu.Unlock()
+	return out.AccessToken, nil
 }
 
 func unwrapKnown(err error) error {

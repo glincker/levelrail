@@ -34,6 +34,11 @@ func describePendingChanges(p apiclient.PendingChanges) string {
 // With apply, restarts the app now; otherwise reports the pending changes.
 // Returns a failure code only when apply was requested and did not happen.
 func afterConfigWrite(ctx context.Context, client *Client, prog, name string, apply bool, out, errOut io.Writer) int {
+	return afterConfigWriteReason(ctx, client, prog, name, apply, "", out, errOut)
+}
+
+// afterConfigWriteReason is afterConfigWrite with an audit reason for the restart.
+func afterConfigWriteReason(ctx context.Context, client *Client, prog, name string, apply bool, reason string, out, errOut io.Writer) int {
 	pending, err := client.GetPendingChanges(ctx, name)
 	if err != nil {
 		_, _ = fmt.Fprintf(errOut, "could not check pending changes for app %q: %v\n", name, err)
@@ -46,7 +51,7 @@ func afterConfigWrite(ctx context.Context, client *Client, prog, name string, ap
 		return exitOK
 	}
 	if apply {
-		if _, err := client.ApplyPendingChanges(ctx, name); err != nil {
+		if _, err := client.ApplyPendingChangesFor(ctx, name, reason); err != nil {
 			_, _ = fmt.Fprintf(errOut, "could not apply pending changes for app %q: %v\n", name, err)
 			return exitCodeForError(err)
 		}

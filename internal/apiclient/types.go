@@ -3059,6 +3059,7 @@ type PreviewEnvironmentResource struct {
 	Branch       string `json:"branch"`
 	HeadSHA      string `json:"head_sha"`
 	Domain       string `json:"domain,omitempty"`
+	Gated        bool   `json:"gated"`
 	Status       string `json:"status"`
 	StatusReason string `json:"status_reason,omitempty"`
 	CreatedAt    string `json:"created_at"`

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -295,5 +296,57 @@ func TestHandleTeardownPreviewEnvironment_NotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/previews/1/teardown", ""))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleListPreviewEnvironments_GatedFlag(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedAppWithDomains(t, db, "pr-1.example.com", "pr-2.example.com", "pr-3.example.com")
+	ctx := context.Background()
+	for i, domain := range []string{"pr-1.example.com", "pr-2.example.com", "pr-3.example.com"} {
+		if err := db.SavePreviewEnvironment(ctx, store.PreviewEnvironment{
+			ID: fmt.Sprintf("pv%d", i), AppName: "web", PRNumber: i + 1, PreviewAppID: fmt.Sprintf("web-pr-%d", i+1),
+			Domain: domain, Status: store.PreviewStatusActive, CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z",
+		}); err != nil {
+			t.Fatalf("SavePreviewEnvironment() error = %v", err)
+		}
+	}
+	if err := db.SetDomainAuthGate(ctx, store.DomainAuthGate{Domain: "pr-1.example.com", Enabled: true, Provider: store.GateProviderBuiltin, CheckPath: "/"}); err != nil {
+		t.Fatalf("SetDomainAuthGate() error = %v", err)
+	}
+
+	if err := db.SetDomainBasicAuth(ctx, "pr-3.example.com", "operator"); err != nil {
+		t.Fatalf("SetDomainBasicAuth() error = %v", err)
+	}
+
+	list := func(req *http.Request) map[int]bool {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+		}
+		var got []previewEnvironmentResource
+		if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		out := map[int]bool{}
+		for _, p := range got {
+			out[p.PRNumber] = p.Gated
+		}
+		return out
+	}
+	if got := list(authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/previews", "")); !got[1] || got[2] || !got[3] {
+		t.Errorf("gated = %v, want PRs 1 and 3 gated, PR 2 open", got)
+	}
+
+	const plaintext = "viewer-token" //nolint:gosec // fake fixture
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_viewer", Name: "viewer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := list(bearerRequest(http.MethodGet, "/api/v1/apps/web/previews", "", plaintext)); !got[1] || got[2] || !got[3] {
+		t.Errorf("viewer gated = %v, want PRs 1 and 3 gated, PR 2 open", got)
 	}
 }

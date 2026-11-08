@@ -168,6 +168,9 @@ func (rt *Router) handlePendingChanges(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
+// applyReasonEnvOnSet marks a restart the CLI made because the runtime setting asked for it.
+const applyReasonEnvOnSet = "env_apply_on_set"
+
 type applyPendingResult struct {
 	AttemptID string `json:"attempt_id,omitempty"`
 }
@@ -209,10 +212,15 @@ func (rt *Router) handleApplyPending(w http.ResponseWriter, r *http.Request) {
 		keys = append(keys, c.Keys...)
 	}
 	slices.Sort(keys)
+	detail := "restarted to apply " + strings.Join(kinds, ", ")
+	// Only a known reason is echoed, so the query cannot inject audit text.
+	if r.URL.Query().Get("reason") == applyReasonEnvOnSet {
+		detail += " (apps.env_apply_on_set is on)"
+	}
 	rt.recordAppEvent(r, store.AppEvent{
 		AppName: name, Kind: store.AppEventRestart, Keys: keys,
 		Title:  "Applied pending changes",
-		Detail: "restarted to apply " + strings.Join(kinds, ", "),
+		Detail: detail,
 	})
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusAccepted, applyPendingResult{})

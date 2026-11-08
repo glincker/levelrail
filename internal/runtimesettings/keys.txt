@@ -19,6 +19,7 @@ api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
 apps.containers_inspect_timeout
+apps.env_apply_on_set
 apps.max_replicas_per_service
 assets.upload_max_bytes
 audit.anchor_webhook_secret

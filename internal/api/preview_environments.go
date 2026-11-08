@@ -35,6 +35,7 @@ type PreviewEnvironmentStore interface {
 	SetPreviewEnvironmentExtendedUntil(ctx context.Context, id, until string) error
 	GetPreviewAppSettings(ctx context.Context, appName string) (store.PreviewAppSettings, error)
 	ListPreviewAppSettings(ctx context.Context) (map[string]store.PreviewAppSettings, error)
+	GatedDomains(ctx context.Context, domains []string) (map[string]bool, error)
 	SavePreviewAppSettings(ctx context.Context, s store.PreviewAppSettings) error
 
 	// The PR env override methods back per-pull-request env overrides

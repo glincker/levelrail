@@ -109,6 +109,14 @@ func (s Store) Put(ctx context.Context, cfg Config, token string, grace time.Dur
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
+	if strings.HasPrefix(token, IdentityPrefix) {
+		if cfg.Type != TypeInfisical {
+			return Config{}, fmt.Errorf("machine identity credentials are only supported for Infisical")
+		}
+		if _, _, ok := ParseIdentity(token); !ok {
+			return Config{}, fmt.Errorf("machine identity credential must be %s<clientId>:<clientSecret>", IdentityPrefix)
+		}
+	}
 	existing, found, err := s.Get(ctx, cfg.Name)
 	if err != nil {
 		return Config{}, err
