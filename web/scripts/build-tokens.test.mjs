@@ -69,6 +69,22 @@ describe('glinr design tokens', () => {
     for (const name of legacy) expect(names.has(`--glinr-${name}`)).toBe(true)
   })
 
+  it('declares the density and font tokens', () => {
+    const wanted = [
+      'control-h',
+      'row-h',
+      'table-header-h',
+      'badge-h',
+      'dialog-w-form',
+      'sheet-w',
+      'radius-control',
+      'font-sans',
+      'font-mono',
+    ]
+    for (const name of wanted) expect(names.has(`--glinr-${name}`)).toBe(true)
+    expect(tokensCss).toContain("--glinr-font-sans: 'Geist'")
+  })
+
   it('only references --glinr-* variables that exist in the source', () => {
     const missing = []
     for (const file of walk(path.join(root, 'src'))) {

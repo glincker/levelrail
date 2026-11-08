@@ -15,7 +15,15 @@ import { BASE_BACKGROUND, deriveAccent, normalizeHex } from './accentContrast'
 
 export const DARK_BASES = ['soft', 'black', 'graphite', 'midnight'] as const
 export const LIGHT_BASES = ['white', 'grey', 'paper', 'cool'] as const
-export const FONTS = ['system', 'rounded', 'serif', 'mono', 'readable'] as const
+// 'system' is the bundled Geist default; 'device' is the OS font.
+export const FONTS = [
+  'system',
+  'device',
+  'rounded',
+  'serif',
+  'mono',
+  'readable',
+] as const
 export const TEXT_SIZE_MIN = 80
 export const TEXT_SIZE_MAX = 140
 export const TEXT_SIZE_STEP = 5
@@ -33,7 +41,14 @@ export const ACCENT_CHOICES = [...ACCENTS, 'custom'] as const
 export const GUTTERS = ['tight', 'normal', 'roomy'] as const
 export const RADII = ['sharp', 'normal', 'soft'] as const
 export const CONTRASTS = ['system', 'on', 'off'] as const
-export const CODE_FONTS = ['system-mono', 'jetbrains', 'fira', 'menlo'] as const
+// 'system-mono' is the bundled Geist Mono default; 'device-mono' is the OS monospace.
+export const CODE_FONTS = [
+  'system-mono',
+  'device-mono',
+  'jetbrains',
+  'fira',
+  'menlo',
+] as const
 export const CODE_SIZE_MIN = 11
 export const CODE_SIZE_MAX = 16
 export const CODE_SIZE_DEFAULT = 13

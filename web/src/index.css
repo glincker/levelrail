@@ -24,8 +24,8 @@
       transform: translateX(100%);
     }
   }
-  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: var(--font-code, ui-monospace, Consolas, monospace);
+  --font-sans: var(--glinr-font-sans);
+  --font-mono: var(--font-code, var(--glinr-font-mono));
   --font-display: 'Inter Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -618,6 +618,10 @@ body {
 
 /* Density: compact is the :root default in glinr-tokens.css; comfortable swaps in the paired tokens. */
 [data-density='comfortable'] {
+  --glinr-control-h: var(--glinr-control-h-comfortable);
+  --glinr-row-h: var(--glinr-row-h-comfortable);
+  --glinr-table-header-h: var(--glinr-table-header-h-comfortable);
+  --glinr-badge-h: var(--glinr-badge-h-comfortable);
   --glinr-hero-tile-size: var(--glinr-hero-tile-size-comfortable);
   --glinr-page-gap: var(--glinr-page-gap-comfortable);
   --glinr-card-pad: var(--glinr-card-pad-comfortable);
@@ -1040,7 +1044,11 @@ body {
   color: var(--foreground);
 }
 
-/* Fonts: local stacks only, no webfont downloads. */
+/* Fonts: Geist is the default (self-hosted); the rest are local stacks. */
+:root[data-font='device'] {
+  --font-sans: ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --glinr-font-body: var(--font-sans);
+}
 :root[data-font='rounded'] {
   --font-sans:
     ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Quicksand,
@@ -1091,7 +1099,10 @@ body {
   --glinr-radius-xl: 1.25rem;
 }
 
-/* Code font: local monospace stacks only, nothing is downloaded. Tailwind font-mono reads --font-code. */
+/* Code font: Geist Mono by default, local stacks otherwise. Tailwind font-mono reads --font-code. */
+:root[data-code-font='device-mono'] {
+  --font-code: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
 :root[data-code-font='jetbrains'] {
   --font-code:
     'JetBrains Mono', 'JetBrainsMono Nerd Font', ui-monospace, Consolas,

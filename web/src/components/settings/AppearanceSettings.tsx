@@ -125,6 +125,7 @@ function BaseSample({ id }: { id: string }) {
 
 const FONT_SAMPLE: Record<string, string> = {
   system: 'font-sans',
+  device: 'font-[family-name:ui-sans-serif,system-ui,sans-serif]',
   rounded: 'font-[family-name:ui-rounded,system-ui,sans-serif]',
   serif: 'font-serif',
   mono: 'font-mono',
@@ -144,6 +145,7 @@ function FontSample({ id }: { id: string }) {
 
 const CODE_FONT_SAMPLE: Record<string, string> = {
   'system-mono': 'font-mono',
+  'device-mono': 'font-[family-name:ui-monospace,Menlo,Consolas,monospace]',
   jetbrains: "font-[family-name:'JetBrains_Mono',ui-monospace,monospace]",
   fira: "font-[family-name:'Fira_Code',ui-monospace,monospace]",
   menlo: 'font-[family-name:Menlo,Monaco,ui-monospace,monospace]',

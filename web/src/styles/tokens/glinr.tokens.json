@@ -228,7 +228,6 @@
     }
   },
   "space": {
-    "$type": "dimension",
     "1": {
       "$value": "0.25rem",
       "$description": "4px rhythm step.",
@@ -310,6 +309,7 @@
         }
       }
     },
+    "$type": "dimension",
     "page-gap": {
       "$value": "{space.5}",
       "$description": "Vertical gap between page sections (compact default).",
@@ -424,6 +424,139 @@
       }
     }
   },
+  "density": {
+    "$type": "dimension",
+    "control-h": {
+      "$value": "2rem",
+      "$description": "Height of buttons, inputs and selects (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "control-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "control-h-comfortable": {
+      "$value": "2.25rem",
+      "$description": "Control height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "control-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "row-h": {
+      "$value": "2.25rem",
+      "$description": "Table body row height (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "row-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "row-h-comfortable": {
+      "$value": "2.75rem",
+      "$description": "Table row height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "row-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "table-header-h": {
+      "$value": "2rem",
+      "$description": "Table header row height (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "table-header-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "table-header-h-comfortable": {
+      "$value": "2.25rem",
+      "$description": "Table header height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "table-header-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "badge-h": {
+      "$value": "1.375rem",
+      "$description": "Badge height (compact default).",
+      "$extensions": {
+        "glinr": {
+          "name": "badge-h",
+          "stability": "stable"
+        }
+      }
+    },
+    "badge-h-comfortable": {
+      "$value": "1.5rem",
+      "$description": "Badge height when data-density is comfortable.",
+      "$extensions": {
+        "glinr": {
+          "name": "badge-h-comfortable",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-pad": {
+      "$value": "1.5rem",
+      "$description": "Dialog padding, 24px for every density.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-pad",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-w-confirm": {
+      "$value": "25rem",
+      "$description": "Confirm dialog width, 400px.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-w-confirm",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-w-form": {
+      "$value": "30rem",
+      "$description": "Form dialog width, 480px.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-w-form",
+          "stability": "stable"
+        }
+      }
+    },
+    "dialog-w-rich": {
+      "$value": "35rem",
+      "$description": "Rich dialog width, 560px.",
+      "$extensions": {
+        "glinr": {
+          "name": "dialog-w-rich",
+          "stability": "stable"
+        }
+      }
+    },
+    "sheet-w": {
+      "$value": "30rem",
+      "$description": "Side sheet width, 480px.",
+      "$extensions": {
+        "glinr": {
+          "name": "sheet-w",
+          "stability": "stable"
+        }
+      }
+    }
+  },
   "content": {
     "$type": "dimension",
     "narrow": {
@@ -532,6 +665,15 @@
           "tailwind": "radius-glinr-xl"
         }
       }
+    },
+    "control": {
+      "$value": "{radius.lg}",
+      "$description": "Corner radius of buttons, inputs and selects. Follows the radius appearance setting.",
+      "$extensions": {
+        "glinr": {
+          "stability": "stable"
+        }
+      }
     }
   },
   "elev": {
@@ -596,8 +738,8 @@
   "font": {
     "$type": "fontFamily",
     "body": {
-      "$value": "system-ui, 'Segoe UI', Roboto, sans-serif",
-      "$description": "Body copy. Stays on the system stack for speed and native feel.",
+      "$value": "'Geist', 'Geist Fallback', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif",
+      "$description": "Body copy. Geist with a metric-adjusted fallback so the swap does not shift layout.",
       "$extensions": {
         "glinr": {
           "stability": "experimental"
@@ -605,7 +747,7 @@
       }
     },
     "display": {
-      "$value": "'Geist Variable', system-ui, 'Segoe UI', Roboto, sans-serif",
+      "$value": "'Geist', 'Geist Fallback', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif",
       "$description": "Display and heading role.",
       "$extensions": {
         "glinr": {
@@ -616,13 +758,31 @@
       }
     },
     "eyebrow": {
-      "$value": "'Geist Mono Variable', ui-monospace, Consolas, monospace",
+      "$value": "'Geist Mono', 'Geist Mono Fallback', ui-monospace, Consolas, monospace",
       "$description": "Eyebrow, label and numeric role.",
       "$extensions": {
         "glinr": {
           "name": "font-eyebrow",
           "stability": "stable",
           "tailwind": "font-glinr-eyebrow"
+        }
+      }
+    },
+    "sans": {
+      "$value": "'Geist', 'Geist Fallback', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif",
+      "$description": "Default UI sans stack.",
+      "$extensions": {
+        "glinr": {
+          "stability": "stable"
+        }
+      }
+    },
+    "mono": {
+      "$value": "'Geist Mono', 'Geist Mono Fallback', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+      "$description": "Default monospace stack for code, logs and ids.",
+      "$extensions": {
+        "glinr": {
+          "stability": "stable"
         }
       }
     }
