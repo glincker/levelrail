@@ -151,7 +151,7 @@ These keys widen a container's access to the host, so a compose file that sets a
   - `stopped`
 - Each service's ready state with the reconciler's reason, for example `WaitingForDependency`, `WaitingForDependencyHealthy` or `CreateFailed`, plus its message.
 
-Logs and metrics stay per service. Each member is a normal app, named `<app>-<service>`, with all the usual app pages.
+Logs and metrics stay per service. Each member is a normal app, named `<app>-<service>`, with all the usual app pages. In the dashboard, the Logs tab of a multi-service app shows a Service selector that opens the logs of another member service.
 
 ```bash
 levelrail-cli compose logs shop                    # recent lines from every service, merged

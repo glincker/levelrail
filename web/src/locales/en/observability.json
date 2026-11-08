@@ -102,6 +102,9 @@
     "likelyCause": "Likely cause"
   },
   "logs": {
+    "serviceFilter": {
+      "label": "Service"
+    },
     "container": "Container",
     "allContainers": "All containers",
     "stream": "Stream",
