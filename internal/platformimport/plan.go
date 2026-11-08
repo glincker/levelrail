@@ -75,15 +75,18 @@ type VolumePlan struct {
 // AppPlan is one app create request. Secrets holds plaintext and is never
 // serialized.
 type AppPlan struct {
-	SourceID    string            `json:"source_id"`
-	SourceName  string            `json:"source_name"`
-	Name        string            `json:"name"`
-	Image       string            `json:"image"`
-	Port        int               `json:"port"`
-	Env         map[string]string `json:"env,omitempty"`
-	Secrets     map[string]string `json:"-"`
-	Domains     []string          `json:"domains,omitempty"`
-	Volumes     []VolumePlan      `json:"volumes,omitempty"`
+	SourceID   string            `json:"source_id"`
+	SourceName string            `json:"source_name"`
+	Name       string            `json:"name"`
+	Image      string            `json:"image"`
+	Port       int               `json:"port"`
+	Env        map[string]string `json:"env,omitempty"`
+	Secrets    map[string]string `json:"-"`
+	Domains    []string          `json:"domains,omitempty"`
+	Volumes    []VolumePlan      `json:"volumes,omitempty"`
+	// Files carry content that may hold credentials, so the plan JSON omits it
+	// and apply stores each one as a secret app file.
+	Files       []FilePlan        `json:"-"`
 	Replicas    int               `json:"replicas"`
 	Health      *HealthPlan       `json:"health,omitempty"`
 	MemoryBytes int64             `json:"memory_bytes,omitempty"`
@@ -98,6 +101,12 @@ type AppPlan struct {
 	Crons       []CronPlan        `json:"crons,omitempty"`
 	// UnreadSecrets names secret variables the source would not reveal.
 	UnreadSecrets []string `json:"-"`
+}
+
+// FilePlan is one inline file to write as an app file.
+type FilePlan struct {
+	Path    string
+	Content string
 }
 
 // CronPlan is a scheduled command that becomes a scheduled job on the new app.
@@ -320,6 +329,9 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 			plan.Volumes = append(plan.Volumes, VolumePlan{HostPath: v.HostPath, ContainerPath: v.ContainerPath, ReadOnly: v.ReadOnly})
 			attention("bind mount "+v.HostPath+" needs the same path on this host and the root ability to save", "copy the data to "+v.HostPath+" on the target node")
 		}
+	}
+	for _, f := range a.Files {
+		plan.Files = append(plan.Files, FilePlan(f))
 	}
 	if len(plan.Volumes) > 0 {
 		attention("volumes are created empty, their data is not migrated", "copy the data into the new volumes before starting (CLI: migrate volumes --source user@host prints the commands)")

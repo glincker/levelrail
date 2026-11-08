@@ -140,6 +140,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateEgress(name); err != nil {
 		return err
 	}
+	if err := svc.validateNetworks(name); err != nil {
+		return err
+	}
 	if err := placement.ValidateRules(svc.Tolerations, svc.Affinity); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
@@ -495,4 +498,24 @@ func supportedSpecEngineList() string {
 		quoted[i] = strconv.Quote(e)
 	}
 	return strings.Join(quoted[:len(quoted)-1], ", ") + ", and " + quoted[len(quoted)-1]
+}
+
+// validateNetworks keeps extra network names and aliases DNS-safe and unique.
+func (svc *Service) validateNetworks(name string) error {
+	seen := map[string]bool{}
+	for _, n := range svc.Networks {
+		if err := ValidateServiceName(n.Name); err != nil {
+			return fmt.Errorf("spec: service %q: networks: %w", name, err)
+		}
+		if seen[n.Name] {
+			return fmt.Errorf("spec: service %q: networks: %q listed twice", name, n.Name)
+		}
+		seen[n.Name] = true
+		for _, a := range n.Aliases {
+			if err := ValidateServiceName(a); err != nil {
+				return fmt.Errorf("spec: service %q: networks[%s].aliases: %w", name, n.Name, err)
+			}
+		}
+	}
+	return nil
 }

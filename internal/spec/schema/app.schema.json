@@ -129,6 +129,11 @@
         "working_dir": { "description": "Absolute working directory that overrides the image's WORKDIR.", "type": "string", "pattern": "^/" },
         "runtime": { "description": "Allowlisted docker run options.", "$ref": "#/$defs/runtime" },
         "egress": { "description": "Outbound network allowlist for the container.", "$ref": "#/$defs/egress" },
+        "networks": {
+          "description": "Extra named Docker networks this service joins, with DNS aliases on each.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/extraNetwork" }
+        },
         "tolerations": {
           "description": "Node taints this service may be placed despite.",
           "type": "array",
@@ -351,6 +356,15 @@
             "server_name": { "description": "Server name used for TLS verification.", "type": "string" }
           }
         }
+      }
+    },
+    "extraNetwork": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "description": "Network name; created if missing.", "type": "string", "minLength": 1 },
+        "aliases": { "description": "DNS names other containers on this network use to reach the service.", "type": "array", "items": { "type": "string", "minLength": 1 } }
       }
     },
     "egress": {

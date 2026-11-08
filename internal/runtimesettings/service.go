@@ -176,6 +176,7 @@ func (s *Service) load(ctx context.Context) (map[string]store.RuntimeSettingRow,
 	for _, r := range rows {
 		m[r.Key] = r
 	}
+	m = applyLegacyKeys(m)
 	s.mu.Lock()
 	s.saved, s.loaded, s.lastGood, s.retryAt = m, true, m, time.Time{}
 	s.mu.Unlock()

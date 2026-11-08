@@ -103,12 +103,20 @@ type App struct {
 	Env         []Env
 	Domains     []string
 	Volumes     []Volume
+	// Files are inline file mounts, content included, to become app files.
+	Files       []AppFile
 	Replicas    int
 	Health      *HealthCheck
 	Crons       []Cron
 	MemoryBytes int64
 	NanoCPUs    int64
 	Notes       []Note
+}
+
+// AppFile is a text file the source mounted into the container.
+type AppFile struct {
+	Path    string
+	Content string
 }
 
 // BackupSchedule is one scheduled database backup on the source.

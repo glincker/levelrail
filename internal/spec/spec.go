@@ -109,6 +109,10 @@ type Service struct {
 	// to deny-all egress on upgrade would be a breaking change.
 	Egress *Egress `yaml:"egress,omitempty"`
 
+	// Networks are extra named networks the service joins besides its app
+	// network, each with optional DNS aliases.
+	Networks []ExtraNetwork `yaml:"networks,omitempty"`
+
 	// Tolerations let the service land on nodes carrying matching taints.
 	// Affinity steers it by node labels and by the workloads on each node.
 	// Both are optional; omitted keeps today's placement.
@@ -513,4 +517,10 @@ func yamlUnmarshalStrict(data []byte, out any) error {
 	dec := yaml.NewDecoder(bytes.NewReader(data))
 	dec.KnownFields(true)
 	return dec.Decode(out)
+}
+
+// ExtraNetwork is one additional network attachment with its DNS aliases.
+type ExtraNetwork struct {
+	Name    string   `yaml:"name"`
+	Aliases []string `yaml:"aliases,omitempty"`
 }

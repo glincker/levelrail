@@ -38,7 +38,8 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 ## What does not move
 
 - Dokploy [compose apps](/compose-apps). They are listed as unsupported. Deploy the compose file with `levelrail-cli apps deploy-compose`.
-- Apps uploaded as an archive (`drop`) and file mounts.
+- Apps uploaded as an archive (`drop`).
+- File mounts with no inline content, a relative path, or content over the app file size limit. Other file mounts are read into app files, kept as secrets so a credential in a config file is never shown in the plan.
 - Swarm services as such: Levelrail runs plain Docker containers, so Swarm placement and overlay networking do not carry over.
 - Certificates, DNS records, deploy history, logs and metrics.
 

@@ -55,3 +55,20 @@ levelrail-cli private-networks delete backend
 | `POST /api/v1/private-networks/apply` | Re-apply enforcement now |
 
 Changes need root. Reads need the read ability.
+
+## Extra networks with aliases
+
+A service can join extra named Docker networks beyond its app network, with DNS
+aliases on each, straight from the app spec:
+
+```yaml
+services:
+  web:
+    networks:
+      - name: shared-db
+        aliases: [pg, primary]
+```
+
+Networks are created when missing and joined when the container is created. Names
+and aliases use lowercase letters, digits and hyphens, and a network can be listed
+once per service.

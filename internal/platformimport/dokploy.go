@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // DokploySource reads a Dokploy instance through its x-api-key API.
@@ -81,6 +83,8 @@ type dokployMount struct {
 	HostPath   string `json:"hostPath"`
 	VolumeName string `json:"volumeName"`
 	MountPath  string `json:"mountPath"`
+	FilePath   string `json:"filePath"`
+	Content    string `json:"content"`
 }
 
 type dokployApp struct {
@@ -205,7 +209,7 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 		case "bind":
 			app.Volumes = append(app.Volumes, Volume{HostPath: m.HostPath, ContainerPath: m.MountPath})
 		default:
-			app.Notes = append(app.Notes, Note{Reason: "file mount " + m.MountPath + " is not imported", Manual: "bake the file into the image or use a volume"})
+			app.Files, app.Notes = dokployFileMount(app.Files, app.Notes, m)
 		}
 	}
 	if hc := a.HealthCheckSwarm; hc != nil && len(hc.Test) > 0 {
@@ -307,4 +311,23 @@ func parseEnvBlob(blob string) []Env {
 		out = append(out, Env{Key: k, Value: v, Secret: LooksSecret(k)})
 	}
 	return out
+}
+
+// dokployFileMount turns an inline file mount into an app file, or a note when
+// the path is invalid, the content is missing or it exceeds the file size cap.
+func dokployFileMount(files []AppFile, notes []Note, m dokployMount) ([]AppFile, []Note) {
+	dest := m.MountPath
+	if m.FilePath != "" && !strings.HasPrefix(dest, "/") {
+		dest = m.FilePath
+	}
+	manual := "bake the file into the image or use a volume"
+	switch {
+	case m.Content == "":
+		return files, append(notes, Note{Reason: "file mount " + dest + " has no inline content to import", Manual: manual})
+	case spec.ValidateFilePath(dest) != nil:
+		return files, append(notes, Note{Reason: "file mount " + dest + " is not an absolute path inside the container", Manual: manual})
+	case len(m.Content) > spec.FileLimitsFromEnv().MaxBytes:
+		return files, append(notes, Note{Reason: "file mount " + dest + " is larger than the app file size limit", Manual: manual})
+	}
+	return append(files, AppFile{Path: dest, Content: m.Content}), notes
 }

@@ -211,6 +211,8 @@ type ContainerSpec struct {
 	// field existed: that network has no embedded DNS, so this is what
 	// makes multi-service apps able to reach each other by name at all.
 	Network *NetworkAttachment
+	// ExtraNetworks are joined after create, each with its own aliases.
+	ExtraNetworks []NetworkAttachmentAliases
 	// RegistryAuth authenticates the image pull (Create's own ensureImage
 	// step) against a private registry. Nil means an unauthenticated
 	// pull, unchanged from every container this codebase created before
@@ -348,6 +350,12 @@ type RegistryAuth struct {
 type NetworkAttachment struct {
 	Name  string
 	Alias string
+}
+
+// NetworkAttachmentAliases is an extra network plus every alias on it.
+type NetworkAttachmentAliases struct {
+	Name    string
+	Aliases []string
 }
 
 // ImageInfo is one tagged image available locally, used to discover

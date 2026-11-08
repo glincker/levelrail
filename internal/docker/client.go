@@ -466,6 +466,10 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
+	if err := c.connectExtraNetworks(ctx, resp.ID, spec.ExtraNetworks); err != nil {
+		c.removeQuietly(resp.ID)
+		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
+	}
 	if err := c.chownFreshVolumes(ctx, resp.ID, spec.Image, spec.User, spec.Volumes); err != nil {
 		slog.Warn("docker: could not fix ownership of a new volume for a non-root image", slog.String("container", spec.Name), slog.String("error", err.Error()))
 	}
@@ -495,6 +499,24 @@ func toNetworkingConfig(n *NetworkAttachment) *dockernetwork.NetworkingConfig {
 			n.Name: endpoint,
 		},
 	}
+}
+
+// extraEndpoint builds the endpoint settings for one extra network.
+func extraEndpoint(n NetworkAttachmentAliases) *dockernetwork.EndpointSettings {
+	return &dockernetwork.EndpointSettings{Aliases: append([]string(nil), n.Aliases...)}
+}
+
+// connectExtraNetworks creates each missing network and attaches the fresh container with aliases.
+func (c *Client) connectExtraNetworks(ctx context.Context, id string, nets []NetworkAttachmentAliases) error {
+	for _, n := range nets {
+		if _, err := c.EnsureNetwork(ctx, n.Name); err != nil {
+			return err
+		}
+		if err := c.cli.NetworkConnect(ctx, n.Name, id, extraEndpoint(n)); err != nil {
+			return fmt.Errorf("docker: connect to network %q: %w", n.Name, err)
+		}
+	}
+	return nil
 }
 
 // EnsureNetwork implements Runtime.

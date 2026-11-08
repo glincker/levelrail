@@ -1,0 +1,12 @@
+{
+  "applicationId": "app-fm",
+  "name": "web",
+  "sourceType": "docker",
+  "dockerImage": "nginx:1",
+  "mounts": [
+    {"type": "file", "filePath": "nginx.conf", "mountPath": "/etc/nginx/nginx.conf", "content": "events {}\n"},
+    {"type": "file", "filePath": "empty.conf", "mountPath": "/etc/empty.conf", "content": ""},
+    {"type": "file", "filePath": "rel.conf", "mountPath": "relative/rel.conf", "content": "x"},
+    {"type": "volume", "volumeName": "data", "mountPath": "/data"}
+  ]
+}
