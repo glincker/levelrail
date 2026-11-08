@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2014 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2017 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -851,6 +851,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/headers", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteDomainPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/headers", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicy", Description: "Per-domain header rules and presets. Reads are AbilityRead; changes are AbilityDeploy like the other per-domain routing settings."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/headers", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainPolicy", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/limits", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainLimits", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/limits", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainLimits", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/limits", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainLimits", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainMaintenance", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainMaintenance", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainMaintenance", Description: ""},

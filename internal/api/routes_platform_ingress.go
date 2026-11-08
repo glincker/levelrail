@@ -156,6 +156,9 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainErrorPages))
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/search-visibility", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainSearchVisibility))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/search-visibility", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainSearchVisibility))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/limits", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainLimits))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/limits", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainLimits))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/limits", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainLimits))
 	rt.registerDomainPolicyRoutes(mux)
 	rt.registerFirewallEdgeRoutes(mux)
 }

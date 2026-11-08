@@ -1251,3 +1251,7 @@ Proxy a domain to a port or URL with no app behind it.
 - [Diagnose a domain](/domain-diagnosis)
 - [Move a domain with no downtime](/move-a-domain-with-no-downtime)
 - [Firewall](/firewall) and [host firewall](/host-firewall)
+
+## Request limits per domain
+
+`levelrail-cli domains limits set <app> <domain> --max-body 100MiB --read-timeout 120 --write-timeout 120` caps the request body of one domain and bounds the ingress read and write time on the connection to the app. A domain cap beats the app cap and the instance cap. 0 or unset keeps today's behavior. Allowed ranges come from the runtime settings `domains.limits_max_body_bytes` and `domains.limits_max_timeout_seconds`. Static site domains can store limits but a static site has no upstream, so they have no effect there. `domains limits clear` removes them.

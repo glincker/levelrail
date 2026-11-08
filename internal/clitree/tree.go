@@ -197,6 +197,7 @@ var Tree = map[string]*Node{
 		"google-cloud-dns":     {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "test": nil}},
 		"basic-auth":           {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"auth-gate":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "log": nil, "revoke": nil}},
+		"limits":               {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "status": nil, "preview": nil}},
 		"redirect":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "renew": nil}},

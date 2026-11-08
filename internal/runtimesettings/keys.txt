@@ -62,6 +62,8 @@ domains.dns_wait_budget
 domains.dns_watch_interval_seconds
 domains.dns_watch_max_minutes
 domains.https_attempts_per_hour
+domains.limits_max_body_bytes
+domains.limits_max_timeout_seconds
 domains.parked_retention_days
 domains.rollback_window_minutes
 domains.www_mode

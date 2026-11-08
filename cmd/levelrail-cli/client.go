@@ -81,6 +81,8 @@ type (
 	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
 	domainAuthGateResource           = apiclient.DomainAuthGateResource
 	setDomainAuthGateRequest         = apiclient.SetDomainAuthGateRequest
+	domainLimitsResource             = apiclient.DomainLimitsResource
+	setDomainLimitsRequest           = apiclient.SetDomainLimitsRequest
 	authGateRule                     = apiclient.AuthGateRule
 	authGateEventsResponse           = apiclient.AuthGateEventsResponse
 	apiAuthGateEvent                 = apiclient.AuthGateEvent

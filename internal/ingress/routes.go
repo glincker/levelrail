@@ -14,6 +14,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 )
@@ -80,6 +81,10 @@ type ProxyRoute struct {
 	Hidden bool
 	// MaxBodyBytes, when positive, replaces the instance request body cap for these hosts.
 	MaxBodyBytes int64
+	// ReadTimeout and WriteTimeout, when positive, bound reads from and writes
+	// to the upstream connection for these hosts (the domain's own limits).
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
 	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
@@ -586,6 +591,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			// After forwarders so their path rules match the original path.
 			handle = r.Upstream.apply(handle)
 		}
+		handle = applyUpstreamTimeouts(handle, r.ReadTimeout, r.WriteTimeout)
 		if r.AuthGate != nil {
 			// After WAF, rate limit and basic auth, before cache and the proxy.
 			gate, err := r.AuthGate.handlers()
