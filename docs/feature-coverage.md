@@ -57,7 +57,8 @@ Ruby and PHP projects get a plan from Railpack, but the docs say no live build h
 | --- | --- | --- |
 | Managed databases for postgres, redis, mysql, mongodb, mariadb, keydb, dragonfly, clickhouse, valkey, meilisearch, qdrant, typesense and memcached | Built and tested | [Managed databases](/managed-databases) |
 | Version upgrades with security checks and automatic rollback on failure | Built and tested | [Database upgrades](/database-upgrades) |
-| TLS on new MySQL, MariaDB and MongoDB instances | Beta | [Database access](/database-access) |
+| TLS for Postgres and Redis databases, and Valkey once switched on | Built and tested | [Managing databases](/managing-databases) |
+| TLS on new MySQL, MariaDB and MongoDB instances, and on older ones through the API | Beta | [Managing databases](/managing-databases) |
 | Point-in-time restore for Postgres | Built and tested | [Backups and storage](/backups-and-storage) |
 | Point-in-time restore for MySQL and MariaDB, from binlog | Beta | [Backups and storage](/backups-and-storage) |
 | MongoDB dump, verify and restore as a new database (no point-in-time restore) | Beta | [Backups and storage](/backups-and-storage) |
@@ -77,6 +78,7 @@ Compose database dumps run on a cron schedule. Restoring one is a manual step to
 | Cloudflare Tunnel, with no open inbound port | Experimental | [Cloudflare Tunnel](/cloudflare-tunnel) |
 | Load balancing across an app's replicas, with health checks and sticky sessions | Experimental | [Load balancing](/load-balancing) |
 | Forward auth in front of a domain | Built and tested | [Domains and ingress](/domains-and-ingress) |
+| Per-domain request body cap and upstream read and write timeouts | Built and tested | [Domain traffic controls](/domain-traffic-controls) |
 | WAF, rate limiting and redirects | Built and tested | [Domains and ingress](/domains-and-ingress) |
 | Private networks that group apps and allow named app-to-app paths | Built and tested | [Private networks](/private-networks) |
 | WireGuard mesh between nodes | Built and tested | [Multi-node](/multi-node) |
@@ -111,6 +113,7 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | Global environments and the environment switcher | Experimental | [Environments](/environments) |
 | Sign-in with OAuth providers and generic OpenID Connect, with group to role mapping | Built and tested | [SSO with OIDC](/sso-oidc) |
 | SAML 2.0 single sign-on and SCIM 2.0 provisioning | Beta | [SSO with SAML](/sso-saml) |
+| Container runtime options per service: read-only root, capability drop, pids, tmpfs, ulimits, init and stop timeout | Built and tested | [Runtime options](/runtime-options) |
 
 ## Multi-server
 
@@ -156,4 +159,4 @@ These are the rest of the experimental catalog. Each one is switched on separate
 
 ## Keeping this page current
 
-When a capability changes, update its row in the same change. The Beta and Experimental labels should match `internal/experimental/catalog.go`. A new Proven on a real host row needs a recorded run in the docs first.
+When a capability changes, update its row in the same change. The Experimental labels should match `internal/experimental/catalog.go`, and Beta labels follow [Feature status](/feature-status). A new Proven on a real host row needs a recorded run in the docs first.
