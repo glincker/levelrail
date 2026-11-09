@@ -111782,7 +111782,7 @@
         "x-required-ability": "write"
       },
       "patch": {
-        "description": "Change a monitor's status page link: open and resolve an incident on its component when it fails.\n\nRequires the `write` ability.",
+        "description": "Change a monitor's status page link, or pause and resume it with the enabled flag.\n\nRequires the `write` ability.",
         "operationId": "handleUpdateMonitorLink",
         "parameters": [
           {
@@ -111862,7 +111862,7 @@
             ]
           }
         ],
-        "summary": "Change a monitor's status page link: open and resolve an incident on its component when it fails.",
+        "summary": "Change a monitor's status page link, or pause and resume it with the enabled flag.",
         "tags": [
           "Other"
         ],

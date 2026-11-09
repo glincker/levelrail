@@ -75,3 +75,31 @@ func between(s, start, end string) string {
 	}
 	return s
 }
+
+func TestMonitors_PatchEnabledPausesAndResumes(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "false")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	cfg, err := monitor.ConfigFromEnv(func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SetMonitors(monitor.New(monitor.Options{Config: cfg, Store: db, Logger: slog.New(slog.NewTextHandler(discardWriter{}, nil))}))
+	rec := apiDo(t, rt, cookie, http.MethodPost, "/api/v1/monitors", `{"name":"site","kind":"http","url":"https://example.com/health","interval_seconds":60,"timeout_ms":3000}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+	}
+	path := "/api/v1/monitors/" + between(rec.Body.String(), `"id":"`, `"`)
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{"enabled":false}`); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), `"enabled":false`) {
+		t.Fatalf("pause = %d %s", r.Code, r.Body.String())
+	}
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{"enabled":true}`); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), `"enabled":true`) {
+		t.Fatalf("resume = %d %s", r.Code, r.Body.String())
+	}
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{}`); r.Code != http.StatusBadRequest {
+		t.Errorf("empty patch = %d, want 400", r.Code)
+	}
+	if r := apiDo(t, rt, cookie, http.MethodPatch, "/api/v1/monitors/mon_missing", `{"enabled":false}`); r.Code != http.StatusNotFound {
+		t.Errorf("missing = %d, want 404", r.Code)
+	}
+}

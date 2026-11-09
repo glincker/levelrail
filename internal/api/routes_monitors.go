@@ -7,7 +7,7 @@ func (rt *Router) registerMonitorRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/monitors", rt.requireAbilityForResource(AbilityRead, monitorsResource, rt.handleListMonitors))
 	// Create an http or tcp uptime monitor. Header values are stored encrypted and never returned.
 	mux.HandleFunc("POST /api/v1/monitors", rt.requireAbilityForResource(AbilityWrite, monitorsResource, rt.handleCreateMonitor))
-	// Change a monitor's status page link: open and resolve an incident on its component when it fails.
+	// Change a monitor's status page link, or pause and resume it with the enabled flag.
 	mux.HandleFunc("PATCH /api/v1/monitors/{id}", rt.requireAbilityForResource(AbilityWrite, monitorsResource, rt.handleUpdateMonitorLink))
 	// Delete a monitor with its results and rollups.
 	mux.HandleFunc("DELETE /api/v1/monitors/{id}", rt.requireAbilityForResource(AbilityWrite, monitorsResource, rt.handleDeleteMonitor))

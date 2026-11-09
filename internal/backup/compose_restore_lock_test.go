@@ -30,13 +30,9 @@ func TestComposeRestoreLockBlocksSecondAndExpires(t *testing.T) {
 	}
 }
 
-func TestComposeRestoreTimeoutEnvSeedsDefault(t *testing.T) {
+func TestComposeRestoreTimeoutIgnoresEnv(t *testing.T) {
 	t.Setenv("APP_COMPOSE_RESTORE_TIMEOUT", "5m")
-	if got := ComposeRestoreTimeout(); got != 5*time.Minute {
-		t.Fatalf("timeout = %v", got)
-	}
-	t.Setenv("APP_COMPOSE_RESTORE_TIMEOUT", "junk")
 	if got := ComposeRestoreTimeout(); got != defaultComposeRestoreTimeout {
-		t.Fatalf("fallback = %v", got)
+		t.Fatalf("timeout = %v", got)
 	}
 }

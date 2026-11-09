@@ -147,3 +147,7 @@ A `tls` monitor connects to `host:port` (default 443), verifies the chain agains
 ```sh
 levelrail-cli monitors create --name site-cert --kind tls --host example.com --interval 24h --warn-days 30 --crit-days 10
 ```
+
+## Pause and resume
+
+`PATCH /api/v1/monitors/{id}` accepts `{"enabled": false}` to pause a monitor and `{"enabled": true}` to resume it. A paused monitor is not probed and the schedule changes at once. Fields left out of the body are unchanged.

@@ -15,12 +15,9 @@ var ErrComposeRestoreBusy = errors.New("a restore is already running for this se
 
 const defaultComposeRestoreTimeout = 2 * time.Hour
 
-// ComposeRestoreTimeout is the deadline for one in-place restore; the
-// environment value only seeds the default.
+// ComposeRestoreTimeout is the fallback deadline for one in-place restore. The live value comes
+// from the backups.compose_restore_timeout runtime setting.
 func ComposeRestoreTimeout() time.Duration {
-	if v, err := time.ParseDuration(os.Getenv("APP_COMPOSE_RESTORE_TIMEOUT")); err == nil && v > 0 {
-		return v
-	}
 	return defaultComposeRestoreTimeout
 }
 
