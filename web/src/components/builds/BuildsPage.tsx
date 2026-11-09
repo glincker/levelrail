@@ -25,6 +25,7 @@ import { useListKeyboard } from '../../hooks/useListKeyboard'
 
 const buildsRoute = getRouteApi('/builds')
 const SavedViewsMenu = lazy(() => import('../SavedViewsMenu'))
+const BuildCacheQuotaCard = lazy(() => import('./BuildCacheQuotaCard'))
 
 export function BuildsPage() {
   const { t } = useTranslation('buildCenter')
@@ -237,6 +238,9 @@ export function BuildsPage() {
           pruneOpen={pruneOpen}
           onPruneOpenChange={setPruneOpen}
         />
+        <Suspense fallback={null}>
+          <BuildCacheQuotaCard />
+        </Suspense>
       </div>
     </PageTemplate>
   )

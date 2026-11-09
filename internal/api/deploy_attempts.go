@@ -143,6 +143,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 			return
 		}
+		go rt.AfterBuildFinish(req.ServiceName)
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if rt.deployNotifier != nil {
 			outcome := alerting.DeployOutcome{

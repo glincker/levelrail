@@ -88,7 +88,8 @@ func (rt *Router) RunPreviewSweeper(ctx context.Context, interval time.Duration)
 	return footprint.Every(ctx, "preview sweep", interval, rt.logger, func(ctx context.Context) error {
 		_, err := rt.SweepStalePreviewEnvironments(ctx)
 		_, branchErr := rt.SweepStaleBranchDeploys(ctx)
-		return errors.Join(err, branchErr)
+		_, expiryErr := rt.SweepAppExpiry(ctx, time.Now())
+		return errors.Join(err, branchErr, expiryErr)
 	})
 }
 

@@ -157,9 +157,12 @@ type gitSourceResource struct {
 	BranchPattern string `json:"branch_pattern"`
 	// AppAuth is false when a team scoped caller set the source, so
 	// background flows never clone it with the GitHub App.
-	AppAuth   bool      `json:"app_auth"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	AppAuth bool `json:"app_auth"`
+	// FetchSubmodules and FetchLFS make builds fetch submodules and LFS objects.
+	FetchSubmodules bool      `json:"fetch_submodules"`
+	FetchLFS        bool      `json:"fetch_lfs"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 	// WebhookURLWarning is private_address or no_public_url when WebhookURL
 	// cannot be reached by a git host; WebhookURLSource says where it came from.
 	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
@@ -225,6 +228,8 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		BranchPattern:          g.BranchPattern,
 		ConnectionID:           g.ConnectionID,
 		AppAuth:                g.AppAuth,
+		FetchSubmodules:        g.FetchSubmodules,
+		FetchLFS:               g.FetchLFS,
 		CreatedAt:              g.CreatedAt,
 		UpdatedAt:              g.UpdatedAt,
 	}

@@ -171,6 +171,9 @@ func Swap(ctx context.Context, dataDir, dbFile, src string, now time.Time) (asid
 	if err := copySynced(src, live); err != nil {
 		return "", 0, fmt.Errorf("put backup in place: %w", err)
 	}
+	if err := store.KeepRestoredAppExpiries(ctx, live); err != nil {
+		return "", 0, err
+	}
 	return aside, version, nil
 }
 

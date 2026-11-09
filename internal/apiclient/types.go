@@ -2071,6 +2071,8 @@ type GitDeploySettings struct {
 	CIRequiredChecks  []string `json:"ci_required_checks"`
 	TagPattern        string   `json:"tag_pattern"`
 	BranchPattern     string   `json:"branch_pattern"`
+	FetchSubmodules   bool     `json:"fetch_submodules"`
+	FetchLFS          bool     `json:"fetch_lfs"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -2083,6 +2085,8 @@ type SetGitDeploySettingsRequest struct {
 	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
 	TagPattern        *string   `json:"tag_pattern,omitempty"`
 	BranchPattern     *string   `json:"branch_pattern,omitempty"`
+	FetchSubmodules   *bool     `json:"fetch_submodules,omitempty"`
+	FetchLFS          *bool     `json:"fetch_lfs,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest

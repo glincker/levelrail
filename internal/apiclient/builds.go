@@ -164,3 +164,40 @@ func (c *Client) PruneBuildCache(ctx context.Context, req BuildCachePruneRequest
 	err := c.do(ctx, http.MethodPost, "/api/v1/builds/cache/prune", req, &out)
 	return out, err
 }
+
+// BuildCacheReclaim is one per app quota reclaim in the report.
+type BuildCacheReclaim struct {
+	App          string    `json:"app"`
+	Trigger      string    `json:"trigger"`
+	At           time.Time `json:"at"`
+	UsageBytes   int64     `json:"usage_bytes"`
+	QuotaBytes   int64     `json:"quota_bytes"`
+	FreedBytes   int64     `json:"freed_bytes"`
+	RemovedCount int       `json:"removed_count"`
+	SkippedInUse int       `json:"skipped_in_use"`
+	Bounded      bool      `json:"bounded"`
+	Skipped      string    `json:"skipped,omitempty"`
+	Partial      bool      `json:"partial,omitempty"`
+}
+
+// BuildCacheQuota is the response of GET /api/v1/builds/cache/quota.
+type BuildCacheQuota struct {
+	AppQuotaGB        int                 `json:"app_quota_gb"`
+	ReclaimMaxRecords int                 `json:"reclaim_max_records"`
+	Supported         bool                `json:"supported"`
+	Reclaims          []BuildCacheReclaim `json:"reclaims"`
+}
+
+// GetBuildCacheQuota calls GET /api/v1/builds/cache/quota.
+func (c *Client) GetBuildCacheQuota(ctx context.Context) (BuildCacheQuota, error) {
+	var out BuildCacheQuota
+	err := c.do(ctx, http.MethodGet, "/api/v1/builds/cache/quota", nil, &out)
+	return out, err
+}
+
+// ReclaimAppBuildCache calls POST /api/v1/apps/{name}/build-cache/reclaim.
+func (c *Client) ReclaimAppBuildCache(ctx context.Context, app string) (BuildCacheReclaim, error) {
+	var out BuildCacheReclaim
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+url.PathEscape(app)+"/build-cache/reclaim", nil, &out)
+	return out, err
+}

@@ -451,7 +451,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusInternalServerError, "internal error"
 	}
-	sourceDir, cleanup, err := rt.gitSourceFetch(sourcecache.WithScope(ctx, scope), gs.RepoURL, checkoutRef, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(rt.withFetchExtras(sourcecache.WithScope(ctx, scope), gs), gs.RepoURL, checkoutRef, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
 		if _, adopted := adoptedAttemptID(ctx); errors.Is(err, errGitCommitNotFound) && !adopted {

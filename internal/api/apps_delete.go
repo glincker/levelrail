@@ -95,9 +95,22 @@ func lockAppName(name string) func() {
 // so a failed teardown (second return) is retried by the reconciler. Callers
 // nudge the reconciler afterwards.
 func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err error) {
+	return rt.deleteAppGuarded(ctx, name, nil)
+}
+
+// deleteAppGuarded runs guard on the loaded app under the name lock, so a
+// scheduled delete re-checks its preconditions in the same critical section.
+func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(store.DesiredService) error) (teardownErr, err error) {
+	unlock := lockAppName(name)
+	defer unlock()
 	existing, err := rt.apps.GetDesiredService(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("load app %q: %w", name, err)
+	}
+	if guard != nil {
+		if err := guard(*existing); err != nil {
+			return nil, err
+		}
 	}
 	finalizer := rt.deleteFinalizer()
 	if finalizer != nil {
@@ -107,11 +120,8 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	}
 	// Integration rows cascade with the service, so list them first.
 	integrationNS := rt.appIntegrationSecretNamespaces(ctx, name)
-	// Erase right after the row is gone, under the name lock: the row is
-	// already deleted so a failure loses nothing, and a same-name create
-	// cannot write secrets that this cleanup then removes.
-	unlock := lockAppName(name)
-	defer unlock()
+	// Erase right after the row is gone, under the name lock (held since the
+	// load): a same-name create cannot write secrets this cleanup then removes.
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}

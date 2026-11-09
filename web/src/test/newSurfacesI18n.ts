@@ -4,13 +4,21 @@ import commonEn from '../locales/en/common.json'
 import databasesEn from '../locales/en/databases.json'
 import functionsEn from '../locales/en/functions.json'
 import imagesEn from '../locales/en/images.json'
+import appExpiryEn from '../locales/en/appExpiry.json'
 import storageBucketsEn from '../locales/en/storageBuckets.json'
 
 export const newSurfacesI18n = i18next.createInstance()
 void newSurfacesI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'databases', 'functions', 'images', 'storageBuckets'],
+  ns: [
+    'common',
+    'databases',
+    'functions',
+    'images',
+    'storageBuckets',
+    'appExpiry',
+  ],
   defaultNS: 'common',
   resources: {
     en: {
@@ -18,6 +26,7 @@ void newSurfacesI18n.use(initReactI18next).init({
       databases: databasesEn,
       functions: functionsEn,
       images: imagesEn,
+      appExpiry: appExpiryEn,
       storageBuckets: storageBucketsEn,
     },
   },

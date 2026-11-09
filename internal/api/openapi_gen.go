@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2088 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2093 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -152,6 +152,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/override", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendOverride", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildCache", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/build-cache/reclaim", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReclaimAppBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBuildHooks", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateBuildHook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-hooks/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevokeBuildHook", Description: ""},
@@ -273,6 +274,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/exec", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExecApp", Description: "One-off exec: AbilityRoot, not AbilityDeploy, because it can read the plaintext env secrets that no other route ever returns."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetExecAccess", Description: "Exec access opt-out: a second gate checked by exec and terminal on top of AbilityRoot. GET is AbilityRead; PUT is AbilityRoot, since re-enabling hands back a root capability."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetExecAccess", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/expiry", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppExpiry", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/expiry", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppExpiry", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/expiry", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppExpiry", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/export", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportApp", Description: "Compose export (leave-anytime): AbilityRead like the app view itself, since it carries only non-secret env; each call writes an app.export audit event."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exposure", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppExposure", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exposure", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppExposure", Description: ""},
@@ -1118,6 +1122,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/builds", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuilds", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds/cache", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/builds/cache/prune", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildCachePrune", Description: "Pruning frees disk shared by every app's builds, so write-sensitive even as a preview."},
+	{Method: "GET", Path: "/api/v1/builds/cache/quota", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCacheQuota", Description: "The report filters reclaims to the caller's apps; budgets change through runtime settings."},
 	{Method: "GET", Path: "/api/v1/builds/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},

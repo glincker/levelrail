@@ -263,3 +263,9 @@ layer progress of its own.
 ## Reconcile cost
 
 `GET /api/v1/system/control-plane-health` and `levelrail-cli system health` list the five controllers with the most total time since start (runs, errors, total and max milliseconds), so a slow controller shows up without a profiler. The interval between full resync passes is the `reconcile.resync_seconds` runtime setting (default 30, from 5 to 3600, seeded by `APP_RECONCILE_RESYNC_SECONDS`); the engine re-reads it on each resync tick.
+
+## Build cache per app quota
+
+`build.cache_app_quota_gb` caps the builder cache mounts of one app (0, the default, turns it off). After each build of an app over its quota, from the API or a push webhook, its least recently used cache mounts are removed until it fits, at most `build.cache_reclaim_max_records` records per run and within `build.cache_reclaim_timeout` (default 2m). Only that app's own cache mounts are touched, never another app's cache, images or volumes. Cache held by a running build, or used while the reclaim scans, is skipped and reported. No reclaim starts while a build of that app runs or waits in the queue, and only one disk usage scan runs at a time.
+
+The build center shows the quota and the recent reclaims of the apps you can read; `levelrail-cli builds cache quota` shows the same and changes the quota (root or admin). `--reclaim APP` trims one app now. Every reclaim that removed something writes an audit row with the app name and bytes freed, also when it stopped early.

@@ -249,5 +249,13 @@
     "saving": "Guardando...",
     "saved": "Patrones guardados.",
     "failed": "No se pudieron guardar los patrones."
+  },
+  "fetchExtras": {
+    "title": "Submódulos y LFS",
+    "note": "Descarga los submódulos de git (solo https) y los objetos LFS antes de cada compilación. Las credenciales solo se envían al host del repositorio.",
+    "submodules": "Descargar submódulos",
+    "lfs": "Descargar objetos LFS",
+    "saved": "Ajustes de descarga del código guardados.",
+    "failed": "No se pudieron guardar los ajustes de descarga del código"
   }
 }

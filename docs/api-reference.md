@@ -762,6 +762,10 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/scrape-target | AbilityWrite | handlePutScrapeTarget |
 | DELETE | /api/v1/apps/{name}/scrape-target | AbilityWrite | handleDeleteScrapeTarget |
 | GET | /api/v1/apps/{name}/scraped-metrics | AbilityRead | handleScrapedMetrics |
+| GET | /api/v1/apps/{name}/expiry | AbilityRead | handleGetAppExpiry |
+| PUT | /api/v1/apps/{name}/expiry | AbilityWrite | handleSetAppExpiry |
+| DELETE | /api/v1/apps/{name}/expiry | AbilityDeploy | handleClearAppExpiry |
+| POST | /api/v1/apps/{name}/build-cache/reclaim | AbilityDeploy | handleReclaimAppBuildCache |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2312,6 +2316,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/events/changes | AbilityRead | handleChangesStream |
 | GET | /api/v1/tags/{id}/databases | AbilityRead | handleListDatabasesByTag |
 | GET | /api/v1/shell | AbilityRead | handleShellOverview |
+| GET | /api/v1/builds/cache/quota | AbilityRead | handleBuildCacheQuota |
 | POST | /mcp | Public |  |
 
 ## See also

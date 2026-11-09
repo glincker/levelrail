@@ -18,13 +18,16 @@ func buildsUsage(prog string) string {
   %[1]s builds cancel <id>
   %[1]s builds retry <id>
   %[1]s builds cache [--node N]
+  %[1]s builds cache quota [--app-quota-gb N] [--reclaim APP]
   %[1]s builds prune [--node N] [--older-than-hours H] [--apply]
 
 The build center: queued, running and finished builds across every app with
 duration, cache hit ratio, image size change and the node that ran each one.
 retry rebuilds the connected branch of a failed or canceled build. prune
 previews by default and only removes idle BuildKit cache with --apply; cache
-an in-flight build holds is never removed.
+an in-flight build holds is never removed. cache quota shows the per app quota
+(0 is off) and the recent reclaims; --app-quota-gb changes the live setting
+(root or admin), --reclaim trims one app now.
 `, prog)
 }
 
@@ -203,6 +206,9 @@ func runBuildsAction(prog, verb string, args []string, stdout, stderr io.Writer,
 }
 
 func runBuildsCache(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && args[0] == "quota" {
+		return runBuildsCacheQuota(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	var node string
 	c, code, ok := parseBuildsCall(prog, "builds cache", args, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&node, "node", "", "node ID (default: the control plane's own node)")
@@ -266,5 +272,59 @@ func runBuildsPrune(prog string, args []string, stdout, stderr io.Writer, lookup
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "removed %d records, freed %s\n", res.RemovedCount, humanBytes(res.FreedBytes))
+	})
+}
+
+func runBuildsCacheQuota(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	quota := -1
+	var reclaim string
+	c, code, ok := parseBuildsCall(prog, "builds cache quota", args, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		fs.IntVar(&quota, "app-quota-gb", -1, "set build.cache_app_quota_gb, the per app quota in GiB (0 turns it off)")
+		fs.StringVar(&reclaim, "reclaim", "", "reclaim this app's cache down to its quota now")
+	})
+	if !ok {
+		return code
+	}
+	if quota >= 0 {
+		if _, err := c.client.PutRuntimeSetting(bg(), "build.cache_app_quota_gb", apiclient.RuntimeSettingWrite{Value: quota}); err != nil {
+			return reportError(stdout, stderr, c.jsonO, fmt.Errorf("set build.cache_app_quota_gb: %w", err))
+		}
+	}
+	if reclaim != "" {
+		res, err := c.client.ReclaimAppBuildCache(bg(), reclaim)
+		if err != nil {
+			return reportError(stdout, stderr, c.jsonO, fmt.Errorf("reclaim build cache of %s: %w", reclaim, err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
+			_, _ = fmt.Fprintf(stdout, "%s: removed %d records, freed %s, %d in use skipped\n", res.App, res.RemovedCount, humanBytes(res.FreedBytes), res.SkippedInUse)
+		})
+	}
+	res, err := c.client.GetBuildCacheQuota(bg())
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("build cache quota: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
+		appQuota := "off"
+		if res.AppQuotaGB > 0 {
+			appQuota = fmt.Sprintf("%d GiB", res.AppQuotaGB)
+		}
+		_, _ = fmt.Fprintf(stdout, "per app quota %s, up to %d records per reclaim\n", appQuota, res.ReclaimMaxRecords)
+		if len(res.Reclaims) == 0 {
+			_, _ = fmt.Fprintln(stdout, "no reclaims yet")
+			return
+		}
+		tw := tabwriter.NewWriter(stdout, 0, 8, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "APP\tTRIGGER\tWHEN\tFREED\tREMOVED\tIN USE\tNOTE")
+		for _, r := range res.Reclaims {
+			note := r.Skipped
+			if r.Bounded {
+				note = "record limit reached"
+			}
+			if r.Partial {
+				note = "stopped early"
+			}
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%d\t%d\t%s\n", r.App, r.Trigger, r.At.Local().Format(time.DateTime), humanBytes(r.FreedBytes), r.RemovedCount, r.SkippedInUse, buildOrDash(note))
+		}
+		_ = tw.Flush()
 	})
 }

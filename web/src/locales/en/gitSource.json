@@ -249,5 +249,13 @@
     "saving": "Saving...",
     "saved": "Trigger patterns saved.",
     "failed": "Could not save trigger patterns."
+  },
+  "fetchExtras": {
+    "title": "Submodules and LFS",
+    "note": "Fetch git submodules (https only) and LFS objects before each build. Credentials go only to the repository host.",
+    "submodules": "Fetch submodules",
+    "lfs": "Fetch LFS objects",
+    "saved": "Source fetch settings saved.",
+    "failed": "Could not save source fetch settings"
   }
 }

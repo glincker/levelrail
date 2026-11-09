@@ -39,6 +39,7 @@ import { CardSkeleton } from '@/components/ui/card-skeleton'
 const ImageRetentionCard = lazy(
   () => import('../../../components/ImageRetentionCard'),
 )
+const AppExpiryCard = lazy(() => import('../../../components/AppExpiryCard'))
 
 // The one home for deploy settings, grouped by when they act: Build,
 // Run, Safety, Automation. The deploys page only links here. Suspense cards
@@ -117,6 +118,9 @@ function DeploySettingsSection() {
         </CardHelp>
         <Suspense fallback={<CardSkeleton titleWidth="w-40" rows={2} />}>
           <ImageRetentionCard appName={name} />
+        </Suspense>
+        <Suspense fallback={<CardSkeleton titleWidth="w-40" rows={2} />}>
+          <AppExpiryCard appName={name} />
         </Suspense>
       </SettingsGroup>
       <SettingsGroup id="automation">

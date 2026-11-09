@@ -90,5 +90,32 @@
       "image": "image",
       "cache": "cache"
     }
+  },
+  "quota": {
+    "title": "Cache quota",
+    "errorTitle": "Could not load the cache quota",
+    "appQuota": "Per app quota",
+    "maxRecords": "Records per reclaim",
+    "gib_one": "{{count}} GiB",
+    "gib_other": "{{count}} GiB",
+    "off": "Off",
+    "restartNote": "The per app quota applies after the next build of each app, from the dashboard, the CLI or a push. Change it in Settings under build.cache_app_quota_gb.",
+    "empty": "No cache has been reclaimed yet.",
+    "col": {
+      "app": "App",
+      "trigger": "Trigger",
+      "when": "When",
+      "freed": "Freed",
+      "note": "Note"
+    },
+    "trigger": {
+      "auto": "After a build",
+      "manual": "Manual"
+    },
+    "note": {
+      "running": "Skipped, a build was running",
+      "bounded": "Record limit reached, the rest follows next build",
+      "partial": "Stopped early, what was freed is kept"
+    }
   }
 }

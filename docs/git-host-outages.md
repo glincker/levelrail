@@ -65,4 +65,4 @@ Replay after recovery is kept in memory. If the control plane restarts during an
 
 - A checkout from the cache has a real `.git` at the requested commit with full history and tags, but no remote and no branches.
 - Single repository mode (`APP_GIT_REPO_URL`) uses the same cache and fast failure, but does not replay pushes automatically.
-- Submodule contents are not fetched into the cache.
+- Submodules and LFS objects are not kept in the mirror. With `--submodules` or `--lfs` on, each build fetches them from their hosts, so a build or **Deploy from cache** of such an app needs those hosts to answer and fails with `source_not_cached` while they are down.

@@ -70,7 +70,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
+| `APP_GIT_LFS_HOSTS` | [`git.lfs_hosts`](/runtime-settings#security) | empty |
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
+| `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
+| `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
 | `APP_NODES_PATCH_ADOPT_LIMIT` | [`nodes.patch_adopt_limit`](/runtime-settings#security) | `20` |
 | `APP_NODES_PATCH_APPLY_TIMEOUT` | [`nodes.patch_apply_timeout`](/runtime-settings#security) | `30m` |
@@ -166,7 +169,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
+| `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_PER_APP` | [`build.cache_per_app`](/runtime-settings#deploys) | `true` |
+| `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
+| `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
@@ -203,6 +209,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_POLL_ENABLED` | [`git.poll_enabled`](/runtime-settings#deploys) | `true` |
 | `APP_GIT_POLL_INTERVAL` | [`git.poll_interval`](/runtime-settings#deploys) | `5m` |
 | `APP_GIT_POLL_MAX_BACKOFF` | [`git.poll_max_backoff`](/runtime-settings#deploys) | `1h` |
+| `APP_GIT_SUBMODULES_MAX_COUNT` | [`git.submodules_max_count`](/runtime-settings#deploys) | `32` |
+| `APP_GIT_SUBMODULES_MAX_DEPTH` | [`git.submodules_max_depth`](/runtime-settings#deploys) | `3` |
+| `APP_GIT_SUBMODULES_MAX_MB` | [`git.submodules_max_mb`](/runtime-settings#deploys) | `4096` |
+| `APP_GIT_SUBMODULES_TIMEOUT` | [`git.submodules_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_GIT_TRIGGER_PATTERN_LIST_MAX_BYTES` | [`git.trigger_pattern_list_max_bytes`](/runtime-settings#deploys) | `1024` |
 | `APP_GIT_TRIGGER_PATTERN_MAX_LENGTH` | [`git.trigger_pattern_max_length`](/runtime-settings#deploys) | `128` |
 | `APP_GIT_TRIGGER_PATTERNS_MAX` | [`git.trigger_patterns_max`](/runtime-settings#deploys) | `32` |

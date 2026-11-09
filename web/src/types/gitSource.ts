@@ -191,6 +191,10 @@ export interface GitSourceResource {
   ci_required_checks?: string[]
   tag_pattern?: string
   branch_pattern?: string
+  // fetch_submodules and fetch_lfs make builds fetch submodules and LFS
+  // objects, set via the deploy-settings route.
+  fetch_submodules?: boolean
+  fetch_lfs?: boolean
   created_at: string
   updated_at: string
 }
@@ -210,6 +214,8 @@ export interface GitDeploySettings {
   ci_required_checks?: string[]
   tag_pattern?: string
   branch_pattern?: string
+  fetch_submodules?: boolean
+  fetch_lfs?: boolean
 }
 
 export type SetGitDeploySettingsRequest = Partial<GitDeploySettings>

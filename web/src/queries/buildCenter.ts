@@ -177,3 +177,36 @@ export function usePruneBuildCache(node: string) {
     },
   })
 }
+
+export interface BuildCacheReclaim {
+  app: string
+  trigger: 'auto' | 'manual'
+  at: string
+  usage_bytes: number
+  quota_bytes: number
+  freed_bytes: number
+  removed_count: number
+  skipped_in_use: number
+  bounded: boolean
+  skipped?: string
+  partial?: boolean
+}
+
+export interface BuildCacheQuota {
+  app_quota_gb: number
+  reclaim_max_records: number
+  supported: boolean
+  reclaims: BuildCacheReclaim[]
+}
+
+export function useBuildCacheQuota() {
+  return useQuery({
+    queryKey: ['builds', 'cache', 'quota'] as const,
+    queryFn: async ({ signal }) =>
+      json<BuildCacheQuota>(
+        await fetch('/api/v1/builds/cache/quota', { signal }),
+        'fetch build cache quota',
+      ),
+    refetchInterval: IDLE_REFETCH_MS,
+  })
+}

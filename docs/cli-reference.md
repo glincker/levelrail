@@ -220,6 +220,7 @@ levelrail-cli apps delete <name> [flags]
 - `apps next-advisor <app>` checks the saved config of a Next.js app (shared cache, skew protection, build memory, web vitals) and prints one row per finding with its fix. It needs no build; for other apps it says Next.js was not detected. `--json` prints the raw response.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
+- `apps expiry <app>` shows an app's expiry. `--at TIME` (RFC 3339) or `--in 72h` sets it, within the max horizon setting. A notice is written to the audit log first, the app is stopped at the expiry, and deleted only after the grace period (`deploy.app_expiry_grace_hours`, default 7 days) and only when an operator has turned on `deploy.app_expiry_delete_enabled` (off by default; until then expired apps are only stopped). Starting the app again after its expiry stop keeps it for good. With `--delete-data`, the person or token that set it must still hold write:sensitive at delete time, or the app is kept. A control plane restore marks already stopped expiries kept. Apps with volumes, bind mounts, linked databases or dependent apps are only stopped and kept unless `--delete-data --confirm <app>` is set. A protected app, an app in a protected environment (setting an expiry there is refused), or one started again after its expiry is never deleted. An expiry belongs to one life of the app name, so a recreated app never inherits it. Setting needs write ability on the app, `--delete-data` also needs write:sensitive and an app on the control plane's own node. `--clear` needs deploy ability and always cancels a pending delete; a stopped app stays stopped until `apps start`.
 
 ### Deploy, roll back and scale
 
@@ -529,7 +530,7 @@ levelrail-cli apps previews sweep [flags]
 ```
 
 - `git remote add <app>` and `git remote rotate <app>` issue the git push deploy remote (beta, `git-push`); `--apply` (with optional `--dir PATH`) sets the remote in a local repository instead of printing the token line; by default the token stays out of `.git/config` and is read from `LEVELRAIL_GIT_TOKEN` at push time (`--credential-helper` is an accepted no-op alias); `--store-token-in-config` writes it into `.git/config` instead, stored unencrypted in the repo config.
-- `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters, forge status reporting and deploy trigger patterns (`--tag-pattern v*` in release mode, `--branch-pattern main,release/*` in push mode, see Deploy trigger patterns in the app spec reference); `rotate-secret` mints a fresh webhook secret, shown once.
+- `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters, forge status reporting and deploy trigger patterns (`--tag-pattern v*` in release mode, `--branch-pattern main,release/*` in push mode, see Deploy trigger patterns in the app spec reference) and whether builds fetch git submodules and LFS objects (`--submodules`, `--lfs`, https only, capped by the `git.submodules_*` runtime settings); `rotate-secret` mints a fresh webhook secret, shown once.
 - `apps webhook-deliveries` lists recent inbound webhook requests, verified or not. `replay` re-runs a stored delivery's payload and can trigger a real build and deploy.
 - `apps previews` manages preview environments per pull request, see [Preview environments per pull request](/previews). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
 
@@ -1042,6 +1043,13 @@ levelrail-cli build detect --repo-url URL [--ref REF] [flags]
 levelrail-cli build branches --repo-url URL [flags]
 ```
 Both work against a public repository and need no existing app. `detect` shows which framework the builder detects without running a build, and prints `no framework detected` (exit 0) when nothing matches. `branches` lists the branches a repo advertises; private or unreachable repos fail with an API error.
+
+## Builds cache quota
+
+```
+levelrail-cli builds cache quota [--app-quota-gb N] [--reclaim APP] [flags]
+```
+Shows the per app cache quota (`build.cache_app_quota_gb`, 0 is off) and the recent reclaims of the apps you can read. `--app-quota-gb` changes the live setting (root or admin). `--reclaim APP` trims that app's least recently used cache mounts down to its quota now; it is refused while a build of the app runs or waits in the queue. Every reclaim is audited with the app name and bytes freed.
 
 ## Cloudflare Tunnel
 

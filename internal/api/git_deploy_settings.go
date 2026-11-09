@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/pathfilter"
@@ -31,6 +32,8 @@ type gitDeploySettings struct {
 	CIRequiredChecks  []string `json:"ci_required_checks"`
 	TagPattern        string   `json:"tag_pattern"`
 	BranchPattern     string   `json:"branch_pattern"`
+	FetchSubmodules   bool     `json:"fetch_submodules"`
+	FetchLFS          bool     `json:"fetch_lfs"`
 }
 
 type setGitDeploySettingsRequest struct {
@@ -41,6 +44,16 @@ type setGitDeploySettingsRequest struct {
 	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
 	TagPattern        *string   `json:"tag_pattern,omitempty"`
 	BranchPattern     *string   `json:"branch_pattern,omitempty"`
+	FetchSubmodules   *bool     `json:"fetch_submodules,omitempty"`
+	FetchLFS          *bool     `json:"fetch_lfs,omitempty"`
+}
+
+// AuditActionGitFetchExtras marks the audit row of a submodule or LFS toggle.
+const AuditActionGitFetchExtras = "git_source.fetch_extras"
+
+// fetchExtrasSetter is the optional store surface for the submodule and LFS toggles.
+type fetchExtrasSetter interface {
+	SetGitSourceFetchExtras(ctx context.Context, serviceName string, submodules, lfs bool) error
 }
 
 // AuditActionGitTriggerPatterns marks the audit row of a trigger pattern change.
@@ -60,6 +73,8 @@ func toGitDeploySettings(gs store.GitSource) gitDeploySettings {
 		CIRequiredChecks:  nonNilPaths(gs.CIRequiredChecks),
 		TagPattern:        gs.TagPattern,
 		BranchPattern:     gs.BranchPattern,
+		FetchSubmodules:   gs.FetchSubmodules,
+		FetchLFS:          gs.FetchLFS,
 	}
 }
 
@@ -82,8 +97,8 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil && req.TagPattern == nil && req.BranchPattern == nil {
-		writeError(w, http.StatusBadRequest, "deploy_paths, deploy_paths_ignore, report_status, wait_for_ci, ci_required_checks, tag_pattern or branch_pattern is required")
+	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil && req.TagPattern == nil && req.BranchPattern == nil && req.FetchSubmodules == nil && req.FetchLFS == nil {
+		writeError(w, http.StatusBadRequest, "deploy_paths, deploy_paths_ignore, report_status, wait_for_ci, ci_required_checks, tag_pattern, branch_pattern, fetch_submodules or fetch_lfs is required")
 		return
 	}
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
@@ -117,6 +132,12 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 	if req.BranchPattern != nil {
 		next.BranchPattern = spec.NormalizeRefPatterns(*req.BranchPattern)
 	}
+	if req.FetchSubmodules != nil {
+		next.FetchSubmodules = *req.FetchSubmodules
+	}
+	if req.FetchLFS != nil {
+		next.FetchLFS = *req.FetchLFS
+	}
 	if err := rt.validateTriggerPatterns(ctx, req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -133,6 +154,9 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if (req.TagPattern != nil || req.BranchPattern != nil) && !rt.saveTriggerPatterns(w, r, name, *gs, next) {
+		return
+	}
+	if (req.FetchSubmodules != nil || req.FetchLFS != nil) && !rt.saveFetchExtras(w, r, name, next) {
 		return
 	}
 	if err := rt.gitSources.SetGitSourceDeploySettings(ctx, name, next.DeployPaths, next.DeployPathsIgnore, next.ReportStatus); err != nil {
@@ -183,25 +207,30 @@ func (rt *Router) saveTriggerPatterns(w http.ResponseWriter, r *http.Request, na
 // auditTriggerPatterns records the pattern text, which is not secret, so a
 // reviewer can see exactly which refs were allowed to deploy and when.
 func (rt *Router) auditTriggerPatterns(r *http.Request, name string, next gitDeploySettings) {
+	rt.auditGitSetting(r, name, AuditActionGitTriggerPatterns, map[string]any{"app": name, "tag_pattern": next.TagPattern, "branch_pattern": next.BranchPattern})
+}
+
+// auditGitSetting records one non-secret git source setting change.
+func (rt *Router) auditGitSetting(r *http.Request, name, action string, detailMap map[string]any) {
 	if rt.auditLog == nil {
 		return
 	}
 	a := rt.accessActor(r)
 	id, err := store.NewAuditEntryID()
 	if err != nil {
-		rt.logger.Warn("api: trigger patterns audit id failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Warn("api: git setting audit id failed", slog.String("error", err.Error()), slog.String("name", name))
 		return
 	}
-	detail, _ := json.Marshal(map[string]string{"app": name, "tag_pattern": next.TagPattern, "branch_pattern": next.BranchPattern})
+	detail, _ := json.Marshal(detailMap)
 	entry := store.AuditEntry{
 		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
 		Ability: AbilityWriteSensitive, Method: r.Method, Path: r.URL.Path, StatusCode: http.StatusOK,
 		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
-		Action:     AuditActionGitTriggerPatterns, Detail: string(detail),
+		Action:     action, Detail: string(detail),
 	}
 	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
-		rt.logger.Warn("api: trigger patterns audit save failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Warn("api: git setting audit save failed", slog.String("error", err.Error()), slog.String("name", name))
 	}
 }
 
@@ -233,4 +262,38 @@ func (rt *Router) skipPushForPaths(ctx context.Context, name string, gs store.Gi
 		return ""
 	}
 	return fmt.Sprintf("ignored: %s\n", res.Reason)
+}
+
+func (rt *Router) saveFetchExtras(w http.ResponseWriter, r *http.Request, name string, next gitDeploySettings) bool {
+	setter, ok := rt.gitSources.(fetchExtrasSetter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "submodule and lfs fetch is not available on this control plane")
+		return false
+	}
+	if err := setter.SetGitSourceFetchExtras(r.Context(), name, next.FetchSubmodules, next.FetchLFS); err != nil {
+		rt.internalError(w, "api: set git fetch extras failed", err, slog.String("name", name))
+		return false
+	}
+	rt.auditGitSetting(r, name, AuditActionGitFetchExtras, map[string]any{"app": name, "fetch_submodules": next.FetchSubmodules, "fetch_lfs": next.FetchLFS})
+	return true
+}
+
+// withFetchExtras attaches gs's submodule and LFS options, with caps read
+// live from runtime settings, to a source checkout context.
+func (rt *Router) withFetchExtras(ctx context.Context, gs store.GitSource) context.Context {
+	if !gs.FetchSubmodules && !gs.FetchLFS {
+		return ctx
+	}
+	s := rt.runtimeSettings
+	return sourcecache.WithExtras(ctx, sourcecache.Extras{
+		Submodules:      gs.FetchSubmodules,
+		LFS:             gs.FetchLFS,
+		MaxDepth:        s.Limit(ctx, runtimesettings.KeyGitSubmodulesMaxDepth),
+		MaxCount:        s.Limit(ctx, runtimesettings.KeyGitSubmodulesMaxCount),
+		MaxBytes:        int64(s.Limit(ctx, runtimesettings.KeyGitSubmodulesMaxMB)) << 20,
+		Timeout:         s.GitSubmodulesTimeout(ctx),
+		CredentialHosts: s.List(ctx, runtimesettings.KeyGitSubmodulesAuthHosts),
+		LFSHosts:        s.List(ctx, runtimesettings.KeyGitLFSHosts),
+		AllowedCIDRs:    s.List(ctx, runtimesettings.KeyGitSubmodulesAllowedCIDRs),
+	})
 }
