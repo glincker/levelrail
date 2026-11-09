@@ -385,7 +385,7 @@ DELETE /api/v1/apps/{name}/domains/{domain}/limits    deploy
 
 The PUT body is `{"max_body_bytes": 104857600, "read_timeout_seconds": 120, "write_timeout_seconds": 120}`. The response is the stored limits, with the current ceilings and the minimum body size, so a client can show the same bounds the dashboard does.
 
-Status: built and covered by unit tests for the API, the CLI and the dashboard control. Not proven on a real host. No live request has gone through a domain body cap or timeout in a real deployment, and the dashboard control has not been checked in a browser at narrow or wide widths.
+Status: built and covered by unit tests for the API, the CLI and the dashboard control. Body cap proven on a real host (arm64 Ubuntu VM, 2026-11-08): a request over the cap answered 413 when the application read the body, and the cap is enforced only when the application reads the body. Timeouts have no real-host run, and the dashboard control has not been checked in a browser at narrow or wide widths.
 
 ## Permissions and audit
 

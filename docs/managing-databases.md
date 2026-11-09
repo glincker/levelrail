@@ -313,7 +313,7 @@ The command waits up to `--wait` for the fresh backup. The default is 15 minutes
 
 On the dashboard, the **Data transfer** card on a database's Overview page offers the same three actions plus **Back up now**. **Back up now** picks a backup target (the first one by default) and starts a backup through the existing backup endpoint; the button shows as running while the newest history row is running, and it needs `write:sensitive`. **Download latest dump** streams the newest succeeded backup (it does not take a new one, so run a backup first for current data) and needs `read:sensitive`. **Clone** is prefilled with `<name>-clone` and starts a restore into a new database from that backup, which needs `write:sensitive`. **Import** takes a dump file, checks first whether the database already holds data, and for a non-empty database asks you to type its name before replacing it. It shows upload progress and the server's own error text, and needs `root`. Controls you lack the ability for are disabled with one line saying why.
 
-Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). It has not run against a live control plane, and `import` has not restored into a real database.
+Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). `export`, `clone` and a plain dump `import` ran against a managed Postgres database on a real host (arm64 Ubuntu VM, 2026-11-08), as did a Redis import guard check. Other engines have no real-host run.
 
 ### Scheduled backups
 

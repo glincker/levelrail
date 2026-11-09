@@ -29,7 +29,7 @@ The labels on this page are a summary. [Feature status](/feature-status) holds t
 | Git provider webhooks for GitHub, GitLab, Bitbucket and Gitea | Built and tested | [Git integrations](/git-integrations) |
 | Hold an automatic git deploy until the commit's CI checks finish | Built and tested | [CI gate](/ci-gate) |
 | CI deploy trust through OIDC for GitHub Actions, GitLab CI and CircleCI | Built and tested | [Pipelines and OIDC](/pipelines-oidc) |
-| SSH deploy key for private git repositories | Built and tested | [Git integrations](/git-integrations) |
+| SSH deploy key for private git repositories (trust-on-first-use pinning, manual deploy and git poller) | Proven on a real host | [Git integrations](/git-integrations) |
 | Container image deploy, with promotion by digest and signature checks | Built and tested | [Images](/images) |
 | Docker Compose file as one app, with per-service status | Beta | [Compose apps](/compose-apps) |
 | Upload a folder or a zip to a static site | Built and tested | [Drop deploy](/drop-deploy) |
@@ -80,7 +80,7 @@ Compose database dumps run on a cron schedule. Restoring one is a manual step to
 | Cloudflare Tunnel, with no open inbound port | Experimental | [Cloudflare Tunnel](/cloudflare-tunnel) |
 | Load balancing across an app's replicas, with health checks and sticky sessions | Experimental | [Load balancing](/load-balancing) |
 | Forward auth in front of a domain | Built and tested | [Domains and ingress](/domains-and-ingress) |
-| Per-domain request body cap and upstream read and write timeouts | Built and tested | [Domain traffic controls](/domain-traffic-controls) |
+| Per-domain request body cap (413 when the application reads the body) and upstream read and write timeouts | Proven on a real host | [Domain traffic controls](/domain-traffic-controls) |
 | WAF, rate limiting and redirects | Built and tested | [Domains and ingress](/domains-and-ingress) |
 | Abuse limits as runtime settings (`abuse.*`). Saved values reach the ingress limiter on the next policy save and proxy refresh | Beta | [Ingress abuse defense](/abuse-defense) |
 | Private networks that group apps and allow named app-to-app paths | Built and tested | [Private networks](/private-networks) |
@@ -88,6 +88,8 @@ Compose database dumps run on a cron schedule. Restoring one is a manual step to
 | Mail DNS records (SPF, DKIM, DMARC, MX), add-only by default | Experimental | [Mail DNS](/mail-dns) |
 
 The Proven on a real host row covers one recorded issuance, on 2026-10-05, against a public CA on a public VPS, using the staging CA first and then production. Renewal, DNS-01 wildcard issuance and the port 80 preflight from outside the server are not verified. See [the ACME runbook](/acme-verification-runbook) for the record.
+
+The SSH deploy key, request body cap and runtime options rows marked Proven on a real host cite a 2026-11-08 run on an arm64 Ubuntu VM (build 243a8ee00). The body cap run covered the proxy path only, not the dashboard control, and the deploy key run covered trust-on-first-use pinning only. See [Feature status](/feature-status#real-host-runs-2026-11-08).
 
 ## Previews
 
@@ -119,7 +121,7 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | Global environments and the environment switcher | Experimental | [Environments](/environments) |
 | Sign-in with OAuth providers and generic OpenID Connect, with group to role mapping | Built and tested | [SSO with OIDC](/sso-oidc) |
 | SAML 2.0 single sign-on and SCIM 2.0 provisioning | Beta | [SSO with SAML](/sso-saml) |
-| Container runtime options per service: read-only root, capability drop, pids, tmpfs, ulimits, init and stop timeout | Built and tested | [Runtime options](/runtime-options) |
+| Container runtime options per service: read-only root, capability drop, pids, tmpfs, ulimits, init and stop timeout | Proven on a real host | [Runtime options](/runtime-options) |
 
 ## Multi-server
 
