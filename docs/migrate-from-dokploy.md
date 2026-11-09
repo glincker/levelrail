@@ -25,6 +25,10 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 | Volumes | Volume and bind mounts |
 | Replicas, memory and CPU limits | Imported |
 | Preview deployments | The preview limit becomes the app's preview policy maximum on `--apply`. The wildcard host, auto deploy off and clean cache are reported as review items |
+| Redirect rules | A rule whose regex starts at the app's first domain and whose replacement is an absolute http or https URL becomes a forwarder rule on that domain on `--apply`. Anything else is listed as a review item |
+| Basic auth | Only the fact that it was on. `--apply` gates each domain with a random placeholder password that is never shown; set the real one with `domains basic-auth set`. The source password is never read |
+| Pre and post deploy commands | Carried over as deploy hooks when the command is one line and holds no inline secret or env value. A static site has no container, so they are reported instead |
+| Extra published ports | Reported as a review item, they are not routed |
 | Health check | Only when it is a curl or wget style HTTP probe |
 | Databases | PostgreSQL, MySQL, MariaDB, MongoDB and Redis, created empty with the major version from the image tag |
 

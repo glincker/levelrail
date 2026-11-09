@@ -85,38 +85,43 @@ type dokployMount struct {
 }
 
 type dokployApp struct {
-	ApplicationID       string          `json:"applicationId"`
-	Name                string          `json:"name"`
-	SourceType          string          `json:"sourceType"`
-	BuildType           string          `json:"buildType"`
-	BuildPath           string          `json:"buildPath"`
-	Dockerfile          string          `json:"dockerfile"`
-	DockerImage         string          `json:"dockerImage"`
-	Env                 string          `json:"env"`
-	Replicas            int             `json:"replicas"`
-	MemoryLimit         string          `json:"memoryLimit"`
-	CPULimit            string          `json:"cpuLimit"`
-	Owner               string          `json:"owner"`
-	Repository          string          `json:"repository"`
-	Branch              string          `json:"branch"`
-	GitlabOwner         string          `json:"gitlabOwner"`
-	GitlabRepository    string          `json:"gitlabRepository"`
-	GitlabBranch        string          `json:"gitlabBranch"`
-	BitbucketOwner      string          `json:"bitbucketOwner"`
-	BitbucketRepository string          `json:"bitbucketRepository"`
-	BitbucketBranch     string          `json:"bitbucketBranch"`
-	GiteaOwner          string          `json:"giteaOwner"`
-	GiteaRepository     string          `json:"giteaRepository"`
-	GiteaBranch         string          `json:"giteaBranch"`
-	CustomGitURL        string          `json:"customGitUrl"`
-	CustomGitBranch     string          `json:"customGitBranch"`
-	AutoDeploy          *bool           `json:"autoDeploy"`
-	CleanCache          bool            `json:"cleanCache"`
-	PreviewActive       bool            `json:"isPreviewDeploymentsActive"`
-	PreviewLimit        int             `json:"previewLimit"`
-	PreviewWildcard     string          `json:"previewWildcard"`
-	Domains             []dokployDomain `json:"domains"`
-	Mounts              []dokployMount  `json:"mounts"`
+	ApplicationID       string            `json:"applicationId"`
+	Name                string            `json:"name"`
+	SourceType          string            `json:"sourceType"`
+	BuildType           string            `json:"buildType"`
+	BuildPath           string            `json:"buildPath"`
+	Dockerfile          string            `json:"dockerfile"`
+	DockerImage         string            `json:"dockerImage"`
+	Env                 string            `json:"env"`
+	Replicas            int               `json:"replicas"`
+	MemoryLimit         string            `json:"memoryLimit"`
+	CPULimit            string            `json:"cpuLimit"`
+	Owner               string            `json:"owner"`
+	Repository          string            `json:"repository"`
+	Branch              string            `json:"branch"`
+	GitlabOwner         string            `json:"gitlabOwner"`
+	GitlabRepository    string            `json:"gitlabRepository"`
+	GitlabBranch        string            `json:"gitlabBranch"`
+	BitbucketOwner      string            `json:"bitbucketOwner"`
+	BitbucketRepository string            `json:"bitbucketRepository"`
+	BitbucketBranch     string            `json:"bitbucketBranch"`
+	GiteaOwner          string            `json:"giteaOwner"`
+	GiteaRepository     string            `json:"giteaRepository"`
+	GiteaBranch         string            `json:"giteaBranch"`
+	CustomGitURL        string            `json:"customGitUrl"`
+	CustomGitBranch     string            `json:"customGitBranch"`
+	AutoDeploy          *bool             `json:"autoDeploy"`
+	CleanCache          bool              `json:"cleanCache"`
+	PreviewActive       bool              `json:"isPreviewDeploymentsActive"`
+	PreviewLimit        int               `json:"previewLimit"`
+	PreviewWildcard     string            `json:"previewWildcard"`
+	Domains             []dokployDomain   `json:"domains"`
+	Mounts              []dokployMount    `json:"mounts"`
+	Redirects           []DokployRedirect `json:"redirects"`
+	Security            []DokploySecurity `json:"security"`
+	Ports               []DokployPort     `json:"ports"`
+	PreDeployCommand    string            `json:"preDeployCommand"`
+	PostDeployCommand   string            `json:"postDeployCommand"`
 	HealthCheckSwarm    *struct {
 		Test     []string `json:"Test"`
 		Interval int64    `json:"Interval"`
@@ -238,6 +243,18 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 		app.Kind, app.GitURL, app.GitBranch = SourceGit, a.CustomGitURL, a.CustomGitBranch
 	}
 	app.scrubGitURL()
+	values := make([]string, 0, len(app.Env))
+	for _, e := range app.Env {
+		values = append(values, e.Value)
+	}
+	first := ""
+	if len(app.Domains) > 0 {
+		first = app.Domains[0]
+	}
+	tr := TranslateDokployPolicies(DokployPolicies{Redirects: a.Redirects, Security: a.Security, Ports: a.Ports,
+		PreDeploy: a.PreDeployCommand, PostDeploy: a.PostDeployCommand}, first, values)
+	app.Ingress, app.Build.PreDeploy, app.Build.PostDeploy = tr.Ingress, tr.PreDeploy, tr.PostDeploy
+	app.Notes = append(app.Notes, tr.Notes...)
 	if app.Kind == SourceGit {
 		switch strings.ToLower(a.BuildType) {
 		case "dockerfile":

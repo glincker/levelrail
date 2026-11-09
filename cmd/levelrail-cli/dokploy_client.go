@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 // memoryLimit and cpuLimit are raw bytes and nanoCPUs, though the update schema types them as strings.
@@ -55,6 +57,13 @@ type dokployApplication struct {
 	PreviewActive   bool   `json:"isPreviewDeploymentsActive"`
 	PreviewLimit    int    `json:"previewLimit"`
 	PreviewWildcard string `json:"previewWildcard"`
+
+	// Security holds basic-auth users; the password is not declared so it is never read.
+	Redirects         []platformimport.DokployRedirect `json:"redirects"`
+	Security          []platformimport.DokploySecurity `json:"security"`
+	Ports             []platformimport.DokployPort     `json:"ports"`
+	PreDeployCommand  string                           `json:"preDeployCommand"`
+	PostDeployCommand string                           `json:"postDeployCommand"`
 }
 
 // dokployDomain mirrors Dokploy's Domain model
