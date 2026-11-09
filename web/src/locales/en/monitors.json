@@ -35,7 +35,7 @@
     "daysHint": "Degraded under the warning days, down under the critical days. Blank uses the server default.",
     "serverDefault": "default",
     "pingTitle": "Add this to your job",
-    "pingHint": "Shown once. Append /start before the job and /fail on error. Rotate it with the CLI if it leaks.",
+    "pingHint": "Shown once. Append /start before the job and /fail on error. Rotate it from the row or the CLI if it leaks.",
     "copy": "Copy",
     "copied": "Copied",
     "done": "Done",
@@ -60,6 +60,13 @@
     "confirm": "Delete",
     "pending": "Deleting...",
     "done": "Monitor {{name}} deleted"
+  },
+  "rotate": {
+    "action": "Rotate token for {{name}}",
+    "title": "Rotate the ping URL of {{name}}?",
+    "description": "The old URL stops working at once. The new one is shown once, so update your job right after.",
+    "confirm": "Rotate",
+    "pending": "Rotating..."
   },
   "incidents": {
     "title": "Incidents",

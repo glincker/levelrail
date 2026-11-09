@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import {
   deriveMonitorState,
   uptimePercent,
@@ -62,5 +62,24 @@ describe('MonitorsList', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByText(/empty|No monitors/i)).toBeTruthy()
+  })
+})
+
+describe('MonitorsList rotate control', () => {
+  const hb: Monitor = { ...mon, id: 'h1', name: 'Nightly', kind: 'heartbeat' }
+  it('offers rotate for heartbeat rows only and asks first', () => {
+    const onRotate = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MonitorsList
+          monitors={[mon, hb]}
+          onDelete={() => undefined}
+          onRotate={onRotate}
+        />
+      </QueryClientProvider>,
+    )
+    expect(screen.queryAllByLabelText(/rotate\.action/)).toHaveLength(1)
+    fireEvent.click(screen.getByLabelText(/rotate\.action/))
+    expect(onRotate).toHaveBeenCalledWith(hb)
   })
 })
