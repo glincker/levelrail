@@ -14,6 +14,7 @@ export interface OneShotJob {
   run_status?: string
   message?: string
   output?: string
+  output_withheld?: boolean
   output_truncated?: boolean
 }
 

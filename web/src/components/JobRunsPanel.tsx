@@ -137,6 +137,10 @@ function RunLogsDialog({ appName, run }: { appName: string; run: JobRun }) {
           <p className="text-sm text-muted-foreground">
             {t('history.logsLoading')}
           </p>
+        ) : data?.output_withheld ? (
+          <p className="text-sm text-muted-foreground">
+            {t('history.outputWithheld')}
+          </p>
         ) : output ? (
           <CodeBlock code={output} wrap maxHeight="lg" />
         ) : (

@@ -16,5 +16,6 @@
   "timeout": "Tiempo de espera (s)",
   "timeoutPlaceholder": "3600",
   "cancel": "Cancelar",
-  "history": "Ejecuciones recientes"
+  "history": "Ejecuciones recientes",
+  "outputWithheld": "La salida está oculta. Ver la salida de los trabajos requiere acceso de lectura sensible."
 }

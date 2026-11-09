@@ -189,7 +189,9 @@ export function RunCommandCard({
                     {t('output')}
                   </p>
                   <pre className="max-h-80 overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs break-all whitespace-pre-wrap">
-                    {job.output || t('empty')}
+                    {job.output_withheld
+                      ? t('outputWithheld')
+                      : job.output || t('empty')}
                   </pre>
                   {job.output_truncated ? (
                     <p className="text-xs text-muted-foreground">

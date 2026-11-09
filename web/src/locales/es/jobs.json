@@ -171,7 +171,8 @@
     "logsEmpty": "Esta ejecución no produjo salida.",
     "logsLoading": "Cargando salida...",
     "logsRedacted": "Los secretos se ocultan en esta salida.",
-    "alertsHint": "Recibe un aviso cuando una tarea falle, pierda ejecuciones o se ejecute demasiado tiempo con Alertas, usando los tipos de fallo de tarea, ejecución perdida o ejecución demasiado larga."
+    "alertsHint": "Recibe un aviso cuando una tarea falle, pierda ejecuciones o se ejecute demasiado tiempo con Alertas, usando los tipos de fallo de tarea, ejecución perdida o ejecución demasiado larga.",
+    "outputWithheld": "La salida está oculta. Ver la salida de los trabajos requiere acceso de lectura sensible."
   },
   "historyKept": {
     "label": "Historial conservado (ejecuciones por tarea)",

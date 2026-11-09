@@ -171,7 +171,8 @@
     "logsEmpty": "This run produced no output.",
     "logsLoading": "Loading output...",
     "logsRedacted": "Secrets are redacted from this output.",
-    "alertsHint": "Get notified when a job fails, misses runs or runs too long with Alerts, using the job failure, missed run or running too long kinds."
+    "alertsHint": "Get notified when a job fails, misses runs or runs too long with Alerts, using the job failure, missed run or running too long kinds.",
+    "outputWithheld": "Output is withheld. Viewing job output needs sensitive read access."
   },
   "historyKept": {
     "label": "History kept (runs per job)",

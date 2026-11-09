@@ -16,5 +16,6 @@
   "timeout": "Timeout (s)",
   "timeoutPlaceholder": "3600",
   "cancel": "Cancel",
-  "history": "Recent runs"
+  "history": "Recent runs",
+  "outputWithheld": "Output is withheld. Viewing job output needs sensitive read access."
 }

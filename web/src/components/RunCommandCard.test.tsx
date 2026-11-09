@@ -85,6 +85,32 @@ describe('RunCommandCard', () => {
     })
   })
 
+  it('says the output is withheld instead of showing an empty run', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        json(
+          {
+            id: 'j3',
+            app: 'shop',
+            state: 'Succeeded',
+            exit_code: 0,
+            output_withheld: true,
+          },
+          202,
+        ),
+      ),
+    )
+    renderCard()
+    await user.type(screen.getByLabelText('Command'), 'true')
+    await user.click(screen.getByRole('button', { name: 'Run' }))
+    expect(
+      await screen.findByText(/Output is withheld/, {}, { timeout: 4000 }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('(no output)')).not.toBeInTheDocument()
+  })
+
   it('shows a succeeded run and the server error text inline', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(

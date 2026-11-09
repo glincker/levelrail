@@ -71,6 +71,8 @@ export interface ScheduledTask {
   last_run_at?: string
   last_run_status?: ScheduledTaskRunStatus
   last_run_output?: string
+  // True when the output exists but the caller lacks sensitive read access.
+  last_run_output_withheld?: boolean
   consecutive_failures: number
   consecutive_missed?: number
   running_since?: string
@@ -120,4 +122,5 @@ export interface JobRun {
   mode?: ScheduledTaskMode
   message?: string
   output?: string
+  output_withheld?: boolean
 }
