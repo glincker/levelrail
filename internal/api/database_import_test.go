@@ -232,3 +232,14 @@ func TestDatabaseImport_DataArrivingDuringUploadIs409(t *testing.T) {
 		t.Fatalf("probes = %d, want 2 (before and after spooling)", fake.n)
 	}
 }
+
+func TestDatabaseHoldsData_ValkeyReadsKeyCountsLikeRedis(t *testing.T) {
+	for _, engine := range []string{store.EngineRedis, store.EngineValkey} {
+		if databaseHoldsData(engine, "keys|0\n") {
+			t.Fatalf("%s with zero keys reported data", engine)
+		}
+		if !databaseHoldsData(engine, "keys|3\n") {
+			t.Fatalf("%s with keys reported empty", engine)
+		}
+	}
+}

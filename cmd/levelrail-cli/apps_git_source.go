@@ -38,6 +38,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceRotateSecret(prog, args[1:], stdout, stderr, lookupEnv)
 	case "register-webhook":
 		return runAppsGitSourceRegisterWebhook(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ssh-key":
+		return runAppsGitSourceSSHKey(prog, args[1:], stdout, stderr, lookupEnv)
 	case "plan":
 		return runAppsGitSourcePlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
@@ -68,6 +70,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   %[1]s apps git-source register-webhook <name> [flags]                 register the push webhook on the provider again
+  %[1]s apps git-source ssh-key show|generate|rotate|delete <name> [flags]  manage the SSH deploy key for a private repo
   %[1]s apps git-source disconnect <name> [flags]                       disconnect an app's repo, the running image keeps serving
   %[1]s apps git-source delete <name> [flags]                           same as disconnect
 

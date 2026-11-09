@@ -78,7 +78,7 @@ func databaseHoldsData(engine, probeOutput string) bool {
 		if !ok || label == "" {
 			continue
 		}
-		if engine != store.EngineRedis {
+		if engine != store.EngineRedis && engine != store.EngineValkey {
 			return true
 		}
 		if n, err := strconv.Atoi(strings.TrimSpace(count)); err != nil || n != 0 {
@@ -96,7 +96,7 @@ func (rt *Router) importTarget(w http.ResponseWriter, r *http.Request) (*store.D
 		return nil, nil, false
 	}
 	if !datamigrate.Supported(db.Engine) {
-		writeError(w, http.StatusBadRequest, "importing a dump is available for postgres, mysql, mariadb, mongodb and redis databases")
+		writeError(w, http.StatusBadRequest, "importing a dump is available for postgres, mysql, mariadb, mongodb, redis and valkey databases")
 		return nil, nil, false
 	}
 	if rt.execRuntime == nil {

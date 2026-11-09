@@ -1219,12 +1219,12 @@ func TestNormalizeRepoURL(t *testing.T) {
 	}
 }
 
-func TestPlanFromFlags_SSHRepoBecomesHTTPS(t *testing.T) {
+func TestPlanFromFlags_SSHRepoKeepsScheme(t *testing.T) {
 	plan, err := planFromFlags(createFlags{name: "web", repo: "ssh://git@github.com/org/web.git", imageRepo: "reg/web", port: 8080}, nil, detectedGit{})
 	if err != nil {
 		t.Fatalf("planFromFlags() error = %v", err)
 	}
-	if got := plan.Build.RepoURL; got != "https://github.com/org/web.git" {
+	if got := plan.Build.RepoURL; got != "ssh://git@github.com/org/web.git" {
 		t.Errorf("repo url = %q", got)
 	}
 }

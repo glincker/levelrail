@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -416,6 +417,9 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 	var req setBackupScheduleRequest
 	if !decodeReq(w, r, &req) {
 		return
+	}
+	if req.Retain == 0 {
+		req.Retain = rt.tunableInt(r.Context(), runtimesettings.KeyBackupsScheduleRetainDefault, "APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", 0)
 	}
 	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
 		return

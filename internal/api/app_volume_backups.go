@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -169,6 +170,9 @@ func (rt *Router) handleSetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 	var req setVolumeBackupScheduleRequest
 	if !decodeReq(w, r, &req) {
 		return
+	}
+	if req.Retain == 0 {
+		req.Retain = rt.tunableInt(r.Context(), runtimesettings.KeyBackupsScheduleRetainDefault, "APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", 0)
 	}
 	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
 		return

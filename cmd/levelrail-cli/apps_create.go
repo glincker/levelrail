@@ -97,7 +97,10 @@ func pendingImageTag(imageRepo string) string {
 // planFromFlags picks the creation path (existing image, git build, or --file) and builds its requests. Pure, so it is table-tested.
 // A local git remote also selects the git-build path when no --image or --file is given.
 func planFromFlags(f createFlags, fileSpec *spec.Spec, detected detectedGit) (createPlan, error) {
-	f.repo = normalizeRepoURL(f.repo)
+	// An explicit ssh:// repo keeps its scheme so the app's stored deploy key is used.
+	if !isSSHRepoURL(f.repo) {
+		f.repo = normalizeRepoURL(f.repo)
+	}
 	detected.RepoURL = normalizeRepoURL(detected.RepoURL)
 	switch {
 	case f.file != "":
@@ -781,6 +784,12 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		_, _ = fmt.Fprintf(stderr, "app %q auto-placed on node %q (simple spread scheduling)\n", created.Name, created.NodeID)
 	}
 
+	if plan.Build != nil && isSSHRepoURL(plan.Build.RepoURL) {
+		if sshErr := connectSSHSource(ctx, client, prog, created.Name, plan.Build); sshErr != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but no build started: %w", created.Name, sshErr))
+		}
+	}
+
 	if buildErr := triggerCreatePlanBuild(ctx, client, created, plan, stderr, f.jsonOut); buildErr != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
 	}
@@ -813,8 +822,29 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 // validatePlanVolumes rejects bind mounts, which the volumes endpoint cannot take. Compose deploys carry them.
 func validateBuildRepoScheme(repo string) error {
 	u, err := url.Parse(repo)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
-		return newValidationError("repo_url must use http or https (got %q)", envredact.URLForLog(repo))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https" && !isSSHRepoURL(repo)) {
+		return newValidationError("repo_url must use http, https or ssh (got %q)", envredact.URLForLog(repo))
+	}
+	return nil
+}
+
+// isSSHRepoURL is true for an explicit ssh:// remote with a host.
+func isSSHRepoURL(repo string) bool {
+	u, err := url.Parse(strings.TrimSpace(repo))
+	return err == nil && u.Scheme == "ssh" && u.Hostname() != ""
+}
+
+// connectSSHSource attaches an ssh repo to the new app and refuses to build until a
+// deploy key exists, because the build would fail closed with a less helpful error.
+func connectSSHSource(ctx context.Context, client *Client, prog, name string, b *buildTriggerRequest) error {
+	if _, err := client.SetGitSource(ctx, name, apiclient.SetGitSourceRequest{RepoURL: b.RepoURL, Branch: b.Ref}); err != nil {
+		return fmt.Errorf("connect the ssh repository: %w", err)
+	}
+	if _, err := client.GetGitSSHKey(ctx, name); err != nil {
+		if !isAPINotFound(err) {
+			return fmt.Errorf("check the ssh deploy key: %w", err)
+		}
+		return fmt.Errorf("the repository is connected but %q has no SSH deploy key yet. Add the key first:\n  %[2]s apps git-source ssh-key generate %[1]s --trust-on-first-use\nadd the printed public key to the repository's deploy keys, then run:\n  %[2]s apps git-source deploy %[1]s", name, prog)
 	}
 	return nil
 }
@@ -849,7 +879,7 @@ func triggerCreatePlanBuild(ctx context.Context, client *Client, created appReso
 	if plan.Build == nil {
 		return nil
 	}
-	if plan.Build.DetectedFramework == "" {
+	if plan.Build.DetectedFramework == "" && !isSSHRepoURL(plan.Build.RepoURL) {
 		if det, err := client.DetectFramework(ctx, plan.Build.RepoURL, plan.Build.Ref); err == nil && det.Detected {
 			plan.Build.DetectedFramework = det.FrameworkName
 		}
