@@ -240,6 +240,7 @@ runtime.ulimit_count_max
 scheduled_tasks.history_keep
 secrets.provider_cache_ttl_seconds
 secrets.provider_max_response_kib
+secrets.provider_max_rps
 secrets.provider_timeout_seconds
 security.audit_sensitive_reads
 security.bind_allowed_roots
@@ -275,6 +276,8 @@ telemetry.logs_retention
 telemetry.metrics_retention
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
+templates.import_max_bytes
+templates.import_timeout
 tokens.default_ttl_days
 tokens.expiry_warning_days
 tokens.system_rotation_lead_minutes
