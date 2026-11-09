@@ -61,6 +61,13 @@
     "pending": "Eliminando...",
     "done": "Monitor {{name}} eliminado"
   },
+  "rotate": {
+    "action": "Rotar el token de {{name}}",
+    "title": "¿Rotar la URL de ping de {{name}}?",
+    "description": "La URL anterior deja de funcionar al instante. La nueva se muestra una sola vez, así que actualiza tu tarea enseguida.",
+    "confirm": "Rotar",
+    "pending": "Rotando..."
+  },
   "incidents": {
     "title": "Incidentes",
     "empty": "Sin incidentes. Las caídas confirmadas de monitores y las alertas promovidas aparecen aquí.",

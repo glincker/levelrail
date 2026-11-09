@@ -45,6 +45,7 @@ autoscale.gauge_timeout
 backup.default_retention_hours
 backup.local_root
 backups.compose_restore_timeout
+backups.schedule_retain_default
 boot.event_recheck
 boot.rechecks
 bootstrap_scripts.max_bytes

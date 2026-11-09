@@ -156435,7 +156435,7 @@
         "x-required-ability": "read"
       },
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Requires the `write:sensitive` ability.",
         "operationId": "handleImportCustomTemplate",
         "requestBody": {
           "content": {
@@ -156501,7 +156501,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write"
+              "write:sensitive"
             ]
           }
         ],
@@ -156509,7 +156509,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "write"
+        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/templates/custom/{id}": {

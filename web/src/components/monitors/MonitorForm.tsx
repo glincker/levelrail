@@ -36,7 +36,7 @@ function pingCurl(path: string): string {
   return `curl -fsS -m 10 --retry 3 ${window.location.origin}${path}`
 }
 
-function PingPanel({
+export function PingPanel({
   monitor,
   onDone,
 }: {

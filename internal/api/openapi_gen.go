@@ -1788,7 +1788,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetQuota", Description: ""},
 	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
-	{Method: "POST", Path: "/api/v1/templates/custom", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportCustomTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/templates/custom", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleImportCustomTemplate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/tokens/unused", Ability: "Session", Group: "Other", Handler: "handleUnusedTokens", Description: "Read-only list of idle tokens, same audience as the token list."},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},

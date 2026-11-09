@@ -2294,7 +2294,7 @@ Routes that do not fit an existing group.
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
-| POST | /api/v1/templates/custom | AbilityWrite | handleImportCustomTemplate |
+| POST | /api/v1/templates/custom | AbilityWriteSensitive | handleImportCustomTemplate |
 | POST | /api/v1/jobs/runs | AbilityRoot | handleStartOneShotJob |
 | GET | /api/v1/jobs/runs/{id} | AbilityRead | handleGetOneShotJob |
 | POST | /api/v1/jobs/runs/{id}/cancel | AbilityRoot | handleCancelOneShotJob |

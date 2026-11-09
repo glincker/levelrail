@@ -438,7 +438,7 @@ levelrail-cli apps volumes detach <name> --name NAME [flags]
 levelrail-cli apps storage set <name> --storage-target-id ID [flags]
 levelrail-cli apps storage clear <name> [flags]
 levelrail-cli apps backups services <app>
-levelrail-cli apps backups schedule set <app> <service> --target ID --cron EXPR [--retain N] [--retain-days N] [--disable]
+levelrail-cli apps backups schedule set <app> <service> --target ID --cron EXPR [--retain N] [--retain-days N] [--disable]   (without --retain the server applies backups.schedule_retain_default, 0 keeps all)
 levelrail-cli apps backups schedule clear <app> <service>
 levelrail-cli apps backups schedule pause <app> <service>
 levelrail-cli apps backups schedule resume <app> <service>

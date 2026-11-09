@@ -73,7 +73,7 @@ func runAppsBackupsScheduleSet(prog string, args []string, stdout, stderr io.Wri
 	var disable bool
 	fs.StringVar(&targetID, "target", "", "backup target id (required)")
 	fs.StringVar(&cron, "cron", "", "5-field cron expression (required)")
-	fs.IntVar(&retain, "retain", 0, "number of backups to keep (0: no limit)")
+	fs.IntVar(&retain, "retain", 0, "number of backups to keep (0: the server default, backups.schedule_retain_default)")
 	fs.IntVar(&retainDays, "retain-days", 0, "delete backups older than this many days (0: no limit)")
 	fs.BoolVar(&disable, "disable", false, "save the schedule but pause it")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsBackupsUsage(prog)) }

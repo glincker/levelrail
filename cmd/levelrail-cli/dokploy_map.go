@@ -40,6 +40,7 @@ func mapDokployApplication(app dokployApplication, domains []dokployDomain, incl
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapDokployEnv(app.Env, includeSecretValues, out.Issues)
 
 	out.Service.Previews, out.Issues = mapDokployPreviews(app, out.Issues)
+	out.Issues = mapDokployPolicies(app, &out)
 
 	return out
 }
@@ -275,4 +276,35 @@ func mapDokployCompose(c platformimport.ComposeApp, includeSecretValues bool) ma
 	out.Compose = &stagedCompose{Yaml: c.Compose, Hosts: c.Domains, Volumes: c.Volumes}
 	out.Issues = issues
 	return out
+}
+
+// mapDokployPolicies stages redirects and basic auth as the shared ingress plan and deploy commands as hooks.
+// Basic auth is a flag only: --apply gates the domain with a placeholder, never the source credential.
+func mapDokployPolicies(app dokployApplication, out *mappedApp) []migrationIssue {
+	issues := out.Issues
+	values := parseDokployEnv(app.Env)
+	vals := make([]string, 0, len(values))
+	for _, v := range values {
+		vals = append(vals, v)
+	}
+	first := ""
+	if len(out.Service.Domains) > 0 {
+		first = out.Service.Domains[0]
+	}
+	tr := platformimport.TranslateDokployPolicies(platformimport.DokployPolicies{Redirects: app.Redirects, Security: app.Security,
+		Ports: app.Ports, PreDeploy: app.PreDeployCommand, PostDeploy: app.PostDeployCommand}, first, vals)
+	for _, n := range tr.Notes {
+		kind := issuePlanned
+		if !strings.HasPrefix(n.Reason, "planned: ") {
+			kind = issueReview
+		}
+		issues = appendIssue(issues, n.Area, kind, strings.TrimPrefix(n.Reason, "planned: ")+": "+n.Manual)
+	}
+	if tr.Ingress != nil && tr.Ingress.Translated() {
+		out.Service.Ingress = tr.Ingress
+	}
+	if (tr.PreDeploy != "" || tr.PostDeploy != "") && out.Service.BuildType != spec.BuildStatic {
+		out.Service.Hooks = &mappedHooks{PreDeploy: tr.PreDeploy, PostDeploy: tr.PostDeploy}
+	}
+	return issues
 }

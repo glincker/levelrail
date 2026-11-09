@@ -62,7 +62,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// templates captured from a running app. Deploy reuses the
 	// service-templates/{id}/deploy route above, no second deploy path.
 	mux.HandleFunc("GET /api/v1/templates/custom", rt.requireAbility(AbilityRead, rt.handleListCustomTemplates))
-	mux.HandleFunc("POST /api/v1/templates/custom", rt.requireAbility(AbilityWrite, rt.handleImportCustomTemplate))
+	mux.HandleFunc("POST /api/v1/templates/custom", rt.requireAbility(AbilityWriteSensitive, rt.handleImportCustomTemplate))
 	mux.HandleFunc("DELETE /api/v1/templates/custom/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteCustomTemplate))
 	mux.HandleFunc("POST /api/v1/apps/{name}/save-as-template", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSaveAppAsTemplate))
 

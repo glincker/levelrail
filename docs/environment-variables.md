@@ -81,6 +81,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ORGS_STRICT_ISOLATION` | [`orgs.strict_isolation`](/runtime-settings#security) | `false` |
 | `APP_SECRET_PROVIDER_CACHE_TTL_SECONDS` | [`secrets.provider_cache_ttl_seconds`](/runtime-settings#security) | `60` |
 | `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
+| `APP_SECRET_PROVIDER_MAX_RPS` | [`secrets.provider_max_rps`](/runtime-settings#security) | `20` |
 | `APP_SECRET_PROVIDER_TIMEOUT_SECONDS` | [`secrets.provider_timeout_seconds`](/runtime-settings#security) | `10` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
@@ -149,6 +150,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
+| `APP_TEMPLATE_IMPORT_MAX_BYTES` | [`templates.import_max_bytes`](/runtime-settings#networking) | `262144` |
+| `APP_TEMPLATE_IMPORT_TIMEOUT` | [`templates.import_timeout`](/runtime-settings#networking) | `10s` |
 | `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
 | `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
 | `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
@@ -311,6 +314,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
+| `APP_BACKUP_SCHEDULE_RETAIN_DEFAULT` | [`backups.schedule_retain_default`](/runtime-settings#data-retention) | `0` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |

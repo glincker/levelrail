@@ -30,6 +30,9 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - **A source for every app.** Connect the repository (with credentials for a private one) and run a build, or push an image to a registry and set it as the source.
 - **Volume contents**, by `rsync` commands you run.
 - **Raw host port mappings** are not imported. Publish a port in the app settings if it must be reachable.
+- **Pre-deploy script.** Reported as a plan item and not copied, because it is JavaScript run by CapRover and may hold credentials. Rewrite it as a shell command and set it as the app's pre-deploy hook.
+- **Node pin.** Reported only. Node ids are never mapped, so pick the target node in the app's placement settings.
+- **Tags and deploy token.** Tags are listed. When a deploy token is enabled, the token value is never read into the plan or the report: create a new one for the app's build hook and update the caller.
 - **Health checks.** CapRover has none to import. Add a readiness path here.
 
 ## What does not move
