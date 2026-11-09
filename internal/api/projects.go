@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -85,7 +86,13 @@ func (rt *Router) handleListProjects(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	writeJSON(w, http.StatusOK, out)
+	sortQuery(r, out, map[string]func(a, b projectResource) int{
+		"name": func(a, b projectResource) int {
+			return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+		},
+		"created": func(a, b projectResource) int { return strings.Compare(a.CreatedAt, b.CreatedAt) },
+	})
+	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }
 
 // handleGetProject handles GET /api/v1/projects/{id}, the same
