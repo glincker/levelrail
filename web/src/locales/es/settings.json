@@ -3831,6 +3831,14 @@
         "dialogBody": "No se puede deshacer.",
         "danger": "Eliminar"
       }
+    },
+    "listKeys": {
+      "title": "Atajos de teclado para listas",
+      "description": "Teclas sueltas recorren las listas: j y k mueven, x selecciona, Intro abre, / enfoca el filtro, ? muestra las teclas. Desactívalos si chocan con un lector de pantalla o la entrada por voz.",
+      "on": "Activados",
+      "onHint": "j, k, x, Intro, /, ?",
+      "off": "Desactivados",
+      "offHint": "Solo ratón y Tab"
     }
   },
   "secretProviders": {

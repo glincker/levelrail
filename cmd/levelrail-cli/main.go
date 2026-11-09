@@ -325,6 +325,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runDeployLink(prog, args[1:], stdout, stderr, lookupEnv)
 	case "search":
 		return runSearch(prog, args[1:], stdout, stderr, lookupEnv)
+	case "views":
+		return runViews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "janitor":
 		return runJanitor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
@@ -567,6 +569,7 @@ Usage:
   %[1]s control-plane rehydrate plan|run|status [flags]   whole-server recovery: restore data for every app, database and volume
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
+  %[1]s views list|save|delete|apply [--list L] [flags]       saved list filters for apps, databases, domains, builds and deployments, private or shared with your team
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes export|import <app> <volume> [flags]          move a volume out of or into Levelrail as a tar.gz

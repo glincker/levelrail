@@ -91,6 +91,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesMove(prog, rest, stdout, stderr, lookupEnv)
 	case "moves":
 		return runNodesMoves(prog, rest, stdout, stderr, lookupEnv)
+	case "resources":
+		return runNodesResources(prog, rest, stdout, stderr, lookupEnv)
 	case "drains":
 		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
 	case "taint":
@@ -142,6 +144,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
   %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node
   %[1]s nodes drains <id> [flags]                                    show a node's drains and their moves
+  %[1]s nodes resources <id> [flags]                                 list the apps and databases placed on a node
   %[1]s nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
   %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels

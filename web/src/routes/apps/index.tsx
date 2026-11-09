@@ -36,6 +36,7 @@ const BulkActionsBar = lazy(() =>
   })),
 )
 import { AppsFilterBar } from '../../components/AppsFilterBar'
+const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
 import {
   AppsStatusChips,
   ViewToggle,
@@ -146,6 +147,27 @@ function AppListPage() {
 
   const setStatus = (next: StatusFilter) => {
     void navigate({ search: next ? { status: next } : {}, replace: true })
+  }
+  const currentView = {
+    q: filters.query,
+    status: status ?? '',
+    env: filters.environments.join(','),
+    tags: filters.tags.join(','),
+    labels: labelSelector,
+  }
+  const splitList = (v: string | undefined) =>
+    (v ?? '')
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+  const applyView = (f: Record<string, string>) => {
+    setFilters({
+      query: f.q ?? '',
+      environments: splitList(f.env),
+      tags: splitList(f.tags),
+    })
+    setLabelSelector(f.labels ?? '')
+    setStatus(parseStatusSearch(f.status))
   }
   const changeMode = (next: ViewMode) => {
     storeViewMode(next)
@@ -320,6 +342,13 @@ function AppListPage() {
               onChange={setLabelSelector}
               invalid={labelMatches.isError}
             />
+            <Suspense fallback={null}>
+              <SavedViewsMenu
+                list="apps"
+                current={currentView}
+                onApply={applyView}
+              />
+            </Suspense>
           </div>
           <FilterChips
             filters={activeFilters}

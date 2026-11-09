@@ -68,5 +68,18 @@
   "guidedEmpty": {
     "viaCli": "Or do it from the CLI",
     "cliLabel": "CLI command"
+  },
+  "savedViews": {
+    "button": "Views",
+    "label": "Saved views",
+    "empty": "No saved views yet.",
+    "apply": "Apply view {{name}}",
+    "delete": "Delete view {{name}}",
+    "deleted": "View deleted",
+    "saved": "Saved view {{name}}",
+    "namePlaceholder": "Save current filters as",
+    "shareTeam": "Share with my team",
+    "teamBadge": "Team",
+    "save": "Save view"
   }
 }

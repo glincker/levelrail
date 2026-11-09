@@ -282,6 +282,10 @@ tokens.unused_alert_days
 ui.outbound_utm
 updates.offered_channels
 upgrade.verify_backup
+views.filter_max_keys
+views.filter_value_max_bytes
+views.max_per_user
+views.name_max_chars
 volumes.import_overwrite
 volumes.size_history_retention
 volumes.transfer_max_bytes

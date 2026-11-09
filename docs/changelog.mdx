@@ -4,6 +4,225 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="0.9.5" description="2026-11-08">
+**Features**
+
+* add apps backups services, schedule, runs and run to the CLI
+* **agent:** show live health, restarts, networks and mounts for agent nodes
+* **alerts:** explain why a deploy failed from its timeline
+* **api:** app disk usage and periodic sqlite optimize
+* **api:** club of git poll, net client, digest, mail cert and store lanes
+* **api:** service runtime options, auth gate timeout, safer previews Change a service's container options from the API and CLI. Set the auth gate check timeout live; lone CHECKS file gives a readiness probe. KeyDB probes use keydb-cli; previews wait for a fresh database before migrate. Authz deny rows cover import, restore, abuse, preview policy and settings.
+* apps run, per-service scale and restart, logs follow on a terminal
+* apps validate-spec and listening-ports CLI verbs
+* **apps:** per-replica container details endpoint and CLI
+* build log names the builder that ran and why
+* build Procfile apps from their Dockerfile and override CMD per process
+* **cdn:** set up Cloudflare for an app in one command and see its edge status
+* **ci:** generated proof tables and screenshots for PRs and tickets
+* cleanup alert, footprint knobs, up definition file, procfile port
+* cli databases engine-stats, query-history and saved-queries
+* cli update knows npm and brew installs and prints the right upgrade command
+* **cli:** a rejected deploy removes the empty app it created
+* **cli:** apps scale swap and cpuset flags, templates list category filter
+* **cli:** database import, abuse limit settings, git credential helper
+* **cli:** disk history, Infisical identity, preview gates, env restart
+* **cli:** stack drift command, vm destroy and a clear missing-limactl hint
+* **cli:** static deploys roll back a created app, up dry-run checks repo reachability, builds show the last build time
+* **compose:** document and name per-service env scoping for compose apps
+* **compose:** read env_file and merge same-file extends in compose deploys
+* connect a Git source to apps deployed from the CLI, plus a UI consistency sweep
+* create and place Coolify import environments in the API applier
+* database backups card for compose apps
+* database TLS for Valkey through the Redis TLS path
+* databases export and clone CLI commands
+* **databases:** back up now with a target picker in the data card
+* **databases:** download, clone and import from the dashboard
+* disable domain detail controls for read-only users
+* disable the database network page for read-only users
+* doctor checks registry reachability and points to mirror setup
+* domain traffic limits control on the domain page
+* dump command and detection for database services in compose apps
+* env set value sources KEY=[@file](https://github.com/file) and KEY=@- with bounded reads and value tests
+* git remote add and rotate --apply configure the push remote in a local repo
+* **git:** connect Azure DevOps repositories with a token and deploy on push
+* **iac:** Terraform provider manages app secrets and alert rules
+* import Coolify environments as Levelrail environments
+* **import:** richer app import from docker, CHECKS and health checks
+* installer mirror variables for release base, docker mirror and registry mirror
+* Levelrail v0.9.5, backups, secret providers, git sources
+* map Procfile release to a pre-deploy hook on any deploy target
+* **metrics:** token-gated Prometheus scrape with a live on/off setting and a CLI scrape config
+* next-advisor CLI, Coolify network report, live runtime option limits
+* **nodes:** add a second server with one agent installer script
+* **nodes:** adopt patch units after restart, refuse extra dependencies
+* **nodes:** preview and safely apply OS security updates on the host
+* **parity:** club go lanes b7 and b8 API, CLI and settings
+* **parity:** club of catalog, alerting, cost caps, service controls
+* **parity:** ship reconcile stats, preview policy and web batch
+* per-domain request body cap and upstream read and write timeouts
+* per-service replica stepper and restart on the Services tab
+* **preview:** CLI flags for migrate and prebuilt image, refuse unverifiable database migrations
+* **preview:** open a PR preview from the CLI and tune preview lifetime live
+* **preview:** run a migrate command and deploy prebuilt images per pull request
+* **projects:** clone a project or environment as config only
+* publish levelrail and @levelrail/cli forwarding packages with each release
+* registry.mirror_prefix runtime setting for agent and buildkit images
+* **release:** club go and web lanes, backups, secrets, oom alert
+* restore compose database backups with a safety dump and typed confirm
+* restore control for compose database backups in the dashboard
+* richer npm package metadata, README and public OpenSSF Scorecard results
+* **rollout:** see gate, traffic flip and hold countdown of a release in one view
+* Ruby/PHP build tests, 1Password secrets, KeyDB TLS, preview migrate
+* run a one-off command in a fresh container from the Exec tab
+* runtime options allowlist for services (tmpfs, ulimits, init, stop timeout, hosts, dns, sysctls, cap_drop, pids limit)
+* schedule dumps of database services in compose apps
+* **scheduling:** node scheduling guide for taints, affinity and score mode
+* secret providers section in vault settings (Doppler, Infisical)
+* **secrets:** read app secrets live from Doppler and Infisical
+* **secrets:** separate client ID and secret inputs for Infisical
+* **secrets:** show Infisical client ID on edit, require a 1Password vault
+* service selector on the app Logs tab for multi-service apps
+* **settings:** make clone, preview migrate, purge history, explain and channel tunables live runtime settings
+* **spec:** per-service user and working_dir from app.yaml and compose
+* SSH deploy key for private git repos
+* SSH deploy key section on the git source card
+* **stress:** repeatable local stress harness with fake node fleet and budgets
+* switch the Cloudflare tunnel feature live from Settings
+* **templates:** add MongoDB, Cassandra, Kafka, EMQX, Solr, Nginx, Gokapi and OTel LGTM templates
+* **templates:** re-add Cassandra, MongoDB and Solr on clean tags, bump otel-lgtm past a known-exploited CVE
+* translate a Procfile into services at deploy when no app spec exists
+* translate app.json healthchecks, cron, dokku scripts and formation with findings
+* ui.outbound_utm runtime setting
+* **updates:** automatic updates on by default with notice and CLI
+* **web:** accent primary, tinted and loading buttons
+* **web:** choose Glass-forward or Restrained look in Appearance
+* **web:** clearer active rows, tabs and selected table rows with a sticky header Accent rail on nav and selected rows, accent tab underline, 36px nav and header rows.
+* **web:** clone projects, preview migrate settings, Azure DevOps repo picker
+* **web:** compact upgrade history with latest 10 and quick acknowledge
+* **web:** consistent states and controls, plain background option, steadier backdrop
+* **web:** container details tab on the app page
+* **web:** customize the sidebar with pins, reorder, hide and recent
+* **web:** dense monochrome sidebar rhythm scaled by density, single-item groups render as rows
+* **web:** denser monochrome sidebar with a modern 52px icon rail
+* **web:** deploy history selection and actions visible without hover
+* **web:** edge pipeline card, CDN setup, auto-update card, Azure DevOps and Prometheus scrape
+* **web:** edit service runtime options and add 1Password provider
+* **web:** even 36px sidebar rows with a 4px gap, pinned header and footer, one version line
+* **web:** faster first load by deferring route transition and brand glow styles
+* **web:** five-group sidebar IA, folded pages as tabs, brand marks on the Git provider rail
+* **web:** glass overlays with spring enter and faster exit
+* **web:** glass sidebar, 40px switch, segmented control, object cards and denser tables
+* **web:** glass-forward alerts, error states and grouped lists across existing pages
+* **web:** glass-forward look with backdrop wash, capsule buttons and calmer field focus
+* **web:** live appearance preview and visual theme cards
+* **web:** log row copy action visible at rest with a 40px touch target
+* **web:** OLED black theme in the theme menu and appearance settings
+* **web:** OLED mode and glass-forward design tokens for surfaces, status and motion
+* **web:** previews badge per gate flag, Connect server on 1Password rows
+* **web:** projects and backups show empty and error states with actions
+* **web:** responsive DNS, redirect and insights tables, sentence-case mesh labels Tables scroll inside their own box at 390, docs tables too.
+* **web:** rollout state, failed-deploy explanation and preview lifetime in the dashboard
+* **web:** self-hosted Geist fonts and density tokens for controls, rows and dialogs
+* **web:** sentence-case labels, sturdier login on mobile, larger template chips - S2: tracked uppercase labels removed, ui-tells baseline lowered - S5: login 40px targets at phone width, footer landmark, TheAuth label starts with visible text - template category chips reach 40px on coarse pointers
+* **web:** server patching on the node page
+* **web:** settings search shows loading and retryable error states
+* **web:** shared UI primitives for cards, alerts, empty states, paging and progress
+* **web:** show basic auth gate state on the previews list
+* **web:** show partial node drains, placement warnings and registry-only preview image tags
+* **web:** status shapes, capsule badges and v2 spacing tokens
+* **web:** status tones use the new status tokens
+* **web:** toolbars wrap, palette results panel is readable, mobile tap targets and scrolling chip rows
+* **web:** translated create wizard and import front door with 40px touch chips
+* **web:** translated load balancer and mesh states, mesh peers in a real table
+* **web:** v2 checkbox and radio controls with a contrast guard on current tokens - contrast guard resolves var() aliases and alpha for light, dark and OLED - adds 3:1 control border pairs, thresholds unchanged - checkbox 16px with indeterminate, new radio group 18px, accent fill, offset focus ring
+
+
+**Bug Fixes**
+
+* **api:** hide ungranted environments, fix stale migration docs
+* **api:** one-off runs and scheduled jobs follow console exec access rules
+* apply runtime review findings (read_only bridge, stop timeout, per-option validation, pids clamp, migration 3215)
+* apply the registry mirror prefix to cloud provisioning, join commands and the buildkit image
+* apps run runs once by default, scale pairs roll back, replica cap, bounded job output
+* **backup:** compose database backups run, reach remote nodes and restore cleanly
+* **bench:** validate report output paths
+* CI lint, published schema and first-load budget (pin i18n packages)
+* clamp stored domain limits to current ceilings, merge CLI limit flags, tighten docs
+* cli help covers apps delete --yes, vm destroy is json exempt, status test ignores the auto updates probe
+* **cli:** git remote --apply keeps the push token out of .git/config
+* **cli:** importers never print repository URLs with credentials
+* **cli:** list --dockerfile and --image in up help
+* **cli:** list upgrade, rollout state and tokens scrape in the completion tree
+* create the basic auth gate for static previews and refuse to publish without it
+* **databases:** managed Redis stays on the private network, import errors stay out of logs
+* drop compose database backup schedules when an app is deleted
+* drop partial es observability namespace that broke locale parity
+* enforce domain basic auth on static site routes, fail closed when unresolved
+* env set reads files only for explicit @./ or @/ paths, bare [@word](https://github.com/word) stays literal
+* fail closed on SSH deploy keys, block SSRF in host key scan
+* file values, imported jobs, job output and restore checks follow stricter rules
+* gate the database network page on the server's per-database root decision
+* **git:** ssh sources use deploy keys only and follow the network guard
+* hold five templates back from 0.9.4 until their images pass admission
+* hold the otel-lgtm template back from 0.9.4 until its image passes admission
+* http cron jobs resolve app secrets at run time
+* import guard fails closed, runtime option drift, schedule cleanup
+* keep created apps when a build may be queued, hide repo credentials, gate gokapi setup
+* keep retain 0 when schedule omits it in compose db card
+* let static site domains own gate settings and clear the gate on preview teardown
+* make compose database restore atomic, single-flight and replacing
+* mount the next image cache volume where the standalone server writes it
+* next advisor detects next.js on upload deploys and the build report reads pages router routes
+* next cache handler honors soft tags in fallback and keeps invalidations during recovery
+* node patch status, install-agent flags, self-upgrade data dir and auto-upgrade docs
+* **nodes:** fail closed on wrapped dnf output and failed unit scans
+* old build requests pass the host auth chain and route to the right release
+* partial drain status, mesh self-peer and interface name, selector warnings, apps delete --yes, release branch version stamp
+* pin react-virtual to 3.14.17 so log terminal tests render rows
+* point the sidebar Registry row at a real page instead of the /images redirect
+* **reconcile:** app delete removes its network on every node
+* **reconcile:** apps wait for the node mesh and start once it is healthy
+* **reconcile:** network cleanup never removes another instance's network
+* **reconcile:** never collect networks without this instance label
+* rediss connect URL for TLS Redis and Valkey, Valkey connection probe
+* restore clitree, help and fan-in guards on the release tip
+* restore lint, build and test guards on the release branch
+* restore readable sidebar row size and contrast
+* runtime options apply on save, redis import guard, pinned release auth chain
+* **secrets:** provider references follow provider scope and tier
+* serve both clears an existing www redirect
+* **settings:** refresh keys.txt for registered runtime settings
+* **spec:** carry user and working_dir through clone, export, compose redeploy and volume ownership
+* stop_timeout extends the stop grace, pids clamp on rootless, resolver drop warning
+* **stress:** lift scratch rate limits and share the session with watch streams
+* unique build cache ids for long app names
+* upload deploys to a stopped app finish with a clear status and delete clears deploy history
+* vitals overall covers all routes, delete drops buffered vitals and cleanup respects name reuse
+* web build is green again (test type error and first load back under budget)
+* **web:** compact sidebar rows, 32px with a 2px gap
+* **web:** dialogs, menus and popovers render solid again
+* **web:** git provider rows show brand marks and tab strips no longer show a scrollbar
+* **web:** green type check, lint and tests for the release
+* **web:** mark invalid secret provider name and list Azure DevOps in git connections
+* **web:** one active sidebar row per page, consistent row and sub-row style
+* **web:** raise the spec reference chunk budget for the Procfile and app.json docs
+* **web:** settings sidebar groups no longer scroll sideways
+* **web:** translate apps runtime settings, lock provider token save
+* **web:** type the import template dialog
+
+
+**Performance**
+
+* **api:** scoped app lists load one page instead of every app
+* faster mesh convergence on node join, clearer not-found page, labelled tables, quieter startup logs
+* **web:** load the OLED and glass material tokens only when needed Light and dark users no longer download the OLED block or the unused material tiers.
+* **web:** move palette and cleanup styles to lazy chunks, drop dead hero CSS
+* **web:** sidebar personalization loads on demand
+* **web:** split route loaders out of the first-load bundle
+* **web:** trim duplicate tone aliases and unused mesh token
+</Update>
+
 <Update label="0.9.3" description="2026-11-07">
 **Features**
 

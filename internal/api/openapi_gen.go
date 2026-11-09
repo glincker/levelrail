@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2074 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2078 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1026,6 +1026,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/{id}/patch/runs", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodePatchRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/reenroll-token", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeReenrollToken", Description: "Agent certificate lifecycle (node_cert.go, ADR 021)."},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/region", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeRegion", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/resources", Ability: "AbilityRead", Group: "Nodes", Handler: "handleListNodeResources", Description: "Read, not root: rows are filtered by the caller's app and database policies; org tenants get 403."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/revoke-cert", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/security", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeTrust", Description: "Trust panel (node_trust.go): what was verified and when."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/security/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeSecurityEvents", Description: ""},
@@ -1628,6 +1629,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/resources/views", Ability: "AbilityWrite", Group: "Other", Handler: "handleListResourceViews", Description: ""},
 	{Method: "POST", Path: "/api/v1/resources/views", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveResourceView", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/resources/views/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteResourceView", Description: ""},
+	{Method: "GET", Path: "/api/v1/saved-views", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedViews", Description: ""},
+	{Method: "POST", Path: "/api/v1/saved-views", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveView", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/saved-views/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedView", Description: ""},
 	{Method: "GET", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityRead", Group: "Other", Handler: "handleListScheduledMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateScheduledMaintenance", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/scheduled-maintenance/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteScheduledMaintenance", Description: ""},

@@ -3863,6 +3863,14 @@
         "dialogBody": "This cannot be undone.",
         "danger": "Delete"
       }
+    },
+    "listKeys": {
+      "title": "Keyboard shortcuts for lists",
+      "description": "Single keys move through lists: j and k move, x selects, Enter opens, / focuses the filter, ? shows the keys. Turn them off if they clash with a screen reader or speech input.",
+      "on": "Enabled",
+      "onHint": "j, k, x, Enter, /, ?",
+      "off": "Disabled",
+      "offHint": "Mouse and Tab only"
     }
   },
   "secretProviders": {

@@ -1100,6 +1100,7 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/patch/preview | AbilityRoot | handleNodePatchPreview |
 | POST | /api/v1/nodes/{id}/patch/apply | AbilityRoot | handleNodePatchApply |
 | GET | /api/v1/nodes/{id}/patch/runs | AbilityRoot | handleListNodePatchRuns |
+| GET | /api/v1/nodes/{id}/resources | AbilityRead | handleListNodeResources |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -2298,6 +2299,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/jobs/runs | AbilityRoot | handleStartOneShotJob |
 | GET | /api/v1/jobs/runs/{id} | AbilityRead | handleGetOneShotJob |
 | POST | /api/v1/jobs/runs/{id}/cancel | AbilityRoot | handleCancelOneShotJob |
+| GET | /api/v1/saved-views | AbilityRead | handleListSavedViews |
+| POST | /api/v1/saved-views | AbilityWrite | handleSaveView |
+| DELETE | /api/v1/saved-views/{id} | AbilityWrite | handleDeleteSavedView |
 | POST | /mcp | Public |  |
 
 ## See also

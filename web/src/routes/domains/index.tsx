@@ -12,6 +12,8 @@ import {
 } from '../../queries/domains'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { AddDomainsDialog } from '../../components/AddDomainsDialog'
+import { ListKeyboardHint } from '../../components/ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { DomainsTable } from '../../components/DomainsTable'
 import { ParkedDomainsGroup } from '../../components/domains/ParkedDomainsGroup'
 import { DomainsFirstRun } from '../../components/domains/DomainsFirstRun'
@@ -60,6 +62,11 @@ function DomainsPage() {
   const { data: certificates } = useSuspenseQuery(certificatesQueryOptions())
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const [addOpen, setAddOpen] = useState(false)
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
   const query = Route.useSearch().q ?? ''
   const navigate = Route.useNavigate()
   const setQuery = (next: string) => {
@@ -150,16 +157,21 @@ function DomainsPage() {
       ) : null}
 
       {noDomains ? null : (
-        <DomainsTable
-          domains={domains}
-          certByDomain={certByDomain}
-          appCount={apps.length}
-          query={query}
-          onQueryChange={setQuery}
-          onAdd={() => {
-            setAddOpen(true)
-          }}
-        />
+        <>
+          <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+          <div ref={setListContainer} className="contents">
+            <DomainsTable
+              domains={domains}
+              certByDomain={certByDomain}
+              appCount={apps.length}
+              query={query}
+              onQueryChange={setQuery}
+              onAdd={() => {
+                setAddOpen(true)
+              }}
+            />
+          </div>
+        </>
       )}
 
       <ParkedDomainsGroup />

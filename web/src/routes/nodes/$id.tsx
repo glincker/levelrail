@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { formatAge } from '../../lib/format'
@@ -25,7 +26,6 @@ import { NodeTaintsCard } from '../../components/NodeTaintsCard'
 import { NodeRegionCard } from '../../components/nodes/NodeRegionCard'
 import { NodeAllocationCard } from '../../components/nodes/NodeAllocationCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
-import { NodeWorkloadsCard } from '../../components/nodes/NodeWorkloadsCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { IacExportButton } from '../../components/IacExportButton'
@@ -40,6 +40,10 @@ import { InfoTip } from '../../components/kit/InfoTip'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
+
+const NodeResourcesTab = lazy(
+  () => import('../../components/nodes/NodeResourcesTab'),
+)
 
 // Loader primes the node, its health and the node list (the drain dialog's target picker needs it).
 export const Route = createFileRoute('/nodes/$id')({
@@ -211,10 +215,9 @@ function NodeDetailPage() {
       <NodeNeverConnectedAlert node={node} />
       <NodeAlertStatusCard nodeId={id} />
 
-      <NodeWorkloadsCard
-        apps={node.placed_apps ?? []}
-        databases={node.placed_databases ?? []}
-      />
+      <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+        <NodeResourcesTab nodeId={id} />
+      </Suspense>
 
       <NodeGpuCard gpu={node.gpu} />
 

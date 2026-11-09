@@ -1343,6 +1343,16 @@ levelrail-cli search saved rm <id>
 ```
 One search over apps, databases, nodes, domains, templates, settings, docs and actions. Scopes (`app:`, `env:`, `tag:`, `node:`, `kind:`) narrow the result, the rest is free text. You only ever see what your token may see, and an action hit appears only when you hold the ability it needs: `levelrail-cli search kind:action restart api`. See [Unified search](/search).
 
+## Saved views
+
+```
+levelrail-cli views list [--list apps|databases|domains|builds|deployments]
+levelrail-cli views save <name> --list L [--filter KEY=VALUE]... [--share private|team]
+levelrail-cli views delete <id|name> [--list L]
+levelrail-cli views apply <id|name> [--list L]
+```
+A saved view is a named filter of one list page, the same one the Views menu on the Apps and Databases pages saves. Each list only accepts its own filter keys: apps take `q`, `status`, `env`, `tags`, `labels`; databases take `q`, `status`, `engine`, `labels`; domains take `q`, `status`; builds take `q`, `status`, `app`; deployments take `q`, `status`, `app`, `env`. Names and values are plain text. `--share team` shares the view with the team you are signed in to (or have switched to); members can apply it, only you can change it, and you or a team admin can delete it. Members of other teams never see it. `apply` prints the dashboard path that opens the list with the filter, for example `/apps?status=failing`. Caps come from the `views.name_max_chars`, `views.filter_max_keys`, `views.filter_value_max_bytes` and `views.max_per_user` runtime settings. Creating, sharing and deleting a view writes an audit row with its name and list.
+
 ## Logs
 
 See [Log archive](/log-archive).
@@ -1481,6 +1491,7 @@ levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
 levelrail-cli nodes drain <id> [--target NODE-ID] [--wait] [flags]
 levelrail-cli nodes drains <id> [flags]
+levelrail-cli nodes resources <id> [flags]
 levelrail-cli nodes failure-policy get|set <id> [--mode off|notify|auto] [--grace SECONDS] [flags]
 levelrail-cli nodes lost <id> [--dry-run] [--yes] [flags]
 levelrail-cli nodes failure-resolve <id> app|database NAME --wait|--restore [--target NODE-ID] [flags]

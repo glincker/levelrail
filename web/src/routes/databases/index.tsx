@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useMemo, useState, type KeyboardEvent } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -23,6 +23,7 @@ import {
   DatabasesStatusStrip,
 } from '../../components/DatabasesFilterBar'
 import { DatabasesBulkBar } from '../../components/DatabasesBulkBar'
+const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
 import {
   EMPTY_DB_FILTERS,
   countByStatus,
@@ -183,6 +184,21 @@ function DatabaseListPage() {
             onChange={setLabelSelector}
             invalid={labelMatches.isError}
           />
+          <Suspense fallback={null}>
+            <SavedViewsMenu
+              list="databases"
+              current={{
+                q: filters.q,
+                status: filters.status ?? '',
+                engine: filters.engines.join(','),
+                labels: labelSelector,
+              }}
+              onApply={(f) => {
+                setFilters(filtersFromSearch(parseDatabasesSearch(f)))
+                setLabelSelector(f.labels ?? '')
+              }}
+            />
+          </Suspense>
         </div>
         <FilterChips
           filters={activeFilters}

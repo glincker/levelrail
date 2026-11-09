@@ -21,6 +21,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerBackupCoverageRoutes(mux)
 	rt.registerPipelineRoutes(mux)
 	rt.registerSearchRoutes(mux)
+	rt.registerSavedViewsRoutes(mux)
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
 	rt.registerDataExportRoutes(mux)

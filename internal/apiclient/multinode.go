@@ -155,6 +155,30 @@ func (c *Client) PreviewNodeDrain(ctx context.Context, id string) (NodeDrainPrev
 	return out, err
 }
 
+// NodePlacedResource is one app or database placed on a node.
+type NodePlacedResource struct {
+	Kind        string `json:"kind"`
+	Name        string `json:"name"`
+	Detail      string `json:"detail"`
+	Status      string `json:"status"`
+	Replicas    int    `json:"replicas,omitempty"`
+	MemoryBytes int64  `json:"memory_bytes,omitempty"`
+	NanoCPUs    int64  `json:"nano_cpus,omitempty"`
+}
+
+// NodeResources is everything the caller may read that is placed on a node.
+type NodeResources struct {
+	NodeID    string               `json:"node_id"`
+	Resources []NodePlacedResource `json:"resources"`
+}
+
+// ListNodeResources calls GET /api/v1/nodes/{id}/resources.
+func (c *Client) ListNodeResources(ctx context.Context, id string) (NodeResources, error) {
+	var out NodeResources
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/resources", nil, &out)
+	return out, err
+}
+
 // GetNodeDrain calls GET /api/v1/node-drains/{id}.
 func (c *Client) GetNodeDrain(ctx context.Context, id string) (NodeDrainResource, error) {
 	var out NodeDrainResource

@@ -714,12 +714,6 @@
     }
   },
   "detail": {
-    "placed": {
-      "title": "Se ejecuta en este nodo",
-      "apps": "Apps",
-      "databases": "Bases de datos",
-      "none": "Aún no hay nada ubicado en este nodo."
-    },
     "back": "Volver a nodos",
     "retry": "Reintentar",
     "banner": {
@@ -992,5 +986,29 @@
       "runtime_upgrade_needs_systemd": "Actualizar el runtime de contenedores requiere systemd en este host. Desactiva Incluir paquetes retenidos o hazlo a mano.",
       "generic": "La solicitud de actualizacion fallo."
     }
+  },
+  "resourcesTab": {
+    "title": "Recursos en este nodo",
+    "list": "Recursos ubicados en este nodo",
+    "placedTab_one": "Ubicados ({{count}})",
+    "placedTab_other": "Ubicados ({{count}})",
+    "drainTab": "Vista previa del vaciado",
+    "empty": "No hay nada visible para ti en este nodo.",
+    "kind": {
+      "app": "App",
+      "database": "Base de datos"
+    },
+    "status": {
+      "active": "Activo",
+      "suspended": "Suspendido"
+    },
+    "memory": "{{value}} de memoria",
+    "noLimit": "Sin límite de memoria",
+    "cpu": "{{value}} CPU",
+    "replicas_one": "{{count}} réplica",
+    "replicas_other": "{{count}} réplicas",
+    "drainNothing": "Un vaciado no movería nada: aquí no se ejecuta ninguna app ni base de datos visible para ti.",
+    "drainSummary": "Un vaciado movería fuera de este nodo las {{apps}} app(s) y {{databases}} base(s) de datos visibles para ti. Nada cambia hasta que vacíes.",
+    "drainOrder": "Primero se mueven las bases de datos y luego las apps, una a una, verificadas en su nuevo nodo."
   }
 }

@@ -714,12 +714,6 @@
     }
   },
   "detail": {
-    "placed": {
-      "title": "Running on this node",
-      "apps": "Apps",
-      "databases": "Databases",
-      "none": "Nothing is placed on this node yet."
-    },
     "back": "Back to nodes",
     "retry": "Try again",
     "banner": {
@@ -992,5 +986,29 @@
       "runtime_upgrade_needs_systemd": "Container runtime upgrades need systemd on this host. Turn off Include held packages, or run the upgrade by hand.",
       "generic": "The update request failed."
     }
+  },
+  "resourcesTab": {
+    "title": "Resources on this node",
+    "list": "Resources placed on this node",
+    "placedTab_one": "Placed ({{count}})",
+    "placedTab_other": "Placed ({{count}})",
+    "drainTab": "Drain preview",
+    "empty": "Nothing you can see is placed on this node.",
+    "kind": {
+      "app": "App",
+      "database": "Database"
+    },
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "memory": "{{value}} memory",
+    "noLimit": "No memory limit",
+    "cpu": "{{value}} CPU",
+    "replicas_one": "{{count}} replica",
+    "replicas_other": "{{count}} replicas",
+    "drainNothing": "A drain would move nothing: no app or database you can see runs here.",
+    "drainSummary": "A drain would move the {{apps}} app(s) and {{databases}} database(s) you can see off this node. Nothing changes until you drain.",
+    "drainOrder": "Databases move first, then apps, one at a time, each verified on its new node."
   }
 }

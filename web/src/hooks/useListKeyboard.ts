@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getAppearance } from '../lib/appearance'
 
 const ROW_SELECTOR =
   'tbody > tr, [role="rowgroup"] > [role="row"], [data-list-row]'
@@ -32,7 +33,21 @@ export function useListKeyboard<T extends HTMLElement>(): {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const root = container
-      if (!root || e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) {
+      if (
+        !root ||
+        getAppearance().listKeys === 'off' ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        isTyping(e.target)
+      ) {
+        return
+      }
+      // An open dialog or menu owns the keyboard unless focus is already in the list.
+      if (
+        !root.contains(document.activeElement) &&
+        document.querySelector('[role="dialog"], [role="menu"]')
+      ) {
         return
       }
       const rows = Array.from(root.querySelectorAll<HTMLElement>(ROW_SELECTOR))

@@ -68,5 +68,18 @@
   "guidedEmpty": {
     "viaCli": "O hazlo desde la CLI",
     "cliLabel": "Comando de la CLI"
+  },
+  "savedViews": {
+    "button": "Vistas",
+    "label": "Vistas guardadas",
+    "empty": "Aún no hay vistas guardadas.",
+    "apply": "Aplicar la vista {{name}}",
+    "delete": "Eliminar la vista {{name}}",
+    "deleted": "Vista eliminada",
+    "saved": "Vista {{name}} guardada",
+    "namePlaceholder": "Guardar los filtros actuales como",
+    "shareTeam": "Compartir con mi equipo",
+    "teamBadge": "Equipo",
+    "save": "Guardar vista"
   }
 }
