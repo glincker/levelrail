@@ -44,6 +44,7 @@ internal/spec 179
 internal/spendcap 182
 internal/store 169
 internal/telemetry 59
+internal/trafficpolicy 52
 internal/usagecost 170
 internal/version 36
 kit/cronexpr 180
