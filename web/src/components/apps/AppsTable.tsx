@@ -76,9 +76,12 @@ export function AppsTable({
         id: 'node',
         header: t('appsList.colNode'),
         priority: 2,
-        width: 'w-36',
+        width: 'w-44',
         cell: (app) => (
-          <span className="block min-w-0 truncate" title={app.node_name}>
+          <span
+            className="block min-w-0 truncate"
+            title={app.node_name ?? app.node_id}
+          >
             <PlacementLabel
               nodeId={app.node_id}
               nodeName={app.node_name}

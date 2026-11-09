@@ -21,8 +21,13 @@ type dokployApplication struct {
 	DockerImage   string `json:"dockerImage"`
 
 	Repository string `json:"repository"`
-	Owner      string `json:"owner"`
-	Branch     string `json:"branch"`
+	// ServerID and Server name the remote host the app runs on; both are empty on the local host.
+	ServerID string `json:"serverId,omitempty"`
+	Server   *struct {
+		Name string `json:"name"`
+	} `json:"server,omitempty"`
+	Owner  string `json:"owner"`
+	Branch string `json:"branch"`
 
 	GitlabRepository string `json:"gitlabRepository"`
 	GitlabOwner      string `json:"gitlabOwner"`

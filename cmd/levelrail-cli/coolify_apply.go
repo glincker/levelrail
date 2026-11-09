@@ -54,13 +54,17 @@ func applyMigration(ctx context.Context, client *Client, report *migrationReport
 		}
 		a.Applied = true
 		applyGitBuild(ctx, client, created.Name, a)
+		applyPlacement(ctx, client, created.Name, a)
+		applyIngress(ctx, client, created.Name, a)
 
 		if pv := a.Service.Previews; pv != nil {
 			req := apiclient.SetPreviewPolicyRequest{}
 			if pv.MaxPreviews > 0 {
 				req.MaxPreviews = &pv.MaxPreviews
 			}
-			if _, err := client.SetPreviewPolicy(ctx, created.Name, req); err != nil {
+			if !gatePreviews(a, &req) {
+				a.Issues = appendIssue(a.Issues, "previews", issueReview, "previews were not turned on: the source used basic auth and a gate password could not be generated")
+			} else if _, err := client.SetPreviewPolicy(ctx, created.Name, req); err != nil {
 				a.Issues = append(a.Issues, migrationIssue{Field: "previews", Severity: issueReview, Detail: "preview policy was not applied: " + err.Error()})
 			}
 		}

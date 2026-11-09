@@ -106,7 +106,7 @@ export function PaletteList({
       ref={scrollRef}
       role="listbox"
       aria-label={label}
-      className="max-h-[28rem] overflow-y-auto p-2.5"
+      className="max-h-[28rem] min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5"
     >
       {itemCount > VIRTUALIZE_ABOVE ? (
         <VirtualEntries entries={entries} scrollRef={scrollRef} {...props} />

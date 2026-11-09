@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 // runMigrate dispatches "migrate <source> [flags]".
@@ -101,9 +103,19 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 	}
 	defer func() { report.Apps = append(plain.Apps, composeApps...) }()
 
+	nodeMap, err := platformimport.ParseNodeMap(f.nodeMap)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("%s", err.Error()))
+	}
+	linkNetworkPeers(plain.Apps)
+	placeApps(plain.Apps, nodeMap)
 	if f.apply {
 		profile := resolveProfile(f.targetProfile, lookupEnv)
 		client := NewClient(resolveAPIURL(f.targetAPIURL, lookupEnv, prog, profile), resolveToken(f.targetToken, lookupEnv, prog, profile))
+		// Unknown node names are refused here, before any app is created.
+		if err := resolvePlacements(ctx, client, plain.Apps, nodeMap); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
 		applyMigration(ctx, client, &plain)
 	} else if err := writeMigrationFiles(f.outDir, &plain); err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
@@ -156,4 +168,6 @@ type migratePipelineFlags struct {
 	targetToken   string
 	targetAPIURL  string
 	targetProfile string
+	// nodeMap is the raw --node-map value: source-server=node pairs.
+	nodeMap string
 }

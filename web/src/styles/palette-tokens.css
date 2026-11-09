@@ -41,7 +41,19 @@
       saturate(var(--glinr-saturate-regular));
   }
 }
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .palette-pill {
+    background: var(--glinr-surface-glass-solid);
+  }
+}
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .palette-pill {
+    background: var(--glinr-surface-glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   .palette-panel {
     background-color: var(--glinr-surface-glass-solid);
     -webkit-backdrop-filter: none;

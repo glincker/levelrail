@@ -962,6 +962,7 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/branches | AbilityWriteSensitive | handleBranchDatabase |
 | GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
 | POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
+| POST | /api/v1/databases/bulk | AbilityWriteSensitive | handleBulkDatabases |
 
 ## Projects / Organizations / Environments
 

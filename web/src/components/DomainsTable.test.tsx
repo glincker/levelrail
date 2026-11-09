@@ -7,6 +7,7 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainsTable } from './DomainsTable'
 import domainsEn from '../locales/en/domains.json'
+import uiSharedEn from '../locales/en/uiShared.json'
 import type { Domain } from '../queries/domains'
 import { createTestQueryClient } from '@/test/testQueryClient'
 
@@ -33,9 +34,9 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['domains'],
+  ns: ['domains', 'uiShared'],
   defaultNS: 'domains',
-  resources: { en: { domains: domainsEn } },
+  resources: { en: { domains: domainsEn, uiShared: uiSharedEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -102,9 +103,15 @@ describe('DomainsTable', () => {
     const user = userEvent.setup()
     renderTable({ domains: [makeDomain()], appCount: 1 })
     await user.type(screen.getByLabelText('Filter domains'), 'zzz')
-    expect(screen.getByText('No domain matches "zzz"')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Clear filter' }))
+    expect(screen.getByText('Search: zzz')).toBeInTheDocument()
+    expect(
+      screen.getByText('Nothing matches these filters'),
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getAllByRole('button', { name: 'Clear all filters' })[0]!,
+    )
     expect(screen.getByLabelText('Filter domains')).toHaveValue('')
+    expect(screen.queryByText('Search: zzz')).not.toBeInTheDocument()
   })
 })
 

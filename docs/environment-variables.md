@@ -169,6 +169,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
+| `APP_DATABASES_BULK_CONCURRENCY` | [`databases.bulk_concurrency`](/runtime-settings#deploys) | `4` |
+| `APP_DATABASES_BULK_MAX_ITEMS` | [`databases.bulk_max_items`](/runtime-settings#deploys) | `200` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
 | `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
 | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | [`deploy.approval_claim_timeout_seconds`](/runtime-settings#deploys) | `900` |
@@ -229,6 +231,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
+| `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
@@ -259,6 +262,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_RULE_MAX_WINDOW` | [`log_rules.max_window`](/runtime-settings#observability) | `1h` |
 | `APP_LOG_RULE_SAMPLES` | [`log_rules.samples`](/runtime-settings#observability) | `5` |
 | `APP_LOG_EXPORT_MAX_LINES` | [`logs.export_max_lines`](/runtime-settings#observability) | `5000` |
+| `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
+| `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
@@ -316,6 +321,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
 | `APP_JOBS_HISTORY_KEEP` | [`scheduled_tasks.history_keep`](/runtime-settings#data-retention) | `200` |
+| `LEVELRAIL_SPOOL_MAX_AGE_SECONDS` | [`spool.max_age_seconds`](/runtime-settings#data-retention) | `0` |
+| `LEVELRAIL_SPOOL_QUOTA_BYTES` | [`spool.quota_bytes`](/runtime-settings#data-retention) | `0` |
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |

@@ -70,6 +70,14 @@ type mappedApp struct {
 	CreateError   string   `json:"create_error,omitempty"`
 	SecretsSet    []string `json:"secrets_set,omitempty"`
 	SecretsFailed []string `json:"secrets_failed,omitempty"`
+
+	// SourceServer is the source host the app ran on; Node is the target node --node-map put it on.
+	SourceServer string `json:"source_server,omitempty"`
+	Node         string `json:"node,omitempty"`
+	// NetworkPeers are apps that shared a custom docker network with this one in the source.
+	NetworkPeers []string `json:"network_peers,omitempty"`
+	network      string
+	nodeID       string
 }
 
 type mappedService struct {
@@ -91,6 +99,8 @@ type mappedService struct {
 	BuildTimeKeys []string `json:"build_time_keys,omitempty"`
 	// Previews is set only by the Dokploy mapper, applied through the preview policy route.
 	Previews *mappedPreviews `json:"previews,omitempty"`
+	// Ingress holds validated auth, redirect and header settings from the source proxy; no credential.
+	Ingress *platformimport.IngressPlan `json:"ingress,omitempty"`
 	// EnvLiteral is set only when includeSecretValues was requested; it is never serialized or written to app.yaml.
 	EnvLiteral map[string]string `json:"-"`
 }
@@ -175,8 +185,66 @@ func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, include
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapEnv(envs, includeSecretValues, out.Issues)
 	out.Issues = mapBuildSettings(app, envs, &out.Service, out.Issues)
 	out.Issues = mapReportOnly(app, out.ServiceName, out.Issues)
-
+	out.Service.Ingress, out.Issues = mapIngress(app, out.ServiceName, out.Service.Domains, out.Issues)
+	if app.PreviewsEnabled {
+		out.Service.Previews = &mappedPreviews{}
+		out.Issues = appendIssue(out.Issues, "is_preview_deployments_enabled", issuePlanned, "preview deployments were on in the source: previews are turned on with the default policy, review its limits before the first pull request")
+	}
+	out.SourceServer = app.Destination.Server.Name
+	if out.SourceServer == "" {
+		out.SourceServer = app.ServerName
+	}
+	if n := strings.TrimSpace(app.Destination.Network); n != "" && n != "coolify" {
+		out.network = n
+	}
 	return out
+}
+
+// mapIngress translates basic auth, the www rule and proxy labels; unknown labels stay as dropped issues.
+func mapIngress(app coolifyApplication, serviceName string, domains []string, issues []migrationIssue) (*platformimport.IngressPlan, []migrationIssue) {
+	first := ""
+	if len(domains) > 0 {
+		first = domains[0]
+	}
+	p := platformimport.TranslateIngress(platformimport.IngressSource{Labels: app.CustomLabels, BasicAuth: app.BasicAuthEnabled,
+		Redirect: app.Redirect, App: serviceName, Domain: first}, nil)
+	for _, n := range p.Manual {
+		issues = appendIssue(issues, "custom_labels", issueDropped, n.Reason+": "+n.Manual)
+	}
+	if !p.Translated() {
+		return nil, issues
+	}
+	if p.BasicAuth {
+		issues = appendIssue(issues, "is_http_basic_auth_enabled", issueReview, fmt.Sprintf("HTTP basic auth was on in the source: the app is public until basic auth is set. --apply gates each domain with a random placeholder password that is never shown; set the real one with domains basic-auth set %s <domain> (file mode sets nothing)", serviceName))
+	}
+	if p.Canonical != "" || p.ForceHTTPS || len(p.Forwarders) > 0 || len(p.Headers) > 0 {
+		issues = appendIssue(issues, "ingress", issuePlanned, fmt.Sprintf("redirects and headers from the source proxy are set on the first domain by --apply (canonical %q, force https %t, %d forwarder and %d header rule(s))",
+			p.Canonical, p.ForceHTTPS, len(p.Forwarders), len(p.Headers)))
+	}
+	return &p, issues
+}
+
+// linkNetworkPeers records, for each app on a custom network, the other apps on that network.
+func linkNetworkPeers(apps []mappedApp) {
+	byNet := map[string][]string{}
+	for _, a := range apps {
+		if a.network != "" && !a.Blocking {
+			byNet[a.network] = append(byNet[a.network], a.ServiceName)
+		}
+	}
+	for i := range apps {
+		a := &apps[i]
+		members := byNet[a.network]
+		if a.network == "" || len(members) < 2 {
+			continue
+		}
+		for _, m := range members {
+			if m != a.ServiceName {
+				a.NetworkPeers = append(a.NetworkPeers, m)
+			}
+		}
+		a.Issues = appendIssue(a.Issues, "network", issuePlanned, fmt.Sprintf("shared a custom docker network with %s: put them in one project and use the service name or internal host as the address; no connection is created automatically", strings.Join(a.NetworkPeers, ", ")))
+	}
 }
 
 // sourceCommand validates one Coolify command; a rejected one is reported by name only, its text may hold a secret.
@@ -279,17 +347,8 @@ func mapStaticBuild(install, build, start, publish string, svc *mappedService, i
 
 // mapReportOnly lists settings with no direct field here, each with a reason, so none is dropped silently.
 func mapReportOnly(app coolifyApplication, serviceName string, issues []migrationIssue) []migrationIssue {
-	if r := strings.ToLower(strings.TrimSpace(app.Redirect)); r != "" && r != "both" {
-		issues = appendIssue(issues, "redirect", issueDropped, fmt.Sprintf("www redirect rule %q is not created: add the redirect in the app's domain settings", r))
-	}
-	if strings.TrimSpace(app.CustomLabels) != "" {
-		issues = appendIssue(issues, "custom_labels", issueDropped, "custom container labels (often proxy middleware) are not copied: recreate redirects, headers or rate limits as ingress settings")
-	}
 	if strings.TrimSpace(app.DockerRunOptions) != "" {
 		issues = appendIssue(issues, "custom_docker_run_options", issueDropped, "custom docker run options are not copied: translate each option into app settings by hand")
-	}
-	if app.BasicAuthEnabled {
-		issues = appendIssue(issues, "is_http_basic_auth_enabled", issueReview, "HTTP basic auth was on in the source and is not copied, the app is public until you enable it")
 	}
 	if app.WebhookGithub != "" || app.WebhookGitlab != "" || app.WebhookBitbucket != "" || app.WebhookGitea != "" {
 		issues = appendIssue(issues, "deploy_webhook", issuePlanned, fmt.Sprintf("a deploy webhook secret is set in the source (never read into this report): run apps build-hooks create %s --name deploy, point the git host or CI at the new URL, then remove the old webhook", serviceName))

@@ -35,7 +35,9 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - **Old database hostnames** in env vars are only rewritten through a mapping you confirm.
 - **Secrets the token could not read** are skipped and flagged.
 - **Build settings** move with `migrate coolify`: base directory, Dockerfile path, static build command and publish directory, start command, pre and post deployment hooks, and build-time variables (stored as secrets with build access). With `--apply`, a repository given as a full URL is connected with those settings; a private one still needs credentials.
-- **Extra ports, raw host port mappings, basic auth, custom labels, redirects, tags, the Node version pin, webhooks and backup schedules** are called out as needs attention or planned items. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
+- **Basic auth, `www` redirects, preview deployments and common proxy labels** (`redirectscheme`, `redirectregex`, `stripprefix`, `headers`) are translated into ingress settings on `--apply`: a placeholder basic auth credential (never shown, set the real one with `domains basic-auth set`), a canonical redirect, forwarder and header rules, and previews on with the default policy (gated when the source used basic auth). Until basic auth is set the app is public, and file mode sets nothing. Unknown label keys stay as manual items with the reason. Apps that shared a custom docker network are listed with their peers; no connection is created automatically.
+- **Multi-server instances**: pass `--node-map source-server=node,other=node2` to put each app on the named node. An unmapped server keeps its apps on the control plane node with a finding, and an unknown or ambiguous node name stops the run before anything is created. Placement needs a token with the root ability, checked first.
+- **Extra ports, raw host port mappings, other custom labels, tags, the Node version pin, webhooks and backup schedules** are called out as needs attention or planned items. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
 
 ## What does not move
 

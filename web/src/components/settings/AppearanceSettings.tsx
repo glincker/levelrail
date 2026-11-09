@@ -588,6 +588,11 @@ export function AppearanceSettings() {
       icon: <LayoutDashboardGlassIcon size="1.1em" />,
     },
     {
+      id: 'look',
+      label: t('appearancePage.sections.look'),
+      icon: <SparklesGlassIcon size="1.1em" />,
+    },
+    {
       id: 'sync',
       label: t('appearancePage.sections.sync'),
       icon: <RefreshCwGlassIcon size="1.1em" />,
@@ -879,6 +884,7 @@ export function AppearanceSettings() {
             ) : null}
           </SettingRow>
           <SettingRow
+            id="look"
             wide
             title={t('appearancePage.look.title')}
             description={t('appearancePage.look.description')}

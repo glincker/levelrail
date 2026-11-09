@@ -69,9 +69,13 @@ database_viewer.max_rows
 database_viewer.max_sql_bytes
 database_viewer.query_timeout
 database_viewer.schema_max_rows
+databases.bulk_concurrency
+databases.bulk_max_items
 databases.import_max_bytes
 databases.pooler_default
 databases.pooler_image
+db.compact_min_free_percent
+db.space_report_rows
 deploy.approval_claim_timeout_seconds
 deploy.approve_digest_check_timeout_seconds
 deploy.ci_gate_max_waits_per_app
@@ -248,6 +252,7 @@ store.synchronous
 store.temp_store
 supply_chain.default_enabled
 supply_chain.default_gate
+system.processes_max_rows
 tags.max_per_app
 telemetry.access_log_retention
 telemetry.access_log_size

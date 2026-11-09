@@ -290,6 +290,7 @@ func (n *networkTally) annotate(d *Discovery) {
 				others = append(others, m)
 			}
 		}
+		d.Apps[i].NetworkPeers = others
 		d.Apps[i].Notes = append(d.Apps[i].Notes, Note{Area: "network",
 			Reason: "shares the custom network " + net + " with " + strings.Join(others, ", ") + ", other resources may reach it by container name",
 			Manual: "put the related resources in one project here and use the service name or the internal host from the report as the address"})
@@ -550,6 +551,16 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 		app.Notes = append(app.Notes, Note{Reason: "command-based health check is not supported", Manual: "add an HTTP health check after import"})
 	}
 	app.Notes = append(app.Notes, sourceSettingNotes(a)...)
+	app.Previews = a.PreviewsEnabled
+	first := ""
+	if len(app.Domains) > 0 {
+		first = app.Domains[0]
+	}
+	if ing := TranslateIngress(IngressSource{Labels: a.CustomLabels, BasicAuth: a.BasicAuthEnabled, Redirect: a.Redirect,
+		App: SanitizeName(a.Name), Domain: first}, nil); ing.Translated() || len(ing.Manual) > 0 {
+		app.Ingress = &ing
+		app.Notes = append(app.Notes, ingressNotes(ing)...)
+	}
 	c.readDetails(ctx, &app)
 	// Cleaned after the env read, so a command embedding any fetched value is dropped.
 	values := make([]string, 0, len(app.Env))
@@ -596,15 +607,6 @@ func sourceSettingNotes(a coolifyApp) []Note {
 	if a.DockerRunOptions != "" {
 		add("runtime", "custom docker run options are not imported: "+a.DockerRunOptions, "translate each option (capabilities, devices, ulimits, shm size) into app settings by hand")
 	}
-	if strings.TrimSpace(a.CustomLabels) != "" {
-		add("runtime", "custom container labels (often Traefik middleware) are not imported", "recreate redirects, headers or rate limits as ingress settings")
-	}
-	if a.BasicAuthEnabled {
-		add("access", "HTTP basic auth was enabled on the source and is not imported, the staged app would be public", "enable basic auth on the app before routing a domain")
-	}
-	if r := strings.ToLower(strings.TrimSpace(a.Redirect)); r != "" && r != "both" {
-		add("domain", "www redirect rule "+r+" is not imported", "add the redirect in the app's domain settings")
-	}
 	if a.WebhookGithub != "" || a.WebhookGitlab != "" || a.WebhookBitbucket != "" || a.WebhookGitea != "" {
 		add("webhook", "planned: a deploy webhook secret is set, so the git host calls the source to auto deploy; the secret is never read into this report", "create a build hook (apps build-hooks create <app> --name deploy), point the git host or CI at its URL, then remove the old webhook")
 	}
@@ -612,7 +614,7 @@ func sourceSettingNotes(a coolifyApp) []Note {
 		add("limits", "memory swap or reservation is set ("+swapSummary(a)+") and has no setting here, only the memory limit is imported", "none needed unless the app relies on swap, then size the memory limit for it")
 	}
 	if a.PreviewsEnabled {
-		add("preview", "preview deployments were enabled and are not imported", "enable preview environments on the app after cutover")
+		add("preview", "planned: preview deployments were enabled, previews are turned on with the default policy", "review the preview policy (limits, gate, database strategy) before the first pull request")
 	}
 	if strings.TrimSpace(a.InlineDockerfile) != "" && a.GitRepository == "" {
 		add("source", "the app builds from a Dockerfile stored in the source database with no git repository", "commit the Dockerfile to a repository, or build and push an image, then set it as the app source")

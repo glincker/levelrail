@@ -105,6 +105,11 @@
     "button": "Cargar más"
   },
   "appsList": {
+    "quick": {
+      "open": "Abrir {{domain}}",
+      "redeploy": "Volver a desplegar {{name}}",
+      "logs": "Registros de {{name}}"
+    },
     "title": "Aplicaciones",
     "tableLabel": "Aplicaciones",
     "colName": "Nombre",
@@ -1331,6 +1336,7 @@
     "empty": "Aún no hay etiquetas.",
     "filterInvalid": "No se pudo leer ese selector.",
     "filterLabel": "Filtrar por etiqueta",
+    "filterButton": "Etiquetas",
     "filterPlaceholder": "env=prod,tier!=db",
     "incomplete": "Completa la clave y el valor, o quita la fila.",
     "keyPlaceholder": "clave",

@@ -6,7 +6,6 @@ import {
   filterDatabases,
   filtersFromSearch,
   parseDatabasesSearch,
-  runLimited,
   searchFromFilters,
 } from './databasesFilter'
 
@@ -92,21 +91,5 @@ describe('URL state', () => {
 
   it('drops unknown status and empty engines', () => {
     expect(parseDatabasesSearch({ status: 'nope', engine: ' , ' })).toEqual({})
-  })
-})
-
-describe('runLimited', () => {
-  it('never exceeds the limit and keeps order', async () => {
-    let inFlight = 0
-    let peak = 0
-    const out = await runLimited([1, 2, 3, 4, 5], 2, async (n) => {
-      inFlight += 1
-      peak = Math.max(peak, inFlight)
-      await Promise.resolve()
-      inFlight -= 1
-      return n * 2
-    })
-    expect(out).toEqual([2, 4, 6, 8, 10])
-    expect(peak).toBe(2)
   })
 })

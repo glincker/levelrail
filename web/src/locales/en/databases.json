@@ -1069,7 +1069,8 @@
       "notCreated": "Not created yet",
       "running": "Already running",
       "stopped": "Already stopped",
-      "noTarget": "No backup target"
+      "noTarget": "No backup target",
+      "noBackups": "No backups for this engine"
     }
   },
   "rowActions": {

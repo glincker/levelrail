@@ -19,8 +19,8 @@ export function OnboardingCard() {
   const resuming = data.state === 'in_progress'
   return (
     <Card>
-      <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="min-w-0 flex-1">
+      <CardContent className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
           <p className="text-sm font-semibold text-foreground">
             {resuming ? t('card.resumeTitle') : t('card.title')}
           </p>
@@ -33,18 +33,20 @@ export function OnboardingCard() {
               : t('card.body')}
           </p>
         </div>
-        <Link to="/welcome" className={buttonVariants({ size: 'sm' })}>
-          {resuming ? t('card.resume') : t('card.start')}
-        </Link>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={dismiss.isPending}
-          onClick={() => dismiss.mutate({ state: 'dismissed' })}
-        >
-          {t('card.dismiss')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to="/welcome" className={buttonVariants({ size: 'sm' })}>
+            {resuming ? t('card.resume') : t('card.start')}
+          </Link>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={dismiss.isPending}
+            onClick={() => dismiss.mutate({ state: 'dismissed' })}
+          >
+            {t('card.dismiss')}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

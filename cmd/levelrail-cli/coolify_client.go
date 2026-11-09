@@ -40,6 +40,14 @@ type coolifyApplication struct {
 	DockerRunOptions    string `json:"custom_docker_run_options,omitempty"`
 	DockerComposeRaw    string `json:"docker_compose_raw,omitempty"`
 	BasicAuthEnabled    bool   `json:"is_http_basic_auth_enabled,omitempty"`
+	PreviewsEnabled     bool   `json:"is_preview_deployments_enabled,omitempty"`
+	ServerName          string `json:"server_name,omitempty"`
+	Destination         struct {
+		Network string `json:"network,omitempty"`
+		Server  struct {
+			Name string `json:"name,omitempty"`
+		} `json:"server"`
+	} `json:"destination"`
 	// Webhook secrets are only checked for presence, never copied into a report or spec.
 	WebhookGithub    string          `json:"manual_webhook_secret_github,omitempty"`
 	WebhookGitlab    string          `json:"manual_webhook_secret_gitlab,omitempty"`

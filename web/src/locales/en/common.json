@@ -123,6 +123,11 @@
     "button": "Load more"
   },
   "appsList": {
+    "quick": {
+      "open": "Open {{domain}}",
+      "redeploy": "Redeploy {{name}}",
+      "logs": "Logs for {{name}}"
+    },
     "title": "Apps",
     "tableLabel": "Apps",
     "colName": "Name",
@@ -1342,6 +1347,7 @@
     "duplicate": "Each key can be used once.",
     "incomplete": "Fill in both the key and the value, or remove the row.",
     "filterLabel": "Filter by label",
+    "filterButton": "Labels",
     "filterPlaceholder": "env=prod,tier!=db",
     "filterInvalid": "That selector could not be read."
   },

@@ -23,6 +23,7 @@ type migrateCoolifyFlags struct {
 	only                string
 	stageDir            string
 	domainSuffix        string
+	nodeMap             string
 }
 
 // runMigrateCoolify implements "migrate coolify": writes app.yaml files and a report, or creates apps on a target with --apply.
@@ -49,6 +50,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.stageDir, "stage-dir", defaultStageDir, "directory to stage one-click services into as compose.yaml files; staging writes files only, nothing is deployed")
 	fs.StringVar(&f.domainSuffix, "domain-suffix", "", "parent domain for the hosts of staged services (default localhost, so nothing routes publicly)")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
+	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateCoolifyUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -89,7 +91,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
 		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
-		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag,
+		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag, nodeMap: f.nodeMap,
 	}, prog, stdout, stderr, lookupEnv)
 }
 
@@ -160,6 +162,8 @@ Flags:
   --target-profile string      named credentials profile for the target Levelrail instance, --apply only
   --target-api-url string    Levelrail control plane base URL, --apply only (default: %[3]s env var, then %[4]s)
   --json                             print the migration report as JSON to stdout, nothing else
+  --node-map string               source-server=node pairs, comma-separated; --apply places each app on its node,
+                                  an unmapped server stays on the control plane node, an unknown node is refused
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

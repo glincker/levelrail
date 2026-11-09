@@ -28,16 +28,6 @@ export interface DatabasesSearch {
   status?: DbStatusBucket
 }
 
-const DEFAULT_BULK_CONCURRENCY = 4
-
-/** How many single-database calls a bulk action runs at once. */
-export function bulkConcurrency(): number {
-  const raw = Number(
-    import.meta.env.VITE_DATABASES_BULK_CONCURRENCY ?? DEFAULT_BULK_CONCURRENCY,
-  )
-  return Number.isInteger(raw) && raw > 0 ? raw : DEFAULT_BULK_CONCURRENCY
-}
-
 // Buckets come from fields the list endpoint already sends: the
 // suspended flag, provision_state and the server status summary.
 export function databaseStatusBucket(db: DatabaseListEntry): DbStatusBucket {
@@ -129,7 +119,7 @@ export type DbBulkAction = 'start' | 'stop' | 'backup'
 export type BulkItemStatus =
   'planned' | 'ok' | 'skipped' | 'denied' | 'protected' | 'notFound' | 'error'
 export type SkipReason =
-  'external' | 'notCreated' | 'running' | 'stopped' | 'noTarget'
+  'external' | 'notCreated' | 'running' | 'stopped' | 'noTarget' | 'noBackups'
 
 export interface BulkItemResult {
   name: string
@@ -155,25 +145,4 @@ export function planBulk(
     if (action === 'backup' && !db.backup_target_id) return skip('noTarget')
     return { name: db.name, status: 'planned' }
   })
-}
-
-/** Runs fn over items with at most `limit` in flight; keeps input order. */
-export async function runLimited<T, R>(
-  items: readonly T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length)
-  let next = 0
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next
-      next += 1
-      results[i] = await fn(items[i] as T)
-    }
-  }
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, worker),
-  )
-  return results
 }

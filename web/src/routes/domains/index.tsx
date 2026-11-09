@@ -30,6 +30,8 @@ import { PageTemplate } from '../../components/shell/PageTemplate'
 // The loader primes every query the page uses, so nothing fetches in a
 // component body. Old /domains#dashboard-url links land on the new page.
 export const Route = createFileRoute('/domains/')({
+  validateSearch: (search: Record<string, unknown>): { q?: string } =>
+    typeof search.q === 'string' && search.q !== '' ? { q: search.q } : {},
   beforeLoad: ({ location }) => {
     if (location.hash === DASHBOARD_URL_ANCHOR) {
       redirect({
@@ -58,6 +60,11 @@ function DomainsPage() {
   const { data: certificates } = useSuspenseQuery(certificatesQueryOptions())
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const [addOpen, setAddOpen] = useState(false)
+  const query = Route.useSearch().q ?? ''
+  const navigate = Route.useNavigate()
+  const setQuery = (next: string) => {
+    void navigate({ search: next ? { q: next } : {}, replace: true })
+  }
 
   const { data: proxy } = useProxyIntegration()
   const certByDomain = useMemo(() => {
@@ -147,6 +154,8 @@ function DomainsPage() {
           domains={domains}
           certByDomain={certByDomain}
           appCount={apps.length}
+          query={query}
+          onQueryChange={setQuery}
           onAdd={() => {
             setAddOpen(true)
           }}

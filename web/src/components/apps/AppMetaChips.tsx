@@ -56,6 +56,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
       {domain ? (
         <Badge
           variant="outline"
+          title={domain}
           className="max-w-44 gap-1 px-1.5 py-0 text-muted-foreground"
         >
           <GlobeGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />

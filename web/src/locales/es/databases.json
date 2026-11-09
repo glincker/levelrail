@@ -1069,7 +1069,8 @@
       "notCreated": "Aún no creada",
       "running": "Ya en ejecución",
       "stopped": "Ya detenida",
-      "noTarget": "Sin destino de copias"
+      "noTarget": "Sin destino de copias",
+      "noBackups": "Este motor no admite copias"
     }
   },
   "rowActions": {

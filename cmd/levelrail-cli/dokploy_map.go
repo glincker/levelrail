@@ -17,6 +17,10 @@ func mapDokployApplication(app dokployApplication, domains []dokployDomain, incl
 	out := mappedApp{SourceName: app.Name}
 
 	out.ServiceName, out.Issues = mapServiceName("Dokploy", app.Name, out.Issues)
+	out.SourceServer = app.ServerID
+	if app.Server != nil && app.Server.Name != "" {
+		out.SourceServer = app.Server.Name
+	}
 
 	buildType, buildPath, buildIssue, blocking := mapDokployBuildConfig(app)
 	if buildIssue != nil {

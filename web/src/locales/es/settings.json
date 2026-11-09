@@ -3703,6 +3703,7 @@
       "color": "Color",
       "type": "Tipografía",
       "layout": "Diseño",
+      "look": "Aspecto y fondo",
       "sync": "Sincronización"
     },
     "motion": {

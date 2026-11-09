@@ -61,7 +61,7 @@ func TestCoolifyBuildSettingsMapToSpec(t *testing.T) {
 	if len(svc.BuildTimeKeys) != 1 || svc.BuildTimeKeys[0] != "PUBLIC_API_URL" {
 		t.Fatalf("build-time keys = %v", svc.BuildTimeKeys)
 	}
-	for _, f := range []string{"redirect", "custom_labels", "deploy_webhook", "tags", "node_version"} {
+	for _, f := range []string{"ingress", "deploy_webhook", "tags", "node_version"} {
 		found := false
 		for _, iss := range got.Issues {
 			found = found || iss.Field == f

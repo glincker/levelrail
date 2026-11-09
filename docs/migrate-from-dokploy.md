@@ -30,6 +30,8 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 
 ## What needs a manual step
 
+- Multi-server installs: pass `--node-map source-server=node` (the Dokploy server name or id) to put each app on the named node. An unmapped server keeps its apps on the control plane node with a finding, and an unknown or ambiguous node name stops the run before anything is created. Placement needs a token with the root ability, checked first.
+
 - Database contents and volume contents (below).
 - Git apps do not build by themselves: connect the repository and run a build.
 - Health checks that are shell commands, extra ports, pre and post deploy commands.

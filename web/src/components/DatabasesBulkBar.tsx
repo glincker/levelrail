@@ -18,18 +18,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { ApiError } from '../lib/apiError'
 import {
-  bulkConcurrency,
   planBulk,
-  runLimited,
   type BulkItemResult as ItemResult,
   type BulkItemStatus as ItemStatus,
   type DbBulkAction,
   type SkipReason,
 } from '../lib/databasesFilter'
-import { useStartDatabase, useStopDatabase } from '../queries/databases'
-import { backupHistoryKeys, triggerBackup } from '../queries/backupHistory'
+import { databaseKeys } from '../queries/databases'
+import { backupHistoryKeys } from '../queries/backupHistory'
+import { postDatabasesBulk } from '../queries/databasesBulk'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 
 const STATUS_STYLE: Record<ItemStatus, string> = {
@@ -40,18 +38,6 @@ const STATUS_STYLE: Record<ItemStatus, string> = {
   protected: 'text-tone-warning',
   notFound: 'text-destructive',
   error: 'text-destructive',
-}
-
-function classify(name: string, err: unknown): ItemResult {
-  const status = err instanceof ApiError ? err.status : 0
-  const reason = err instanceof Error ? err.message : undefined
-  if (status === 401 || status === 403)
-    return { name, status: 'denied', reason }
-  if (status === 404) return { name, status: 'notFound', reason }
-  if (status === 409 || status === 423 || status === 428) {
-    return { name, status: 'protected', reason }
-  }
-  return { name, status: 'error', reason }
 }
 
 function ResultList({ results }: { results: ItemResult[] }) {
@@ -88,8 +74,6 @@ function BulkDialog({
 }) {
   const { t } = useTranslation('databases')
   const queryClient = useQueryClient()
-  const start = useStartDatabase()
-  const stop = useStopDatabase()
   const [plan] = useState(() => planBulk(action, databases))
   const [results, setResults] = useState<ItemResult[] | null>(null)
   const [running, setRunning] = useState(false)
@@ -98,28 +82,31 @@ function BulkDialog({
   )
   const label = t(`bulk.action.${action}`)
 
-  const runOne = async (db: DatabaseListEntry): Promise<ItemResult> => {
-    try {
-      if (action === 'start') await start.mutateAsync(db.name)
-      else if (action === 'stop') await stop.mutateAsync(db.name)
-      else {
-        await triggerBackup(db.name, { target_id: db.backup_target_id ?? '' })
-        void queryClient.invalidateQueries({
-          queryKey: backupHistoryKeys.list(db.name),
-        })
-      }
-      return { name: db.name, status: 'ok' }
-    } catch (err) {
-      return classify(db.name, err)
-    }
-  }
-
   const apply = async () => {
     setRunning(true)
-    const done = await runLimited(targets, bulkConcurrency(), runOne)
+    const names = targets.map((db) => db.name)
+    let done: ItemResult[]
+    try {
+      done = await postDatabasesBulk({
+        action,
+        names,
+        confirm_count: action === 'stop' ? names.length : undefined,
+      })
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : undefined
+      done = names.map((name) => ({ name, status: 'error', reason }))
+    }
     const byName = new Map(done.map((r) => [r.name, r]))
     setResults(plan.map((p) => byName.get(p.name) ?? p))
     setRunning(false)
+    void queryClient.invalidateQueries({ queryKey: databaseKeys.all })
+    if (action === 'backup') {
+      for (const name of names) {
+        void queryClient.invalidateQueries({
+          queryKey: backupHistoryKeys.list(name),
+        })
+      }
+    }
   }
 
   const summary = results

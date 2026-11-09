@@ -114,7 +114,13 @@ type App struct {
 	Build BuildSettings
 	// Files are config file mounts copied byte for byte from the source.
 	Files []AppFile
-	Notes []Note
+	// Ingress is basic auth, redirects and header rules translated from the source proxy settings.
+	Ingress *IngressPlan
+	// Previews is true when the source ran preview deployments for the app.
+	Previews bool
+	// NetworkPeers names the other resources that shared a custom network with the app.
+	NetworkPeers []string
+	Notes        []Note
 }
 
 // BuildSettings carries the source's build and deploy settings so a staged app builds the same way.

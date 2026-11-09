@@ -212,7 +212,15 @@ If apps still connect to the database, delete is refused with a `409` naming the
 
 The Databases page has a search box, engine toggles and a status strip (Healthy, Needs attention, Reconciling, Stopped) whose counts double as quick filters. The filters live in the URL (`?q=orders&engine=postgres,redis&status=stopped`), so a filtered list can be bookmarked or shared. On a narrow screen the engine toggles fold behind a Filters button.
 
-Tick rows (or press Ctrl or Cmd plus A inside the list) to open the bulk bar with Start, Stop and Back up. Each action opens a review dialog first: databases that cannot take the action (already running, already stopped, external, not created yet, no backup target) are listed as skipped. Stop asks for confirmation. The dashboard then calls the single-database endpoints for each target, a few at a time (`VITE_DATABASES_BULK_CONCURRENCY`, default 4), and reports every database on its own, so a permission error or a protected database fails only that row.
+Tick rows (or press Ctrl or Cmd plus A inside the list) to open the bulk bar with Start, Stop and Back up. Each action opens a review dialog first: databases that cannot take the action (already running, already stopped, external, not created yet, no backup target) are listed as skipped. Stop asks for confirmation. The dashboard then sends one audited call, `POST /api/v1/databases/bulk`, and reports every database on its own, so a permission error or a protected database fails only that row.
+
+```bash
+levelrail-cli databases bulk start db-a db-b
+levelrail-cli databases bulk backup --selector engine=postgres,project=<id> --dry-run
+levelrail-cli databases bulk stop db-a db-b --confirm-count 2 --output json
+```
+
+Every database is authorized on its own at the same ability as the single-database action (`write:sensitive`), and gets its own audit row. `--dry-run` (`dry_run: true`) returns the plan, what would run and what is skipped and why, and changes nothing. A real stop needs `confirm_count` equal to the number of targets, and refuses databases in a protected environment (stop those one at a time). Results are `ok`, `skipped` (with a reason code), `denied`, `protected`, `not_found` or `error`, in a 207 response. How many databases run at once and how many one call may target are the runtime settings `databases.bulk_concurrency` and `databases.bulk_max_items`.
 
 Each row also has a menu with Open, Back up now and Copy connection string. The copied string holds a `<password>` placeholder, never the real password.
 

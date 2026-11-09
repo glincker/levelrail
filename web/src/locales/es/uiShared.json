@@ -53,7 +53,7 @@
     "tag": "Etiqueta: {{value}}",
     "environment": "Entorno: {{value}}",
     "engine": "Motor: {{value}}",
-    "labels": "Labels: {{value}}"
+    "labels": "Etiquetas: {{value}}"
   },
   "listKeys": {
     "title": "Atajos de teclado",
