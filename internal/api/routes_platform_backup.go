@@ -105,6 +105,7 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/backups/drills/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupDrill))
 	mux.HandleFunc("POST /api/v1/backups/drills", rt.requireAbility(AbilityWriteSensitive, rt.handleStartBackupDrill))
 	mux.HandleFunc("POST /api/v1/backups/protection/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshBackupProtection))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/size-history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleVolumeSizeHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupPolicy))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupPolicy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore-to", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVolumeRestoreTo))

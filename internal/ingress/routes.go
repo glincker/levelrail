@@ -583,6 +583,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		if limit := opts.Hardening.bodyLimitFor(r.MaxBodyBytes); limit != nil {
 			handle = append([]any{limit}, handle...)
+			// Only a per-domain or per-app cap gets the early check; the instance cap keeps the stream limit alone.
+			if r.MaxBodyBytes > 0 {
+				handle = append([]any{BodyGuardHandler{Handler: "levelrail_body_guard", MaxSize: r.MaxBodyBytes}}, handle...)
+			}
 		}
 		// Traffic controls, backend side: cache and path forwarders sit
 		// right before the reverse proxy, behind auth and WAF.

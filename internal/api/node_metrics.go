@@ -90,6 +90,7 @@ type nodeMetricsResponse struct {
 // real, separate change (a second ListDesiredDatabasesByNode loop plus
 // resourceIDForDatabase lookups), not attempted here.
 func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request) {
+	rt.presence.Touch()
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return

@@ -32,6 +32,8 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "check":
 		return runAppsEnvCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "convert-to-secret":
+		return runAppsEnvConvertToSecret(prog, args[1:], stdout, stderr, lookupEnv)
 	case "history":
 		return runAppsEnvHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -46,6 +48,7 @@ func appsEnvUsage(prog string) string {
   %[1]s apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [flags]   merge a .env file: sensitive keys to secrets, the rest to plain env
   %[1]s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json]      write an app's env vars as .env text
   %[1]s apps env get <name> <KEY> [--reveal] [flags]                              print one variable
+  %[1]s apps env convert-to-secret <name> <KEY> [flags]                           move a plain variable into the secret store
   %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
   %[1]s apps env check <name> [--fix] [flags]                                     find empty, shadowed, duplicate and missing variables
   %[1]s apps env history <name> [--limit N] [flags]                               list who added, changed or removed which variable

@@ -15,6 +15,10 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	var beforeFlag string
 	var limitFlag int
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
+	// Limit stays server-side with --before paging; status and sort apply client-side.
+	lo := &listOpts{}
+	fs.StringVar(&lo.status, "status", "", "only attempts whose status matches (case-insensitive)")
+	fs.StringVar(&lo.sort, "sort", "", "sort by a field; prefix with - for descending (started, finished or any JSON field)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsListUsage(prog)) }
 
@@ -40,6 +44,7 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list backups for database %q: %w", name, err))
 	}
+	history = applyListOpts(history, lo)
 
 	if err := renderResult(stdout, of.Format, of.Query, history, func() { printBackupHistoryTable(stdout, history) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
@@ -77,6 +82,8 @@ Flags:
   --json                    print backup history as a JSON array to stdout, nothing else
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp
+  --status string         only attempts whose status matches (case-insensitive)
+  --sort string            sort by a field; prefix with - for descending
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

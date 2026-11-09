@@ -1202,3 +1202,29 @@ func TestApplyCreateHealth(t *testing.T) {
 		t.Error("unknown preset accepted")
 	}
 }
+
+func TestNormalizeRepoURL(t *testing.T) {
+	cases := map[string]string{
+		"ssh://git@github.com/org/repo.git":      "https://github.com/org/repo.git",
+		"ssh://git@git.example.com:2222/org/app": "https://git.example.com/org/app",
+		"git@github.com:org/repo.git":            "https://github.com/org/repo.git",
+		"git://github.com/org/repo":              "https://github.com/org/repo",
+		"https://github.com/org/repo":            "https://github.com/org/repo",
+		"":                                       "",
+	}
+	for in, want := range cases {
+		if got := normalizeRepoURL(in); got != want {
+			t.Errorf("normalizeRepoURL(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestPlanFromFlags_SSHRepoBecomesHTTPS(t *testing.T) {
+	plan, err := planFromFlags(createFlags{name: "web", repo: "ssh://git@github.com/org/web.git", imageRepo: "reg/web", port: 8080}, nil, detectedGit{})
+	if err != nil {
+		t.Fatalf("planFromFlags() error = %v", err)
+	}
+	if got := plan.Build.RepoURL; got != "https://github.com/org/web.git" {
+		t.Errorf("repo url = %q", got)
+	}
+}

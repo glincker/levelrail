@@ -111,6 +111,10 @@ type Engine struct {
 	emailDelivery EmailDeliverySource
 	cleanup       CleanupSource
 
+	// volumes and volumeThreshold back kind=volume_usage rules; the threshold is read per tick so a runtime setting change applies live.
+	volumes         VolumeSource
+	volumeThreshold func() float64
+
 	budgets       BudgetSource
 	budgetTracker *budgetTracker
 
@@ -196,6 +200,12 @@ func (e *Engine) SetSLOBurnAutoRollback(st SLOAutoRollbackStore, nudger deploy.R
 func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge time.Duration) {
 	e.cpBackups = src
 	e.cpBackupMaxAge = maxAge
+}
+
+// SetVolumeUsage enables kind=volume_usage rules; threshold returns the current percent.
+func (e *Engine) SetVolumeUsage(src VolumeSource, threshold func() float64) {
+	e.volumes = src
+	e.volumeThreshold = threshold
 }
 
 // SetLogArchive enables kind=log_archive_stale rules.
@@ -488,6 +498,18 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindVolumeUsage:
+			if e.volumes == nil || e.volumeThreshold == nil || e.metrics == nil {
+				e.logger.Warn("alerting: volume_usage rule found but no volume source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			var volumeNotices []string
+			next, volumeNotices, err = EvaluateVolumeUsage(ctx, e.volumes, e.metrics, r, e.volumeThreshold(), now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+			backupMissingNoticeText = strings.Join(volumeNotices, "; ")
 		case KindDeployFailed:
 			if e.deployFailures == nil {
 				continue
@@ -774,7 +796,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

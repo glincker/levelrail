@@ -16,6 +16,7 @@ abuse.suggest_client_share
 account.preferences_max_bytes
 api.apps_metrics_max
 api.conditional_get
+api.conditional_get_max_bytes
 api.max_body_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm

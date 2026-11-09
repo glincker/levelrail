@@ -212,13 +212,14 @@ type Router struct {
 	// same "this package never reads the environment directly"
 	// convention WithSessionTTL's own doc comment establishes.
 	requestLogThresholds    requestLogThresholds
-	alertRules              AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	lb                      lbDeps          // zero value is valid: load balancer routes return 501
-	iac                     iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
-	alertNoise              AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
-	alertDefaults           AlertDefaults   // nil is valid: default alert routes return 501
-	inbox                   InboxStore      // nil is valid: notification inbox routes return 501
-	statusPage              StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
+	presence                *telemetry.Presence // nil is valid: touches are no-ops
+	alertRules              AlertRules          // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                      lbDeps              // zero value is valid: load balancer routes return 501
+	iac                     iacDeps             // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise              AlertNoise          // nil is valid: silence, maintenance window and alert history routes return 501
+	alertDefaults           AlertDefaults       // nil is valid: default alert routes return 501
+	inbox                   InboxStore          // nil is valid: notification inbox routes return 501
+	statusPage              StatusPageStore     // nil is valid: status page routes return 501 and the public page stays off
 	statusView              StatusPageViewer
 	incidents               IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
 	incidentBodyMax         int

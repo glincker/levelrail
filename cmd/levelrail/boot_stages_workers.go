@@ -48,6 +48,11 @@ func (s *bootState) startTelemetry() {
 	notifyClient := s.notifyClient
 	telemetryDB := s.telemetryDB
 	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
+	presence := telemetry.NewPresence(metricsPresenceWindow)
+	collector.SetPresence(presence, metricsIdleInterval)
+	if s.apiRouter != nil {
+		s.apiRouter.SetPresence(presence)
+	}
 	go func() {
 		targets := telemetryTargets(db, client, agentRegistry, meshCfg, logger)
 		if err := collector.Run(ctx, withModelTelemetryTargets(targets, db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
@@ -528,6 +533,7 @@ func (s *bootState) serve() error {
 	}()
 	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
 	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
+	engine.SetResyncSource(resyncFromSettings(rsCtx, rs))
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
@@ -586,4 +592,11 @@ func bootPassDelays(logger *slog.Logger, items []string) []time.Duration {
 		out = append(out, d)
 	}
 	return out
+}
+
+// resyncFromSettings reads the live resync interval each tick; zero keeps the boot default.
+func resyncFromSettings(ctx context.Context, rs *runtimesettings.Service) func() time.Duration {
+	return func() time.Duration {
+		return time.Duration(rs.Int(ctx, runtimesettings.KeyReconcileResyncSeconds)) * time.Second
+	}
 }

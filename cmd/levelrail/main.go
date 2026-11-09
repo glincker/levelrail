@@ -51,6 +51,9 @@ const (
 
 	// Not env-configurable: resolution changes the stored sample shape, retention does not.
 	metricsCollectionInterval = 15 * time.Second
+	// Idle polling and the viewer window scale off the base interval so one number tunes the cadence.
+	metricsIdleInterval   = 4 * metricsCollectionInterval
+	metricsPresenceWindow = 2 * metricsIdleInterval
 
 	// Separate from resyncInterval: log stream subscriptions are a different concern.
 	logTargetsResyncInterval = 30 * time.Second

@@ -549,10 +549,9 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EngineValkey:
-		// Same /data path, port and image defaults (RDB snapshots, no
-		// password) as Redis; the image ships redis-server and redis-cli symlinks,
-		// and the TLS flags are the same, so the Redis command is reused.
-		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
+		// Same /data path, port and defaults as Redis and the same TLS flags,
+		// but the TLS command must name the binary the Valkey image ships.
+		command, containerPort := redisCommandAndPort(c.tls, valkeyServerBin)
 		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EngineDragonfly:
@@ -1139,9 +1138,10 @@ func mongoCommand(tls *TLSMaterial) []string {
 
 // Server binaries for the Redis TLS flag builder; the KeyDB image ships no redis-server.
 const (
-	redisServerBin = "redis-server"
-	keydbServerBin = "keydb-server"
-	keydbConfPath  = "/etc/keydb/keydb.conf"
+	redisServerBin  = "redis-server"
+	valkeyServerBin = "valkey-server"
+	keydbServerBin  = "keydb-server"
+	keydbConfPath   = "/etc/keydb/keydb.conf"
 )
 
 // redisCommandAndPort returns Redis's own container command and the port

@@ -850,7 +850,10 @@ func TestController_Reconcile_Valkey_TLS_DisablesPlaintextPort(t *testing.T) {
 	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
 		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
-	wantCommand, _ := redisCommandAndPort(material, redisServerBin)
+	wantCommand, _ := redisCommandAndPort(material, valkeyServerBin)
+	if rt.lastCreateSpec.Command[0] != "valkey-server" {
+		t.Errorf("TLS binary = %q, want valkey-server", rt.lastCreateSpec.Command[0])
+	}
 	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
 		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
 	}

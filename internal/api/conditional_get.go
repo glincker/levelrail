@@ -5,22 +5,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
-// envConditionalGetMaxBytes caps the body buffered to compute an ETag; bigger
-// responses stream through without one.
-const envConditionalGetMaxBytes = "APP_API_CONDITIONAL_GET_MAX_BYTES"
-
+// defaultConditionalGetMaxBytes backs the cap when no settings service is wired.
 const defaultConditionalGetMaxBytes = 4 << 20
 
-func conditionalGetMaxBytes() int {
-	if n, err := strconv.Atoi(os.Getenv(envConditionalGetMaxBytes)); err == nil && n > 0 {
-		return n
+// conditionalGetMaxBytes reads the cap live; bigger responses stream through without an ETag.
+func (rt *Router) conditionalGetMaxBytes(r *http.Request) int {
+	if rt.runtimeSettings != nil {
+		if n := rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyAPIConditionalGetMaxBytes); n > 0 {
+			return n
+		}
 	}
 	return defaultConditionalGetMaxBytes
 }
@@ -30,12 +28,15 @@ func conditionalGetMaxBytes() int {
 // secret-bearing handlers), cookie setters, auth routes, sensitive reads and
 // streams never get a validator. It sits inside compress so the hash covers
 // the uncompressed body.
-func conditionalGetMiddleware(enabled func(*http.Request) bool, next http.Handler) http.Handler {
-	limit := conditionalGetMaxBytes()
+func conditionalGetMiddleware(enabled func(*http.Request) bool, maxBytes func(*http.Request) int, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !conditionalEligibleRequest(r) || (enabled != nil && !enabled(r)) {
 			next.ServeHTTP(w, r)
 			return
+		}
+		limit := defaultConditionalGetMaxBytes
+		if maxBytes != nil {
+			limit = maxBytes(r)
 		}
 		cw := &conditionalWriter{ResponseWriter: w, req: r, limit: limit}
 		next.ServeHTTP(cw, r)

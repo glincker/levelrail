@@ -105,6 +105,9 @@ func (f *File) ResolveEnvFiles(root, composeDir string) error {
 	return nil
 }
 
+// One message for missing and outside-repo paths so the answer does not reveal what exists on the host.
+var errEnvFileUnavailable = errors.New("file not found in the repository")
+
 func readEnvFile(root, composeDir string, ref EnvFileRef) (map[string]string, error) {
 	if ref.Path == "" {
 		return nil, errors.New("path is empty")
@@ -123,13 +126,13 @@ func readEnvFile(root, composeDir string, ref EnvFileRef) (map[string]string, er
 			if !ref.Required {
 				return nil, nil
 			}
-			return nil, errors.New("file not found")
+			return nil, errEnvFileUnavailable
 		}
 		return nil, fmt.Errorf("resolve: %w", err)
 	}
 	back, err := filepath.Rel(rootReal, resolved)
 	if err != nil || (back != "." && !filepath.IsLocal(back)) {
-		return nil, errors.New("resolves outside the repository")
+		return nil, errEnvFileUnavailable
 	}
 	st, err := os.Stat(resolved)
 	if err != nil {

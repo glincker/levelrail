@@ -112,3 +112,25 @@ func TestRun_Backups_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout.String())
 	}
 }
+
+func TestRun_BackupsList_StatusAndSort(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]backupHistoryResource{
+			{ID: "bkp_a", Status: "failed", StartedAt: "2026-08-15T00:00:00Z"},
+			{ID: "bkp_b", Status: "succeeded", StartedAt: "2026-08-14T00:00:00Z"},
+			{ID: "bkp_c", Status: "succeeded", StartedAt: "2026-08-16T00:00:00Z"},
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"backups", "list", "main", "--status", "SUCCEEDED", "--sort", "-started_at", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d (stderr=%q)", got, stderr.String())
+	}
+	out := stdout.String()
+	if strings.Contains(out, "bkp_a") || strings.Index(out, "bkp_c") > strings.Index(out, "bkp_b") {
+		t.Errorf("stdout = %q, want succeeded rows newest first", out)
+	}
+}

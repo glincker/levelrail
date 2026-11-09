@@ -80,3 +80,17 @@ func TestDomainsExportWritesCSV(t *testing.T) {
 		t.Fatalf("code=%d path=%q out=%q err=%q", code, gotPath, out.String(), errBuf.String())
 	}
 }
+
+func TestRun_DomainsList_ListOpts(t *testing.T) {
+	srv := newListEchoServer(t, nil, []domainResource{
+		{Domain: "b.example.com", ServiceName: "web"},
+		{Domain: "a.example.com", ServiceName: "web"},
+		{Domain: "c.example.com", ServiceName: "web"},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"domains", "list", "--sort", "domain", "--limit", "2", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "a.example.com") || !strings.Contains(stdout, "b.example.com") || strings.Contains(stdout, "c.example.com") {
+		t.Errorf("stdout = %q, want the first two domains after sorting", stdout)
+	}
+}
