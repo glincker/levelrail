@@ -1,0 +1,164 @@
+{
+  "title": "Explorador de costes",
+  "description": "Consulta en qué se va el gasto con el tiempo, qué alcanzará este mes y qué presupuestos están en riesgo. Las cifras usan tus propios precios.",
+  "error": "No se pudieron cargar los costes: {{message}}",
+  "groupBy": {
+    "label": "Agrupar por",
+    "app": "App",
+    "project": "Proyecto",
+    "tag": "Etiqueta",
+    "node": "Nodo",
+    "kind": "Tipo de recurso"
+  },
+  "granularity": {
+    "label": "Granularidad",
+    "daily": "Diaria",
+    "monthly": "Mensual"
+  },
+  "period": {
+    "label": "Periodo",
+    "mtd": "Mes hasta hoy",
+    "30d": "Últimos 30 días",
+    "last_month": "Mes pasado"
+  },
+  "months": {
+    "label": "Meses",
+    "count_one": "{{count}} mes",
+    "count_other": "{{count}} meses"
+  },
+  "summary": {
+    "change": "{{value}} frente al periodo anterior",
+    "noChange": "No hay periodo anterior con el que comparar"
+  },
+  "series": {
+    "other": "Otros",
+    "unassigned": "Sin asignar",
+    "untagged": "Sin etiqueta"
+  },
+  "kind": {
+    "app": "Apps",
+    "database": "Bases de datos"
+  },
+  "chart": {
+    "label": "Coste a lo largo del tiempo"
+  },
+  "table": {
+    "label": "Ranking de costes",
+    "name": "Nombre",
+    "cost": "Coste",
+    "previous": "Anterior",
+    "change": "Cambio"
+  },
+  "forecast": {
+    "title": "Previsión de fin de mes",
+    "range": "Probablemente entre {{low}} y {{high}}",
+    "hint": "Proyectado a partir de los últimos días completos. El rango se amplía cuando el gasto diario es irregular.",
+    "chart": "Gasto acumulado este mes con el rango proyectado",
+    "bandName": "Rango",
+    "actual": "Gastado hasta ahora",
+    "projected": "Proyectado",
+    "confidence": {
+      "low": "Confianza baja",
+      "medium": "Confianza media",
+      "high": "Confianza alta"
+    }
+  },
+  "movers": {
+    "title": "Mayores cambios",
+    "description": "Los mayores aumentos frente al periodo anterior.",
+    "none": "Nada creció frente al periodo anterior.",
+    "up": "{{name}} sube {{amount}} ({{pct}})"
+  },
+  "empty": {
+    "noData": "Aún no hay datos de coste para este periodo.",
+    "noTelemetryTitle": "Aún no hay datos de uso",
+    "noTelemetryDescription": "El coste se calcula a partir del uso medido. Aparece cuando se recogen métricas.",
+    "notConfiguredTitle": "Define tus precios primero",
+    "notConfiguredDescription": "Los costes son cero hasta que indiques a Levelrail lo que cuestan tus servidores o unidades.",
+    "configure": "Definir precios"
+  },
+  "budgets": {
+    "title": "Presupuestos",
+    "description": "Límites mensuales para un proyecto, una etiqueta o una app. Cada uno avisa una vez por umbral y puede pausar o limitar las apps afectadas al 100%.",
+    "empty": "Aún no hay presupuestos. Añade uno abajo para recibir avisos antes de que el gasto se dispare.",
+    "addTitle": "Añadir un presupuesto",
+    "name": "Nombre",
+    "scope": "Se aplica a",
+    "scopes": {
+      "project": "Proyecto",
+      "tag": "Etiqueta",
+      "app": "App"
+    },
+    "target": {
+      "project": "Proyecto",
+      "tag": "Nombre de la etiqueta",
+      "app": "App"
+    },
+    "monthly": "Importe mensual",
+    "thresholds": "Avisar en (porcentaje)",
+    "action": "Al 100%",
+    "actions": {
+      "none": "Solo avisar",
+      "throttle": "Limitar el tráfico",
+      "pause": "Pausar las apps"
+    },
+    "actionHint": "Limitar y pausar se levantan al subir el presupuesto o al cambiar de mes. Nunca se elimina nada.",
+    "create": "Crear presupuesto",
+    "created": "Presupuesto creado",
+    "error": "No se pudo guardar el presupuesto: {{message}}",
+    "remove": "Eliminar presupuesto {{name}}",
+    "spent": "{{spent}} de {{budget}}",
+    "forecast": "previsión {{mid}} ({{low}} a {{high}})",
+    "thresholdsLine": "Avisos al {{levels}} por ciento. Máximo alcanzado: {{reached}}",
+    "none": "ninguno",
+    "state": {
+      "ok": "En camino",
+      "warn": "Aviso",
+      "over": "Presupuesto superado",
+      "forecast": "Previsión superada"
+    },
+    "enforced": {
+      "pause": "Apps pausadas",
+      "throttle": "Tráfico limitado"
+    },
+    "deleteTitle": "¿Eliminar el presupuesto {{name}}?",
+    "deleteDescription": "Se levanta cualquier pausa o límite que haya aplicado. El historial de gasto no se ve afectado.",
+    "delete": "Eliminar presupuesto",
+    "alertHint": "Los avisos pasan por tu regla de alerta de umbral de presupuesto. Añade una en Alertas si quieres notificaciones por correo, Slack o webhook."
+  },
+  "fix": {
+    "label": "Arreglar este presupuesto",
+    "raise": "Subir el presupuesto a {{amount}}",
+    "raised": "Presupuesto subido a {{amount}}",
+    "pause": "Pausar {{app}}",
+    "pauseTitle": "¿Pausar {{app}}?",
+    "pauseDescription": "La app deja de servir hasta que la inicies de nuevo. Sus datos se conservan.",
+    "pauseConfirm": "Pausar app",
+    "pausing": "Pausando",
+    "rightSize": "Ajustar el tamaño de las apps"
+  },
+  "appCaps": {
+    "title": "Límites por app",
+    "description": "Límites mensuales de egreso y coste definidos en cada app, con lo que se aplica ahora.",
+    "loadError": "No se pudieron cargar los límites de las apps: {{message}}",
+    "empty": "Ninguna app tiene límite todavía. Abre una app y define un límite mensual en su tarjeta de presupuesto.",
+    "app": "App",
+    "usage": "{{pct}}% del límite",
+    "ceiling": "Tope de coste",
+    "ceilingLabel": "Tope de coste de {{app}}",
+    "set": "Definir",
+    "saved": "Límite actualizado para {{app}}",
+    "saveFailed": "No se pudo actualizar el límite: {{message}}",
+    "enforced": {
+      "none": "Dentro del límite",
+      "throttle": "Limitada",
+      "pause": "Pausada"
+    },
+    "blocked": "Despliegues bloqueados",
+    "overridden": "Excepción activa",
+    "preview": "Simulación",
+    "override": "Excepción",
+    "edit": "Abrir app",
+    "forecast": "Se prevé que lo supere"
+  }
+}

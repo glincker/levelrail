@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
@@ -178,6 +179,12 @@ func (s *bootState) startAlerting() {
 	}()
 	go runUsageRollup(ctx, apiRouter)
 	rs := apiRouter.RuntimeSettings()
+	go runLiveSettings(ctx, rs, logger)
+	go func() {
+		if err := api.RunSpoolSweeper(ctx, logger); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("upload spool sweep stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go footprint.RunTrim(ctx, logger, os.Getenv, &footprint.LiveSettings{
 		GCPercent:       func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintGCPercent) },
 		MemLimitPercent: func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintMemLimitPercent) },

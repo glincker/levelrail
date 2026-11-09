@@ -96,7 +96,7 @@ The token you supply is used for that one request. It is not stored or logged, a
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_HF_CACHE_TTL` | `5m` | How long Hub answers are reused. `0` disables the cache. |
-| `APP_HF_TIMEOUT` | `10s` | Per-request timeout to the Hub. |
+| `APP_HF_TIMEOUT_SECONDS` | `10` | Per-request timeout to the Hub, in seconds (1 to 300). Replaces the duration-valued `APP_HF_TIMEOUT`. |
 | `APP_HF_MAX_RESPONSE_BYTES` | `16777216` | Cap on the repository listing. |
 | `APP_HF_MAX_LISTED_FILES` | `100` | Files returned per repository (totals always cover all files). |
 | `APP_HF_BASE_URL` | `https://huggingface.co` | Hub base URL (a mirror). |

@@ -236,6 +236,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
 | `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_DB_COMPACT_MIN_FREE_PERCENT` | [`db.compact_min_free_percent`](/runtime-settings#observability) | `10` |
+| `APP_DB_SPACE_REPORT_ROWS` | [`db.space_report_rows`](/runtime-settings#observability) | `20` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
@@ -271,6 +273,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_READ_CONNS` | [`store.read_connections`](/runtime-settings#observability) | `4` |
 | `APP_DB_SYNCHRONOUS` | [`store.synchronous`](/runtime-settings#observability) | `default` |
 | `APP_DB_TEMP_STORE` | [`store.temp_store`](/runtime-settings#observability) | `default` |
+| `APP_SYSTEM_PROCESSES_MAX_ROWS` | [`system.processes_max_rows`](/runtime-settings#observability) | `25` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
 | `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
@@ -318,6 +321,18 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
+
+## Renamed to seconds
+
+These variables now take a whole number of seconds. The old duration-valued names are replaced and no longer documented.
+
+| Use | Replaces | Setting |
+| --- | --- | --- |
+| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` (`15m`, now `900`) | `deploy.approval_claim_timeout_seconds` |
+| `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | the duration-valued digest check timeout | `deploy.approve_digest_check_timeout_seconds` |
+| `APP_HF_TIMEOUT_SECONDS` | `APP_HF_TIMEOUT` (`10s`, now `10`) | `models.hf_timeout_seconds` |
+
+If you set an old name in your environment, switch to the new one and write the value in seconds.
 
 ## Sessions and cookies
 
@@ -755,7 +770,6 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` | ``15m`` | How long an approving claim on a deploy approval may stand before recovery treats the claimer as gone. Control plane. |
 | `APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS` | ``2`` | Restarts during a rollout before it counts as a crash loop and fails. Control plane. |
 | `APP_DEFAULT_ALERTS` | computed | Set to off to skip creating the default alert rules on first start. Control plane. |
 | `APP_DB_CRASH_LOOP_RESTARTS` | ``3`` | Restarts before a database counts as crash-looping. Control plane. |

@@ -89,6 +89,7 @@
         }
       ],
       "warnings": [
+        "app web changes jobs, which needs a root-tier token; a lower tier fails after the app itself is applied",
         "env DATABASE_URL is also set directly on the live app; remove that value so only the database connection supplies it",
         "job from-spec is declared in the app's app.yaml and is left as it is; declare it in one place"
       ],
@@ -149,5 +150,5 @@
     "noop": 0,
     "error": 0
   },
-  "hash": "1f9e2bf4ebc04596"
+  "hash": "85e44d8c5804053a"
 }

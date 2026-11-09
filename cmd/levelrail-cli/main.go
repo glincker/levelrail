@@ -614,6 +614,7 @@ Usage:
   %[1]s app-volume-backups restores <app> <volume> [flags]   volume restore attempt history
 
 Auth and target:
+  --no-color              disable ANSI color (also NO_COLOR and CI mode)
   --debug                 trace every outgoing request's method, URL, and
                           response status/timing to stderr (never stdout);
                           Authorization and any token are always redacted

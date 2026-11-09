@@ -1,0 +1,92 @@
+{
+  "trend": {
+    "title": "Rendimiento de compilación",
+    "loadError": "No se pudieron cargar las estadísticas de compilación.",
+    "empty": "Aún no hay compilaciones registradas. Las estadísticas aparecen tras la siguiente compilación.",
+    "p50": "Compilación mediana",
+    "p95": "El 5% más lento (p95)",
+    "cacheHit": "Aciertos de caché",
+    "failures": "Fallidas o con tiempo agotado",
+    "none": "n/d",
+    "chartLabel_one": "Duración de la última compilación",
+    "chartLabel_other": "Duraciones de las últimas {{count}} compilaciones, de la más antigua a la más reciente",
+    "footnote_one": "Basado en la última compilación. Los tiempos cuentan solo compilaciones correctas.",
+    "footnote_other": "Basado en las últimas {{count}} compilaciones. Los tiempos cuentan solo compilaciones correctas.",
+    "skewed_one": "1 compilación tuvo una duración negativa (desfase del reloj) y se excluye de los tiempos.",
+    "skewed_other": "{{count}} compilaciones tuvieron una duración negativa (desfase del reloj) y se excluyen de los tiempos."
+  },
+  "speed": {
+    "title": "Acelera las compilaciones",
+    "saved": "La caché ahorró unos {{saved}} en {{count}} compilaciones (compilación en frío {{cold}}, con caché {{warm}}).",
+    "none": "No hay mejoras que sugerir.",
+    "loadError": "No se pudieron cargar las sugerencias de velocidad.",
+    "fixing": "Aplicando...",
+    "fixed": "Caché de compilación activada.",
+    "fixError": "No se pudo aplicar la corrección",
+    "fix": {
+      "auto": "Activar caché",
+      "guided": "Configurar caché"
+    },
+    "findings": {
+      "cache_disabled": {
+        "title": "La caché de compilación remota está desactivada",
+        "body": "Hay un destino de caché configurado pero desactivado, así que cada compilación empieza desde cero."
+      },
+      "cache_unconfigured": {
+        "title": "No hay caché de compilación remota configurada",
+        "body": "La mayoría de los pasos se repiten en cada compilación. Elige un destino de almacenamiento para reutilizar pasos entre compilaciones y nodos."
+      },
+      "low_cache_hit": {
+        "title": "Se reutilizan pocos pasos de compilación",
+        "body": "Pon primero en el Dockerfile los pasos que rara vez cambian (copia el lockfile e instala dependencias antes de copiar el código) y añade un .dockerignore para node_modules, .git y la salida de compilación, así los archivos ajenos no invalidan capas."
+      },
+      "slower_recently": {
+        "title": "Las compilaciones se han vuelto más lentas",
+        "body": "La mediana reciente es al menos un 30% más lenta que la anterior. Compara los últimos despliegues por nuevas dependencias, un contexto de compilación mayor o una caché que dejó de acertar."
+      }
+    }
+  },
+  "settings": {
+    "title": "Rendimiento de compilación",
+    "description": "Limita cuánto puede durar una compilación, cuánta CPU y memoria puede usar y cuántas se ejecutan a la vez. Las demás esperan en cola.",
+    "loadError": "No se pudieron cargar los límites de compilación.",
+    "timeoutLabel": "Tiempo máximo de compilación (minutos)",
+    "timeoutHelp": "Una compilación que supere este tiempo se detiene y se marca como agotada. 0 significa sin límite.",
+    "concurrentLabel": "Compilaciones simultáneas",
+    "concurrentHelp": "Las compilaciones por encima de este número esperan un hueco libre. 0 significa sin límite.",
+    "defaultsNote": "Los valores por defecto vienen de APP_BUILD_TIMEOUT, APP_BUILD_MAX_CONCURRENT, APP_BUILD_MEMORY_MB y APP_BUILD_CPU_MILLIS: {{timeout}} minutos, {{concurrent}} compilaciones, {{memory}} MB, {{cpu}} núcleos.",
+    "overridden": "Personalizado",
+    "save": "Guardar límites",
+    "reset": "Usar valores por defecto",
+    "saved": "Límites de compilación guardados.",
+    "resetDone": "Límites de compilación restablecidos a los valores por defecto.",
+    "rootOnly": "Solo una cuenta root puede cambiar los límites de compilación.",
+    "memoryLabel": "Memoria de compilación (MB)",
+    "memoryHelp": "Una compilación que use más que esto se detiene y se marca como excedida de memoria. 0 significa sin límite.",
+    "cpuLabel": "CPU de compilación (núcleos)",
+    "cpuHelp": "Limita la CPU que puede usar una compilación, por ejemplo 1.5. 0 significa sin límite."
+  },
+  "limits": {
+    "title": "Límites de compilación",
+    "description": "Límites solo para esta app. Los valores sin definir siguen los predeterminados del plano de control.",
+    "loadError": "No se pudieron cargar los límites de compilación.",
+    "timeoutLabel": "Tiempo máximo (minutos)",
+    "memoryLabel": "Memoria (MB)",
+    "cpuLabel": "CPU (núcleos)",
+    "unlimited": "Sin límite",
+    "globalNote": "Valores por defecto del plano de control: {{timeout}} minutos, {{memory}} MB, {{cpu}} núcleos. 0 significa sin límite.",
+    "overridden": "Personalizado",
+    "save": "Guardar límites",
+    "saved": "Límites de compilación guardados.",
+    "reset": "Usar valores por defecto",
+    "resetDone": "Límites de compilación restablecidos a los valores por defecto.",
+    "rootOnly": "Solo una cuenta root puede cambiar los límites de compilación.",
+    "hit": {
+      "memory_limit": "La última compilación se detuvo por usar más de {{value}} MB.",
+      "timeout": "La última compilación se detuvo tras {{value}} minutos."
+    },
+    "raiseMemory": "Subir la memoria a {{value}} MB",
+    "raiseTimeout": "Subir el tiempo máximo a {{value}} minutos",
+    "raised": "Límite aumentado. Reintenta el despliegue."
+  }
+}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2064 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2068 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -102,6 +102,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/restore-as-new", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVolumeCloneRestore", Description: "Restore as a new volume (app_volume_clone_restore.go): the non-destructive counterpart just above, the same AbilityWriteSensitive tier the database clone-restore route below uses, see handleVolumeCloneRestore's own doc comment for why."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/restore-to", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVolumeRestoreTo", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/restores", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeRestoreHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/size-history", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleVolumeSizeHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListApps", Description: "Apps CRUD. requireAbility accepts either a session (implicitly root, there is exactly one human identity in Phase 1) or a bearer token scoped to at least the named ability, so a read-only MCP-issued token is provably unable to reach a write/deploy route, not just conventionally discouraged from calling it."},
 	{Method: "POST", Path: "/api/v1/apps", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateApp", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/bulk", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBulkApps", Description: ""},
@@ -2000,6 +2001,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/control-plane-dr/settings", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleUpdateControlPlaneDR", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/control-plane-health", Ability: "AbilityRead", Group: "System", Handler: "handleGetCPHealth", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-health/fix", Ability: "AbilityRoot", Group: "System", Handler: "handleCPHealthFix", Description: "Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot."},
+	{Method: "GET", Path: "/api/v1/system/db-space", Ability: "AbilityRead", Group: "System", Handler: "handleGetDBSpace", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/db-space/compact", Ability: "AbilityRoot", Group: "System", Handler: "handleCompactDB", Description: "VACUUM holds the single writer connection, so AbilityRoot, and it only runs on request."},
 	{Method: "GET", Path: "/api/v1/system/disk/history", Ability: "AbilityRead", Group: "System", Handler: "handleDiskHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/docker-guard", Ability: "AbilityRead", Group: "System", Handler: "handleGetDockerGuard", Description: "Docker API guard status (Security settings page): AbilityRead like system/doctor."},
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},
@@ -2025,6 +2028,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/networks/prune", Ability: "AbilityRoot", Group: "System", Handler: "handlePruneSystemNetworks", Description: "Removes Docker networks, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/orphans", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphans", Description: "Orphaned named volumes: detection is a read (AbilityRead), the cleanup that actually deletes one is the same AbilityRoot, fleet-wide, no-undo tier system/prune sits behind, not AbilityWrite."},
 	{Method: "POST", Path: "/api/v1/system/orphans/reap", Ability: "AbilityRoot", Group: "System", Handler: "handleReapOrphans", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/processes", Ability: "AbilityRoot", Group: "System", Handler: "handleGetSystemProcesses", Description: "Process names and memory of the control plane host are admin only."},
 	{Method: "GET", Path: "/api/v1/system/proxy-integration", Ability: "AbilityRead", Group: "System", Handler: "handleGetProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/apply", Ability: "AbilityRoot", Group: "System", Handler: "handleApplyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/install", Ability: "AbilityRoot", Group: "System", Handler: "handleInstallProxy", Description: ""},

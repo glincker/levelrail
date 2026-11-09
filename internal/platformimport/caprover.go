@@ -161,6 +161,10 @@ func mapCapRoverApp(def caproverDefinition, rootDomain string) App {
 		app.Notes = append(app.Notes, Note{Reason: fmt.Sprintf("raw port mapping %d:%d is not imported", p.HostPort, p.ContainerPort), Manual: "publish the port from the app settings if it must be reachable"})
 	}
 	app.Notes = append(app.Notes, caproverProxyNotes(def)...)
+	app.Policy = DomainPolicy{ForceHTTPS: def.ForceSSL, WebSocket: def.WebsocketSupport, RedirectTo: def.RedirectDomain}
+	if def.HTTPAuth != nil {
+		app.Policy.BasicAuthUser = def.HTTPAuth.User
+	}
 	if wh := def.AppPushWebhook; wh != nil && wh.RepoInfo.Repo != "" {
 		app.Kind, app.GitURL, app.GitBranch = SourceGit, gitURLFromRepo(wh.RepoInfo.Repo, "github.com"), wh.RepoInfo.Branch
 		app.scrubGitURL()

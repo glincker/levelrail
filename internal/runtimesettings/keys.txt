@@ -17,6 +17,7 @@ account.preferences_max_bytes
 api.apps_metrics_max
 api.conditional_get
 api.conditional_get_max_bytes
+api.expensive_read_ttl
 api.max_body_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
@@ -159,6 +160,8 @@ mesh.hub_resolve_ttl
 mesh.hub_stale_max
 mesh.ready_retry_seconds
 mesh.wake_debounce
+metrics.idle_interval
+metrics.presence_window
 models.hf_max_listed_files
 models.hf_max_response_bytes
 models.hf_timeout_seconds
@@ -229,6 +232,8 @@ security.protected_silence_max_days
 security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window
+spool.max_age_seconds
+spool.quota_bytes
 stacks.history_limit
 stacks.prune_max_count
 stacks.prune_max_percent
