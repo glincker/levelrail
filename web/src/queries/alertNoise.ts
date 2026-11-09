@@ -18,6 +18,7 @@ import type {
   MaintenanceWindow,
   Silence,
 } from '../types/alertNoise'
+import { pollMs } from '../lib/pollTier'
 
 export const alertNoiseKeys = {
   all: ['alert-noise'] as const,
@@ -187,6 +188,6 @@ export function useAlertHistory(filter: AlertHistoryFilter) {
         `${path}?${params.toString()}`,
         'list alert history',
       ),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }

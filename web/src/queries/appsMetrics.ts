@@ -8,6 +8,7 @@ import {
   scopeUrl,
   type ScopeParams,
 } from '../lib/scopeQuery'
+import { pollMs } from '../lib/pollTier'
 
 export const appsMetricsKeys = {
   all: ['apps-metrics'] as const,
@@ -35,7 +36,7 @@ export function appsMetricsQueryOptions() {
     queryKey: [...appsMetricsKeys.all, ...scopeKey(scope)] as const,
     queryFn: () => fetchAppsMetrics(scope),
     staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
     refetchIntervalInBackground: false,
     retry: false,
   })
