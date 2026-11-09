@@ -97,6 +97,10 @@ func (p *planner) planApp(r *Resource) {
 		liveRef = live
 	}
 	jobChanges, jobKept, jobOps := p.planJobs(r, jobs, liveRef, prune)
+	if len(jobOps) > 0 {
+		// Jobs sync through loopback with the caller's token, so a token below the root tier stops partway.
+		r.Warnings = append(r.Warnings, "app "+r.Name+" changes jobs, which needs a root-tier token; a lower tier fails after the app itself is applied")
+	}
 	r.Warnings = append(r.Warnings, connWarnings(conns, liveRef)...)
 	if !exists {
 		fields := append(addAll(f, additiveApp), jobChanges...)
