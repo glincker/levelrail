@@ -92,6 +92,7 @@
     "retentionHint": "0 turns a bucket off. Counts combine with the schedule's own keep-last and age limits.",
     "preHook": "Command before backup",
     "preHookHint": "A non-zero exit fails the backup, so an inconsistent volume is never archived.",
+    "hooksHidden": "Hook commands are hidden because changing them needs the write:sensitive ability.",
     "postHook": "Command after backup",
     "pause": "Pause the app while the archive streams",
     "pauseHint": "Freezes every process in the container so files cannot change mid-archive. The app is unavailable until the upload finishes.",

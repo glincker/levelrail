@@ -152,6 +152,7 @@ func (s *DokploySource) Discover(ctx context.Context) (*Discovery, error) {
 		}
 	}
 	s.collectDestinations(ctx, d)
+	s.collectNotifications(ctx, d)
 	return d, nil
 }
 

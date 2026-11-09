@@ -65,7 +65,12 @@ func (s *bootState) buildRunners() error {
 			Secrets:    secretsManager,
 			Downloader: routedStorage(agentRegistry),
 		}
-		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger)
+		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger, func() *runtimesettings.Service {
+			if s.apiRouter != nil {
+				return s.apiRouter.RuntimeSettings()
+			}
+			return nil
+		})
 		if err != nil {
 			return err
 		}

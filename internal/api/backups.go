@@ -201,6 +201,9 @@ type backupHistoryResource struct {
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 	// Codec is "zstd+age" for an encrypted object, empty for a raw one.
 	Codec string `json:"codec,omitempty"`
+	// HookOutput is a failing volume hook's masked output, filled only for
+	// callers who may change that app's hooks.
+	HookOutput string `json:"hook_output,omitempty"`
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {

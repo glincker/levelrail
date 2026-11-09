@@ -92,6 +92,7 @@
     "retentionHint": "0 desactiva un grupo. Las cantidades se combinan con los límites de últimos respaldos y antigüedad de la propia programación.",
     "preHook": "Comando antes del respaldo",
     "preHookHint": "Una salida distinta de cero hace fallar el respaldo, así nunca se archiva un volumen inconsistente.",
+    "hooksHidden": "Los comandos de los hooks están ocultos porque cambiarlos requiere el permiso write:sensitive.",
     "postHook": "Comando después del respaldo",
     "pause": "Pausar la aplicación mientras se transmite el archivo",
     "pauseHint": "Congela todos los procesos del contenedor para que los archivos no cambien durante el archivado. La aplicación no estará disponible hasta que termine la subida.",

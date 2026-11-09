@@ -66,6 +66,8 @@ type AccessFilter struct {
 	Since     time.Time
 	Path      string
 	Limit     int
+	// KeySince hides rows a key recorded before its current owner took it.
+	KeySince map[string]time.Time
 }
 
 type accessRing struct {
@@ -353,6 +355,9 @@ func (l *AccessLog) Query(keys []string, f AccessFilter) []AccessRecord {
 				continue
 			}
 			if !f.Since.IsZero() && rec.Time.Before(f.Since) {
+				continue
+			}
+			if ks, ok := f.KeySince[key]; ok && rec.Time.Before(ks) {
 				continue
 			}
 			if f.Path != "" && !strings.HasPrefix(rec.Path, f.Path) {

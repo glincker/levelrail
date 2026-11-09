@@ -20,6 +20,7 @@ type migrateDokployFlags struct {
 	nodeMap             string
 	createWebhooks      bool
 	enableBackups       bool
+	enableChannels      bool
 }
 
 // runMigrateDokploy implements "migrate dokploy", mirroring
@@ -53,6 +54,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
 	fs.BoolVar(&f.createWebhooks, "create-webhooks", false, createWebhooksHelp)
 	fs.StringVar(&journalFlag, "journal", "", journalFlagHelp)
+	fs.BoolVar(&f.enableChannels, "enable-imported-channels", false, "create imported alert channels enabled, which receive broadcast notices (key rotation, maintenance, updates) right away (default: created disabled)")
 	fs.BoolVar(&f.enableBackups, "enable-backup-schedules", false, "keep imported database backup schedules running when they were on in Dokploy (default: imported paused)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateDokployUsage(prog)) }
 
@@ -92,6 +94,11 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 		report.Backups.finishPlan(f.includeSecretValues)
 		if report.Backups != nil && f.apply && f.includeSecretValues {
 			report.Backups.creds = src.DestinationCredentials
+		}
+		report.Channels = planDokployChannels(disc, channelPlanOptionsFromEnv(ctx, f.enableChannels, lookupEnv))
+		report.Channels.finishPlan(f.includeSecretValues)
+		if report.Channels != nil && f.apply && f.includeSecretValues {
+			report.Channels.target = src.NotificationTarget
 		}
 	}
 
@@ -146,6 +153,10 @@ Flags:
                                   printed at the end); resume reads it and continues the open steps
   --enable-backup-schedules       keep imported database backup schedules running when they were on in
                                   Dokploy; by default they are imported paused
+  --enable-imported-channels      create imported alert channels enabled; by default they are created
+                                  disabled so nothing is sent until you turn them on; an enabled channel
+                                  receives broadcast notices (key rotation reminders, maintenance and
+                                  update notices) right away, with no routing needed
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
@@ -166,6 +177,15 @@ needs_secret with the create command to run. A name that already exists
 is skipped, never overwritten. Schedules bind to the database of the same
 name on the target and are imported paused unless
 --enable-backup-schedules is given.
+
+Notification providers become alert channels of the matching kind (slack,
+discord, telegram, email, gotify, ntfy, lark, pushover; custom becomes
+generic). Tokens and webhook URLs are read only with --apply and
+--include-secret-values and go straight to the channel create call;
+otherwise the channel is reported as needs_secret with a placeholder
+command. Channels are created disabled unless --enable-imported-channels
+is given, an existing name is skipped, and other kinds are listed as
+unsupported.
 
 Every --apply run writes a journal of what it created, step by step (names
 and step states only, never values or secrets). "resume" re-reads the

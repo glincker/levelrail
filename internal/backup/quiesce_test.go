@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -23,7 +24,13 @@ type hookRuntime struct {
 	events *[]string
 	fail   map[string]bool
 	hang   map[string]bool
-	out    string
+	// failOut hooks print out and then exit non-zero.
+	failOut map[string]bool
+	// killed hooks honour the in-container limit: they end at argv's seconds.
+	killed map[string]bool
+	// block hooks wait on this channel.
+	block chan struct{}
+	out   string
 }
 
 func (h *hookRuntime) Exec(ctx context.Context, _ string, cmd []string) (io.ReadCloser, error) {
@@ -34,6 +41,24 @@ func (h *hookRuntime) Exec(ctx context.Context, _ string, cmd []string) (io.Read
 	if h.hang[c] {
 		<-ctx.Done()
 		return nil, ctx.Err()
+	}
+	if h.killed[c] {
+		secs, _ := strconv.Atoi(cmd[4])
+		select {
+		case <-time.After(time.Duration(secs) * time.Second):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+		h.mu.Lock()
+		*h.events = append(*h.events, "killed")
+		h.mu.Unlock()
+		return io.NopCloser(errReader{err: &docker.ExecExitError{ExitCode: 137, Stderr: c}}), nil
+	}
+	if h.block != nil && strings.HasPrefix(c, "block") {
+		<-h.block
+	}
+	if h.failOut[c] {
+		return io.NopCloser(io.MultiReader(strings.NewReader(h.out), errReader{err: &docker.ExecExitError{ExitCode: 3, Stderr: c}})), nil
 	}
 	if h.fail[c] {
 		return nil, errors.New("exec failed with " + testRconSecret + " in " + c)
@@ -46,7 +71,7 @@ func newHookQuiescer(events *[]string, rt *hookRuntime, buf *strings.Builder) *C
 	rt.events = events
 	return &ContainerQuiescer{
 		Resolve: func(context.Context, string) (docker.Runtime, string, error) { return rt, "cid", nil },
-		Timeout: 50 * time.Millisecond, MaxTimeout: time.Second,
+		Timeout: 50 * time.Millisecond, MaxTimeout: 5 * time.Second, KillGrace: 50 * time.Millisecond,
 		Logger: slog.New(slog.NewTextHandler(buf, nil)),
 	}
 }
@@ -93,17 +118,32 @@ func TestHooks_NoHooksUnchanged(t *testing.T) {
 	}
 }
 
-func TestHooks_PreFailureStillBacksUpAndFlags(t *testing.T) {
+type errReader struct{ err error }
+
+func (e errReader) Read([]byte) (int, error) { return 0, e.err }
+
+// hookOutputHistory records saved hook outputs next to the in-memory rows.
+type hookOutputHistory struct {
+	*memHistory
+	outs map[string]string
+}
+
+func (h *hookOutputHistory) SaveBackupHookOutput(_ context.Context, id, phase, out string) error {
+	h.outs[id] = phase + ":" + out
+	return nil
+}
+
+func TestHooks_PreFailureAbortsAndPostRuns(t *testing.T) {
 	rt := &hookRuntime{fail: map[string]bool{"save-off " + testRconSecret: true}}
 	e, ev, logs, err := runHooked(t, rt, store.VolumeBackupPolicy{PreHook: "save-off " + testRconSecret, PostHook: "save-on " + testRconSecret})
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, ErrPreHookFailed) {
+		t.Fatalf("err = %v", err)
 	}
-	if strings.Join(ev, ",") != "hook:save-off,snapshot,hook:save-on" {
+	if strings.Join(ev, ",") != "hook:save-off,hook:save-on" {
 		t.Fatalf("events = %v", ev)
 	}
 	row := e.hist.rows["bkh_1"]
-	if row.Status != store.BackupStatusSucceeded || !strings.HasPrefix(row.Error, "inconsistent") || strings.Contains(row.Error, "inconsistent: inconsistent") {
+	if row.Status != store.BackupStatusFailed || !strings.Contains(row.Error, "pre-backup hook failed") {
 		t.Fatalf("row = %+v", row)
 	}
 	if strings.Contains(row.Error, testRconSecret) || strings.Contains(logs, testRconSecret) {
@@ -111,17 +151,118 @@ func TestHooks_PreFailureStillBacksUpAndFlags(t *testing.T) {
 	}
 }
 
-func TestHooks_PreTimeoutIsInconsistentAndPostRuns(t *testing.T) {
+func TestHooks_PreUnkilledReportsStillRunningAndPostRuns(t *testing.T) {
 	rt := &hookRuntime{hang: map[string]bool{"save-off": true}}
 	e, ev, _, err := runHooked(t, rt, store.VolumeBackupPolicy{PreHook: "save-off", PostHook: "save-on"})
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, ErrPreHookFailed) {
+		t.Fatalf("err = %v", err)
 	}
-	if strings.Join(ev, ",") != "hook:save-off,snapshot,hook:save-on" {
+	if strings.Join(ev, ",") != "hook:save-off,hook:save-on" {
 		t.Fatalf("events = %v", ev)
 	}
-	if !strings.Contains(e.hist.rows["bkh_1"].Error, "timed out") {
-		t.Fatalf("row = %+v", e.hist.rows["bkh_1"])
+	if row := e.hist.rows["bkh_1"]; row.Status != store.BackupStatusFailed || !strings.Contains(row.Error, "may still be running") {
+		t.Fatalf("row = %+v", row)
+	}
+}
+
+func TestHooks_PreKilledAtLimitBeforePostRuns(t *testing.T) {
+	rt := &hookRuntime{killed: map[string]bool{"save-off": true}}
+	var events []string
+	var logs strings.Builder
+	e := newVolTestEnv(t, Opts{})
+	q := newHookQuiescer(&events, rt, &logs)
+	q.Timeout, q.KillGrace = time.Second, 700*time.Millisecond
+	e.runner.Volume.Quiesce = q
+	e.hist.policies["web/data"] = store.VolumeBackupPolicy{PreHook: "save-off", PostHook: "save-on"}
+	err := e.runner.RunVolumeBackup(context.Background(), "bkh_1", "web", "data", "app-web-data", "bkt_test", "")
+	if !errors.Is(err, ErrPreHookFailed) {
+		t.Fatalf("err = %v", err)
+	}
+	if strings.Join(events, ",") != "hook:save-off,killed,hook:save-on" {
+		t.Fatalf("post must start only after the kill landed: %v", events)
+	}
+	if row := e.hist.rows["bkh_1"]; row.Error != "prepare volume for backup: pre-backup hook failed: timed out" {
+		t.Fatalf("row = %+v", row)
+	}
+}
+
+func TestHooks_ConcurrentRunOfSameVolumeRejected(t *testing.T) {
+	block := make(chan struct{})
+	rt := &hookRuntime{block: block}
+	var events []string
+	var logs strings.Builder
+	e := newVolTestEnv(t, Opts{})
+	q := newHookQuiescer(&events, rt, &logs)
+	q.Timeout = 5 * time.Second
+	e.runner.Volume.Quiesce = q
+	e.hist.policies["web/data"] = store.VolumeBackupPolicy{PreHook: "block-writes", PostHook: "save-on"}
+	first := make(chan error, 1)
+	go func() {
+		first <- e.runner.RunVolumeBackup(context.Background(), "bkh_1", "web", "data", "app-web-data", "bkt_test", "")
+	}()
+	deadline := time.Now().Add(2 * time.Second)
+	for !e.runner.VolumeBackupRunning("web", "data") {
+		if time.Now().After(deadline) {
+			t.Fatal("first run never took the lock")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	err := e.runner.RunVolumeBackup(context.Background(), "bkh_2", "web", "data", "app-web-data", "bkt_test", "")
+	if !errors.Is(err, ErrVolumeBackupBusy) {
+		t.Fatalf("second run err = %v", err)
+	}
+	if row := e.hist.rows["bkh_2"]; row.Status != store.BackupStatusFailed || row.Error != ErrVolumeBackupBusy.Error() {
+		t.Fatalf("second row = %+v", row)
+	}
+	close(block)
+	if err := <-first; err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+	if e.runner.VolumeBackupRunning("web", "data") {
+		t.Fatal("lock not released")
+	}
+}
+
+func TestHooks_FailureOutputTruncatedAndRedacted(t *testing.T) {
+	cmd := "dump --password " + testRconSecret
+	out := "token=" + testRconSecret + " ran " + cmd + " " + strings.Repeat("y", 4096)
+	rt := &hookRuntime{failOut: map[string]bool{cmd: true}, out: out}
+	var events []string
+	var logs strings.Builder
+	e := newVolTestEnv(t, Opts{})
+	q := newHookQuiescer(&events, rt, &logs)
+	q.Budgets = func(context.Context) (time.Duration, int64) { return 0, 128 }
+	e.runner.Volume.Quiesce = q
+	hs := &hookOutputHistory{memHistory: e.hist, outs: map[string]string{}}
+	e.runner.Store = hs
+	e.hist.policies["web/data"] = store.VolumeBackupPolicy{PreHook: cmd}
+	err := e.runner.RunVolumeBackup(context.Background(), "bkh_1", "web", "data", "app-web-data", "bkt_test", "")
+	if !errors.Is(err, ErrPreHookFailed) {
+		t.Fatalf("err = %v", err)
+	}
+	if row := e.hist.rows["bkh_1"]; row.Error != "prepare volume for backup: pre-backup hook failed: exit 3" || strings.Contains(logs.String(), "ran") {
+		t.Fatalf("history error and logs must stay generic: %q / %q", row.Error, logs.String())
+	}
+	saved := hs.outs["bkh_1"]
+	if !strings.HasPrefix(saved, "pre:") || strings.Contains(saved, testRconSecret) || strings.Contains(saved, "--password") || !strings.Contains(saved, "ran") {
+		t.Fatalf("saved output = %q", saved)
+	}
+	if len(saved) > 200 {
+		t.Fatalf("output not truncated: %d bytes", len(saved))
+	}
+}
+
+func TestHooks_ArgvKeepsCommandOutOfScript(t *testing.T) {
+	argv := hookArgv(`echo "$HOME"; rm -rf /x`, 2500*time.Millisecond)
+	if argv[0] != "sh" || argv[2] != hookWrapper || argv[4] != "2" || argv[5] != `echo "$HOME"; rm -rf /x` {
+		t.Fatalf("argv = %q", argv)
+	}
+}
+
+func TestHooks_LiveBudgetsClamped(t *testing.T) {
+	q := &ContainerQuiescer{MaxTimeout: 2 * time.Second, Budgets: func(context.Context) (time.Duration, int64) { return time.Hour, 64 }}
+	if to, out := q.budgets(context.Background()); to != 2*time.Second || out != 64 {
+		t.Fatalf("budgets = %v %d", to, out)
 	}
 }
 

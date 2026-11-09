@@ -56,6 +56,8 @@ auth.sso_auto_redirect
 autoscale.gauge_max_bytes
 autoscale.gauge_timeout
 backup.default_retention_hours
+backup.hook_max_output_bytes
+backup.hook_timeout_seconds
 backup.local_root
 backups.compose_restore_timeout
 backups.schedule_retain_default
@@ -303,6 +305,11 @@ tags.max_per_app
 tags.max_per_resource
 telemetry.access_log_retention
 telemetry.access_log_size
+telemetry.access_search_max_concurrent
+telemetry.access_search_max_rows
+telemetry.access_search_max_scan
+telemetry.access_search_max_term
+telemetry.access_search_max_window
 telemetry.log_budget_mb
 telemetry.logs_retention
 telemetry.metrics_retention

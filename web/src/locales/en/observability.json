@@ -349,5 +349,30 @@
     "lastError": "Last scrape failed: {{error}}",
     "invalidPort": "Enter a port from 1 to 65535.",
     "invalidPath": "Use a plain path like /metrics."
+  },
+  "accessSearch": {
+    "formLabel": "Request filters",
+    "status": "Status",
+    "anyStatus": "Any status",
+    "method": "Method",
+    "anyMethod": "Any method",
+    "path": "Path prefix",
+    "pathPlaceholder": "/api/",
+    "text": "Path contains",
+    "textPlaceholder": "Text in path",
+    "window": "Time window",
+    "search": "Search",
+    "privacyNote": "Recent requests kept in memory at the edge. Query strings are never recorded and client IPs are not shown.",
+    "loading": "Loading requests",
+    "empty": "No requests match these filters.",
+    "colTime": "Time",
+    "colStatus": "Status",
+    "colMethod": "Method",
+    "colPath": "Host and path",
+    "colDuration": "ms",
+    "truncated": "The search stopped at its scan limit. Narrow the filters for a complete result.",
+    "newer": "Newer",
+    "older": "Older",
+    "tab": "Requests"
   }
 }

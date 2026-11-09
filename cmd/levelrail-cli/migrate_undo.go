@@ -115,6 +115,10 @@ func planUndo(ctx context.Context, client *Client, j *migrateJournal, f migrateU
 
 func planOne(ctx context.Context, client *Client, r *journalResource, f migrateUndoFlags) undoItem {
 	item := undoItem{r: r, action: undoSkip}
+	if r.Kind == journalKindChannel {
+		item.action, item.reason = planChannelUndo(ctx, client, r)
+		return item
+	}
 	if r.Kind != journalKindApp {
 		item.action, item.reason = planBackupUndo(ctx, client, r)
 		return item
@@ -201,7 +205,9 @@ func executeUndo(ctx context.Context, client *Client, f migrateUndoFlags, j *mig
 			continue
 		}
 		var err error
-		if it.r.Kind != journalKindApp {
+		if it.r.Kind == journalKindChannel {
+			err = client.DeleteNotificationChannel(ctx, it.r.TargetID)
+		} else if it.r.Kind != journalKindApp {
 			err = undoBackupResource(ctx, client, it.r)
 		} else if it.data {
 			_, err = client.DeleteAppAndData(ctx, it.r.Name)

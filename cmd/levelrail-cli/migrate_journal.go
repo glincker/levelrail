@@ -59,7 +59,7 @@ var (
 	journalSteps         = []string{stepCreated, stepGitSource, stepNode, stepIngress, stepPreviews, stepSecrets, stepFiles, stepWebhook, stepUndone, stepPaused}
 	journalStates        = []string{stateDone, stateFailed, stateSkipped, statePending, stateReview, stateUnknown}
 	journalSources       = []string{"coolify", "dokploy"}
-	journalKinds         = []string{journalKindApp, journalKindBackupTarget, journalKindBackupSchedule}
+	journalKinds         = []string{journalKindApp, journalKindBackupTarget, journalKindBackupSchedule, journalKindChannel}
 	journalNameRE        = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
 	journalTargetIDRE    = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 	journalFingerprintRE = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)

@@ -239,6 +239,8 @@ type Discovery struct {
 	Servers     []Server
 	// Destinations are object-storage backup targets, read without their keys.
 	Destinations []BackupDestination
+	// Notifications are alert providers, read without their tokens or webhook URLs.
+	Notifications []NotificationProvider
 	// Warnings are source reads that failed softly, so the plan lacks that detail.
 	Warnings []string
 }

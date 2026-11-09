@@ -54,6 +54,11 @@ func (rt *Router) handleTriggerVolumeBackup(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if busy, ok := rt.serviceVolumeBackupRunner.(volumeBackupBusyChecker); ok && busy.VolumeBackupRunning(serviceName, volumeName) {
+		writeError(w, http.StatusConflict, "another backup of this volume is running")
+		return
+	}
+
 	historyID, ok := rt.prepareBackupTrigger(w, r, req.TargetID, "api: trigger volume backup")
 	if !ok {
 		return
@@ -101,11 +106,29 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 		rt.internalError(w, "api: list volume backup history failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
+	outputs, _ := rt.serviceVolumeBackupHistory.(backupHookOutputReader)
+	mayEdit := outputs != nil && rt.callerMayEditBackupHooks(r, serviceName)
 	out := make([]backupHistoryResource, 0, len(history))
 	for _, h := range history {
-		out = append(out, toBackupHistoryResource(h))
+		res := toBackupHistoryResource(h)
+		if mayEdit && h.Status == store.BackupStatusFailed {
+			if _, o, err := outputs.GetBackupHookOutput(r.Context(), h.ID); err == nil {
+				res.HookOutput = o
+			}
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// volumeBackupBusyChecker is the optional runner capability behind the 409.
+type volumeBackupBusyChecker interface {
+	VolumeBackupRunning(service, volume string) bool
+}
+
+// backupHookOutputReader reads a failing hook's masked output.
+type backupHookOutputReader interface {
+	GetBackupHookOutput(ctx context.Context, historyID string) (phase, output string, err error)
 }
 
 // volumeBackupScheduleResource is the wire shape for a service volume's

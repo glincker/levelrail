@@ -332,6 +332,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SYSTEM_PROCESSES_MAX_ROWS` | [`system.processes_max_rows`](/runtime-settings#observability) | `25` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
 | `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
+| `APP_ACCESS_SEARCH_MAX_CONCURRENT` | [`telemetry.access_search_max_concurrent`](/runtime-settings#observability) | `4` |
+| `APP_ACCESS_SEARCH_MAX_ROWS` | [`telemetry.access_search_max_rows`](/runtime-settings#observability) | `200` |
+| `APP_ACCESS_SEARCH_MAX_SCAN` | [`telemetry.access_search_max_scan`](/runtime-settings#observability) | `200000` |
+| `APP_ACCESS_SEARCH_MAX_TERM` | [`telemetry.access_search_max_term`](/runtime-settings#observability) | `256` |
+| `APP_ACCESS_SEARCH_MAX_WINDOW` | [`telemetry.access_search_max_window`](/runtime-settings#observability) | `24h` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
@@ -349,6 +354,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_USAGE_ALERT_PERCENT` | [`volumes.usage_alert_percent`](/runtime-settings#observability) | `90` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
+| `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
 | `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
 | `APP_BACKUP_SCHEDULE_RETAIN_DEFAULT` | [`backups.schedule_retain_default`](/runtime-settings#data-retention) | `0` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |

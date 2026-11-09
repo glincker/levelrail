@@ -68,14 +68,19 @@ func webhookLimits(lookupEnv func(string) (string, bool)) (maxHooks, maxURL int)
 		envPositiveInt(lookupEnv, envMigrateRepoURLMaxLen, defaultMigrateRepoURLMax, ceilingMigrateRepoURLMax)
 }
 
+// unsafeRune covers control and format characters (bidi overrides, zero-width marks).
+func unsafeRune(r rune) bool {
+	return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
+}
+
 func hasControlChar(s string) bool {
-	return strings.IndexFunc(s, unicode.IsControl) >= 0
+	return strings.IndexFunc(s, unsafeRune) >= 0
 }
 
 // cleanDetail keeps a provider or server message printable and short.
 func cleanDetail(s string) string {
 	s = strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
+		if unsafeRune(r) {
 			return ' '
 		}
 		return r

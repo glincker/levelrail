@@ -769,6 +769,7 @@ Endpoints for:
 | POST | /api/v1/apps/import-bundle | AbilityWrite | handleImportAppBundle |
 | GET | /api/v1/apps/{name}/build-settings | AbilityRead | handleGetAppBuildSettings |
 | PUT | /api/v1/apps/{name}/build-settings | AbilityWrite | handleSetAppBuildSettings |
+| GET | /api/v1/apps/{name}/access/search | AbilityRead | handleAppAccessSearch |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2323,6 +2324,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/tags/{id}/databases | AbilityRead | handleListDatabasesByTag |
 | GET | /api/v1/shell | AbilityRead | handleShellOverview |
 | GET | /api/v1/builds/cache/quota | AbilityRead | handleBuildCacheQuota |
+| GET | /api/v1/logs/access | AbilityRead | handleAccessSearch |
 | POST | /mcp | Public |  |
 
 ## See also

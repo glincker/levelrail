@@ -349,5 +349,30 @@
     "lastError": "La última lectura falló: {{error}}",
     "invalidPort": "Escribe un puerto de 1 a 65535.",
     "invalidPath": "Usa una ruta simple como /metrics."
+  },
+  "accessSearch": {
+    "formLabel": "Filtros de solicitudes",
+    "status": "Estado",
+    "anyStatus": "Cualquier estado",
+    "method": "Método",
+    "anyMethod": "Cualquier método",
+    "path": "Prefijo de ruta",
+    "pathPlaceholder": "/api/",
+    "text": "La ruta contiene",
+    "textPlaceholder": "Texto en la ruta",
+    "window": "Ventana de tiempo",
+    "search": "Buscar",
+    "privacyNote": "Solicitudes recientes guardadas en memoria en el borde. Nunca se registran las cadenas de consulta y no se muestran las IP de los clientes.",
+    "loading": "Cargando solicitudes",
+    "empty": "Ninguna solicitud coincide con estos filtros.",
+    "colTime": "Hora",
+    "colStatus": "Estado",
+    "colMethod": "Método",
+    "colPath": "Host y ruta",
+    "colDuration": "ms",
+    "truncated": "La búsqueda se detuvo en su límite de escaneo. Ajusta los filtros para un resultado completo.",
+    "newer": "Más recientes",
+    "older": "Más antiguas",
+    "tab": "Solicitudes"
   }
 }

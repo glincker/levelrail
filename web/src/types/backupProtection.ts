@@ -92,6 +92,8 @@ export interface VolumeBackupPolicy {
   pre_hook: string
   post_hook: string
   quiesce: '' | 'pause'
+  /** Set when the caller lacks write:sensitive, so the hook commands are withheld. */
+  hooks_hidden?: boolean
 }
 
 export interface VolumeRestoreToRequest {

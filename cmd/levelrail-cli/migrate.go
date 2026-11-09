@@ -134,6 +134,7 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 		}
 		applyMigrationJournaled(ctx, client, &plain, jr)
 		applyBackupImport(ctx, client, plain.Backups, jr)
+		applyChannelImport(ctx, client, plain.Channels, jr)
 		if f.createWebhooks {
 			applyMigrationWebhooks(ctx, client, plain.Apps, lookupEnv)
 			jr.recordWebhooks(plain.Apps)
@@ -160,6 +161,7 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 	printMigrationReportHuman(stdout, plain, prog, f.outDir)
 	printStagedServices(stdout, composeApps)
 	printBackupImport(stdout, plain.Backups)
+	printChannelImport(stdout, plain.Channels)
 	return exitOK
 }
 

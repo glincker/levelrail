@@ -16,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -33,7 +34,7 @@ func backupDataDir() string {
 
 // newVolumeBackupOptions builds the sealed volume backup behavior: encryption
 // key, budgets and pre/post hooks resolved against the app's own container.
-func newVolumeBackupOptions(db *store.DB, local docker.Runtime, registry *agent.Registry, logger *slog.Logger) (*backup.VolumeBackupOptions, error) {
+func newVolumeBackupOptions(db *store.DB, local docker.Runtime, registry *agent.Registry, logger *slog.Logger, settings func() *runtimesettings.Service) (*backup.VolumeBackupOptions, error) {
 	sealer, err := backup.LoadSealer(os.LookupEnv, backupDataDir())
 	if err != nil {
 		return nil, fmt.Errorf("load backup encryption key: %w", err)
@@ -60,6 +61,14 @@ func newVolumeBackupOptions(db *store.DB, local docker.Runtime, registry *agent.
 		return rt, st.ID, nil
 	}}
 	quiescer.HookBudgetsFromEnv(os.LookupEnv)
+	quiescer.Budgets = func(ctx context.Context) (time.Duration, int64) {
+		rs := settings()
+		if rs == nil {
+			return 0, 0
+		}
+		return time.Duration(rs.Int(ctx, runtimesettings.KeyBackupHookTimeoutSeconds)) * time.Second,
+			int64(rs.Int(ctx, runtimesettings.KeyBackupHookMaxOutputBytes))
+	}
 	opts.Quiesce = quiescer
 	return opts, nil
 }

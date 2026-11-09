@@ -15,6 +15,8 @@ type migrationReport struct {
 	Applied     bool        `json:"applied"`
 	// Backups lists imported backup targets and schedules, by name only.
 	Backups *backupImport `json:"backups,omitempty"`
+	// Channels lists imported alert channels by name and kind only.
+	Channels *channelImport `json:"channels,omitempty"`
 }
 
 func (r migrationReport) sourceLabel() string {

@@ -1,0 +1,7 @@
+[
+  {"notificationId": "ntf-slack", "name": "Ops Slack", "notificationType": "slack", "slack": {"webhookUrl": "https://hooks.example.com/services/FIXTURE-SLACK-TOKEN", "channel": "#ops"}},
+  {"notificationId": "ntf-tg", "name": "Pager Telegram", "notificationType": "telegram", "telegram": {"botToken": "fixture-bot-token", "chatId": "-1001", "messageThreadId": ""}},
+  {"notificationId": "ntf-ntfy", "name": "Phone", "notificationType": "ntfy", "ntfy": {"serverUrl": "https://ntfy.example.com/", "topic": "fixture-secret-topic", "accessToken": "fixture-ntfy-token"}},
+  {"notificationId": "ntf-mail", "name": "On-call Mail", "notificationType": "email", "email": {"smtpServer": "smtp.example.com", "smtpPort": 587, "username": "mailer", "password": "fixture-smtp-password", "fromAddress": "alerts@example.com", "toAddresses": ["oncall@example.com"]}},
+  {"notificationId": "ntf-matrix", "name": "Matrix Room", "notificationType": "matrix", "matrix": {"accessToken": "fixture-matrix-token"}}
+]
