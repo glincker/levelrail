@@ -19,6 +19,9 @@ const (
 	CodecZstdAge = "zstd+age"
 )
 
+// ErrExportKeyMismatch means the export was sealed with a different instance key.
+var ErrExportKeyMismatch = errors.New("this export was sealed with a different instance key")
+
 // Environment variables that tune sealed volume backups.
 const (
 	EnvBackupEncryption    = "APP_BACKUP_ENCRYPTION"

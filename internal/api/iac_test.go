@@ -261,3 +261,26 @@ func TestIaCExportEnvValuesNeedReadSensitive(t *testing.T) {
 		t.Fatalf("root export lost env values:\n%s", out.Join())
 	}
 }
+
+func TestIaCPlanRefusesJobsForWriteTierToken(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+	tok := seedMatrixToken(t, db, "wr-tok", []string{AbilityRead, AbilityWrite})
+	docs := iacTestDocs + `    jobs:
+      - name: nightly
+        schedule: "0 3 * * *"
+        command: [node, nightly.js]
+`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apply/plan", strings.NewReader(iacRequestBody(t, docs, nil)))
+	req.Header.Set("Authorization", "Bearer "+tok)
+	var plan iacPlanResponse
+	if code := iacCall(t, rt, req, &plan); code != http.StatusOK || plan.Plan == nil {
+		t.Fatalf("status = %d, issues = %+v", code, plan.Issues)
+	}
+	for _, c := range plan.Plan.Changes {
+		if c.Kind == iac.KindApp && c.Action == iac.ActionError && strings.Contains(c.Reason, "root-tier") {
+			return
+		}
+	}
+	t.Fatalf("jobs were not refused at plan time: %+v", plan.Plan.Changes)
+}

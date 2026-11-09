@@ -205,6 +205,8 @@ type result struct {
 	attempts    int
 	secrets     []string
 	infraErr    error
+	// refused marks an attempt blocked by policy, which a retry cannot change.
+	refused bool
 }
 
 // RunTrigger runs task once. task.ConcurrencyPolicy governs a still
@@ -374,7 +376,7 @@ func (r *Runner) execute(runCtx context.Context, task store.ScheduledTask, runID
 	for attempt := 1; ; attempt++ {
 		res = r.attempt(runCtx, task, runID)
 		res.attempts = attempt
-		if res.status == store.ScheduledTaskStatusSuccess || !retryable(res.status) || attempt > retries || runCtx.Err() != nil {
+		if res.status == store.ScheduledTaskStatusSuccess || res.refused || !retryable(res.status) || attempt > retries || runCtx.Err() != nil {
 			break
 		}
 		history = append(history, fmt.Sprintf("attempt %d: %s", attempt, res.status))
@@ -435,6 +437,13 @@ func (r *Runner) attempt(runCtx context.Context, task store.ScheduledTask, runID
 		}
 	}
 	res := result{nodeID: svc.NodeID}
+
+	// Exec access is read at fire time so turning it off stops existing schedules too.
+	if !svc.ExecEnabled {
+		res.status, res.refused = store.ScheduledTaskStatusFailed, true
+		res.message = fmt.Sprintf("refused: exec access is disabled for app %q; enable it with PUT /api/v1/apps/%s/exec-access", task.ServiceName, task.ServiceName)
+		return res
+	}
 
 	rt, err := r.Resolver(svc.NodeID)
 	if err != nil {

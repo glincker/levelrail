@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"sort"
 	"strings"
 	"time"
+
+	"filippo.io/age"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -127,6 +130,20 @@ func (p *Protection) Encryption() EncryptionStatus {
 		}
 	}
 	return st
+}
+
+// OpenSealedExport decrypts and decompresses a sealed export with this
+// instance's own key. A different instance's export fails with ErrExportKeyMismatch.
+func (p *Protection) OpenSealedExport(r io.Reader) (io.ReadCloser, error) {
+	if p.Sealer == nil || len(p.Sealer.Identities) == 0 {
+		return nil, ErrNoDecryptionKey
+	}
+	rc, err := OpenSealed(r, CodecZstdAge, p.Sealer.Identities)
+	var noMatch *age.NoIdentityMatchError
+	if errors.As(err, &noMatch) {
+		return nil, ErrExportKeyMismatch
+	}
+	return rc, err
 }
 
 // Health builds one row per backed up or scheduled resource.

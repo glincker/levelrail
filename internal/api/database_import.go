@@ -213,6 +213,19 @@ func (rt *Router) handleDatabaseImport(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusBadRequest, "the dump is empty; nothing was restored")
 		return
 	}
+	if isAge, aerr := isAgeExport(spool.f); aerr == nil && isAge {
+		plain, pn, msg := rt.unsealImport(spool, maxBytes)
+		if msg != "" {
+			fail(http.StatusBadRequest, msg)
+			return
+		}
+		spool, written = plain, pn
+		defer spool.discard()
+		if pn == 0 {
+			fail(http.StatusBadRequest, "the dump is empty; nothing was restored")
+			return
+		}
+	}
 	if msg, herr := sealedImportReason(spool.f, db.Engine); herr != nil || msg != "" {
 		if herr != nil {
 			msg = "the upload could not be read back; nothing was restored"

@@ -686,6 +686,7 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res, opts, issues := req.iac(name, project, prune).build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		resp.Issues = issues
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
@@ -813,6 +814,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	}
 	project := rt.projectName(ctx, stack.ProjectID)
 	res, opts, issues := req.iac(stack.Name, project, req.Prune).build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: stack.Name, Issues: issues})
 		return

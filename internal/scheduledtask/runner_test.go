@@ -161,7 +161,7 @@ func testTask() store.ScheduledTask {
 }
 
 func TestRunner_Run_Success(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	rt := &fakeRuntime{
 		inspectState: &docker.ContainerState{ID: "c1", Running: true},
@@ -210,7 +210,7 @@ func (e *errReadCloser) Read(p []byte) (int, error) {
 func (e *errReadCloser) Close() error { return nil }
 
 func TestRunner_Run_NonzeroExit_RecordsFailedWithStderr(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	execErr := &docker.ExecExitError{Cmd: []string{"false"}, Container: "c1", ExitCode: 1, Stderr: "boom"}
 	rt := &fakeRuntime{
@@ -244,7 +244,7 @@ func TestRunner_Run_ContainerNotRunning(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+			apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 			runs := &fakeRunStore{}
 			rt := &fakeRuntime{inspectState: tc.state}
 			r := newTestRunner(apps, runs, rt, nil)
@@ -271,7 +271,7 @@ func TestRunner_Run_ContainerNotRunning(t *testing.T) {
 // look like a scheduler-crashing infrastructure failure: see Runner.Run's
 // own doc comment.
 func TestRunner_Run_NodeUnreachable(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	r := newTestRunner(apps, runs, nil, errors.New("node not registered"))
 
@@ -310,7 +310,7 @@ func (b *blockingReadCloser) Close() error {
 }
 
 func TestRunner_Run_Timeout(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	blocking := newBlockingReadCloser()
 	t.Cleanup(func() { _ = blocking.Close() })

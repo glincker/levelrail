@@ -748,6 +748,7 @@ levelrail-cli databases major-upgrade-discard <name> <id> [flags]
 ```
 
 - `status` shows a database's current reconcile conditions (useful when it exists but is not running yet).
+- `import` also accepts an export made by `databases export` when that backup target is encrypted. The control plane decrypts it with its own instance key, so this works only on the instance that made the export. A file sealed with another instance's key is refused with a clear message and nothing is restored. There is no plain text export option.
 - `import-hosted` copies a hosted Postgres (such as Heroku) into an existing managed Postgres database. The source URL is read from the environment variable named by `--from-env` or from the first line of stdin, never from an argument. `--dry-run` runs the preflight only and prints blockers, warnings and info with the fix for each. Without `--writes-frozen` a real run refuses. Exit code 1 means the preflight is blocked or the move failed. See [Migration reference](/migration-reference#move-a-hosted-postgres-heroku).
 - `delete` stops and removes a database but keeps its data volume; `--force` is needed if apps use it.
 - `slow-queries` lists a Postgres or MySQL database's slow query log.

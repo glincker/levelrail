@@ -333,6 +333,21 @@ func TestRunner_ExecMode_WritesHistory(t *testing.T) {
 	}
 }
 
+func TestRunner_ExecDisabledRefusesAtFireTime(t *testing.T) {
+	rt := &fakeRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	env := newJobEnv(t, rt, nil, func(j *store.ScheduledTask) { j.MaxRetries = 2 })
+	if err := env.db.SetServiceExecEnabled(context.Background(), "web", false); err != nil {
+		t.Fatalf("disable exec: %v", err)
+	}
+	if err := env.runner.RunTrigger(context.Background(), env.task, Trigger{Kind: store.ScheduledTaskTriggerSchedule}); err != nil {
+		t.Fatalf("RunTrigger: %v", err)
+	}
+	run := env.lastRun(t)
+	if run.Status != store.ScheduledTaskStatusFailed || !strings.Contains(run.Message, "exec access is disabled") || run.Attempts != 1 {
+		t.Errorf("run = %+v, want one failed attempt with an exec-disabled reason", run)
+	}
+}
+
 func nopReader(s string) io.ReadCloser { return io.NopCloser(strings.NewReader(s)) }
 
 // The value is known only to the mask registry (not to the job's own secret list), as with a vault value.
