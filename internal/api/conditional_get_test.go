@@ -13,7 +13,7 @@ func condServe(h http.HandlerFunc, path, inm string, enabled bool) *httptest.Res
 		req.Header.Set("If-None-Match", inm)
 	}
 	rec := httptest.NewRecorder()
-	conditionalGetMiddleware(func(*http.Request) bool { return enabled }, h).ServeHTTP(rec, req)
+	conditionalGetMiddleware(func(*http.Request) bool { return enabled }, nil, h).ServeHTTP(rec, req)
 	return rec
 }
 

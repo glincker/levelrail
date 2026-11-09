@@ -95,6 +95,7 @@ func (rt *Router) handleQueryMetrics(w http.ResponseWriter, r *http.Request) {
 // noun feed the log lines and 404 message so an app 404 reads
 // "app not found" and a database 404 reads "database not found".
 func (rt *Router) queryResourceMetrics(w http.ResponseWriter, r *http.Request, lookup resourceLookup, opName, noun string) {
+	rt.presence.Touch()
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return

@@ -387,3 +387,20 @@ func TestStaticPreview_FirstDeployWithoutOwnerStillDeploysAndFailureLeavesNoGate
 		t.Fatal("gate row left behind after a failed deploy")
 	}
 }
+
+func TestStaticPreview_FirstDeployIsGatedBeforeReturn(t *testing.T) {
+	rt, db, probe, domain := setUpGatedDeploy(t, nil)
+	ctx := context.Background()
+	s := store.PreviewAppSettings{GateBasicAuth: true, GateUsername: "reviewer"}
+	gs := store.GitSource{ServiceName: "web", BuildType: spec.BuildStatic}
+
+	if _, _, err := rt.deployPreviewStatic(ctx, "web", "web-pr-7", gs, t.TempDir(), "sha7", domain, s); err != nil {
+		t.Fatalf("deployPreviewStatic() error = %v", err)
+	}
+	if probe.row {
+		t.Fatal("gate row existed before the first claim; the claim cannot precede Deploy")
+	}
+	if _, found, err := db.GetDomainBasicAuth(ctx, domain); err != nil || !found {
+		t.Fatalf("gate row found = %v, err %v; want gated before the reconciler is nudged", found, err)
+	}
+}

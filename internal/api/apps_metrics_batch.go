@@ -42,6 +42,7 @@ type appMetricsSummary struct {
 // usage plus a one hour request summary and sparkline for every readable app
 // (or the comma separated names query param), in one response.
 func (rt *Router) handleBatchAppMetrics(w http.ResponseWriter, r *http.Request) {
+	rt.presence.Touch()
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return

@@ -94,6 +94,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
+| `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |

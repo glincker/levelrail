@@ -48,6 +48,11 @@ func (s *bootState) startTelemetry() {
 	notifyClient := s.notifyClient
 	telemetryDB := s.telemetryDB
 	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
+	presence := telemetry.NewPresence(metricsPresenceWindow)
+	collector.SetPresence(presence, metricsIdleInterval)
+	if s.apiRouter != nil {
+		s.apiRouter.SetPresence(presence)
+	}
 	go func() {
 		targets := telemetryTargets(db, client, agentRegistry, meshCfg, logger)
 		if err := collector.Run(ctx, withModelTelemetryTargets(targets, db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
