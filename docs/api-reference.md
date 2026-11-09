@@ -123,6 +123,9 @@ System endpoints for:
 | GET | /api/v1/system/storage/inventory | AbilityRead | handleStorageInventory |
 | GET | /api/v1/system/disk/history | AbilityRead | handleDiskHistory |
 | POST | /api/v1/updates/auto/notice/dismiss | AbilityRoot | handleDismissUpgradeNotice |
+| GET | /api/v1/system/db-space | AbilityRead | handleGetDBSpace |
+| POST | /api/v1/system/db-space/compact | AbilityRoot | handleCompactDB |
+| GET | /api/v1/system/processes | AbilityRoot | handleGetSystemProcesses |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -1422,6 +1425,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/import | AbilityWriteSensitive | handleImportVolume |
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause | AbilityWriteSensitive | handlePauseVolumeBackupSchedule |
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume | AbilityWriteSensitive | handleResumeVolumeBackupSchedule |
+| GET | /api/v1/apps/{name}/volumes/{volume}/size-history | AbilityRead | handleVolumeSizeHistory |
 
 ## App Storage / Database Attach
 

@@ -236,6 +236,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
 | `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_DB_COMPACT_MIN_FREE_PERCENT` | [`db.compact_min_free_percent`](/runtime-settings#observability) | `10` |
+| `APP_DB_SPACE_REPORT_ROWS` | [`db.space_report_rows`](/runtime-settings#observability) | `20` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
@@ -271,6 +273,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_READ_CONNS` | [`store.read_connections`](/runtime-settings#observability) | `4` |
 | `APP_DB_SYNCHRONOUS` | [`store.synchronous`](/runtime-settings#observability) | `default` |
 | `APP_DB_TEMP_STORE` | [`store.temp_store`](/runtime-settings#observability) | `default` |
+| `APP_SYSTEM_PROCESSES_MAX_ROWS` | [`system.processes_max_rows`](/runtime-settings#observability) | `25` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
 | `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
