@@ -33,3 +33,22 @@ func TestGoroutineLabelsRunHoldsCount(t *testing.T) {
 		}
 	})
 }
+
+func TestStreamHoldsCountUntilDone(t *testing.T) {
+	done := Stream(context.Background(), "test-stream-label")
+	found := false
+	for _, s := range Subsystems() {
+		if s.Name == "test-stream-label" && s.Count == 1 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("stream not counted")
+	}
+	done()
+	for _, s := range Subsystems() {
+		if s.Name == "test-stream-label" {
+			t.Fatalf("still listed: %d", s.Count)
+		}
+	}
+}

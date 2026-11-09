@@ -501,6 +501,7 @@ Thresholds have defaults and can be overridden per control plane, not per rule.
 | Cert expiry warning window | 14 days | none |
 | Patch status | 1 pending security patch | `APP_ALERT_PATCH_STATUS_THRESHOLD` |
 | Node disk space | 90% used | `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` |
+| Volume usage | 85% used | `APP_ALERT_VOLUME_USAGE_THRESHOLD_PERCENT` (samples every `APP_VOLUME_USAGE_SAMPLE_INTERVAL`, capacity from the filesystem at `APP_VOLUME_USAGE_TOTAL_PATH`) |
 | Node CPU | 80% | `APP_ALERT_NODE_CPU_THRESHOLD_PERCENT` |
 | Node memory | 4 GiB | `APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES` |
 | Domain health check interval | built-in default | `APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL` |

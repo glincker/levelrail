@@ -226,6 +226,10 @@ func (rt *Router) handleListMailDomains(w http.ResponseWriter, r *http.Request) 
 	for _, d := range list {
 		out = append(out, mailDomainResource{d})
 	}
+	sortQuery(r, out, map[string]func(a, b mailDomainResource) int{
+		"domain":  func(a, b mailDomainResource) int { return strings.Compare(a.Domain, b.Domain) },
+		"created": func(a, b mailDomainResource) int { return strings.Compare(a.CreatedAt, b.CreatedAt) },
+	})
 	writeJSON(w, http.StatusOK, out)
 }
 

@@ -165,6 +165,7 @@ func (s *bootState) startAlerting() {
 		return alerting.LogRulePolicy{EvalEvery: l.EvalEvery, MaxWindow: l.MaxWindow, MaxRows: l.MaxRows, Samples: l.Samples}
 	})
 	alertingEngine.SetDomainTraffic(apiRouter)
+	wireVolumeUsage(ctx, alertingEngine, client, db, telemetryDB, logger)
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetCleanup(apiRouter)
 	alertingEngine.SetDatabaseHealth(apiRouter)

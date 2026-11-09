@@ -436,6 +436,8 @@ levelrail-cli apps storage clear <name> [flags]
 levelrail-cli apps backups services <app>
 levelrail-cli apps backups schedule set <app> <service> --target ID --cron EXPR [--retain N] [--retain-days N] [--disable]
 levelrail-cli apps backups schedule clear <app> <service>
+levelrail-cli apps backups schedule pause <app> <service>
+levelrail-cli apps backups schedule resume <app> <service>
 levelrail-cli apps backups runs <app> <service>
 levelrail-cli apps backups run <app> <service> --target ID
 levelrail-cli apps backups restore <app> <service> <run> [--yes]

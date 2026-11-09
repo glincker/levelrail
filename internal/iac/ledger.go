@@ -445,6 +445,9 @@ func (p *planner) planLedgerPrune() {
 				continue
 			}
 		}
+		if p.refuseProtectedPrune(r) {
+			continue
+		}
 		if p.deniedItem(r, pruneReadKey(kind, scope, name, e.LiveID)) {
 			continue
 		}

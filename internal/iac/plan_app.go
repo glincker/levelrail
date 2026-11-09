@@ -97,9 +97,8 @@ func (p *planner) planApp(r *Resource) {
 		liveRef = live
 	}
 	jobChanges, jobKept, jobOps := p.planJobs(r, jobs, liveRef, prune)
-	if len(jobOps) > 0 {
-		// Jobs sync through loopback with the caller's token, so a token below the root tier stops partway.
-		r.Warnings = append(r.Warnings, "app "+r.Name+" changes jobs, which needs a root-tier token; a lower tier fails after the app itself is applied")
+	if len(jobOps) > 0 && p.jobTierGate(r) {
+		return
 	}
 	r.Warnings = append(r.Warnings, connWarnings(conns, liveRef)...)
 	if !exists {
@@ -226,10 +225,23 @@ func (p *planner) planPrune() {
 			}
 		}
 		r := &Resource{Kind: KindApp, Name: name}
+		if p.refuseProtectedPrune(r) {
+			continue
+		}
 		p.add(r, ActionDelete, nil, nil, func(ctx context.Context, x *executor) error {
 			return x.d.Do(ctx, "DELETE", "/api/v1/apps/"+esc(name), nil, nil)
 		}).Reason = "carries the managed-by tag for source " + p.opts.Source + " and is absent from the files"
 	}
+}
+
+// refuseProtectedPrune fails a prune delete of a protected app before anything
+// is applied, matching the refusal the delete endpoint would give midway.
+func (p *planner) refuseProtectedPrune(r *Resource) bool {
+	if r.Kind != KindApp || !p.st.protected[r.Name] {
+		return false
+	}
+	p.fail(r, "app %s is protected and cannot be pruned; unprotect it or declare it in the files", r.Name)
+	return true
 }
 
 func (p *planner) pruneLB(app string) {

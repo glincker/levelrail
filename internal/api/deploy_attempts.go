@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
@@ -491,6 +492,7 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 		rt.logger.Error("api: deploy log stream: response writer does not support flushing", slog.String("deploy_id", deployID))
 		return
 	}
+	defer footprint.Stream(ctx, "stream:deploy log")()
 
 	// A zero-body WriteHeader+Flush never reaches the browser through
 	// Vite's dev proxy (Node's http-proxy only forwards headers on the

@@ -75,6 +75,17 @@ func connWarnings(conns map[string]string, live *liveApp) []string {
 	return out
 }
 
+// jobTierGate refuses an app whose job writes the caller cannot make, before
+// any resource is applied; otherwise it warns, since jobs sync with the caller token.
+func (p *planner) jobTierGate(r *Resource) bool {
+	if p.opts.BelowRoot {
+		p.fail(r, "app %s changes jobs, which needs a root-tier token; nothing was applied", r.Name)
+		return true
+	}
+	r.Warnings = append(r.Warnings, "app "+r.Name+" changes jobs, which needs a root-tier token; a lower tier fails after the app itself is applied")
+	return false
+}
+
 // planJobs diffs declared jobs by name. Jobs absent from the files are
 // kept, or removed under prune; jobs owned by app.yaml are never touched.
 func (p *planner) planJobs(r *Resource, want map[string]jobFields, live *liveApp, prune bool) (changes, kept []FieldChange, ops []jobOp) {

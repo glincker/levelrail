@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/dnsstatus"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -202,6 +203,7 @@ func (rt *Router) handleDomainsWatch(w http.ResponseWriter, r *http.Request) {
 	}
 	snapshot, events, cancel := watcher.SubscribeWithSnapshot()
 	defer cancel()
+	defer footprint.Stream(r.Context(), "stream:domains watch")()
 	flusher, ok := rt.startLiveSSE(w, r)
 	if !ok {
 		return
