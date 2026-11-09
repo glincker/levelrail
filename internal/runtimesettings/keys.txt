@@ -252,6 +252,7 @@ store.optimize_interval
 store.read_connections
 store.synchronous
 store.temp_store
+store.touch_flush_interval
 supply_chain.default_enabled
 supply_chain.default_gate
 system.processes_max_rows
