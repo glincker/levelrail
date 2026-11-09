@@ -336,6 +336,9 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		if _, err := os.Stat(filepath.Join(buildRoot, "Dockerfile")); err != nil {
 			dockerfilePath = definitionDockerfile(req.SourceDir, buildRoot)
 		}
+		if note := definitionIgnoredNote(req.SourceDir, buildRoot); note != "" && progress != nil {
+			progress(build.ProgressEvent{Step: stepBuildEnv, Log: "warning: " + note, Stream: "stderr"})
+		}
 	}
 
 	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {

@@ -220,6 +220,7 @@ func TunablesFrom(s *runtimesettings.Service) func(context.Context) Tunables {
 			Timeout:          time.Duration(s.Int(ctx, runtimesettings.KeySecretProviderTimeout)) * time.Second,
 			CacheTTL:         time.Duration(s.Int(ctx, runtimesettings.KeySecretProviderCacheTTL)) * time.Second,
 			MaxResponseBytes: int64(s.Int(ctx, runtimesettings.KeySecretProviderMaxResponse)) * 1024,
+			MaxRPS:           s.Int(ctx, runtimesettings.KeySecretProviderMaxRPS),
 		}
 	}
 }

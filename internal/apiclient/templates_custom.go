@@ -10,7 +10,8 @@ type ImportCustomTemplateRequest struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
-	ComposeYAML string   `json:"compose_yaml"`
+	ComposeYAML string   `json:"compose_yaml,omitempty"`
+	URL         string   `json:"url,omitempty"`
 	Variables   []string `json:"variables,omitempty"`
 }
 
