@@ -57,3 +57,15 @@ func TestTouchBufferCoalescesSessionActivity(t *testing.T) {
 		t.Fatalf("last_seen_at = %d, err = %v, want 202", seen, err)
 	}
 }
+
+func TestSetTouchFlushIntervalZeroWritesThrough(t *testing.T) {
+	db := openTestDB(t)
+	db.SetTouchFlushInterval(0)
+	if got := db.touches.interval.Load(); got != 0 {
+		t.Fatalf("interval = %d, want 0", got)
+	}
+	db.SetTouchFlushInterval(-time.Second)
+	if got := db.touches.interval.Load(); got != 0 {
+		t.Fatalf("negative must be ignored, got %d", got)
+	}
+}

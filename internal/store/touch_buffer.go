@@ -2,13 +2,12 @@ package store
 
 import (
 	"context"
-	"os"
-	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-// defaultTouchFlushInterval seeds the write-behind window; LEVELRAIL_TOUCH_FLUSH_INTERVAL overrides it, and 0 writes through.
+// defaultTouchFlushInterval seeds the write-behind window; the store.touch_flush_interval setting overrides it at boot.
 const defaultTouchFlushInterval = 5 * time.Second
 
 const touchTimeLayout = "2006-01-02T15:04:05.000Z"
@@ -24,7 +23,7 @@ type touchBuffer struct {
 	tokens   map[string]time.Time
 	nodes    map[string]time.Time
 	sessions map[string]sessionTouch
-	interval time.Duration
+	interval atomic.Int64 // nanoseconds
 	start    sync.Once
 	stop     chan struct{}
 	stopOnce sync.Once
@@ -32,22 +31,27 @@ type touchBuffer struct {
 }
 
 func newTouchBuffer() *touchBuffer {
-	iv := defaultTouchFlushInterval
-	if raw := strings.TrimSpace(os.Getenv("LEVELRAIL_TOUCH_FLUSH_INTERVAL")); raw != "" {
-		if d, err := time.ParseDuration(raw); err == nil && d >= 0 {
-			iv = d
-		}
-	}
-	return &touchBuffer{
+	b := &touchBuffer{
 		tokens: map[string]time.Time{}, nodes: map[string]time.Time{}, sessions: map[string]sessionTouch{},
-		interval: iv, stop: make(chan struct{}), done: make(chan struct{}),
+		stop: make(chan struct{}), done: make(chan struct{}),
 	}
+	b.interval.Store(int64(defaultTouchFlushInterval))
+	return b
+}
+
+// SetTouchFlushInterval applies the store.touch_flush_interval setting at boot; 0 writes through.
+// A flusher already running keeps its window until restart.
+func (db *DB) SetTouchFlushInterval(d time.Duration) {
+	if db.touches == nil || d < 0 {
+		return
+	}
+	db.touches.interval.Store(int64(d))
 }
 
 // touch records the newest timestamp per id; the flusher goroutine starts on first use.
 func (db *DB) touch(kind func(*touchBuffer) map[string]time.Time, id string, write func() error) error {
 	b := db.touches
-	if b == nil || b.interval == 0 {
+	if b == nil || b.interval.Load() == 0 {
 		return write()
 	}
 	b.mu.Lock()
@@ -60,7 +64,7 @@ func (db *DB) touch(kind func(*touchBuffer) map[string]time.Time, id string, wri
 // touchSession buffers a session last-seen write, or writes through when buffering is off.
 func (db *DB) touchSession(sessionID, userID string, now time.Time, write func() error) error {
 	b := db.touches
-	if b == nil || b.interval == 0 {
+	if b == nil || b.interval.Load() == 0 {
 		return write()
 	}
 	b.mu.Lock()
@@ -73,7 +77,7 @@ func (db *DB) touchSession(sessionID, userID string, now time.Time, write func()
 func (db *DB) touchLoop() {
 	b := db.touches
 	defer close(b.done)
-	t := time.NewTicker(b.interval)
+	t := time.NewTicker(time.Duration(b.interval.Load()))
 	defer t.Stop()
 	for {
 		select {

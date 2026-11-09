@@ -285,6 +285,8 @@ levelrail-cli apps preflight <name> [--require-env A,B] [flags]
 levelrail-cli apps freeze show <app-name> [flags]
 levelrail-cli apps freeze set <app-name> --cron EXPR --duration D [--timezone TZ] [--reason TEXT] [flags]
 levelrail-cli apps freeze clear <app-name> [flags]
+levelrail-cli apps upgrade-plan <app-name> [flags]
+levelrail-cli apps upgrade <app-name> [--yes] [--no-wait] [--interval D] [--wait-timeout D] [flags]
 levelrail-cli apps schedule set <app> --cron EXPR --branch NAME [flags]
 levelrail-cli apps schedule set <app> --run-at 2h --branch NAME [flags]
 levelrail-cli apps schedule get <app> [flags]
@@ -319,6 +321,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps timeline` shows what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start.
 - `apps diagnose` explains a failed deploy or crashloop and can apply a suggested fix with `--apply-fix N`. `apps preflight` runs pre-deploy checks (DNS, ports, disk, image, env).
 - `apps deploy`, `apps rollback`, `apps restart`, `apps start` and `apps stop` exit non-zero with code `node_offline` when the app's node is offline, naming the node and the fix (bring it back, or `apps move` / `nodes drain`). `--queue-while-offline` records the change as a `pending` attempt that the node applies when it returns.
+- `apps upgrade-plan` prints what moving a template app to the current catalog entry would change (risk, image, env, volume and port changes, blockers) and changes nothing. `apps upgrade` shows the same plan until `--yes` is given, then applies it, follows the release and reports a rollback if one happened; `--no-wait` returns once it has started. See `docs/template-upgrades.md`.
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule. `apps deploy --at` schedules a one-shot image or git ref deploy, and `apps schedule list` and `apps schedule cancel` manage those (see [Scheduled deploys](/scheduled-deploys#one-shot-scheduled-deploys)).
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.

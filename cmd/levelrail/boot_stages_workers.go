@@ -180,6 +180,9 @@ func (s *bootState) startAlerting() {
 	}()
 	go runUsageRollup(ctx, apiRouter)
 	rs := apiRouter.RuntimeSettings()
+	if rs != nil {
+		db.SetTouchFlushInterval(rs.Duration(ctx, runtimesettings.KeyStoreTouchFlush))
+	}
 	go runLiveSettings(ctx, rs, logger)
 	go func() {
 		if err := api.RunSpoolSweeper(ctx, logger); err != nil && !errors.Is(err, context.Canceled) {
