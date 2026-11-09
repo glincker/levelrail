@@ -319,6 +319,18 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 
+## Renamed to seconds
+
+These variables now take a whole number of seconds. The old duration-valued names are replaced and no longer documented.
+
+| Use | Replaces | Setting |
+| --- | --- | --- |
+| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` (`15m`, now `900`) | `deploy.approval_claim_timeout_seconds` |
+| `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | the duration-valued digest check timeout | `deploy.approve_digest_check_timeout_seconds` |
+| `APP_HF_TIMEOUT_SECONDS` | `APP_HF_TIMEOUT` (`10s`, now `10`) | `models.hf_timeout_seconds` |
+
+If you set an old name in your environment, switch to the new one and write the value in seconds.
+
 ## Sessions and cookies
 
 | Variable | Default | Meaning |
@@ -755,7 +767,6 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` | ``15m`` | How long an approving claim on a deploy approval may stand before recovery treats the claimer as gone. Control plane. |
 | `APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS` | ``2`` | Restarts during a rollout before it counts as a crash loop and fails. Control plane. |
 | `APP_DEFAULT_ALERTS` | computed | Set to off to skip creating the default alert rules on first start. Control plane. |
 | `APP_DB_CRASH_LOOP_RESTARTS` | ``3`` | Restarts before a database counts as crash-looping. Control plane. |
