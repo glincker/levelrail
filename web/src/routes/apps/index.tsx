@@ -22,7 +22,6 @@ import {
   appsSummaryQueryOptions,
 } from '../../queries/appPages'
 import { LoadMore } from '@/components/ui/load-more'
-import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
@@ -45,15 +44,14 @@ import {
 import { AppsFirstRun } from '../../components/apps/AppsFirstRun'
 import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
+import { filtersActive, type AppListFilters } from '../../lib/appViews'
 import {
-  EMPTY_FILTERS,
-  filtersActive,
-  type AppListFilters,
-} from '../../lib/appViews'
-import {
+  appFiltersFromSearch,
+  appsSearchFrom,
   loadViewMode,
-  parseStatusSearch,
+  parseAppsSearch,
   storeViewMode,
+  type AppsSearch,
   type StatusFilter,
   type ViewMode,
 } from '../../lib/appsListView'
@@ -65,15 +63,11 @@ import { useLabelMatches } from '../../queries/resourceLabels'
 
 // The loader primes the Query cache; the component only reads it. The
 // list is virtualized unconditionally (project rule for lists that can
-// exceed 50 items). `status` in the URL lets the command palette and
-// dashboard deep-link into a filtered list.
+// exceed 50 items). Every filter sits in the URL so the command palette,
+// shared links and saved views deep-link into a filtered list.
 export const Route = createFileRoute('/apps/')({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { status?: StatusFilter } => {
-    const status = parseStatusSearch(search.status)
-    return status ? { status } : {}
-  },
+  validateSearch: (search: Record<string, unknown>): AppsSearch =>
+    parseAppsSearch(search),
   loaderDeps: ({ search }) => ({ status: search.status ?? null }),
   loader: ({ context: { queryClient }, deps }) =>
     Promise.all([
@@ -92,18 +86,25 @@ function AppListPage() {
   useEnvironmentScope()
   const { t } = useTranslation('common')
   const { data: staticSites } = useSuspenseQuery(staticSitesQueryOptions())
-  const status = Route.useSearch().status ?? null
+  const search = Route.useSearch()
+  const status = search.status ?? null
+  const labelSelector = search.labels ?? ''
   const navigate = useNavigate({ from: Route.fullPath })
-  const [filters, setFilters] = useState<AppListFilters>(EMPTY_FILTERS)
-  const debouncedQuery = useDebouncedValue(filters.query, 250)
+  const filters = useMemo(() => appFiltersFromSearch(search), [search])
+  const writeSearch = (next: AppsSearch) => {
+    void navigate({ search: next, replace: true })
+  }
+  const setFilters = (next: AppListFilters) => {
+    writeSearch(appsSearchFrom(next, status, labelSelector))
+  }
   const pageParams = useMemo(
     () => ({
       status,
-      q: debouncedQuery,
+      q: filters.query,
       environments: filters.environments,
       tags: filters.tags,
     }),
-    [status, debouncedQuery, filters.environments, filters.tags],
+    [status, filters.query, filters.environments, filters.tags],
   )
   const pages = useInfiniteQuery({
     ...appPagesQueryOptions(pageParams),
@@ -136,7 +137,9 @@ function AppListPage() {
     }),
     [summary],
   )
-  const [labelSelector, setLabelSelector] = useState('')
+  const setLabelSelector = (next: string) => {
+    writeSearch(appsSearchFrom(filters, status, next))
+  }
   const labelMatches = useLabelMatches('apps', labelSelector)
   const filteredApps = useMemo(
     () =>
@@ -147,28 +150,17 @@ function AppListPage() {
   )
 
   const setStatus = (next: StatusFilter) => {
-    void navigate({ search: next ? { status: next } : {}, replace: true })
+    writeSearch(appsSearchFrom(filters, next, labelSelector))
   }
   const currentView = {
-    q: filters.query,
-    status: status ?? '',
-    env: filters.environments.join(','),
-    tags: filters.tags.join(','),
+    q: search.q ?? '',
+    status: search.status ?? '',
+    env: search.env ?? '',
+    tags: search.tags ?? '',
     labels: labelSelector,
   }
-  const splitList = (v: string | undefined) =>
-    (v ?? '')
-      .split(',')
-      .map((x) => x.trim())
-      .filter(Boolean)
   const applyView = (f: Record<string, string>) => {
-    setFilters({
-      query: f.q ?? '',
-      environments: splitList(f.env),
-      tags: splitList(f.tags),
-    })
-    setLabelSelector(f.labels ?? '')
-    setStatus(parseStatusSearch(f.status))
+    writeSearch(parseAppsSearch(f))
   }
   const changeMode = (next: ViewMode) => {
     storeViewMode(next)
@@ -191,9 +183,7 @@ function AppListPage() {
   } = useListKeyboard<HTMLDivElement>()
   const canDeploy = useCanDeploy()
   const clearAll = () => {
-    setFilters(EMPTY_FILTERS)
-    setLabelSelector('')
-    setStatus(null)
+    writeSearch({})
   }
   const activeFilters: ActiveFilter[] = [
     ...(status

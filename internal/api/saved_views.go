@@ -29,7 +29,7 @@ const (
 // savedViewKeys is the per list allowlist of filter keys; a view can only ever carry these URL params.
 var savedViewKeys = map[string][]string{
 	"apps":        {"q", "status", "env", "tags", "labels"},
-	"databases":   {"q", "status", "engine", "labels"},
+	"databases":   {"q", "status", "engine", "tag", "labels"},
 	"domains":     {"q", "status"},
 	"builds":      {"q", "status", "app"},
 	"deployments": {"q", "status", "app", "env"},

@@ -135,6 +135,20 @@ export function filtersFromSearch(s: DatabasesSearch): DatabaseListFilters {
   }
 }
 
+// The saved views filter for the Databases list, keyed like its URL params.
+export function databaseViewFilter(
+  f: DatabaseListFilters,
+  labels: string,
+): Record<string, string> {
+  return {
+    q: f.q,
+    status: f.status ?? '',
+    engine: f.engines.join(','),
+    tag: f.tags.join(','),
+    labels,
+  }
+}
+
 export function searchFromFilters(f: DatabaseListFilters): DatabasesSearch {
   const out: DatabasesSearch = {}
   if (f.q !== '') out.q = f.q

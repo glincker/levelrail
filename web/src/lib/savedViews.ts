@@ -1,4 +1,5 @@
-export type SavedViewList = 'apps' | 'databases'
+export type SavedViewList =
+  'apps' | 'databases' | 'domains' | 'builds' | 'deployments'
 export type ViewFilter = Record<string, string>
 
 export interface SavedView {
@@ -14,7 +15,10 @@ export interface SavedView {
 // Mirrors the server allowlist: a stored filter can only ever set these URL params of its own list.
 const VIEW_KEYS: Record<SavedViewList, readonly string[]> = {
   apps: ['q', 'status', 'env', 'tags', 'labels'],
-  databases: ['q', 'status', 'engine', 'labels'],
+  databases: ['q', 'status', 'engine', 'tag', 'labels'],
+  domains: ['q', 'status'],
+  builds: ['q', 'status', 'app'],
+  deployments: ['q', 'status', 'app', 'env'],
 }
 
 export function sanitizeViewFilter(

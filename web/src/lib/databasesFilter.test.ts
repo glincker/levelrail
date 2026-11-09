@@ -3,6 +3,7 @@ import type { DatabaseListEntry } from '../types/databaseDetail'
 import {
   EMPTY_DB_FILTERS,
   countByStatus,
+  databaseViewFilter,
   filterDatabases,
   filtersFromSearch,
   parseDatabasesSearch,
@@ -114,5 +115,19 @@ describe('URL state', () => {
 
   it('drops unknown status and empty engines', () => {
     expect(parseDatabasesSearch({ status: 'nope', engine: ' , ' })).toEqual({})
+  })
+})
+
+describe('databaseViewFilter', () => {
+  it('stores the tag filter and restores it through the URL parser', () => {
+    const filters = {
+      ...EMPTY_DB_FILTERS,
+      q: 'pg',
+      engines: ['postgres'],
+      tags: ['prod', 'billing'],
+    }
+    const view = databaseViewFilter(filters, 'tier=db')
+    expect(view.tag).toBe('prod,billing')
+    expect(filtersFromSearch(parseDatabasesSearch(view))).toEqual(filters)
   })
 })

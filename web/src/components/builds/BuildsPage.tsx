@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { BroomGlassIcon, HammerGlassIcon } from '@thesvg/ui-react'
@@ -24,6 +24,7 @@ import {
 import { useListKeyboard } from '../../hooks/useListKeyboard'
 
 const buildsRoute = getRouteApi('/builds')
+const SavedViewsMenu = lazy(() => import('../SavedViewsMenu'))
 
 export function BuildsPage() {
   const { t } = useTranslation('buildCenter')
@@ -196,14 +197,27 @@ export function BuildsPage() {
               <BuildsEmptyState total={data.rows.length} />
             ) : (
               <div ref={setListContainer} className="flex flex-col gap-2">
-                <FilterChips
-                  filters={activeFilters}
-                  shown={shownRows.length}
-                  total={data.rows.length}
-                  onClearAll={() => {
-                    setStatusFilter(undefined)
-                  }}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <FilterChips
+                      filters={activeFilters}
+                      shown={shownRows.length}
+                      total={data.rows.length}
+                      onClearAll={() => {
+                        setStatusFilter(undefined)
+                      }}
+                    />
+                  </div>
+                  <Suspense fallback={null}>
+                    <SavedViewsMenu
+                      list="builds"
+                      current={{ status: statusFilter ?? '' }}
+                      onApply={(f) => {
+                        setStatusFilter(parseBuildStatusFilter(f.status))
+                      }}
+                    />
+                  </Suspense>
+                </div>
                 <ListKeyboardHint open={hintOpen} onClose={closeHint} />
                 {shownRows.length === 0 ? null : (
                   <BuildsTable

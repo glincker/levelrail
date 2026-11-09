@@ -1,6 +1,5 @@
-// Saved app-list views live in localStorage: the control plane has no
-// per-user preference store, and a view is a convenience filter, not shared
-// state, so a server table would be more machinery than the feature earns.
+// Legacy browser-only Apps views. Saved views now live on the server; this
+// copy is read once by the migration in migrateLocalAppViews and then cleared.
 
 export interface AppListFilters {
   tags: string[]
@@ -77,6 +76,14 @@ export function storeSavedViews(views: SavedAppView[]): void {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(views))
   } catch {
     // Storage can be blocked or full; views are a convenience only.
+  }
+}
+
+export function clearSavedViews(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Blocked storage has nothing to clear.
   }
 }
 

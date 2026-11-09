@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { FilterChips } from './FilterChips'
 import { useTranslation } from 'react-i18next'
 import {
@@ -58,6 +58,7 @@ export function DomainsTable({
   onAdd,
   query: controlledQuery,
   onQueryChange,
+  toolbar,
 }: {
   domains: Domain[]
   certByDomain: ReadonlyMap<string, CertificateStatus>
@@ -66,6 +67,8 @@ export function DomainsTable({
   // The page keeps the search in the URL; standalone uses keep it local.
   query?: string
   onQueryChange?: (next: string) => void
+  /** Extra controls on the search row, such as the saved views menu. */
+  toolbar?: ReactNode
 }) {
   const { t } = useTranslation('domains')
   const { t: tf } = useTranslation('uiShared')
@@ -256,9 +259,12 @@ export function DomainsTable({
             }}
           />
         </div>
-        <span className="text-xs text-muted-foreground">
-          {t('page.count', { count: visible.length })}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {t('page.count', { count: visible.length })}
+          </span>
+          {toolbar}
+        </div>
       </div>
 
       <DomainsBulkBar

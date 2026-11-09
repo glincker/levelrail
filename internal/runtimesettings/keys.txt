@@ -263,6 +263,7 @@ security.protected_silence_max_days
 security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window
+shell.section_timeout
 spool.max_age_seconds
 spool.quota_bytes
 stacks.history_limit

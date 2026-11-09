@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { TagFilter } from './TagFilter'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { SEARCH_DEBOUNCE_MS } from '../lib/searchDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,15 +25,28 @@ export function AppsFilterBar({
   environments: string[]
   onChange: (next: AppListFilters) => void
 }) {
+  const [text, setText] = useState(filters.query)
+  const debounced = useDebouncedValue(text, SEARCH_DEBOUNCE_MS)
+  const [urlQuery, setUrlQuery] = useState(filters.query)
+  if (filters.query !== urlQuery) {
+    setUrlQuery(filters.query)
+    setText(filters.query)
+  }
+  useEffect(() => {
+    if (debounced !== filters.query) onChange({ ...filters, query: debounced })
+    // Only a settled edit should push to the URL; a URL-driven change is handled above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced])
+
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <Input
-        value={filters.query}
+        value={text}
         placeholder="Search apps"
         aria-label="Search apps"
         className="h-8 w-56"
         onChange={(e) => {
-          onChange({ ...filters, query: e.target.value })
+          setText(e.target.value)
         }}
       />
       {environments.map((env) => {

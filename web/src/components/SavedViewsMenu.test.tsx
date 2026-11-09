@@ -68,5 +68,19 @@ describe('SavedViewsMenu', () => {
       }),
     ).toEqual({ engine: 'postgres', labels: 'tier=db' })
     expect(sanitizeViewFilter('apps', null)).toEqual({})
+    expect(sanitizeViewFilter('databases', { tag: 'prod,billing' })).toEqual({
+      tag: 'prod,billing',
+    })
+    expect(
+      sanitizeViewFilter('deployments', {
+        q: 'api',
+        env: 'prod',
+        environment: 'prod',
+        trigger: 'push',
+      }),
+    ).toEqual({ q: 'api', env: 'prod' })
+    expect(sanitizeViewFilter('domains', { q: 'a', app: 'x' })).toEqual({
+      q: 'a',
+    })
   })
 })

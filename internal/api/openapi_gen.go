@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2087 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2088 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1675,6 +1675,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
 	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/setup/guide/visibility", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideVisibility", Description: ""},
+	{Method: "GET", Path: "/api/v1/shell", Ability: "AbilityRead", Group: "Other", Handler: "handleShellOverview", Description: "Shell bootstrap: each section is replayed as the caller, so it only holds what they can already read."},
 	{Method: "GET", Path: "/api/v1/silences", Ability: "AbilityRead", Group: "Other", Handler: "handleListSilences", Description: ""},
 	{Method: "POST", Path: "/api/v1/silences", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateSilence", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/silences/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSilence", Description: ""},

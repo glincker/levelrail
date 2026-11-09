@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookmarkGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
@@ -17,6 +17,7 @@ import {
   type SavedViewList,
   type ViewFilter,
 } from '../lib/savedViews'
+import { migrateLocalAppViews } from '../lib/migrateLocalAppViews'
 
 async function viewsRequest<T>(
   url: string,
@@ -87,6 +88,34 @@ export function SavedViewsMenu({
       ),
     onSuccess: invalidate,
   })
+
+  // One-time move of the old browser-only Apps views; any failure stays silent and keeps the local copy.
+  const migrated = useRef(false)
+  const loaded = views.data
+  useEffect(() => {
+    if (list !== 'apps' || !loaded || migrated.current) return
+    migrated.current = true
+    const existing = new Map(
+      loaded
+        .filter((v) => v.mine)
+        .map((v) => [v.name, sanitizeViewFilter(list, v.filter)]),
+    )
+    migrateLocalAppViews(existing, (draft) =>
+      viewsRequest<SavedView>(
+        '/api/v1/saved-views',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...draft, list, shared: 'private' }),
+        },
+        'migrate view',
+      ),
+    )
+      .then((moved) => {
+        if (moved > 0) void qc.invalidateQueries({ queryKey: viewsKey(list) })
+      })
+      .catch(() => undefined)
+  }, [list, loaded, qc])
 
   const saveCurrent = () => {
     const trimmed = name.trim()

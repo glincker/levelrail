@@ -153,6 +153,12 @@ func TestSavedViewsRejectHostileInput(t *testing.T) {
 	if code, _, raw := saveView(t, f.rt, dev, `{"name":"ok","list":"apps","filter":{"q":"c"}}`); code != http.StatusOK {
 		t.Fatalf("same name replaces = %d %s", code, raw)
 	}
+	if code, _, raw := saveView(t, f.rt, dev, `{"name":"tagged","list":"databases","filter":{"tag":"prod,billing"}}`); code != http.StatusCreated {
+		t.Fatalf("database tag view = %d %s", code, raw)
+	}
+	if code, _, raw := saveView(t, f.rt, dev, `{"name":"x","list":"databases","filter":{"tag":"`+strings.Repeat("t", 513)+`"}}`); code != http.StatusBadRequest {
+		t.Fatalf("long database tag = %d %s", code, raw)
+	}
 	if code, body := teamDo(t, f.rt, http.MethodGet, "/api/v1/saved-views?list=secrets", "", func(r *http.Request) { r.AddCookie(dev) }); code != http.StatusBadRequest {
 		t.Fatalf("list filter = %d %s", code, body)
 	}

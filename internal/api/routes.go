@@ -101,6 +101,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDNSWatchRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
+	shell := rt.registerShellRoutes(mux)
 	mcpHTTP := rt.registerMCPHTTPRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
 	rt.registerMeOnboardingRoutes(mux)
@@ -127,6 +128,7 @@ func (rt *Router) Handler() http.Handler {
 		h = rt.demoGate(h)
 	}
 	mcpHTTP.inner = h
+	shell.inner = h
 	return h
 }
 

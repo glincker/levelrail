@@ -10,6 +10,7 @@ import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
 import { demoQueryOptions } from '../queries/demo'
+import { shellCacheReady } from '../queries/shell'
 import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
@@ -116,6 +117,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   // screen itself). BrandProvider below reads the same cache entry via
   // useSuspenseQuery, so this is the one network call, not two.
   loader: async ({ context: { queryClient } }) => {
+    // The shell aggregate (main.tsx) may already be seeding these keys.
+    await shellCacheReady()
     // demo probe never throws; awaiting it makes the demo store ready before first paint.
     const [brand] = await Promise.all([
       queryClient.ensureQueryData(brandQueryOptions()),

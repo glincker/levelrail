@@ -225,6 +225,18 @@ Where it stands:
 - Previously not fixed: the dashboard and apps list still fetch the whole apps list (about 314 kB at 1000 apps) because status tiles and filters count client side. A server side summary endpoint is the next step. The thesvg brand logo chunks (about 250 kB each) still load on home, databases and nodes. `npm run check-bundle-size` already fails on the diagram `elk` chunk (1463 kB against a 720 kB budget) before this change.
 - Apps seeded here have no running containers, so this measures list rendering and fetching, not live metrics streaming.
 
+## Shell first paint
+
+Status: unmeasured (from code reading). No built binary or browser capture was run for this count.
+
+Signed in, the shell (`web/src/routes/__root.tsx` and the components it mounts) fires about 40 distinct GETs plus the `GET /api/v1/events/changes` stream before or during first paint. React Query sends each shared key once. Two (`/brand`, `/demo`) come from the root loader and also run on `/login`; the rest mount with the signed in layout (sidebar, header, banners, inbox and nav counts).
+
+`GET /api/v1/shell` returns, in one round trip, the bodies of 11 of them, chosen because they are small, keyed without a scope and read on every page: `/brand`, `/demo`, `/dev-mode`, `/auth/session`, `/auth/preferences`, `/me/preferences/appearance`, `/local-mode`, `/system/status`, `/auth/sign-in-requests`, `/projects` and `/teams`. The dashboard requests it at boot when a session is recorded, seeds each body under that endpoint's own query key, and the root loader waits for it, so those keys skip their first request. Each endpoint stays in place for later refetch and polling.
+
+- Each section is replayed through the full router chain as a fresh request carrying only the caller's credentials, so ability checks, the team gate and per team filtering are exactly the endpoint's own. A section the caller cannot read is left out; the response still answers 200.
+- The response is `Cache-Control: private, no-cache` with `Vary: Cookie, Authorization`, and its ETag comes from the shared conditional GET layer, so no shared cache can hand one user's body to another.
+- Not folded in (scoped keys, polled every few seconds or heavier): apps and failing apps, deploys, attention feed, inbox, deploy approvals, domains and maintenance, certificates, doctor, docker health, device requests, updates and self upgrade, users, nodes (root only), traffic, functions, setup guide and credentials.
+
 ## Database read pool
 
 The control plane keeps a pool of read-only SQLite connections beside the single writer. Size it with the runtime setting `store.read_connections` (1 to 32, default 4; `APP_DB_READ_CONNS` only seeds it). A saved change resizes the pool on the next WAL maintenance tick, with no restart. Setting `APP_DB_READ_CONNS=0` at boot sends reads to the writer and stays boot-only.

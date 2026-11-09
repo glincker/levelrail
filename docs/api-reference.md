@@ -2311,6 +2311,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/saved-views/{id} | AbilityWrite | handleDeleteSavedView |
 | GET | /api/v1/events/changes | AbilityRead | handleChangesStream |
 | GET | /api/v1/tags/{id}/databases | AbilityRead | handleListDatabasesByTag |
+| GET | /api/v1/shell | AbilityRead | handleShellOverview |
 | POST | /mcp | Public |  |
 
 ## See also

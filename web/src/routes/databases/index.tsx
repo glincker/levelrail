@@ -27,6 +27,7 @@ const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
 import {
   EMPTY_DB_FILTERS,
   countByStatus,
+  databaseViewFilter,
   engineOptions,
   filterDatabases,
   filtersFromSearch,
@@ -200,12 +201,7 @@ function DatabaseListPage() {
           <Suspense fallback={null}>
             <SavedViewsMenu
               list="databases"
-              current={{
-                q: filters.q,
-                status: filters.status ?? '',
-                engine: filters.engines.join(','),
-                labels: labelSelector,
-              }}
+              current={databaseViewFilter(filters, labelSelector)}
               onApply={(f) => {
                 setFilters(filtersFromSearch(parseDatabasesSearch(f)))
                 setLabelSelector(f.labels ?? '')

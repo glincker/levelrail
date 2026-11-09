@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -126,6 +127,7 @@ func (rt *Router) handlePutScrapeTarget(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: set scrape target failed", err)
 		return
 	}
+	rt.auditScrapeTarget(r, AuditActionAppScrapeTargetSet, svc.Name, in.Port, in.Path, http.StatusOK)
 	writeJSON(w, http.StatusOK, scrapeTargetBody{Configured: true, Port: in.Port, Path: in.Path})
 }
 
@@ -138,7 +140,37 @@ func (rt *Router) handleDeleteScrapeTarget(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: delete scrape target failed", err)
 		return
 	}
+	rt.auditScrapeTarget(r, AuditActionAppScrapeTargetDelete, svc.Name, 0, "", http.StatusNoContent)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Audit actions for scrape target changes, so the row names the app and endpoint, not just the path.
+const (
+	AuditActionAppScrapeTargetSet    = "app.scrape_target.set"
+	AuditActionAppScrapeTargetDelete = "app.scrape_target.delete"
+)
+
+func (rt *Router) auditScrapeTarget(r *http.Request, action, app string, port int, path string, status int) {
+	if rt.auditLog == nil {
+		return
+	}
+	a := rt.accessActor(r)
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: scrape target audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	detail, _ := json.Marshal(map[string]string{"app": app, "port": fmt.Sprint(port), "path": path})
+	entry := store.AuditEntry{
+		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityWrite, Method: r.Method, Path: "/api/v1/apps/" + app + "/scrape-target", StatusCode: status,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+		Action:     action, Detail: string(detail),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: scrape target audit save failed", slog.String("error", err.Error()), slog.String("app", app))
+	}
 }
 
 func (rt *Router) handleScrapedMetrics(w http.ResponseWriter, r *http.Request) {
