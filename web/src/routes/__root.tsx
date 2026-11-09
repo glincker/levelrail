@@ -14,6 +14,7 @@ import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { useShortcuts } from '../hooks/useShortcuts'
+import { useChangesStream } from '../hooks/useChangesStream'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { PreferencesApplier } from '../components/account/PreferencesApplier'
 import { AppearanceSyncApplier } from '../components/account/AppearanceSyncApplier'
@@ -150,6 +151,7 @@ function RootLayout() {
 // not an incremental change to it.
 function AppShell() {
   const username = useAuthUsername()
+  useChangesStream(Boolean(username))
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
   const [paletteMounted, setPaletteMounted] = React.useState(false)
   const openPalette = React.useCallback(() => {

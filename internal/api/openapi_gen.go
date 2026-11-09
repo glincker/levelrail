@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2078 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2087 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -437,6 +437,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/run", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunScheduledTaskNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTaskRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/runs/{run}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledTaskRun", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/scrape-target", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteScrapeTarget", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scrape-target", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScrapeTarget", Description: "Scrape target of an app's own metrics endpoint: port and path on its container only, never a host."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/scrape-target", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutScrapeTarget", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scraped-metrics", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleScrapedMetrics", Description: "Scraped series of one app: names, or one metric's points grouped by label set."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-rotation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListSecretRotation", Description: "Rotation policies hold schedule and progress only, never a value."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSecretScan", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSecretScan", Description: ""},
@@ -827,6 +831,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/status", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/rows", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableRows", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/structure", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableStructure", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/tags", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseTags", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/tags", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleAttachDatabaseTag", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/tags/{id}", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleDetachDatabaseTag", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/tls", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseTLSEnabled", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tunnel", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseTunnel", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/upgrade-now", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseUpgradeNow", Description: ""},
@@ -1209,6 +1216,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/event-webhooks/{id}/deliveries", Ability: "AbilityRoot", Group: "Other", Handler: "handleListEventWebhookDeliveries", Description: ""},
 	{Method: "POST", Path: "/api/v1/event-webhooks/{id}/rotate-secret", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateEventWebhookSecret", Description: ""},
 	{Method: "POST", Path: "/api/v1/event-webhooks/{id}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestEventWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/events/changes", Ability: "AbilityRead", Group: "Other", Handler: "handleChangesStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/export", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCExport", Description: ""},
 	{Method: "GET", Path: "/api/v1/export/destinations", Ability: "AbilityRoot", Group: "Other", Handler: "handleListExportDestinations", Description: ""},
 	{Method: "POST", Path: "/api/v1/export/destinations", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExportDestination", Description: ""},
@@ -1771,6 +1779,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteTag", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRenameTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/tags/{id}/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppsByTag", Description: ""},
+	{Method: "GET", Path: "/api/v1/tags/{id}/databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListDatabasesByTag", Description: ""},
 	{Method: "POST", Path: "/api/v1/team-invites/accept", Ability: "Public", Group: "Other", Handler: "handleAcceptTeamInvite", Description: ""},
 	{Method: "GET", Path: "/api/v1/team-invites/{token}", Ability: "Session", Group: "Other", Handler: "handlePreviewTeamInvite", Description: ""},
 	{Method: "GET", Path: "/api/v1/teams", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeams", Description: ""},

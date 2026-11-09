@@ -234,6 +234,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
 | `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
 | `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
+| `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_SAVED_VIEW_FILTER_MAX_KEYS` | [`views.filter_max_keys`](/runtime-settings#deploys) | `12` |
 | `APP_SAVED_VIEW_FILTER_VALUE_MAX_BYTES` | [`views.filter_value_max_bytes`](/runtime-settings#deploys) | `512` |
 | `APP_SAVED_VIEW_MAX_PER_USER` | [`views.max_per_user`](/runtime-settings#deploys) | `100` |
@@ -245,6 +246,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
+| `APP_APP_METRICS_MAX_BODY_BYTES` | [`app_metrics.max_body_bytes`](/runtime-settings#observability) | `1048576` |
+| `APP_APP_METRICS_MAX_LABEL_BYTES` | [`app_metrics.max_label_bytes`](/runtime-settings#observability) | `65536` |
+| `APP_APP_METRICS_MAX_LABELS` | [`app_metrics.max_labels`](/runtime-settings#observability) | `10` |
+| `APP_APP_METRICS_MAX_SERIES` | [`app_metrics.max_series`](/runtime-settings#observability) | `500` |
+| `APP_APP_METRICS_MAX_STORED_ROWS` | [`app_metrics.max_stored_rows`](/runtime-settings#observability) | `500000` |
+| `APP_APP_METRICS_QUERY_MAX_POINTS` | [`app_metrics.query_max_points`](/runtime-settings#observability) | `10000` |
+| `APP_APP_METRICS_RETENTION_HOURS` | [`app_metrics.retention_hours`](/runtime-settings#observability) | `72` |
+| `APP_APP_METRICS_SCRAPE_INTERVAL` | [`app_metrics.scrape_interval`](/runtime-settings#observability) | `60s` |
+| `APP_APP_METRICS_SCRAPE_TIMEOUT` | [`app_metrics.scrape_timeout`](/runtime-settings#observability) | `5s` |
+| `APP_APP_METRICS_SCRAPE_WORKERS` | [`app_metrics.scrape_workers`](/runtime-settings#observability) | `4` |
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
@@ -264,6 +275,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `APP_CHANGES_STREAM_BUFFER` | [`events.changes_buffer`](/runtime-settings#observability) | `64` |
+| `APP_CHANGES_STREAM_HEARTBEAT` | [`events.changes_heartbeat`](/runtime-settings#observability) | `20s` |
+| `APP_CHANGES_STREAM_MAX_PER_CALLER` | [`events.changes_max_streams_per_caller`](/runtime-settings#observability) | `4` |
 | `APP_GC_PERCENT` | [`footprint.gc_percent`](/runtime-settings#observability) | `50` |
 | `APP_GOMEMLIMIT_PERCENT` | [`footprint.memlimit_percent`](/runtime-settings#observability) | `80` |
 | `APP_MEM_TRIM_INTERVAL` | [`footprint.trim_interval`](/runtime-settings#observability) | `2m0s` |

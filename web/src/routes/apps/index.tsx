@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { topicPollMs } from '../../lib/pollTier'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import {
   keepPreviousData,
@@ -106,12 +107,12 @@ function AppListPage() {
   )
   const pages = useInfiniteQuery({
     ...appPagesQueryOptions(pageParams),
-    refetchInterval: 15_000,
+    refetchInterval: () => topicPollMs('active'),
     placeholderData: keepPreviousData,
   })
   const { data: summary } = useQuery({
     ...appsSummaryQueryOptions(),
-    refetchInterval: 15_000,
+    refetchInterval: () => topicPollMs('active'),
   })
   const apps = useMemo(
     () => pages.data?.pages.flatMap((p) => p.items) ?? [],

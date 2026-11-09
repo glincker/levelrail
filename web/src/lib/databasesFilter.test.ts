@@ -7,6 +7,7 @@ import {
   filtersFromSearch,
   parseDatabasesSearch,
   searchFromFilters,
+  tagOptions,
 } from './databasesFilter'
 
 function db(over: Partial<DatabaseListEntry>): DatabaseListEntry {
@@ -60,6 +61,26 @@ describe('filterDatabases', () => {
     ).toEqual(['cache'])
   })
 
+  it('keeps only rows carrying every selected tag', () => {
+    const tagged = [
+      db({ name: 'a', tags: ['prod', 'team:billing'] }),
+      db({ name: 'b', tags: ['prod'] }),
+      db({ name: 'c' }),
+    ]
+    expect(
+      filterDatabases(tagged, { ...EMPTY_DB_FILTERS, tags: ['prod'] }).map(
+        (r) => r.name,
+      ),
+    ).toEqual(['a', 'b'])
+    expect(
+      filterDatabases(tagged, {
+        ...EMPTY_DB_FILTERS,
+        tags: ['prod', 'team:billing'],
+      }).map((r) => r.name),
+    ).toEqual(['a'])
+    expect(tagOptions(tagged)).toEqual(['prod', 'team:billing'])
+  })
+
   it('counts every row into one status bucket', () => {
     expect(countByStatus(rows)).toEqual({
       healthy: 2,
@@ -76,12 +97,14 @@ describe('URL state', () => {
       q: 'ord',
       engines: ['postgres', 'redis'],
       status: 'healthy' as const,
+      tags: ['team:billing'],
     }
     const search = searchFromFilters(filters)
     expect(search).toEqual({
       q: 'ord',
       engine: 'postgres,redis',
       status: 'healthy',
+      tag: 'team:billing',
     })
     expect(
       filtersFromSearch(parseDatabasesSearch({ ...search, create: '1' })),

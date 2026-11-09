@@ -1117,3 +1117,33 @@ The seeded `Certificate expires within N days` rules (14, 7, 3 and 1 days) are t
 
 API: `GET` and `PUT /api/v1/alert-defaults/cert-expiry/email` read and set the email opt-in.
 
+
+## App metrics endpoint
+
+An app that serves metrics in the text exposition format can have them stored next to platform metrics. Set the container port and path once:
+
+```
+levelrail-cli apps metrics web --scraped --scrape-port 9100 --scrape-path /metrics
+levelrail-cli apps metrics web --scraped                       # list stored names
+levelrail-cli apps metrics web --scraped --metric http_requests_total --since 6h
+levelrail-cli apps metrics web --scraped --scrape-off
+```
+
+The same target and a metric picker sit at the bottom of the app's Metrics page. API: `GET|PUT|DELETE /api/v1/apps/{name}/scrape-target` and `GET /api/v1/apps/{name}/scraped-metrics[?metric=&from=&to=]`.
+
+The control plane only ever connects to the app container's own address on its own app network; the port and path are the only inputs, a path with a host, query or `..` is refused, and redirects are never followed. Invalid metric or label names, label names over 64 bytes, label values that are not UTF-8, non-finite values and series with too many labels are dropped. Each label set is stored once and samples point to it. A failed scrape records a short fixed reason (refused, timed out, status, too large, redirect) on the target, never the raw error. Limits are runtime settings that apply live (each seeded by its env var):
+
+| Setting | Default | What it bounds |
+| --- | --- | --- |
+| `app_metrics.scrape_interval` | 60s | time between scrapes |
+| `app_metrics.scrape_timeout` | 5s | one scrape, connect plus body |
+| `app_metrics.max_body_bytes` | 1048576 | response size; larger fails the scrape |
+| `app_metrics.max_series` | 500 | distinct series stored per scrape |
+| `app_metrics.max_labels` | 10 | labels per series |
+| `app_metrics.retention_hours` | 72 | how long samples are kept |
+| `app_metrics.query_max_points` | 10000 | samples one query returns |
+| `app_metrics.max_label_bytes` | 65536 | label text kept per scrape |
+| `app_metrics.max_stored_rows` | 500000 | samples stored per app; at the limit new scrapes are dropped |
+| `app_metrics.scrape_workers` | 4 | apps scraped at once (1 to 16) |
+
+Reads need read access to the app, so a team member only sees apps of their own teams.

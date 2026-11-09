@@ -333,5 +333,21 @@
     "budgetRemaining": "Presupuesto de errores restante",
     "tierWindow": "{{name}} ({{long}} y {{short}})",
     "burnRate": "consumo {{rate}}x"
+  },
+  "appScrape": {
+    "title": "Métricas de la app",
+    "subtitle": "Series leídas del endpoint de métricas propio de la app en su contenedor.",
+    "metric": "Métrica",
+    "pickMetric": "Elige una métrica",
+    "range": "Rango",
+    "hours_one": "Última {{count}} hora",
+    "hours_other": "Últimas {{count}} horas",
+    "empty": "Aún no hay series guardadas. La primera lectura ocurre en el siguiente intervalo.",
+    "port": "Puerto del contenedor",
+    "path": "Ruta",
+    "save": "Guardar destino",
+    "lastError": "La última lectura falló: {{error}}",
+    "invalidPort": "Escribe un puerto de 1 a 65535.",
+    "invalidPath": "Usa una ruta simple como /metrics."
   }
 }

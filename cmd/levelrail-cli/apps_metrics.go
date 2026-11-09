@@ -9,6 +9,9 @@ import (
 
 // The server decides which metric names are valid, so the CLI keeps no list of them.
 func runAppsMetrics(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if rest, wantScraped := splitScrapedFlag(args); wantScraped {
+		return runAppsScrapedMetrics(prog, rest, stdout, stderr, lookupEnv)
+	}
 	if rest, wantRequests := splitRequestsFlag(args); wantRequests {
 		return runAppsRequests(prog, rest, stdout, stderr, lookupEnv)
 	}

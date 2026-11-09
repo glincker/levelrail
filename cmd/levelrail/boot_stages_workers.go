@@ -457,6 +457,13 @@ func (s *bootState) startSchedulers() {
 
 	go func() { _ = apiRouter.RunVitalsWorker(ctx) }() // flushes buffered web vitals counters and prunes old rows
 
+	// Scrapes apps that configured their own metrics endpoint; idle when none did.
+	go func() {
+		if err := apiRouter.RunAppMetricsScraper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("app metrics scraper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Follows new domains until DNS and the certificate are ready; the set is persisted so a restart resumes it.
 	go func() {
 		if err := apiRouter.RunDNSWatcher(ctx); err != nil && !errors.Is(err, context.Canceled) {

@@ -54,6 +54,30 @@ func (db *DB) AttachResourceTag(ctx context.Context, tagID string, ref ResourceR
 	return nil
 }
 
+// ErrResourceTagCap is returned when a capped attach would exceed the per-resource limit.
+var ErrResourceTagCap = errors.New("store: resource tag cap reached")
+
+// AttachResourceTagCapped tags a non-app resource only while it carries fewer than limit
+// tags, in one statement so concurrent attaches cannot overshoot. Re-attaching is a no-op.
+func (db *DB) AttachResourceTagCapped(ctx context.Context, tagID string, ref ResourceRef, limit int) error {
+	res, err := db.ExecContext(ctx, `
+		INSERT OR IGNORE INTO resource_tags (tag_id, kind, name, created_at)
+		SELECT ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM resource_tags WHERE kind = ? AND name = ?) < ?`,
+		tagID, ref.Kind, ref.Name, formatTime(time.Now()), ref.Kind, ref.Name, limit)
+	if err != nil {
+		return fmt.Errorf("store: attach tag %q to %s: %w", tagID, ref.Key(), err)
+	}
+	if n, err := res.RowsAffected(); err != nil || n > 0 {
+		return err
+	}
+	var one int
+	err = db.QueryRowContext(ctx, `SELECT 1 FROM resource_tags WHERE tag_id = ? AND kind = ? AND name = ?`, tagID, ref.Kind, ref.Name).Scan(&one)
+	if err == nil {
+		return nil
+	}
+	return ErrResourceTagCap
+}
+
 // DetachResourceTag removes a tag from a resource, or returns ErrTagNotFound.
 func (db *DB) DetachResourceTag(ctx context.Context, tagID string, ref ResourceRef) error {
 	if ref.Kind == ResourceKindApp {
@@ -178,4 +202,65 @@ func (db *DB) DeleteResourceView(ctx context.Context, owner, id string) error {
 		return fmt.Errorf("store: delete resource view %q: %w", id, err)
 	}
 	return rowsAffectedOrNotFound(res, ErrResourceViewNotFound, "delete resource view %q", id)
+}
+
+// ListTagsForResource returns the tags on one non-app resource, alphabetical.
+func (db *DB) ListTagsForResource(ctx context.Context, ref ResourceRef) ([]Tag, error) {
+	if ref.Kind == ResourceKindApp {
+		return db.ListTagsForApp(ctx, ref.Name)
+	}
+	rows, err := db.QueryContext(ctx, `
+		SELECT t.id, t.name, t.created_at FROM resource_tags rt JOIN tags t ON t.id = rt.tag_id
+		WHERE rt.kind = ? AND rt.name = ? ORDER BY t.name`, ref.Kind, ref.Name)
+	if err != nil {
+		return nil, fmt.Errorf("store: list tags for %s: %w", ref.Key(), err)
+	}
+	return scanTags(rows)
+}
+
+// ListTagsForKind returns tags per resource name for one non-app kind.
+func (db *DB) ListTagsForKind(ctx context.Context, kind string) (map[string][]Tag, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT rt.name, t.id, t.name, t.created_at FROM resource_tags rt JOIN tags t ON t.id = rt.tag_id
+		WHERE rt.kind = ? ORDER BY rt.name, t.name`, kind)
+	if err != nil {
+		return nil, fmt.Errorf("store: list %s tags: %w", kind, err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string][]Tag{}
+	for rows.Next() {
+		var name string
+		t, err := scanTag(func(dest ...any) error {
+			return rows.Scan(&name, dest[0], dest[1], dest[2])
+		})
+		if err != nil {
+			return nil, fmt.Errorf("store: scan %s tag: %w", kind, err)
+		}
+		out[name] = append(out[name], *t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate %s tags: %w", kind, err)
+	}
+	return out, nil
+}
+
+// ListResourceNamesByTag returns the names of one kind carrying tagID, alphabetical.
+func (db *DB) ListResourceNamesByTag(ctx context.Context, tagID, kind string) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `SELECT name FROM resource_tags WHERE tag_id = ? AND kind = ? ORDER BY name`, tagID, kind)
+	if err != nil {
+		return nil, fmt.Errorf("store: list %s by tag %q: %w", kind, tagID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("store: scan %s by tag: %w", kind, err)
+		}
+		out = append(out, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate %s by tag: %w", kind, err)
+	}
+	return out, nil
 }

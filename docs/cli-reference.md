@@ -626,8 +626,9 @@ levelrail-cli tags list [flags]
 levelrail-cli tags create --name NAME [flags]
 levelrail-cli tags delete <name> [flags]
 levelrail-cli tags apps <name> [flags]
+levelrail-cli tags databases <name> [flags]
 ```
-Tags are arbitrary labels for organizing and filtering apps, always identified by name. `delete` detaches the tag from every app. `apps` lists every app attached to a tag. Attach one to an app with `apps tag`.
+Tags are arbitrary labels for organizing and filtering apps and databases, always identified by name. `delete` detaches the tag from every app and database. `apps` lists every app attached to a tag; `databases` lists every database you can read that carries it. Attach one to an app with `apps tag` and to a database with `databases tag`. The per-database cap is the `tags.max_per_resource` runtime setting.
 
 ## Pipelines
 
@@ -734,6 +735,9 @@ levelrail-cli databases probe <name> [flags]
 levelrail-cli databases import-hosted <name> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--create-missing-roles] [--dry-run] [--json] [flags]
 levelrail-cli databases resource-recommendation <name> [flags]
 levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
+levelrail-cli databases tag <name> <tag> [flags]
+levelrail-cli databases untag <name> <tag> [flags]
+levelrail-cli databases tags <name> [flags]
 levelrail-cli databases set-project <name> <project-id> [flags]
 levelrail-cli databases clear-project <name> [flags]
 levelrail-cli databases set-node <name> <node-id> [flags]
@@ -806,6 +810,10 @@ levelrail-cli auth code [flags]
 levelrail-cli auth approve <id> --match N [flags]
 levelrail-cli auth deny <id> [flags]
 levelrail-cli auth devices [revoke <id>] [flags]
+levelrail-cli auth devices trusted list [flags]
+levelrail-cli auth devices trusted revoke <id> [--yes] [flags]
+levelrail-cli auth sign-in-requests list [flags]
+levelrail-cli auth sign-in-requests reveal <code-id> [flags]
 levelrail-cli auth code-login [--admins true|false] [--others true|false] [flags]
 levelrail-cli auth activity [--kind KIND] [--all] [--limit N] [--cursor C] [flags]
 levelrail-cli auth preferences get|set [--timezone Z] [--language L] [--theme T] [--landing-page P] [--gravatar] [flags]
@@ -825,6 +833,7 @@ levelrail-cli auth 2fa recovery-codes --code CODE [flags]
 - `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](/attention-center).
 - `session-link` mints a short lived (about 2 minutes), single use login link that signs in as whoever minted it, meant for browser automation. It needs a token with the root ability.
 - `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows, typed in; a wrong number denies it, and the number is never printed by `code`), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code needs `signin:approve`, which no device login, root or `write:sensitive` token carries; `approve` and `deny` need `signin:approve` or an unscoped root token of your own user (a root token must type the number, not the password). Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (it must expire within 30 days by default, cannot be an agent token, and is revoked when you change or reset your password or sign out your other sessions), or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](/identity-and-access#sign-in-with-a-code).
+- `devices trusted list` and `devices trusted revoke` are the same calls as `devices` as a list and revoke pair; `revoke` asks first and needs `--yes` when stdin is not a terminal. `sign-in-requests list` shows waiting code requests and new-browser sign-ins without any code, and `sign-in-requests reveal <code-id>` prints one code once on stdout (never saved; needs `signin:approve`, and a refused reveal shows the server error and how to get that token).
 - `activity` shows your own account activity feed (needs a token that belongs to you with `read:sensitive`); `preferences` reads or changes your timezone, language, theme, landing page and Gravatar choice; `export` requests the data bundle, waits and saves the zip (mode 0600); `unlink` removes a linked sign-in provider and refuses to remove your last way in; `delete-account` permanently deletes your account after the typed email and your password. See [Your account](/account).
 - Every `2fa` subcommand needs a live session: `--username` and `--password` (prompted if omitted), never the CLI's saved bearer token. `setup` starts enrollment and returns a secret and provisioning URI; `enable` confirms it and returns recovery codes once; `recovery-codes` regenerates them and invalidates the old set.
 
@@ -1988,6 +1997,16 @@ levelrail-cli migrate dokploy --url URL --token TOKEN [flags]
 levelrail-cli migrate caprover --url URL --token TOKEN [flags]
 levelrail-cli migrate <coolify|dokploy> resume --journal FILE --url URL --token TOKEN [flags]
 levelrail-cli migrate <coolify|dokploy> undo --journal FILE [--dry-run] [--yes] [--force] [--include-data]
+levelrail-cli migrate hub sessions list|show <id> [flags]
+levelrail-cli migrate hub sessions select <id> [--select DB] [--deselect DB] [--target-name DB=NAME] [--target-version DB=VER] [flags]
+levelrail-cli migrate hub sessions step <id> <inventory|preflight|verify|cutover> [flags]
+levelrail-cli migrate hub sessions apply <id> [--password-stdin] [--yes] [flags]
+levelrail-cli migrate hub sessions receipt <id> [--out FILE [--force]] [flags]
+levelrail-cli migrate hub sessions connection <id> <db> [flags]
+levelrail-cli migrate hub sessions reveal <id> <db> [--yes] [flags]
+levelrail-cli migrate hub sessions delete <id> [--yes] [flags]
+levelrail-cli migrate checklist list|show <app> [flags]
+levelrail-cli migrate checklist step <app> <step> --done|--reset [--note TEXT] [--confirm] [--database NAME] [--volume NAME=SF:SB:TF:TB] [flags]
 ```
 
 One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
@@ -1995,6 +2014,8 @@ One way migration from a live instance. By default it writes `app.yaml` files pl
 For Coolify one-click services, `--stage-dir` (default `./migrated/compose`) receives one `compose.yaml` per service with its magic variables translated, and `--domain-suffix` (default `localhost`) sets the parent domain of the staged hosts. Staging writes files only and starts nothing. See [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose).
 
 For Coolify and Dokploy, every `--apply` run writes a journal (`--journal FILE`, default under the config dir, mode `0600`, names and step states only). `resume` finishes the open steps without re-creating anything, and `undo` removes only the apps that run created, as a dry run unless `--yes` is given; `--force` includes apps deployed since the run, `--force-app NAME` includes one app whose fingerprint no longer matches and `--include-data` includes apps with volumes after a typed confirmation. See [Resume or undo an --apply run](/migrate-from-coolify#apply-journal).
+
+`migrate hub sessions` drives the database migration hub from the terminal: `show` lists a session's databases and checks, `select` and `step` change the plan, `apply` starts the copy (it asks first, reuses the source password held for the session or reads one non-empty line piped in with `--password-stdin`, never a flag or a terminal), `receipt` prints or saves (`--out`, mode 0600, refuses an existing file unless `--force` and never writes through a symlink) the read-only receipt with secrets masked, `connection` shows a verified database's connection without a secret and `reveal` adds its password (needs `read:sensitive`, audited, asks first), and `delete` drops a session after confirmation. `migrate checklist` lists and updates the per-app cutover checklist with `--done` or `--reset`, with the same `--json`, `--output` and `--query` flags as other API verbs.
 
 ## Stack templates {#stack-templates}
 

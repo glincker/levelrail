@@ -801,6 +801,7 @@ type Router struct {
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
+	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 	deviceFlow                   *apiRateLimiter          // per-IP device-login-start token bucket

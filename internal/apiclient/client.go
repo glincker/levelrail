@@ -674,6 +674,32 @@ func (c *Client) DetachAppTag(ctx context.Context, name, tagID string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/tags/"+PathEscape(tagID), nil, nil)
 }
 
+// ListDatabasesByTag calls GET /api/v1/tags/{id}/databases.
+func (c *Client) ListDatabasesByTag(ctx context.Context, id string) ([]TagAppResource, error) {
+	var out []TagAppResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/tags/"+PathEscape(id)+"/databases", nil, &out)
+	return out, err
+}
+
+// ListDatabaseTags calls GET /api/v1/databases/{name}/tags.
+func (c *Client) ListDatabaseTags(ctx context.Context, name string) ([]TagResource, error) {
+	var out []TagResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/tags", nil, &out)
+	return out, err
+}
+
+// AttachDatabaseTag calls POST /api/v1/databases/{name}/tags, creating the tag on first use.
+func (c *Client) AttachDatabaseTag(ctx context.Context, name, tagName string) (TagResource, error) {
+	var out TagResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/tags", AttachAppTagRequest{Name: tagName}, &out)
+	return out, err
+}
+
+// DetachDatabaseTag calls DELETE /api/v1/databases/{name}/tags/{id}.
+func (c *Client) DetachDatabaseTag(ctx context.Context, name, tagID string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/tags/"+PathEscape(tagID), nil, nil)
+}
+
 // SetAppPreviewEnvOverride calls PUT /api/v1/apps/{name}/preview-env/{key}:
 // declares (or replaces) one env var's preview-specific value on an app
 // that already exists, applied only the next time a preview environment

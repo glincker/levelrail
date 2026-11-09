@@ -24,6 +24,16 @@ api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
 app.image_keep
 app.image_keep_overrides
+app_metrics.max_body_bytes
+app_metrics.max_label_bytes
+app_metrics.max_labels
+app_metrics.max_series
+app_metrics.max_stored_rows
+app_metrics.query_max_points
+app_metrics.retention_hours
+app_metrics.scrape_interval
+app_metrics.scrape_timeout
+app_metrics.scrape_workers
 apps.containers_inspect_timeout
 apps.env_apply_on_set
 apps.max_replicas_per_service
@@ -121,6 +131,9 @@ domains.limits_max_timeout_seconds
 domains.parked_retention_days
 domains.rollback_window_minutes
 domains.www_mode
+events.changes_buffer
+events.changes_heartbeat
+events.changes_max_streams_per_caller
 firewall.confirm_window
 fixit.max_per_hour
 footprint.gc_percent
@@ -269,6 +282,7 @@ supply_chain.default_enabled
 supply_chain.default_gate
 system.processes_max_rows
 tags.max_per_app
+tags.max_per_resource
 telemetry.access_log_retention
 telemetry.access_log_size
 telemetry.log_budget_mb

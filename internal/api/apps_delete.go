@@ -41,6 +41,7 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if purge && teardownErr == nil {
 		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
 	}
+	rt.changes.Publish(changeApps, name)
 	rt.nudgeReconciler()
 	if teardownErr != nil {
 		writeJSON(w, http.StatusAccepted, map[string]string{

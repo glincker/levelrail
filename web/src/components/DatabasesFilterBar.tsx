@@ -78,10 +78,12 @@ export function DatabasesStatusStrip({
 export function DatabasesFilterBar({
   filters,
   engines,
+  tags = [],
   onChange,
 }: {
   filters: DatabaseListFilters
   engines: string[]
+  tags?: string[]
   onChange: (next: DatabaseListFilters) => void
 }) {
   const { t } = useTranslation('databases')
@@ -149,6 +151,31 @@ export function DatabasesFilterBar({
             })}
           </div>
         </>
+      ) : null}
+      {tags.length > 0 ? (
+        <div
+          role="group"
+          aria-label={t('filter.tags')}
+          className="flex flex-wrap items-center gap-2"
+        >
+          {tags.map((tag) => {
+            const on = filters.tags.includes(tag)
+            return (
+              <Button
+                key={tag}
+                type="button"
+                size="sm"
+                variant={on ? 'default' : 'outline'}
+                aria-pressed={on}
+                onClick={() => {
+                  onChange({ ...filters, tags: toggle(filters.tags, tag) })
+                }}
+              >
+                {t('filter.tagOption', { tag })}
+              </Button>
+            )
+          })}
+        </div>
       ) : null}
       {dbFiltersActive(filters) ? (
         <Button

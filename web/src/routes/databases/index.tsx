@@ -30,6 +30,7 @@ import {
   engineOptions,
   filterDatabases,
   filtersFromSearch,
+  tagOptions,
   parseDatabasesSearch,
   searchFromFilters,
   type DatabaseListFilters,
@@ -79,6 +80,7 @@ function DatabaseListPage() {
     [databases, labelMatches.data],
   )
   const engines = useMemo(() => engineOptions(databases), [databases])
+  const tags = useMemo(() => tagOptions(databases), [databases])
   const counts = useMemo(() => countByStatus(labelled), [labelled])
   const shown = useMemo(
     () => filterDatabases(labelled, filters),
@@ -139,6 +141,16 @@ function DatabaseListPage() {
         })
       },
     })),
+    ...filters.tags.map((tag) => ({
+      id: `tag:${tag}`,
+      label: tf('filterChips.tag', { value: tag }),
+      onRemove: () => {
+        setFilters({
+          ...filters,
+          tags: filters.tags.filter((x) => x !== tag),
+        })
+      },
+    })),
     ...(labelSelector
       ? [
           {
@@ -177,6 +189,7 @@ function DatabaseListPage() {
           <DatabasesFilterBar
             filters={filters}
             engines={engines}
+            tags={tags}
             onChange={setFilters}
           />
           <LabelFilterInput

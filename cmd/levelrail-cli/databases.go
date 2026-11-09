@@ -61,6 +61,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesSchema(prog, rest, stdout, stderr, lookupEnv)
 	case "move-env":
 		return runDatabasesMoveEnv(prog, rest, stdout, stderr, lookupEnv)
+	case "tag":
+		return runDatabasesTag(prog, rest, stdout, stderr, lookupEnv)
+	case "untag":
+		return runDatabasesUntag(prog, rest, stdout, stderr, lookupEnv)
+	case "tags":
+		return runDatabasesTags(prog, rest, stdout, stderr, lookupEnv)
 	case "set-project":
 		return runDatabasesSetProject(prog, rest, stdout, stderr, lookupEnv)
 	case "clear-project":

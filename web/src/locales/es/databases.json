@@ -1028,7 +1028,9 @@
       "stopped": "Detenida"
     },
     "emptyTitle": "Ninguna base de datos coincide con estos filtros",
-    "emptyBody": "Prueba otra búsqueda, motor o estado, o quita los filtros para ver todas las bases de datos."
+    "emptyBody": "Prueba otra búsqueda, motor o estado, o quita los filtros para ver todas las bases de datos.",
+    "tags": "Etiquetas",
+    "tagOption": "#{{tag}}"
   },
   "bulk": {
     "region": "Acciones en lote",

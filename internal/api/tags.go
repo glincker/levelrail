@@ -254,15 +254,22 @@ func (rt *Router) handleListAppsByTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	canRead, _, err := rt.callerAppVisibility(r)
+	if err != nil {
+		rt.internalError(w, "api: list apps by tag: visibility", err)
+		return
+	}
 	names, err := rt.tags.ListAppNamesByTag(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: list apps by tag failed", err, slog.String("id", id))
 		return
 	}
 
-	out := make([]tagAppResource, len(names))
-	for i, name := range names {
-		out[i] = tagAppResource{Name: name}
+	out := make([]tagAppResource, 0, len(names))
+	for _, name := range names {
+		if canRead(name) {
+			out = append(out, tagAppResource{Name: name})
+		}
 	}
 	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }

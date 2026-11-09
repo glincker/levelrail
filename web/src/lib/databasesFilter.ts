@@ -12,12 +12,14 @@ export interface DatabaseListFilters {
   q: string
   engines: string[]
   status: DbStatusBucket | null
+  tags: string[]
 }
 
 export const EMPTY_DB_FILTERS: DatabaseListFilters = {
   q: '',
   engines: [],
   status: null,
+  tags: [],
 }
 
 // URL shape: engines travel as one comma list so links stay short.
@@ -26,6 +28,7 @@ export interface DatabasesSearch {
   q?: string
   engine?: string
   status?: DbStatusBucket
+  tag?: string
 }
 
 // Buckets come from fields the list endpoint already sends: the
@@ -56,6 +59,23 @@ export function engineOptions(dbs: readonly DatabaseListEntry[]): string[] {
   return [...new Set(dbs.map((db) => db.engine))].sort()
 }
 
+export function tagOptions(dbs: readonly DatabaseListEntry[]): string[] {
+  return [...new Set(dbs.flatMap((db) => db.tags ?? []))].sort()
+}
+
+// A row matches when it carries every selected tag.
+function hasTags(db: DatabaseListEntry, want: readonly string[]): boolean {
+  const have = db.tags ?? []
+  return want.every((tag) => have.includes(tag))
+}
+
+function splitList(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean)
+}
+
 export function filterDatabases(
   dbs: readonly DatabaseListEntry[],
   f: DatabaseListFilters,
@@ -67,12 +87,15 @@ export function filterDatabases(
         db.name.toLowerCase().includes(q) ||
         db.engine.toLowerCase().includes(q)) &&
       (f.engines.length === 0 || f.engines.includes(db.engine)) &&
-      (f.status === null || databaseStatusBucket(db) === f.status),
+      (f.status === null || databaseStatusBucket(db) === f.status) &&
+      hasTags(db, f.tags),
   )
 }
 
 export function dbFiltersActive(f: DatabaseListFilters): boolean {
-  return f.q !== '' || f.engines.length > 0 || f.status !== null
+  return (
+    f.q !== '' || f.engines.length > 0 || f.status !== null || f.tags.length > 0
+  )
 }
 
 function isBucket(raw: unknown): raw is DbStatusBucket {
@@ -96,6 +119,10 @@ export function parseDatabasesSearch(
     if (engines.length > 0) out.engine = engines.join(',')
   }
   if (isBucket(search.status)) out.status = search.status
+  if (typeof search.tag === 'string') {
+    const tags = splitList(search.tag.toLowerCase())
+    if (tags.length > 0) out.tag = tags.join(',')
+  }
   return out
 }
 
@@ -104,6 +131,7 @@ export function filtersFromSearch(s: DatabasesSearch): DatabaseListFilters {
     q: s.q ?? '',
     engines: s.engine ? s.engine.split(',') : [],
     status: s.status ?? null,
+    tags: s.tag ? s.tag.split(',') : [],
   }
 }
 
@@ -112,6 +140,7 @@ export function searchFromFilters(f: DatabaseListFilters): DatabasesSearch {
   if (f.q !== '') out.q = f.q
   if (f.engines.length > 0) out.engine = f.engines.join(',')
   if (f.status) out.status = f.status
+  if (f.tags.length > 0) out.tag = f.tags.join(',')
   return out
 }
 

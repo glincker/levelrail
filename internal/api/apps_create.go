@@ -236,6 +236,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		req.DNS = rt.dnsForAutoDomain(r.Context(), r, req.Name, autoDomain)
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
+	rt.changes.Publish(changeApps, req.Name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }

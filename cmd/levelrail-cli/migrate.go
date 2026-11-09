@@ -50,6 +50,10 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateStep(prog, args[1:], stdout, stderr, lookupEnv)
 	case "agent":
 		return runMigrateAgent(prog, args[1:], stdout, stderr, lookupEnv)
+	case "hub":
+		return runMigrateHub(prog, args[1:], stdout, stderr, lookupEnv)
+	case "checklist":
+		return runMigrateChecklist(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown migrate source %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, migrateUsage(prog))
@@ -67,6 +71,10 @@ func migrateUsage(prog string) string {
 
   %[1]s migrate [coolify|dokploy|caprover|server] --resume JOB [--retry] [--follow] [--retire [--probe] [--ack STEP]]
                                                            resume a migration job: status, retry failures, safe-to-delete check
+
+Database migration hub and cutover checklists:
+  %[1]s migrate hub sessions <list|show|select|step|apply|receipt|connection|reveal|delete>
+  %[1]s migrate checklist <list|show|step>
 
 Data and cutover steps, after "import platform":
 `+migrateDataUsage(prog)+`

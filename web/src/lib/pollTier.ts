@@ -24,6 +24,26 @@ export function resolveTierMs(
   return Number.isFinite(raw) && raw >= 1_000 ? raw : DEFAULTS[tier]
 }
 
+// While the change stream is live, polls of the lists it covers are only a fallback.
+let streamHealthy = false
+
+export function setChangeStreamHealthy(healthy: boolean): void {
+  streamHealthy = healthy
+}
+
+export function resolveStreamFactor(
+  env: Record<string, unknown> = import.meta.env,
+): number {
+  const raw = Number(env.VITE_POLL_STREAM_FACTOR)
+  return Number.isFinite(raw) && raw >= 1 ? raw : 4
+}
+
 export function pollMs(tier: PollTier): number {
   return resolveTierMs(tier)
+}
+
+/** Poll cadence for a query the change stream covers; call it per render, not at import. */
+export function topicPollMs(tier: PollTier): number {
+  const ms = resolveTierMs(tier)
+  return streamHealthy && tier !== 'live' ? ms * resolveStreamFactor() : ms
 }

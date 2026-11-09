@@ -31,6 +31,7 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/deployments":            true,
 	"GET /api/v1/deployments/summary":    true,
 	"GET /api/v1/deployments/stream":     true,
+	"GET /api/v1/events/changes":         true,
 	"GET /api/v1/deploy-approvals":       true,
 	"GET /api/v1/attention/feed":         true,
 	"GET /api/v1/traffic/summary":        true,

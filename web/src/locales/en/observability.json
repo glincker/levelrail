@@ -333,5 +333,21 @@
     "budgetRemaining": "Error budget remaining",
     "tierWindow": "{{name}} ({{long}} and {{short}})",
     "burnRate": "{{rate}}x burn"
+  },
+  "appScrape": {
+    "title": "App metrics",
+    "subtitle": "Series scraped from the app's own metrics endpoint on its container.",
+    "metric": "Metric",
+    "pickMetric": "Pick a metric",
+    "range": "Range",
+    "hours_one": "Last {{count}} hour",
+    "hours_other": "Last {{count}} hours",
+    "empty": "No series stored yet. The first scrape runs on the next interval.",
+    "port": "Container port",
+    "path": "Path",
+    "save": "Save target",
+    "lastError": "Last scrape failed: {{error}}",
+    "invalidPort": "Enter a port from 1 to 65535.",
+    "invalidPath": "Use a plain path like /metrics."
   }
 }

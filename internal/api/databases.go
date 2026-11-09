@@ -150,6 +150,7 @@ type databaseListResource struct {
 	databaseResource
 	Status   appStatusSummary          `json:"status"`
 	External *externalDatabaseResource `json:"external,omitempty"`
+	Tags     []string                  `json:"tags,omitempty"`
 }
 
 // Engines are checked against the embedded registry, so adding an engine needs no change here.
@@ -181,6 +182,15 @@ func validateDatabaseResource(d databaseResource) error {
 
 // handleListDatabases batches status and TLS lookups, avoiding a query per database.
 func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
+	tagFilter := ""
+	if raw := r.URL.Query().Get("tag"); raw != "" {
+		name, err := validateTagName(raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		tagFilter = name
+	}
 	dbs, err := rt.databases.ListDesiredDatabases(r.Context())
 	if err != nil {
 		rt.logger.Error("api: list databases failed", slog.String("error", err.Error()))
@@ -259,6 +269,10 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	out = rt.appendExternalDatabases(r, canSee, out)
+	if out, err = rt.stampDatabaseListTags(r.Context(), out, tagFilter); err != nil {
+		rt.internalError(w, "api: list databases: tags", err)
+		return
+	}
 	writeJSON(w, http.StatusOK, pageQueryDefault(w, r, out, appListMaxLimit))
 }
 

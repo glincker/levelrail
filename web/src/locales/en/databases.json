@@ -1028,7 +1028,9 @@
       "stopped": "Stopped"
     },
     "emptyTitle": "No databases match these filters",
-    "emptyBody": "Try another search, engine or status, or clear the filters to see every database."
+    "emptyBody": "Try another search, engine or status, or clear the filters to see every database.",
+    "tags": "Tags",
+    "tagOption": "#{{tag}}"
   },
   "bulk": {
     "region": "Bulk actions",

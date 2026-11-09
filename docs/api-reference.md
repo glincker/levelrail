@@ -758,6 +758,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/image-retention | AbilityRead | handleGetImageRetention |
 | PUT | /api/v1/apps/{name}/image-retention | AbilityRoot | handleSetImageRetention |
 | POST | /api/v1/apps/{name}/image-retention/preview | AbilityRoot | handlePreviewImageRetention |
+| GET | /api/v1/apps/{name}/scrape-target | AbilityRead | handleGetScrapeTarget |
+| PUT | /api/v1/apps/{name}/scrape-target | AbilityWrite | handlePutScrapeTarget |
+| DELETE | /api/v1/apps/{name}/scrape-target | AbilityWrite | handleDeleteScrapeTarget |
+| GET | /api/v1/apps/{name}/scraped-metrics | AbilityRead | handleScrapedMetrics |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -966,6 +970,9 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
 | POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
 | POST | /api/v1/databases/bulk | AbilityWriteSensitive | handleBulkDatabases |
+| GET | /api/v1/databases/{name}/tags | AbilityRead | handleListDatabaseTags |
+| POST | /api/v1/databases/{name}/tags | AbilityWrite | handleAttachDatabaseTag |
+| DELETE | /api/v1/databases/{name}/tags/{id} | AbilityWrite | handleDetachDatabaseTag |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
@@ -2302,6 +2309,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/saved-views | AbilityRead | handleListSavedViews |
 | POST | /api/v1/saved-views | AbilityWrite | handleSaveView |
 | DELETE | /api/v1/saved-views/{id} | AbilityWrite | handleDeleteSavedView |
+| GET | /api/v1/events/changes | AbilityRead | handleChangesStream |
+| GET | /api/v1/tags/{id}/databases | AbilityRead | handleListDatabasesByTag |
 | POST | /mcp | Public |  |
 
 ## See also

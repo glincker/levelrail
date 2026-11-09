@@ -160,6 +160,7 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 	resp := editDomainsResponse{App: name, Domains: next, Changed: changed, EnvSkipped: envReport.Skipped, EnvSkippedHidden: envReport.SkippedHidden}
 	if changed {
 		rt.automateDomainChanges(r, name, req, before, next, &resp)
+		rt.changes.Publish(changeDomains, name)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

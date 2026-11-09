@@ -440,6 +440,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	rt.changes.Publish(changeAlerts, r.PathValue("name"))
 	res := toRuleResource(*saved)
 	res.Warnings = ruleWarnings(*saved)
 	writeJSON(w, http.StatusCreated, res)
