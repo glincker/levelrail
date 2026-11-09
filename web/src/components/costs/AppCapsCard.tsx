@@ -19,20 +19,32 @@ import {
 import { OverrideDeploysDialog } from '../spend/OverrideDeploysDialog'
 import { PausePreviewDialog } from '../spend/PausePreviewDialog'
 
+const BYTES_PER_GIB = 1024 ** 3
+
+function toGib(bytes: number): string {
+  return bytes > 0 ? String(Number((bytes / BYTES_PER_GIB).toFixed(2))) : ''
+}
+
 function CapRow({ cap }: { cap: SpendCap }) {
   const { t } = useTranslation('costs')
   const { save } = useSpendCapActions(cap.app)
   const preview = usePausePreview(appPauseUrl(cap.app))
   const [ceiling, setCeiling] = useState(String(cap.monthly_cost_ceiling))
+  const [egress, setEgress] = useState(toGib(cap.monthly_egress_bytes))
   const [previewOpen, setPreviewOpen] = useState(false)
   const [overrideOpen, setOverrideOpen] = useState(false)
   const pct = Math.min(100, Math.round(cap.pct))
   const parsed = Number(ceiling)
+  const egressParsed = egress.trim() === '' ? 0 : Number(egress)
+  const egressBytes = Math.round(egressParsed * BYTES_PER_GIB)
+  const ceilingValid =
+    ceiling.trim() !== '' && Number.isFinite(parsed) && parsed >= 0
+  const egressValid = Number.isFinite(egressParsed) && egressParsed >= 0
   const dirty =
-    ceiling.trim() !== '' &&
-    Number.isFinite(parsed) &&
-    parsed >= 0 &&
-    parsed !== cap.monthly_cost_ceiling
+    ceilingValid &&
+    egressValid &&
+    (parsed !== cap.monthly_cost_ceiling ||
+      egressBytes !== cap.monthly_egress_bytes)
   const blocked = cap.guard?.blocked === true
   const overridden = cap.guard?.override !== undefined
 
@@ -40,7 +52,7 @@ function CapRow({ cap }: { cap: SpendCap }) {
     if (!dirty) return
     save.mutate(
       {
-        monthly_egress_bytes: cap.monthly_egress_bytes,
+        monthly_egress_bytes: egressBytes,
         monthly_cost_ceiling: parsed,
         thresholds: cap.thresholds,
         action: cap.action,
@@ -95,6 +107,17 @@ function CapRow({ cap }: { cap: SpendCap }) {
           submit()
         }}
       >
+        <Input
+          type="number"
+          min={0}
+          step="any"
+          inputMode="decimal"
+          value={egress}
+          placeholder={t('appCaps.egressPlaceholder')}
+          aria-label={t('appCaps.egressLabel', { app: cap.app })}
+          onChange={(e) => setEgress(e.target.value)}
+          className="h-8 w-24"
+        />
         <Input
           type="number"
           min={0}

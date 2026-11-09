@@ -146,6 +146,8 @@
     "usage": "{{pct}}% del límite",
     "ceiling": "Tope de coste",
     "ceilingLabel": "Tope de coste de {{app}}",
+    "egressLabel": "Tope de salida en GiB de {{app}}",
+    "egressPlaceholder": "GiB",
     "set": "Definir",
     "saved": "Límite actualizado para {{app}}",
     "saveFailed": "No se pudo actualizar el límite: {{message}}",

@@ -160,7 +160,6 @@ func mapCapRoverApp(def caproverDefinition, rootDomain string) App {
 	for _, p := range def.Ports {
 		app.Notes = append(app.Notes, Note{Reason: fmt.Sprintf("raw port mapping %d:%d is not imported", p.HostPort, p.ContainerPort), Manual: "publish the port from the app settings if it must be reachable"})
 	}
-	app.Notes = append(app.Notes, caproverProxyNotes(def)...)
 	app.Policy = DomainPolicy{ForceHTTPS: def.ForceSSL, WebSocket: def.WebsocketSupport, RedirectTo: def.RedirectDomain}
 	if def.HTTPAuth != nil {
 		app.Policy.BasicAuthUser = def.HTTPAuth.User
@@ -173,22 +172,4 @@ func mapCapRoverApp(def caproverDefinition, rootDomain string) App {
 		app.Notes = append(app.Notes, Note{Reason: "the source stores no image or repository identity for this app, its image only exists on the source host", Manual: "connect a repository or push an image to a registry, then set it as the app source"})
 	}
 	return app
-}
-
-// caproverProxyNotes turns per-app proxy flags into review notes, since the plan carries no domain policies.
-func caproverProxyNotes(def caproverDefinition) []Note {
-	var notes []Note
-	if def.ForceSSL {
-		notes = append(notes, Note{Reason: "the source forced HTTPS for this app", Manual: "enable the redirect-to-HTTPS policy on each imported domain"})
-	}
-	if def.WebsocketSupport {
-		notes = append(notes, Note{Reason: "the source enabled websocket support", Manual: "confirm upgrade requests pass through the domain policy"})
-	}
-	if def.RedirectDomain != "" {
-		notes = append(notes, Note{Reason: "the source redirected requests to " + def.RedirectDomain, Manual: "add a redirect policy to the imported domain"})
-	}
-	if def.HTTPAuth != nil && def.HTTPAuth.User != "" {
-		notes = append(notes, Note{Reason: "the source enabled basic auth for user " + def.HTTPAuth.User + ", the password hash is not imported", Manual: "add basic auth to the domain policy with a new password"})
-	}
-	return notes
 }

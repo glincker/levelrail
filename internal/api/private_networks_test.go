@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -127,5 +128,30 @@ func TestPrivateNetworks_MapVerdicts(t *testing.T) {
 	}
 	if blocked := edge("app_web", "app_cache"); blocked == nil || blocked.Allowed || blocked.Fix != privateNetworkFixAllow {
 		t.Fatalf("blocked edge = %+v", blocked)
+	}
+}
+
+func TestPrivateNetworks_ListSortsByName(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.SetPrivateNetworks(PrivateNetworkConfig{Store: db})
+	for _, n := range []string{"bravo", "alpha", "charlie"} {
+		if w := privnetCall(t, rt, cookie, http.MethodPost, "/api/v1/private-networks", `{"name":"`+n+`"}`); w.Code != http.StatusCreated {
+			t.Fatalf("create %s = %d", n, w.Code)
+		}
+	}
+	for query, want := range map[string]string{"sort=name": "alpha,bravo,charlie", "sort=-name": "charlie,bravo,alpha"} {
+		var list privateNetworkListResponse
+		w := privnetCall(t, rt, cookie, http.MethodGet, "/api/v1/private-networks?"+query, "")
+		if err := json.Unmarshal(w.Body.Bytes(), &list); err != nil {
+			t.Fatalf("%s: %v", query, err)
+		}
+		names := make([]string, 0, len(list.Networks))
+		for _, n := range list.Networks {
+			names = append(names, n.Name)
+		}
+		if got := strings.Join(names, ","); got != want {
+			t.Fatalf("%s: got %s, want %s", query, got, want)
+		}
 	}
 }

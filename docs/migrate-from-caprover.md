@@ -56,6 +56,8 @@ levelrail-cli import platform caprover --url https://captain.example.com --dry-r
 levelrail-cli import platform caprover --url https://captain.example.com --only blog,api
 ```
 
+Per-app proxy flags (force HTTPS, websocket support, redirect domain, basic auth user) are listed as domain policy lines in MIGRATION.md; the basic auth password is never imported.
+
 Apps are created without a running image. The report names the repository and branch where one is known. For verdicts and one-click fixes, use `levelrail-cli migrate plan --platform caprover --url https://captain.example.com`, then add `--apply --only ID`.
 
 </Step>

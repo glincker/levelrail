@@ -70,6 +70,12 @@ describe('AppCapsCard', () => {
     expect(screen.queryByRole('button', { name: 'Override' })).toBeNull()
   })
 
+  it('shows the egress cap in GiB as an editable field', async () => {
+    renderWith([cap({ monthly_egress_bytes: 5 * 1024 ** 3 })])
+    const input = await screen.findByLabelText('Egress cap in GiB for shop')
+    expect((input as HTMLInputElement).value).toBe('5')
+  })
+
   it('offers an override when deploys are blocked', async () => {
     renderWith([
       cap({

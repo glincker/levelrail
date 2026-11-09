@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -174,10 +175,14 @@ func (rt *Router) fillVolumeUsage(ctx context.Context, res *volumeUsageResource,
 		res.NotConfigured = true
 		return nil
 	}
-	vols, err := rt.orphanedVolumes.ListNamedVolumes(ctx)
+	// Unscoped compute is shared; visibility filtering happens below per caller.
+	cached, err := rt.expensiveRead(ctx, fmt.Sprintf("usage-volumes:%p", rt), func(ctx context.Context) (any, error) {
+		return rt.orphanedVolumes.ListNamedVolumes(ctx)
+	})
 	if err != nil {
 		return fmt.Errorf("list named volumes: %w", err)
 	}
+	vols, _ := cached.([]docker.NamedVolume)
 	services, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
 		return fmt.Errorf("list desired services: %w", err)

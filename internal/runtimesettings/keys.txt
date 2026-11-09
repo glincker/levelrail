@@ -40,6 +40,8 @@ auth.engine_rate_limit_per_ip
 auth.password_min_length
 auth.password_require_classes
 auth.sso_auto_redirect
+autoscale.gauge_max_bytes
+autoscale.gauge_timeout
 backup.default_retention_hours
 backup.local_root
 boot.event_recheck

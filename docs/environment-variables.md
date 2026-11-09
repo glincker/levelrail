@@ -233,6 +233,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
+| `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
+| `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |
@@ -278,6 +280,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_READ_CONNS` | [`store.read_connections`](/runtime-settings#observability) | `4` |
 | `APP_DB_SYNCHRONOUS` | [`store.synchronous`](/runtime-settings#observability) | `default` |
 | `APP_DB_TEMP_STORE` | [`store.temp_store`](/runtime-settings#observability) | `default` |
+| `LEVELRAIL_TOUCH_FLUSH_INTERVAL` | [`store.touch_flush_interval`](/runtime-settings#observability) | `5s` |
 | `APP_SYSTEM_PROCESSES_MAX_ROWS` | [`system.processes_max_rows`](/runtime-settings#observability) | `25` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
 | `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
