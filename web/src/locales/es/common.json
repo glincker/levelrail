@@ -1524,5 +1524,30 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "saved": "Notas guardadas"
+  },
+  "copyCommand": {
+    "trigger": "Copiar {{name}} como comando",
+    "title": "Copiar como comando",
+    "cli": "{{action}}: comando CLI",
+    "api": "{{action}}: llamada API",
+    "copiedCli": "Comando CLI copiado",
+    "copiedApi": "Llamada API copiada, define antes la variable del token",
+    "actions": {
+      "app_restart": "Reiniciar",
+      "app_stop": "Detener",
+      "app_start": "Iniciar",
+      "app_scale": "Escalar",
+      "app_rollback": "Revertir",
+      "deploy_rollback": "Revertir a este despliegue",
+      "database_start": "Iniciar",
+      "database_stop": "Detener",
+      "database_backup": "Respaldar ahora",
+      "domain_check": "Verificar",
+      "domain_remove": "Quitar",
+      "cert_renew": "Renovar certificado",
+      "job_run": "Ejecutar ahora",
+      "node_cordon": "Acordonar",
+      "node_uncordon": "Quitar acordonamiento"
+    }
   }
 }

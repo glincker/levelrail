@@ -2069,6 +2069,8 @@ type GitDeploySettings struct {
 	ReportStatus      bool     `json:"report_status"`
 	WaitForCI         bool     `json:"wait_for_ci"`
 	CIRequiredChecks  []string `json:"ci_required_checks"`
+	TagPattern        string   `json:"tag_pattern"`
+	BranchPattern     string   `json:"branch_pattern"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -2079,6 +2081,8 @@ type SetGitDeploySettingsRequest struct {
 	ReportStatus      *bool     `json:"report_status,omitempty"`
 	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
 	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
+	TagPattern        *string   `json:"tag_pattern,omitempty"`
+	BranchPattern     *string   `json:"branch_pattern,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest

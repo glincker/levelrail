@@ -204,6 +204,27 @@ Pause or put the old Coolify app into maintenance mode before the final database
 | Image move fails on a remote node | Move it by hand: `docker save IMAGE \| ssh TARGET docker load` |
 | Cutover reports `block` | The plan names the item and the fix. Fix it and run the dry run again |
 
+## Resume or undo an --apply run {#apply-journal}
+
+Every `migrate coolify --apply` run writes a journal: one entry per app with each step (created, git source, node, ingress, previews, secrets, files, webhook) and its outcome. The journal holds names, step states and a fingerprint of each created app. It never holds env values, secrets, tokens, passwords or connection strings. It is written with mode `0600`, atomically, and a lock file stops two runs from using it at once. The default path is under `~/.config/<cli>/migrate-journals/`; pick one with `--journal FILE`. The path is printed at the end of the run.
+
+If the run stopped half way, continue it with the same flags:
+
+```
+levelrail-cli migrate coolify resume --journal FILE --url URL --token TOKEN [the same flags as the --apply run]
+```
+
+Resume skips steps that are done and retries failed ones. It never creates an app that already exists and was not created by this run, and it leaves an app alone if it changed on the target since the run.
+
+To roll the run back:
+
+```
+levelrail-cli migrate coolify undo --journal FILE           # prints the plan, removes nothing
+levelrail-cli migrate coolify undo --journal FILE --yes     # removes what the plan marks remove
+```
+
+Undo removes only the apps the journal records as created by that run, newest first, with your own token and the normal delete route, so protected environments and delete confirmations still apply. Apps that existed before the run are never touched. An app deployed since the run is listed and skipped unless you pass `--force`. An app whose fingerprint is missing or no longer matches (it changed since the run, or the run stopped before recording it) is always skipped unless you name it with `--force-app NAME`; `--force` never overrides that. Undo checks each app again right before it deletes it. Apps have no immutable id in the API, so the fingerprint is the app's shape (image, domains, port, node, volumes and similar, never env values): if someone deletes an app and re-creates one with the same name and shape, undo cannot tell them apart, so read the plan before passing `--yes`. An app holding volume data is skipped unless you pass `--include-data` and type the number of such apps to confirm; its volumes are then deleted with it. Undo refuses a journal that is a symlink or sits in a symlinked folder, readable by others, over `APP_MIGRATE_JOURNAL_MAX_BYTES` (default 4 MiB), written for another control plane, or with a name that is not a valid app name.
+
 ## Choose to stay if
 
 Coolify already does what you need and your team knows it. Levelrail is the younger project with fewer users, and its migration path has had little time on production data. If you cannot take a write freeze or test a rollback, wait. See the [comparison](/comparison) and [Coolify alternative](/coolify-alternative).

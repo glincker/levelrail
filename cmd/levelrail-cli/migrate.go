@@ -111,15 +111,25 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 	placeApps(plain.Apps, nodeMap)
 	if f.apply {
 		profile := resolveProfile(f.targetProfile, lookupEnv)
-		client := NewClient(resolveAPIURL(f.targetAPIURL, lookupEnv, prog, profile), resolveToken(f.targetToken, lookupEnv, prog, profile))
+		targetURL := resolveAPIURL(f.targetAPIURL, lookupEnv, prog, profile)
+		client := NewClient(targetURL, resolveToken(f.targetToken, lookupEnv, prog, profile))
 		// Unknown node names are refused here, before any app is created.
 		if err := resolvePlacements(ctx, client, plain.Apps, nodeMap); err != nil {
 			return reportError(stdout, stderr, f.jsonOut, err)
 		}
-		applyMigration(ctx, client, &plain)
+		var jr *applyJournal
+		if f.source != "" {
+			if jr, err = openApplyJournal(prog, f.source, f.journalPath, f.sourceURL, targetURL, f.resume, lookupEnv); err != nil {
+				return reportError(stdout, stderr, f.jsonOut, err)
+			}
+			defer jr.close()
+		}
+		applyMigrationJournaled(ctx, client, &plain, jr)
 		if f.createWebhooks {
 			applyMigrationWebhooks(ctx, client, plain.Apps, lookupEnv)
+			jr.recordWebhooks(plain.Apps)
 		}
+		printJournalFooter(stderr, prog, f.source, jr)
 	} else {
 		if f.createWebhooks {
 			planMigrationWebhooks(plain.Apps, lookupEnv)
@@ -180,4 +190,7 @@ type migratePipelineFlags struct {
 	nodeMap string
 	// createWebhooks writes to the user's git host, so it is opt-in.
 	createWebhooks bool
+	// source names the journal's importer; empty keeps --apply unjournaled (CapRover).
+	source, sourceURL, journalPath string
+	resume                         bool
 }

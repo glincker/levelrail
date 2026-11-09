@@ -133,6 +133,10 @@ git.poll_enabled
 git.poll_interval
 git.poll_max_backoff
 git.ssh_scan_allow_internal
+git.trigger_pattern_list_max_bytes
+git.trigger_pattern_max_length
+git.trigger_patterns_max
+git.trigger_ref_max_bytes
 heartbeat.job_backoff_base
 heartbeat.job_backoff_max
 heartbeat.job_max_attempts

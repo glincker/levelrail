@@ -565,6 +565,23 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 `spec.Parse` also runs `yamlUnmarshalStrict` (YAML decode with `KnownFields(true)`) as an independent guard against struct tags and JSON Schema drifting apart. An unknown key becomes a decode error during development rather than a silently dropped field in production.
 </Accordion>
 
+## Deploy trigger patterns
+
+Trigger patterns are git source settings, not `app.yaml` fields: they decide which pushed refs deploy before anything is cloned, so they live with the branch and trigger mode. Set them on the app's Source tab, with `levelrail-cli apps git-source settings <app> --tag-pattern ... --branch-pattern ...`, or with `PUT /api/v1/apps/{name}/git-source/deploy-settings` (`tag_pattern`, `branch_pattern`).
+
+| Setting | Mode | Empty value |
+| --- | --- | --- |
+| `tag_pattern` | `release` | Every tag push and every published GitHub release deploys, as before. |
+| `branch_pattern` | `push` | Only pushes to the configured branch deploy, as before. |
+
+- A list is comma or newline separated. Patterns match the short ref name: `refs/heads/` and `refs/tags/` are stripped, and a pattern that starts with `refs/` is rejected.
+- `*` matches within one path segment (not `/`), `**` matches across `/`, `?` matches one character. Allowed characters are letters, digits and `- _ . / + @`. There are no regular expressions, classes or braces, and matching runs in time bounded by the pattern and ref length.
+- A pattern starting with `!` excludes. Order: if any `!` pattern matches the ref is skipped, whatever its position in the list; otherwise the ref deploys when a positive pattern matches; a list of only `!` patterns allows every other ref.
+- A branch pattern replaces the single branch match with the matching branches of the same repository. It never admits tags, `refs/pull/` refs, other refs, or pushes for another repository. A tag pattern only narrows which tags deploy. While a branch pattern is set, the background poller does not poll the source, since one polled branch head cannot stand for a set of branches; webhooks are the only trigger.
+- Branch deploys come first: when branch deploys are on and a pushed branch is eligible for one, it gets its own branch environment and the trigger pattern is not consulted. Keep the branch deploy patterns and the trigger branch pattern disjoint.
+- A ref longer than the `git.trigger_ref_max_bytes` runtime setting, not valid UTF-8, or containing control characters never matches. `git.trigger_patterns_max`, `git.trigger_pattern_max_length` and `git.trigger_pattern_list_max_bytes` (total bytes of one list) cap a list, which bounds the matching cost of every push; an invalid list is rejected with a 400 when saved.
+- A skipped push answers 200 with the reason in the webhook delivery log and does not deploy. Path filters, the CI gate, protected environments and freeze windows still apply to a push that matches. Every change writes an audit row with the pattern text.
+
 ## Next steps
 
 <CardGroup cols={2}>

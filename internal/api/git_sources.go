@@ -152,6 +152,9 @@ type gitSourceResource struct {
 	// PUT .../git-source/deploy-settings.
 	WaitForCI        bool     `json:"wait_for_ci"`
 	CIRequiredChecks []string `json:"ci_required_checks"`
+	// TagPattern and BranchPattern narrow which refs deploy, set via the same route.
+	TagPattern    string `json:"tag_pattern"`
+	BranchPattern string `json:"branch_pattern"`
 	// AppAuth is false when a team scoped caller set the source, so
 	// background flows never clone it with the GitHub App.
 	AppAuth   bool      `json:"app_auth"`
@@ -218,6 +221,8 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		ReportStatus:           g.ReportStatus,
 		WaitForCI:              g.WaitForCI,
 		CIRequiredChecks:       nonNilPaths(g.CIRequiredChecks),
+		TagPattern:             g.TagPattern,
+		BranchPattern:          g.BranchPattern,
 		ConnectionID:           g.ConnectionID,
 		AppAuth:                g.AppAuth,
 		CreatedAt:              g.CreatedAt,

@@ -237,5 +237,17 @@
     "started": "Compilación iniciada.",
     "failed": "No se pudo iniciar la compilación",
     "deployId": "Despliegue {{id}} iniciado."
+  },
+  "triggerPatterns": {
+    "title": "Patrones de despliegue",
+    "tagHelp": "El modo release despliega hoy cada tag enviado. Indica patrones de tag para desplegar solo los que coincidan, como v* para un tren de versiones.",
+    "branchHelp": "El modo push despliega hoy los envios a {{branch}}. Indica patrones de rama para desplegar en su lugar las ramas de este repositorio que coincidan, como main y release/*.",
+    "tagLabel": "Tags que despliegan",
+    "branchLabel": "Ramas que despliegan",
+    "syntax": "Un patron por linea o separados por comas. * queda dentro de un segmento, ** cruza /, ? es un caracter. Un patron que empieza con ! excluye y siempre gana. Deja vacio para mantener el valor por defecto. Los envios omitidos muestran el motivo en las entregas del webhook.",
+    "save": "Guardar patrones",
+    "saving": "Guardando...",
+    "saved": "Patrones guardados.",
+    "failed": "No se pudieron guardar los patrones."
   }
 }

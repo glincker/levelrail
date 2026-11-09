@@ -189,6 +189,8 @@ export interface GitSourceResource {
   report_status: boolean
   wait_for_ci?: boolean
   ci_required_checks?: string[]
+  tag_pattern?: string
+  branch_pattern?: string
   created_at: string
   updated_at: string
 }
@@ -206,6 +208,8 @@ export interface GitDeploySettings {
   report_status: boolean
   wait_for_ci?: boolean
   ci_required_checks?: string[]
+  tag_pattern?: string
+  branch_pattern?: string
 }
 
 export type SetGitDeploySettingsRequest = Partial<GitDeploySettings>

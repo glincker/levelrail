@@ -448,7 +448,7 @@ var Tree = map[string]*Node{
 		"suggest":   nil,
 	}},
 	"secrets":        {Subs: map[string]*Node{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil, "scan": nil, "key-status": nil, "rotate-dek": nil, "key-policy": nil}},
-	"migrate":        {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil, "server": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil, "plan": nil, "status": nil, "step": nil, "agent": {Subs: map[string]*Node{"start": nil, "status": nil, "verify": nil, "reopen": nil, "remove": nil}}}},
+	"migrate":        {Subs: map[string]*Node{"coolify": {Subs: map[string]*Node{"resume": nil, "undo": nil}}, "dokploy": {Subs: map[string]*Node{"resume": nil, "undo": nil}}, "caprover": nil, "server": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil, "plan": nil, "status": nil, "step": nil, "agent": {Subs: map[string]*Node{"start": nil, "status": nil, "verify": nil, "reopen": nil, "remove": nil}}}},
 	"releases":       {Subs: map[string]*Node{"list": nil}},
 	"apply":          nil,
 	"diff":           nil,

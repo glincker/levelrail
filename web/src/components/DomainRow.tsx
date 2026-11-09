@@ -76,6 +76,7 @@ import {
   StandaloneRowActions,
   StandaloneTargetCell,
 } from './domains/StandaloneRowParts'
+import { CopyAsCommand } from './CopyAsCommand'
 
 const FLAGS: {
   key: keyof Pick<
@@ -596,13 +597,35 @@ export function DomainRowActions({ domain }: { domain: Domain }) {
           onDiagnose={onDiagnose}
         />
       ) : (
-        <RowActions
-          domain={domain}
-          onShowRecord={onShowRecord}
-          onRecheck={onRecheck}
-          onDiagnose={onDiagnose}
-          onLifecycle={setLifecycle}
-        />
+        <span className="flex items-center gap-1 justify-self-end">
+          <CopyAsCommand
+            subject={domain.domain}
+            actions={[
+              {
+                kind: 'domain.check',
+                app: domain.service_name,
+                domain: domain.domain,
+              },
+              {
+                kind: 'cert.renew',
+                app: domain.service_name,
+                domain: domain.domain,
+              },
+              {
+                kind: 'domain.remove',
+                app: domain.service_name,
+                domain: domain.domain,
+              },
+            ]}
+          />
+          <RowActions
+            domain={domain}
+            onShowRecord={onShowRecord}
+            onRecheck={onRecheck}
+            onDiagnose={onDiagnose}
+            onLifecycle={setLifecycle}
+          />
+        </span>
       )}
       {lifecycle === 'park' ? (
         <ParkDomainDialog

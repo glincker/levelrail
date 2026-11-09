@@ -66,11 +66,15 @@ func runMigrateApply(t *testing.T, source, url, token, wantName string, wantPort
 	defer targetSrv.Close()
 
 	var stdoutBuf, stderrBuf bytes.Buffer
-	got := run("levelrail-cli-test", []string{
+	args := []string{
 		"migrate", source,
 		"--url", url, "--token", token,
 		"--apply", "--target-api-url", targetSrv.URL, "--target-token", "target-token",
-	}, &stdoutBuf, &stderrBuf, envMap())
+	}
+	if source != "caprover" {
+		args = append(args, "--journal", filepath.Join(t.TempDir(), "journal.json"))
+	}
+	got := run("levelrail-cli-test", args, &stdoutBuf, &stderrBuf, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdoutBuf.String(), stderrBuf.String())
 	}

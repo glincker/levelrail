@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 )
 
 type migrateDokployFlags struct {
@@ -24,11 +25,20 @@ type migrateDokployFlags struct {
 // runMigrateCoolify (migrate_coolify.go) exactly: same flag surface,
 // same file-vs-apply modes, same report shape.
 func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	resume := false
+	if len(args) > 0 {
+		switch args[0] {
+		case "resume":
+			resume, args = true, args[1:]
+		case "undo":
+			return runMigrateUndo(prog, "dokploy", args[1:], os.Stdin, stdout, stderr, lookupEnv)
+		}
+	}
 	fs := flag.NewFlagSet(prog+" migrate dokploy", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
 	var f migrateDokployFlags
-	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag string
+	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag, journalFlag string
 	fs.StringVar(&f.dokployURL, "url", "", "Dokploy instance base URL, e.g. https://dokploy.example.com (required)")
 	fs.StringVar(&f.dokployToken, "token", "", "Dokploy API key (required)")
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
@@ -41,6 +51,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
 	fs.BoolVar(&f.createWebhooks, "create-webhooks", false, createWebhooksHelp)
+	fs.StringVar(&journalFlag, "journal", "", journalFlagHelp)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateDokployUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -50,6 +61,12 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitUsage
 	}
 
+	if resume {
+		f.apply = true
+	}
+	if journalFlag != "" && !f.apply {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("%s", "--journal records an --apply run: add --apply, or use resume or undo"))
+	}
 	if f.dokployURL == "" || f.dokployToken == "" {
 		return reportError(stdout, stderr, f.jsonOut, newValidationError("--url and --token (Dokploy's own) are both required"))
 	}
@@ -72,6 +89,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
 		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag, nodeMap: f.nodeMap,
 		createWebhooks: f.createWebhooks,
+		source:         "dokploy", sourceURL: f.dokployURL, journalPath: journalFlag, resume: resume,
 	}, prog, stdout, stderr, lookupEnv)
 }
 
@@ -91,6 +109,8 @@ func fetchAndMapDokployApplication(ctx context.Context, dokploy *DokployClient, 
 func migrateDokployUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s migrate dokploy --url URL --token TOKEN [flags]
+  %[1]s migrate dokploy resume --journal FILE --url URL --token TOKEN [flags]
+  %[1]s migrate dokploy undo --journal FILE [--dry-run] [--yes] [--force] [--include-data]
 
 One-way migration from a live Dokploy instance to Levelrail. Default
 mode writes app.yaml files plus a migration report; --apply creates apps
@@ -112,6 +132,8 @@ Flags:
   --create-webhooks                with --apply, register one push webhook per git-sourced app through the
                                   connected git provider for its host (default off, it writes to the git host);
                                   without --apply the report lists what would be created
+  --journal string                with --apply, the apply journal to write (default under the config dir,
+                                  printed at the end); resume reads it and continues the open steps
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
@@ -123,6 +145,12 @@ the printed compose deploy command.
 Dokploy's docker (prebuilt image) and drop (file upload) source types,
 and its nixpacks/heroku_buildpacks/paketo_buildpacks build types, have no
 Levelrail equivalent and are reported for manual review, not migrated.
+
+Every --apply run writes a journal of what it created, step by step (names
+and step states only, never values or secrets). "resume" re-reads the
+source with the same flags and finishes the open steps without re-creating
+anything; apps that already existed are left alone. "undo" removes only
+what the run created; see "%[1]s migrate dokploy undo -h".
 
 Git repo/branch identity is not persisted Levelrail state today: the
 report prints the exact "apps create --repo ... --ref ..." follow-up

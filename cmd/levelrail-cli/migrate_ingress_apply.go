@@ -146,11 +146,13 @@ func resolvePlacements(ctx context.Context, client *Client, apps []mappedApp, no
 }
 
 // applyPlacement pins a created app to its mapped node through the same route as apps set-node.
-func applyPlacement(ctx context.Context, client *Client, name string, a *mappedApp) {
+func applyPlacement(ctx context.Context, client *Client, name string, a *mappedApp) string {
 	if a.nodeID == "" {
-		return
+		return stateSkipped
 	}
 	if _, err := client.SetAppNode(ctx, name, a.nodeID); err != nil {
 		a.Issues = appendIssue(a.Issues, "node", issueReview, fmt.Sprintf("the app was not placed on node %q: %s", a.Node, err.Error()))
+		return stateFailed
 	}
+	return stateDone
 }

@@ -199,6 +199,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_POLL_ENABLED` | [`git.poll_enabled`](/runtime-settings#deploys) | `true` |
 | `APP_GIT_POLL_INTERVAL` | [`git.poll_interval`](/runtime-settings#deploys) | `5m` |
 | `APP_GIT_POLL_MAX_BACKOFF` | [`git.poll_max_backoff`](/runtime-settings#deploys) | `1h` |
+| `APP_GIT_TRIGGER_PATTERN_LIST_MAX_BYTES` | [`git.trigger_pattern_list_max_bytes`](/runtime-settings#deploys) | `1024` |
+| `APP_GIT_TRIGGER_PATTERN_MAX_LENGTH` | [`git.trigger_pattern_max_length`](/runtime-settings#deploys) | `128` |
+| `APP_GIT_TRIGGER_PATTERNS_MAX` | [`git.trigger_patterns_max`](/runtime-settings#deploys) | `32` |
+| `APP_GIT_TRIGGER_REF_MAX_BYTES` | [`git.trigger_ref_max_bytes`](/runtime-settings#deploys) | `1024` |
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
@@ -235,7 +239,6 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
-| `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#retention) | `2h` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
@@ -307,6 +310,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_USAGE_ALERT_PERCENT` | [`volumes.usage_alert_percent`](/runtime-settings#observability) | `90` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |

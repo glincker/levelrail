@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
@@ -30,11 +31,20 @@ type migrateCoolifyFlags struct {
 // runMigrateCoolify implements "migrate coolify": writes app.yaml files and a report, or creates apps on a target with --apply.
 // Coolify's token uses --token; the target uses --target-token and --target-api-url, since this command talks to two APIs.
 func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	resume := false
+	if len(args) > 0 {
+		switch args[0] {
+		case "resume":
+			resume, args = true, args[1:]
+		case "undo":
+			return runMigrateUndo(prog, "coolify", args[1:], os.Stdin, stdout, stderr, lookupEnv)
+		}
+	}
 	fs := flag.NewFlagSet(prog+" migrate coolify", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
 	var f migrateCoolifyFlags
-	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag string
+	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag, journalFlag string
 	fs.StringVar(&f.coolifyURL, "url", "", "Coolify instance base URL, e.g. https://coolify.example.com (required)")
 	fs.StringVar(&f.coolifyToken, "token", "", "Coolify API bearer token (required)")
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
@@ -53,6 +63,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
 	fs.BoolVar(&f.createWebhooks, "create-webhooks", false, createWebhooksHelp)
+	fs.StringVar(&journalFlag, "journal", "", journalFlagHelp)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateCoolifyUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -62,6 +73,12 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitUsage
 	}
 
+	if resume {
+		f.apply = true
+	}
+	if journalFlag != "" && !f.apply {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("%s", "--journal records an --apply run: add --apply, or use resume or undo"))
+	}
 	if f.coolifyURL == "" || f.coolifyToken == "" {
 		return reportError(stdout, stderr, f.jsonOut, newValidationError("--url and --token (Coolify's own) are both required"))
 	}
@@ -96,6 +113,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
 		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag, nodeMap: f.nodeMap,
 		createWebhooks: f.createWebhooks,
+		source:         "coolify", sourceURL: f.coolifyURL, journalPath: journalFlag, resume: resume,
 	}, prog, stdout, stderr, lookupEnv)
 }
 
@@ -144,6 +162,8 @@ func fetchAndMapApplication(ctx context.Context, coolify *CoolifyClient, summary
 func migrateCoolifyUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s migrate coolify --url URL --token TOKEN [flags]
+  %[1]s migrate coolify resume --journal FILE --url URL --token TOKEN [flags]
+  %[1]s migrate coolify undo --journal FILE [--dry-run] [--yes] [--force] [--include-data]
 
 One-way migration from a live Coolify instance to Levelrail. Default
 mode writes app.yaml files plus a migration report; --apply creates apps
@@ -171,6 +191,8 @@ Flags:
   --create-webhooks                with --apply, register one push webhook per git-sourced app through the
                                   connected git provider for its host (default off, it writes to the git host);
                                   without --apply the report lists what would be created
+  --journal string                with --apply, the apply journal to write (default under the config dir,
+                                  printed at the end); resume reads it and continues the open steps
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
@@ -181,6 +203,12 @@ secrets and the printed "compose deploy" command; unsupported keys are listed.
 --dry-run and --verify cover what this command's file and --apply modes do
 not: databases, volumes, scheduled tasks, webhooks, servers and a DNS
 switch order. Stage them with "import apps --from coolify".
+
+Every --apply run writes a journal of what it created, step by step (names
+and step states only, never values or secrets). "resume" re-reads the
+source with the same flags and finishes the open steps without re-creating
+anything; apps that already existed are left alone. "undo" removes only
+what the run created; see "%[1]s migrate coolify undo -h".
 
 Git repo/branch identity is not persisted Levelrail state today: the
 report prints the exact "apps create --repo ... --ref ..." follow-up

@@ -21,6 +21,7 @@ import { engineHasBackups } from '@/lib/databaseCatalog'
 import { DeleteDatabaseDialog } from '../DeleteDatabaseDialog'
 import { ConnectDrawer } from './ConnectDrawer'
 import { BranchDatabaseDialog } from './BranchDatabaseDialog'
+import { CopyAsCommand } from '../CopyAsCommand'
 
 const BackupSetupDialog = lazy(() =>
   import('./backupSetup/BackupSetupDialog').then((m) => ({
@@ -150,6 +151,20 @@ export function DatabaseActionBar({
           />
         </Suspense>
       ) : null}
+      <CopyAsCommand
+        subject={name}
+        actions={[
+          {
+            kind: suspended ? 'database.start' : 'database.stop',
+            database: name,
+          },
+          {
+            kind: 'database.backup',
+            database: name,
+            targetId: targetId ?? undefined,
+          },
+        ]}
+      />
       <ActionMenu
         trigger={
           <Button variant="ghost" size="icon-sm" aria-label={t('detail.more')}>

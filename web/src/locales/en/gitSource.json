@@ -237,5 +237,17 @@
     "started": "Build started.",
     "failed": "Could not start the build",
     "deployId": "Deploy {{id}} started."
+  },
+  "triggerPatterns": {
+    "title": "Deploy trigger patterns",
+    "tagHelp": "Release mode deploys every tag push today. List tag patterns to deploy only matching tags, such as v* for a release train.",
+    "branchHelp": "Push mode deploys pushes to {{branch}} today. List branch patterns to deploy matching branches of this repository instead, such as main and release/*.",
+    "tagLabel": "Tags that deploy",
+    "branchLabel": "Branches that deploy",
+    "syntax": "One pattern per line or comma separated. * stays inside one path segment, ** crosses /, ? is one character. A pattern starting with ! excludes and always wins. Leave empty to keep the default. Skipped pushes show their reason in webhook deliveries.",
+    "save": "Save patterns",
+    "saving": "Saving...",
+    "saved": "Trigger patterns saved.",
+    "failed": "Could not save trigger patterns."
   }
 }

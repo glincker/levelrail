@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/azuredevops"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -181,9 +183,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return status, msg
 	}
 
-	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
+	triggered, ignoredMsg := gitSourceTriggerMatchesPushMax(gs, ev.Ref, rt.runtimeSettings.Limit(ctx, runtimesettings.KeyGitTriggerRefMaxBytes))
 	if !triggered {
-		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
+		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", truncatedRef(ev.Ref)), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
 		return http.StatusOK, ignoredMsg
 	}
 	if msg := skipPushForMarker(ev.HeadMessage); msg != "" && !isWebhookReplay(ctx) {
@@ -199,7 +201,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, "ignored: the ref was deleted, nothing to gate or deploy\n"
 	}
 	prevHead := rt.lastSeenHead(ctx, name)
-	rt.noteGitHead(ctx, name, ev.After)
+	// Only the configured branch's head is the poller's last seen head.
+	if ev.Ref == gateRef(gs.Branch) {
+		rt.noteGitHead(ctx, name, ev.After)
+	}
 	gateSHA := gateCommitSHA(body, ev)
 	if gs.WaitForCI && gateSHA == "" && strings.HasPrefix(ev.Ref, "refs/tags/") {
 		status, msg := rt.startGatedTagResolve(ctx, name, gs, ev)
@@ -247,17 +252,60 @@ func isGitHubPingEvent(header http.Header) bool {
 // Push mode matches only the configured branch. Release mode matches only tag pushes, on any branch.
 // GitHub release events are handled separately, before this function is reached.
 func gitSourceTriggerMatchesPush(gs store.GitSource, ref string) (bool, string) {
+	return gitSourceTriggerMatchesPushMax(gs, ref, runtimesettings.ClampLimit(runtimesettings.KeyGitTriggerRefMaxBytes, 0))
+}
+
+// gitSourceTriggerMatchesPushMax applies the trigger patterns before any clone.
+// A branch pattern replaces the single branch match but only ever admits
+// refs/heads/ refs of the source's own repository, never pull or note refs.
+func gitSourceTriggerMatchesPushMax(gs store.GitSource, ref string, maxRefBytes int) (bool, string) {
 	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
-		if strings.HasPrefix(ref, "refs/tags/") {
+		if !strings.HasPrefix(ref, "refs/tags/") {
+			return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", truncatedRef(ref), spec.TriggerModeRelease)
+		}
+		if gs.TagPattern == "" {
 			return true, ""
 		}
-		return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", ref, spec.TriggerModeRelease)
+		tag, kind, ok := spec.ShortRefName(ref, maxRefBytes)
+		if !ok || kind != spec.RefKindTag || !spec.MatchRefPatterns(gs.TagPattern, tag) {
+			return false, fmt.Sprintf("ignored: tag %q does not match the tag pattern\n", truncatedRef(ref))
+		}
+		return true, ""
+	}
+	if gs.BranchPattern != "" {
+		branch, kind, ok := spec.ShortRefName(ref, maxRefBytes)
+		if !ok || kind != spec.RefKindBranch || !spec.MatchRefPatterns(gs.BranchPattern, branch) {
+			return false, fmt.Sprintf("ignored: push to %q does not match the branch pattern\n", truncatedRef(ref))
+		}
+		return true, ""
 	}
 	targetCfg := webhook.Config{Branch: gs.Branch}
 	if ref == targetCfg.TargetRef() {
 		return true, ""
 	}
-	return false, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", ref, targetCfg.TargetRef())
+	return false, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", truncatedRef(ref), targetCfg.TargetRef())
+}
+
+// truncatedRef bounds a payload ref before it is echoed into a delivery note or log.
+func truncatedRef(ref string) string {
+	const keep = 120
+	if len(ref) <= keep {
+		return ref
+	}
+	cut := keep
+	for cut > 0 && !utf8.RuneStart(ref[cut]) {
+		cut--
+	}
+	return ref[:cut] + "..."
+}
+
+// releaseTagAllowed applies the tag pattern to a GitHub release event's tag name.
+func (rt *Router) releaseTagAllowed(ctx context.Context, gs store.GitSource, tag string) bool {
+	if gs.TagPattern == "" {
+		return true
+	}
+	name, _, ok := spec.ShortRefName("refs/tags/"+tag, rt.runtimeSettings.Limit(ctx, runtimesettings.KeyGitTriggerRefMaxBytes))
+	return ok && spec.MatchRefPatterns(gs.TagPattern, name)
 }
 
 // githubReleaseEvent is the subset of GitHub's release webhook payload
@@ -303,6 +351,9 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 	}
 	if rel.TagName == "" {
 		return http.StatusBadRequest, "malformed payload"
+	}
+	if !rt.releaseTagAllowed(ctx, gs, rel.TagName) {
+		return http.StatusOK, fmt.Sprintf("ignored: release tag %q does not match the tag pattern\n", truncatedRef(rel.TagName))
 	}
 
 	if gs.WaitForCI {

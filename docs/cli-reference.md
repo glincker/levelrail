@@ -529,7 +529,7 @@ levelrail-cli apps previews sweep [flags]
 ```
 
 - `git remote add <app>` and `git remote rotate <app>` issue the git push deploy remote (beta, `git-push`); `--apply` (with optional `--dir PATH`) sets the remote in a local repository instead of printing the token line; by default the token stays out of `.git/config` and is read from `LEVELRAIL_GIT_TOKEN` at push time (`--credential-helper` is an accepted no-op alias); `--store-token-in-config` writes it into `.git/config` instead, stored unencrypted in the repo config.
-- `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters and forge status reporting; `rotate-secret` mints a fresh webhook secret, shown once.
+- `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters, forge status reporting and deploy trigger patterns (`--tag-pattern v*` in release mode, `--branch-pattern main,release/*` in push mode, see Deploy trigger patterns in the app spec reference); `rotate-secret` mints a fresh webhook secret, shown once.
 - `apps webhook-deliveries` lists recent inbound webhook requests, verified or not. `replay` re-runs a stored delivery's payload and can trigger a real build and deploy.
 - `apps previews` manages preview environments per pull request, see [Preview environments per pull request](/previews). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
 
@@ -1975,11 +1975,15 @@ levelrail-cli secrets rebind [flags]
 levelrail-cli migrate coolify --url URL --token TOKEN [flags]
 levelrail-cli migrate dokploy --url URL --token TOKEN [flags]
 levelrail-cli migrate caprover --url URL --token TOKEN [flags]
+levelrail-cli migrate <coolify|dokploy> resume --journal FILE --url URL --token TOKEN [flags]
+levelrail-cli migrate <coolify|dokploy> undo --journal FILE [--dry-run] [--yes] [--force] [--include-data]
 ```
 
 One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
 
 For Coolify one-click services, `--stage-dir` (default `./migrated/compose`) receives one `compose.yaml` per service with its magic variables translated, and `--domain-suffix` (default `localhost`) sets the parent domain of the staged hosts. Staging writes files only and starts nothing. See [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose).
+
+For Coolify and Dokploy, every `--apply` run writes a journal (`--journal FILE`, default under the config dir, mode `0600`, names and step states only). `resume` finishes the open steps without re-creating anything, and `undo` removes only the apps that run created, as a dry run unless `--yes` is given; `--force` includes apps deployed since the run, `--force-app NAME` includes one app whose fingerprint no longer matches and `--include-data` includes apps with volumes after a typed confirmation. See [Resume or undo an --apply run](/migrate-from-coolify#apply-journal).
 
 ## Stack templates {#stack-templates}
 

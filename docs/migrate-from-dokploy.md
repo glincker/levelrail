@@ -129,6 +129,27 @@ Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the
 
 The copy only reads the old server, so nothing there is changed. To roll back, restart the old app if you paused it and point DNS back at the old server.
 
+## Resume or undo an --apply run {#apply-journal}
+
+Every `migrate dokploy --apply` run writes a journal: one entry per app with each step (created, git source, node, ingress, previews, secrets, files, webhook) and its outcome. The journal holds names, step states and a fingerprint of each created app. It never holds env values, secrets, tokens, passwords or connection strings. It is written with mode `0600`, atomically, and a lock file stops two runs from using it at once. The default path is under `~/.config/<cli>/migrate-journals/`; pick one with `--journal FILE`. The path is printed at the end of the run.
+
+If the run stopped half way, continue it with the same flags:
+
+```
+levelrail-cli migrate dokploy resume --journal FILE --url URL --token TOKEN [the same flags as the --apply run]
+```
+
+Resume skips steps that are done and retries failed ones. It never creates an app that already exists and was not created by this run, and it leaves an app alone if it changed on the target since the run.
+
+To roll the run back:
+
+```
+levelrail-cli migrate dokploy undo --journal FILE           # prints the plan, removes nothing
+levelrail-cli migrate dokploy undo --journal FILE --yes     # removes what the plan marks remove
+```
+
+Undo removes only the apps the journal records as created by that run, newest first, with your own token and the normal delete route, so protected environments and delete confirmations still apply. Apps that existed before the run are never touched. An app deployed since the run is listed and skipped unless you pass `--force`. An app whose fingerprint is missing or no longer matches (it changed since the run, or the run stopped before recording it) is always skipped unless you name it with `--force-app NAME`; `--force` never overrides that. Undo checks each app again right before it deletes it. Apps have no immutable id in the API, so the fingerprint is the app's shape (image, domains, port, node, volumes and similar, never env values): if someone deletes an app and re-creates one with the same name and shape, undo cannot tell them apart, so read the plan before passing `--yes`. An app holding volume data is skipped unless you pass `--include-data` and type the number of such apps to confirm; its volumes are then deleted with it. Undo refuses a journal that is a symlink or sits in a symlinked folder, readable by others, over `APP_MIGRATE_JOURNAL_MAX_BYTES` (default 4 MiB), written for another control plane, or with a name that is not a valid app name.
+
 ## Choose to stay if
 
 Dokploy's Swarm multi-node scheduling and its compose workflow are what you rely on, or you cannot afford a write freeze on your databases. Levelrail does not use Swarm, and its migration path has no recorded run against a live Dokploy. See [Dokploy alternative](/dokploy-alternative) and the [comparison](/comparison).
