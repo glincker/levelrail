@@ -46,3 +46,11 @@ func TestEvaluateVolumeUsageFiresOnceAndResolves(t *testing.T) {
 		t.Fatalf("third: expected resolved, firing=%v notices=%d", r3.Firing, len(notices))
 	}
 }
+
+func TestVolumeUsageEngineCase(t *testing.T) {
+	e := &Engine{}
+	e.SetVolumeUsage(nil, func() float64 { return 90 })
+	if e.volumeThreshold() != 90 {
+		t.Fatal("threshold func not stored")
+	}
+}

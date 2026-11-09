@@ -51,3 +51,23 @@ func TestAppLockPutRequiresReason(t *testing.T) {
 		t.Fatalf("got %d, want 400", w.Code)
 	}
 }
+
+func TestProtectBulkRestartSkipsProtected(t *testing.T) {
+	rt := &Router{apps: &fakeProtectApps{p: &store.AppProtection{Reason: "demo week"}}}
+	status, msg := rt.runBulkAction(context.Background(), bulkAppsRequest{Action: bulkActionRestart}, store.DesiredService{Name: "web"})
+	if status != bulkStatusSkipped || !strings.Contains(msg, "demo week") {
+		t.Fatalf("got %s %q, want skipped with reason", status, msg)
+	}
+}
+
+func TestProtectEnvSettingsRefuses(t *testing.T) {
+	rt := &Router{apps: &fakeProtectApps{p: &store.AppProtection{Reason: "demo week"}}}
+	rt.envProtect.settings = failingEnvSettings{}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPut, "/api/v1/apps/web/env/settings", strings.NewReader(`{}`))
+	r.SetPathValue("name", "web")
+	rt.handlePutEnvSettings(w, r)
+	if w.Code != http.StatusLocked {
+		t.Fatalf("got %d, want 423", w.Code)
+	}
+}

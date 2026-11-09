@@ -1,8 +1,11 @@
 package api
 
 import (
+	"net/http"
 	"sort"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -373,4 +376,47 @@ func unionSecretEnvNames(declared []string, values map[string]string) []string {
 		}
 	}
 	return out
+}
+
+type volumeSizePoint struct {
+	At        time.Time `json:"at"`
+	UsedBytes float64   `json:"used_bytes"`
+}
+
+// handleVolumeSizeHistory handles GET /api/v1/apps/{name}/volumes/{volume}/size-history;
+// from and to are RFC3339 and default to the last 24 hours.
+func (rt *Router) handleVolumeSizeHistory(w http.ResponseWriter, r *http.Request) {
+	if rt.telemetry == nil {
+		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
+		return
+	}
+	to, from := time.Now().UTC(), time.Now().UTC().Add(-24*time.Hour)
+	var err error
+	if v := r.URL.Query().Get("to"); v != "" {
+		if to, err = time.Parse(time.RFC3339, v); err != nil {
+			writeError(w, http.StatusBadRequest, "to must be RFC3339")
+			return
+		}
+	}
+	if v := r.URL.Query().Get("from"); v != "" {
+		if from, err = time.Parse(time.RFC3339, v); err != nil {
+			writeError(w, http.StatusBadRequest, "from must be RFC3339")
+			return
+		}
+	}
+	if !from.Before(to) {
+		writeError(w, http.StatusBadRequest, "from must be before to")
+		return
+	}
+	// The sampler keys a volume as "<app>/<volume>".
+	samples, err := alerting.VolumeSizeHistory(r.Context(), rt.telemetry, r.PathValue("name")+"/"+r.PathValue("volume"), from, to)
+	if err != nil {
+		rt.internalError(w, "api: volume size history failed", err)
+		return
+	}
+	out := make([]volumeSizePoint, 0, len(samples))
+	for _, sm := range samples {
+		out = append(out, volumeSizePoint{At: sm.Timestamp, UsedBytes: sm.Value})
+	}
+	writeJSON(w, http.StatusOK, out)
 }

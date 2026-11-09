@@ -161,6 +161,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	case "control_plane_backup_stale":
 		return "the control plane's newest self-backup snapshot older than its age limit (platform-wide)"
+	case "volume_usage":
+		return "any volume at or above the volumes.usage_alert_percent setting (platform-wide)"
 	case "log_archive_stale":
 		return "a log archive policy failed or has not succeeded within its age limit (platform-wide)"
 	case "export_behind":

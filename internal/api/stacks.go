@@ -817,6 +817,12 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: stack.Name, Issues: issues})
 		return
 	}
+	// A stack apply is a write path for every app it declares.
+	for _, rsrc := range res {
+		if rsrc.Kind == iac.KindApp && rt.refuseIfProtected(w, r, rsrc.Name) {
+			return
+		}
+	}
 	if req.IdempotencyKey != "" {
 		if prev, found := rt.findStackRevisionByKey(ctx, ss, stack.ID, req.IdempotencyKey); found {
 			s := summarizeRevision(prev)

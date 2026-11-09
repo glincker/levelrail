@@ -245,3 +245,21 @@ func TestRun_VolumesExportImport(t *testing.T) {
 		t.Fatalf("stdout = %q", stdout)
 	}
 }
+
+func TestRun_AppsVolumes_VolumeUsageSizeHistory(t *testing.T) {
+	var gotPath, gotFrom string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotFrom = r.URL.Path, r.URL.Query().Get("from")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `[{"at":"2026-11-08T10:00:00Z","used_bytes":1024}]`)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "volumes", "get", "web", "--size-history", "data", "--from", "2026-11-08T00:00:00Z", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/volumes/data/size-history" || gotFrom == "" {
+		t.Errorf("path %s from %q", gotPath, gotFrom)
+	}
+	if !strings.Contains(stdout, "1024 bytes") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}

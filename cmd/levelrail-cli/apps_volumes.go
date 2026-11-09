@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 )
 
 // runAppsVolumes dispatches get/attach/detach for an existing app's volumes. The mount applies at the next container create.
@@ -63,8 +64,12 @@ Run "%[1]s apps volumes <subcommand> -h" for a subcommand's own flags.
 
 func runAppsVolumesGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps volumes get", "print the app's volumes as JSON to stdout and nothing else", stderr)
+	var history, from, to string
+	fs.StringVar(&history, "size-history", "", "print used-byte samples for this volume instead of the list")
+	fs.StringVar(&from, "from", "", "size history start (RFC3339, default 24h ago)")
+	fs.StringVar(&to, "to", "", "size history end (RFC3339, default now)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps volumes get <name> [flags]\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps volumes get <name> [--size-history VOLUME [--from T] [--to T]] [flags]\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -73,6 +78,20 @@ func runAppsVolumesGet(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitCode
 	}
 
+	if history != "" {
+		pts, err := client.VolumeSizeHistory(context.Background(), name, history, from, to)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("size history of volume %q on app %q: %w", history, name, err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, pts, func() {
+			if len(pts) == 0 {
+				_, _ = fmt.Fprintln(stdout, "no size samples in this range")
+			}
+			for _, p := range pts {
+				_, _ = fmt.Fprintf(stdout, "%s  %.0f bytes\n", p.At.Format(time.RFC3339), p.UsedBytes)
+			}
+		})
+	}
 	app, err := client.GetApp(context.Background(), name)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get volumes for app %q: %w", name, err))

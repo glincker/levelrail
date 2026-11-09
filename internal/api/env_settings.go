@@ -87,6 +87,9 @@ func (rt *Router) handlePutEnvSettings(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if rt.refuseIfProtected(w, r, name) {
+		return
+	}
 	svc, ok := rt.loadRevealApp(w, r, name)
 	if !ok {
 		return
