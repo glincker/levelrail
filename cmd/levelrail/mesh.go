@@ -266,7 +266,7 @@ func wireMeshWake(meshCfg *meshSetup, nudge func(), registry *agent.Registry, en
 
 // Returns (nil, nil) when disabled, so an operator who did not opt in sees nothing new.
 // Device failures never fail startup, but config errors (bad key, taken DNS port) do.
-func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, logger *slog.Logger) (*meshSetup, error) {
+func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, shared *runtimesettings.Service, logger *slog.Logger) (*meshSetup, error) {
 	if !meshEnabled(ctx, db, logger) {
 		return nil, nil
 	}
@@ -299,7 +299,11 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		return nil, fmt.Errorf("build local mesh sink: %w", err)
 	}
 	// GRPCSink serves remote nodes and LocalSink serves this node, combined via MultiSink.
-	hubSettings := runtimesettings.New(db, os.LookupEnv)
+	// The API's shared service, so live mesh settings apply without a restart.
+	hubSettings := shared
+	if hubSettings == nil {
+		hubSettings = runtimesettings.New(db, os.LookupEnv)
+	}
 	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry, agent.WithApplyPolicy(meshApplyPolicy(hubSettings))))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
