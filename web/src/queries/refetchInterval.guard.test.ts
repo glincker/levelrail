@@ -2,24 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-// Files that still carry a literal poll interval. Shrink this list; never grow it.
-const LEGACY_LITERAL_POLLS = new Set([
-  'accountSelf.ts',
-  'appImport.ts',
-  'appImportCutover.ts',
-  'appImportSSH.ts',
-  'controlPlaneDr.ts',
-  'databasePooler.ts',
-  'mail.ts',
-  'migrateAgent.ts',
-  'migration.ts',
-  'migrationHub.ts',
-  'pipelines.ts',
-  'portTakeover.ts',
-  'rehydrate.ts',
-  'scheduledTasks.ts',
-  'storage.ts',
-])
+// Files allowed a literal poll interval. Empty: use pollMs tiers or named constants.
+const LEGACY_LITERAL_POLLS = new Set<string>([])
 
 const BARE_NUMBER = /(?:\?|:|=>|=)\s*\d{3,}\b/
 

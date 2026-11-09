@@ -27,6 +27,9 @@ import type {
   UpdateStorageDestinationRequest,
 } from '../types/storage'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_3000_MS = 3000
+
 export const storageKeys = {
   all: ['storage'] as const,
   providers: () => [...storageKeys.all, 'providers'] as const,
@@ -310,7 +313,9 @@ export function useLogArchiveRuns(app: string) {
       ),
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.some((r) => r.status === 'running') ? 3000 : false,
+      query.state.data?.some((r) => r.status === 'running')
+        ? POLL_3000_MS
+        : false,
   })
 }
 

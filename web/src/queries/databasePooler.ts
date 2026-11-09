@@ -6,6 +6,9 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { DatabasePoolerResource } from '../types/databasePooler'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_3000_MS = 3000
+
 export const databasePoolerKey = (name: string) =>
   ['databases', 'detail', name, 'pooler'] as const
 
@@ -46,7 +49,7 @@ export const databasePoolerQuery = (name: string) =>
     queryFn: () => poolerRequest(name, 'GET'),
     refetchInterval: (query) =>
       query.state.data?.enabled && query.state.data.status !== 'running'
-        ? 3000
+        ? POLL_3000_MS
         : false,
   })
 

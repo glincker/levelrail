@@ -4,6 +4,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+
 export interface AppImportSSHLogin {
   host: string
   port?: number
@@ -127,7 +130,7 @@ export function useVolumeCopy(id: string, enabled: boolean) {
     queryKey: copyKey(id),
     enabled,
     queryFn: () => send<VolumeCopy>(`${base}/sessions/${enc(id)}/volumes/copy`),
-    refetchInterval: (q) => (q.state.data?.running ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.running ? POLL_2000_MS : false),
   })
 }
 

@@ -23,3 +23,16 @@ func TestMonitorsRotateToken_NotFoundFails(t *testing.T) {
 	srv, _ := recordingServer(t, http.StatusNotFound, map[string]string{"error": "monitor not found"})
 	runCLIExpectAPIError(t, []string{"monitors", "rotate-token", "mon_x", "--api-url", srv.URL})
 }
+
+func TestMonitorsPauseResume_PatchesEnabled(t *testing.T) {
+	for verb, want := range map[string]string{"pause": `"enabled":false`, "resume": `"enabled":true`} {
+		srv, rec := recordingServer(t, http.StatusOK, apiclient.Monitor{ID: "mon_1"})
+		stdout, _ := runCLIExpectOK(t, []string{"monitors", verb, "mon_1", "--api-url", srv.URL})
+		if rec.method != http.MethodPatch || rec.path != "/api/v1/monitors/mon_1" || !strings.Contains(rec.body, want) {
+			t.Fatalf("%s call = %+v", verb, rec)
+		}
+		if !strings.Contains(stdout, verb+"d") {
+			t.Errorf("%s stdout = %q", verb, stdout)
+		}
+	}
+}

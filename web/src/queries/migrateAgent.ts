@@ -5,6 +5,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { MigrateChecklist } from './migrateWizard'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_10000_MS = 10000
+const POLL_5000_MS = 5000
+
 export type AgentState =
   'pending' | 'connected' | 'lost' | 'revoked' | 'expired'
 
@@ -123,7 +127,9 @@ export function useAgentSessions() {
       return body.sessions
     },
     refetchInterval: (q) =>
-      q.state.data?.some((s) => LIVE_STATES.includes(s.state)) ? 5000 : false,
+      q.state.data?.some((s) => LIVE_STATES.includes(s.state))
+        ? POLL_5000_MS
+        : false,
   })
 }
 
@@ -142,7 +148,7 @@ export function useAgentDetail(id: string | undefined) {
         err instanceof ApiError &&
         (err.status === 403 || err.status === 401)
       ) && count < 2,
-    refetchInterval: (q) => (q.state.error ? false : 10000),
+    refetchInterval: (q) => (q.state.error ? false : POLL_10000_MS),
   })
 }
 

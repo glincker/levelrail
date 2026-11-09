@@ -61,6 +61,12 @@
     "pending": "Deleting...",
     "done": "Monitor {{name}} deleted"
   },
+  "pause": {
+    "action": "Pause {{name}}"
+  },
+  "resume": {
+    "action": "Resume {{name}}"
+  },
   "rotate": {
     "action": "Rotate token for {{name}}",
     "title": "Rotate the ping URL of {{name}}?",

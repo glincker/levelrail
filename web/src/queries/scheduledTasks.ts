@@ -21,6 +21,9 @@ import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+
 export const scheduledTaskKeys = {
   all: (appName: string) =>
     [...appKeys.detail(appName), 'scheduled-tasks'] as const,
@@ -89,7 +92,7 @@ export function useJobRun(appName: string, taskId: string, runId: string) {
     queryKey: scheduledTaskKeys.run(appName, taskId, runId),
     queryFn: () => fetchJobRun(appName, taskId, runId),
     refetchInterval: (query) =>
-      query.state.data?.status === 'running' ? 2000 : false,
+      query.state.data?.status === 'running' ? POLL_2000_MS : false,
   })
 }
 

@@ -5,6 +5,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_3000_MS = 3000
+
 export type CopyStatus =
   'pending' | 'copying' | 'verified' | 'failed' | 'unsupported'
 
@@ -117,7 +120,7 @@ export function useDatabaseCopies() {
     queryKey: migrationKeys.copies,
     queryFn: () => send<DatabaseCopy[]>('/api/v1/imports/platform/databases'),
     refetchInterval: (q) =>
-      q.state.data?.some((d) => d.status === 'copying') ? 3000 : false,
+      q.state.data?.some((d) => d.status === 'copying') ? POLL_3000_MS : false,
   })
 }
 

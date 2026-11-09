@@ -5,6 +5,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { AppImportSSHLogin } from './appImportSSH'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+const POLL_1500_MS = 1500
+
 export type AppImportVerdict =
   'ready' | 'ready-with-notes' | 'needs-attention' | 'unsupported'
 
@@ -274,7 +278,7 @@ export function useAppImportSession(id: string | null) {
     queryKey: appImportKeys.one(id ?? ''),
     enabled: id !== null,
     queryFn: () => send<AppImportSession>(`${base}/${enc(id ?? '')}`),
-    refetchInterval: (q) => (q.state.data?.running ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.running ? POLL_2000_MS : false),
   })
 }
 
@@ -481,7 +485,7 @@ export function useAppImportImages(id: string) {
   return useQuery({
     queryKey: imageKeys(id),
     queryFn: () => send<AppImportImages>(`${base}/${enc(id)}/images`),
-    refetchInterval: (q) => (q.state.data?.running ? 1500 : false),
+    refetchInterval: (q) => (q.state.data?.running ? POLL_1500_MS : false),
   })
 }
 

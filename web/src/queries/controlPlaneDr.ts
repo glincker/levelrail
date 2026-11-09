@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+
 export interface ControlPlaneDrWarning {
   code: string
   message: string
@@ -142,7 +145,7 @@ export function useControlPlaneDr() {
     retry: false,
     refetchInterval: (query) =>
       query.state.data?.backup_running || query.state.data?.drill_running
-        ? 2000
+        ? POLL_2000_MS
         : false,
   })
 }

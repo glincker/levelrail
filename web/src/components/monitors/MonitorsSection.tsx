@@ -6,6 +6,8 @@ import {
   TrashGlassIcon,
   InboxGlassIcon,
   RefreshCwGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +26,7 @@ import {
   useMonitorResults,
   useMonitors,
   useRotateMonitorToken,
+  useSetMonitorEnabled,
 } from '../../queries/monitors'
 import type { Monitor } from '../../types/monitor'
 import { MonitorForm, PingPanel } from './MonitorForm'
@@ -45,10 +48,12 @@ export function MonitorRow({
   monitor,
   onDelete,
   onRotate,
+  onToggle,
 }: {
   monitor: Monitor
   onDelete: (m: Monitor) => void
   onRotate?: (m: Monitor) => void
+  onToggle?: (m: Monitor) => void
 }) {
   const { t } = useTranslation('monitors')
   const ref = useRef<HTMLLIElement>(null)
@@ -96,6 +101,25 @@ export function MonitorRow({
       >
         {uptime === undefined ? t('notAvailable') : `${uptime.toFixed(1)}%`}
       </span>
+      {onToggle ? (
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={t(monitor.enabled ? 'pause.action' : 'resume.action', {
+            name: monitor.name,
+          })}
+          onClick={() => {
+            onToggle(monitor)
+          }}
+        >
+          {monitor.enabled ? (
+            <PauseGlassIcon className="size-5" aria-hidden="true" />
+          ) : (
+            <PlayGlassIcon className="size-5" aria-hidden="true" />
+          )}
+        </Button>
+      ) : null}
       {monitor.kind === 'heartbeat' && onRotate ? (
         <Button
           type="button"
@@ -131,10 +155,12 @@ export function MonitorsList({
   monitors,
   onDelete,
   onRotate,
+  onToggle,
 }: {
   monitors: Monitor[]
   onDelete: (m: Monitor) => void
   onRotate?: (m: Monitor) => void
+  onToggle?: (m: Monitor) => void
 }) {
   const { t } = useTranslation('monitors')
   if (monitors.length === 0) {
@@ -161,6 +187,7 @@ export function MonitorsList({
         <span className="w-28">{t('columns.lastCheck')}</span>
         <span className="w-14 text-right">{t('columns.uptime')}</span>
         <span className="size-8" />
+        {onToggle ? <span className="size-8" /> : null}
         {onRotate ? <span className="size-8" /> : null}
       </li>
       {monitors.map((m) => (
@@ -169,6 +196,7 @@ export function MonitorsList({
           monitor={m}
           onDelete={onDelete}
           onRotate={onRotate}
+          onToggle={onToggle}
         />
       ))}
     </ul>
@@ -182,6 +210,7 @@ export function MonitorsSection() {
   const del = useDeleteMonitor()
   const [adding, setAdding] = useState(false)
   const rotate = useRotateMonitorToken()
+  const setEnabled = useSetMonitorEnabled()
   const [pendingDelete, setPendingDelete] = useState<Monitor | null>(null)
   const [pendingRotate, setPendingRotate] = useState<Monitor | null>(null)
   const [rotated, setRotated] = useState<Monitor | null>(null)
@@ -222,6 +251,16 @@ export function MonitorsSection() {
           monitors={query.data ?? []}
           onDelete={setPendingDelete}
           onRotate={setPendingRotate}
+          onToggle={(m) => {
+            setEnabled.mutate(
+              { id: m.id, enabled: !m.enabled },
+              {
+                onError: (e) => {
+                  toast.add({ title: e.message, type: 'error' })
+                },
+              },
+            )
+          }}
         />
       )}
       {rotated ? (

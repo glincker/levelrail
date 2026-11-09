@@ -61,6 +61,12 @@
     "pending": "Eliminando...",
     "done": "Monitor {{name}} eliminado"
   },
+  "pause": {
+    "action": "Pausar {{name}}"
+  },
+  "resume": {
+    "action": "Reanudar {{name}}"
+  },
   "rotate": {
     "action": "Rotar el token de {{name}}",
     "title": "¿Rotar la URL de ping de {{name}}?",
