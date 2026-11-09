@@ -55,5 +55,6 @@
       "skipped": "Omitida",
       "error": "Falló"
     }
-  }
+  },
+  "description": "Descripción: {{text}}"
 }

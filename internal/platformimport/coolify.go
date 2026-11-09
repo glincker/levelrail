@@ -359,7 +359,8 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, envi
 	dbs := []struct {
 		engine string
 		list   []coolifyDatabase
-	}{{"postgres", res.Postgresqls}, {"redis", res.Redis}, {"mongodb", res.Mongodbs}, {"mysql", res.Mysqls}, {"mariadb", res.Mariadbs}}
+	}{{"postgres", res.Postgresqls}, {"redis", res.Redis}, {"mongodb", res.Mongodbs}, {"mysql", res.Mysqls}, {"mariadb", res.Mariadbs},
+		{"keydb", res.Keydbs}, {"dragonfly", res.Dragonflies}, {"clickhouse", res.Clickhouses}}
 	for _, g := range dbs {
 		for _, db := range g.list {
 			nets.add(db.Destination.customNetwork(), db.Name)
@@ -373,19 +374,6 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, envi
 			row.Backups = backupSchedules(backups)
 			reportBackups(d, row, backups)
 			d.Databases = append(d.Databases, row)
-		}
-	}
-	others := []struct {
-		engine string
-		list   []coolifyDatabase
-	}{{"KeyDB", res.Keydbs}, {"Dragonfly", res.Dragonflies}, {"ClickHouse", res.Clickhouses}}
-	for _, g := range others {
-		for _, db := range g.list {
-			d.Unsupported = append(d.Unsupported, Unsupported{
-				Kind: "database", SourceID: db.UUID, Name: db.Name, Project: project, Environment: environment, Source: g.engine + " database",
-				Reason: g.engine + " is not a managed database engine here, so it is not created or copied",
-				Manual: "run it as a container or catalog template, then move the data with its own dump tool (" + otherEngineTool(g.engine) + ")",
-			})
 		}
 	}
 	for _, s := range res.Services {
@@ -501,15 +489,6 @@ func reportS3Destination(d *Discovery, db Database, b coolifyBackup) {
 func taskNote(app App, t coolifyTask) Note {
 	cmd := "levelrail-cli jobs create " + shellArg(SanitizeName(app.Name)) + " " + shellArg(SanitizeJobName(t.Name)) + " --schedule " + shellArg(NormalizeSchedule(t.Frequency)) + " -- sh -c " + shellArg(t.Command)
 	return Note{Area: "task", Reason: "scheduled task " + t.Name + " is disabled in the source, so it was not imported", Manual: cmd}
-}
-
-func otherEngineTool(engine string) string {
-	switch engine {
-	case "ClickHouse":
-		return "clickhouse-backup or INSERT INTO ... SELECT FROM remote()"
-	default:
-		return "a Redis RDB snapshot or redis-cli --rdb"
-	}
 }
 
 func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp) (App, *Unsupported) {

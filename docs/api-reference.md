@@ -126,6 +126,7 @@ System endpoints for:
 | GET | /api/v1/system/db-space | AbilityRead | handleGetDBSpace |
 | POST | /api/v1/system/db-space/compact | AbilityRoot | handleCompactDB |
 | GET | /api/v1/system/processes | AbilityRoot | handleGetSystemProcesses |
+| GET | /api/v1/system/slow-statements | AbilityRoot | handleGetSlowStatements |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -757,6 +758,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/image-retention | AbilityRead | handleGetImageRetention |
 | PUT | /api/v1/apps/{name}/image-retention | AbilityRoot | handleSetImageRetention |
 | POST | /api/v1/apps/{name}/image-retention/preview | AbilityRoot | handlePreviewImageRetention |
+| GET | /api/v1/apps/{name}/notes | AbilityRead |  |
+| PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
 </Accordion>
 
@@ -963,6 +966,8 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
 | POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
 | POST | /api/v1/databases/bulk | AbilityWriteSensitive | handleBulkDatabases |
+| GET | /api/v1/databases/{name}/notes | AbilityRead |  |
+| PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
 ## Projects / Organizations / Environments
 

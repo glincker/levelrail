@@ -55,5 +55,6 @@
       "skipped": "Skipped",
       "error": "Failed"
     }
-  }
+  },
+  "description": "Description: {{text}}"
 }

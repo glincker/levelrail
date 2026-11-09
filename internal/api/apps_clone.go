@@ -139,5 +139,6 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.copyEnvSettings(r.Context(), name, req.NewName)
+	rt.copyResourceNotes(r, store.LabelKindApp, name, req.NewName)
 	writeJSON(w, http.StatusCreated, rt.appOut(r.Context(), *cloned))
 }

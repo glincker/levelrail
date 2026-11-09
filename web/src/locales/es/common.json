@@ -1508,5 +1508,21 @@
       "firewallRules": "Reglas del firewall",
       "mobileDevices": "Dispositivos móviles"
     }
+  },
+  "resourceNotes": {
+    "title": "Descripción y notas",
+    "hint": "Anota el responsable, el propósito y los enlaces a runbooks. Admite Markdown.",
+    "empty": "Aún no hay descripción ni notas.",
+    "edit": "Editar notas",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Resumen de una línea que aparece en la lista",
+    "notesLabel": "Notas",
+    "notesPlaceholder": "Responsable, propósito, enlaces a runbooks",
+    "preview": "Vista previa",
+    "write": "Escribir",
+    "noSecrets": "Quien pueda leer este recurso puede leer sus notas. Nunca pongas secretos aquí.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saved": "Notas guardadas"
   }
 }

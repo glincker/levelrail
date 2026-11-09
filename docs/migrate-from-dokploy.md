@@ -30,6 +30,7 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 
 ## What needs a manual step
 
+- **Git webhooks**: pass `--create-webhooks` with `--apply` to register one push webhook per git-sourced app after it is created. It is off by default because it writes to your git host. A hook is only created when the repository URL is https and its scheme, host and port match an authorized git connection (GitHub App, GitLab, Gitea or Bitbucket), and it goes through the existing `apps git-source register-webhook` route with your own token. The control plane generates the webhook secret, which is never printed or written to the report. A re-run does not add a second hook. Every app that is skipped gets the reason, and a failure on one app does not stop the others. Without `--apply` the report lists what would be created and writes nothing to the git host. `APP_MIGRATE_WEBHOOK_LIMIT` (default 200) caps hooks per run and `APP_MIGRATE_REPO_URL_MAX_LEN` (default 2048) caps the accepted repository URL length.
 - Multi-server installs: pass `--node-map source-server=node` (the Dokploy server name or id) to put each app on the named node. An unmapped server keeps its apps on the control plane node with a finding, and an unknown or ambiguous node name stops the run before anything is created. Placement needs a token with the root ability, checked first.
 
 - Database contents and volume contents (below).

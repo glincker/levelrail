@@ -231,6 +231,12 @@ The control plane keeps a pool of read-only SQLite connections beside the single
 
 SQLite connection tuning is also a runtime setting, applied to the writer and read connections on the same tick: `store.cache_size_mb` (0 to 4096, `APP_DB_CACHE_SIZE_MB`), `store.mmap_size_mb` (0 to 16384, `APP_DB_MMAP_SIZE_MB`), `store.temp_store` (`default`, `file`, `memory`, `APP_DB_TEMP_STORE`) and `store.synchronous` (`default`, `normal`, `full`, `APP_DB_SYNCHRONOUS`). The default value of each keeps the SQLite built-in. Env only seeds the defaults.
 
+## Statement timing
+
+Turn on the runtime setting `perf.statement_timing` (default off, `APP_PERF_STATEMENT_TIMING` only seeds it) to time every statement the control plane runs against its own SQLite database. It applies on the next request, with no restart. While on, API responses to callers holding the root ability carry a `Server-Timing` header with the total statement time and count for that request (`db;dur=1.42, queries;desc="6"`); other callers, anonymous requests and non API paths never get it. A statement at or above `perf.slow_statement_ms` (default 100) is logged with its prepared text only, never bound values, and kept in a ring of `perf.slow_statement_ring` (default 20) distinct statements, shown by `levelrail-cli system slow-statements`, `GET /api/v1/system/slow-statements` and the statement timing card on the control plane health page.
+
+Overhead, measured with `go test -bench StatementTiming ./internal/store` on a point SELECT: with the setting off the wrapper adds no allocations and no measurable time over the plain driver; with it on the cost is a clock read and two atomic adds per statement, about 0.2 microseconds.
+
 ## Goroutine attribution
 
 `GET /api/v1/system/cp-health` lists `goroutines_by_subsystem` under `footprint`: live counts for each background loop (`loop:<name>`) and for long lived streams (`live-logs`, `terminal`, `deployments-stream`). Goroutines started through `footprint.Run` also carry a pprof `subsystem` label, so a goroutine profile groups them by owner.

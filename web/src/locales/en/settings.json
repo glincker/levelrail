@@ -1206,6 +1206,16 @@
       "vs": "(baseline {{baseline}}, limit {{limit}})",
       "meterLabel": "{{metric}} against its limit",
       "footnote": "CPU is averaged over the last {{seconds}} s. Memory is held to the baseline peak. Limits come from the IDLE_TOL_* settings. The node agent is not measured here."
+    },
+    "statementTiming": {
+      "title": "Statement timing",
+      "on": "Recording",
+      "off": "Off",
+      "basis": "Statements at or above {{threshold}} ms are kept, up to {{size}} distinct statements. Text only, never values.",
+      "offHint": "Turn on the Database statement timing setting to record slow statements and send a Server-Timing header to admins.",
+      "empty": "No statement has crossed the threshold yet.",
+      "loadError": "Could not load slow statements.",
+      "row": "Worst {{max}} ms, last {{last}} ms, seen {{count}} times"
     }
   },
   "generalPage": {

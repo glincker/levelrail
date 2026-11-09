@@ -111,6 +111,7 @@ func (rt *Router) Handler() http.Handler {
 	h = experimentalGateMiddleware(h)
 	h = rt.accessPolicyMiddleware(h)
 	h = conditionalGetMiddleware(rt.conditionalGetEnabled, rt.conditionalGetMaxBytes, h)
+	h = rt.serverTimingMiddleware(h)
 	h = compressMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)

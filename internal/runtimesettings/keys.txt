@@ -191,6 +191,9 @@ orgs.avatar_max_bytes
 orgs.avatar_max_dimension
 orgs.provisioned_default_membership
 orgs.strict_isolation
+perf.slow_statement_ms
+perf.slow_statement_ring
+perf.statement_timing
 pipelines.oidc_listen_port
 placement.affinity_max_terms
 previews.migrate_timeout
@@ -201,6 +204,8 @@ projects.default_environment
 projects.default_environment_name
 reconcile.resync_seconds
 registry.mirror_prefix
+resources.description_max_chars
+resources.notes_max_bytes
 retention.ai_history_days
 retention.alert_history_days
 retention.app_history_days

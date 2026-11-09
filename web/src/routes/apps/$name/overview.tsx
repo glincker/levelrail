@@ -31,6 +31,11 @@ const AppAnalysis = lazy(() =>
   })),
 )
 
+const ResourceNotesCard = lazy(() =>
+  import('../../../components/apps/ResourceNotesCard').then((m) => ({
+    default: m.ResourceNotesCard,
+  })),
+)
 const NextStatusCard = lazy(() =>
   import('../../../components/apps/NextStatusCard').then((m) => ({
     default: m.NextStatusCard,
@@ -62,6 +67,7 @@ function OverviewSection() {
         <NextStatusCard app={app} />
         <AppReleases appName={name} />
         <AppAnalysis appName={name} />
+        <ResourceNotesCard path="apps" name={name} />
       </Suspense>
       <SleepHistoryCard appName={name} hideWhenOff />
       <ResourceLabelsCard path="apps" name={name} />

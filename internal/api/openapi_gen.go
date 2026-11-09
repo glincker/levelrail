@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2069 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2074 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -359,6 +359,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/network", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppNetwork", Description: "Live traffic path (network.go): declared container port plus the current Docker-assigned host port Caddy is actually proxying to, for the dashboard's Network tab. AbilityRead, same tier as images above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/next-advisor", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleNextAdvisor", Description: "Next.js checks of the saved app and its latest successful release, no build needed."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/node", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppNode", Description: "Placement: AbilityRoot, not AbilityWrite, matching the sensitivity of the standalone node routes above: moving a service between physical machines is infrastructure placement, not ordinary app config, even though it's reached through this app-scoped URL."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/notes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/notes", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pending-changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePendingChanges", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipelineRun", Description: ""},
@@ -791,6 +793,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/databases/{name}/network/scope", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseScope", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/network/tls", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseTLS", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/node", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseNode", Description: "Placement, the database counterpart to PUT /apps/{name}/node above: same AbilityRoot gating."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/notes", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/notes", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/password-rotation", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabasePasswordRotation", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/password-rotation", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleRotateDatabasePassword", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/password-rotation/policy", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabasePasswordPolicy", Description: ""},
@@ -2048,6 +2052,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/system/server-address", Ability: "AbilityRead", Group: "System", Handler: "handleGetServerAddress", Description: "The address DNS records must point at. Reading is AbilityRead; the manual override changes DNS checks for every domain, so it is root."},
 	{Method: "PUT", Path: "/api/v1/system/server-address", Ability: "AbilityRoot", Group: "System", Handler: "handleSetServerAddress", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/shield/bots", Ability: "AbilityRead", Group: "System", Handler: "handleShieldBotList", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/slow-statements", Ability: "AbilityRoot", Group: "System", Handler: "handleGetSlowStatements", Description: "Statement text from the control plane's own database is admin only, like processes."},
 	{Method: "GET", Path: "/api/v1/system/status", Ability: "AbilityRead", Group: "System", Handler: "handleSystemStatus", Description: "System status (General settings page): configured/not-configured signals plus disk usage, AbilityRead like everything else an authenticated operator can passively view."},
 	{Method: "GET", Path: "/api/v1/system/storage/inventory", Ability: "AbilityRead", Group: "System", Handler: "handleStorageInventory", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},

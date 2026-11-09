@@ -61,7 +61,8 @@ export function filterApps(
       (status === null || statusBucket(app) === status) &&
       (q === '' ||
         app.name.toLowerCase().includes(q) ||
-        app.image.toLowerCase().includes(q)) &&
+        app.image.toLowerCase().includes(q) ||
+        (app.description ?? '').toLowerCase().includes(q)) &&
       (filters.environments.length === 0 ||
         filters.environments.includes(app.environment_name ?? '')) &&
       (filters.tags.length === 0 ||

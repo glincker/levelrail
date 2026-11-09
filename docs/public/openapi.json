@@ -34181,6 +34181,171 @@
         "x-required-ability": "root"
       }
     },
+    "/api/v1/apps/{name}/notes": {
+      "get": {
+        "description": "Requires the `read` ability.",
+        "operationId": "Getapiv1appsnamenotes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "GET /api/v1/apps/{name}/notes",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "read"
+      },
+      "put": {
+        "description": "Requires the `write` ability.",
+        "operationId": "Putapiv1appsnamenotes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "summary": "PUT /api/v1/apps/{name}/notes",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "write"
+      }
+    },
     "/api/v1/apps/{name}/pending-changes": {
       "get": {
         "description": "Requires the `read` ability.",
@@ -68062,6 +68227,171 @@
           "Databases CRUD / Engines / Resources"
         ],
         "x-required-ability": "root"
+      }
+    },
+    "/api/v1/databases/{name}/notes": {
+      "get": {
+        "description": "Requires the `read` ability.",
+        "operationId": "Getapiv1databasesnamenotes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "GET /api/v1/databases/{name}/notes",
+        "tags": [
+          "Databases CRUD / Engines / Resources"
+        ],
+        "x-required-ability": "read"
+      },
+      "put": {
+        "description": "Requires the `write` ability.",
+        "operationId": "Putapiv1databasesnamenotes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "summary": "PUT /api/v1/databases/{name}/notes",
+        "tags": [
+          "Databases CRUD / Engines / Resources"
+        ],
+        "x-required-ability": "write"
       }
     },
     "/api/v1/databases/{name}/password-rotation": {
@@ -153722,6 +154052,74 @@
           "System"
         ],
         "x-required-ability": "read"
+      }
+    },
+    "/api/v1/system/slow-statements": {
+      "get": {
+        "description": "Statement text from the control plane's own database is admin only, like processes.\n\nRequires the `root` ability.",
+        "operationId": "handleGetSlowStatements",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Statement text from the control plane's own database is admin only, like processes.",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "root"
       }
     },
     "/api/v1/system/status": {

@@ -39,10 +39,10 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Persistent volumes | moves | Created empty. The data copy is a separate step with file and byte counts |
 | File mounts | copied | Each file storage becomes an app file at its mount path with identical bytes (`apps files set`). A path that is not a clean absolute file path (relative, `..`, `.`, backslash, control character, reserved root) is refused with the reason, and content over `APP_SERVICE_FILE_MAX_BYTES` or not text is refused. Content is copied only with `--include-secret-values` (otherwise the report lists path and size), and a secret-looking name or content goes through the encrypted secret store. Duplicate and nested mount paths are reported. Directory mounts are reported |
 | Databases: PostgreSQL, MySQL, MariaDB, MongoDB, Redis | moves | Created empty at the same major version. Data copy uses `migrate db-copy`, and the report prints the command with the public port, user and database name read from Coolify |
-| Databases: KeyDB, Dragonfly, ClickHouse | reported | Silently dropped before this audit. Now listed as skipped with the dump tool to use |
+| Databases: KeyDB, Dragonfly, ClickHouse | moves | Created empty as managed databases. Dragonfly keeps a full `vX.Y.Z` tag and KeyDB keeps an exact `eqalpha/keydb` release tag (such as `x86_64_v6.3.4`), other tags fall back to the newest supported version. The report prints the `migrate db-copy` command for each |
 | Database backup schedules | reported | One row per schedule with the `backups schedule set` command. Imported databases also get a manual row for their schedule |
 | Scheduled tasks (cron) | moves | Was report-only. Enabled tasks become scheduled jobs that run `sh -c COMMAND` inside the app. Disabled tasks are skipped. Staged apps get their jobs disabled until cutover so a job never runs on both hosts |
-| Git webhook secrets (auto deploy) | reported | Planned item. The secret is never read into the report. Create a build hook (`apps build-hooks create`) and point the git host at it |
+| Git webhooks (auto deploy) | moves, opt-in | With `--create-webhooks` and `--apply`, one push webhook per git-sourced app is registered through the connected git provider whose https scheme, host and port match the repository. Off by default. The source secret is never read, the control plane generates a new one and never prints it. Re-runs do not duplicate hooks, skipped apps get the reason, and the dry run lists what would be created |
 | HTTP health checks | moves | Path, interval, timeout and retries |
 | Command health checks | moves | Built, unit tested, source field name not verified against a real instance. A command check becomes an `exec` probe (`sh -c COMMAND`, see the [app spec](/app-spec-reference)) with interval, timeout and retries. A missing, oversized or unrecognised command keeps a note to add the probe by hand |
 | Memory and CPU limits | moves | Memory and CPU are mapped. A swap or memory reservation set on the source has no setting here, so it is listed as a note on the app with its value |
@@ -80,4 +80,4 @@ Last checked against the importer in `internal/platformimport/coolify.go` on 202
 ## Next gaps, by value
 
 1. Import database backup schedules and S3 targets instead of listing them.
-2. Recreate git webhooks through the git provider integration. GitHub, GitLab, Bitbucket, Gitea and Azure DevOps (`azure_devops`, access token plus service hook) are all supported git sources here, so every provider has a target.
+2. Run `--create-webhooks` against a real Coolify instance and real GitHub, GitLab, Gitea and Bitbucket connections. It is covered by fake-provider tests only.

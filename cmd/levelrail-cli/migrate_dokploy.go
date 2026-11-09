@@ -17,6 +17,7 @@ type migrateDokployFlags struct {
 	includeSecretValues bool
 	jsonOut             bool
 	nodeMap             string
+	createWebhooks      bool
 }
 
 // runMigrateDokploy implements "migrate dokploy", mirroring
@@ -39,6 +40,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&targetProfileFlag, "target-profile", "", "named credentials profile to read the target Levelrail instance from, --apply only (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
+	fs.BoolVar(&f.createWebhooks, "create-webhooks", false, createWebhooksHelp)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateDokployUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -69,6 +71,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
 		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
 		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag, nodeMap: f.nodeMap,
+		createWebhooks: f.createWebhooks,
 	}, prog, stdout, stderr, lookupEnv)
 }
 
@@ -106,6 +109,9 @@ Flags:
   --json                             print the migration report as JSON to stdout, nothing else
   --node-map string               source-server=node pairs, comma-separated; --apply places each app on its node,
                                   an unmapped server stays on the control plane node, an unknown node is refused
+  --create-webhooks                with --apply, register one push webhook per git-sourced app through the
+                                  connected git provider for its host (default off, it writes to the git host);
+                                  without --apply the report lists what would be created
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

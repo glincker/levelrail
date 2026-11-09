@@ -99,6 +99,7 @@ func printMigrationReportHuman(out io.Writer, r migrationReport, prog, outDir st
 				_, _ = fmt.Fprintln(out, "      git source is not persisted by Levelrail; to build and deploy from it, run:")
 				_, _ = fmt.Fprintf(out, "        %s apps create --file %s/%s.yaml --repo %s --ref %s --image-repo <your-registry>/%s\n", prog, outDir, a.ServiceName, a.RepoURL, ref, a.ServiceName)
 			}
+			printWebhookOutcome(out, a.Webhook)
 			for _, iss := range a.Issues {
 				_, _ = fmt.Fprintf(out, "      [%s] %s: %s\n", iss.Severity, iss.Field, iss.Detail)
 			}

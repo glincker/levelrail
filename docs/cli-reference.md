@@ -243,7 +243,7 @@ levelrail-cli apps scale <name> web=2 worker=1 [flags]
 levelrail-cli apps group <name> [flags]
 levelrail-cli apps hook-runs <name> [flags]
 levelrail-cli apps images <name> [flags]
-levelrail-cli apps set <name> --pr-comment-commands on|off [--pr-comment-commands-forks on|off] [flags]
+levelrail-cli apps set <name> [--description text] [--notes-file path|-] [--pr-comment-commands on|off] [--pr-comment-commands-forks on|off] [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
 levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 levelrail-cli apps moves list <name> [flags]
@@ -261,6 +261,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps scale` changes the replica count and/or the deploy strategy. With `service=count` pairs it sets replicas per service of a multi-service app; every key is checked before anything changes, then services are updated one at a time. If an update fails, the services already changed are set back to their previous counts (best effort, each rollback is reported), so it is not atomic. `apps restart --service S` recreates one service.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
 - `apps set` changes app settings. `--pr-comment-commands on|off` lets write-access users run `/levelrail` commands from pull request comments (see [Pull request comment commands](/pr-comment-commands)).
+- `apps set --description "Checkout frontend"` sets the one line summary shown on the apps list, and `--notes-file runbook.md` (or `-` for stdin) sets markdown notes for the owner, purpose and runbook links, shown on the app overview. An empty value clears either field. Both are searchable from the apps list, copied by `apps clone`, written to `NOTES.md` by `apps export`, and capped by the `resources.description_max_chars` and `resources.notes_max_bytes` runtime settings. `apps get` prints them, and `--output json` includes `description` and `notes`. Never put secrets in notes: anyone who can read the app can read them. Databases take the same fields over `PUT /api/v1/databases/{name}/notes`.
 - `apps set-node` and `apps clear-node` move an app to another node, or back to the control plane's own local node. With `--with-volumes` the named volumes move too, and `apps moves` shows the history of those moves.
 
 ### Deploy history, approvals and automation
@@ -1572,6 +1573,14 @@ levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log|tel
 ```
 
 Prints goroutines, heap, database latency and write queue, write ahead log size, reconcile pass timing and live stream use, with a finding for each value over its threshold. `--fix` applies one of the typed fixes and prints the result; it needs a root token. The API is `GET /api/v1/system/control-plane-health` and `POST /api/v1/system/control-plane-health/fix`. See [Control plane health](/control-plane-health).
+
+## System slow statements {#system-slow-statements}
+
+```
+levelrail-cli system slow-statements [flags]
+```
+
+Lists the slowest statements the control plane ran against its own database, slowest first, with the worst and last time and how often each was seen. Only the prepared statement text is kept, never bound values, and quoted literals are replaced by `?`. Recording is off until the runtime setting `perf.statement_timing` is on; `perf.slow_statement_ms` sets the threshold and `perf.slow_statement_ring` how many statements are kept. Needs a root token. The API is `GET /api/v1/system/slow-statements`.
 
 ## System integrity {#system-integrity}
 

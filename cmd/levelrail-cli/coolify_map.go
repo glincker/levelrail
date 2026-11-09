@@ -76,8 +76,11 @@ type mappedApp struct {
 	Node         string `json:"node,omitempty"`
 	// NetworkPeers are apps that shared a custom docker network with this one in the source.
 	NetworkPeers []string `json:"network_peers,omitempty"`
+	// Webhook is what --create-webhooks did, or would do, for a git-sourced app.
+	Webhook      *webhookOutcome `json:"webhook,omitempty"`
 	network      string
 	nodeID       string
+	gitSourceSet bool
 }
 
 type mappedService struct {

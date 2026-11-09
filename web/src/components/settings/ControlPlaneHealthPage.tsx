@@ -37,6 +37,12 @@ const FootprintCard = lazy(() =>
   })),
 )
 
+const StatementTimingCard = lazy(() =>
+  import('@/components/system/StatementTimingCard').then((m) => ({
+    default: m.StatementTimingCard,
+  })),
+)
+
 const MIB = 1 << 20
 
 function formatFinding(f: CPHealthFinding): { value: string; limit: string } {
@@ -368,6 +374,9 @@ export function ControlPlaneHealthPage() {
               <FootprintCard idle={data.idle_footprint} />
             </Suspense>
           ) : null}
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            <StatementTimingCard />
+          </Suspense>
           <IntegrityCard />
           <ReconcileGuardCard guard={data.reconcile.guard} />
           <Card>

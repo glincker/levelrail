@@ -351,3 +351,23 @@ func (rt *Router) handleGetIdleFootprint(w http.ResponseWriter, _ *http.Request)
 	}
 	writeJSON(w, http.StatusOK, rt.idleAssessment(p))
 }
+
+// slowStatementsResource is the slowest statements ring of the control plane's own database.
+type slowStatementsResource struct {
+	Enabled         bool                  `json:"enabled"`
+	SlowThresholdMS int                   `json:"slow_threshold_ms"`
+	RingSize        int                   `json:"ring_size"`
+	Statements      []store.SlowStatement `json:"statements"`
+}
+
+// handleGetSlowStatements serves GET /api/v1/system/slow-statements: statement text only, never bound values.
+func (rt *Router) handleGetSlowStatements(w http.ResponseWriter, r *http.Request) {
+	cfg := rt.statementTimingConfig(r)
+	list := store.SlowStatements()
+	if list == nil {
+		list = []store.SlowStatement{}
+	}
+	writeJSON(w, http.StatusOK, slowStatementsResource{
+		Enabled: cfg.Enabled, SlowThresholdMS: cfg.SlowMS, RingSize: cfg.RingSize, Statements: list,
+	})
+}

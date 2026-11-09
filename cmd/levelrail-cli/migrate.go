@@ -117,8 +117,16 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 			return reportError(stdout, stderr, f.jsonOut, err)
 		}
 		applyMigration(ctx, client, &plain)
-	} else if err := writeMigrationFiles(f.outDir, &plain); err != nil {
-		return reportError(stdout, stderr, f.jsonOut, err)
+		if f.createWebhooks {
+			applyMigrationWebhooks(ctx, client, plain.Apps, lookupEnv)
+		}
+	} else {
+		if f.createWebhooks {
+			planMigrationWebhooks(plain.Apps, lookupEnv)
+		}
+		if err := writeMigrationFiles(f.outDir, &plain); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
 	}
 
 	if f.jsonOut {
@@ -170,4 +178,6 @@ type migratePipelineFlags struct {
 	targetProfile string
 	// nodeMap is the raw --node-map value: source-server=node pairs.
 	nodeMap string
+	// createWebhooks writes to the user's git host, so it is opt-in.
+	createWebhooks bool
 }

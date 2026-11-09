@@ -1402,7 +1402,17 @@
       "ok": "Saludable",
       "warn": "Degradado"
     },
-    "title": "Estado del plano de control"
+    "title": "Estado del plano de control",
+    "statementTiming": {
+      "title": "Tiempos de sentencias",
+      "on": "Registrando",
+      "off": "Apagado",
+      "basis": "Se guardan las sentencias de {{threshold}} ms o más, hasta {{size}} sentencias distintas. Solo el texto, nunca los valores.",
+      "offHint": "Activa el ajuste de tiempos de sentencias de la base de datos para registrar sentencias lentas y enviar un encabezado Server-Timing a los administradores.",
+      "empty": "Ninguna sentencia ha superado el umbral todavía.",
+      "loadError": "No se pudieron cargar las sentencias lentas.",
+      "row": "Peor {{max}} ms, última {{last}} ms, vista {{count}} veces"
+    }
   },
   "gitConnections": {
     "account": "Sesión iniciada como {{name}}",

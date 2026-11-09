@@ -1508,5 +1508,21 @@
       "firewallRules": "Firewall rules",
       "mobileDevices": "Mobile devices"
     }
+  },
+  "resourceNotes": {
+    "title": "Description and notes",
+    "hint": "Record the owner, purpose and runbook links. Markdown is supported.",
+    "empty": "No description or notes yet.",
+    "edit": "Edit notes",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "One line summary shown on the list",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Owner, purpose, runbook links",
+    "preview": "Preview",
+    "write": "Write",
+    "noSecrets": "Everyone who can read this resource can read its notes. Never put secrets here.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Notes saved"
   }
 }

@@ -213,6 +213,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
+| `APP_RESOURCE_DESCRIPTION_MAX_CHARS` | [`resources.description_max_chars`](/runtime-settings#deploys) | `280` |
+| `APP_RESOURCE_NOTES_MAX_BYTES` | [`resources.notes_max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_RUNTIME_DNS_MAX` | [`runtime.dns_max`](/runtime-settings#deploys) | `3` |
 | `APP_RUNTIME_EXTRA_HOSTS_MAX` | [`runtime.extra_hosts_max`](/runtime-settings#deploys) | `32` |
 | `APP_RUNTIME_PIDS_LIMIT_MAX` | [`runtime.pids_limit_max`](/runtime-settings#deploys) | `32768` |
@@ -270,6 +272,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
+| `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
+| `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
+| `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |

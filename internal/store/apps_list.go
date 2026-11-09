@@ -27,9 +27,9 @@ func (f AppListFilter) where() (string, []any, error) {
 	clauses := []string{`name NOT LIKE ? ESCAPE '\'`, `name NOT IN (SELECT service_name FROM deploy_urls)`}
 	args := []any{"%" + likeEscaper.Replace(CanaryServiceSuffix)}
 	if q := strings.ToLower(strings.TrimSpace(f.Query)); q != "" {
-		clauses = append(clauses, `(lower(name) LIKE ? ESCAPE '\' OR lower(image) LIKE ? ESCAPE '\')`)
+		clauses = append(clauses, `(lower(name) LIKE ? ESCAPE '\' OR lower(image) LIKE ? ESCAPE '\' OR name IN (SELECT name FROM resource_notes WHERE kind = 'app' AND (description LIKE ? ESCAPE '\' OR substr(notes, 1, ?) LIKE ? ESCAPE '\')))`)
 		like := "%" + likeEscaper.Replace(q) + "%"
-		args = append(args, like, like)
+		args = append(args, like, like, like, NotesSearchPrefixBytes, like)
 	}
 	if f.Names != nil {
 		bNames, err := json.Marshal(f.Names)

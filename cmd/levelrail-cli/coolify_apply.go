@@ -121,7 +121,9 @@ func applyGitBuild(ctx context.Context, client *Client, name string, a *mappedAp
 		BaseDirectory: svc.BaseDirectory, BuildCommand: svc.BuildCommand, PublishDir: svc.PublishDir}
 	if _, err := client.SetGitSource(ctx, name, req); err != nil {
 		a.Issues = append(a.Issues, migrationIssue{Field: "git_repository", Severity: issuePlanned, Detail: "git source and build settings were not applied (" + err.Error() + "), connect the repository by hand with the build settings from this report"})
+		return
 	}
+	a.gitSourceSet = true
 }
 
 func healthMappedToSpec(h mappedHealth) *spec.Health {
