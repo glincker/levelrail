@@ -38,6 +38,8 @@ type composeDeployOpts struct {
 	templateID string
 	// interpEnv is the install form's env, counted as the app env on a first deploy.
 	interpEnv map[string]string
+	// suspended saves every service stopped, so an import never runs until asked.
+	suspended bool
 }
 
 type composeServiceStatus struct {

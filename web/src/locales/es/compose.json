@@ -98,5 +98,19 @@
     "published_port_conflict": "Otro servicio ya publica ese puerto del host y protocolo. Elige un puerto libre del host o detén el otro servicio.",
     "published_port_remote_node": "Los puertos del host solo se pueden publicar en el nodo del propio plano de control. Mueve el servicio a este nodo o quita el puerto del host.",
     "published_port_in_use": "Otro proceso de este servidor ya usa ese puerto: elige otro puerto del host o detén ese proceso. Un bind privado a 127.0.0.1 no lo bloquean los resolvers del sistema."
+  },
+  "bundleImport": {
+    "open": "Importar paquete",
+    "title": "Importar un paquete de app",
+    "description": "Sube un tar creado con apps export en otra instancia. Un paquete nunca lleva valores secretos; los servicios se guardan detenidos.",
+    "file": "Archivo del paquete",
+    "name": "Nombre de la app",
+    "namePlaceholder": "Nombre de la app (opcional, por defecto el del paquete)",
+    "preview": "Vista previa",
+    "confirm": "Importar",
+    "plan_one": "Crea {{app}} con {{count}} servicio",
+    "plan_other": "Crea {{app}} con {{count}} servicios",
+    "secrets": "Secretos por definir tras importar: {{names}}",
+    "done": "{{app}} importada. Define sus secretos y luego iníciala."
   }
 }

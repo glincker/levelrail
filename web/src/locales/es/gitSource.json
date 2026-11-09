@@ -257,5 +257,28 @@
     "lfs": "Descargar objetos LFS",
     "saved": "Ajustes de descarga del código guardados.",
     "failed": "No se pudieron guardar los ajustes de descarga del código"
+  },
+  "buildSettings": {
+    "title": "Ajustes de compilación",
+    "description": "Opciones guardadas que usa cada compilación posterior. Guardar no inicia un despliegue.",
+    "builder": "Compilador",
+    "dockerfile": "Ruta del Dockerfile",
+    "target": "Etapa objetivo",
+    "provider": "Proveedor de Railpack",
+    "providerAuto": "Detectar automáticamente",
+    "noCache": "Omitir la caché de capas en compilaciones con Dockerfile",
+    "needsGit": "Conecta un origen git para cambiar el compilador o la ruta del Dockerfile.",
+    "save": "Guardar ajustes de compilación",
+    "saving": "Guardando...",
+    "saved": "Ajustes de compilación guardados",
+    "failed": "No se pudieron guardar los ajustes de compilación",
+    "errors": {
+      "tooLong": "Este valor es demasiado largo.",
+      "targetCharset": "Usa letras, dígitos, puntos, guiones bajos o guiones, empezando por una letra o un dígito.",
+      "pathRelative": "Usa una ruta dentro del repositorio, sin .. ni barra inicial.",
+      "provider": "Elige un proveedor compatible."
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
   }
 }

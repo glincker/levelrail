@@ -161,6 +161,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "export":
 		return runAppsExport(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "import-bundle":
+		return runAppsImportBundle(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "metrics":
@@ -195,6 +197,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsBackups(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "build-settings":
+		return runAppsBuildSettings(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "build-stats":
 		return runAppsBuildStats(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "build-speed":
@@ -413,6 +417,7 @@ func appsUsage(prog string) string {
   %[1]s apps cache <show|clear> <name>    show or clear one app's BuildKit build cache on the builder
   %[1]s apps backups restore <app> <service> <run> [--yes]   restore a compose database service from a backup run
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
+  %[1]s apps build-settings <verb> [flags]  show/set builder, Dockerfile path, target stage, no-cache and provider
   %[1]s apps build-stats <name> [--limit N]   build duration trend (p50, p95) and cache hits
   %[1]s apps build-speed <name> [--fix]   time saved by build cache and speedup suggestions
   %[1]s apps build-limits <verb> [flags]   show/set/reset the build timeout and concurrency limit

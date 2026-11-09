@@ -357,6 +357,7 @@ func (rt *Router) replayQueued(ctx context.Context, a store.DeployAttempt) error
 }
 
 func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.HeldRequest) error {
+	ctx = withHeldBuildSettings(ctx, hr.BuildSettings)
 	if rt.builder == nil {
 		return errors.New("manual build trigger is not configured on this control plane")
 	}
@@ -374,6 +375,7 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 	}
 	ctx = withRerunOf(ctx, req.RerunOf)
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 	source := store.DeployAttemptSourceManual
 	if req.UploadHash != "" {
 		source = store.DeployAttemptSourceUpload

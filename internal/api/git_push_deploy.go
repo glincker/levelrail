@@ -237,6 +237,7 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{
 		Branch:  plan.branch,

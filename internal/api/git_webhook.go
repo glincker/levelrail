@@ -512,6 +512,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		ImageRepo:   defaultImageRepo(name, existing.Image),
 		Order:       order,
 	}
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 
 	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, source, "")
 	buildReq.AttemptID = attemptID

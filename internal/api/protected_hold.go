@@ -59,6 +59,7 @@ func (rt *Router) holdIfProtected(ctx context.Context, name string, hr deploy.He
 		return false, 0, ""
 	}
 	rt.supersedeHeldDeploys(ctx, name)
+	hr.BuildSettings = rt.snapshotBuildSettings(ctx, name)
 	id, err := rt.HoldForApproval(ctx, env, name, image, source, hr, actor)
 	if err != nil {
 		rt.logger.Error("api: hold protected deploy failed", slog.String("name", name), slog.String("error", err.Error()))
@@ -191,6 +192,7 @@ func (rt *Router) holdGitPush(ctx context.Context, name string, plan *gitPushPla
 // replayGitPush builds a held push from the push mirror at the pushed commit.
 func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.HeldRequest) error {
 	defer rt.dropHeldRef(req)
+	ctx = withHeldBuildSettings(ctx, req.BuildSettings)
 	if rt.builder == nil {
 		return errors.New("builds are not configured on this control plane")
 	}
@@ -213,6 +215,7 @@ func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.Hel
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{Branch: req.Branch, Message: pushCommitSubject(commit.Message), Author: commit.Author.Name})
 	run := rt.beginManualBuild(dctx, *existing, buildReq, buildType, store.DeployAttemptSourceGitPush, "", "", false)
 	run.repoURL, run.ref, run.fromCache = req.PushMirror, req.CommitSHA, true

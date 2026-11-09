@@ -34,6 +34,9 @@ app_metrics.retention_hours
 app_metrics.scrape_interval
 app_metrics.scrape_timeout
 app_metrics.scrape_workers
+apps.bundle_import_max_bytes
+apps.bundle_import_max_entries
+apps.bundle_import_max_entry_bytes
 apps.containers_inspect_timeout
 apps.env_apply_on_set
 apps.max_replicas_per_service
@@ -64,6 +67,7 @@ build.cache_app_quota_gb
 build.cache_reclaim_max_records
 build.cache_reclaim_timeout
 builds.memory_limit_mb
+builds.setting_value_max_bytes
 cdn.purge_history
 certificates.weekly_issue_warn
 cleanup.enabled

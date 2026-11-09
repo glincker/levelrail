@@ -5,6 +5,8 @@ import "net/http"
 // registerAppImportRoutes registers the guided app import flow. Every
 // route that carries or uses the source credential is AbilityWriteSensitive.
 func (rt *Router) registerAppImportRoutes(mux *http.ServeMux) {
+	// Bundle import: write tier; deploy=true and replace=true are gated again in the handler.
+	mux.HandleFunc("POST /api/v1/apps/import-bundle", rt.requireAbility(AbilityWrite, rt.handleImportAppBundle))
 	mux.HandleFunc("POST /api/v1/migration/apps/plan", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportPlan))
 	mux.HandleFunc("POST /api/v1/migration/apps/test", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportTest))
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/progress", rt.requireAbility(AbilityRead, rt.handleAppImportProgress))

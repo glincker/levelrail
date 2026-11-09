@@ -766,6 +766,9 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/expiry | AbilityWrite | handleSetAppExpiry |
 | DELETE | /api/v1/apps/{name}/expiry | AbilityDeploy | handleClearAppExpiry |
 | POST | /api/v1/apps/{name}/build-cache/reclaim | AbilityDeploy | handleReclaimAppBuildCache |
+| POST | /api/v1/apps/import-bundle | AbilityWrite | handleImportAppBundle |
+| GET | /api/v1/apps/{name}/build-settings | AbilityRead | handleGetAppBuildSettings |
+| PUT | /api/v1/apps/{name}/build-settings | AbilityWrite | handleSetAppBuildSettings |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

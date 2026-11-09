@@ -262,6 +262,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps scale` changes the replica count and/or the deploy strategy. With `service=count` pairs it sets replicas per service of a multi-service app; every key is checked before anything changes, then services are updated one at a time. If an update fails, the services already changed are set back to their previous counts (best effort, each rollback is reported), so it is not atomic. `apps restart --service S` recreates one service.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
 - `apps set` changes app settings. `--pr-comment-commands on|off` lets write-access users run `/levelrail` commands from pull request comments (see [Pull request comment commands](/pr-comment-commands)).
+- `apps import-bundle <file>` imports a tar written by `apps export <name> --out -` on another instance. It needs the `write` ability, runs the same checks as a compose deploy (spec, quotas, scope, bind mounts need root), and saves the services stopped unless `--deploy` is set (which needs `deploy`). `--dry-run` prints the services, the secret names to set and the warnings without writing anything. The dry run is advisory: it does not reserve quota or published ports, so the import itself can still be refused. A name already in use is refused with 409; pass `--name` to import under another name, or `--replace --confirm <name>` with `write:sensitive` to replace it. Secret values are never in a bundle and a bundle holding `.env` is refused. Size, entry count and file size caps are the `apps.bundle_import_max_bytes`, `apps.bundle_import_max_entries` and `apps.bundle_import_max_entry_bytes` runtime settings.
 - `apps set --description "Checkout frontend"` sets the one line summary shown on the apps list, and `--notes-file runbook.md` (or `-` for stdin) sets markdown notes for the owner, purpose and runbook links, shown on the app overview. An empty value clears either field. Both are searchable from the apps list, copied by `apps clone`, written to `NOTES.md` by `apps export`, and capped by the `resources.description_max_chars` and `resources.notes_max_bytes` runtime settings. `apps get` prints them, and `--output json` includes `description` and `notes`. Never put secrets in notes: anyone who can read the app can read them. Databases take the same fields over `PUT /api/v1/databases/{name}/notes`.
 - `apps set-node` and `apps clear-node` move an app to another node, or back to the control plane's own local node. With `--with-volumes` the named volumes move too, and `apps moves` shows the history of those moves.
 
@@ -386,7 +387,8 @@ levelrail-cli apps runtime set <name> [--service NAME] [--tmpfs P:size=64m] [--u
 levelrail-cli apps exec <name> -- <command> [args...] [flags]
 levelrail-cli apps run <name> [--service S] [--timeout D] [--retries N] -- <command> [args...] [flags]
 levelrail-cli apps console <name> [-- <command> [args...]] [flags]
-levelrail-cli apps export <name> [--format compose] [--out DIR|-] [flags]
+levelrail-cli apps export <name> [--format compose] [--out DIRlevelrail-cli apps import-bundle <file|-> [--name NAME] [--dry-run] [--deploy] [--replace --confirm NAME] [flags]
+|-] [flags]
 levelrail-cli apps logs <name> [flags]
 levelrail-cli apps metrics <name> --metric NAME [flags]
 levelrail-cli apps requests <name> [flags]
@@ -449,6 +451,8 @@ levelrail-cli apps backups restore <app> <service> <run> [--yes]
 levelrail-cli apps build-cache show <name>|--global
 levelrail-cli apps build-cache set <name>|--global --target ID [--mode min|max] [--disable]
 levelrail-cli apps build-cache clear <name>
+levelrail-cli apps build-settings show <name>
+levelrail-cli apps build-settings set <name> [--builder TYPE] [--dockerfile PATH] [--target STAGE] [--no-cache=true|false] [--provider NAME]
 levelrail-cli apps build-stats <name> [--limit N]
 levelrail-cli apps build-speed <name> [--fix]
 levelrail-cli apps build-limits show|set|reset
@@ -459,6 +463,7 @@ levelrail-cli apps build-cache remove <name>|--global
 - `apps volumes` manages named Docker volumes outside a redeploy. The name is lowercase letters, numbers and hyphens starting with a letter; the path is where it mounts in the container.
 - `apps storage set` attaches a connected bucket as object storage and injects its credentials as `S3_*` env vars at container create time. See [Object storage](/object-storage).
 - `apps build-cache` configures the BuildKit remote cache on a storage destination. `--global` applies to every app without its own setting. `clear` is bounded per call; run it again while it reports more to delete. A cache problem never fails a build.
+- `apps build-settings` stores per-app build options that every later build uses; saving never starts a deploy. `--builder` and `--dockerfile` update the connected git source. `--target` names a multi-stage stage (letters, digits, `.`, `_`, `-`), `--no-cache` skips the layer cache on Dockerfile builds and `--provider` pins the Railpack provider, so a build that detects another one fails. Values are capped by `builds.setting_value_max_bytes`. `--builder` and `--dockerfile` need the `write:sensitive` ability, like `PUT git-source/build`; the other flags need `write`. Stored settings apply to manual builds, git push and webhook deploys, and protected-environment holds (which snapshot them when the deploy is held, so approval binds what gets built). They do not apply to pull request previews or to apps that deploy from a services map, which refuse them with 409. Concurrent saves are last writer wins.
 
 ### Environment, secrets and Vault
 

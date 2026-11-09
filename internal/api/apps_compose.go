@@ -220,7 +220,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	traceComposePlan(r.Context(), trace, name, services)
 	out := make([]appResource, 0, len(services))
 	for _, svc := range services {
-		if err := rt.appCompose.SaveDesiredService(r.Context(), svc); err != nil {
+		save := rt.appCompose.SaveDesiredService
+		if opts.suspended {
+			save = rt.appCompose.SaveSuspendedDesiredService
+		}
+		if err := save(r.Context(), svc); err != nil {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
 		}

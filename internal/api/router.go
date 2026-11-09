@@ -940,6 +940,7 @@ type Router struct {
 
 	branchDeploys  BranchDeployStore // always set
 	contextConfigs ContextConfigStore
+	buildSettings  BuildSettingsStore
 	branchDeployMu sync.Mutex
 
 	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
@@ -1183,6 +1184,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.attachCertLedger(s)
 	if cs, ok := s.(ContextConfigStore); ok {
 		rt.contextConfigs = cs
+	}
+	if bs, ok := s.(BuildSettingsStore); ok {
+		rt.buildSettings = bs
 	}
 	return rt
 }

@@ -100,6 +100,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
+| `APP_BUNDLE_IMPORT_MAX_BYTES` | [`apps.bundle_import_max_bytes`](/runtime-settings#networking) | `4194304` |
+| `APP_BUNDLE_IMPORT_MAX_ENTRIES` | [`apps.bundle_import_max_entries`](/runtime-settings#networking) | `16` |
+| `APP_BUNDLE_IMPORT_MAX_ENTRY_BYTES` | [`apps.bundle_import_max_entry_bytes`](/runtime-settings#networking) | `1048576` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |
 | `APP_CUTOVER_VERIFY_CERT_WARN_DAYS` | [`cutover.verify_cert_warn_days`](/runtime-settings#networking) | `21` |
@@ -175,6 +178,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
+| `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |

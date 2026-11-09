@@ -201,7 +201,7 @@ func replayContext(ctx context.Context, req deploy.HeldRequest) context.Context 
 	if req.FreezeNote != "" {
 		ctx = withFreezeOverrideNote(ctx, req.FreezeNote)
 	}
-	return ctx
+	return withHeldBuildSettings(ctx, req.BuildSettings)
 }
 
 // replayGitDeploy re-runs a held or queued webhook deploy from its saved request.

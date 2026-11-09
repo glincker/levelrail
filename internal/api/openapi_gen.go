@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2093 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2096 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -107,6 +107,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateApp", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/bulk", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBulkApps", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/git-sources", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitSources", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/import-bundle", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleImportAppBundle", Description: "Bundle import: write tier; deploy=true and replace=true are gated again in the handler."},
 	{Method: "POST", Path: "/api/v1/apps/repo-plan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRepoPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/sleep/overview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppsSleepOverview", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteApp", Description: ""},
@@ -160,6 +161,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResetAppBuildLimits", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildLimits", Description: "An app's CPU and memory cap decides how much of the host its builds can take, so root only."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/build-settings", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/build-settings", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-speed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildSpeed", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-stats", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: ""},

@@ -37,6 +37,9 @@ const BulkActionsBar = lazy(() =>
 )
 import { AppsFilterBar } from '../../components/AppsFilterBar'
 const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
+const ImportBundleDialog = lazy(
+  () => import('../../components/apps/ImportBundleDialog'),
+)
 import {
   AppsStatusChips,
   ViewToggle,
@@ -285,6 +288,9 @@ function AppListPage() {
         <DatabaseGlassIcon size="1.4em" />
         {t('appsList.newDatabase', { defaultValue: 'New database' })}
       </Button>
+      <Suspense fallback={null}>
+        <ImportBundleDialog />
+      </Suspense>
       <Button size="sm" render={<Link to="/apps/new" />} nativeButton={false}>
         <PlusGlassIcon size="1.4em" />
         {t('appsList.newApp', { defaultValue: 'New app' })}

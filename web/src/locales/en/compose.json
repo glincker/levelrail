@@ -98,5 +98,19 @@
     "published_port_conflict": "Another service already publishes that host port and protocol. Pick a free host port, or stop the other service.",
     "published_port_remote_node": "Host ports can only be published on the control plane's own node. Move the service to this node or drop the host port.",
     "published_port_in_use": "Another process on this server already uses that port: pick another host port or stop that process. A private 127.0.0.1 bind is not blocked by system resolvers."
+  },
+  "bundleImport": {
+    "open": "Import bundle",
+    "title": "Import an app bundle",
+    "description": "Upload a tar written by apps export on another instance. Secret values are never in a bundle; services are saved stopped.",
+    "file": "Bundle file",
+    "name": "App name",
+    "namePlaceholder": "App name (optional, defaults to the bundle)",
+    "preview": "Preview",
+    "confirm": "Import",
+    "plan_one": "Creates {{app}} with {{count}} service",
+    "plan_other": "Creates {{app}} with {{count}} services",
+    "secrets": "Secrets to set after import: {{names}}",
+    "done": "Imported {{app}}. Set its secrets, then start it."
   }
 }

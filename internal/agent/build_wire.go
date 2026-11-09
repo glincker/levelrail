@@ -28,7 +28,8 @@ func buildRequestToPB(req build.RemoteRequest) (*agentpb.BuildRequest, error) {
 			RegistryRef:      req.Cache.RegistryRef,
 			RegistryInsecure: req.Cache.RegistryInsecure,
 		},
-		Network: string(req.Network),
+		Network:          string(req.Network),
+		RailpackProvider: req.RailpackProvider,
 	}, nil
 }
 
@@ -43,13 +44,14 @@ func buildRequestFromPB(req *agentpb.BuildRequest) (build.RemoteRequest, error) 
 		return build.RemoteRequest{}, err
 	}
 	return build.RemoteRequest{
-		Network:        network,
-		Kind:           kind,
-		DockerfilePath: req.GetDockerfilePath(),
-		Tag:            req.GetTag(),
-		Target:         req.GetTarget(),
-		BuildArgs:      req.GetBuildArgs(),
-		NoCache:        req.GetNoCache(),
+		Network:          network,
+		Kind:             kind,
+		DockerfilePath:   req.GetDockerfilePath(),
+		Tag:              req.GetTag(),
+		Target:           req.GetTarget(),
+		BuildArgs:        req.GetBuildArgs(),
+		NoCache:          req.GetNoCache(),
+		RailpackProvider: req.GetRailpackProvider(),
 		Cache: build.CacheConfig{
 			RegistryRef:      req.GetCache().GetRegistryRef(),
 			RegistryInsecure: req.GetCache().GetRegistryInsecure(),

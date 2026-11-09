@@ -9,6 +9,7 @@ import { GitPushRemoteCard } from '../../../components/GitPushRemoteCard'
 import { GitDeploySettingsCard } from '../../../components/GitDeploySettingsCard'
 import { CiGateSettings } from '../../../components/apps/CiGateSettings'
 import { GitTriggerPatternsSlot } from '../../../components/GitTriggerPatternsSlot'
+import { BuildSettingsSlot } from '../../../components/build-settings/BuildSettingsSlot'
 import { WebhookDeliveriesPanel } from '../../../components/WebhookDeliveriesPanel'
 
 // Former Overview-page cards, split out here since a preview environment
@@ -45,6 +46,7 @@ function SourceSection() {
         onOpenChange={setConnect}
       />
       <GitSourceCard app={app} />
+      <BuildSettingsSlot appName={name} />
       <InlineDockerfileSourceSlot appName={name} />
       <GitPushRemoteCard appName={name} />
       <GitDeploySettingsCard appName={name} />

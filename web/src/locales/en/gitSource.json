@@ -257,5 +257,28 @@
     "lfs": "Fetch LFS objects",
     "saved": "Source fetch settings saved.",
     "failed": "Could not save source fetch settings"
+  },
+  "buildSettings": {
+    "title": "Build settings",
+    "description": "Saved options every later build uses. Saving does not start a deploy.",
+    "builder": "Builder",
+    "dockerfile": "Dockerfile path",
+    "target": "Target stage",
+    "provider": "Railpack provider",
+    "providerAuto": "Detect automatically",
+    "noCache": "Skip the layer cache on Dockerfile builds",
+    "needsGit": "Connect a git source to change the builder or Dockerfile path.",
+    "save": "Save build settings",
+    "saving": "Saving...",
+    "saved": "Build settings saved",
+    "failed": "Could not save build settings",
+    "errors": {
+      "tooLong": "This value is too long.",
+      "targetCharset": "Use letters, digits, dots, underscores or hyphens, starting with a letter or digit.",
+      "pathRelative": "Use a path inside the repository, without .. or a leading slash.",
+      "provider": "Pick a supported provider."
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
   }
 }
