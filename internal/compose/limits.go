@@ -37,11 +37,23 @@ const (
 	defaultMaxShmBytes = 2 << 30
 )
 
+// envCap reads a whole-number byte cap; fractional values are refused with a warning
+// and the fallback applies, so a typo like 1.5e9 cannot silently truncate.
 func envCap(name string, fallback float64) float64 {
-	if v, err := strconv.ParseFloat(strings.TrimSpace(os.Getenv(name)), 64); err == nil && v > 0 && !math.IsInf(v, 0) {
-		return math.Min(v, fallback)
+	v, ok := envCapFloat(name, fallback)
+	if ok && v != math.Trunc(v) {
+		slog.Warn("compose: cap must be a whole number, using the default", slog.String("env", name), slog.String("value", os.Getenv(name)))
+		return fallback
 	}
-	return fallback
+	return v
+}
+
+// envCapFloat is the CPU variant: fractional values are valid there.
+func envCapFloat(name string, fallback float64) (float64, bool) {
+	if v, err := strconv.ParseFloat(strings.TrimSpace(os.Getenv(name)), 64); err == nil && v > 0 && !math.IsInf(v, 0) {
+		return math.Min(v, fallback), true
+	}
+	return fallback, false
 }
 
 // toInt64 converts a scaled float, refusing NaN, Inf, overflow and values that round to zero.
@@ -105,7 +117,7 @@ func parseNanoCPUs(raw string) (int64, error) {
 	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 {
 		return 0, fmt.Errorf("%q is not a positive CPU count such as 0.5 or 2", raw)
 	}
-	maxCPUs := envCap(envMaxCPUs, float64(math.MaxInt64>>sumHeadroomShift)/1e9)
+	maxCPUs, _ := envCapFloat(envMaxCPUs, float64(math.MaxInt64>>sumHeadroomShift)/1e9)
 	nano, ok := toInt64(n*1e9, maxCPUs*1e9)
 	if !ok {
 		return 0, fmt.Errorf("%q is out of range: it must be at least 0.000000001 and at most %g CPUs (%s)", raw, maxCPUs, envMaxCPUs)
