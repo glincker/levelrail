@@ -16,6 +16,7 @@ COPY docs/ /src/docs/
 COPY install.sh install-cli.sh install-cli.ps1 /src/
 # A silently empty/partial dist (e.g. the symlink bug #911 fixed) must
 # fail the build here, not ship as a binary with no embedded frontend.
+ENV NODE_OPTIONS=--max-old-space-size=8192
 RUN npm run build && test -s dist/index.html
 
 FROM golang:1.27-alpine AS build

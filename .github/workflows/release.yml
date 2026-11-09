@@ -650,6 +650,12 @@ jobs:
       # cancelled at the 20-minute job limit on a cold cache). Each leg
       # pushes its own image by digest; the merge job below assembles
       # the final multi-arch manifest from those digests.
+      # Tags cut before the Dockerfile set a Node heap limit ran out of memory in tsc.
+      - name: Give the image web build enough heap
+        run: |
+          grep -q '^ENV NODE_OPTIONS=' deploy/docker/Dockerfile.levelrail || \
+            sed -i 's|^RUN npm run build|ENV NODE_OPTIONS=--max-old-space-size=8192\nRUN npm run build|' deploy/docker/Dockerfile.levelrail
+
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
