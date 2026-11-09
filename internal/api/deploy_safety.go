@@ -178,6 +178,9 @@ func (rt *Router) holdIfFrozen(ctx context.Context, name string, req deploy.Held
 		return false, ""
 	}
 	status, err := deploy.CheckFreeze(ctx, rt.deploySafety, name, time.Now())
+	if err == nil && !status.Frozen {
+		status = rt.composeMemberFreeze(ctx, name, status)
+	}
 	if err != nil || !status.Frozen {
 		if err != nil {
 			rt.logger.Error("api: check deploy freeze failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -227,6 +230,10 @@ func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.H
 func (rt *Router) ReleaseHandlers() map[string]deploy.ReleaseHandler {
 	return map[string]deploy.ReleaseHandler{
 		deploy.HeldKindGit: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
+			// A compose replay applies inside the held attempt, so its outcome is the real one.
+			if gs, err := rt.gitSources.GetGitSource(ctx, a.ServiceName); err == nil && gs.ComposePath != "" {
+				ctx = withAdoptedAttempt(ctx, a.ID)
+			}
 			return rt.replayGitDeploy(ctx, a.ServiceName, req)
 		},
 		deploy.HeldKindPush: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {

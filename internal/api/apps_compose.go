@@ -83,7 +83,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
 		}
 	}
-	resp, ok := rt.deployComposeBody(w, r, name, body, opts)
+	resp, ok := rt.lockedComposeDeploy(w, r, name, body, opts)
 	if !ok {
 		return
 	}
@@ -195,7 +195,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	for _, svc := range services {
 		serviceNames = append(serviceNames, svc.Name)
 	}
-	if !rt.authorizeServiceNames(w, r, name, serviceNames) {
+	if opts.noCaller {
+		if !rt.refuseForeignServiceNames(r.Context(), w, name, previousServices, serviceNames) {
+			return composeDeployResponse{}, false
+		}
+	} else if !rt.authorizeServiceNames(w, r, name, serviceNames) {
 		return composeDeployResponse{}, false
 	}
 

@@ -164,8 +164,13 @@ func (rt *Router) commitDeployState(ctx context.Context, name, sha string) strin
 // context with the queue's per-app serialization and concurrency cap.
 func (rt *Router) enqueueGitPushDeploy(ctx context.Context, name string, hr deploy.HeldRequest) (int, string, bool) {
 	existing, err := rt.apps.GetDesiredService(ctx, name)
+	compose := false
 	if errors.Is(err, store.ErrServiceNotFound) {
-		return http.StatusNotFound, "app not found", true
+		// A compose app queues under its app name; the queue's per-app slot serializes it.
+		if _, merr := rt.composeMembers(ctx, name); merr != nil {
+			return http.StatusNotFound, "app not found", true
+		}
+		existing, err, compose = &store.DesiredService{Name: name, AppID: name}, nil, true
 	}
 	if err != nil {
 		rt.logger.Error("api: git push webhook: load app failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -173,10 +178,18 @@ func (rt *Router) enqueueGitPushDeploy(ctx context.Context, name string, hr depl
 	}
 	rt.buildStartMu.Lock()
 	id, err := rt.enqueueDeploy(ctx, *existing, store.DeployAttemptSourceWebhook, name+":"+hr.CommitSHA, hr)
+	// Save and supersede are one step under buildStartMu, so two enqueues never supersede each other.
+	newerQueued := ""
+	if err == nil && compose {
+		newerQueued = rt.supersedeComposeQueued(ctx, name, id, hr)
+	}
 	rt.buildStartMu.Unlock()
 	if err != nil {
 		rt.logger.Error("api: git push webhook: enqueue failed", slog.String("error", err.Error()), slog.String("name", name))
 		return 0, "", false
+	}
+	if newerQueued != "" {
+		return http.StatusOK, fmt.Sprintf("ignored: commit %s is older than the queued deploy %s\n", webhookShortSHA(hr.CommitSHA), newerQueued), true
 	}
 	if o := webhookOutcomeFrom(ctx); o != nil {
 		o.AttemptID = id

@@ -21,6 +21,10 @@ func (rt *Router) registerComposeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/stop", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleStopApp)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/start", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleStartApp)))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose/services/{service}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.composeServiceAction(rt.handleQueryLogs)))
+	mux.HandleFunc("GET /api/v1/apps/{name}/compose-source", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetComposeSource))
+	// Same tier as PUT git-source: it stores a deploy token and mints a webhook secret.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/compose-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetComposeSource))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-source/deploy", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeployComposeSource))
 	mux.HandleFunc("POST /api/v1/service-templates/{id}/install", rt.requireAbility(AbilityDeploy, rt.handleInstallServiceTemplate))
 	// Same tier as DELETE /apps/{name}; ?volumes=true also needs write-sensitive, checked in the handler.
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleComposeDown))

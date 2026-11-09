@@ -178,7 +178,7 @@ func (rt *Router) handleApplyTemplateUpgrade(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusConflict, templateUpgradeRefusal{Error: "an upgrade of this app is already running", Code: codeUpgradeInProgress})
 		return
 	}
-	resp, ok := rt.deployComposeBody(w, r, appID, []byte(merged), composeDeployOpts{
+	resp, ok := rt.lockedComposeDeploy(w, r, appID, []byte(merged), composeDeployOpts{
 		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceTemplate, templateID: st.latest.TemplateID,
 	})
 	if !ok {
@@ -259,7 +259,7 @@ func (rt *Router) watchTemplateUpgrade(r *http.Request, st templateUpgradeState,
 	}
 	rt.logger.Warn("api: template upgrade failed, rolling back", slog.String("app", appID), slog.String("reason", reason))
 	rb := &captureWriter{header: http.Header{}}
-	resp, ok := rt.deployComposeBody(rb, r, appID, []byte(st.latest.Compose), composeDeployOpts{
+	resp, ok := rt.lockedComposeDeploy(rb, r, appID, []byte(st.latest.Compose), composeDeployOpts{
 		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceRollback, templateID: st.latest.TemplateID,
 	})
 	rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {

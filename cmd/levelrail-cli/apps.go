@@ -51,6 +51,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
 	case "expiry":
 		return runAppsExpiry(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restart-schedule":
+		return runAppsRestartSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "protect", "unprotect":
 		return runAppsProtect(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "lock", "unlock", "publish":
@@ -328,6 +330,7 @@ func appsUsage(prog string) string {
   %[1]s apps next-advisor <app> [flags]   check a Next.js app's saved config and list what to fix
   %[1]s apps skew <name> [flags]      show skew protection and the held previous release
   %[1]s apps expiry <name> [--at TIME|--in DUR|--clear]   stop an app at a date, delete it after a grace period
+  %[1]s apps restart-schedule <name> [--schedule EXPR|--clear]   restart an app on a cron or interval schedule
   %[1]s apps maintenance show|set|clear <app> [flags]   maintenance page on every domain of the app, all or none
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps ci token|trust <name> [flags]   deploy from any CI with OIDC: mint a deploy token, manage which pipelines are trusted

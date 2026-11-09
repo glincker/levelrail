@@ -40,6 +40,9 @@ const ImageRetentionCard = lazy(
   () => import('../../../components/ImageRetentionCard'),
 )
 const AppExpiryCard = lazy(() => import('../../../components/AppExpiryCard'))
+const AppRestartScheduleCard = lazy(
+  () => import('../../../components/AppRestartScheduleCard'),
+)
 
 // The one home for deploy settings, grouped by when they act: Build,
 // Run, Safety, Automation. The deploys page only links here. Suspense cards
@@ -124,6 +127,9 @@ function DeploySettingsSection() {
         </Suspense>
       </SettingsGroup>
       <SettingsGroup id="automation">
+        <Suspense fallback={<CardSkeleton titleWidth="w-40" rows={2} />}>
+          <AppRestartScheduleCard appName={name} />
+        </Suspense>
         <CardHelp card="scheduled">
           <ScheduledDeployCard appName={name} />
         </CardHelp>

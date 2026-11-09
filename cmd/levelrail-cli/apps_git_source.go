@@ -42,6 +42,10 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceSSHKey(prog, args[1:], stdout, stderr, lookupEnv)
 	case "plan":
 		return runAppsGitSourcePlan(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compose":
+		return runAppsGitSourceCompose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compose-deploy":
+		return runAppsGitSourceComposeDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runAppsGitSourceDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete", "disconnect":

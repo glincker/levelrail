@@ -150,6 +150,7 @@ import type demo from '../locales/en/demo.json'
 import type statePlaceholders from '../locales/en/statePlaceholders.json'
 import type secretScan from '../locales/en/secretScan.json'
 import type appExpiry from '../locales/en/appExpiry.json'
+import type appRestartSchedule from '../locales/en/appRestartSchedule.json'
 import type appFiles from '../locales/en/appFiles.json'
 import type appContainers from '../locales/en/appContainers.json'
 import type sso from '../locales/en/sso.json'
@@ -288,6 +289,7 @@ declare module 'i18next' {
       statePlaceholders: typeof statePlaceholders
       secretScan: typeof secretScan
       appExpiry: typeof appExpiry
+      appRestartSchedule: typeof appRestartSchedule
       appFiles: typeof appFiles
       appContainers: typeof appContainers
       maintenance: typeof maintenance

@@ -104,6 +104,8 @@ type gitSourceResource struct {
 	Branch      string `json:"branch"`
 	BuildType   string `json:"build_type"`
 	BuildPath   string `json:"build_path,omitempty"`
+	// ComposePath is set only for a compose app source.
+	ComposePath string `json:"compose_path,omitempty"`
 	// BaseDirectory is the build context relative to the repository root;
 	// empty means the root. BuildPath is always relative to the repository
 	// root too.
@@ -204,6 +206,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		Branch:                 g.Branch,
 		BuildType:              g.BuildType,
 		BuildPath:              g.BuildPath,
+		ComposePath:            g.ComposePath,
 		BaseDirectory:          g.BaseDirectory,
 		BuildCommand:           g.BuildCommand,
 		PublishDir:             g.PublishDir,
@@ -667,6 +670,10 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 		TriggerMode: triggerMode,
 	})
+	if errors.Is(err, errGitSourceKindConflict) {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: set git source failed", err, slog.String("name", name))
 		return
@@ -708,6 +715,8 @@ type connectGitSourceParams struct {
 	// TriggerMode is always already-normalized (normalizeGitSourceTriggerMode)
 	// by the time a caller builds this struct.
 	TriggerMode string
+	// ComposePath marks a compose app source; empty for a single-service one.
+	ComposePath string
 }
 
 // connectGitSourceResult is connectGitSource's return: the resource to
@@ -741,6 +750,9 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		staticSPA = prev.StaticSPA
 	}
 	staticSPA = staticSPA && p.BuildType == spec.BuildStatic
+	if !creating && prev != nil && (prev.ComposePath != "") != (p.ComposePath != "") {
+		return connectGitSourceResult{}, errGitSourceKindConflict
+	}
 	if p.KeepStaticBuild && !creating && prev != nil && p.BuildType == spec.BuildStatic {
 		if p.BuildCommand == "" {
 			p.BuildCommand = prev.BuildCommand
@@ -773,7 +785,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 	if err := rt.gitSources.SaveGitSourceWithAppAuth(ctx, store.GitSource{
 		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir, StaticSPA: staticSPA,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
-		TriggerMode: triggerMode,
+		TriggerMode: triggerMode, ComposePath: p.ComposePath,
 	}, gitHubAppTokenAllowed(ctx)); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
 	}

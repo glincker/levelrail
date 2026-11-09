@@ -105,7 +105,8 @@ func attemptApps(as []store.DeployAttempt) []string {
 // attempt, so the fetch window still counts as busy for concurrent requests.
 func (rt *Router) queueIfBusy(ctx context.Context, name string, gs store.GitSource, req deploy.HeldRequest, image string) (queued bool, msg string, release func()) {
 	release = func() {}
-	if rt.deploySafety == nil || len(gs.Services) > 0 {
+	// A compose source queues in deployComposeFromGitSource, under its app name.
+	if rt.deploySafety == nil || len(gs.Services) > 0 || gs.ComposePath != "" {
 		return false, "", release
 	}
 	rt.buildStartMu.Lock()
@@ -171,7 +172,8 @@ func (rt *Router) supersedeQueued(ctx context.Context, name, newID, branch strin
 	}
 	on, err := rt.deploySafety.GetServiceCancelSuperseded(ctx, name)
 	if err != nil || !on {
-		if err != nil {
+		// A compose app has no service row; supersedeComposeQueued covers it.
+		if err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 			rt.logger.Warn("api: deploy queue: read cancel_superseded failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 		return
@@ -309,6 +311,9 @@ func (rt *Router) queuedFrozen(ctx context.Context, a store.DeployAttempt) bool 
 		return false
 	}
 	status, err := deploy.CheckFreeze(ctx, rt.deploySafety, a.ServiceName, time.Now())
+	if err == nil && !status.Frozen {
+		status = rt.composeMemberFreeze(ctx, a.ServiceName, status)
+	}
 	return err == nil && status.Frozen
 }
 

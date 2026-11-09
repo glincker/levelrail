@@ -183,6 +183,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
+| `APP_COMPOSE_REPO_DEPLOY_TIMEOUT` | [`compose.repo_deploy_timeout`](/runtime-settings#deploys) | `10m` |
+| `APP_COMPOSE_REPO_FILE_MAX_BYTES` | [`compose.repo_file_max_bytes`](/runtime-settings#deploys) | `524288` |
 | `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
@@ -207,6 +209,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_PROCFILE_DEFAULT_PORT` | [`deploy.procfile_default_port`](/runtime-settings#deploys) | `8080` |
 | `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
+| `APP_RESTART_SCHEDULE_FAILURE_BACKOFF` | [`deploy.restart_schedule_failure_backoff`](/runtime-settings#deploys) | `15m0s` |
+| `APP_RESTART_SCHEDULE_MAX_PER_SWEEP` | [`deploy.restart_schedule_max_per_sweep`](/runtime-settings#deploys) | `5` |
+| `APP_RESTART_SCHEDULE_MIN_INTERVAL` | [`deploy.restart_schedule_min_interval`](/runtime-settings#deploys) | `1h0m0s` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
 | `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
@@ -502,6 +507,7 @@ Each of these sets how often a background loop wakes to check for work. Five-fie
 | --- | --- | --- |
 | `APP_BACKUP_SCHEDULER_INTERVAL` | `1m` | How often the database backup scheduler checks for backups whose cron schedule is due. See [Backups and storage](/backups-and-storage). Control plane. |
 | `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL` | `1m` | How often the scheduler checks for scheduled tasks that are due. Control plane. |
+| `APP_RESTART_SCHEDULE_TICK` | `1m` | How often the scheduled restart sweep looks for due app restarts. Clamped to 10s..10m. Read at boot. Control plane. |
 | `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` | `5m` | How often pending deploy approvals are checked against their 24 hour expiry. See [Chat deploy approvals](/chat-deploy-approvals). Control plane. |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | `168h` (7 days) | History window used when computing app resource recommendations. Control plane. |
 | `APP_RECONCILE_WORKERS` | `1` | How many apps may reconcile at once, so one slow or failing app does not delay the others. `1` keeps the sequential pass; `4` or `8` is recommended with many apps. Above 1, each app reconcile is cut after `APP_RECONCILE_KEY_TIMEOUT` (default `10m`) and retried. Control plane. |

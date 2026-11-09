@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2101 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2107 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -203,6 +203,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeDBBackupRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerComposeDBBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestoreComposeDBBackup", Description: "AbilityRoot like the volume restore: it replaces the live database in place."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose-source", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeSource", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/compose-source", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetComposeSource", Description: "Same tier as PUT git-source: it stores a deploy token and mints a webhook secret."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose-source/deploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployComposeSource", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose/redeploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRedeployCompose", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeRevisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions/{revision}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeRevision", Description: ""},
@@ -422,6 +425,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/requests", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleQueryRequests", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppResourceRecommendation", Description: "Read-only resource right-sizing suggestion (resource_recommendation.go): synthesizes the app's historical CPU/memory usage and current limits into a deterministic raise/lower/keep suggestion per dimension. AbilityRead, same sensitivity as diagnose above; never writes anything, never applied automatically."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/restart-schedule", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppRestartSchedule", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/restart-schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppRestartSchedule", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/restart-schedule", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppRestartSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollback-targets", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListRollbackTargets", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRollout", Description: ""},

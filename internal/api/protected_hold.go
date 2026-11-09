@@ -28,7 +28,7 @@ func (rt *Router) protectedEnvironmentOf(ctx context.Context, name string) (env 
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
-		return store.Environment{}, false, nil
+		return rt.composeProtectedEnvironment(ctx, name)
 	}
 	if err != nil {
 		return store.Environment{}, false, fmt.Errorf("load service: %w", err)

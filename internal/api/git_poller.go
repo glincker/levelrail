@@ -219,7 +219,8 @@ func (rt *Router) pollGitSource(ctx context.Context, cfg gitPollConfig, state *g
 	if err != nil || gs == nil {
 		return
 	}
-	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease || gs.BranchPattern != "" {
+	// A compose source deploys from webhooks and deploy-now only.
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease || gs.BranchPattern != "" || gs.ComposePath != "" {
 		return
 	}
 	now := time.Now()

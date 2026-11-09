@@ -447,6 +447,11 @@ func (s *bootState) startSchedulers() {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
+	go func() {
+		if err := apiRouter.RunAppRestartScheduler(ctx, api.RestartScheduleTick()); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("restart scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
 
 	// Enforces the operator's audit retention window so audit_log does not grow forever.
 	go func() {

@@ -2021,6 +2021,8 @@ type GitSourceResource struct {
 	Branch      string `json:"branch"`
 	BuildType   string `json:"build_type"`
 	BuildPath   string `json:"build_path,omitempty"`
+	// ComposePath is set only for a compose app deployed from git.
+	ComposePath string `json:"compose_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
 	// BuildCommand and PublishDir build a static site before serving it.

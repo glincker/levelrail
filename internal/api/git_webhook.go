@@ -426,6 +426,10 @@ func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store
 
 // Sets the deploy attempt source, so scheduled redeploys are distinguishable from git pushes in deploy history.
 func (rt *Router) deployFromGitSourceAs(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
+	// A compose call that only enqueues reports nothing to the forge; the queued run does.
+	if _, adopted := adoptedAttemptID(ctx); gs.ComposePath != "" && !adopted && rt.deploySafety != nil {
+		return rt.deployComposeFromGitSource(ctx, name, gs, checkoutRef, commitLabel, order, source)
+	}
 	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, forgeEnvProduction, "")
 	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order, source)
 	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
@@ -433,6 +437,10 @@ func (rt *Router) deployFromGitSourceAs(ctx context.Context, name string, gs sto
 }
 
 func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
+	// A compose source never builds: every gate above already ran, so it only swaps the file.
+	if gs.ComposePath != "" {
+		return rt.deployComposeFromGitSource(ctx, name, gs, checkoutRef, commitLabel, order, source)
+	}
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}

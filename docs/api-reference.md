@@ -770,6 +770,12 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/build-settings | AbilityRead | handleGetAppBuildSettings |
 | PUT | /api/v1/apps/{name}/build-settings | AbilityWrite | handleSetAppBuildSettings |
 | GET | /api/v1/apps/{name}/access/search | AbilityRead | handleAppAccessSearch |
+| GET | /api/v1/apps/{name}/compose-source | AbilityRead | handleGetComposeSource |
+| PUT | /api/v1/apps/{name}/compose-source | AbilityWriteSensitive | handleSetComposeSource |
+| POST | /api/v1/apps/{name}/compose-source/deploy | AbilityDeploy | handleDeployComposeSource |
+| GET | /api/v1/apps/{name}/restart-schedule | AbilityRead | handleGetAppRestartSchedule |
+| PUT | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleSetAppRestartSchedule |
+| DELETE | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleClearAppRestartSchedule |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

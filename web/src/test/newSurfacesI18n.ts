@@ -5,6 +5,7 @@ import databasesEn from '../locales/en/databases.json'
 import functionsEn from '../locales/en/functions.json'
 import imagesEn from '../locales/en/images.json'
 import appExpiryEn from '../locales/en/appExpiry.json'
+import appRestartScheduleEn from '../locales/en/appRestartSchedule.json'
 import storageBucketsEn from '../locales/en/storageBuckets.json'
 
 export const newSurfacesI18n = i18next.createInstance()
@@ -18,6 +19,7 @@ void newSurfacesI18n.use(initReactI18next).init({
     'images',
     'storageBuckets',
     'appExpiry',
+    'appRestartSchedule',
   ],
   defaultNS: 'common',
   resources: {
@@ -27,6 +29,7 @@ void newSurfacesI18n.use(initReactI18next).init({
       functions: functionsEn,
       images: imagesEn,
       appExpiry: appExpiryEn,
+      appRestartSchedule: appRestartScheduleEn,
       storageBuckets: storageBucketsEn,
     },
   },

@@ -347,3 +347,27 @@ docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROO
 ## Imported stacks
 
 `migrate coolify` and `migrate dokploy` stage multi-service stacks from those platforms as compose apps. Imported files are treated as untrusted: they go through the same parser and host-access rules as a pasted file, so a rejected key keeps the stack blocked with the same reason, and the importer never fetches anything over the network for them. Staged files land under `--stage-dir` with owner-only permissions; deploy them with `levelrail-cli compose deploy <app> -f <path>`.
+
+## Deploy a compose app from a git repository
+
+Keep the compose file in a repository and let pushes redeploy the stack.
+Deploy the stack once (paste or template), then connect its repository:
+
+```
+levelrail-cli apps git-source compose <name> --repo https://github.com/org/stack.git --branch main --path docker/compose.yml
+levelrail-cli apps git-source compose-deploy <name>
+```
+
+The API is `PUT /api/v1/apps/{name}/compose-source` (write:sensitive), `GET` on the same path, and `POST /api/v1/apps/{name}/compose-source/deploy`. The webhook secret is shown once; rotate it, change trigger patterns or disconnect with the usual `git-source` commands.
+
+- The file goes through the same deploy path as a pasted compose file, so every check (ports, quotas, privileged and host mounts, name ownership) applies unchanged.
+- The path is relative to the repository root. `..`, absolute paths and symlinks that leave the checkout are refused. The size cap is the `compose.repo_file_max_bytes` runtime setting.
+- `include:`, `build:` and `extends:` from another file are refused. `env_file:` is ignored as for a pasted file, and no `.env` is read from the repository: keep secrets in app env vars or secret placeholders.
+- Only pushes to the configured branch deploy and trigger patterns apply (trigger mode push or release). A push is held when any service of the stack is in a protected environment or a freeze window. Deploy now is refused in a protected environment. Approvals for a held compose push are decided by instance admins.
+- A push answers 202 and joins the deploy queue as one attempt under the app name, so the global deploy cap applies. Deploys of one stack run one at a time, at most one push waits (the newest), and a commit already deployed or older than the deployed or waiting one is ignored. The apply is bounded by the `compose.repo_deploy_timeout` runtime setting. Manual compose deploys, rollbacks and redeploys of the stack wait for a running push. The git poller does not poll compose sources.
+- A queued compose push shares the deploy queue and its global cap with every other app, so it can wait behind other deploys. Approving a held compose push, or the end of a freeze window, applies the stack before that step returns. A freeze window on the stack, on any of its services or a global one holds a waiting push, and a released or approved compose push is not applied while one is active unless the request overrode the freeze (it fails with the freeze reason; push again after the window). When the freeze state cannot be read, the deploy waits. Deploy now records the commit's parent and time, so a later push of an older commit is ignored.
+- A push deploy runs without a caller, so a file that bind-mounts a host directory is refused there; deploy that stack by hand as a root user. A push that adds a service whose name another app already uses fails with 409.
+- The path is at most 512 bytes, with no control or format characters.
+- An app has either a compose source or a single-service git source, never both (409).
+- Removing the stack (`DELETE /api/v1/apps/{name}/compose`) cancels its queued, held and approval-waiting deploys. The repository stays connected, but pushes do nothing until the stack is deployed again by hand.
+- Commit times more than a day ahead of the server clock are not used to order pushes.

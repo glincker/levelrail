@@ -40,6 +40,10 @@ type composeDeployOpts struct {
 	interpEnv map[string]string
 	// suspended saves every service stopped, so an import never runs until asked.
 	suspended bool
+	// actor names a deploy with no request caller, such as git:<sha> for a push.
+	actor string
+	// noCaller marks a push deploy: name collisions are refused outright.
+	noCaller bool
 }
 
 type composeServiceStatus struct {
@@ -92,9 +96,13 @@ func (rt *Router) recordComposeRevision(r *http.Request, appID string, body []by
 	if revs == nil {
 		return 0
 	}
+	actor := opts.actor
+	if actor == "" {
+		actor = rt.pipelineActor(r)
+	}
 	n, err := revs.AddComposeRevision(r.Context(), store.ComposeRevision{
 		AppID: appID, Compose: string(body), Profiles: opts.profiles, Source: opts.source,
-		TemplateID: opts.templateID, CreatedBy: rt.pipelineActor(r),
+		TemplateID: opts.templateID, CreatedBy: actor,
 	})
 	if err != nil {
 		rt.logger.Error("api: compose: record revision failed", slog.String("error", err.Error()), slog.String("app", appID))
@@ -267,6 +275,9 @@ func (rt *Router) handleRedeployCompose(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
+	mu := composeGitLock(appID)
+	mu.Lock()
+	defer mu.Unlock()
 	_, services, ok := rt.loadComposeStack(w, r, appID)
 	if !ok {
 		return
@@ -300,6 +311,10 @@ func (rt *Router) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "removing volumes deletes data and requires the write-sensitive ability")
 		return
 	}
+	// The lock keeps a push deploy from saving members while they are removed.
+	mu := composeGitLock(appID)
+	mu.Lock()
+	defer mu.Unlock()
 	_, services, ok := rt.loadComposeStack(w, r, appID)
 	if !ok {
 		return
@@ -342,6 +357,7 @@ func (rt *Router) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 			rt.logger.Error("api: compose: down: delete revisions failed", slog.String("error", err.Error()), slog.String("app", appID))
 		}
 	}
+	rt.cancelWaitingComposeAttempts(r.Context(), appID)
 	rt.nudgeReconciler()
 	resp["removed"] = removed
 	if len(pending) > 0 {

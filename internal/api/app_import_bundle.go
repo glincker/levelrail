@@ -309,7 +309,7 @@ func (rt *Router) handleImportAppBundle(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	sw := &bundleStatusWriter{ResponseWriter: w, code: http.StatusCreated}
-	_, ok = rt.deployComposeBody(sw, r, name, files[bundleComposeName], composeDeployOpts{source: store.ComposeRevisionSourceAPI, interpEnv: plain, suspended: !deployNow})
+	_, ok = rt.lockedComposeDeploy(sw, r, name, files[bundleComposeName], composeDeployOpts{source: store.ComposeRevisionSourceAPI, interpEnv: plain, suspended: !deployNow})
 	// Audited on failure too: a failed import may have saved some services.
 	rt.auditAppImportBundle(r, resp, deployNow && ok, sw.code)
 	if !ok {
