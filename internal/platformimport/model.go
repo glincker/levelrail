@@ -108,6 +108,8 @@ type App struct {
 	Crons       []Cron
 	MemoryBytes int64
 	NanoCPUs    int64
+	// Policy carries the source's proxy flags. Never a credential or hash.
+	Policy DomainPolicy
 	// Build is how the source builds and deploys the app, validated and secret free.
 	Build BuildSettings
 	// Files are config file mounts copied byte for byte from the source.
@@ -233,4 +235,18 @@ type Discovery struct {
 type SourceEnvironment struct {
 	Project string
 	Name    string
+}
+
+// DomainPolicy is the neutral form of per-app proxy flags. Basic auth keeps
+// only the user name: the source hash is never read into the model.
+type DomainPolicy struct {
+	ForceHTTPS    bool
+	WebSocket     bool
+	RedirectTo    string
+	BasicAuthUser string
+}
+
+// Empty reports whether the source set no proxy flag.
+func (p DomainPolicy) Empty() bool {
+	return !p.ForceHTTPS && !p.WebSocket && p.RedirectTo == "" && p.BasicAuthUser == ""
 }

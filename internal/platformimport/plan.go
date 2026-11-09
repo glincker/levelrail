@@ -96,6 +96,7 @@ type AppPlan struct {
 	BuildMethod string            `json:"build_method,omitempty"`
 	BuildPath   string            `json:"build_path,omitempty"`
 	Crons       []CronPlan        `json:"crons,omitempty"`
+	Policy      DomainPolicy      `json:"-"`
 	// UnreadSecrets names secret variables the source would not reveal.
 	UnreadSecrets []string `json:"-"`
 }
@@ -333,6 +334,7 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 	if a.Health != nil && (a.Health.Path != "" || len(a.Health.Exec) > 0) {
 		plan.Health = &HealthPlan{Path: a.Health.Path, Exec: a.Health.Exec, IntervalSeconds: a.Health.IntervalSeconds, TimeoutSeconds: a.Health.TimeoutSeconds, Failures: a.Health.Retries}
 	}
+	plan.Policy = a.Policy
 	for _, c := range a.Crons {
 		plan.Crons = append(plan.Crons, CronPlan{Name: SanitizeJobName(c.Name), Schedule: NormalizeSchedule(c.Schedule), Command: c.Command})
 	}
