@@ -47,6 +47,8 @@ jobs:
 
       - name: Build
         working-directory: web
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run build && test -s dist/index.html
 
       - name: Upload dist
