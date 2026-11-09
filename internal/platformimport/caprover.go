@@ -64,6 +64,15 @@ type caproverDefinition struct {
 	HTTPAuth         *struct {
 		User string `json:"user"`
 	} `json:"httpAuth"`
+	PreDeployFunction string `json:"preDeployFunction"`
+	NodeID            string `json:"nodeId"`
+	Tags              []struct {
+		TagName string `json:"tagName"`
+	} `json:"tags"`
+	// The token value is deliberately not mapped: only whether one is enabled is read.
+	AppDeployTokenConfig *struct {
+		Enabled bool `json:"enabled"`
+	} `json:"appDeployTokenConfig"`
 	AppPushWebhook *struct {
 		RepoInfo struct {
 			Repo   string `json:"repo"`
@@ -171,5 +180,34 @@ func mapCapRoverApp(def caproverDefinition, rootDomain string) App {
 	} else {
 		app.Notes = append(app.Notes, Note{Reason: "the source stores no image or repository identity for this app, its image only exists on the source host", Manual: "connect a repository or push an image to a registry, then set it as the app source"})
 	}
+	app.Notes = append(app.Notes, capRoverHookNotes(def)...)
 	return app
+}
+
+// capRoverHookNotes turns the pre-deploy script, node pin, tags and deploy
+// token into plan items. The script body and the token are never copied.
+func capRoverHookNotes(def caproverDefinition) []Note {
+	var notes []Note
+	if strings.TrimSpace(def.PreDeployFunction) != "" {
+		notes = append(notes, Note{Area: "hook", Reason: "a pre-deploy script is set in the source and was not copied, it is JavaScript run by the source and may hold credentials",
+			Manual: "rewrite it as a shell command and set it as the app's pre-deploy hook"})
+	}
+	if def.NodeID != "" {
+		notes = append(notes, Note{Area: "placement", Reason: "the app is pinned to a node in the source, node ids are not mapped",
+			Manual: "pick the target node in the app's placement settings"})
+	}
+	var tags []string
+	for _, t := range def.Tags {
+		if t.TagName != "" {
+			tags = append(tags, t.TagName)
+		}
+	}
+	if len(tags) > 0 {
+		notes = append(notes, Note{Area: "hook", Reason: "source tags " + strings.Join(tags, ", ") + " are not carried over", Manual: "add them as labels on the app if you still use them"})
+	}
+	if def.AppDeployTokenConfig != nil && def.AppDeployTokenConfig.Enabled {
+		notes = append(notes, Note{Area: "hook", Reason: "a deploy token is enabled in the source, its value is never copied",
+			Manual: "create a new deploy token for the app's build hook and update the caller that used the old one"})
+	}
+	return notes
 }

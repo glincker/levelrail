@@ -20,11 +20,18 @@ const (
 	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
 	KeyAppsContainersInspectTimeout  = "apps.containers_inspect_timeout"
 	KeyBackupsComposeRestoreTimeout  = "backups.compose_restore_timeout"
+	KeyBackupsScheduleRetainDefault  = "backups.schedule_retain_default"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyBackupsScheduleRetainDefault, Category: CategoryRetention, Kind: KindInt, Default: "0",
+		Env: "APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", Apply: ApplyLive, CheckValue: intRangeCheck(0, 1000),
+		Title:       "Compose backup schedule retain default",
+		Description: "How many backups a compose database schedule keeps when it is saved without a retain count, from 0 to 1000. 0 keeps every backup. Schedules already saved are not changed.",
+	})
 	Register(Definition{
 		Key: KeyBackupsComposeRestoreTimeout, Category: CategoryRetention, Kind: KindDuration, Default: "2h",
 		Env: "APP_COMPOSE_RESTORE_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Minute, 24*time.Hour),
