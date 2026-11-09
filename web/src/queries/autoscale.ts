@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
 
 export type AutoscaleMetric =
   'cpu_percent' | 'memory_percent' | 'requests_per_replica'
@@ -115,7 +116,7 @@ export function autoscaleQueryOptions(appName: string) {
   return queryOptions({
     queryKey: autoscaleKeys.detail(appName),
     queryFn: () => getAutoscale(appName),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
     retry: false,
   })
 }
@@ -124,7 +125,7 @@ export function autoscaleHistoryQueryOptions(appName: string) {
   return queryOptions({
     queryKey: autoscaleKeys.history(appName),
     queryFn: () => getHistory(appName),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
     retry: false,
   })
 }

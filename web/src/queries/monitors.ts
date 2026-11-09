@@ -5,6 +5,7 @@ import type {
   Monitor,
   MonitorResults,
 } from '../types/monitor'
+import { pollMs } from '../lib/pollTier'
 
 export const monitorKeys = {
   all: ['monitors'] as const,
@@ -43,7 +44,7 @@ export function useMonitorResults(id: string, enabled = true) {
     queryFn: () => fetchMonitorResults(id),
     retry: false,
     enabled,
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
 }
 

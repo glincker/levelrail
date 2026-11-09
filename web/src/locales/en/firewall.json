@@ -184,7 +184,19 @@
     "ends": "Ends",
     "lift": "Lift",
     "liftFor": "Lift the ban on {{ip}}",
-    "lifted": "Ban on {{ip}} lifted"
+    "lifted": "Ban on {{ip}} lifted",
+    "search": "Search bans",
+    "searchPlaceholder": "Search IP or cause",
+    "noMatch": "No bans match this search.",
+    "select": "Select {{ip}}",
+    "selectAll": "Select all bans",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "liftSelected": "Lift selected",
+    "liftedMany_one": "{{count}} ban lifted",
+    "liftedMany_other": "{{count}} bans lifted",
+    "liftManyFailed_one": "{{count}} ban could not be lifted",
+    "liftManyFailed_other": "{{count}} bans could not be lifted"
   },
   "rules": {
     "title": "Rules",

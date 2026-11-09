@@ -17,6 +17,7 @@ import type {
   ComposeStack,
   TemplateInstallInput,
 } from '../types/compose'
+import { pollMs } from '../lib/pollTier'
 
 export const composeKeys = {
   all: ['compose'] as const,
@@ -47,7 +48,7 @@ export function composeStackQueryOptions(appId: string) {
     queryKey: composeKeys.stack(appId),
     queryFn: () =>
       request<ComposeStack>(appPath(appId), {}, 'load compose stack failed'),
-    refetchInterval: 5000,
+    refetchInterval: pollMs('live'),
   })
 }
 

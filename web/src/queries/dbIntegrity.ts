@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { EnvApiError } from './envProtection'
+import { pollMs } from '../lib/pollTier'
 
 export interface IntegrityStatus {
   healthy: boolean
@@ -52,7 +53,7 @@ export function useIntegrity() {
       if (!res.ok) throw await failure(res, 'fetch database integrity')
       return (await res.json()) as IntegrityView
     },
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

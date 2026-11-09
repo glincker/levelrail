@@ -19,6 +19,7 @@ import type {
 } from '../types/scheduledTasks'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
 
 export const scheduledTaskKeys = {
   all: (appName: string) =>
@@ -62,7 +63,7 @@ export function useJobRuns(appName: string, taskId: string, status: string) {
   return useQuery({
     queryKey: scheduledTaskKeys.runs(appName, taskId, status),
     queryFn: () => fetchJobRuns(appName, taskId, status),
-    refetchInterval: 5000,
+    refetchInterval: pollMs('live'),
   })
 }
 
