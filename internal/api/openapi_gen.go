@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2096 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2099 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -941,6 +941,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainTLSCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainTLSCert", Description: "BYO TLS certificate upload (domain_tls_cert.go): an operator- supplied certificate/key pair used in place of Caddy's automatic ACME/internal issuance for one app-owned domain, enforced on the next ingress reconcile pass. GET is AbilityRead, matching the auth routes' own passive-visibility tier. PUT/DELETE are AbilityRoot, the same \"real infrastructure, high blast radius\" tier PUT/DELETE .../domains/{domain}/auth already reserves for a credential-bearing change."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainTLSCert", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/tuning", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainTuning", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/tuning", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainTuning", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/tuning", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainTuning", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/waf", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainWAF", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/waf", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainWAF", Description: "Opt-in WAF and rate limiting (domain_waf.go): OWASP Coraza and Caddy's rate_limit handler on one app-owned domain, enforced on the next ingress reconcile pass. GET is AbilityRead, matching the auth/maintenance routes' own passive-visibility tier. PUT/DELETE are AbilityDeploy, the same \"app lifecycle, runtime routing behavior, not a credential\" tier PUT/DELETE .../maintenance already uses: unlike basic auth or a BYO cert, nothing here is secret material."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/waf", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainWAF", Description: ""},

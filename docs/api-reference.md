@@ -1256,6 +1256,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/limits | AbilityRead | handleGetDomainLimits |
 | PUT | /api/v1/apps/{name}/domains/{domain}/limits | AbilityDeploy | handleSetDomainLimits |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/limits | AbilityDeploy | handleClearDomainLimits |
+| GET | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityRead | handleGetDomainTuning |
+| PUT | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleSetDomainTuning |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleClearDomainTuning |
 
 </Accordion>
 

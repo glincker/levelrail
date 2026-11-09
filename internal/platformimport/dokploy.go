@@ -53,13 +53,14 @@ type dokployAppRef struct {
 }
 
 type dokployDB struct {
-	ID          string `json:"postgresId"`
-	MysqlID     string `json:"mysqlId"`
-	MariadbID   string `json:"mariadbId"`
-	MongoID     string `json:"mongoId"`
-	RedisID     string `json:"redisId"`
-	Name        string `json:"name"`
-	DockerImage string `json:"dockerImage"`
+	ID          string          `json:"postgresId"`
+	MysqlID     string          `json:"mysqlId"`
+	MariadbID   string          `json:"mariadbId"`
+	MongoID     string          `json:"mongoId"`
+	RedisID     string          `json:"redisId"`
+	Name        string          `json:"name"`
+	DockerImage string          `json:"dockerImage"`
+	Backups     []dokployBackup `json:"backups"`
 }
 
 func (d dokployDB) id() string {
@@ -150,6 +151,7 @@ func (s *DokploySource) Discover(ctx context.Context) (*Discovery, error) {
 			s.collect(ctx, d, p.Name, res)
 		}
 	}
+	s.collectDestinations(ctx, d)
 	return d, nil
 }
 
@@ -178,7 +180,8 @@ func (s *DokploySource) collect(ctx context.Context, d *Discovery, project strin
 	for _, g := range dbs {
 		for _, db := range g.list {
 			_, ver := engineFromImage(db.DockerImage)
-			d.Databases = append(d.Databases, Database{SourceID: db.id(), Name: db.Name, Project: project, Engine: g.engine, Version: ver})
+			d.Databases = append(d.Databases, Database{SourceID: db.id(), Name: db.Name, Project: project, Engine: g.engine, Version: ver,
+				Backups: mapDokployBackups(db.Backups)})
 		}
 	}
 }

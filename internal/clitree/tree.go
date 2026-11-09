@@ -209,6 +209,7 @@ var Tree = map[string]*Node{
 		"basic-auth":           {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"auth-gate":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "log": nil, "revoke": nil}},
 		"limits":               {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
+		"tuning":               {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "status": nil, "preview": nil}},
 		"redirect":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "renew": nil}},

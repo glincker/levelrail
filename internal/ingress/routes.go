@@ -85,6 +85,8 @@ type ProxyRoute struct {
 	// to the upstream connection for these hosts (the domain's own limits).
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
+	// Tuning, if non-nil, is the domain's own proxy tuning (domain_tuning.go).
+	Tuning *DomainTuning
 	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
@@ -596,6 +598,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			handle = r.Upstream.apply(handle)
 		}
 		handle = applyUpstreamTimeouts(handle, r.ReadTimeout, r.WriteTimeout)
+		handle = applyDomainTuning(handle, r.Tuning)
 		if r.AuthGate != nil {
 			// After WAF, rate limit and basic auth, before cache and the proxy.
 			gate, err := r.AuthGate.handlers()

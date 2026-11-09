@@ -193,6 +193,8 @@ type ReverseProxyHandler struct {
 	HealthChecks     *HealthChecks  `json:"health_checks,omitempty"`
 	Transport        *HTTPTransport `json:"transport,omitempty"`
 	StreamCloseDelay string         `json:"stream_close_delay,omitempty"`
+	StreamTimeout    string         `json:"stream_timeout,omitempty"`
+	FlushInterval    int64          `json:"flush_interval,omitempty"`
 	Headers          *ProxyHeaders  `json:"headers,omitempty"`
 	Rewrite          *ProxyRewrite  `json:"rewrite,omitempty"`
 }

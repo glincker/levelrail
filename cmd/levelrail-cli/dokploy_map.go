@@ -216,9 +216,9 @@ func mapDokployEnv(raw string, includeSecretValues bool, issues []migrationIssue
 	return keys, parsed, issues
 }
 
-// discoverDokployCompose maps compose stacks through the read-only import source. A read failure
-// only warns, so applications still migrate when the stacks cannot be read.
-func discoverDokployCompose(ctx context.Context, f migrateDokployFlags, lookupEnv func(string) (string, bool), stderr io.Writer) []mappedApp {
+// discoverDokployCompose maps compose stacks through the read-only import source and returns the
+// discovery for the backup import. A read failure only warns, so applications still migrate.
+func discoverDokployCompose(ctx context.Context, f migrateDokployFlags, lookupEnv func(string) (string, bool), stderr io.Writer) ([]mappedApp, *platformimport.Discovery, *platformimport.DokploySource) {
 	src, err := platformimport.NewDokploy(f.dokployURL, f.dokployToken, platformimport.ClientOptions{Policy: platformimport.NetworkPolicy{
 		AllowPrivate: envIsTrue(lookupEnv, platformimport.AllowPrivateEnv), AllowLoopback: envIsTrue(lookupEnv, platformimport.AllowLoopbackEnv)}})
 	if err == nil {
@@ -228,11 +228,11 @@ func discoverDokployCompose(ctx context.Context, f migrateDokployFlags, lookupEn
 			for _, c := range disc.ComposeApps {
 				out = append(out, mapDokployCompose(c, f.includeSecretValues))
 			}
-			return out
+			return out, disc, src
 		}
 	}
-	_, _ = fmt.Fprintf(stderr, "warning: could not read Dokploy compose stacks, they are not included: %v\n", err)
-	return nil
+	_, _ = fmt.Fprintf(stderr, "warning: could not read Dokploy compose stacks and backups, they are not included: %v\n", err)
+	return nil, nil, nil
 }
 
 // mapDokployCompose stages a stack as a compose app. Env values are staged only when real values

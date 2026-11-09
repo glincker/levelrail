@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +21,10 @@ import { DomainSearchVisibilityControl } from '../DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from '../DomainTLSCertControl'
 import { DomainWafControl } from '../DomainWafControl'
 import { DomainTrafficLimitsControl } from './DomainTrafficLimitsControl'
+
+const DomainTuningSection = lazy(
+  () => import('../domain-tuning/DomainTuningSection'),
+)
 import { GetCertificateButton } from '../GetCertificateButton'
 import { ProxyDomainStatus } from '../ProxyDomainStatus'
 import {
@@ -237,6 +242,9 @@ export function DomainDetailPage({
                 domain={domain}
               />
               <DomainTrafficLimitsControl appName={appName} domain={domain} />
+              <Suspense fallback={null}>
+                <DomainTuningSection appName={appName} domain={domain} />
+              </Suspense>
             </DetailCard>
           </fieldset>
           <DangerZone appName={appName} domain={domain} />

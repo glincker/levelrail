@@ -13,6 +13,8 @@ type migrationReport struct {
 	CaproverURL string      `json:"caprover_url,omitempty"`
 	Apps        []mappedApp `json:"apps"`
 	Applied     bool        `json:"applied"`
+	// Backups lists imported backup targets and schedules, by name only.
+	Backups *backupImport `json:"backups,omitempty"`
 }
 
 func (r migrationReport) sourceLabel() string {

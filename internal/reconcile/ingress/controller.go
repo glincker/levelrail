@@ -282,10 +282,15 @@ const (
 type Controller struct {
 	// domainLimitCeilings reads the current domain limit ceilings each pass; nil leaves stored values as saved.
 	domainLimitCeilings func(ctx context.Context) (bodyBytes int64, timeoutSeconds int)
-	store               ServiceStore
-	runtime             docker.Runtime
-	driver              Applier
-	logger              *slog.Logger
+	// domainTuningBounds reads the current tuning bounds each pass; nil leaves stored values as saved.
+	domainTuningBounds func(ctx context.Context) TuningBounds
+	// rejectedTuning is the hash of the last tuned config Caddy refused.
+	tuningMu       sync.Mutex
+	rejectedTuning string
+	store          ServiceStore
+	runtime        docker.Runtime
+	driver         Applier
+	logger         *slog.Logger
 
 	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
 	lastDial sync.Map
@@ -1098,6 +1103,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if routes, err = c.applyDomainLimits(ctx, routes); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain limits: %w", err)
 	}
+	if routes, err = c.applyDomainTuning(ctx, routes); err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tuning: %w", err)
+	}
 
 	var staticRoutes []ingress.StaticRoute
 	for _, site := range staticSites {
@@ -1224,7 +1232,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 	}
 
-	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
+	routesOpts := ingress.RoutesOptions{
 		ServerName:           c.serverName,
 		ListenAddr:           c.listenAddr,
 		HTTPPort:             httpPortFromAddr(c.httpListenAddr),
@@ -1256,14 +1264,19 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		RequestStats:         c.requestStats,
 		Firewall:             c.firewall,
 		Streams:              streamRoutes,
-	})
+	}
+	cfg, err := ingress.BuildRoutesConfig(routesOpts)
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
 	}
 
 	c.publishRequestHostOwners(claimedHosts)
-	if err := c.driver.Apply(ctx, cfg); err != nil {
+	cfg, droppedTuning, err := c.applyWithTuningFallback(ctx, routesOpts, cfg)
+	if err != nil {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
+	}
+	for _, host := range droppedTuning {
+		c.issues.note(host, store.DomainCondTuningDropped, store.DomainConditionDegraded, "proxy tuning was rejected by the ingress and is not applied; change or clear it")
 	}
 
 	if c.servedHosts != nil {
@@ -1291,6 +1304,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		conditions[0].Status = reconcile.ConditionFalse
 		conditions[0].Reason = reasonDomainsDropped
 		conditions[0].Message = fmt.Sprintf("%d domain(s) are not routed this pass (%s); %s", len(dropped), strings.Join(dropped, ", "), message)
+	} else if len(droppedTuning) > 0 {
+		conditions[0].Status = reconcile.ConditionFalse
+		conditions[0].Reason = reasonTuningDropped
+		conditions[0].Message = fmt.Sprintf("proxy tuning was rejected and not applied for %s; %s", strings.Join(droppedTuning, ", "), message)
 	}
 	if cond := lbCondition(lbPlans); cond != nil {
 		conditions = append(conditions, *cond)

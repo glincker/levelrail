@@ -115,6 +115,10 @@ func planUndo(ctx context.Context, client *Client, j *migrateJournal, f migrateU
 
 func planOne(ctx context.Context, client *Client, r *journalResource, f migrateUndoFlags) undoItem {
 	item := undoItem{r: r, action: undoSkip}
+	if r.Kind != journalKindApp {
+		item.action, item.reason = planBackupUndo(ctx, client, r)
+		return item
+	}
 	app, err := client.GetApp(ctx, r.Name)
 	switch {
 	case isAPINotFound(err):
@@ -193,11 +197,13 @@ func executeUndo(ctx context.Context, client *Client, f migrateUndoFlags, j *mig
 		}
 		// Checked again right before the delete: the prompt can sit open while the app changes.
 		if again := planOne(ctx, client, it.r, f); again.action != undoRemove || again.data != it.data {
-			_, _ = fmt.Fprintf(stderr, "skipped app %s: it changed after the plan was printed (%s)\n", it.r.Name, again.reason)
+			_, _ = fmt.Fprintf(stderr, "skipped %s %s: it changed after the plan was printed (%s)\n", it.r.Kind, it.r.Name, again.reason)
 			continue
 		}
 		var err error
-		if it.data {
+		if it.r.Kind != journalKindApp {
+			err = undoBackupResource(ctx, client, it.r)
+		} else if it.data {
 			_, err = client.DeleteAppAndData(ctx, it.r.Name)
 		} else {
 			_, err = client.DeleteAppResult(ctx, it.r.Name)
@@ -205,9 +211,9 @@ func executeUndo(ctx context.Context, client *Client, f migrateUndoFlags, j *mig
 		state := stateDone
 		if err != nil {
 			state, code = stateFailed, exitAPIError
-			_, _ = fmt.Fprintf(stderr, "remove app %s: %v\n", it.r.Name, err)
+			_, _ = fmt.Fprintf(stderr, "remove %s %s: %v\n", it.r.Kind, it.r.Name, err)
 		} else {
-			_, _ = fmt.Fprintf(stdout, "removed app %s\n", it.r.Name)
+			_, _ = fmt.Fprintf(stdout, "removed %s %s\n", it.r.Kind, it.r.Name)
 		}
 		it.r.set(stepUndone, state, time.Now())
 		if err := saveJournal(path, j, time.Now()); err != nil {

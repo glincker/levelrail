@@ -19,6 +19,7 @@ type migrateDokployFlags struct {
 	jsonOut             bool
 	nodeMap             string
 	createWebhooks      bool
+	enableBackups       bool
 }
 
 // runMigrateDokploy implements "migrate dokploy", mirroring
@@ -52,6 +53,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
 	fs.BoolVar(&f.createWebhooks, "create-webhooks", false, createWebhooksHelp)
 	fs.StringVar(&journalFlag, "journal", "", journalFlagHelp)
+	fs.BoolVar(&f.enableBackups, "enable-backup-schedules", false, "keep imported database backup schedules running when they were on in Dokploy (default: imported paused)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateDokployUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -83,7 +85,15 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	for _, summary := range apps {
 		report.Apps = append(report.Apps, fetchAndMapDokployApplication(ctx, dokploy, summary, f.includeSecretValues))
 	}
-	report.Apps = append(report.Apps, discoverDokployCompose(ctx, f, lookupEnv, stderr)...)
+	composeApps, disc, src := discoverDokployCompose(ctx, f, lookupEnv, stderr)
+	report.Apps = append(report.Apps, composeApps...)
+	if disc != nil {
+		report.Backups = planDokployBackups(disc, backupPlanOptionsFromEnv(ctx, f.enableBackups, lookupEnv))
+		report.Backups.finishPlan(f.includeSecretValues)
+		if report.Backups != nil && f.apply && f.includeSecretValues {
+			report.Backups.creds = src.DestinationCredentials
+		}
+	}
 
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
 		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
@@ -134,6 +144,8 @@ Flags:
                                   without --apply the report lists what would be created
   --journal string                with --apply, the apply journal to write (default under the config dir,
                                   printed at the end); resume reads it and continues the open steps
+  --enable-backup-schedules       keep imported database backup schedules running when they were on in
+                                  Dokploy; by default they are imported paused
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
@@ -145,6 +157,15 @@ the printed compose deploy command.
 Dokploy's docker (prebuilt image) and drop (file upload) source types,
 and its nixpacks/heroku_buildpacks/paketo_buildpacks build types, have no
 Levelrail equivalent and are reported for manual review, not migrated.
+
+Object-storage backup destinations and database backup schedules are
+imported too. A destination's keys are used only with --apply and
+--include-secret-values, go straight to the backup target create call and
+are never printed or journaled; otherwise the target is reported as
+needs_secret with the create command to run. A name that already exists
+is skipped, never overwritten. Schedules bind to the database of the same
+name on the target and are imported paused unless
+--enable-backup-schedules is given.
 
 Every --apply run writes a journal of what it created, step by step (names
 and step states only, never values or secrets). "resume" re-reads the

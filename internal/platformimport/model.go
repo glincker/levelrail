@@ -144,6 +144,10 @@ type BackupSchedule struct {
 	Enabled  bool
 	// Remote is true when the source also uploads the backup to S3.
 	Remote bool
+	// SourceID, DestinationID and KeepLatest are set by sources that bind a schedule to a destination.
+	SourceID      string
+	DestinationID string
+	KeepLatest    int
 }
 
 // Server is a host the source platform deploys to.
@@ -233,6 +237,8 @@ type Discovery struct {
 	// ComposeApps are multi-service stacks imported as compose apps.
 	ComposeApps []ComposeApp
 	Servers     []Server
+	// Destinations are object-storage backup targets, read without their keys.
+	Destinations []BackupDestination
 	// Warnings are source reads that failed softly, so the plan lacks that detail.
 	Warnings []string
 }

@@ -891,6 +891,8 @@ levelrail-cli domains tls-cert set <app> <domain> --cert-file FILE --key-file FI
 levelrail-cli domains tls-cert clear <app> <domain> [flags]
 levelrail-cli domains tls-cert renew <app> <domain> [flags]
 levelrail-cli domains waf get|set|clear <app> <domain> [flags]
+levelrail-cli domains tuning get|clear <app> <domain> [flags]
+levelrail-cli domains tuning set <app> <domain> [--preset api|uploads|streaming|websocket|custom] [--compression] [--streaming] [--websocket] [--dial-timeout S] [--response-timeout S] [--stream-timeout S] [--close-delay S] [flags]
 levelrail-cli domains error-pages get <app> <domain> [--code N] [flags]
 levelrail-cli domains error-pages set <app> <domain> --code N (--body TEXT | --body-file PATH) [flags]
 levelrail-cli domains error-pages clear <app> <domain> [--code N] [flags]
@@ -2022,7 +2024,7 @@ levelrail-cli migrate checklist list|show <app> [flags]
 levelrail-cli migrate checklist step <app> <step> --done|--reset [--note TEXT] [--confirm] [--database NAME] [--volume NAME=SF:SB:TF:TB] [flags]
 ```
 
-One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
+One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Dokploy, object-storage backup destinations and database backup schedules are imported too: a destination's keys are used only with `--apply` and `--include-secret-values` (never printed or journaled, otherwise the target is reported `needs_secret` with the create command to run), names that already exist are skipped, and schedules are imported paused unless `--enable-backup-schedules` is given. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
 
 For Coolify one-click services, `--stage-dir` (default `./migrated/compose`) receives one `compose.yaml` per service with its magic variables translated, and `--domain-suffix` (default `localhost`) sets the parent domain of the staged hosts. Staging writes files only and starts nothing. See [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose).
 

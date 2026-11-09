@@ -167,6 +167,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		ingressOpts = append(ingressOpts, skewIngress, ingressreconcile.WithDomainLimitCeilings(func(ctx context.Context) (int64, int) {
 			s := deps.settingsService()
 			return int64(s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxBodyBytes)), s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxTimeoutSeconds)
+		}), ingressreconcile.WithDomainTuningBounds(func(ctx context.Context) ingressreconcile.TuningBounds {
+			s := deps.settingsService()
+			return ingressreconcile.TuningBounds{
+				MinSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMinTimeoutSeconds), MaxSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMaxTimeoutSeconds),
+				MaxStreamSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMaxStreamSeconds),
+			}
 		}))
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial), ingressreconcile.WithGateSecret(deps.gateSecret))

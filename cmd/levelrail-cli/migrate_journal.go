@@ -43,6 +43,7 @@ const (
 	stepFiles     = "files"
 	stepWebhook   = "webhook"
 	stepUndone    = "undone"
+	stepPaused    = "paused"
 )
 
 const (
@@ -55,10 +56,12 @@ const (
 )
 
 var (
-	journalSteps         = []string{stepCreated, stepGitSource, stepNode, stepIngress, stepPreviews, stepSecrets, stepFiles, stepWebhook, stepUndone}
+	journalSteps         = []string{stepCreated, stepGitSource, stepNode, stepIngress, stepPreviews, stepSecrets, stepFiles, stepWebhook, stepUndone, stepPaused}
 	journalStates        = []string{stateDone, stateFailed, stateSkipped, statePending, stateReview, stateUnknown}
 	journalSources       = []string{"coolify", "dokploy"}
+	journalKinds         = []string{journalKindApp, journalKindBackupTarget, journalKindBackupSchedule}
 	journalNameRE        = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+	journalTargetIDRE    = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 	journalFingerprintRE = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 )
 
@@ -81,6 +84,9 @@ type journalResource struct {
 	Fingerprint  string        `json:"fingerprint,omitempty"`
 	Deploys      int           `json:"deploys"`
 	HasData      bool          `json:"has_data,omitempty"`
+	// TargetID and Cron identify an imported backup target or schedule for undo and resume.
+	TargetID string `json:"target_id,omitempty"`
+	Cron     string `json:"cron,omitempty"`
 }
 
 type journalStep struct {
@@ -193,21 +199,24 @@ func validateJournal(j *migrateJournal, source string) error {
 	}
 	seen := map[string]bool{}
 	for i, r := range j.Resources {
-		if r.Kind != journalKindApp {
+		if !slices.Contains(journalKinds, r.Kind) {
 			return fmt.Errorf("resource %d: kind %q is not one this importer creates", i, r.Kind)
 		}
 		if !journalNameRE.MatchString(r.Name) || sanitizeServiceName(r.Name) != r.Name {
-			return fmt.Errorf("resource %d: %q is not a valid app name", i, r.Name)
+			return fmt.Errorf("resource %d: %q is not a valid %s name", i, r.Name, r.Kind)
 		}
-		if seen[r.Name] {
+		if seen[r.Kind+"/"+r.Name] {
 			return fmt.Errorf("resource %q is listed twice", r.Name)
 		}
-		seen[r.Name] = true
+		seen[r.Kind+"/"+r.Name] = true
 		if r.Fingerprint != "" && !journalFingerprintRE.MatchString(r.Fingerprint) {
 			return fmt.Errorf("resource %q: malformed fingerprint", r.Name)
 		}
 		if r.Deploys < 0 {
 			return fmt.Errorf("resource %q: negative deploy count", r.Name)
+		}
+		if (r.TargetID != "" && !journalTargetIDRE.MatchString(r.TargetID)) || len(r.Cron) > 128 || hasControlChar(r.Cron) {
+			return fmt.Errorf("resource %q: malformed target id or cron", r.Name)
 		}
 		steps := map[string]bool{}
 		for _, s := range r.Steps {

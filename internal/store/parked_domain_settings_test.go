@@ -18,6 +18,7 @@ var parkedSettingSeeds = map[string]string{
 	"domain_search_visibility": `INSERT INTO domain_search_visibility (domain) VALUES ('a.example.com')`,
 	"domain_traffic_policies":  `INSERT INTO domain_traffic_policies (domain, kind, spec, updated_at) VALUES ('a.example.com', 'headers', '{}', '2026-01-01T00:00:00Z')`,
 	"domain_limits":            `INSERT INTO domain_limits (domain, max_body_bytes, read_timeout_seconds, write_timeout_seconds, updated_at) VALUES ('a.example.com', 1048576, 30, 30, '2026-01-01T00:00:00Z')`,
+	"domain_tuning":            `INSERT INTO domain_tuning (domain, preset, websocket, stream_timeout_seconds, updated_at) VALUES ('a.example.com', 'websocket', 1, 3600, '2026-01-01T00:00:00Z')`,
 }
 
 func countSettingRows(t *testing.T, db *DB, table string) int {

@@ -1,0 +1,14 @@
+[
+  {
+    "projectId": "p1", "name": "Shop",
+    "applications": [], "compose": [],
+    "postgres": [{"postgresId": "pg1", "name": "shop-db", "dockerImage": "postgres:16", "backups": [
+      {"backupId": "b1", "schedule": "0 3 * * *", "enabled": true, "database": "shop", "prefix": "nightly", "destinationId": "dst-r2", "keepLatestCount": 7},
+      {"backupId": "b2", "schedule": "@hourly", "enabled": true, "database": "shop", "prefix": "hourly", "destinationId": "dst-minio", "keepLatestCount": 24}
+    ]}],
+    "mysql": [{"mysqlId": "my1", "name": "orders", "dockerImage": "mysql:8", "backups": [
+      {"backupId": "b3", "schedule": "30 2 * * 0", "enabled": false, "database": "orders", "prefix": "weekly", "destinationId": "dst-minio", "keepLatestCount": 4}
+    ]}],
+    "mariadb": [], "mongo": [], "redis": []
+  }
+]

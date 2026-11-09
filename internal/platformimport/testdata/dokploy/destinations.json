@@ -1,0 +1,4 @@
+[
+  {"destinationId": "dst-r2", "name": "Offsite R2", "provider": "Cloudflare", "accessKey": "fixture-access-r2", "secretAccessKey": "fixture-secret-r2", "bucket": "shop-backups", "region": "auto", "endpoint": "https://acct.r2.cloudflarestorage.com"},
+  {"destinationId": "dst-minio", "name": "minio", "provider": "Minio", "accessKey": "********", "secretAccessKey": "********", "bucket": "db-dumps", "region": "eu-1", "endpoint": "https://s3.example.com"}
+]

@@ -185,6 +185,31 @@ func (jr *applyJournal) recordWebhooks(apps []mappedApp) {
 	}
 }
 
+// findCreated returns a resource only when this run's journal recorded creating it.
+func (jr *applyJournal) findCreated(kind, name string) *journalResource {
+	if jr == nil {
+		return nil
+	}
+	if r := jr.j.find(kind, name); r != nil && r.CreatedByRun {
+		return r
+	}
+	return nil
+}
+
+// recordBackup journals an imported backup target or schedule by name, id, cron and state only.
+func (jr *applyJournal) recordBackup(kind, name, state, targetID, cron, fingerprint string) *journalResource {
+	if jr == nil {
+		return nil
+	}
+	r := jr.j.ensure(kind, name)
+	if state == stateDone {
+		r.CreatedByRun = true
+		r.TargetID, r.Cron, r.Fingerprint = targetID, cron, fingerprint
+	}
+	jr.record(r, stepCreated, state)
+	return r
+}
+
 // runStep runs one step when the journal says it is still open and records its outcome.
 func (jr *applyJournal) runStep(ctx context.Context, client *Client, r *journalResource, step string, fn func() string) {
 	if !r.needsRun(step) {

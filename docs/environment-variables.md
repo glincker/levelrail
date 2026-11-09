@@ -123,6 +123,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DOMAIN_LIMITS_MAX_TIMEOUT_SECONDS` | [`domains.limits_max_timeout_seconds`](/runtime-settings#networking) | `3600` |
 | `APP_DOMAINS_PARKED_RETENTION_DAYS` | [`domains.parked_retention_days`](/runtime-settings#networking) | `0` |
 | `APP_DOMAINS_ROLLBACK_WINDOW_MINUTES` | [`domains.rollback_window_minutes`](/runtime-settings#networking) | `60` |
+| `APP_DOMAIN_TUNING_MAX_STREAM_SECONDS` | [`domains.tuning_max_stream_seconds`](/runtime-settings#networking) | `86400` |
+| `APP_DOMAIN_TUNING_MAX_TIMEOUT_SECONDS` | [`domains.tuning_max_timeout_seconds`](/runtime-settings#networking) | `600` |
+| `APP_DOMAIN_TUNING_MIN_TIMEOUT_SECONDS` | [`domains.tuning_min_timeout_seconds`](/runtime-settings#networking) | `1` |
 | `APP_DOMAINS_WWW_MODE` | [`domains.www_mode`](/runtime-settings#networking) | `both` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |

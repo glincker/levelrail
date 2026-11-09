@@ -137,6 +137,9 @@ domains.limits_max_body_bytes
 domains.limits_max_timeout_seconds
 domains.parked_retention_days
 domains.rollback_window_minutes
+domains.tuning_max_stream_seconds
+domains.tuning_max_timeout_seconds
+domains.tuning_min_timeout_seconds
 domains.www_mode
 events.changes_buffer
 events.changes_heartbeat
