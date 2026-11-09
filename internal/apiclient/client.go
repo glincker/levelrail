@@ -4321,6 +4321,39 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 	return data, nil
 }
 
+// DownloadBackupTo streams one backup object into w without holding it in
+// memory, so dumps past httpx.MaxDownload still work. It returns bytes written.
+func (c *Client) DownloadBackupTo(ctx context.Context, name, historyID string, w io.Writer) (int64, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/backups/" + PathEscape(historyID) + "/download"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target
+	if err != nil {
+		return 0, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+	start := time.Now()
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
+		return 0, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		data, _ := httpx.ReadAll(resp.Body, httpx.MaxDownload)
+		return 0, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+	}
+	n, err := io.Copy(w, resp.Body)
+	if err != nil {
+		return n, fmt.Errorf("stream response body: %w", err)
+	}
+	return n, nil
+}
+
 // DownloadBackup calls GET /api/v1/databases/{name}/backups/{historyId}/download:
 // one succeeded database backup's own object, streamed straight through
 // as raw bytes so a caller can write it to a local file.

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -96,6 +97,8 @@ func pendingImageTag(imageRepo string) string {
 // planFromFlags picks the creation path (existing image, git build, or --file) and builds its requests. Pure, so it is table-tested.
 // A local git remote also selects the git-build path when no --image or --file is given.
 func planFromFlags(f createFlags, fileSpec *spec.Spec, detected detectedGit) (createPlan, error) {
+	f.repo = normalizeRepoURL(f.repo)
+	detected.RepoURL = normalizeRepoURL(detected.RepoURL)
 	switch {
 	case f.file != "":
 		if f.image != "" {
@@ -1159,4 +1162,24 @@ func toPublishedPorts(in []spec.PublishedPort) []publishedPort {
 		out[i] = publishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.EffectiveProtocol()}
 	}
 	return out
+}
+
+// scpRepoURL matches host:path remotes such as git@github.com:org/repo.
+var scpRepoURL = regexp.MustCompile(`^(?:[A-Za-z0-9._-]+@)?([A-Za-z0-9.-]+\.[A-Za-z]{2,}):([^/\s][^\s]*)$`)
+
+// normalizeRepoURL turns ssh://, git:// and host:path remotes into the https
+// form the git-source API accepts; anything else is returned unchanged.
+func normalizeRepoURL(raw string) string {
+	s := strings.TrimSpace(raw)
+	if m := scpRepoURL.FindStringSubmatch(s); m != nil && !strings.Contains(s, "://") {
+		return "https://" + m[1] + "/" + m[2]
+	}
+	if !strings.HasPrefix(s, "ssh://") && !strings.HasPrefix(s, "git://") {
+		return raw
+	}
+	u, err := url.Parse(s)
+	if err != nil || u.Hostname() == "" {
+		return raw
+	}
+	return "https://" + u.Hostname() + u.EscapedPath()
 }
