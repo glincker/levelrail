@@ -2,6 +2,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { RetentionCandidate } from '../lib/parkedRetention'
+import { pollMs } from '@/lib/pollTier'
 
 export interface ParkedRetention {
   retention_days: number
@@ -13,7 +14,7 @@ export interface ParkedRetention {
 }
 
 export const RETENTION_SETTING_KEY = 'domains.parked_retention_days'
-export const RETENTION_REFETCH_MS = 60_000
+export const RETENTION_REFETCH_MS = pollMs('idle')
 
 export const parkedRetentionKeys = {
   all: ['domains', 'parked', 'retention'] as const,

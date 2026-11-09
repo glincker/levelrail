@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface BuildHint {
   code: string
@@ -94,8 +95,8 @@ export const buildKeys = {
   cache: (node: string) => ['builds', 'cache', node] as const,
 }
 
-const ACTIVE_REFETCH_MS = 5_000
-const IDLE_REFETCH_MS = 30_000
+const ACTIVE_REFETCH_MS = pollMs('live')
+const IDLE_REFETCH_MS = pollMs('steady')
 
 async function json<T>(res: Response, what: string): Promise<T> {
   if (!res.ok) {

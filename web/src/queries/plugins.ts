@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type PluginHealth = 'healthy' | 'unhealthy' | 'stopped' | 'removing'
 export type PluginFix = '' | 'restart' | 'approve' | 'trust_key' | 'reinstall'
@@ -148,7 +149,7 @@ export function pluginsQueryOptions() {
     queryKey: pluginKeys.all,
     queryFn: () => send<Plugin[]>('GET', '/api/v1/plugins'),
     staleTime: 10_000,
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

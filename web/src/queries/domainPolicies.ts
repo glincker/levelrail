@@ -20,6 +20,7 @@ import type {
   RedirectSettings,
   SpecByKind,
 } from './domainPolicyTypes'
+import { pollMs } from '@/lib/pollTier'
 
 // PolicyApiError carries the per-field messages a 400 returns, so editors
 // can show them next to the input that caused them.
@@ -154,7 +155,7 @@ export function useDomainCacheStats(app: string, domain: string) {
         undefined,
         'load cache stats failed',
       ),
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

@@ -16,6 +16,7 @@ import type {
   ModelResidency,
   ModelResource,
 } from '../types/models'
+import { pollMs } from '@/lib/pollTier'
 
 export const modelKeys = {
   all: ['models'] as const,
@@ -24,8 +25,8 @@ export const modelKeys = {
   detail: (name: string) => [...modelKeys.all, 'detail', name] as const,
 }
 
-const SETTLING_REFETCH_MS = 3000
-const GPU_REFETCH_MS = 30000
+const SETTLING_REFETCH_MS = pollMs('live')
+const GPU_REFETCH_MS = pollMs('steady')
 
 export async function requestJson<T>(
   url: string,

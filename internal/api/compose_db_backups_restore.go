@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -110,7 +111,7 @@ func (rt *Router) handleRestoreComposeDBBackup(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusConflict, "a restore is already running for this service")
 		return
 	}
-	timeout := backup.ComposeRestoreTimeout()
+	timeout := rt.tunableDuration(r.Context(), runtimesettings.KeyBackupsComposeRestoreTimeout, "APP_COMPOSE_RESTORE_TIMEOUT", backup.ComposeRestoreTimeout())
 	release, lockErr := backup.AcquireComposeRestoreLock(app, service, safetyID, timeout+time.Minute)
 	if lockErr != nil {
 		composeRestoreInFlight.Delete(flightKey)

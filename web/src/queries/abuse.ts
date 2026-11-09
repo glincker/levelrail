@@ -12,8 +12,9 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { AbuseDryRun, AbusePolicy, AppAbuse } from '../types/abuse'
 import { appKeys } from './apps'
+import { pollMs } from '@/lib/pollTier'
 
-const REFETCH_MS = 15_000
+const REFETCH_MS = pollMs('active')
 
 export const abuseKeys = {
   policy: (app: string) => [...appKeys.detail(app), 'abuse'] as const,

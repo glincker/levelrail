@@ -11,6 +11,7 @@ import { appKeys } from './apps'
 import { deployAttemptKeys } from './deployAttempts'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { DeploySafetyValues } from '../lib/imageDigest'
+import { pollMs } from '@/lib/pollTier'
 
 export interface FreezeWindow {
   id?: string
@@ -52,7 +53,7 @@ export function deployFreezeQueryOptions(appName: string) {
     queryKey: deployFreezeKeys.detail(appName),
     queryFn: () => fetchDeployFreeze(appName),
     // A window can open or close while the page is open.
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
 }
 

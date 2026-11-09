@@ -13,6 +13,7 @@ import type {
   ErrorStatus,
   ErrorTracking,
 } from '../types/errorTracking'
+import { pollMs } from '@/lib/pollTier'
 
 export interface ErrorFilters {
   status: ErrorStatus | 'all'
@@ -45,7 +46,7 @@ function base(app: string): string {
 export function errorListQueryOptions(app: string, f: ErrorFilters) {
   return queryOptions({
     queryKey: errorKeys.list(app, f),
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
     queryFn: async () => {
       const q = new URLSearchParams()
       q.set('since', `${f.sinceHours}h`)

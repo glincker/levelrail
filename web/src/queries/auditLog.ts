@@ -10,6 +10,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface AuditLogEntry {
   id: string
@@ -271,7 +272,7 @@ export interface AuditAnchorStatus {
   queued: number
 }
 
-const AUDIT_ANCHOR_REFETCH_MS = 30_000
+const AUDIT_ANCHOR_REFETCH_MS = pollMs('steady')
 
 export async function fetchAuditAnchorStatus(): Promise<AuditAnchorStatus> {
   const res = await fetch('/api/v1/audit-log/anchor-status')

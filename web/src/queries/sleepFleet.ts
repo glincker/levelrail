@@ -6,6 +6,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { WakeTiming } from './appSleep'
 import { useEnvironmentScope } from '../lib/environmentScope'
 import { currentScope, scopeKey, scopeUrl } from '../lib/scopeQuery'
+import { pollMs } from '@/lib/pollTier'
 
 export interface SleepFleetApp {
   name: string
@@ -41,7 +42,7 @@ export function sleepFleetQueryOptions() {
       }
       return (await res.json()) as SleepFleet
     },
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

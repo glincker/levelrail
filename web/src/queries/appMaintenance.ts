@@ -14,6 +14,7 @@ import {
   type DomainMaintenance,
   type SetDomainMaintenanceRequest,
 } from './domainMaintenance'
+import { pollMs } from '@/lib/pollTier'
 
 export interface AppMaintenanceDomain extends DomainMaintenance {
   elapsed_seconds?: number
@@ -55,7 +56,7 @@ export function appMaintenanceQueryOptions(app: string) {
     queryKey: appMaintenanceKey(app),
     queryFn: () => request(app, undefined, 'fetch app maintenance'),
     staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
 }
 

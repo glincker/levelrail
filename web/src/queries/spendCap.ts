@@ -10,6 +10,7 @@ import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 import type { SpendGuardMode } from '../types/costExplorer'
+import { pollMs } from '@/lib/pollTier'
 
 export type SpendCapAction = 'none' | 'throttle' | 'pause'
 export type { SpendGuardMode }
@@ -149,7 +150,7 @@ export function spendCapQueryOptions(appName: string) {
   return queryOptions({
     queryKey: spendCapKeys.detail(appName),
     queryFn: () => getSpendCap(appName),
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
     retry: false,
   })
 }
@@ -232,7 +233,7 @@ export function spendCapsQueryOptions() {
       if (!res.ok) return fail(res, 'app caps')
       return ((await res.json()) as { caps: SpendCap[] }).caps
     },
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
     retry: false,
   })
 }

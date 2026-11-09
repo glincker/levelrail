@@ -3,6 +3,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { AccessRecord } from '../types/edgeAccess'
+import { pollMs } from '@/lib/pollTier'
 
 export interface EdgeAccessFilters {
   minMs: number
@@ -17,7 +18,7 @@ export const edgeAccessKeys = {
 export function edgeAccessQueryOptions(app: string, f: EdgeAccessFilters) {
   return queryOptions({
     queryKey: edgeAccessKeys.list(app, f),
-    refetchInterval: 5_000,
+    refetchInterval: pollMs('live'),
     queryFn: async () => {
       const q = new URLSearchParams()
       if (f.minMs > 0) q.set('min_ms', String(f.minMs))

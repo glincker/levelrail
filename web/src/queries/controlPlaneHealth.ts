@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type CPHealthSeverity = 'warn' | 'crit'
 
@@ -182,7 +183,7 @@ export function useControlPlaneHealth() {
       }
       return (await res.json()) as CPHealth
     },
-    refetchInterval: 10_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

@@ -13,6 +13,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { AppHealthScore } from '../types/healthScore'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export const healthScoreKeys = {
   detail: (appName: string) =>
@@ -43,7 +44,7 @@ export function appHealthScoreQueryOptions(appName: string) {
     // going stale while an operator is looking at it, the same
     // "quiet idle cost, fresh while watched" shape FleetUtilizationSummary
     // already uses for its own 30s poll (docs/observability.md).
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

@@ -3,8 +3,9 @@
 import { useQuery } from '@tanstack/react-query'
 import type { EngineMetricsReport } from '../types/models'
 import { modelKeys, requestJson } from './models'
+import { pollMs } from '@/lib/pollTier'
 
-const ENGINE_METRICS_REFETCH_MS = 15000
+const ENGINE_METRICS_REFETCH_MS = pollMs('active')
 
 export const modelEngineMetricsKey = (name: string, hours: number) =>
   [...modelKeys.all, 'engine-metrics', name, hours] as const

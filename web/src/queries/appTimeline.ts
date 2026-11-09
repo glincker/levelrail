@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type TimelineKind =
   | 'deploy'
@@ -47,7 +48,7 @@ export interface PendingChanges {
 }
 
 const TIMELINE_LIMIT = 8
-const TIMELINE_REFETCH_MS = 20_000
+const TIMELINE_REFETCH_MS = pollMs('active')
 
 export const timelineKeys = {
   list: (appName: string) => [...appKeys.detail(appName), 'timeline'] as const,

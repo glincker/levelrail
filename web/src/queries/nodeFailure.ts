@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { NodeFailureStatus } from '../types/nodeFailure'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { nodeKeys } from './nodes'
+import { pollMs } from '@/lib/pollTier'
 
 const failureKey = (id: string) => [...nodeKeys.detail(id), 'failure'] as const
 
@@ -32,7 +33,7 @@ export function useNodeFailure(id: string) {
   return useQuery({
     queryKey: failureKey(id),
     queryFn: () => call(id, '/failure', 'GET'),
-    refetchInterval: 10_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

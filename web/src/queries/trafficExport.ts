@@ -15,6 +15,7 @@ import type {
   TrafficExportStatus,
   TrafficExportTestResult,
 } from '../types/trafficExport'
+import { pollMs } from '@/lib/pollTier'
 
 export const trafficExportKeys = {
   all: ['traffic-export'] as const,
@@ -23,7 +24,7 @@ export const trafficExportKeys = {
 }
 
 // Queue depth and counters move every few seconds, so status is polled.
-const STATUS_REFETCH_MS = 10_000
+const STATUS_REFETCH_MS = pollMs('active')
 
 const base = '/api/v1/settings/traffic-export'
 

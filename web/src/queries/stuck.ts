@@ -1,5 +1,6 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type StuckKind = 'app' | 'database' | 'domain' | 'node'
 
@@ -67,7 +68,7 @@ export function stuckQueryOptions(kind: StuckKind, name: string) {
   return queryOptions({
     queryKey: stuckKeys.detail(kind, name),
     queryFn: () => fetchStuck(kind, name),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

@@ -19,11 +19,18 @@ const (
 	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
 	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
 	KeyAppsContainersInspectTimeout  = "apps.containers_inspect_timeout"
+	KeyBackupsComposeRestoreTimeout  = "backups.compose_restore_timeout"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyBackupsComposeRestoreTimeout, Category: CategoryRetention, Kind: KindDuration, Default: "2h",
+		Env: "APP_COMPOSE_RESTORE_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Minute, 24*time.Hour),
+		Title:       "Compose database restore timeout",
+		Description: "How long one in-place restore of a compose database may run before it is cancelled, from 1m to 24h. The next restore uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyAppsContainersInspectTimeout, Category: CategoryObservability, Kind: KindDuration, Default: "5s",
 		Env: "APP_CONTAINERS_INSPECT_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, 2*time.Minute),

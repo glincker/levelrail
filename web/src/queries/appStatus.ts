@@ -3,6 +3,7 @@ import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 // GET /api/v1/apps/{name}/status (internal/api/deploys.go handleAppStatus).
 export interface AppStatus {
@@ -35,7 +36,7 @@ export function appStatusQueryOptions(appName: string) {
   return queryOptions({
     queryKey: appStatusKeys.status(appName),
     queryFn: () => fetchAppStatus(appName),
-    refetchInterval: 10_000,
+    refetchInterval: pollMs('active'),
   })
 }
 
