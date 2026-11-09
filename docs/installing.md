@@ -415,7 +415,7 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `.github/CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
 
-**Requirements:** Go 1.26 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
+**Requirements:** Go 1.27 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
 
 ```bash
 go build ./cmd/levelrail          # control plane
