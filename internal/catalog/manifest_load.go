@@ -93,6 +93,7 @@ func (m Manifest) Validate() error {
 	}
 	errs = append(errs, m.validateMarketplaceFields()...)
 	errs = append(errs, m.validatePrompts()...)
+	errs = append(errs, m.validateCapabilityShape()...)
 	if len(errs) == 0 {
 		errs = append(errs, m.validateRender()...)
 	}
@@ -148,7 +149,10 @@ func (m Manifest) validateRender() []error {
 	if err != nil {
 		return []error{err}
 	}
-	services, err := ValidateCompose([]byte(body))
+	if capErrs := m.validateCapabilityUsage(body); len(capErrs) > 0 {
+		return capErrs
+	}
+	services, err := validateComposeWith([]byte(body), CapGrantMap(m.DeclaredCapabilities()))
 	if err != nil {
 		return []error{err}
 	}
@@ -169,10 +173,15 @@ func (m Manifest) validateRender() []error {
 // returns the declared service keys. A later catalog import batch runs
 // this over every candidate file (scripts/validate-templates).
 func ValidateCompose(body []byte) (map[string]bool, error) {
+	return validateComposeWith(body, nil)
+}
+
+func validateComposeWith(body []byte, grants map[string][]string) (map[string]bool, error) {
 	f, err := compose.Parse(body)
 	if err != nil {
 		return nil, err
 	}
+	f.CapGrants = grants
 	if _, err := f.ApplyProfiles(nil); err != nil {
 		return nil, err
 	}

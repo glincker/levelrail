@@ -96,6 +96,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_PRUNE_MAX_PERCENT` | [`stacks.prune_max_percent`](/runtime-settings#security) | `50` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
+| `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |

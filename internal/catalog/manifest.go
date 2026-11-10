@@ -49,7 +49,9 @@ type Manifest struct {
 	FirstBootSeconds int `yaml:"first_boot_seconds" json:"first_boot_seconds,omitempty"`
 	// ConsoleCommand is the argv "apps console" runs in the container. It must read any secret from the container env, never carry one.
 	ConsoleCommand []string `yaml:"console_command" json:"console_command,omitempty"`
-	Compose        string   `yaml:"-" json:"-"`
+	// Capabilities declares every elevated compose key the template uses, each with a reason.
+	Capabilities []ManifestCapability `yaml:"capabilities" json:"capabilities,omitempty"`
+	Compose      string               `yaml:"-" json:"-"`
 }
 
 // EnvPrompt is one ${KEY} placeholder the installer asks for.

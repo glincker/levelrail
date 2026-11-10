@@ -46,6 +46,8 @@ type composeDeployOpts struct {
 	actor string
 	// noCaller marks a push deploy: name collisions are refused outright.
 	noCaller bool
+	// capGrants are the per-service cap_add values a template manifest declared and the install approved.
+	capGrants map[string][]string
 }
 
 type composeServiceStatus struct {

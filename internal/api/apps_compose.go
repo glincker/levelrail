@@ -120,6 +120,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
 	}
+	file.CapGrants = opts.capGrants
 	skipped, err := file.ApplyProfiles(opts.profiles)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
