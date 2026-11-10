@@ -8,7 +8,9 @@
 # Everything lives under a throwaway scratch dir removed on exit.
 #
 # Requires: Go, sqlite3 (optional, release rows), Node/npm, Python 3 with playwright, and shot-scraper on PATH.
-# Env: OUT_DIR (default docs/assets/screenshots), KEEP_SCRATCH=1.
+# Env: OUT_DIR (default docs/assets/screenshots), KEEP_SCRATCH=1, SHOT_WORKERS (parallel
+# shot-scraper processes per theme, default 4), ONLY="name1,name2" (output names),
+# THEMES="dark,light", FORCE_BUILD=1 (ignore the build cache), WAIT_FLOOR_MS (default 800).
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,6 +23,13 @@ DATA_DIR="$SCRATCH_DIR/data"
 SERVER_LOG="$SCRATCH_DIR/server.log"
 STORAGE_STATE="$SCRATCH_DIR/storage_state.json"
 CAPTURE_START="$(date +%s)"
+T_START="$CAPTURE_START"
+SHOT_WORKERS="${SHOT_WORKERS:-4}"
+THEMES="${THEMES:-dark,light}"
+ONLY="${ONLY:-}"
+WAIT_FLOOR_MS="${WAIT_FLOOR_MS:-800}"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/levelrail-screenshots"
+mkdir -p "$CACHE_DIR"
 mkdir -p "$DATA_DIR" "$OUT_DIR"
 
 SERVER_PID=""
@@ -66,17 +75,44 @@ log "using HTTP port $HTTP_PORT"
 
 # --- build ----------------------------------------------------------------
 
-log "building web frontend (web/dist)"
-# Demo thresholds keep the maintainer's real disk pressure out of the shots.
-(cd "$REPO_ROOT/web" && VITE_DISK_WARN_FREE_PERCENT=0.5 VITE_DISK_CRITICAL_FREE_PERCENT=0.1 npm run build >/dev/null) || fail "web build failed"
+# Binary and web/dist live in the cache dir so reruns reuse them. The stamp
+# covers HEAD plus uncommitted and untracked changes under the built dirs.
+T_BUILD0="$(date +%s)"
+CACHED_BIN="$CACHE_DIR/levelrail"
+CACHED_DIST="$CACHE_DIR/web-dist"
+STAMP_FILE="$CACHE_DIR/build.stamp"
+STAMP="$(
+  cd "$REPO_ROOT" && {
+    git rev-parse HEAD
+    git diff HEAD -- web cmd internal
+    git ls-files -o --exclude-standard -- web cmd internal | grep -v '^web/dist/' | while read -r f; do echo "$f"; cat "$f"; done
+    echo "disk:0.5/0.1"
+  } | shasum | cut -d' ' -f1
+)"
 
-log "building control plane binary"
-(cd "$REPO_ROOT" && go build -tags embedweb -o "$BIN" ./cmd/levelrail) || fail "control plane build failed"
+if [ "${FORCE_BUILD:-0}" != "1" ] && [ -x "$CACHED_BIN" ] && [ "$(cat "$STAMP_FILE" 2>/dev/null)" = "$STAMP" ]; then
+  log "build cache hit ($STAMP), skipping web and go build"
+  [ -d "$REPO_ROOT/web/dist" ] || { [ -d "$CACHED_DIST" ] && cp -R "$CACHED_DIST" "$REPO_ROOT/web/dist"; }
+else
+  log "build cache miss, building web frontend (web/dist)"
+  # Demo thresholds keep the maintainer's real disk pressure out of the shots.
+  (cd "$REPO_ROOT/web" && VITE_DISK_WARN_FREE_PERCENT=0.5 VITE_DISK_CRITICAL_FREE_PERCENT=0.1 npm run build >/dev/null) || fail "web build failed"
+
+  log "building control plane binary"
+  (cd "$REPO_ROOT" && go build -tags embedweb -o "$CACHED_BIN.tmp" ./cmd/levelrail) || fail "control plane build failed"
+  mv "$CACHED_BIN.tmp" "$CACHED_BIN"
+  rm -rf "$CACHED_DIST"
+  cp -R "$REPO_ROOT/web/dist" "$CACHED_DIST" || log "could not cache web/dist"
+  echo "$STAMP" >"$STAMP_FILE"
+fi
+cp "$CACHED_BIN" "$BIN"
+T_BUILD="$(( $(date +%s) - T_BUILD0 ))"
 
 # --- seed and serve -----------------------------------------------------------
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"
 
+T_SEED0="$(date +%s)"
 log "seeding demo data"
 APP_BRAND_FILE="$REPO_ROOT/brand.yaml" APP_DATA_DIR="$DATA_DIR" "$BIN" demo seed --seed 1 --scenario "${SCENARIO:-calm}" >"$SCRATCH_DIR/seed.log" 2>&1 \
   || { cat "$SCRATCH_DIR/seed.log"; fail "demo seed failed"; }
@@ -112,6 +148,7 @@ until curl -s "$BASE_URL/api/v1/demo" | grep -q '"enabled":[[:space:]]*true'; do
   sleep 1
 done
 log "demo server ready"
+T_SEED="$(( $(date +%s) - T_SEED0 ))"
 
 # --- login ----------------------------------------------------------------------
 
@@ -160,38 +197,46 @@ CHROME_JS_SED="${CHROME_JS//\\/\\\\}"
 CHROME_JS_SED="${CHROME_JS_SED//&/\\&}"
 CHROME_JS_SED="${CHROME_JS_SED//#/\\#}"
 
-DARK_CFG="$SCRATCH_DIR/shots.dark.yml"
-LIGHT_CFG="$SCRATCH_DIR/shots.light.yml"
+BASE_CFG="$SCRATCH_DIR/shots.base.yml"
 sed -e "s#__BASE_URL__#${BASE_URL}#g" -e "s#__OUT_DIR__#${OUT_DIR}#g" -e "s#__CHROME_JS__#${CHROME_JS_SED}#g" \
-  "$SCRIPT_DIR/shots-demo.yml" >"$DARK_CFG"
-sed -E '/^- output:/ s#\.png$#-light.png#' "$DARK_CFG" >"$LIGHT_CFG"
+  "$SCRIPT_DIR/shots-demo.yml" >"$BASE_CFG"
 
-log "capturing dark screenshots"
-(cd "$REPO_ROOT" && shot-scraper multi "$DARK_CFG" --auth "$STATE_DARK" --timeout 90000) || fail "dark shot-scraper run failed"
-log "capturing light screenshots"
-(cd "$REPO_ROOT" && shot-scraper multi "$LIGHT_CFG" --auth "$STATE_LIGHT" --timeout 90000) || fail "light shot-scraper run failed"
+# Page-ready condition: main mounted and no loading skeleton or busy region left.
+WAIT_FOR_JS="document.querySelector('main') !== null && !document.querySelector('[aria-busy=true], [data-slot=skeleton]')"
+
+T_CAP0="$(date +%s)"
+CHUNKS="$(python3 "$SCRIPT_DIR/shard.py" "$BASE_CFG" "$SCRATCH_DIR/shots" "$SHOT_WORKERS" "$ONLY" "$WAIT_FLOOR_MS" "$WAIT_FOR_JS" "$THEMES")" \
+  || fail "could not build shot chunks (check ONLY and THEMES)"
+CAPTURE_START="$(date +%s)"
+
+PIDS=()
+NAMES=()
+for cfg in $CHUNKS; do
+  name="$(basename "$cfg" .yml)"
+  theme="$(echo "$name" | cut -d. -f2)"
+  state="$STATE_DARK"
+  [ "$theme" = "light" ] && state="$STATE_LIGHT"
+  (cd "$REPO_ROOT" && shot-scraper multi "$cfg" --auth "$state" --timeout 90000) >"$SCRATCH_DIR/$name.log" 2>&1 &
+  PIDS+=($!)
+  NAMES+=("$name")
+done
+log "capturing ${#PIDS[@]} chunks in parallel (themes: $THEMES, workers per theme: $SHOT_WORKERS)"
+
+failed=0
+for idx in "${!PIDS[@]}"; do
+  if ! wait "${PIDS[$idx]}"; then
+    failed=1
+    log "chunk ${NAMES[$idx]} failed:"
+    tail -20 "$SCRATCH_DIR/${NAMES[$idx]}.log"
+  fi
+done
+[ "$failed" = "0" ] || fail "shot-scraper run failed"
+T_CAP="$(( $(date +%s) - T_CAP0 ))"
 
 # --- optimize ---------------------------------------------------------------------------
-python3 - "$OUT_DIR" "$CAPTURE_START" <<'PY' || log "optimizer step skipped (Pillow unavailable)"
-import io, os, sys
-from PIL import Image
-
-out_dir, started = sys.argv[1], float(sys.argv[2])
-limit = 400 * 1024
-
-for name in sorted(os.listdir(out_dir)):
-    path = os.path.join(out_dir, name)
-    if not name.endswith(".png") or os.path.getmtime(path) < started:
-        continue
-    img = Image.open(path).convert("RGB")
-    buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True)
-    if buf.tell() > limit:
-        img = img.quantize(colors=256, method=Image.Quantize.FASTOCTREE).convert("RGB")
-        buf = io.BytesIO()
-        img.save(buf, format="PNG", optimize=True)
-    open(path, "wb").write(buf.getvalue())
-    print(f"wrote {name} ({len(buf.getvalue()) // 1024} KB)")
-PY
+T_OPT0="$(date +%s)"
+python3 "$SCRIPT_DIR/optimize.py" "$OUT_DIR" "$CAPTURE_START" || log "optimizer step skipped (Pillow unavailable)"
+T_OPT="$(( $(date +%s) - T_OPT0 ))"
 
 log "done: screenshots written to $OUT_DIR (dark and -light)"
+log "timing (s): build=$T_BUILD seed=$T_SEED capture=$T_CAP optimize=$T_OPT total=$(( $(date +%s) - T_START ))"
