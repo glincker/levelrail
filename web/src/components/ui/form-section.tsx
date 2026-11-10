@@ -55,10 +55,10 @@ export function FormSection({
         {description ? <Lede>{description}</Lede> : null}
         {hint ? <div className="text-sm">{hint}</div> : null}
       </div>
-      <div className="min-w-0 max-w-2xl space-y-3">
+      <div className="min-w-0 max-w-2xl space-y-4">
         {children}
         {error ? (
-          <p role="alert" className="text-sm text-tone-danger">
+          <p role="alert" className="text-xs text-tone-danger">
             {error}
           </p>
         ) : null}

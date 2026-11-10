@@ -51,7 +51,7 @@ export function SettingRow({
         className,
       )}
     >
-      <div className="min-w-0 space-y-0.5">
+      <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
           <span id={titleId}>{title}</span>
           {badge}
