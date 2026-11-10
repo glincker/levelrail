@@ -315,7 +315,8 @@ var aiml1Templates = []Template{
       - langfuse_redis_data:/data
   minio:
     image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
-    command: ["sh", "-c", "mkdir -p /data/langfuse && minio server /data"]
+    # The image entrypoint takes a minio subcommand, so a shell needs entrypoint.
+    entrypoint: ["sh", "-c", "mkdir -p /data/langfuse && exec minio server /data"]
     environment:
       MINIO_ROOT_USER: langfuse
       MINIO_ROOT_PASSWORD: $SERVICE_PASSWORD_MINIO
@@ -333,6 +334,8 @@ var aiml1Templates = []Template{
 		Compose: `services:
   flowise:
     image: flowiseai/flowise:3.1.4
+    # The image runs as node, which cannot create dirs under the root-owned volume.
+    user: "0:0"
     ports: ["3000:3000"]
     environment:
       PORT: "3000"
