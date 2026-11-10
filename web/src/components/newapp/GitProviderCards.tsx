@@ -19,7 +19,7 @@ export function GitProviderCards() {
   const { data: ingress } = useQuery(ingressSettingsQueryOptions())
   const noPublicAddress = ingress !== undefined && !ingress.primary_domain
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       <details className="group rounded-lg border border-border bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
           {t('source.git.connectTitle')}
@@ -32,7 +32,7 @@ export function GitProviderCards() {
           <p className="text-sm text-muted-foreground">
             {t('source.git.connectBody')}
           </p>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2 @sm:grid-cols-2">
             {PROVIDERS.map((p) => (
               <li
                 key={p.id}
