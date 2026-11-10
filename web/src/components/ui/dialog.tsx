@@ -126,7 +126,6 @@ function DialogContent({
   showCloseButton = true,
   size,
   glass = true,
-  initialFocus,
   ...props
 }: DialogPrimitive.Popup.Props &
   VariantProps<typeof dialogContentVariants> & {
@@ -134,14 +133,10 @@ function DialogContent({
     /** Glass is the default; pass false for a solid surface. */
     glass?: boolean
   }) {
-  // Focus the popup itself by default so the close button never opens with a ring.
-  const popupRef = React.useRef<HTMLDivElement>(null)
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
-        ref={popupRef}
-        initialFocus={initialFocus ?? popupRef}
         data-slot="dialog-content"
         className={cn(
           dialogContentVariants({ size, className }),
