@@ -328,6 +328,7 @@
     "theme": {
       "label": "Tema: {{theme}}",
       "menu": "Elegir tema",
+      "heading": "Tema",
       "light": "Claro",
       "dark": "Oscuro",
       "oled": "Negro OLED",
@@ -552,7 +553,9 @@
         "team": "Equipo",
         "auditLog": "Registro de auditoría"
       }
-    }
+    },
+    "headerUtilities": "Más: novedades, chat, ayuda y tema",
+    "chat": "Chat"
   },
   "login": {
     "signInTitle": "Iniciar sesión",
