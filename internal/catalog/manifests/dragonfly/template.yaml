@@ -1,0 +1,25 @@
+id: dragonfly
+name: Dragonfly
+description: "A Redis compatible in-memory store built for multi-core speed, with a generated password and a data volume. It is not published on the host, so reach it from this project at dragonfly:6379. Source available under the BSL."
+icon: database
+category: Database Tools
+documentation_url: https://www.dragonflydb.io/docs
+source_repo: https://github.com/dragonflydb/dragonfly
+license: LicenseRef-BUSL-1.1
+license_class: source-available
+license_url: https://github.com/dragonflydb/dragonfly/blob/main/LICENSE
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Read the generated password from the app secrets, then connect with any Redis client at dragonfly:6379.
+domains:
+  - service: dragonfly
+    port: 6379
+    description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: dragonfly
+  port: 6379
+  kind: tcp
