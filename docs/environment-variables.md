@@ -190,6 +190,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
 | `APP_DATABASES_BULK_CONCURRENCY` | [`databases.bulk_concurrency`](/runtime-settings#deploys) | `4` |
 | `APP_DATABASES_BULK_MAX_ITEMS` | [`databases.bulk_max_items`](/runtime-settings#deploys) | `200` |
+| `APP_DB_PARAMS_MAX_CONNECTIONS` | [`databases.params_max_connections`](/runtime-settings#deploys) | `5000` |
+| `APP_DB_PARAMS_MAX_MEMORY_MB` | [`databases.params_max_memory_mb`](/runtime-settings#deploys) | `4096` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
 | `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
 | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | [`deploy.approval_claim_timeout_seconds`](/runtime-settings#deploys) | `900` |
@@ -232,7 +234,15 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
+| `APP_JOBS_FAILURE_ALERT_BATCH` | [`jobs.failure_alert_batch`](/runtime-settings#deploys) | `50` |
+| `APP_JOBS_FAILURE_ALERT_WINDOW_SECONDS` | [`jobs.failure_alert_window_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
+| `APP_JOBS_RETENTION_MAX_DAYS` | [`jobs.retention_max_days`](/runtime-settings#deploys) | `365` |
+| `APP_JOBS_RETENTION_MAX_RUNS` | [`jobs.retention_max_runs`](/runtime-settings#deploys) | `1000` |
+| `APP_JOBS_RETENTION_SKIPPED_KEEP` | [`jobs.retention_skipped_keep`](/runtime-settings#deploys) | `20` |
+| `APP_JOBS_RETENTION_SWEEP_MAX_ROWS` | [`jobs.retention_sweep_max_rows`](/runtime-settings#deploys) | `500` |
+| `APP_JOBS_TIMEOUT_MAX_SECONDS` | [`jobs.timeout_max_seconds`](/runtime-settings#deploys) | `86400` |
+| `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |

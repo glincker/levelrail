@@ -987,6 +987,10 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/tags | AbilityRead | handleListDatabaseTags |
 | POST | /api/v1/databases/{name}/tags | AbilityWrite | handleAttachDatabaseTag |
 | DELETE | /api/v1/databases/{name}/tags/{id} | AbilityWrite | handleDetachDatabaseTag |
+| GET | /api/v1/databases/{name}/params | AbilityRead | handleGetDatabaseParams |
+| PUT | /api/v1/databases/{name}/params | AbilityWrite | handleStageDatabaseParams |
+| DELETE | /api/v1/databases/{name}/params/pending | AbilityWrite | handleDiscardDatabaseParams |
+| POST | /api/v1/databases/{name}/params/apply | AbilityWriteSensitive | handleApplyDatabaseParams |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

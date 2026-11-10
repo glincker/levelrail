@@ -143,5 +143,5 @@ func (rt *Router) withJobHTTP(ctx context.Context, res scheduledTaskResource) sc
 
 // jobResource is toScheduledTaskResource plus the http request, if any.
 func (rt *Router) jobResource(ctx context.Context, t store.ScheduledTask) scheduledTaskResource {
-	return rt.withJobHeartbeat(ctx, rt.withJobHTTP(ctx, toScheduledTaskResource(t)))
+	return rt.withJobGuards(ctx, rt.withJobHeartbeat(ctx, rt.withJobHTTP(ctx, toScheduledTaskResource(t))))
 }

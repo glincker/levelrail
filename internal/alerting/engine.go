@@ -42,23 +42,26 @@ const crashloopLogLookback = 15 * time.Minute
 
 // Engine evaluates enabled rules each tick and notifies only on firing or resolved transitions, never on repeats.
 type Engine struct {
-	rules          RuleStore
-	metrics        MetricsSource
-	logs           LogsSource
-	tracker        *RestartTracker
-	certs          CertSource
-	nodes          NodeSource
-	nodeServices   NodeServiceSource
-	scheduledTasks ScheduledTaskSource
-	domainApps     AppDomainSource
-	domainChecker  DomainCheckSource
-	backups        BackupSource
-	databaseHealth DatabaseHealthSource
-	deployFailures DeployFailureSource
-	monitorDowns   MonitorDownSource
-	traffic        trafficKinds
-	newNotifier    func(Rule) Notifier
-	logger         *slog.Logger
+	rules            RuleStore
+	metrics          MetricsSource
+	logs             LogsSource
+	tracker          *RestartTracker
+	certs            CertSource
+	nodes            NodeSource
+	nodeServices     NodeServiceSource
+	scheduledTasks   ScheduledTaskSource
+	jobFailing       JobFailingSource
+	jobFailingWindow func() time.Duration
+	jobFailingLimit  func() int
+	domainApps       AppDomainSource
+	domainChecker    DomainCheckSource
+	backups          BackupSource
+	databaseHealth   DatabaseHealthSource
+	deployFailures   DeployFailureSource
+	monitorDowns     MonitorDownSource
+	traffic          trafficKinds
+	newNotifier      func(Rule) Notifier
+	logger           *slog.Logger
 
 	// Both nil (the default) disables crashloop auto-rollback platform-wide.
 	autoRollback        AutoRollbackStore
@@ -354,6 +357,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 	for _, r := range rules {
 		if ctx.Err() != nil {
 			break
+		}
+		if r.Kind == KindJobFailing {
+			if err := e.tickJobFailing(ctx, r, now); err != nil {
+				errs = append(errs, err)
+			}
+			continue
 		}
 		var next Rule
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string

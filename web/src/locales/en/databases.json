@@ -1081,5 +1081,22 @@
     "copyConnection": "Copy connection string",
     "copied": "Connection string copied, password left out.",
     "noBackupTarget": "Set up backups first"
+  },
+  "params": {
+    "title": "Engine parameters",
+    "description": "Tune the engine from a fixed list of safe settings. Changes are staged and only take effect when you apply them or start the database.",
+    "staged": "Change staged",
+    "name": "Parameter",
+    "default": "Default",
+    "current": "Running",
+    "next": "Next",
+    "engineDefault": "engine default",
+    "stage": "Stage change",
+    "apply": "Apply and restart",
+    "confirmApply": "Confirm restart",
+    "discard": "Discard",
+    "failed": "Could not update parameters",
+    "note": "Clear a field to go back to the engine default.",
+    "pendingNote": "Applying restarts the database. A start after a stop applies it too."
   }
 }

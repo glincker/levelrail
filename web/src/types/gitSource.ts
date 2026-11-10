@@ -113,6 +113,8 @@ export interface GitSourceResource {
   // build_path is the Dockerfile (or static output directory), relative to
   // the repository root.
   build_path?: string
+  // compose_path is set only for a compose app connected to git.
+  compose_path?: string
   // base_directory is the build context relative to the repository root;
   // empty or absent means the root.
   base_directory?: string

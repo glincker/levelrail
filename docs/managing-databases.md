@@ -591,6 +591,21 @@ Both engines have an "encrypt without verifying" mode in their standard connecti
 The certificate is self-signed ECDSA P-256 and valid for ten years. It is never presented to a party that verifies its issuer, so rotation is a deliberate operator action, not forced by expiry. It is ECDSA rather than ed25519 because libpq's SCRAM channel binding fails on an ed25519 certificate, which broke `psql`, psycopg2, and other libpq clients using the default `sslmode=require` URL. Databases created by an earlier release get a new certificate and are recreated once, automatically, the next time the reconciler sees them.
 </Accordion>
 
+## Engine parameters {#engine-parameters}
+
+Tune a running engine without a custom image: `GET /api/v1/databases/{name}/params` lists each allowed parameter with its default, the value the container runs with, and any staged value. Only a fixed allowlist per engine is accepted, each with a typed check (whole number or decimal ranges, sizes such as `256MB`, fixed options, on or off). Values are re-rendered from the parsed number or option, so quotes, spaces, `;`, `=`, backslashes and newlines are refused.
+
+| Engine | Parameters |
+| --- | --- |
+| Postgres | `max_connections`, `shared_buffers`, `effective_cache_size`, `work_mem`, `maintenance_work_mem`, `max_wal_size`, `checkpoint_completion_target`, `random_page_cost`, `effective_io_concurrency`, `default_statistics_target`, `statement_timeout`, `idle_in_transaction_session_timeout`, `jit` |
+| MySQL, MariaDB | `max_connections`, `innodb_buffer_pool_size`, `max_allowed_packet`, `tmp_table_size`, `max_heap_table_size`, `sort_buffer_size`, `table_open_cache`, `wait_timeout`, `interactive_timeout`, `innodb_flush_log_at_trx_commit`, `character_set_server` |
+| Redis, Valkey | `maxmemory`, `maxmemory-policy`, `maxclients`, `timeout`, `tcp-keepalive`, `hz`, `appendfsync`, `lazyfree-lazy-eviction` |
+| MongoDB | `wiredTigerCacheSizeGB`, `maxConns`, `slowms` |
+
+Settings that change network exposure, TLS, authentication, file paths, archiving, plugins or included files (for example `listen_addresses`, `archive_command`, `shared_preload_libraries`, `local_infile`, `secure_file_priv`, `requirepass`, `rename-command`, `bind_ip`, Redis `appendonly`) are managed by the platform and always refused. The connection parameters are capped by the `databases.params_max_connections` runtime setting (default 5000). Memory sizes are capped at 75 percent of the database memory limit, or by `databases.params_max_memory_mb` (default 4096) when it has none. `appendonly` is refused for Redis and Valkey because restores load the RDB snapshot, which an append only file would override.
+
+A change never restarts the database by itself. `PUT .../params` with `{"set": {...}, "unset": [...]}` (or `{"rollback": true}` for the set that ran before the last apply) stages it and needs write ability on the database. `POST .../params/apply` with `{"confirm": true}` (write:sensitive) promotes it, and the reconciler replaces the container through its usual sequential replace and recreate guard; the next `databases start` applies a staged change too. `DELETE .../params/pending` discards it. Every stage, apply and discard is in the audit log with the parameter names and values. The dashboard has a **Engine parameters** card on the database overview. It is built and tested with fakes, not yet proven on a real host.
+
 ## Change the version
 
 ```bash

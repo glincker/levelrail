@@ -150,6 +150,7 @@ func (s *bootState) startAlerting() {
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
+	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
 	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})

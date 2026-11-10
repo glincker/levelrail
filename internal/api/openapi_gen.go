@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2107 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2111 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -813,6 +813,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/databases/{name}/node", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseNode", Description: "Placement, the database counterpart to PUT /apps/{name}/node above: same AbilityRoot gating."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/notes", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/notes", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/params", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseParams", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/params", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleStageDatabaseParams", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/params/apply", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleApplyDatabaseParams", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/params/pending", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardDatabaseParams", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/password-rotation", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabasePasswordRotation", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/password-rotation", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleRotateDatabasePassword", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/password-rotation/policy", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabasePasswordPolicy", Description: ""},

@@ -13,6 +13,11 @@ const RuntimeOptionsPanel = lazy(
   () => import('../../../components/apps/RuntimeOptionsCard'),
 )
 
+// Lazy: only compose apps render it, so it stays out of first load.
+const ComposeSourceCard = lazy(
+  () => import('../../../components/ComposeSourceCard'),
+)
+
 // Safe to visit for a single-service app too, see AppServicesPanel's own comment.
 export const Route = createFileRoute('/apps/$name/services')({
   loader: ({ context: { queryClient }, params: { name } }) =>
@@ -28,6 +33,11 @@ function ServicesSection() {
   return (
     <div className="space-y-6">
       <ComposeStackPanel appId={group.app_id} />
+      {group.app_id ? (
+        <Suspense fallback={null}>
+          <ComposeSourceCard appName={group.app_id} />
+        </Suspense>
+      ) : null}
       <AppServicesPanel appName={name} />
       <DeploySpecForm appName={name} />
       <Suspense fallback={null}>

@@ -36,6 +36,10 @@ func (rt *Router) handleStopDatabase(w http.ResponseWriter, r *http.Request) {
 // body.
 func (rt *Router) handleStartDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	wasSuspended := false
+	if d, err := rt.databases.GetDesiredDatabase(r.Context(), name); err == nil {
+		wasSuspended = d.Suspended
+	}
 
 	if err := rt.databases.UpdateDatabaseSuspended(r.Context(), name, false); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
@@ -44,6 +48,10 @@ func (rt *Router) handleStartDatabase(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: start database failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+	// Starting a stopped database recreates its container, so a staged set goes live with it.
+	if wasSuspended {
+		rt.applyStagedDatabaseParams(r, name)
 	}
 
 	rt.reloadAndWriteDatabase(w, r, name, "start database")

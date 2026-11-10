@@ -46,6 +46,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	build.SetNetworkResolver(func(ctx context.Context) (string, error) { return svc.StringChecked(ctx, build.KeyBuildNetwork) })
 	wireBuildCacheSettings(svc)
 	wireJobHTTPSettings(svc)
+	wireJobGuardSettings(svc)
 	netclient.SetTimeoutSource(func() time.Duration { return svc.Duration(context.Background(), runtimesettings.KeyNetOutboundTimeout) })
 	wireNextSkewSettings(svc)
 	wireDiagnosticSettings(svc)

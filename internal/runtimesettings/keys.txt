@@ -97,6 +97,8 @@ database_viewer.schema_max_rows
 databases.bulk_concurrency
 databases.bulk_max_items
 databases.import_max_bytes
+databases.params_max_connections
+databases.params_max_memory_mb
 databases.pooler_default
 databases.pooler_image
 db.compact_min_free_percent

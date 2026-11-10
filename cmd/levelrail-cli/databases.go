@@ -79,6 +79,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "pooler":
 		return runDatabasesPooler(prog, rest, stdout, stderr, lookupEnv)
+	case "params":
+		return runDatabasesParams(prog, rest, stdout, stderr, lookupEnv)
 	case "export":
 		return runDatabasesExport(prog, rest, stdout, stderr, lookupEnv)
 	case "import":

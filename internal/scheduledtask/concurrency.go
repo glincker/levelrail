@@ -63,7 +63,7 @@ func (r *Runner) beginRun(ctx context.Context, taskID, policy string) (runCtx co
 	if exists && policy == store.ScheduledTaskConcurrencyReplace {
 		prev.cancel(errReplacedByNewRun)
 	}
-	waits := exists && (policy == store.ScheduledTaskConcurrencyReplace || policy == store.ScheduledTaskConcurrencyQueue)
+	waits := exists && (policy == store.ScheduledTaskConcurrencyReplace || policy == store.ScheduledTaskConcurrencyQueue || policy == store.ScheduledTaskConcurrencyQueueOne)
 
 	runCtx, cancel := context.WithCancelCause(ctx)
 	done := make(chan struct{})

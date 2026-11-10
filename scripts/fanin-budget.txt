@@ -11,6 +11,7 @@ internal/chaos 171
 internal/compose 62
 internal/configtranslate 29
 internal/costbudget 171
+internal/dbparams 46
 internal/dbprovision 46
 internal/defparse 29
 internal/deploy 27

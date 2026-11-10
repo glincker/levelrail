@@ -112,5 +112,59 @@
     "plan_other": "Creates {{app}} with {{count}} services",
     "secrets": "Secrets to set after import: {{names}}",
     "done": "Imported {{app}}. Set its secrets, then start it."
+  },
+  "source": {
+    "title": "Deploy from git",
+    "intro": "Connect this stack to a repository. Each push (or release) redeploys the compose file from that branch.",
+    "loading": "Loading git connection",
+    "formLabel": "Git connection for this stack",
+    "repoUrl": "Repository URL",
+    "repoPlaceholder": "https://github.com/acme/stack.git",
+    "branch": "Branch",
+    "composePath": "Compose file",
+    "token": "Access token (private repos)",
+    "tokenKeep": "Saved, leave blank to keep",
+    "triggerLabel": "Deploy on",
+    "trigger": {
+      "push": "Every push",
+      "release": "Tags and releases"
+    },
+    "connect": "Connect repository",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "updated": "Git connection updated",
+    "state": "Current state",
+    "fromGit": "Deployed from git",
+    "notFromGit": "Not yet deployed from git",
+    "webhookUrl": "Webhook URL",
+    "webhookSecret": "Webhook secret",
+    "secretOnce": "Copy the webhook secret now. It is shown only once and is not stored in this browser.",
+    "secretHint": "Paste it as the secret of a push webhook on your git host.",
+    "done": "Done, I copied it",
+    "deployNow": "Deploy now",
+    "deployStarted": "Deploy finished from the branch head",
+    "deployFailed": "Deploy failed",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Confirm disconnect",
+    "disconnected": "Repository disconnected",
+    "disconnectFailed": "Disconnect failed",
+    "pathErrors": {
+      "tooLong": "Keep the path under 512 bytes.",
+      "control": "The path contains a control or invisible character.",
+      "absolute": "Use a path relative to the repository root, without a leading slash.",
+      "parent": "The path must stay inside the repository (no ..).",
+      "notFile": "Name a compose file, not a folder.",
+      "extension": "The compose file must end in .yml or .yaml."
+    },
+    "errors": {
+      "kindConflict": "This app already deploys a single service from git. Disconnect that source first, then connect the compose repository.",
+      "protected": "This app is in a protected environment. Push to the branch so the deploy goes through approval.",
+      "frozen": "Deploys are frozen for this app right now. Try again once the freeze ends.",
+      "pollNotAllowed": "A compose stack deploys on push or release only, polling is not available.",
+      "notDeployed": "Deploy the stack once, then connect its repository.",
+      "noMasterKey": "Git connections need a master key on this control plane.",
+      "generic": "Something went wrong."
+    }
   }
 }

@@ -92,6 +92,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMailBackupRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
+	rt.registerDatabaseParamsRoutes(mux)
 	rt.registerTeamRoutes(mux)
 	rt.registerComposeRoutes(mux)
 	rt.registerCatalogRoutes(mux)

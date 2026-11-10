@@ -56,7 +56,7 @@ type RunStore interface {
 type HistoryStore interface {
 	CreateScheduledTaskRun(ctx context.Context, run store.ScheduledTaskRun) error
 	FinishScheduledTaskRun(ctx context.Context, run store.ScheduledTaskRun) error
-	PruneScheduledTaskRuns(ctx context.Context, taskID string, keep int, outputCutoff time.Time) error
+	PruneScheduledTaskRuns(ctx context.Context, taskID string, p store.RunRetention) error
 }
 
 // SpecBuilder derives a one-off container spec from a service, so a fresh
@@ -155,9 +155,9 @@ func (r *Runner) attemptTimeout(task store.ScheduledTask) time.Duration {
 	case r.Timeout > 0:
 		return r.Timeout
 	case task.TimeoutSeconds > 0:
-		return time.Duration(task.TimeoutSeconds) * time.Second
+		return clampTimeout(time.Duration(task.TimeoutSeconds) * time.Second)
 	default:
-		return r.limits().DefaultTimeout
+		return clampTimeout(r.limits().DefaultTimeout)
 	}
 }
 
@@ -323,8 +323,7 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 		if err := r.History.FinishScheduledTaskRun(ctx, row); err != nil {
 			return fmt.Errorf("scheduledtask: finish run %q of %q: %w", runID, task.ID, err)
 		}
-		l := r.limits()
-		if err := r.History.PruneScheduledTaskRuns(ctx, task.ID, r.historyKeep(ctx), ended.Add(-l.OutputRetention)); err != nil {
+		if err := r.History.PruneScheduledTaskRuns(ctx, task.ID, r.retention(ctx, task.ID, ended)); err != nil {
 			r.log().Warn("scheduledtask: prune history failed", slog.String("task_id", task.ID), slog.String("error", err.Error()))
 		}
 	}

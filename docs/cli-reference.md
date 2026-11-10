@@ -329,7 +329,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule. `apps deploy --at` schedules a one-shot image or git ref deploy, and `apps schedule list` and `apps schedule cancel` manage those (see [Scheduled deploys](/scheduled-deploys#one-shot-scheduled-deploys)).
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
-- `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](/scheduled-jobs)). `apps scheduled-tasks` is the older exec-only form of the same resource.
+- `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](/scheduled-jobs)). `apps scheduled-tasks` is the older exec-only form of the same resource. Guard rails on `create` and `update`: `--overlap allow|skip|queue-one` decides what a run that comes due while the previous one is still running does (skip records a skipped run, queue-one holds one run until the previous finishes and skips the rest), `--alert-on-failure` reports failed runs to `job_failing` alert rules scoped to the app (at most one notice per rule and job per `jobs.failure_alert_window_seconds`, with the job name and exit code, never output; a failed delivery is retried), and `--keep-runs N` and `--keep-days N` bound the job's history (capped by `jobs.retention_max_runs` and `jobs.retention_max_days`). `--timeout` is clamped to `jobs.timeout_min_seconds` and `jobs.timeout_max_seconds`, and a run past it is stopped.
 - `functions` runs a handler repo (built with Railpack) or an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start. `functions init node|python|go` writes a ten line starter, `functions list` shows state, calls and p95 duration (see [Functions](/functions)).
 - `apps sleep` stops an app after it has had no requests for a set time and wakes it on the next request (see [Sleep when idle](/sleep-when-idle)).
 - `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](/canary-deploys)).
@@ -758,6 +758,12 @@ levelrail-cli databases major-upgrade <name> --version V [flags]
 levelrail-cli databases major-upgrades <name> [flags]
 levelrail-cli databases major-upgrade-rollback <name> <id> [flags]
 levelrail-cli databases major-upgrade-discard <name> <id> [flags]
+levelrail-cli databases params show <name> [flags]
+levelrail-cli databases params set <name> NAME=VALUE... [flags]
+levelrail-cli databases params unset <name> NAME... [flags]
+levelrail-cli databases params rollback <name> [flags]
+levelrail-cli databases params discard <name> [flags]
+levelrail-cli databases params apply <name> --yes [flags]
 ```
 
 - `status` shows a database's current reconcile conditions (useful when it exists but is not running yet).
@@ -769,6 +775,8 @@ levelrail-cli databases major-upgrade-discard <name> <id> [flags]
 - `set-resources` applies memory and CPU limits to an already created database, replacing whatever was set before (a full replace, not a patch).
 - `public-access set` exposes a database on a host port; `--bind-address` is `private` (the default), `public`, or a literal IP.
 - `set-version` is a minor or patch image change on the same data. `major-upgrade` is a guarded Postgres major upgrade with a rollback snapshot; `major-upgrades` lists the attempts, `major-upgrade-rollback` restores the pre upgrade data, and `major-upgrade-discard` deletes a rollback snapshot to free disk.
+
+- `params` edits engine tuning parameters (Postgres, MySQL, MariaDB, Redis, Valkey, MongoDB) from a fixed allowlist with typed values. `set`, `unset` and `rollback` only stage a change; `apply --yes` (needs write:sensitive) or the next `databases start` restarts the database with it. See [Managing databases](/managing-databases#engine-parameters).
 
 See [Managing databases](/managing-databases).
 

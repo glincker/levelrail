@@ -1081,5 +1081,22 @@
     "copyConnection": "Copiar cadena de conexión",
     "copied": "Cadena de conexión copiada, sin la contraseña.",
     "noBackupTarget": "Configura las copias primero"
+  },
+  "params": {
+    "title": "Parámetros del motor",
+    "description": "Ajusta el motor con una lista fija de opciones seguras. Los cambios quedan preparados y solo se aplican cuando los aplicas o inicias la base de datos.",
+    "staged": "Cambio preparado",
+    "name": "Parámetro",
+    "default": "Predeterminado",
+    "current": "En uso",
+    "next": "Siguiente",
+    "engineDefault": "valor del motor",
+    "stage": "Preparar cambio",
+    "apply": "Aplicar y reiniciar",
+    "confirmApply": "Confirmar reinicio",
+    "discard": "Descartar",
+    "failed": "No se pudieron actualizar los parámetros",
+    "note": "Vacía un campo para volver al valor del motor.",
+    "pendingNote": "Aplicar reinicia la base de datos. Iniciarla después de detenerla también lo aplica."
   }
 }

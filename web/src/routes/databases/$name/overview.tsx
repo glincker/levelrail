@@ -32,6 +32,11 @@ const DatabaseDataActionsCard = lazy(() =>
     default: m.DatabaseDataActionsCard,
   })),
 )
+const DatabaseParamsCard = lazy(() =>
+  import('../../../components/databases/DatabaseParamsCard').then((m) => ({
+    default: m.DatabaseParamsCard,
+  })),
+)
 const ProvisioningPanel = lazy(() =>
   import('../../../components/databases/ProvisioningPanel').then((m) => ({
     default: m.ProvisioningPanel,
@@ -162,6 +167,10 @@ function OverviewSection() {
       <DatabasePublicAccessCard database={database} />
 
       <DatabasePoolerCard database={database} />
+
+      <Suspense fallback={null}>
+        <DatabaseParamsCard database={database.name} />
+      </Suspense>
 
       <div id="backups" className="scroll-mt-20 space-y-6">
         {engineHasBackups(database.engine) ? (

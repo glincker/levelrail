@@ -2319,6 +2319,11 @@ type ScheduledTaskResource struct {
 	// of itself still executing. Empty on a request defaults to "allow"
 	// server-side.
 	ConcurrencyPolicy string `json:"concurrency_policy"`
+	// OverlapPolicy is allow, skip or queue-one; empty for replace and queue.
+	OverlapPolicy  string `json:"overlap_policy,omitempty"`
+	AlertOnFailure bool   `json:"alert_on_failure"`
+	KeepRuns       int    `json:"keep_runs"`
+	KeepDays       int    `json:"keep_days"`
 
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
@@ -2412,6 +2417,10 @@ type ScheduledTaskRequest struct {
 	HeartbeatClear   bool   `json:"heartbeat_clear,omitempty"`
 	// HTTP makes the job call a path on the app (Mode "http").
 	HTTP *JobHTTP `json:"http,omitempty"`
+	// Guard rails are pointers so an update leaves unset ones alone.
+	AlertOnFailure *bool `json:"alert_on_failure,omitempty"`
+	KeepRuns       *int  `json:"keep_runs,omitempty"`
+	KeepDays       *int  `json:"keep_days,omitempty"`
 }
 
 // JobHTTP mirrors internal/api's jobHTTPResource. Background jobs are
