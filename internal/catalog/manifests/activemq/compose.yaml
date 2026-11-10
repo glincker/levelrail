@@ -1,0 +1,12 @@
+services:
+  activemq:
+    image: apache/activemq-classic:6.1.4
+    ports: ["8161", "61616"]
+    volumes:
+      - activemq_data:/opt/apache-activemq/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://127.0.0.1:8161/ || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 40s

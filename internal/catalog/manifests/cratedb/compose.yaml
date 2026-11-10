@@ -1,0 +1,15 @@
+services:
+  cratedb:
+    image: crate:6.5.1
+    ports: ["4200", "5432"]
+    command: ["crate", "-Cdiscovery.type=single-node"]
+    environment:
+      CRATE_HEAP_SIZE: 512m
+    volumes:
+      - crate_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:4200/ > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s

@@ -1,0 +1,25 @@
+id: mailcatcher
+name: MailCatcher
+description: "A development SMTP server that catches every message and shows it in a web inbox. Send mail from services in this project to mailcatcher:1025. Messages are kept in memory only."
+icon: mail
+category: Developer Tools
+documentation_url: https://mailcatcher.me/
+source_repo: https://github.com/sj26/mailcatcher
+license: MIT
+license_class: permissive
+license_url: https://github.com/sj26/mailcatcher/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Set the SMTP host of a service in this project to mailcatcher and port 1025, then read the mail in the web inbox.
+domains:
+  - service: mailcatcher
+    port: 1080
+    description: Public address of the web page.
+healthcheck:
+  service: mailcatcher
+  port: 1080
+  path: /

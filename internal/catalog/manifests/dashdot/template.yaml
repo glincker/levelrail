@@ -1,0 +1,25 @@
+id: dashdot
+name: Dash.
+description: "A modern server dashboard showing CPU, memory, storage and network usage. Without host access it reports the container view, and the page has no login so keep it private."
+icon: gauge
+category: Monitoring
+documentation_url: https://getdashdot.com/docs/
+source_repo: https://github.com/MauriceNino/dashdot
+license: MIT
+license_class: permissive
+license_url: https://github.com/MauriceNino/dashdot/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Open the public address to see live usage. It shows the container view because the host is not mounted.
+domains:
+  - service: dashdot
+    port: 3001
+    description: Public address of the web page.
+healthcheck:
+  service: dashdot
+  port: 3001
+  path: /

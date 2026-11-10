@@ -1,0 +1,25 @@
+id: arangodb
+name: ArangoDB
+description: "A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line."
+icon: graph
+category: Database Tools
+documentation_url: https://docs.arangodb.com/3.12/
+source_repo: https://github.com/arangodb/arangodb
+license: LicenseRef-BUSL-1.1
+license_class: source-available
+license_url: https://github.com/arangodb/arangodb
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the web interface and sign in as root with the generated password from the app secrets.
+domains:
+  - service: arangodb
+    port: 8529
+    description: Public address of the web page.
+healthcheck:
+  service: arangodb
+  port: 8529
+  kind: tcp

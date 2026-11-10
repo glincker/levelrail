@@ -1,0 +1,25 @@
+id: pyroscope
+name: Pyroscope
+description: "A continuous profiling database with a web UI and a data volume. The UI has no login, so restrict access before exposing it. Applications push profiles to port 4040."
+icon: chart
+category: Monitoring
+documentation_url: https://grafana.com/docs/pyroscope/latest/
+source_repo: https://github.com/grafana/pyroscope
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/grafana/pyroscope/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Point profiling agents in this project at http://pyroscope:4040, then open the UI to explore flame graphs.
+domains:
+  - service: pyroscope
+    port: 4040
+    description: Public address of the web page.
+healthcheck:
+  service: pyroscope
+  port: 4040
+  path: /ready

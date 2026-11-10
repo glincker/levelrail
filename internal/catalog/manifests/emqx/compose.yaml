@@ -1,0 +1,15 @@
+services:
+  emqx:
+    image: emqx/emqx:5.8.9
+    ports: ["18083", "1883"]
+    environment:
+      EMQX_NODE__NAME: emqx@127.0.0.1
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: $SERVICE_PASSWORD_EMQX
+    volumes:
+      - emqx_data:/opt/emqx/data
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

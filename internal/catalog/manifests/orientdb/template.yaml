@@ -1,0 +1,25 @@
+id: orientdb
+name: OrientDB
+description: "A multi model database for graphs and documents with the Studio web console, a generated root password and data volumes. The binary protocol port 2424 stays private."
+icon: graph
+category: Database Tools
+documentation_url: https://orientdb.org/docs/3.2.x/
+source_repo: https://github.com/orientechnologies/orientdb
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/orientechnologies/orientdb/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open Studio and sign in as root with the generated password from the app secrets.
+domains:
+  - service: orientdb
+    port: 2480
+    description: Public address of the web page.
+healthcheck:
+  service: orientdb
+  port: 2480
+  path: /

@@ -1,0 +1,25 @@
+id: emqx
+name: EMQX
+description: "An MQTT broker for connected devices on the 5.8 Apache line, with a web dashboard, a generated admin password and data volume. MQTT on 1883 stays private."
+icon: network
+category: Infrastructure
+documentation_url: https://docs.emqx.com/en/emqx/v5.8/
+source_repo: https://github.com/emqx/emqx
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/emqx/emqx/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in to the dashboard as admin with the generated password. Point MQTT clients in this project at emqx:1883.
+domains:
+  - service: emqx
+    port: 18083
+    description: Public address of the web page.
+healthcheck:
+  service: emqx
+  port: 18083
+  path: /status
