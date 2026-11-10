@@ -1,0 +1,25 @@
+id: gitbucket
+name: GitBucket
+description: "A Git hosting platform with issues, pull requests and a wiki, on a data volume. The first account is root with the password root, so change it right after the first sign in."
+icon: git-branch
+category: Developer Tools
+documentation_url: https://github.com/gitbucket/gitbucket/wiki
+source_repo: https://github.com/gitbucket/gitbucket
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/gitbucket/gitbucket/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in as root with the password root and change the password at once, because it is public knowledge.
+domains:
+  - service: gitbucket
+    port: 8080
+    description: Public address of the web page.
+healthcheck:
+  service: gitbucket
+  port: 8080
+  path: /

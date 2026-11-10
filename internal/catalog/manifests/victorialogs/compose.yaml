@@ -1,0 +1,13 @@
+services:
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.53.0
+    ports: ["9428"]
+    command: ["-storageDataPath=/victoria-logs-data"]
+    volumes:
+      - vlogs_data:/victoria-logs-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9428/health || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

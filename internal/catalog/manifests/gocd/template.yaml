@@ -1,0 +1,25 @@
+id: gocd
+name: GoCD
+description: "A continuous delivery server with pipeline visualisation, running on a data volume. Needs about 1 GB of memory. Authentication is off until you set it up, so restrict access first."
+icon: workflow
+category: Developer Tools
+documentation_url: https://docs.gocd.org/current/
+source_repo: https://github.com/gocd/gocd
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/gocd/gocd/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the dashboard and enable authentication under Admin before exposing it. Agents need to be added separately.
+domains:
+  - service: gocd
+    port: 8153
+    description: Public address of the web page.
+healthcheck:
+  service: gocd
+  port: 8153
+  path: /go/api/v1/health
