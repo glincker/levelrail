@@ -8,7 +8,7 @@
 # Everything lives under a throwaway scratch dir removed on exit.
 #
 # Requires: Go, sqlite3 (optional, release rows), Node/npm, Python 3 with playwright, and shot-scraper on PATH.
-# Env: OUT_DIR (default docs/assets/screenshots), KEEP_SCRATCH=1, SHOT_WORKERS (parallel
+# Env: OUT_DIR (default docs/assets/screenshots), SCALE_FACTOR (device pixel ratio, default 1), NO_OPTIMIZE=1, KEEP_SCRATCH=1, SHOT_WORKERS (parallel
 # shot-scraper processes per theme, default 4), ONLY="name1,name2" (output names),
 # THEMES="dark,light", FORCE_BUILD=1 (ignore the build cache), WAIT_FLOOR_MS (default 800).
 set -uo pipefail
@@ -216,7 +216,7 @@ for cfg in $CHUNKS; do
   theme="$(echo "$name" | cut -d. -f2)"
   state="$STATE_DARK"
   [ "$theme" = "light" ] && state="$STATE_LIGHT"
-  (cd "$REPO_ROOT" && shot-scraper multi "$cfg" --auth "$state" --timeout 90000) >"$SCRATCH_DIR/$name.log" 2>&1 &
+  (cd "$REPO_ROOT" && shot-scraper multi "$cfg" --auth "$state" --timeout 90000 --scale-factor "${SCALE_FACTOR:-1}") >"$SCRATCH_DIR/$name.log" 2>&1 &
   PIDS+=($!)
   NAMES+=("$name")
 done
@@ -235,7 +235,7 @@ T_CAP="$(( $(date +%s) - T_CAP0 ))"
 
 # --- optimize ---------------------------------------------------------------------------
 T_OPT0="$(date +%s)"
-python3 "$SCRIPT_DIR/optimize.py" "$OUT_DIR" "$CAPTURE_START" || log "optimizer step skipped (Pillow unavailable)"
+if [ "${NO_OPTIMIZE:-0}" = "1" ]; then log "optimizer skipped (NO_OPTIMIZE=1)"; else python3 "$SCRIPT_DIR/optimize.py" "$OUT_DIR" "$CAPTURE_START" || log "optimizer step skipped (Pillow unavailable)"; fi
 T_OPT="$(( $(date +%s) - T_OPT0 ))"
 
 log "done: screenshots written to $OUT_DIR (dark and -light)"
