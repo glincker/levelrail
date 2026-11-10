@@ -234,6 +234,10 @@
       "title": "Reverificación tras el primer evento al arrancar",
       "description": "Tiempo tras el primer evento de Docker en el que el plano de control ejecuta una pasada de reconciliación más, de 1s a 1h. Se lee al arrancar."
     },
+    "bootDeferredStages": {
+      "title": "Aplazar etapas de arranque no críticas",
+      "description": "Inicia el latido, el DNS dinámico, los monitores y el historial de disco después de que el listener HTTP esté activo, para que el panel responda antes. GET /readyz lista las etapas pendientes. Se lee al arrancar."
+    },
     "metricsScrapeEnabled": {
       "title": "Endpoint de scraping de Prometheus",
       "description": "Sirve métricas de apps, bases de datos y nodos en formato de texto Prometheus en /metrics para un token de lectura. Desactivado, el endpoint responde 404."

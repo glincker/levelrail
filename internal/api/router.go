@@ -248,6 +248,7 @@ type Router struct {
 	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness               ReadinessProbes
+	pendingStages           func() []string
 	meshSettings            meshSettingsState                                             // see mesh_settings.go
 	serverProfile           serverProfileState                                            // see server_profile.go
 	fixit                   fixitState                                                    // see fixit.go

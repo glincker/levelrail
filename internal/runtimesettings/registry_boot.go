@@ -10,6 +10,8 @@ import (
 const (
 	KeyBootRechecks     = "boot.rechecks"
 	KeyBootEventRecheck = "boot.event_recheck"
+	// KeyBootDeferredStages starts non critical boot stages after the listener is up.
+	KeyBootDeferredStages = "boot.deferred_stages"
 )
 
 // Floors keep a typo from turning the post-start passes into a busy loop.
@@ -45,5 +47,12 @@ func init() {
 		TitleKey: "runtimeSettings:items.bootEventRecheck.title", DescKey: "runtimeSettings:items.bootEventRecheck.description",
 		Title:       "Boot recheck after first event",
 		Description: "How long after the first Docker event the control plane runs one more reconcile pass, from 1s to 1h. Read at start.",
+	})
+	Register(Definition{
+		Key: KeyBootDeferredStages, Category: CategoryDeploys, Kind: KindBool, Default: "false",
+		Env: "APP_BOOT_DEFERRED_STAGES", Apply: ApplyRestart,
+		TitleKey: "runtimeSettings:items.bootDeferredStages.title", DescKey: "runtimeSettings:items.bootDeferredStages.description",
+		Title:       "Defer non critical startup stages",
+		Description: "Start heartbeat, dynamic DNS, monitors and disk history after the HTTP listener is up so the dashboard answers sooner. GET /readyz lists the stages still pending. Read at start.",
 	})
 }

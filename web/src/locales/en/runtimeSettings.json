@@ -234,6 +234,10 @@
       "title": "Boot recheck after first event",
       "description": "How long after the first Docker event the control plane runs one more reconcile pass, from 1s to 1h. Read at start."
     },
+    "bootDeferredStages": {
+      "title": "Defer non critical startup stages",
+      "description": "Start heartbeat, dynamic DNS, monitors and disk history after the HTTP listener is up so the dashboard answers sooner. GET /readyz lists the stages still pending. Read at start."
+    },
     "metricsScrapeEnabled": {
       "title": "Prometheus scrape endpoint",
       "description": "Serve app, database and node metrics in Prometheus text format at /metrics for a read token. When off, the endpoint answers 404."

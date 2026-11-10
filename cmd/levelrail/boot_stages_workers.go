@@ -543,6 +543,10 @@ func (s *bootState) serve() error {
 		serveErrs <- nil
 	}()
 
+	if len(s.deferredQueue) > 0 {
+		go s.runDeferredStages(s.deferredQueue)
+	}
+
 	healthy := time.AfterFunc(s.bootPolicy.HealthyAfter, s.ledger.MarkHealthy)
 	defer healthy.Stop()
 

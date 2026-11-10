@@ -63,6 +63,7 @@ type rootDeps struct {
 	engine              *reconcile.Engine
 	ingressDriver       *ingressdriver.Driver
 	pushVAPIDPublicKey  string
+	pendingStages       func() []string
 }
 
 // rootHandler mounts the API under /api/ and the embedded frontend everywhere else, on one server.
@@ -104,6 +105,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithStaticRootDir(filepath.Join(dataDir, "static")),
 		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
+		api.WithPendingStages(d.pendingStages),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithTraceStore(telemetryDB),
 		api.WithErrorStore(telemetryDB),

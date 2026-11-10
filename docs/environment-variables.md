@@ -171,6 +171,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUN_MAX_TIMEOUT_SECONDS` | [`apps_run.max_timeout_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_RUN_MEMORY_LIMIT_MB` | [`apps_run.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
+| `APP_BOOT_DEFERRED_STAGES` | [`boot.deferred_stages`](/runtime-settings#deploys) | `false` |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |

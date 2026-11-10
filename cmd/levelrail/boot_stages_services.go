@@ -199,7 +199,8 @@ func (s *bootState) wireRouter() {
 	telemetryDB := s.telemetryDB
 	webhookHandler := s.webhookHandler
 	apiHandler, apiRouter := rootHandler(rootDeps{
-		logger: logger, b: b, db: db, telemetryDB: telemetryDB, alertingDB: alertingDB,
+		pendingStages: s.pending.List,
+		logger:        logger, b: b, db: db, telemetryDB: telemetryDB, alertingDB: alertingDB,
 		secretsManager: secretsManager, masterKeyFilePath: masterKeyFilePath, webhookHandler: webhookHandler,
 		client: client, builder: builder, buildClient: s.buildClient, deployRecorder: deployRecorder, logBroadcaster: logBroadcaster,
 		deployDispatcher: deployDispatcher, backupRunner: backupRunner, backupVerifyRunner: backupVerifyRunner,
