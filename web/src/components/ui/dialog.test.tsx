@@ -23,7 +23,10 @@ describe('DialogContent material', () => {
         </DialogContent>
       </Dialog>,
     )
-    expect(screen.getByRole('dialog')).toHaveClass('glass', 'motion-overlay')
+    expect(screen.getByRole('dialog')).toHaveClass(
+      'bg-popover',
+      'motion-overlay',
+    )
     expect(screen.getByText('Rename')).toBeInTheDocument()
   })
 })
