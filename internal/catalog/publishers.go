@@ -3,6 +3,7 @@ package catalog
 import (
 	_ "embed"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -25,9 +26,17 @@ type Publisher struct {
 	ReviewedAt string   `yaml:"reviewed_at"`
 	Expires    string   `yaml:"expires"`
 	Note       string   `yaml:"note,omitempty"`
+	// Personal marks an individual's account; it must list the exact repos it covers.
+	Personal bool     `yaml:"personal,omitempty"`
+	Repos    []string `yaml:"repos,omitempty"`
 }
 
 const publisherDateLayout = "2006-01-02"
+
+// maxPublisherReview bounds how long one review can vouch for a namespace.
+const maxPublisherReview = 400 * 24 * time.Hour
+
+var publisherNamespacePattern = regexp.MustCompile(`^[a-z0-9.-]+(:\d+)?/[a-z0-9][a-z0-9._-]*$`)
 
 var publishers = loadPublishers()
 
@@ -49,8 +58,11 @@ func Publishers() []Publisher { return publishers }
 // reviewer, bad dates or an https-less evidence link.
 func (p Publisher) Validate() error {
 	var missing []string
-	if p.Namespace == "" || strings.Count(p.Namespace, "/") != 1 {
-		missing = append(missing, "namespace must be registry/org")
+	if !publisherNamespacePattern.MatchString(p.Namespace) {
+		missing = append(missing, "namespace must be registry/org in lowercase")
+	}
+	if p.Personal && len(p.Repos) == 0 {
+		missing = append(missing, "repos (required for personal accounts)")
 	}
 	if len(p.SourceOrgs) == 0 {
 		missing = append(missing, "source_orgs")
@@ -65,8 +77,16 @@ func (p Publisher) Validate() error {
 	exp, err2 := time.Parse(publisherDateLayout, p.Expires)
 	if err1 != nil || err2 != nil {
 		missing = append(missing, "reviewed_at and expires as YYYY-MM-DD")
-	} else if !exp.After(added) {
-		missing = append(missing, "expires after reviewed_at")
+	} else {
+		if !exp.After(added) {
+			missing = append(missing, "expires after reviewed_at")
+		}
+		if exp.Sub(added) > maxPublisherReview {
+			missing = append(missing, "expires within 400 days of reviewed_at")
+		}
+		if added.After(publisherClock().UTC().AddDate(0, 0, 1)) {
+			missing = append(missing, "reviewed_at not in the future")
+		}
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("publisher %q: %s", p.Namespace, strings.Join(missing, ", "))
@@ -105,10 +125,24 @@ func verifiedPublisherFor(img, sourceRepo string, now time.Time) bool {
 		if strings.ToLower(p.Namespace) != ns || p.Validate() != nil || p.Expired(now) {
 			continue
 		}
+		if len(p.Repos) > 0 && !repoListed(p.Repos, img) {
+			continue
+		}
 		for _, o := range p.SourceOrgs {
 			if strings.EqualFold(o, m[1]) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// repoListed reports whether the image repo path (registry removed) is in repos.
+func repoListed(repos []string, img string) bool {
+	_, path := splitRegistry(img)
+	for _, r := range repos {
+		if strings.EqualFold(r, path) {
+			return true
 		}
 	}
 	return false

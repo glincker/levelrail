@@ -67,16 +67,16 @@ var mutableTags = map[string]bool{
 	"nightly": true, "dev": true, "beta": true, "rc": true,
 }
 
-// Maintainer exception lists. Each entry needs a reason. Image namespaces are
+// Maintainer exception lists keyed by the exact image repo, never by template id. Each entry needs a reason. Image namespaces are
 // granted through publishers.yaml, not here.
 var (
 	shortTagExceptions = map[string]string{
-		"languagetool": "the community image erikvl87/languagetool publishes X.Y tags only (6.8, last pushed 2026-06-15), no X.Y.Z tags exist",
+		"erikvl87/languagetool": "the community image erikvl87/languagetool publishes X.Y tags only (6.8, last pushed 2026-06-15), no X.Y.Z tags exist",
 	}
 	// noUpstreamImage covers projects that publish no server image at all, so no
 	// publisher namespace can be verified. Each entry needs a reason.
 	noUpstreamImage = map[string]string{
-		"languagetool": "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64 (https://github.com/Erikvl87/docker-languagetool)",
+		"erikvl87/languagetool": "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64 (https://github.com/Erikvl87/docker-languagetool)",
 	}
 	fetchExceptions = map[string]string{}
 )
@@ -126,9 +126,9 @@ func (m Manifest) validateMarketplaceFields() []error {
 		reason := strings.TrimSpace(h.Reason) != ""
 		switch {
 		case h.Expect == 0, h.Expect == 401, h.Expect == 403:
-		case h.Expect >= 400 && h.Expect <= 499 && reason:
+		case (h.Expect == 404 || h.Expect == 405) && reason:
 		default:
-			errs = append(errs, fmt.Errorf("healthcheck expect %d must be 401 or 403, or another 4xx with a reason (200 to 399 is the default)", h.Expect))
+			errs = append(errs, fmt.Errorf("healthcheck expect %d must be 401 or 403, or 404 or 405 with a reason (200 to 399 is the default)", h.Expect))
 		}
 	}
 	if m.FirstBootSeconds < 0 {
@@ -194,6 +194,30 @@ func (m Manifest) validateListingBlock() []error {
 	return errs
 }
 
+// splitRegistry separates an explicit registry host from the repository path.
+// A first segment with a dot or port, or localhost, is a host.
+func splitRegistry(img string) (host, path string) {
+	first, rest, ok := strings.Cut(strings.ToLower(img), "/")
+	if ok && (strings.ContainsAny(first, ".:") || first == "localhost") {
+		return first, rest
+	}
+	return "", strings.ToLower(img)
+}
+
+// imageRepo is the exact lowercase repository of a ref with no tag, digest or
+// docker.io prefix, so exceptions cannot be claimed through a different registry.
+func imageRepo(ref string) string {
+	if i := strings.Index(ref, "@"); i >= 0 {
+		ref = ref[:i]
+	}
+	img, _ := SplitImageRef(ref)
+	host, path := splitRegistry(img)
+	if host == "" || host == "docker.io" {
+		return path
+	}
+	return host + "/" + path
+}
+
 // ImageSourceClass says who owns the namespace of an image ref relative to the source repo.
 func ImageSourceClass(ref, sourceRepo string) string {
 	img, _ := SplitImageRef(ref)
@@ -210,12 +234,14 @@ func ImageSourceClass(ref, sourceRepo string) string {
 	if m := githubRepoPattern.FindStringSubmatch(sourceRepo); m != nil {
 		org = strings.ToLower(m[1])
 	}
-	host := strings.Split(img, "/")
-	if strings.Contains(host[0], ".") { // registry host form: ghcr.io/org/app
-		host = host[1:]
-	}
-	if org != "" && len(host) > 0 && strings.ToLower(host[0]) == org {
-		return SourceUpstream
+	host, path := splitRegistry(img)
+	owner := strings.ToLower(strings.SplitN(path, "/", 2)[0])
+	// Only registries where the owner segment is an enforced account name can claim upstream.
+	switch host {
+	case "", "docker.io", "ghcr.io", "quay.io":
+		if org != "" && owner == org {
+			return SourceUpstream
+		}
 	}
 	if verifiedPublisherFor(img, sourceRepo, publisherClock()) {
 		return SourceVerifiedPublisher
@@ -272,10 +298,10 @@ func (m Manifest) checkImage(service, ref string) []error {
 		errs = append(errs, fmt.Errorf("service %s: tag %q contains no version number", service, tag))
 	case bareMajorPattern.MatchString(tag):
 		errs = append(errs, fmt.Errorf("service %s: tag %q is a bare major version, pin the full version", service, tag))
-	case shortTagPattern.MatchString(tag) && !pinned && shortTagExceptions[m.ID] == "":
+	case shortTagPattern.MatchString(tag) && !pinned && shortTagExceptions[imageRepo(ref)] == "":
 		errs = append(errs, fmt.Errorf("service %s: tag %q is not a full version; use X.Y.Z, pin the image by digest too, or ask a maintainer for an exception", service, tag))
 	}
-	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && noUpstreamImage[m.ID] == "" {
+	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && noUpstreamImage[imageRepo(ref)] == "" {
 		errs = append(errs, fmt.Errorf("service %s: image %s is not from the upstream namespace, a Docker Official Image or an allowed rebuilder", service, ref))
 	}
 	return errs

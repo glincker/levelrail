@@ -4826,7 +4826,7 @@
      "service": "app-service",
      "image": "budibase.docker.scarf.sh/budibase/apps",
      "tag": "latest",
-     "source_class": "upstream",
+     "source_class": "community",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -4900,7 +4900,7 @@
      "service": "worker-service",
      "image": "budibase.docker.scarf.sh/budibase/worker",
      "tag": "latest",
-     "source_class": "upstream",
+     "source_class": "community",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -61801,7 +61801,7 @@
      "service": "supertokens",
      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
      "tag": "latest",
-     "source_class": "upstream",
+     "source_class": "community",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -66409,7 +66409,7 @@
      "service": "unstructured",
      "image": "downloads.unstructured.io/unstructured-io/unstructured-api",
      "tag": "latest",
-     "source_class": "upstream",
+     "source_class": "community",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
