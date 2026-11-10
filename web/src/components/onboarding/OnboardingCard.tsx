@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { buttonVariants, Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   onboardingActive,
   useMeOnboarding,
@@ -18,36 +17,40 @@ export function OnboardingCard() {
   if (data.state !== 'not_started' && data.state !== 'in_progress') return null
   const resuming = data.state === 'in_progress'
   return (
-    <Card>
-      <CardContent className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
-          <p className="text-sm font-semibold text-foreground">
-            {resuming ? t('card.resumeTitle') : t('card.title')}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {resuming
-              ? t('card.resumeBody', {
-                  current: stepIndex(data.current_step) + 1,
-                  total: ONBOARDING_STEPS.length,
-                })
-              : t('card.body')}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to="/welcome" className={buttonVariants({ size: 'sm' })}>
-            {resuming ? t('card.resume') : t('card.start')}
-          </Link>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={dismiss.isPending}
-            onClick={() => dismiss.mutate({ state: 'dismissed' })}
-          >
-            {t('card.dismiss')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div
+      data-testid="onboarding-note"
+      className="flex flex-col items-start gap-2 rounded-xl bg-muted/50 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-4"
+    >
+      <p className="min-w-0 text-sm text-muted-foreground sm:flex-1">
+        <span className="font-medium text-foreground">
+          {resuming ? t('card.resumeTitle') : t('card.title')}
+        </span>
+        <span className="sm:before:content-['\00a0\00b7\00a0']">
+          {resuming
+            ? t('card.resumeBody', {
+                current: stepIndex(data.current_step) + 1,
+                total: ONBOARDING_STEPS.length,
+              })
+            : t('card.body')}
+        </span>
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          to="/welcome"
+          className={buttonVariants({ size: 'sm', variant: 'outline' })}
+        >
+          {resuming ? t('card.resume') : t('card.start')}
+        </Link>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={dismiss.isPending}
+          onClick={() => dismiss.mutate({ state: 'dismissed' })}
+        >
+          {t('card.dismiss')}
+        </Button>
+      </div>
+    </div>
   )
 }

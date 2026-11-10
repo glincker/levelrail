@@ -207,7 +207,6 @@ export function DashboardHome({
   if (!hasApps || (deployStarted && !firstRunDone)) {
     const firstRun = (
       <div className="space-y-8">
-        <OnboardingCard />
         <Suspense fallback={null}>
           <FirstRunStripLive
             onStarted={() => {
@@ -220,6 +219,7 @@ export function DashboardHome({
           {deployStarted ? null : <FirstDeploy secondary />}
         </Suspense>
         {hasApps ? null : <RecommendationsLine showSetup={isRoot} />}
+        <OnboardingCard />
       </div>
     )
     // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.
