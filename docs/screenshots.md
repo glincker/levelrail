@@ -108,3 +108,7 @@ If you lose access to the admin account on a cluster you own, `sudo APP_DATA_DIR
 - [Identity and access](/identity-and-access) for device login flow details
 - [Feature catalog](/feature-catalog) to understand which dashboard pages are captured
 - `scripts/screenshots/capture-demo.sh` and `shots-demo.yml`: the Docker-free demo-mode variant.
+
+## Shot list
+
+`scripts/screenshots/shots-demo.yml` shoots full pages at 1440x900 so side panels and wide grids show. New names: `new-app-wizard` (/apps/new) and `settings-hub` (/settings). Rejected in the demo: databases and the engine picker (empty), backups, the Add node dialog (writes are blocked).
