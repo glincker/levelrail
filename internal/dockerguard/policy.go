@@ -13,6 +13,13 @@ import (
 // create was declared with them: the egress sidecar's firewall needs these.
 var GrantableCaps = []string{"NET_ADMIN", "NET_RAW"}
 
+// ReviewTierCaps are the small set a template may declare for the Review
+// tier. They sit inside the hardening profile, so the guard already allows them.
+var ReviewTierCaps = []string{"CHOWN", "DAC_OVERRIDE", "SETUID", "SETGID", "FOWNER"}
+
+// NormalizeCap upper-cases a capability and drops the CAP_ prefix.
+func NormalizeCap(c string) string { return normalizeCap(c) }
+
 // Policy is the fixed part of what the body validator allows.
 type Policy struct {
 	// AllowedCaps may appear in CapAdd on any container: the hardening

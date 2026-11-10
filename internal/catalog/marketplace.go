@@ -242,6 +242,7 @@ func (m Manifest) ValidateSubmission() error {
 	if m.SourceRepo != "" && !githubRepoPattern.MatchString(m.SourceRepo) {
 		errs = append(errs, fmt.Errorf("source_repo must look like https://github.com/<org>/<repo>"))
 	}
+	errs = append(errs, m.validateSubmissionCapabilities()...)
 	f, err := compose.Parse([]byte(m.Compose))
 	if err != nil {
 		return errors.Join(append(errs, err)...)
