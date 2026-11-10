@@ -183,11 +183,17 @@ func (rt *Router) approvalDecision(r *http.Request, scope *teamScope, required s
 	if err != nil {
 		return 0, "", err
 	}
+	return rt.approvalScopeStatus(r.Context(), scope, a, required, abilities)
+}
+
+// approvalScopeStatus is approvalDecision's team check for a loaded approval,
+// also re-run on each counted vote when a deploy needs several approvers.
+func (rt *Router) approvalScopeStatus(ctx context.Context, scope *teamScope, a store.DeployApproval, required string, abilities []string) (int, string, error) {
 	for _, app := range []string{a.ServiceName, a.SourceServiceName} {
 		if app == "" {
 			continue
 		}
-		owner, err := rt.ownerForResource(r.Context(), resourcePrefixApp, app)
+		owner, err := rt.ownerForResource(ctx, resourcePrefixApp, app)
 		if err != nil {
 			return 0, "", err
 		}

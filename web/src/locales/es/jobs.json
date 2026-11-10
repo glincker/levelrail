@@ -26,13 +26,15 @@
     "allow": "Permitir solapamiento",
     "forbid": "Omitir si sigue en ejecución",
     "replace": "Cancelar y reemplazar",
-    "queue": "Poner en cola detrás de ella"
+    "queue": "Poner en cola detrás de ella",
+    "queue-one": "Encolar una, omitir el resto"
   },
   "concurrencyHint": {
     "allow": "Inicia la nueva ejecución aunque la anterior no haya terminado.",
     "forbid": "Omite esta ejecución si la anterior sigue en curso, y queda registrada como omitida.",
     "replace": "Cancela la ejecución anterior que sigue en curso y luego inicia esta.",
-    "queue": "Espera a que termine la ejecución anterior y luego corre, de modo que las ejecuciones solapadas van una tras otra."
+    "queue": "Espera a que termine la ejecución anterior y luego corre, de modo que las ejecuciones solapadas van una tras otra.",
+    "queue-one": "Retiene una ejecución hasta que termine la anterior; las demás solapadas se omiten."
   },
   "preview": {
     "title": "Próximas ejecuciones ({{zone}})",
@@ -45,9 +47,9 @@
     "failed": "Fallida",
     "timeout": "Tiempo agotado",
     "container_not_running": "Contenedor detenido",
-    "skipped_concurrency": "Omitida (límite alcanzado)",
+    "skipped_concurrency": "Omitida, la anterior sigue en curso",
     "replaced": "Reemplazada por una ejecución más reciente",
-    "missed": "Perdida",
+    "missed": "No se ejecutó a su hora",
     "interrupted": "Interrumpida por un reinicio"
   },
   "trigger": {
@@ -182,5 +184,46 @@
   },
   "nextRunNever": "Nunca",
   "nextRunNeverHint": "Esta programación no tiene próxima ejecución",
-  "accessRule": "Las ejecuciones puntuales y las tareas programadas siguen las reglas de acceso de la consola exec: crear, editar o ejecutar una tarea requiere acceso root en esta app y exec activado para ella."
+  "accessRule": "Las ejecuciones puntuales y las tareas programadas siguen las reglas de acceso de la consola exec: crear, editar o ejecutar una tarea requiere acceso root en esta app y exec activado para ella.",
+  "guards": {
+    "title": "Salvaguardas",
+    "description": "Limita el solapamiento, acota la duración, recibe una alerta si falla y limita cuánto historial se guarda. Se guardan por separado.",
+    "overlap": {
+      "allow": "Permitir solapamiento",
+      "skip": "Omitir si sigue en curso",
+      "queue-one": "Encolar una, omitir el resto",
+      "replace": "Cancelar y reemplazar",
+      "queue": "Poner en cola detrás de ella"
+    },
+    "overlapHint": {
+      "allow": "Inicia la nueva ejecución aunque la anterior no haya terminado.",
+      "skip": "Omite esta ejecución si otra anterior sigue en curso, registrada como omitida.",
+      "queue-one": "Retiene una ejecución hasta que termine la anterior; las demás solapadas se omiten.",
+      "replace": "Cancela la ejecución anterior que sigue en curso y luego inicia esta.",
+      "queue": "Espera a que termine la ejecución anterior y luego corre, de modo que las ejecuciones solapadas van una tras otra."
+    },
+    "timeoutSeconds": "Tiempo límite (segundos)",
+    "keepRuns": "Conservar últimas ejecuciones",
+    "keepDays": "Conservar días",
+    "keepHint": "Vacío usa el valor predeterminado del plano de control.",
+    "defaultPlaceholder": "Predeterminado",
+    "alertOnFailure": "Alertar si falla",
+    "alertOnFailureHint": "Permite que una regla de alerta de tareas fallidas de esta aplicación te avise cuando esta tarea falle.",
+    "save": "Guardar salvaguardas",
+    "saved": "Salvaguardas guardadas",
+    "summary": {
+      "overlap": {
+        "skip": "Omite solapamiento",
+        "queue-one": "Encola una",
+        "replace": "Reemplaza solapamiento",
+        "queue": "Encola solapamiento"
+      },
+      "timeout": "Límite {{seconds}} s",
+      "alerts": "Alerta si falla",
+      "keepRuns_one": "Conserva {{count}} ejecución",
+      "keepRuns_other": "Conserva {{count}} ejecuciones",
+      "keepDays_one": "Conserva {{count}} día",
+      "keepDays_other": "Conserva {{count}} días"
+    }
+  }
 }

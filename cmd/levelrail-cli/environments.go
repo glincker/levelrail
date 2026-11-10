@@ -120,6 +120,7 @@ func runEnvironmentsUpdate(prog string, args []string, stdout, stderr io.Writer,
 	kind := fs.String("kind", "", "dev, test, uat, production or custom")
 	sortOrder := fs.Int("sort-order", 0, "position in lists, lower first")
 	protected := fs.Bool("protected", false, "protect or unprotect (pass --protected=false to clear)")
+	approvers := fs.Int("required-approvers", 1, "distinct approvers a deploy into this environment needs before it is released (1 to the server max)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s environments update <id> [flags]\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -139,10 +140,12 @@ func runEnvironmentsUpdate(prog string, args []string, stdout, stderr io.Writer,
 			patch.SortOrder = sortOrder
 		case "protected":
 			patch.Protected = protected
+		case "required-approvers":
+			patch.RequiredApprovers = approvers
 		}
 	})
 	if patch == (apiclient.PatchEnvironmentRequest{}) {
-		return reportError(stdout, stderr, jsonOut, newValidationError("environments update needs at least one of --name, --kind, --sort-order, --protected"))
+		return reportError(stdout, stderr, jsonOut, newValidationError("environments update needs at least one of --name, --kind, --sort-order, --protected, --required-approvers"))
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.PatchEnvironment(context.Background(), id, patch)

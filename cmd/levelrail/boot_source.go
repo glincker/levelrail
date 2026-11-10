@@ -445,6 +445,12 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		}
 		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
 		dbOpts = append(dbOpts, database.WithAgentVersion(agentVersionLookup(deps)))
+		dbOpts = append(dbOpts, database.WithParamsMaxMemory(func() int {
+			if svc := deps.settingsService(); svc != nil {
+				return svc.DatabaseParamsMaxMemoryMB(context.Background())
+			}
+			return 0
+		}))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers

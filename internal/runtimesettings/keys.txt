@@ -104,6 +104,7 @@ databases.pooler_image
 db.compact_min_free_percent
 db.space_report_rows
 deploy.approval_claim_timeout_seconds
+deploy.approval_max_required
 deploy.approve_digest_check_timeout_seconds
 deploy.ci_gate_max_waits_per_app
 deploy.drain_timeout

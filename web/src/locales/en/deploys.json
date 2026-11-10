@@ -658,6 +658,8 @@
     "reject": "Reject",
     "approve": "Approve",
     "approving": "Approving...",
-    "viewQueue": "View queue"
+    "viewQueue": "View queue",
+    "progress": "{{received}} of {{required}} distinct approvers so far. The deploy runs when the last one approves.",
+    "recorded": "Approval recorded: {{received}} of {{required}} distinct approvers."
   }
 }

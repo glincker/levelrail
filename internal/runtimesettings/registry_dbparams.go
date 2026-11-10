@@ -22,7 +22,8 @@ func init() {
 		CheckValue: intRangeCheck(64, 1_048_576),
 		Title:      "Database parameters: memory ceiling",
 		Description: "Highest memory size parameter, in MB, for a managed database with no memory limit, from 64 to 1048576. " +
-			"A database with a memory limit is capped at 75 percent of it instead.",
+			"A database with a memory limit is capped at 75 percent of it instead. " +
+			"Applies when the database next restarts or a change is applied.",
 	})
 }
 

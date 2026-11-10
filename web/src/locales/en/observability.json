@@ -244,6 +244,11 @@
       "label": "Data cleanup failing",
       "description": "Fires while scheduled or manual data cleanup runs keep failing.",
       "action": "Open Cleanup, read the error on the failed run, then run that data type again."
+    },
+    "job_failing": {
+      "label": "Job failing",
+      "description": "Fires once per failing job on this app that has alert on failure turned on, rate limited per job.",
+      "action": "Open the job's run history to read the failed run's logs, fix the cause, then run it now to confirm."
     }
   },
   "budgetThreshold": {

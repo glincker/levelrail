@@ -36,6 +36,8 @@ type PatchEnvironmentRequest struct {
 	Kind      *string `json:"kind,omitempty"`
 	SortOrder *int    `json:"sort_order,omitempty"`
 	Protected *bool   `json:"protected,omitempty"`
+	// RequiredApprovers is how many distinct approvers a deploy needs.
+	RequiredApprovers *int `json:"required_approvers,omitempty"`
 }
 
 // MoveEnvironmentRequest is the body of PUT .../{name}/environment.

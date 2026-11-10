@@ -160,7 +160,7 @@ export function useCreateScheduledTask(appName: string) {
 export async function updateScheduledTask(
   appName: string,
   id: string,
-  req: ScheduledTaskRequest,
+  req: Partial<ScheduledTaskRequest>,
 ): Promise<ScheduledTask> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}`,
@@ -185,8 +185,13 @@ export async function updateScheduledTask(
 export function useUpdateScheduledTask(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, req }: { id: string; req: ScheduledTaskRequest }) =>
-      updateScheduledTask(appName, id, req),
+    mutationFn: ({
+      id,
+      req,
+    }: {
+      id: string
+      req: Partial<ScheduledTaskRequest>
+    }) => updateScheduledTask(appName, id, req),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: scheduledTaskKeys.list(appName),

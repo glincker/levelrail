@@ -168,6 +168,10 @@ func runDeployApprovalsApprove(prog string, args []string, stdout, stderr io.Wri
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, result, func() {
+		if result.Approval.Status == "pending" {
+			_, _ = fmt.Fprintf(stdout, "approval %q recorded: %d of %d distinct approvers; the deploy runs when the last one approves\n", id, result.Approval.ApprovalsReceived, result.Approval.ApprovalsRequired)
+			return
+		}
 		_, _ = fmt.Fprintf(stderr, "approval %q approved; app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", id, result.App.Name, result.App.Image, prog, result.App.Name)
 		printAppHuman(stdout, result.App)
 	}); err != nil {

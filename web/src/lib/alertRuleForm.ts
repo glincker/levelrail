@@ -62,6 +62,7 @@ export const ALERT_KIND_OPTIONS: {
     label: 'Job running too long',
     Icon: CountdownGlassIcon,
   },
+  { value: 'job_failing', Icon: CountdownGlassIcon },
   { value: 'node_disk_space', Icon: ServerGlassIcon },
   {
     value: 'node_resource_usage',
@@ -146,6 +147,7 @@ export const alertRuleFormSchema = z
       'scheduled_task_failure',
       'scheduled_task_missed',
       'scheduled_task_running_long',
+      'job_failing',
       'node_disk_space',
       'node_resource_usage',
       'domain_health',
@@ -204,6 +206,7 @@ export const alertRuleFormSchema = z
       data.kind === 'email_delivery_failing' ||
       data.kind === 'cleanup_failing' ||
       data.kind === 'deploy_failed' ||
+      data.kind === 'job_failing' ||
       data.kind === 'monitor_down' ||
       data.kind === 'budget_threshold'
     ) {

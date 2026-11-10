@@ -50,6 +50,10 @@ type deployApprovalResource struct {
 	FreezeOverride    string `json:"freeze_override,omitempty"`
 	Pull              bool   `json:"pull,omitempty"`
 	IncludeEnv        bool   `json:"include_env,omitempty"`
+	// ApprovalsRequired and ApprovalsReceived show progress when the
+	// environment needs more than one distinct approver; omitted otherwise.
+	ApprovalsRequired int `json:"approvals_required,omitempty"`
+	ApprovalsReceived int `json:"approvals_received,omitempty"`
 }
 
 func toDeployApprovalResource(a store.DeployApproval) deployApprovalResource {
@@ -216,7 +220,7 @@ func (rt *Router) handleListDeployApprovals(w http.ResponseWriter, r *http.Reque
 				continue
 			}
 		}
-		out = append(out, toDeployApprovalResource(a))
+		out = append(out, rt.withApproverCounts(r.Context(), a))
 	}
 	writeJSON(w, http.StatusOK, deployApprovalListResponse{Approvals: out})
 }
@@ -234,7 +238,7 @@ func (rt *Router) handleGetDeployApproval(w http.ResponseWriter, r *http.Request
 		return
 	}
 	a = rt.expireIfStale(r.Context(), a)
-	writeJSON(w, http.StatusOK, toDeployApprovalResource(a))
+	writeJSON(w, http.StatusOK, rt.withApproverCounts(r.Context(), a))
 }
 
 type rejectDeployApprovalRequest struct {
@@ -380,6 +384,11 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 		rt.writeApprovalDecideError(w, "api: approve deploy approval failed", id, err)
 		return
 	}
+	if resp.Approval.Status == store.DeployApprovalStatusPending {
+		// Recorded, still waiting on more distinct approvers.
+		writeJSON(w, http.StatusAccepted, resp)
+		return
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -395,6 +404,13 @@ var approvalBeforeClaim func()
 // dashboard click and a verified Slack/Discord click can never apply an
 // approval differently.
 func (rt *Router) applyAndDecideApproval(ctx context.Context, a store.DeployApproval, deciderType, deciderID, deciderName string) (deployApprovalDecisionResponse, error) {
+	gate, err := rt.gateRequiredApprovers(ctx, a, deciderType, deciderID, deciderName)
+	if err != nil {
+		return deployApprovalDecisionResponse{}, err
+	}
+	if !gate.ready {
+		return gate.waiting, nil
+	}
 	if approvalBeforeClaim != nil {
 		approvalBeforeClaim()
 	}
@@ -407,7 +423,14 @@ func (rt *Router) applyAndDecideApproval(ctx context.Context, a store.DeployAppr
 	if !ok {
 		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "deploy approval " + a.ID + " is no longer pending"}
 	}
+	if gate.image != "" {
+		// Deploy the digest every approver saw, not whatever the tag points at now.
+		a.Image = gate.image
+	}
 	resp, err := rt.applyClaimedApproval(ctx, a)
+	if gate.multi {
+		rt.auditRelease(ctx, a, deciderType, deciderID, err)
+	}
 	if err != nil {
 		rt.releaseApprovalClaim(ctx, a.ID, claimedAt, "apply failed: "+err.Error())
 		return deployApprovalDecisionResponse{}, err

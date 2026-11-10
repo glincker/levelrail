@@ -427,6 +427,8 @@ type DeployApprovalResource struct {
 	CreatedAt         string `json:"created_at"`
 	ExpiresAt         string `json:"expires_at"`
 	DecidedAt         string `json:"decided_at,omitempty"`
+	ApprovalsRequired int    `json:"approvals_required,omitempty"`
+	ApprovalsReceived int    `json:"approvals_received,omitempty"`
 }
 
 // DeployApprovalListResult mirrors internal/api's
@@ -2944,6 +2946,8 @@ type EnvironmentResource struct {
 	Kind      string `json:"kind,omitempty"`
 	Scope     string `json:"scope,omitempty"`
 	SortOrder int    `json:"sort_order,omitempty"`
+	// RequiredApprovers is set on PATCH responses; 0 when not reported.
+	RequiredApprovers int `json:"required_approvers,omitempty"`
 }
 
 // CreateEnvironmentRequest mirrors internal/api's

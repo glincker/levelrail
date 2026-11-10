@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -57,6 +57,8 @@ import { CronScheduleFields } from './CronScheduleFields'
 import { CronPreview } from './CronPreview'
 import { JobHttpFields } from './JobHttpFields'
 
+const JobGuardsSection = lazy(() => import('./JobGuardsSection'))
+
 export function JobDialog({
   appName,
   task,
@@ -100,6 +102,11 @@ export function JobDialog({
 
   const onSubmit = handleSubmit((values) => {
     const req = toRequest(values)
+    // On edit the guard rails section owns these, saved by its own partial PUT.
+    if (isEdit) {
+      delete req.concurrency_policy
+      delete req.timeout_seconds
+    }
     const onSuccess = () => {
       handleOpenChange(false)
       toast.add({
@@ -255,44 +262,49 @@ export function JobDialog({
 
           <CronPreview cron={cron} timezone={timezone} />
 
-          <Field>
-            <FieldLabel htmlFor="job-concurrency">
-              {t('dialog.concurrencyLabel')}
-            </FieldLabel>
-            <Controller
-              control={control}
-              name="concurrencyPolicy"
-              render={({ field }) => (
-                <Select<ScheduledTaskConcurrencyPolicy>
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value ?? 'forbid')
-                  }}
-                >
-                  <SelectTrigger id="job-concurrency" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="allow">
-                      {t('concurrency.allow')}
-                    </SelectItem>
-                    <SelectItem value="forbid">
-                      {t('concurrency.forbid')}
-                    </SelectItem>
-                    <SelectItem value="replace">
-                      {t('concurrency.replace')}
-                    </SelectItem>
-                    <SelectItem value="queue">
-                      {t('concurrency.queue')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <FieldDescription>
-              {t(`concurrencyHint.${watch('concurrencyPolicy')}`)}
-            </FieldDescription>
-          </Field>
+          {isEdit ? null : (
+            <Field>
+              <FieldLabel htmlFor="job-concurrency">
+                {t('dialog.concurrencyLabel')}
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="concurrencyPolicy"
+                render={({ field }) => (
+                  <Select<ScheduledTaskConcurrencyPolicy>
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value ?? 'forbid')
+                    }}
+                  >
+                    <SelectTrigger id="job-concurrency" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="allow">
+                        {t('concurrency.allow')}
+                      </SelectItem>
+                      <SelectItem value="forbid">
+                        {t('concurrency.forbid')}
+                      </SelectItem>
+                      <SelectItem value="replace">
+                        {t('concurrency.replace')}
+                      </SelectItem>
+                      <SelectItem value="queue">
+                        {t('concurrency.queue')}
+                      </SelectItem>
+                      <SelectItem value="queue-one">
+                        {t('concurrency.queue-one')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldDescription>
+                {t(`concurrencyHint.${watch('concurrencyPolicy')}`)}
+              </FieldDescription>
+            </Field>
+          )}
 
           <Collapsible>
             <CollapsibleTrigger
@@ -301,12 +313,14 @@ export function JobDialog({
               {t('dialog.advanced')}
             </CollapsibleTrigger>
             <CollapsiblePanel className="mt-3 space-y-4">
-              {numberField(
-                'job-timeout',
-                'timeoutSeconds',
-                t('dialog.timeout'),
-                t('dialog.timeoutHint'),
-              )}
+              {isEdit
+                ? null
+                : numberField(
+                    'job-timeout',
+                    'timeoutSeconds',
+                    t('dialog.timeout'),
+                    t('dialog.timeoutHint'),
+                  )}
               {numberField(
                 'job-retries',
                 'maxRetries',
@@ -407,6 +421,11 @@ export function JobDialog({
             </Button>
           </SheetFooter>
         </form>
+        {isEdit && open ? (
+          <Suspense fallback={null}>
+            <JobGuardsSection appName={appName} task={task} />
+          </Suspense>
+        ) : null}
       </SheetContent>
     </Sheet>
   )

@@ -195,6 +195,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
 | `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
 | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | [`deploy.approval_claim_timeout_seconds`](/runtime-settings#deploys) | `900` |
+| `APP_DEPLOY_APPROVAL_MAX_REQUIRED` | [`deploy.approval_max_required`](/runtime-settings#deploys) | `10` |
 | `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | [`deploy.approve_digest_check_timeout_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |

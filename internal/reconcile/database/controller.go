@@ -266,6 +266,7 @@ type Controller struct {
 	// isn't set, meaning "use defaultSlowQueryThresholdMs"; see
 	// effectiveSlowQueryThresholdMs.
 	slowQueryThresholdMs int
+	paramsMaxMemoryMB    func() int
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
@@ -460,7 +461,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 	switch desired.Engine {
 	case store.EngineRedis:
 		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, engineParamsSpec(desired))
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
@@ -478,7 +479,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			env["PGDATA"] = postgresDataPath
 		}
 		command := postgresCommand(c.tls, c.effectiveSlowQueryThresholdMs(), desired.PITREnabled)
-		res, err := c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls, engineParamsSpec(desired))
+		res, err := c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls, c.engineParamsSpec(desired))
 		if err != nil {
 			return res, err
 		}
@@ -504,7 +505,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
 		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls, engineParamsSpec(desired))
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -516,7 +517,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls, engineParamsSpec(desired))
+		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -536,7 +537,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		}
 		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
 		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls, engineParamsSpec(desired))
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -552,7 +553,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		// Same /data path, port and defaults as Redis and the same TLS flags,
 		// but the TLS command must name the binary the Valkey image ships.
 		command, containerPort := redisCommandAndPort(c.tls, valkeyServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, engineParamsSpec(desired))
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's

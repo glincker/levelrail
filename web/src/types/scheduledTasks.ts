@@ -14,8 +14,10 @@ export type ScheduledTaskRunStatus =
   | 'interrupted'
 
 // What happens when a job's next run finds the previous one still going.
+// skip is accepted on write and stored as forbid; queue-one keeps at most one
+// waiting run and skips the rest.
 export type ScheduledTaskConcurrencyPolicy =
-  'allow' | 'forbid' | 'replace' | 'queue'
+  'allow' | 'forbid' | 'skip' | 'replace' | 'queue' | 'queue-one'
 
 // fresh runs the command in a new container of the app's image with its
 // env, volumes and network; exec runs it inside the running container.
@@ -58,6 +60,12 @@ export interface ScheduledTask {
   timezone?: string
   enabled: boolean
   concurrency_policy: ScheduledTaskConcurrencyPolicy
+  // Read-only overlap name of concurrency_policy.
+  overlap_policy?: ScheduledTaskConcurrencyPolicy
+  // 0 keep_runs or keep_days means the control plane default.
+  alert_on_failure?: boolean
+  keep_runs?: number
+  keep_days?: number
   timeout_seconds?: number
   max_retries?: number
   retry_backoff_seconds?: number
@@ -94,6 +102,9 @@ export interface ScheduledTaskRequest {
   timezone?: string
   enabled: boolean
   concurrency_policy?: ScheduledTaskConcurrencyPolicy
+  alert_on_failure?: boolean
+  keep_runs?: number
+  keep_days?: number
   timeout_seconds?: number
   max_retries?: number
   retry_backoff_seconds?: number

@@ -26,13 +26,15 @@
     "allow": "Allow overlap",
     "forbid": "Skip if still running",
     "replace": "Cancel and replace",
-    "queue": "Queue behind it"
+    "queue": "Queue behind it",
+    "queue-one": "Queue one, skip the rest"
   },
   "concurrencyHint": {
     "allow": "Start the new run even if the previous one has not finished.",
     "forbid": "Skip this run if a previous one is still in flight, recorded as skipped.",
     "replace": "Cancel the still-running previous run, then start this one.",
-    "queue": "Wait for the previous run to finish, then run, so overlapping runs go one after another."
+    "queue": "Wait for the previous run to finish, then run, so overlapping runs go one after another.",
+    "queue-one": "Hold one run until the previous finishes; further overlapping runs are skipped."
   },
   "preview": {
     "title": "Next runs ({{zone}})",
@@ -45,9 +47,9 @@
     "failed": "Failed",
     "timeout": "Timed out",
     "container_not_running": "Container not running",
-    "skipped_concurrency": "Skipped (limit reached)",
+    "skipped_concurrency": "Skipped, previous run still going",
     "replaced": "Replaced by newer run",
-    "missed": "Missed",
+    "missed": "Missed its scheduled time",
     "interrupted": "Interrupted by restart"
   },
   "trigger": {
@@ -182,5 +184,46 @@
   },
   "nextRunNever": "Never",
   "nextRunNeverHint": "This schedule has no future run",
-  "accessRule": "One-off runs and scheduled jobs follow console exec access rules: creating, editing or running a job needs root access on this app and exec enabled for it."
+  "accessRule": "One-off runs and scheduled jobs follow console exec access rules: creating, editing or running a job needs root access on this app and exec enabled for it.",
+  "guards": {
+    "title": "Guard rails",
+    "description": "Limit overlap, cap run time, get an alert when it fails and bound how much history is kept. These save on their own.",
+    "overlap": {
+      "allow": "Allow overlap",
+      "skip": "Skip if still running",
+      "queue-one": "Queue one, skip the rest",
+      "replace": "Cancel and replace",
+      "queue": "Queue behind it"
+    },
+    "overlapHint": {
+      "allow": "Start the new run even if the previous one has not finished.",
+      "skip": "Skip this run if a previous one is still in flight, recorded as skipped.",
+      "queue-one": "Hold one run until the previous finishes; further overlapping runs are skipped.",
+      "replace": "Cancel the still-running previous run, then start this one.",
+      "queue": "Wait for the previous run to finish, then run, so overlapping runs go one after another."
+    },
+    "timeoutSeconds": "Timeout (seconds)",
+    "keepRuns": "Keep last runs",
+    "keepDays": "Keep days",
+    "keepHint": "Empty uses the control plane default.",
+    "defaultPlaceholder": "Default",
+    "alertOnFailure": "Alert on failure",
+    "alertOnFailureHint": "Lets a job failing alert rule on this app notify you when this job fails.",
+    "save": "Save guard rails",
+    "saved": "Guard rails saved",
+    "summary": {
+      "overlap": {
+        "skip": "Skips overlap",
+        "queue-one": "Queues one",
+        "replace": "Replaces overlap",
+        "queue": "Queues overlap"
+      },
+      "timeout": "Timeout {{seconds}} s",
+      "alerts": "Alerts on failure",
+      "keepRuns_one": "Keeps {{count}} run",
+      "keepRuns_other": "Keeps {{count}} runs",
+      "keepDays_one": "Keeps {{count}} day",
+      "keepDays_other": "Keeps {{count}} days"
+    }
+  }
 }

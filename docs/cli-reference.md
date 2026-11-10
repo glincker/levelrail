@@ -2000,13 +2000,15 @@ levelrail-cli iam policies create --name read-web --document '{"Statement":[{"Ef
 ```
 levelrail-cli environments list [flags]
 levelrail-cli environments create --name NAME [--kind dev|test|uat|production|custom] [--protected] [--sort-order N] [flags]
-levelrail-cli environments update <id> [--name N] [--kind K] [--protected[=false]] [--sort-order N] [flags]
+levelrail-cli environments update <id> [--name N] [--kind K] [--protected[=false]] [--sort-order N] [--required-approvers N] [flags]
 levelrail-cli environments delete <id> [--move-to ID] [flags]
 levelrail-cli apps move-env <app> <environment> [--confirm] [flags]
 levelrail-cli databases move-env <db> <environment> [--confirm] [flags]
 ```
 
 Global environments exist across the entire instance (Development, Test, UAT, Production). Kinds control which environment a resource has and what policies apply. Moving into or out of a protected environment requires confirmation and approval from another user. See [Environments](/environments).
+
+`--required-approvers N` makes a deploy into a protected environment wait for N distinct approvers (default 1, capped by the `deploy.approval_max_required` runtime setting). The requester never counts, two tokens of one user count once, a revoked or disabled approver stops counting, and a replaced held deploy starts again from zero. Each vote is checked again at release time: a revoked or disabled approver, or one who lost the deploy ability or access to the app, stops counting, and a vote whose token was revoked can be cast again from a live session. Votes must come from a user or a token owned by a user. With N above 1 a tag only image is resolved to its registry digest, the release deploys that digest, and a tag that moves between votes refuses the release (request the deploy again). Raising N needs the environment edit ability; lowering it or unprotecting an environment needs `write:sensitive`. With N=1 nothing changes: the tag is deployed as today. `deploy-approvals approve` prints the progress until the last approval releases the deploy once.
 
 ## Secrets
 

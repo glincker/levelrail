@@ -658,6 +658,8 @@
     "reject": "Rechazar",
     "approve": "Aprobar",
     "approving": "Aprobando...",
-    "viewQueue": "Ver cola"
+    "viewQueue": "Ver cola",
+    "progress": "{{received}} de {{required}} aprobadores distintos por ahora. El despliegue se ejecuta cuando apruebe el último.",
+    "recorded": "Aprobación registrada: {{received}} de {{required}} aprobadores distintos."
   }
 }

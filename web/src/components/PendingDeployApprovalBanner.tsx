@@ -47,7 +47,17 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   function handleApprove() {
     if (!approval) return
     approve.mutate(approval.id, {
-      onSuccess: () => {
+      onSuccess: (res) => {
+        if (res.approval.status === 'pending') {
+          toast.add({
+            title: t('approvalBanner.recorded', {
+              received: res.approval.approvals_received ?? 0,
+              required: res.approval.approvals_required ?? 0,
+            }),
+            type: 'success',
+          })
+          return
+        }
         toast.add({
           title: t('approvalBanner.approved', {
             app: appName,
@@ -119,6 +129,14 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
               name: approval.requested_by_name,
             })}
           </p>
+          {(approval.approvals_required ?? 0) > 1 ? (
+            <p className="text-muted-foreground">
+              {t('approvalBanner.progress', {
+                received: approval.approvals_received ?? 0,
+                required: approval.approvals_required,
+              })}
+            </p>
+          ) : null}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">

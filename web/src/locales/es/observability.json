@@ -77,6 +77,11 @@
       "label": "Fallo en la limpieza de datos",
       "description": "Se activa mientras las limpiezas de datos programadas o manuales sigan fallando.",
       "action": "Abre Limpieza, lee el error de la ejecución fallida y vuelve a ejecutar ese tipo de datos."
+    },
+    "job_failing": {
+      "label": "Tarea fallando",
+      "description": "Se activa una vez por cada tarea fallida de esta aplicación que tenga activada la alerta si falla, con límite de frecuencia por tarea.",
+      "action": "Abre el historial de la tarea para leer los registros de la ejecución fallida, corrige la causa y ejecútala ahora para confirmarlo."
     }
   },
   "budgetThreshold": {

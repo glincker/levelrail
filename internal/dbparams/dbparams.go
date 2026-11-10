@@ -373,6 +373,49 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
+// ClampMemory lowers a valid memory parameter above lim's ceiling to the
+// ceiling, in the value's own unit, so a lower cap still bounds the engine
+// instead of the parameter falling back to an uncapped default.
+func ClampMemory(engine, name, value string, lim Limits) (string, bool) {
+	s, ok := lookup(engine, name)
+	if !ok || !s.MemoryCap || lim.MaxMemoryBytes <= 0 {
+		return value, false
+	}
+	v, err := ValidateOne(engine, name, value, Limits{})
+	if err != nil {
+		return value, false
+	}
+	if _, err := ValidateOne(engine, name, v, lim); err == nil {
+		return value, false
+	}
+	fam, _ := FamilyFor(engine)
+	switch s.Kind {
+	case KindFloat:
+		gb := math.Max(math.Floor(float64(lim.MaxMemoryBytes)/gib*100)/100, s.Min)
+		return strconv.FormatFloat(gb, 'f', -1, 64), true
+	case KindSize:
+		_, unit, _, _ := parseSize(fam, v)
+		mult := sizeUnits(fam)[strings.ToLower(unit)].mult
+		if n := lim.MaxMemoryBytes / mult; n > 0 {
+			return strconv.FormatInt(n, 10) + unit, true
+		}
+		small, smallMult := smallestUnit(fam)
+		return strconv.FormatInt(max(lim.MaxMemoryBytes/smallMult, int64(s.Min)/smallMult), 10) + small, true
+	}
+	return value, false
+}
+
+func smallestUnit(f Family) (string, int64) {
+	var spelling string
+	var mult int64
+	for _, u := range sizeUnits(f) {
+		if mult == 0 || u.mult < mult {
+			spelling, mult = u.spelling, u.mult
+		}
+	}
+	return spelling, mult
+}
+
 // Args renders applied parameters as separate argv elements. Entries that
 // fail validation are dropped, so a stored row edited by hand never reaches the engine.
 func Args(engine string, params map[string]string, lim Limits) []string {

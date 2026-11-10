@@ -74,6 +74,9 @@ export function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'scheduled_task_failure') {
     return `job ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
   }
+  if (rule.kind === 'job_failing') {
+    return 'any job on this app with alert on failure turned on fails'
+  }
   if (rule.kind === 'scheduled_task_missed') {
     return `job ${rule.scheduled_task_id ?? '?'} misses scheduled runs`
   }
@@ -177,6 +180,9 @@ export function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'scheduled_task_failure') {
     return `${rule.last_value} consecutive failures`
+  }
+  if (rule.kind === 'job_failing') {
+    return `${rule.last_value} failing job(s)`
   }
   if (rule.kind === 'scheduled_task_missed') {
     return `${rule.last_value} missed runs in a row`
