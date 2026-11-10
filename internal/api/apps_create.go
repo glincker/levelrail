@@ -156,6 +156,14 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// row below doesn't exist yet.
 	unlockName := lockAppName(req.Name)
 	defer unlockName()
+	// The checks above ran unlocked; a clone or compose deploy may have taken the name since.
+	if ferr := rt.appNameFree(r.Context(), req.Name); errors.Is(ferr, errAppNameTaken) {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
+		return
+	} else if ferr != nil {
+		rt.internalError(w, "api: create app: recheck name failed", ferr, slog.String("name", req.Name))
+		return
+	}
 	for key, value := range req.Secrets {
 		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
 			if errors.Is(err, secrets.ErrSecretLocked) {

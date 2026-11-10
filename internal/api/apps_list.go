@@ -83,16 +83,22 @@ func parseAppListFilter(r *http.Request) store.AppListFilter {
 // caller has any IAM policies at all (none means every app is visible
 // to a caller holding the base read ability, so DB paging is exact).
 func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) bool, filtered bool, err error) {
+	return rt.callerAppAccess(r, AbilityRead)
+}
+
+// callerAppAccess is callerAppVisibility for any ability, so a deploy-only
+// route keeps the stack member rule without demanding read.
+func (rt *Router) callerAppAccess(r *http.Request, ability string) (canRead func(string) bool, filtered bool, err error) {
 	abilities, policies, scope, err := rt.callerScope(r)
 	if err != nil {
 		return nil, false, err
 	}
 	canRead = func(app string) bool {
-		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixApp, app)
+		return scope.authorize(abilities, policies, ability, resourcePrefixApp, app)
 	}
 	if scope.teams != nil && rt.teamDB() != nil {
 		canRead = rt.composeAwareRead(r.Context(), scope, canRead, func(stack, member string) bool {
-			return scope.authorizeAsMember(abilities, policies, AbilityRead, resourcePrefixApp, stack, member)
+			return scope.authorizeAsMember(abilities, policies, ability, resourcePrefixApp, stack, member)
 		})
 	}
 	return canRead, len(policies) > 0 || scope.restricted(), nil

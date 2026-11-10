@@ -105,6 +105,11 @@ type Runner struct {
 	Limits   Limits
 	// HistoryKeepFn reads the live scheduled_tasks.history_keep setting.
 	HistoryKeepFn func(context.Context) int
+	// OutputCapFn reads the per-run output bound live from runtime settings.
+	OutputCapFn func(context.Context) int
+	// Paused returns a reason to skip a scheduled tick (a deploy freeze), or "".
+	// Manual runs are an explicit operator action and are never paused.
+	Paused func(context.Context, store.ScheduledTask) string
 	// Target and HTTPConfigs serve http-mode jobs; Client overrides the
 	// HTTP client (nil uses http.DefaultClient).
 	Target      HTTPTarget
@@ -216,6 +221,11 @@ type result struct {
 // inside the one run. The returned error is only an infrastructure
 // failure; a failing command is a recorded outcome, not an error.
 func (r *Runner) RunTrigger(ctx context.Context, task store.ScheduledTask, trig Trigger) error {
+	if trig.Kind == store.ScheduledTaskTriggerSchedule && r.Paused != nil {
+		if reason := r.Paused(ctx, task); reason != "" {
+			return r.settleWithoutRunning(ctx, task, trig, store.ScheduledTaskStatusSkippedFreeze, reason)
+		}
+	}
 	policy := normalizeConcurrencyPolicy(task.ConcurrencyPolicy)
 
 	runCtx, cleanup, skip := r.beginRun(ctx, task.ID, policy)
@@ -337,6 +347,11 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 }
 
 func (r *Runner) outputCap() int {
+	if r.OutputCapFn != nil {
+		if n := r.OutputCapFn(context.Background()); n > 0 {
+			return n
+		}
+	}
 	if n := r.limits().MaxOutputBytes; n > 0 {
 		return n
 	}

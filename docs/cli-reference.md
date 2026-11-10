@@ -2192,8 +2192,9 @@ levelrail-cli templates deploy <id> [--name NAME] [flags]
 levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
 levelrail-cli templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [--var NAME]... [flags]
+levelrail-cli templates service list|show <id>|validate -f <template.yaml | dir>|install <id> [--yes]|deploy <id> [--yes] [flags]
 ```
-`list` browses the curated service catalog with license and trust columns, or `--custom` for your own saved templates. `--license-class`, `--arch` and `--hide-deprecated` filter on the server, `--category` matches the CATEGORY column case-insensitively on the client, and deprecated entries are marked, not hidden, by default. `get` shows one entry including its license, trust, verification (image tag and architectures) and any deprecation notice, then its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
+`list` browses the curated service catalog with license and trust columns, or `--custom` for your own saved templates. `--license-class`, `--arch` and `--hide-deprecated` filter on the server, `--category` matches the CATEGORY column case-insensitively on the client, and deprecated entries are marked, not hidden, by default. `get` shows one entry including its license, trust, verification (image tag and architectures) and any deprecation notice, then its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). `templates service` calls the server side `/service-templates` routes: `list` and `show` read the catalog, `validate -f` posts a submission and prints each field error (exit 1 when invalid), and `install` and `deploy` print a plan and change nothing until you pass `--yes`. `deploy` here is the one-click trial deploy under a generated app name. See [Templates](/templates).
 
 `import` saves a local compose file (or `-` for stdin) as a custom template through `POST /api/v1/templates/custom`. The id defaults to the file name; an id used by a built-in or an existing custom template is refused. `--var` names a `${NAME}` placeholder the file must use.
 
@@ -2212,6 +2213,9 @@ levelrail-cli compose logs <app> [--service S] [--since 1h] [--tail N] [-f] [fla
 levelrail-cli compose redeploy <app> [--service S] [flags]
 levelrail-cli compose rollback <app> [--revision N] [flags]
 levelrail-cli compose down <app> [--volumes] [flags]
+levelrail-cli compose schedules list <app> [flags]
+levelrail-cli compose schedules add <app> <service> --schedule CRON [--name N] [--timezone TZ] [--paused] -- CMD...
+levelrail-cli compose schedules run|runs|pause|resume|rm <app> <service> <id|name> [flags]
 ```
 - `deploy` deploys or updates a stack and records a numbered revision; `-f -` reads stdin. `--profile-name` enables services behind compose `profiles:`.
 - `preview` asks the server to parse and check a file without saving anything, lists each service with its generated and required env vars, and exits with code 2 when the file would be rejected.
@@ -2220,6 +2224,7 @@ levelrail-cli compose down <app> [--volumes] [flags]
 - `redeploy` recreates every service's containers, or one service's.
 - `rollback` re-applies an earlier compose file (default: the one before the latest) as a new revision.
 - `down` removes every service and its containers; named volumes and generated secrets are kept unless you pass `--volumes`.
+- `schedules` runs a command on a cron schedule inside one service's running container. `run` starts it now, `runs` prints the history with exit codes, `pause` and `resume` toggle it.
 
 See [Compose apps](/compose-apps).
 

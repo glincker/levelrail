@@ -94,6 +94,16 @@ func (s *bootState) buildRunners() error {
 			}
 			return settings.Int(c, runtimesettings.KeyScheduledTasksHistoryKeep)
 		},
+		OutputCapFn: func(c context.Context) int {
+			settings := bootHistorySettings
+			if s.apiRouter != nil && s.apiRouter.RuntimeSettings() != nil {
+				settings = s.apiRouter.RuntimeSettings()
+			}
+			return settings.Int(c, runtimesettings.KeyScheduledTasksMaxOutputBytes)
+		},
+		Paused: func(c context.Context, task store.ScheduledTask) string {
+			return composeJobFreezeReason(c, db, logger, task.ServiceName, time.Now())
+		},
 		NamePrefix: b.ShortName,
 		Resolver: func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)

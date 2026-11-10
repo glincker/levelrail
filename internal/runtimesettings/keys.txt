@@ -288,6 +288,7 @@ runtime.tmpfs_max_bytes
 runtime.ulimit_bytes_max
 runtime.ulimit_count_max
 scheduled_tasks.history_keep
+scheduled_tasks.max_output_bytes
 secrets.provider_cache_ttl_seconds
 secrets.provider_max_response_kib
 secrets.provider_max_rps

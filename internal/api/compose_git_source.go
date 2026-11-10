@@ -218,6 +218,27 @@ func (rt *Router) stackNameTaken(ctx context.Context, name string) (bool, error)
 	return false, err
 }
 
+// errAppNameTaken marks a name an app or a compose stack already holds.
+var errAppNameTaken = errors.New("an app with this name already exists")
+
+// appNameFree re-checks a new app name; callers hold lockAppName(name) so the
+// check and the write cannot interleave with another create.
+func (rt *Router) appNameFree(ctx context.Context, name string) error {
+	if _, err := rt.apps.GetDesiredService(ctx, name); err == nil {
+		return errAppNameTaken
+	} else if !errors.Is(err, store.ErrServiceNotFound) {
+		return fmt.Errorf("check app %q: %w", name, err)
+	}
+	taken, err := rt.stackNameTaken(ctx, name)
+	if err != nil {
+		return fmt.Errorf("check stack %q: %w", name, err)
+	}
+	if taken {
+		return errAppNameTaken
+	}
+	return nil
+}
+
 func (rt *Router) loadComposeGitSource(w http.ResponseWriter, r *http.Request, name string) (*store.GitSource, bool) {
 	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
 	if errors.Is(err, store.ErrGitSourceNotFound) || (err == nil && gs.ComposePath == "") {

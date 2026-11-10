@@ -116,6 +116,10 @@ func (rt *Router) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.applyProjectClone(r, plan); err != nil {
+		if errors.Is(err, errAppNameTaken) {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 		rt.internalError(w, "api: clone project: apply failed", err, slog.String("id", src.ID))
 		return
 	}

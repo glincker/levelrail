@@ -253,6 +253,22 @@ levelrail-cli apps env export blog-db
 
 Effective env of one service, lowest to highest precedence: the `environment:` block in the compose file, then env set on the member app, then branch or pull request overrides on that member for previews. Generated secrets are encrypted per member and masked when listed. To give several services the same value, set it on each member.
 
+## Scheduled commands in a service
+
+A schedule runs a command inside one service's running container, through the same exec path as the console, so console exec must be on for that service (`PUT /api/v1/apps/<app>-<service>/exec-access`).
+
+```bash
+levelrail-cli compose schedules add shop web --schedule "0 3 * * *" --name nightly-report -- php artisan report:send
+levelrail-cli compose schedules run shop web nightly-report
+levelrail-cli compose schedules runs shop web nightly-report
+```
+
+- Every run is kept in history with its trigger, status, exit code, duration and the tail of its output. How many bytes of output a run keeps is the `scheduled_tasks.max_output_bytes` runtime setting, and how many runs are kept is `scheduled_tasks.history_keep`. Output is shown only to callers with `read_sensitive`.
+- A scheduled tick is skipped and recorded as `skipped_freeze` while a deploy freeze covers the service, the stack or everything. Run now still works during a freeze. A global freeze pauses compose service schedules only, not plain app jobs, and a freeze skip sends no heartbeat monitor ping.
+- Creating, running and pausing a schedule need access to both the stack and that service. An unknown stack, an unknown service and one you cannot read all answer `404 app not found`.
+- The stack page shows every schedule in the Schedules card, with run now and the last runs of each.
+- API: `GET /api/v1/apps/{name}/compose/schedules` lists them all; `/api/v1/apps/{name}/compose/services/{service}/schedules` takes `POST`, and `/{id}` takes `GET`, `DELETE`, `POST /run`, `POST /enable`, `POST /disable` and `GET /runs`.
+
 ## Troubleshooting
 
 ### Compose file was rejected as invalid

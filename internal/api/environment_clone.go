@@ -338,6 +338,10 @@ func (rt *Router) handleEnvironmentClone(w http.ResponseWriter, r *http.Request)
 				writeError(w, http.StatusConflict, domainTaken.Error())
 				return
 			}
+			if errors.Is(err, errAppNameTaken) {
+				writeError(w, http.StatusConflict, err.Error())
+				return
+			}
 			rt.internalError(w, "api: clone environment: clone app failed", err, slog.String("source", svc.Name), slog.String("new_name", newName))
 			return
 		}
@@ -469,6 +473,9 @@ func (rt *Router) cloneEnvironmentSharedEnv(ctx context.Context, sourceEnvID, ne
 func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, newName, newEnvID string, domains []string, copySecretValues bool) (store.DesiredService, error) {
 	// Serialized with deleteApp so a same-name delete cannot wipe the secrets copied below.
 	defer lockAppName(newName)()
+	if err := rt.appNameFree(ctx, newName); err != nil {
+		return store.DesiredService{}, err
+	}
 	desired := cloneDesiredService(source, newName, domains)
 	if other, err := rt.cloneVolumeConflict(ctx, desired); err != nil {
 		return store.DesiredService{}, fmt.Errorf("check volume owners: %w", err)

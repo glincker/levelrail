@@ -410,6 +410,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
 | `APP_JOBS_HISTORY_KEEP` | [`scheduled_tasks.history_keep`](/runtime-settings#data-retention) | `200` |
+| `APP_JOBS_MAX_OUTPUT_BYTES` | [`scheduled_tasks.max_output_bytes`](/runtime-settings#data-retention) | `65536` |
 | `LEVELRAIL_SPOOL_MAX_AGE_SECONDS` | [`spool.max_age_seconds`](/runtime-settings#data-retention) | `0` |
 | `LEVELRAIL_SPOOL_QUOTA_BYTES` | [`spool.quota_bytes`](/runtime-settings#data-retention) | `0` |
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |

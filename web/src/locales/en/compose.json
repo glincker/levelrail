@@ -166,5 +166,18 @@
       "noMasterKey": "Git connections need a master key on this control plane.",
       "generic": "Something went wrong."
     }
+  },
+  "schedules": {
+    "title": "Schedules",
+    "description": "Commands that run on a cron schedule inside one service's container.",
+    "empty": "No schedules yet. Add one with levelrail-cli compose schedules add {{app}} <service> --schedule CRON -- CMD.",
+    "paused": "Paused",
+    "history": "History",
+    "noRuns": "No runs yet.",
+    "none": "none",
+    "exitCode": "exit {{code}}",
+    "runNow": "Run now",
+    "runNowLabel": "Run {{name}} on {{service}} now",
+    "started": "Started run {{id}}"
   }
 }

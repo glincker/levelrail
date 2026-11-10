@@ -265,11 +265,11 @@ func scanScheduledTaskRunsTx(ctx context.Context, tx *sql.Tx, id string) ([]Sche
 // Prune deletes pick runs oldest first, bounded by the trailing LIMIT. Skipped
 // runs have their own cap so a busy overlap never pushes out real history.
 const (
-	pruneSkipped = `DELETE FROM scheduled_task_runs WHERE id IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status = 'skipped_concurrency'
-		AND id NOT IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status = 'skipped_concurrency' ORDER BY started_at DESC, id DESC LIMIT ?)
+	pruneSkipped = `DELETE FROM scheduled_task_runs WHERE id IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status IN ('skipped_concurrency', 'skipped_freeze')
+		AND id NOT IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status IN ('skipped_concurrency', 'skipped_freeze') ORDER BY started_at DESC, id DESC LIMIT ?)
 		ORDER BY started_at ASC, id ASC LIMIT ?)`
-	pruneBeyondKeep = `DELETE FROM scheduled_task_runs WHERE id IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status NOT IN ('running', 'queued', 'skipped_concurrency')
-		AND id NOT IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status NOT IN ('running', 'queued', 'skipped_concurrency') ORDER BY started_at DESC, id DESC LIMIT ?)
+	pruneBeyondKeep = `DELETE FROM scheduled_task_runs WHERE id IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status NOT IN ('running', 'queued', 'skipped_concurrency', 'skipped_freeze')
+		AND id NOT IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status NOT IN ('running', 'queued', 'skipped_concurrency', 'skipped_freeze') ORDER BY started_at DESC, id DESC LIMIT ?)
 		ORDER BY started_at ASC, id ASC LIMIT ?)`
 	pruneOlderThan = `DELETE FROM scheduled_task_runs WHERE id IN (SELECT id FROM scheduled_task_runs WHERE task_id = ? AND status NOT IN ('running', 'queued')
 		AND started_at < ? ORDER BY started_at ASC, id ASC LIMIT ?)`

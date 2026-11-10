@@ -450,6 +450,9 @@ type sseLogEvent struct {
 // already rendered.
 func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	deployID := r.PathValue("deployId")
 
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
@@ -666,4 +669,46 @@ func (rt *Router) callerCanReadApp(r *http.Request, name string) bool {
 		return false
 	}
 	return rt.canReadDeploymentApp(r.Context(), canRead, name)
+}
+
+// requireAppAccess answers an app the caller cannot reach with ability exactly
+// like an unknown name; a visibility lookup error is a 500, still denying.
+func (rt *Router) requireAppAccess(w http.ResponseWriter, r *http.Request, name, ability string) bool {
+	allowed, _, err := rt.callerAppAccess(r, ability)
+	if err != nil {
+		rt.internalError(w, "api: app access check failed", err, slog.String("name", name))
+		return false
+	}
+	if rt.canReadDeploymentApp(r.Context(), allowed, name) {
+		return true
+	}
+	writeError(w, http.StatusNotFound, "app not found")
+	return false
+}
+
+// requireAppOrStack answers a name that is neither a service nor a compose
+// stack with the same 404 a hidden app gets.
+func (rt *Router) requireAppOrStack(w http.ResponseWriter, r *http.Request, name string) bool {
+	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err == nil {
+		return true
+	}
+	if !errors.Is(err, store.ErrServiceNotFound) {
+		rt.internalError(w, "api: load app failed", err, slog.String("name", name))
+		return false
+	}
+	taken, err := rt.stackNameTaken(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: check stack name failed", err, slog.String("name", name))
+		return false
+	}
+	if !taken {
+		writeError(w, http.StatusNotFound, "app not found")
+	}
+	return taken
+}
+
+// requireReadableApp is requireAppAccess for the read routes.
+func (rt *Router) requireReadableApp(w http.ResponseWriter, r *http.Request, name string) bool {
+	return rt.requireAppAccess(w, r, name, AbilityRead)
 }

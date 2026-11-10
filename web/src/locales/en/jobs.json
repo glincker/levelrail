@@ -48,6 +48,7 @@
     "timeout": "Timed out",
     "container_not_running": "Container not running",
     "skipped_concurrency": "Skipped, previous run still going",
+    "skipped_freeze": "Skipped, deploy freeze active",
     "replaced": "Replaced by newer run",
     "missed": "Missed its scheduled time",
     "interrupted": "Interrupted by restart"

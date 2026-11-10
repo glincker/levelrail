@@ -9,6 +9,7 @@ export type ScheduledTaskRunStatus =
   | 'timeout'
   | 'container_not_running'
   | 'skipped_concurrency'
+  | 'skipped_freeze'
   | 'replaced'
   | 'missed'
   | 'interrupted'

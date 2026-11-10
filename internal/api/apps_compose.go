@@ -109,6 +109,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusForbidden, msgTemplateInstanceOnly)
 		return composeDeployResponse{}, false
 	}
+	// Serializes the stack name with create and clone; every caller holds composeGitLock first.
+	if !opts.nameLocked {
+		defer lockAppName(name)()
+	}
 	trace := deploytrace.NewBuffered()
 	parseSpan := trace.Begin(r.Context(), deploytrace.StepComposeParse, fmt.Sprintf("parsing compose file (%d bytes)", len(body)))
 	file, err := compose.Parse(body)

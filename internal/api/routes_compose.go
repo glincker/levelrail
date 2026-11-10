@@ -20,6 +20,7 @@ func (rt *Router) registerComposeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleRestartApp)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/stop", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleStopApp)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/services/{service}/start", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.composeServiceAction(rt.handleStartApp)))
+	rt.registerComposeScheduleRoutes(mux)
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose/services/{service}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.composeServiceAction(rt.handleQueryLogs)))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose-source", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetComposeSource))
 	// Same tier as PUT git-source: it stores a deploy token and mints a webhook secret.

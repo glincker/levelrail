@@ -494,8 +494,8 @@ var Tree = map[string]*Node{
 	"github-app": {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "register-url": nil, "installations": {Subs: map[string]*Node{
 		"list": nil, "add": nil, "remove": nil,
 	}}}},
-	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "show": nil, "deploy": nil, "install": nil, "delete": nil}},
-	"compose":          {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil}},
+	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "show": nil, "deploy": nil, "install": nil, "delete": nil, "service": {Subs: map[string]*Node{"list": nil, "show": nil, "validate": nil, "install": nil, "deploy": nil}}}},
+	"compose":          {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil, "schedules": {Subs: map[string]*Node{"list": nil, "add": nil, "run": nil, "runs": nil, "pause": nil, "resume": nil, "rm": nil}}}},
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil, "routes": {Subs: map[string]*Node{"show": nil, "test": nil, "lint": nil}}}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
 	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
