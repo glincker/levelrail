@@ -273,6 +273,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 levelrail-cli apps inspect <app> effective-config [--key K] [--context C] [--branch B] [flags]
 levelrail-cli apps inspect <app> pending-changes|failure-context|rollback-targets|image-status [flags]
 levelrail-cli apps deploys list <name> [flags]
+levelrail-cli apps deploys attempts <name> [--fail-on-error] [flags]
 levelrail-cli apps deploys show <name> [deploy-id] [flags]
 levelrail-cli apps deploys wait <name> [deploy-id] [--timeout 10m] [--poll-interval 2s] [flags]
 levelrail-cli apps deploys compare <name> --from ID [--to ID] [flags]
@@ -317,7 +318,7 @@ levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 ```
 
-- `apps deploys list` is real, row per attempt deploy history, newest first. `apps deploys show` prints one attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable. See [Deploy failures](/deploy-failures).
+- `apps deploys list` is real, row per attempt deploy history, newest first.  `apps deploys attempts` is an alias; `--fail-on-error` exits 7 when the newest listed attempt failed. `apps deploys show` prints one attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable. See [Deploy failures](/deploy-failures).
 - `apps deploys wait` blocks until one deploy is healthy, failed, canceled, superseded or blocked (a freeze window or approval) and prints the result with its failure. Exit 0 healthy, 7 failed, canceled, superseded or blocked, 6 timeout. Without a deploy id it resolves the newest deploy once and follows it by id.
 - `apps deploys build-report <name> <deploy-id>` prints the Next.js route table (static, ISR or dynamic, with sizes), the shared first-load size and build warnings parsed from that attempt's stored build log. Sizes read 0 when the log has no size columns.
 - `apps deploys compare` diffs two deploy attempts, or one against the current live state. `apps deploys logs` prints one attempt's full build and log output to stdout. `apps deploys steps` streams the pipeline steps (detecting, building, pushing, deploying) until the attempt ends and exits non-zero if a step failed; an already finished attempt replays only a short summary.

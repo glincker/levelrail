@@ -206,6 +206,18 @@ func (rt *Router) composeMembers(ctx context.Context, appID string) ([]store.Des
 	return members, nil
 }
 
+// stackNameTaken reports whether name is a compose app, whose name has no service row of its own.
+func (rt *Router) stackNameTaken(ctx context.Context, name string) (bool, error) {
+	_, err := rt.composeMembers(ctx, name)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return false, nil
+	}
+	return false, err
+}
+
 func (rt *Router) loadComposeGitSource(w http.ResponseWriter, r *http.Request, name string) (*store.GitSource, bool) {
 	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
 	if errors.Is(err, store.ErrGitSourceNotFound) || (err == nil && gs.ComposePath == "") {

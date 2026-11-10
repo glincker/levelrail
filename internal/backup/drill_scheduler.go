@@ -52,6 +52,12 @@ type DrillScheduler struct {
 	Protection ProtectionProber
 	// Interval is the drill period per resource; zero disables drills.
 	Interval time.Duration
+	// IntervalFn, when set, is read each tick so a runtime setting applies live.
+	IntervalFn func() time.Duration
+	// TimeoutFn bounds one drill; unset or non-positive means no extra bound.
+	TimeoutFn func() time.Duration
+	// RetentionFn returns days of drill history to keep; non-positive keeps all.
+	RetentionFn func() int
 	// StaleAfter is the age a running backup must reach before the sweep
 	// finalizes it.
 	StaleAfter time.Duration
@@ -105,6 +111,13 @@ func StaleRunningFromEnv(lookup func(string) (string, bool)) time.Duration {
 	return DefaultStaleRunning
 }
 
+func (s *DrillScheduler) interval() time.Duration {
+	if s.IntervalFn != nil {
+		return s.IntervalFn()
+	}
+	return s.Interval
+}
+
 func (s *DrillScheduler) now() time.Time {
 	if s.Now != nil {
 		return s.Now()
@@ -128,7 +141,10 @@ func (s *DrillScheduler) Tick(ctx context.Context) error {
 	if err := s.refreshProtection(ctx); err != nil {
 		errs = append(errs, err)
 	}
-	if s.Interval > 0 && s.Runner != nil {
+	if err := s.pruneDrills(ctx); err != nil {
+		errs = append(errs, err)
+	}
+	if s.interval() > 0 && s.Runner != nil {
 		if err := s.drillDue(ctx); err != nil {
 			errs = append(errs, err)
 		}
@@ -215,7 +231,7 @@ func (s *DrillScheduler) drillDue(ctx context.Context) error {
 			continue
 		}
 		if len(drills) > 0 {
-			if at, perr := time.Parse(time.RFC3339, drills[0].StartedAt); perr == nil && s.now().Sub(at) < s.Interval {
+			if at, perr := time.Parse(time.RFC3339, drills[0].StartedAt); perr == nil && s.now().Sub(at) < s.interval() {
 				continue
 			}
 		}
@@ -224,11 +240,43 @@ func (s *DrillScheduler) drillDue(ctx context.Context) error {
 			errs = append(errs, ierr)
 			continue
 		}
-		if _, derr := s.Runner.RunDrill(ctx, id, h.ID, store.DrillTriggerScheduled); derr != nil {
+		if _, derr := s.runOne(ctx, id, h.ID); derr != nil {
 			errs = append(errs, derr)
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func (s *DrillScheduler) runOne(ctx context.Context, id, backupID string) (store.BackupDrill, error) {
+	if s.TimeoutFn != nil {
+		if t := s.TimeoutFn(); t > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, t)
+			defer cancel()
+		}
+	}
+	return s.Runner.RunDrill(ctx, id, backupID, store.DrillTriggerScheduled)
+}
+
+type drillPruner interface {
+	PruneBackupDrills(ctx context.Context, cutoff string) (int64, error)
+}
+
+// pruneDrills drops old drill rows; each resource keeps its newest one.
+func (s *DrillScheduler) pruneDrills(ctx context.Context) error {
+	pr, ok := s.Store.(drillPruner)
+	if !ok || s.RetentionFn == nil {
+		return nil
+	}
+	days := s.RetentionFn()
+	if days <= 0 {
+		return nil
+	}
+	cutoff := s.now().AddDate(0, 0, -days).UTC().Format(time.RFC3339)
+	if _, err := pr.PruneBackupDrills(ctx, cutoff); err != nil {
+		return fmt.Errorf("prune drills: %w", err)
+	}
+	return nil
 }
 
 // NewDrillID mints a drill identifier safe to embed in a Docker name.

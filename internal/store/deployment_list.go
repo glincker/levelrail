@@ -88,8 +88,13 @@ const (
 	// rollback; a manual deploy of an older tag stays manual.
 	rollbackAttemptSQL = `(%[1]s.source = 'auto_rollback' OR %[1]s.reason LIKE '%%RollbackTo:%%')`
 
+	// deploymentServicesSQL is every app plus compose stack names; the branches are disjoint.
+	deploymentServicesSQL = `(SELECT name, environment_id, project_id FROM desired_services
+			UNION ALL SELECT DISTINCT app_id, '', '' FROM desired_services
+				WHERE app_id <> '' AND app_id NOT IN (SELECT name FROM desired_services))`
+
 	deploymentFromSQL = `FROM deploy_attempts d
-		JOIN desired_services s ON s.name = d.service_name
+		JOIN ` + deploymentServicesSQL + ` s ON s.name = d.service_name
 		LEFT JOIN environments env ON env.id = s.environment_id
 		LEFT JOIN service_git_sources g ON g.service_name = d.service_name
 		LEFT JOIN preview_environments pv ON pv.preview_app_id = d.service_name`

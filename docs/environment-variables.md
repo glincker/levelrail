@@ -383,6 +383,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
 | `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
 | `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
+| `APP_BACKUP_DRILL_INTERVAL_HOURS` | [`backups.drill_interval_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_BACKUP_DRILL_RETENTION_DAYS` | [`backups.drill_retention_days`](/runtime-settings#data-retention) | `90` |
+| `APP_BACKUP_DRILL_TIMEOUT` | [`backups.drill_timeout`](/runtime-settings#data-retention) | `1h` |
 | `APP_BACKUP_SCHEDULE_RETAIN_DEFAULT` | [`backups.schedule_retain_default`](/runtime-settings#data-retention) | `0` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |

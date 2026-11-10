@@ -107,7 +107,7 @@ var Tree = map[string]*Node{
 		"export":                  nil,
 		"import-bundle":           nil,
 		"inspect":                 {Subs: map[string]*Node{"effective-config": nil, "pending-changes": nil, "failure-context": nil, "rollback-targets": nil, "image-status": nil}},
-		"deploys":                 {Subs: map[string]*Node{"list": nil, "show": nil, "wait": nil, "compare": nil, "release-notes": nil, "url": nil, "logs": nil, "failed": nil, "receipt": nil, "timeline": nil, "steps": nil, "probes": nil, "cancel": nil, "rollback-to": nil, "promote": nil, "gate": nil, "status": nil, "build-report": nil}},
+		"deploys":                 {Subs: map[string]*Node{"list": nil, "attempts": nil, "show": nil, "wait": nil, "compare": nil, "release-notes": nil, "url": nil, "logs": nil, "failed": nil, "receipt": nil, "timeline": nil, "steps": nil, "probes": nil, "cancel": nil, "rollback-to": nil, "promote": nil, "gate": nil, "status": nil, "build-report": nil}},
 		"ci":                      {Subs: map[string]*Node{"token": nil, "workflow": nil, "template": nil, "trust": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}},
 		"github-actions":          {Subs: map[string]*Node{"get": nil, "set": nil, "start": nil, "finish": nil, "workflow": nil, "token": nil, "trust": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}},
 		"build-stats":             nil,

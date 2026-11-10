@@ -115,21 +115,31 @@ func newBackupProtection(db *store.DB, secretsManager *secrets.Manager, client *
 		drills.Identities = sealer.Identities
 	}
 	return &backup.Protection{
-		Store:         db,
-		Drills:        drills,
-		Prober:        backup.S3ProtectionProber{},
-		Secrets:       secretsManager,
-		Downloader:    downloader,
-		RestoreStore:  db,
-		Sealer:        sealer,
-		DrillInterval: backup.DrillIntervalFromEnv(os.LookupEnv),
-		Logger:        logger,
+		Store:           db,
+		Drills:          drills,
+		Prober:          backup.S3ProtectionProber{},
+		Secrets:         secretsManager,
+		Downloader:      downloader,
+		RestoreStore:    db,
+		Sealer:          sealer,
+		DrillInterval:   backup.DrillIntervalFromEnv(os.LookupEnv),
+		DrillIntervalFn: drillIntervalSetting(db),
+		Logger:          logger,
+	}
+}
+
+// drillIntervalSetting reads the saved drill interval on each call so a dashboard change applies without a restart.
+func drillIntervalSetting(db *store.DB) func() time.Duration {
+	rs := runtimesettings.New(db, nil)
+	return func() time.Duration {
+		return time.Duration(rs.Int(context.Background(), runtimesettings.KeyBackupsDrillIntervalHours)) * time.Hour
 	}
 }
 
 // startBackupDrills runs the restore drill scheduler and registers the
 // restore drill alert source.
 func startBackupDrills(ctx context.Context, logger *slog.Logger, db *store.DB, prot *backup.Protection, engine *alerting.Engine) {
+	rs := runtimesettings.New(db, nil)
 	engine.SetRestoreDrills(restoreDrillAlertSource{prot: prot})
 	sched := &backup.DrillScheduler{
 		Store:      db,
@@ -139,6 +149,11 @@ func startBackupDrills(ctx context.Context, logger *slog.Logger, db *store.DB, p
 		Downloader: backup.S3Downloader{},
 		Protection: prot.Prober,
 		Interval:   prot.DrillInterval,
+		IntervalFn: prot.DrillIntervalFn,
+		TimeoutFn:  func() time.Duration { return rs.Duration(context.Background(), runtimesettings.KeyBackupsDrillTimeout) },
+		RetentionFn: func() int {
+			return rs.Int(context.Background(), runtimesettings.KeyBackupsDrillRetentionDays)
+		},
 		StaleAfter: backup.StaleRunningFromEnv(os.LookupEnv),
 		Logger:     logger,
 	}

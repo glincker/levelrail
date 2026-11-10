@@ -35,6 +35,7 @@ var allowlist = []AllowEntry{
 	{"apps contexts show", "read: shows one record from the API, secrets masked server side"},
 	{"apps deploy-notify-targets list", "read: lists records from the API"},
 	{"apps deploy-safety show", "read: shows one record from the API, secrets masked server side"},
+	{"apps deploys attempts", "read: lists records from the API"},
 	{"apps deploys list", "read: lists records from the API"},
 	{"apps deploys logs", "read: streams logs from the API"},
 	{"apps deploys show", "read: shows one record from the API, secrets masked server side"},

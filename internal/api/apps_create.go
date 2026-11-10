@@ -107,11 +107,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// A compose stack's name has no service row; taking it would hand the stack to the creator's team.
-	if _, merr := rt.composeMembers(r.Context(), req.Name); merr == nil {
-		writeError(w, http.StatusConflict, "an app with this name already exists")
-		return
-	} else if !errors.Is(merr, store.ErrServiceNotFound) {
+	if taken, merr := rt.stackNameTaken(r.Context(), req.Name); merr != nil {
 		rt.internalError(w, "api: create app: check stack name failed", merr, slog.String("name", req.Name))
+		return
+	} else if taken {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
 		return
 	}
 

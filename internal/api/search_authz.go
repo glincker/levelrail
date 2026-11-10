@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -26,6 +27,43 @@ type searchAuthorizer struct {
 	policies  []store.Policy
 	scope     *resourceScope
 	caller    *refCaller
+
+	// One listing per request answers every hit's stack-sharing check.
+	groupsOnce sync.Once
+	services   map[string]bool
+	groups     map[string][]string
+	groupsErr  error
+}
+
+func (a *searchAuthorizer) loadGroups() {
+	svcs, err := a.rt.apps.ListDesiredServices(a.r.Context())
+	if err != nil {
+		a.groupsErr = err
+		return
+	}
+	a.services, a.groups = make(map[string]bool, len(svcs)), map[string][]string{}
+	for _, s := range svcs {
+		a.services[s.Name] = true
+		if s.AppID != "" && s.AppID != s.Name {
+			a.groups[s.AppID] = append(a.groups[s.AppID], s.Name)
+		}
+	}
+}
+
+// appAllowed hides an app hit unless the services sharing its name are readable too.
+func (a *searchAuthorizer) appAllowed(ability, name string) bool {
+	if !a.scope.authorize(a.abilities, a.policies, ability, resourcePrefixApp, name) {
+		return false
+	}
+	a.groupsOnce.Do(a.loadGroups)
+	if a.groupsErr != nil {
+		return false
+	}
+	if !a.services[name] && len(a.groups[name]) == 0 {
+		return true
+	}
+	canRead := func(n string) bool { return a.scope.authorize(a.abilities, a.policies, ability, resourcePrefixApp, n) }
+	return stackReadable(name, a.groups[name], canRead)
 }
 
 func (rt *Router) newSearchCaller(r *http.Request) (search.Caller, error) {
@@ -47,7 +85,9 @@ func (rt *Router) newSearchCaller(r *http.Request) (search.Caller, error) {
 // Allowed fails closed: an error resolving a reference hides the hit.
 func (a *searchAuthorizer) Allowed(prefix, name, ability string) bool {
 	switch prefix {
-	case resourcePrefixApp, resourcePrefixDatabase:
+	case resourcePrefixApp:
+		return a.appAllowed(ability, name)
+	case resourcePrefixDatabase:
 		return a.scope.authorize(a.abilities, a.policies, ability, prefix, name)
 	case resourcePrefixNode:
 		return a.refAllowed(nodeRef(name), ability)

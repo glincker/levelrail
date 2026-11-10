@@ -100,8 +100,10 @@ type Protection struct {
 	// DrillInterval is the configured drill period, used to flag a resource
 	// whose last verified restore is older than two periods.
 	DrillInterval time.Duration
-	Logger        *slog.Logger
-	Now           func() time.Time
+	// DrillIntervalFn overrides DrillInterval when set, so a runtime setting applies live.
+	DrillIntervalFn func() time.Duration
+	Logger          *slog.Logger
+	Now             func() time.Time
 }
 
 func (p *Protection) now() time.Time {
@@ -283,8 +285,12 @@ func (p *Protection) classify(r *ResourceHealth, now time.Time) (state, reason s
 	case r.LastVerifiedRestore == nil:
 		return HealthUnverified, "no restore has been proven to work yet"
 	}
-	if p.DrillInterval > 0 {
-		if at, err := time.Parse(time.RFC3339, r.LastVerifiedRestore.At); err == nil && now.Sub(at) > 2*p.DrillInterval {
+	interval := p.DrillInterval
+	if p.DrillIntervalFn != nil {
+		interval = p.DrillIntervalFn()
+	}
+	if interval > 0 {
+		if at, err := time.Parse(time.RFC3339, r.LastVerifiedRestore.At); err == nil && now.Sub(at) > 2*interval {
 			return HealthWarning, "the last verified restore is overdue"
 		}
 	}

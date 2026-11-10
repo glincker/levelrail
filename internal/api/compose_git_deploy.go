@@ -232,7 +232,16 @@ func (rt *Router) refuseForeignServiceNames(ctx context.Context, w http.Response
 		}
 		_, err := rt.apps.GetDesiredService(ctx, n)
 		if errors.Is(err, store.ErrServiceNotFound) {
-			continue
+			taken, terr := rt.stackNameTaken(ctx, n)
+			if terr != nil {
+				rt.internalError(w, "api: compose git source: check stack name", terr)
+				return false
+			}
+			if !taken {
+				continue
+			}
+			writeError(w, http.StatusConflict, "an app named "+n+" already exists")
+			return false
 		}
 		if err != nil {
 			rt.internalError(w, "api: compose git source: check existing service", err)

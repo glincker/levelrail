@@ -248,7 +248,14 @@ func (rt *Router) freeAppName(r *http.Request, base string, taken map[string]boo
 			lookupErr = err
 			return false
 		}
-		return err == nil && svc != nil
+		if err == nil && svc != nil {
+			return true
+		}
+		taken, serr := rt.stackNameTaken(r.Context(), c)
+		if serr != nil {
+			lookupErr = serr
+		}
+		return taken
 	})
 	if lookupErr != nil {
 		return "", lookupErr

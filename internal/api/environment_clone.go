@@ -403,6 +403,14 @@ func (rt *Router) resolveClonedAppNames(ctx context.Context, source []store.Desi
 		if !errors.Is(err, store.ErrServiceNotFound) {
 			return nil, nil, err
 		}
+		taken, err := rt.stackNameTaken(ctx, newName)
+		if err != nil {
+			return nil, nil, err
+		}
+		if taken {
+			conflicts = append(conflicts, fmt.Sprintf("an app named %q already exists (source %q)", newName, svc.Name))
+			continue
+		}
 		newNames[svc.Name] = newName
 	}
 	return newNames, conflicts, nil
