@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 448 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 451 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -226,6 +226,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `docuseal` | yes | linux/amd64, linux/arm64 |
 | `dokuwiki` | yes | linux/amd64, linux/arm64 |
 | `dolibarr` | yes | linux/amd64, linux/arm64 |
+| `domoticz` | not checked | - |
 | `drawio` | yes | linux/amd64, linux/arm64 |
 | `drupal` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `duplicati` | yes | linux/amd64, linux/arm64 |
@@ -328,6 +329,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `kimai` | yes | linux/amd64, linux/arm64 |
 | `kokoro-fastapi` | yes | linux/amd64, linux/arm64 |
 | `komga` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kong` | not checked | - |
 | `kopia` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `kroki` | not checked | - |
 | `kutt` | yes | linux/amd64, linux/arm64 |
@@ -417,6 +419,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `node-red` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nodebb` | yes | linux/amd64, linux/arm64 |
 | `ntfy` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `nzbget` | not checked | - |
 | `obsidian-livesync` | yes | linux/amd64, linux/arm64 |
 | `odoo` | yes | linux/amd64, linux/arm64, linux/ppc64le |
 | `ollama` | yes | linux/amd64, linux/arm64 |

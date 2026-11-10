@@ -2,14 +2,14 @@
   "generated_at": "2026-11-02T03:14:45Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 448,
-    "images": 492,
+    "templates": 451,
+    "images": 495,
     "arm64_yes": 393,
     "arm64_no": 15,
-    "arm64_unknown": 40,
+    "arm64_unknown": 43,
     "image_arm64_yes": 434,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 43
+    "image_arm64_unknown": 46
   },
   "templates": [
     {
@@ -1960,6 +1960,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "domoticz",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4574,6 +4588,20 @@
       ]
     },
     {
+      "id": "kong",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "kong:3.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kopia",
       "amd64": "yes",
       "arm64": "yes",
@@ -6787,6 +6815,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:53:56Z"
+        }
+      ]
+    },
+    {
+      "id": "nzbget",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nzbgetcom/nzbget:v26.3@sha256:f451d98066cbc0c108146420a61a60f7638de50e067738951461e0105eeaa56d",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

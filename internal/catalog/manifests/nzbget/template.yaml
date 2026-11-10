@@ -1,0 +1,36 @@
+id: nzbget
+name: NZBGet
+description: A fast, light Usenet downloader with a web interface and scripting support.
+icon: download-simple
+category: Media
+documentation_url: https://nzbget.com/documentation/
+source_repo: https://github.com/nzbgetcom/nzbget
+license: GPL-2.0-only
+license_class: copyleft
+license_url: https://github.com/nzbgetcom/nzbget/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Sign in as admin with the generated password, then add your news server under Settings.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+  - key: ADMIN_PASSWORD
+    label: Web password
+    description: Password for the admin user of the web interface.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: nzbget
+    port: 6789
+    description: Public address of NZBGet.
+healthcheck:
+  service: nzbget
+  port: 6789
+  path: /
+  expect: 401

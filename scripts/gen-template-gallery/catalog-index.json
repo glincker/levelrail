@@ -12036,6 +12036,120 @@
    }
   },
   {
+   "id": "domoticz",
+   "aliases": [],
+   "name": "Domoticz",
+   "slogan": "A home automation system with a web UI that links sensors, switches and many device protocols.",
+   "description": "A home automation system with a web UI that links sensors, switches and many device protocols.",
+   "first_run": [
+    "Open the address, then set a login under Setup and Settings and add your hardware."
+   ],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/domoticz/domoticz",
+   "documentation_url": "https://www.domoticz.com/wiki/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/domoticz/domoticz/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "domoticz",
+     "image": "domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a",
+     "tag": "",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "domoticz",
+     "image": "domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "userdata -> /opt/domoticz/userdata"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "domoticz",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "domoticz"
+      ],
+      "detail": "userdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "drawio",
    "aliases": [],
    "name": "draw.io",
@@ -27955,6 +28069,128 @@
    }
   },
   {
+   "id": "kong",
+   "aliases": [],
+   "name": "Kong Gateway",
+   "slogan": "An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state.",
+   "description": "An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state.",
+   "first_run": [
+    "Post a declarative config to kong:8001/config from a service in this project, then send traffic to the public address."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/Kong/kong",
+   "documentation_url": "https://docs.konghq.com/gateway/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/Kong/kong/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kong",
+     "image": "kong",
+     "tag": "3.8.0",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kong",
+     "image": "kong:3.8.0",
+     "ports": [
+      8000,
+      8001
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "kong",
+     "name": "KONG_ADMIN_ACCESS_LOG",
+     "kind": "preset"
+    },
+    {
+     "service": "kong",
+     "name": "KONG_ADMIN_ERROR_LOG",
+     "kind": "preset"
+    },
+    {
+     "service": "kong",
+     "name": "KONG_ADMIN_LISTEN",
+     "kind": "preset"
+    },
+    {
+     "service": "kong",
+     "name": "KONG_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "kong",
+     "name": "KONG_PROXY_ACCESS_LOG",
+     "kind": "preset"
+    },
+    {
+     "service": "kong",
+     "name": "KONG_PROXY_ERROR_LOG",
+     "kind": "preset"
+    },
+    {
+     "service": "kong",
+     "name": "KONG_PROXY_LISTEN",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "kopia",
    "aliases": [],
    "name": "Kopia",
@@ -42027,6 +42263,160 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "nzbget",
+   "aliases": [],
+   "name": "NZBGet",
+   "slogan": "A fast, light Usenet downloader with a web interface and scripting support.",
+   "description": "A fast, light Usenet downloader with a web interface and scripting support.",
+   "first_run": [
+    "Sign in as admin with the generated password, then add your news server under Settings."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/nzbgetcom/nzbget",
+   "documentation_url": "https://nzbget.com/documentation/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/nzbgetcom/nzbget/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "nzbget",
+     "image": "nzbgetcom/nzbget:v26.3@sha256:f451d98066cbc0c108146420a61a60f7638de50e067738951461e0105eeaa56d",
+     "tag": "",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ADMIN_PASSWORD",
+      "label": "Web password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "nzbget",
+     "image": "nzbgetcom/nzbget:v26.3@sha256:f451d98066cbc0c108146420a61a60f7638de50e067738951461e0105eeaa56d",
+     "ports": [
+      6789
+     ],
+     "volumes": [
+      "config -> /config",
+      "downloads -> /downloads"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "nzbget",
+     "name": "NZBGET_PASS",
+     "kind": "generated"
+    },
+    {
+     "service": "nzbget",
+     "name": "NZBGET_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "nzbget",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "nzbget",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "nzbget",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "nzbget"
+      ],
+      "detail": "NZBGET_PASS",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "nzbget"
+      ],
+      "detail": "config, downloads",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",

@@ -57,6 +57,7 @@ var (
 	httpsURLPattern   = regexp.MustCompile(`^https://[^\s/]+(/\S*)?$`)
 	githubRepoPattern = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9][A-Za-z0-9-]*)/[A-Za-z0-9._-]+$`)
 	bareMajorPattern  = regexp.MustCompile(`^v?\d+$`)
+	digestPattern     = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
 	shortTagPattern   = regexp.MustCompile(`^v?\d+\.\d+$`)
 	fetchPattern      = regexp.MustCompile(`\b(curl|wget|git clone|pip3? install|npm (i|install)|apk add|apt(-get)? (install|update))\b`)
 )
@@ -128,9 +129,18 @@ func (m Manifest) validateMarketplaceFields() []error {
 		default:
 			errs = append(errs, fmt.Errorf("healthcheck kind %q must be http or tcp", h.Kind))
 		}
-		if h.Expect != 0 && h.Expect != 401 && h.Expect != 403 {
-			errs = append(errs, fmt.Errorf("healthcheck expect %d must be 401 or 403 (200 to 399 is the default)", h.Expect))
+		reason := strings.TrimSpace(h.Reason) != ""
+		switch {
+		case h.Expect == 0, h.Expect == 401, h.Expect == 403:
+		case h.Expect >= 400 && h.Expect <= 499 && reason:
+		default:
+			errs = append(errs, fmt.Errorf("healthcheck expect %d must be 401 or 403, or another 4xx with a reason (200 to 399 is the default)", h.Expect))
 		}
+	}
+	if m.FirstBootSeconds < 0 {
+		errs = append(errs, fmt.Errorf("first_boot_seconds must not be negative"))
+	} else if ceiling := firstBootCeiling(); m.FirstBootSeconds > ceiling {
+		errs = append(errs, fmt.Errorf("first_boot_seconds %d is above the allowed maximum %d", m.FirstBootSeconds, ceiling))
 	}
 	return errs
 }
@@ -253,6 +263,10 @@ func (m Manifest) ValidateSubmission() error {
 
 func (m Manifest) checkImage(service, ref string) []error {
 	var errs []error
+	pinned := digestPattern.MatchString(ref)
+	if pinned {
+		ref = ref[:strings.LastIndex(ref, "@")]
+	}
 	_, tag := SplitImageRef(ref)
 	switch {
 	case mutableTags[strings.ToLower(tag)] || tag == "":
@@ -261,8 +275,8 @@ func (m Manifest) checkImage(service, ref string) []error {
 		errs = append(errs, fmt.Errorf("service %s: tag %q contains no version number", service, tag))
 	case bareMajorPattern.MatchString(tag):
 		errs = append(errs, fmt.Errorf("service %s: tag %q is a bare major version, pin the full version", service, tag))
-	case shortTagPattern.MatchString(tag) && shortTagExceptions[m.ID] == "":
-		errs = append(errs, fmt.Errorf("service %s: tag %q is not a full version; use X.Y.Z or ask a maintainer for an exception", service, tag))
+	case shortTagPattern.MatchString(tag) && !pinned && shortTagExceptions[m.ID] == "":
+		errs = append(errs, fmt.Errorf("service %s: tag %q is not a full version; use X.Y.Z, pin the image by digest too, or ask a maintainer for an exception", service, tag))
 	}
 	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && communityImageExceptions[m.ID] == "" {
 		errs = append(errs, fmt.Errorf("service %s: image %s is not from the upstream namespace, a Docker Official Image or an allowed rebuilder", service, ref))

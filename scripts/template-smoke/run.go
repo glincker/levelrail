@@ -111,7 +111,7 @@ func smokeTemplate(ctx context.Context, t catalog.Template, o options) (r result
 	r.Services = p.inspect(ictx, services)
 	r = classify(r, upErr)
 	if hc != nil && r.Status == statusPass {
-		status, ok, detail := probeHealth(ictx, p, *hc, o.probeWait)
+		status, ok, detail := probeHealth(ictx, p, *hc, max(o.probeWait, time.Duration(t.Manifest.FirstBootWait(catalog.FirstBootCeiling(ictx, nil)))*time.Second))
 		r.HTTPStatus = status
 		if !ok {
 			return failed(r, detail)

@@ -25,13 +25,13 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (448 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (451 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 36 |
 | [Analytics](#analytics) | 10 |
-| [Applications](#applications) | 34 |
+| [Applications](#applications) | 35 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
@@ -39,9 +39,9 @@ Generated from `internal/catalog.Templates` (448 entries as of this build). Run 
 | [Developer Tools](#developer-tools) | 67 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 19 |
+| [Infrastructure](#infrastructure) | 20 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 30 |
+| [Media](#media) | 31 |
 | [Monitoring](#monitoring) | 36 |
 | [Productivity](#productivity) | 82 |
 | [Security](#security) | 19 |
@@ -114,6 +114,7 @@ Generated from `internal/catalog.Templates` (448 entries as of this build). Run 
 | [Cleanuparr](https://cleanuparr.github.io/Cleanuparr/) | A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings. | `cleanuparr` |  |
 | [Cockpit CMS](https://getcockpit.com/documentation/) | A headless content platform for managing structured content behind a clean API, without a big CMS footprint. | `cockpit-cms` |  |
 | [Deluge](https://deluge.readthedocs.io/) | A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited. | `deluge` |  |
+| [Domoticz](https://www.domoticz.com/wiki/) | A home automation system with a web UI that links sensors, switches and many device protocols. | `domoticz` |  |
 | [Drupal](https://www.drupal.org/docs) | A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. | `drupal` |  |
 | [EspoCRM](https://docs.espocrm.com) | An open-source CRM for managing sales, support, and customer relationships end to end. | `espocrm` |  |
 | [Ghost](https://ghost.org/docs/) | A fast, modern publishing platform for blogs and newsletters, with built-in memberships. | `ghost` |  |
@@ -352,6 +353,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [etcd](https://etcd.io/docs/) | A distributed key-value store for configuration and coordination, running as a single member. | `etcd` |  |
 | [Headscale](https://headscale.net/stable/) | Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create). | `headscale` |  |
 | [imgproxy](https://docs.imgproxy.net/) | A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served. | `imgproxy` |  |
+| [Kong Gateway](https://docs.konghq.com/gateway/latest/) | An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state. | `kong` |  |
 | [MeshCentral](https://meshcentral.com/docs/) | A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server. | `meshcentral` |  |
 | [NATS](https://docs.nats.io/) | A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. | `nats` |  |
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
@@ -391,6 +393,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Lidarr](https://wiki.servarr.com/lidarr) | Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. | `lidarr` |  |
 | [MeTube](https://github.com/alexta69/metube) | A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. | `metube` |  |
 | [Navidrome](https://www.navidrome.org/docs/) | Stream your own music collection from a Subsonic-compatible server to any device, anywhere. | `navidrome` |  |
+| [NZBGet](https://nzbget.com/documentation/) | A fast, light Usenet downloader with a web interface and scripting support. | `nzbget` |  |
 | [Overseerr](https://docs.overseerr.dev) | Lets your Plex users request new movies and TV shows straight from a shared web UI. | `overseerr` |  |
 | [Owncast](https://owncast.online/docs) | Run your own live video streaming server with built-in chat, no third-party platform required. | `owncast` |  |
 | [PhotoPrism](https://docs.photoprism.app/getting-started/docker-compose/) | An AI-powered photo management app that indexes and organizes your library as you own it. | `photoprism` |  |

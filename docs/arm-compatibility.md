@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 40 unknown, of 448 templates.
+393 listed, 15 amd64 only, 43 unknown, of 451 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -103,6 +103,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `docuseal` | listed | not tested |
 | `dokuwiki` | listed | not tested |
 | `dolibarr` | listed | not tested |
+| `domoticz` | unknown | not tested |
 | `drawio` | listed | not tested |
 | `drupal` | listed | not tested |
 | `duplicati` | listed | not tested |
@@ -205,6 +206,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `kimai` | listed | not tested |
 | `kokoro-fastapi` | listed | not tested |
 | `komga` | listed | not tested |
+| `kong` | unknown | not tested |
 | `kopia` | listed | pass |
 | `kroki` | unknown | not tested |
 | `kutt` | listed | not tested |
@@ -294,6 +296,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `node-red` | listed | not tested |
 | `nodebb` | listed | not tested |
 | `ntfy` | listed | pass |
+| `nzbget` | unknown | not tested |
 | `obsidian-livesync` | listed | not tested |
 | `odoo` | listed | not tested |
 | `ollama` | listed | not tested |
