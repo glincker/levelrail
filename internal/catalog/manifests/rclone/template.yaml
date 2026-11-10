@@ -1,0 +1,32 @@
+id: rclone
+name: rclone
+description: The rclone remote control web GUI for managing and syncing files across dozens of cloud storage providers.
+icon: cloud-arrow-up
+category: Backups
+documentation_url: https://rclone.org/gui/
+source_repo: https://github.com/rclone/rclone
+license: MIT
+license_class: permissive
+license_url: https://github.com/rclone/rclone/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Sign in as admin with the generated password, then add your remotes.
+env:
+  - key: ADMIN_PASSWORD
+    label: Web password
+    description: Password for the admin user of the web GUI.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: rclone
+    port: 5572
+    description: Public address of rclone.
+healthcheck:
+  service: rclone
+  port: 5572
+  path: /
+  expect: 401

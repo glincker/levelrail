@@ -1,0 +1,15 @@
+services:
+  emqx:
+    image: emqx/emqx:6.3.2
+    ports: ["18083", "1883"]
+    environment:
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - data:/opt/emqx/data
+      - log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s

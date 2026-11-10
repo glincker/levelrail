@@ -1,0 +1,20 @@
+services:
+  gonic:
+    image: sentriz/gonic:v0.23.0
+    ports: ["4747"]
+    environment:
+      TZ: ${TZ}
+      GONIC_MUSIC_PATH: "/music"
+      GONIC_PODCAST_PATH: "/podcasts"
+      GONIC_CACHE_PATH: "/cache"
+    volumes:
+      - data:/data
+      - music:/music
+      - podcasts:/podcasts
+      - cache:/cache
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4747"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

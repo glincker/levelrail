@@ -1,0 +1,19 @@
+services:
+  tubesync:
+    image: ghcr.io/meeb/tubesync:v0.19.0
+    ports: ["4848"]
+    environment:
+      TZ: ${TZ}
+      PUID: "1000"
+      PGID: "1000"
+      HTTP_USER: "admin"
+      HTTP_PASS: ${ADMIN_PASSWORD}
+    volumes:
+      - config:/config
+      - downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:4848/healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

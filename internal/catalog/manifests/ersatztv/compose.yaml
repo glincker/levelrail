@@ -1,0 +1,15 @@
+services:
+  ersatztv:
+    image: jasongdove/ersatztv:v26.3.0
+    ports: ["8409"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - config:/root/.local/share/ersatztv
+      - media:/media
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8409 || wget -q -O /dev/null http://127.0.0.1:8409"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

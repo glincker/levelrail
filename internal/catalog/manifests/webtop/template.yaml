@@ -1,0 +1,36 @@
+id: webtop
+name: Webtop
+description: A full Linux desktop in your browser, running as a container with a login.
+icon: desktop
+category: Applications
+documentation_url: https://docs.linuxserver.io/images/docker-webtop/
+source_repo: https://github.com/linuxserver/docker-webtop
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/linuxserver/docker-webtop/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 2147483648
+first_run:
+  - Sign in as admin with the generated password.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+  - key: ADMIN_PASSWORD
+    label: Desktop password
+    description: Password for the admin user of the desktop.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: webtop
+    port: 3000
+    description: Public address of Webtop.
+healthcheck:
+  service: webtop
+  port: 3000
+  path: /
+  expect: 401
