@@ -1,0 +1,25 @@
+id: redis
+name: Redis
+description: "The Redis in-memory data store on the BSD licensed 7.2 line, with append-only persistence and a generated password. It is not published on the host, so reach it from other services in this project at redis:6379."
+icon: database
+category: Database Tools
+documentation_url: https://redis.io/docs/
+source_repo: https://github.com/redis/redis
+license: BSD-3-Clause
+license_class: permissive
+license_url: https://github.com/redis/redis/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Read the generated password from the app secrets, then connect from a service in the same project with redis://:PASSWORD@redis:6379.
+domains:
+  - service: redis
+    port: 6379
+    description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: redis
+  port: 6379
+  kind: tcp

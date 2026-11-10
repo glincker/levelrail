@@ -1,0 +1,17 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.1.2
+    ports: ["8000"]
+    user: root
+    command: ["start", "--bind", "0.0.0.0:8000", "rocksdb:/data/db"]
+    environment:
+      SURREAL_USER: root
+      SURREAL_PASS: $SERVICE_PASSWORD_SURREALROOT
+    volumes:
+      - surreal_data:/data
+    healthcheck:
+      test: ["CMD", "/surreal", "isready", "--endpoint", "http://127.0.0.1:8000"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 15s

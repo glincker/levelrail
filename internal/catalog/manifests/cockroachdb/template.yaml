@@ -1,0 +1,25 @@
+id: cockroachdb
+name: CockroachDB
+description: "A distributed SQL database that speaks the Postgres wire protocol, run as one insecure node for development and small workloads. The SQL port is private, the admin console is the web page. Source available license."
+icon: database
+category: Database Tools
+documentation_url: https://www.cockroachlabs.com/docs/
+source_repo: https://github.com/cockroachdb/cockroach
+license: LicenseRef-CockroachDB-Software-License
+license_class: source-available
+license_url: https://github.com/cockroachdb/cockroach/blob/main/LICENSE
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the admin console, and connect clients from this project to cockroachdb:26257 as root with no password.
+domains:
+  - service: cockroachdb
+    port: 8080
+    description: Public address of the web page.
+healthcheck:
+  service: cockroachdb
+  port: 8080
+  path: /health
