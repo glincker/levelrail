@@ -624,8 +624,8 @@
       }
     },
     "dialog-w-form": {
-      "$value": "30rem",
-      "$description": "Form dialog width, 480px.",
+      "$value": "32.5rem",
+      "$description": "Form dialog width, 520px.",
       "$extensions": {
         "glinr": {
           "name": "dialog-w-form",
@@ -634,8 +634,8 @@
       }
     },
     "dialog-w-rich": {
-      "$value": "35rem",
-      "$description": "Rich dialog width, 560px.",
+      "$value": "45rem",
+      "$description": "Rich dialog width, 720px.",
       "$extensions": {
         "glinr": {
           "name": "dialog-w-rich",
