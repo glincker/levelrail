@@ -56,16 +56,18 @@ export function AppsTable({
         primary: true,
         header: t('appsList.colName'),
         cell: (app) => (
-          <span className="flex min-w-0 flex-col gap-1">
-            <Link
-              to="/apps/$name"
-              params={{ name: app.name }}
-              className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
-            >
-              {app.name}
-            </Link>
-            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="flex min-w-0 items-center gap-2">
+              <Link
+                to="/apps/$name"
+                params={{ name: app.name }}
+                className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
+              >
+                {app.name}
+              </Link>
               <StatusLabel status={app.status} />
+            </span>
+            <span className="flex min-w-0 items-center gap-x-2 overflow-hidden">
               <AppMetaChips app={app} />
               <ManagedByStackTag stack={app.managed_by_stack} />
             </span>
