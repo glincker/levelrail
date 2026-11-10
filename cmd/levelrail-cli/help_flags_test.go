@@ -41,7 +41,7 @@ func isFlagSetCtor(call *ast.CallExpr) bool {
 		id, ok := fn.X.(*ast.Ident)
 		return ok && id.Name == "flag" && fn.Sel.Name == "NewFlagSet"
 	case *ast.Ident:
-		return fn.Name == "apiFlagSet"
+		return fn.Name == "apiFlagSet" || fn.Name == "hubFlagSet"
 	}
 	return false
 }

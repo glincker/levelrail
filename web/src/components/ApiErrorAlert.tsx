@@ -48,12 +48,8 @@ export function ApiErrorAlert({
   }
 
   return (
-    <Alert variant="destructive" data-testid="api-error-alert">
-      <TriangleAlertGlassIcon
-        className="text-tone-warning"
-        size="1.7em"
-        aria-hidden="true"
-      />
+    <Alert variant="danger" data-testid="api-error-alert">
+      <TriangleAlertGlassIcon size="1.7em" aria-hidden="true" />
       <AlertDescription className="space-y-2">
         <p>{message}</p>
         {action ? <p className="text-muted-foreground">{action}</p> : null}

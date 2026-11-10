@@ -18,6 +18,7 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
+    "themeOled": "OLED",
     "landing": "Open this page after sign-in",
     "landingDefault": "Dashboard overview",
     "landingApps": "Apps",

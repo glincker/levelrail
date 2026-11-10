@@ -101,7 +101,11 @@ function DoctorPage() {
               >
                 <RefreshCwGlassIcon
                   size="1.4em"
-                  className={state.running ? 'animate-spin' : ''}
+                  className={
+                    state.running
+                      ? 'animate-spin motion-reduce:animate-none'
+                      : ''
+                  }
                 />
                 {t('doctorPage.rerun')}
               </Button>

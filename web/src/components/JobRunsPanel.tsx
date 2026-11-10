@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { ClockGlassIcon } from '@thesvg/ui-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RestoreGlassIcon } from '@thesvg/ui-react'
@@ -37,6 +39,7 @@ const STATUSES: ScheduledTaskRunStatus[] = [
   'interrupted',
   'container_not_running',
   'skipped_concurrency',
+  'skipped_freeze',
   'replaced',
 ]
 
@@ -134,6 +137,10 @@ function RunLogsDialog({ appName, run }: { appName: string; run: JobRun }) {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">
             {t('history.logsLoading')}
+          </p>
+        ) : data?.output_withheld ? (
+          <p className="text-sm text-muted-foreground">
+            {t('history.outputWithheld')}
           </p>
         ) : output ? (
           <CodeBlock code={output} wrap maxHeight="lg" />
@@ -275,9 +282,14 @@ export function JobRunsPanel({ appName }: { appName: string }) {
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : runs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {status === ALL ? t('history.empty') : t('history.emptyFiltered')}
-          </p>
+          <EmptyState
+            kind="no-results"
+            icon={<ClockGlassIcon className="size-5" aria-hidden="true" />}
+            title={t('history.emptyTitle')}
+            description={
+              status === ALL ? t('history.empty') : t('history.emptyFiltered')
+            }
+          />
         ) : (
           <ResponsiveTable
             rows={runs}

@@ -70,6 +70,7 @@ func TestClassify(t *testing.T) {
 		{name: "unhealthy", services: []serviceResult{{Name: "web", State: "running", Health: "unhealthy"}}, wantStatus: statusFail, wantIn: "healthcheck failing"},
 		{name: "health starting still passes", services: []serviceResult{{Name: "web", State: "running", Health: "starting"}}, wantStatus: statusPass, wantIn: "still starting"},
 		{name: "restarting", services: []serviceResult{{Name: "web", State: "restarting"}}, wantStatus: statusFail, wantIn: "web is restarting"},
+		{name: "host kernel refusal is a skip", services: []serviceResult{{Name: "mongodb", State: "exited", ExitCode: 1, Logs: []string{"MongoDB cannot start: Linux kernel versions 6.19 and newer has a known incompatibility"}}}, wantStatus: statusSkip, wantIn: "host kernel"},
 		{name: "up error with missing service", services: []serviceResult{{Name: "web", State: "missing"}}, upErr: errors.New("pool exhausted"), wantStatus: statusFail, wantIn: "compose up: pool exhausted"},
 	}
 	for _, tt := range tests {

@@ -50,6 +50,8 @@ func WithImageVerify(pub *ecdsa.PublicKey, mode string) Option {
 type imageRetention struct {
 	KeepPerApp int `json:"keep_per_app"`
 	MinAgeHrs  int `json:"min_age_hours"`
+	// requested is an explicit caller count; it can only raise a per-app count.
+	requested int
 }
 
 type imageTotals struct {
@@ -143,6 +145,9 @@ func (rt *Router) buildImageEntries(ctx context.Context, inv docker.ImageInvento
 	if err != nil {
 		return nil, err
 	}
+	if err := rt.applyAppImageKeep(ctx, apps, ret.requested); err != nil {
+		return nil, err
+	}
 	return imagelife.Build(records, apps, ret.KeepPerApp, time.Duration(ret.MinAgeHrs)*time.Hour, time.Now()), nil
 }
 
@@ -169,6 +174,9 @@ func (rt *Router) handleListImageInventory(w http.ResponseWriter, r *http.Reques
 	}
 	ret := rt.imageRetentionDefaults()
 	ret.KeepPerApp = queryIntOr(r, "keep_per_app", ret.KeepPerApp)
+	if r.URL.Query().Has("keep_per_app") {
+		ret.requested = ret.KeepPerApp
+	}
 	entries, err := rt.buildImageEntries(r.Context(), inv, nodeID, ret)
 	if err != nil {
 		rt.internalError(w, "api: list images failed", err)
@@ -274,6 +282,7 @@ func (rt *Router) handleImageGC(w http.ResponseWriter, r *http.Request) {
 	ret := rt.imageRetentionDefaults()
 	if req.KeepPerApp != nil && *req.KeepPerApp >= 0 {
 		ret.KeepPerApp = *req.KeepPerApp
+		ret.requested = *req.KeepPerApp
 	}
 	if req.MinAgeHrs != nil && *req.MinAgeHrs >= 0 {
 		ret.MinAgeHrs = *req.MinAgeHrs
@@ -284,10 +293,17 @@ func (rt *Router) handleImageGC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plan := imagelife.PlanGC(entries)
+	plan.Remove = retentionSafeRemovals(plan.Remove)
 	resp := imageGCResponse{DryRun: req.DryRun, Candidates: plan.Remove, Removed: []string{}, Failed: []imageGCFailure{}, Retention: ret}
 	if !req.DryRun {
+		var refs []string
 		for _, e := range plan.Remove {
-			if err := removeImageEntry(r.Context(), inv, e); err != nil {
+			if !rt.removalStillSafe(r.Context(), e) {
+				continue
+			}
+			done, err := removeImageEntry(r.Context(), inv, e)
+			refs = append(refs, done...)
+			if err != nil {
 				resp.Failed = append(resp.Failed, imageGCFailure{ID: e.ID, Error: err.Error()})
 				continue
 			}
@@ -295,17 +311,23 @@ func (rt *Router) handleImageGC(w http.ResponseWriter, r *http.Request) {
 			resp.ReclaimedBytes += e.SizeBytes - e.SharedBytes
 		}
 		rt.logger.Info("api: image gc finished", slog.Int("removed", len(resp.Removed)), slog.Int("failed", len(resp.Failed)))
+		if len(refs) > 0 || len(resp.Failed) > 0 {
+			rt.auditImageRetention(r, AuditActionImageGCRemoved, "", map[string]any{"removed": resp.Removed, "refs": refs, "failed": resp.Failed, "node": req.Node})
+		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func removeImageEntry(ctx context.Context, inv docker.ImageInventory, e imagelife.Entry) error {
+// removeImageEntry returns the refs it removed, also on a partial failure, for the audit log.
+func removeImageEntry(ctx context.Context, inv docker.ImageInventory, e imagelife.Entry) ([]string, error) {
+	var done []string
 	for _, ref := range imagelife.RemoveRefs(e) {
 		if err := inv.RemoveImage(ctx, ref); err != nil {
-			return fmt.Errorf("remove %s: %w", ref, err)
+			return done, fmt.Errorf("remove %s: %w", ref, err)
 		}
+		done = append(done, ref)
 	}
-	return nil
+	return done, nil
 }
 
 type imageVerifyRequest struct {

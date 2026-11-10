@@ -1,5 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { FilterChips } from './FilterChips'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftRightGlassIcon,
@@ -55,16 +56,27 @@ export function DomainsTable({
   certByDomain,
   appCount,
   onAdd,
+  query: controlledQuery,
+  onQueryChange,
+  toolbar,
 }: {
   domains: Domain[]
   certByDomain: ReadonlyMap<string, CertificateStatus>
   appCount: number
   onAdd: () => void
+  // The page keeps the search in the URL; standalone uses keep it local.
+  query?: string
+  onQueryChange?: (next: string) => void
+  /** Extra controls on the search row, such as the saved views menu. */
+  toolbar?: ReactNode
 }) {
   const { t } = useTranslation('domains')
+  const { t: tf } = useTranslation('uiShared')
   useDomainsWatchRefresh()
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
+  const [localQuery, setLocalQuery] = useState('')
+  const query = controlledQuery ?? localQuery
+  const setQuery = onQueryChange ?? setLocalQuery
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [batchAction, setBatchAction] = useState<BatchAction | null>(null)
 
@@ -247,9 +259,12 @@ export function DomainsTable({
             }}
           />
         </div>
-        <span className="text-xs text-muted-foreground">
-          {t('page.count', { count: visible.length })}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {t('page.count', { count: visible.length })}
+          </span>
+          {toolbar}
+        </div>
       </div>
 
       <DomainsBulkBar
@@ -277,24 +292,28 @@ export function DomainsTable({
         }}
       />
 
-      {visible.length === 0 ? (
-        <EmptyState
-          icon={<SearchGlassIcon className="size-6" />}
-          title={t('page.noMatch', { query: query.trim() })}
-          description={t('page.noMatchBody')}
-          action={
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setQuery('')
-              }}
-            >
-              {t('page.clearSearch')}
-            </Button>
-          }
-        />
-      ) : (
+      <FilterChips
+        filters={
+          needle === ''
+            ? []
+            : [
+                {
+                  id: 'search',
+                  label: tf('filterChips.search', { value: query.trim() }),
+                  onRemove: () => {
+                    setQuery('')
+                  },
+                },
+              ]
+        }
+        shown={visible.length}
+        total={domains.length}
+        onClearAll={() => {
+          setQuery('')
+        }}
+      />
+
+      {visible.length === 0 ? null : (
         <ResponsiveTable
           rows={visible}
           columns={columns}

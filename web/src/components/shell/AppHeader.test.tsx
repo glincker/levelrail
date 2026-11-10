@@ -37,6 +37,13 @@ vi.mock('../teams/TeamSwitcher', () => ({ TeamSwitcher: () => null }))
 vi.mock('../environments/ScopePicker', () => ({
   ScopePicker: () => null,
 }))
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
+  useQuery: () => ({ data: undefined }),
+}))
+vi.mock('../ThemeProvider', () => ({
+  useTheme: () => ({ theme: 'system', setTheme: vi.fn() }),
+}))
 vi.mock('../HelpMenu', () => ({ HelpMenu: () => null }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))
 vi.mock('./NotificationCenter', () => ({ NotificationCenter: () => null }))

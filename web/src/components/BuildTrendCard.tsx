@@ -1,5 +1,6 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
-import { ClockGlassIcon } from '@thesvg/ui-react'
+import { ClockGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { BuildSpeedAdvice } from './BuildSpeedAdvice'
@@ -72,7 +73,11 @@ export function BuildTrendCard({ appName }: { appName: string }) {
           </p>
         ) : null}
         {data && data.trend.builds === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('trend.empty')}</p>
+          <EmptyState
+            compact
+            icon={<InboxGlassIcon className="size-5" />}
+            title={t('trend.empty')}
+          />
         ) : null}
         {data && data.trend.builds > 0 ? (
           <>

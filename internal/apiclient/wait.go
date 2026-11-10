@@ -10,6 +10,7 @@ import (
 const (
 	DeployOutcomeInProgress = "in_progress"
 	DeployOutcomeHealthy    = "healthy"
+	DeployOutcomeStopped    = "stopped"
 )
 
 // WaitOptions bounds one WaitForDeploy call.

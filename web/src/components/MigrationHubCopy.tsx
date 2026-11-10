@@ -1,3 +1,5 @@
+import { InboxGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -47,7 +49,11 @@ export function MigrationHubCopy({
     ['copy', 'verify', 'cutover'].includes(session.step)
   if (selected.length === 0 || !started) {
     return (
-      <p className="text-sm text-muted-foreground">{t('hub.copy.empty')}</p>
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('hub.copy.empty')}
+      />
     )
   }
 

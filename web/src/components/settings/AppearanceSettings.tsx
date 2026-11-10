@@ -7,7 +7,6 @@ import {
   MoonGlassIcon,
   PaletteGlassIcon,
   RefreshCwGlassIcon,
-  RotateCcwGlassIcon,
   SparklesGlassIcon,
   TypeGlassIcon,
 } from '@thesvg/ui-react'
@@ -29,7 +28,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { SettingRow, SettingRows } from '@/components/ui/setting-row'
-import { ThemeChoice } from '@/components/account/ThemeChoice'
+import { AppearanceHub } from './appearance/AppearanceHub'
 import { useTheme } from '@/components/ThemeProvider'
 import {
   APPEARANCE_RECOMMENDED as REC,
@@ -40,6 +39,9 @@ import {
   CODE_SIZE_MIN,
   CONTRASTS,
   RADII,
+  BACKDROPS,
+  LOOKS,
+  LIST_KEYS,
   clampCodeSize,
   clampContentWidth,
   DARK_BASES,
@@ -125,6 +127,7 @@ function BaseSample({ id }: { id: string }) {
 
 const FONT_SAMPLE: Record<string, string> = {
   system: 'font-sans',
+  device: 'font-[family-name:ui-sans-serif,system-ui,sans-serif]',
   rounded: 'font-[family-name:ui-rounded,system-ui,sans-serif]',
   serif: 'font-serif',
   mono: 'font-mono',
@@ -144,6 +147,7 @@ function FontSample({ id }: { id: string }) {
 
 const CODE_FONT_SAMPLE: Record<string, string> = {
   'system-mono': 'font-mono',
+  'device-mono': 'font-[family-name:ui-monospace,Menlo,Consolas,monospace]',
   jetbrains: "font-[family-name:'JetBrains_Mono',ui-monospace,monospace]",
   fira: "font-[family-name:'Fira_Code',ui-monospace,monospace]",
   menlo: 'font-[family-name:Menlo,Monaco,ui-monospace,monospace]',
@@ -434,7 +438,6 @@ export function AppearanceSettings() {
   const appearance = useAppearance()
   const width = usePageWidth()
   const density = useDensity()
-  const themeLabelId = useId()
 
   const common = {
     defaultLabel: t('appearancePage.defaultBadge'),
@@ -513,6 +516,28 @@ export function AppearanceSettings() {
     sample: <RadiusSample id={v} />,
     isDefault: v === DEF.radius,
   }))
+  const lookOptions: Choice<(typeof LOOKS)[number]>[] = LOOKS.map((v) => ({
+    value: v,
+    label: t(`appearancePage.look.${v}`),
+    hint: t(`appearancePage.look.${v}Hint`),
+    isDefault: v === DEF.look,
+  }))
+  const listKeyOptions: Choice<(typeof LIST_KEYS)[number]>[] = LIST_KEYS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.listKeys.${v}`),
+      hint: t(`appearancePage.listKeys.${v}Hint`),
+      isDefault: v === DEF.listKeys,
+    }),
+  )
+  const backdropOptions: Choice<(typeof BACKDROPS)[number]>[] = BACKDROPS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.backdrop.${v}`),
+      hint: t(`appearancePage.backdrop.${v}Hint`),
+      isDefault: v === DEF.backdrop,
+    }),
+  )
   const contrastOptions: Choice<(typeof CONTRASTS)[number]>[] = CONTRASTS.map(
     (v) => ({
       value: v,
@@ -572,6 +597,11 @@ export function AppearanceSettings() {
       icon: <LayoutDashboardGlassIcon size="1.1em" />,
     },
     {
+      id: 'look',
+      label: t('appearancePage.sections.look'),
+      icon: <SparklesGlassIcon size="1.1em" />,
+    },
+    {
       id: 'sync',
       label: t('appearancePage.sections.sync'),
       icon: <RefreshCwGlassIcon size="1.1em" />,
@@ -580,6 +610,7 @@ export function AppearanceSettings() {
 
   return (
     <SettingsLayout sections={sections}>
+      <AppearanceHub onReset={onReset} />
       <SettingsSection
         id="presets"
         title={t('appearancePage.presets.title')}
@@ -600,15 +631,6 @@ export function AppearanceSettings() {
                   {t('appearancePage.presets.custom')}
                 </Badge>
               )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={onReset}
-              >
-                <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
-                {t('appearancePage.reset')}
-              </Button>
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -671,19 +693,6 @@ export function AppearanceSettings() {
           }
           title={t('appearancePage.sections.color')}
         >
-          <SettingRow
-            className={ROW}
-            title={
-              <span id={themeLabelId}>{t('appearancePage.theme.title')}</span>
-            }
-            description={t('appearancePage.theme.description')}
-          >
-            <ThemeChoice
-              value={theme}
-              onChange={setTheme}
-              labelledBy={themeLabelId}
-            />
-          </SettingRow>
           <SettingRow
             wide
             className={ROW}
@@ -882,6 +891,50 @@ export function AppearanceSettings() {
                 />
               </div>
             ) : null}
+          </SettingRow>
+          <SettingRow
+            id="look"
+            wide
+            title={t('appearancePage.look.title')}
+            description={t('appearancePage.look.description')}
+          >
+            <ChoiceGroup
+              compact
+              label={t('appearancePage.look.title')}
+              value={appearance.look}
+              options={lookOptions}
+              onChange={(look) => setAppearance({ look })}
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            wide
+            title={t('appearancePage.backdrop.title')}
+            description={t('appearancePage.backdrop.description')}
+          >
+            <ChoiceGroup
+              compact
+              label={t('appearancePage.backdrop.title')}
+              value={appearance.backdrop}
+              options={backdropOptions}
+              onChange={(backdrop) => setAppearance({ backdrop })}
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            id="list-keys"
+            wide
+            title={t('appearancePage.listKeys.title')}
+            description={t('appearancePage.listKeys.description')}
+          >
+            <ChoiceGroup
+              compact
+              label={t('appearancePage.listKeys.title')}
+              value={appearance.listKeys}
+              options={listKeyOptions}
+              onChange={(listKeys) => setAppearance({ listKeys })}
+              {...common}
+            />
           </SettingRow>
           <div className="grid gap-x-8 gap-y-4 py-4 xl:grid-cols-2">
             <SettingRow

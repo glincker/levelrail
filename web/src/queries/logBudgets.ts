@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { LogBudget, LogTrimResult, LogUsage } from '../types/logBudgets'
+import { pollMs } from '@/lib/pollTier'
 
 export const logBudgetKeys = {
   usage: ['log-usage'] as const,
@@ -28,7 +29,7 @@ export function logUsageQueryOptions() {
       await ensureOk(res, `load log usage failed: ${res.status}`)
       return (await res.json()) as LogUsage
     },
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
 }
 

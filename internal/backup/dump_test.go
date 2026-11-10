@@ -181,7 +181,7 @@ func TestContainerDumper_Dump(t *testing.T) {
 			engine:      store.EngineKeyDB,
 			containerID: "db-cache",
 			content:     "rdb-bytes",
-			wantCmd:     []string{"keydb-cli", "--rdb", "-"},
+			wantCmd:     keydbDumpCmd,
 		},
 		{
 			name:        "Valkey",

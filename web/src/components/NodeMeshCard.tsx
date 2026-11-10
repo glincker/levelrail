@@ -2,7 +2,10 @@ import {
   RestoreGlassIcon,
   WifiHighGlassIcon,
   WifiOffGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useMeshStatus } from '../queries/mesh'
 import type { MeshPeerResource } from '../types/mesh'
 import { ApiError } from '../lib/apiError'
@@ -12,78 +15,74 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
-// Shared column grid for the peer list, the same sticky-header-plus-row
-// convention NODE_LIST_GRID (NodeRow.tsx) establishes for the top-level
-// node list: a fixed grid template so the header never drifts out of
-// alignment with row content, rather than an actual <table>.
-const PEER_LIST_GRID =
-  'grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.4fr)_auto] items-center gap-3'
-
-function formatHandshake(iso?: string): string {
+function formatHandshake(t: TFunction<'statePlaceholders'>, iso?: string) {
   if (!iso) {
-    return 'Never'
+    return t('mesh.never')
   }
   return new Date(iso).toLocaleString()
 }
 
-function handshakeAge(iso?: string): string {
+function handshakeAge(t: TFunction<'statePlaceholders'>, iso?: string) {
   if (!iso) {
-    return 'Never'
+    return t('mesh.never')
   }
   const secs = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000))
   if (secs < 90) {
-    return `${secs}s ago`
+    return t('mesh.secondsAgo', { count: secs })
   }
   if (secs < 5400) {
-    return `${Math.round(secs / 60)} min ago`
+    return t('mesh.minutesAgo', { count: Math.round(secs / 60) })
   }
   return new Date(iso).toLocaleString()
 }
 
 function PeerRow({ peer }: { peer: MeshPeerResource }) {
+  const { t } = useTranslation('statePlaceholders')
   const label = peer.name || peer.node_id
   return (
-    <div
-      role="row"
-      className={`${PEER_LIST_GRID} border-b border-border px-3 py-2 text-sm last:border-b-0`}
-    >
-      <div role="cell" className="min-w-0">
+    <TableRow>
+      <TableCell className="max-w-0 min-w-40">
         <div className="truncate font-medium text-foreground">{label}</div>
         <div className="truncate font-mono text-xs text-muted-foreground">
-          {peer.mesh_address || 'No mesh address yet'}
+          {peer.mesh_address || t('mesh.noMeshAddress')}
         </div>
-      </div>
-      <div role="cell">
+      </TableCell>
+      <TableCell>
         {!peer.live ? (
           <Badge variant="muted">
             <RestoreGlassIcon className="size-4.5" aria-hidden="true" />
-            Not peered yet
+            {t('mesh.notPeered')}
           </Badge>
         ) : peer.healthy ? (
           <Badge variant="success">
             <WifiHighGlassIcon className="size-4.5" aria-hidden="true" />
-            Healthy
+            {t('mesh.healthy')}
           </Badge>
         ) : (
           <Badge variant="destructive">
             <WifiOffGlassIcon className="size-4.5" aria-hidden="true" />
-            Stale
+            {t('mesh.stale')}
           </Badge>
         )}
-      </div>
-      <div role="cell" className="truncate text-xs text-muted-foreground">
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
         {peer.live
-          ? formatHandshake(peer.last_handshake_at)
-          : 'No live peer entry'}
-      </div>
-      <div
-        role="cell"
-        className="text-right font-mono text-xs text-muted-foreground"
-      >
+          ? formatHandshake(t, peer.last_handshake_at)
+          : t('mesh.noLivePeer')}
+      </TableCell>
+      <TableCell className="text-right font-mono text-xs text-muted-foreground">
         {peer.endpoint || ''}
-      </div>
-    </div>
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -109,18 +108,17 @@ export function NodeMeshCard({
   nodeId: string
   nodeName: string
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const { data, isPending, isError, error } = useMeshStatus()
 
   if (isPending) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>WireGuard mesh</CardTitle>
+          <CardTitle>{t('mesh.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Loading mesh status...
-          </p>
+          <p className="text-sm text-muted-foreground">{t('mesh.loading')}</p>
         </CardContent>
       </Card>
     )
@@ -134,15 +132,15 @@ export function NodeMeshCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>WireGuard mesh</CardTitle>
+          <CardTitle>{t('mesh.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={<WifiOffGlassIcon className="size-6" />}
-            title="Mesh networking is not enabled"
+            title={t('mesh.disabledTitle')}
             description={
               error instanceof ApiError && error.status === 501
-                ? 'Set APP_MESH_ENABLED=1 on this control plane to bring up its WireGuard device and peer visibility.'
+                ? t('mesh.disabledHint')
                 : error.message
             }
           />
@@ -168,7 +166,7 @@ export function NodeMeshCard({
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>WireGuard mesh</CardTitle>
+          <CardTitle>{t('mesh.title')}</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
             <RejoinMeshButton nodeId={nodeId} nodeName={nodeName} />
             <RotateMeshKeyDialog nodeId={nodeId} nodeName={nodeName} />
@@ -178,43 +176,45 @@ export function NodeMeshCard({
       <CardContent className="space-y-4">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <dt className="text-xs text-muted-foreground uppercase">Backend</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('mesh.backend')}
+            </dt>
             <dd className="mt-1 text-sm text-foreground">
-              {data.backend || 'Unknown'}
+              {data.backend || t('mesh.unknown')}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground uppercase">
-              Mesh address
+            <dt className="text-xs text-muted-foreground">
+              {t('mesh.meshAddress')}
             </dt>
             <dd className="mt-1 break-all font-mono text-sm text-foreground">
-              {meshAddress || 'Not assigned'}
+              {meshAddress || t('mesh.notAssigned')}
             </dd>
           </div>
           <div className="col-span-2 min-w-0">
-            <dt className="text-xs text-muted-foreground uppercase">
-              Public key
+            <dt className="text-xs text-muted-foreground">
+              {t('mesh.publicKey')}
             </dt>
             <dd className="mt-1 truncate font-mono text-sm text-foreground">
-              {publicKey || 'Not generated yet'}
+              {publicKey || t('mesh.notGenerated')}
             </dd>
           </div>
           {!isLocalNode ? (
             <>
               <div>
-                <dt className="text-xs text-muted-foreground uppercase">
-                  Endpoint
+                <dt className="text-xs text-muted-foreground">
+                  {t('mesh.endpoint')}
                 </dt>
                 <dd className="mt-1 break-all font-mono text-sm text-foreground">
-                  {self?.endpoint || 'Unknown'}
+                  {self?.endpoint || t('mesh.unknown')}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground uppercase">
-                  Last handshake
+                <dt className="text-xs text-muted-foreground">
+                  {t('mesh.lastHandshake')}
                 </dt>
                 <dd className="mt-1 text-sm text-foreground">
-                  {handshakeAge(self?.last_handshake_at)}
+                  {handshakeAge(t, self?.last_handshake_at)}
                 </dd>
               </div>
             </>
@@ -224,38 +224,50 @@ export function NodeMeshCard({
         {rotation ? (
           <Banner
             variant={rotation.confirmed ? 'success' : 'warning'}
-            title={`Last rotation ${rotation.confirmed ? 'confirmed' : 'still confirming'}: started ${new Date(rotation.started_at).toLocaleString()}${
-              rotation.confirmed && rotation.confirmed_at
-                ? `, confirmed ${new Date(rotation.confirmed_at).toLocaleString()}`
-                : ''
-            }`}
+            title={
+              rotation.confirmed
+                ? rotation.confirmed_at
+                  ? t('mesh.rotationConfirmed', {
+                      started: new Date(rotation.started_at).toLocaleString(),
+                      confirmed: new Date(
+                        rotation.confirmed_at,
+                      ).toLocaleString(),
+                    })
+                  : t('mesh.rotationConfirmedNoTime', {
+                      started: new Date(rotation.started_at).toLocaleString(),
+                    })
+                : t('mesh.rotationPending', {
+                    started: new Date(rotation.started_at).toLocaleString(),
+                  })
+            }
           />
         ) : null}
 
         {peers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No peers configured yet.
-          </p>
+          <EmptyState
+            compact
+            icon={<InboxGlassIcon className="size-5" />}
+            title={t('mesh.noPeers')}
+          />
         ) : (
-          <div
-            role="table"
-            aria-label="Mesh peers"
-            className="overflow-hidden rounded-lg border border-border"
-          >
-            <div
-              role="row"
-              className={`${PEER_LIST_GRID} border-b border-border bg-muted/40 px-3 py-2 text-[13px] font-medium text-muted-foreground`}
-            >
-              <span role="columnheader">Peer</span>
-              <span role="columnheader">Health</span>
-              <span role="columnheader">Last handshake</span>
-              <span role="columnheader" className="text-right">
-                Endpoint
-              </span>
-            </div>
-            {peers.map((peer) => (
-              <PeerRow key={peer.node_id || peer.public_key} peer={peer} />
-            ))}
+          <div className="overflow-hidden rounded-lg border border-border">
+            <Table aria-label={t('mesh.peersLabel')}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('mesh.peer')}</TableHead>
+                  <TableHead>{t('mesh.health')}</TableHead>
+                  <TableHead>{t('mesh.lastHandshake')}</TableHead>
+                  <TableHead className="text-right">
+                    {t('mesh.endpoint')}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {peers.map((peer) => (
+                  <PeerRow key={peer.node_id || peer.public_key} peer={peer} />
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>

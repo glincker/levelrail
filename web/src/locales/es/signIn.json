@@ -71,6 +71,7 @@
     "title": "Navegadores de confianza",
     "description": "Navegadores que pueden iniciar sesión con tu contraseña sin pedir aprobación a otra sesión. Revoca los que ya no uses.",
     "empty": "Aún no hay navegadores de confianza.",
+    "emptyHint": "Los navegadores que marques como de confianza al iniciar sesión aparecen aquí.",
     "current": "Este navegador",
     "lastUsed": "Último uso {{time}} desde {{ip}}",
     "revoke": "Revocar",
@@ -93,7 +94,7 @@
   },
   "attribution": {
     "poweredBy": "Con tecnología de {{name}}",
-    "theAuthLabel": "TheAuth, autenticación de código abierto (se abre en una pestaña nueva)",
+    "theAuthLabel": "Con tecnología de TheAuth, autenticación de código abierto (se abre en una pestaña nueva)",
     "studioLabel": "GLINR Studios (se abre en una pestaña nueva)"
   },
   "passkey": {

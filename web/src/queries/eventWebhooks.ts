@@ -15,6 +15,7 @@ import type {
   EventWebhookTestResult,
   UpdateEventWebhookRequest,
 } from '../types/eventWebhooks'
+import { pollMs } from '@/lib/pollTier'
 
 export const eventWebhookKeys = {
   all: ['event-webhooks'] as const,
@@ -24,7 +25,7 @@ export const eventWebhookKeys = {
 }
 
 // Delivery counters change every few seconds, so both views are polled.
-const REFETCH_MS = 10_000
+const REFETCH_MS = pollMs('active')
 
 async function request<T>(
   path: string,

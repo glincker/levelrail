@@ -4,6 +4,7 @@ import {
   ThumbsDownGlassIcon,
   ThumbsUpGlassIcon,
 } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -17,11 +18,13 @@ import {
 } from '../lib/pipelineOverview'
 import type { PipelineRunRow } from '../types/pipelineOverview'
 import { PipelineStatusIcon } from './PipelineStatusBadge'
+import { Alert } from '@/components/ui/alert'
 
 const PENDING_LIMIT = 10
 const FAILED_LIMIT = 5
 
 function AttentionItem({ row }: { row: PipelineRunRow }) {
+  const { t } = useTranslation('pipelines')
   const decide = useDecidePipelineRow()
   const pending = isPendingDecision(row)
   const act = (decision: 'approved' | 'rejected') =>
@@ -34,9 +37,7 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
       <PipelineStatusIcon
         status={row.status}
         className={
-          pending
-            ? 'size-5 text-amber-600 dark:text-amber-400'
-            : 'size-5 text-destructive'
+          pending ? 'size-5 text-tone-warning' : 'size-5 text-destructive'
         }
       />
       <Link
@@ -48,27 +49,22 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
           {row.app} / {row.pipeline} #{row.number}
         </span>
         <span className="ml-2 text-xs text-muted-foreground">
-          {pending ? decisionLabel(row) : (row.reason ?? 'Failed')}
+          {pending ? decisionLabel(row) : (row.reason ?? t('attention.failed'))}
         </span>
       </Link>
       {pending && row.can_decide ? (
         <>
-          <Button
-            size="sm"
-            disabled={decide.isPending}
-            onClick={() => act('approved')}
-          >
+          <Button disabled={decide.isPending} onClick={() => act('approved')}>
             <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
-            Approve
+            {t('attention.approve')}
           </Button>
           <Button
-            size="sm"
             variant="destructive"
             disabled={decide.isPending}
             onClick={() => act('rejected')}
           >
             <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
-            Reject
+            {t('attention.reject')}
           </Button>
         </>
       ) : null}
@@ -77,6 +73,7 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
 }
 
 export function PipelineAttentionStrip() {
+  const { t } = useTranslation('pipelines')
   const waiting = useAttentionRuns(
     { status: 'waiting_approval' },
     PENDING_LIMIT,
@@ -92,22 +89,24 @@ export function PipelineAttentionStrip() {
     return null
   }
   return (
-    <section
-      aria-label="Needs attention"
-      className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30"
+    <Alert
+      variant="warning"
+      role="region"
+      aria-label={t('attention.title')}
+      className="block p-3"
     >
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <CircleAlertGlassIcon
           className="size-5 text-tone-danger"
           aria-hidden="true"
         />
-        Needs attention
+        {t('attention.title')}
       </h2>
-      <ul className="mt-1 divide-y divide-amber-200 dark:divide-amber-900">
+      <ul className="mt-1 divide-y divide-tone-warning-border">
         {rows.map((row) => (
           <AttentionItem key={row.id} row={row} />
         ))}
       </ul>
-    </section>
+    </Alert>
   )
 }

@@ -334,3 +334,74 @@ services:
 		t.Errorf("ValidateForBuild() error = %v, want nil", err)
 	}
 }
+
+func TestExpandBuildService_MagicVars(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFile(t, sourceDir, "docker-compose.yml", `
+x-levelrail-domains:
+  web: app.example.com
+services:
+  web:
+    image: nginx
+    environment:
+      HOST: ${SERVICE_FQDN_WEB_3000}
+      PUBLIC: ${SERVICE_URL_WEB}
+      DB_URL: postgres://u:${SERVICE_PASSWORD_DB}@db/x
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_DB}
+      PEER: ${SERVICE_FQDN_API}
+      PEER_URL: ${SERVICE_URL_DB_5432}
+`)
+	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
+	run := func() (map[string]spec.Service, []string, map[string]string) {
+		stored := map[string]string{}
+		gen := func(kind, key string, _ int) (string, error) { return "pw-" + kind + "-" + key, nil }
+		persist := func(s, k, v string) error { stored[s+"/"+k] = v; return nil }
+		out, warns, err := ExpandBuildService(svc, sourceDir, WithMagicSecrets(gen, persist))
+		if err != nil {
+			t.Fatalf("ExpandBuildService() error = %v", err)
+		}
+		return out, warns, stored
+	}
+	out, warns, stored := run()
+	if got := out["web"].Env["HOST"].Value; got != "app.example.com" {
+		t.Errorf("HOST = %q, want the service domain", got)
+	}
+	if got := out["web"].Env["PUBLIC"].Value; got != "https://app.example.com" {
+		t.Errorf("PUBLIC = %q", got)
+	}
+	if got := out["db"].Env["PEER"].Value; got != "db" || len(warns) != 2 {
+		t.Errorf("PEER = %q warnings = %v, want internal name plus one warning", got, warns)
+	}
+	if got := out["db"].Env["PEER_URL"].Value; got != "http://db:5432" {
+		t.Errorf("PEER_URL = %q, want the internal name with the token port", got)
+	}
+	if !out["db"].Env["POSTGRES_PASSWORD"].Secret || out["db"].Env["POSTGRES_PASSWORD"].Value != "" {
+		t.Errorf("password must be secret-backed with no literal value")
+	}
+	if stored["db/POSTGRES_PASSWORD"] != "pw-PASSWORD-DB" || stored["web/DB_URL"] != "postgres://u:"+stored["db/POSTGRES_PASSWORD"]+"@db/x" {
+		t.Errorf("stored = %v, want one shared generated password", stored)
+	}
+	_, _, again := run()
+	if again["db/POSTGRES_PASSWORD"] != stored["db/POSTGRES_PASSWORD"] {
+		t.Errorf("password changed on second expand")
+	}
+}
+
+func TestExpandBuildService_MagicVar_UnknownKindStillErrors(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFile(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    image: nginx
+    environment:
+      X: ${SERVICE_WHATEVER_KEY}
+`)
+	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
+	gen := func(string, string, int) (string, error) { return "x", nil }
+	if _, _, err := ExpandBuildService(svc, sourceDir, WithMagicSecrets(gen, func(string, string, string) error { return nil })); err == nil {
+		t.Fatal("ExpandBuildService() error = nil, want unknown kind rejected")
+	}
+}

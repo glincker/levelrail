@@ -25,7 +25,7 @@ export function TrafficSpark({
   if (metrics.loading) {
     return (
       <span
-        className="h-4 w-20 animate-pulse rounded bg-muted"
+        className="h-4 w-20 animate-pulse motion-reduce:animate-none rounded bg-muted"
         aria-hidden="true"
       />
     )

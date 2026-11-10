@@ -1,5 +1,6 @@
 'use client'
 
+import '@/styles/material.css'
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -44,7 +45,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        'fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
+        'motion-scrim fixed inset-0 isolate z-50 bg-black/60 data-starting-style:opacity-0 data-ending-style:opacity-0',
         className,
       )}
       {...props}
@@ -60,7 +61,7 @@ function DialogOverlay({
 // a base class string every popup gets regardless of variant, plus a
 // `variants.size` map for the parts that actually differ.
 //
-// The base intentionally keeps `p-4` fixed across both variants rather
+// The base intentionally keeps the dialog pad token fixed across both variants rather
 // than letting `fullscreen` claim more padding for itself. DialogFooter
 // below bleeds to the popup's edges with `-mx-4 -mb-4`, a value hardcoded
 // against this exact padding; if `fullscreen` used a different padding
@@ -73,7 +74,7 @@ function DialogOverlay({
 //
 // `fullscreen` keeps the same `rounded-xl` as `default` for the same
 // reason: DialogFooter's own bottom corners are hardcoded to
-// `rounded-b-xl`, not parameterized by size. Going edge-to-edge with
+// `rounded-b-container`, not parameterized by size. Going edge-to-edge with
 // square corners would leave that hardcoded radius rendering as a small
 // notch of visible backdrop in the popup's bottom corners. Keeping a
 // small inset (`inset-4`/`inset-6`) instead of `inset-0` gives
@@ -81,7 +82,7 @@ function DialogOverlay({
 // treatment rather than a true edge-to-edge one, and sidesteps the
 // mismatch entirely by never changing the radius at all.
 const dialogContentVariants = cva(
-  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground shadow-dialog ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 bg-popover ring-1 ring-foreground/12 shadow-dialog motion-overlay rounded-container p-(--glinr-dialog-pad) text-sm text-foreground outline-none',
   {
     variants: {
       size: {
@@ -93,7 +94,11 @@ const dialogContentVariants = cva(
         // and scrolling internally is the same "the whole popup scrolls
         // together" contract `fullscreen` already documents below.
         default:
-          'inset-x-0 bottom-0 max-h-[90dvh] w-full overflow-y-auto rounded-b-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-b-xl sm:pb-4',
+          'inset-x-0 bottom-0 max-h-[90dvh] w-full overflow-y-auto rounded-b-none pb-[max(var(--glinr-dialog-pad),env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:max-w-(--glinr-dialog-w-form) sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-b-container sm:pb-(--glinr-dialog-pad)',
+        // Confirm and rich reuse the centered default and only change the width token.
+        confirm:
+          'inset-x-0 bottom-0 max-h-[90dvh] w-full overflow-y-auto rounded-b-none pb-[max(var(--glinr-dialog-pad),env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:max-w-(--glinr-dialog-w-confirm) sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-b-container sm:pb-(--glinr-dialog-pad)',
+        rich: 'inset-x-0 bottom-0 max-h-[90dvh] w-full overflow-y-auto rounded-b-none pb-[max(var(--glinr-dialog-pad),env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:max-w-(--glinr-dialog-w-rich) sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-b-container sm:pb-(--glinr-dialog-pad)',
         // No centering transform: `inset-*` positions and sizes the
         // popup directly against the viewport instead of a centered
         // fixed-width box, which is also what makes this fill available
@@ -106,7 +111,7 @@ const dialogContentVariants = cva(
         // close button stays pinned to the popup's frame because it's
         // positioned absolute against that same fixed-position ancestor.
         fullscreen:
-          'inset-0 w-auto max-w-none overflow-y-auto rounded-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-6 sm:rounded-xl sm:pb-4',
+          'inset-0 w-auto max-w-none overflow-y-auto rounded-none pb-[max(var(--glinr-dialog-pad),env(safe-area-inset-bottom))] sm:inset-6 sm:rounded-container sm:pb-(--glinr-dialog-pad)',
       },
     },
     defaultVariants: {
@@ -120,14 +125,12 @@ function DialogContent({
   children,
   showCloseButton = true,
   size,
-  glass = false,
+  glass = true,
   ...props
 }: DialogPrimitive.Popup.Props &
   VariantProps<typeof dialogContentVariants> & {
     showCloseButton?: boolean
-    /** Opt into the glinui blurred glass surface (adr/024) instead of the
-     * default solid popover background. Additive: existing dialogs keep
-     * their current look unless they pass this explicitly. */
+    /** Glass is the default; pass false for a solid surface. */
     glass?: boolean
   }) {
   return (
@@ -137,7 +140,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           dialogContentVariants({ size, className }),
-          glass && 'glinui-glass-surface',
+          !glass && 'glass-solid',
         )}
         {...props}
       >
@@ -148,7 +151,7 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-5 right-5 size-8 hover:bg-foreground/10"
                 size="icon-sm"
               />
             }
@@ -166,7 +169,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn('flex flex-col gap-2', className)}
+      className={cn('flex flex-col gap-1.5 pr-10', className)}
       {...props}
     />
   )
@@ -184,7 +187,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end',
+        'sticky bottom-[calc(-1*var(--glinr-dialog-pad))] -mx-(--glinr-dialog-pad) -mb-(--glinr-dialog-pad) flex flex-col-reverse gap-2 rounded-b-container border-t bg-muted p-(--glinr-dialog-pad) max-sm:*:data-[slot=button]:w-full sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
@@ -203,7 +206,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-base leading-none font-medium', className)}
+      className={cn('text-base leading-snug font-semibold', className)}
       {...props}
     />
   )

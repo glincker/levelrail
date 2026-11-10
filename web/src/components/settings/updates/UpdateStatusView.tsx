@@ -41,7 +41,7 @@ function StateIcon({ state }: { state: UpdateState }) {
       return (
         <LoaderCircleGlassIcon
           size="1.4em"
-          className={cn(cls, 'animate-spin')}
+          className={cn(cls, 'animate-spin motion-reduce:animate-none')}
         />
       )
     case 'checkFailed':
@@ -156,7 +156,9 @@ export function UpdateStatusView({
               >
                 <RotateCwGlassIcon
                   size="1.4em"
-                  className={checking ? 'animate-spin' : ''}
+                  className={
+                    checking ? 'animate-spin motion-reduce:animate-none' : ''
+                  }
                 />
                 {checking ? t('status.checking') : t('status.checkNow')}
               </Button>

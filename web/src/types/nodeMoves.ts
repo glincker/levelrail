@@ -47,7 +47,7 @@ export interface NodeDrainBlocked {
   reason: string
 }
 
-export type NodeDrainStatus = 'running' | 'succeeded' | 'failed'
+export type NodeDrainStatus = 'running' | 'succeeded' | 'partial' | 'failed'
 
 export interface NodeDrain {
   id: string
@@ -115,6 +115,7 @@ export interface Placement {
   eligible_node_ids: string[]
   rejected: PlacementRejection[]
   domain_warnings?: DomainRisk[]
+  warnings?: string[]
 }
 
 export type MeshPairStatus = 'ok' | 'degraded' | 'down' | 'unknown'

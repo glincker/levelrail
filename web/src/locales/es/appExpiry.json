@@ -1,0 +1,23 @@
+{
+  "title": "Caducidad",
+  "description": "Para apps temporales y de demostración. Se escribe un aviso {{notice}} horas antes, la app se detiene al caducar y se elimina {{grace}} horas después. Las apps con volúmenes, bases de datos enlazadas o un entorno protegido solo se detienen salvo que se active borrar datos.",
+  "none": "Sin caducidad.",
+  "state": {
+    "none": "Sin caducidad.",
+    "scheduled": "Caduca {{at}}.",
+    "noticed": "Caduca {{at}}. El aviso está en el registro de auditoría.",
+    "stopped": "Detenida al caducar. Se elimina después de {{after}} salvo que se quite la caducidad.",
+    "kept": "Detenida al caducar y conservada."
+  },
+  "kept": "Conservada, no eliminada: {{reason}}.",
+  "clear": "Quitar caducidad",
+  "atLabel": "Caduca el",
+  "deleteData": "Borrar también los datos",
+  "confirmLabel": "Escribe {{name}} para confirmar",
+  "save": "Guardar caducidad",
+  "saved": "Caducidad guardada",
+  "cleared": "Caducidad quitada, se cancela cualquier eliminación pendiente",
+  "failed": "No se pudo cambiar la caducidad",
+  "hint": "Hasta {{days}} días. Quitarla siempre cancela una eliminación pendiente; una app detenida sigue detenida hasta que se inicie.",
+  "deleteDisabled": "Eliminación desactivada por el operador: las apps caducadas solo se detienen."
+}

@@ -233,6 +233,9 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 			errs = append(errs, fmt.Errorf("task %q: %w", task.ID, err))
 		}
 	}
+	if err := s.promoteQueued(ctx, tasks, now); err != nil {
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
@@ -269,14 +272,84 @@ func (s *Scheduler) evaluate(ctx context.Context, task store.ScheduledTask, now 
 	}
 
 	run.Status = store.ScheduledTaskStatusRunning
-	claimed, err := s.Store.ClaimScheduledTaskRun(ctx, run)
+	claimed, err := s.claim(ctx, run)
 	if err != nil {
 		return err
 	}
 	if !claimed {
 		return nil
 	}
-	trig := Trigger{Kind: store.ScheduledTaskTriggerSchedule, RunID: id, ScheduledFor: &scheduledFor, CatchUp: d.catchUp}
+	s.launch(ctx, task, Trigger{Kind: store.ScheduledTaskTriggerSchedule, RunID: id, ScheduledFor: &scheduledFor, CatchUp: d.catchUp})
+	return nil
+}
+
+// GuardedClaimer is the optional store surface that enforces skip and
+// queue-one in the claim itself, so separate scheduler processes agree.
+type GuardedClaimer interface {
+	ClaimGuardedScheduledTaskRun(ctx context.Context, run store.ScheduledTaskRun) (store.ClaimOutcome, error)
+	PromoteQueuedScheduledTaskRuns(ctx context.Context, now time.Time, targets []store.QueuedTarget) ([]store.ScheduledTaskRun, error)
+}
+
+func (s *Scheduler) claim(ctx context.Context, run store.ScheduledTaskRun) (bool, error) {
+	g, ok := s.Store.(GuardedClaimer)
+	if !ok {
+		return s.Store.ClaimScheduledTaskRun(ctx, run)
+	}
+	outcome, err := g.ClaimGuardedScheduledTaskRun(ctx, run)
+	if outcome == store.ClaimSkipped || outcome == store.ClaimQueued {
+		s.log().Info("scheduledtask: occurrence held by overlap policy",
+			slog.String("task_id", run.TaskID), slog.String("outcome", string(outcome)))
+	}
+	return outcome == store.ClaimStarted, err
+}
+
+// promoteQueued starts queue-one runs whose previous run has finished. Only
+// this tick's enabled queue-one jobs are passed, so every promoted row is launched.
+func (s *Scheduler) promoteQueued(ctx context.Context, tasks []store.ScheduledTask, now time.Time) error {
+	g, ok := s.Store.(GuardedClaimer)
+	if !ok {
+		return nil
+	}
+	byID := make(map[string]store.ScheduledTask, len(tasks))
+	var targets []store.QueuedTarget
+	for _, t := range tasks {
+		if t.ConcurrencyPolicy != store.ScheduledTaskConcurrencyQueueOne {
+			continue
+		}
+		byID[t.ID] = t
+		targets = append(targets, store.QueuedTarget{TaskID: t.ID, MaxWait: queuedMaxWait(t)})
+	}
+	if len(targets) == 0 {
+		return nil
+	}
+	runs, err := g.PromoteQueuedScheduledTaskRuns(ctx, now, targets)
+	for _, run := range runs {
+		task, found := byID[run.TaskID]
+		if !found {
+			continue
+		}
+		s.launch(ctx, task, Trigger{Kind: store.ScheduledTaskTriggerSchedule, RunID: run.ID, ScheduledFor: run.ScheduledFor})
+	}
+	if err != nil {
+		return fmt.Errorf("scheduledtask: promote queued runs: %w", err)
+	}
+	return nil
+}
+
+// queuedMaxWait is how long a queued run may wait: the job's catch-up
+// lookback, else the live timeout ceiling, else the scan restart window.
+func queuedMaxWait(t store.ScheduledTask) time.Duration {
+	if t.CatchUpLookbackSeconds > 0 {
+		return time.Duration(t.CatchUpLookbackSeconds) * time.Second
+	}
+	if hi := guardSetting(KeyTimeoutMaxSeconds); hi > 0 {
+		return time.Duration(hi) * time.Second * time.Duration(t.MaxRetries+1)
+	}
+	return scanRestartWindow
+}
+
+func (s *Scheduler) launch(ctx context.Context, task store.ScheduledTask, trig Trigger) {
+	id := trig.RunID
 	runCtx := ctx
 	if s.baseCtx != nil {
 		runCtx = s.baseCtx
@@ -289,7 +362,6 @@ func (s *Scheduler) evaluate(ctx context.Context, task store.ScheduledTask, now 
 				slog.String("run_id", id), slog.String("error", err.Error()))
 		}
 	}()
-	return nil
 }
 
 func orDefaultPolicy(p string) string {

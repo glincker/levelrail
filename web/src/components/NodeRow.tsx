@@ -23,6 +23,7 @@ import { DrainNodeDialog } from './DrainNodeDialog'
 import { NodeCertBadge } from './NodeCertBadge'
 import { NodeNeverConnectedBadge } from './NodeNeverConnected'
 import { NodeCPUCell, NodeMemoryCell } from './NodeUtilizationCells'
+import { CopyAsCommand } from './CopyAsCommand'
 
 // Same anatomy as DATABASE_LIST_GRID: icon, name with status beneath, lg-only
 // columns, trailing kebab. Shared by the sticky header and every row.
@@ -143,7 +144,16 @@ export function NodeRow({
         {formatAge(node.last_seen_at, t('list.never'))}
       </span>
 
-      <span className="relative z-10 justify-self-end">
+      <span className="relative z-10 flex items-center gap-1 justify-self-end">
+        <CopyAsCommand
+          subject={node.name}
+          actions={[
+            {
+              kind: node.schedulable ? 'node.cordon' : 'node.uncordon',
+              nodeId: node.id,
+            },
+          ]}
+        />
         <ActionMenu
           trigger={
             <Button
@@ -226,14 +236,14 @@ export function RowSkeleton() {
       className={`${NODE_LIST_GRID} border-b border-border px-4 py-3`}
       aria-hidden="true"
     >
-      <div className="size-8 animate-pulse rounded-lg bg-muted" />
-      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-      <div className="hidden h-4 w-24 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-24 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-10 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-16 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-16 animate-pulse rounded bg-muted lg:block" />
-      <div className="size-7 animate-pulse justify-self-end rounded bg-muted" />
+      <div className="size-8 animate-pulse motion-reduce:animate-none rounded-lg bg-muted" />
+      <div className="h-4 w-32 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="hidden h-4 w-24 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-24 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-10 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-16 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-16 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="size-7 animate-pulse motion-reduce:animate-none justify-self-end rounded bg-muted" />
     </div>
   )
 }

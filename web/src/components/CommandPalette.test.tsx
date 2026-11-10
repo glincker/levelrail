@@ -134,6 +134,18 @@ afterEach(() => {
 })
 
 describe('CommandPalette', () => {
+  it('keeps the footer outside the scrolling list so rows never sit under it', () => {
+    renderPalette()
+    const list = screen.getByRole('listbox')
+    expect(list).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
+    const panel = document.querySelector('[data-slot="command-palette-panel"]')
+    expect(panel).toHaveClass('flex', 'flex-col', 'min-h-0')
+    const footer = document.querySelector(
+      '[data-slot="command-palette-footer"]',
+    )
+    expect(footer).toHaveClass('shrink-0')
+    expect(list.contains(footer)).toBe(false)
+  })
   it('exposes combobox, listbox and option roles with hint chips', () => {
     renderPalette()
     expect(screen.getByRole('combobox')).toBeInTheDocument()

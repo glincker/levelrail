@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // ErrNotDockerRun is returned when the text is not a `docker run` command.
@@ -27,6 +29,8 @@ type dockerRun struct {
 	NanoCPUs   int64
 	Network    string
 	Warnings   []Warning
+	// Runtime collects the supported tuning flags; see dockerrun_runtime.go.
+	Runtime spec.RuntimeOptions
 }
 
 // flagsWithValue lists docker run flags that consume the next argument.
@@ -56,7 +60,6 @@ var flagsWithValue = map[string]bool{
 var unsupportedFlag = map[string]string{
 	"--privileged":         "privileged containers are not supported",
 	"--cap-add":            "adding Linux capabilities is not supported",
-	"--cap-drop":           "dropping Linux capabilities is not supported",
 	"--device":             "passing host devices is not supported",
 	"--pid":                "sharing a PID namespace is not supported",
 	"--ipc":                "sharing an IPC namespace is not supported",
@@ -64,21 +67,15 @@ var unsupportedFlag = map[string]string{
 	"--security-opt":       "custom security options are not supported",
 	"--userns":             "user namespace overrides are not supported",
 	"--cgroupns":           "cgroup namespace overrides are not supported",
-	"--sysctl":             "sysctl overrides are not supported",
-	"--ulimit":             "ulimit overrides are not supported",
-	"--tmpfs":              "tmpfs mounts are not supported",
 	"--mount":              "--mount syntax is not supported, use -v",
 	"--link":               "legacy container links are not supported",
 	"--volumes-from":       "volumes-from is not supported",
 	"--ip":                 "static container IPs are not supported",
 	"--mac-address":        "custom MAC addresses are not supported",
-	"--add-host":           "extra host entries are not supported",
-	"--dns":                "custom DNS servers are not supported",
 	"--dns-search":         "custom DNS search domains are not supported",
 	"--dns-option":         "custom DNS options are not supported",
 	"--runtime":            "custom container runtimes are not supported",
 	"--gpus":               "GPU requests are not imported, set them on the app after creating it",
-	"--shm-size":           "shared memory size is not supported",
 	"--group-add":          "supplementary groups are not supported",
 	"--log-driver":         "custom log drivers are not supported",
 	"--log-opt":            "custom log driver options are not supported",
@@ -90,11 +87,7 @@ var unsupportedFlag = map[string]string{
 	"-h":                   "custom hostnames are not supported",
 	"--cpuset-cpus":        "CPU pinning is not imported",
 	"--memory-swap":        "swap limits are not imported",
-	"--pids-limit":         "PID limits are not supported",
 	"--stop-signal":        "custom stop signals are not supported",
-	"--stop-timeout":       "custom stop timeouts are not supported",
-	"--init":               "--init is not supported",
-	"--read-only":          "read-only root filesystems are not supported",
 	"--platform":           "platform overrides are not supported",
 	"--oom-score-adj":      "OOM score adjustment is not supported",
 	"--cpu-shares":         "CPU shares are not supported",
@@ -188,6 +181,9 @@ func parseDockerRun(text string) (*dockerRun, error) {
 	if i+1 < len(toks) {
 		dr.Command = toks[i+1:]
 	}
+	if err := dr.finishRuntime(); err != nil {
+		return nil, err
+	}
 	return dr, nil
 }
 
@@ -276,6 +272,9 @@ func (dr *dockerRun) applyFlag(flag, val string, unsupported func(string), warn 
 	case "--privileged":
 		unsupported(flag)
 	default:
+		if dr.applyRuntimeFlag(flag, val) {
+			return nil
+		}
 		if ignoredFlag[flag] {
 			return nil
 		}

@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast, toastAction } from '@/components/ui/toast'
+import { CopyAsCommand } from './CopyAsCommand'
 
 const TONE_TEXT: Record<string, string> = {
   success: 'text-tone-success',
@@ -256,13 +257,9 @@ export function DeployAttemptRow({
         isSelected && 'bg-muted/50',
       )}
     >
-      <div className="relative mt-0.5 size-5 shrink-0 pointer-coarse:flex pointer-coarse:size-auto pointer-coarse:items-center pointer-coarse:gap-2">
+      <div className="mt-0.5 flex shrink-0 items-center gap-2">
         <span
-          className={cn(
-            'absolute inset-0 flex items-center justify-center transition-opacity pointer-coarse:static pointer-coarse:opacity-100',
-            isSelected ? 'opacity-0' : 'group-hover:opacity-0',
-            TONE_TEXT[tone],
-          )}
+          className={cn('flex items-center justify-center', TONE_TEXT[tone])}
         >
           <StatusIcon
             className={cn(
@@ -274,10 +271,6 @@ export function DeployAttemptRow({
           />
         </span>
         <Checkbox
-          className={cn(
-            'absolute inset-0 m-auto transition-opacity pointer-coarse:static pointer-coarse:m-0 pointer-coarse:opacity-100',
-            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-          )}
           checked={isSelected}
           onCheckedChange={onToggleSelected}
           aria-label={`Select ${title} to compare`}
@@ -354,6 +347,7 @@ export function DeployAttemptRow({
           <Button
             variant="outline"
             size="sm"
+            className="max-sm:h-10"
             nativeButton={false}
             render={
               <a
@@ -375,6 +369,7 @@ export function DeployAttemptRow({
           <Button
             variant="outline"
             size="sm"
+            className="max-sm:h-10"
             nativeButton={false}
             render={
               <a
@@ -397,6 +392,7 @@ export function DeployAttemptRow({
         {held ? (
           <Button
             size="sm"
+            className="max-sm:h-10"
             disabled={publish.isPending}
             onClick={handlePublish}
           >
@@ -429,11 +425,20 @@ export function DeployAttemptRow({
               ? t('deployHistory.failedLog')
               : t('deployHistory.viewLogs')}
         </Button>
+        {attempt.status === 'succeeded' && !isLatestAttempt ? (
+          <CopyAsCommand
+            subject={attempt.id}
+            actions={[
+              { kind: 'deploy.rollback', app: appName, deployId: attempt.id },
+            ]}
+          />
+        ) : null}
         <ActionMenu
           trigger={
             <Button
               variant="ghost"
               size="sm"
+              className="max-sm:size-10"
               aria-label={`More actions for ${title}`}
             >
               <EllipsisGlassIcon className="size-5" />

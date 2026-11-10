@@ -19,14 +19,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
-	defaultStackLockTTL      = 10 * time.Minute
-	defaultStackHistoryLimit = 50
-	stackCIPrefix            = "ci:"
+	defaultStackLockTTL = 10 * time.Minute
+	stackCIPrefix       = "ci:"
 )
 
 // Audit action names for stack verbs.
@@ -138,11 +139,8 @@ func stackLockTTL() time.Duration {
 	return defaultStackLockTTL
 }
 
-func stackHistoryLimit() int {
-	if n, err := strconv.Atoi(os.Getenv("APP_STACK_HISTORY_LIMIT")); err == nil && n > 0 {
-		return n
-	}
-	return defaultStackHistoryLimit
+func (rt *Router) stackHistoryLimit(ctx context.Context) int {
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyStackHistoryLimit)
 }
 
 // Wire types.
@@ -688,6 +686,7 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res, opts, issues := req.iac(name, project, prune).build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		resp.Issues = issues
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
@@ -815,9 +814,16 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	}
 	project := rt.projectName(ctx, stack.ProjectID)
 	res, opts, issues := req.iac(stack.Name, project, req.Prune).build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: stack.Name, Issues: issues})
 		return
+	}
+	// A stack apply is a write path for every app it declares.
+	for _, rsrc := range res {
+		if rsrc.Kind == iac.KindApp && rt.refuseIfProtected(w, r, rsrc.Name) {
+			return
+		}
 	}
 	if req.IdempotencyKey != "" {
 		if prev, found := rt.findStackRevisionByKey(ctx, ss, stack.ID, req.IdempotencyKey); found {

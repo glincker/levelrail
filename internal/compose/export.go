@@ -69,6 +69,15 @@ func exportServiceBody(appName, serviceKey string, d store.DesiredService) map[s
 	if len(d.Entrypoint) > 0 {
 		body["entrypoint"] = []string(d.Entrypoint)
 	}
+	if d.User != "" {
+		body["user"] = d.User
+	}
+	if d.WorkingDir != "" {
+		body["working_dir"] = d.WorkingDir
+	}
+	for k, v := range d.Runtime.ComposeKeys() {
+		body[k] = v
+	}
 	if d.PullPolicy != "" {
 		body["pull_policy"] = d.PullPolicy
 	}

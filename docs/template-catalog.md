@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (444 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (448 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -35,14 +35,14 @@ Generated from `internal/catalog.Templates` (444 entries as of this build). Run 
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 31 |
+| [Database Tools](#database-tools) | 34 |
 | [Developer Tools](#developer-tools) | 67 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
 | [Infrastructure](#infrastructure) | 19 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 30 |
-| [Monitoring](#monitoring) | 35 |
+| [Monitoring](#monitoring) | 36 |
 | [Productivity](#productivity) | 82 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
@@ -208,6 +208,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [Adminer](https://www.adminer.org) | A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more. | `adminer` |  |
+| [Apache Cassandra](https://cassandra.apache.org/doc/latest/) | A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory. | `cassandra` |  |
+| [Apache Solr](https://solr.apache.org/guide/solr/latest/) | The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983. | `solr` |  |
 | [Baserow](https://baserow.io/docs/installation%2Finstall-with-docker) | A no-code database and spreadsheet hybrid you can build internal tools and apps on top of. | `baserow` |  |
 | [Bytebase](https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker) | A database schema change and migration tool with review workflows built in. | `bytebase` |  |
 | [Chroma](https://docs.trychroma.com) | A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host. | `chroma` |  |
@@ -221,6 +223,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Memcached](https://memcached.org/) | A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. | `memcached` |  |
 | [Milvus](https://milvus.io/docs) | A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. | `milvus` |  |
 | [Mongo Express](https://github.com/mongo-express/mongo-express) | A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. | `mongo-express` |  |
+| [MongoDB](https://www.mongodb.com/docs/manual/) | The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017. | `mongodb` |  |
 | [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) | The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306. | `mysql` |  |
 | [Neo4j](https://neo4j.com/docs/) | A graph database with the Cypher query language, Community Edition, including the browser console. | `neo4j` |  |
 | [NocoDB](https://docs.nocodb.com) | Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. | `nocodb` |  |
@@ -423,6 +426,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Grafana (Postgres)](https://grafana.com/docs/grafana/latest/) | Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. | `grafana-postgres` |  |
 | [Grafana Alloy](https://grafana.com/docs/alloy/latest/) | A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere. | `grafana-alloy` |  |
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
+| [Grafana OTel LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) | An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP). | `otel-lgtm` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
 | [HyperDX](https://clickhouse.com/docs/use-cases/observability/clickstack) | An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login. | `hyperdx` |  |
 | [Jaeger](https://www.jaegertracing.io/docs/) | Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory. | `jaeger` |  |

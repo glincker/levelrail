@@ -90,6 +90,14 @@ type Service struct {
 	// list, never shell-interpreted.
 	Command []string `yaml:"command,omitempty"`
 
+	// User runs the process as a name or uid[:gid] inside the container
+	// only; empty keeps the image's USER. WorkingDir overrides WORKDIR.
+	User       string `yaml:"user,omitempty"`
+	WorkingDir string `yaml:"working_dir,omitempty"`
+
+	// Runtime is the allowlisted subset of docker run options; see RuntimeOptions.
+	Runtime *RuntimeOptions `yaml:"runtime,omitempty"`
+
 	// Egress restricts this service's outbound network traffic to an
 	// explicit host+port allowlist, enforced by
 	// internal/reconcile/application's egress sidecar. Nil (the default,
@@ -124,6 +132,9 @@ type Service struct {
 	// Autoscale owns this service's replica count within min and max. Nil
 	// leaves any policy set from the dashboard or CLI alone.
 	Autoscale *Autoscale `yaml:"autoscale,omitempty"`
+	// Images sets how many deploy images the cleanup keeps for this service.
+	// Nil leaves any count set from the dashboard or CLI alone.
+	Images *ImageRetention `yaml:"images,omitempty"`
 	// Next tunes Next.js apps, such as the shared Redis cache.
 	Next *Next `yaml:"next,omitempty"`
 	// Canary tunes staged canary releases (strategy: canary). Nil uses the

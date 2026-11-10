@@ -1,0 +1,49 @@
+/* GLINR design tokens, generated from tokens/glinr.tokens.json, do not edit. Run `npm run tokens`. */
+
+:root, [data-mode="light"] {
+  --glinr-surface-glass: oklch(0.995 0.002 245 / 86%);
+  --glinr-surface-glass-solid: var(--glinr-surface-overlay);
+  --glinr-material-ultrathin: oklch(0.995 0.002 245 / 55%);
+  --glinr-material-thin: oklch(0.995 0.002 245 / 72%);
+  --glinr-material-regular: oklch(0.995 0.002 245 / 86%);
+  --glinr-material-thick: oklch(0.995 0.002 245 / 94%);
+  --glinr-material-tinted: color-mix(in oklab, var(--glinr-accent-solid) 8%, var(--glinr-material-regular));
+  --glinr-blur-ultrathin: 8px;
+  --glinr-blur-thin: 16px;
+  --glinr-blur-regular: 20px;
+  --glinr-blur-thick: 28px;
+  --glinr-blur-tinted: 20px;
+  --glinr-saturate-ultrathin: 1.6;
+  --glinr-saturate-thin: 1.8;
+  --glinr-saturate-regular: 1.8;
+  --glinr-saturate-thick: 1.4;
+  --glinr-saturate-tinted: 1.8;
+  --glinr-shadow-float: 0 1px 2px oklch(0.3 0.05 250 / 6%), 0 12px 32px -12px oklch(0.3 0.05 250 / 18%);
+  --glinr-glass-edge: oklch(1 0 0 / 60%);
+  --glinr-specular: inset 0 1px 0 oklch(1 0 0 / 75%);
+  --glinr-glass-inner: inset 0 -10px 20px -14px oklch(0.21 0.02 250 / 10%);
+}
+
+.dark, [data-mode="dark"] {
+  --glinr-surface-glass: oklch(0.235 0.016 250 / 88%);
+  --glinr-material-ultrathin: oklch(0.235 0.016 250 / 55%);
+  --glinr-material-thin: oklch(0.235 0.016 250 / 72%);
+  --glinr-material-regular: oklch(0.235 0.016 250 / 88%);
+  --glinr-material-thick: oklch(0.235 0.016 250 / 95%);
+  --glinr-shadow-float: 0 12px 32px -12px oklch(0 0 0 / 55%);
+  --glinr-glass-edge: oklch(1 0 0 / 12%);
+  --glinr-specular: inset 0 1px 0 oklch(1 0 0 / 12%);
+  --glinr-glass-inner: inset 0 -10px 20px -14px oklch(0 0 0 / 40%);
+}
+
+.dark.oled, [data-mode="oled"][data-mode] {
+  --glinr-surface-glass: oklch(0.22 0.01 250 / 90%);
+  --glinr-material-ultrathin: oklch(0.22 0.01 250 / 60%);
+  --glinr-material-thin: oklch(0.22 0.01 250 / 82%);
+  --glinr-material-regular: oklch(0.22 0.01 250 / 90%);
+  --glinr-material-thick: oklch(0.22 0.01 250 / 94%);
+  --glinr-shadow-float: none;
+  --glinr-glass-edge: oklch(1 0 0 / 14%);
+  --glinr-specular: inset 0 1px 0 oklch(1 0 0 / 8%);
+  --glinr-glass-inner: none;
+}

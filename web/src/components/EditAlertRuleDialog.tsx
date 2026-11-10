@@ -238,7 +238,11 @@ export function EditAlertRuleDialog({
             <AlertKindGuidance kind="node_disk_space" />
           ) : kind === 'email_delivery_failing' ? (
             <AlertKindGuidance kind="email_delivery_failing" />
-          ) : kind === 'deploy_failed' || kind === 'monitor_down' ? (
+          ) : kind === 'cleanup_failing' ? (
+            <AlertKindGuidance kind="cleanup_failing" />
+          ) : kind === 'deploy_failed' ||
+            kind === 'job_failing' ||
+            kind === 'monitor_down' ? (
             <AlertKindGuidance kind={kind} />
           ) : kind === 'cert_expiry' ||
             kind === 'patch_status' ||

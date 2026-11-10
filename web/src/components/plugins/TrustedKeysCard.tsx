@@ -47,7 +47,7 @@ export function TrustedKeysCard() {
             description={t('keys.emptyDescription')}
           />
         ) : (
-          <Table>
+          <Table aria-label={t('a11y.tables.trustedKeys', { ns: 'common' })}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('keys.colName')}</TableHead>

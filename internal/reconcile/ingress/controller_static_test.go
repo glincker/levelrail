@@ -218,3 +218,36 @@ func TestController_Reconcile_StaticSiteRemoved_RouteDrops(t *testing.T) {
 		t.Errorf("routes after delete = %d, want 0", got)
 	}
 }
+
+func TestController_Reconcile_StaticSite_GatedDomain(t *testing.T) {
+	sites := []store.StaticSite{{Name: "prev", Domains: []string{"prev.example.com"}, RootDir: "/data/static/prev"}}
+	gate := []store.DomainBasicAuth{{Domain: "prev.example.com", Username: "op"}}
+
+	t.Run("resolved gate adds auth ahead of file server", func(t *testing.T) {
+		key := store.DomainBasicAuthSecretsKey("prev.example.com")
+		resolver := &fakePasswordResolver{passwords: map[string]string{key: "pw"}}
+		applier := &fakeApplier{}
+		c := New(&fakeStore{staticSites: sites, basicAuth: gate}, newFakeRuntime(), applier, WithLogger(discardLogger()), WithDomainBasicAuthSecrets(resolver))
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		routes := applier.routes(t)
+		if len(routes) != 1 {
+			t.Fatalf("routes = %v, want 1", routes)
+		}
+		if _, ok := routes[0].Handle[0].(ingress.BasicAuthHandler); !ok {
+			t.Fatalf("Handle[0] is %T, want BasicAuthHandler", routes[0].Handle[0])
+		}
+	})
+
+	t.Run("unresolvable gate drops the route", func(t *testing.T) {
+		applier := &fakeApplier{}
+		c := New(&fakeStore{staticSites: sites, basicAuth: gate}, newFakeRuntime(), applier, WithLogger(discardLogger()))
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if routes := applier.routes(t); len(routes) != 0 {
+			t.Fatalf("routes = %v, want none (fail closed)", routes)
+		}
+	})
+}

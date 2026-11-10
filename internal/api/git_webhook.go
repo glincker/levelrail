@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/azuredevops"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -181,9 +183,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return status, msg
 	}
 
-	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
+	triggered, ignoredMsg := gitSourceTriggerMatchesPushMax(gs, ev.Ref, rt.runtimeSettings.Limit(ctx, runtimesettings.KeyGitTriggerRefMaxBytes))
 	if !triggered {
-		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
+		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", truncatedRef(ev.Ref)), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
 		return http.StatusOK, ignoredMsg
 	}
 	if msg := skipPushForMarker(ev.HeadMessage); msg != "" && !isWebhookReplay(ctx) {
@@ -199,7 +201,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, "ignored: the ref was deleted, nothing to gate or deploy\n"
 	}
 	prevHead := rt.lastSeenHead(ctx, name)
-	rt.noteGitHead(ctx, name, ev.After)
+	// Only the configured branch's head is the poller's last seen head.
+	if ev.Ref == gateRef(gs.Branch) {
+		rt.noteGitHead(ctx, name, ev.After)
+	}
 	gateSHA := gateCommitSHA(body, ev)
 	if gs.WaitForCI && gateSHA == "" && strings.HasPrefix(ev.Ref, "refs/tags/") {
 		status, msg := rt.startGatedTagResolve(ctx, name, gs, ev)
@@ -247,17 +252,60 @@ func isGitHubPingEvent(header http.Header) bool {
 // Push mode matches only the configured branch. Release mode matches only tag pushes, on any branch.
 // GitHub release events are handled separately, before this function is reached.
 func gitSourceTriggerMatchesPush(gs store.GitSource, ref string) (bool, string) {
+	return gitSourceTriggerMatchesPushMax(gs, ref, runtimesettings.ClampLimit(runtimesettings.KeyGitTriggerRefMaxBytes, 0))
+}
+
+// gitSourceTriggerMatchesPushMax applies the trigger patterns before any clone.
+// A branch pattern replaces the single branch match but only ever admits
+// refs/heads/ refs of the source's own repository, never pull or note refs.
+func gitSourceTriggerMatchesPushMax(gs store.GitSource, ref string, maxRefBytes int) (bool, string) {
 	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
-		if strings.HasPrefix(ref, "refs/tags/") {
+		if !strings.HasPrefix(ref, "refs/tags/") {
+			return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", truncatedRef(ref), spec.TriggerModeRelease)
+		}
+		if gs.TagPattern == "" {
 			return true, ""
 		}
-		return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", ref, spec.TriggerModeRelease)
+		tag, kind, ok := spec.ShortRefName(ref, maxRefBytes)
+		if !ok || kind != spec.RefKindTag || !spec.MatchRefPatterns(gs.TagPattern, tag) {
+			return false, fmt.Sprintf("ignored: tag %q does not match the tag pattern\n", truncatedRef(ref))
+		}
+		return true, ""
+	}
+	if gs.BranchPattern != "" {
+		branch, kind, ok := spec.ShortRefName(ref, maxRefBytes)
+		if !ok || kind != spec.RefKindBranch || !spec.MatchRefPatterns(gs.BranchPattern, branch) {
+			return false, fmt.Sprintf("ignored: push to %q does not match the branch pattern\n", truncatedRef(ref))
+		}
+		return true, ""
 	}
 	targetCfg := webhook.Config{Branch: gs.Branch}
 	if ref == targetCfg.TargetRef() {
 		return true, ""
 	}
-	return false, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", ref, targetCfg.TargetRef())
+	return false, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", truncatedRef(ref), targetCfg.TargetRef())
+}
+
+// truncatedRef bounds a payload ref before it is echoed into a delivery note or log.
+func truncatedRef(ref string) string {
+	const keep = 120
+	if len(ref) <= keep {
+		return ref
+	}
+	cut := keep
+	for cut > 0 && !utf8.RuneStart(ref[cut]) {
+		cut--
+	}
+	return ref[:cut] + "..."
+}
+
+// releaseTagAllowed applies the tag pattern to a GitHub release event's tag name.
+func (rt *Router) releaseTagAllowed(ctx context.Context, gs store.GitSource, tag string) bool {
+	if gs.TagPattern == "" {
+		return true
+	}
+	name, _, ok := spec.ShortRefName("refs/tags/"+tag, rt.runtimeSettings.Limit(ctx, runtimesettings.KeyGitTriggerRefMaxBytes))
+	return ok && spec.MatchRefPatterns(gs.TagPattern, name)
 }
 
 // githubReleaseEvent is the subset of GitHub's release webhook payload
@@ -303,6 +351,9 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 	}
 	if rel.TagName == "" {
 		return http.StatusBadRequest, "malformed payload"
+	}
+	if !rt.releaseTagAllowed(ctx, gs, rel.TagName) {
+		return http.StatusOK, fmt.Sprintf("ignored: release tag %q does not match the tag pattern\n", truncatedRef(rel.TagName))
 	}
 
 	if gs.WaitForCI {
@@ -375,6 +426,10 @@ func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store
 
 // Sets the deploy attempt source, so scheduled redeploys are distinguishable from git pushes in deploy history.
 func (rt *Router) deployFromGitSourceAs(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
+	// A compose call that only enqueues reports nothing to the forge; the queued run does.
+	if _, adopted := adoptedAttemptID(ctx); gs.ComposePath != "" && !adopted && rt.deploySafety != nil {
+		return rt.deployComposeFromGitSource(ctx, name, gs, checkoutRef, commitLabel, order, source)
+	}
 	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, forgeEnvProduction, "")
 	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order, source)
 	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
@@ -382,6 +437,10 @@ func (rt *Router) deployFromGitSourceAs(ctx context.Context, name string, gs sto
 }
 
 func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
+	// A compose source never builds: every gate above already ran, so it only swaps the file.
+	if gs.ComposePath != "" {
+		return rt.deployComposeFromGitSource(ctx, name, gs, checkoutRef, commitLabel, order, source)
+	}
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}
@@ -400,7 +459,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusInternalServerError, "internal error"
 	}
-	sourceDir, cleanup, err := rt.gitSourceFetch(sourcecache.WithScope(ctx, scope), gs.RepoURL, checkoutRef, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(rt.withFetchExtras(sourcecache.WithScope(ctx, scope), gs), gs.RepoURL, checkoutRef, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
 		if _, adopted := adoptedAttemptID(ctx); errors.Is(err, errGitCommitNotFound) && !adopted {
@@ -426,17 +485,22 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	defer cleanup()
 
 	// Services fan out via DeploySpec. validateGitSourceServices makes them mutually exclusive with AdditionalServices, so this is the one decision point.
-	if len(gs.Services) > 0 {
+	// A never-deployed app whose repo has only a Procfile fans out too; a deployed app keeps its single-service route.
+	if len(gs.Services) > 0 || rt.procfileFanout(ctx, existing, gs, sourceDir) {
 		appName := existing.AppID
 		if appName == "" {
 			appName = name
 		}
-		failed := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, commitLabel)
+		failed, warnings := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, commitLabel)
 		status := http.StatusOK
 		if failed > 0 {
 			status = http.StatusMultiStatus
 		}
-		return status, fmt.Sprintf("services deploy triggered for app %q (%d service(s) failed)\n", appName, failed)
+		msg := fmt.Sprintf("services deploy triggered for app %q (%d service(s) failed)\n", appName, failed)
+		for _, w := range warnings {
+			msg += "warning: " + w + "\n"
+		}
+		return status, msg
 	}
 
 	gitBuild, err := gs.SpecBuild()
@@ -456,6 +520,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		ImageRepo:   defaultImageRepo(name, existing.Image),
 		Order:       order,
 	}
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 
 	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, source, "")
 	buildReq.AttemptID = attemptID
@@ -647,9 +712,18 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 	return failed
 }
 
+// procfileFanout reports whether a push should take the DeploySpec fan-out only because the checkout has a Procfile and no app spec.
+func (rt *Router) procfileFanout(ctx context.Context, existing *store.DesiredService, gs store.GitSource, sourceDir string) bool {
+	if existing.Image != "" || len(gs.AdditionalServices) > 0 || len(gs.Databases) > 0 {
+		return false
+	}
+	_, _, ok, err := deploy.ProcfileServices(sourceDir, rt.procfileWebPort(ctx))
+	return err == nil && ok
+}
+
 // Routes a webhook push through the same DeploySpec fan-out as the manual deploy-spec API.
 // appName matches DeploySpec's default so a push reuses the existing app group. Returns the failed key count.
-func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, gs store.GitSource, sourceDir, commitSHA string) int {
+func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, gs store.GitSource, sourceDir, commitSHA string) (int, []string) {
 	progress := func(serviceKey string, ev build.ProgressEvent) {
 		rt.logger.Info("api: git push webhook: services fan-out build progress", slog.String("app_name", appName), slog.String("service_key", serviceKey), slog.String("step", ev.Step), slog.Bool("completed", ev.Completed), slog.String("error", ev.Error))
 	}
@@ -663,9 +737,16 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 	}, progress)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: services fan-out failed", slog.String("app_name", appName), slog.String("error", err.Error()))
-		return len(gs.Services)
+		return max(len(gs.Services), 1), nil
 	}
+	var warnings []string
 
+	if len(outcomes) > 0 {
+		warnings = outcomes[0].Warnings
+		for _, w := range warnings {
+			rt.logger.Warn("api: git push webhook: services fan-out: translation finding", slog.String("app_name", appName), slog.String("finding", w))
+		}
+	}
 	failed := 0
 	for _, o := range outcomes {
 		if o.Err != nil {
@@ -675,7 +756,7 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 		}
 		rt.logger.Info("api: git push webhook: services fan-out: service deployed", slog.String("app_name", appName), slog.String("service_key", o.ServiceKey), slog.String("image", o.Image))
 	}
-	return failed
+	return failed, warnings
 }
 
 // Checks a push webhook against secret using the scheme the headers indicate: GitHub and Bitbucket sign the body (HMAC),

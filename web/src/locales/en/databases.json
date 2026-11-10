@@ -648,7 +648,24 @@
     "custom": {
       "title": "Not in the list? Run any database image",
       "description": "Deploy it as a regular app with a volume for its data. You get deploys, logs, metrics and rollbacks, but not the managed features of the databases above: backups with restore checks, the data browser and the database commands in the CLI."
-    }
+    },
+    "planTitle": "Deployment plan",
+    "planDescription": "Review what will be created. Nothing exists until you deploy.",
+    "searchPlaceholder": "Search resources...",
+    "searchLabel": "Search resources",
+    "tabAll": "All",
+    "tabApplications": "Applications",
+    "tabDatabases": "Databases",
+    "importTitle": "Import anything",
+    "importLabel": "Repository URL, image, docker run command, compose file or Dockerfile",
+    "importPlaceholder": "Paste a repo URL, an image, a docker run command, a docker-compose.yml or a Dockerfile",
+    "previewPlan": "Preview plan",
+    "reading": "Reading...",
+    "uploadFile": "Upload file",
+    "uploadLabel": "Upload a compose file or Dockerfile",
+    "looksLike": "Looks like: {{source}}",
+    "tryLabel": "Try:",
+    "fileTooLarge": "That file is larger than 512 KB."
   },
   "noBackups": {
     "title": "Backups",
@@ -673,6 +690,12 @@
   "banner": {
     "title": "Databases",
     "description": "Create a managed database beside your apps. Credentials are injected for you, backups run on a schedule, and you can restore to a point in time.",
+    "pickEngine": "Pick an engine",
+    "value": {
+      "credentials": "Credentials injected for you",
+      "backups": "Backups on a schedule",
+      "restore": "Restore to a point in time"
+    },
     "whatFor": "Pick an engine, accept the defaults, and your first database is running in under a minute. Already have one elsewhere? Connect it as an external database.",
     "diagram": {
       "app": "app",
@@ -950,5 +973,136 @@
     "starting": "Starting...",
     "started": "Branch \"{{name}}\" is being created.",
     "action": "Branch"
+  },
+  "dataActions": {
+    "title": "Data transfer",
+    "description": "Download a dump, clone this database or load a dump into it. The source is never changed by a clone.",
+    "needsReadSensitive": "Downloading a dump needs the read:sensitive ability.",
+    "needsWriteSensitive": "Cloning needs the write:sensitive ability.",
+    "needsBackupWrite": "Backing up needs the write:sensitive ability.",
+    "needsRoot": "Importing a dump needs the root ability.",
+    "backup": {
+      "title": "Back up now",
+      "target": "Backup target",
+      "action": "Back up now",
+      "running": "Backing up...",
+      "hint": "Starts a backup to the chosen target. Download and clone use the newest succeeded one.",
+      "noTarget": "No backup target yet. Add one under Backups first.",
+      "started": "Backup started.",
+      "failed": "Could not start the backup."
+    },
+    "download": {
+      "title": "Download dump",
+      "action": "Download latest dump",
+      "source": "Newest succeeded backup, taken {{when}}. Take a fresh backup first for current data.",
+      "none": "No succeeded backup yet. Run a backup first."
+    },
+    "clone": {
+      "title": "Clone",
+      "label": "New database name",
+      "action": "Clone",
+      "cloning": "Cloning...",
+      "hint": "Creates a new database from the newest succeeded backup.",
+      "none": "No succeeded backup yet. Run a backup first.",
+      "started": "Clone {{name}} started.",
+      "failed": "Could not start the clone."
+    },
+    "import": {
+      "title": "Import dump",
+      "label": "Dump file",
+      "action": "Import",
+      "replace": "Replace data",
+      "uploading": "Uploading...",
+      "progress": "Upload progress",
+      "nonEmpty": "This database already holds data. Importing replaces it. Type the database name to confirm.",
+      "confirmLabel": "Type {{name}} to confirm",
+      "done": "Dump imported.",
+      "failed": "Import failed."
+    }
+  },
+  "filter": {
+    "search": "Search databases",
+    "engines": "Engines",
+    "enginesCount_one": "{{count}} engine",
+    "enginesCount_other": "{{count}} engines",
+    "statusGroup": "Filter by status",
+    "clear": "Clear filters",
+    "status": {
+      "healthy": "Healthy",
+      "attention": "Needs attention",
+      "reconciling": "Reconciling",
+      "stopped": "Stopped"
+    },
+    "emptyTitle": "No databases match these filters",
+    "emptyBody": "Try another search, engine or status, or clear the filters to see every database.",
+    "tags": "Tags",
+    "tagOption": "#{{tag}}"
+  },
+  "bulk": {
+    "region": "Bulk actions",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "selectAll_one": "Select the {{count}} shown database",
+    "selectAll_other": "Select all {{count}} shown databases",
+    "selectOne": "Select {{name}}",
+    "clear": "Clear selection",
+    "action": {
+      "start": "Start",
+      "stop": "Stop",
+      "backup": "Back up"
+    },
+    "reviewTitle_one": "{{action}} {{count}} database",
+    "reviewTitle_other": "{{action}} {{count}} databases",
+    "reviewDescription": "Each database is checked against your permissions on its own. Ones that cannot take this action are skipped.",
+    "resultsTitle": "{{action}}: results",
+    "summary": "{{ok}} done, {{failed}} failed, {{skipped}} skipped.",
+    "stopWarning_one": "Stopping removes the container for {{count}} database. Data stays on its volume and apps lose their connection until you start it again.",
+    "stopWarning_other": "Stopping removes the containers for {{count}} databases. Data stays on their volumes and apps lose their connection until you start them again.",
+    "confirm_one": "{{action}} {{count}}",
+    "confirm_other": "{{action}} {{count}}",
+    "cancel": "Cancel",
+    "close": "Close",
+    "working": "Working...",
+    "result": {
+      "planned": "Ready",
+      "ok": "Done",
+      "skipped": "Skipped",
+      "denied": "Not allowed",
+      "protected": "Protected",
+      "notFound": "Not found",
+      "error": "Failed"
+    },
+    "skip": {
+      "external": "External, not run here",
+      "notCreated": "Not created yet",
+      "running": "Already running",
+      "stopped": "Already stopped",
+      "noTarget": "No backup target",
+      "noBackups": "No backups for this engine"
+    }
+  },
+  "rowActions": {
+    "label": "Actions for {{name}}",
+    "open": "Open",
+    "copyConnection": "Copy connection string",
+    "copied": "Connection string copied, password left out.",
+    "noBackupTarget": "Set up backups first"
+  },
+  "params": {
+    "title": "Engine parameters",
+    "description": "Tune the engine from a fixed list of safe settings. Changes are staged and only take effect when you apply them or start the database.",
+    "staged": "Change staged",
+    "name": "Parameter",
+    "default": "Default",
+    "current": "Running",
+    "next": "Next",
+    "engineDefault": "engine default",
+    "stage": "Stage change",
+    "apply": "Apply and restart",
+    "confirmApply": "Confirm restart",
+    "discard": "Discard",
+    "failed": "Could not update parameters",
+    "note": "Clear a field to go back to the engine default.",
+    "pendingNote": "Applying restarts the database. A start after a stop applies it too."
   }
 }

@@ -158,7 +158,7 @@ func applyDoctorFixes(ctx context.Context, client *Client, report systemDoctorRe
 		if err != nil {
 			return out, fmt.Errorf("apply fix %s: %w", f.ID, err)
 		}
-		_, _ = fmt.Fprintf(stderr, "%s: %s: %s\n", f.ID, res.Outcome, res.Detail)
+		_, _ = fmt.Fprintf(stderr, "%s: %s: %s\n", f.ID, styleFor(stderr).paint(ansiYellow, string(res.Outcome)), res.Detail)
 		out.Applied = append(out.Applied, res)
 	}
 	after, err := client.GetSystemDoctor(ctx)

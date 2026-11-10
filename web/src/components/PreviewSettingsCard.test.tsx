@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PreviewSettingsCard } from './PreviewSettingsCard'
 import type { PreviewStatus } from '../types/preview'
 import { createTestQueryClient } from '@/test/testQueryClient'
+import { AllI18n } from '../test/allI18n'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -23,9 +24,11 @@ function urlOf(input: RequestInfo | URL): string {
 function renderCard() {
   const queryClient = createTestQueryClient()
   render(
-    <QueryClientProvider client={queryClient}>
-      <PreviewSettingsCard appName="web" />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>
+        <PreviewSettingsCard appName="web" />
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 

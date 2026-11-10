@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
 import { RefreshCwGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
@@ -102,10 +103,14 @@ export function ResilienceReportCard() {
           </Alert>
         )}
         {data && data.latest.length === 0 && (
-          <div className="space-y-1">
-            <p className="text-sm font-medium">{t('empty.title')}</p>
-            <p className="text-sm text-muted-foreground">{t('empty.body')}</p>
-          </div>
+          <EmptyState
+            kind="first-run"
+            icon={
+              <ShieldCheckGlassIcon className="size-5" aria-hidden="true" />
+            }
+            title={t('empty.title')}
+            description={t('empty.body')}
+          />
         )}
         {data && data.latest.length > 0 && (
           <ul className="divide-y divide-border">

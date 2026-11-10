@@ -1,7 +1,15 @@
 import { PageTemplate } from '../shell/PageTemplate'
 import { PageBanner } from '../PageBanner'
 import { LazyDeploymentsDiagram } from '../banners/LazyDiagrams'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useEnvironmentScope } from '../../lib/environmentScope'
@@ -24,6 +32,7 @@ import {
   EMPTY_FILTERS,
   facetsFrom,
   matchesFilters,
+  parseDeploymentsSearch,
   removeFilter,
   type DeploymentFilters,
   type DeploymentsSearch,
@@ -51,6 +60,8 @@ import { DeploymentsFilterBar } from './DeploymentsFilterBar'
 import { DeploymentsSummary } from './DeploymentsSummary'
 import { ShortcutsHelp } from './ShortcutsHelp'
 import type { Deployment } from '../../types/deployment'
+
+const SavedViewsMenu = lazy(() => import('../SavedViewsMenu'))
 
 const AT_TOP_PX = 32
 const MIN_AUTHOR_ROWS = 20
@@ -308,6 +319,31 @@ export function DeploymentsPage({
           onClear={() => {
             setFilters(EMPTY_FILTERS)
           }}
+          extra={
+            <Suspense fallback={null}>
+              <SavedViewsMenu
+                list="deployments"
+                current={{
+                  q: filters.q,
+                  status: filters.status.join(','),
+                  app: filters.app,
+                  env: filters.environment,
+                }}
+                onApply={(f) => {
+                  setFilters(
+                    filtersOf(
+                      parseDeploymentsSearch({
+                        q: f.q,
+                        status: f.status,
+                        app: f.app,
+                        environment: f.env,
+                      }),
+                    ),
+                  )
+                }}
+              />
+            </Suspense>
+          }
         />
       )}
 

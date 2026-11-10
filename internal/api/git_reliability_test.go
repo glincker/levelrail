@@ -472,7 +472,7 @@ func TestGitPollerStopsOnContextCancel(t *testing.T) {
 	var head atomic.Value
 	head.Store("sha1")
 	rt, _, _ := newPollRouter(t, &head)
-	t.Setenv(envGitPollInterval, "50ms")
+	t.Setenv("APP_GIT_POLL_INTERVAL", "50ms")
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() {
@@ -492,15 +492,22 @@ func TestGitPollerDisabledByEnv(t *testing.T) {
 	var head atomic.Value
 	head.Store("sha1")
 	rt, _, _ := newPollRouter(t, &head)
-	t.Setenv(envGitPollEnabled, "false")
+	t.Setenv("APP_GIT_POLL_ENABLED", "false")
+	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() {
-		rt.RunGitPoller(context.Background())
+		rt.RunGitPoller(ctx)
 		close(done)
 	}()
 	select {
 	case <-done:
+		t.Fatal("a disabled poller keeps its cheap tick so it can be enabled live")
+	case <-time.After(100 * time.Millisecond):
+	}
+	cancel()
+	select {
+	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("a disabled poller must return at once")
+		t.Fatal("a disabled poller must stop on cancel")
 	}
 }

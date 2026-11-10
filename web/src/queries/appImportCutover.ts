@@ -3,6 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_1500_MS = 1500
+
 export type CutoverStatus = 'pass' | 'warn' | 'block'
 
 export interface CutoverFix {
@@ -143,7 +146,8 @@ export function useCutoverRuns(id: string, item: string, enabled: boolean) {
     queryFn: async () =>
       (await send<{ runs: CutoverRun[] }>(`${path(id, item)}/runs`)).runs,
     enabled,
-    refetchInterval: (q) => (cutoverSettled(q.state.data?.[0]) ? false : 1500),
+    refetchInterval: (q) =>
+      cutoverSettled(q.state.data?.[0]) ? false : POLL_1500_MS,
   })
 }
 

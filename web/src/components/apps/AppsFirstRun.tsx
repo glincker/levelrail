@@ -7,6 +7,7 @@ import {
   PackageGlassIcon,
 } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
+import { PopularTemplatesRow } from '../newapp/PopularTemplatesRow'
 
 const TILE =
   'group flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
@@ -64,6 +65,9 @@ export function AppsFirstRun() {
           </li>
         ))}
       </ul>
+      <div className="pt-3">
+        <PopularTemplatesRow className="block" count={12} />
+      </div>
     </section>
   )
 }

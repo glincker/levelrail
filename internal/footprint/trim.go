@@ -44,8 +44,20 @@ func ApplyGCPercent(getenv func(string) string) int {
 	return pct
 }
 
+// DefaultSettingsPoll is how often RunTrim re-reads the live settings; the trim itself still runs on its own interval.
+const DefaultSettingsPoll = 30 * time.Second
+
+// LiveSettings reads the runtime settings that tune the Go runtime. Nil funcs are skipped. footprint cannot import the settings package, so the caller supplies the readers.
+type LiveSettings struct {
+	GCPercent       func(context.Context) int
+	MemLimitPercent func(context.Context) int
+	TrimInterval    func(context.Context) time.Duration
+	TrimMinIdleMB   func(context.Context) int
+}
+
 // RunTrim returns heap the runtime is holding but not using to the OS. Boot allocates transient hundreds of MB (catalog parse, password hashing) and the scavenger gives it back slowly, so RSS stays high for no reason.
-func RunTrim(ctx context.Context, logger *slog.Logger, getenv func(string) string) {
+// With live set it also re-reads the GC target, memory limit and trim knobs on every poll, in the same loop.
+func RunTrim(ctx context.Context, logger *slog.Logger, getenv func(string) string, live *LiveSettings) {
 	if getenv == nil {
 		getenv = os.Getenv
 	}
@@ -53,23 +65,59 @@ func RunTrim(ctx context.Context, logger *slog.Logger, getenv func(string) strin
 	if d, err := time.ParseDuration(strings.TrimSpace(getenv(EnvTrimInterval))); err == nil {
 		every = d
 	}
-	if every <= 0 {
-		return
-	}
 	minIdle := uint64(DefaultTrimIdleMB)
 	if n, err := strconv.ParseUint(strings.TrimSpace(getenv(EnvTrimMinIdleMB)), 10, 64); err == nil {
 		minIdle = n
 	}
+	if live == nil && every <= 0 {
+		return
+	}
 	go trimOnceAfterBoot(ctx, getenv)
-	_ = Every(ctx, trimLoopName, every, logger, func(context.Context) error {
-		var ms runtime.MemStats
-		runtime.ReadMemStats(&ms)
-		if (ms.HeapIdle-ms.HeapReleased)/bytesPerMB < minIdle {
+	if live == nil {
+		_ = Every(ctx, trimLoopName, every, logger, func(context.Context) error {
+			trimIfIdle(minIdle)
 			return nil
+		})
+		return
+	}
+	var lastTrim time.Time
+	var lastGC, lastPct = -1, -1
+	_ = Every(ctx, trimLoopName, DefaultSettingsPoll, logger, func(ctx context.Context) error {
+		if live.GCPercent != nil && getenv("GOGC") == "" {
+			if n := live.GCPercent(ctx); n > 0 && n != lastGC {
+				debug.SetGCPercent(n)
+				lastGC = n
+			}
 		}
-		debug.FreeOSMemory()
+		if live.MemLimitPercent != nil && getenv(EnvMemLimit) == "" {
+			if n := live.MemLimitPercent(ctx); n != lastPct {
+				ApplyMemoryLimitPercent(n, logger)
+				lastPct = n
+			}
+		}
+		if live.TrimInterval != nil {
+			every = live.TrimInterval(ctx)
+		}
+		if live.TrimMinIdleMB != nil {
+			if n := live.TrimMinIdleMB(ctx); n >= 0 {
+				minIdle = uint64(n)
+			}
+		}
+		if every > 0 && time.Since(lastTrim) >= every {
+			lastTrim = time.Now()
+			trimIfIdle(minIdle)
+		}
 		return nil
 	})
+}
+
+func trimIfIdle(minIdleMB uint64) {
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	if (ms.HeapIdle-ms.HeapReleased)/bytesPerMB < minIdleMB {
+		return
+	}
+	debug.FreeOSMemory()
 }
 
 // trimOnceAfterBoot releases the boot-time heap shortly after startup instead of waiting a full trim interval; a delay of 0 or less turns it off.

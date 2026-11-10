@@ -1,0 +1,20 @@
+{
+  "title": "Customize sidebar",
+  "description": "Reorder, show or hide groups and pages. Hidden pages stay reachable from search.",
+  "groups": "Sidebar groups",
+  "itemsIn": "Pages in {{label}}",
+  "moveUp": "Move {{label}} up",
+  "moveDown": "Move {{label}} down",
+  "show": "Show {{label}}",
+  "moved": "{{label}} moved to position {{position}} of {{total}}",
+  "currentPage": "Current page",
+  "currentGroup": "Has current page",
+  "reset": "Reset to default",
+  "resetDone": "Sidebar reset to default",
+  "done": "Done",
+  "recent": {
+    "group": "Recent",
+    "app": "App",
+    "database": "Database"
+  }
+}

@@ -222,6 +222,10 @@
       "title": "Raíz de copias de seguridad locales",
       "description": "Directorio absoluto del plano de control que limita los destinos de copia local. Si está vacío se usa backups/ dentro del directorio de datos. La siguiente copia o restauración usa el valor nuevo; las rutas de destino son relativas a esta raíz y no pueden salir de ella."
     },
+    "outboundTimeout": {
+      "title": "Tiempo límite de solicitudes salientes",
+      "description": "Cuánto puede tardar una solicitud HTTP saliente del plano de control (metadatos de la nube, sondeos de modelos, comprobaciones de actualización) antes de cancelarse. La siguiente solicitud usa el valor cambiado."
+    },
     "bootRechecks": {
       "title": "Retrasos de reverificación al arrancar",
       "description": "Desfases tras el arranque, separados por dos puntos (por ejemplo 3s:10s), en los que el plano de control ejecuta pasadas extra de reconciliación para corregir las rutas cuando Docker publica los puertos tarde tras reiniciar el host. Cada desfase es de al menos 1s. Se lee al arrancar."
@@ -230,9 +234,25 @@
       "title": "Reverificación tras el primer evento al arrancar",
       "description": "Tiempo tras el primer evento de Docker en el que el plano de control ejecuta una pasada de reconciliación más, de 1s a 1h. Se lee al arrancar."
     },
+    "bootDeferredStages": {
+      "title": "Aplazar etapas de arranque no críticas",
+      "description": "Inicia el latido, el DNS dinámico, los monitores y el historial de disco después de que el listener HTTP esté activo, para que el panel responda antes. GET /readyz lista las etapas pendientes. Se lee al arrancar."
+    },
     "metricsScrapeEnabled": {
       "title": "Endpoint de scraping de Prometheus",
       "description": "Sirve métricas de apps, bases de datos y nodos en formato de texto Prometheus en /metrics para un token de lectura. Desactivado, el endpoint responde 404."
+    },
+    "envApplyOnSet": {
+      "title": "Aplicar cambios de entorno al guardar",
+      "description": "Si está activo, env set y env import reinician la app para que los valores nuevos lleguen al contenedor en ejecución, como si se pasara --apply. Usa --no-apply para dejar un cambio pendiente. Desactivado por defecto; el cambio se aplica al siguiente comando."
+    },
+    "maxReplicasPerService": {
+      "title": "Límite de réplicas por servicio",
+      "description": "Mayor número de réplicas que acepta la API para un servicio al crear, actualizar o escalar una app; un valor mayor se rechaza con HTTP 400. Entre 1 y 1000; el cambio se aplica a la siguiente petición y las apps en ejecución conservan su número."
+    },
+    "containersInspectTimeout": {
+      "title": "Tiempo límite de inspección de contenedores",
+      "description": "Cuánto espera la vista de contenedores de la app la inspección en vivo de un nodo (salud, reinicios, redes, montajes), de 1s a 2m. Si se agota, la vista responde igualmente con esos campos marcados como no disponibles. La siguiente petición usa el valor nuevo."
     }
   },
   "row": {

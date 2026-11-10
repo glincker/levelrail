@@ -20,6 +20,7 @@ import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
 const THEMES: { value: Theme; icon: UiIcon }[] = [
   { value: 'light', icon: SunGlassIcon },
   { value: 'dark', icon: MoonGlassIcon },
+  { value: 'oled', icon: MoonGlassIcon },
   { value: 'system', icon: MonitorGlassIcon },
 ]
 
@@ -39,6 +40,7 @@ export function ThemeToggle() {
             type="button"
             variant="outline"
             size="icon-sm"
+            className="max-sm:size-10"
             aria-label={t('shell.theme.label', { theme: currentLabel })}
             title={t('shell.theme.label', { theme: currentLabel })}
           />

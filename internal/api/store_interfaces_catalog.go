@@ -23,6 +23,8 @@ type AppComposeStore interface {
 	SaveApp(ctx context.Context, a store.App) error
 	GetAppByName(ctx context.Context, name string) (store.App, error)
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+	// SaveSuspendedDesiredService saves the row already stopped, in one transaction.
+	SaveSuspendedDesiredService(ctx context.Context, svc store.DesiredService) error
 }
 
 // CustomTemplateStore is the store surface save-as-template needs
@@ -52,6 +54,7 @@ type ComposeSecretStore interface {
 // DatabaseStore is the store surface the databases handlers need, the
 // database-kind counterpart to AppStore.
 type DatabaseStore interface {
+	SetDatabaseBackupPaused(ctx context.Context, name string, paused bool) error
 	SaveDesiredDatabase(ctx context.Context, d store.DesiredDatabase) error
 	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 	ListDesiredDatabases(ctx context.Context) ([]store.DesiredDatabase, error)

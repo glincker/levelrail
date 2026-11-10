@@ -1,20 +1,31 @@
-import { useRef, useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
+  ArchiveGlassIcon,
   ArrowRightGlassIcon,
   CheckGlassIcon,
   ChevronDownGlassIcon,
   ChevronRightGlassIcon,
+  ClockGlassIcon,
   ExternalLinkGlassIcon,
+  InfoGlassIcon,
   RotateCcwGlassIcon,
+  TriangleAlertGlassIcon,
+  UserGlassIcon,
 } from '@thesvg/ui-react'
 import { StatusPill, type Tone } from '@/components/kit'
 import { formatRelative } from '@/components/kit/formatRelative'
+import { cn } from '@/lib/utils'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
-import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '../ui/collapsible'
+import { EmptyState } from '../ui/empty-state'
+import { Skeleton } from '../ui/skeleton'
 import { toast } from '../ui/toast'
 import {
   upgradeHistoryQueryOptions,
@@ -26,8 +37,8 @@ import { ReleaseNotes } from './ReleaseNotes'
 import { RollbackPlanDialog } from './RollbackPlanDialog'
 import { AgentVersionTimeline } from './AgentVersionTimeline'
 
-const VIRTUALIZE_ABOVE = 50
-const ESTIMATED_ROW_PX = 150
+// Rows shown before "Show all"; the dashboard keeps this fixed.
+const PREVIEW_COUNT = 10
 
 const KIND_TONE: Record<UpgradeKind, Tone> = {
   installed: 'info',
@@ -41,8 +52,30 @@ const KIND_TONE: Record<UpgradeKind, Tone> = {
 
 function VersionChip({ value }: { value: string }) {
   return (
-    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+    <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-xs text-foreground">
       {value}
+    </span>
+  )
+}
+
+function MetaChip({
+  tone,
+  icon,
+  label,
+}: {
+  tone: 'muted' | 'warning'
+  icon: ReactNode
+  label: string
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 text-xs',
+        tone === 'warning' ? 'text-tone-warning' : 'text-muted-foreground',
+      )}
+    >
+      {icon}
+      {label}
     </span>
   )
 }
@@ -50,294 +83,369 @@ function VersionChip({ value }: { value: string }) {
 function HistoryRow({
   item,
   onRollback,
+  onAcked,
 }: {
   item: UpgradeHistoryItem
   onRollback: (version: string) => void
+  onAcked: (version: string) => void
 }) {
   const { t } = useTranslation('updates')
   const ack = useAckUpgrade()
   const [open, setOpen] = useState(false)
   const hasNotes = item.notes_state === 'fetched' && item.notes !== ''
   const absolute = new Date(item.occurred_at).toLocaleString()
+  const who =
+    item.initiator === 'unknown'
+      ? t('upgradeHistory.unknownShort')
+      : item.method
+        ? t('upgradeHistory.viaShort', {
+            who: item.initiator,
+            method: item.method,
+          })
+        : t('upgradeHistory.byShort', { who: item.initiator })
+  const schemaKnown = item.schema_before !== null && item.schema_after !== null
+  const backupMissing = item.backup_name === '' && item.schema_moved
 
   return (
-    <div
-      role="listitem"
-      className="space-y-2 border-l-2 border-border py-3 pl-4"
+    <li
+      className={cn(
+        'border-l-2 py-2 pl-3',
+        item.acknowledged ? 'border-transparent' : 'border-primary',
+      )}
     >
-      {!item.acknowledged ? (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-tone-warning-border px-3 py-2"
-        >
-          <span className="text-sm text-foreground">
-            {t('upgradeHistory.unacknowledged')}
-          </span>
-          <Button
-            type="button"
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-1">
+          <StatusPill
+            tone={KIND_TONE[item.kind]}
             size="sm"
-            disabled={ack.isPending}
-            onClick={() => {
-              ack.mutate(item.id, {
-                onSuccess: () => {
-                  toast.add({
-                    title: t('upgradeHistory.acknowledgedToast'),
-                    type: 'success',
-                  })
-                },
-                onError: (e) => {
-                  toast.add({ title: e.message, type: 'error' })
-                },
-              })
-            }}
+            label={t(`upgradeHistory.kind.${item.kind}`)}
+          />
+          {item.from_version !== '' ? (
+            <>
+              <VersionChip value={item.from_version} />
+              <ArrowRightGlassIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </>
+          ) : null}
+          <VersionChip value={item.to_version} />
+          <time
+            dateTime={item.occurred_at}
+            title={absolute}
+            className="text-xs text-muted-foreground"
           >
-            <CheckGlassIcon className="size-5" />
-            {t('upgradeHistory.acknowledge')}
-          </Button>
+            {formatRelative(item.occurred_at)}
+          </time>
         </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusPill
-          tone={KIND_TONE[item.kind]}
-          size="sm"
-          label={t(`upgradeHistory.kind.${item.kind}`)}
-        />
-        {item.from_version !== '' ? (
-          <>
-            <VersionChip value={item.from_version} />
-            <ArrowRightGlassIcon className="size-5 text-muted-foreground" />
-          </>
-        ) : null}
-        <VersionChip value={item.to_version} />
-        {item.channel === 'stable' || item.channel === 'beta' ? (
-          <Badge variant="outline">
-            {t(`history.channel.${item.channel}`)}
-          </Badge>
-        ) : null}
-        <time
-          dateTime={item.occurred_at}
-          title={absolute}
-          className="text-xs text-muted-foreground"
-        >
-          {formatRelative(item.occurred_at)}
-        </time>
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        {item.initiator === 'unknown'
-          ? t('upgradeHistory.initiatorUnknown')
-          : t('upgradeHistory.initiator', {
-              who: item.initiator,
-              method: item.method || t('upgradeHistory.methodUnknown'),
-            })}
-      </p>
-
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <li>
-          {item.schema_before !== null && item.schema_after !== null
-            ? t('upgradeHistory.schemaDelta', {
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <MetaChip
+            tone="muted"
+            icon={<UserGlassIcon className="size-4" aria-hidden="true" />}
+            label={who}
+          />
+          {item.schema_moved && schemaKnown ? (
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+              {t('upgradeHistory.schemaChip', {
                 before: item.schema_before,
                 after: item.schema_after,
-              })
-            : t('upgradeHistory.schemaUnknown')}
-        </li>
-        <li>
-          {item.backup_name !== ''
-            ? t('upgradeHistory.backup', { name: item.backup_name })
-            : t('upgradeHistory.noBackup')}
-        </li>
-        <li>{t(`upgradeHistory.health.${item.health}`, item.health)}</li>
-      </ul>
-
-      {item.schema_moved ? (
-        <p className="text-xs text-tone-warning">
-          {t('upgradeHistory.schemaMoved')}
-        </p>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
-        {item.release_url !== '' ? (
-          <a
-            href={item.release_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              })}
+            </span>
+          ) : null}
+          {item.backup_name !== '' ? (
+            <MetaChip
+              tone="muted"
+              icon={<ArchiveGlassIcon className="size-4" aria-hidden="true" />}
+              label={t('upgradeHistory.backupOk')}
+            />
+          ) : (
+            <MetaChip
+              tone={backupMissing ? 'warning' : 'muted'}
+              icon={
+                backupMissing ? (
+                  <TriangleAlertGlassIcon
+                    className="size-4"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <ArchiveGlassIcon className="size-4" aria-hidden="true" />
+                )
+              }
+              label={
+                backupMissing
+                  ? t('upgradeHistory.backupMissing')
+                  : t('upgradeHistory.backupNone')
+              }
+            />
+          )}
+          <span
+            title={t(`upgradeHistory.health.${item.health}`, item.health)}
+            className={cn(
+              'size-2 shrink-0 rounded-full',
+              item.health === 'booted'
+                ? 'bg-tone-success'
+                : 'bg-muted-foreground',
+            )}
           >
-            {t('upgradeHistory.releasePage')}
-            <ExternalLinkGlassIcon className="size-5" />
-          </a>
-        ) : item.kind === 'development' ? (
-          <span className="text-xs text-muted-foreground">
-            {t('upgradeHistory.noReleasePage')}
+            <span className="sr-only">
+              {t(`upgradeHistory.health.${item.health}`, item.health)}
+            </span>
           </span>
-        ) : null}
-        {item.compare_url !== '' ? (
-          <a
-            href={item.compare_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            {t('upgradeHistory.compare')}
-            <ExternalLinkGlassIcon className="size-5" />
-          </a>
-        ) : null}
-        {item.rollback_available ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              onRollback(item.from_version)
-            }}
-          >
-            <RotateCcwGlassIcon className="size-5" />
-            {t('upgradeHistory.rollbackTo', { version: item.from_version })}
-          </Button>
-        ) : null}
-        {hasNotes ? (
+          {item.acknowledged ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <CheckGlassIcon className="size-4" aria-hidden="true" />
+              {t('upgradeHistory.acknowledged')}
+            </span>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-10 sm:min-h-8"
+              aria-label={t('upgradeHistory.ackAria', {
+                version: item.to_version,
+              })}
+              disabled={ack.isPending}
+              onClick={() => {
+                ack.mutate(item.id, {
+                  onSuccess: () => {
+                    onAcked(item.to_version)
+                    toast.add({
+                      title: t('upgradeHistory.acknowledgedToast'),
+                      type: 'success',
+                    })
+                  },
+                  onError: (e) => {
+                    toast.add({ title: e.message, type: 'error' })
+                  },
+                })
+              }}
+            >
+              <CheckGlassIcon className="size-4" aria-hidden="true" />
+              {t('upgradeHistory.acknowledge')}
+            </Button>
+          )}
           <button
             type="button"
             aria-expanded={open}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            aria-label={t('upgradeHistory.details', {
+              version: item.to_version,
+            })}
+            className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 sm:size-8"
             onClick={() => {
               setOpen((v) => !v)
             }}
           >
             {open ? (
-              <ChevronDownGlassIcon className="size-5" />
+              <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
             ) : (
-              <ChevronRightGlassIcon className="size-5" />
+              <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
             )}
-            {t('upgradeHistory.notes')}
           </button>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            {item.notes_state === 'pending'
-              ? t('upgradeHistory.notesPending')
-              : t('upgradeHistory.notesUnavailable')}
-          </span>
-        )}
+        </div>
       </div>
 
-      {open && hasNotes ? <ReleaseNotes markdown={item.notes} /> : null}
-
-      {item.acknowledged ? (
-        <p className="text-xs text-muted-foreground">
-          {t('upgradeHistory.ackedBy', {
-            who: item.acked_by || t('upgradeHistory.initiatorUnknownShort'),
-            when: item.acked_at ? new Date(item.acked_at).toLocaleString() : '',
-          })}
-        </p>
+      {open ? (
+        <div className="mt-2 space-y-2 pb-1">
+          {item.schema_moved ? (
+            <p className="text-xs text-tone-warning">
+              {t('upgradeHistory.schemaMoved')}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-3">
+            {item.release_url !== '' ? (
+              <a
+                href={item.release_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                {t('upgradeHistory.releasePage')}
+                <ExternalLinkGlassIcon className="size-4" />
+              </a>
+            ) : item.kind === 'development' ? (
+              <span className="text-xs text-muted-foreground">
+                {t('upgradeHistory.noReleasePage')}
+              </span>
+            ) : null}
+            {item.compare_url !== '' ? (
+              <a
+                href={item.compare_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                {t('upgradeHistory.compare')}
+                <ExternalLinkGlassIcon className="size-4" />
+              </a>
+            ) : null}
+            {item.rollback_available ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="min-h-10 sm:min-h-8"
+                onClick={() => {
+                  onRollback(item.from_version)
+                }}
+              >
+                <RotateCcwGlassIcon className="size-4" />
+                {t('upgradeHistory.rollbackTo', { version: item.from_version })}
+              </Button>
+            ) : null}
+            {!hasNotes ? (
+              <span className="text-xs text-muted-foreground">
+                {item.notes_state === 'pending'
+                  ? t('upgradeHistory.notesPending')
+                  : t('upgradeHistory.notesUnavailable')}
+              </span>
+            ) : null}
+          </div>
+          {hasNotes ? <ReleaseNotes markdown={item.notes} /> : null}
+          {item.acknowledged ? (
+            <p className="text-xs text-muted-foreground">
+              {t('upgradeHistory.ackedBy', {
+                who: item.acked_by || t('upgradeHistory.initiatorUnknownShort'),
+                when: item.acked_at
+                  ? new Date(item.acked_at).toLocaleString()
+                  : '',
+              })}
+            </p>
+          ) : null}
+        </div>
       ) : null}
-    </div>
-  )
-}
-
-function VirtualRows({
-  items,
-  onRollback,
-}: {
-  items: UpgradeHistoryItem[]
-  onRollback: (version: string) => void
-}) {
-  const parentRef = useRef<HTMLDivElement>(null)
-  const virtualizer = useVirtualizer({
-    count: items.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => ESTIMATED_ROW_PX,
-    overscan: 6,
-  })
-  return (
-    <div ref={parentRef} className="max-h-[40rem] overflow-y-auto">
-      <div
-        role="list"
-        className="relative"
-        style={{ height: `${virtualizer.getTotalSize()}px` }}
-      >
-        {virtualizer.getVirtualItems().map((v) => {
-          const item = items[v.index]
-          if (!item) return null
-          return (
-            <div
-              key={item.id}
-              data-index={v.index}
-              ref={virtualizer.measureElement}
-              className="absolute left-0 top-0 w-full"
-              style={{ transform: `translateY(${v.start}px)` }}
-            >
-              <HistoryRow item={item} onRollback={onRollback} />
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    </li>
   )
 }
 
 export function UpgradeHistory() {
   const { t } = useTranslation('updates')
   const [previewing, setPreviewing] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const [announce, setAnnounce] = useState('')
   const { data, isPending, isError, error, refetch } = useQuery(
     upgradeHistoryQueryOptions(),
   )
 
   if (isPending) {
     return (
-      <p className="text-sm text-muted-foreground">
-        {t('upgradeHistory.loading')}
-      </p>
+      <div role="status" aria-label={t('upgradeHistory.loadingLabel')}>
+        <ul className="space-y-2" aria-hidden="true">
+          {Array.from({ length: 3 }, (_, i) => (
+            <li key={i}>
+              <Skeleton className="h-9 w-full" />
+            </li>
+          ))}
+        </ul>
+      </div>
     )
   }
   if (isError) {
     return (
-      <div className="space-y-2">
-        <p role="alert" className="text-sm text-destructive">
+      <Alert variant="destructive">
+        <AlertTitle>
           {t('upgradeHistory.loadError', { message: error.message })}
-        </p>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            void refetch()
-          }}
-        >
-          {t('history.retry')}
-        </Button>
-      </div>
+        </AlertTitle>
+        <AlertDescription>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void refetch()
+            }}
+          >
+            {t('history.retry')}
+          </Button>
+        </AlertDescription>
+      </Alert>
     )
   }
 
+  // The API returns every row newest first; the cap is applied here.
+  const total = data.entries.length
+  const capped = total > PREVIEW_COUNT
+  const visible = showAll ? data.entries : data.entries.slice(0, PREVIEW_COUNT)
+  const latest = data.entries[0]
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Collapsible>
+          <CollapsibleTrigger className="inline-flex min-h-10 w-auto items-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-6">
+            <InfoGlassIcon className="size-4" aria-hidden="true" />
+            {t('upgradeHistory.howTitle')}
+          </CollapsibleTrigger>
+          <CollapsiblePanel>
+            <p className="max-w-prose pb-1 text-xs text-muted-foreground">
+              {t('upgradeHistory.howBody')}
+            </p>
+          </CollapsiblePanel>
+        </Collapsible>
+        {latest ? (
+          <span className="text-xs text-muted-foreground">
+            {t('upgradeHistory.lastRecorded', {
+              when: formatRelative(latest.occurred_at),
+            })}
+          </span>
+        ) : null}
+      </div>
+
       {data.unacknowledged > 0 ? (
-        <Alert>
+        <Alert className="py-1.5">
           <AlertTitle>
-            {t('upgradeHistory.pendingTitle', { count: data.unacknowledged })}
+            {t('upgradeHistory.pendingBanner', { count: data.unacknowledged })}
           </AlertTitle>
-          <AlertDescription>{t('upgradeHistory.pendingBody')}</AlertDescription>
         </Alert>
       ) : null}
 
-      {data.entries.length === 0 ? (
-        <div className="rounded-md border border-dashed px-4 py-6 text-center">
-          <p className="text-sm font-medium text-foreground">
-            {t('upgradeHistory.empty')}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t('upgradeHistory.emptyHint')}
-          </p>
-        </div>
-      ) : data.entries.length > VIRTUALIZE_ABOVE ? (
-        <VirtualRows items={data.entries} onRollback={setPreviewing} />
+      <p role="status" aria-live="polite" className="sr-only">
+        {announce}
+      </p>
+
+      {total === 0 ? (
+        <EmptyState
+          compact
+          icon={<ClockGlassIcon className="size-5" />}
+          title={t('upgradeHistory.empty')}
+          description={t('upgradeHistory.emptyHint')}
+        />
       ) : (
-        <div role="list">
-          {data.entries.map((item) => (
-            <HistoryRow key={item.id} item={item} onRollback={setPreviewing} />
-          ))}
-        </div>
+        <>
+          <ol
+            aria-label={t('upgradeHistory.list')}
+            className={cn(
+              'divide-y divide-border',
+              showAll && 'max-h-[32rem] overflow-y-auto',
+            )}
+          >
+            {visible.map((item) => (
+              <HistoryRow
+                key={item.id}
+                item={item}
+                onRollback={setPreviewing}
+                onAcked={(v) => {
+                  setAnnounce(t('upgradeHistory.ackAnnounce', { version: v }))
+                }}
+              />
+            ))}
+          </ol>
+          {capped ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="min-h-10 sm:min-h-8"
+              aria-expanded={showAll}
+              onClick={() => {
+                setShowAll((v) => !v)
+              }}
+            >
+              {showAll
+                ? t('upgradeHistory.showLess', { count: PREVIEW_COUNT })
+                : t('upgradeHistory.showAll', { count: total })}
+            </Button>
+          ) : null}
+        </>
       )}
 
       <AgentVersionTimeline changes={data.agent_changes} />

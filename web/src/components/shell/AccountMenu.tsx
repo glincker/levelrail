@@ -13,7 +13,7 @@ import {
   type UiIcon,
 } from '@thesvg/ui-react'
 import { CircleQuestionMarkGlassIcon } from '@thesvg/ui-react'
-import { SidebarMenuButton } from '@/components/ui/sidebar'
+import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,8 @@ import { preferencesQueryOptions } from '../../queries/accountSelf'
 import { sessionQueryOptions } from '../../queries/security'
 import { useLogout } from '../../queries/auth'
 import { UserAvatar } from '../account/UserAvatar'
+import { teamListQueryOptions } from '../../queries/teams'
+import { TeamRoleBadge } from '../teams/TeamRoleBadge'
 import { useTheme, type Theme } from '../ThemeProvider'
 import { useAttentionSummary } from './useAttentionSummary'
 
@@ -100,11 +102,14 @@ function StatusRow() {
 /** AccountMenu is the sidebar footer: avatar and name opening the account, theme, help and sign-out menu. */
 export function AccountMenu() {
   const { t } = useTranslation()
+  const { state } = useSidebar()
   const brand = useBrand()
   const username = useAuthUsername()
   const logout = useLogout()
   const session = useQuery(sessionQueryOptions()).data
   const prefs = useQuery(preferencesQueryOptions()).data
+  const teams = useQuery(teamListQueryOptions()).data
+  const role = teams?.length === 1 ? teams[0]?.role : undefined
   const name = session?.display_name || username || '?'
   const email = session?.username.includes('@') ? session.username : undefined
   const avatar = (
@@ -123,7 +128,7 @@ export function AccountMenu() {
           <SidebarMenuButton
             size="lg"
             tooltip={name}
-            className="gap-2 !p-1.5"
+            className="h-9 gap-2 !p-1.5"
           />
         }
       >
@@ -137,11 +142,18 @@ export function AccountMenu() {
           ) : null}
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-72 p-0">
+      <DropdownMenuContent
+        side={state === 'collapsed' ? 'right' : 'top'}
+        align="end"
+        className="w-72 p-0"
+      >
         <div className="flex items-center gap-3 border-b border-border px-3 py-3">
           {avatar}
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-semibold">{name}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-semibold">{name}</span>
+              {role ? <TeamRoleBadge role={role} /> : null}
+            </span>
             {email ? (
               <span className="truncate text-xs text-muted-foreground">
                 {email}

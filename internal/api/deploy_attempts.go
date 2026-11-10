@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
@@ -103,6 +105,11 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			return "", fallback, noop, noopCommit
 		}
 	}
+	if note := freezeOverrideNoteFrom(ctx); note != "" && rt.deploySafety != nil {
+		if err := rt.deploySafety.SetDeployAttemptReason(ctx, id, note); err != nil {
+			rt.logger.Error("api: trigger build: record freeze override failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+		}
+	}
 
 	setCommit = func(setCtx context.Context, commit string) {
 		if commit == "" || commit == req.CommitSHA {
@@ -136,6 +143,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 			return
 		}
+		go rt.AfterBuildFinish(req.ServiceName)
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if rt.deployNotifier != nil {
 			outcome := alerting.DeployOutcome{
@@ -152,7 +160,27 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	if rt.deployRecorder != nil {
 		inner = rt.deployRecorder.Progress(id)
 	}
-	return id, rt.recordCacheWarning(id, inner), finish, setCommit
+	return id, rt.recordDetectedFramework(id, rt.recordCacheWarning(id, inner)), finish, setCommit
+}
+
+// recordDetectedFramework persists Next.js on the attempt the first time the
+// build log says it was detected, so upload and git deploys feed the advisor.
+func (rt *Router) recordDetectedFramework(id string, next func(build.ProgressEvent)) func(build.ProgressEvent) {
+	setter, ok := rt.deployAttempts.(detectedFrameworkSetter)
+	if !ok {
+		return next
+	}
+	var once sync.Once
+	return func(ev build.ProgressEvent) {
+		if ev.Log != "" && build.IsNextDetectedLine(ev.Log) {
+			once.Do(func() {
+				if err := setter.SetDeployAttemptDetectedFramework(context.Background(), id, "Next.js"); err != nil {
+					rt.logger.Warn("api: record detected framework failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+				}
+			})
+		}
+		next(ev)
+	}
 }
 
 // recordCacheWarning stores a build cache warning on the attempt row while
@@ -312,13 +340,27 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	// A compose stack has no service row of its own; its attempts live under the stack name.
+	var liveImage string
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	}
-	if err != nil {
+		if _, merr := rt.composeMembers(r.Context(), name); merr != nil {
+			if !errors.Is(merr, store.ErrServiceNotFound) {
+				rt.internalError(w, "api: list deploy attempts: load stack failed", merr, slog.String("name", name))
+				return
+			}
+			writeError(w, http.StatusNotFound, "app not found")
+			return
+		}
+	} else if err != nil {
 		rt.internalError(w, "api: list deploy attempts: load app failed", err, slog.String("name", name))
+		return
+	} else {
+		liveImage = svc.Image
+	}
+
+	if !rt.callerCanReadApp(r, name) {
+		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 
@@ -354,7 +396,7 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		}
 		res.ChainPosition = chainPos(a.ID)
 		res.DeployURL = deployURLs[a.ID]
-		res.Live = a.ID == liveID && a.Image == svc.Image
+		res.Live = liveImage != "" && a.ID == liveID && a.Image == liveImage
 		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
 			res.Live = false
 			res.PublishState = publishStateHeld
@@ -376,6 +418,10 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 // capabilities, so stores that predate build cache warnings keep working.
 type cacheWarningLister interface {
 	ListDeployAttemptCacheWarnings(ctx context.Context, serviceName string) (map[string]string, error)
+}
+
+type detectedFrameworkSetter interface {
+	SetDeployAttemptDetectedFramework(ctx context.Context, id, framework string) error
 }
 
 type cacheWarningSetter interface {
@@ -404,6 +450,9 @@ type sseLogEvent struct {
 // already rendered.
 func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	deployID := r.PathValue("deployId")
 
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
@@ -461,6 +510,7 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 		rt.logger.Error("api: deploy log stream: response writer does not support flushing", slog.String("deploy_id", deployID))
 		return
 	}
+	defer footprint.Stream(ctx, "stream:deploy log")()
 
 	// A zero-body WriteHeader+Flush never reaches the browser through
 	// Vite's dev proxy (Node's http-proxy only forwards headers on the
@@ -608,4 +658,57 @@ func eventAt(t time.Time) string {
 		return ""
 	}
 	return t.UTC().Format(time.RFC3339Nano)
+}
+
+// callerCanReadApp applies the per-member read check the route guard cannot
+// express; an error resolving visibility hides the app.
+func (rt *Router) callerCanReadApp(r *http.Request, name string) bool {
+	canRead, _, err := rt.callerAppVisibility(r)
+	if err != nil {
+		rt.logger.Warn("api: deploy history visibility failed", slog.String("name", name), slog.String("error", err.Error()))
+		return false
+	}
+	return rt.canReadDeploymentApp(r.Context(), canRead, name)
+}
+
+// requireAppAccess answers an app the caller cannot reach with ability exactly
+// like an unknown name; a visibility lookup error is a 500, still denying.
+func (rt *Router) requireAppAccess(w http.ResponseWriter, r *http.Request, name, ability string) bool {
+	allowed, _, err := rt.callerAppAccess(r, ability)
+	if err != nil {
+		rt.internalError(w, "api: app access check failed", err, slog.String("name", name))
+		return false
+	}
+	if rt.canReadDeploymentApp(r.Context(), allowed, name) {
+		return true
+	}
+	writeError(w, http.StatusNotFound, "app not found")
+	return false
+}
+
+// requireAppOrStack answers a name that is neither a service nor a compose
+// stack with the same 404 a hidden app gets.
+func (rt *Router) requireAppOrStack(w http.ResponseWriter, r *http.Request, name string) bool {
+	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err == nil {
+		return true
+	}
+	if !errors.Is(err, store.ErrServiceNotFound) {
+		rt.internalError(w, "api: load app failed", err, slog.String("name", name))
+		return false
+	}
+	taken, err := rt.stackNameTaken(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: check stack name failed", err, slog.String("name", name))
+		return false
+	}
+	if !taken {
+		writeError(w, http.StatusNotFound, "app not found")
+	}
+	return taken
+}
+
+// requireReadableApp is requireAppAccess for the read routes.
+func (rt *Router) requireReadableApp(w http.ResponseWriter, r *http.Request, name string) bool {
+	return rt.requireAppAccess(w, r, name, AbilityRead)
 }

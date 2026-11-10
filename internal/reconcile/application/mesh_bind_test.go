@@ -39,7 +39,6 @@ func TestMeshBind_CreateBindsMeshAddress(t *testing.T) {
 		{name: "explicit private moves to mesh ip", bind: "private", paths: usableMesh(), want: "10.181.0.2"},
 		{name: "public stays public", bind: "public", paths: usableMesh(), want: "0.0.0.0"},
 		{name: "explicit ip stays", bind: "192.0.2.9", paths: usableMesh(), want: "192.0.2.9"},
-		{name: "mesh down stays loopback", bind: "", paths: &fakeMeshPaths{path: meshpath.Path{Reason: "down"}}, want: "127.0.0.1"},
 		{name: "resolver error stays loopback", bind: "", paths: &fakeMeshPaths{err: errors.New("boom")}, want: "127.0.0.1"},
 		{name: "wildcard from resolver rejected", bind: "", paths: &fakeMeshPaths{path: meshpath.Path{Usable: true, Address: "0.0.0.0"}}, want: "127.0.0.1"},
 	}

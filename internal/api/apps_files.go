@@ -127,6 +127,9 @@ func (rt *Router) handleSetAppFile(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotImplemented, "secrets are not configured")
 			return
 		}
+		if !rt.allowProviderRefs(w, r, req.Content) {
+			return
+		}
 		if err := rt.secrets.SetValueGuarded(r.Context(), name, store.FileSecretKey(clean), req.Content, true); err != nil {
 			rt.internalError(w, "api: set app file: store secret failed", err, slog.String("name", name))
 			return

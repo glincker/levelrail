@@ -19,7 +19,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 
 | Item | Result |
 | --- | --- |
-| Applications | Created stopped and not routed. Image or git source, build method (Nixpacks becomes Railpack), first exposed port, replicas, health check and memory and CPU limits |
+| Applications | Created stopped and not routed. Image or git source, build method (Nixpacks becomes Railpack), first exposed port, replicas, HTTP and command health checks (a command check becomes an exec probe) and memory and CPU limits |
 | Environment variables | Imported, secret-looking names through the encrypted secrets store. Preview duplicates are dropped |
 | Domains | Read and held back until you enable routing |
 | Databases | PostgreSQL, MySQL, MariaDB, MongoDB and Redis, created empty with the major version from the image tag |
@@ -34,14 +34,19 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - **Git-built apps** do not build by themselves. Connect the repository (with credentials for a private one) and run a build, or let verify do it.
 - **Old database hostnames** in env vars are only rewritten through a mapping you confirm.
 - **Secrets the token could not read** are skipped and flagged.
-- **Extra ports, raw host port mappings, command-style health checks, custom build and start commands, basic auth, custom labels, webhooks and backup schedules** are called out as needs attention. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
+- **Build settings** move with `migrate coolify`: base directory, Dockerfile path, static build command and publish directory, start command, pre and post deployment hooks, and build-time variables (stored as secrets with build access). With `--apply`, a repository given as a full URL is connected with those settings; a private one still needs credentials.
+- **Basic auth, `www` redirects, preview deployments and common proxy labels** (`redirectscheme`, `redirectregex`, `stripprefix`, `headers`) are translated into ingress settings on `--apply`: a placeholder basic auth credential (never shown, set the real one with `domains basic-auth set`), a canonical redirect, forwarder and header rules, and previews on with the default policy (gated when the source used basic auth). Until basic auth is set the app is public, and file mode sets nothing. Unknown label keys stay as manual items with the reason. Apps that shared a custom docker network are listed with their peers; no connection is created automatically.
+- **Git webhooks**: pass `--create-webhooks` with `--apply` to register one push webhook per git-sourced app after it is created. It is off by default because it writes to your git host. A hook is only created when the repository URL is https and its scheme, host and port match an authorized git connection (GitHub App, GitLab, Gitea or Bitbucket), and it goes through the existing `apps git-source register-webhook` route with your own token. The control plane generates the webhook secret, which is never printed or written to the report. A re-run does not add a second hook. Every app that is skipped gets the reason, and a failure on one app does not stop the others. Without `--apply` the report lists what would be created and writes nothing to the git host. `APP_MIGRATE_WEBHOOK_LIMIT` (default 200) caps hooks per run and `APP_MIGRATE_REPO_URL_MAX_LEN` (default 2048) caps the accepted repository URL length.
+- **Multi-server instances**: pass `--node-map source-server=node,other=node2` to put each app on the named node. An unmapped server keeps its apps on the control plane node with a finding, and an unknown or ambiguous node name stops the run before anything is created. Placement needs a token with the root ability, checked first.
+- **Extra ports, raw host port mappings, other custom labels, tags, the Node version pin, webhooks and backup schedules** are called out as needs attention or planned items. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
 
 ## What does not move
 
 - Coolify one-click services are not created as apps. `migrate coolify` reads each service's compose file and env, translates its `SERVICE_` magic variables and stages the result as `compose.yaml` under `--stage-dir` (default `./migrated/compose`), with hosts under `--domain-suffix`. Nothing is deployed. Review the file, then deploy it with `levelrail-cli compose deploy`. The file and `--apply` modes stage services. The dry-run and verify reports list them as skipped. See [one-click services to Compose](/coolify-service-to-compose). Staging is pending run against a real Coolify instance.
-- Coolify Docker Compose applications (the `dockercompose` build pack, multi-service) are blocked and not translated. Stage their compose file by hand with the manual path in [one-click services to Compose](/coolify-service-to-compose), then deploy it with [compose apps](/compose-apps).
+- Coolify Docker Compose applications (the `dockercompose` build pack) are staged like one-click services: one `compose.yaml` under `--stage-dir` with magic variables and generated secrets resolved, plus `stack.env` (mode 0600) when env values were requested. A file that sets `privileged`, host networking, host `pid` or `ipc`, `cap_add`, `devices` or mounts the Docker socket stays blocked with the same reason a manual [compose deploy](/compose-apps) gives. Compose text and secret values never appear in the report.
+- File storages are copied as app files at their mount path with identical bytes. Unsafe paths (relative, `..`, backslash, control characters) are refused with the reason. Content is copied only with `--include-secret-values` (otherwise the report lists each path and size), and a secret-looking file is set through the encrypted store. In file mode they are written under `<out-dir>/<app>.files/` with owner-only permissions.
 - TLS certificates, DNS records, deploy history, logs and metrics. Certificates are issued here on first use.
-- ClickHouse, KeyDB and Dragonfly databases. They are listed as skipped, and the copy step does not handle them. Use their own dump tools and the [restore tools](/backups-and-storage).
+- ClickHouse, KeyDB and Dragonfly databases are created empty as managed databases, like the other engines. A Dragonfly version is kept only when the source pins a full `vX.Y.Z` tag, and a KeyDB version only for an exact `eqalpha/keydb` release tag, otherwise the newest supported one is used. Copy the data with the printed `migrate db-copy` command, or with the engine's own dump tool and the [restore tools](/backups-and-storage) where the copy step does not support the engine.
 
 ## Exit report and cutover checklist {#exit-report-and-cutover-checklist}
 
@@ -198,6 +203,27 @@ Pause or put the old Coolify app into maintenance mode before the final database
 | `pg_dump` refuses the server | Create the target with the same or a newer major version |
 | Image move fails on a remote node | Move it by hand: `docker save IMAGE \| ssh TARGET docker load` |
 | Cutover reports `block` | The plan names the item and the fix. Fix it and run the dry run again |
+
+## Resume or undo an --apply run {#apply-journal}
+
+Every `migrate coolify --apply` run writes a journal: one entry per app with each step (created, git source, node, ingress, previews, secrets, files, webhook) and its outcome. The journal holds names, step states and a fingerprint of each created app. It never holds env values, secrets, tokens, passwords or connection strings. It is written with mode `0600`, atomically, and a lock file stops two runs from using it at once. The default path is under `~/.config/<cli>/migrate-journals/`; pick one with `--journal FILE`. The path is printed at the end of the run.
+
+If the run stopped half way, continue it with the same flags:
+
+```
+levelrail-cli migrate coolify resume --journal FILE --url URL --token TOKEN [the same flags as the --apply run]
+```
+
+Resume skips steps that are done and retries failed ones. It never creates an app that already exists and was not created by this run, and it leaves an app alone if it changed on the target since the run.
+
+To roll the run back:
+
+```
+levelrail-cli migrate coolify undo --journal FILE           # prints the plan, removes nothing
+levelrail-cli migrate coolify undo --journal FILE --yes     # removes what the plan marks remove
+```
+
+Undo removes only the apps the journal records as created by that run, newest first, with your own token and the normal delete route, so protected environments and delete confirmations still apply. Apps that existed before the run are never touched. An app deployed since the run is listed and skipped unless you pass `--force`. An app whose fingerprint is missing or no longer matches (it changed since the run, or the run stopped before recording it) is always skipped unless you name it with `--force-app NAME`; `--force` never overrides that. Undo checks each app again right before it deletes it. Apps have no immutable id in the API, so the fingerprint is the app's shape (image, domains, port, node, volumes and similar, never env values): if someone deletes an app and re-creates one with the same name and shape, undo cannot tell them apart, so read the plan before passing `--yes`. An app holding volume data is skipped unless you pass `--include-data` and type the number of such apps to confirm; its volumes are then deleted with it. Undo refuses a journal that is a symlink or sits in a symlinked folder, readable by others, over `APP_MIGRATE_JOURNAL_MAX_BYTES` (default 4 MiB), written for another control plane, or with a name that is not a valid app name.
 
 ## Choose to stay if
 

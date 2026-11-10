@@ -19,6 +19,10 @@ import type {
 } from '../types/scheduledTasks'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
+
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
 
 export const scheduledTaskKeys = {
   all: (appName: string) =>
@@ -62,7 +66,7 @@ export function useJobRuns(appName: string, taskId: string, status: string) {
   return useQuery({
     queryKey: scheduledTaskKeys.runs(appName, taskId, status),
     queryFn: () => fetchJobRuns(appName, taskId, status),
-    refetchInterval: 5000,
+    refetchInterval: pollMs('live'),
   })
 }
 
@@ -88,7 +92,7 @@ export function useJobRun(appName: string, taskId: string, runId: string) {
     queryKey: scheduledTaskKeys.run(appName, taskId, runId),
     queryFn: () => fetchJobRun(appName, taskId, runId),
     refetchInterval: (query) =>
-      query.state.data?.status === 'running' ? 2000 : false,
+      query.state.data?.status === 'running' ? POLL_2000_MS : false,
   })
 }
 
@@ -156,7 +160,7 @@ export function useCreateScheduledTask(appName: string) {
 export async function updateScheduledTask(
   appName: string,
   id: string,
-  req: ScheduledTaskRequest,
+  req: Partial<ScheduledTaskRequest>,
 ): Promise<ScheduledTask> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}`,
@@ -181,8 +185,48 @@ export async function updateScheduledTask(
 export function useUpdateScheduledTask(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, req }: { id: string; req: ScheduledTaskRequest }) =>
-      updateScheduledTask(appName, id, req),
+    mutationFn: ({
+      id,
+      req,
+    }: {
+      id: string
+      req: Partial<ScheduledTaskRequest>
+    }) => updateScheduledTask(appName, id, req),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: scheduledTaskKeys.list(appName),
+      })
+    },
+  })
+}
+
+export async function setScheduledTaskEnabled(
+  appName: string,
+  id: string,
+  enabled: boolean,
+): Promise<ScheduledTask> {
+  const action = enabled ? 'enable' : 'disable'
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}/${action}`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `${action} scheduled task failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as ScheduledTask
+}
+
+export function useSetScheduledTaskEnabled(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      setScheduledTaskEnabled(appName, id, enabled),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: scheduledTaskKeys.list(appName),

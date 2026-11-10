@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type MaintenanceScope = 'all' | 'project' | 'app'
 export type MaintenanceState = 'scheduled' | 'active' | 'ended'
@@ -40,7 +41,7 @@ export const maintenanceKeys = {
 }
 
 const BASE = '/api/v1/scheduled-maintenance'
-const BANNER_REFETCH_MS = 60_000
+const BANNER_REFETCH_MS = pollMs('idle')
 
 async function readList(url: string, signal?: AbortSignal) {
   const res = await fetch(url, { signal })

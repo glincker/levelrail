@@ -45,7 +45,11 @@ export function StatusBadge({ status }: { status: AttemptStatus }) {
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
       <StatusIcon
-        className={status === 'running' ? 'size-3.5 animate-spin' : 'size-3.5'}
+        className={
+          status === 'running'
+            ? 'size-3.5 animate-spin motion-reduce:animate-none'
+            : 'size-3.5'
+        }
         aria-hidden="true"
       />
       {STATUS_LABEL[status]}

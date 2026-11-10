@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -38,6 +39,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export function ModelUsageCard({ modelName }: { modelName: string }) {
+  const { t: tc } = useTranslation('common')
   const [hours, setHours] = useState<number>(WINDOWS[0].hours)
   const usage = useModelUsage(modelName, hours)
   const report = usage.data
@@ -132,7 +134,10 @@ export function ModelUsageCard({ modelName }: { modelName: string }) {
             isLoading={false}
           />
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table
+              aria-label={tc('a11y.tables.modelUsage')}
+              className="w-full text-left text-xs"
+            >
               <thead className="text-muted-foreground">
                 <tr>
                   <th className="py-1 font-medium">Key</th>

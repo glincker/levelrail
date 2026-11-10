@@ -124,7 +124,8 @@ func dialProbe(ctx context.Context, addr string) error {
 // probeReady checks that the engine port accepts connections on the container
 // address. ok is false when the pass must end with res (still starting, or timed out).
 func (c *Controller) probeReady(ctx context.Context, state *docker.ContainerState, port int) (res reconcile.Result, ok bool) {
-	if c.prov == nil || state == nil {
+	_, watching := c.watchFor(state)
+	if state == nil || (c.prov == nil && !watching) {
 		return reconcile.Result{}, true
 	}
 	ip := ""
@@ -137,6 +138,7 @@ func (c *Controller) probeReady(ctx context.Context, state *docker.ContainerStat
 	// Docker Desktop does not route container IPs to the host, so a host-side
 	// dial can never succeed there.
 	if ip == "" || (c.probe == nil && runtime.GOOS != "linux") {
+		c.shared.clearWatch(c.dbName)
 		c.prov.Done(dbprovision.StepWaitReady, "container is running")
 		return reconcile.Result{}, true
 	}
@@ -147,10 +149,15 @@ func (c *Controller) probeReady(ctx context.Context, state *docker.ContainerStat
 	addr := net.JoinHostPort(ip, strconv.Itoa(port))
 	err := probe(ctx, addr)
 	if err == nil {
+		c.shared.clearWatch(c.dbName)
 		c.prov.Done(dbprovision.StepWaitReady, "accepting connections on port "+strconv.Itoa(port))
 		return reconcile.Result{}, true
 	}
-	if !state.Created.IsZero() && time.Since(state.Created) > durationFromEnv(EnvReadyTimeout, defaultReadyTimeout) {
+	if w, ok := c.watchFor(state); ok {
+		if c.clock().Sub(w.started) > durationFromEnv(EnvReadyTimeout, defaultReadyTimeout) {
+			return notReady(reasonNotAccepting, fmt.Errorf("the database did not accept connections on port %d in time after new engine parameters: %w", port, err)), false
+		}
+	} else if !state.Created.IsZero() && time.Since(state.Created) > durationFromEnv(EnvReadyTimeout, defaultReadyTimeout) {
 		return notReady(reasonNotAccepting, fmt.Errorf("the database did not accept connections on port %d in time: %w", port, err)), false
 	}
 	if res, loop := c.crashLoopResult(ctx, containerName(c.dbName)); loop {

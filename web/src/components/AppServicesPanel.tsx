@@ -17,16 +17,19 @@ import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
+import { ServiceActions } from './ServiceActions'
 import type { AppDetail } from '../types/appDetail'
 
 // A suspense query primed by the route's loader; fetch failures surface
 // through the route's errorComponent (routes/apps/$name.tsx), not locally.
 export function AppServicesPanel({ appName }: { appName: string }) {
   const { t } = useTranslation('common')
+  const { t: tSvc } = useTranslation('appServices')
   const { data: group } = useAppGroup(appName)
   const hasDependsOn = group.services.some(
     (svc) => svc.depends_on && svc.depends_on.length > 0,
   )
+  const multi = group.services.length > 1
   const columns = useMemo<ResponsiveColumn<AppDetail>[]>(
     () => [
       {
@@ -89,6 +92,18 @@ export function AppServicesPanel({ appName }: { appName: string }) {
           </span>
         ),
       },
+      ...(multi
+        ? [
+            {
+              id: 'actions',
+              header: tSvc('actions'),
+              priority: 1 as const,
+              cell: (svc: AppDetail) => (
+                <ServiceActions svc={svc} appName={appName} />
+              ),
+            },
+          ]
+        : []),
       ...(hasDependsOn
         ? [
             {
@@ -110,7 +125,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
           ]
         : []),
     ],
-    [appName, hasDependsOn],
+    [appName, hasDependsOn, multi, tSvc],
   )
 
   return (
@@ -121,7 +136,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
           Services
         </CardTitle>
         <CardDescription>
-          {group.services.length > 1
+          {multi
             ? `${group.services.length} services deployed together under one app.`
             : 'This app currently has one service. Deploy an app.yaml with multiple services to fan more out under it.'}
         </CardDescription>

@@ -212,13 +212,14 @@ type Router struct {
 	// same "this package never reads the environment directly"
 	// convention WithSessionTTL's own doc comment establishes.
 	requestLogThresholds    requestLogThresholds
-	alertRules              AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	lb                      lbDeps          // zero value is valid: load balancer routes return 501
-	iac                     iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
-	alertNoise              AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
-	alertDefaults           AlertDefaults   // nil is valid: default alert routes return 501
-	inbox                   InboxStore      // nil is valid: notification inbox routes return 501
-	statusPage              StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
+	presence                *telemetry.Presence // nil is valid: touches are no-ops
+	alertRules              AlertRules          // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                      lbDeps              // zero value is valid: load balancer routes return 501
+	iac                     iacDeps             // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise              AlertNoise          // nil is valid: silence, maintenance window and alert history routes return 501
+	alertDefaults           AlertDefaults       // nil is valid: default alert routes return 501
+	inbox                   InboxStore          // nil is valid: notification inbox routes return 501
+	statusPage              StatusPageStore     // nil is valid: status page routes return 501 and the public page stays off
 	statusView              StatusPageViewer
 	incidents               IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
 	incidentBodyMax         int
@@ -247,6 +248,7 @@ type Router struct {
 	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness               ReadinessProbes
+	pendingStages           func() []string
 	meshSettings            meshSettingsState                                             // see mesh_settings.go
 	serverProfile           serverProfileState                                            // see server_profile.go
 	fixit                   fixitState                                                    // see fixit.go
@@ -273,11 +275,13 @@ type Router struct {
 	imageVerifyIssue        string
 	imageVerifyRequested    string
 	imageVerifier           *imagelife.Verifier
-	dockerPruner            DockerPruner             // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
-	orphanedVolumes         OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
-	janitor                 *janitor.Engine          // nil is valid: /system/janitor* return 501, and the disk fix falls back to a plain prune
-	janitorStore            janitor.Store            // set with janitor
-	nodeGuard               *nodeGuardState          // nil is valid: node capacity routes return 501 and nothing is blocked
+	dockerPruner            DockerPruner          // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	orphanedVolumes         OrphanedVolumeManager // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
+	janitor                 *janitor.Engine       // nil is valid: /system/janitor* return 501, and the disk fix falls back to a plain prune
+	janitorStore            janitor.Store         // set with janitor
+	nodeGuard               *nodeGuardState       // nil is valid: node capacity routes return 501 and nothing is blocked
+	nodePatchOnce           sync.Once
+	nodePatch               *nodePatcher             // built lazily on first use; tests set it before the first request
 	orphanReaper            *orphans.Reaper          // nil is valid: GET /system/orphans and POST /system/orphans/reap return 501
 	orphanedContainers      OrphanedContainerManager // nil is valid: POST /system/containers/{name}/stop and .../remove return 501, same shape as orphanedVolumes above
 	registryAuthTester      RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
@@ -313,6 +317,8 @@ type Router struct {
 	gateEvents              gateEventCounter            // coalesced gate events awaiting flush
 	domainRedirect          DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility  DomainSearchVisibilityStore // always set, core Store
+	domainLimits            DomainLimitsStore           // always set, core Store
+	domainTuning            DomainTuningStore           // always set, core Store
 	domainACME              DomainACMEChallengeStore    // per-host DNS-01 flag, domain_cutover_cert.go
 	domainPolicy            domainPolicyDeps            // per-domain traffic controls, domain_policies.go
 	cachePurges             CachePurgeStore             // purge history, cache_app.go
@@ -493,6 +499,8 @@ type Router struct {
 	// previewAdmitMu serializes the check-evict-save section that enforces it.
 	previewLimits  PreviewLimits
 	previewAdmitMu sync.Mutex
+	// previewDeployLocks serializes deploys of the same preview.
+	previewDeployLocks keyedLocks
 	// quotaMu makes a quota check and the create it guards one atomic step.
 	quotaMu sync.Mutex
 	// previewDeploys tracks approval-triggered background deploys.
@@ -602,6 +610,9 @@ type Router struct {
 	pitrRestoreRunner            PITRRestoreRunner                                                                   // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
 	serviceVolumeBackupHistory   ServiceVolumeBackupHistoryStore                                                     // always set, same "core Store interface" shape as backupHistory above
 	serviceVolumeBackupSchedule  ServiceVolumeBackupScheduleStore                                                    // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
+	composeDBBackups             ComposeDBBackupStore                                                                // nil when the store lacks compose backups: those routes return 501
+	composeDBBackupRunner        ComposeDBBackupRunner                                                               // nil is valid: POST .../compose-db-services/{service}/backups returns 501
+	composeDBRestoreRunner       ComposeDBRestoreRunner                                                              // nil is valid: the compose restore route returns 501
 	serviceVolumeBackupRunner    ServiceVolumeBackupRunner                                                           // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
 	serviceVolumeRestoreHistory  ServiceVolumeRestoreHistoryStore                                                    // always set, same "core Store interface" shape as restoreHistory above
 	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner                                                          // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
@@ -792,6 +803,7 @@ type Router struct {
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
+	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 	deviceFlow                   *apiRateLimiter          // per-IP device-login-start token bucket
@@ -930,6 +942,7 @@ type Router struct {
 
 	branchDeploys  BranchDeployStore // always set
 	contextConfigs ContextConfigStore
+	buildSettings  BuildSettingsStore
 	branchDeployMu sync.Mutex
 
 	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
@@ -975,6 +988,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainRedirect:              s,
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
+		domainLimits:                s,
+		domainTuning:                s,
 		domainACME:                  s,
 		domainPolicy:                domainPolicyDeps{store: s},
 		cachePurges:                 s,
@@ -1116,6 +1131,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	rt.fetch = rt.gitCheckout
 	rt.gitSourceFetch = rt.gitCheckoutWithToken
+	if c, ok := any(s).(ComposeDBBackupStore); ok {
+		rt.composeDBBackups = c
+	}
 	if g, ok := any(s).(GitPushStore); ok {
 		rt.gitPushStore = g
 	}
@@ -1169,6 +1187,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.attachCertLedger(s)
 	if cs, ok := s.(ContextConfigStore); ok {
 		rt.contextConfigs = cs
+	}
+	if bs, ok := s.(BuildSettingsStore); ok {
+		rt.buildSettings = bs
 	}
 	return rt
 }

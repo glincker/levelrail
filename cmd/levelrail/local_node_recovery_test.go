@@ -40,6 +40,10 @@ func TestBootstrapLocalNode_RecoversOfflineNodeOnRestart(t *testing.T) {
 			if err := bootstrapLocalNode(ctx, db, id); err != nil {
 				t.Fatalf("bootstrapLocalNode() error = %v", err)
 			}
+			// The heartbeat touch is write-behind, so drain it before reading.
+			if err := db.FlushTouches(ctx); err != nil {
+				t.Fatal(err)
+			}
 			got, err := db.GetNode(ctx, id)
 			if err != nil {
 				t.Fatal(err)

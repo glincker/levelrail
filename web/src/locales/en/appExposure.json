@@ -42,6 +42,7 @@
     "fallback": "Automatic hostname",
     "direct": "Direct IP and port",
     "none": "No public URL yet. Add a domain, turn on automatic hostnames, or use direct IP and port.",
+    "noneTitle": "No public URL",
     "internal": "Other apps on this server reach it by its app name on port {{port}}."
   },
   "check": {
@@ -69,6 +70,7 @@
     "port": "Port",
     "heldBy": "Held by",
     "empty": "No host ports are pinned or published by apps or the control plane.",
+    "emptyTitle": "No pinned host ports",
     "control": "Control plane: {{name}}",
     "app": "App {{name}}",
     "stream": "Stream of {{name}}"

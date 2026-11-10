@@ -8,6 +8,7 @@ import {
   BotGlassIcon,
   BracesGlassIcon,
   BugGlassIcon,
+  ContainerGlassIcon,
   ChartLineGlassIcon,
   ClipboardListGlassIcon,
   CloudGlassIcon,
@@ -29,11 +30,11 @@ import {
   ImagesGlassIcon,
   InboxGlassIcon,
   KeyGlassIcon,
+  LockGlassIcon,
   LayersGlassIcon,
   LayoutGridGlassIcon,
   LightbulbGlassIcon,
   ListGlassIcon,
-  LockGlassIcon,
   PackageGlassIcon,
   PlugGlassIcon,
   RestoreGlassIcon,
@@ -89,6 +90,8 @@ export type GlobalTo =
   | '/network/private'
   | '/cdn'
   | '/domains'
+  | '/domains/certificates'
+  | '/settings/notification-channels'
   | '/dns'
   | '/loadbalancers'
   | '/mail'
@@ -168,14 +171,18 @@ export const COST_GROUP_PATHS = [
   '/resources',
 ] as const
 
-export const APPS_GROUP_PATHS = ['/projects', '/templates', '/tags'] as const
+export const APPS_GROUP_PATHS = ['/tags', '/variables', '/sources'] as const
 export const PIPELINE_GROUP_PATHS = ['/pipelines', '/approvals'] as const
-export const DOMAIN_GROUP_PATHS = ['/domains', '/dns', '/mail'] as const
+export const DOMAIN_GROUP_PATHS = [
+  '/domains',
+  '/dns',
+  '/domains/certificates',
+] as const
 export const TRAFFIC_GROUP_PATHS = [
   '/network/proxy',
+  '/network/private',
   '/loadbalancers',
   '/cdn',
-  '/firewall',
 ] as const
 export const REGISTRY_GROUP_PATHS = [
   '/images',
@@ -186,7 +193,7 @@ export const REGISTRY_GROUP_PATHS = [
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
     id: 'primary',
-    label: 'Home',
+    label: 'Overview',
     ungrouped: true,
     items: [
       {
@@ -197,6 +204,25 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         exact: true,
         // Status is reached from the dashboard status strip.
         alsoActive: ['/status'],
+      },
+      {
+        id: 'projects',
+        label: 'Projects',
+        to: '/projects',
+        icon: glass(FolderGlassIcon),
+      },
+      {
+        id: 'inbox',
+        label: 'Inbox',
+        to: '/inbox',
+        icon: glass(InboxGlassIcon),
+        badge: 'inbox',
+      },
+      {
+        id: 'alerts',
+        label: 'Alerts',
+        to: '/alerts',
+        icon: glass(BellGlassIcon),
       },
     ],
   },
@@ -211,6 +237,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: glass(LayersGlassIcon),
         badge: 'failing-apps',
         alsoActive: APPS_GROUP_PATHS,
+      },
+      {
+        id: 'templates',
+        label: 'Templates',
+        to: '/templates',
+        icon: glass(LayoutGridGlassIcon),
       },
       {
         id: 'deployments',
@@ -245,7 +277,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Databases',
         to: '/databases',
         icon: glass(DatabaseGlassIcon),
-        alsoActive: ['/backups'],
+      },
+      {
+        id: 'backups',
+        label: 'Backups',
+        to: '/backups',
+        icon: glass(UploadGlassIcon),
       },
       {
         id: 'storage',
@@ -276,20 +313,27 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: glass(TrafficConeGlassIcon),
         badge: 'proxy-attention',
         alsoActive: TRAFFIC_GROUP_PATHS,
+        // Topology is exactly /network; a prefix match would also light other pages.
+        alsoExact: ['/network'],
       },
       {
-        id: 'private-networks',
-        label: 'Private network',
-        to: '/network/private',
-        icon: glass(LockGlassIcon),
-        // Topology is exactly /network; a prefix match would also light Traffic's pages.
-        alsoExact: ['/network'],
+        id: 'firewall',
+        label: 'Firewall',
+        to: '/firewall',
+        icon: <ShieldCheckGlassIcon size="1.4em" />,
+      },
+      {
+        id: 'mail',
+        label: 'Mail',
+        to: '/mail',
+        icon: glass(MailGlassIcon),
+        feature: 'mail',
       },
     ],
   },
   {
-    id: 'infrastructure',
-    label: 'Infrastructure',
+    id: 'platform',
+    label: 'Platform',
     items: [
       {
         id: 'nodes',
@@ -299,15 +343,10 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         alsoActive: ['/settings/node-providers'],
       },
       {
-        id: 'alerts',
-        label: 'Alerts',
-        to: '/alerts',
-        icon: glass(BellGlassIcon),
-      },
-      {
         id: 'registry',
         label: 'Registry',
-        to: '/images',
+        // /images redirects into the Storage hub, so it cannot be the row target.
+        to: '/settings/registry',
         icon: glass(PackageGlassIcon),
         alsoActive: REGISTRY_GROUP_PATHS,
       },
@@ -318,19 +357,11 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: glass(CoinsGlassIcon),
         alsoActive: COST_GROUP_PATHS,
       },
-    ],
-  },
-  {
-    id: 'access',
-    label: 'Security',
-    items: [
       {
         id: 'security',
         label: 'Security',
         to: '/security',
-        icon: (
-          <ShieldAlertGlassIcon className="text-tone-warning" size="1.4em" />
-        ),
+        icon: <ShieldAlertGlassIcon size="1.4em" />,
         alsoActive: ['/settings/iam-policies'],
       },
     ],
@@ -348,14 +379,17 @@ const folded = (
 // Destinations folded into a parent row's tab strip. No sidebar row, but they
 // stay in the command palette and light their parent through alsoActive.
 export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
+  folded(
+    'private-networks',
+    'Private network',
+    '/network/private',
+    glass(LockGlassIcon),
+  ),
   folded('status', 'Status', '/status', glass(ActivityGlassIcon)),
-  folded('projects', 'Projects', '/projects', glass(FolderGlassIcon)),
-  folded('templates', 'Templates', '/templates', glass(LayoutGridGlassIcon)),
   folded('tags', 'Tags', '/tags', glass(ListGlassIcon)),
   folded('variables', 'Variables', '/variables', glass(BracesGlassIcon)),
   folded('sources', 'Sources', '/sources', glass(GitBranchGlassIcon)),
   folded('approvals', 'Deploy approvals', '/approvals', glass(GavelGlassIcon)),
-  folded('backups', 'Backups', '/backups', glass(UploadGlassIcon)),
   folded(
     'network-shares',
     'Network shares',
@@ -366,15 +400,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
   folded('dns', 'DNS', '/dns', glass(ListGlassIcon), {
     requiresRoute: true,
   }),
-  folded('mail', 'Mail', '/mail', glass(MailGlassIcon), {
-    feature: 'mail',
-  }),
-  folded(
-    'firewall',
-    'Firewall',
-    '/firewall',
-    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
-  ),
   folded(
     'loadbalancers',
     'Load balancers',
@@ -391,12 +416,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     'Cloud providers',
     '/settings/node-providers',
     glass(CloudGlassIcon),
-  ),
-  folded(
-    'registry-settings',
-    'Registry settings',
-    '/settings/registry',
-    glass(PackageGlassIcon),
   ),
   folded(
     'registry-credentials',
@@ -416,7 +435,7 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     'iam-policies',
     'IAM policies',
     '/settings/iam-policies',
-    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
+    <ShieldCheckGlassIcon size="1.4em" />,
   ),
   folded(
     'scanning',
@@ -430,7 +449,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     '/nodes/bootstrap-scripts',
     glass(TerminalGlassIcon),
   ),
-  folded('inbox', 'Inbox', '/inbox', glass(InboxGlassIcon)),
   folded('models', 'AI models', '/models', glass(CpuGlassIcon), {
     feature: 'ai-models',
   }),
@@ -466,6 +484,13 @@ export function visibleGlobalGroups(
     ...g,
     items: g.items.filter((i) => !i.requiresRoute || routeAvailable(i.to)),
   })).filter((g) => g.items.length > 0)
+}
+
+// A group with one item renders as that item, so no header repeats its label.
+export function isSingleItemGroup(group: {
+  items: readonly unknown[]
+}): boolean {
+  return group.items.length === 1
 }
 
 export function visibleGlobalFooter(): GlobalNavItem[] {
@@ -591,6 +616,7 @@ export type AppTo =
   | '/apps/$name/resources'
   | '/apps/$name/volumes'
   | '/apps/$name/health'
+  | '/apps/$name/containers'
   | '/apps/$name/scheduled-tasks'
   | '/apps/$name/feature-flags'
   | '/apps/$name/split-testing'
@@ -736,6 +762,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       item('volumes', 'Volumes', '/apps/$name/volumes', glass(ServerGlassIcon)),
       item('health', 'Health', '/apps/$name/health', glass(ActivityGlassIcon)),
       item(
+        'containers',
+        'Containers',
+        '/apps/$name/containers',
+        glass(ContainerGlassIcon),
+      ),
+      item(
         'scheduled-tasks',
         'Jobs',
         '/apps/$name/scheduled-tasks',
@@ -824,10 +856,16 @@ export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
 }
 
-// With about 15 rows every group starts open.
+// Tall viewports open every group; shorter ones open only the group holding the current page.
 // Anything the user toggles is persisted and wins from then on.
-export function defaultGroupOpen(): boolean {
-  return true
+const OPEN_ALL_MIN_HEIGHT =
+  Number(import.meta.env.VITE_SIDEBAR_OPEN_ALL_MIN_HEIGHT) || 900
+
+export function defaultGroupOpen(
+  viewportHeight: number,
+  containsActive: boolean,
+): boolean {
+  return viewportHeight >= OPEN_ALL_MIN_HEIGHT || containsActive
 }
 
 export function resolveOpen(

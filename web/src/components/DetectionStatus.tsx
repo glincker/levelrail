@@ -17,7 +17,10 @@ export function DetectionStatus({
   if (pending) {
     return (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <LoaderGlassIcon className="size-5 animate-spin" aria-hidden="true" />
+        <LoaderGlassIcon
+          className="size-5 animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         Detecting...
       </span>
     )

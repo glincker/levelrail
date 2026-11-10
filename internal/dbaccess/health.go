@@ -25,13 +25,21 @@ func connectionsScript(engine string) (string, bool) {
 		return mysqlConnectionsScript("mysql", "MYSQL_ROOT_PASSWORD"), true
 	case store.EngineMariaDB:
 		return mysqlConnectionsScript("mariadb", "MARIADB_ROOT_PASSWORD"), true
-	case store.EngineRedis:
-		return `RC="redis-cli"; $RC ping >/dev/null 2>&1 || RC="redis-cli --tls --insecure -p 6380"; ` +
+	case store.EngineRedis, store.EngineValkey, store.EngineKeyDB:
+		// KeyDB ships keydb-cli, not redis-cli.
+		return `B=$(command -v redis-cli || command -v keydb-cli) || exit 1; RC="$B"; $RC ping >/dev/null 2>&1 || RC="$B --tls --insecure -p 6380"; ` +
 			`u=$($RC INFO clients | tr -d '\r' | awk -F: '/^connected_clients/{print $2}'); ` +
 			`m=$($RC CONFIG GET maxclients | tail -1 | tr -d '\r'); echo "$u $m"`, true
+	case store.EngineDragonfly:
+		// No client binary in the image, so read INFO and CONFIG over bash /dev/tcp.
+		return dragonflyConnectionsScript, true
 	}
 	return "", false
 }
+
+// The maxclients value is the second line after its name in the RESP array reply.
+const dragonflyConnectionsScript = `out=$(bash -c 'exec 3<>/dev/tcp/127.0.0.1/6379 || exit 1; printf "INFO clients\r\nCONFIG GET maxclients\r\nQUIT\r\n" >&3; cat <&3') || exit 1; ` +
+	`printf '%s\n' "$out" | tr -d '\r' | awk -F: '/^connected_clients:/{u=$2} $0=="maxclients"{f=2;next} f>0{f--; if(f==0)m=$0} END{print u, m}'`
 
 func mysqlConnectionsScript(bin, passEnv string) string {
 	return `P="$` + passEnv + `"; ` +

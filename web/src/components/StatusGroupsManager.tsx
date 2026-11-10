@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { LayersGlassIcon } from '@thesvg/ui-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -176,7 +178,12 @@ export function StatusGroupsManager() {
         </p>
       ) : null}
       {groups.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t('groups.empty')}</p>
+        <EmptyState
+          kind="first-run"
+          icon={<LayersGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('groups.emptyTitle')}
+          description={t('groups.empty')}
+        />
       ) : (
         <ul className="divide-y divide-border">
           {groups.map((g, i) => (

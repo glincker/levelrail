@@ -105,6 +105,11 @@
     "button": "Cargar más"
   },
   "appsList": {
+    "quick": {
+      "open": "Abrir {{domain}}",
+      "redeploy": "Volver a desplegar {{name}}",
+      "logs": "Registros de {{name}}"
+    },
     "title": "Aplicaciones",
     "tableLabel": "Aplicaciones",
     "colName": "Nombre",
@@ -284,6 +289,9 @@
       "pin": "Fijar {{label}}",
       "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
     },
+    "customize": {
+      "open": "Personalizar barra lateral"
+    },
     "locked": {
       "badge": "Beta",
       "description": "Esta es una función beta y está desactivada. Ábrela para ir a Funciones beta y activarla.",
@@ -320,8 +328,10 @@
     "theme": {
       "label": "Tema: {{theme}}",
       "menu": "Elegir tema",
+      "heading": "Tema",
       "light": "Claro",
       "dark": "Oscuro",
+      "oled": "Negro OLED",
       "system": "Sistema"
     },
     "help": {
@@ -352,6 +362,7 @@
       "data": "Datos",
       "traffic": "Red",
       "infrastructure": "Flota y costes",
+      "platform": "Plataforma",
       "access": "Seguridad",
       "ai": "IA"
     },
@@ -495,6 +506,7 @@
         "servers": "Secciones de servidores",
         "registry": "Secciones del registro",
         "cost": "Secciones de uso y coste",
+        "alerts": "Secciones de alertas",
         "security": "Secciones de seguridad"
       },
       "tab": {
@@ -518,7 +530,13 @@
         "loadBalancers": "Balanceadores de carga",
         "cdn": "CDN",
         "firewall": "Cortafuegos",
-        "nodes": "Nodos",
+        "nodes": "Servidores",
+        "privateNetworks": "Red privada",
+        "topology": "Topologia",
+        "certificates": "Certificados",
+        "channels": "Canales",
+        "status": "Estado",
+        "alerts": "Alertas",
         "providers": "Proveedores cloud",
         "images": "Imágenes",
         "registry": "Registro",
@@ -535,7 +553,9 @@
         "team": "Equipo",
         "auditLog": "Registro de auditoría"
       }
-    }
+    },
+    "headerUtilities": "Más: novedades, chat, ayuda y tema",
+    "chat": "Chat"
   },
   "login": {
     "signInTitle": "Iniciar sesión",
@@ -823,6 +843,21 @@
     "envKey": "Nombre de variable, fila {{row}}",
     "envValue": "Valor de variable, fila {{row}}"
   },
+  "projectsPage": {
+    "list": {
+      "name": "Nombre",
+      "created": "Creado"
+    },
+    "empty": {
+      "title": "Aún no hay proyectos",
+      "description": "Los proyectos agrupan una app con su base de datos y caché. Crea uno para empezar a organizar."
+    },
+    "error": {
+      "title": "No se pudieron cargar los proyectos",
+      "description": "{{error}}",
+      "retry": "Reintentar"
+    }
+  },
   "apiError": {
     "copied": "Copiado",
     "copyRequestId": "Copiar ID de solicitud",
@@ -987,6 +1022,9 @@
       "deploy": "Despliegue",
       "observe": "Observar",
       "traffic": "Tráfico"
+    },
+    "items": {
+      "containers": "Contenedores"
     },
     "more": "Más",
     "overview": "Resumen",
@@ -1301,6 +1339,7 @@
     "empty": "Aún no hay etiquetas.",
     "filterInvalid": "No se pudo leer ese selector.",
     "filterLabel": "Filtrar por etiqueta",
+    "filterButton": "Etiquetas",
     "filterPlaceholder": "env=prod,tier!=db",
     "incomplete": "Completa la clave y el valor, o quita la fila.",
     "keyPlaceholder": "clave",
@@ -1412,5 +1451,106 @@
   "roleGate": {
     "needsAdmin": "Requiere administrador",
     "needsOperator": "Requiere operador"
+  },
+  "overview": {
+    "connectGitSource": "Conectar origen Git"
+  },
+  "a11y": {
+    "routeNotFound": {
+      "title": "Página no encontrada",
+      "body": "Esta dirección no corresponde a ninguna página. Puede haberse movido o el enlace está desactualizado.",
+      "suggestions": "Páginas con un nombre parecido",
+      "home": "Volver al panel"
+    },
+    "tables": {
+      "alertHistory": "Historial de alertas",
+      "appExposure": "Puertos expuestos",
+      "appReplicas": "Réplicas de la app",
+      "archiveFiles": "Archivos del archivo comprimido",
+      "dnsRecords": "Registros DNS",
+      "importEnv": "Variables de entorno importadas",
+      "investigationMetrics": "Métricas de la investigación",
+      "investigationEvents": "Eventos de la investigación",
+      "modelUsage": "Uso de modelos",
+      "pipelineInsights": "Datos de pipelines",
+      "pipelineSlowSteps": "Pasos de pipeline más lentos",
+      "splitTests": "Variantes de prueba dividida",
+      "statusWebhooks": "Webhooks de la página de estado",
+      "myAccess": "Mi acceso",
+      "agentConnect": "Conexiones de agentes",
+      "aiUsage": "Uso de IA",
+      "appAnalysis": "Análisis de la app",
+      "vitalsRoutes": "Web vitals por ruta",
+      "cleanupHistory": "Historial de limpieza",
+      "engineStats": "Estadísticas del motor de base de datos",
+      "buildReport": "Informe de compilación",
+      "dnsDelegation": "Delegación DNS",
+      "dnsPropagation": "Resultados de propagación DNS",
+      "redirects": "Redirecciones",
+      "serverAddresses": "Direcciones del servidor",
+      "exposure": "Exposición",
+      "firewallPorts": "Puertos abiertos",
+      "functionKv": "Entradas clave valor de la función",
+      "mailQueue": "Cola de correo",
+      "importPlan": "Plan de importación",
+      "importPlanServices": "Servicios del plan de importación",
+      "nodePatches": "Parches del nodo",
+      "pluginPanel": "Datos del plugin",
+      "plugins": "Plugins",
+      "trustedKeys": "Claves de firma de confianza",
+      "findingChanges": "Cambios propuestos",
+      "benchmarkCompare": "Comparación de benchmarks",
+      "benchmarkResults": "Resultados del benchmark",
+      "benchmarkSteps": "Pasos del benchmark",
+      "benchmarkSamples": "Muestras del benchmark",
+      "benchmarkRuns": "Ejecuciones de benchmark",
+      "trafficDiff": "Vista previa del cambio de tráfico",
+      "trafficTopPaths": "Rutas principales",
+      "trafficBreakdown": "Desglose del tráfico",
+      "trafficErrors": "Errores de tráfico",
+      "firewallRules": "Reglas del firewall",
+      "mobileDevices": "Dispositivos móviles"
+    }
+  },
+  "resourceNotes": {
+    "title": "Descripción y notas",
+    "hint": "Anota el responsable, el propósito y los enlaces a runbooks. Admite Markdown.",
+    "empty": "Aún no hay descripción ni notas.",
+    "edit": "Editar notas",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Resumen de una línea que aparece en la lista",
+    "notesLabel": "Notas",
+    "notesPlaceholder": "Responsable, propósito, enlaces a runbooks",
+    "preview": "Vista previa",
+    "write": "Escribir",
+    "noSecrets": "Quien pueda leer este recurso puede leer sus notas. Nunca pongas secretos aquí.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saved": "Notas guardadas"
+  },
+  "copyCommand": {
+    "trigger": "Copiar {{name}} como comando",
+    "title": "Copiar como comando",
+    "cli": "{{action}}: comando CLI",
+    "api": "{{action}}: llamada API",
+    "copiedCli": "Comando CLI copiado",
+    "copiedApi": "Llamada API copiada, define antes la variable del token",
+    "actions": {
+      "app_restart": "Reiniciar",
+      "app_stop": "Detener",
+      "app_start": "Iniciar",
+      "app_scale": "Escalar",
+      "app_rollback": "Revertir",
+      "deploy_rollback": "Revertir a este despliegue",
+      "database_start": "Iniciar",
+      "database_stop": "Detener",
+      "database_backup": "Respaldar ahora",
+      "domain_check": "Verificar",
+      "domain_remove": "Quitar",
+      "cert_renew": "Renovar certificado",
+      "job_run": "Ejecutar ahora",
+      "node_cordon": "Acordonar",
+      "node_uncordon": "Quitar acordonamiento"
+    }
   }
 }

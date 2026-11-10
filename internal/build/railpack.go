@@ -73,6 +73,8 @@ type RailpackRequest struct {
 	Env map[string]string
 	// CacheID scopes Railpack cache mounts (.next/cache, package stores) to one app. Empty derives it from Tag.
 	CacheID string
+	// Provider, when set, is the provider the app's build settings require.
+	Provider string
 
 	perAppCache bool
 }
@@ -190,6 +192,9 @@ func generateRailpackPlan(req RailpackRequest) (*core.BuildResult, error) {
 	}
 	if !supportedRailpackProviders[provider] {
 		return nil, &UnsupportedProviderError{Provider: provider}
+	}
+	if err := checkPinnedProvider(req.Provider, provider); err != nil {
+		return nil, err
 	}
 	if provider == "node" {
 		applyNextStandalone(result.Plan, req.SourceDir)
@@ -395,6 +400,9 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	}
 	if err := checkDiskSpace(req.SourceDir); err != nil {
 		return nil, err
+	}
+	for _, line := range BuilderNotes(req.SourceDir) {
+		progress(ProgressEvent{Step: "builder", Log: line, Stream: "stderr"})
 	}
 	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
 		return c.solveRailpack(solveCtx, req, out, progress)

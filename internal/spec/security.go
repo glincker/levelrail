@@ -4,6 +4,9 @@ import "fmt"
 
 // ReadOnlyRootfsOn reports an explicit security.read_only_rootfs: true.
 func (s *Service) ReadOnlyRootfsOn() bool {
+	if s.Runtime != nil && s.Runtime.ReadOnly != nil && *s.Runtime.ReadOnly {
+		return true
+	}
 	return s.Security != nil && s.Security.ReadOnlyRootfs != nil && *s.Security.ReadOnlyRootfs
 }
 

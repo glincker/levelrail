@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
 
 // Matches internal/api's pendingJoinTokenResource.
 export interface PendingJoinToken {
@@ -31,7 +32,7 @@ export function usePendingJoinTokens() {
     queryKey: KEY,
     queryFn: ({ signal }) => fetchPendingJoinTokens(signal),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

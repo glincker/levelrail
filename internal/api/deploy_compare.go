@@ -84,6 +84,9 @@ const deployCompareUnsnapshottedNote = "Deploy attempts record image tag, commit
 // Compares only the fields an attempt snapshot captures, not a fabricated full config diff.
 func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {

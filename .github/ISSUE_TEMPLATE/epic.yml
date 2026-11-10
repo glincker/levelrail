@@ -1,0 +1,31 @@
+name: Epic
+description: A themed group of tracked feature issues for one release
+title: "epic: "
+labels: ["epic"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: The outcome this epic delivers and how we will know it is done.
+    validations:
+      required: true
+
+  - type: textarea
+    id: children
+    attributes:
+      label: Child issues
+      description: A task list of the tracked feature issues that make up this epic.
+      placeholder: |
+        - [ ] #123
+        - [ ] #124
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this epic deliberately does not cover.
+    validations:
+      required: false

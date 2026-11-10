@@ -442,6 +442,8 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	}
 	c.hardening.apply(hostConfig, spec)
 	c.hardening.applyReadOnlyRootfs(hostConfig, spec)
+	applyRuntimeOptions(hostConfig, spec)
+	c.hardening.clampTenantPids(hostConfig, spec)
 
 	release := c.declare(spec)
 	defer release()
@@ -454,6 +456,8 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Cmd:          spec.Command,
 			Entrypoint:   spec.Entrypoint,
 			User:         spec.User,
+			WorkingDir:   spec.WorkingDir,
+			StopTimeout:  spec.StopTimeoutSeconds,
 		},
 		hostConfig,
 		toNetworkingConfig(spec.Network), nil,
@@ -462,7 +466,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
-	if err := c.chownFreshVolumes(ctx, resp.ID, spec.Image, spec.Volumes); err != nil {
+	if err := c.chownFreshVolumes(ctx, resp.ID, spec.Image, spec.User, spec.Volumes); err != nil {
 		slog.Warn("docker: could not fix ownership of a new volume for a non-root image", slog.String("container", spec.Name), slog.String("error", err.Error()))
 	}
 	if len(spec.Files) > 0 {
@@ -495,6 +499,11 @@ func toNetworkingConfig(n *NetworkAttachment) *dockernetwork.NetworkingConfig {
 
 // EnsureNetwork implements Runtime.
 func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error) {
+	return c.EnsureLabeledNetwork(ctx, name, nil)
+}
+
+// EnsureLabeledNetwork implements LabeledNetworkEnsurer; an existing network keeps its labels.
+func (c *Client) EnsureLabeledNetwork(ctx context.Context, name string, extra map[string]string) (string, error) {
 	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
 	if err == nil {
 		return inspect.ID, nil
@@ -503,7 +512,7 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
-	labels := c.networkLabels(name)
+	labels := mergeNetworkLabels(c.networkLabels(name), extra)
 	if c.pool != nil {
 		id, err := c.alloc.create(ctx, c.cli, *c.pool, name, labels)
 		if err != nil {
@@ -519,6 +528,21 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: create network %q: %w", name, err)
 	}
 	return resp.ID, nil
+}
+
+// mergeNetworkLabels lets a caller add labels while this Client's own instance labels still win.
+func mergeNetworkLabels(own, extra map[string]string) map[string]string {
+	if len(extra) == 0 {
+		return own
+	}
+	out := make(map[string]string, len(own)+len(extra))
+	for k, v := range extra {
+		out[k] = v
+	}
+	for k, v := range own {
+		out[k] = v
+	}
+	return out
 }
 
 func (c *Client) countNetworks(ctx context.Context) int {
@@ -700,6 +724,7 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
+	applyLogRotation(hostConfig, currentLogRotation())
 	if spec.CPUShares > 0 {
 		hostConfig.CPUShares = spec.CPUShares
 	}
@@ -912,6 +937,7 @@ func (c *Client) Start(ctx context.Context, id string) error {
 
 // Stop implements Runtime.
 func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) error {
+	timeout = c.configuredStopTimeout(ctx, id, timeout)
 	opts := container.StopOptions{}
 	if timeout >= 0 {
 		seconds := int(timeout.Seconds())
@@ -1228,6 +1254,15 @@ func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth
 		}
 	}
 
+	return pulls.do(ctx, pullKey(ref, auth), func() error {
+		return c.pullImage(ctx, ref, auth, onPull)
+	})
+}
+
+// pulls dedupes and caps image pulls across all deploy pipelines.
+var pulls = newPullGroup()
+
+func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, onPull func(PullEvent)) error {
 	var pullOpts image.PullOptions
 	if auth != nil {
 		encoded, err := registry.EncodeAuthConfig(registry.AuthConfig{Username: auth.Username, Password: auth.Password})
@@ -1355,6 +1390,8 @@ func mapAction(a events.Action) EventAction {
 		return EventDie
 	case "stop":
 		return EventStop
+	case "oom":
+		return EventOOM
 	default:
 		return ""
 	}

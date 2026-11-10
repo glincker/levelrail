@@ -158,6 +158,15 @@ func applyPreviewPolicy(svc *spec.Service, vars previewEnvVars, attachmentVar st
 // domain it is one label (<app>-pr-<n>.<base>) so the base domain's wildcard
 // record covers it; otherwise it falls back to pr-<n>.<app>.<primary domain>.
 func (rt *Router) previewHost(ctx context.Context, appName string, prNumber int) string {
+	return rt.previewHostFor(ctx, appName, prNumber, "")
+}
+
+// previewHostFor honours the app's host template when one is saved and its
+// domain is still one of the app's own; any mismatch falls back to the default host.
+func (rt *Router) previewHostFor(ctx context.Context, appName string, prNumber int, branch string) string {
+	if h := rt.templatedPreviewHost(ctx, appName, prNumber, branch); h != "" {
+		return h
+	}
 	if base := rt.appsBaseDomain(ctx); base != "" {
 		return appBaseHost(previewAppName(appName, prNumber), base)
 	}

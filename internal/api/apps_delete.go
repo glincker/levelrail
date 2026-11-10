@@ -18,6 +18,9 @@ import (
 // tombstone (application.DeleteFinalizer). An emptied store.App row is removed too.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.refuseIfProtected(w, r, name) {
+		return
+	}
 	if rt.retainedDeployServices(r.Context())[name] {
 		writeError(w, http.StatusConflict, "this is a retained copy of an earlier deploy that the platform manages; it is removed automatically")
 		return
@@ -38,6 +41,8 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if purge && teardownErr == nil {
 		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
 	}
+	rt.changes.Publish(changeApps, name)
+	rt.purgeAppAccess(name)
 	rt.nudgeReconciler()
 	if teardownErr != nil {
 		writeJSON(w, http.StatusAccepted, map[string]string{
@@ -91,9 +96,22 @@ func lockAppName(name string) func() {
 // so a failed teardown (second return) is retried by the reconciler. Callers
 // nudge the reconciler afterwards.
 func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err error) {
+	return rt.deleteAppGuarded(ctx, name, nil)
+}
+
+// deleteAppGuarded runs guard on the loaded app under the name lock, so a
+// scheduled delete re-checks its preconditions in the same critical section.
+func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(store.DesiredService) error) (teardownErr, err error) {
+	unlock := lockAppName(name)
+	defer unlock()
 	existing, err := rt.apps.GetDesiredService(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("load app %q: %w", name, err)
+	}
+	if guard != nil {
+		if err := guard(*existing); err != nil {
+			return nil, err
+		}
 	}
 	finalizer := rt.deleteFinalizer()
 	if finalizer != nil {
@@ -103,11 +121,8 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	}
 	// Integration rows cascade with the service, so list them first.
 	integrationNS := rt.appIntegrationSecretNamespaces(ctx, name)
-	// Erase right after the row is gone, under the name lock: the row is
-	// already deleted so a failure loses nothing, and a same-name create
-	// cannot write secrets that this cleanup then removes.
-	unlock := lockAppName(name)
-	defer unlock()
+	// Erase right after the row is gone, under the name lock (held since the
+	// load): a same-name create cannot write secrets this cleanup then removes.
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
@@ -138,6 +153,14 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	rt.removeAppArtifactsUnlessReused(ctx, name, existing.NodeID)
+	// Schedules go with the app; run history and stored objects stay, like volume backup history.
+	if cd, ok := rt.composeDBBackups.(interface {
+		DeleteComposeServiceBackupsForApp(ctx context.Context, app string) error
+	}); ok {
+		if err := cd.DeleteComposeServiceBackupsForApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove compose backup schedules failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if rt.canaries != nil && !store.IsCanaryService(name) {
 		if _, ok, err := rt.canaries.GetCanaryRelease(ctx, name); err == nil && ok {
 			if err := rt.removeCanary(ctx, name); err != nil {
@@ -175,11 +198,16 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	rt.forgetAppImageKeep(ctx, name)
 	if existing.AppID != "" {
 		// Name lock covers the window where a same-name create has saved its row but not yet linked it.
 		unlockSweep := lockAppName(name)
 		orphaned := rt.deleteAppIfOrphaned(ctx, existing.AppID)
 		unlockSweep()
+		if orphaned {
+			// Compose schedules are keyed by app id; a recreated app of the same name must not inherit them.
+			rt.deleteComposeBackupsFor(ctx, existing.AppID)
+		}
 		if orphaned && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
 			if err := finalizer.RemoveAppNetwork(nctx, existing.AppID, existing.NodeID); err != nil {
@@ -295,6 +323,18 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 			rt.logger.Error("api: teardown containers pending, will retry", slog.String("error", err.Error()), slog.String("name", name), slog.String("node_id", nodeID))
 		}
 	}()
+}
+
+func (rt *Router) deleteComposeBackupsFor(ctx context.Context, app string) {
+	cd, ok := rt.composeDBBackups.(interface {
+		DeleteComposeServiceBackupsForApp(ctx context.Context, app string) error
+	})
+	if !ok {
+		return
+	}
+	if err := cd.DeleteComposeServiceBackupsForApp(ctx, app); err != nil {
+		rt.logger.Warn("api: delete app: remove compose backup schedules failed", slog.String("error", err.Error()), slog.String("app_id", app))
+	}
 }
 
 // deleteAppIfOrphaned deletes the store.App row identified by appID once

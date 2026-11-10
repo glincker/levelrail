@@ -17,7 +17,7 @@ export function FirstRunMore({
   const [open, setOpen] = useState(false)
   const panelId = useId()
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col items-start gap-4">
       <button
         type="button"
         aria-expanded={open}

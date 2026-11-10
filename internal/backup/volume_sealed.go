@@ -134,7 +134,7 @@ func (r *Runner) runSealedVolume(ctx context.Context, serviceName, volumeName, d
 			return size, sum, res, nil
 		}
 		lastErr = err
-		if errors.Is(err, ErrBackupTooLarge) || ctx.Err() != nil || i == attempts {
+		if errors.Is(err, ErrBackupTooLarge) || errors.Is(err, ErrPreHookFailed) || ctx.Err() != nil || i == attempts {
 			return size, "", res, err
 		}
 		if opts.Logger != nil {
@@ -152,11 +152,7 @@ func (r *Runner) sealedAttempt(ctx context.Context, serviceName, volumeName, doc
 
 	if opts.Quiesce != nil && (policy.PreHook != "" || policy.PostHook != "" || policy.Quiesce != "") {
 		end, qerr := opts.Quiesce.Begin(ctx, serviceName, policy)
-		switch {
-		case qerr != nil && errors.Is(qerr, ErrInconsistent) && end != nil:
-			// The error already starts with "inconsistent: ".
-			res.warning = qerr.Error()
-		case qerr != nil:
+		if qerr != nil {
 			return 0, "", res, fmt.Errorf("prepare volume for backup: %w", qerr)
 		}
 		defer func() {

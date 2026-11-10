@@ -1,0 +1,9 @@
+{
+  "composeId": "cmp-2",
+  "name": "root-stack",
+  "sourceType": "raw",
+  "composeFile": "services:\n  agent:\n    image: busybox:1.36\n    privileged: true\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n",
+  "env": "",
+  "domains": [],
+  "mounts": []
+}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"io"
 	"net/http"
 	"strings"
@@ -60,7 +61,7 @@ type pullState struct {
 
 // NewHTTPProber builds an HTTPProber.
 func NewHTTPProber() *HTTPProber {
-	return &HTTPProber{client: &http.Client{}, pulls: map[string]*pullState{}, loads: map[string]bool{}}
+	return &HTTPProber{client: netclient.New(), pulls: map[string]*pullState{}, loads: map[string]bool{}}
 }
 
 // Probe implements Prober.

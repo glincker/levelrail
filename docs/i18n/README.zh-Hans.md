@@ -320,7 +320,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) 用于提问、分享想法和成果展示，[Issues](https://github.com/glincker/levelrail/issues) 用于报告 bug。
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99)：与维护者实时交流，位于 `#levelrail` 论坛频道。
 - 直接求助请发邮件至 [support@levelrail.com](mailto:support@levelrail.com)，私下报告漏洞请参阅[安全策略](../../.github/SECURITY.md)。
-- [贡献指南](../../.github/CONTRIBUTING.md)：开发循环、测试和提交规范。从源码构建需要 Go 1.26 或更高版本以及 Docker：参见[安装](../../docs/installing.md#option-3-build-from-source)。
+- [贡献指南](../../.github/CONTRIBUTING.md)：开发循环、测试和提交规范。从源码构建需要 Go 1.27 或更高版本以及 Docker：参见[安装](../../docs/installing.md#option-3-build-from-source)。
 
 ## 给仓库加星
 

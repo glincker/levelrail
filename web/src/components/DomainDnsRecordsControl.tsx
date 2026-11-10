@@ -153,7 +153,7 @@ export function DomainDnsRecordsControl({
               }}
               className="max-h-80 overflow-auto rounded-md border border-border"
             >
-              <Table>
+              <Table aria-label={t('a11y.tables.dnsRecords', { ns: 'common' })}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('recordsControl.colType')}</TableHead>

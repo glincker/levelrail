@@ -1,0 +1,51 @@
+name: Tracked feature
+description: A shippable feature with acceptance criteria, tracked in the Levelrail project
+title: "feat: "
+labels: ["type/feature"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Why this matters and who it helps. One short paragraph.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: surfaces
+    attributes:
+      label: Surfaces
+      description: Where this feature shows up.
+      options:
+        - label: API
+        - label: CLI
+        - label: Dashboard
+        - label: Agent
+        - label: Docs
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: A checklist of 2 to 5 observable outcomes. The linked PR closes this issue when all are true.
+      placeholder: |
+        - [ ] First observable outcome
+        - [ ] Second observable outcome
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Settings or migrations needed
+      description: New runtime setting keys with defaults, and any forward migration. Write "none" if there are none.
+    validations:
+      required: false
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related ADR or docs
+      description: ADR numbers, doc pages or earlier issues.
+    validations:
+      required: false

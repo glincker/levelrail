@@ -1,6 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"maps"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -34,5 +38,127 @@ func TestEnvSetRebuildHintGitApp(t *testing.T) {
 	out, _ := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "VITE_API=https://a.example"))
 	if !strings.Contains(out, "deploy web --latest") {
 		t.Errorf("missing git app hint in %q", out)
+	}
+}
+
+func envSetRoutes(extra map[string]any) map[string]any {
+	r := map[string]any{
+		"GET /api/v1/apps/web":                 appResource{Name: "web", Image: "x:1", Port: 80},
+		"GET /api/v1/apps/web/secrets":         []map[string]string{},
+		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
+		"GET /api/v1/apps/web/pending-changes": map[string]any{},
+		"PUT /api/v1/apps/web":                 map[string]any{"name": "web"},
+	}
+	maps.Copy(r, extra)
+	return r
+}
+
+func sentEnv(t *testing.T, bodies map[string][]byte) map[string]string {
+	t.Helper()
+	var sent appResource
+	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web"], &sent); err != nil {
+		t.Fatal(err)
+	}
+	return sent.Env
+}
+
+func TestEnvSetValueForms(t *testing.T) {
+	cases := []struct{ name, arg, want string }{
+		{"equals", "A=x=y", "x=y"},
+		{"quotes", `A=say "hi"`, `say "hi"`},
+		{"newline", "A=l1\nl2", "l1\nl2"},
+		{"empty", "A=", ""},
+		{"spaces", "A= lead and trail ", " lead and trail "},
+		{"hash", "A=#c", "#c"},
+		{"escape", "A=@@x", "@x"},
+		{"bare at word", "A=@oncall", "@oncall"},
+		{"bare at empty", "A=@", "@"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			bodies := map[string][]byte{}
+			srv := routeServer(t, envSetRoutes(nil), bodies)
+			runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", c.arg))
+			if got, ok := sentEnv(t, bodies)["A"]; !ok || got != c.want {
+				t.Errorf("A = %q (set %v), want %q", got, ok, c.want)
+			}
+		})
+	}
+}
+
+func TestEnvSetValueSourceStdinAndErrors(t *testing.T) {
+	bodies := map[string][]byte{}
+	srv := routeServer(t, envSetRoutes(nil), bodies)
+	envSetStdin = strings.NewReader("s3cret\nmore\n")
+	t.Cleanup(func() { envSetStdin = os.Stdin })
+	runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "A=@-"))
+	if got := sentEnv(t, bodies)["A"]; got != "s3cret\nmore" {
+		t.Errorf("stdin value = %q", got)
+	}
+
+	dir := t.TempDir()
+	big := filepath.Join(dir, "big")
+	nul := filepath.Join(dir, "nul")
+	_ = os.WriteFile(big, make([]byte, envValueSourceMaxBytes+1), 0o600)
+	_ = os.WriteFile(nul, []byte("a\x00b"), 0o600)
+	bodies = map[string][]byte{}
+	srv = routeServer(t, envSetRoutes(nil), bodies)
+	envSetStdin = strings.NewReader("x")
+	for _, args := range [][]string{
+		{"A=@-", "B=@-"},
+		{"--allow-file-values", "A=@" + dir},
+		{"--allow-file-values", "A=@" + filepath.Join(dir, "missing")},
+		{"--allow-file-values", "A=@" + big},
+		{"--allow-file-values", "A=@" + nul},
+		{"--allow-file-values", "A=@~other/x"},
+	} {
+		msg := runCLIExpectValidationError(t, cliArgs(srv, append([]string{"env", "set", "web"}, args...)...))
+		if strings.Contains(msg, "a\x00b") {
+			t.Errorf("error leaked content: %q", msg)
+		}
+	}
+	if len(bodies) != 0 {
+		t.Errorf("API was called despite a bad value source: %v", bodies)
+	}
+}
+
+func TestEnvSetFileValueNeedsOptIn(t *testing.T) {
+	dir := t.TempDir()
+	pem := filepath.Join(dir, "k.pem")
+	if err := os.WriteFile(pem, []byte("line1\nline2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+	bodies := map[string][]byte{}
+	srv := routeServer(t, envSetRoutes(nil), bodies)
+	for _, arg := range []string{"A=@" + pem, "A=@./k.pem", "A=@../x", "A=@~/k.pem"} {
+		msg := runCLIExpectValidationError(t, cliArgs(srv, "env", "set", "web", arg))
+		if !strings.Contains(msg, "--allow-file-values") || strings.Contains(msg, "line1") {
+			t.Errorf("%s: message must name the flag and no content, got %q", arg, msg)
+		}
+	}
+	if len(bodies) != 0 {
+		t.Errorf("API was called without the opt-in: %v", bodies)
+	}
+
+	for _, arg := range []string{"A=@" + pem, "A=@~/k.pem"} {
+		bodies = map[string][]byte{}
+		srv = routeServer(t, envSetRoutes(nil), bodies)
+		runCLIExpectOK(t, cliArgs(srv, "env", "set", "--allow-file-values", "web", arg))
+		if got := sentEnv(t, bodies)["A"]; got != "line1\nline2" {
+			t.Errorf("%s: A = %q", arg, got)
+		}
+	}
+}
+
+func TestEnvUnsetMultipleKeys(t *testing.T) {
+	bodies := map[string][]byte{}
+	routes := envSetRoutes(map[string]any{"GET /api/v1/apps/web": appResource{Name: "web", Image: "x:1", Port: 80, Env: map[string]string{"A": "1", "B": "2", "C": "3"}}})
+	srv := routeServer(t, routes, bodies)
+	runCLIExpectOK(t, cliArgs(srv, "env", "unset", "web", "A", "B"))
+	env := sentEnv(t, bodies)
+	if len(env) != 1 || env["C"] != "3" {
+		t.Errorf("env = %v, want only C", env)
 	}
 }

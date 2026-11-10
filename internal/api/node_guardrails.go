@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"os"
@@ -418,16 +419,11 @@ func (rt *Router) RunNodeGuardrailWatcher(ctx context.Context) {
 	if rt.nodeGuard == nil {
 		return
 	}
-	t := time.NewTicker(nodeGuardInterval)
-	defer t.Stop()
-	for {
+	rt.checkNodeGuardrails(ctx)
+	_ = footprint.Every(ctx, "node guardrails", nodeGuardInterval, rt.logger, func(ctx context.Context) error {
 		rt.checkNodeGuardrails(ctx)
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
-	}
+		return nil
+	})
 }
 
 func (rt *Router) checkNodeGuardrails(ctx context.Context) {

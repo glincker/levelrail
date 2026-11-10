@@ -26,6 +26,9 @@ type environmentResource struct {
 	SortOrder int    `json:"sort_order"`
 	// ManagedByStack names the stack owning this environment, omitted when none.
 	ManagedByStack string `json:"managed_by_stack,omitempty"`
+	// RequiredApprovers is how many distinct approvers a deploy here needs;
+	// set only on responses that read the approval policy.
+	RequiredApprovers int `json:"required_approvers,omitempty"`
 }
 
 func toEnvironmentResource(e store.Environment) environmentResource {
@@ -42,6 +45,8 @@ type updateEnvironmentRequest struct {
 	Name      *string `json:"name"`
 	Kind      *string `json:"kind"`
 	SortOrder *int    `json:"sort_order"`
+	// RequiredApprovers sets the distinct approver count, 1 to the runtime max.
+	RequiredApprovers *int `json:"required_approvers"`
 }
 
 // handleListEnvironments handles GET /api/v1/projects/{id}/environments.
@@ -55,6 +60,11 @@ func (rt *Router) handleListEnvironments(w http.ResponseWriter, r *http.Request)
 	envs, err := rt.environments.ListEnvironmentsByProject(r.Context(), projectID)
 	if err != nil {
 		rt.internalError(w, "api: list environments failed", err, slog.String("project_id", projectID))
+		return
+	}
+	envs, err = rt.filterProjectEnvironmentGrants(r, envs)
+	if err != nil {
+		rt.internalError(w, "api: list environments: grant filter failed", err, slog.String("project_id", projectID))
 		return
 	}
 	owners := rt.loadStackOwners(r.Context())
@@ -127,6 +137,21 @@ func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	oldN, msg, err := rt.approverPolicyChange(r.Context(), id, req.RequiredApprovers)
+	if err != nil {
+		rt.internalError(w, "api: update environment: read required approvers failed", err, slog.String("id", id))
+		return
+	}
+	if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	// Weakening the gate (fewer approvers, or unprotecting) needs the sensitive tier.
+	lowering := (req.RequiredApprovers != nil && *req.RequiredApprovers < oldN) || (req.Protected != nil && !*req.Protected && current.Protected)
+	if lowering && !rt.callerHasAbility(r, AbilityWriteSensitive) {
+		writeError(w, http.StatusForbidden, "lowering required approvers or unprotecting an environment needs "+AbilityWriteSensitive)
+		return
+	}
 	err = rt.environments.UpdateEnvironment(r.Context(), id, store.EnvironmentPatch{Name: req.Name, Kind: req.Kind, SortOrder: req.SortOrder, Protected: req.Protected})
 	if errors.Is(err, store.ErrEnvironmentNotFound) {
 		writeError(w, http.StatusNotFound, "environment not found")
@@ -136,13 +161,23 @@ func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: update environment failed", err, slog.String("id", id))
 		return
 	}
+	if req.RequiredApprovers != nil && *req.RequiredApprovers != oldN {
+		if err := rt.setRequiredApprovers(r.Context(), id, *req.RequiredApprovers); err != nil {
+			rt.internalError(w, "api: update environment: set required approvers failed", err, slog.String("id", id))
+			return
+		}
+		actorType, actorID, _, _ := rt.currentActor(r)
+		rt.auditSystemEvent(r.Context(), actorType+":"+actorID, "environment.required_approvers", fmt.Sprintf("%s required approvers %d -> %d", id, oldN, *req.RequiredApprovers))
+	}
 
 	e, err := rt.environments.GetEnvironment(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: update environment: reload failed", err, slog.String("id", id))
 		return
 	}
-	writeJSON(w, http.StatusOK, toEnvironmentResource(e))
+	res := toEnvironmentResource(e)
+	res.RequiredApprovers, _, _ = rt.approverPolicyChange(r.Context(), id, nil)
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDeleteEnvironment handles DELETE /api/v1/environments/{id}. A

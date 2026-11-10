@@ -67,6 +67,13 @@ func (rt *Router) handleIaCSchema(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(raw)
 }
 
+// belowRootOpts marks a caller under the root tier so the plan refuses job
+// writes up front instead of failing partway through the apply.
+func (rt *Router) belowRootOpts(r *http.Request, opts iac.Options) iac.Options {
+	opts.BelowRoot = !rt.callerHasAbility(r, AbilityRoot)
+	return opts
+}
+
 func (rt *Router) iacDoer(r *http.Request) iac.Doer {
 	rt.iac.once.Do(func() { rt.iac.h = rt.Handler() })
 	return &loopbackDoer{h: rt.iac.h, orig: r}
@@ -119,6 +126,7 @@ func (rt *Router) handleIaCPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res, opts, issues := req.build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
 		return
@@ -138,6 +146,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res, opts, issues := req.build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, iacApplyResponse{Issues: issues})
 		return

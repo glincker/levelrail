@@ -1,5 +1,6 @@
 import { ALGORITHM_OPTIONS, type LbFormState } from '../../lib/loadBalancer'
 import { detectionTimes, weightShares } from './detection'
+import { lbT } from '../../lib/lbText'
 
 export interface ChangeChip {
   key: string
@@ -16,8 +17,10 @@ interface FieldDef {
   risky?: (b: LbFormState, a: LbFormState) => string | undefined
 }
 
-const on = (v: boolean, detail: string) => (v ? detail : 'off')
-const orDash = (s: string) => (s.trim() === '' ? 'unset' : s.trim())
+const on = (v: boolean, detail: string) =>
+  v ? detail : lbT('change.value.off', 'off')
+const orDash = (s: string) =>
+  s.trim() === '' ? lbT('change.value.unset', 'unset') : s.trim()
 const algoLabel = (f: LbFormState) =>
   ALGORITHM_OPTIONS.find((o) => o.value === f.algorithm)?.label ?? f.algorithm
 const STICKY = new Set(['ip_hash', 'client_ip_hash', 'cookie', 'uri_hash'])
@@ -30,13 +33,19 @@ const FIELDS: FieldDef[] = [
     risky: (b, a) =>
       STICKY.has(b.algorithm) !== STICKY.has(a.algorithm) ||
       (STICKY.has(a.algorithm) && b.algorithm !== a.algorithm)
-        ? 'Clients may move to a different replica and lose in-memory sessions.'
+        ? lbT(
+            'change.risk.algorithm',
+            'Clients may move to a different replica and lose in-memory sessions.',
+          )
         : undefined,
   },
   {
     key: 'cookie',
     label: 'Cookie',
-    show: (f) => (f.algorithm === 'cookie' ? orDash(f.cookieName) : 'n/a'),
+    show: (f) =>
+      f.algorithm === 'cookie'
+        ? orDash(f.cookieName)
+        : lbT('change.value.na', 'n/a'),
   },
   {
     key: 'weights',
@@ -46,7 +55,7 @@ const FIELDS: FieldDef[] = [
         ? weightShares(f.weights)
             .map((s) => `${s}%`)
             .join(' / ')
-        : 'even',
+        : lbT('change.value.even', 'even'),
   },
   {
     key: 'active',
@@ -54,7 +63,10 @@ const FIELDS: FieldDef[] = [
     show: (f) => on(f.healthEnabled, f.healthPath),
     risky: (b, a) =>
       b.healthEnabled && !a.healthEnabled
-        ? 'Failed replicas will keep receiving traffic.'
+        ? lbT(
+            'change.risk.active',
+            'Failed replicas will keep receiving traffic.',
+          )
         : undefined,
   },
   {
@@ -88,7 +100,10 @@ const FIELDS: FieldDef[] = [
     show: (f) =>
       on(
         f.passiveEnabled,
-        `${orDash(f.maxFails)} fails, skip ${orDash(f.failDuration)}`,
+        lbT('change.value.passive', '{{fails}} fails, skip {{skip}}', {
+          fails: orDash(f.maxFails),
+          skip: orDash(f.failDuration),
+        }),
       ),
   },
   {
@@ -97,7 +112,10 @@ const FIELDS: FieldDef[] = [
     show: (f) =>
       on(
         f.retriesEnabled,
-        `${orDash(f.retryCount)} within ${orDash(f.tryDuration)}`,
+        lbT('change.value.retries', '{{count}} within {{within}}', {
+          count: orDash(f.retryCount),
+          within: orDash(f.tryDuration),
+        }),
       ),
   },
   { key: 'slow', label: 'Slow start', show: (f) => orDash(f.slowStart) },
@@ -111,10 +129,16 @@ const FIELDS: FieldDef[] = [
     key: 'rate',
     label: 'Rate limit',
     show: (f) =>
-      on(f.rateEnabled, `${orDash(f.rps)}/s, burst ${orDash(f.burst)}`),
+      on(
+        f.rateEnabled,
+        lbT('change.value.rate', '{{rps}}/s, burst {{burst}}', {
+          rps: orDash(f.rps),
+          burst: orDash(f.burst),
+        }),
+      ),
     risky: (b, a) =>
       !b.rateEnabled && a.rateEnabled
-        ? 'Clients above the limit get 429 responses.'
+        ? lbT('change.risk.rate', 'Clients above the limit get 429 responses.')
         : undefined,
   },
   {
@@ -123,11 +147,16 @@ const FIELDS: FieldDef[] = [
     show: (f) =>
       on(
         f.tlsEnabled,
-        f.tlsInsecure ? 'no verification' : orDash(f.tlsServerName),
+        f.tlsInsecure
+          ? lbT('change.value.noVerify', 'no verification')
+          : orDash(f.tlsServerName),
       ),
     risky: (b, a) =>
       a.tlsEnabled && a.tlsInsecure && !(b.tlsEnabled && b.tlsInsecure)
-        ? 'Certificates of replicas will not be verified.'
+        ? lbT(
+            'change.risk.tls',
+            'Certificates of replicas will not be verified.',
+          )
         : undefined,
   },
 ]
@@ -143,7 +172,7 @@ export function summarizeChanges(
     if (b === a) continue
     chips.push({
       key: def.key,
-      label: def.label,
+      label: lbT(`change.label.${def.key}`, def.label),
       before: b,
       after: a,
       risky: def.risky?.(before, after),
@@ -153,13 +182,17 @@ export function summarizeChanges(
 }
 
 export function predictEffect(after: LbFormState, chips: ChangeChip[]): string {
-  if (chips.length === 0) return 'No changes.'
+  if (chips.length === 0) return lbT('effect.none', 'No changes.')
   const parts: string[] = []
   if (chips.some((c) => c.key === 'algorithm' || c.key === 'weights')) {
     parts.push(
       after.algorithm === 'weighted'
-        ? `New requests split ${weightShares(after.weights).join('/')}.`
-        : `New requests follow ${algoLabel(after).toLowerCase()}.`,
+        ? lbT('effect.split', 'New requests split {{split}}.', {
+            split: weightShares(after.weights).join('/'),
+          })
+        : lbT('effect.follow', 'New requests follow {{algo}}.', {
+            algo: algoLabel(after).toLowerCase(),
+          }),
     )
   }
   const d = detectionTimes(after)
@@ -170,9 +203,18 @@ export function predictEffect(after: LbFormState, chips: ChangeChip[]): string {
     parts.push(`${d.text}.`)
   }
   if (chips.some((c) => c.key === 'drain') && after.drainTimeout.trim()) {
-    parts.push(`Deploys keep open streams for ${after.drainTimeout.trim()}.`)
+    parts.push(
+      lbT('effect.drain', 'Deploys keep open streams for {{drain}}.', {
+        drain: after.drainTimeout.trim(),
+      }),
+    )
   }
   if (parts.length === 0)
-    parts.push('Applies to new requests; open connections are not cut.')
+    parts.push(
+      lbT(
+        'effect.default',
+        'Applies to new requests; open connections are not cut.',
+      ),
+    )
   return parts.join(' ')
 }

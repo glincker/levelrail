@@ -1,4 +1,6 @@
 import { Fragment, useState } from 'react'
+import { ListKeyboardHint } from '@/components/ListKeyboardHint'
+import { useListKeyboard } from '../hooks/useListKeyboard'
 import { useTranslation } from 'react-i18next'
 import { AlertKindGuidance } from './AlertKindGuidance'
 import { alertKindLabel, isAlertKindCopyKind } from './alertKindCopy'
@@ -141,9 +143,15 @@ export function AlertHistoryTable({ app }: { app?: string }) {
   const [event, setEvent] = useState<AlertEventName | ''>('')
   const { data, isLoading, error } = useAlertHistory({ app, outcome, event })
   const entries = data ?? []
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
 
   return (
     <section className="space-y-3" aria-label="Alert history">
+      <ListKeyboardHint open={hintOpen} onClose={closeHint} />
       <div className="flex flex-wrap items-center gap-2">
         <Select
           value={outcome === '' ? ALL : outcome}
@@ -195,12 +203,13 @@ export function AlertHistoryTable({ app }: { app?: string }) {
         />
       ) : (
         <div
+          ref={setListContainer}
           role="region"
           aria-label={t('tables.alertHistory')}
           tabIndex={0}
           className="overflow-x-auto rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          <Table>
+          <Table aria-label={t('a11y.tables.alertHistory', { ns: 'common' })}>
             <TableHeader>
               <TableRow>
                 <TableHead>Time</TableHead>

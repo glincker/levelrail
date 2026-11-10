@@ -26,6 +26,12 @@ export type NavTabId =
   | 'mail'
   | 'networkShares'
   | 'nodes'
+  | 'privateNetworks'
+  | 'topology'
+  | 'certificates'
+  | 'channels'
+  | 'status'
+  | 'alerts'
   | 'pipelines'
   | 'projects'
   | 'providers'
@@ -41,6 +47,7 @@ export type NavTabId =
   | 'usage'
 
 export type NavTabGroupId =
+  | 'alerts'
   | 'apps'
   | 'pipelines'
   | 'databases'
@@ -73,11 +80,9 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
     id: 'apps',
     tabs: [
       { id: 'apps', to: '/apps' },
-      { id: 'projects', to: '/projects' },
-      { id: 'templates', to: '/templates' },
-      { id: 'tags', to: '/tags' },
       { id: 'variables', to: '/variables' },
       { id: 'sources', to: '/sources' },
+      { id: 'tags', to: '/tags' },
     ],
   },
   {
@@ -85,13 +90,6 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
     tabs: [
       { id: 'pipelines', to: '/pipelines' },
       { id: 'approvals', to: '/approvals' },
-    ],
-  },
-  {
-    id: 'databases',
-    tabs: [
-      { id: 'databases', to: '/databases' },
-      { id: 'backups', to: '/backups' },
     ],
   },
   {
@@ -107,16 +105,25 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
     tabs: [
       { id: 'domains', to: '/domains' },
       { id: 'dns', to: '/dns', requiresRoute: true },
-      { id: 'mail', to: '/mail', feature: 'mail' },
+      { id: 'certificates', to: '/domains/certificates' },
     ],
   },
   {
     id: 'traffic',
     tabs: [
       { id: 'proxy', to: '/network/proxy' },
+      { id: 'privateNetworks', to: '/network/private' },
       { id: 'loadBalancers', to: '/loadbalancers', feature: 'load-balancer' },
       { id: 'cdn', to: '/cdn' },
-      { id: 'firewall', to: '/firewall' },
+      { id: 'topology', to: '/network' },
+    ],
+  },
+  {
+    id: 'alerts',
+    tabs: [
+      { id: 'alerts', to: '/alerts' },
+      { id: 'status', to: '/status' },
+      { id: 'channels', to: '/settings/notification-channels' },
     ],
   },
   {

@@ -135,21 +135,65 @@ func (rt *Router) gitPushBlockedReason(ctx context.Context, name string) string 
 	return ""
 }
 
-func (rt *Router) gitPushBuildConfig(ctx context.Context, name string, c *object.Commit) (buildType, path, base string) {
+// gitPushBuildConfig picks the build and also returns a note when the commit has
+// a definition file a git build cannot honor and nothing else decides the build.
+func (rt *Router) gitPushBuildConfig(ctx context.Context, name string, c *object.Commit) (buildType, path, base, note string) {
+	var gs *store.GitSource
 	if rt.gitSources != nil {
-		if gs, err := rt.gitSources.GetGitSource(ctx, name); err == nil && gs != nil {
-			switch gs.BuildType {
-			case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
-				return gs.BuildType, gs.BuildPath, gs.BaseDirectory
-			}
+		if g, err := rt.gitSources.GetGitSource(ctx, name); err == nil {
+			gs = g
 		}
 	}
-	if tree, err := c.Tree(); err == nil {
-		if _, err := tree.File("Dockerfile"); err == nil {
-			return spec.BuildDockerfile, "", ""
+	tree, treeErr := c.Tree()
+	hasDockerfile := false
+	if treeErr == nil {
+		_, err := tree.File("Dockerfile")
+		hasDockerfile = err == nil
+		if !hasDockerfile && (gs == nil || gs.BuildPath == "") {
+			note = resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)).Note
 		}
 	}
-	return spec.BuildRailpack, "", ""
+	if gs != nil {
+		switch gs.BuildType {
+		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
+			return gs.BuildType, gs.BuildPath, gs.BaseDirectory, note
+		}
+	}
+	if treeErr == nil {
+		if hasDockerfile {
+			return spec.BuildDockerfile, "", "", note
+		}
+		if def := resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)); def.Dockerfile != "" {
+			return spec.BuildDockerfile, def.Dockerfile, "", note
+		}
+	}
+	return spec.BuildRailpack, "", "", note
+}
+
+func gitPushBaseDir(ctx context.Context, rt *Router, name string) string {
+	if rt.gitSources == nil {
+		return ""
+	}
+	if gs, err := rt.gitSources.GetGitSource(ctx, name); err == nil && gs != nil {
+		return gs.BaseDirectory
+	}
+	return ""
+}
+
+// treeReader reads a blob from a commit tree, bounded by limit bytes.
+func treeReader(tree *object.Tree) func(string, int) ([]byte, error) {
+	return func(p string, limit int) ([]byte, error) {
+		f, err := tree.File(p)
+		if err != nil {
+			return nil, err
+		}
+		r, err := f.Reader()
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = r.Close() }()
+		return io.ReadAll(io.LimitReader(r, int64(limit)))
+	}
 }
 
 // gitPushStaticSPA is the stored single page app flag, the same source the
@@ -183,12 +227,17 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 		}
 		return ""
 	}
-	buildType, path, base := rt.gitPushBuildConfig(ctx, name, plan.commit)
+	buildType, path, base, note := rt.gitPushBuildConfig(ctx, name, plan.commit)
+	if note != "" {
+		ws.say("Cannot build: " + note)
+		return "unsupported definition file"
+	}
 	treq := triggerBuildRequest{
 		RepoURL: gitPushMirrorURL(name), Ref: hash,
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{
 		Branch:  plan.branch,

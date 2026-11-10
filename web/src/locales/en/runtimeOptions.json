@@ -1,0 +1,32 @@
+{
+  "service": "Service",
+  "title": "Runtime options for {{service}}",
+  "description": "Container options this service may set. Everything else, such as extra capabilities or devices, stays out of reach.",
+  "tmpfs": {
+    "label": "Tmpfs mounts",
+    "hint": "One per line, /path:size=64m. Up to {{max}}."
+  },
+  "ulimits": {
+    "label": "Ulimits",
+    "hint": "One per line, name=soft:hard. Up to {{max}} of {{names}}."
+  },
+  "extraHosts": {
+    "label": "Extra hosts",
+    "hint": "One per line, hostname:ip. Up to {{max}}."
+  },
+  "dns": { "label": "DNS servers", "hint": "One IP per line. Up to {{max}}." },
+  "sysctls": {
+    "label": "Sysctls",
+    "hint": "One per line, key=value. Allowed: {{names}}."
+  },
+  "stopTimeout": { "label": "Stop timeout (s)", "hint": "Up to {{max}}." },
+  "pids": { "label": "Process limit", "hint": "Up to {{max}}." },
+  "init": { "label": "Init process", "hint": "Run a minimal init as PID 1." },
+  "badUlimit": "Use name=soft or name=soft:hard on each line.",
+  "badSysctl": "Use key=value on each line.",
+  "save": "Save",
+  "saving": "Saving",
+  "saved": "Runtime options saved",
+  "recreates": "Saving recreates the container.",
+  "readOnly": "You need the sensitive write ability to change runtime options."
+}

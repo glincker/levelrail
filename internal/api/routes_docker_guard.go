@@ -26,6 +26,8 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/cli-console/commands", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleCommands))
 	mux.HandleFunc("GET /api/v1/system/cli-console/session", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleSession))
 	mux.HandleFunc("GET /api/v1/system/control-plane-health", rt.requireAbility(AbilityRead, rt.handleGetCPHealth))
+	// Statement text from the control plane's own database is admin only, like processes.
+	mux.HandleFunc("GET /api/v1/system/slow-statements", rt.requireAbility(AbilityRoot, rt.handleGetSlowStatements))
 	mux.HandleFunc("GET /api/v1/system/footprint", rt.requireAbility(AbilityRead, rt.handleGetIdleFootprint))
 	// Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/control-plane-health/fix", rt.requireAbility(AbilityRoot, rt.handleCPHealthFix))
@@ -34,6 +36,11 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	// Stages a replacement of the whole control plane database for the next boot, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/integrity/restore", rt.requireAbility(AbilityRoot, rt.handleIntegrityRestore))
 	mux.HandleFunc("DELETE /api/v1/system/integrity/restore", rt.requireAbility(AbilityRoot, rt.handleIntegrityCancelRestore))
+	mux.HandleFunc("GET /api/v1/system/db-space", rt.requireAbility(AbilityRead, rt.handleGetDBSpace))
+	// VACUUM holds the single writer connection, so AbilityRoot, and it only runs on request.
+	mux.HandleFunc("POST /api/v1/system/db-space/compact", rt.requireAbility(AbilityRoot, rt.handleCompactDB))
+	// Process names and memory of the control plane host are admin only.
+	mux.HandleFunc("GET /api/v1/system/processes", rt.requireAbility(AbilityRoot, rt.handleGetSystemProcesses))
 	mux.HandleFunc("GET /api/v1/system/networks", rt.requireAbility(AbilityRead, rt.handleGetSystemNetworks))
 	// Removes Docker networks, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/networks/prune", rt.requireAbility(AbilityRoot, rt.handlePruneSystemNetworks))

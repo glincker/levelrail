@@ -225,3 +225,43 @@ func (db *DB) DeleteDeployAttempts(ctx context.Context, ids []string) error {
 	}
 	return nil
 }
+
+// DeleteDeployAttemptsForService drops every attempt of a deleted app and the
+// rows that hang off them, so a re-created app of the same name starts clean.
+func (db *DB) DeleteDeployAttemptsForService(ctx context.Context, name string) error {
+	rows, err := db.QueryContext(ctx, `SELECT id FROM deploy_attempts WHERE service_name = ?`, name)
+	if err != nil {
+		return fmt.Errorf("store: list deploy attempts for %q: %w", name, err)
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return fmt.Errorf("store: scan deploy attempt id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return fmt.Errorf("store: list deploy attempts for %q: %w", name, err)
+	}
+	_ = rows.Close()
+	// Chunked to stay under the SQL variable limit.
+	const chunk = 500
+	for i := 0; i < len(ids); i += chunk {
+		if err := db.DeleteDeployAttempts(ctx, ids[i:min(i+chunk, len(ids))]); err != nil {
+			return err
+		}
+	}
+	// Attempt-keyed tables above miss rows whose attempt row never existed.
+	for _, q := range []string{
+		`DELETE FROM deploy_timelines WHERE service_name = ?`,
+		`DELETE FROM deploy_trace_steps WHERE service = ?`,
+	} {
+		if _, err := db.ExecContext(ctx, q, name); err != nil {
+			return fmt.Errorf("store: clear deploy history for %q: %w", name, err)
+		}
+	}
+	return nil
+}

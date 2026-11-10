@@ -9,8 +9,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -235,4 +238,111 @@ func newCustomTemplateID() (string, error) {
 		return "", fmt.Errorf("generate custom template id: %w", err)
 	}
 	return customTemplateIDPrefix + hex.EncodeToString(buf), nil
+}
+
+// maxCustomTemplateImportBytes bounds the import body; compose files are small text.
+const maxCustomTemplateImportBytes = 256 << 10
+
+var (
+	customTemplateImportIDRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,62}$`)
+	customTemplateVarRe      = regexp.MustCompile(`^[A-Z][A-Z0-9_]{0,63}$`)
+)
+
+// importCustomTemplateRequest is POST /api/v1/templates/custom's body.
+// Variables names the ${NAME} placeholders the operator fills in at deploy.
+type importCustomTemplateRequest struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	ComposeYAML string `json:"compose_yaml"`
+	// URL is an https address to download the compose file from instead of sending compose_yaml.
+	URL       string   `json:"url,omitempty"`
+	Variables []string `json:"variables,omitempty"`
+}
+
+// importCustomTemplateResponse omits the compose body so an imported file is never echoed back.
+type importCustomTemplateResponse struct {
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	RequiresConfiguration bool     `json:"requires_configuration"`
+	RequiredEnvKeys       []string `json:"required_env_keys,omitempty"`
+	Variables             []string `json:"variables,omitempty"`
+	CreatedAt             string   `json:"created_at"`
+}
+
+// handleImportCustomTemplate handles POST /api/v1/templates/custom: saves an
+// operator-written compose file as a custom template, with the same compose
+// parse the install and deploy paths use.
+func (rt *Router) handleImportCustomTemplate(w http.ResponseWriter, r *http.Request) {
+	var req importCustomTemplateRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxCustomTemplateImportBytes)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.ID, req.Name = strings.TrimSpace(req.ID), strings.TrimSpace(req.Name)
+	if !customTemplateImportIDRe.MatchString(req.ID) {
+		writeError(w, http.StatusBadRequest, "id must be 2 to 63 lowercase letters, digits or dashes")
+		return
+	}
+	if req.Name == "" || len(req.Name) > 120 || len(req.Description) > 2000 {
+		writeError(w, http.StatusBadRequest, "name is required (up to 120 characters) and description is limited to 2000")
+		return
+	}
+	if strings.TrimSpace(req.URL) != "" {
+		if strings.TrimSpace(req.ComposeYAML) != "" {
+			writeError(w, http.StatusBadRequest, "send either compose_yaml or url, not both")
+			return
+		}
+		body, ferr := rt.loadTemplateImportURL(r, req.URL)
+		if ferr != nil {
+			writeError(w, http.StatusUnprocessableEntity, ferr.Error())
+			return
+		}
+		req.ComposeYAML = body
+	}
+	if strings.TrimSpace(req.ComposeYAML) == "" {
+		writeError(w, http.StatusBadRequest, "compose_yaml or url is required")
+		return
+	}
+	if _, builtin := catalog.TemplateByID(req.ID); builtin {
+		writeError(w, http.StatusConflict, "id is used by a built-in template")
+		return
+	}
+	if _, err := rt.customTemplates.GetCustomTemplate(r.Context(), req.ID); err == nil {
+		writeError(w, http.StatusConflict, "a custom template with this id already exists")
+		return
+	} else if !errors.Is(err, store.ErrCustomTemplateNotFound) {
+		rt.internalError(w, "api: import custom template: lookup failed", err, slog.String("id", req.ID))
+		return
+	}
+	f, err := compose.Parse([]byte(req.ComposeYAML))
+	if err != nil || len(f.Services) == 0 {
+		writeError(w, http.StatusUnprocessableEntity, "compose_yaml is not a valid compose file with at least one service")
+		return
+	}
+	for _, v := range req.Variables {
+		if !customTemplateVarRe.MatchString(v) || !strings.Contains(req.ComposeYAML, v) {
+			writeError(w, http.StatusUnprocessableEntity, "each variable must be an upper case name used in compose_yaml")
+			return
+		}
+	}
+
+	_, principalID, _, perr := rt.callerPrincipal(r)
+	if perr != nil {
+		principalID = ""
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	tpl := store.CustomTemplate{ID: req.ID, Name: req.Name, Description: req.Description, Compose: req.ComposeYAML, CreatedBy: principalID, CreatedAt: now, UpdatedAt: now, Variables: req.Variables}
+	if err := rt.customTemplates.SaveCustomTemplate(r.Context(), tpl); err != nil {
+		rt.internalError(w, "api: import custom template: save failed", err, slog.String("id", req.ID))
+		return
+	}
+	writeJSON(w, http.StatusCreated, importCustomTemplateResponse{
+		ID: tpl.ID, Name: tpl.Name, Description: tpl.Description,
+		RequiresConfiguration: composeNeedsConfiguration(tpl.Compose),
+		RequiredEnvKeys:       requiredEnvKeys(tpl.Compose),
+		Variables:             tpl.Variables,
+		CreatedAt:             tpl.CreatedAt,
+	})
 }

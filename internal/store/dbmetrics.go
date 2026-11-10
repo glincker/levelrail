@@ -24,6 +24,9 @@ const (
 	checkpointPassive  = "PASSIVE"
 	checkpointTruncate = "TRUNCATE"
 	checkpointEvery    = time.Minute
+	// Cap on rows PRAGMA optimize samples per index, and how often the live interval is re-read.
+	optimizeAnalysisLimit = 1000
+	optimizeRecheck       = time.Minute
 )
 
 // SlowQuery is one statement that exceeded the slow threshold. Arguments are never recorded.
@@ -87,10 +90,7 @@ func (m *dbMetrics) observe(query string, d time.Duration) {
 		return
 	}
 	m.slow++
-	q := strings.Join(strings.Fields(query), " ")
-	if len(q) > maxLoggedStatement {
-		q = q[:maxLoggedStatement]
-	}
+	q := redactStatement(query)
 	m.recent = append(m.recent, SlowQuery{SQL: q, DurationMS: float64(d) / float64(time.Millisecond), At: time.Now().UTC()})
 	if len(m.recent) > slowQueryKeep {
 		m.recent = m.recent[len(m.recent)-slowQueryKeep:]
@@ -188,11 +188,47 @@ func (db *DB) CheckpointWAL(ctx context.Context, truncate bool) error {
 }
 
 // Optimize refreshes planner statistics for tables whose shape changed.
+// analysis_limit is per connection, so both pragmas share one pinned connection.
 func (db *DB) Optimize(ctx context.Context) error {
-	if _, err := db.DB.ExecContext(ctx, "PRAGMA optimize"); err != nil {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("store: optimize: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, "PRAGMA analysis_limit="+strconv.Itoa(optimizeAnalysisLimit)); err != nil {
+		return fmt.Errorf("store: optimize: %w", err)
+	}
+	if _, err := conn.ExecContext(ctx, "PRAGMA optimize"); err != nil {
 		return fmt.Errorf("store: optimize: %w", err)
 	}
 	return nil
+}
+
+// RunOptimize refreshes planner statistics every interval(), re-read each wait so a saved
+// change applies live. A zero interval pauses the loop without stopping it.
+func (db *DB) RunOptimize(ctx context.Context, interval func() time.Duration) {
+	loop := footprint.Track("sqlite optimize", interval())
+	defer loop.Active()()
+	last := time.Now()
+	for {
+		wait := optimizeRecheck
+		if iv := interval(); iv > 0 && iv < wait {
+			wait = iv
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(wait):
+		}
+		iv := interval()
+		if iv <= 0 || time.Since(last) < iv {
+			continue
+		}
+		start := time.Now()
+		err := db.Optimize(ctx)
+		loop.Observe(start, err)
+		last = time.Now()
+	}
 }
 
 // RunWALMaintenance passively checkpoints on an interval so a long reader never lets the log grow unbounded.
@@ -209,6 +245,8 @@ func (db *DB) RunWALMaintenance(ctx context.Context) {
 			start := time.Now()
 			err := db.CheckpointWAL(ctx, false)
 			loop.Observe(start, err)
+			db.ApplyReadConnsSource()
+			db.ApplyTuningSource(ctx)
 		}
 	}
 }

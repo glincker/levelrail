@@ -25,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/profile"
+	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -231,13 +232,41 @@ type meshSetup struct {
 	// Never nil when meshSetup is non-nil: NewDevice always returns a usable Mesh.
 	device network.Mesh
 	// Use the actually bound address, which can differ from the configured one.
-	dnsAddr netip.AddrPort
-	close   func()
+	dnsAddr  netip.AddrPort
+	close    func()
+	settings *runtimesettings.Service
+}
+
+// meshApplyPolicy bounds each mesh config push; values come from runtime settings so changes apply on the next pass.
+func meshApplyPolicy(settings *runtimesettings.Service) agent.ApplyPolicy {
+	return agent.ApplyPolicy{
+		Timeout: func() time.Duration {
+			return runtimesettings.ClampMeshApplyTimeout(settings.Duration(context.Background(), runtimesettings.KeyMeshApplyTimeout))
+		},
+		Retries: func() int {
+			return runtimesettings.ClampMeshApplyRetries(settings.Int(context.Background(), runtimesettings.KeyMeshApplyRetries))
+		},
+		Backoff: func() time.Duration {
+			return runtimesettings.ClampMeshApplyRetryDelay(settings.Duration(context.Background(), runtimesettings.KeyMeshApplyRetryDelay))
+		},
+	}
+}
+
+// wireMeshWake makes node joins, leaves and endpoint changes request a reconcile pass instead of waiting for the resync tick.
+func wireMeshWake(meshCfg *meshSetup, nudge func(), registry *agent.Registry, endpoints *meshEndpointBook) {
+	if meshCfg == nil || nudge == nil {
+		return
+	}
+	waker := meshreconcile.NewWaker(nudge, func() time.Duration {
+		return runtimesettings.ClampMeshWakeDebounce(meshCfg.settings.Duration(context.Background(), runtimesettings.KeyMeshWakeDebounce))
+	})
+	registry.SetChangeHook(func(string) { waker.Wake() })
+	endpoints.SetWake(waker.Wake)
 }
 
 // Returns (nil, nil) when disabled, so an operator who did not opt in sees nothing new.
 // Device failures never fail startup, but config errors (bad key, taken DNS port) do.
-func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, logger *slog.Logger) (*meshSetup, error) {
+func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, shared *runtimesettings.Service, logger *slog.Logger) (*meshSetup, error) {
 	if !meshEnabled(ctx, db, logger) {
 		return nil, nil
 	}
@@ -270,10 +299,14 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		return nil, fmt.Errorf("build local mesh sink: %w", err)
 	}
 	// GRPCSink serves remote nodes and LocalSink serves this node, combined via MultiSink.
-	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
+	// The API's shared service, so live mesh settings apply without a restart.
+	hubSettings := shared
+	if hubSettings == nil {
+		hubSettings = runtimesettings.New(db, os.LookupEnv)
+	}
+	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry, agent.WithApplyPolicy(meshApplyPolicy(hubSettings))))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
-	hubSettings := runtimesettings.New(db, os.LookupEnv)
 	hubHost := network.NewHubHostResolver(network.HubHostConfig{
 		TTL: func() time.Duration {
 			return hubSettings.Duration(context.Background(), runtimesettings.KeyMeshHubResolveTTL)
@@ -319,6 +352,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		hubHost:     hubHost,
 		device:      device,
 		dnsAddr:     dnsServer.Addr(),
+		settings:    hubSettings,
 		close: func() {
 			cancelHeartbeat()
 			cancelHub()
@@ -342,7 +376,7 @@ func containerDNSAddr(ctx context.Context, client *docker.Client, meshCfg *meshS
 		return ""
 	}
 	if meshCfg.dnsAddr.Port() != dockerNameserverPort {
-		logger.Warn("mesh dns: not bound to port 53, so no container can be pointed at it "+
+		logger.Info("mesh dns: not bound to port 53, so no container can be pointed at it "+
 			"(neither Docker's DNS config nor a container's own resolver supports a non-standard nameserver port); "+
 			"containers will use Docker's own resolver until APP_MESH_DNS_ADDR is set to bind :53",
 			slog.Int("bound_port", int(meshCfg.dnsAddr.Port())))

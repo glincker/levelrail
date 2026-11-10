@@ -109,6 +109,23 @@ levelrail-cli incidents publish <id>
 
 `publish` fetches the incident, refuses an empty draft or an already published incident before sending anything, and sends the `updated_at` it just fetched. Pass `--updated-at` with the value from `show` to refuse if the incident changed after you reviewed it.
 
+### Postmortems
+
+A resolved incident can carry one structured postmortem: summary, impact, root cause, resolution and action items, plus the impact window and the alerts that fired.
+
+- `POST /api/v1/incidents/{id}/postmortem/draft` creates the draft. The impact window runs from the earliest recorded outage to the resolve time, and the alert list holds the alert rule or monitors already recorded on the incident. Running it again refreshes those two and keeps the text. It answers 409 until the incident is resolved.
+- `PUT /api/v1/incidents/{id}/postmortem` edits `summary`, `impact`, `root_cause`, `resolution` and `action_items`. Only the fields you send change, so two people editing different fields do not overwrite each other. Control characters (other than newline and tab) and bidi override characters answer 400.
+- `POST /api/v1/incidents/{id}/postmortem/publish` needs a summary and a root cause (422 otherwise). Publishing is final: every later edit, draft or publish answers 409, also when two requests race. An incident with a published postmortem is skipped by retention cleanup, and deleting it answers 409.
+- `GET /api/v1/incidents/{id}/postmortem` reads it (404 when there is none yet).
+
+Access matches the rest of the incident API: reading needs `read:sensitive`, writing needs `write`, and writes are audited. `APP_INCIDENT_POSTMORTEM_FIELD_MAX` (default 8000 bytes) caps each text field and action item, and `APP_INCIDENT_POSTMORTEM_ACTION_ITEMS_MAX` (default 50) caps the list, and `APP_INCIDENT_POSTMORTEM_BODY_MAX` (default 1 MiB) caps one edit request (413 above it). All three are runtime settings and apply live. Every write answers 409 until the incident is resolved. The dashboard shows the postmortem under a resolved incident and renders every field as plain text.
+
+```
+levelrail-cli incidents postmortem draft <id>
+levelrail-cli incidents postmortem edit <id> --summary "Pool exhausted" --root-cause "Pool size too low" --action-item "Raise pool to 50"
+levelrail-cli incidents postmortem publish <id>
+```
+
 ## Status page link (opt-in)
 
 A monitor can open a public status page incident while it is confirmed down and resolve it on recovery. It is off by default, so existing monitors do not change.
@@ -147,3 +164,7 @@ A `tls` monitor connects to `host:port` (default 443), verifies the chain agains
 ```sh
 levelrail-cli monitors create --name site-cert --kind tls --host example.com --interval 24h --warn-days 30 --crit-days 10
 ```
+
+## Pause and resume
+
+`PATCH /api/v1/monitors/{id}` accepts `{"enabled": false}` to pause a monitor and `{"enabled": true}` to resume it. A paused monitor is not probed and the schedule changes at once. Fields left out of the body are unchanged.

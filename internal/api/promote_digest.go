@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -48,7 +49,8 @@ func (rt *Router) verifyPromotionDigest(ctx context.Context, image string) error
 	if !ok {
 		return nil
 	}
-	if d, err := time.ParseDuration(os.Getenv("APP_APPROVE_DIGEST_CHECK_TIMEOUT")); err == nil && d > 0 {
+	if sec := rt.runtimeSettings.Limit(ctx, runtimesettings.KeyApproveDigestCheckTimeoutSec); sec > 0 {
+		d := time.Duration(sec) * time.Second
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, d)
 		defer cancel()

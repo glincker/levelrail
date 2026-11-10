@@ -81,7 +81,7 @@ function RunStep({
     return (
       <p className="flex items-center gap-2 text-sm text-foreground">
         <LoaderCircleGlassIcon
-          className="size-5 animate-spin"
+          className="size-5 animate-spin motion-reduce:animate-none"
           aria-hidden="true"
         />
         {t('backupSetup.run.progress')}

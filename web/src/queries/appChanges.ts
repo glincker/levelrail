@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type AppChangeKind =
   | 'deploy'
@@ -43,7 +44,7 @@ export const appChangesKeys = {
     ['app-changes', app, until || 'now'] as const,
 }
 
-const NOW_REFETCH_MS = 30_000
+const NOW_REFETCH_MS = pollMs('steady')
 
 export async function fetchAppChanges(
   app: string,

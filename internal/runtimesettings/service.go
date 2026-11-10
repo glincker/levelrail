@@ -172,10 +172,7 @@ func (s *Service) load(ctx context.Context) (map[string]store.RuntimeSettingRow,
 		}
 		return nil, fmt.Errorf("runtimesettings: load saved values: %w", err)
 	}
-	m := make(map[string]store.RuntimeSettingRow, len(rows))
-	for _, r := range rows {
-		m[r.Key] = r
-	}
+	m := s.upgradeRows(ctx, rows)
 	s.mu.Lock()
 	s.saved, s.loaded, s.lastGood, s.retryAt = m, true, m, time.Time{}
 	s.mu.Unlock()

@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // SecretPlaceholder stands in for every value that must not leave the server.
@@ -57,6 +59,9 @@ type Service struct {
 	Image            string
 	Command          []string
 	Entrypoint       []string
+	User             string
+	WorkingDir       string
+	Runtime          *spec.RuntimeOptions
 	Port             int
 	Domains          []string
 	Env              map[string]string
@@ -85,6 +90,9 @@ type Service struct {
 type Input struct {
 	AppName  string
 	Services []Service
+	// Description and Notes are the operator's app notes, written to NOTES.md when either is set.
+	Description string
+	Notes       string
 }
 
 // File is one produced file.
@@ -143,11 +151,43 @@ func Render(in Input) ([]File, error) {
 	}
 	vars := planVars(svcs)
 	env := renderEnv(svcs, vars)
-	return []File{
+	files := []File{
 		{Name: ".env.example", Content: []byte(env)},
 		{Name: "README.md", Content: []byte(renderReadme(in.AppName, svcs))},
 		{Name: "docker-compose.yml", Content: []byte(renderCompose(in.AppName, svcs, vars))},
-	}, nil
+	}
+	if notes := RenderNotes(in.Description, in.Notes); notes != "" {
+		files = append(files, File{Name: NotesFileName, Content: []byte(notes)})
+	}
+	return files, nil
+}
+
+// NotesFileName is the archive entry that carries the app's description and notes.
+const NotesFileName = "NOTES.md"
+
+// RenderNotes writes the description as a quoted first line and the notes below it.
+func RenderNotes(description, notes string) string {
+	if description == "" && notes == "" {
+		return ""
+	}
+	var b strings.Builder
+	if description != "" {
+		b.WriteString("> " + description + "\n\n")
+	}
+	if notes != "" {
+		b.WriteString(notes + "\n")
+	}
+	return b.String()
+}
+
+// ParseNotes reverses RenderNotes so an exported NOTES.md restores both fields.
+func ParseNotes(doc string) (description, notes string) {
+	if rest, ok := strings.CutPrefix(doc, "> "); ok {
+		line, body, _ := strings.Cut(rest, "\n")
+		description = strings.TrimSpace(line)
+		doc = strings.TrimPrefix(body, "\n")
+	}
+	return description, strings.TrimRight(doc, "\n")
 }
 
 // WriteTar writes files as a deterministic tar stream (fixed mtime and owner).
@@ -344,6 +384,13 @@ func writeService(b *strings.Builder, s Service, vars []envVar) {
 	if len(s.Command) > 0 {
 		fmt.Fprintf(b, "    command: %s\n", ysList(s.Command))
 	}
+	if s.User != "" {
+		fmt.Fprintf(b, "    user: %s\n", ys(s.User))
+	}
+	if s.WorkingDir != "" {
+		fmt.Fprintf(b, "    working_dir: %s\n", ys(s.WorkingDir))
+	}
+	writeRuntime(b, s.Runtime)
 	fmt.Fprintf(b, "    restart: %s\n", restartPolicy(s.Restart))
 	if len(vars) > 0 {
 		b.WriteString("    environment:\n")

@@ -138,4 +138,73 @@ describe('BuildHooksCard', () => {
       ).toBe(true),
     )
   })
+
+  it('shows the allowlist and saves an edited one with PATCH', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          init?.method === 'PATCH'
+            ? json({ ...existing, allowed_cidrs: ['10.0.0.0/8'] })
+            : json([
+                {
+                  ...existing,
+                  allowed_cidrs: ['203.0.113.0/24'],
+                  last_used_at: '2026-10-03T10:00:00Z',
+                  last_refusal: 'refused: source address not allowed',
+                },
+              ]),
+        ),
+    )
+    const user = userEvent.setup()
+    renderCard()
+    expect(
+      await screen.findByText(/Only 203\.0\.113\.0\/24 may call it/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Last refused call: refused: source address/),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Allowlist' }))
+    const [field] = screen.getAllByLabelText('Allowed sources (optional)')
+    if (!field) throw new Error('allowlist field missing')
+    expect(field).toHaveValue('203.0.113.0/24')
+    await user.clear(field)
+    expect(
+      screen.getByRole('button', { name: 'Save allowlist' }),
+    ).toBeDisabled()
+    await user.type(field, '10.0.0.0/8, 192.0.2.1')
+    await user.click(screen.getByRole('button', { name: 'Save allowlist' }))
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(patch?.[0]).toBe('/api/v1/apps/demo-app/build-hooks/bh_1')
+      expect(JSON.parse((patch?.[1] as RequestInit).body as string)).toEqual({
+        allowed_cidrs: ['10.0.0.0/8', '192.0.2.1'],
+      })
+    })
+  })
+
+  it('clears the allowlist only through the explicit allow any toggle', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          init?.method === 'PATCH'
+            ? json(existing)
+            : json([{ ...existing, allowed_cidrs: ['203.0.113.0/24'] }]),
+        ),
+    )
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(await screen.findByRole('button', { name: 'Allowlist' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Allow any source' }))
+    await user.click(screen.getByRole('button', { name: 'Save allowlist' }))
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(JSON.parse((patch?.[1] as RequestInit).body as string)).toEqual({
+        allow_any: true,
+      })
+    })
+  })
 })

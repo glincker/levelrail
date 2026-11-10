@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -97,16 +98,11 @@ func (rt *Router) RunMailQueue(ctx context.Context) {
 	if rt.mail.runner == nil {
 		return
 	}
-	t := time.NewTicker(mailTickInterval)
-	defer t.Stop()
-	for {
+	rt.mail.runner.Tick(ctx, time.Now())
+	_ = footprint.Every(ctx, "mail queue", mailTickInterval, rt.logger, func(ctx context.Context) error {
 		rt.mail.runner.Tick(ctx, time.Now())
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
-	}
+		return nil
+	})
 }
 
 func (rt *Router) mailBranding(ctx context.Context) mailtemplates.Branding {

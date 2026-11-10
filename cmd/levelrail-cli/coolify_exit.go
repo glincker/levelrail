@@ -17,6 +17,8 @@ type coolifyExitFlags struct {
 	verify                                            bool
 	insecureTLS, allowPrivate, allowLoopback, jsonOut bool
 	only                                              string
+	createWebhooks                                    bool
+	lookupEnv                                         func(string) (string, bool)
 }
 
 // runCoolifyExit prints the exit report. Dry run reads Coolify from this machine and needs no
@@ -46,6 +48,9 @@ func runCoolifyExit(ctx context.Context, prog string, f coolifyExitFlags, client
 			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("read coolify: %w", err))
 		}
 		rep = coolifyexit.Build(disc, platformimport.BuildPlan(disc, platformimport.PlanOptions{Only: only}))
+		if f.createWebhooks {
+			rep.Notes = append(rep.Notes, webhookDryRunNotes(disc.Apps, f.lookupEnv)...)
+		}
 	}
 	return printCoolifyExit(stdout, stderr, prog, f.jsonOut, rep)
 }

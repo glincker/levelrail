@@ -64,6 +64,9 @@ func BuildInventory(d *platformimport.Discovery, c Context) Inventory {
 	for _, u := range d.Unsupported {
 		entries = append(entries, unsupportedEntry(u))
 	}
+	for _, c := range d.ComposeApps {
+		entries = append(entries, composeEntry(c))
+	}
 	return Inventory{Platform: string(d.Platform), Groups: group(entries), Databases: refs, Counts: count(entries)}
 }
 
@@ -266,4 +269,18 @@ func referencedDatabases(env []platformimport.Env, hosts []string, byHost map[st
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
+}
+
+// composeEntry lists a stack; the guided flow stages single apps only, so the migrate command stages it.
+func composeEntry(c platformimport.ComposeApp) Entry {
+	e := Entry{SourceID: c.SourceID, Name: c.Name, Kind: KindApp, Project: c.Project, Environment: c.Environment,
+		Source: SourceCompose, BuildPack: "docker compose", Domains: c.Domains, Verdict: VerdictUnsupported}
+	if c.Verdict == platformimport.ComposeBlocked {
+		for _, r := range c.Blocked {
+			e.Findings = append(e.Findings, Finding{Reason: r, Next: "fix the compose file, then deploy it with the compose deploy command"})
+		}
+		return e
+	}
+	e.Findings = []Finding{{Reason: "multi-service stack, the compose validation passed", Next: "stage it with the migrate command and deploy it with the compose deploy command"}}
+	return e
 }

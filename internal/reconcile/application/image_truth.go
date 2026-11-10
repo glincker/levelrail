@@ -44,10 +44,11 @@ func WithNextGraceHold(until func(service string, now time.Time) time.Time) Opti
 // image ID is folded in so rebuilding the same tag with new content gets a
 // new container instead of silently keeping the old one.
 func NameImage(svc store.DesiredService) string {
+	key := svc.Image
 	if id := svc.LocalImageID(); id != "" {
-		return svc.Image + "\x00id:" + id
+		key += "\x00id:" + id
 	}
-	return svc.Image
+	return key
 }
 
 // imageMismatchError means a container runs different content than the

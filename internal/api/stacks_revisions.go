@@ -53,7 +53,7 @@ func (rt *Router) handleStackRevisions(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	limit := stackHistoryLimit()
+	limit := rt.stackHistoryLimit(r.Context())
 	if n, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && n > 0 && n < limit {
 		limit = n
 	}
@@ -218,6 +218,7 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 	resp := stackDiffResponse{Stack: s.Name, Revision: n, Against: "live", Changes: []stackDiffChange{}}
 	if against == "" || against == "live" {
 		res, opts, issues := iacRequest{Files: files, Source: s.Name, Project: project}.build()
+		opts = rt.belowRootOpts(r, opts)
 		if len(issues) > 0 {
 			writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
 			return

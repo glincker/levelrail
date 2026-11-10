@@ -15,6 +15,13 @@ const (
 	KeyAPIMaxBodyBytes         = "api.max_body_bytes"
 	KeyAssetsUploadMaxBytes    = "assets.upload_max_bytes"
 	KeyDeployMaxConcurrent     = "deploy.max_concurrent"
+	KeyInlineSourceMaxBytes    = "deploy.inline_source_max_bytes"
+	KeyInlineSourceMaxFiles    = "deploy.inline_source_max_files"
+	KeyInlineSourceKeep        = "deploy.inline_source_keep"
+	inlineSourceKeepCeiling    = 1000
+	inlineSourceBytesFloor     = 1 << 10
+	inlineSourceBytesCeiling   = 8 << 20
+	inlineSourceFilesCeiling   = 200
 	rateLimitCeiling           = 10_000_000
 	bodyLimitFloor             = 1 << 20
 	apiMaxBodyCeiling          = 1 << 30
@@ -107,4 +114,30 @@ func init() {
 		Title:       "Concurrent deploys",
 		Description: "How many deploys may run at once across all apps; extra deploys wait in the queue and start when one finishes. 0 means no limit. A change applies to the next queue decision.",
 	}, 0, deployMaxConcurrentCeiling)
+	registerLimit(Definition{
+		Key: KeyInlineSourceMaxBytes, Category: CategoryDeploys, Default: strconv.Itoa(256 << 10), Env: "APP_INLINE_SOURCE_MAX_BYTES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
+		Title:       "Inline Dockerfile size limit",
+		Description: "Largest pasted Dockerfile plus extra context files, in bytes, accepted by a deploy without a git repository; a bigger one is refused with HTTP 413. Between 1 KiB and 8 MiB, and never more than the API request body limit. A change applies to the next deploy.",
+	}, inlineSourceBytesFloor, inlineSourceBytesCeiling)
+	registerLimit(Definition{
+		Key: KeyInlineSourceMaxFiles, Category: CategoryDeploys, Default: "20", Env: "APP_INLINE_SOURCE_MAX_FILES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
+		Title:       "Inline Dockerfile extra files",
+		Description: "How many extra context files may be sent next to a pasted Dockerfile; more are refused with HTTP 413. 0 allows the Dockerfile alone. A change applies to the next deploy.",
+	}, 0, inlineSourceFilesCeiling)
+	registerLimit(Definition{
+		Key: KeyInlineSourceKeep, Category: CategoryDeploys, Default: "10", Env: "APP_INLINE_SOURCE_KEEP", Apply: ApplyLive,
+		Title:       "Inline Dockerfiles kept per app",
+		Description: "How many distinct pasted Dockerfiles each app keeps for redeploys; the hourly sweep deletes older ones unless a queued, held or running deploy still needs them. Between 1 and 1000. A change applies to the next sweep.",
+	}, 1, inlineSourceKeepCeiling)
+}
+
+// KeyAppsMaxReplicasPerService caps the replica count one service may be given.
+const KeyAppsMaxReplicasPerService = "apps.max_replicas_per_service"
+
+func init() {
+	registerLimit(Definition{
+		Key: KeyAppsMaxReplicasPerService, Category: CategoryDeploys, Default: "100", Env: "APP_MAX_REPLICAS_PER_SERVICE", Apply: ApplyLive,
+		Title:       "Replica cap per service",
+		Description: "Largest replica count the API accepts for one service when an app is created, updated or scaled; a bigger count is refused with HTTP 400. Between 1 and 1000; a change applies to the next request, running apps keep their count.",
+	}, 1, 1000)
 }

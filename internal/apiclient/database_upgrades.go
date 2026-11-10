@@ -71,6 +71,7 @@ type DBUpgradeRun struct {
 	Timings         map[string]string `json:"timings"`
 	CreatedAt       string            `json:"created_at"`
 	FinishedAt      string            `json:"finished_at,omitempty"`
+	ParamsPending   bool              `json:"params_pending,omitempty"`
 }
 
 // DBUpgradesResource is GET /api/v1/databases/{name}/upgrades.
@@ -126,8 +127,14 @@ func (c *Client) SetDatabaseUpgradePolicy(ctx context.Context, name string, p DB
 
 // UpgradeDatabaseNow calls POST /api/v1/databases/{name}/upgrade-now.
 func (c *Client) UpgradeDatabaseNow(ctx context.Context, name, version, confirm string) (DBUpgradeRun, error) {
+	return c.UpgradeDatabaseNowWith(ctx, name, version, confirm, false)
+}
+
+// UpgradeDatabaseNowWith is UpgradeDatabaseNow with drop_incompatible_params.
+func (c *Client) UpgradeDatabaseNowWith(ctx context.Context, name, version, confirm string, dropIncompatibleParams bool) (DBUpgradeRun, error) {
 	var out DBUpgradeRun
-	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/upgrade-now", map[string]string{"version": version, "confirm": confirm}, &out)
+	body := map[string]any{"version": version, "confirm": confirm, "drop_incompatible_params": dropIncompatibleParams}
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/upgrade-now", body, &out)
 	return out, err
 }
 

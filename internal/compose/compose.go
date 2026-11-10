@@ -100,6 +100,9 @@ type Service struct {
 	// (store.DesiredService.Entrypoint), parsed with the same
 	// string-or-list union as Command.
 	Entrypoint Command
+	// User and WorkingDir are user: and working_dir:, validated like app.yaml's.
+	User       string
+	WorkingDir string
 	// PullPolicy is pull_policy:, normalized by normalizePullPolicy into
 	// exactly the two states store.DesiredService.PullPolicy
 	// distinguishes: PullPolicyAlways forces a fresh pull even when the
@@ -127,8 +130,19 @@ type Service struct {
 	MemLimit yamlScalarString
 	CPUs     yamlScalarString
 	// ShmSize is shm_size:, the /dev/shm size Chromium based apps need.
-	ShmSize    yamlScalarString
-	HostAccess HostAccess
+	ShmSize yamlScalarString
+	// Allowlisted runtime tuning keys, mapped by runtimeFromService.
+	Tmpfs           stringList
+	Ulimits         map[string]spec.Ulimit
+	Init            *bool
+	StopGracePeriod string
+	ExtraHosts      hostList
+	DNS             stringList
+	Sysctls         sysctlMap
+	CapDrop         []string
+	PidsLimit       int
+	ReadOnly        bool
+	HostAccess      HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
 	// such as recreate for an app that locks its state volume. Empty means default.
 	Strategy       string
@@ -145,6 +159,8 @@ type Service struct {
 	// DependsOnCompleted lists the DependsOn entries declared with
 	// condition: service_completed_successfully, which wait for exit 0.
 	DependsOnCompleted []string
+	// EnvFiles is env_file:, read by ResolveEnvFiles when a checkout exists.
+	EnvFiles []EnvFileRef
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value
@@ -199,6 +215,14 @@ type rawBuild struct {
 
 // Parse decodes a compose.yaml document.
 func Parse(data []byte) (*File, error) {
+	data, err := resolveExtends(data)
+	if err != nil {
+		return nil, err
+	}
+	envFiles, err := envFileRefsByService(data)
+	if err != nil {
+		return nil, err
+	}
 	var raw rawFile
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("compose: parse: %w", err)
@@ -208,7 +232,6 @@ func Parse(data []byte) (*File, error) {
 		Version:     raw.Version,
 		Services:    make(map[string]Service, len(raw.Services)),
 		Domains:     raw.Domains,
-		HasSecrets:  len(raw.Secrets) > 0,
 		HasConfigs:  len(raw.Configs) > 0,
 		Unsupported: findUnsupported(data),
 	}
@@ -219,9 +242,13 @@ func Parse(data []byte) (*File, error) {
 	for name, svc := range raw.Services {
 		svc.DependsOnHealthy = healthy[name]
 		svc.DependsOnCompleted = completed[name]
+		svc.EnvFiles = envFiles[name]
 		f.Services[name] = Service(svc)
 	}
 	if err := resolveConfigFiles(f, raw.Configs); err != nil {
+		return nil, err
+	}
+	if err := resolveSecretFiles(f, raw.Secrets); err != nil {
 		return nil, err
 	}
 	if len(raw.Networks) > 0 {

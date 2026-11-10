@@ -109,6 +109,9 @@ func loadBackupMissingTarget(ctx context.Context, source BackupSource, r Rule) (
 		if err != nil {
 			return "", "", nil, fmt.Errorf("alerting: evaluate rule %q: list service volume backup history: %w", r.ID, err)
 		}
+		if cfg.BackupPaused {
+			return label, "", nil, nil
+		}
 		return label, cfg.BackupSchedule, history, nil
 	}
 
@@ -119,6 +122,9 @@ func loadBackupMissingTarget(ctx context.Context, source BackupSource, r Rule) (
 	}
 	if derr != nil {
 		return "", "", nil, fmt.Errorf("alerting: evaluate rule %q: load database %q: %w", r.ID, r.BackupDatabaseName, derr)
+	}
+	if d.BackupPaused {
+		return label, "", nil, nil
 	}
 	history, err = source.ListBackupHistory(ctx, r.BackupDatabaseName, backupMissingHistoryLookback, nil)
 	if err != nil {

@@ -156,7 +156,7 @@ func (c *Copier) verify(ctx context.Context, t Target, helper, targetName string
 		return Verification{}, fmt.Errorf("count source rows: %w", err)
 	}
 	source := ParseCounts(srcOut)
-	if t.Engine == EngineRedis && len(source) == 0 {
+	if isRedisFamily(t.Engine) && len(source) == 0 {
 		return Verification{}, errors.New("count source keys: no result")
 	}
 

@@ -22,7 +22,7 @@ const (
 	maxConfigFileBytes = 1 << 20
 )
 
-var importConfigFiles = []string{"Procfile", "app.json", "vercel.json"}
+var importConfigFiles = []string{"Procfile", "app.json", "vercel.json", "CHECKS"}
 
 // importConfigOutput is the --json shape of "import config".
 type importConfigOutput struct {

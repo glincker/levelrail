@@ -125,7 +125,7 @@ function FirewallPage() {
         />
       ) : (
         <div className="rounded-lg border border-border">
-          <Table>
+          <Table aria-label={t('a11y.tables.firewallRules', { ns: 'common' })}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('firewallRules.cols.action')}</TableHead>

@@ -30,6 +30,7 @@ import type {
 import type { ReconcileCondition } from '../types/deploy'
 import type { NodeJoinTokenRequest } from '../types/nodeMoves'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
 
 export const nodeKeys = {
   all: ['nodes'] as const,
@@ -271,7 +272,7 @@ export function useNodeEvents(id: string) {
     queryKey: nodeKeys.events(id),
     queryFn: () => fetchNodeEvents(id),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

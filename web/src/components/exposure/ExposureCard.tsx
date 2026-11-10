@@ -242,7 +242,7 @@ export function ExposureCard() {
             tabIndex={0}
             className="overflow-x-auto rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            <Table>
+            <Table aria-label={t('a11y.tables.exposure', { ns: 'common' })}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('columns.severity')}</TableHead>

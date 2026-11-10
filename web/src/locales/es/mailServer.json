@@ -1,0 +1,461 @@
+{
+  "title": "Correo",
+  "description": "Tu propio servidor de correo: buzones, DNS, respaldos.",
+  "eyebrow": "Experimental",
+  "install": {
+    "title": "Instalar un servidor de correo",
+    "body": "Despliega la plantilla mox: SMTP, IMAP y webmail en un solo contenedor.",
+    "action": "Instalar servidor de correo"
+  },
+  "overview": {
+    "title": "Lista de configuración",
+    "hint": "Ejecuta una comprobación en un dominio para completar esto. Lo que no se comprueba queda marcado como tal.",
+    "label": "Lista de configuración del correo de {{domain}}"
+  },
+  "status": {
+    "pass": "Correcto",
+    "warn": "Requiere atención",
+    "fail": "Con fallos",
+    "not_tested": "Sin comprobar"
+  },
+  "items": {
+    "server": "Servidor de correo instalado",
+    "dns": "Registro MX",
+    "spf": "SPF",
+    "dkim": "DKIM",
+    "dmarc": "DMARC",
+    "mta_sts": "MTA-STS",
+    "ptr": "DNS inverso (PTR)",
+    "port25": "Puerto 25 saliente"
+  },
+  "unknown": {
+    "server": "Estado no disponible.",
+    "ptr": "Lo define tu proveedor de alojamiento. Esta página aún no puede leerlo."
+  },
+  "dns": {
+    "title": "DNS del dominio",
+    "domain": "Dominio",
+    "domainPlaceholder": "example.com",
+    "knownDomains": "Dominios de esta instancia",
+    "preset": "Proveedor de correo",
+    "selfHosted": "Autoalojado",
+    "mailHost": "Host de correo",
+    "ipv4": "IPv4 del servidor",
+    "ipv4Placeholder": "Dirección pública",
+    "plan": "Vista previa de registros",
+    "apply": "Aplicar {{count}} registros",
+    "applying": "Aplicando",
+    "check": "Comprobar",
+    "checking": "Comprobando",
+    "planHash": "Plan {{hash}}",
+    "noChanges": "Nada que añadir. Estos registros ya existen.",
+    "blocked": "El plan está bloqueado por registros existentes. Corrígelos primero en tu proveedor de DNS.",
+    "applied": "{{count}} registros aplicados",
+    "colAction": "Plan",
+    "colName": "Nombre",
+    "colType": "Tipo",
+    "colValue": "Valor",
+    "colLive": "Actual",
+    "tableLabel": "Registros DNS de correo planificados",
+    "action": {
+      "add": "Añadir",
+      "unchanged": "Sin cambios",
+      "replace": "Reemplazar",
+      "refused": "Rechazado"
+    },
+    "error": "La solicitud falló: {{message}}"
+  },
+  "next": {
+    "title": "Siguiente paso",
+    "allSet": "La configuración parece completa",
+    "step": {
+      "install": "Instala el servidor de correo",
+      "fix": "Inicia el contenedor de correo",
+      "wait": "Espera a que el servidor de correo responda",
+      "dns": "Añade tus registros DNS",
+      "verify": "Comprueba el DNS de nuevo"
+    },
+    "tls": {
+      "self-signed": "TLS: autofirmado",
+      "provided": "TLS: certificado proporcionado",
+      "unknown": "TLS: desconocido"
+    },
+    "tlsSelfSigned": "Autofirmado: reemplázalo antes de enviar correo real.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "cta": "Vista previa de registros DNS",
+    "ctaBody": "Muestra los registros que necesita este dominio, sin cambiar nada hasta que los apliques.",
+    "doneLabel": "Pasos completados",
+    "doneItem": {
+      "installed": "Aplicación de correo instalada",
+      "running": "Contenedor en ejecución",
+      "admin": "La API de administración responde"
+    }
+  },
+  "server": {
+    "installAction": "Instalar",
+    "done": "En ejecución y respondiendo",
+    "stopped": "Instalado pero detenido"
+  },
+  "ports": {
+    "title": "Puertos de correo",
+    "listLabel": "Estado de enlace y firewall de los puertos de correo",
+    "open": "Abrir puertos de correo",
+    "opened": "Puertos de correo abiertos",
+    "pending": "Abriendo",
+    "failed": "No se pudieron abrir los puertos de correo",
+    "missing": "Esta aplicación de correo no publica los puertos de correo. Vuelve a desplegarla primero desde la plantilla actual.",
+    "webStays": "Webmail y la interfaz de cuentas mantienen su propio enlace ({{bind}}). Abrir los puertos de correo nunca los publica.",
+    "confirmTitle": "¿Abrir los puertos 25, 465, 587 y 993?",
+    "consequence": "Solo estos cuatro puertos reciben un enlace público y una regla de permiso en el firewall del host. El contenedor se recrea.",
+    "certificate": "Usa un certificado TLS real, no el autofirmado, y mantén el servidor protegido antes de abrir los puertos.",
+    "confirm": "Abrir los puertos",
+    "bind": {
+      "public": "público",
+      "private": "privado",
+      "not_published": "no publicado"
+    },
+    "firewall": {
+      "allowed": "el firewall permite",
+      "blocked": "el firewall bloquea",
+      "not_filtering": "el firewall no filtra",
+      "unknown": "firewall desconocido"
+    }
+  },
+  "mailboxes": {
+    "title": "Buzones",
+    "failed": "La solicitud de correo falló.",
+    "noUser": "Ninguno",
+    "needsWrite": "Requiere la habilidad write:sensitive.",
+    "needsRoot": "Solo un usuario root puede hacerlo.",
+    "pendingWarning": "El servidor de correo no estaba accesible, así que la suspensión aún no se aplicó. Se aplicará en la próxima llamada de correo correcta.",
+    "status": {
+      "active": "Activo",
+      "suspended": "Suspendido",
+      "pending": "Suspensión pendiente"
+    },
+    "col": {
+      "address": "Dirección",
+      "team": "Equipo",
+      "user": "Usuario vinculado",
+      "status": "Estado",
+      "created": "Creado",
+      "actions": "Acciones"
+    },
+    "form": {
+      "localpart": "Nombre",
+      "domain": "Dominio",
+      "linkedUser": "Usuario vinculado (opcional)",
+      "noUser": "Sin usuario vinculado",
+      "add": "Añadir buzón",
+      "localpartHint": "jo"
+    },
+    "empty": {
+      "title": "Aún no hay buzones",
+      "claim": "Reclama un dominio arriba y luego añade el primer buzón.",
+      "add": "Añade el primer buzón arriba."
+    },
+    "suspend": "Suspender",
+    "resume": "Reanudar",
+    "reset": "Restablecer contraseña",
+    "delete": "Eliminar",
+    "suspendFor": "Suspender {{address}}",
+    "resumeFor": "Reanudar {{address}}",
+    "resetFor": "Restablecer la contraseña de {{address}}",
+    "deleteFor": "Eliminar {{address}}",
+    "deleteTitle": "¿Eliminar {{address}}?",
+    "deleteBody": "Escribe la dirección para confirmar. Suspender suele ser la mejor opción.",
+    "reveal": {
+      "title": "Contraseña de {{address}}",
+      "label": "Contraseña generada",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "once": "Se muestra una sola vez. No se almacena.",
+      "saved": "La guardé"
+    }
+  },
+  "aliases": {
+    "title": "Alias",
+    "needsMailbox": "Añade primero un buzón. Un alias debe apuntar a un buzón.",
+    "empty": "Aún no hay alias.",
+    "listLabel": "Alias",
+    "to": "a",
+    "remove": "Quitar",
+    "removeFor": "Quitar {{address}}",
+    "form": {
+      "alias": "Alias",
+      "target": "Reenviar a",
+      "add": "Añadir alias",
+      "aliasHint": "equipo"
+    }
+  },
+  "queue": {
+    "title": "Cola",
+    "count_one": "{{count}} mensaje en espera",
+    "count_other": "{{count}} mensajes en espera",
+    "empty": "No hay nada esperando para entregarse.",
+    "holdAll": "Retener todo",
+    "releaseAll": "Liberar todo",
+    "hold": "Retener",
+    "release": "Liberar",
+    "held": "Retenido",
+    "holdFor": "Retener el mensaje {{id}}",
+    "releaseFor": "Liberar el mensaje {{id}}",
+    "col": {
+      "sender": "Remitente",
+      "domain": "Dominio destino",
+      "attempts": "Intentos",
+      "next": "Próximo intento",
+      "error": "Último error"
+    }
+  },
+  "domains": {
+    "domain": "Dominio",
+    "team": "Equipo",
+    "claim": "Reclamar dominio",
+    "claimed": "Reclamado"
+  },
+  "hold": {
+    "title": "Restauración en curso, el correo está retenido",
+    "body": "Una restauración de correo mantiene esta aplicación detenida. La plataforma no la iniciará ni la cambiará hasta que la restauración termine o se revierta. Sigue el trabajo en el panel de respaldos."
+  },
+  "demo": {
+    "badge": "Datos de demostración",
+    "hint": "Modo demo local: nada de esto es real y nada llega a un proveedor de DNS ni a un servidor de correo.",
+    "reset": "Restablecer demo"
+  },
+  "backup": {
+    "title": "Respaldo",
+    "last": "Último respaldo",
+    "never": "Aún no hay respaldo",
+    "runNow": "Respaldar ahora",
+    "running": "Respaldando: {{step}}",
+    "restoring": "Restaurando: {{step}}",
+    "usage": "{{used}} de {{cap}} usados",
+    "usageLabel": "Espacio de respaldo usado",
+    "notEncrypted": "Los respaldos están desactivados hasta que el servidor tenga una clave de cifrado, porque contendrían correo sin cifrar.",
+    "failed": "El respaldo falló",
+    "jobFailed": "El último trabajo falló: {{error}}",
+    "verified": "Verificado",
+    "unverified": "Sin verificar",
+    "empty": "Aún no hay respaldos almacenados.",
+    "needsWrite": "Requiere permiso para cambiar la configuración del correo.",
+    "col": {
+      "backup": "Respaldo",
+      "size": "Tamaño",
+      "mox": "Mox",
+      "where": "Ubicación",
+      "actions": "Acciones"
+    },
+    "restore": "Restaurar",
+    "restoreFor": "Restaurar el respaldo {{id}}",
+    "steps": {
+      "version": "comprobando versión",
+      "backup": "volcando datos",
+      "verify": "verificando",
+      "copy": "copiando",
+      "archive": "archivando",
+      "prune": "depurando respaldos antiguos",
+      "extract": "descomprimiendo",
+      "stage": "preparando",
+      "stop": "deteniendo el correo",
+      "swap": "intercambiando datos",
+      "start": "iniciando el correo",
+      "wait": "esperando al correo"
+    },
+    "line": "Último respaldo {{when}}, {{size}}, {{state}}",
+    "verifiedLower": "verificado",
+    "unverifiedLower": "sin verificar",
+    "capChip": "límite de {{cap}}",
+    "destination": "Almacenamiento",
+    "destinationOpen": "Abrir la configuración de almacenamiento de respaldos",
+    "history": "Historial",
+    "historyTitle": "Historial de respaldos",
+    "progressLabel": "Progreso del respaldo",
+    "actionsFor": "Acciones del respaldo {{id}}"
+  },
+  "restore": {
+    "title": "Restaurar el respaldo {{id}}",
+    "checking": "Comprobando el respaldo...",
+    "summary": "{{files}} archivos, {{size}}, creado con mox {{mox}}.",
+    "warning": "El correo se detiene mientras dura la restauración y el correo actual se reemplaza por este respaldo.",
+    "confirmLabel": "Escribe {{id}} para confirmar",
+    "submit": "Restaurar ahora",
+    "working": "Restaurando...",
+    "conflict": "Este respaldo no se puede restaurar ahora: el mox en ejecución es más antiguo que el respaldo, o hay otro trabajo en curso.",
+    "failed": "La restauración falló",
+    "started": "Restauración iniciada"
+  },
+  "storage": {
+    "title": "Almacenamiento de respaldos",
+    "kind": "Destino",
+    "local": "Carpeta local",
+    "s3": "Bucket S3 o R2",
+    "folder": "Carpeta",
+    "cap": "Límite de espacio",
+    "endpoint": "Endpoint",
+    "region": "Región",
+    "bucket": "Bucket",
+    "accessKey": "ID de clave de acceso",
+    "secret": "Clave secreta",
+    "secretHint": "No se vuelve a mostrar, introdúcela cada vez que guardes.",
+    "pathStyle": "URLs de estilo ruta",
+    "save": "Guardar y comprobar",
+    "saving": "Comprobando...",
+    "recheck": "Volver a comprobar",
+    "saved": "Almacenamiento guardado",
+    "checks": "Validación",
+    "pass": "correcto",
+    "fail": "fallido",
+    "step": {
+      "put": "Escritura",
+      "get": "Lectura",
+      "list": "Listado",
+      "delete": "Eliminación"
+    },
+    "localOnly": "En esta versión los respaldos aún se escriben en la carpeta local. El bucket solo se comprueba y se guarda.",
+    "failed": "La comprobación del almacenamiento falló"
+  },
+  "systemEmail": {
+    "title": "Correos del sistema",
+    "intro": "Envía invitaciones, restablecimientos de contraseña, alertas y avisos de la página de estado desde noreply en uno de tus dominios, a través de este servidor de correo.",
+    "domain": "Dominio del remitente",
+    "fromOption": "noreply@{{domain}}",
+    "replace": "Reemplazar el proveedor de correo actual (al desactivar se restaura)",
+    "enable": "Usar mi servidor de correo",
+    "disable": "Desactivar",
+    "rotate": "Rotar contraseña",
+    "test": "Enviar prueba",
+    "active": "Enviando a través de {{addr}}.",
+    "replaced": "Activado, pero la configuración de correo cambió después. Desactiva para restaurar el proveedor anterior.",
+    "lastOk": "La última prueba a {{to}} fue correcta: {{message}}",
+    "lastFail": "La última prueba a {{to}} falló: {{message}}",
+    "dns": "DNS: SPF {{spf}}, DKIM {{dkim}}, DMARC {{dmarc}}",
+    "dnsWarning": "El correo a destinatarios externos irá a spam o será rechazado hasta que SPF, DKIM y DMARC pasen y el DNS inverso (PTR) del servidor coincida con su host de correo.",
+    "dnsLink": "Abrir el panel de DNS",
+    "needsRoot": "Solo un administrador de la instancia puede cambiar a dónde van los correos del sistema.",
+    "noDomain": "Reclama primero un dominio en Buzones.",
+    "failed": "La solicitud de correo del sistema falló.",
+    "steps": "Pasos",
+    "step": {
+      "mailbox": "Buzón",
+      "provider_saved": "Proveedor guardado",
+      "test_send_queued": "Envío de prueba en cola",
+      "delivered_to_local_queue": "Entregado a la cola del servidor de correo",
+      "provider_restored": "Proveedor anterior restaurado",
+      "mailbox_suspended": "Buzón suspendido",
+      "rotated": "Contraseña rotada"
+    },
+    "switchLabel": "Enviar los correos de Levelrail desde {{from}}",
+    "settings": "Ajustes",
+    "statusOn": "Activado",
+    "statusOff": "Desactivado",
+    "statusReplaced": "Cambiado desde la activación",
+    "replaceHelp": "Desactiva el proveedor que usas hoy. Al desactivar se restaura.",
+    "pinNote": "Fijado: si la configuración de correo cambia después, aparecerá como cambiada y Desactivar restaura el proveedor anterior.",
+    "noLast": "Aún sin probar",
+    "testShort": "Probar",
+    "dnsReady": "Estado del DNS",
+    "dnsRow": "{{name}}: {{value}}"
+  },
+  "tabs": {
+    "label": "Secciones del correo",
+    "overview": "Resumen",
+    "mailboxes": "Buzones",
+    "domains": "Dominios y DNS",
+    "backups": "Respaldos"
+  },
+  "shell": {
+    "running": "En ejecución",
+    "stopped": "Detenido",
+    "waiting": "Iniciando",
+    "notInstalled": "No instalado",
+    "settings": "Ajustes",
+    "settingsTitle": "Ajustes del correo",
+    "queueChip": "Cola {{count}}",
+    "queueTitle": "Cola de entrega",
+    "addMailbox": "Añadir buzón",
+    "statusLabel": "Estado del servidor de correo",
+    "skeleton": "Cargando el estado del correo"
+  },
+  "webmail": {
+    "open": "Abrir webmail",
+    "openFor": "Abrir webmail de {{address}}",
+    "disabled": "Asocia un dominio al listener de webmail para activarlo",
+    "settings": "Ajustes del dominio de la aplicación"
+  },
+  "ov": {
+    "allSet": "Todo listo",
+    "details": "Detalles",
+    "hideDetails": "Ocultar detalles",
+    "chips": {
+      "dns": "DNS {{pass}}/{{total}}",
+      "dnsNone": "DNS: aún sin comprobar",
+      "backup": "Respaldo {{when}}",
+      "backupNone": "Aún no hay respaldo",
+      "queue": "{{count}} en cola"
+    },
+    "statsLabel": "El correo de un vistazo",
+    "backupOpen": "Abrir respaldos",
+    "checkDns": "Comprobar DNS",
+    "checkFailed": "La comprobación de DNS falló"
+  },
+  "mbx": {
+    "search": "Buscar buzones",
+    "filter": "Filtrar por estado",
+    "all": "Todos",
+    "active": "Activos",
+    "suspended": "Suspendidos",
+    "system": "Sistema",
+    "add": {
+      "name": "Nombre",
+      "hint": "nombre",
+      "submit": "Crear",
+      "cancel": "Cancelar",
+      "claims": "Reclama {{domain}} para tu equipo predeterminado",
+      "domainLabel": "Dominio",
+      "user": "Usuario vinculado (opcional)",
+      "close": "Cerrar"
+    },
+    "empty": "Aún no hay buzones.",
+    "noMatch": "Ningún buzón coincide.",
+    "list": "Buzones",
+    "actions": "Acciones de {{address}}",
+    "copy": "Copiar dirección",
+    "copied": "Copiado",
+    "details": "Detalles",
+    "aliasesTitle": "Alias",
+    "addDomain": "Añadir dominio",
+    "domainChip": "Dominio {{domain}}",
+    "created": "Creado {{date}}",
+    "team": "Equipo {{team}}",
+    "user": "Vinculado: {{user}}",
+    "claimedDomains": "Dominios reclamados",
+    "noDomains": "Aún no hay dominios reclamados. Se reclama al añadir el primer buzón.",
+    "loading": "Cargando buzones",
+    "notUp": "Disponible cuando el servidor de correo esté en ejecución.",
+    "storage": "Almacenamiento de respaldos",
+    "viewOnly": "Puedes ver los buzones pero no gestionarlos",
+    "viewOnlyReason": "Tu rol de equipo no permite gestionar el correo. Pide acceso a un administrador o propietario del equipo.",
+    "actionForbidden": "Tu rol de equipo no permite esto. Pide a un administrador o propietario del equipo que lo haga o que cambie tu rol."
+  },
+  "cert": {
+    "title": "Certificado de correo",
+    "listLabel": "Certificado servido en los puertos de correo",
+    "host": "Host",
+    "source": "Origen",
+    "issuer": "Emisor",
+    "expires": "Caduca",
+    "daysLeft_one": "Queda {{count}} día",
+    "daysLeft_other": "Quedan {{count}} días",
+    "serial": "Serie",
+    "fingerprint": "SHA-256",
+    "selfSigned": "Autofirmado",
+    "notServed": "Aún no se sirve ningún certificado",
+    "probeError": "La sonda falló: {{message}}",
+    "obtain": "Obtener certificado",
+    "obtaining": "Solicitando",
+    "obtained": "Certificado solicitado",
+    "failed": "No se pudo obtener un certificado"
+  }
+}

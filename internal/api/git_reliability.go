@@ -159,7 +159,7 @@ func (rt *Router) gitSourceResourceFor(ctx context.Context, g store.GitSource, h
 		res.WebhookRegistration = &gitWebhookRegistrationResource{State: rel.WebhookState, Error: rel.WebhookError, ChangedAt: timePtrUTC(rel.WebhookChangedAt)}
 	}
 	res.Poll = &gitPollStatusResource{
-		Enabled:      gitPollConfigFromEnv().Enabled && effectiveGitSourceTriggerMode(g.TriggerMode) != "release",
+		Enabled:      rt.gitPollConfig(ctx).Enabled && effectiveGitSourceTriggerMode(g.TriggerMode) != "release",
 		LastPolledAt: timePtrUTC(rel.LastPolledAt), LastWebhookAt: timePtrUTC(rel.LastWebhookAt), LastSeenHead: rel.LastSeenHead, Error: rel.PollError,
 	}
 	return res

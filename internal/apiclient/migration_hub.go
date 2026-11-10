@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 )
@@ -159,5 +160,66 @@ func (c *Client) ApplyMigrationSession(ctx context.Context, id, password string)
 		Password string `json:"password,omitempty"`
 	}{Password: password}
 	err := c.do(ctx, http.MethodPost, hubBase+"/"+url.PathEscape(id)+"/apply", body, &out)
+	return out, err
+}
+
+// HubEnvVar is one env entry of a migrated database's connection.
+type HubEnvVar struct {
+	EnvVar string `json:"env_var"`
+	Field  string `json:"field"`
+	Value  string `json:"value,omitempty"`
+	Secret bool   `json:"secret,omitempty"`
+}
+
+// HubConnection mirrors the hub connection response; Revealed says whether
+// secret values are in it.
+type HubConnection struct {
+	Database  string      `json:"database"`
+	Engine    string      `json:"engine"`
+	Host      string      `json:"host"`
+	Port      int         `json:"port"`
+	Username  string      `json:"username,omitempty"`
+	Name      string      `json:"name,omitempty"`
+	URL       string      `json:"url"`
+	Env       []HubEnvVar `json:"env"`
+	Reference string      `json:"reference"`
+	Revealed  bool        `json:"revealed"`
+}
+
+// DeleteMigrationSession removes a session and the password held for it.
+func (c *Client) DeleteMigrationSession(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, hubBase+"/"+url.PathEscape(id), nil, nil)
+}
+
+// SetMigrationSessionStep moves a session to a later wizard step.
+func (c *Client) SetMigrationSessionStep(ctx context.Context, id, step string) (HubSession, error) {
+	var out HubSession
+	body := struct {
+		Step string `json:"step"`
+	}{Step: step}
+	err := c.do(ctx, http.MethodPut, hubBase+"/"+url.PathEscape(id)+"/step", body, &out)
+	return out, err
+}
+
+// MigrationSessionReceipt returns the receipt undecoded, so a saved copy keeps
+// every field the server sent, including ones this client does not know yet.
+func (c *Client) MigrationSessionReceipt(ctx context.Context, id string) (json.RawMessage, error) {
+	var out json.RawMessage
+	err := c.do(ctx, http.MethodGet, hubBase+"/"+url.PathEscape(id)+"/receipt", nil, &out)
+	return out, err
+}
+
+// MigrationConnection returns a verified database's connection without secrets.
+func (c *Client) MigrationConnection(ctx context.Context, id, db string) (HubConnection, error) {
+	var out HubConnection
+	err := c.do(ctx, http.MethodGet, hubBase+"/"+url.PathEscape(id)+"/items/"+url.PathEscape(db)+"/connection", nil, &out)
+	return out, err
+}
+
+// RevealMigrationConnection returns the connection with its secret values;
+// the server requires read:sensitive and audits it.
+func (c *Client) RevealMigrationConnection(ctx context.Context, id, db string) (HubConnection, error) {
+	var out HubConnection
+	err := c.do(ctx, http.MethodPost, hubBase+"/"+url.PathEscape(id)+"/items/"+url.PathEscape(db)+"/reveal", nil, &out)
 	return out, err
 }

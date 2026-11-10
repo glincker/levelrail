@@ -161,3 +161,38 @@ func TestDatabaseUpgradeRoutesNotConfigured(t *testing.T) {
 		t.Errorf("unconfigured summary = %d, want 501", rec.Code)
 	}
 }
+
+func TestDatabaseUpgradeNow_DropsParamsOnlyWhenAccepted(t *testing.T) {
+	rt, db, cookie := newUpgradeTestRouter(t)
+	ctx := context.Background()
+	do := func(body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/upgrade-now", body))
+		return rec
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE desired_databases SET engine_params = '{"max_connections":"999999","work_mem":"8MB"}' WHERE name = 'main'`); err != nil {
+		t.Fatal(err)
+	}
+	if rec := do(`{"version":"16.11","confirm":"main"}`); rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "max_connections") {
+		t.Fatalf("without drop: %d %s, want 409 naming max_connections", rec.Code, rec.Body.String())
+	}
+	// No backup target: the upgrade is refused, so nothing may be dropped.
+	if rec := do(`{"version":"16.11","confirm":"main","drop_incompatible_params":true}`); rec.Code != http.StatusConflict {
+		t.Fatalf("refused upgrade: %d %s", rec.Code, rec.Body.String())
+	}
+	if p, _ := db.GetDatabaseEngineParams(ctx, "main"); p.Applied["max_connections"] != "999999" {
+		t.Fatalf("a refused upgrade dropped params: %v", p.Applied)
+	}
+	if err := db.SaveBackupTarget(ctx, store.BackupTarget{ID: "tgt", Name: "s3", Provider: "aws", Region: "us-east-1", Bucket: "b", CreatedAt: "2026-10-10T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", "tgt", "", 0, 0); err != nil {
+		t.Fatal(err)
+	}
+	if rec := do(`{"version":"16.11","confirm":"main","drop_incompatible_params":true}`); rec.Code != http.StatusAccepted {
+		t.Fatalf("accepted upgrade: %d %s", rec.Code, rec.Body.String())
+	}
+	if p, _ := db.GetDatabaseEngineParams(ctx, "main"); p.Applied["max_connections"] != "" || p.Applied["work_mem"] != "8MB" {
+		t.Fatalf("after accepted upgrade = %v", p.Applied)
+	}
+}

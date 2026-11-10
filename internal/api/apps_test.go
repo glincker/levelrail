@@ -2512,3 +2512,28 @@ func TestHandleCreateApp_RejectsNonDNSLabelName(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHandleDeleteApp_RemovesComposeBackupSchedulesByAppID(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveApp(ctx, store.App{ID: "shop", Name: "shop", CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z"}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "shop-db", AppID: "shop", Image: "postgres:16", Port: 5432}); err != nil {
+		t.Fatalf("seed service: %v", err)
+	}
+	cfg := store.ComposeServiceBackup{App: "shop", Service: "db", Engine: store.EnginePostgres, BackupSchedule: "0 3 * * *", Enabled: true}
+	if err := db.UpsertComposeServiceBackup(ctx, cfg); err != nil {
+		t.Fatalf("seed schedule: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/shop-db", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rows, _ := db.ListComposeServiceBackups(ctx, "shop"); len(rows) != 0 {
+		t.Fatalf("schedules left = %d, want 0 once the app row is dropped", len(rows))
+	}
+}

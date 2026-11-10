@@ -28,6 +28,14 @@ func runSystem(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runSystemIntegrity(prog, args[1:], stdout, stderr, lookupEnv)
 	case "networks":
 		return runSystemNetworks(prog, args[1:], stdout, stderr, lookupEnv)
+	case "db-space":
+		return runSystemDBSpace(prog, args[1:], stdout, stderr, lookupEnv)
+	case "slow-statements":
+		return runSystemSlowStatements(prog, args[1:], stdout, stderr, lookupEnv)
+	case "processes":
+		return runSystemProcesses(prog, args[1:], stdout, stderr, lookupEnv)
+	case "disk":
+		return runSystemDiskHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown system subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, systemUsage(prog))
@@ -45,8 +53,12 @@ func systemUsage(prog string) string {
   %[1]s system health [--fix ID]                 show control plane saturation, optionally apply a fix
   %[1]s system integrity [--check [--full]]      database integrity state and restorable snapshots
   %[1]s system integrity --restore NAME|latest   stage a verified snapshot for the next start
+  %[1]s system db-space [compact [--force]]      database size report, explicit compaction
+  %[1]s system slow-statements                   slowest control plane database statements
+  %[1]s system processes                         largest processes on the control plane host
   %[1]s system networks [--orphans]             list app networks, owners and pool usage
   %[1]s system networks prune --dry-run|--yes    remove orphaned, empty app networks
+  %[1]s system disk history [--days N]           disk use over time and a days-until-full forecast
 
 With --domain, also prints the exact DNS records to create for that name.
 `, prog)

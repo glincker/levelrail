@@ -187,6 +187,17 @@ func (rt *Router) beginPreview(ctx context.Context, appName string, gs store.Git
 		rt.logger.Error("api: pull request webhook: load preview failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 		return nil, true, http.StatusInternalServerError, "internal error\n"
 	}
+	// A new preview must not land on a compose stack's name and join its records.
+	if existing == nil {
+		taken, terr := rt.stackNameTaken(ctx, previewName)
+		if terr != nil {
+			rt.logger.Error("api: pull request webhook: check preview name failed", slog.String("error", terr.Error()), slog.String("preview", previewName))
+			return nil, true, http.StatusInternalServerError, "internal error\n"
+		}
+		if taken {
+			return nil, true, http.StatusConflict, fmt.Sprintf("refused: preview name %q is already an app\n", previewName)
+		}
+	}
 
 	settings := rt.previewSettings(ctx, appName)
 	base := store.PreviewEnvironment{

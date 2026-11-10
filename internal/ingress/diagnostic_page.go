@@ -92,6 +92,9 @@ func diagnosticCaseHTML(status int) string {
 
 // diagnosticCatchAll is the last route: any host no route claimed gets the 404 page.
 func diagnosticCatchAll(h *Hardening) Route {
+	if r, ok := unmatchedCatchAll(h); ok {
+		return r
+	}
 	if h.DiagnosticDial != "" && h.DiagnosticToken != "" {
 		return diagnosticProxyRoute(h)
 	}

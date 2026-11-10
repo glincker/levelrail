@@ -252,62 +252,71 @@ function RedirectsEditor({
         title={t('redirects.aliasesTitle')}
         description={t('redirects.aliasesHelp')}
       >
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground">
-              <th className="py-1 font-normal">{t('redirects.domain')}</th>
-              <th className="py-1 font-normal">{t('redirects.primary')}</th>
-              <th className="py-1 font-normal">{t('redirects.alias')}</th>
-              <th className="py-1 font-normal">{t('redirects.current')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.app_domains.map((d) => (
-              <tr key={d.domain} className="border-t border-border">
-                <td className="py-1 font-mono text-xs break-all">{d.domain}</td>
-                <td className="py-1">
-                  <input
-                    type="radio"
-                    name="primary"
-                    className="accent-primary"
-                    aria-label={t('redirects.makePrimary', {
-                      domain: d.domain,
-                    })}
-                    checked={primary === d.domain}
-                    disabled={d.wildcard}
-                    onChange={() => {
-                      setPrimary(d.domain)
-                      setAliases((a) => a.filter((x) => x !== d.domain))
-                    }}
-                  />
-                </td>
-                <td className="py-1">
-                  <input
-                    type="checkbox"
-                    className="accent-primary"
-                    aria-label={t('redirects.makeAlias', { domain: d.domain })}
-                    disabled={d.domain === primary || d.wildcard}
-                    checked={aliases.includes(d.domain)}
-                    onChange={(e) =>
-                      setAliases((a) =>
-                        e.target.checked
-                          ? [...a, d.domain]
-                          : a.filter((x) => x !== d.domain),
-                      )
-                    }
-                  />
-                </td>
-                <td className="py-1 text-xs text-muted-foreground">
-                  {d.maintenance
-                    ? t('redirects.maintenance')
-                    : d.redirect
-                      ? `${d.redirect.status_code} ${d.redirect.target_url}`
-                      : t('redirects.servesApp')}
-                </td>
+        <div className="overflow-x-auto">
+          <table
+            aria-label={t('a11y.tables.redirects', { ns: 'common' })}
+            className="w-full text-sm"
+          >
+            <thead>
+              <tr className="text-left text-xs text-muted-foreground">
+                <th className="py-1 font-normal">{t('redirects.domain')}</th>
+                <th className="py-1 font-normal">{t('redirects.primary')}</th>
+                <th className="py-1 font-normal">{t('redirects.alias')}</th>
+                <th className="py-1 font-normal">{t('redirects.current')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.app_domains.map((d) => (
+                <tr key={d.domain} className="border-t border-border">
+                  <td className="py-1 font-mono text-xs break-all">
+                    {d.domain}
+                  </td>
+                  <td className="py-1">
+                    <input
+                      type="radio"
+                      name="primary"
+                      className="accent-primary"
+                      aria-label={t('redirects.makePrimary', {
+                        domain: d.domain,
+                      })}
+                      checked={primary === d.domain}
+                      disabled={d.wildcard}
+                      onChange={() => {
+                        setPrimary(d.domain)
+                        setAliases((a) => a.filter((x) => x !== d.domain))
+                      }}
+                    />
+                  </td>
+                  <td className="py-1">
+                    <input
+                      type="checkbox"
+                      className="accent-primary"
+                      aria-label={t('redirects.makeAlias', {
+                        domain: d.domain,
+                      })}
+                      disabled={d.domain === primary || d.wildcard}
+                      checked={aliases.includes(d.domain)}
+                      onChange={(e) =>
+                        setAliases((a) =>
+                          e.target.checked
+                            ? [...a, d.domain]
+                            : a.filter((x) => x !== d.domain),
+                        )
+                      }
+                    />
+                  </td>
+                  <td className="py-1 text-xs text-muted-foreground">
+                    {d.maintenance
+                      ? t('redirects.maintenance')
+                      : d.redirect
+                        ? `${d.redirect.status_code} ${d.redirect.target_url}`
+                        : t('redirects.servesApp')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <div className="flex flex-wrap items-end gap-2">
           <NativeSelect
             id="alias-status"

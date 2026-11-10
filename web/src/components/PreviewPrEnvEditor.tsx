@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -75,7 +76,17 @@ export function PreviewPrEnvEditor({
               <AlertDescription>{list.error.message}</AlertDescription>
             </Alert>
           ) : overrides.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('prEnv.empty')}</p>
+            <EmptyState
+              kind="first-run"
+              icon={
+                <SlidersHorizontalGlassIcon
+                  className="size-5"
+                  aria-hidden="true"
+                />
+              }
+              title={t('prEnv.empty')}
+              description={t('prEnv.emptyHint')}
+            />
           ) : (
             <ul className="space-y-1">
               {overrides.map((o) => (

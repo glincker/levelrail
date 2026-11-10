@@ -216,5 +216,24 @@
     "resultFailed_other": "{{count}} images could not be removed:",
     "announce_one": "Removed {{count}} image.",
     "announce_other": "Removed {{count}} images."
+  },
+  "retention": {
+    "title": "Image retention",
+    "description": "How many recent deploy images this app keeps for rollback. The cleanup removes older ones on its next run.",
+    "keepLabel": "Images to keep",
+    "hint": "0 follows the global setting, otherwise {{min}} or more.",
+    "preview": "Preview removals",
+    "save": "Save",
+    "saved": "Image retention saved",
+    "saveFailed": "Could not save image retention",
+    "protected": "This app is in the protected environment {{env}}, so it keeps at least {{global}} images.",
+    "wouldRemove_one": "The next cleanup would remove {{count}} image, freeing {{size}}.",
+    "wouldRemove_other": "The next cleanup would remove {{count}} images, freeing {{size}}.",
+    "alwaysKept": "The running image, rollback pins, the previous successful release, images shared with other apps and images a queued or held deploy needs are always kept.",
+    "source": {
+      "app": "Keeps the newest {{count}} deploy images (set on this app).",
+      "app_default": "Keeps the newest {{count}} deploy images (the default for apps).",
+      "global": "Keeps the newest {{count}} deploy images (the global setting, {{global}})."
+    }
   }
 }

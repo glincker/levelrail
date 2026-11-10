@@ -37,6 +37,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeAppInvalid(w, err)
 		return
 	}
+	if err := rt.checkReplicaCap(r.Context(), req.Replicas); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
 	// Create only: apps that predate this rule keep updating under their old names.
 	if err := spec.ValidateServiceName(req.Name); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -53,6 +57,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if len(req.Secrets) > 0 && rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
+	}
+	for _, v := range req.Secrets {
+		if !rt.allowProviderRefs(w, r, v) {
+			return
+		}
 	}
 	req.ProjectID = defaultProjectFor(r, req.ProjectID)
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
@@ -97,6 +106,14 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
+	// A compose stack's name has no service row; taking it would hand the stack to the creator's team.
+	if taken, merr := rt.stackNameTaken(r.Context(), req.Name); merr != nil {
+		rt.internalError(w, "api: create app: check stack name failed", merr, slog.String("name", req.Name))
+		return
+	} else if taken {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
+		return
+	}
 
 	desired := req.toDesiredService()
 	// Required: false for every entry here, since this endpoint has no
@@ -139,6 +156,14 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// row below doesn't exist yet.
 	unlockName := lockAppName(req.Name)
 	defer unlockName()
+	// The checks above ran unlocked; a clone or compose deploy may have taken the name since.
+	if ferr := rt.appNameFree(r.Context(), req.Name); errors.Is(ferr, errAppNameTaken) {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
+		return
+	} else if ferr != nil {
+		rt.internalError(w, "api: create app: recheck name failed", ferr, slog.String("name", req.Name))
+		return
+	}
 	for key, value := range req.Secrets {
 		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
 			if errors.Is(err, secrets.ErrSecretLocked) {
@@ -227,6 +252,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		req.DNS = rt.dnsForAutoDomain(r.Context(), r, req.Name, autoDomain)
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
+	rt.changes.Publish(changeApps, req.Name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }

@@ -197,6 +197,9 @@ func TestTouchAPITokenLastUsed(t *testing.T) {
 	if err := db.TouchAPITokenLastUsed(ctx, "tok_touch"); err != nil {
 		t.Fatalf("TouchAPITokenLastUsed() error = %v", err)
 	}
+	if err := db.FlushTouches(ctx); err != nil {
+		t.Fatalf("FlushTouches() error = %v", err)
+	}
 
 	got, err := db.GetAPITokenByHash(ctx, "hash-touch")
 	if err != nil {

@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { BackupCopy, BackupCopySettings } from '../types/backupCopy'
+import { pollMs } from '@/lib/pollTier'
 
 export const backupCopyKeys = {
   all: ['backup-copies'] as const,
@@ -42,7 +43,7 @@ export function backupCopyListQueryOptions() {
         await fetch('/api/v1/backups/copies'),
         'fetch backup copies',
       ),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

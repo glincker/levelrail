@@ -131,6 +131,7 @@
   "targets": {
     "title": "Destinos de reversión fijados",
     "empty": "Todavía no hay versiones fijadas. Una versión se fija cuando recibe tráfico.",
+    "emptyTitle": "Sin versiones fijadas",
     "live": "En vivo"
   },
   "publishLock": {
@@ -174,5 +175,13 @@
       "failed": "Fallido",
       "rolled_back": "Revertido"
     }
-  }
+  },
+  "freezeBanner": {
+    "title": "Congelación de despliegues activa",
+    "titleUntil": "Congelación de despliegues activa hasta {{when}}",
+    "body": "Un despliegue manual ahora anula la congelación. Indica el motivo; queda registrado en el despliegue.",
+    "reasonLabel": "Motivo para anular la congelación",
+    "reasonPlaceholder": "p. ej. corrección urgente de seguridad"
+  },
+  "pullFresh": "Exigir una consulta nueva al registro: fallar en lugar de desplegar la imagen en caché si el registro no responde."
 }

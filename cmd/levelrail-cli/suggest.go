@@ -100,6 +100,22 @@ func unknownVerbHint(prog string, path []string, got string) string {
 	return b.String()
 }
 
+// unknownCommandHint extends the top-level hint: when the typed noun is
+// close to a real one and the next word is a verb of it, suggest the pair.
+func unknownCommandHint(prog string, args []string) string {
+	if len(args) > 1 && !strings.HasPrefix(args[1], "-") {
+		for _, noun := range closestMatches(verbCandidates(nil), args[0]) {
+			for _, v := range verbCandidates([]string{noun}) {
+				if v == args[1] {
+					return fmt.Sprintf("did you mean: %s %s %s?\n", prog, noun, v) +
+						fmt.Sprintf("next step: run %s %s --help to list the available commands\n", prog, noun)
+				}
+			}
+		}
+	}
+	return unknownVerbHint(prog, nil, args[0])
+}
+
 var (
 	badFlagRe  = regexp.MustCompile(`flag provided but not defined: -{1,2}([A-Za-z0-9][\w.-]*)`)
 	usageFlagR = regexp.MustCompile(`(?m)^\s+-{1,2}([A-Za-z0-9][\w.-]*)`)

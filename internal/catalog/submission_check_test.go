@@ -10,7 +10,7 @@ func TestCheckSubmissionAcceptsShippedManifest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, id := range []string{"kafka", "nginx"} {
+	for _, id := range []string{"kafka", "otel-lgtm", "nginx"} {
 		tpl, err := fs.ReadFile(sub, id+"/template.yaml")
 		if err != nil {
 			t.Fatalf("%s: %v", id, err)

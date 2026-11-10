@@ -79,10 +79,13 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const domains = useQuery(domainsQueryOptions()).data ?? []
   const preset = findPreset(presetId)
 
-  const update = useCallback((patch: Partial<FlowValues>) => {
-    setValues((prev) => ({ ...prev, ...patch }))
-    if (patch.port !== undefined) setPortTouched(true)
-  }, [])
+  const update = useCallback(
+    (patch: Partial<FlowValues>) => {
+      setValues((prev) => ({ ...prev, ...patch }))
+      if (patch.port !== undefined) setPortTouched(true)
+    },
+    [setValues],
+  )
 
   const updateSource = useCallback(
     (patch: Partial<FlowValues>) => {
@@ -102,14 +105,14 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
         return next
       })
     },
-    [nameTouched, presetId],
+    [nameTouched, presetId, setValues],
   )
 
   const onDetectedPort = useCallback(
     (port: number) => {
       if (!portTouched) setValues((prev) => ({ ...prev, port: String(port) }))
     },
-    [portTouched],
+    [portTouched, setValues],
   )
 
   function choosePreset(id: string) {

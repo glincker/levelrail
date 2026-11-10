@@ -6,12 +6,24 @@ import {
   PageRailSection,
 } from '@/components/shell/PageRail'
 import { Badge } from '@/components/ui/badge'
+import { BrandTile } from '@/components/BrandLogoBadge'
 import { HelpLink } from '../HelpLink'
 import {
   useGitHubAppInstallations,
   useGitHubAppStatus,
 } from '../../queries/githubApp'
 import { useGitConnections } from '../../queries/gitConnections'
+
+// Brand marks come from the thesvg library through BrandTile, never vendored.
+const RAIL_BRAND: Record<RailProvider, string> = {
+  github: 'github',
+  gitlab: 'gitlab',
+  gitea: 'gitea',
+  forgejo: 'forgejo',
+  bitbucket: 'bitbucket',
+  bitbucket_server: 'bitbucket',
+  azure_devops: 'azure',
+}
 
 export type RailProvider =
   | 'github'
@@ -38,6 +50,8 @@ function GitProviderRailBody({
   instance,
 }: RailBodyProps) {
   const { t } = useTranslation('settings')
+  const { t: th } = useTranslation('hubs')
+  const providerName = th(`sources.provider.${provider}`)
   const access = t(`gitProviders.rail.access.${provider}`, {
     returnObjects: true,
   })
@@ -45,6 +59,16 @@ function GitProviderRailBody({
   return (
     <PageRail>
       <PageRailSection title={t('gitProviders.rail.connection')}>
+        <PageRailRow label={t('gitProviders.eyebrow')}>
+          <span className="flex items-center gap-2">
+            <BrandTile
+              name={RAIL_BRAND[provider]}
+              label={providerName}
+              size="sm"
+            />
+            {providerName}
+          </span>
+        </PageRailRow>
         <PageRailRow label={t('gitProviders.rail.status')}>
           <Badge variant={connected ? 'success' : 'muted'}>
             {connected

@@ -282,6 +282,8 @@ type ContainerSpec struct {
 	RestartPolicy string
 	// User runs the container process as this uid[:gid]. Empty keeps the image's user.
 	User string
+	// WorkingDir overrides the image's WORKDIR. Empty keeps the image's.
+	WorkingDir string
 	// UsernsMode is the engine's user namespace mode, such as "auto" or
 	// "keep-id" (Podman). Empty keeps the engine default.
 	UsernsMode string
@@ -293,6 +295,32 @@ type ContainerSpec struct {
 	Devices []string
 	// Files are inline files written into the container before it starts.
 	Files []FileMount
+	// Tmpfs is "path:opts" in-memory mounts; the spec layer requires a size.
+	Tmpfs []string
+	// Ulimits are per-process resource limits.
+	Ulimits []Ulimit
+	// Init runs a minimal init as PID 1.
+	Init bool
+	// StopTimeoutSeconds is applied at create and used by Stop; nil keeps the caller's grace.
+	StopTimeoutSeconds *int
+	// Sysctls are namespaced kernel settings, already limited to a safe list upstream.
+	Sysctls map[string]string
+	// CapDrop lists capabilities removed on top of any hardening profile.
+	CapDrop []string
+}
+
+// Ulimit is one soft and hard resource limit.
+type Ulimit struct {
+	Name string
+	Soft int64
+	Hard int64
+}
+
+// NeedsRuntimeCapability reports whether the spec sets a runtime option an
+// older agent would silently drop, so it must fail closed instead.
+func (s ContainerSpec) NeedsRuntimeCapability() bool {
+	return len(s.Tmpfs) > 0 || len(s.Ulimits) > 0 || s.Init || s.StopTimeoutSeconds != nil ||
+		len(s.Sysctls) > 0 || len(s.CapDrop) > 0 || s.PidsLimit > 0
 }
 
 // NeedsFilesCapability reports whether the spec carries files an agent that
@@ -339,6 +367,8 @@ const (
 	EventStart EventAction = "start"
 	EventDie   EventAction = "die"
 	EventStop  EventAction = "stop"
+	// EventOOM is the kernel killing the container for exceeding its memory limit.
+	EventOOM EventAction = "oom"
 )
 
 // Event is a trimmed container lifecycle event from the Docker event
@@ -585,4 +615,10 @@ type ExecSession interface {
 // reports "not supported on this node" if it fails.
 type TTYRuntime interface {
 	ExecTTY(ctx context.Context, containerID string, opts ExecTTYOptions) (ExecSession, error)
+}
+
+// LabeledNetworkEnsurer is EnsureNetwork with extra labels set on create, so a
+// caller's instance label survives a runtime that is not instance-scoped itself.
+type LabeledNetworkEnsurer interface {
+	EnsureLabeledNetwork(ctx context.Context, name string, labels map[string]string) (id string, err error)
 }

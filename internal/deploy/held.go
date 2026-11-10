@@ -44,6 +44,16 @@ type HeldRequest struct {
 	HeldRef    string `json:"held_ref,omitempty"`
 	// AllowPrivateRepoAuth records the requester's ability to mint repo tokens.
 	AllowPrivateRepoAuth bool `json:"allow_private_repo_auth,omitempty"`
+	// BuildSettings snapshots the app's build settings at hold time, so an
+	// approval binds what gets built. Nil (queued, not held) reads them at run time.
+	BuildSettings *HeldBuildSettings `json:"build_settings,omitempty"`
+}
+
+// HeldBuildSettings is the snapshot of store.AppBuildSettings a hold carries.
+type HeldBuildSettings struct {
+	Target   string `json:"target,omitempty"`
+	NoCache  bool   `json:"no_cache,omitempty"`
+	Provider string `json:"provider,omitempty"`
 }
 
 // HeldStore is the store surface holding and releasing needs.

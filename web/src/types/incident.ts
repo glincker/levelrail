@@ -34,3 +34,34 @@ export interface IncidentDraftInput {
   status: IncidentPublicStatus
   body: string
 }
+
+export interface PostmortemAlert {
+  kind: string
+  ref: string
+  down_at?: string
+  up_at?: string
+}
+
+export interface IncidentPostmortem {
+  incident_id: string
+  state: 'draft' | 'published'
+  summary: string
+  impact: string
+  root_cause: string
+  resolution: string
+  action_items: string[]
+  impact_start: string
+  impact_end?: string
+  alerts: PostmortemAlert[]
+  published_by?: string
+  published_at?: string
+  updated_at: string
+}
+
+export interface PostmortemEditInput {
+  summary: string
+  impact: string
+  root_cause: string
+  resolution: string
+  action_items: string[]
+}

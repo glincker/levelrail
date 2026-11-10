@@ -6324,6 +6324,142 @@
    }
   },
   {
+   "id": "cassandra",
+   "aliases": [],
+   "name": "Apache Cassandra",
+   "slogan": "A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory.",
+   "description": "A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory.",
+   "first_run": [
+    "The first start takes a few minutes. Connect from a service in the same project at cassandra:9042 with the CQL native protocol."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/apache/cassandra",
+   "documentation_url": "https://cassandra.apache.org/doc/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/cassandra/blob/trunk/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "cassandra",
+     "image": "cassandra",
+     "tag": "5.0.9",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 2048,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "CASSANDRA_CLUSTER_NAME",
+      "label": "Cluster name",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "MAX_HEAP_SIZE",
+      "label": "Maximum heap",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "HEAP_NEWSIZE",
+      "label": "Young generation size",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "cassandra",
+     "image": "cassandra:5.0.9",
+     "ports": [
+      9042
+     ],
+     "volumes": [
+      "cassandra_data -> /var/lib/cassandra"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "cassandra",
+     "name": "CASSANDRA_CLUSTER_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "cassandra",
+     "name": "HEAP_NEWSIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "cassandra",
+     "name": "MAX_HEAP_SIZE",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "cassandra"
+      ],
+      "detail": "cassandra_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "castopod",
    "aliases": [],
    "name": "Castopod",
@@ -37329,6 +37465,132 @@
    }
   },
   {
+   "id": "mongodb",
+   "aliases": [],
+   "name": "MongoDB",
+   "slogan": "The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017.",
+   "description": "The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017.",
+   "first_run": [
+    "Read the generated root user and password from the app secrets, then connect from a service in the same project with mongodb://USER:PASSWORD@mongodb:27017/?authSource=admin."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/mongodb/mongo",
+   "documentation_url": "https://www.mongodb.com/docs/manual/",
+   "license": {
+    "spdx": "LicenseRef-SSPL-1.0",
+    "class": "source-available",
+    "url": "https://github.com/mongodb/mongo/blob/master/LICENSE-Community.txt"
+   },
+   "hosted_use": "restricted",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mongodb",
+     "image": "mongo",
+     "tag": "8.0.34",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "mongodb",
+     "image": "mongo:8.0.34",
+     "ports": [
+      27017
+     ],
+     "volumes": [
+      "mongodb_data -> /data/db",
+      "mongodb_config -> /data/configdb"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "mongodb",
+     "name": "MONGO_INITDB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mongodb",
+     "name": "MONGO_INITDB_ROOT_USERNAME",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "mongodb"
+      ],
+      "detail": "MONGO_INITDB_ROOT_PASSWORD, MONGO_INITDB_ROOT_USERNAME",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mongodb"
+      ],
+      "detail": "mongodb_config, mongodb_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "monica",
    "aliases": [],
    "name": "Monica",
@@ -45044,6 +45306,145 @@
        "osticket"
       ],
       "detail": "osticket_data, osticket_db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "otel-lgtm",
+   "aliases": [],
+   "name": "Grafana OTel LGTM",
+   "slogan": "An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).",
+   "description": "An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).",
+   "first_run": [
+    "Sign in to Grafana as admin with the generated password from the app secrets."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/grafana/docker-otel-lgtm",
+   "documentation_url": "https://grafana.com/docs/opentelemetry/docker-lgtm/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/grafana/docker-otel-lgtm/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "otel-lgtm",
+     "image": "grafana/otel-lgtm",
+     "tag": "0.40.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "otel-lgtm",
+     "image": "grafana/otel-lgtm:0.40.0",
+     "ports": [
+      3000,
+      4317,
+      4318
+     ],
+     "volumes": [
+      "otel_lgtm_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "otel-lgtm",
+     "name": "GF_SECURITY_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "otel-lgtm",
+     "name": "GF_SECURITY_ADMIN_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "otel-lgtm",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "otel-lgtm"
+      ],
+      "detail": "GF_SECURITY_ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "otel-lgtm"
+      ],
+      "detail": "otel_lgtm_data",
       "message": "Stores data in named volumes"
      }
     ],
@@ -57809,6 +58210,107 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "solr",
+   "aliases": [],
+   "name": "Apache Solr",
+   "slogan": "The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983.",
+   "description": "The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983.",
+   "first_run": [
+    "Open the admin interface and create a core, or run the solr create command in the container's console."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/apache/solr",
+   "documentation_url": "https://solr.apache.org/guide/solr/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/solr/blob/main/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "solr",
+     "image": "solr",
+     "tag": "9.11.0",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "solr",
+     "image": "solr:9.11.0",
+     "ports": [
+      8983
+     ],
+     "volumes": [
+      "solr_data -> /var/solr"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "solr"
+      ],
+      "detail": "solr_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "health_gated_deploy",

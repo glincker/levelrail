@@ -1,4 +1,5 @@
 {
+  "readOnlyNotice": "You have read-only access. Ask an admin for deploy access to change these settings.",
   "authGate": {
     "badgeOn": "Auth gate on",
     "badgeOff": "No auth gate",
@@ -1789,5 +1790,50 @@
       "wwwTitle": "Also connect www",
       "wwwBody": "Visitors often type www. One click connects it and sends them to {{domain}}."
     }
+  },
+  "limits": {
+    "title": "Traffic limits",
+    "configured": "Configured",
+    "default": "Default",
+    "bodyLabel": "Max upload (MB)",
+    "readLabel": "Read timeout (s)",
+    "writeLabel": "Write timeout (s)",
+    "bodyHint": "Empty = no limit. {{min}} to {{max}} MB.",
+    "timeoutHint": "Empty = default. Up to {{max}} s.",
+    "save": "Save",
+    "reset": "Reset to default",
+    "saved": "Traffic limits saved",
+    "resetDone": "Traffic limits reset",
+    "note": "Applies on the next ingress reconcile."
+  },
+  "tuning": {
+    "title": "Proxy tuning",
+    "custom": "Custom",
+    "save": "Apply preset",
+    "saved": "Proxy tuning saved",
+    "note": "Applies on the next ingress reconcile. Timeouts stay under {{max}}s and streams under {{stream}}s.",
+    "preset": {
+      "default": {
+        "label": "Default",
+        "hint": "Ingress defaults, nothing tuned"
+      },
+      "api": {
+        "label": "API",
+        "hint": "Compressed text, one minute to answer"
+      },
+      "uploads": {
+        "label": "Long uploads",
+        "hint": "Five minutes for slow uploads and jobs"
+      },
+      "streaming": {
+        "label": "Live streams",
+        "hint": "Server-sent events, each chunk sent at once"
+      },
+      "websocket": {
+        "label": "WebSockets",
+        "hint": "Long-lived sockets that survive a reload"
+      }
+    },
+    "notApplied": "The ingress rejected this tuning, so the domain runs on the defaults. Pick another preset or reset it."
   }
 }

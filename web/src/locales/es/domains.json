@@ -1,4 +1,5 @@
 {
+  "readOnlyNotice": "Tienes acceso de solo lectura. Pide a un administrador acceso de despliegue para cambiar estos ajustes.",
   "authGate": {
     "badgeOn": "Puerta de autenticación activada",
     "badgeOff": "Sin puerta de autenticación",
@@ -1789,5 +1790,50 @@
       "wwwTitle": "Conecta también www",
       "wwwBody": "Mucha gente escribe www. Con un clic lo conectamos y lo enviamos a {{domain}}."
     }
+  },
+  "limits": {
+    "title": "Limites de trafico",
+    "configured": "Configurado",
+    "default": "Predeterminado",
+    "bodyLabel": "Subida maxima (MB)",
+    "readLabel": "Timeout de lectura (s)",
+    "writeLabel": "Timeout de escritura (s)",
+    "bodyHint": "Vacio = sin limite. De {{min}} a {{max}} MB.",
+    "timeoutHint": "Vacio = predeterminado. Hasta {{max}} s.",
+    "save": "Guardar",
+    "reset": "Restablecer",
+    "saved": "Limites de trafico guardados",
+    "resetDone": "Limites de trafico restablecidos",
+    "note": "Se aplica en la siguiente reconciliacion del ingress."
+  },
+  "tuning": {
+    "title": "Ajuste del proxy",
+    "custom": "Personalizado",
+    "save": "Aplicar ajuste",
+    "saved": "Ajuste del proxy guardado",
+    "note": "Se aplica en la siguiente reconciliacion del ingress. Los tiempos quedan bajo {{max}}s y las conexiones bajo {{stream}}s.",
+    "preset": {
+      "default": {
+        "label": "Predeterminado",
+        "hint": "Valores del ingress, sin ajustes"
+      },
+      "api": {
+        "label": "API",
+        "hint": "Texto comprimido, un minuto para responder"
+      },
+      "uploads": {
+        "label": "Subidas largas",
+        "hint": "Cinco minutos para subidas y tareas lentas"
+      },
+      "streaming": {
+        "label": "Transmisiones",
+        "hint": "Eventos del servidor, cada fragmento al instante"
+      },
+      "websocket": {
+        "label": "WebSockets",
+        "hint": "Conexiones largas que sobreviven a una recarga"
+      }
+    },
+    "notApplied": "El ingress rechazo este ajuste, asi que el dominio usa los valores predeterminados. Elige otro ajuste o restablecelo."
   }
 }

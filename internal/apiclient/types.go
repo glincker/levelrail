@@ -329,6 +329,20 @@ type BuildTriggerRequest struct {
 	DetectedFramework string `json:"detected_framework,omitempty"`
 	// UploadHash builds a directory sent with UploadSource instead of a git checkout; RepoURL and Ref stay empty.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// InlineSource builds pasted Dockerfile text plus optional files; RepoURL and Ref stay empty.
+	InlineSource *InlineSource `json:"inline_source,omitempty"`
+}
+
+// InlineSource is a Dockerfile and extra build context files sent as text, no git repository needed.
+type InlineSource struct {
+	Dockerfile string       `json:"dockerfile"`
+	Files      []InlineFile `json:"files,omitempty"`
+}
+
+// InlineFile is one extra build context file of an InlineSource, at a clean relative path.
+type InlineFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input
@@ -413,6 +427,8 @@ type DeployApprovalResource struct {
 	CreatedAt         string `json:"created_at"`
 	ExpiresAt         string `json:"expires_at"`
 	DecidedAt         string `json:"decided_at,omitempty"`
+	ApprovalsRequired int    `json:"approvals_required,omitempty"`
+	ApprovalsReceived int    `json:"approvals_received,omitempty"`
 }
 
 // DeployApprovalListResult mirrors internal/api's
@@ -1185,6 +1201,7 @@ type BackupScheduleResource struct {
 	Schedule     string `json:"schedule,omitempty"`
 	Retain       int    `json:"retain,omitempty"`
 	RetainDays   int    `json:"retain_days,omitempty"`
+	Paused       bool   `json:"paused,omitempty"`
 }
 
 // SetBackupScheduleRequest mirrors internal/api's setBackupScheduleRequest.
@@ -1488,6 +1505,7 @@ type VolumeBackupScheduleResource struct {
 	Retain      int    `json:"retain,omitempty"`
 	RetainDays  int    `json:"retain_days,omitempty"`
 	SqlitePath  string `json:"sqlite_path,omitempty"`
+	Paused      bool   `json:"paused,omitempty"`
 }
 
 // SetVolumeBackupScheduleRequest mirrors internal/api's
@@ -2005,6 +2023,8 @@ type GitSourceResource struct {
 	Branch      string `json:"branch"`
 	BuildType   string `json:"build_type"`
 	BuildPath   string `json:"build_path,omitempty"`
+	// ComposePath is set only for a compose app deployed from git.
+	ComposePath string `json:"compose_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
 	// BuildCommand and PublishDir build a static site before serving it.
@@ -2053,6 +2073,10 @@ type GitDeploySettings struct {
 	ReportStatus      bool     `json:"report_status"`
 	WaitForCI         bool     `json:"wait_for_ci"`
 	CIRequiredChecks  []string `json:"ci_required_checks"`
+	TagPattern        string   `json:"tag_pattern"`
+	BranchPattern     string   `json:"branch_pattern"`
+	FetchSubmodules   bool     `json:"fetch_submodules"`
+	FetchLFS          bool     `json:"fetch_lfs"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -2063,6 +2087,10 @@ type SetGitDeploySettingsRequest struct {
 	ReportStatus      *bool     `json:"report_status,omitempty"`
 	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
 	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
+	TagPattern        *string   `json:"tag_pattern,omitempty"`
+	BranchPattern     *string   `json:"branch_pattern,omitempty"`
+	FetchSubmodules   *bool     `json:"fetch_submodules,omitempty"`
+	FetchLFS          *bool     `json:"fetch_lfs,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest
@@ -2293,10 +2321,17 @@ type ScheduledTaskResource struct {
 	// of itself still executing. Empty on a request defaults to "allow"
 	// server-side.
 	ConcurrencyPolicy string `json:"concurrency_policy"`
+	// OverlapPolicy is allow, skip or queue-one; empty for replace and queue.
+	OverlapPolicy  string `json:"overlap_policy,omitempty"`
+	AlertOnFailure bool   `json:"alert_on_failure"`
+	KeepRuns       int    `json:"keep_runs"`
+	KeepDays       int    `json:"keep_days"`
 
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
 	LastRunOutput string     `json:"last_run_output,omitempty"`
+	// LastRunOutputWithheld means the last run printed output this token may not read.
+	LastRunOutputWithheld bool `json:"last_run_output_withheld,omitempty"`
 	// ConsecutiveFailures mirrors internal/api's own field: what a
 	// kind=scheduled_task_failure alert rule watches.
 	ConsecutiveFailures int `json:"consecutive_failures"`
@@ -2349,6 +2384,8 @@ type JobRunResource struct {
 	Mode         string     `json:"mode,omitempty"`
 	Message      string     `json:"message,omitempty"`
 	Output       string     `json:"output,omitempty"`
+	// OutputWithheld means the run printed output this token may not read (it lacks read_sensitive).
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 // ScheduledTaskRequest mirrors the fields internal/api's
@@ -2382,6 +2419,10 @@ type ScheduledTaskRequest struct {
 	HeartbeatClear   bool   `json:"heartbeat_clear,omitempty"`
 	// HTTP makes the job call a path on the app (Mode "http").
 	HTTP *JobHTTP `json:"http,omitempty"`
+	// Guard rails are pointers so an update leaves unset ones alone.
+	AlertOnFailure *bool `json:"alert_on_failure,omitempty"`
+	KeepRuns       *int  `json:"keep_runs,omitempty"`
+	KeepDays       *int  `json:"keep_days,omitempty"`
 }
 
 // JobHTTP mirrors internal/api's jobHTTPResource. Background jobs are
@@ -2905,6 +2946,8 @@ type EnvironmentResource struct {
 	Kind      string `json:"kind,omitempty"`
 	Scope     string `json:"scope,omitempty"`
 	SortOrder int    `json:"sort_order,omitempty"`
+	// RequiredApprovers is set on PATCH responses; 0 when not reported.
+	RequiredApprovers int `json:"required_approvers,omitempty"`
 }
 
 // CreateEnvironmentRequest mirrors internal/api's
@@ -3059,6 +3102,7 @@ type PreviewEnvironmentResource struct {
 	Branch       string `json:"branch"`
 	HeadSHA      string `json:"head_sha"`
 	Domain       string `json:"domain,omitempty"`
+	Gated        bool   `json:"gated"`
 	Status       string `json:"status"`
 	StatusReason string `json:"status_reason,omitempty"`
 	CreatedAt    string `json:"created_at"`
@@ -3921,6 +3965,8 @@ type AppResourceUsageResource struct {
 	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
 	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
 	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
+	DiskReadBytes    *float64 `json:"disk_read_bytes,omitempty"`
+	DiskWriteBytes   *float64 `json:"disk_write_bytes,omitempty"`
 }
 
 // NodeMetricsResource mirrors internal/api's nodeMetricsResponse

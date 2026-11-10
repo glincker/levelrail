@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +9,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { certTruth } from '../../lib/certTruth'
 import { certExpiryDate } from '../../lib/certStatus'
 import { proxyCertTrusted } from '../../lib/dnsPill'
+import { useAbilities } from '../../hooks/useAbilities'
 import { certificatesQueryOptions } from '../../queries/certificates'
 import { DomainAuthGateControl } from '../DomainAuthGateControl'
 import { DomainBasicAuthControl } from '../DomainBasicAuthControl'
@@ -18,6 +20,11 @@ import { DomainRedirectControl } from '../DomainRedirectControl'
 import { DomainSearchVisibilityControl } from '../DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from '../DomainTLSCertControl'
 import { DomainWafControl } from '../DomainWafControl'
+import { DomainTrafficLimitsControl } from './DomainTrafficLimitsControl'
+
+const DomainTuningSection = lazy(
+  () => import('../domain-tuning/DomainTuningSection'),
+)
 import { GetCertificateButton } from '../GetCertificateButton'
 import { ProxyDomainStatus } from '../ProxyDomainStatus'
 import {
@@ -62,6 +69,8 @@ export function DomainDetailPage({
   domain: string
 }) {
   const { t } = useTranslation('domains')
+  const { role, can } = useAbilities()
+  const canDeploy = can('deploy')
   const { data, isFetching, onRefetch, proxyRow } = useDomainCheckState(
     appName,
     domain,
@@ -164,7 +173,11 @@ export function DomainDetailPage({
             disabled={isFetching}
           >
             <RefreshCwGlassIcon
-              className={isFetching ? 'animate-spin' : undefined}
+              className={
+                isFetching
+                  ? 'animate-spin motion-reduce:animate-none'
+                  : undefined
+              }
               aria-hidden="true"
             />
             {t('readiness.checkNow')}
@@ -201,22 +214,39 @@ export function DomainDetailPage({
           ) : null}
         </div>
         <div className="min-w-0 space-y-4">
-          <DetailCard title={t('detail.tls')}>
-            {dnsOk ? <CertTimeline items={timeline} /> : null}
-            {needsRealCert ? <GetCertificateButton domain={domain} /> : null}
-            <DomainTLSCertControl appName={appName} domain={domain} />
-          </DetailCard>
-          <DetailCard title={t('detail.redirect')}>
-            <DomainRedirectControl appName={appName} domain={domain} />
-          </DetailCard>
-          <DetailCard title={t('moreOptions.title')}>
-            <DomainBasicAuthControl appName={appName} domain={domain} />
-            <DomainAuthGateControl appName={appName} domain={domain} />
-            <DomainWafControl appName={appName} domain={domain} />
-            <DomainMaintenanceControl appName={appName} domain={domain} />
-            <DomainErrorPagesControl appName={appName} domain={domain} />
-            <DomainSearchVisibilityControl appName={appName} domain={domain} />
-          </DetailCard>
+          {role !== null && !canDeploy ? (
+            <p className="text-muted-foreground text-xs">
+              {t('readOnlyNotice')}
+            </p>
+          ) : null}
+          <fieldset
+            disabled={!canDeploy}
+            className="m-0 min-w-0 space-y-4 border-0 p-0"
+          >
+            <DetailCard title={t('detail.tls')}>
+              {dnsOk ? <CertTimeline items={timeline} /> : null}
+              {needsRealCert ? <GetCertificateButton domain={domain} /> : null}
+              <DomainTLSCertControl appName={appName} domain={domain} />
+            </DetailCard>
+            <DetailCard title={t('detail.redirect')}>
+              <DomainRedirectControl appName={appName} domain={domain} />
+            </DetailCard>
+            <DetailCard title={t('moreOptions.title')}>
+              <DomainBasicAuthControl appName={appName} domain={domain} />
+              <DomainAuthGateControl appName={appName} domain={domain} />
+              <DomainWafControl appName={appName} domain={domain} />
+              <DomainMaintenanceControl appName={appName} domain={domain} />
+              <DomainErrorPagesControl appName={appName} domain={domain} />
+              <DomainSearchVisibilityControl
+                appName={appName}
+                domain={domain}
+              />
+              <DomainTrafficLimitsControl appName={appName} domain={domain} />
+              <Suspense fallback={null}>
+                <DomainTuningSection appName={appName} domain={domain} />
+              </Suspense>
+            </DetailCard>
+          </fieldset>
           <DangerZone appName={appName} domain={domain} />
         </div>
       </div>

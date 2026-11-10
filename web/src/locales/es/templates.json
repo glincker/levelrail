@@ -344,5 +344,27 @@
       "arch": "Arquitectura",
       "anyArch": "Cualquier arquitectura"
     }
+  },
+  "importTemplate": {
+    "button": "Importar compose",
+    "title": "Importar una plantilla",
+    "description": "Pega o carga un archivo compose para guardarlo como plantilla propia. No se despliega nada.",
+    "idLabel": "Id de la plantilla",
+    "nameLabel": "Nombre",
+    "descriptionLabel": "Descripción (opcional)",
+    "fileLabel": "Cargar un archivo compose",
+    "composeLabel": "Archivo compose",
+    "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
+    "variablesLabel": "Variables (opcional, separadas por comas)",
+    "variablesPlaceholder": "DB_PASSWORD, API_KEY",
+    "cancel": "Cancelar",
+    "submit": "Importar plantilla",
+    "submitting": "Importando...",
+    "tooLarge": "Ese archivo es demasiado grande para una plantilla.",
+    "success": "Se importó \"{{name}}\" como plantilla.",
+    "idInvalid": "Usa de 2 a 63 letras minúsculas, dígitos o guiones.",
+    "nameRequired": "El nombre es obligatorio.",
+    "composeRequired": "Se requiere un archivo compose.",
+    "variablesInvalid": "Las variables deben ser nombres en MAYÚSCULAS."
   }
 }

@@ -21,6 +21,8 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerBackupCoverageRoutes(mux)
 	rt.registerPipelineRoutes(mux)
 	rt.registerSearchRoutes(mux)
+	rt.registerSavedViewsRoutes(mux)
+	rt.registerAppMetricsRoutes(mux)
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
 	rt.registerDataExportRoutes(mux)
@@ -31,7 +33,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStatusReasonRoutes(mux)
 	rt.registerComplianceRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
-	rt.registerPlatformImportRoutes(mux)
+	platformImport := rt.registerPlatformImportRoutes(mux)
 	rt.registerMigrationAgentRoutes(mux)
 	rt.registerAppImportRoutes(mux)
 	rt.registerTakeoverRoutes(mux)
@@ -61,6 +63,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerResourceConsoleRoutes(mux)
 	rt.registerCustomDashboardRoutes(mux)
 	rt.registerChaosRoutes(mux)
+	rt.registerSecretProviderRoutes(mux)
 	rt.registerArchiveRoutes(mux)
 	rt.registerSpendCapRoutes(mux)
 	rt.registerAppAbuseRoutes(mux)
@@ -69,6 +72,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerIngressEdgeRoutes(mux)
 	rt.registerCostExplorerRoutes(mux)
 	rt.registerAutoscaleRoutes(mux)
+	rt.registerSizePresetRoutes(mux)
 	rt.registerPreviewRoutes(mux)
 	rt.registerSupplyChainRoutes(mux)
 	rt.registerSecretScanRoutes(mux)
@@ -88,6 +92,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMailBackupRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
+	rt.registerDatabaseParamsRoutes(mux)
 	rt.registerTeamRoutes(mux)
 	rt.registerComposeRoutes(mux)
 	rt.registerCatalogRoutes(mux)
@@ -97,6 +102,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDNSWatchRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
+	shell := rt.registerShellRoutes(mux)
 	mcpHTTP := rt.registerMCPHTTPRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
 	rt.registerMeOnboardingRoutes(mux)
@@ -108,6 +114,8 @@ func (rt *Router) Handler() http.Handler {
 	h = rt.accountEventMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = rt.accessPolicyMiddleware(h)
+	h = conditionalGetMiddleware(rt.conditionalGetEnabled, rt.conditionalGetMaxBytes, h)
+	h = rt.serverTimingMiddleware(h)
 	h = compressMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
@@ -121,6 +129,8 @@ func (rt *Router) Handler() http.Handler {
 		h = rt.demoGate(h)
 	}
 	mcpHTTP.inner = h
+	shell.inner = h
+	platformImport.inner = h
 	return h
 }
 

@@ -113,3 +113,22 @@ func TestMetrics_ReadPoolFields(t *testing.T) {
 		})
 	}
 }
+
+func TestReadPool_SetReadConnsResizes(t *testing.T) {
+	db := openTestDB(t)
+	if db.ro == nil {
+		t.Skip("no read pool")
+	}
+	db.SetReadConns(2)
+	if got := db.ro.Stats().MaxOpenConnections; got != 2 {
+		t.Fatalf("max open %d, want 2", got)
+	}
+	db.SetReadConns(8)
+	if got := db.ro.Stats().MaxOpenConnections; got != 8 {
+		t.Fatalf("max open %d, want 8", got)
+	}
+	db.SetReadConns(0)
+	if got := db.ro.Stats().MaxOpenConnections; got != 8 {
+		t.Fatalf("out of range value changed pool to %d", got)
+	}
+}

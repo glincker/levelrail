@@ -178,7 +178,7 @@ function EnvironmentCompareLoaded({
 function EnvironmentComparePagePending() {
   return (
     <div className="space-y-6">
-      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="h-6 w-48 animate-pulse motion-reduce:animate-none rounded bg-muted" />
       <Card>
         <CardContent className="space-y-3 pt-6" aria-hidden="true">
           <Skeleton className="h-9 w-full" />

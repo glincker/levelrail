@@ -9,8 +9,9 @@ import type {
   ModelUsageReport,
 } from '../types/models'
 import { modelKeys, requestJson, requestVoid } from './models'
+import { pollMs } from '@/lib/pollTier'
 
-const USAGE_REFETCH_MS = 30000
+const USAGE_REFETCH_MS = pollMs('steady')
 
 export const modelKeyKeys = {
   keys: (name: string) => [...modelKeys.all, 'keys', name] as const,

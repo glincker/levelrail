@@ -1,0 +1,13 @@
+{
+  "composeId": "cmp-1",
+  "name": "shop-stack",
+  "appName": "shop-stack-x1",
+  "sourceType": "raw",
+  "composeFile": "services:\n  web:\n    image: nginx:1.27\n    environment:\n      DB_HOST: db\n      DB_PASSWORD: ${DB_PASSWORD}\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: ${DB_PASSWORD}\n    volumes:\n      - pgdata:/var/lib/postgresql/data\nvolumes:\n  pgdata: {}\n",
+  "env": "APP_MODE=production\nDB_PASSWORD=fake-not-a-real-password\n# comment\n",
+  "domains": [
+    {"host": "shop.example.test", "port": 80, "serviceName": "web"},
+    {"host": "admin.example.test", "port": 80, "serviceName": "web"}
+  ],
+  "mounts": []
+}

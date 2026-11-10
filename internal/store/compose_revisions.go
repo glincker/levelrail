@@ -17,6 +17,7 @@ const (
 	ComposeRevisionSourceAPI      = "api"
 	ComposeRevisionSourceTemplate = "template"
 	ComposeRevisionSourceRollback = "rollback"
+	ComposeRevisionSourceGit      = "git"
 )
 
 // ComposeRevision is one compose file a stack was deployed from.

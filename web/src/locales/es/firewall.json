@@ -184,7 +184,19 @@
     "ends": "Termina",
     "lift": "Levantar",
     "liftFor": "Levantar el bloqueo de {{ip}}",
-    "lifted": "Bloqueo de {{ip}} levantado"
+    "lifted": "Bloqueo de {{ip}} levantado",
+    "search": "Buscar bloqueos",
+    "searchPlaceholder": "Buscar IP o causa",
+    "noMatch": "Ningún bloqueo coincide con esta búsqueda.",
+    "select": "Seleccionar {{ip}}",
+    "selectAll": "Seleccionar todos los bloqueos",
+    "selected_one": "{{count}} seleccionado",
+    "selected_other": "{{count}} seleccionados",
+    "liftSelected": "Levantar seleccionados",
+    "liftedMany_one": "{{count}} bloqueo levantado",
+    "liftedMany_other": "{{count}} bloqueos levantados",
+    "liftManyFailed_one": "No se pudo levantar {{count}} bloqueo",
+    "liftManyFailed_other": "No se pudieron levantar {{count}} bloqueos"
   },
   "rules": {
     "title": "Reglas",
@@ -328,5 +340,37 @@
       "blocked": "Bloqueada",
       "server": "Servidor"
     }
+  },
+  "list": {
+    "selectAll": "Seleccionar todo lo mostrado",
+    "selectRow": "Seleccionar {{name}}",
+    "searchLabel": "Buscar en {{list}}",
+    "searchPlaceholder": "Buscar nombre, nota o condicion",
+    "sortLabel": "Ordenar por",
+    "sort": {
+      "default": "Orden de reglas",
+      "name": "Nombre",
+      "hits": "Mas coincidencias",
+      "recent": "Cambiadas recientemente"
+    },
+    "barLabel": "Acciones en lote",
+    "selected_one": "{{count}} seleccionada",
+    "selected_other": "{{count}} seleccionadas",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "delete": "Eliminar",
+    "clear": "Limpiar",
+    "noMatch": "Nada coincide con la busqueda",
+    "enabledCount_one": "{{count}} entrada activada",
+    "enabledCount_other": "{{count}} entradas activadas",
+    "disabledCount_one": "{{count}} entrada desactivada",
+    "disabledCount_other": "{{count}} entradas desactivadas",
+    "deletedCount_one": "{{count}} entrada eliminada",
+    "deletedCount_other": "{{count}} entradas eliminadas",
+    "bulkFailed_one": "{{count}} cambio fallo",
+    "bulkFailed_other": "{{count}} cambios fallaron",
+    "deleteTitle_one": "Eliminar {{count}} entrada?",
+    "deleteTitle_other": "Eliminar {{count}} entradas?",
+    "deleteHelp": "El trafico dejara de filtrarse por ellas. No se puede deshacer."
   }
 }

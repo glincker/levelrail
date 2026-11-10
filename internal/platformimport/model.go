@@ -59,9 +59,10 @@ type Volume struct {
 	SizeBytes int64
 }
 
-// HealthCheck is an HTTP probe.
+// HealthCheck is an HTTP probe, or an exec probe when Exec is set.
 type HealthCheck struct {
 	Path            string
+	Exec            []string
 	IntervalSeconds int
 	TimeoutSeconds  int
 	Retries         int
@@ -107,7 +108,34 @@ type App struct {
 	Crons       []Cron
 	MemoryBytes int64
 	NanoCPUs    int64
-	Notes       []Note
+	// Policy carries the source's proxy flags. Never a credential or hash.
+	Policy DomainPolicy
+	// Build is how the source builds and deploys the app, validated and secret free.
+	Build BuildSettings
+	// Files are config file mounts copied byte for byte from the source.
+	Files []AppFile
+	// Ingress is basic auth, redirects and header rules translated from the source proxy settings.
+	Ingress *IngressPlan
+	// Previews is true when the source ran preview deployments for the app.
+	Previews bool
+	// NetworkPeers names the other resources that shared a custom network with the app.
+	NetworkPeers []string
+	Notes        []Note
+}
+
+// BuildSettings carries the source's build and deploy settings so a staged app builds the same way.
+// Paths are repository relative; a command that holds a secret-looking value is never kept here.
+type BuildSettings struct {
+	BaseDirectory  string
+	DockerfilePath string
+	InstallCommand string
+	BuildCommand   string
+	StartCommand   string
+	PublishDir     string
+	PreDeploy      string
+	PostDeploy     string
+	// BuildTimeKeys names the variables the source only exposes during the build.
+	BuildTimeKeys []string
 }
 
 // BackupSchedule is one scheduled database backup on the source.
@@ -116,6 +144,10 @@ type BackupSchedule struct {
 	Enabled  bool
 	// Remote is true when the source also uploads the backup to S3.
 	Remote bool
+	// SourceID, DestinationID and KeepLatest are set by sources that bind a schedule to a destination.
+	SourceID      string
+	DestinationID string
+	KeepLatest    int
 }
 
 // Server is a host the source platform deploys to.
@@ -193,14 +225,42 @@ type Unsupported struct {
 
 // Discovery is everything read from a source.
 type Discovery struct {
-	Platform    Platform
-	Projects    []string
-	Apps        []App
-	Databases   []Database
-	Unsupported []Unsupported
+	Platform Platform
+	Projects []string
+	// Environments lists every source environment, including empty ones.
+	Environments []SourceEnvironment
+	Apps         []App
+	Databases    []Database
+	Unsupported  []Unsupported
 	// Services holds each one-click service's masked compose body and env.
 	Services []Service
-	Servers  []Server
+	// ComposeApps are multi-service stacks imported as compose apps.
+	ComposeApps []ComposeApp
+	Servers     []Server
+	// Destinations are object-storage backup targets, read without their keys.
+	Destinations []BackupDestination
+	// Notifications are alert providers, read without their tokens or webhook URLs.
+	Notifications []NotificationProvider
 	// Warnings are source reads that failed softly, so the plan lacks that detail.
 	Warnings []string
+}
+
+// SourceEnvironment is one environment of a source project.
+type SourceEnvironment struct {
+	Project string
+	Name    string
+}
+
+// DomainPolicy is the neutral form of per-app proxy flags. Basic auth keeps
+// only the user name: the source hash is never read into the model.
+type DomainPolicy struct {
+	ForceHTTPS    bool
+	WebSocket     bool
+	RedirectTo    string
+	BasicAuthUser string
+}
+
+// Empty reports whether the source set no proxy flag.
+func (p DomainPolicy) Empty() bool {
+	return !p.ForceHTTPS && !p.WebSocket && p.RedirectTo == "" && p.BasicAuthUser == ""
 }

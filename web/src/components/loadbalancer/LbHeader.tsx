@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   EllipsisGlassIcon,
   RefreshCwGlassIcon,
@@ -13,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ALGORITHM_OPTIONS } from '../../lib/loadBalancer'
 import type { LoadBalancerAlgorithm } from '../../queries/appLoadBalancer'
-import { UNSUPPORTED_HINT } from './adminActions'
+import { unsupportedHint } from './adminActions'
 import { StateGlyphIcon } from './StateGlyphIcon'
 import type { PoolRollup } from './rollup'
 
@@ -47,6 +48,7 @@ export function LbHeader({
   onExport,
   onRemove,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const algo = ALGORITHM_OPTIONS.find((o) => o.value === algorithm)
   return (
     <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -57,12 +59,14 @@ export function LbHeader({
         icon={<StateGlyphIcon glyph={GLYPH[rollup.level]} />}
       />
       <p className="text-lg font-semibold" aria-live="polite">
-        <AnimatedNumber value={rollup.healthy} /> of{' '}
-        <AnimatedNumber value={rollup.total} /> healthy
+        <AnimatedNumber value={rollup.healthy} /> {t('lb.header.of')}{' '}
+        <AnimatedNumber value={rollup.total} /> {t('lb.header.healthy')}
       </p>
       <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs">
         {algo?.label ?? algorithm}
-        <InfoTip label="About this algorithm">{algo?.description}</InfoTip>
+        <InfoTip label={t('lb.header.aboutAlgorithm')}>
+          {algo?.description}
+        </InfoTip>
       </span>
       <div className="ml-auto flex items-center gap-2">
         <Button
@@ -70,19 +74,23 @@ export function LbHeader({
           size="sm"
           variant="outline"
           disabled={!checkSupported || checking || cooldown > 0}
-          title={checkSupported ? undefined : UNSUPPORTED_HINT}
+          title={checkSupported ? undefined : unsupportedHint()}
           onClick={onCheck}
         >
           <RefreshCwGlassIcon
             size="1.4em"
             data-icon="inline-start"
-            className={checking ? 'animate-spin' : undefined}
+            className={
+              checking ? 'animate-spin motion-reduce:animate-none' : undefined
+            }
           />
-          Check now{cooldown > 0 ? ` (${cooldown}s)` : ''}
+          {cooldown > 0
+            ? t('lb.header.checkNowCooldown', { seconds: cooldown })
+            : t('lb.header.checkNow')}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={onExport}>
           <ShareGlassIcon size="1.4em" data-icon="inline-start" />
-          Export
+          {t('lb.header.export')}
         </Button>
         <ActionMenu
           trigger={
@@ -90,7 +98,7 @@ export function LbHeader({
               type="button"
               size="icon"
               variant="ghost"
-              aria-label="More actions"
+              aria-label={t('lb.header.moreActions')}
             >
               <EllipsisGlassIcon size="1.4em" />
             </Button>
@@ -98,8 +106,8 @@ export function LbHeader({
           items={[
             {
               id: 'remove',
-              label: 'Remove load balancer',
-              description: 'Domains go back to a single upstream',
+              label: t('lb.header.remove'),
+              description: t('lb.header.removeHint'),
               icon: <TrashGlassIcon size="1.4em" />,
               tone: 'danger',
               onSelect: onRemove,

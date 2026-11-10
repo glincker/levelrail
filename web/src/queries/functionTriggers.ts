@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface FunctionWebhook {
   url: string
@@ -78,7 +79,7 @@ export function functionTriggersQueryOptions(name: string) {
         `/api/v1/functions/${encodeURIComponent(name)}/triggers`,
         'fetch function triggers',
       ),
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
   })
 }
 
@@ -96,7 +97,7 @@ export function useDeadLetters() {
           'fetch dead letters',
         )
       ).invocations,
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

@@ -821,7 +821,7 @@ func TestController_Reconcile_Redis_TLS_DisablesPlaintextPort(t *testing.T) {
 		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 
-	wantCommand, wantPort := redisCommandAndPort(material)
+	wantCommand, wantPort := redisCommandAndPort(material, redisServerBin)
 	if wantPort != redisTLSContainerPort {
 		t.Fatalf("test setup: redisCommandAndPort port = %d, want %d", wantPort, redisTLSContainerPort)
 	}
@@ -830,6 +830,43 @@ func TestController_Reconcile_Redis_TLS_DisablesPlaintextPort(t *testing.T) {
 	}
 	if rt.execWithInputCalls != 1 {
 		t.Errorf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+}
+
+func TestController_Reconcile_Valkey_TLS_DisablesPlaintextPort(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-kv")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "kv", Engine: store.EngineValkey, Version: "8"}
+	c := New("kv", &fakeStore{db: desired}, rt, WithTLS(material))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	wantCommand, _ := redisCommandAndPort(material, valkeyServerBin)
+	if rt.lastCreateSpec.Command[0] != "valkey-server" {
+		t.Errorf("TLS binary = %q, want valkey-server", rt.lastCreateSpec.Command[0])
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Errorf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+
+	plain := newFakeRuntime()
+	if _, err := New("kv", &fakeStore{db: desired}, plain).Reconcile(context.Background()); err != nil {
+		t.Fatalf("plain Reconcile() error = %v", err)
+	}
+	if len(plain.lastCreateSpec.Command) != 0 {
+		t.Errorf("plain valkey Command = %v, want none", plain.lastCreateSpec.Command)
 	}
 }
 
@@ -2240,9 +2277,28 @@ func TestDragonflyCommand(t *testing.T) {
 		{"many", []string{"--dbfilename", "dump"}},
 	}
 	for _, tt := range tests {
-		if got := dragonflyCommand(tt.threads); !reflect.DeepEqual(got, tt.want) {
+		if got := dragonflyCommand(tt.threads, nil); !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("dragonflyCommand(%q) = %v, want %v", tt.threads, got, tt.want)
 		}
+	}
+}
+
+func TestDragonflyAndKeyDBTLSCommandShape(t *testing.T) {
+	m := &TLSMaterial{}
+	wantDF := []string{"--dbfilename", "dump", "--tls", "--tls_cert_file", "/certs/tls.crt", "--tls_key_file", "/certs/tls.key", "--no_tls_on_admin_port"}
+	if got := dragonflyCommand("", m); !reflect.DeepEqual(got, wantDF) {
+		t.Errorf("dragonfly tls command = %v, want %v", got, wantDF)
+	}
+	wantKey := []string{"keydb-server", "/etc/keydb/keydb.conf", "--protected-mode", "no", "--tls-port", "6380", "--port", "0", "--tls-cert-file", "/certs/tls.crt", "--tls-key-file", "/certs/tls.key", "--tls-auth-clients", "no"}
+	got, port := redisCommandAndPort(m, keydbServerBin)
+	if !reflect.DeepEqual(got, wantKey) || port != redisTLSContainerPort {
+		t.Errorf("keydb tls command = %v port %d, want %v", got, port, wantKey)
+	}
+	if cmd, p := redisCommandAndPort(nil, keydbServerBin); cmd != nil || p != redisContainerPort {
+		t.Errorf("keydb plain = %v %d, want nil %d", cmd, p, redisContainerPort)
+	}
+	if ServerTLSEngine(store.EngineDragonfly) {
+		t.Error("dragonfly must stay out of the TLS engines")
 	}
 }
 

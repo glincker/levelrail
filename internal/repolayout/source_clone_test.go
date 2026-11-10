@@ -2,10 +2,16 @@ package repolayout
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -62,5 +68,36 @@ func TestCloneSourceDetectsTurborepo(t *testing.T) {
 	}
 	if res.Suggestions[0].BaseDirectory != "" || res.Suggestions[0].ReasonCode != ReasonTurboPrune {
 		t.Fatalf("top = %+v, want root context from turbo prune", res.Suggestions[0])
+	}
+}
+
+func TestCloneSourceSSHDeployKeyAuth(t *testing.T) {
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	der, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
+
+	auth, err := NewSSHDeployKeyAuth("", pemKey)
+	if err != nil {
+		t.Fatalf("deploy key auth: %v", err)
+	}
+	keys, ok := auth.(*gitssh.PublicKeys)
+	if !ok || keys.User != "git" || keys.Signer == nil {
+		t.Fatalf("auth = %#v, want git user with signer", auth)
+	}
+	if _, err := NewSSHDeployKeyAuth("git", []byte("not a key")); err == nil {
+		t.Fatal("garbage key accepted")
+	}
+
+	// An unreachable ssh host must fail the clone, proving the key path is used.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := NewCloneSourceAuth(ctx, "ssh://git@127.0.0.1:1/x/y.git", "main", auth); err == nil {
+		t.Fatal("expected clone error for unreachable ssh host")
 	}
 }

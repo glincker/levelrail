@@ -118,7 +118,7 @@ func (rt *Router) handleSaveDatabaseQuery(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	limits := dbviewer.LimitsFromEnv(nil)
+	limits := rt.databaseViewerLimits(r.Context())
 	var req savedQueryRequest
 	r.Body = http.MaxBytesReader(w, r.Body, int64(limits.SQLBytes+queryBodyMargin))
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

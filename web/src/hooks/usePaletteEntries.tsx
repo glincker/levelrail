@@ -181,6 +181,21 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
               : { to: '/apps/$name', params: { name: sp.app ?? '' } },
           ),
       }))
+      if (currentApp) {
+        const app = decodeURIComponent(currentApp)
+        suggested.unshift({
+          key: 'app-connect-source',
+          label: t('connectSource', { app }),
+          group: 'Suggested',
+          icon: <LayersGlassIcon size="1.4em" />,
+          run: () =>
+            void navigate({
+              to: '/apps/$name/source',
+              params: { name: app },
+              search: { connect: true },
+            }),
+        })
+      }
       // Cache-only read: opening the palette must not fire a list request.
       const cachedApps = queryClient.getQueryData(
         appListQueryOptions().queryKey,

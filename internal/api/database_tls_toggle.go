@@ -49,7 +49,7 @@ func (rt *Router) databaseTLSMode(ctx context.Context, name string) string {
 	return mode
 }
 
-// handleSetDatabaseTLSEnabled handles PUT /api/v1/databases/{name}/tls: switches server TLS for MySQL, MariaDB, MongoDB and Redis.
+// handleSetDatabaseTLSEnabled handles PUT /api/v1/databases/{name}/tls: switches server TLS for MySQL, MariaDB, MongoDB, Redis, Valkey and KeyDB.
 func (rt *Router) handleSetDatabaseTLSEnabled(w http.ResponseWriter, r *http.Request) {
 	var req databaseTLSToggleRequest
 	if err := decodeJSONBody(r, &req); err != nil {
@@ -66,7 +66,7 @@ func (rt *Router) handleSetDatabaseTLSEnabled(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if !store.DatabaseTLSToggleable(d.Engine) {
-		writeError(w, http.StatusBadRequest, "TLS can be switched for MySQL, MariaDB, MongoDB and Redis databases only")
+		writeError(w, http.StatusBadRequest, "TLS can be switched for MySQL, MariaDB, MongoDB, Redis, Valkey and KeyDB databases only")
 		return
 	}
 	mode := store.DatabaseTLSModeOff

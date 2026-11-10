@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"sort"
 	"strings"
 	"time"
+
+	"filippo.io/age"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -97,8 +100,10 @@ type Protection struct {
 	// DrillInterval is the configured drill period, used to flag a resource
 	// whose last verified restore is older than two periods.
 	DrillInterval time.Duration
-	Logger        *slog.Logger
-	Now           func() time.Time
+	// DrillIntervalFn overrides DrillInterval when set, so a runtime setting applies live.
+	DrillIntervalFn func() time.Duration
+	Logger          *slog.Logger
+	Now             func() time.Time
 }
 
 func (p *Protection) now() time.Time {
@@ -127,6 +132,20 @@ func (p *Protection) Encryption() EncryptionStatus {
 		}
 	}
 	return st
+}
+
+// OpenSealedExport decrypts and decompresses a sealed export with this
+// instance's own key. A different instance's export fails with ErrExportKeyMismatch.
+func (p *Protection) OpenSealedExport(r io.Reader) (io.ReadCloser, error) {
+	if p.Sealer == nil || len(p.Sealer.Identities) == 0 {
+		return nil, ErrNoDecryptionKey
+	}
+	rc, err := OpenSealed(r, CodecZstdAge, p.Sealer.Identities)
+	var noMatch *age.NoIdentityMatchError
+	if errors.As(err, &noMatch) {
+		return nil, ErrExportKeyMismatch
+	}
+	return rc, err
 }
 
 // Health builds one row per backed up or scheduled resource.
@@ -266,8 +285,12 @@ func (p *Protection) classify(r *ResourceHealth, now time.Time) (state, reason s
 	case r.LastVerifiedRestore == nil:
 		return HealthUnverified, "no restore has been proven to work yet"
 	}
-	if p.DrillInterval > 0 {
-		if at, err := time.Parse(time.RFC3339, r.LastVerifiedRestore.At); err == nil && now.Sub(at) > 2*p.DrillInterval {
+	interval := p.DrillInterval
+	if p.DrillIntervalFn != nil {
+		interval = p.DrillIntervalFn()
+	}
+	if interval > 0 {
+		if at, err := time.Parse(time.RFC3339, r.LastVerifiedRestore.At); err == nil && now.Sub(at) > 2*interval {
 			return HealthWarning, "the last verified restore is overdue"
 		}
 	}

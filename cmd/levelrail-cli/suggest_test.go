@@ -37,3 +37,14 @@ func TestEmptyHint_NamesNextStep(t *testing.T) {
 		t.Errorf("empty hint = %q", b.String())
 	}
 }
+
+func TestUnknownCommand_SuggestsNounAndVerb(t *testing.T) {
+	var out, errb bytes.Buffer
+	code := run("levelrail-cli", []string{"app", "list"}, &out, &errb, func(string) (string, bool) { return "", false })
+	if code != exitUsage {
+		t.Fatalf("exit = %d", code)
+	}
+	if !strings.Contains(errb.String(), "did you mean: levelrail-cli apps list?") {
+		t.Errorf("stderr = %q", errb.String())
+	}
+}

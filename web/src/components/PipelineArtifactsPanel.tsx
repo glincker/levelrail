@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
 import { DownloadGlassIcon, PackageGlassIcon } from '@thesvg/ui-react'
 import { buttonVariants } from '@/components/ui/button'
@@ -37,7 +38,12 @@ export function PipelineArtifactsPanel({
           {t('artifacts.loadFailed')}: {error.message}
         </p>
       ) : list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('artifacts.empty')}</p>
+        <EmptyState
+          kind="no-results"
+          icon={<PackageGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('artifacts.emptyTitle')}
+          description={t('artifacts.empty')}
+        />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">
           {list.map((a) => (

@@ -13,6 +13,10 @@ type migrationReport struct {
 	CaproverURL string      `json:"caprover_url,omitempty"`
 	Apps        []mappedApp `json:"apps"`
 	Applied     bool        `json:"applied"`
+	// Backups lists imported backup targets and schedules, by name only.
+	Backups *backupImport `json:"backups,omitempty"`
+	// Channels lists imported alert channels by name and kind only.
+	Channels *channelImport `json:"channels,omitempty"`
 }
 
 func (r migrationReport) sourceLabel() string {
@@ -70,6 +74,9 @@ func printMigrationReportHuman(out io.Writer, r migrationReport, prog, outDir st
 		_, _ = fmt.Fprintln(out, "migrated:")
 		for _, a := range clean {
 			_, _ = fmt.Fprintf(out, "  - %s (from %q)\n", a.ServiceName, a.SourceName)
+			if a.Node != "" {
+				_, _ = fmt.Fprintf(out, "      node: %q (source server %q)\n", a.Node, a.SourceServer)
+			}
 			if r.Applied {
 				if a.CreateError != "" {
 					_, _ = fmt.Fprintf(out, "      apply FAILED: %s\n", a.CreateError)
@@ -96,6 +103,7 @@ func printMigrationReportHuman(out io.Writer, r migrationReport, prog, outDir st
 				_, _ = fmt.Fprintln(out, "      git source is not persisted by Levelrail; to build and deploy from it, run:")
 				_, _ = fmt.Fprintf(out, "        %s apps create --file %s/%s.yaml --repo %s --ref %s --image-repo <your-registry>/%s\n", prog, outDir, a.ServiceName, a.RepoURL, ref, a.ServiceName)
 			}
+			printWebhookOutcome(out, a.Webhook)
 			for _, iss := range a.Issues {
 				_, _ = fmt.Fprintf(out, "      [%s] %s: %s\n", iss.Severity, iss.Field, iss.Detail)
 			}

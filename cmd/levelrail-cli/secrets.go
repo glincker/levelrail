@@ -41,6 +41,8 @@ func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runSecretsKeyPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "scan":
 		return runSecretsScan(prog, args[1:], stdout, stderr, lookupEnv)
+	case "provider":
+		return runSecretsProvider(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown secrets subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))

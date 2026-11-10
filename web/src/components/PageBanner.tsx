@@ -42,14 +42,13 @@ export function PageBanner({
       aria-hidden="true"
       className={cn(
         'pointer-events-none absolute z-[5] hidden -translate-y-1/2 sm:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-90 motion-safe:duration-500',
-        'top-1/2 left-6 size-24',
+        'top-1/2 left-5 size-14',
       )}
     >
-      <div className="absolute inset-x-2 -bottom-3 h-3 rounded-full bg-black/45 blur-md" />
       <div
         className={cn(
-          'absolute inset-0 -rotate-6 [&_svg]:size-full [&_svg]:text-(--banner-icon)!',
-          'drop-shadow-[0_-1px_0_rgba(255,255,255,0.55)] drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)] drop-shadow-[0_14px_14px_rgba(0,0,0,0.3)]',
+          'absolute inset-0 [&_svg]:size-full [&_svg]:text-(--banner-icon)!',
+          'drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]',
         )}
       >
         {icon}
@@ -61,30 +60,21 @@ export function PageBanner({
     <header
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row',
+        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row sm:flex-wrap',
         compact
           ? 'rounded-xl border border-border bg-card'
-          : 'banner-edge rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))]',
+          : 'rounded-2xl border border-border bg-card sm:flex-nowrap sm:items-center',
         className,
       )}
     >
-      {art ? (
-        <div
-          aria-hidden="true"
-          className={cn(
-            'grain-orb pointer-events-none absolute -z-10 hidden sm:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-700',
-            '-top-10 -left-10 size-60',
-          )}
-        />
-      ) : null}
       {iconArt}
       <div
         className={cn(
           'z-10 flex min-w-0 flex-1 gap-x-3',
           compact
             ? 'min-h-[4.5rem] flex-wrap items-center px-4 py-3'
-            : 'min-h-28 flex-col justify-center gap-y-2 px-6 py-5 md:max-w-xl md:flex-none',
-          art && 'sm:pl-40',
+            : 'min-h-20 flex-col justify-center gap-y-1 px-5 py-4',
+          art && 'sm:pl-24',
         )}
       >
         <div
@@ -97,7 +87,7 @@ export function PageBanner({
             <h1
               className={cn(
                 'font-(family-name:--font-display) font-light tracking-[-0.03em] leading-[1.08] text-foreground',
-                compact ? 'text-xl' : 'text-2xl md:text-3xl',
+                'text-xl',
               )}
             >
               {title}
@@ -110,7 +100,7 @@ export function PageBanner({
           </div>
         </div>
         {compact ? null : (
-          <p className="line-clamp-3 max-w-prose text-sm text-muted-foreground">
+          <p className="line-clamp-2 max-w-prose text-sm text-muted-foreground">
             {description}
           </p>
         )}
@@ -118,8 +108,7 @@ export function PageBanner({
       {action ? (
         <div
           className={cn(
-            'z-10 flex shrink-0 flex-wrap items-center gap-2 self-start px-4 pb-4 sm:ml-auto sm:justify-end sm:px-5 sm:py-4',
-            compact && 'sm:self-center',
+            'z-10 flex shrink-0 flex-wrap items-center gap-2 px-4 pb-4 sm:ml-auto sm:justify-end sm:self-center sm:px-5 sm:py-4',
           )}
         >
           {action}

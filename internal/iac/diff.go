@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 // Field operations shown in a plan.
@@ -74,8 +75,16 @@ const defaultPlanValueMax = 120
 
 var secretPathWords = []string{"TOKEN", "SECRET", "PASSW", "CREDENTIAL", "PRIVATE", "APIKEY", "API_KEY", "ACCESS_KEY", "_KEY"}
 
+var planValueLive atomic.Pointer[func() int]
+
+// SetPlanValueSource makes PlanValueMax follow a live setting.
+func SetPlanValueSource(fn func() int) { planValueLive.Store(&fn) }
+
 // PlanValueMax is the longest before or after value a plan shows.
 func PlanValueMax() int {
+	if p := planValueLive.Load(); p != nil {
+		return (*p)()
+	}
 	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_IAC_PLAN_VALUE_MAX"))); err == nil && n > 0 {
 		return n
 	}

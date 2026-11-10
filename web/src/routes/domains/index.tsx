@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -12,10 +12,11 @@ import {
 } from '../../queries/domains'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { AddDomainsDialog } from '../../components/AddDomainsDialog'
+import { ListKeyboardHint } from '../../components/ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { DomainsTable } from '../../components/DomainsTable'
 import { ParkedDomainsGroup } from '../../components/domains/ParkedDomainsGroup'
 import { DomainsFirstRun } from '../../components/domains/DomainsFirstRun'
-import { DomainsTabs } from '../../components/domains/DomainsTabs'
 import { usePlatformStatus } from '../../components/platform/usePlatformStatus'
 import { DomainsStatusBar } from '../../components/domains/DomainsStatusBar'
 import { serverAddressQueryOptions } from '../../queries/serverAddress'
@@ -25,11 +26,15 @@ import { DASHBOARD_URL_ANCHOR } from '../../components/DashboardUrlCard'
 import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyDomainsDiagram } from '../../components/banners/LazyDiagrams'
+
+const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
 import { PageTemplate } from '../../components/shell/PageTemplate'
 
 // The loader primes every query the page uses, so nothing fetches in a
 // component body. Old /domains#dashboard-url links land on the new page.
 export const Route = createFileRoute('/domains/')({
+  validateSearch: (search: Record<string, unknown>): { q?: string } =>
+    typeof search.q === 'string' && search.q !== '' ? { q: search.q } : {},
   beforeLoad: ({ location }) => {
     if (location.hash === DASHBOARD_URL_ANCHOR) {
       redirect({
@@ -58,6 +63,16 @@ function DomainsPage() {
   const { data: certificates } = useSuspenseQuery(certificatesQueryOptions())
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const [addOpen, setAddOpen] = useState(false)
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
+  const query = Route.useSearch().q ?? ''
+  const navigate = Route.useNavigate()
+  const setQuery = (next: string) => {
+    void navigate({ search: next ? { q: next } : {}, replace: true })
+  }
 
   const { data: proxy } = useProxyIntegration()
   const certByDomain = useMemo(() => {
@@ -124,7 +139,6 @@ function DomainsPage() {
         />
       }
     >
-      <DomainsTabs />
       <DomainsStatusBar
         onAdd={() => {
           setAddOpen(true)
@@ -143,14 +157,32 @@ function DomainsPage() {
       ) : null}
 
       {noDomains ? null : (
-        <DomainsTable
-          domains={domains}
-          certByDomain={certByDomain}
-          appCount={apps.length}
-          onAdd={() => {
-            setAddOpen(true)
-          }}
-        />
+        <>
+          <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+          <div ref={setListContainer} className="contents">
+            <DomainsTable
+              domains={domains}
+              certByDomain={certByDomain}
+              appCount={apps.length}
+              query={query}
+              onQueryChange={setQuery}
+              toolbar={
+                <Suspense fallback={null}>
+                  <SavedViewsMenu
+                    list="domains"
+                    current={{ q: query }}
+                    onApply={(f) => {
+                      setQuery(f.q ?? '')
+                    }}
+                  />
+                </Suspense>
+              }
+              onAdd={() => {
+                setAddOpen(true)
+              }}
+            />
+          </div>
+        </>
       )}
 
       <ParkedDomainsGroup />

@@ -157,7 +157,7 @@ func publicAddressCheck(e ReadinessEnv) Check {
 func unknownAddress() Check {
 	return Check{ID: CheckPublicAddress, Status: CheckWarn,
 		Detail: "no public address is set for this control plane, so other nodes cannot find it",
-		Hint:   "set APP_AGENT_ADVERTISE_HOST to this server's public IP or hostname before adding nodes"}
+		Hint:   "set APP_AGENT_ADVERTISE_HOST=<public IP or hostname> on the control plane (environment or the saved address setting) before adding nodes"}
 }
 
 // Blocking returns the checks that failed.

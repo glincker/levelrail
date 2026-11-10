@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
+import { getRouteApi } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { BroomGlassIcon, HammerGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -12,16 +13,63 @@ import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBuildCenter } from '../../queries/buildCenter'
 import { BuildCachePanel } from './BuildCachePanel'
 import { BuildsTable } from './BuildsTable'
+import { BuildsEmptyState } from '../empty/BuildsEmptyState'
+import { ListKeyboardHint } from '../ListKeyboardHint'
+import { FilterChips } from '../FilterChips'
+import {
+  matchesBuildStatus,
+  parseBuildStatusFilter,
+  type BuildStatusFilter,
+} from './buildFormat'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
+
+const buildsRoute = getRouteApi('/builds')
+const SavedViewsMenu = lazy(() => import('../SavedViewsMenu'))
+const BuildCacheQuotaCard = lazy(() => import('./BuildCacheQuotaCard'))
 
 export function BuildsPage() {
   const { t } = useTranslation('buildCenter')
+  const { t: tf } = useTranslation('uiShared')
+  const statusFilter = parseBuildStatusFilter(buildsRoute.useSearch().status)
+  const navigate = buildsRoute.useNavigate()
+  const setStatusFilter = (next: BuildStatusFilter | undefined) => {
+    void navigate({ search: next ? { status: next } : {}, replace: true })
+  }
+  const toggleStatus = (next: BuildStatusFilter) => {
+    setStatusFilter(statusFilter === next ? undefined : next)
+  }
   const [pruneOpen, setPruneOpen] = useState(false)
   const isRoot = useIsRoot()
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
   const builds = useBuildCenter()
   const data = builds.data
   const isEmpty = data !== undefined && data.rows.length === 0
   const size = isEmpty ? 'hero' : 'compact'
   const cacheFull = data?.rows.some((r) => r.hint?.fix === 'prune_cache')
+  const shownRows = useMemo(
+    () =>
+      statusFilter && data
+        ? data.rows.filter((r) => matchesBuildStatus(r.status, statusFilter))
+        : (data?.rows ?? []),
+    [data, statusFilter],
+  )
+  const activeFilters = statusFilter
+    ? [
+        {
+          id: 'status',
+          label: tf('filterChips.status', {
+            value: t(`status.${statusFilter}`),
+          }),
+          onRemove: () => {
+            setStatusFilter(undefined)
+          },
+        },
+      ]
+    : []
 
   return (
     <PageTemplate
@@ -97,11 +145,17 @@ export function BuildsPage() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <MetricTile
                 label={t('tiles.queued')}
+                onClick={() => {
+                  toggleStatus('queued')
+                }}
                 value={data.counts.queued}
                 tone={data.counts.queued > 0 ? 'warning' : 'neutral'}
               />
               <MetricTile
                 label={t('tiles.running')}
+                onClick={() => {
+                  toggleStatus('running')
+                }}
                 value={data.counts.running}
                 tone={data.counts.running > 0 ? 'info' : 'neutral'}
               />
@@ -111,6 +165,9 @@ export function BuildsPage() {
               />
               <MetricTile
                 label={t('tiles.failed')}
+                onClick={() => {
+                  toggleStatus('failed')
+                }}
                 value={data.counts.failed}
                 tone={data.counts.failed > 0 ? 'danger' : 'neutral'}
               />
@@ -137,14 +194,42 @@ export function BuildsPage() {
               </p>
             </div>
 
-            {isEmpty ? null : (
-              <BuildsTable
-                rows={data.rows}
-                running={data.counts.running}
-                onFixCache={() => {
-                  setPruneOpen(true)
-                }}
-              />
+            {isEmpty ? (
+              <BuildsEmptyState total={data.rows.length} />
+            ) : (
+              <div ref={setListContainer} className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <FilterChips
+                      filters={activeFilters}
+                      shown={shownRows.length}
+                      total={data.rows.length}
+                      onClearAll={() => {
+                        setStatusFilter(undefined)
+                      }}
+                    />
+                  </div>
+                  <Suspense fallback={null}>
+                    <SavedViewsMenu
+                      list="builds"
+                      current={{ status: statusFilter ?? '' }}
+                      onApply={(f) => {
+                        setStatusFilter(parseBuildStatusFilter(f.status))
+                      }}
+                    />
+                  </Suspense>
+                </div>
+                <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+                {shownRows.length === 0 ? null : (
+                  <BuildsTable
+                    rows={shownRows}
+                    running={data.counts.running}
+                    onFixCache={() => {
+                      setPruneOpen(true)
+                    }}
+                  />
+                )}
+              </div>
             )}
           </>
         ) : null}
@@ -153,6 +238,9 @@ export function BuildsPage() {
           pruneOpen={pruneOpen}
           onPruneOpenChange={setPruneOpen}
         />
+        <Suspense fallback={null}>
+          <BuildCacheQuotaCard />
+        </Suspense>
       </div>
     </PageTemplate>
   )

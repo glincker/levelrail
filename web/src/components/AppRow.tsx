@@ -60,6 +60,7 @@ export function AppRow({
         >
           {app.name}
         </Link>
+        <AppDescription text={app.description} />
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <StatusLabel status={app.status} />
           <FailureReason status={app.status} name={app.name} />
@@ -133,6 +134,20 @@ export function StatusLabel({ status }: { status: AppStatusSummary }) {
   )
 }
 
+function AppDescription({ text }: { text?: string }) {
+  const { t } = useTranslation('appRows')
+  if (!text) return null
+  return (
+    <span
+      className="max-w-full min-w-0 truncate text-xs text-muted-foreground"
+      title={text}
+      aria-label={t('description', { text })}
+    >
+      {text}
+    </span>
+  )
+}
+
 function FailureReason({
   status,
   name,
@@ -172,14 +187,14 @@ export function RowSkeleton() {
       className={`${APP_LIST_GRID} border-b border-border px-4 py-3`}
       aria-hidden="true"
     >
-      <div className="size-4 animate-pulse rounded bg-muted" />
-      <div className="size-8 animate-pulse rounded-lg bg-muted" />
-      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-      <div className="hidden h-4 w-20 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-12 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-10 animate-pulse rounded bg-muted lg:block" />
-      <div className="hidden h-4 w-14 animate-pulse rounded bg-muted lg:block" />
-      <div className="h-4 w-8 animate-pulse justify-self-end rounded bg-muted" />
+      <div className="size-4 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="size-8 animate-pulse motion-reduce:animate-none rounded-lg bg-muted" />
+      <div className="h-4 w-32 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="hidden h-4 w-20 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-12 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-10 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="hidden h-4 w-14 animate-pulse motion-reduce:animate-none rounded bg-muted lg:block" />
+      <div className="h-4 w-8 animate-pulse motion-reduce:animate-none justify-self-end rounded bg-muted" />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import (
 
 func runDomainsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains list", "print domains as a JSON array to stdout and nothing else", stderr)
+	lo := registerListOpts(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsListUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -22,6 +23,7 @@ func runDomainsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list domains: %w", err))
 	}
+	domains = applyListOpts(domains, lo)
 
 	if err := renderResult(stdout, of.Format, of.Query, domains, func() { printDomainsTable(stdout, domains) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)

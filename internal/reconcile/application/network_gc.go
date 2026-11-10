@@ -32,13 +32,15 @@ func NetworkGCMaxPerPassFromEnv() int {
 
 // Reasons a network is not removable, surfaced by the diagnostics API.
 const (
-	NetworkKeepOwned    = "owner_exists"
-	NetworkKeepForeign  = "foreign_instance"
-	NetworkKeepInUse    = "containers_attached"
-	NetworkKeepGrace    = "within_grace_period"
-	NetworkKeepNoApps   = "no_apps_in_store"
-	NetworkRemovable    = "removable"
-	networkOwnerKindApp = "app"
+	NetworkKeepOwned   = "owner_exists"
+	NetworkKeepForeign = "foreign_instance"
+	NetworkKeepInUse   = "containers_attached"
+	NetworkKeepGrace   = "within_grace_period"
+	NetworkKeepNoApps  = "no_apps_in_store"
+	// NetworkKeepUnlabeled marks a network with no instance label: on a shared daemon it may be another instance's.
+	NetworkKeepUnlabeled = "unlabeled"
+	NetworkRemovable     = "removable"
+	networkOwnerKindApp  = "app"
 )
 
 // NetworkGraceFromEnv reads APP_NETWORK_GC_GRACE, falling back to 10m.
@@ -77,9 +79,8 @@ type NetworkView struct {
 
 // ClassifyNetworks decides, per network, whether it is orphaned and safe
 // to remove. Networks of another instance are never removable, attached
-// containers always block removal, and unlabeled legacy networks are
-// only removable when this store has at least one app (an empty store
-// cannot tell its own leftovers from a sibling instance's idle network).
+// containers always block removal, and unlabeled networks are never
+// removable: a sibling instance on the same daemon may own them.
 func ClassifyNetworks(prefix, instanceID string, details []docker.NetworkDetail, apps []store.App, now time.Time, grace time.Duration) []NetworkView {
 	if prefix == "" {
 		prefix = defaultNetworkPrefix
@@ -110,8 +111,8 @@ func ClassifyNetworks(prefix, instanceID string, details []docker.NetworkDetail,
 			v.Reason = NetworkKeepInUse
 		case !d.Created.IsZero() && now.Sub(d.Created) < grace:
 			v.Reason = NetworkKeepGrace
-		case instanceID != "" && !labeled && len(apps) == 0:
-			v.Reason = NetworkKeepNoApps
+		case instanceID != "" && !labeled:
+			v.Reason = NetworkKeepUnlabeled
 		default:
 			v.Reason = NetworkRemovable
 			v.Removable = true

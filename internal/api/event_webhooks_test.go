@@ -89,3 +89,29 @@ func TestEventWebhooks_NotConfigured(t *testing.T) {
 		t.Fatalf("status = %d, want 501", rec.Code)
 	}
 }
+
+func TestEventWebhooks_ListSortsByName(t *testing.T) {
+	rt, db := newTestRouter(t)
+	rt.SetEventWebhooks(eventhook.NewService(eventhook.Deps{
+		Store: db, Secrets: &exportTestSecrets{m: map[string]string{}}, Brand: "plat",
+	}))
+	cookie := loginTestSession(t, rt, db)
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, path, body))
+		return rec
+	}
+	for _, n := range []string{"bravo", "alpha", "charlie"} {
+		if rec := do(http.MethodPost, "/api/v1/event-webhooks", `{"name":"`+n+`","url":"https://203.0.113.9/h","events":["apps.*"]}`); rec.Code != http.StatusCreated {
+			t.Fatalf("create %s = %d", n, rec.Code)
+		}
+	}
+	rec := do(http.MethodGet, "/api/v1/event-webhooks?sort=-name", "")
+	var got []eventWebhookResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 3 || got[0].Name != "charlie" || got[2].Name != "alpha" {
+		t.Fatalf("order = %+v", got)
+	}
+}

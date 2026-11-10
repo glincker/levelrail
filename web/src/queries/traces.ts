@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { TraceSpan, TraceSummary, Tracing } from '../types/traces'
+import { pollMs } from '../lib/pollTier'
 
 export interface TraceFilters {
   errorsOnly: boolean
@@ -37,7 +38,7 @@ async function json<T>(res: Response, what: string): Promise<T> {
 export function traceListQueryOptions(app: string, f: TraceFilters) {
   return queryOptions({
     queryKey: traceKeys.list(app, f),
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
     queryFn: async () => {
       const q = new URLSearchParams()
       q.set(

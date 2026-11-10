@@ -47,6 +47,9 @@ func toProbeAttemptResource(a store.ProbeAttempt) probeAttemptResource {
 // .../deploy-attempts itself already is, not a live tail.
 func (rt *Router) handleListProbeAttempts(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	deployID := r.PathValue("deployId")
 
 	_, err := rt.apps.GetDesiredService(r.Context(), name)

@@ -26,6 +26,7 @@ export function OverviewHero({
   attentionCount = 0,
   serverOutcome,
   onDeploy,
+  gitMissing = false,
 }: {
   app: AppDetail
   conditions: ReconcileCondition[]
@@ -35,6 +36,8 @@ export function OverviewHero({
   attentionCount?: number
   serverOutcome?: { outcome?: string; reason?: string }
   onDeploy: (tab: DeployTab) => void
+  /** The git source query answered 404: offer the connect flow. */
+  gitMissing?: boolean
 }) {
   const { t } = useTranslation('common')
   const runningStage = latestAttempt
@@ -96,6 +99,7 @@ export function OverviewHero({
           url={url}
           onDeploy={onDeploy}
           primary={primary}
+          gitMissing={gitMissing}
         />
       </section>
       <section

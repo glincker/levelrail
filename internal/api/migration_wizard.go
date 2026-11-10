@@ -102,7 +102,7 @@ func (rt *Router) handleMigrationImport(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	applied := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt})
+	applied := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt, providerRefs: rt.callerHasAbility(r, AbilityRoot)})
 	rt.nudgeReconciler()
 	rt.seedChecklists(r.Context(), req.Platform, applied, r)
 	rt.logger.Info("api: migration import applied", slog.String("platform", req.Platform), slog.Any("counts", applied.Counts))

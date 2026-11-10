@@ -93,7 +93,9 @@ type DesiredDatabase struct {
 	// nothing."
 	BackupTargetID string
 	BackupSchedule string
-	BackupRetain   int
+	// BackupPaused keeps the schedule configured but stops the scheduler from running it.
+	BackupPaused bool
+	BackupRetain int
 	// BackupRetainDays is a second, independent retention dimension
 	// (migrations/0059_backup_retain_days.sql): 0 means no age limit,
 	// mirroring BackupRetain's own zero-means-unlimited convention.
@@ -137,7 +139,10 @@ type DesiredDatabase struct {
 	// SaveDesiredDatabase-never-writes-it exception as NodeID/
 	// BackupSchedule/Suspended above; only SetDatabasePITR writes these
 	// two. PITREnabledAt is "" whenever PITREnabled is false.
-	PITREnabled   bool
+	PITREnabled bool
+	// EngineParams is the applied, validated tuning set the container runs
+	// with (migrations/3236). Only ApplyDatabaseEngineParams writes it.
+	EngineParams  EngineParamSet
 	PITREnabledAt string
 	// BaseBackupSchedule is a cron expression for base backups taken
 	// independently of the dump schedule; "" ties them to each dump.
@@ -741,7 +746,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 	rows, err := db.QueryContext(ctx, `
 		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
-		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
+		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL AND backup_paused = 0
 		AND name NOT IN (`+pendingDatabaseNamesSQL+`)
 		ORDER BY name
 	`)
@@ -771,7 +776,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, instance_id, created_at, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn, base_backup_schedule, base_backup_target_id"
+const desiredDatabaseColumns = "name, engine, version, instance_id, created_at, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn, base_backup_schedule, base_backup_target_id, backup_paused, engine_params"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -788,8 +793,9 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		resourcesJSON             string
 		suspended                 bool
 		pitrEnabled               bool
+		engineParamsJSON          string
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.InstanceID, &d.CreatedAt, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn, &d.BaseBackupSchedule, &d.BaseBackupTargetID); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.InstanceID, &d.CreatedAt, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn, &d.BaseBackupSchedule, &d.BaseBackupTargetID, &d.BackupPaused, &engineParamsJSON); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended
@@ -804,5 +810,20 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 			return nil, fmt.Errorf("unmarshal resources: %w", err)
 		}
 	}
+	d.EngineParams = newEngineParamSet(decodeEngineParams(engineParamsJSON))
 	return &d, nil
+}
+
+// SetDatabaseBackupPaused pauses or resumes the scheduled backup without touching its config.
+func (db *DB) SetDatabaseBackupPaused(ctx context.Context, name string, paused bool) error {
+	res, err := db.ExecContext(ctx, `UPDATE desired_databases SET backup_paused = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, paused, name)
+	if err != nil {
+		return fmt.Errorf("store: set backup paused for database %q: %w", name, err)
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return fmt.Errorf("store: set backup paused for database %q: rows affected: %w", name, err)
+	} else if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
 }

@@ -62,10 +62,12 @@ type Engine struct {
 	lastResult map[string]Result
 	lastErr    map[string]error
 
-	stats       passStats
-	ring        []time.Duration
-	slowest     time.Duration
-	slowestName string
+	stats        passStats
+	costs        costTable
+	resyncSource func() time.Duration
+	ring         []time.Duration
+	slowest      time.Duration
+	slowestName  string
 
 	passSlowest     time.Duration
 	passSlowestName string
@@ -354,6 +356,7 @@ func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	e.guard.After(c.Name(), err, panicked)
 	dur := time.Since(start)
 	e.recordController(c.Name(), dur)
+	e.costs.add(c.Name(), dur, err != nil || panicked)
 
 	e.mu.Lock()
 	e.lastResult[c.Name()] = result
@@ -487,6 +490,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-ticker.C:
 			e.logger.Debug("resync tick")
+			resyncInterval = e.refreshResync(ticker, resyncInterval)
 			trigger()
 
 		case <-deferC:

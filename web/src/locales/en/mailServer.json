@@ -220,7 +220,7 @@
     "body": "A mail restore holds this app stopped. The platform will not start or change it until the restore finishes or rolls back. Follow the job in the Backup panel."
   },
   "demo": {
-    "badge": "DEMO DATA",
+    "badge": "Demo data",
     "hint": "Local demo mode: nothing here is real and nothing reaches a DNS provider or mail server.",
     "reset": "Reset demo"
   },
@@ -438,5 +438,24 @@
     "viewOnly": "You can view mailboxes but not manage them",
     "viewOnlyReason": "Your team role does not allow managing mail. Ask a team admin or owner for access.",
     "actionForbidden": "Your team role does not allow this. Ask a team admin or owner to do it or to change your role."
+  },
+  "cert": {
+    "title": "Mail certificate",
+    "listLabel": "Certificate served on the mail ports",
+    "host": "Host",
+    "source": "Source",
+    "issuer": "Issuer",
+    "expires": "Expires",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "serial": "Serial",
+    "fingerprint": "SHA-256",
+    "selfSigned": "Self-signed",
+    "notServed": "No certificate is served yet",
+    "probeError": "Probe failed: {{message}}",
+    "obtain": "Obtain certificate",
+    "obtaining": "Requesting",
+    "obtained": "Certificate requested",
+    "failed": "Could not obtain a certificate"
   }
 }

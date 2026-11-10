@@ -1,0 +1,48 @@
+{
+  "title": "Contenedores",
+  "count_one": "{{count}} réplica",
+  "count_other": "{{count}} réplicas",
+  "loading": "Cargando contenedores",
+  "forbidden": "No tienes permiso para inspeccionar los contenedores de esta app.",
+  "error": "No se pudieron cargar los contenedores: {{message}}",
+  "empty": {
+    "title": "No hay contenedores en ejecución",
+    "description": "La app está detenida o en suspensión. Estado actual: {{status}}."
+  },
+  "unavailable": "No disponible",
+  "unavailableTip": "El agente no informa este campo en nodos remotos.",
+  "none": "Ninguno",
+  "copyId": "Copiar id del contenedor",
+  "copied": "Copiado",
+  "restarts_one": "{{count}} reinicio",
+  "restarts_other": "{{count}} reinicios",
+  "uptime": "Activo {{duration}}",
+  "node": "Nodo",
+  "fields": {
+    "image": "Imagen",
+    "digest": "Digest",
+    "ports": "Puertos",
+    "networks": "Redes",
+    "mounts": "Montajes",
+    "limits": "Límites",
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "health": "Salud"
+  },
+  "state": {
+    "running": "En ejecución",
+    "stopped": "Detenido",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "Saludable",
+    "unhealthy": "No saludable",
+    "starting": "Iniciando",
+    "none": "Sin comprobación",
+    "streak": "{{count}} fallos seguidos"
+  },
+  "readOnly": "solo lectura",
+  "limitsValue": "{{cpu}} CPU, {{memory}}",
+  "noLimit": "Sin límite",
+  "usage": "{{used}} de {{limit}}"
+}

@@ -99,6 +99,8 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 		var err error
 		if strings.HasPrefix(m.repoURL, uploadURLPrefix) {
 			sourceDir, commit, cleanup, err = rt.fetchUpload(name, m.repoURL)
+		} else if strings.HasPrefix(m.repoURL, inlineURLPrefix) {
+			sourceDir, commit, cleanup, err = rt.fetchInline(ctx, name, m.repoURL)
 		} else {
 			token, scope := rt.cloneCredential(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
 			fetchCtx := sourcecache.WithScope(ctx, scope)
@@ -164,5 +166,9 @@ func (rt *Router) keepStoredDomains(ctx context.Context, desired *store.DesiredS
 		return err
 	}
 	desired.Domains = cur.Domains
+	// A git build carries no volumes of its own: keep the ones attached to the running app.
+	if len(desired.Volumes) == 0 {
+		desired.Volumes = cur.Volumes
+	}
 	return nil
 }

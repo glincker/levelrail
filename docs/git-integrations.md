@@ -16,6 +16,28 @@ This page covers connecting a provider, using a repository as an app's source, d
 Fastest path: connect the provider in the dashboard ([Connect a provider](#connect-a-provider)), then run `levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app`. Pushes to the default branch deploy from then on.
 </Tip>
 
+## SSH deploy key for private repositories
+
+A private repository on any git host can be cloned over SSH with a per-app deploy key, with no personal access token. Set the git source's `repo_url` to an SSH URL (`git@host:owner/repo.git` or `ssh://git@host:port/owner/repo.git`), then mint the key.
+
+```bash
+levelrail-cli apps git-source ssh-key generate my-app --trust-on-first-use
+```
+
+The output holds `public_key` (an ed25519 key in `authorized_keys` format), its `fingerprint`, and the pinned `host_fingerprint`. Add the public key to the repository's deploy keys (read-only is enough). `ssh-key show my-app` prints the same fields later and `ssh-key delete my-app` removes the key. `generate` (alias `rotate`) always mints a new key, so it also rotates. The same operations are available as `GET`, `POST` and `DELETE` on `/api/v1/apps/my-app/git-source/ssh-key` and in the app's git source settings in the dashboard.
+
+To create an app straight from an SSH repository, run `apps create --repo ssh://git@host/owner/repo.git ...`. The app and its git source are created first; the build waits until the key exists, and the command prints the `ssh-key generate` step to run, then `apps git-source deploy`.
+
+- The private key is generated on the control plane, stored encrypted with the same envelope encryption as every secret, and never returned by any route or written to a log. Clones hold it in memory only, so no key file touches disk and no shell command is built from user input.
+- Host keys are always pinned. Pass `--host-key FILE` (`host_key` in the API; the server's public key in `authorized_keys` format, for example from `ssh-keyscan`) to pin one you verified yourself, or `--trust-on-first-use` to scan once and pin what the host presents; compare the returned `host_fingerprint` with the host's published fingerprint. A later clone that sees a different host key fails. There is no option to skip host key checking.
+- An SSH repository with no stored deploy key is refused before any connection. The control plane never falls back to its own ssh-agent or `known_hosts`.
+- Trust-on-first-use scans refuse loopback, private and link-local addresses, so a git URL cannot be used to probe your internal network. For a self-hosted git server on a private range, either paste its `host_key` or list its IP or CIDR in the `git.ssh_scan_allow_internal` runtime setting. Cloud metadata addresses are never allowed.
+- Keys are per app, so one compromised key exposes only that app's repository. The scan timeout comes from `APP_GIT_SSH_SCAN_TIMEOUT` (default 10s).
+
+<Note>
+Webhook registration, branch listing and build detection still use the provider API, so an SSH-only source deploys from pushes you wire to the app's webhook URL by hand, or from a manual deploy.
+</Note>
+
 ## Provider connections and git sources
 
 Two records are involved, and keeping them separate is deliberate.

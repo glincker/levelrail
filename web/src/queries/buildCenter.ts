@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface BuildHint {
   code: string
@@ -94,8 +95,8 @@ export const buildKeys = {
   cache: (node: string) => ['builds', 'cache', node] as const,
 }
 
-const ACTIVE_REFETCH_MS = 5_000
-const IDLE_REFETCH_MS = 30_000
+const ACTIVE_REFETCH_MS = pollMs('live')
+const IDLE_REFETCH_MS = pollMs('steady')
 
 async function json<T>(res: Response, what: string): Promise<T> {
   if (!res.ok) {
@@ -174,5 +175,38 @@ export function usePruneBuildCache(node: string) {
     onSuccess: (res) => {
       if (res.applied) void qc.invalidateQueries({ queryKey: ['builds'] })
     },
+  })
+}
+
+export interface BuildCacheReclaim {
+  app: string
+  trigger: 'auto' | 'manual'
+  at: string
+  usage_bytes: number
+  quota_bytes: number
+  freed_bytes: number
+  removed_count: number
+  skipped_in_use: number
+  bounded: boolean
+  skipped?: string
+  partial?: boolean
+}
+
+export interface BuildCacheQuota {
+  app_quota_gb: number
+  reclaim_max_records: number
+  supported: boolean
+  reclaims: BuildCacheReclaim[]
+}
+
+export function useBuildCacheQuota() {
+  return useQuery({
+    queryKey: ['builds', 'cache', 'quota'] as const,
+    queryFn: async ({ signal }) =>
+      json<BuildCacheQuota>(
+        await fetch('/api/v1/builds/cache/quota', { signal }),
+        'fetch build cache quota',
+      ),
+    refetchInterval: IDLE_REFETCH_MS,
   })
 }

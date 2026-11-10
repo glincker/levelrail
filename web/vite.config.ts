@@ -114,6 +114,8 @@ export default defineConfig({
             'errorComponent',
             'notFoundComponent',
           ],
+          // Loaders pull query modules; splitting keeps them out of first load.
+          ['loader'],
         ],
       },
       routesDirectory: './src/routes',

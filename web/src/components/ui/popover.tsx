@@ -1,5 +1,6 @@
 'use client'
 
+import '@/styles/material.css'
 import * as React from 'react'
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 
@@ -26,17 +27,14 @@ function PopoverContent({
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
-  glass = false,
+  glass = true,
   ...props
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset'
   > & {
-    /** Opt into the glinui blurred glass surface (adr/024) instead of the
-     * default solid popover background. Additive, same as DialogContent's
-     * `glass` prop: existing popovers keep their current look unless they
-     * pass this explicitly. */
+    /** Glass is the default; pass false for a solid surface. */
     glass?: boolean
   }) {
   return (
@@ -51,8 +49,8 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            'z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 rounded-lg bg-popover p-2.5 text-sm text-popover-foreground shadow-popover ring-1 ring-foreground/10 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
-            glass && 'glinui-glass-surface',
+            'z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 glass glass-regular motion-overlay rounded-container p-2.5 text-sm text-popover-foreground outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+            !glass && 'glass-solid',
             className,
           )}
           {...props}

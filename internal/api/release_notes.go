@@ -204,6 +204,9 @@ func (rt *Router) commitsForRange(ctx context.Context, app, fromSHA, toSHA strin
 // to defaults to the newest deploy that recorded a commit.
 func (rt *Router) handleReleaseNotes(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) || !rt.requireAppOrStack(w, r, name) {
+		return
+	}
 	fromID := r.URL.Query().Get("from")
 	if fromID == "" {
 		writeError(w, http.StatusBadRequest, "from is required")

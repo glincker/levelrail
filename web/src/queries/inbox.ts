@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { AlertHistoryEntry } from '../types/alertNoise'
+import { pollMs } from '@/lib/pollTier'
 
 // Matches internal/api's inboxItemResource and inboxPrefsResource.
 export interface InboxItem extends AlertHistoryEntry {
@@ -81,7 +82,7 @@ export function useInbox(unreadOnly: boolean, archived = false) {
     getNextPageParam: (last) =>
       last.length >= PAGE_SIZE ? last.at(-1)?.at : undefined,
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 
@@ -95,7 +96,7 @@ export function useInboxUnreadCount() {
         { signal },
       ),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
     select: (d) => d.unread,
   })
 }
@@ -125,7 +126,7 @@ export function useInboxState() {
         signal,
       }),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

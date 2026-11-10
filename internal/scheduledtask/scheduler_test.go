@@ -21,6 +21,9 @@ func openDB(t *testing.T) *store.DB {
 	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
+	if err := db.SetServiceExecEnabled(context.Background(), "web", true); err != nil {
+		t.Fatalf("enable exec: %v", err)
+	}
 	return db
 }
 

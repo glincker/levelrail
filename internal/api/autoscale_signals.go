@@ -62,6 +62,9 @@ func (g autoscaleSignals) Metric(ctx context.Context, p autoscale.Policy, curren
 	window := autoscale.WindowFromEnv(os.Getenv)
 	maxAge := autoscale.MetricMaxAgeFromEnv(os.Getenv)
 	from := now.Add(-window)
+	if autoscale.IsGaugeMetric(p.Metric) {
+		return g.appGauge(ctx, p)
+	}
 	svc, err := g.rt.apps.GetDesiredService(ctx, p.App)
 	if err != nil {
 		return autoscale.Reading{}, err

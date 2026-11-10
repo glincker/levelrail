@@ -1,0 +1,21 @@
+{
+  "title": "Run in a fresh container",
+  "description": "Starts a new container from this app's image, with its env and secrets, runs the command once and shows its output. The live container is not touched.",
+  "service": "Service",
+  "command": "Command",
+  "placeholder": "bin/migrate",
+  "hint": "Run directly, without a shell. Quote an argument with spaces. For pipes or redirects, use sh -c \"...\".",
+  "run": "Run",
+  "running": "Running...",
+  "exitCode": "Exit code",
+  "state": "State",
+  "output": "Output",
+  "empty": "(no output)",
+  "truncated": "Output was longer than the server keeps; only the last part is shown.",
+  "accessRule": "One-off runs and scheduled jobs follow console exec access rules: running a command needs root access on this app and exec enabled for it.",
+  "timeout": "Timeout (s)",
+  "timeoutPlaceholder": "3600",
+  "cancel": "Cancel",
+  "history": "Recent runs",
+  "outputWithheld": "Output is withheld. Viewing job output needs sensitive read access."
+}

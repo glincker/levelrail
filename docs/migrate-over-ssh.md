@@ -1,3 +1,4 @@
+| `POST /api/v1/apps/import-bundle` | Import a tar from `apps export` (body is the tar; query `name`, `dry_run`, `deploy`, `replace`, `confirm`), `write` ability |
 ---
 title: "Migrate over SSH"
 description: "Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login. Read only, no agent, no remote command."
@@ -6,7 +7,7 @@ description: "Import apps, env, images and volumes from an old Coolify, Dokploy,
 
 Use this when you have an SSH login on the old server but no platform API token, or you do not want to install anything there. The control plane opens an SSH connection, uses it only to reach the old host's Docker socket, and reads containers, volumes and images through the Docker Engine API. It never runs a command on the old host.
 
-For the importer that reads another platform over its API, see [Migrate to Levelrail](/migrate-to-levelrail).
+For the importer that reads another platform over its API, see [Migrate to Levelrail](/migrate-to-levelrail). Coming from Dokku? Start with [Migrate from Dokku](/migrate-from-dokku), which uses this route and maps Dokku commands to Levelrail commands.
 
 ## How it works
 
@@ -90,6 +91,18 @@ restrict,permitopen="/var/run/docker.sock" ssh-ed25519 AAAA... levelrail-migrati
 ```
 
 `restrict` turns off everything not re-enabled, and `permitopen` limits what the key may forward to. How `permitopen` behaves for Unix sockets (`direct-streamlocal`) varies between OpenSSH versions and this has not been verified against a live host here. Test it: run Test connection with the restricted line in place, and loosen it if the connection is refused. A restriction that breaks the connection is safe, one that is silently ignored is not, so also confirm that the key cannot do more than you intend.
+
+## Moving an app between Levelrail instances
+
+No SSH is needed when both ends run Levelrail. Export on the old instance and import on the new one:
+
+```sh
+levelrail-cli apps export shop --out - > shop.tar
+levelrail-cli apps import-bundle shop.tar --dry-run
+levelrail-cli apps import-bundle shop.tar
+```
+
+The bundle holds plain compose and an env template. Secret values never travel: the import lists their names, you set them on the new instance, then run `apps start shop`. Volume data is not in the bundle; copy it with the volume export and import routes.
 
 ## API
 

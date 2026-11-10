@@ -18,6 +18,8 @@ const (
 	OutcomeCanceled   = "canceled"
 	OutcomeSuperseded = "superseded"
 	OutcomeBlocked    = "blocked"
+	// OutcomeStopped: the build finished but the app is stopped, so nothing went live.
+	OutcomeStopped = "stopped"
 )
 
 // Non-terminal and derived statuses reported by the single-deploy endpoint.
@@ -77,6 +79,11 @@ func computeDeployOutcome(a store.DeployAttempt, newest bool, conds []reconcile.
 		return OutcomeFailed
 	}
 	for _, c := range conds {
+		if c.Type == reconcile.ConditionTypeReady && c.Reason == "Suspended" {
+			return OutcomeStopped
+		}
+	}
+	for _, c := range conds {
 		if rolloutDoneReasons[c.Reason] && !c.LastTransitionTime.Before(*a.FinishedAt) {
 			return OutcomeHealthy
 		}
@@ -106,6 +113,8 @@ func deployOutcomeReason(a store.DeployAttempt, outcome string, conds []reconcil
 			return "rolling out"
 		}
 		return "building"
+	case OutcomeStopped:
+		return "built, but the app is stopped so it is not live; start it to serve this deploy"
 	case OutcomeSuperseded:
 		return "replaced by a newer deploy"
 	case OutcomeCanceled:

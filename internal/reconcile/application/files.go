@@ -36,8 +36,11 @@ func (c *Controller) resolveFiles(ctx context.Context, desired *store.DesiredSer
 			if err != nil {
 				return nil, fmt.Errorf("resolve secret file %q: %w", f.Path, err)
 			}
-			if content, err = spec.ExpandFilePlaceholders(plain, env); err != nil {
-				return nil, fmt.Errorf("file %q: %w", f.Path, err)
+			content = plain
+			if !f.NoExpand {
+				if content, err = spec.ExpandFilePlaceholders(plain, env); err != nil {
+					return nil, fmt.Errorf("file %q: %w", f.Path, err)
+				}
 			}
 		}
 		out = append(out, docker.FileMount{Path: f.Path, Mode: uint32(mode), Content: []byte(content)})

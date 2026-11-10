@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { attentionFeedKeys } from './attentionFeed'
+import { pollMs } from '@/lib/pollTier'
 
 export type SilenceDuration = '1h' | '1d' | '1w' | '30d' | 'forever'
 
@@ -138,7 +139,7 @@ export function useSilences() {
   return useQuery({
     ...silencesQueryOptions(),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -24,6 +25,7 @@ func TestSaveAndGetCustomTemplate(t *testing.T) {
 	ctx := context.Background()
 
 	want := newTestCustomTemplate()
+	want.Variables = []string{"APP_DOMAIN", "ADMIN_EMAIL"}
 	if err := db.SaveCustomTemplate(ctx, want); err != nil {
 		t.Fatalf("SaveCustomTemplate() error = %v", err)
 	}
@@ -32,7 +34,7 @@ func TestSaveAndGetCustomTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetCustomTemplate() error = %v", err)
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("GetCustomTemplate() = %+v, want %+v", got, want)
 	}
 }

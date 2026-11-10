@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { MonitorGlassIcon } from '@thesvg/ui-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -65,7 +67,12 @@ function TrustedDevicesCard() {
       </CardHeader>
       <CardContent>
         {devices.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('devices.empty')}</p>
+          <EmptyState
+            kind="no-results"
+            icon={<MonitorGlassIcon className="size-5" aria-hidden="true" />}
+            title={t('devices.empty')}
+            description={t('devices.emptyHint')}
+          />
         ) : (
           <ul className="divide-y divide-border">
             {devices.map((d) => (

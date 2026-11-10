@@ -531,3 +531,26 @@ func TestHandleTriggerBackup_DiskFullIsRejectedVisibly(t *testing.T) {
 		t.Errorf("body = %s, want the disk space reason", rec.Body.String())
 	}
 }
+
+func TestHandleSetBackupSchedule_AppliesDefaultRetain(t *testing.T) {
+	t.Setenv("APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", "9")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	seedBackupTargetForAPI(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/backup-schedule", `{"target_id":"bkt_test1","schedule":"0 3 * * *"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got backupScheduleResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Retain != 9 {
+		t.Errorf("retain = %d, want the runtime default 9", got.Retain)
+	}
+}

@@ -21,7 +21,7 @@ export function SectionTabs({
     <nav
       aria-label={ariaLabel}
       data-slot="section-tabs"
-      className="flex gap-1 overflow-x-auto"
+      className="-mb-px flex gap-1 overflow-x-auto overflow-y-hidden pb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {items.map((item) => (
         <Link

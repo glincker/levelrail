@@ -225,7 +225,7 @@ function EnvironmentDetailPage() {
 function EnvironmentDetailPending() {
   return (
     <div className="space-y-6">
-      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="h-6 w-48 animate-pulse motion-reduce:animate-none rounded bg-muted" />
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         {Array.from({ length: 4 }, (_, i) => (
           <RowSkeleton key={i} />

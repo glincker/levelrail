@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -34,6 +35,9 @@ type EmitSecret struct {
 // EmitApp is one app to write as a kind: App document.
 type EmitApp struct {
 	Name string
+	// Project and Environment override the stack-wide ones when set.
+	Project     string
+	Environment string
 	// Image is the prebuilt image. Empty means use EmitOptions.ImageRepo.
 	Image       string
 	Port        int
@@ -46,12 +50,19 @@ type EmitApp struct {
 	Memory     string
 	NanoCPUs   int64
 	HealthPath string
-	Command    []string
-	PreDeploy  string
-	PostDeploy string
+	// HealthExec, when set, emits an exec probe instead of the HTTP path.
+	HealthExec     []string
+	HealthInterval int
+	HealthTimeout  int
+	HealthRetries  int
+	Command        []string
+	PreDeploy      string
+	PostDeploy     string
 	// Connections maps an env var to the emitted database it reads from.
 	Connections map[string]EmitConnection
 	Jobs        []EmitJob
+	// Policy lists proxy flags for the domain steps in MIGRATION.md.
+	Policy DomainPolicy
 	// Notes are follow-ups for MIGRATION.md that the documents cannot express.
 	Notes []string
 }
@@ -75,6 +86,7 @@ type EmitJob struct {
 // EmitDatabase is one kind: Database document.
 type EmitDatabase struct {
 	Name    string
+	Project string
 	Engine  string
 	Version string
 }
@@ -87,6 +99,8 @@ type EmitInput struct {
 	Databases []EmitDatabase
 	// Notes are source-wide follow-ups for MIGRATION.md.
 	Notes []string
+	// Environments are extra project environments to declare.
+	Environments []SourceEnvironment
 }
 
 // EmitOptions name the stack and fill what the source does not know.
@@ -171,7 +185,11 @@ type emitHealth struct {
 }
 
 type emitProbe struct {
-	Path string `yaml:"path"`
+	Path     string   `yaml:"path,omitempty"`
+	Exec     []string `yaml:"exec,omitempty,flow"`
+	Interval string   `yaml:"interval,omitempty"`
+	Timeout  string   `yaml:"timeout,omitempty"`
+	Failures int      `yaml:"failures,omitempty"`
 }
 
 type emitHooks struct {
@@ -247,12 +265,27 @@ func EmitStack(in EmitInput, o EmitOptions) ([]EmitFile, error) {
 		}
 	}
 	for _, d := range dbs {
-		dbDocs = append(dbDocs, emitDoc{Version: 1, Kind: "Database", Metadata: emitMeta{Name: d.Name}, Spec: emitDBSpec{Engine: d.Engine, Version: d.Version, Project: o.Project}})
+		dbDocs = append(dbDocs, emitDoc{Version: 1, Kind: "Database", Metadata: emitMeta{Name: d.Name}, Spec: emitDBSpec{Engine: d.Engine, Version: d.Version, Project: firstNonEmpty(d.Project, o.Project)}})
 	}
 
 	head := []emitDoc{{Version: 1, Kind: "Project", Metadata: emitMeta{Name: o.Project}, Spec: map[string]string{}}}
 	if o.Environment != "" {
 		head = append(head, emitDoc{Version: 1, Kind: "Environment", Metadata: emitMeta{Name: o.Environment}, Spec: emitEnvSpec{Project: o.Project}})
+	}
+	declared := map[string]bool{o.Project: true}
+	seenEnv := map[string]bool{EnvironmentKey(o.Project, o.Environment): true}
+	for _, e := range in.Environments {
+		if e.Project != "" && !declared[e.Project] {
+			declared[e.Project] = true
+			head = append(head, emitDoc{Version: 1, Kind: "Project", Metadata: emitMeta{Name: e.Project}, Spec: map[string]string{}})
+		}
+	}
+	for _, e := range in.Environments {
+		if e.Project == "" || e.Name == "" || seenEnv[EnvironmentKey(e.Project, e.Name)] {
+			continue
+		}
+		seenEnv[EnvironmentKey(e.Project, e.Name)] = true
+		head = append(head, emitDoc{Version: 1, Kind: "Environment", Metadata: emitMeta{Name: e.Name}, Spec: emitEnvSpec{Project: e.Project}})
 	}
 	var files []EmitFile
 	for _, g := range []struct {
@@ -297,7 +330,16 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 		}
 		svc.Resources = r
 	}
-	if a.HealthPath != "" {
+	if len(a.HealthExec) > 0 {
+		p := emitProbe{Exec: a.HealthExec, Failures: a.HealthRetries}
+		if a.HealthInterval > 0 {
+			p.Interval = (time.Duration(a.HealthInterval) * time.Second).String()
+		}
+		if a.HealthTimeout > 0 {
+			p.Timeout = (time.Duration(a.HealthTimeout) * time.Second).String()
+		}
+		svc.Health = &emitHealth{Readiness: p}
+	} else if a.HealthPath != "" {
 		svc.Health = &emitHealth{Readiness: emitProbe{Path: a.HealthPath}}
 	}
 	if a.PreDeploy != "" || a.PostDeploy != "" {
@@ -342,7 +384,7 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 		svc.Jobs = append(svc.Jobs, emitJob(j))
 	}
 	sort.SliceStable(svc.Jobs, func(i, j int) bool { return svc.Jobs[i].Name < svc.Jobs[j].Name })
-	spec := emitAppSpec{Project: o.Project, Environment: o.Environment, Service: svc}
+	spec := emitAppSpec{Project: firstNonEmpty(a.Project, o.Project), Environment: firstNonEmpty(a.Environment, o.Environment), Service: svc}
 	return emitDoc{Version: 1, Kind: "App", Metadata: emitMeta{Name: a.Name}, Spec: spec}, out, nil
 }
 
@@ -431,12 +473,15 @@ func renderNotes(source string, o EmitOptions, apps []EmitApp, general []string)
 		fmt.Fprintf(&b, "- %s\n", n)
 	}
 	for _, a := range apps {
-		if len(a.Notes) == 0 {
+		if len(a.Notes) == 0 && a.Policy.Empty() {
 			continue
 		}
 		fmt.Fprintf(&b, "\n## App %s\n\n", a.Name)
 		for _, n := range a.Notes {
 			fmt.Fprintf(&b, "- %s\n", n)
+		}
+		for _, l := range policyLines(a.Policy) {
+			fmt.Fprintf(&b, "- domain policy: %s\n", l)
 		}
 	}
 	return b.String()
@@ -460,5 +505,31 @@ func sortedKeysOf[V any](m map[string]V) []string {
 		out = append(out, k)
 	}
 	sort.Strings(out)
+	return out
+}
+
+func firstNonEmpty(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
+}
+
+// policyLines names each proxy flag as a setting for every domain of the app.
+// Basic auth shows the user only: the password is set fresh on the new domain.
+func policyLines(p DomainPolicy) []string {
+	var out []string
+	if p.ForceHTTPS {
+		out = append(out, "redirect to HTTPS: on")
+	}
+	if p.WebSocket {
+		out = append(out, "websocket upgrade: on")
+	}
+	if p.RedirectTo != "" {
+		out = append(out, "redirect to "+p.RedirectTo)
+	}
+	if p.BasicAuthUser != "" {
+		out = append(out, "basic auth user "+p.BasicAuthUser+" (set a new password)")
+	}
 	return out
 }

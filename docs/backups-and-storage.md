@@ -182,6 +182,10 @@ Database schedules are stored on the database itself. App volume schedules are s
 
 On the dashboard, a database's schedule form is on its Overview page and an app volume's is on the app's Volumes tab. Backup targets themselves are configured account-wide under **Settings, Backup targets**.
 
+### Pause a schedule
+
+`levelrail-cli backups schedule pause <database>` (and `app-volume-backups schedule pause <app> <volume>`) stops the scheduler from running a schedule while keeping its cron, target and retention. `resume` turns it back on. A manual backup still works while paused, and the missing-backup alert stays quiet for a paused schedule. The API is `POST .../backup-schedule/pause` and `.../resume`, and the schedule resource reports `paused`. Compose database services have no pause yet.
+
 ### Volume backup commands
 
 App volume backups have the same lifecycle as database backups:
@@ -500,6 +504,7 @@ levelrail-cli registry tags --repository NAME
 
 levelrail-cli backups schedule set <database> --target ID --cron EXPR [--retain N] [--retain-days N]
 levelrail-cli backups schedule clear <database>
+levelrail-cli backups schedule pause|resume <database>
 levelrail-cli backups delete <database> <backup-id>
 levelrail-cli backups list-all [--limit N] [--before RFC3339]
 levelrail-cli backups health

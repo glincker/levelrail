@@ -30,6 +30,9 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - **A source for every app.** Connect the repository (with credentials for a private one) and run a build, or push an image to a registry and set it as the source.
 - **Volume contents**, by `rsync` commands you run.
 - **Raw host port mappings** are not imported. Publish a port in the app settings if it must be reachable.
+- **Pre-deploy script.** Reported as a plan item and not copied, because it is JavaScript run by CapRover and may hold credentials. Rewrite it as a shell command and set it as the app's pre-deploy hook.
+- **Node pin.** Reported only. Node ids are never mapped, so pick the target node in the app's placement settings.
+- **Tags and deploy token.** Tags are listed. When a deploy token is enabled, the token value is never read into the plan or the report: create a new one for the app's build hook and update the caller.
 - **Health checks.** CapRover has none to import. Add a readiness path here.
 
 ## What does not move
@@ -37,6 +40,7 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - Images built on CapRover: there is no recoverable image through its API. Rebuild from source.
 - Databases as a feature. CapRover runs databases as ordinary apps or one-click apps, so nothing maps to a managed database. Create a [managed database](/managing-databases) here and copy the data.
 - Certificates, DNS records, deploy history, logs and metrics.
+- `captain-definition` files and one-click app definitions. Neither has an importer yet. The [feature map](/caprover-alternative) lists where each CapRover feature lives here.
 
 ## Steps
 
@@ -54,6 +58,8 @@ levelrail-cli import platform caprover --url https://captain.example.com --dry-r
 ```bash
 levelrail-cli import platform caprover --url https://captain.example.com --only blog,api
 ```
+
+Per-app proxy flags (force HTTPS, websocket support, redirect domain, basic auth user) are listed as domain policy lines in MIGRATION.md; the basic auth password is never imported.
 
 Apps are created without a running image. The report names the repository and branch where one is known. For verdicts and one-click fixes, use `levelrail-cli migrate plan --platform caprover --url https://captain.example.com`, then add `--apply --only ID`.
 

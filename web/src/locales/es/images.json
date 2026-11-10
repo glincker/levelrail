@@ -216,5 +216,24 @@
     "resultFailed_other": "No se pudieron eliminar {{count}} imágenes:",
     "announce_one": "Se eliminó {{count}} imagen.",
     "announce_other": "Se eliminaron {{count}} imágenes."
+  },
+  "retention": {
+    "title": "Retención de imágenes",
+    "description": "Cuántas imágenes de despliegues recientes conserva esta app para revertir. La limpieza elimina las anteriores en su próxima ejecución.",
+    "keepLabel": "Imágenes a conservar",
+    "hint": "0 sigue el ajuste global; si no, {{min}} o más.",
+    "preview": "Ver qué se elimina",
+    "save": "Guardar",
+    "saved": "Retención de imágenes guardada",
+    "saveFailed": "No se pudo guardar la retención de imágenes",
+    "protected": "Esta app está en el entorno protegido {{env}}, así que conserva al menos {{global}} imágenes.",
+    "wouldRemove_one": "La próxima limpieza eliminaría {{count}} imagen y liberaría {{size}}.",
+    "wouldRemove_other": "La próxima limpieza eliminaría {{count}} imágenes y liberaría {{size}}.",
+    "alwaysKept": "Siempre se conservan la imagen en ejecución, los puntos de reversión, la versión correcta anterior, las imágenes compartidas con otras apps y las que necesita un despliegue en cola o retenido.",
+    "source": {
+      "app": "Conserva las {{count}} imágenes de despliegue más recientes (ajuste de esta app).",
+      "app_default": "Conserva las {{count}} imágenes de despliegue más recientes (valor por defecto de las apps).",
+      "global": "Conserva las {{count}} imágenes de despliegue más recientes (ajuste global, {{global}})."
+    }
   }
 }

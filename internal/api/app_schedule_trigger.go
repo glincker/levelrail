@@ -32,7 +32,7 @@ func (rt *Router) triggerGitDeploy(ctx context.Context, serviceName, branch, sou
 		return "", fmt.Errorf("resolve deploy token for %q: %w", serviceName, err)
 	}
 
-	sha, err := rt.resolveBranchSHA(ctx, gs.RepoURL, branch, token)
+	sha, err := rt.resolveBranchSHA(rt.gitAuthCtx(ctx, serviceName, gs.RepoURL), gs.RepoURL, branch, token)
 	if err != nil {
 		return "", fmt.Errorf("resolve latest commit for %q@%q: %w", serviceName, branch, err)
 	}

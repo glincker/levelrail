@@ -41,6 +41,8 @@ const (
 	// ScheduledTaskStatusInterrupted marks a run whose control plane
 	// restarted mid-flight; it is never re-run, to rule out a double run.
 	ScheduledTaskStatusInterrupted = "interrupted"
+	// ScheduledTaskStatusSkippedFreeze marks a tick skipped during a deploy freeze window.
+	ScheduledTaskStatusSkippedFreeze = "skipped_freeze"
 )
 
 // Scheduled task execution modes and catch-up policies.
@@ -298,13 +300,13 @@ func (db *DB) RecordScheduledTaskRun(ctx context.Context, id string, ranAt time.
 		SET last_run_at = ?, last_run_status = ?, last_run_output = ?, updated_at = ?,
 			consecutive_failures = CASE
 				WHEN ? = ? THEN 0
-				WHEN ? IN (?, ?) THEN consecutive_failures
+				WHEN ? IN (?, ?, ?) THEN consecutive_failures
 				ELSE consecutive_failures + 1
 			END
 		WHERE id = ?
 	`, formatTime(ranAt), status, output, formatTime(ranAt),
 		status, ScheduledTaskStatusSuccess,
-		status, ScheduledTaskStatusSkippedConcurrency, ScheduledTaskStatusReplaced,
+		status, ScheduledTaskStatusSkippedConcurrency, ScheduledTaskStatusReplaced, ScheduledTaskStatusSkippedFreeze,
 		id)
 	if err != nil {
 		return fmt.Errorf("store: record scheduled task run %q: %w", id, err)

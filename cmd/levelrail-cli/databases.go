@@ -45,6 +45,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesStop(prog, rest, stdout, stderr, lookupEnv)
 	case "start":
 		return runDatabasesStart(prog, rest, stdout, stderr, lookupEnv)
+	case "bulk":
+		return runDatabasesBulk(prog, rest, stdout, stderr, lookupEnv)
 	case "resource-recommendation":
 		return runDatabasesResourceRecommendation(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":
@@ -59,6 +61,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesSchema(prog, rest, stdout, stderr, lookupEnv)
 	case "move-env":
 		return runDatabasesMoveEnv(prog, rest, stdout, stderr, lookupEnv)
+	case "tag":
+		return runDatabasesTag(prog, rest, stdout, stderr, lookupEnv)
+	case "untag":
+		return runDatabasesUntag(prog, rest, stdout, stderr, lookupEnv)
+	case "tags":
+		return runDatabasesTags(prog, rest, stdout, stderr, lookupEnv)
 	case "set-project":
 		return runDatabasesSetProject(prog, rest, stdout, stderr, lookupEnv)
 	case "clear-project":
@@ -71,6 +79,14 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "pooler":
 		return runDatabasesPooler(prog, rest, stdout, stderr, lookupEnv)
+	case "params":
+		return runDatabasesParams(prog, rest, stdout, stderr, lookupEnv)
+	case "export":
+		return runDatabasesExport(prog, rest, stdout, stderr, lookupEnv)
+	case "import":
+		return runDatabasesImport(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
+	case "clone":
+		return runDatabasesClone(prog, rest, stdout, stderr, lookupEnv)
 	case "branch":
 		return runDatabasesBranch(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
@@ -83,6 +99,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "network":
 		return runDatabasesNetwork(prog, rest, stdout, stderr, lookupEnv)
+	case "engine-stats":
+		return runDatabasesEngineStats(prog, rest, stdout, stderr, lookupEnv)
+	case "query-history":
+		return runDatabasesQueryHistory(prog, rest, stdout, stderr, lookupEnv)
+	case "saved-queries":
+		return runDatabasesSavedQueries(prog, rest, stdout, stderr, lookupEnv)
 	case "set-resources":
 		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
 	case "set-version":
@@ -125,6 +147,9 @@ func databasesUsage(prog string) string {
   %[1]s databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
   %[1]s databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
+  %[1]s databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
+  %[1]s databases import <name> --in FILE|- [--force] [--yes] [flags]  restore a dump into a database
+  %[1]s databases clone <source> <new-name> [--backup ID] [flags]  new database from a fresh or chosen backup
   %[1]s databases link <name> <app> [--env-var VAR] [--field F] [flags]  connect an app: injects the connection env var
   %[1]s databases links <name> [flags]  list the apps connected to a database
   %[1]s databases probe <name> [flags]  re-check an external database's connectivity
@@ -135,6 +160,7 @@ func databasesUsage(prog string) string {
   %[1]s databases delete <name> [flags]  stop and remove a database, keep its data volume (--force if apps use it)
   %[1]s databases stop <name> [flags]     stop a database's container, keep its data
   %[1]s databases start <name> [flags]    bring a stopped database's container back
+  %[1]s databases bulk start|stop|backup <names...|--selector S> [--dry-run] [--confirm-count N]  one audited call for many databases
   %[1]s databases resource-recommendation <name> [flags]  suggest memory/CPU limits from historical usage
   %[1]s databases metrics <name> --metric NAME [flags]  query a database's metric time series
   %[1]s databases logs <name> [flags]     search a database's stored log entries
@@ -153,6 +179,9 @@ func databasesUsage(prog string) string {
   %[1]s databases rotate-password <name> [--dry-run|--status|--every-days N] [flags]  rotate the owner password, restart linked apps
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
   %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
+  %[1]s databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
+  %[1]s databases query-history list|clear <name> ...  your recent statements (clear needs --yes)
+  %[1]s databases saved-queries list|add|delete <name> ...  your saved statements (delete needs --yes)
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
   %[1]s databases set-version <name> <version> [flags]  minor or patch image change, same data
   %[1]s databases major-upgrade <name> --version V [flags]  guarded Postgres major upgrade with rollback snapshot

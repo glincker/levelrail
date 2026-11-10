@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -104,5 +105,34 @@ func TestAccessLogRetentionSourceApplied(t *testing.T) {
 	window = time.Hour
 	if got := len(l.Query([]string{"k"}, AccessFilter{})); got != 0 {
 		t.Fatalf("a shorter stored window did not apply to the next read: %d", got)
+	}
+}
+
+func TestAccessLogCapacityResizesLive(t *testing.T) {
+	base := time.Now()
+	l := NewAccessLog(5)
+	size := 5
+	l.SetCapacitySource(func() int { return size })
+	for i := range 5 {
+		l.Record("a", AccessRecord{Path: strconv.Itoa(i), Time: base.Add(time.Duration(i) * time.Second)})
+	}
+	size = 2
+	l.capChecked.Store(0)
+	l.Record("a", AccessRecord{Path: "5", Time: base.Add(5 * time.Second)})
+	got := l.Query([]string{"a"}, AccessFilter{})
+	if len(got) != 2 || got[0].Path != "5" || got[1].Path != "4" {
+		t.Fatalf("after shrink got %+v", got)
+	}
+	size = 0
+	l.capChecked.Store(0)
+	l.Record("a", AccessRecord{Path: "6", Time: base.Add(6 * time.Second)})
+	if len(l.rings) != 0 || len(l.Query([]string{"a"}, AccessFilter{})) != 0 {
+		t.Fatal("size 0 should free the rings")
+	}
+	size = 3
+	l.capChecked.Store(0)
+	l.Record("a", AccessRecord{Path: "7", Time: base.Add(7 * time.Second)})
+	if got := l.Query([]string{"a"}, AccessFilter{}); len(got) != 1 {
+		t.Fatalf("after regrow got %+v", got)
 	}
 }

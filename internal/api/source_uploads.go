@@ -97,6 +97,7 @@ func (rt *Router) RunUploadCleanup(ctx context.Context) {
 	defer t.Stop()
 	for {
 		rt.CleanupUploads(ctx)
+		rt.CleanupInlineSources(ctx)
 		select {
 		case <-ctx.Done():
 			return

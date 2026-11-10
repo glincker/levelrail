@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -18,6 +19,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 )
 
 const lastUsedFile = ".last_used"
@@ -61,6 +64,58 @@ func WithScope(ctx context.Context, scope string) context.Context {
 	return context.WithValue(ctx, scopeKey{}, scope)
 }
 
+type authKey struct{}
+
+// WithAuth overrides the token-derived auth for one Checkout, used for SSH
+// deploy keys so the key never travels as a token string.
+func WithAuth(ctx context.Context, auth transport.AuthMethod) context.Context {
+	return context.WithValue(ctx, authKey{}, auth)
+}
+
+type authErrKey struct{}
+
+// WithAuthError makes every fetch under ctx fail with err, so a caller that
+// could not build the credential it promised never falls back to ambient auth.
+func WithAuthError(ctx context.Context, err error) context.Context {
+	return context.WithValue(ctx, authErrKey{}, err)
+}
+
+func authErrOf(ctx context.Context) error {
+	err, _ := ctx.Value(authErrKey{}).(error)
+	return err
+}
+
+// ErrSSHAuthRequired is returned for an SSH repository with no deploy key.
+// The ssh transport would otherwise use the ssh-agent and known_hosts of the
+// control plane's own user.
+var ErrSSHAuthRequired = errors.New("sourcecache: ssh repository needs a deploy key with a pinned host key")
+
+func authOf(ctx context.Context) transport.AuthMethod {
+	v, _ := ctx.Value(authKey{}).(transport.AuthMethod)
+	return v
+}
+
+// RemoteAuth is the auth a one-off remote call outside the cache uses: the
+// ctx auth or its error, ErrSSHAuthRequired for ssh with none, else the token.
+func RemoteAuth(ctx context.Context, repoURL, token string) (transport.AuthMethod, error) {
+	if err := authErrOf(ctx); err != nil {
+		return nil, err
+	}
+	if a := authOf(ctx); a != nil {
+		return a, nil
+	}
+	if gitsshkey.IsSSHURL(repoURL) {
+		return nil, ErrSSHAuthRequired
+	}
+	if token != "" {
+		return &githttp.BasicAuth{Username: "x-access-token", Password: token}, nil
+	}
+	return nil, nil
+}
+
+// ScopeOf returns the credential scope WithScope attached, if any.
+func ScopeOf(ctx context.Context) string { return scopeOf(ctx) }
+
 func scopeOf(ctx context.Context) string {
 	v, _ := ctx.Value(scopeKey{}).(string)
 	return v
@@ -85,6 +140,9 @@ type Cache struct {
 	probeFn func(ctx context.Context, repoURL string) error
 	now     func() time.Time
 	export  func(mirrorDir string, commit plumbing.Hash, dest string) error
+	// subFetch and lfsClient are seams for tests; nil means the real ones.
+	subFetch  subFetchFunc
+	lfsClient *http.Client
 }
 
 // New builds a Cache; a nil logger discards logs.
@@ -159,6 +217,15 @@ func (c *Cache) Checkout(ctx context.Context, repoURL, ref, token string) (Check
 			return fail(fmt.Errorf("%w: %s", ErrCommitNotFound, shortRef(ref)))
 		}
 		return fail(fmt.Errorf("sourcecache: check out %s: %w", shortRef(ref), err))
+	}
+	if ex, ok := extrasOf(ctx); ok {
+		// Extras never read the mirror, so let it be pruned or fetched meanwhile.
+		c.touch(mirrorDir)
+		release()
+		if err := c.checkoutExtras(ctx, dest, repoURL, token, ex); err != nil {
+			_ = os.RemoveAll(dest)
+			return Checkout{}, err
+		}
 	}
 	c.touch(mirrorDir)
 	var once sync.Once
@@ -308,4 +375,17 @@ func cleanURL(raw string) string {
 	}
 	u.User = nil
 	return u.String()
+}
+
+// checkoutExtras fetches submodules and LFS objects; both need the host, so
+// an offline checkout of such a source fails instead of building empty dirs.
+func (c *Cache) checkoutExtras(ctx context.Context, dest, repoURL, token string, ex Extras) error {
+	if IsOffline(ctx) {
+		return fmt.Errorf("%w: %w", ErrNotCached, errExtrasNeedsNetwork)
+	}
+	auth := authOf(ctx)
+	if auth == nil {
+		auth = authFor(repoURL, token)
+	}
+	return c.fetchExtras(ctx, dest, repoURL, auth, ex)
 }

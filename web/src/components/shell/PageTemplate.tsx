@@ -7,11 +7,16 @@ import { RelatedLinks } from './RelatedLinks'
 
 const DESCRIPTION_LINE_PX = 24
 
-export type PageTemplateWidth = 'default' | 'wide' | 'full'
+export type PageTemplateWidth =
+  'narrow' | 'medium' | 'default' | 'wide' | 'full'
 
+// Side padding comes from the shell main (--glinr-page-pad-x); every mode centers
+// with mx-auto. `wide` shares the default cap so 1920px screens keep one content line.
 const WIDTH: Record<PageTemplateWidth, string> = {
+  narrow: 'max-w-(--glinr-content-narrow)',
+  medium: 'max-w-[60rem]',
   default: 'max-w-(--glinr-content-max)',
-  wide: 'max-w-(--glinr-content-max-wide)',
+  wide: 'max-w-(--glinr-content-max)',
   full: 'max-w-none',
 }
 
@@ -36,7 +41,7 @@ export interface PageTemplateProps {
   /** Page-level banners, rendered between the hero and the content. */
   banners?: ReactNode
   width?: PageTemplateWidth
-  /** Right rail, 20rem and sticky from xl (1280px of the content area), after the main content below it. */
+  /** Right rail, 20rem and sticky from 68rem (1088px) of the content area, after the main content below it. */
   aside?: ReactNode
   /** Accessible name of the aside landmark. */
   asideLabel?: string
@@ -105,7 +110,10 @@ export function PageTemplate({
       )}
     >
       {banner ?? (
-        <header className="space-y-3">
+        <header
+          data-large-title={!breadcrumb && titleSize === 'page'}
+          className="space-y-3"
+        >
           {breadcrumb ? <div>{breadcrumb}</div> : null}
           <div
             data-slot="page-hero"
@@ -164,7 +172,7 @@ export function PageTemplate({
       {aside ? (
         <div
           data-page-body=""
-          className="grid grid-cols-1 items-start gap-(--glinr-space-6) @min-[80rem]/page:grid-cols-[minmax(0,1fr)_var(--glinr-aside-width)]"
+          className="grid grid-cols-1 items-start gap-(--glinr-space-6) @min-[68rem]/page:grid-cols-[minmax(0,1fr)_var(--glinr-aside-width)]"
         >
           <div
             data-page-main=""
@@ -175,7 +183,7 @@ export function PageTemplate({
           <aside
             data-page-aside=""
             aria-label={asideLabel}
-            className="flex min-w-0 flex-col gap-(--glinr-page-gap) @min-[80rem]/page:sticky @min-[80rem]/page:top-(--glinr-aside-top)"
+            className="flex min-w-0 flex-col gap-(--glinr-page-gap) @min-[68rem]/page:sticky @min-[68rem]/page:top-(--glinr-aside-top)"
           >
             {aside}
           </aside>

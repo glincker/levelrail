@@ -124,6 +124,9 @@ func (rt *Router) handleRollbackCompose(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: compose: rollback: load target failed", err, slog.String("app", appID))
 		return
 	}
+	mu := composeGitLock(appID)
+	mu.Lock()
+	defer mu.Unlock()
 	resp, ok := rt.deployComposeBody(w, r, appID, []byte(rev.Compose), composeDeployOpts{
 		profiles: rev.Profiles, source: store.ComposeRevisionSourceRollback, templateID: rev.TemplateID,
 	})

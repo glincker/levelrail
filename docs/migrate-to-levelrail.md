@@ -16,7 +16,7 @@ The short version: the old server keeps serving while you stage, copy and test t
 | Coolify | [Migrate from Coolify](/migrate-from-coolify) | Its HTTP API (read-only), or a `docker inspect` snapshot |
 | Dokploy | [Migrate from Dokploy](/migrate-from-dokploy) | Its HTTP API (read-only) |
 | CapRover | [Migrate from CapRover](/migrate-from-caprover) | Its HTTP API (read-only) |
-| Dokku | [Migrate from Dokku](/migrate-from-dokku) | A pasted `dokku config:export` dump. Live Dokku over SSH is not supported |
+| Dokku | [Migrate from Dokku](/migrate-from-dokku) | Live over SSH (read only, Docker socket), or a pasted `dokku config:export` dump as a fallback. Includes a Dokku command map |
 | A `docker-compose.yml` | [Migrate from Docker Compose](/migrate-from-docker-compose) | The compose file you paste or pass |
 | Heroku-style or plain git apps | [Importing apps](/importing-apps) | Nothing to import: point Levelrail at the repo, image or Dockerfile |
 | Vercel or Cloud Run | [From Vercel](/migrating-from-vercel), [from Cloud Run](/migrating-from-cloud-run) | Separate guides |
@@ -110,6 +110,7 @@ Maturity here uses the labels on [Feature status](/feature-status). The migratio
 | Coolify | beta | Unit tests against a fake Coolify API and fixtures. Database copy rehearsed live on two droplets for PostgreSQL, MySQL and MongoDB. Guided cutover has a live Docker test. |
 | Dokploy | beta | Unit tests against fixtures. No live Dokploy run recorded. |
 | CapRover | beta | Unit tests against fixtures. No live CapRover run recorded. |
+| Dokku (SSH route) | beta | The shared Docker over SSH importer, with unit tests. No live Dokku run recorded. |
 | Dokku (env dump) | beta | Unit tests. Variables only, no live Dokku run recorded. |
 | Docker Compose file | beta | Unit tests. No live rehearsal recorded. |
 | Docker snapshot (`docker inspect`) | beta | Unit tests. Works for any host that runs plain containers. |

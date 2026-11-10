@@ -26,7 +26,7 @@ func appsAutoscaleUsage(prog string) string {
 set flags:
   --min N                     fewest replicas (default 1)
   --max N                     most replicas (required for a new policy)
-  --metric NAME               cpu_percent, memory_percent or requests_per_replica (required for a new policy)
+  --metric NAME               cpu_percent, memory_percent, requests_per_replica or gauge:NAME from the app metrics path (required for a new policy)
   --target N                  value to hold the metric at (required for a new policy)
   --scale-up-tolerance PCT    scale up only above target plus this percent (default 10)
   --scale-down-tolerance PCT  scale down only below target minus this percent (default 30)
@@ -70,7 +70,7 @@ func bindAutoscaleFlags(fs *flag.FlagSet) autoscaleFlags {
 	return autoscaleFlags{
 		min:       fs.Int("min", 0, "fewest replicas (set)"),
 		max:       fs.Int("max", 0, "most replicas (set)"),
-		metric:    fs.String("metric", "", "cpu_percent, memory_percent or requests_per_replica (set)"),
+		metric:    fs.String("metric", "", "cpu_percent, memory_percent, requests_per_replica or gauge:NAME (set)"),
 		target:    fs.Float64("target", 0, "value to hold the metric at (set)"),
 		upTol:     fs.Int("scale-up-tolerance", 0, "scale up only above target plus this percent (set)"),
 		downTol:   fs.Int("scale-down-tolerance", 0, "scale down only below target minus this percent (set)"),

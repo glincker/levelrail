@@ -1,5 +1,6 @@
-import { selectableCardClass } from './ui/selectable-card'
 import type { ReactNode } from 'react'
+import { SelectableCard } from './ui/selectable-card'
+import { cn } from '@/lib/utils'
 
 export function ChoiceButton({
   selected,
@@ -11,16 +12,15 @@ export function ChoiceButton({
   children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={selectableCardClass(
-        selected,
-        `rounded-md px-2.5 py-1 text-sm ${selected ? '' : 'text-muted-foreground'}`,
+    <SelectableCard
+      selected={selected}
+      onSelect={onClick}
+      className={cn(
+        'rounded-md py-1 pr-6 pl-2.5 text-sm',
+        !selected && 'text-muted-foreground',
       )}
     >
       {children}
-    </button>
+    </SelectableCard>
   )
 }

@@ -36,6 +36,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	proxyroutesreconcile "github.com/GLINCKER/levelrail/internal/reconcile/proxyroutes"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
+	"github.com/GLINCKER/levelrail/internal/secretprovider"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -163,7 +164,16 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
 		_, skewIngress := nextSkewOptions(ctx, deps.db, deps.logger)
-		ingressOpts = append(ingressOpts, skewIngress)
+		ingressOpts = append(ingressOpts, skewIngress, ingressreconcile.WithDomainLimitCeilings(func(ctx context.Context) (int64, int) {
+			s := deps.settingsService()
+			return int64(s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxBodyBytes)), s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxTimeoutSeconds)
+		}), ingressreconcile.WithDomainTuningBounds(func(ctx context.Context) ingressreconcile.TuningBounds {
+			s := deps.settingsService()
+			return ingressreconcile.TuningBounds{
+				MinSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMinTimeoutSeconds), MaxSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMaxTimeoutSeconds),
+				MaxStreamSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMaxStreamSeconds),
+			}
+		}))
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial), ingressreconcile.WithGateSecret(deps.gateSecret))
 		}
@@ -204,13 +214,19 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until
 		// the WireGuard mesh exists.
-		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
+		gcMax := func(ctx context.Context) int {
+			if s := deps.settingsService(); s != nil {
+				return s.Int(ctx, runtimesettings.KeyNetworkGCMaxRemovals)
+			}
+			return 0
+		}
+		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID).WithMaxRemovals(gcMax))
 		for _, n := range nodes {
 			if runtimeNodeID(deps, n.ID) == "" {
 				continue
 			}
 			if nodeRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, n.ID); err == nil {
-				controllers = append(controllers, application.NewNetworkCleanupController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID))
+				controllers = append(controllers, application.NewNetworkCleanupController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID).WithMaxRemovals(gcMax))
 			}
 		}
 		controllers = append(controllers, privnet.NewController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
@@ -234,9 +250,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if deps.secretsManager != nil {
 			tunnelTokens = deps.secretsManager
 		}
-		if experimental.Enabled(experimental.CloudflareTunnel) {
-			controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
-		}
+		// Always registered; the live switch decides each pass, so Settings needs no restart.
+		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime,
+			cloudflaretunnel.WithContainerPrefix(deps.networkPrefix),
+			cloudflaretunnel.WithEnabled(func() bool { return experimental.Enabled(experimental.CloudflareTunnel) })))
 
 		// The registry credential is generated when an operator enables the registry, so this only resolves an existing one.
 		var registryCreds registryreconcile.CredentialResolver
@@ -295,6 +312,12 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
+		application.WithMeshRetry(func(ctx context.Context) time.Duration {
+			if s := deps.settingsService(); s != nil {
+				return time.Duration(s.Int(ctx, runtimesettings.KeyMeshReadyRetrySeconds)) * time.Second
+			}
+			return 0
+		}),
 	}
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
@@ -316,7 +339,13 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	}
 	if deps.secretsManager != nil {
 		// A retained deploy URL runs its app's config, so it reads the app's secrets.
-		appOpts = append(appOpts, application.WithSecretResolver(deployurls.ParentSecrets{Inner: deps.secretsManager, Apps: deps.db}))
+		// A secret holding a doppler:// or infisical:// reference resolves live at container create.
+		appOpts = append(appOpts, application.WithSecretResolver(secretprovider.EnvResolver{
+			Inner:     deployurls.ParentSecrets{Inner: deps.secretsManager, Apps: deps.db},
+			Providers: secretprovider.Store{Secrets: deps.secretsManager},
+			Resolver:  secretprovider.Default(),
+			Tunables:  secretprovider.TunablesFrom(deps.settingsService()),
+		}))
 	}
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))
@@ -400,6 +429,11 @@ func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []s
 // A database whose credentials fail to resolve still gets a controller, and is retried on the next pass.
 func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
 	controllers := make([]reconcile.Controller, 0, len(databases))
+	live := make([]string, 0, len(databases))
+	for _, desired := range databases {
+		live = append(live, desired.Name)
+	}
+	databaseSharedState().Retain(live)
 	for _, desired := range databases {
 		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, desired.NodeID))
 		if err != nil {
@@ -415,7 +449,14 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
 		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
+		dbOpts = append(dbOpts, database.WithSharedState(databaseSharedState()), database.WithRemoteNode(runtimeNodeID(deps, desired.NodeID) != ""))
 		dbOpts = append(dbOpts, database.WithAgentVersion(agentVersionLookup(deps)))
+		dbOpts = append(dbOpts, database.WithParamsMaxMemory(func() int {
+			if svc := deps.settingsService(); svc != nil {
+				return svc.DatabaseParamsMaxMemoryMB(context.Background())
+			}
+			return 0
+		}))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
@@ -430,6 +471,17 @@ var (
 func pendingReadiness() *application.PendingReadiness {
 	pendingReadinessOnce.Do(func() { pendingReadinessInst = application.NewPendingReadiness() })
 	return pendingReadinessInst
+}
+
+var (
+	databaseSharedOnce sync.Once
+	databaseSharedInst *database.SharedState
+)
+
+// databaseSharedState is shared so params watches and recreate guards survive the per-pass controller rebuild.
+func databaseSharedState() *database.SharedState {
+	databaseSharedOnce.Do(func() { databaseSharedInst = database.NewSharedState() })
+	return databaseSharedInst
 }
 
 var (
@@ -458,8 +510,8 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		}
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
-	case store.EngineRedis:
-		// Redis needs no credentials to reconcile at all (this package's
+	case store.EngineRedis, store.EngineValkey, store.EngineKeyDB:
+		// Redis and Valkey need no credentials to reconcile at all (this package's
 		// own doc comment), so TLS is the only per-engine option it ever
 		// gets here.
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)

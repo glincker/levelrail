@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 // Ledger is the stack ownership view a plan is checked against (ADR 042).
@@ -45,9 +46,17 @@ const (
 	defaultPruneMaxCount   = 10
 )
 
+var pruneGuardLive atomic.Pointer[func() PruneGuard]
+
+// SetPruneGuardSource makes new ledgers follow a live setting.
+func SetPruneGuardSource(fn func() PruneGuard) { pruneGuardLive.Store(&fn) }
+
 // PruneGuardFromEnv reads APP_STACK_PRUNE_MAX_PERCENT and
 // APP_STACK_PRUNE_MAX_COUNT; zero is valid and means any prune needs the flag.
 func PruneGuardFromEnv() PruneGuard {
+	if p := pruneGuardLive.Load(); p != nil {
+		return (*p)()
+	}
 	g := PruneGuard{MaxPercent: defaultPruneMaxPercent, MaxCount: defaultPruneMaxCount}
 	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_STACK_PRUNE_MAX_PERCENT"))); err == nil && n >= 0 && n <= 100 {
 		g.MaxPercent = n
@@ -435,6 +444,9 @@ func (p *planner) planLedgerPrune() {
 				p.conflict(r, "domain %s now belongs to app %s of stack %s; it is not pruned from stack %s", name, e.LiveID, owner, l.StackName)
 				continue
 			}
+		}
+		if p.refuseProtectedPrune(r) {
+			continue
 		}
 		if p.deniedItem(r, pruneReadKey(kind, scope, name, e.LiveID)) {
 			continue

@@ -1,0 +1,23 @@
+{
+  "title": "Expiry",
+  "description": "For temporary and demo apps. A notice is written {{notice}} hours before, the app is stopped at the expiry, and deleted {{grace}} hours later. Apps with volumes, linked databases or a protected environment are only stopped unless delete data is set.",
+  "none": "No expiry set.",
+  "state": {
+    "none": "No expiry set.",
+    "scheduled": "Expires {{at}}.",
+    "noticed": "Expires {{at}}. The notice is in the audit log.",
+    "stopped": "Stopped at expiry. Deleted after {{after}} unless cleared.",
+    "kept": "Stopped at expiry and kept."
+  },
+  "kept": "Kept, not deleted: {{reason}}.",
+  "clear": "Clear expiry",
+  "atLabel": "Expires at",
+  "deleteData": "Delete data too",
+  "confirmLabel": "Type {{name}} to confirm",
+  "save": "Save expiry",
+  "saved": "Expiry saved",
+  "cleared": "Expiry cleared, any pending delete is cancelled",
+  "failed": "Expiry change failed",
+  "hint": "Up to {{days}} days ahead. Clearing always cancels a pending delete; a stopped app stays stopped until started.",
+  "deleteDisabled": "Delete disabled by operator: expired apps are only stopped."
+}

@@ -58,10 +58,25 @@ const (
 	DefaultNodePort = 3000
 )
 
-type options struct{ webPort, nodePort int }
+type options struct {
+	webPort, nodePort int
+	// deploy marks a translation run at deploy time: nothing outside the
+	// service map can be created, so databases and source hints are skipped.
+	deploy     bool
+	dockerfile bool
+}
 
 // Option tunes a translation without making the package read the environment.
 type Option func(*options)
+
+// ForDeploy switches the translation to deploy-time rules. dockerfile says
+// the repo ships a Dockerfile, so services build from it instead of Railpack.
+func ForDeploy(dockerfile bool) Option {
+	return func(o *options) {
+		o.deploy = true
+		o.dockerfile = dockerfile
+	}
+}
 
 // WithWebPort sets the port proposed for Heroku web and worker services.
 func WithWebPort(p int) Option {
@@ -102,15 +117,19 @@ func Translate(files map[string][]byte, opts ...Option) Result {
 		res.Findings = append(res.Findings, fs...)
 		res.Findings = append(res.Findings, res.Fragment.merge(part)...)
 	}
-	res.Findings = append(res.Findings, sourceFindings(res.Fragment)...)
+	if !o.deploy {
+		res.Findings = append(res.Findings, sourceFindings(res.Fragment)...)
+	}
 	return res
 }
 
 // Detect reports which formats have at least one input file present, in a
-// fixed order.
+// fixed order. A lone CHECKS file counts only without vercel.json, so it
+// cannot add a phantom service next to the Vercel one.
 func Detect(files map[string][]byte) []Format {
 	var out []Format
-	if has(files, "Procfile") || has(files, "app.json") {
+	if has(files, "Procfile") || has(files, "app.json") ||
+		(has(files, fileChecks) && !has(files, "vercel.json")) {
 		out = append(out, FormatHeroku)
 	}
 	if has(files, "vercel.json") {

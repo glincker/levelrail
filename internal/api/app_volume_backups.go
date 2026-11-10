@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -26,6 +27,7 @@ type ServiceVolumeBackupRunner interface {
 type ServiceVolumeBackupScheduleStore interface {
 	SetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName, targetID, schedule string, retain, retainDays int, sqlitePath string) error
 	GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName string) (store.ServiceVolumeBackupConfig, error)
+	SetServiceVolumeBackupPaused(ctx context.Context, serviceName, volumeName string, paused bool) error
 }
 
 type triggerVolumeBackupRequest struct {
@@ -49,6 +51,11 @@ func (rt *Router) handleTriggerVolumeBackup(w http.ResponseWriter, r *http.Reque
 
 	var req triggerVolumeBackupRequest
 	if !decodeReq(w, r, &req) {
+		return
+	}
+
+	if busy, ok := rt.serviceVolumeBackupRunner.(volumeBackupBusyChecker); ok && busy.VolumeBackupRunning(serviceName, volumeName) {
+		writeError(w, http.StatusConflict, "another backup of this volume is running")
 		return
 	}
 
@@ -99,11 +106,29 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 		rt.internalError(w, "api: list volume backup history failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
+	outputs, _ := rt.serviceVolumeBackupHistory.(backupHookOutputReader)
+	mayEdit := outputs != nil && rt.callerMayEditBackupHooks(r, serviceName)
 	out := make([]backupHistoryResource, 0, len(history))
 	for _, h := range history {
-		out = append(out, toBackupHistoryResource(h))
+		res := toBackupHistoryResource(h)
+		if mayEdit && h.Status == store.BackupStatusFailed {
+			if _, o, err := outputs.GetBackupHookOutput(r.Context(), h.ID); err == nil {
+				res.HookOutput = o
+			}
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// volumeBackupBusyChecker is the optional runner capability behind the 409.
+type volumeBackupBusyChecker interface {
+	VolumeBackupRunning(service, volume string) bool
+}
+
+// backupHookOutputReader reads a failing hook's masked output.
+type backupHookOutputReader interface {
+	GetBackupHookOutput(ctx context.Context, historyID string) (phase, output string, err error)
 }
 
 // volumeBackupScheduleResource is the wire shape for a service volume's
@@ -117,6 +142,8 @@ type volumeBackupScheduleResource struct {
 	Retain      int    `json:"retain,omitempty"`
 	RetainDays  int    `json:"retain_days,omitempty"`
 	SqlitePath  string `json:"sqlite_path,omitempty"`
+	// Paused is true while the scheduler skips this schedule; the config stays saved.
+	Paused bool `json:"paused,omitempty"`
 }
 
 // handleGetVolumeBackupSchedule handles GET .../backup-schedule. A missing schedule is a normal state, not an error.
@@ -142,6 +169,7 @@ func (rt *Router) handleGetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 		Retain:      cfg.BackupRetain,
 		RetainDays:  cfg.BackupRetainDays,
 		SqlitePath:  cfg.SqlitePath,
+		Paused:      cfg.BackupPaused,
 	})
 }
 
@@ -165,6 +193,9 @@ func (rt *Router) handleSetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 	var req setVolumeBackupScheduleRequest
 	if !decodeReq(w, r, &req) {
 		return
+	}
+	if req.Retain == 0 {
+		req.Retain = rt.tunableInt(r.Context(), runtimesettings.KeyBackupsScheduleRetainDefault, "APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", 0)
 	}
 	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
 		return
@@ -227,4 +258,28 @@ func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request
 		return store.BackupHistory{}, false
 	}
 	return h, true
+}
+
+func (rt *Router) handlePauseVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setVolumeBackupPaused(w, r, true)
+}
+
+func (rt *Router) handleResumeVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setVolumeBackupPaused(w, r, false)
+}
+
+func (rt *Router) setVolumeBackupPaused(w http.ResponseWriter, r *http.Request, paused bool) {
+	serviceName := r.PathValue("name")
+	volumeName := r.PathValue("volume")
+	if _, ok := rt.loadServiceVolume(w, r, serviceName, volumeName, "api: pause volume backup schedule: load service failed"); !ok {
+		return
+	}
+	if err := rt.serviceVolumeBackupSchedule.SetServiceVolumeBackupPaused(r.Context(), serviceName, volumeName, paused); errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
+		writeError(w, http.StatusConflict, "volume has no backup schedule")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: pause volume backup schedule failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
+		return
+	}
+	rt.handleGetVolumeBackupSchedule(w, r)
 }

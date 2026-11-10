@@ -141,6 +141,9 @@ func (rt *Router) handleSetSharedEnvSecret(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "value is required")
 		return
 	}
+	if !rt.allowProviderRefs(w, r, req.Value) {
+		return
+	}
 
 	// overwriteLocked is always true: shared env var secrets have no
 	// per-key lock concept (unlike per-app secrets' SetSecretLock), so

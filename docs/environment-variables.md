@@ -45,6 +45,21 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 
 | Variable | Setting | Default |
 | --- | --- | --- |
+| `APP_ABUSE_DEFAULT_BURST` | [`abuse.default_burst`](/runtime-settings#security) | `40` |
+| `APP_ABUSE_DEFAULT_RPS` | [`abuse.default_rps`](/runtime-settings#security) | `20` |
+| `APP_ABUSE_DRYRUN_DEFAULT_WINDOW` | [`abuse.dryrun_default_window`](/runtime-settings#security) | `15m0s` |
+| `APP_ABUSE_DRYRUN_MAX_WINDOW` | [`abuse.dryrun_max_window`](/runtime-settings#security) | `1h0m0s` |
+| `APP_ABUSE_DRYRUN_TOP_CLIENTS` | [`abuse.dryrun_top_clients`](/runtime-settings#security) | `10` |
+| `APP_ABUSE_IDLE_EVICT` | [`abuse.idle_evict`](/runtime-settings#security) | `5m0s` |
+| `APP_ABUSE_MAX_AGENT_ENTRIES` | [`abuse.max_agent_entries`](/runtime-settings#security) | `64` |
+| `APP_ABUSE_MAX_BURST` | [`abuse.max_burst`](/runtime-settings#security) | `100000` |
+| `APP_ABUSE_MAX_DENY_ENTRIES` | [`abuse.max_deny_entries`](/runtime-settings#security) | `256` |
+| `APP_ABUSE_MAX_RETRY_AFTER` | [`abuse.max_retry_after`](/runtime-settings#security) | `1m0s` |
+| `APP_ABUSE_MAX_RPS` | [`abuse.max_rps`](/runtime-settings#security) | `10000` |
+| `APP_ABUSE_MAX_TRACKED_CLIENTS` | [`abuse.max_tracked_clients`](/runtime-settings#security) | `100000` |
+| `APP_ABUSE_SHARDS` | [`abuse.shards`](/runtime-settings#security) | `64` |
+| `APP_ABUSE_SUGGEST_BURST_SECONDS` | [`abuse.suggest_burst_seconds`](/runtime-settings#security) | `2` |
+| `APP_ABUSE_SUGGEST_CLIENT_SHARE` | [`abuse.suggest_client_share`](/runtime-settings#security) | `0.25` |
 | `APP_API_RATE_LIMIT_READ_RPM` | [`api.rate_limit_read_rpm`](/runtime-settings#security) | `600` |
 | `APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM` | [`api.rate_limit_redeem_rpm`](/runtime-settings#security) | `10` |
 | `APP_API_RATE_LIMIT_WRITE_RPM` | [`api.rate_limit_write_rpm`](/runtime-settings#security) | `120` |
@@ -54,21 +69,40 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
+| `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
+| `APP_GIT_LFS_HOSTS` | [`git.lfs_hosts`](/runtime-settings#security) | empty |
+| `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
+| `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
+| `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
+| `APP_NODES_PATCH_ADOPT_LIMIT` | [`nodes.patch_adopt_limit`](/runtime-settings#security) | `20` |
+| `APP_NODES_PATCH_APPLY_TIMEOUT` | [`nodes.patch_apply_timeout`](/runtime-settings#security) | `30m` |
+| `APP_NODES_PATCH_PREVIEW_TTL` | [`nodes.patch_preview_ttl`](/runtime-settings#security) | `10m` |
 | `APP_NODES_PROTECTED_TAINT_KEYS` | [`nodes.protected_taint_keys`](/runtime-settings#security) | empty |
 | `APP_ORGS_AVATAR_MAX_BYTES` | [`orgs.avatar_max_bytes`](/runtime-settings#security) | `262144` |
 | `APP_ORGS_AVATAR_MAX_DIMENSION` | [`orgs.avatar_max_dimension`](/runtime-settings#security) | `1024` |
 | `APP_ORGS_STRICT_ISOLATION` | [`orgs.strict_isolation`](/runtime-settings#security) | `false` |
+| `APP_SECRET_PROVIDER_CACHE_TTL_SECONDS` | [`secrets.provider_cache_ttl_seconds`](/runtime-settings#security) | `60` |
+| `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
+| `APP_SECRET_PROVIDER_MAX_RPS` | [`secrets.provider_max_rps`](/runtime-settings#security) | `20` |
+| `APP_SECRET_PROVIDER_TIMEOUT_SECONDS` | [`secrets.provider_timeout_seconds`](/runtime-settings#security) | `10` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
 | `APP_BIND_BLOCK_CREDENTIAL_DIRS` | [`security.bind_block_credential_dirs`](/runtime-settings#security) | `true` |
 | `APP_BUILD_NETWORK` | [`security.build_network`](/runtime-settings#security) | `open` |
 | `APP_WEBHOOK_REPLAY_PROTECTION` | [`security.webhook_replay_protection`](/runtime-settings#security) | `true` |
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
+| `APP_STACK_PRUNE_MAX_COUNT` | [`stacks.prune_max_count`](/runtime-settings#security) | `10` |
+| `APP_STACK_PRUNE_MAX_PERCENT` | [`stacks.prune_max_percent`](/runtime-settings#security) | `50` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
+| `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
+| `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
+| `APP_BUNDLE_IMPORT_MAX_BYTES` | [`apps.bundle_import_max_bytes`](/runtime-settings#networking) | `4194304` |
+| `APP_BUNDLE_IMPORT_MAX_ENTRIES` | [`apps.bundle_import_max_entries`](/runtime-settings#networking) | `16` |
+| `APP_BUNDLE_IMPORT_MAX_ENTRY_BYTES` | [`apps.bundle_import_max_entry_bytes`](/runtime-settings#networking) | `1048576` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |
 | `APP_CUTOVER_VERIFY_CERT_WARN_DAYS` | [`cutover.verify_cert_warn_days`](/runtime-settings#networking) | `21` |
@@ -76,15 +110,22 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_MIN_INTERVAL` | [`cutover.verify_min_interval`](/runtime-settings#networking) | `10s` |
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
+| `APP_DATABASE_IMPORT_MAX_BYTES` | [`databases.import_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
+| `APP_AUTH_GATE_TIMEOUT` | [`domains.auth_gate_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |
 | `APP_DOMAINS_CANONICAL` | [`domains.canonical`](/runtime-settings#networking) | `apex` |
 | `APP_DOMAINS_DNS_WAIT_BUDGET` | [`domains.dns_wait_budget`](/runtime-settings#networking) | `10m` |
 | `APP_DOMAINS_DNS_WATCH_INTERVAL_SECONDS` | [`domains.dns_watch_interval_seconds`](/runtime-settings#networking) | `15` |
 | `APP_DOMAINS_DNS_WATCH_MAX_MINUTES` | [`domains.dns_watch_max_minutes`](/runtime-settings#networking) | `120` |
 | `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | [`domains.https_attempts_per_hour`](/runtime-settings#networking) | `5` |
+| `APP_DOMAIN_LIMITS_MAX_BODY_BYTES` | [`domains.limits_max_body_bytes`](/runtime-settings#networking) | `1073741824` |
+| `APP_DOMAIN_LIMITS_MAX_TIMEOUT_SECONDS` | [`domains.limits_max_timeout_seconds`](/runtime-settings#networking) | `3600` |
 | `APP_DOMAINS_PARKED_RETENTION_DAYS` | [`domains.parked_retention_days`](/runtime-settings#networking) | `0` |
 | `APP_DOMAINS_ROLLBACK_WINDOW_MINUTES` | [`domains.rollback_window_minutes`](/runtime-settings#networking) | `60` |
+| `APP_DOMAIN_TUNING_MAX_STREAM_SECONDS` | [`domains.tuning_max_stream_seconds`](/runtime-settings#networking) | `86400` |
+| `APP_DOMAIN_TUNING_MAX_TIMEOUT_SECONDS` | [`domains.tuning_max_timeout_seconds`](/runtime-settings#networking) | `600` |
+| `APP_DOMAIN_TUNING_MIN_TIMEOUT_SECONDS` | [`domains.tuning_min_timeout_seconds`](/runtime-settings#networking) | `1` |
 | `APP_DOMAINS_WWW_MODE` | [`domains.www_mode`](/runtime-settings#networking) | `both` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
@@ -101,41 +142,113 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
+| `APP_INGRESS_UNMATCHED_MODE` | [`ingress.unmatched_mode`](/runtime-settings#networking) | `diagnostic` |
+| `APP_INGRESS_UNMATCHED_REDIRECT_URL` | [`ingress.unmatched_redirect_url`](/runtime-settings#networking) | empty |
+| `APP_MESH_APPLY_RETRIES` | [`mesh.apply_retries`](/runtime-settings#networking) | `2` |
+| `APP_MESH_APPLY_RETRY_DELAY` | [`mesh.apply_retry_delay`](/runtime-settings#networking) | `500ms` |
+| `APP_MESH_APPLY_TIMEOUT` | [`mesh.apply_timeout`](/runtime-settings#networking) | `10s` |
 | `APP_MESH_HUB_RESOLVE_TTL` | [`mesh.hub_resolve_ttl`](/runtime-settings#networking) | `5m` |
 | `APP_MESH_HUB_STALE_MAX` | [`mesh.hub_stale_max`](/runtime-settings#networking) | `24h` |
+| `APP_MESH_READY_RETRY_SECONDS` | [`mesh.ready_retry_seconds`](/runtime-settings#networking) | `10` |
+| `APP_MESH_WAKE_DEBOUNCE` | [`mesh.wake_debounce`](/runtime-settings#networking) | `1s` |
+| `APP_HF_MAX_LISTED_FILES` | [`models.hf_max_listed_files`](/runtime-settings#networking) | `100` |
+| `APP_HF_MAX_RESPONSE_BYTES` | [`models.hf_max_response_bytes`](/runtime-settings#networking) | `16777216` |
+| `APP_HF_TIMEOUT_SECONDS` | [`models.hf_timeout_seconds`](/runtime-settings#networking) | `10` |
+| `APP_NET_OUTBOUND_TIMEOUT` | [`net.outbound_timeout`](/runtime-settings#networking) | `30s` |
+| `APP_NETWORK_GC_MAX_REMOVALS` | [`network.gc_max_removals`](/runtime-settings#networking) | `20` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
+| `APP_SHELL_SECTION_TIMEOUT` | [`shell.section_timeout`](/runtime-settings#networking) | `2s` |
+| `APP_TEMPLATE_IMPORT_MAX_BYTES` | [`templates.import_max_bytes`](/runtime-settings#networking) | `262144` |
+| `APP_TEMPLATE_IMPORT_TIMEOUT` | [`templates.import_timeout`](/runtime-settings#networking) | `10s` |
+| `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
+| `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
+| `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
+| `APP_SIZE_PRESETS` | [`apps.size_presets`](/runtime-settings#deploys) | `small=0.5:512Mi,medium=1:1Gi,large=2:2Gi,xlarge=4:4Gi` |
+| `APP_RUN_CPU_LIMIT_MILLIS` | [`apps_run.cpu_limit_millis`](/runtime-settings#deploys) | `0` |
+| `APP_RUN_MAX_CONCURRENT_PER_APP` | [`apps_run.max_concurrent_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_RUN_MAX_TIMEOUT_SECONDS` | [`apps_run.max_timeout_seconds`](/runtime-settings#deploys) | `3600` |
+| `APP_RUN_MEMORY_LIMIT_MB` | [`apps_run.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
+| `APP_BOOT_DEFERRED_STAGES` | [`boot.deferred_stages`](/runtime-settings#deploys) | `false` |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
+| `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_PER_APP` | [`build.cache_per_app`](/runtime-settings#deploys) | `true` |
+| `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
+| `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
+| `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
+| `APP_COMPOSE_REPO_DEPLOY_TIMEOUT` | [`compose.repo_deploy_timeout`](/runtime-settings#deploys) | `10m` |
+| `APP_COMPOSE_REPO_FILE_MAX_BYTES` | [`compose.repo_file_max_bytes`](/runtime-settings#deploys) | `524288` |
+| `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
+| `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
+| `APP_DATABASES_BULK_CONCURRENCY` | [`databases.bulk_concurrency`](/runtime-settings#deploys) | `4` |
+| `APP_DATABASES_BULK_MAX_ITEMS` | [`databases.bulk_max_items`](/runtime-settings#deploys) | `200` |
+| `APP_DB_PARAMS_MAX_CONNECTIONS` | [`databases.params_max_connections`](/runtime-settings#deploys) | `5000` |
+| `APP_DB_PARAMS_MAX_MEMORY_MB` | [`databases.params_max_memory_mb`](/runtime-settings#deploys) | `4096` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
 | `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
+| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | [`deploy.approval_claim_timeout_seconds`](/runtime-settings#deploys) | `900` |
+| `APP_DEPLOY_APPROVAL_MAX_REQUIRED` | [`deploy.approval_max_required`](/runtime-settings#deploys) | `10` |
+| `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | [`deploy.approve_digest_check_timeout_seconds`](/runtime-settings#deploys) | `0` |
+| `APP_BUILD_HOOK_MAX_CIDRS` | [`deploy.build_hook_max_cidrs`](/runtime-settings#deploys) | `32` |
+| `APP_BUILD_HOOK_TRIGGERS_PER_MINUTE` | [`deploy.build_hook_triggers_per_minute`](/runtime-settings#deploys) | `6` |
 | `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
+| `APP_INLINE_SOURCE_KEEP` | [`deploy.inline_source_keep`](/runtime-settings#deploys) | `10` |
+| `APP_INLINE_SOURCE_MAX_BYTES` | [`deploy.inline_source_max_bytes`](/runtime-settings#deploys) | `262144` |
+| `APP_INLINE_SOURCE_MAX_FILES` | [`deploy.inline_source_max_files`](/runtime-settings#deploys) | `20` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
+| `APP_DEPLOY_MAX_CONCURRENT_PER_PROJECT` | [`deploy.max_concurrent_per_project`](/runtime-settings#deploys) | `0` |
 | `APP_DEPLOY_NEXT_ASSET_GRACE_MAX_HELD` | [`deploy.next_asset_grace_max_held`](/runtime-settings#deploys) | `1` |
 | `APP_DEPLOY_NEXT_ASSET_GRACE_SECONDS` | [`deploy.next_asset_grace_seconds`](/runtime-settings#deploys) | `1800` |
 | `APP_DEPLOY_NEXT_DEPLOYMENT_ID` | [`deploy.next_deployment_id`](/runtime-settings#deploys) | `true` |
 | `APP_DEPLOY_PHASES_SAMPLES` | [`deploy.phases_samples`](/runtime-settings#deploys) | `5` |
 | `APP_DEPLOY_PREVIEW_CACHE_MODE` | [`deploy.preview_cache_mode`](/runtime-settings#deploys) | `isolated` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
+| `APP_DEPLOY_PROCFILE_DEFAULT_PORT` | [`deploy.procfile_default_port`](/runtime-settings#deploys) | `8080` |
 | `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
+| `APP_RESTART_SCHEDULE_FAILURE_BACKOFF` | [`deploy.restart_schedule_failure_backoff`](/runtime-settings#deploys) | `15m0s` |
+| `APP_RESTART_SCHEDULE_MAX_PER_SWEEP` | [`deploy.restart_schedule_max_per_sweep`](/runtime-settings#deploys) | `5` |
+| `APP_RESTART_SCHEDULE_MIN_INTERVAL` | [`deploy.restart_schedule_min_interval`](/runtime-settings#deploys) | `1h0m0s` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
 | `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
 | `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
+| `APP_GIT_POLL_CONCURRENCY` | [`git.poll_concurrency`](/runtime-settings#deploys) | `4` |
+| `APP_GIT_POLL_ENABLED` | [`git.poll_enabled`](/runtime-settings#deploys) | `true` |
+| `APP_GIT_POLL_INTERVAL` | [`git.poll_interval`](/runtime-settings#deploys) | `5m` |
+| `APP_GIT_POLL_MAX_BACKOFF` | [`git.poll_max_backoff`](/runtime-settings#deploys) | `1h` |
+| `APP_GIT_SUBMODULES_MAX_COUNT` | [`git.submodules_max_count`](/runtime-settings#deploys) | `32` |
+| `APP_GIT_SUBMODULES_MAX_DEPTH` | [`git.submodules_max_depth`](/runtime-settings#deploys) | `3` |
+| `APP_GIT_SUBMODULES_MAX_MB` | [`git.submodules_max_mb`](/runtime-settings#deploys) | `4096` |
+| `APP_GIT_SUBMODULES_TIMEOUT` | [`git.submodules_timeout`](/runtime-settings#deploys) | `10m` |
+| `APP_GIT_TRIGGER_PATTERN_LIST_MAX_BYTES` | [`git.trigger_pattern_list_max_bytes`](/runtime-settings#deploys) | `1024` |
+| `APP_GIT_TRIGGER_PATTERN_MAX_LENGTH` | [`git.trigger_pattern_max_length`](/runtime-settings#deploys) | `128` |
+| `APP_GIT_TRIGGER_PATTERNS_MAX` | [`git.trigger_patterns_max`](/runtime-settings#deploys) | `32` |
+| `APP_GIT_TRIGGER_REF_MAX_BYTES` | [`git.trigger_ref_max_bytes`](/runtime-settings#deploys) | `1024` |
+| `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
+| `APP_JOBS_FAILURE_ALERT_BATCH` | [`jobs.failure_alert_batch`](/runtime-settings#deploys) | `50` |
+| `APP_JOBS_FAILURE_ALERT_WINDOW_SECONDS` | [`jobs.failure_alert_window_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
+| `APP_JOBS_RETENTION_MAX_DAYS` | [`jobs.retention_max_days`](/runtime-settings#deploys) | `365` |
+| `APP_JOBS_RETENTION_MAX_RUNS` | [`jobs.retention_max_runs`](/runtime-settings#deploys) | `1000` |
+| `APP_JOBS_RETENTION_SKIPPED_KEEP` | [`jobs.retention_skipped_keep`](/runtime-settings#deploys) | `20` |
+| `APP_JOBS_RETENTION_SWEEP_MAX_ROWS` | [`jobs.retention_sweep_max_rows`](/runtime-settings#deploys) | `500` |
+| `APP_JOBS_TIMEOUT_MAX_SECONDS` | [`jobs.timeout_max_seconds`](/runtime-settings#deploys) | `86400` |
+| `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
+| `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
 | `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_PREVIEW_MIGRATE_WAIT` | [`previews.migrate_wait`](/runtime-settings#deploys) | `2m` |
@@ -144,11 +257,53 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
+| `APP_RESOURCE_DESCRIPTION_MAX_CHARS` | [`resources.description_max_chars`](/runtime-settings#deploys) | `280` |
+| `APP_RESOURCE_NOTES_MAX_BYTES` | [`resources.notes_max_bytes`](/runtime-settings#deploys) | `65536` |
+| `APP_RUNTIME_DNS_MAX` | [`runtime.dns_max`](/runtime-settings#deploys) | `3` |
+| `APP_RUNTIME_EXTRA_HOSTS_MAX` | [`runtime.extra_hosts_max`](/runtime-settings#deploys) | `32` |
+| `APP_RUNTIME_PIDS_LIMIT_MAX` | [`runtime.pids_limit_max`](/runtime-settings#deploys) | `32768` |
+| `APP_RUNTIME_SHM_MAX_BYTES` | [`runtime.shm_max_bytes`](/runtime-settings#deploys) | `4294967296` |
+| `APP_RUNTIME_STOP_TIMEOUT_MAX_SECONDS` | [`runtime.stop_timeout_max_seconds`](/runtime-settings#deploys) | `600` |
+| `APP_RUNTIME_TMPFS_DEFAULT_BYTES` | [`runtime.tmpfs_default_bytes`](/runtime-settings#deploys) | `67108864` |
+| `APP_RUNTIME_TMPFS_MAX` | [`runtime.tmpfs_max`](/runtime-settings#deploys) | `16` |
+| `APP_RUNTIME_TMPFS_MAX_BYTES` | [`runtime.tmpfs_max_bytes`](/runtime-settings#deploys) | `1073741824` |
+| `APP_RUNTIME_ULIMIT_BYTES_MAX` | [`runtime.ulimit_bytes_max`](/runtime-settings#deploys) | `1073741824` |
+| `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
+| `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
+| `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
+| `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
+| `APP_SAVED_VIEW_FILTER_MAX_KEYS` | [`views.filter_max_keys`](/runtime-settings#deploys) | `12` |
+| `APP_SAVED_VIEW_FILTER_VALUE_MAX_BYTES` | [`views.filter_value_max_bytes`](/runtime-settings#deploys) | `512` |
+| `APP_SAVED_VIEW_MAX_PER_USER` | [`views.max_per_user`](/runtime-settings#deploys) | `100` |
+| `APP_SAVED_VIEW_NAME_MAX_CHARS` | [`views.name_max_chars`](/runtime-settings#deploys) | `64` |
 | `APP_VOLUMES_IMPORT_OVERWRITE` | [`volumes.import_overwrite`](/runtime-settings#deploys) | `false` |
 | `APP_VOLUMES_TRANSFER_MAX_BYTES` | [`volumes.transfer_max_bytes`](/runtime-settings#deploys) | `10737418240` |
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
+| `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
+| `APP_APP_METRICS_MAX_BODY_BYTES` | [`app_metrics.max_body_bytes`](/runtime-settings#observability) | `1048576` |
+| `APP_APP_METRICS_MAX_LABEL_BYTES` | [`app_metrics.max_label_bytes`](/runtime-settings#observability) | `65536` |
+| `APP_APP_METRICS_MAX_LABELS` | [`app_metrics.max_labels`](/runtime-settings#observability) | `10` |
+| `APP_APP_METRICS_MAX_SERIES` | [`app_metrics.max_series`](/runtime-settings#observability) | `500` |
+| `APP_APP_METRICS_MAX_STORED_ROWS` | [`app_metrics.max_stored_rows`](/runtime-settings#observability) | `500000` |
+| `APP_APP_METRICS_QUERY_MAX_POINTS` | [`app_metrics.query_max_points`](/runtime-settings#observability) | `10000` |
+| `APP_APP_METRICS_RETENTION_HOURS` | [`app_metrics.retention_hours`](/runtime-settings#observability) | `72` |
+| `APP_APP_METRICS_SCRAPE_INTERVAL` | [`app_metrics.scrape_interval`](/runtime-settings#observability) | `60s` |
+| `APP_APP_METRICS_SCRAPE_TIMEOUT` | [`app_metrics.scrape_timeout`](/runtime-settings#observability) | `5s` |
+| `APP_APP_METRICS_SCRAPE_WORKERS` | [`app_metrics.scrape_workers`](/runtime-settings#observability) | `4` |
+| `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
+| `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
+| `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
+| `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
+| `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
+| `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |
+| `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
+| `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
+| `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_DB_COMPACT_MIN_FREE_PERCENT` | [`db.compact_min_free_percent`](/runtime-settings#observability) | `10` |
+| `APP_DB_SPACE_REPORT_ROWS` | [`db.space_report_rows`](/runtime-settings#observability) | `20` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
@@ -157,21 +312,63 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `APP_CHANGES_STREAM_BUFFER` | [`events.changes_buffer`](/runtime-settings#observability) | `64` |
+| `APP_CHANGES_STREAM_HEARTBEAT` | [`events.changes_heartbeat`](/runtime-settings#observability) | `20s` |
+| `APP_CHANGES_STREAM_MAX_PER_CALLER` | [`events.changes_max_streams_per_caller`](/runtime-settings#observability) | `4` |
+| `APP_GC_PERCENT` | [`footprint.gc_percent`](/runtime-settings#observability) | `50` |
+| `APP_GOMEMLIMIT_PERCENT` | [`footprint.memlimit_percent`](/runtime-settings#observability) | `80` |
+| `APP_MEM_TRIM_INTERVAL` | [`footprint.trim_interval`](/runtime-settings#observability) | `2m0s` |
+| `APP_MEM_TRIM_MIN_IDLE_MB` | [`footprint.trim_min_idle_mb`](/runtime-settings#observability) | `24` |
 | `APP_HEARTBEAT_JOB_BACKOFF_BASE` | [`heartbeat.job_backoff_base`](/runtime-settings#observability) | `2s` |
 | `APP_HEARTBEAT_JOB_BACKOFF_MAX` | [`heartbeat.job_backoff_max`](/runtime-settings#observability) | `30s` |
 | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | [`heartbeat.job_max_attempts`](/runtime-settings#observability) | `3` |
 | `APP_HEARTBEAT_JOB_QUEUE` | [`heartbeat.job_queue`](/runtime-settings#observability) | `64` |
+| `APP_INCIDENT_POSTMORTEM_ACTION_ITEMS_MAX` | [`incidents.postmortem_action_items_max`](/runtime-settings#observability) | `50` |
+| `APP_INCIDENT_POSTMORTEM_BODY_MAX` | [`incidents.postmortem_body_max`](/runtime-settings#observability) | `1048576` |
+| `APP_INCIDENT_POSTMORTEM_FIELD_MAX` | [`incidents.postmortem_field_max`](/runtime-settings#observability) | `8000` |
+| `APP_LOG_RULE_EVAL_INTERVAL` | [`log_rules.eval_interval`](/runtime-settings#observability) | `1m` |
+| `APP_LOG_RULE_MAX_ROWS` | [`log_rules.max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_LOG_RULE_MAX_WINDOW` | [`log_rules.max_window`](/runtime-settings#observability) | `1h` |
+| `APP_LOG_RULE_SAMPLES` | [`log_rules.samples`](/runtime-settings#observability) | `5` |
+| `APP_LOG_EXPORT_MAX_LINES` | [`logs.export_max_lines`](/runtime-settings#observability) | `5000` |
+| `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
+| `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_ALERT_NODE_CPU_PERCENT` | [`nodes.alert_cpu_percent`](/runtime-settings#observability) | `85` |
+| `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` | [`nodes.alert_disk_percent`](/runtime-settings#observability) | `90` |
+| `APP_ALERT_NODE_MEMORY_PERCENT` | [`nodes.alert_memory_percent`](/runtime-settings#observability) | `90` |
+| `APP_ALERT_NODE_SUSTAINED_INTERVALS` | [`nodes.alert_sustained_intervals`](/runtime-settings#observability) | `3` |
+| `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
+| `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
+| `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
+| `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
+| `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
+| `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |
+| `APP_DB_CACHE_SIZE_MB` | [`store.cache_size_mb`](/runtime-settings#observability) | `0` |
+| `APP_DB_MMAP_SIZE_MB` | [`store.mmap_size_mb`](/runtime-settings#observability) | `0` |
+| `APP_DB_OPTIMIZE_INTERVAL` | [`store.optimize_interval`](/runtime-settings#observability) | `6h` |
+| `APP_DB_READ_CONNS` | [`store.read_connections`](/runtime-settings#observability) | `4` |
+| `APP_DB_SYNCHRONOUS` | [`store.synchronous`](/runtime-settings#observability) | `default` |
+| `APP_DB_TEMP_STORE` | [`store.temp_store`](/runtime-settings#observability) | `default` |
+| `LEVELRAIL_TOUCH_FLUSH_INTERVAL` | [`store.touch_flush_interval`](/runtime-settings#observability) | `5s` |
+| `APP_SYSTEM_PROCESSES_MAX_ROWS` | [`system.processes_max_rows`](/runtime-settings#observability) | `25` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
+| `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
+| `APP_ACCESS_SEARCH_MAX_CONCURRENT` | [`telemetry.access_search_max_concurrent`](/runtime-settings#observability) | `4` |
+| `APP_ACCESS_SEARCH_MAX_ROWS` | [`telemetry.access_search_max_rows`](/runtime-settings#observability) | `200` |
+| `APP_ACCESS_SEARCH_MAX_SCAN` | [`telemetry.access_search_max_scan`](/runtime-settings#observability) | `200000` |
+| `APP_ACCESS_SEARCH_MAX_TERM` | [`telemetry.access_search_max_term`](/runtime-settings#observability) | `256` |
+| `APP_ACCESS_SEARCH_MAX_WINDOW` | [`telemetry.access_search_max_window`](/runtime-settings#observability) | `24h` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
+| `APP_UI_OUTBOUND_UTM` | [`ui.outbound_utm`](/runtime-settings#observability) | `true` |
 | `APP_VITALS_ENABLED` | [`vitals.enabled`](/runtime-settings#observability) | `false` |
 | `APP_VITALS_FLUSH_SECONDS` | [`vitals.flush_interval_seconds`](/runtime-settings#observability) | `10` |
 | `APP_VITALS_MAX_BODY_BYTES` | [`vitals.max_body_bytes`](/runtime-settings#observability) | `4096` |
@@ -179,12 +376,24 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_RATE_PER_IP` | [`vitals.rate_limit_per_ip_per_minute`](/runtime-settings#observability) | `120` |
 | `APP_VITALS_RATE_PER_MIN` | [`vitals.rate_limit_per_minute`](/runtime-settings#observability) | `600` |
 | `APP_VITALS_REPORT_TOP_ROUTES` | [`vitals.report_top_routes`](/runtime-settings#observability) | `50` |
+| `APP_VOLUMES_SIZE_HISTORY_RETENTION` | [`volumes.size_history_retention`](/runtime-settings#observability) | `168h` |
+| `APP_VOLUMES_USAGE_ALERT_PERCENT` | [`volumes.usage_alert_percent`](/runtime-settings#observability) | `90` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
+| `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
+| `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
+| `APP_BACKUP_DRILL_INTERVAL_HOURS` | [`backups.drill_interval_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_BACKUP_DRILL_RETENTION_DAYS` | [`backups.drill_retention_days`](/runtime-settings#data-retention) | `90` |
+| `APP_BACKUP_DRILL_TIMEOUT` | [`backups.drill_timeout`](/runtime-settings#data-retention) | `1h` |
+| `APP_BACKUP_SCHEDULE_RETAIN_DEFAULT` | [`backups.schedule_retain_default`](/runtime-settings#data-retention) | `0` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
+| `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |
+| `APP_CLEANUP_FAILING_WINDOW` | [`cleanup.failing_window`](/runtime-settings#data-retention) | `24h` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
+| `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |
 | `APP_RETENTION_AI_HISTORY_DAYS` | [`retention.ai_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_ALERT_HISTORY_RETENTION` | [`retention.alert_history_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_APP_HISTORY_DAYS` | [`retention.app_history_days`](/runtime-settings#data-retention) | `90` |
@@ -201,11 +410,26 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
 | `APP_JOBS_HISTORY_KEEP` | [`scheduled_tasks.history_keep`](/runtime-settings#data-retention) | `200` |
+| `APP_JOBS_MAX_OUTPUT_BYTES` | [`scheduled_tasks.max_output_bytes`](/runtime-settings#data-retention) | `65536` |
+| `LEVELRAIL_SPOOL_MAX_AGE_SECONDS` | [`spool.max_age_seconds`](/runtime-settings#data-retention) | `0` |
+| `LEVELRAIL_SPOOL_QUOTA_BYTES` | [`spool.quota_bytes`](/runtime-settings#data-retention) | `0` |
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
+
+## Renamed to seconds
+
+These variables now take a whole number of seconds. The old duration-valued names are replaced and no longer documented.
+
+| Use | Replaces | Setting |
+| --- | --- | --- |
+| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` (`15m`, now `900`) | `deploy.approval_claim_timeout_seconds` |
+| `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | the duration-valued digest check timeout | `deploy.approve_digest_check_timeout_seconds` |
+| `APP_HF_TIMEOUT_SECONDS` | `APP_HF_TIMEOUT` (`10s`, now `10`) | `models.hf_timeout_seconds` |
+
+If you set an old name in your environment, switch to the new one and write the value in seconds.
 
 ## Sessions and cookies
 
@@ -308,6 +532,7 @@ Each of these sets how often a background loop wakes to check for work. Five-fie
 | --- | --- | --- |
 | `APP_BACKUP_SCHEDULER_INTERVAL` | `1m` | How often the database backup scheduler checks for backups whose cron schedule is due. See [Backups and storage](/backups-and-storage). Control plane. |
 | `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL` | `1m` | How often the scheduler checks for scheduled tasks that are due. Control plane. |
+| `APP_RESTART_SCHEDULE_TICK` | `1m` | How often the scheduled restart sweep looks for due app restarts. Clamped to 10s..10m. Read at boot. Control plane. |
 | `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` | `5m` | How often pending deploy approvals are checked against their 24 hour expiry. See [Chat deploy approvals](/chat-deploy-approvals). Control plane. |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | `168h` (7 days) | History window used when computing app resource recommendations. Control plane. |
 | `APP_RECONCILE_WORKERS` | `1` | How many apps may reconcile at once, so one slow or failing app does not delay the others. `1` keeps the sequential pass; `4` or `8` is recommended with many apps. Above 1, each app reconcile is cut after `APP_RECONCILE_KEY_TIMEOUT` (default `10m`) and retried. Control plane. |
@@ -623,6 +848,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_AGENT_ADVERTISE_HOST` | ``127.0.0.1`` | Host name or IP agents dial for the gRPC server. It must match the server's TLS certificate, so the default only works on one machine. Control plane. |
 | `APP_AGENT_IDENTITY_FILE` | ``./levelrail-agent-identity.json`` | File where the agent stores its enrolled identity. Agent. |
 | `APP_AGENT_LOG_BATCH_MAX` | ``5000`` | Most log lines the agent sends in one relay batch. Agent. |
+| `APP_AGENT_INSPECT_MAX_CONTAINERS` | ``50`` | Most containers the agent returns from one live container inspect, whatever the control plane asks for. Agent. |
+| `APP_AGENT_INSPECT_MAX_BYTES` | ``262144`` | Largest live container inspect answer, in bytes, capped at 1048576; containers past it are left out and the answer is marked truncated. Agent. |
 | `APP_AGENT_MIN_SAFE_VERSION` | ``0.8.5`` | Oldest agent version a node may run before database changes on it are held back. Control plane. |
 | `APP_AGENT_STORAGE_DIR` | computed | Directory for the agent's file storage. Unset keeps the agent's default storage. Agent. |
 | `APP_JOIN_TOKEN` | computed | Join token the agent uses to enroll on first start, and only when no identity file exists yet. Agent. |
@@ -641,7 +868,6 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` | ``15m`` | How long an approving claim on a deploy approval may stand before recovery treats the claimer as gone. Control plane. |
 | `APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS` | ``2`` | Restarts during a rollout before it counts as a crash loop and fails. Control plane. |
 | `APP_DEFAULT_ALERTS` | computed | Set to off to skip creating the default alert rules on first start. Control plane. |
 | `APP_DB_CRASH_LOOP_RESTARTS` | ``3`` | Restarts before a database counts as crash-looping. Control plane. |

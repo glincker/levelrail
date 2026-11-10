@@ -25,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/migrateagent"
 	"github.com/GLINCKER/levelrail/internal/release"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -283,7 +284,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 		WithLogger(logger).
 		WithRecorder(emailRecorder).
 		WithRetry(emailEnvInt("APP_EMAIL_RETRY_ATTEMPTS"), time.Duration(emailEnvInt("APP_EMAIL_RETRY_BASE_MS"))*time.Millisecond)
-	installGitNetguard()
+	installGitNetguard(runtimesettings.New(db, nil))
 	notifyClient := netguard.NewClient()
 
 	// Nil until a master key exists: the VAPID private key can only be stored through secretsManager.

@@ -12,10 +12,11 @@ import type {
   SetupGuideOverride,
   SetupGuideStepId,
 } from '../lib/setupGuide'
+import { pollMs } from '@/lib/pollTier'
 
 export const setupGuideKey = ['setup-guide'] as const
 
-const FOCUS_REFETCH_MS = 5_000
+const FOCUS_REFETCH_MS = pollMs('live')
 
 async function readGuide(res: Response, what: string): Promise<SetupGuide> {
   if (!res.ok) {

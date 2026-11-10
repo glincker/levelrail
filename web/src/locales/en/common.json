@@ -123,6 +123,11 @@
     "button": "Load more"
   },
   "appsList": {
+    "quick": {
+      "open": "Open {{domain}}",
+      "redeploy": "Redeploy {{name}}",
+      "logs": "Logs for {{name}}"
+    },
     "title": "Apps",
     "tableLabel": "Apps",
     "colName": "Name",
@@ -301,6 +306,9 @@
       "config": "Config",
       "observe": "Observe"
     },
+    "items": {
+      "containers": "Containers"
+    },
     "more": "More",
     "overview": "Overview"
   },
@@ -363,6 +371,7 @@
         "servers": "Server sections",
         "registry": "Registry sections",
         "cost": "Usage and cost sections",
+        "alerts": "Alert sections",
         "security": "Security sections"
       },
       "tab": {
@@ -386,7 +395,13 @@
         "loadBalancers": "Load balancers",
         "cdn": "CDN",
         "firewall": "Firewall",
-        "nodes": "Nodes",
+        "nodes": "Servers",
+        "privateNetworks": "Private network",
+        "topology": "Topology",
+        "certificates": "Certificates",
+        "channels": "Channels",
+        "status": "Status",
+        "alerts": "Alerts",
         "providers": "Cloud providers",
         "images": "Images",
         "registry": "Registry",
@@ -408,6 +423,9 @@
       "group": "Pinned",
       "pin": "Pin {{label}}",
       "limit": "Pin limit reached ({{max}}). Unpin one first."
+    },
+    "customize": {
+      "open": "Customize sidebar"
     },
     "locked": {
       "badge": "Beta",
@@ -445,8 +463,10 @@
     "theme": {
       "label": "Theme: {{theme}}",
       "menu": "Choose theme",
+      "heading": "Theme",
       "light": "Light",
       "dark": "Dark",
+      "oled": "OLED black",
       "system": "System"
     },
     "help": {
@@ -477,6 +497,7 @@
       "data": "Data",
       "traffic": "Network",
       "infrastructure": "Infrastructure",
+      "platform": "Platform",
       "access": "Security",
       "ai": "AI"
     },
@@ -608,7 +629,9 @@
       }
     },
     "navAttention": "{{count}} need attention",
-    "headerMore": "More header controls"
+    "headerMore": "More header controls",
+    "headerUtilities": "More: what's new, chat, help and theme",
+    "chat": "Chat"
   },
   "cliConsole": {
     "title": "Console",
@@ -1078,6 +1101,21 @@
       }
     }
   },
+  "projectsPage": {
+    "list": {
+      "name": "Name",
+      "created": "Created"
+    },
+    "empty": {
+      "title": "No projects yet",
+      "description": "Projects group an app with its database and cache. Create one to start organizing."
+    },
+    "error": {
+      "title": "Projects could not load",
+      "description": "{{error}}",
+      "retry": "Retry"
+    }
+  },
   "apiError": {
     "recheckDocker": "Re-check Docker",
     "rechecking": "Checking...",
@@ -1312,6 +1350,7 @@
     "duplicate": "Each key can be used once.",
     "incomplete": "Fill in both the key and the value, or remove the row.",
     "filterLabel": "Filter by label",
+    "filterButton": "Labels",
     "filterPlaceholder": "env=prod,tier!=db",
     "filterInvalid": "That selector could not be read."
   },
@@ -1412,5 +1451,106 @@
   "roleGate": {
     "needsAdmin": "Needs admin",
     "needsOperator": "Needs operator"
+  },
+  "overview": {
+    "connectGitSource": "Connect Git source"
+  },
+  "a11y": {
+    "routeNotFound": {
+      "title": "Page not found",
+      "body": "This address does not match a page. It may have moved, or the link is out of date.",
+      "suggestions": "Pages with a similar name",
+      "home": "Back to dashboard"
+    },
+    "tables": {
+      "alertHistory": "Alert history",
+      "appExposure": "Exposed ports",
+      "appReplicas": "App replicas",
+      "archiveFiles": "Archive files",
+      "dnsRecords": "DNS records",
+      "importEnv": "Imported environment variables",
+      "investigationMetrics": "Investigation metrics",
+      "investigationEvents": "Investigation events",
+      "modelUsage": "Model usage",
+      "pipelineInsights": "Pipeline insights",
+      "pipelineSlowSteps": "Slowest pipeline steps",
+      "splitTests": "Split test variants",
+      "statusWebhooks": "Status page webhooks",
+      "myAccess": "My access",
+      "agentConnect": "Agent connections",
+      "aiUsage": "AI usage",
+      "appAnalysis": "App analysis",
+      "vitalsRoutes": "Web vitals by route",
+      "cleanupHistory": "Cleanup history",
+      "engineStats": "Database engine stats",
+      "buildReport": "Build report",
+      "dnsDelegation": "DNS delegation",
+      "dnsPropagation": "DNS propagation results",
+      "redirects": "Redirects",
+      "serverAddresses": "Server addresses",
+      "exposure": "Exposure",
+      "firewallPorts": "Open ports",
+      "functionKv": "Function key value entries",
+      "mailQueue": "Mail queue",
+      "importPlan": "Import plan",
+      "importPlanServices": "Import plan services",
+      "nodePatches": "Node patches",
+      "pluginPanel": "Plugin data",
+      "plugins": "Plugins",
+      "trustedKeys": "Trusted signing keys",
+      "findingChanges": "Proposed changes",
+      "benchmarkCompare": "Benchmark comparison",
+      "benchmarkResults": "Benchmark results",
+      "benchmarkSteps": "Benchmark steps",
+      "benchmarkSamples": "Benchmark samples",
+      "benchmarkRuns": "Benchmark runs",
+      "trafficDiff": "Traffic change preview",
+      "trafficTopPaths": "Top paths",
+      "trafficBreakdown": "Traffic breakdown",
+      "trafficErrors": "Traffic errors",
+      "firewallRules": "Firewall rules",
+      "mobileDevices": "Mobile devices"
+    }
+  },
+  "resourceNotes": {
+    "title": "Description and notes",
+    "hint": "Record the owner, purpose and runbook links. Markdown is supported.",
+    "empty": "No description or notes yet.",
+    "edit": "Edit notes",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "One line summary shown on the list",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Owner, purpose, runbook links",
+    "preview": "Preview",
+    "write": "Write",
+    "noSecrets": "Everyone who can read this resource can read its notes. Never put secrets here.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Notes saved"
+  },
+  "copyCommand": {
+    "trigger": "Copy {{name}} as command",
+    "title": "Copy as command",
+    "cli": "{{action}}: CLI command",
+    "api": "{{action}}: API call",
+    "copiedCli": "CLI command copied",
+    "copiedApi": "API call copied, set the token variable first",
+    "actions": {
+      "app_restart": "Restart",
+      "app_stop": "Stop",
+      "app_start": "Start",
+      "app_scale": "Scale",
+      "app_rollback": "Roll back",
+      "deploy_rollback": "Roll back to this deploy",
+      "database_start": "Start",
+      "database_stop": "Stop",
+      "database_backup": "Back up now",
+      "domain_check": "Verify",
+      "domain_remove": "Remove",
+      "cert_renew": "Renew certificate",
+      "job_run": "Run now",
+      "node_cordon": "Cordon",
+      "node_uncordon": "Uncordon"
+    }
   }
 }

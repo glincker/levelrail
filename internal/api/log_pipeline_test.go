@@ -13,14 +13,14 @@ import (
 )
 
 func TestLogPipelineRoutes(t *testing.T) {
-	rt, db, _ := newTraceRouter(t)
+	_, db, _ := newTraceRouter(t)
 	tel, err := telemetry.Open(context.Background(), filepath.Join(t.TempDir(), "lp.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = tel.Close() })
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
-	rt = NewRouter(logger, testBrand(), db, WithLogPipelineStore(tel))
+	rt := NewRouter(logger, testBrand(), db, WithLogPipelineStore(tel))
 	cookie := loginTestSession(t, rt, db)
 	seedWebAppForTest(t, db)
 

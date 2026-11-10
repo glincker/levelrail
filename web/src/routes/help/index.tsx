@@ -43,7 +43,7 @@ function HelpIndexPage() {
                   <Link
                     to="/help/$"
                     params={{ _splat: doc.path.slice(1) }}
-                    className="text-sm text-primary underline-offset-2 hover:underline"
+                    className="inline-flex items-center text-sm text-primary underline-offset-2 hover:underline pointer-coarse:min-h-10"
                   >
                     {doc.title}
                   </Link>

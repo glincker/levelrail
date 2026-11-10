@@ -83,6 +83,8 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 	indexing := fs.Bool("allow-indexing", false, "let search engines index preview URLs (hidden by default)")
 	migrateCmd := fs.String("migrate-command", "", "command run once in the preview before it goes live, for example \"npm run migrate\" (empty clears it)")
 	migrateTimeout := fs.Int("migrate-timeout", 0, "seconds the migrate command may run (0 uses the platform default)")
+	hostTpl := fs.String("host-template", "", "preview hostname pattern with {number} or {branch}, for example pr-{number}.{domain} (empty clears it)")
+	wildcard := fs.String("wildcard-domain", "", "domain the host template renders under, one of the app's own domains")
 	imageTag := fs.String("image-tag-template", "", "deploy a prebuilt image per pull request, for example ghcr.io/org/app:pr-{number} (empty clears it)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSettingsUsage(prog)) }
 
@@ -132,6 +134,10 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 			req.MigrateTimeoutSeconds = migrateTimeout
 		case "image-tag-template":
 			req.ImageTagTemplate = imageTag
+		case "host-template":
+			req.HostTemplate = hostTpl
+		case "wildcard-domain":
+			req.WildcardDomain = wildcard
 		}
 	})
 
@@ -172,6 +178,9 @@ func printPreviewSettings(out io.Writer, appName string, p apiclient.PreviewPoli
 	if p.MigrateCommand != "" {
 		_, _ = fmt.Fprintf(tw, "migrate command\t%s (timeout %ds)\n", p.MigrateCommand, p.EffectiveMigrateTimeoutSeconds)
 	}
+	if p.HostTemplate != "" {
+		_, _ = fmt.Fprintf(tw, "host template\t%s (domain %s)\n", p.HostTemplate, p.WildcardDomain)
+	}
 	if p.ImageTagTemplate != "" {
 		_, _ = fmt.Fprintf(tw, "prebuilt image\t%s\n", p.ImageTagTemplate)
 	}
@@ -203,6 +212,8 @@ Flags:
   --allow-indexing           let search engines index preview URLs
   --migrate-command string   command run once in the preview before it goes live (needs database strategy none)
   --migrate-timeout int      seconds the migrate command may run (0 uses the platform default)
+  --host-template str        preview hostname pattern, placeholders {number} {branch} {domain}
+  --wildcard-domain str      domain for {domain}; must be one of the app's own domains
   --image-tag-template str   prebuilt image per pull request, placeholders {number} {sha} {short_sha} {branch}
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)

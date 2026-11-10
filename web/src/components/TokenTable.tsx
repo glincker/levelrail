@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import {
   BotGlassIcon,
@@ -76,19 +77,12 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
   const [rotateTarget, setRotateTarget] = useState<TokenResource | null>(null)
   if (tokens.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-        <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <KeyGlassIcon className="size-6" />
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">
-            {t('tokens.emptyTitle')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {t('tokens.emptyBody')}
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        kind="first-run"
+        icon={<KeyGlassIcon className="size-5" aria-hidden="true" />}
+        title={t('tokens.emptyTitle')}
+        description={t('tokens.emptyBody')}
+      />
     )
   }
 

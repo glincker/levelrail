@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"io"
 	"log/slog"
 	"net/http"
@@ -85,6 +86,7 @@ func (rt *Router) handleAppTerminal(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "exec is not configured on this control plane")
 		return
 	}
+	defer footprint.Attribute("terminal")()
 
 	name := r.PathValue("name")
 	svc, ok := rt.loadExecApp(w, r, name)

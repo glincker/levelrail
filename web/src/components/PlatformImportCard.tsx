@@ -10,11 +10,23 @@ import { Progress } from '@/components/ui/progress'
 import {
   useApplyPlatformImport,
   useDiscoverPlatformImport,
+  useUndoPlatformImport,
+  type ImportJournalRecord,
+  type ImportUndoItem,
   type ImportPlatform,
   type PlatformImportReport,
   type PlatformImportRequest,
 } from '../queries/platformImport'
 import { PlatformImportReportList } from './PlatformImportReportList'
+import {
+  PlatformImportExtras,
+  PlatformImportExtrasToggles,
+} from './PlatformImportExtras'
+import {
+  defaultExtrasToggles,
+  hasExtras,
+  type ExtrasToggles,
+} from '../lib/platformImportExtras'
 import { isSelectable, itemKey } from '../lib/platformImport'
 
 type Step = 'connect' | 'review' | 'done'
@@ -50,8 +62,13 @@ export function PlatformImportCard() {
   const [skipTaken, setSkipTaken] = useState(false)
   const [report, setReport] = useState<PlatformImportReport | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [extras, setExtras] = useState<ExtrasToggles>(defaultExtrasToggles)
+  // The journal of what apply created lives only in this state, so undo works until the page closes.
+  const [journal, setJournal] = useState<ImportJournalRecord[]>([])
+  const [undone, setUndone] = useState<ImportUndoItem[] | null>(null)
   const discover = useDiscoverPlatformImport()
   const apply = useApplyPlatformImport()
+  const undo = useUndoPlatformImport()
 
   const tokenKey = platforms.find((p) => p.id === platform)?.tokenKey
   const tokenLabel = tokenKey ? t(`platformImport.${tokenKey}`) : undefined
@@ -72,8 +89,12 @@ export function PlatformImportCard() {
     setToken('')
     setReport(null)
     setSelected(new Set())
+    setExtras(defaultExtrasToggles)
+    setJournal([])
+    setUndone(null)
     discover.reset()
     apply.reset()
+    undo.reset()
     setStep('connect')
   }
 
@@ -94,15 +115,34 @@ export function PlatformImportCard() {
       .filter((i) => selected.has(itemKey(i)))
       .map((i) => i.source_id)
     apply.mutate(
-      { ...baseRequest(), only },
+      {
+        ...baseRequest(),
+        only,
+        // An empty only list means every app, so an extras-only run says so explicitly.
+        extras_only: only.length === 0 || undefined,
+        import_extras: hasExtras(report) || undefined,
+        include_credentials: extras.includeCredentials || undefined,
+        enable_backup_schedules: extras.enableSchedules || undefined,
+        enable_imported_channels: extras.enableChannels || undefined,
+      },
       {
         onSuccess: (r) => {
           setReport(r)
+          setJournal(r.journal ?? [])
           setToken('')
           setStep('done')
         },
       },
     )
+  }
+
+  function onUndo() {
+    undo.mutate(journal, {
+      onSuccess: (items) => {
+        setUndone(items)
+        setJournal([])
+      },
+    })
   }
 
   function toggle(key: string, next: boolean) {
@@ -140,9 +180,44 @@ export function PlatformImportCard() {
             </Banner>
           ))}
           <PlatformImportReportList items={report.items} />
-          <Button variant="outline" onClick={reset}>
-            {t('platformImport.another')}
-          </Button>
+          {hasExtras(report) ? <PlatformImportExtras report={report} /> : null}
+          {undone ? (
+            <ul className="space-y-0.5 text-sm text-muted-foreground">
+              {undone.map((u) => (
+                <li key={`${u.kind}-${u.name}`}>
+                  {t('platformImport.extras.undoItem', {
+                    name: u.name,
+                    action: t(`platformImport.extras.undo.${u.action}`),
+                  })}
+                  {u.reason ? `: ${u.reason}` : ''}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {undo.isError ? (
+            <Banner
+              variant="critical"
+              title={t('platformImport.extras.undoFailed')}
+            >
+              {errorMessage(undo.error)}
+            </Banner>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {hasExtras(report) ? (
+              <Button
+                variant="outline"
+                onClick={onUndo}
+                disabled={journal.length === 0 || undo.isPending}
+              >
+                {t('platformImport.extras.undoButton', {
+                  count: journal.length,
+                })}
+              </Button>
+            ) : null}
+            <Button variant="outline" onClick={reset}>
+              {t('platformImport.another')}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
@@ -156,11 +231,11 @@ export function PlatformImportCard() {
           <CardTitle>{t('platformImport.reviewTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {report.items.length === 0 ? (
+          {report.items.length === 0 && !hasExtras(report) ? (
             <p className="text-sm text-muted-foreground">
               {t('platformImport.nothingFound')}
             </p>
-          ) : (
+          ) : report.items.length === 0 ? null : (
             <PlatformImportReportList
               items={report.items}
               selected={selected}
@@ -176,6 +251,15 @@ export function PlatformImportCard() {
               {n}
             </Banner>
           ))}
+          {hasExtras(report) ? (
+            <>
+              <PlatformImportExtras report={report} />
+              <PlatformImportExtrasToggles
+                value={extras}
+                onChange={setExtras}
+              />
+            </>
+          ) : null}
           {apply.isError ? (
             <Banner variant="critical" title={t('platformImport.importFailed')}>
               {errorMessage(apply.error)}
@@ -187,11 +271,15 @@ export function PlatformImportCard() {
           <div className="flex gap-2">
             <Button
               onClick={onApply}
-              disabled={applying || selected.size === 0}
+              disabled={applying || (selected.size === 0 && !hasExtras(report))}
             >
               {applying
                 ? t('platformImport.importing')
-                : t('platformImport.importSelected', { count: selected.size })}
+                : selected.size === 0 && hasExtras(report)
+                  ? t('platformImport.extras.importOnly')
+                  : t('platformImport.importSelected', {
+                      count: selected.size,
+                    })}
             </Button>
             <Button variant="outline" onClick={reset} disabled={applying}>
               {t('platformImport.back')}

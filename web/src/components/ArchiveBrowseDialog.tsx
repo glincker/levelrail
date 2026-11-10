@@ -71,7 +71,10 @@ export function ArchiveBrowseDialog({
           ))}
         </div>
         <div className="max-h-[50vh] overflow-auto rounded-lg border border-border">
-          <table className="w-full text-left text-xs">
+          <table
+            aria-label={t('a11y.tables.archiveFiles', { ns: 'common' })}
+            className="w-full text-left text-xs"
+          >
             <thead className="sticky top-0 bg-card text-muted-foreground">
               <tr>
                 {columns.map((c) => (

@@ -83,7 +83,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
 		}
 	}
-	resp, ok := rt.deployComposeBody(w, r, name, body, opts)
+	resp, ok := rt.lockedComposeDeploy(w, r, name, body, opts)
 	if !ok {
 		return
 	}
@@ -108,6 +108,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	if instanceOnlyTemplates[opts.templateID] && !callerIsInstance(r) {
 		writeError(w, http.StatusForbidden, msgTemplateInstanceOnly)
 		return composeDeployResponse{}, false
+	}
+	// Serializes the stack name with create and clone; every caller holds composeGitLock first.
+	if !opts.nameLocked {
+		defer lockAppName(name)()
 	}
 	trace := deploytrace.NewBuffered()
 	parseSpan := trace.Begin(r.Context(), deploytrace.StepComposeParse, fmt.Sprintf("parsing compose file (%d bytes)", len(body)))
@@ -195,7 +199,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	for _, svc := range services {
 		serviceNames = append(serviceNames, svc.Name)
 	}
-	if !rt.authorizeServiceNames(w, r, name, serviceNames) {
+	if opts.noCaller {
+		if !rt.refuseForeignServiceNames(r.Context(), w, name, previousServices, serviceNames) {
+			return composeDeployResponse{}, false
+		}
+	} else if !rt.authorizeServiceNames(w, r, name, serviceNames) {
 		return composeDeployResponse{}, false
 	}
 
@@ -205,6 +213,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	}
 	defer quotaRelease()
 
+	if !rt.storeComposeSecretFiles(w, r, services) {
+		return composeDeployResponse{}, false
+	}
+	rt.pruneStaleComposeSecretFiles(r.Context(), previousServices, services)
 	templateDefaults := rt.planTemplateDefaults(r.Context(), name, opts.templateID, file, services, previousServices)
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -216,7 +228,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	traceComposePlan(r.Context(), trace, name, services)
 	out := make([]appResource, 0, len(services))
 	for _, svc := range services {
-		if err := rt.appCompose.SaveDesiredService(r.Context(), svc); err != nil {
+		save := rt.appCompose.SaveDesiredService
+		if opts.suspended {
+			save = rt.appCompose.SaveSuspendedDesiredService
+		}
+		if err := save(r.Context(), svc); err != nil {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
 		}
@@ -236,7 +252,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
 	}
 
-	revision := rt.recordComposeRevision(r, name, body, opts)
+	revision := 0
+	if stored := redactedComposeBody(rt.logger, body); stored != nil {
+		revision = rt.recordComposeRevision(r, name, stored, opts)
+	}
 	rt.nudgeReconciler()
 	return composeDeployResponse{AppID: name, Services: out, Notices: notices, Revision: revision, Skipped: skipped}, true
 }
@@ -272,6 +291,8 @@ func composeConfigChanged(prev, next store.DesiredService) bool {
 		!maps.Equal(prev.Labels, next.Labels) ||
 		!slices.Equal(prev.Command, next.Command) ||
 		!slices.Equal(prev.Entrypoint, next.Entrypoint) ||
+		prev.User != next.User || prev.WorkingDir != next.WorkingDir ||
+		!jsonEqual(prev.Runtime, next.Runtime) ||
 		prev.Port != next.Port ||
 		!ptrIntEqual(prev.HostPort, next.HostPort) ||
 		!slices.Equal(prev.PublishedPorts, next.PublishedPorts)
@@ -329,6 +350,12 @@ func (rt *Router) pruneStaleComposeServices(ctx context.Context, appName string,
 			continue
 		}
 		rt.teardownServiceContainers(svc.Name, svc.NodeID)
+		// A removed service must not leave encrypted values or its key behind.
+		if rt.secrets != nil {
+			if err := rt.secrets.DeleteAll(ctx, svc.Name); err != nil {
+				rt.logger.Warn("api: deploy compose: remove pruned service secrets failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
+			}
+		}
 	}
 }
 
@@ -458,4 +485,111 @@ func (rt *Router) admitComposeQuota(w http.ResponseWriter, r *http.Request, prev
 		}
 	}
 	return rt.quotaMu.Unlock, true
+}
+
+// redactedComposeBody strips inline secret bodies before history keeps the
+// file; on a parse failure nothing is stored, so plaintext never lands in a revision.
+func redactedComposeBody(logger *slog.Logger, body []byte) []byte {
+	out, _, err := compose.RedactSecretContent(body)
+	if err != nil {
+		logger.Error("api: compose: redact revision failed", slog.String("error", err.Error()))
+		return nil
+	}
+	return out
+}
+
+// storeComposeSecretFiles moves compose-origin secret file bodies into the
+// secrets store and blanks them in desired state. A redacted marker (a
+// rollback or upgrade of a stored revision) reuses the stored value, and a
+// missing one refuses the deploy before anything is written.
+func (rt *Router) storeComposeSecretFiles(w http.ResponseWriter, r *http.Request, services []store.DesiredService) bool {
+	type pending struct {
+		svc, file int
+		plain     string
+		write     bool
+	}
+	var todo []pending
+	for i := range services {
+		for j, f := range services[i].Files {
+			if !f.Secret || !f.NoExpand {
+				continue
+			}
+			if rt.composeSecrets == nil {
+				writeError(w, http.StatusBadRequest, "this compose file has a secret file but no secrets master key is configured")
+				return false
+			}
+			key := store.FileSecretKey(f.Path)
+			if f.Content != compose.RedactedSecretMarker {
+				if !rt.allowProviderRefs(w, r, f.Content) {
+					return false
+				}
+				todo = append(todo, pending{svc: i, file: j, plain: f.Content, write: true})
+				continue
+			}
+			plain, err := rt.composeSecrets.Resolve(r.Context(), services[i].Name, key)
+			if errors.Is(err, secrets.ErrValueNotFound) {
+				writeError(w, http.StatusConflict, "secret file "+f.Path+" was redacted in this revision and has no stored value, deploy it again with its content")
+				return false
+			}
+			if err != nil {
+				rt.internalError(w, "api: deploy compose: resolve secret file failed", err, slog.String("service", services[i].Name))
+				return false
+			}
+			todo = append(todo, pending{svc: i, file: j, plain: plain})
+		}
+	}
+	for _, p := range todo {
+		f := &services[p.svc].Files[p.file]
+		if p.write {
+			if err := rt.composeSecrets.SetValue(r.Context(), services[p.svc].Name, store.FileSecretKey(f.Path), p.plain); err != nil {
+				rt.internalError(w, "api: deploy compose: store secret file failed", err, slog.String("service", services[p.svc].Name))
+				return false
+			}
+		}
+		f.Hash = store.FileContentHash(services[p.svc].Name, f.Path, p.plain)
+		f.Content = ""
+	}
+	return true
+}
+
+// composeSecretDeleter is optional on the secret store so older fakes and
+// stores without delete support keep working.
+type composeSecretDeleter interface {
+	DeleteValue(ctx context.Context, serviceName, envKey string) error
+}
+
+// pruneStaleComposeSecretFiles deletes stored bodies of secret files the new
+// compose revision no longer declares, so dropped secrets do not linger.
+// Only services that still exist are touched; removed services are cleaned elsewhere.
+func (rt *Router) pruneStaleComposeSecretFiles(ctx context.Context, previous, next []store.DesiredService) {
+	del, ok := rt.composeSecrets.(composeSecretDeleter)
+	if !ok || rt.composeSecrets == nil {
+		return
+	}
+	keep := map[string]bool{}
+	for _, svc := range next {
+		for _, f := range svc.Files {
+			if f.Secret {
+				keep[svc.Name+"|"+store.FileSecretKey(f.Path)] = true
+			}
+		}
+	}
+	live := map[string]bool{}
+	for _, svc := range next {
+		live[svc.Name] = true
+	}
+	for _, svc := range previous {
+		if !live[svc.Name] {
+			continue
+		}
+		for _, f := range svc.Files {
+			key := store.FileSecretKey(f.Path)
+			if !f.Secret || keep[svc.Name+"|"+key] {
+				continue
+			}
+			if err := del.DeleteValue(ctx, svc.Name, key); err != nil {
+				slog.Warn("api: deploy compose: delete stale secret file failed", slog.String("service", svc.Name), slog.Any("error", err))
+			}
+		}
+	}
 }

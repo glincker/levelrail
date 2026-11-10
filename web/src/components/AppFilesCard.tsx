@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -67,7 +68,12 @@ export function AppFilesCard({ appName }: { appName: string }) {
             {t('loadError')}
           </p>
         ) : files.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('empty')}</p>
+          <EmptyState
+            kind="first-run"
+            icon={<FileTextGlassIcon className="size-5" aria-hidden="true" />}
+            title={t('empty')}
+            description={t('emptyHint')}
+          />
         ) : (
           <ul className="divide-y rounded-lg border">
             {files.map((file) => (

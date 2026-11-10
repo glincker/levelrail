@@ -46,7 +46,8 @@ func (rt *Router) handleExportApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
-	files, err := appexport.Render(appexport.Input{AppName: appName, Services: rt.exportInput(r.Context(), appName, svcs)})
+	notes := rt.exportNotes(r.Context(), names)
+	files, err := appexport.Render(appexport.Input{AppName: appName, Services: rt.exportInput(r.Context(), appName, svcs), Description: notes.Description, Notes: notes.Notes})
 	if errors.Is(err, appexport.ErrInvalidName) {
 		writeError(w, http.StatusUnprocessableEntity, "export refused: "+err.Error())
 		return
@@ -131,7 +132,7 @@ func (rt *Router) exportInput(ctx context.Context, appName string, svcs []store.
 	out := make([]appexport.Service, 0, len(svcs))
 	for _, s := range svcs {
 		e := appexport.Service{
-			Key: key(s.Name), Image: s.Image, Command: s.Command, Entrypoint: s.Entrypoint,
+			Key: key(s.Name), Image: s.Image, Command: s.Command, Entrypoint: s.Entrypoint, User: s.User, WorkingDir: s.WorkingDir, Runtime: s.Runtime,
 			Port: s.Port, Domains: s.Domains, PullPolicy: s.PullPolicy,
 		}
 		settings, ok := rt.envSettingsFor(ctx, s.Name)

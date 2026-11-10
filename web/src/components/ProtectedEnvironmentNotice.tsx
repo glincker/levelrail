@@ -1,4 +1,5 @@
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { Alert } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 
 // Gates a deploy-shaped action (deploy, rollback, promote) whose target
@@ -18,7 +19,7 @@ export function ProtectedEnvironmentNotice({
   onAcknowledgedChange: (next: boolean) => void
 }) {
   return (
-    <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+    <Alert variant="warning" className="space-y-2">
       <div className="flex items-start gap-2">
         <TriangleAlertGlassIcon
           className="mt-0.5 size-6 shrink-0 text-tone-warning"
@@ -39,6 +40,6 @@ export function ProtectedEnvironmentNotice({
         />
         I understand and want to proceed.
       </label>
-    </div>
+    </Alert>
   )
 }

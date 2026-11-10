@@ -1,3 +1,4 @@
+import '@/styles/cleanupMotion.css'
 import { cn } from '@/lib/utils'
 import type { Tone } from '../kit/tone'
 

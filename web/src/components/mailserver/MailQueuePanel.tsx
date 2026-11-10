@@ -79,7 +79,10 @@ export function MailQueuePanel() {
         <p className="text-xs text-muted-foreground">{t('queue.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table
+            aria-label={t('a11y.tables.mailQueue', { ns: 'common' })}
+            className="w-full text-left text-xs"
+          >
             <thead className="text-muted-foreground">
               <tr>
                 <th className="py-1 pr-3 font-medium">

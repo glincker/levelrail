@@ -3,5 +3,83 @@
     "saving": "Saving",
     "saved": "Saved",
     "error": "Could not save"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "status": "Page {{page}} of {{count}}",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "stepper": {
+    "decrease": "Decrease",
+    "increase": "Increase"
+  },
+  "chip": {
+    "remove": "Remove {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "Time range",
+    "refresh": "Refresh"
+  },
+  "logToolbar": {
+    "level": "Log level",
+    "levels": {
+      "all": "All",
+      "errors": "Errors",
+      "warnings": "Warnings",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "filterPlaceholder": "Filter lines",
+    "filterLabel": "Filter log lines",
+    "jumpToError": "Jump to first error",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copiedAnnounce": "Copied to clipboard",
+    "download": "Download",
+    "shownOf": "{{shown}} of {{total}} lines"
+  },
+  "filterChips": {
+    "group": "Active filters",
+    "clearAll": "Clear all filters",
+    "showing": "Showing {{shown}} of {{total}}",
+    "emptyTitle": "Nothing matches these filters",
+    "emptyBody": "All {{total}} items are still here. Remove a filter or clear them all.",
+    "status": "Status: {{value}}",
+    "search": "Search: {{value}}",
+    "tag": "Tag: {{value}}",
+    "environment": "Environment: {{value}}",
+    "engine": "Engine: {{value}}",
+    "labels": "Labels: {{value}}"
+  },
+  "listKeys": {
+    "title": "Keyboard shortcuts",
+    "down": "next row",
+    "up": "previous row",
+    "select": "select row",
+    "open": "open row",
+    "filter": "focus the filter",
+    "hint": "show or hide this",
+    "close": "Hide keyboard shortcuts"
+  },
+  "guidedEmpty": {
+    "viaCli": "Or do it from the CLI",
+    "cliLabel": "CLI command"
+  },
+  "savedViews": {
+    "button": "Views",
+    "label": "Saved views",
+    "empty": "No saved views yet.",
+    "apply": "Apply view {{name}}",
+    "delete": "Delete view {{name}}",
+    "deleted": "View deleted",
+    "saved": "Saved view {{name}}",
+    "namePlaceholder": "Save current filters as",
+    "shareTeam": "Share with my team",
+    "teamBadge": "Team",
+    "save": "Save view"
   }
 }

@@ -26,6 +26,8 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
+	// Read, not root: rows are filtered by the caller's app and database policies; org tenants get 403.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/resources", rt.requireAbility(AbilityRead, rt.handleListNodeResources))
 	// Mesh status and key rotation, same AbilityRoot boundary: WireGuard
 	// peer/handshake data and a node's own key material are fleet
 	// infrastructure, not app-scoped, matching every other node route
@@ -75,6 +77,8 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// boundary and nil-telemetry 501 shape as every route above, and the
 	// same query-param contract as GET /apps/{name}/metrics above it.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/metrics", rt.requireAbility(AbilityRoot, rt.handleQueryNodeMetrics))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/thresholds", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleGetNodeThresholds))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/thresholds", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleSetNodeThresholds))
 	// Fleet-wide latest CPU/memory/disk snapshot plus rollup
 	// (node_resource_usage.go), the node-scoped counterpart to
 	// GET /apps/resource-usage above: registered as a literal path
@@ -86,6 +90,9 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// HostPatchCollector), a single current fact rather than a time
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/patch/preview", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodePatchPreview))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/patch/apply", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodePatchApply))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/patch/runs", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleListNodePatchRuns))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
 	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
 	// a read-and-suggest layer over the same host samples

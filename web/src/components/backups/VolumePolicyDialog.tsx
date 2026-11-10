@@ -100,6 +100,9 @@ function PolicyForm({
         ))}
       </div>
       <FieldHint>{t('policy.retentionHint')}</FieldHint>
+      {initial.hooks_hidden ? (
+        <FieldHint>{t('policy.hooksHidden')}</FieldHint>
+      ) : null}
       <Field>
         <FieldLabel htmlFor="policy-pre">{t('policy.preHook')}</FieldLabel>
         <Input

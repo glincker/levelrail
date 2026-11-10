@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type recordingExec struct {
@@ -47,5 +48,27 @@ func TestReadPoolerPools_AuthFailureIsUnavailable(t *testing.T) {
 	}
 	if _, err := ReadPoolerPools(context.Background(), ex, "c1", 6432, ""); !errors.Is(err, ErrPoolerStatsUnavailable) {
 		t.Errorf("empty password error = %v, want ErrPoolerStatsUnavailable", err)
+	}
+}
+
+func TestConnectionsScriptValkeyMatchesRedis(t *testing.T) {
+	want, ok := connectionsScript(store.EngineRedis)
+	got, gok := connectionsScript(store.EngineValkey)
+	if !ok || !gok || got != want {
+		t.Fatalf("valkey script = %q ok=%v, want redis script %q", got, gok, want)
+	}
+}
+
+func TestConnectionsScriptKeyDBUsesItsClient(t *testing.T) {
+	got, ok := connectionsScript(store.EngineKeyDB)
+	if !ok || !strings.Contains(got, "command -v keydb-cli") {
+		t.Fatalf("keydb script = %q ok=%v", got, ok)
+	}
+}
+
+func TestHealthConnectionsScriptDragonflyNeedsNoCLI(t *testing.T) {
+	got, ok := connectionsScript(store.EngineDragonfly)
+	if !ok || !strings.Contains(got, "/dev/tcp/127.0.0.1/6379") || strings.Contains(got, "-cli") {
+		t.Fatalf("dragonfly script = %q ok=%v", got, ok)
 	}
 }

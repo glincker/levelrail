@@ -24,7 +24,8 @@ import { useExperimentalFeatures } from './useExperimental'
 
 const NEXT_THEME: Record<Theme, Theme> = {
   light: 'dark',
-  dark: 'system',
+  dark: 'oled',
+  oled: 'system',
   system: 'light',
 }
 const NO_DOMAINS: readonly never[] = []

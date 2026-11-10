@@ -344,5 +344,27 @@
       "arch": "Architecture",
       "anyArch": "Any architecture"
     }
+  },
+  "importTemplate": {
+    "button": "Import compose",
+    "title": "Import a template",
+    "description": "Paste or load a compose file to save it as your own template. Nothing is deployed.",
+    "idLabel": "Template id",
+    "nameLabel": "Name",
+    "descriptionLabel": "Description (optional)",
+    "fileLabel": "Load a compose file",
+    "composeLabel": "Compose file",
+    "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
+    "variablesLabel": "Variables (optional, comma separated)",
+    "variablesPlaceholder": "DB_PASSWORD, API_KEY",
+    "cancel": "Cancel",
+    "submit": "Import template",
+    "submitting": "Importing...",
+    "tooLarge": "That file is too large for a template.",
+    "success": "Imported \"{{name}}\" as a template.",
+    "idInvalid": "Use 2 to 63 lowercase letters, digits or dashes.",
+    "nameRequired": "Name is required.",
+    "composeRequired": "A compose file is required.",
+    "variablesInvalid": "Variables must be UPPER_CASE names."
   }
 }

@@ -76,6 +76,9 @@ func (rt *Router) handleListAllEnvironments(w http.ResponseWriter, r *http.Reque
 	if err == nil {
 		envs, err = rt.filterEnvironments(r, envs)
 	}
+	if err == nil {
+		envs, err = rt.filterEnvironmentGrants(r, envs)
+	}
 	if err != nil {
 		rt.internalError(w, "api: list all environments failed", err)
 		return
@@ -84,7 +87,14 @@ func (rt *Router) handleListAllEnvironments(w http.ResponseWriter, r *http.Reque
 	for _, e := range envs {
 		out = append(out, environmentListResource{environmentResource: toEnvironmentResource(e.Environment), AppCount: e.AppCount, DatabaseCount: e.DatabaseCount})
 	}
-	writeJSON(w, http.StatusOK, out)
+	sortQuery(r, out, map[string]func(a, b environmentListResource) int{
+		"name": func(a, b environmentListResource) int {
+			return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+		},
+		"created": func(a, b environmentListResource) int { return strings.Compare(a.CreatedAt, b.CreatedAt) },
+		"apps":    func(a, b environmentListResource) int { return a.AppCount - b.AppCount },
+	})
+	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }
 
 type createGlobalEnvironmentRequest struct {

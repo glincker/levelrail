@@ -122,6 +122,12 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateHooks(name); err != nil {
 		return err
 	}
+	if err := svc.validateProcess(name); err != nil {
+		return err
+	}
+	if err := svc.validateRuntime(name); err != nil {
+		return err
+	}
 	if err := svc.validateFiles(name); err != nil {
 		return err
 	}
@@ -144,6 +150,9 @@ func (svc *Service) validate(name string) error {
 		return err
 	}
 	if err := svc.Autoscale.Validate(name, svc.Replicas); err != nil {
+		return err
+	}
+	if err := svc.Images.Validate(name); err != nil {
 		return err
 	}
 	if err := svc.validateNext(name); err != nil {

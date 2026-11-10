@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -88,12 +88,9 @@ func validateTagName(name string) (string, error) {
 	return name, nil
 }
 
-// maxTagsPerApp reads APP_MAX_TAGS_PER_APP (default 20).
-func maxTagsPerApp() int {
-	if n, err := strconv.Atoi(os.Getenv("APP_MAX_TAGS_PER_APP")); err == nil && n > 0 {
-		return n
-	}
-	return 20
+// maxTagsPerApp is the live per-app tag cap.
+func (rt *Router) maxTagsPerApp(ctx context.Context) int {
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyMaxTagsPerApp)
 }
 
 var errTooManyTags = errors.New("app has reached the maximum number of tags")
@@ -128,7 +125,7 @@ func (rt *Router) attachTagByName(ctx context.Context, appName, name string) (st
 	for _, t := range existing {
 		attached = attached || t.ID == tag.ID
 	}
-	if !attached && len(existing) >= maxTagsPerApp() {
+	if !attached && len(existing) >= rt.maxTagsPerApp(ctx) {
 		return store.Tag{}, errTooManyTags
 	}
 	if err := rt.tags.AttachAppTag(ctx, tag.ID, appName); err != nil {
@@ -257,15 +254,22 @@ func (rt *Router) handleListAppsByTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	canRead, _, err := rt.callerAppVisibility(r)
+	if err != nil {
+		rt.internalError(w, "api: list apps by tag: visibility", err)
+		return
+	}
 	names, err := rt.tags.ListAppNamesByTag(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: list apps by tag failed", err, slog.String("id", id))
 		return
 	}
 
-	out := make([]tagAppResource, len(names))
-	for i, name := range names {
-		out[i] = tagAppResource{Name: name}
+	out := make([]tagAppResource, 0, len(names))
+	for _, name := range names {
+		if canRead(name) {
+			out = append(out, tagAppResource{Name: name})
+		}
 	}
 	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }

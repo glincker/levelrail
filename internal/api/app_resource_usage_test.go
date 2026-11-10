@@ -44,6 +44,8 @@ func TestHandleAppResourceUsage_RanksAppsByLatestSample(t *testing.T) {
 		{ResourceID: "service:web", Metric: "cpu_percent", Timestamp: now.Add(-time.Minute), Value: 10},
 		{ResourceID: "service:web", Metric: "cpu_percent", Timestamp: now, Value: 85}, // newest: this is the one that should win
 		{ResourceID: "service:web", Metric: "memory_usage_bytes", Timestamp: now, Value: 536870912},
+		{ResourceID: "service:web", Metric: "disk_read_bytes", Timestamp: now, Value: 4096},
+		{ResourceID: "service:web", Metric: "disk_write_bytes", Timestamp: now, Value: 8192},
 		{ResourceID: "service:worker", Metric: "cpu_percent", Timestamp: now, Value: 12},
 		{ResourceID: "service:deleted-app", Metric: "cpu_percent", Timestamp: now, Value: 99}, // no longer a real app: must not appear
 	})
@@ -81,6 +83,10 @@ func TestHandleAppResourceUsage_RanksAppsByLatestSample(t *testing.T) {
 		t.Errorf("web.MemoryUsageBytes = %v, want 536870912", web.MemoryUsageBytes)
 	}
 
+	if web.DiskReadBytes == nil || *web.DiskReadBytes != 4096 || web.DiskWriteBytes == nil || *web.DiskWriteBytes != 8192 {
+		t.Errorf("web disk = %v / %v, want 4096 / 8192", web.DiskReadBytes, web.DiskWriteBytes)
+	}
+
 	worker, ok := byName["worker"]
 	if !ok {
 		t.Fatal("response missing worker")
@@ -95,6 +101,13 @@ func TestHandleAppResourceUsage_RanksAppsByLatestSample(t *testing.T) {
 	}
 	if idle.CPUPercent != nil {
 		t.Errorf("idle.CPUPercent = %v, want nil (no telemetry ever recorded)", idle.CPUPercent)
+	}
+
+	if idle.DiskReadBytes != nil || idle.DiskWriteBytes != nil {
+		t.Error("idle disk fields set, want absent")
+	}
+	if byName["worker"].DiskReadBytes != nil {
+		t.Error("worker disk_read_bytes set, want absent")
 	}
 
 	if _, ok := byName["deleted-app"]; ok {

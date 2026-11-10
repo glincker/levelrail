@@ -54,6 +54,10 @@ type freezeOverride struct {
 // override, otherwise the note recorded on the attempt. ok false means a
 // response was already written.
 func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string, o freezeOverride) (note string, ok bool) {
+	// Protection has no override: a protected app takes no deploy path at all.
+	if rt.refuseIfProtected(w, r, name) {
+		return "", false
+	}
 	if rt.deploySafety == nil {
 		return "", true
 	}
@@ -152,12 +156,31 @@ func (rt *Router) finishSuperseded(ctx context.Context, id string, deployErr err
 	return true
 }
 
+type freezeOverrideNoteKey struct{}
+
+// withFreezeOverrideNote carries an operator's accepted freeze override to the
+// attempt row, and stops holdIfFrozen parking the deploy it already allowed.
+func withFreezeOverrideNote(ctx context.Context, note string) context.Context {
+	if note == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, freezeOverrideNoteKey{}, note)
+}
+
+func freezeOverrideNoteFrom(ctx context.Context) string {
+	note, _ := ctx.Value(freezeOverrideNoteKey{}).(string)
+	return note
+}
+
 // holdIfFrozen parks an automatic git deploy during a freeze window.
 func (rt *Router) holdIfFrozen(ctx context.Context, name string, req deploy.HeldRequest, image string) (bool, string) {
-	if rt.deploySafety == nil {
+	if rt.deploySafety == nil || freezeOverrideNoteFrom(ctx) != "" {
 		return false, ""
 	}
 	status, err := deploy.CheckFreeze(ctx, rt.deploySafety, name, time.Now())
+	if err == nil && !status.Frozen {
+		status = rt.composeMemberFreeze(ctx, name, status)
+	}
 	if err != nil || !status.Frozen {
 		if err != nil {
 			rt.logger.Error("api: check deploy freeze failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -172,6 +195,18 @@ func (rt *Router) holdIfFrozen(ctx context.Context, name string, req deploy.Held
 	return true, fmt.Sprintf("held: %s, deploy %s will run when the window ends\n", (&deploy.FrozenError{Status: status}).Error(), id)
 }
 
+// replayContext restores what a saved request carried, so a replayed override
+// deploy still records its FreezeOverride reason.
+func replayContext(ctx context.Context, req deploy.HeldRequest) context.Context {
+	if len(req.BuildArgs) > 0 {
+		ctx = withExtraBuildArgs(ctx, req.BuildArgs)
+	}
+	if req.FreezeNote != "" {
+		ctx = withFreezeOverrideNote(ctx, req.FreezeNote)
+	}
+	return withHeldBuildSettings(ctx, req.BuildSettings)
+}
+
 // replayGitDeploy re-runs a held or queued webhook deploy from its saved request.
 func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.HeldRequest) error {
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
@@ -181,9 +216,7 @@ func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.H
 	if req.Branch != "" {
 		gs.Branch = req.Branch
 	}
-	if len(req.BuildArgs) > 0 {
-		ctx = withExtraBuildArgs(ctx, req.BuildArgs)
-	}
+	ctx = replayContext(ctx, req)
 	order := rt.nextOrder(ctx, name, req.CommitSHA, req.Before, req.CommitAt)
 	status, msg := rt.deployFromGitSource(ctx, name, *gs, req.CheckoutRef, req.CommitLabel, order)
 	if status >= http.StatusBadRequest {
@@ -197,6 +230,10 @@ func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.H
 func (rt *Router) ReleaseHandlers() map[string]deploy.ReleaseHandler {
 	return map[string]deploy.ReleaseHandler{
 		deploy.HeldKindGit: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
+			// A compose replay applies inside the held attempt, so its outcome is the real one.
+			if gs, err := rt.gitSources.GetGitSource(ctx, a.ServiceName); err == nil && gs.ComposePath != "" {
+				ctx = withAdoptedAttempt(ctx, a.ID)
+			}
 			return rt.replayGitDeploy(ctx, a.ServiceName, req)
 		},
 		deploy.HeldKindPush: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {

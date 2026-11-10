@@ -3,22 +3,36 @@ package api
 import "net/http"
 
 // registerJobRoutes serves scheduled jobs under /api/v1/apps/{name}/jobs and
-// the legacy /scheduled-tasks alias with the same handlers. Reads need
-// AbilityRead, config changes AbilityWrite, and anything that runs a
-// command right now (run) AbilityDeploy, matching restart and stop.
+// the legacy /scheduled-tasks alias, plus one-off runs. Setting or running a
+// command follows console exec access: AbilityRoot plus the app's exec setting.
+// Patterns stay literal so the authz matrix and API reference can read them.
 func (rt *Router) registerJobRoutes(mux *http.ServeMux) {
-	for _, base := range []string{"/api/v1/apps/{name}/jobs", "/api/v1/apps/{name}/scheduled-tasks"} {
-		mux.HandleFunc("POST "+base, rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateScheduledTask))
-		mux.HandleFunc("GET "+base, rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTasks))
-		mux.HandleFunc("GET "+base+"/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTask))
-		mux.HandleFunc("PUT "+base+"/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateScheduledTask))
-		mux.HandleFunc("DELETE "+base+"/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteScheduledTask))
-		mux.HandleFunc("POST "+base+"/{id}/run", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRunScheduledTaskNow))
-		mux.HandleFunc("POST "+base+"/{id}/enable", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetScheduledTaskEnabled(true)))
-		mux.HandleFunc("POST "+base+"/{id}/disable", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetScheduledTaskEnabled(false)))
-		mux.HandleFunc("GET "+base+"/{id}/runs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTaskRuns))
-		mux.HandleFunc("GET "+base+"/{id}/runs/{run}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTaskRun))
-	}
+	mux.HandleFunc("POST /api/v1/jobs/runs", rt.requireAbilityForResource(AbilityRoot, oneShotAppFromBody, rt.handleStartOneShotJob))
+	mux.HandleFunc("GET /api/v1/jobs/runs/{id}", rt.requireAbilityForResource(AbilityRead, rt.oneShotAppFromID, rt.handleGetOneShotJob))
+	mux.HandleFunc("POST /api/v1/jobs/runs/{id}/cancel", rt.requireAbilityForResource(AbilityRoot, rt.oneShotAppFromID, rt.handleCancelOneShotJob))
+
+	mux.HandleFunc("POST /api/v1/apps/{name}/jobs", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/jobs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTasks))
+	mux.HandleFunc("GET /api/v1/apps/{name}/jobs/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTask))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/jobs/{id}", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleUpdateScheduledTask))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/jobs/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteScheduledTask))
+	mux.HandleFunc("POST /api/v1/apps/{name}/jobs/{id}/run", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRunScheduledTaskNow))
+	mux.HandleFunc("POST /api/v1/apps/{name}/jobs/{id}/enable", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetScheduledTaskEnabled(true)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/jobs/{id}/disable", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetScheduledTaskEnabled(false)))
+	mux.HandleFunc("GET /api/v1/apps/{name}/jobs/{id}/runs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTaskRuns))
+	mux.HandleFunc("GET /api/v1/apps/{name}/jobs/{id}/runs/{run}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTaskRun))
+
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTasks))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTask))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleUpdateScheduledTask))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteScheduledTask))
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRunScheduledTaskNow))
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/enable", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetScheduledTaskEnabled(true)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/disable", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetScheduledTaskEnabled(false)))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}/runs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTaskRuns))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}/runs/{run}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTaskRun))
+
 	mux.HandleFunc("GET /api/v1/apps/{name}/job-runs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTaskRuns))
 }
 

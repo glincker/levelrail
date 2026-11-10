@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -62,9 +63,18 @@ func (rt *Router) handlePrometheusRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	compressed, err := io.ReadAll(r.Body)
+	compressed, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxOTLPBody))
 	if err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeError(w, http.StatusRequestEntityTooLarge, "request body too large")
+			return
+		}
 		writeError(w, http.StatusBadRequest, "failed to read request body")
+		return
+	}
+	if n, derr := snappy.DecodedLen(compressed); derr == nil && n > maxOTLPBody {
+		writeError(w, http.StatusRequestEntityTooLarge, "decoded body too large")
 		return
 	}
 	raw, err := snappy.Decode(nil, compressed)

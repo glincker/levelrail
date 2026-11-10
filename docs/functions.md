@@ -204,7 +204,7 @@ The Functions page lists the recent calls of a function: time, method, path, sta
 
 | Environment variable | Meaning |
 | --- | --- |
-| `APP_ACCESS_LOG_SIZE` | Calls kept per route, 0 turns recording off |
+| `APP_ACCESS_LOG_SIZE` | Seeds the runtime setting `telemetry.access_log_size`: calls kept per route, 0 turns recording off, changes apply live |
 | `APP_ACCESS_LOG_RETENTION` | Hide calls older than this duration, empty keeps them until the ring overwrites them |
 | `FUNCTION_LOG_PADDING` | Time added before and after a call when linking to logs |
 

@@ -115,11 +115,10 @@ const (
 // to. The other engines this package reconciles (MySQL, MariaDB,
 // MongoDB, ClickHouse, KeyDB, Dragonfly) don't share that property yet:
 // MongoDB's own tlsAllowInvalidCertificates URI option is a plausible
-// future candidate, KeyDB/Dragonfly fork Redis's TLS flags under
-// different names not verified here, and MySQL/MariaDB have no
+// future candidate, Dragonfly refuses TLS without a password here, and MySQL/MariaDB have no
 // driver-agnostic URI knob for "encrypt but don't verify" at all.
 func SupportsTLS(engine string) bool {
-	return engine == store.EnginePostgres || engine == store.EngineRedis
+	return engine == store.EnginePostgres || engine == store.EngineRedis || engine == store.EngineValkey || engine == store.EngineKeyDB
 }
 
 // ServerTLSEngine reports whether the server side of engine can terminate TLS here. Unlike SupportsTLS, MySQL and MariaDB clients opt in themselves, so no URL changes.
@@ -137,7 +136,7 @@ func TLSContainerPort(engine string) (int, bool) {
 	switch engine {
 	case store.EnginePostgres:
 		return postgresContainerPort, true
-	case store.EngineRedis:
+	case store.EngineRedis, store.EngineValkey, store.EngineKeyDB:
 		return redisTLSContainerPort, true
 	default:
 		return 0, false

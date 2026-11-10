@@ -54,6 +54,9 @@ type PreviewAppSettings struct {
 	// ImageTagTemplate deploys a prebuilt image per pull request instead of
 	// building; placeholders are {number}, {sha}, {short_sha} and {branch}.
 	ImageTagTemplate string
+	// HostTemplate and WildcardDomain place previews on {number}/{branch} hosts under a domain the app owns.
+	HostTemplate   string
+	WildcardDomain string
 }
 
 // Preview database strategies: what database a preview talks to.
@@ -76,7 +79,7 @@ func ValidPreviewDatabaseStrategy(s string) bool {
 const previewSettingsColumns = `app_name, on_limit, allow_fork_previews, ttl_hours, updated_at,
 	max_previews, memory_limit, cpu_limit, idle_sleep_minutes, database_strategy, seed_database,
 	allow_fork_secrets, gate_basic_auth, gate_username, allow_indexing,
-	migrate_command, migrate_timeout_seconds, image_tag_template`
+	migrate_command, migrate_timeout_seconds, image_tag_template, host_template, wildcard_domain`
 
 func scanPreviewSettings(scan func(dest ...any) error) (PreviewAppSettings, error) {
 	var (
@@ -86,7 +89,7 @@ func scanPreviewSettings(scan func(dest ...any) error) (PreviewAppSettings, erro
 	err := scan(&s.AppName, &s.OnLimit, &allowFork, &s.TTLHours, &s.UpdatedAt,
 		&s.MaxPreviews, &s.MemoryLimit, &s.CPULimit, &s.IdleSleepMinutes, &s.DatabaseStrategy, &s.SeedDatabase,
 		&forkSecrets, &gate, &s.GateUsername, &indexing,
-		&s.MigrateCommand, &s.MigrateTimeoutSeconds, &s.ImageTagTemplate)
+		&s.MigrateCommand, &s.MigrateTimeoutSeconds, &s.ImageTagTemplate, &s.HostTemplate, &s.WildcardDomain)
 	s.AllowForkPreviews, s.AllowForkSecrets, s.GateBasicAuth, s.AllowIndexing = allowFork != 0, forkSecrets != 0, gate != 0, indexing != 0
 	return s, err
 }
@@ -143,7 +146,7 @@ func (db *DB) SavePreviewAppSettings(ctx context.Context, s PreviewAppSettings) 
 	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO preview_app_settings (`+previewSettingsColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(app_name) DO UPDATE SET
 			on_limit = excluded.on_limit,
 			allow_fork_previews = excluded.allow_fork_previews,
@@ -161,11 +164,13 @@ func (db *DB) SavePreviewAppSettings(ctx context.Context, s PreviewAppSettings) 
 			allow_indexing = excluded.allow_indexing,
 			migrate_command = excluded.migrate_command,
 			migrate_timeout_seconds = excluded.migrate_timeout_seconds,
-			image_tag_template = excluded.image_tag_template
+			image_tag_template = excluded.image_tag_template,
+			host_template = excluded.host_template,
+			wildcard_domain = excluded.wildcard_domain
 	`, s.AppName, s.OnLimit, boolToInt(s.AllowForkPreviews), s.TTLHours, s.UpdatedAt,
 		s.MaxPreviews, s.MemoryLimit, s.CPULimit, s.IdleSleepMinutes, s.DatabaseStrategy, s.SeedDatabase,
 		boolToInt(s.AllowForkSecrets), boolToInt(s.GateBasicAuth), s.GateUsername, boolToInt(s.AllowIndexing),
-		s.MigrateCommand, s.MigrateTimeoutSeconds, s.ImageTagTemplate)
+		s.MigrateCommand, s.MigrateTimeoutSeconds, s.ImageTagTemplate, s.HostTemplate, s.WildcardDomain)
 	if err != nil {
 		return fmt.Errorf("store: save preview settings for %q: %w", s.AppName, err)
 	}

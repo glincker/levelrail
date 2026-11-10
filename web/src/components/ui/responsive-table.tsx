@@ -16,6 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TABLE_NUMERIC,
 } from '@/components/ui/table'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -352,8 +353,8 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
                   <TableCell
                     key={c.id}
                     className={cn(
-                      'py-3 break-words whitespace-normal',
-                      c.align === 'end' && 'text-right',
+                      'break-words whitespace-normal',
+                      c.align === 'end' && TABLE_NUMERIC,
                       priorityClass(c.priority),
                     )}
                   >

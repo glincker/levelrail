@@ -5,6 +5,7 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import type { ProjectTopologyGraph } from '../types/projectTopology'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export const projectTopologyKeys = {
   all: ['project-topology'] as const,
@@ -44,7 +45,7 @@ export function projectTopologyQueryOptions(projectId: string) {
 export function useLiveProjectTopology(projectId: string) {
   return useSuspenseQuery({
     ...projectTopologyQueryOptions(projectId),
-    refetchInterval: 5000,
+    refetchInterval: pollMs('live'),
   })
 }
 

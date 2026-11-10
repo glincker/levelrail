@@ -104,7 +104,7 @@ func (rt *Router) handleValidateGitSourceAccess(w http.ResponseWriter, r *http.R
 	if branch == "" {
 		branch = "main"
 	}
-	sha, err := rt.resolveBranchSHA(ctx, gs.RepoURL, branch, token)
+	sha, err := rt.resolveBranchSHA(rt.gitAuthCtx(ctx, name, gs.RepoURL), gs.RepoURL, branch, token)
 	if err != nil {
 		rt.logger.Warn("api: validate git source: access failed", slog.String("app", name), slog.String("repo_url", redactURLCredentials(gs.RepoURL)), slog.String("kind", classifyGitAccessError(err, cred)))
 		code := classifyGitAccessError(err, cred)

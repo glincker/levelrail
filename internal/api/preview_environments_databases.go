@@ -72,6 +72,11 @@ func (rt *Router) provisionEphemeralDatabases(ctx context.Context, previewEnviro
 	return provisioned, notes
 }
 
+func (rt *Router) seedPreviewDatabaseNotes(ctx context.Context, source string, db store.PreviewEphemeralDatabase) []string {
+	notes, _ := rt.seedPreviewDatabase(ctx, source, db, db.Engine, false)
+	return notes
+}
+
 // seedEphemeralFromParent restores the newest succeeded backup of the
 // parent database (the one named by the app.yaml key) into the preview
 // database through the existing clone restore path, so the preview gets its
@@ -84,7 +89,7 @@ func (rt *Router) seedEphemeralFromParent(ctx context.Context, parentName string
 	if parent.Engine != db.Engine {
 		return []string{"seedFrom skipped: " + parentName + " is " + parent.Engine + " but the preview database is " + db.Engine + ", " + db.DatabaseName + " is empty"}
 	}
-	return rt.seedPreviewDatabase(ctx, parentName, db, db.Engine)
+	return rt.seedPreviewDatabaseNotes(ctx, parentName, db)
 }
 
 // The bool is true only when this call created the database, so a
@@ -148,22 +153,24 @@ func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvi
 // hand, the same as any other database attachment on any other app.
 // Logged and non-fatal: this is a convenience on top of a working
 // preview, not a precondition for one.
-func (rt *Router) attachEphemeralDatabase(ctx context.Context, previewName string, db store.PreviewEphemeralDatabase) {
+func (rt *Router) attachEphemeralDatabase(ctx context.Context, previewName string, db store.PreviewEphemeralDatabase) bool {
 	att := &store.DatabaseAttachment{
 		DatabaseName: db.DatabaseName,
 		EnvVar:       defaultDatabaseAttachmentEnvVar,
 		Field:        defaultDatabaseAttachmentField,
 	}
 	if !database.SupportsField(db.Engine, att.Field) {
-		return
+		return false
 	}
 	if err := rt.apps.UpdateServiceDatabaseAttachment(ctx, previewName, att); err != nil {
 		rt.logger.Error("api: attach ephemeral preview database failed", slog.String("error", err.Error()), slog.String("preview_app", previewName), slog.String("database", db.DatabaseName))
-		return
+		return false
 	}
 	if err := rt.apps.RestartService(ctx, previewName); err != nil {
 		rt.logger.Error("api: restart preview after database attachment failed", slog.String("error", err.Error()), slog.String("preview_app", previewName))
+		return false
 	}
+	return true
 }
 
 // teardownPreviewEphemeralDatabases tears down every ephemeral database

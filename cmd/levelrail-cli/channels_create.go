@@ -14,7 +14,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 	var disabled, notifyDeviceLogin, notifyDeviceLoginExpired bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
 	fs.StringVar(&kind, "kind", "", "channel kind: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat (required)")
-	fs.StringVar(&notifyURL, "notify-url", "", "destination (webhook URL, Telegram sendMessage URL, email address, or PagerDuty routing key); required unless a kind-specific alternative below is set")
+	fs.StringVar(&notifyURL, "notify-url", "", "destination (webhook URL, Telegram sendMessage URL with chat_id and an optional message_thread_id topic, email address, or PagerDuty routing key); required unless a kind-specific alternative below is set")
 	fs.StringVar(&pushoverUserKey, "pushover-user-key", "", "Pushover User Key (--kind pushover only, an alternative to --notify-url)")
 	fs.StringVar(&pushoverAPIToken, "pushover-api-token", "", "Pushover Application API Token (--kind pushover only, an alternative to --notify-url)")
 	fs.StringVar(&pagerDutyRoutingKey, "pagerduty-routing-key", "", "PagerDuty Events API v2 Integration/Routing Key (--kind pagerduty only, an alternative to --notify-url)")
@@ -88,7 +88,7 @@ Connects a new notification channel.
 Flags:
   --name string                        display name for the channel (required)
   --kind string                        channel kind: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat (required)
-  --notify-url string                  destination (webhook URL, Telegram sendMessage URL, email address, or PagerDuty routing key)
+  --notify-url string                  destination (webhook URL, Telegram sendMessage URL with chat_id and an optional message_thread_id topic, email address, or PagerDuty routing key)
   --pushover-user-key string           Pushover User Key (--kind pushover only, an alternative to --notify-url)
   --pushover-api-token string          Pushover Application API Token (--kind pushover only, an alternative to --notify-url)
   --pagerduty-routing-key string       PagerDuty Events API v2 Integration/Routing Key (--kind pagerduty only, an alternative to --notify-url)

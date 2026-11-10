@@ -151,7 +151,10 @@ export function DeployPreviewThumb({
           disabled={capturing}
         >
           <RefreshCwGlassIcon
-            className={cn('size-5', capturing && 'animate-spin')}
+            className={cn(
+              'size-5',
+              capturing && 'animate-spin motion-reduce:animate-none',
+            )}
             data-icon="inline-start"
           />
           {capturing ? 'Capturing...' : 'Recapture'}

@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { RateLimitError, type LoginResult } from './auth'
+import { pollMs } from '@/lib/pollTier'
 
 // Sign in with a code, new-browser approval and trusted browsers
 // (internal/api/login_code.go, login_approval.go, sign_in_requests.go).
@@ -131,7 +132,7 @@ export function signInRequestsQueryOptions() {
   return queryOptions({
     queryKey: signInKeys.requests,
     queryFn: () => send<SignInRequests>('GET', '/api/v1/auth/sign-in-requests'),
-    refetchInterval: 10_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

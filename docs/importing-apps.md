@@ -58,6 +58,16 @@ Railpack builds Ruby and PHP projects, and the import plan fills in what its sta
 
 Laravel runs `php artisan migrate --force` on every start. Set `RAILPACK_SKIP_MIGRATIONS=true` if the app has no database yet.
 
+## Buildpack apps
+
+An app written for a buildpack platform, with a `Procfile` and no Dockerfile, is built with Railpack. Levelrail does not run Heroku buildpacks, does not read `.buildpacks` or `project.toml`, and has no buildpack layer to select.
+
+- **Supported:** a Dockerfile at the repository root (built with BuildKit), or a stack Railpack detects from files such as `package.json`, `go.mod`, `requirements.txt`, `Gemfile` or `composer.json`. See [Ruby and PHP](#ruby-and-php) for the defaults the plan fills in.
+- **Procfile:** the `web:` line is used only to guess the port. Other process types (`worker`, `release`) are not run at deploy time. Describe them as services and hooks in `app.yaml`, or run `levelrail-cli import config` in the repository to get a first draft from the `Procfile` and `app.json`.
+- **Dockerfile or Railpack:** if the repository has a Dockerfile it wins, and the Dockerfile's `CMD` or `ENTRYPOINT` is what runs. The `Procfile` does not override it. If you want Railpack, remove the Dockerfile or build from a subdirectory.
+- **Build log:** the first line names the builder that ran and why. A Dockerfile build says `builder: Dockerfile (Dockerfile)`, or the path relative to the build context, for example `builder: Dockerfile (deploy/Dockerfile.prod)`. A Railpack build says `builder: Railpack (no Dockerfile in the repository)`. For a Railpack build, a second line appears when `.buildpacks`, `project.toml` or a `Procfile` is present. It lists the file names found and says `.buildpacks` and `project.toml` are not run as buildpacks. The line uses file names only, never file contents. Built and unit tested. Not yet proven on a real host: no real BuildKit build has been run with this line.
+- **Not supported:** custom buildpacks, buildpack-specific env such as `BUILDPACK_URL`, and languages Railpack does not detect. Add a Dockerfile for those.
+
 ## Environment variables
 
 For repos the plan scans `.env.example`, `.env.sample`, `.env.template`, `env.example`, `.env.dist`, compose `environment:` sections and Dockerfile `ENV`. Each variable is reported as:
@@ -84,16 +94,16 @@ Flags that are not supported are listed as warnings and ignored, never dropped s
 
 | Flag | Note |
 | --- | --- |
-| `--privileged`, `--cap-add`, `--cap-drop`, `--device`, `--security-opt` | privilege and device changes |
+| `--privileged`, `--cap-add`, `--device`, `--security-opt` | privilege and device changes |
 | `--pid`, `--ipc`, `--uts`, `--userns`, `--cgroupns` | shared namespaces (`--pid host` is called out explicitly) |
 | `--network host` | host networking; ports are published instead |
-| `--sysctl`, `--ulimit`, `--tmpfs`, `--mount`, `--shm-size`, `--read-only`, `--init` | runtime tuning |
-| `--link`, `--volumes-from`, `--add-host`, `--dns`, `--dns-search`, `--dns-option`, `--ip`, `--mac-address`, `--network-alias` | legacy links and network detail |
-| `--user`/`-u`, `--workdir`/`-w`, `--hostname`/`-h`, `--group-add`, `--stop-signal`, `--stop-timeout` | process settings |
+| `--mount` | runtime tuning |
+| `--link`, `--volumes-from`, `--dns-search`, `--dns-option`, `--ip`, `--mac-address`, `--network-alias` | legacy links and network detail |
+| `--user`/`-u`, `--workdir`/`-w`, `--hostname`/`-h`, `--group-add`, `--stop-signal` | process settings |
 | `--log-driver`, `--log-opt`, `--label`/`-l`, `--label-file`, `--annotation`, `--cidfile` | metadata and logging |
 | `--gpus` | set GPUs on the app after it exists |
 | `--health-cmd` and other health flags | add an HTTP health check on the app afterwards |
-| `--runtime`, `--platform`, `--cpuset-cpus`, `--memory-swap`, `--pids-limit`, `--cpu-shares`, `--oom-score-adj`, `--kernel-memory`, `--storage-opt` | runtime and resource tuning |
+| `--runtime`, `--platform`, `--cpuset-cpus`, `--memory-swap`, `--cpu-shares`, `--oom-score-adj`, `--kernel-memory`, `--storage-opt` | runtime and resource tuning |
 
 ## Run an import
 

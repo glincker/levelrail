@@ -19,7 +19,7 @@ export interface MetricsSearch {
   at?: string
 }
 
-export type LogsTab = 'live' | 'search' | 'errors' | 'archive'
+export type LogsTab = 'live' | 'search' | 'errors' | 'archive' | 'requests'
 
 export interface LogsSearch {
   tab?: LogsTab
@@ -35,7 +35,13 @@ export interface LogsSearch {
 }
 
 const PRESET_KEYS = new Set<string>(TIME_RANGE_PRESETS.map((p) => p.key))
-const LOG_TABS = new Set<string>(['live', 'search', 'errors', 'archive'])
+const LOG_TABS = new Set<string>([
+  'live',
+  'search',
+  'errors',
+  'archive',
+  'requests',
+])
 
 function isoOrUndefined(value: unknown): string | undefined {
   if (typeof value !== 'string' || value === '') {

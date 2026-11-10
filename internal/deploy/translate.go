@@ -49,11 +49,13 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		// comment on these two fields requires them to always be the
 		// already-resolved value, matching Resources/Health's own
 		// resolve-before-storing shape below.
-		Strategy:  svc.EffectiveStrategy(),
-		Replicas:  svc.EffectiveReplicas(),
-		Labels:    svc.Labels,
-		Command:   svc.Command,
-		DependsOn: svc.DependsOn,
+		Strategy:   svc.EffectiveStrategy(),
+		Replicas:   svc.EffectiveReplicas(),
+		Labels:     svc.Labels,
+		Command:    svc.Command,
+		User:       svc.User,
+		WorkingDir: svc.WorkingDir,
+		DependsOn:  svc.DependsOn,
 	}
 
 	if svc.HostPort != 0 {
@@ -77,6 +79,8 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		on := *svc.Security.ReadOnlyRootfs
 		d.Resources.ReadOnlyRootfs = &on
 	}
+
+	applyRuntimeOptions(&d, svc.Runtime)
 
 	if svc.Health != nil {
 		health, err := toServiceHealth(*svc.Health)

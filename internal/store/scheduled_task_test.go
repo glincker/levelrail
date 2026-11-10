@@ -310,7 +310,7 @@ func TestRecordScheduledTaskRun_SkippedAndReplacedDontCountAsFailures(t *testing
 		t.Fatalf("ConsecutiveFailures after one failure = %d, want 1", got.ConsecutiveFailures)
 	}
 
-	for _, status := range []string{ScheduledTaskStatusSkippedConcurrency, ScheduledTaskStatusReplaced} {
+	for _, status := range []string{ScheduledTaskStatusSkippedConcurrency, ScheduledTaskStatusReplaced, ScheduledTaskStatusSkippedFreeze} {
 		if err := db.RecordScheduledTaskRun(ctx, task.ID, now.Add(time.Minute), status, ""); err != nil {
 			t.Fatalf("RecordScheduledTaskRun(%s) error = %v", status, err)
 		}

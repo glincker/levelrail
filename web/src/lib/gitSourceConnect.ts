@@ -22,6 +22,7 @@ export async function connectGitSource(
 ): Promise<ConnectGitSourceResult> {
   const branch = form.branch.trim() || undefined
   const buildPath = form.buildPath.trim() || undefined
+  const baseDirectory = form.baseDirectory.trim() || undefined
   const additionalServices =
     form.fanoutMode === 'additional'
       ? additionalServicesPayload(form.additionalServices)
@@ -43,6 +44,7 @@ export async function connectGitSource(
           branch,
           build_type: form.buildType,
           build_path: buildPath,
+          base_directory: baseDirectory,
           trigger_mode: form.triggerMode,
         },
       )
@@ -54,6 +56,7 @@ export async function connectGitSource(
       branch,
       build_type: form.buildType,
       build_path: buildPath,
+      base_directory: baseDirectory,
       trigger_mode: form.triggerMode,
     })
     return { resource, autoRegistered: true }
@@ -64,7 +67,7 @@ export async function connectGitSource(
     branch,
     build_type: form.buildType,
     build_path: buildPath,
-    base_directory: form.baseDirectory.trim() || undefined,
+    base_directory: baseDirectory,
     token: form.token.trim() || undefined,
     additional_services: additionalServices,
     services,

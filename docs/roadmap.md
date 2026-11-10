@@ -12,7 +12,7 @@ The build did not follow the original phase plan in order. Parts of multi-node s
 
 ## Now, next, later
 
-Last updated 2026-11-05 (v0.9.1). There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
+Last updated 2026-11-09 (release/v0.9.6 branch). There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
 
 ### Now (Q4 2026)
 
@@ -54,7 +54,7 @@ flowchart LR
   P4 --> P5["Phase 5: Hardening<br/>Open"]
 ```
 
-Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook). Upgrade testing has started too: a harness upgrades the real v0.8.1 and v0.8.2 binaries with seeded data and checks restore points, automatic restore and the downgrade refusal (see [Upgrade safely](/upgrade-safely#upgrading-real-releases-with-real-data)); a second test upgrades v0.8.2 data across real migrations (email providers backfill, spend cap guard mode, the migration list, the downgrade refusal and restores), see [Cross-release schema migration](/upgrade-safely#cross-release-schema-migration).
+Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook). Upgrade testing has started too: a harness upgrades real released v0.8.5 to v0.8.8 binaries with seeded data and checks restore points, automatic restore and the downgrade refusal (see [Upgrade safely](/upgrade-safely#upgrading-real-releases-with-real-data)); a second test upgrades v0.8.2 data across real migrations (email providers backfill, spend cap guard mode, the migration list, the downgrade refusal and restores), see [Cross-release schema migration](/upgrade-safely#cross-release-schema-migration). No 0.9.x release has been run through the harness yet.
 
 ## Shipped
 
@@ -120,6 +120,18 @@ The join flow is verified across two real Docker daemons, but not across a real 
 - `migrate verify`, a parity report that compares the source with this server before DNS moves, shown on the Cutover tab of the Migrate page. See [migration reference](/migration-reference).
 - Cross-release schema migration tests that upgrade real v0.8.2 data across real migrations, with downgrade refusal and automatic restore. See [upgrade safely](/upgrade-safely).
 - The dashboard Start tab follows the project and environment picker. See [projects, organizations and environments](/projects-and-organizations).
+
+### Added on the 0.9.6 line
+
+Merged on `release/v0.9.6`, covered by unit tests, with the labels in [feature status](/feature-status). None of these has a real-host run yet.
+
+- Apps: expiry dates (stop at expiry, deletion after a grace period is off by default), a per-app build cache quota with a reclaim report, git submodules and LFS in push-deploy builds, persistent build settings, app bundle import with a dry run, and scheduled restarts.
+- Ingress: per-domain proxy tuning presets and HTTP access log search from the dashboard, CLI and API.
+- Compose: compose apps can deploy from git on push.
+- Data: pre and post backup hooks, and a database engine parameter editor with staged changes and rollback when a change stops the database from starting.
+- Jobs and approvals: job guard rails (overlap policy, timeouts, run retention, failing-job alert) and required approvers on protected deploys.
+- CLI and monitors: `apps git-source ssh-key` verbs (show, generate, rotate, delete), and pause and resume for monitors.
+- Boot: the runtime setting `boot.deferred_stages`, default off, starts the heartbeat, dynamic DNS, monitors and disk history after the HTTP listener is up. See [runtime settings](/runtime-settings).
 
 ### Shipped but off by default or beta
 

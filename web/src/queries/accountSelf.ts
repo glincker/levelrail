@@ -8,6 +8,9 @@ import { ApiError } from '../lib/apiError'
 import { accountKeys } from './myAccess'
 import { sessionKeys } from './security'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_1000_MS = 1000
+
 // Self-service account endpoints: internal/api/account_*.go.
 
 export class AccountApiError extends ApiError {
@@ -153,7 +156,7 @@ export function accountExportQueryOptions(id: string | null) {
         `/api/v1/auth/export/${encodeURIComponent(id ?? '')}`,
       ),
     refetchInterval: (query) =>
-      query.state.data?.status === 'pending' ? 1000 : false,
+      query.state.data?.status === 'pending' ? POLL_1000_MS : false,
   })
 }
 

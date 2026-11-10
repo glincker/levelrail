@@ -29,6 +29,8 @@ type DB struct {
 	attemptObs atomic.Pointer[AttemptObserver]
 	// resourceBoot makes the resource version jump happen once per open handle.
 	resourceBoot sync.Once
+	// touches batches advisory last-seen writes; nil writes through.
+	touches *touchBuffer
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies
@@ -44,7 +46,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	seedFromTemplate(ctx, path, opts)
 	dsn := dsn(path)
 
-	sqlDB, err := sql.Open("sqlite", dsn)
+	sqlDB, err := sql.Open(timedDriverName, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("store: open %s: %w", path, err)
 	}
@@ -55,7 +57,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	// which handles contention from other processes/connections).
 	sqlDB.SetMaxOpenConns(1)
 
-	db := &DB{DB: sqlDB, m: newDBMetrics(path)}
+	db := &DB{DB: sqlDB, m: newDBMetrics(path), touches: newTouchBuffer()}
 
 	if err := db.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()
@@ -104,6 +106,7 @@ func dsn(path string) string {
 type openConfig struct {
 	preMigrate PreMigrateHook
 	ceiling    int
+	skip       map[int]bool
 }
 
 // OpenOption customizes Open.
@@ -117,6 +120,17 @@ type PreMigrateHook func(ctx context.Context, db *DB, from, to int)
 // database has migrations pending (never for a brand new one).
 func WithPreMigrateHook(h PreMigrateHook) OpenOption {
 	return func(c *openConfig) { c.preMigrate = h }
+}
+
+// WithMigrationSkip leaves the given versions unapplied, so upgrade tests can
+// model migrations added out of order after a release tag.
+func WithMigrationSkip(versions ...int) OpenOption {
+	return func(c *openConfig) {
+		c.skip = make(map[int]bool, len(versions))
+		for _, v := range versions {
+			c.skip[v] = true
+		}
+	}
 }
 
 // WithMigrationCeiling stops migrating after version, so upgrade tests can

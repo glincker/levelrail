@@ -47,6 +47,8 @@ type appListResource struct {
 	Status appStatusSummary `json:"status"`
 	// EnvironmentName is the resolved name of appResource.EnvironmentID, empty when untagged.
 	EnvironmentName string `json:"environment_name,omitempty"`
+	// Description is the operator's one line summary from the app's notes.
+	Description string `json:"description,omitempty"`
 	// Sleep is set only for apps with sleep-when-idle on.
 	Sleep *appListSleep `json:"sleep,omitempty"`
 	// ManagedByStack names the stack owning this app, omitted when none.

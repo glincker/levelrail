@@ -323,7 +323,7 @@ Planejado, não prometido. As datas são metas e os itens podem mudar ou ser des
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) para perguntas, ideias e para mostrar o que você fez, e [Issues](https://github.com/glincker/levelrail/issues) para bugs.
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99): chat ao vivo com os mantenedores, no canal de fórum `#levelrail`.
 - [support@levelrail.com](mailto:support@levelrail.com) para ajuda direta, e a [Política de segurança](../../.github/SECURITY.md) para reportar uma vulnerabilidade de forma privada.
-- [Contribuindo](../../.github/CONTRIBUTING.md): ciclo de desenvolvimento, testes e convenções de commit. Compilar a partir do código-fonte exige Go 1.26 ou mais recente e Docker: veja [Instalação](../../docs/installing.md#option-3-build-from-source).
+- [Contribuindo](../../.github/CONTRIBUTING.md): ciclo de desenvolvimento, testes e convenções de commit. Compilar a partir do código-fonte exige Go 1.27 ou mais recente e Docker: veja [Instalação](../../docs/installing.md#option-3-build-from-source).
 
 ## Dê uma estrela ao repositório
 

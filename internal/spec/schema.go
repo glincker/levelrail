@@ -66,6 +66,10 @@ func validateAgainstSchema(yamlData []byte) error {
 		return fmt.Errorf("spec: parse yaml: %w", err)
 	}
 
+	if err := rejectRefusedRuntime(generic); err != nil {
+		return err
+	}
+
 	asJSON, err := json.Marshal(generic)
 	if err != nil {
 		return fmt.Errorf("spec: convert to json for schema validation: %w", err)

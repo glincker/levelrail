@@ -68,12 +68,14 @@ const (
 	EngineMariaDB  = "mariadb"
 	EngineMongoDB  = "mongodb"
 	EngineRedis    = "redis"
+	// Valkey speaks the Redis protocol; the helper image shipping redis-cli is unverified.
+	EngineValkey = "valkey"
 )
 
 // Supported reports whether Copy can move engine.
 func Supported(engine string) bool {
 	switch engine {
-	case EnginePostgres, EngineMySQL, EngineMariaDB, EngineMongoDB, EngineRedis:
+	case EnginePostgres, EngineMySQL, EngineMariaDB, EngineMongoDB, EngineRedis, EngineValkey:
 		return true
 	}
 	return false
@@ -93,7 +95,7 @@ func DefaultPort(engine string) int {
 		return 3306
 	case EngineMongoDB:
 		return 27017
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		return 6379
 	}
 	return 0
@@ -126,7 +128,7 @@ func (s *Source) Validate(engine string) error {
 			return fmt.Errorf("%s contains characters that are not allowed", name)
 		}
 	}
-	if engine != EngineRedis && engine != EngineMongoDB && s.Database == "" {
+	if !isRedisFamily(engine) && engine != EngineMongoDB && s.Database == "" {
 		return errors.New("database is required")
 	}
 	return nil
@@ -141,4 +143,8 @@ func (s Source) Scrub(text string) string {
 		text = strings.ReplaceAll(text, form, "[redacted]")
 	}
 	return text
+}
+
+func isRedisFamily(engine string) bool {
+	return engine == EngineRedis || engine == EngineValkey
 }

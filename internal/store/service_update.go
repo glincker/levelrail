@@ -274,6 +274,11 @@ func (db *DB) UpdateServiceSuspended(ctx context.Context, name string, suspended
 	if err := db.updateServiceRow(ctx, "update suspended", name, query, suspended, name); err != nil {
 		return err
 	}
+	if !suspended {
+		if err := db.keepStartedAppExpiry(ctx, name); err != nil {
+			return err
+		}
+	}
 	return db.noteAppChange(ctx, name)
 }
 

@@ -17,9 +17,14 @@ const (
 	RoleRollbackTarget = "rollback_target"
 	RoleRecent         = "recent"
 	RoleHistory        = "history"
+	// RolePendingDeploy marks an image a queued, held or running deploy still needs.
+	RolePendingDeploy = "pending_deploy"
 )
 
 const succeededStatus = "succeeded"
+
+// pendingStatuses are deploy states whose image must survive until the deploy settles.
+var pendingStatuses = map[string]bool{"queued": true, "pending": true, "held": true, "awaiting_approval": true, "running": true}
 
 // Attempt is the slice of a deploy attempt the inventory needs.
 type Attempt struct {
@@ -49,6 +54,8 @@ type AppState struct {
 	// Attempts is newest first.
 	Attempts []Attempt
 	Pins     []Pin
+	// Keep overrides the global keep count for this app when above zero.
+	Keep int
 }
 
 // AppUse says how an app relates to one image.
@@ -82,6 +89,8 @@ type Entry struct {
 	Removable       bool   `json:"removable"`
 	RemovableReason string `json:"removable_reason,omitempty"`
 	BlockedReason   string `json:"blocked_reason,omitempty"`
+	// repoDigests holds every registry digest, so an app naming any repo@sha256 is matched.
+	repoDigests []string
 }
 
 // DigestOfRecord returns the registry digest of r, or "" for a local build.
@@ -107,7 +116,46 @@ func (e Entry) hasRef(ref string) bool {
 }
 
 func (e Entry) matchesDigest(d string) bool {
-	return d != "" && (d == e.ID || d == e.Digest)
+	if d == "" {
+		return false
+	}
+	if d == e.ID || d == e.Digest {
+		return true
+	}
+	for _, rd := range e.repoDigests {
+		if rd == d {
+			return true
+		}
+	}
+	return false
+}
+
+// MatchesAttempt reports whether a deploy attempt refers to this image.
+func (e Entry) MatchesAttempt(a Attempt) bool { return e.matchesAttempt(a) }
+
+// IsPendingStatus reports whether a deploy in this status still needs its image.
+func IsPendingStatus(status string) bool { return pendingStatuses[status] }
+
+func attemptImageKey(entries []Entry, a Attempt) string {
+	for i := range entries {
+		if entries[i].matchesAttempt(a) {
+			return entries[i].ID
+		}
+	}
+	if a.Digest != "" {
+		return a.Digest
+	}
+	return a.Image
+}
+
+func recordDigests(r docker.ImageRecord) []string {
+	out := make([]string, 0, len(r.RepoDigests))
+	for _, rd := range r.RepoDigests {
+		if i := strings.Index(rd, "@"); i >= 0 {
+			out = append(out, rd[i+1:])
+		}
+	}
+	return out
 }
 
 func (e Entry) matchesAttempt(a Attempt) bool {
@@ -129,6 +177,7 @@ func Build(records []docker.ImageRecord, apps []AppState, keepPerApp int, minAge
 		entries = append(entries, Entry{
 			ID: r.ID, Digest: DigestOfRecord(r), Tags: tags, SizeBytes: r.SizeBytes,
 			SharedBytes: r.SharedBytes, Containers: r.Containers, CreatedAt: r.CreatedAt, Apps: []AppUse{},
+			repoDigests: recordDigests(r),
 		})
 	}
 	for _, app := range apps {
@@ -154,14 +203,24 @@ func attachApp(entries []Entry, app AppState, keepPerApp int) {
 			}
 		}
 	}
-	succeeded := 0
+	if app.Keep > 0 {
+		keepPerApp = app.Keep
+	}
+	// Count distinct images, so redeploys of one image do not use up the slots of older releases.
+	recent := map[string]bool{}
 	for _, a := range app.Attempts {
 		role := RoleHistory
+		if pendingStatuses[a.Status] {
+			role = RolePendingDeploy
+		}
 		if a.Status == succeededStatus {
-			if succeeded < keepPerApp {
+			key := attemptImageKey(entries, a)
+			if !recent[key] && len(recent) < keepPerApp {
+				recent[key] = true
+			}
+			if recent[key] {
 				role = RoleRecent
 			}
-			succeeded++
 		}
 		for i := range entries {
 			if entries[i].matchesAttempt(a) {
@@ -185,6 +244,9 @@ func markProtection(e *Entry, minAge time.Duration, now time.Time) {
 	case hasRole(e.Apps, RoleRollbackTarget):
 		e.Protected, e.ProtectReason = true, "pinned rollback target"
 		return
+	case hasRole(e.Apps, RolePendingDeploy):
+		e.Protected, e.ProtectReason = true, "needed by a queued or held deploy"
+		return
 	case hasRole(e.Apps, RoleRecent):
 		e.Protected, e.ProtectReason = true, "one of the newest successful deploys"
 		return
@@ -207,6 +269,8 @@ func RemovalBlock(e Entry) string {
 		return "live image of an app"
 	case hasRole(e.Apps, RoleRollbackTarget):
 		return "pinned rollback target"
+	case hasRole(e.Apps, RolePendingDeploy):
+		return "needed by a queued or held deploy"
 	}
 	return ""
 }

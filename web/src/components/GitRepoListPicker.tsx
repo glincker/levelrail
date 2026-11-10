@@ -230,7 +230,10 @@ export function GitRepoListPicker({
           onClick={() => refresh.mutate()}
         >
           <RefreshCwGlassIcon
-            className={cn('size-5', refresh.isPending && 'animate-spin')}
+            className={cn(
+              'size-5',
+              refresh.isPending && 'animate-spin motion-reduce:animate-none',
+            )}
             aria-hidden="true"
           />
           {refresh.isPending ? t('picker.refreshing') : t('picker.refresh')}

@@ -10,6 +10,7 @@ import {
   defaultGroupOpen,
   isGlobalItemActive,
   isItemDisclosed,
+  isSingleItemGroup,
   itemBadgeCount,
   pinnedGlobalItems,
   resolveOpen,
@@ -47,7 +48,6 @@ const EXPECTED_GLOBAL = [
   '/mail',
   '/storage',
   '/inbox',
-  '/images',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -78,7 +78,6 @@ const FOLDED_PATHS = [
   '/network',
   '/settings/network-shares',
   '/settings/node-providers',
-  '/settings/registry',
   '/settings/registry-credentials',
   '/settings/iam-policies',
 ]
@@ -103,6 +102,7 @@ const EXPECTED_APP = [
   'resources',
   'volumes',
   'health',
+  'containers',
   'scheduled-tasks',
   'feature-flags',
   'split-testing',
@@ -139,22 +139,36 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('shows only Dashboard ungrouped and fifteen or fewer sidebar rows', () => {
+  it('shows the Overview rows ungrouped and twenty or fewer sidebar rows', () => {
     const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
     expect(primary).toHaveLength(1)
-    expect(primary[0]?.items.map((i) => i.label)).toEqual(['Dashboard'])
+    expect(primary[0]?.items.map((i) => i.label)).toEqual([
+      'Dashboard',
+      'Projects',
+      'Inbox',
+      'Alerts',
+    ])
     const rows = GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
-    expect(rows.length).toBeLessThanOrEqual(15)
+    expect(rows.length).toBeLessThanOrEqual(20)
   })
 
-  it('groups Domains, Traffic and Private network under Network', () => {
+  it('groups Domains, Traffic, Firewall and Mail under Network', () => {
     const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
     expect(net?.label).toBe('Network')
     expect(net?.items.map((i) => i.label)).toEqual([
       'Domains',
       'Traffic',
-      'Private network',
+      'Firewall',
+      'Mail',
     ])
+  })
+
+  it('renders a single-item group as that item, not under a repeated header', () => {
+    expect(isSingleItemGroup({ items: [1] })).toBe(true)
+    for (const g of GLOBAL_NAV_GROUPS) {
+      expect(g.ungrouped || !isSingleItemGroup(g), g.id).toBe(true)
+    }
+    expect(isSingleItemGroup({ items: [1, 2] })).toBe(false)
   })
 
   it('keeps every group at five items or fewer', () => {
@@ -163,10 +177,10 @@ describe('global nav model', () => {
     }
   })
 
-  it('opens every group by default', () => {
-    for (const g of GLOBAL_NAV_GROUPS) {
-      expect(defaultGroupOpen(), g.id).toBe(true)
-    }
+  it('opens every group on tall viewports and only the active one on short ones', () => {
+    expect(defaultGroupOpen(900, false)).toBe(true)
+    expect(defaultGroupOpen(800, false)).toBe(false)
+    expect(defaultGroupOpen(800, true)).toBe(true)
   })
 
   it('aggregates domain and DNS attention onto Domains', () => {
@@ -202,10 +216,12 @@ describe('global nav model', () => {
     ['/apps/web/logs', '/apps', true],
     ['/appsettings', '/apps', false],
     ['/status', '/', true],
-    ['/network', '/network/private', true],
-    ['/network/proxy', '/network/private', false],
+    ['/network', '/network/proxy', true],
+    ['/network/private', '/network/proxy', true],
+    ['/network/private', '/firewall', false],
     ['/network/proxy', '/network/proxy', true],
-    ['/firewall', '/network/proxy', true],
+    ['/firewall', '/firewall', true],
+    ['/firewall', '/network/proxy', false],
   ])('active match %s vs %s', (path, to, want) => {
     const item = allGlobalItems().find((i) => i.to === to)
     expect(item && isGlobalItemActive(path, item)).toBe(want)
@@ -231,7 +247,8 @@ describe('grouped nav entries', () => {
     ['/images', '/deployments', false],
     ['/resources', '/usage', true],
     ['/approvals', '/pipelines', true],
-    ['/settings/registry', '/images', true],
+    ['/settings/registry', '/settings/registry', true],
+    ['/images', '/settings/registry', true],
   ])('active match %s vs %s', (path, to, want) => {
     const it2 = item(to)
     expect(it2 && isGlobalItemActive(path, it2)).toBe(want)
@@ -336,15 +353,15 @@ describe('palette entries derived from the nav model', () => {
   })
 })
 
-describe('activeGlobalItemId', () => {
-  const items = allGlobalItems()
-  it.each([
-    ['/apps', 'apps'],
-    ['/projects', 'projects'],
-    ['/projects/p1', 'projects'],
-    ['/templates', 'templates'],
-  ])('%s activates only %s', (path, id) => {
-    expect(activeGlobalItemId(path, items)).toBe(id)
+describe('registry sidebar row', () => {
+  it('links to a real page, not the /images redirect into Storage', () => {
+    const reg = allGlobalItems().find((i) => i.id === 'registry')
+    expect(reg?.to).toBe('/settings/registry')
+  })
+  it('is the active row on its page and the old images path', () => {
+    const items = allGlobalItems()
+    expect(activeGlobalItemId('/settings/registry', items)).toBe('registry')
+    expect(activeGlobalItemId('/images', items)).toBe('registry')
   })
 })
 

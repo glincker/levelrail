@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { LinkGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { NewAppAside } from '../../components/newapp/NewAppAside'
 import { NewAppWizard } from '../../components/newapp/NewAppWizard'
 import {
   DeployLinkForm,
@@ -30,6 +31,7 @@ function NewAppPage() {
   const search = Route.useSearch()
   const prefill = useDeployLinkPrefill(search)
   const [linkOpen, setLinkOpen] = useState(false)
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null)
 
   if (prefill.active && prefill.image !== undefined) {
     return (
@@ -42,7 +44,36 @@ function NewAppPage() {
     <PageTemplate
       title={t('title')}
       description={t('description')}
-      width="wide"
+      aside={
+        prefill.active ? undefined : (
+          <>
+            <NewAppAside setSlot={setSlot} />
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setLinkOpen(true)
+                }}
+              >
+                <LinkGlassIcon size="1.4em" aria-hidden />
+                {t('deployLinkDialog.action')}
+              </Button>
+            </div>
+            <details className="group w-full">
+              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center text-sm font-medium text-muted-foreground hover:text-foreground">
+                {t('deployButton.title')}
+              </summary>
+              <div className="pt-3">
+                <Suspense fallback={null}>
+                  <DeployButtonBuilder />
+                </Suspense>
+              </div>
+            </details>
+          </>
+        )
+      }
+      asideLabel={t('aside.label')}
     >
       {prefill.active ? (
         <div className="mx-auto w-full max-w-3xl space-y-3">
@@ -52,29 +83,10 @@ function NewAppPage() {
           </p>
         </div>
       ) : null}
-      <NewAppWizard />
-      {prefill.active ? null : (
-        <>
-          <div className="mx-auto w-full max-w-3xl">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setLinkOpen(true)
-              }}
-            >
-              <LinkGlassIcon size="1.4em" aria-hidden />
-              {t('deployLinkDialog.action')}
-            </Button>
-          </div>
-          {linkOpen ? (
-            <DeployLinkDialog open onOpenChange={setLinkOpen} />
-          ) : null}
-          <Suspense fallback={null}>
-            <DeployButtonBuilder />
-          </Suspense>
-        </>
-      )}
+      <NewAppWizard connectSlot={slot} />
+      {linkOpen && !prefill.active ? (
+        <DeployLinkDialog open onOpenChange={setLinkOpen} />
+      ) : null}
     </PageTemplate>
   )
 }

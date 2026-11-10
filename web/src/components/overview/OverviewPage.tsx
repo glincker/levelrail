@@ -7,6 +7,7 @@ import {
 } from '@thesvg/ui-react'
 import { useAppStatus } from '../../queries/appStatus'
 import { useGitSource } from '../../queries/gitSources'
+import { ApiError } from '../../lib/apiError'
 import { useIsStaticSite } from '../../queries/staticSites'
 import { DropDeployCard } from '../dropdeploy/DropDeployCard'
 import { registerPageActions } from '../../lib/pageActions'
@@ -229,6 +230,7 @@ export function OverviewPage({
             : undefined
         }
         onDeploy={setDeployTab}
+        gitMissing={git.error instanceof ApiError && git.error.status === 404}
       />
       <RecommendedNextCard
         app={app}

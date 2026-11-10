@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -104,7 +103,7 @@ func (rt *Router) abuseStore() abuseStore {
 	return st
 }
 
-func abuseLimits() abuse.Limits { return abuse.LimitsFromEnv(os.Getenv) }
+func abuseLimits() abuse.Limits { return abuse.CurrentLimits(context.Background()) }
 
 func newAbuseLimitsResource(l abuse.Limits) abuseLimitsResource {
 	return abuseLimitsResource{

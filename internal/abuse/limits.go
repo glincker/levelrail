@@ -1,6 +1,7 @@
 package abuse
 
 import (
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -91,7 +92,8 @@ func envInt(getenv func(string) string, key string, def int) int {
 
 func envFloat(getenv func(string) string, key string, def float64) float64 {
 	f, err := strconv.ParseFloat(strings.TrimSpace(getenv(key)), 64)
-	if err != nil || f <= 0 {
+	// NaN passes "f <= 0" and Inf would disable the rate limit, so both fall back.
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) || f <= 0 {
 		return def
 	}
 	return f

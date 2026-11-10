@@ -1,0 +1,520 @@
+{
+  "loadBalancers": {
+    "loadError": "Could not load load balancers"
+  },
+  "loadBalancerPicker": {
+    "loadError": "Could not load your apps",
+    "loadErrorHint": "Close this dialog and try again."
+  },
+  "loadBalancerPage": {
+    "loadError": "Could not load the load balancer",
+    "statusError": "Could not load upstream status"
+  },
+  "healthTimeline": {
+    "loadError": "Could not load deploy history",
+    "loadErrorHint": "The timeline needs it. Try again in a moment."
+  },
+  "mesh": {
+    "title": "WireGuard mesh",
+    "loading": "Loading mesh status...",
+    "disabledTitle": "Mesh networking is not enabled",
+    "disabledHint": "Set APP_MESH_ENABLED=1 on this control plane to bring up its WireGuard device and peer visibility.",
+    "never": "Never",
+    "secondsAgo": "{{count}}s ago",
+    "minutesAgo": "{{count}} min ago",
+    "noMeshAddress": "No mesh address yet",
+    "notPeered": "Not peered yet",
+    "healthy": "Healthy",
+    "stale": "Stale",
+    "noLivePeer": "No live peer entry",
+    "backend": "Backend",
+    "unknown": "Unknown",
+    "meshAddress": "Mesh address",
+    "notAssigned": "Not assigned",
+    "publicKey": "Public key",
+    "notGenerated": "Not generated yet",
+    "endpoint": "Endpoint",
+    "lastHandshake": "Last handshake",
+    "rotationConfirmed": "Last rotation confirmed: started {{started}}, confirmed {{confirmed}}",
+    "rotationConfirmedNoTime": "Last rotation confirmed: started {{started}}",
+    "rotationPending": "Last rotation still confirming: started {{started}}",
+    "noPeers": "No peers configured yet.",
+    "peersLabel": "Mesh peers",
+    "peer": "Peer",
+    "health": "Health"
+  },
+  "lb": {
+    "header": {
+      "of": "of",
+      "healthy": "healthy",
+      "aboutAlgorithm": "About this algorithm",
+      "checkNow": "Check now",
+      "checkNowCooldown": "Check now ({{seconds}}s)",
+      "export": "Export",
+      "moreActions": "More actions",
+      "remove": "Remove load balancer",
+      "removeHint": "Domains go back to a single upstream"
+    },
+    "empty": {
+      "title": "Spread traffic across replicas",
+      "description": "Health checks, retries and clean cutovers. Least connections with passive failure detection is a good start. Add an active health check once your app serves one.",
+      "create": "Create recommended setup",
+      "creating": "Creating",
+      "presets": "Or start from a preset",
+      "diagram": "Recommended setup: clients, proxy, {{count}} replicas",
+      "clients": "Clients",
+      "proxy": "Proxy"
+    },
+    "remove": {
+      "title": "Remove load balancer?",
+      "description": "Domains for {{app}} go back to a single upstream. Running replicas are not touched.",
+      "cancel": "Cancel",
+      "confirm": "Remove"
+    },
+    "metrics": {
+      "healthy": "Healthy",
+      "latency": "Latency",
+      "latencyInfo": "Median of the last health check across healthy replicas.",
+      "connections": "Connections",
+      "connectionsInfo": "Open requests right now, across all replicas."
+    },
+    "history": {
+      "none": "No checks recorded yet",
+      "passed": "{{when}}: passed",
+      "passedIn": "{{when}}: passed in {{ms}}ms",
+      "failed": "{{when}}: failed",
+      "failedReason": "{{when}}: failed, {{reason}}",
+      "failedStatus": "{{when}}: failed, status {{status}}"
+    },
+    "table": {
+      "label": "Upstreams",
+      "upstream": "Upstream",
+      "status": "Status",
+      "latency": "Latency",
+      "traffic": "Traffic",
+      "conns": "Conns",
+      "share": "Share",
+      "lastChecks": "Last 12 checks",
+      "latencyTrend": "Latency over the last 30 minutes for {{dial}}",
+      "noData": "no data yet",
+      "replica": "replica {{replica}}",
+      "checked": "checked",
+      "notChecked": "not checked yet",
+      "changed": "changed",
+      "openConnections": "Open connections",
+      "shareEstimated": "Estimated share, not measured",
+      "shareMeasured": "Share of traffic",
+      "actionsFor": "Actions for {{name}}",
+      "viewDetails": "View details",
+      "viewDetailsHint": "Checks, changes and actions"
+    },
+    "drawer": {
+      "description": "Upstream details and actions",
+      "trafficShare": "Traffic share",
+      "connections": "Connections",
+      "failures": "Failures",
+      "latency": "Latency",
+      "replica": "Replica",
+      "node": "Node",
+      "local": "local",
+      "checked": "Checked",
+      "actions": "Actions",
+      "recentChecks": "Recent checks",
+      "passed": "Passed",
+      "failed": "Failed",
+      "failedReason": "Failed: {{reason}}",
+      "stateChanges": "State changes",
+      "noChanges": "No changes recorded.",
+      "transition": "{{from}} to {{to}}"
+    },
+    "export": {
+      "formats": "Export format",
+      "cdkHint": "This is a stack class. Add it to a CDK app and instantiate it in your app entry point, then run cdk deploy.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download",
+      "contents": "{{file}} contents",
+      "applyWith": "Apply with",
+      "section": "Export",
+      "toggle": "Export as code"
+    },
+    "page": {
+      "loading": "Loading load balancer",
+      "reconcilerNote": "The ingress reconciler applies it on its next pass.",
+      "undo": "Undo",
+      "saveError": "Could not save the load balancer.",
+      "applied": "Applied: {{title}}",
+      "applyError": "Could not apply the suggestion.",
+      "unknownError": "Unknown",
+      "checkFinished": "Check finished: {{ok}} of {{total}} passed",
+      "checkUnavailable": "Check now is not available yet.",
+      "checkFailed": "Check failed.",
+      "adminError": "Could not update the upstream.",
+      "removed": "Load balancer removed.",
+      "removedHint": "{{app}} routes to a single upstream again.",
+      "removeError": "Could not remove the load balancer.",
+      "created": "Load balancer created.",
+      "saved": "Load balancer saved.",
+      "newTitle": "New load balancer",
+      "newHint": "Review the settings, then create it.",
+      "guide": "Load balancing guide"
+    },
+    "algo": {
+      "label": "Balancing algorithm",
+      "about": "About {{name}}",
+      "roundRobinUse": "Requests cost about the same.",
+      "roundRobinTradeoff": "Simple and fair, but ignores how busy a replica is.",
+      "leastConnUse": "Requests vary in duration.",
+      "leastConnTradeoff": "Evens out load, slightly more bookkeeping per request.",
+      "ipHashUse": "You need clients to stay put without cookies.",
+      "ipHashTradeoff": "Clients behind one proxy or CDN all land on one replica.",
+      "clientIpHashUse": "You want IP stickiness behind a CDN or proxy.",
+      "clientIpHashTradeoff": "Needs APP_INGRESS_TRUSTED_PROXIES, else it matches IP hash.",
+      "uriHashUse": "Replicas keep per-path caches.",
+      "uriHashTradeoff": "Hot paths can overload one replica.",
+      "cookieUse": "Sessions live in replica memory.",
+      "cookieTradeoff": "Pins a browser to one replica, so uneven load is possible.",
+      "weightedUse": "Canaries or replicas of different sizes.",
+      "weightedTradeoff": "You maintain the weights by hand.",
+      "round_robin": {
+        "label": "Round robin",
+        "description": "Each request goes to the next replica in turn."
+      },
+      "least_conn": {
+        "label": "Least connections",
+        "description": "Send to the replica with the fewest active requests."
+      },
+      "ip_hash": {
+        "label": "IP hash",
+        "description": "The same client address always reaches the same replica."
+      },
+      "client_ip_hash": {
+        "label": "Client IP hash",
+        "description": "Hashes the client IP after trusted-proxy handling, so clients behind a CDN spread across replicas."
+      },
+      "uri_hash": {
+        "label": "URI hash",
+        "description": "The same path always reaches the same replica (cache friendly)."
+      },
+      "cookie": {
+        "label": "Sticky cookie",
+        "description": "A cookie pins a browser session to one replica."
+      },
+      "weighted": {
+        "label": "Weighted",
+        "description": "Give each replica a share of traffic, useful for canaries."
+      }
+    },
+    "bar": {
+      "region": "Unsaved changes",
+      "risky": "Risky change",
+      "cancel": "Cancel",
+      "revert": "Revert",
+      "saving": "Saving",
+      "create": "Create",
+      "save": "Save",
+      "confirmTitle": "Save risky changes?",
+      "confirmHint": "These take effect on live traffic right away.",
+      "keepEditing": "Keep editing",
+      "saveAnyway": "Save anyway"
+    },
+    "configure": {
+      "section": "Configure",
+      "toggle": "Configure",
+      "traffic": "Traffic",
+      "health": "Health",
+      "resilience": "Resilience",
+      "cookieName": "Cookie name",
+      "cookieNameInfo": "The cookie that pins a browser to one replica.",
+      "presets": "Presets",
+      "about": "About {{name}}"
+    },
+    "health": {
+      "active": "Active checks",
+      "activeInfo": "Probe every replica on an interval and stop sending traffic to one that fails.",
+      "path": "Path",
+      "pathInfo": "The URL probed on each replica. It should return quickly and only depend on the app itself.",
+      "status": "Expected status",
+      "statusInfo": "The HTTP status that counts as a pass. Blank accepts any 2xx or 3xx.",
+      "statusPlaceholder": "2xx or 3xx",
+      "interval": "Interval",
+      "intervalInfo": "How often each replica is probed.",
+      "timeout": "Timeout",
+      "timeoutInfo": "How long to wait for a reply. Must be shorter than the interval.",
+      "fails": "Failures to mark down",
+      "failsInfo": "Consecutive failed probes before a replica leaves the pool.",
+      "passes": "Passes to recover",
+      "passesInfo": "Consecutive passing probes before a replica rejoins the pool.",
+      "passive": "Passive checks",
+      "passiveInfo": "Watch real requests. A replica that keeps failing them is skipped for a while, faster than waiting for the next probe.",
+      "maxFails": "Failures before skipping",
+      "maxFailsInfo": "Failed requests within the window that trigger a skip.",
+      "skipFor": "Skip for",
+      "skipForInfo": "How long a failing replica is skipped, and the window failures are counted in."
+    },
+    "resilience": {
+      "retries": "Retries",
+      "retriesInfo": "Retry a failed request on another replica before giving up. Turn off for streams that cannot be replayed.",
+      "retryCountInfo": "Extra attempts after the first. 0 to 10.",
+      "giveUp": "Give up after",
+      "giveUpInfo": "Total time spent retrying one request.",
+      "requestTimeout": "Request timeout",
+      "requestTimeoutInfo": "How long to wait for a replica to start answering before failing the request.",
+      "drain": "Drain on deploy",
+      "drainInfo": "How long open connections may finish when a replica is replaced during a deploy.",
+      "rate": "Rate limit",
+      "rateInfo": "Cap requests per client address. Clients above the limit get a 429 response.",
+      "rps": "Requests per second",
+      "rpsInfo": "Sustained rate allowed for each client address.",
+      "burst": "Burst",
+      "burstInfo": "Extra requests allowed in a short spike.",
+      "tls": "TLS to upstreams",
+      "tlsInfo": "Speak HTTPS to the replicas instead of plain HTTP.",
+      "serverName": "Server name",
+      "serverNameInfo": "Name the replicas certificate must match.",
+      "skipVerify": "Skip verification",
+      "skipVerifyInfo": "Accept any certificate. Only for testing: it removes protection against impersonation.",
+      "notVerified": "Certificates not verified",
+      "verified": "Verified"
+    },
+    "weights": {
+      "split": "Traffic split: {{parts}}",
+      "part": "replica {{index}} {{share}}%",
+      "title": "Traffic split",
+      "about": "About weights",
+      "aboutBody": "Weights follow replica index. A replica with weight 3 gets three times the traffic of one with weight 1.",
+      "replica": "Replica {{index}}",
+      "weightFor": "Weight for replica {{index}}",
+      "slowStart": "Slow start",
+      "slowStartInfo": "A new replica ramps from zero up to its weight over this time instead of taking its full share at once.",
+      "ramp": "New replicas ramp up over {{duration}}"
+    },
+    "topology": {
+      "traffic": "Traffic",
+      "howToRead": "How to read the diagram",
+      "howToReadBody": "Line density shows each replica's share of open connections. Faster motion means lower latency. Shapes and labels show health: check circle is healthy, triangle is draining, square is down.",
+      "motionOff": "Motion off",
+      "pause": "Pause",
+      "play": "Play",
+      "diagram": "Traffic from clients through the proxy to {{total}} upstreams, {{healthy}} healthy",
+      "node": "{{name}}: {{label}}, {{reason}}. Open details",
+      "replica": "Replica {{replica}}",
+      "more": "+{{count}} more in the table below",
+      "clients": "Clients",
+      "proxy": "Proxy",
+      "noUpstreams": "No upstreams yet",
+      "noUpstreamsHint": "They appear as replicas start.",
+      "allDown": "Nothing is passing checks. Requests may fail until a replica recovers.",
+      "caption": "Upstream status",
+      "upstream": "Upstream",
+      "state": "State",
+      "reason": "Reason",
+      "share": "Share",
+      "connections": "Connections"
+    },
+    "overview": {
+      "noMatch": "No load balancers match this filter",
+      "noMatchHint": "Clear the search or pick another state.",
+      "configure": "Configure a load balancer",
+      "search": "Search by app name",
+      "searchLabel": "Search load balancers",
+      "state": "State",
+      "all": "All",
+      "showing": "Showing {{shown}} of {{total}} (limit {{limit}})",
+      "listLabel": "Load balancers",
+      "app": "App",
+      "algorithm": "Algorithm",
+      "upstreams": "Upstreams",
+      "lastCheck": "Last check",
+      "notYet": "Not yet",
+      "secondsAgo": "{{count}}s ago",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "noneObserved": "None observed",
+      "healthyOf": "{{healthy}} of {{total}} healthy",
+      "stateBalancing": "Balancing",
+      "stateDegraded": "Degraded",
+      "stateNone": "No upstreams"
+    },
+    "picker": {
+      "title": "Configure a load balancer",
+      "description": "Choose the app whose replicas you want to balance.",
+      "noApps": "You have no apps yet",
+      "noAppsHint": "A load balancer spreads traffic across an app's replicas, so create an app first.",
+      "createApp": "Create an app",
+      "search": "Search apps",
+      "noMatch": "No app matches that search",
+      "noMatchHint": "Try a shorter or different name.",
+      "truncated": "Showing the first {{count}} matches. Refine the search to narrow it down."
+    },
+    "preset": {
+      "balanced": {
+        "name": "Balanced web app",
+        "useWhen": "A typical stateless web app or API."
+      },
+      "sticky": {
+        "name": "Sticky sessions",
+        "useWhen": "Sessions live in memory on each replica."
+      },
+      "websockets": {
+        "name": "WebSockets and long-lived",
+        "useWhen": "Streams, sockets or long polling.",
+        "note": "Retries are off because upgraded connections cannot be replayed."
+      },
+      "cache": {
+        "name": "Cache friendly",
+        "useWhen": "Each replica keeps a warm cache per path."
+      },
+      "canary": {
+        "name": "Canary 90/10",
+        "useWhen": "Try a new release on a slice of traffic.",
+        "note": "Weights follow replica index: with 2 replicas the split is 90/10."
+      },
+      "bluegreen": {
+        "name": "Blue-green cutover",
+        "useWhen": "Swap releases with a fast, clean handover."
+      },
+      "apiguard": {
+        "name": "Public API guard",
+        "useWhen": "An API exposed to the internet."
+      }
+    },
+    "admin": {
+      "unsupported": "Needs a newer control plane",
+      "active": {
+        "label": "Enable",
+        "meaning": "Back in rotation and receiving new requests."
+      },
+      "draining": {
+        "label": "Drain",
+        "meaning": "Finish open requests, send no new ones."
+      },
+      "disabled": {
+        "label": "Disable",
+        "meaning": "Out of rotation until you enable it again."
+      }
+    },
+    "change": {
+      "value": {
+        "off": "off",
+        "unset": "unset",
+        "na": "n/a",
+        "even": "even",
+        "noVerify": "no verification",
+        "passive": "{{fails}} fails, skip {{skip}}",
+        "retries": "{{count}} within {{within}}",
+        "rate": "{{rps}}/s, burst {{burst}}"
+      },
+      "risk": {
+        "algorithm": "Clients may move to a different replica and lose in-memory sessions.",
+        "active": "Failed replicas will keep receiving traffic.",
+        "rate": "Clients above the limit get 429 responses.",
+        "tls": "Certificates of replicas will not be verified."
+      },
+      "label": {
+        "algorithm": "Algorithm",
+        "cookie": "Cookie",
+        "weights": "Traffic split",
+        "active": "Health check",
+        "interval": "Check interval",
+        "timeout": "Check timeout",
+        "passes": "Passes to recover",
+        "fails": "Failures to mark down",
+        "status": "Expected status",
+        "passive": "Passive checks",
+        "retries": "Retries",
+        "slow": "Slow start",
+        "drain": "Drain",
+        "reqTimeout": "Request timeout",
+        "rate": "Rate limit",
+        "tls": "Upstream TLS"
+      }
+    },
+    "effect": {
+      "none": "No changes.",
+      "split": "New requests split {{split}}.",
+      "follow": "New requests follow {{algo}}.",
+      "drain": "Deploys keep open streams for {{drain}}.",
+      "default": "Applies to new requests; open connections are not cut."
+    },
+    "suggest": {
+      "noHealth": {
+        "title": "No health check",
+        "detail": "A failed replica keeps receiving traffic.",
+        "action": "Add /healthz check"
+      },
+      "single": {
+        "title": "One replica, nothing to balance",
+        "detail": "Run two replicas for failover.",
+        "action": "Set replicas"
+      },
+      "flapping": {
+        "title": "An upstream is flapping",
+        "detail": "3 or more state changes in 10 minutes.",
+        "action": "Require 3 failures"
+      },
+      "ipHash": {
+        "title": "IP hash behind a proxy",
+        "detail": "Clients behind a CDN or shared proxy land on one replica.",
+        "action": "Use sticky cookie"
+      },
+      "weights": {
+        "title": "Weights are ignored",
+        "detail": "Only the weighted algorithm uses them.",
+        "action": "Use weighted"
+      },
+      "passive": {
+        "title": "Passive checks are off",
+        "detail": "Real request failures could eject a replica sooner.",
+        "action": "Enable"
+      },
+      "slowStart": {
+        "title": "No slow start",
+        "detail": "A new replica gets its full share at once.",
+        "action": "Ramp over 30s"
+      },
+      "drain": {
+        "title": "Deploys cut open streams",
+        "detail": "No drain time is set.",
+        "action": "Drain for 15s"
+      },
+      "timeout": {
+        "title": "Health timeout is tight",
+        "detail": "Checks take {{ms}}ms at p95, timeout is {{timeout}}.",
+        "action": "Raise to {{next}}s"
+      }
+    }
+  },
+  "guided": {
+    "databases": {
+      "title": "No databases yet",
+      "body": "Create a managed Postgres, MySQL, Redis or MongoDB database on one of your nodes, with backups and credentials handled for you.",
+      "action": "Create a database"
+    },
+    "builds": {
+      "title": "No builds yet",
+      "body": "Builds appear here when an app deploys from a Git repo or a Dockerfile. Deploy an app to start the first one.",
+      "action": "Deploy an app"
+    },
+    "backups": {
+      "title": "Nothing is backed up yet",
+      "body": "Add a database or volume to a backup schedule, or connect a backup target, and its copies show up here.",
+      "action": "Manage backup targets"
+    },
+    "firewall": {
+      "title": "No firewall rules yet",
+      "body": "Only the ports your apps publish are open. Add a rule to allow or deny a port from a source range.",
+      "action": "Add a rule"
+    },
+    "alerts": {
+      "title": "No alerts yet",
+      "body": "Alerts belong to an app. Pick an app and add a rule for crash loops, domain health or certificate expiry.",
+      "action": "Choose an app"
+    },
+    "certificates": {
+      "title": "No certificates yet",
+      "body": "Certificates are issued automatically when you add a domain to an app.",
+      "action": "Add a domain"
+    }
+  }
+}

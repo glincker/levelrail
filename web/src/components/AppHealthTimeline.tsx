@@ -1,4 +1,8 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { ActivityGlassIcon } from '@thesvg/ui-react'
@@ -11,9 +15,9 @@ import {
   type HealthTimeline,
 } from '../lib/healthTimeline'
 
-const RANGES: { key: TimeRangeKey; label: string }[] = [
-  { key: '24h', label: '24h' },
-  { key: '7d', label: '7d' },
+const RANGES: { value: TimeRangeKey; label: string }[] = [
+  { value: '24h', label: '24h' },
+  { value: '7d', label: '7d' },
 ]
 
 const VIEW_W = 1000
@@ -170,6 +174,7 @@ function Legend() {
 }
 
 export function AppHealthTimeline({ appName }: { appName: string }) {
+  const { t } = useTranslation('statePlaceholders')
   const navigate = useNavigate()
   const [rangeKey, setRangeKey] = useState<TimeRangeKey>('24h')
   const [hovered, setHovered] = useState<string | null>(null)
@@ -219,9 +224,16 @@ export function AppHealthTimeline({ appName }: { appName: string }) {
     )
   } else if (hasError) {
     body = (
-      <p role="alert" className="py-6 text-center text-sm text-destructive">
-        Could not load deploy history for the timeline.
-      </p>
+      <div role="alert">
+        <EmptyState
+          kind="error"
+          icon={
+            <TriangleAlertGlassIcon className="size-5" aria-hidden="true" />
+          }
+          title={t('healthTimeline.loadError')}
+          description={t('healthTimeline.loadErrorHint')}
+        />
+      </div>
     )
   } else if (isEmpty) {
     body = (
@@ -266,27 +278,12 @@ export function AppHealthTimeline({ appName }: { appName: string }) {
           />
           Health timeline
         </h2>
-        <div
-          role="group"
+        <SegmentedControl
           aria-label="Timeline range"
-          className="inline-flex rounded-md border border-border"
-        >
-          {RANGES.map((r) => (
-            <button
-              key={r.key}
-              type="button"
-              aria-pressed={rangeKey === r.key}
-              onClick={() => setRangeKey(r.key)}
-              className={`px-2.5 py-1 text-xs font-medium first:rounded-l-md last:rounded-r-md ${
-                rangeKey === r.key
-                  ? 'bg-foreground text-background'
-                  : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+          value={rangeKey}
+          onValueChange={setRangeKey}
+          options={RANGES}
+        />
       </div>
       {body}
       <Legend />

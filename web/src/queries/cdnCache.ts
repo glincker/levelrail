@@ -9,6 +9,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import { withNextjsPreset, withVary } from '../lib/cachePresets'
 import { base, jsonInit, request } from './domainPolicies'
 import type { CacheSpec, DomainPolicies } from './domainPolicyTypes'
+import { pollMs } from '@/lib/pollTier'
 
 export type CdnWindow = '5m' | '1h' | '24h'
 export type PurgeScope = 'url' | 'prefix' | 'tag' | 'all'
@@ -165,7 +166,7 @@ export const cdnKeys = {
   purges: (app: string) => ['cdn', 'purges', app] as const,
 }
 
-const REFETCH_MS = 15_000
+const REFETCH_MS = pollMs('active')
 
 async function getJson<T>(url: string, what: string): Promise<T> {
   const res = await fetch(url, { cache: 'no-store' })

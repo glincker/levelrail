@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +8,7 @@ import {
   RocketGlassIcon,
   TrashGlassIcon,
   TriangleAlertGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -35,7 +37,11 @@ function TrustList({ appName }: { appName: string }) {
 
   if (trusts.data.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">{t('ciDeploy.noTrusts')}</p>
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('ciDeploy.noTrusts')}
+      />
     )
   }
   return (

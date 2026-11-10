@@ -58,7 +58,7 @@ export function GameStatusCard({ appName }: { appName: string }) {
   return (
     <div className="mt-5 rounded-md bg-muted p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <PlugGlassIcon className="size-5" aria-hidden="true" />
           {t('game.title')}
         </p>

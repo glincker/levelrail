@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type LoadBalancerAlgorithm =
   | 'round_robin'
@@ -177,7 +178,7 @@ export function useAppLoadBalancerStatus(appName: string, enabled: boolean) {
         'fetch load balancer status',
       ),
     enabled,
-    refetchInterval: 5000,
+    refetchInterval: pollMs('live'),
   })
 }
 

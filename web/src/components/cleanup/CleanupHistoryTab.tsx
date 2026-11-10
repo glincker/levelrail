@@ -260,7 +260,7 @@ function RunTable({ runs }: { runs: CleanupRun[] }) {
   const titles = useTargetTitles()
   return (
     <div className="hidden md:block">
-      <Table>
+      <Table aria-label={t('a11y.tables.cleanupHistory', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('history.columns.when')}</TableHead>

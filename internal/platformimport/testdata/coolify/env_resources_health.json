@@ -1,0 +1,11 @@
+{
+  "name": "production",
+  "applications": [
+    {"uuid": "app-cmd", "name": "cmd-app", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/a", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "health_check_enabled": true, "health_check_type": "cmd", "health_check_command": "pg_isready -U app", "health_check_interval": 30, "health_check_timeout": 5, "health_check_retries": 3},
+    {"uuid": "app-empty", "name": "empty-app", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/b", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "health_check_enabled": true, "health_check_type": "cmd", "health_check_command": "  "},
+    {"uuid": "app-http", "name": "http-app", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/c", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "health_check_enabled": true, "health_check_path": "/healthz", "health_check_type": "http", "health_check_interval": 10}
+  ]
+}

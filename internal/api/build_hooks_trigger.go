@@ -7,17 +7,19 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
-	envBuildHookRate      = "APP_BUILD_HOOK_TRIGGERS_PER_MINUTE"
+	envBuildHookRate      = "APP_BUILD_HOOK_TRIGGERS_PER_MINUTE" // seeds runtimesettings.KeyBuildHookTriggersPerMinute
 	envBuildHookFailures  = "APP_BUILD_HOOK_AUTH_FAILURES_PER_MINUTE"
 	envBuildHookFieldMax  = "APP_BUILD_HOOK_FIELD_MAX_BYTES"
 	envBuildHookBodyMax   = "APP_BUILD_HOOK_BODY_MAX_BYTES"
@@ -52,6 +54,10 @@ type buildHookLimiters struct {
 	once     sync.Once
 	perHook  *apiRateLimiter
 	failures *apiRateLimiter
+	// refused is a separate per-hook bucket so blocked sources never drain the allowed budget.
+	refused *apiRateLimiter
+	// refusalLog lets one refusal per hook per window reach the audit log and the store.
+	refusalLog *apiRateLimiter
 }
 
 func (rt *Router) buildHookLimits() *buildHookLimiters {
@@ -59,6 +65,12 @@ func (rt *Router) buildHookLimits() *buildHookLimiters {
 	l.once.Do(func() {
 		l.perHook = newWindowRateLimiter(envInt(envBuildHookRate, defaultBuildHookRate), time.Minute)
 		l.failures = newWindowRateLimiter(envInt(envBuildHookFailures, defaultBuildHookFails), time.Minute)
+		l.refused = newWindowRateLimiter(envInt(envBuildHookRate, defaultBuildHookRate), time.Minute)
+		l.refusalLog = newWindowRateLimiter(1, time.Minute)
+		if rt.runtimeSettings != nil {
+			rt.limitSource(l.perHook, runtimesettings.KeyBuildHookTriggersPerMinute)
+			rt.limitSource(l.refused, runtimesettings.KeyBuildHookTriggersPerMinute)
+		}
 	})
 	return l
 }
@@ -120,17 +132,58 @@ func (rt *Router) handleBuildHookTrigger(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
+	// Refused sources spend their own bucket, so they are throttled without draining the allowed callers' budget.
+	if !buildHookSourceAllowed(hook.AllowedCIDRs, ip) {
+		if ok, retry := lim.refused.allow(id); !ok {
+			rt.refuseBuildHook(r, hook, http.StatusTooManyRequests, "refused: source address not allowed, rate limited")
+			tooManyBuildHookRequests(w, retry)
+			return
+		}
+		rt.refuseBuildHook(r, hook, http.StatusForbidden, "refused: source address not allowed")
+		writeError(w, http.StatusForbidden, "forbidden")
+		return
+	}
 	if ok, retry := lim.perHook.allow(id); !ok {
+		rt.refuseBuildHook(r, hook, http.StatusTooManyRequests, "refused: rate limited")
 		tooManyBuildHookRequests(w, retry)
 		return
 	}
 	payload := readBuildHookPayload(r)
-	rt.auditBuildHookTrigger(r, hook)
+	rt.auditBuildHookTrigger(r, hook, http.StatusAccepted)
 	if err := rt.buildHooks.RecordBuildHookTrigger(r.Context(), id, "triggered", time.Now()); err != nil {
 		rt.logger.Warn("api: build hook: record trigger failed", slog.String("hook_id", id), slog.String("error", err.Error()))
 	}
 	go rt.runBuildHook(context.WithoutCancel(r.Context()), hook, payload)
 	writeJSON(w, http.StatusAccepted, map[string]string{"status": "build triggered"})
+}
+
+// buildHookSourceAllowed reports whether ip (from the trusted proxy path) is inside the allowlist; an empty list allows any source.
+func buildHookSourceAllowed(cidrs []string, ip string) bool {
+	if len(cidrs) == 0 {
+		return true
+	}
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return false
+	}
+	addr = addr.Unmap()
+	for _, c := range cidrs {
+		if p, err := netip.ParsePrefix(c); err == nil && p.Contains(addr) {
+			return true
+		}
+	}
+	return false
+}
+
+// refuseBuildHook audits and stamps the first refusal per hook per window; the rest are dropped to cap audit and store writes.
+func (rt *Router) refuseBuildHook(r *http.Request, h store.BuildHook, status int, result string) {
+	if first, _ := rt.buildHookLimits().refusalLog.allow(h.ID); !first {
+		return
+	}
+	rt.auditBuildHookTrigger(r, h, status)
+	if err := rt.buildHooks.RecordBuildHookRefusal(r.Context(), h.ID, result, time.Now()); err != nil {
+		rt.logger.Warn("api: build hook: record refusal failed", slog.String("hook_id", h.ID), slog.String("error", err.Error()))
+	}
 }
 
 func tooManyBuildHookRequests(w http.ResponseWriter, retry time.Duration) {
@@ -139,12 +192,12 @@ func tooManyBuildHookRequests(w http.ResponseWriter, retry time.Duration) {
 }
 
 // auditBuildHookTrigger logs the call with the secret redacted from the path.
-func (rt *Router) auditBuildHookTrigger(r *http.Request, h store.BuildHook) {
+func (rt *Router) auditBuildHookTrigger(r *http.Request, h store.BuildHook, status int) {
 	clone := r.Clone(r.Context())
 	u := *r.URL
 	u.Path = loggablePath(u.Path)
 	clone.URL = &u
-	rt.recordAudit(r.Context(), clone, AbilityDeploy, "webhook", h.ID, h.ServiceName+"/"+h.Name, http.StatusAccepted)
+	rt.recordAudit(r.Context(), clone, AbilityDeploy, "webhook", h.ID, h.ServiceName+"/"+h.Name, status)
 }
 
 // runBuildHook deploys the app's git source and stores the outcome on the hook.

@@ -93,7 +93,7 @@ func TestPruneScheduledTaskRuns_KeepsNewestAndBlanksOldOutput(t *testing.T) {
 			Status: ScheduledTaskStatusSuccess, StartedAt: fin, FinishedAt: &fin, Output: "out",
 		})
 	}
-	if err := db.PruneScheduledTaskRuns(ctx, "st_1", 3, base.Add(3*time.Hour)); err != nil {
+	if err := db.PruneScheduledTaskRuns(ctx, "st_1", RunRetention{Keep: 3, OutputCutoff: base.Add(3 * time.Hour), MaxRows: 100}); err != nil {
 		t.Fatalf("PruneScheduledTaskRuns: %v", err)
 	}
 	runs, _ := db.ListScheduledTaskRuns(ctx, ScheduledTaskRunFilter{ServiceName: "web"})

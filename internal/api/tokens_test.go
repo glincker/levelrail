@@ -306,6 +306,10 @@ func TestRequireAbility_BearerTokenWithMatchingAbility(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 
+	// The touch is write-behind, so drain it before reading the column.
+	if err := db.FlushTouches(ctx); err != nil {
+		t.Fatalf("FlushTouches() error = %v", err)
+	}
 	updated, err := db.GetAPITokenByHash(ctx, hashToken(plaintext))
 	if err != nil {
 		t.Fatalf("GetAPITokenByHash() error = %v", err)

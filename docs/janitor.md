@@ -47,6 +47,22 @@ The MCP tool `get_janitor` returns the state and, with `preview`, a dry run.
 
 `GET /api/v1/system/janitor`, `GET /api/v1/system/janitor/runs`, `PUT /api/v1/system/janitor/policy` and `POST /api/v1/system/janitor/run?dry_run=true&force=true`. Changing the policy and running need a root token.
 
+## Per-app image retention
+
+Image cleanup, manual or scheduled, keeps the newest successful deploy images of each app. The global count is the `images.keep_per_app` setting. An app can set its own count from Deploy settings, Safety, Image retention, or with:
+
+```
+levelrail-cli images retention get web
+levelrail-cli images retention set web --keep 5 --dry-run
+levelrail-cli images retention set web --keep 5
+```
+
+A count is 0 (follow `app.image_keep`, then `images.keep_per_app`) or 2 to 1000, so the previous successful release always stays as a rollback target. The dashboard runs a dry run first and shows the count, size and names of what the next cleanup would remove before it lets you save.
+
+Whatever the count, the cleanup never removes the running image, a pinned rollback target, an image used by a container, an image more than one app references (such as a shared base image) or an image a queued, held or running deploy needs. An app in a protected environment cannot go below the global count. Changes and removals are written to the audit log.
+
+API: `GET` and `PUT /api/v1/apps/{name}/image-retention` (`{"keep": 5}`), and `POST /api/v1/apps/{name}/image-retention/preview` for the dry run, which never deletes. Setting the count and the preview need a root token, the same as image cleanup.
+
 ## Limits
 
 - It cleans the control plane's own node. Other nodes keep using the per-node build center and image tools.

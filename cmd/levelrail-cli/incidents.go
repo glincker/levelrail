@@ -21,6 +21,7 @@ const incidentsUsage = `Usage:
   %[1]s incidents promote <alert-rule-id> [--title <text>]
   %[1]s incidents draft <id> --title <text> --body <text> [--status <s>] [--impact <i>] [--components a,b]
   %[1]s incidents publish <id> [--updated-at <ts>]
+  %[1]s incidents postmortem show|draft|edit|publish <id>
 `
 
 // runIncidents dispatches the internal incident commands. Nothing reaches the public status page
@@ -57,6 +58,8 @@ func runIncidents(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runIncidentsDraft(prog, rest, stdout, stderr, lookupEnv)
 	case "publish":
 		return runIncidentsPublish(prog, rest, stdout, stderr, lookupEnv)
+	case "postmortem":
+		return runIncidentsPostmortem(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "unknown incidents command %q\n", args[0])
 	return 2
@@ -77,7 +80,7 @@ func runIncidentsList(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list incidents: %w", err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, rows, func() {
+	return writeIncidentResult(stdout, stderr, of, rows, func() {
 		if len(rows) == 0 {
 			_, _ = fmt.Fprintln(stdout, "No incidents.")
 			return
@@ -107,7 +110,7 @@ func runIncidentsID(prog, verb string, args []string, stdout, stderr io.Writer, 
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("incidents %s %q: %w", verb, id, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, value, plain)
+	return writeIncidentResult(stdout, stderr, of, value, plain)
 }
 
 func runIncidentsNote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -128,7 +131,7 @@ func runIncidentsNote(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("incidents note %q: %w", id, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, st, func() { _, _ = fmt.Fprintf(stdout, "Note added to %s\n", st.ID) })
+	return writeIncidentResult(stdout, stderr, of, st, func() { _, _ = fmt.Fprintf(stdout, "Note added to %s\n", st.ID) })
 }
 
 func runIncidentsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -146,7 +149,7 @@ func runIncidentsPromote(prog string, args []string, stdout, stderr io.Writer, l
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("incidents promote %q: %w", rule, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, st, func() { _, _ = fmt.Fprintf(stdout, "Opened %s (%s)\n", st.ID, st.InternalState) })
+	return writeIncidentResult(stdout, stderr, of, st, func() { _, _ = fmt.Fprintf(stdout, "Opened %s (%s)\n", st.ID, st.InternalState) })
 }
 
 func runIncidentsDraft(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -181,7 +184,7 @@ func runIncidentsDraft(prog string, args []string, stdout, stderr io.Writer, loo
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("incidents draft %q: %w", id, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, st, func() { _, _ = fmt.Fprintf(stdout, "Draft saved for %s (not public)\n", st.ID) })
+	return writeIncidentResult(stdout, stderr, of, st, func() { _, _ = fmt.Fprintf(stdout, "Draft saved for %s (not public)\n", st.ID) })
 }
 
 func runIncidentsPublish(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -207,7 +210,7 @@ func runIncidentsPublish(prog string, args []string, stdout, stderr io.Writer, l
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("incidents publish %q: %w", id, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+	return writeIncidentResult(stdout, stderr, of, res, func() {
 		_, _ = fmt.Fprintf(stdout, "Published %s at %s\n", res.ID, res.PublishedAt.Format(time.RFC3339))
 	})
 }
@@ -234,17 +237,18 @@ func checkIncidentPublishable(inc apiclient.Incident, reviewed string) error {
 }
 
 func printIncident(w io.Writer, i apiclient.Incident) {
-	_, _ = fmt.Fprintf(w, "%s  %s\nstate %s, status %s, impact %s, source %s %s\nupdated_at %s\n", i.ID, i.Title, i.InternalState, i.Status, i.Impact, i.Source, i.SourceRef, i.UpdatedAt.Format(time.RFC3339Nano))
+	_, _ = fmt.Fprintf(w, "%s  %s\nstate %s, status %s, impact %s, source %s %s\nupdated_at %s\n", safeTerminalText(i.ID), safeTerminalText(i.Title), safeTerminalText(i.InternalState),
+		safeTerminalText(i.Status), safeTerminalText(i.Impact), safeTerminalText(i.Source), safeTerminalText(i.SourceRef), i.UpdatedAt.Format(time.RFC3339Nano))
 	if len(i.ComponentIDs) > 0 {
-		_, _ = fmt.Fprintf(w, "components %s\n", strings.Join(i.ComponentIDs, ", "))
+		_, _ = fmt.Fprintf(w, "components %s\n", safeTerminalText(strings.Join(i.ComponentIDs, ", ")))
 	}
 	if i.Draft != nil {
-		_, _ = fmt.Fprintf(w, "\nDraft (public only after publish)\n  %s\n  %s\n", i.Draft.Title, i.Draft.Body)
+		_, _ = fmt.Fprintf(w, "\nDraft (public only after publish)\n  %s\n  %s\n", safeTerminalText(i.Draft.Title), safeTerminalBlock(i.Draft.Body))
 	}
 	if len(i.Timeline) > 0 {
 		_, _ = fmt.Fprintln(w, "\nTimeline")
 		for _, e := range i.Timeline {
-			_, _ = fmt.Fprintf(w, "  %s  %-8s %-14s %s\n", e.CreatedAt.Format("2006-01-02 15:04"), e.Visibility, e.Status, e.Body)
+			_, _ = fmt.Fprintf(w, "  %s  %-8s %-14s %s\n", e.CreatedAt.Format("2006-01-02 15:04"), safeTerminalText(e.Visibility), safeTerminalText(e.Status), safeTerminalText(e.Body))
 		}
 	}
 }

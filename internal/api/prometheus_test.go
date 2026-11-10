@@ -246,3 +246,16 @@ func TestMatchersToMetricAndService(t *testing.T) {
 		})
 	}
 }
+
+func TestPromRemoteWriteBodyLimit(t *testing.T) {
+	rt, db, _ := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/v1/prometheus/read", strings.NewReader(strings.Repeat("a", maxOTLPBody+1)))
+	r.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, r)
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusRequestEntityTooLarge)
+	}
+}

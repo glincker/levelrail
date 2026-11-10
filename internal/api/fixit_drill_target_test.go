@@ -20,6 +20,10 @@ type fakeVolumeSchedules struct {
 	setTo  string
 }
 
+func (f *fakeVolumeSchedules) SetServiceVolumeBackupPaused(context.Context, string, string, bool) error {
+	return nil
+}
+
 func (f *fakeVolumeSchedules) GetServiceVolumeBackupSchedule(context.Context, string, string) (store.ServiceVolumeBackupConfig, error) {
 	return f.cfg, f.getErr
 }

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   deployAttemptsQueryOptions,
@@ -6,6 +7,13 @@ import {
 import { MetricsDashboard } from '../../../components/MetricsDashboard'
 import { parseMetricsSearch } from '../../../lib/observabilitySearch'
 import { Skeleton } from '@/components/ui/skeleton'
+
+// Lazy so the scraped metrics picker stays out of the first-load bundle.
+const AppScrapedMetricsCard = lazy(() =>
+  import('../../../components/AppScrapedMetricsCard').then((m) => ({
+    default: m.AppScrapedMetricsCard,
+  })),
+)
 
 // Former "metrics" tab, now a real deep-linkable route. MetricsDashboard
 // now plots real multi-attempt deploy history (see that component's own
@@ -30,14 +38,19 @@ function MetricsSection() {
   const { data: deployAttempts } = useDeployAttempts(name)
 
   return (
-    <MetricsDashboard
-      appName={name}
-      deployAttempts={deployAttempts}
-      search={search}
-      onSearchChange={(next) => {
-        void navigate({ search: next, replace: true })
-      }}
-    />
+    <div className="space-y-4">
+      <MetricsDashboard
+        appName={name}
+        deployAttempts={deployAttempts}
+        search={search}
+        onSearchChange={(next) => {
+          void navigate({ search: next, replace: true })
+        }}
+      />
+      <Suspense fallback={null}>
+        <AppScrapedMetricsCard appName={name} />
+      </Suspense>
+    </div>
   )
 }
 

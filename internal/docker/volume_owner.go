@@ -18,18 +18,26 @@ import (
 // A new named volume mounted at a path the image does not contain is created
 // root-owned, so an image that runs as a non-root USER cannot write to it.
 // chownFreshVolumes fixes that once, while the volume is still empty.
-func (c *Client) chownFreshVolumes(ctx context.Context, containerID, image string, volumes []VolumeMount) error {
+// A spec user overrides the image USER, so the volume is chowned to the user
+// the process really runs as.
+func (c *Client) chownFreshVolumes(ctx context.Context, containerID, image, user string, volumes []VolumeMount) error {
 	if len(volumes) == 0 {
 		return nil
 	}
-	inspect, err := c.cli.ImageInspect(ctx, image)
-	if err != nil {
-		return fmt.Errorf("inspect image %q: %w", image, err)
+	if user == "" {
+		inspect, err := c.cli.ImageInspect(ctx, image)
+		if err != nil {
+			return fmt.Errorf("inspect image %q: %w", image, err)
+		}
+		if inspect.Config == nil {
+			return nil
+		}
+		user = inspect.Config.User
 	}
-	if inspect.Config == nil || isRootUser(inspect.Config.User) {
+	if isRootUser(user) {
 		return nil
 	}
-	uid, gid, err := c.resolveImageUser(ctx, containerID, inspect.Config.User)
+	uid, gid, err := c.resolveImageUser(ctx, containerID, user)
 	if err != nil {
 		return err
 	}
@@ -66,12 +74,12 @@ func (c *Client) resolveImageUser(ctx context.Context, containerID, user string)
 	if userErr != nil {
 		passwd, readErr := c.readContainerFile(ctx, containerID, "/etc/passwd")
 		if readErr != nil {
-			return 0, 0, fmt.Errorf("resolve user %q: %w", userPart, readErr)
+			return 0, 0, fmt.Errorf("resolve user: %w", readErr)
 		}
 		var found bool
 		uid, gid, found = lookupPasswd(passwd, userPart)
 		if !found {
-			return 0, 0, fmt.Errorf("resolve user %q: not in image /etc/passwd", userPart)
+			return 0, 0, errors.New("resolve user: not in image /etc/passwd")
 		}
 	}
 	if hasGroup {
@@ -80,11 +88,11 @@ func (c *Client) resolveImageUser(ctx context.Context, containerID, user string)
 		}
 		groups, readErr := c.readContainerFile(ctx, containerID, "/etc/group")
 		if readErr != nil {
-			return 0, 0, fmt.Errorf("resolve group %q: %w", groupPart, readErr)
+			return 0, 0, fmt.Errorf("resolve group: %w", readErr)
 		}
 		g, found := lookupGroup(groups, groupPart)
 		if !found {
-			return 0, 0, fmt.Errorf("resolve group %q: not in image /etc/group", groupPart)
+			return 0, 0, errors.New("resolve group: not in image /etc/group")
 		}
 		return uid, g, nil
 	}

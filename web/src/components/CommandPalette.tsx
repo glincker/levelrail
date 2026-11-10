@@ -1,3 +1,4 @@
+import '@/styles/palette-tokens.css'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
@@ -269,10 +270,10 @@ export function CommandPalette({
         <DialogOverlay />
         <DialogPrimitive.Popup
           data-slot="command-palette"
-          className="fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-2 text-sm text-popover-foreground duration-100 outline-none md:max-w-4xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          className="fixed top-24 left-1/2 z-50 flex max-h-[calc(100dvh-8rem)] w-full max-w-lg -translate-x-1/2 flex-col gap-2 text-sm text-popover-foreground duration-100 outline-none md:max-w-4xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
-          <div className="banner-edge relative flex flex-wrap items-center gap-3 rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-200 palette-pill px-5">
+          <div className="banner-edge relative flex shrink-0 flex-wrap items-center gap-3 rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-200 palette-pill px-5">
             <SearchGlassIcon className="size-6 shrink-0 text-muted-foreground" />
             <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
             <Input
@@ -294,10 +295,14 @@ export function CommandPalette({
               }}
               onKeyDown={handleInputKeyDown}
               placeholder={ps.chips.length > 0 ? '' : t('placeholder')}
-              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent"
+              data-bare
+              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent look-glass:border-transparent look-glass:bg-transparent look-glass:dark:border-transparent look-glass:dark:bg-transparent look-glass:focus-visible:border-transparent"
             />
           </div>
-          <div className="banner-edge relative overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-4 motion-safe:delay-75 motion-safe:duration-300 motion-safe:fill-mode-backwards palette-panel">
+          <div
+            data-slot="command-palette-panel"
+            className="banner-edge relative flex min-h-0 flex-col overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-4 motion-safe:delay-75 motion-safe:duration-300 motion-safe:fill-mode-backwards palette-panel"
+          >
             <ModePills
               active={parseMode(ps.text)?.kind ?? null}
               onPick={(kind, prefix) => {
@@ -369,8 +374,8 @@ export function CommandPalette({
                 </Button>
               </div>
             ) : null}
-            <div className="flex min-h-0">
-              <div className="min-w-0 flex-1">
+            <div className="flex min-h-0 flex-1">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 {results.length === 0 && !loading ? (
                   <div
                     id="command-palette-listbox"

@@ -1,7 +1,8 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ZapGlassIcon } from '@thesvg/ui-react'
+import { ZapGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { formatBuildSeconds } from '../lib/buildDuration'
@@ -110,7 +111,11 @@ export function BuildSpeedAdvice({ appName }: { appName: string }) {
         </p>
       ) : null}
       {data.findings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('speed.none')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('speed.none')}
+        />
       ) : (
         <ul className="divide-y">
           {data.findings.map((f) => (

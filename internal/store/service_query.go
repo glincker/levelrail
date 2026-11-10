@@ -197,6 +197,12 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM deploy_freeze_windows WHERE scope = ?`, DeployFreezeScopeApp(name)); err != nil {
 		return fmt.Errorf("store: delete desired service %q: clear freeze windows: %w", name, err)
 	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM app_expiry WHERE app_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: clear app expiry: %w", name, err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM app_restart_schedule WHERE app_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: clear restart schedule: %w", name, err)
+	}
 	if err := db.DeleteAppTimelineData(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
@@ -210,6 +216,9 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	if err := db.DeleteAppForms(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
+	if err := db.DeleteDeployAttemptsForService(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	if err := db.DeleteAppVitals(ctx, name); err != nil {

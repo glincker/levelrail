@@ -28,6 +28,7 @@ import { useGpuNodes } from '../../queries/models'
 import { useFleetDeploys } from '../../queries/fleetTraffic'
 import { useAppsMetrics } from '../../queries/appsMetrics'
 import { InstanceWideLabel } from './ScopeIndicator'
+import { pollMs } from '@/lib/pollTier'
 
 export const SAMPLE_APP_CAP = 8
 
@@ -47,7 +48,7 @@ export function FleetTiles({
   const nodes = useQuery({
     ...nodeListQueryOptions(),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
   const gpus = useGpuNodes()
 

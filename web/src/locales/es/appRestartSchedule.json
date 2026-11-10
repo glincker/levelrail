@@ -1,0 +1,20 @@
+{
+  "title": "Reinicio programado",
+  "description": "Reinicia la app según un horario para limitar fugas de memoria lentas. Usa el reinicio normal, así que se aplican las reglas de despliegue y de interrupción. Los reinicios están separados al menos {{min}}.",
+  "none": "Sin reinicio programado.",
+  "current": "Se reinicia con {{schedule}} ({{zone}}). Próximo: {{next}}.",
+  "last": {
+    "started": "Última ejecución {{at}}: iniciada.",
+    "succeeded": "Última ejecución {{at}}: reiniciada.",
+    "skipped": "Última ejecución {{at}}: omitida, {{reason}}.",
+    "failed": "Última ejecución {{at}}: falló, se reintenta tras una espera."
+  },
+  "scheduleLabel": "Cron o @every",
+  "timezoneLabel": "Zona horaria",
+  "save": "Guardar horario",
+  "saved": "Reinicio programado guardado",
+  "cleared": "Reinicio programado eliminado",
+  "failed": "No se pudo cambiar el reinicio programado",
+  "clear": "Quitar horario",
+  "hint": "Por ejemplo 0 3 * * * o @every 24h. Las apps detenidas, los entornos protegidos, las congelaciones y los despliegues en curso se omiten, nunca se fuerzan."
+}

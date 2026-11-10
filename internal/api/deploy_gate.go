@@ -187,12 +187,15 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 	if !rt.gateReady(w) {
 		return
 	}
+	if !rt.requireReadableApp(w, r, r.PathValue("name")) {
+		return
+	}
 	if r.PathValue("deployId") == latestDeployID {
 		if !rt.resolveLatestDeployID(w, r) {
 			return
 		}
 	}
-	attempt, ok := rt.lookupAppAttempt(w, r)
+	attempt, ok := rt.loadAppAttempt(w, r)
 	if !ok {
 		return
 	}

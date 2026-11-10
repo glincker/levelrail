@@ -102,4 +102,6 @@ export interface DatabaseResource {
 // GET /api/v1/databases/{name} never sends `status`.
 export interface DatabaseListEntry extends DatabaseResource {
   status: AppStatusSummary
+  // Tag names from the list endpoint, absent when the database has none.
+  tags?: string[]
 }

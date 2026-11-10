@@ -65,7 +65,13 @@ export interface WizardInitial {
  * review and deploy. The analysis is read-only; nothing exists until the
  * final Deploy.
  */
-export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
+export function NewAppWizard({
+  initial,
+  connectSlot,
+}: {
+  initial?: WizardInitial
+  connectSlot?: HTMLElement | null
+} = {}) {
   const { t } = useTranslation('newApp')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -199,31 +205,45 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
   }, [source, step, edits?.baseDirectory])
 
   const current = STEPS.indexOf(step)
+  const last = STEPS.length - 1
 
   return (
-    <div
-      className={cn(
-        'mx-auto w-full space-y-5',
-        step === 'source' ? 'max-w-none' : 'max-w-3xl',
-      )}
-    >
-      <ol
-        className="flex flex-wrap gap-2 text-sm"
-        aria-label={t('steps.label')}
-      >
+    <div className="w-full max-w-4xl space-y-6">
+      <ol className="flex items-center gap-3" aria-label={t('steps.label')}>
         {STEPS.map((s, i) => (
           <li
             key={s}
             aria-current={i === current ? 'step' : undefined}
-            className={cn(
-              'flex items-center gap-2 rounded-md border px-2.5 py-1',
-              i === current
-                ? 'border-primary/50 bg-muted font-medium text-foreground'
-                : 'border-border text-muted-foreground',
-            )}
+            className={cn('flex items-center gap-3', i < last && 'flex-1')}
           >
-            <span className="font-mono text-xs">{i + 1}</span>
-            {t(`steps.${s}`)}
+            <span
+              className={cn(
+                'flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
+                i === current
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : i < current
+                    ? 'border-primary/50 bg-muted text-foreground'
+                    : 'border-border text-muted-foreground',
+              )}
+            >
+              {i + 1}
+            </span>
+            <span
+              className={cn(
+                'text-sm whitespace-nowrap',
+                i === current
+                  ? 'font-semibold text-foreground'
+                  : 'hidden text-muted-foreground sm:inline',
+              )}
+            >
+              {t(`steps.${s}`)}
+            </span>
+            {i < last ? (
+              <span
+                aria-hidden="true"
+                className="h-px min-w-4 flex-1 bg-border"
+              />
+            ) : null}
           </li>
         ))}
       </ol>
@@ -235,6 +255,7 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
           ) : null}
           <div className={analyze.isPending ? 'hidden' : undefined}>
             <SourceStep
+              connectSlot={connectSlot}
               busy={analyze.isPending}
               error={analyze.isError ? analyze.error.message : null}
               deploying={deploy.isPending}

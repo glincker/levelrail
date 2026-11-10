@@ -6,16 +6,18 @@ import {
   SearchGlassIcon,
 } from '@thesvg/ui-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { LogFilter, LogLevelFilter } from '../lib/logFilter'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { SegmentedControl } from './ui/segmented-control'
 
-const LEVEL_CHIPS: { value: LogLevelFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'errors', label: 'Errors' },
-  { value: 'warnings', label: 'Warnings' },
-  { value: 'info', label: 'Info' },
-  { value: 'debug', label: 'Debug' },
+const LEVELS: readonly LogLevelFilter[] = [
+  'all',
+  'errors',
+  'warnings',
+  'info',
+  'debug',
 ]
 
 export function LogToolbar({
@@ -35,6 +37,7 @@ export function LogToolbar({
   onDownload: () => void
   onJumpToError: () => void
 }) {
+  const { t } = useTranslation('uiShared')
   const activeLevel = filter.level ?? 'all'
   const [copied, setCopied] = useState(false)
 
@@ -58,42 +61,29 @@ export function LogToolbar({
           onChange={(e) => {
             onFilterChange({ ...filter, text: e.target.value })
           }}
-          placeholder="Filter lines"
-          aria-label="Filter log lines"
+          placeholder={t('logToolbar.filterPlaceholder')}
+          aria-label={t('logToolbar.filterLabel')}
           className="h-7 pl-9 text-xs"
         />
       </div>
-      <div
-        className="flex items-center gap-1"
-        role="group"
-        aria-label="Log level"
-      >
-        {LEVEL_CHIPS.map((chip) => (
-          <Button
-            key={chip.value}
-            type="button"
-            size="xs"
-            variant={activeLevel === chip.value ? 'default' : 'outline'}
-            aria-pressed={activeLevel === chip.value}
-            onClick={() => {
-              onFilterChange({
-                ...filter,
-                stderrOnly: false,
-                level: chip.value,
-              })
-            }}
-          >
-            {chip.label}
-          </Button>
-        ))}
-      </div>
+      <SegmentedControl<LogLevelFilter>
+        aria-label={t('logToolbar.level')}
+        value={activeLevel}
+        options={LEVELS.map((value) => ({
+          value,
+          label: t(`logToolbar.levels.${value}`),
+        }))}
+        onValueChange={(level) => {
+          onFilterChange({ ...filter, stderrOnly: false, level })
+        }}
+      />
       <Button type="button" size="xs" variant="outline" onClick={onJumpToError}>
         <CircleAlertGlassIcon
           className="text-tone-danger"
           size="1.4em"
           aria-hidden="true"
         />
-        Jump to first error
+        {t('logToolbar.jumpToError')}
       </Button>
       <Button
         type="button"
@@ -106,11 +96,11 @@ export function LogToolbar({
         ) : (
           <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
-        {copied ? 'Copied' : 'Copy'}
+        {copied ? t('logToolbar.copied') : t('logToolbar.copy')}
       </Button>
       <Button type="button" size="xs" variant="outline" onClick={onDownload}>
         <DownloadGlassIcon size="1.4em" aria-hidden="true" />
-        Download
+        {t('logToolbar.download')}
       </Button>
       <span
         role="status"
@@ -119,9 +109,12 @@ export function LogToolbar({
         }
       >
         {shown !== total
-          ? `${shown.toLocaleString()} of ${total.toLocaleString()} lines`
+          ? t('logToolbar.shownOf', {
+              shown: shown.toLocaleString(),
+              total: total.toLocaleString(),
+            })
           : copied
-            ? 'Copied to clipboard'
+            ? t('logToolbar.copiedAnnounce')
             : ''}
       </span>
     </div>

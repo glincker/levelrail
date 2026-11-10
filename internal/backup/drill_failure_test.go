@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -135,5 +136,44 @@ func TestDrillFailureLiveTargetAndMixedTextAreNotDangling(t *testing.T) {
 	}
 	if c := ClassifyDrillFailure("backup target not found: AccessDenied 403"); c.Kind != DrillFailureCredentials {
 		t.Fatalf("mixed error = %+v", c)
+	}
+}
+
+func TestDrillSchedulerIntervalFnOverridesStatic(t *testing.T) {
+	s := &DrillScheduler{Interval: time.Hour}
+	if got := s.interval(); got != time.Hour {
+		t.Fatalf("static interval = %v", got)
+	}
+	s.IntervalFn = func() time.Duration { return 0 }
+	if got := s.interval(); got != 0 {
+		t.Fatalf("live interval = %v, want 0 (disabled)", got)
+	}
+}
+
+type prunerStore struct {
+	DrillSchedulerStore
+	cutoff string
+}
+
+func (p *prunerStore) PruneBackupDrills(_ context.Context, cutoff string) (int64, error) {
+	p.cutoff = cutoff
+	return 1, nil
+}
+
+func TestDrillSchedulerPrunesByRetention(t *testing.T) {
+	now := time.Date(2026, 11, 10, 0, 0, 0, 0, time.UTC)
+	ps := &prunerStore{}
+	s := &DrillScheduler{Store: ps, Now: func() time.Time { return now }, RetentionFn: func() int { return 10 }}
+	if err := s.pruneDrills(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if ps.cutoff != "2026-10-31T00:00:00Z" {
+		t.Fatalf("cutoff = %q", ps.cutoff)
+	}
+	ps.cutoff = ""
+	s.RetentionFn = func() int { return 0 }
+	_ = s.pruneDrills(context.Background())
+	if ps.cutoff != "" {
+		t.Fatal("retention 0 must keep everything")
 	}
 }

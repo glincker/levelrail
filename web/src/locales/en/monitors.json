@@ -35,7 +35,7 @@
     "daysHint": "Degraded under the warning days, down under the critical days. Blank uses the server default.",
     "serverDefault": "default",
     "pingTitle": "Add this to your job",
-    "pingHint": "Shown once. Append /start before the job and /fail on error. Rotate it with the CLI if it leaks.",
+    "pingHint": "Shown once. Append /start before the job and /fail on error. Rotate it from the row or the CLI if it leaks.",
     "copy": "Copy",
     "copied": "Copied",
     "done": "Done",
@@ -60,6 +60,19 @@
     "confirm": "Delete",
     "pending": "Deleting...",
     "done": "Monitor {{name}} deleted"
+  },
+  "pause": {
+    "action": "Pause {{name}}"
+  },
+  "resume": {
+    "action": "Resume {{name}}"
+  },
+  "rotate": {
+    "action": "Rotate token for {{name}}",
+    "title": "Rotate the ping URL of {{name}}?",
+    "description": "The old URL stops working at once. The new one is shown once, so update your job right after.",
+    "confirm": "Rotate",
+    "pending": "Rotating..."
   },
   "incidents": {
     "title": "Incidents",
@@ -106,6 +119,34 @@
       "already": "Published. Post further public updates from the status page settings.",
       "stale": "This incident changed since you loaded it. Refresh and review the draft again.",
       "changed": "The draft changed while you were publishing. Nothing was published; review it again."
+    },
+    "postmortem": {
+      "title": "Postmortem",
+      "none": "No postmortem yet. Drafting fills the impact window and alerts from this incident.",
+      "start": "Draft postmortem",
+      "refresh": "Refresh window and alerts",
+      "save": "Save",
+      "publish": "Publish postmortem",
+      "pending": "Publishing...",
+      "confirmTitle": "Publish this postmortem?",
+      "confirmBody": "Publishing locks the postmortem. No one can edit it afterwards.",
+      "window": "Impact {{start}} to {{end}}",
+      "ongoing": "not recorded",
+      "alerts": "Alerts",
+      "noAlerts": "No alerts were recorded for this incident.",
+      "itemsHint": "One action item per line",
+      "publishedBy": "Published {{at}} by {{by}}",
+      "state": {
+        "draft": "Draft",
+        "published": "Published"
+      },
+      "fields": {
+        "summary": "Summary",
+        "impact": "Impact",
+        "root_cause": "Root cause",
+        "resolution": "Resolution",
+        "action_items": "Action items"
+      }
     }
   }
 }

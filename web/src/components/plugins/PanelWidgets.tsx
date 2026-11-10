@@ -63,7 +63,7 @@ function TableWidget({ w }: Readonly<{ w: WidgetView }>) {
   }
   return (
     <div className="space-y-2">
-      <Table>
+      <Table aria-label={t('a11y.tables.pluginPanel', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             {(w.columns ?? []).map((c) => (

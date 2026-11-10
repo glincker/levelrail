@@ -42,23 +42,26 @@ const crashloopLogLookback = 15 * time.Minute
 
 // Engine evaluates enabled rules each tick and notifies only on firing or resolved transitions, never on repeats.
 type Engine struct {
-	rules          RuleStore
-	metrics        MetricsSource
-	logs           LogsSource
-	tracker        *RestartTracker
-	certs          CertSource
-	nodes          NodeSource
-	nodeServices   NodeServiceSource
-	scheduledTasks ScheduledTaskSource
-	domainApps     AppDomainSource
-	domainChecker  DomainCheckSource
-	backups        BackupSource
-	databaseHealth DatabaseHealthSource
-	deployFailures DeployFailureSource
-	monitorDowns   MonitorDownSource
-	traffic        trafficKinds
-	newNotifier    func(Rule) Notifier
-	logger         *slog.Logger
+	rules            RuleStore
+	metrics          MetricsSource
+	logs             LogsSource
+	tracker          *RestartTracker
+	certs            CertSource
+	nodes            NodeSource
+	nodeServices     NodeServiceSource
+	scheduledTasks   ScheduledTaskSource
+	jobFailing       JobFailingSource
+	jobFailingWindow func() time.Duration
+	jobFailingLimit  func() int
+	domainApps       AppDomainSource
+	domainChecker    DomainCheckSource
+	backups          BackupSource
+	databaseHealth   DatabaseHealthSource
+	deployFailures   DeployFailureSource
+	monitorDowns     MonitorDownSource
+	traffic          trafficKinds
+	newNotifier      func(Rule) Notifier
+	logger           *slog.Logger
 
 	// Both nil (the default) disables crashloop auto-rollback platform-wide.
 	autoRollback        AutoRollbackStore
@@ -82,6 +85,9 @@ type Engine struct {
 	nodeDiskSpaceThreshold      float64
 	nodeCPUThreshold            float64
 	nodeMemoryThreshold         float64
+	nodePolicy                  func() NodeThresholdPolicy
+	nodeOverrides               NodeThresholdOverrideSource
+	nodeStreaks                 nodeStreaks
 	domainHealthCheckInterval   time.Duration
 	domainHealthThrottle        *domainHealthThrottle
 	backupMissingGracePeriod    time.Duration
@@ -109,6 +115,11 @@ type Engine struct {
 	versionSkewCache    *upgrade.Cache
 
 	emailDelivery EmailDeliverySource
+	cleanup       CleanupSource
+
+	// volumes and volumeThreshold back kind=volume_usage rules; the threshold is read per tick so a runtime setting change applies live.
+	volumes         VolumeSource
+	volumeThreshold func() float64
 
 	budgets       BudgetSource
 	budgetTracker *budgetTracker
@@ -197,6 +208,12 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 	e.cpBackupMaxAge = maxAge
 }
 
+// SetVolumeUsage enables kind=volume_usage rules; threshold returns the current percent.
+func (e *Engine) SetVolumeUsage(src VolumeSource, threshold func() float64) {
+	e.volumes = src
+	e.volumeThreshold = threshold
+}
+
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
@@ -223,6 +240,9 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 
 // SetEmailDelivery enables kind=email_delivery_failing rules.
 func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
+// SetCleanup enables kind=cleanup_failing rules.
+func (e *Engine) SetCleanup(src CleanupSource) { e.cleanup = src }
 
 // SetMonitorDowns wires the source the monitor_down rule reads; unset keeps the rule inert.
 func (e *Engine) SetMonitorDowns(src MonitorDownSource) { e.monitorDowns = src }
@@ -341,6 +361,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 		if ctx.Err() != nil {
 			break
 		}
+		if r.Kind == KindJobFailing {
+			if err := e.tickJobFailing(ctx, r, now); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
 		var next Rule
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
 		var taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice string
@@ -355,6 +381,8 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 		case KindCrashloop:
 			next = EvaluateCrashloop(e.tracker, r, now)
+		case KindOOMKilled:
+			next = EvaluateOOMKilled(e.tracker, r, now)
 		case KindCertExpiry:
 			if e.certs == nil {
 				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
@@ -411,7 +439,11 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: node_disk_space rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, diskSpaceNotices, err = EvaluateNodeDiskSpace(ctx, e.nodes, e.metrics, r, e.nodeDiskSpaceThreshold, now, e.logger)
+			diskLimit := e.nodeDiskSpaceThreshold
+			if e.nodePolicy != nil {
+				diskLimit = e.nodePolicy().DiskPercent
+			}
+			next, diskSpaceNotices, err = EvaluateNodeDiskSpaceWithOverrides(ctx, e.nodes, e.metrics, r, diskLimit, e.loadNodeOverrides(ctx), now, e.logger)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -453,6 +485,18 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindNodeCPU, KindNodeMemory:
+			if e.nodes == nil || e.nodePolicy == nil {
+				e.logger.Warn("alerting: node pressure rule found but no node source or threshold policy configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			var streaks map[string]int
+			next, resourceUsageNotices, streaks, err = EvaluateNodePressure(ctx, e.nodes, e.nodeServices, e.metrics, r, e.nodePolicy(), e.loadNodeOverrides(ctx), e.nodeStreaks.get(r.ID), now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+			e.nodeStreaks.put(r.ID, streaks)
 		case KindDomainHealth:
 			if e.domainApps == nil || e.domainChecker == nil {
 				e.logger.Warn("alerting: domain_health rule found but no app/domain check source configured, skipping", slog.String("rule_id", r.ID))
@@ -482,6 +526,18 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindVolumeUsage:
+			if e.volumes == nil || e.volumeThreshold == nil || e.metrics == nil {
+				e.logger.Warn("alerting: volume_usage rule found but no volume source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			var volumeNotices []string
+			next, volumeNotices, err = EvaluateVolumeUsage(ctx, e.volumes, e.metrics, r, e.volumeThreshold(), now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+			backupMissingNoticeText = strings.Join(volumeNotices, "; ")
 		case KindDeployFailed:
 			if e.deployFailures == nil {
 				continue
@@ -591,6 +647,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, backupMissingNoticeText, err = EvaluateEmailDeliveryFailing(ctx, e.emailDelivery, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindCleanupFailing:
+			if e.cleanup == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateCleanupFailing(ctx, e.cleanup, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -729,7 +794,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 
 	ev := Event{Rule: r, Resolved: resolved}
-	if r.Kind == KindCrashloop && !resolved {
+	if (r.Kind == KindCrashloop || r.Kind == KindOOMKilled) && !resolved {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
 	}
 	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled || r.Kind == KindParkedDomainCertExpiry) && !resolved {
@@ -750,7 +815,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindNodeCertExpiring && !resolved {
 		ev.NodeCertNotices = nodeNotices
 	}
-	if r.Kind == KindNodeResourceUsage && !resolved {
+	if (r.Kind == KindNodeResourceUsage || r.Kind == KindNodeCPU || r.Kind == KindNodeMemory) && !resolved {
 		ev.ResourceUsageNotices = resourceUsageNotices
 	}
 	if (r.Kind == KindScheduledTaskFailure || r.Kind == KindScheduledTaskMissed || r.Kind == KindScheduledTaskRunningLong) && !resolved {
@@ -759,7 +824,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

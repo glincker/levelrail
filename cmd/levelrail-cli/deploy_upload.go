@@ -58,7 +58,7 @@ func wantsUploadDeploy(args []string) bool {
 	for _, a := range args {
 		name := strings.TrimLeft(strings.SplitN(a, "=", 2)[0], "-")
 		switch name {
-		case "image", "commit", "latest", "branch", "from-cache", "diff", "confirm":
+		case "image", "commit", "latest", "branch", "from-cache", "diff", "confirm", "dockerfile", "dockerfile-file", "context-file":
 			if strings.HasPrefix(a, "-") {
 				return false
 			}
@@ -477,6 +477,9 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		_, _ = fmt.Fprintf(stderr, "deploy %s: %s\n", res.DeployID, res.Status)
 		if !wait.Done {
 			_, _ = fmt.Fprintf(stderr, "still running on the server, follow it with: %s\n", followHint(prog, name, res.DeployID))
+		}
+		if res.Status == apiclient.DeployOutcomeStopped {
+			_, _ = fmt.Fprintf(stderr, "%q is stopped, so this deploy was built but is not live. Start it with: %s apps start %s\n", name, prog, name)
 		}
 		printUploadFailure(stderr, res)
 	})

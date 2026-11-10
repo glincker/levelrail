@@ -1,3 +1,4 @@
+import '@/styles/material.css'
 import * as React from 'react'
 import { Menu as MenuPrimitive } from '@base-ui/react/menu'
 
@@ -37,7 +38,7 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            'z-50 min-w-48 origin-(--transform-origin) rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-popover ring-1 ring-foreground/10 outline-hidden duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+            'z-50 min-w-48 origin-(--transform-origin) glass glass-regular motion-overlay rounded-container p-1 text-sm text-popover-foreground outline-hidden',
             className,
           )}
           {...props}
@@ -52,7 +53,7 @@ function DropdownMenuItem({ className, ...props }: MenuPrimitive.Item.Props) {
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
       className={cn(
-        'flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden select-none data-highlighted:bg-muted data-highlighted:text-foreground [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+        'flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden select-none data-highlighted:bg-foreground/10 data-highlighted:text-foreground [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
         className,
       )}
       {...props}
@@ -69,7 +70,7 @@ function DropdownMenuLinkItem({
       data-slot="dropdown-menu-link-item"
       closeOnClick
       className={cn(
-        'flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden select-none data-highlighted:bg-muted data-highlighted:text-foreground [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+        'flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden select-none data-highlighted:bg-foreground/10 data-highlighted:text-foreground [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
         className,
       )}
       {...props}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/spool"
 	"io"
 	"log/slog"
 	"mime"
@@ -249,7 +250,7 @@ func (rt *Router) handleUploadAsset(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Content-Type is not a valid media type")
 		return
 	}
-	tmp, err := os.CreateTemp("", "asset-upload-*")
+	tmp, err := spool.Create("asset-upload")
 	if err != nil {
 		rt.internalError(w, "api: asset upload: temp file failed", err)
 		return

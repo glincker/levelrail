@@ -63,6 +63,7 @@ type rootDeps struct {
 	engine              *reconcile.Engine
 	ingressDriver       *ingressdriver.Driver
 	pushVAPIDPublicKey  string
+	pendingStages       func() []string
 }
 
 // rootHandler mounts the API under /api/ and the embedded frontend everywhere else, on one server.
@@ -104,6 +105,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithStaticRootDir(filepath.Join(dataDir, "static")),
 		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
+		api.WithPendingStages(d.pendingStages),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithTraceStore(telemetryDB),
 		api.WithErrorStore(telemetryDB),
@@ -329,6 +331,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			mailBackupOption(backupRunner, secretsManager),
 			// Volume backups reuse the database runner: one implementation serves both resource kinds.
 			api.WithServiceVolumeBackupRunner(backupRunner),
+			composeBackupOption(db, client, agentRegistry, backupRunner, restoreRunner),
 			// Needs ExecWithInput on the local runtime, the same way ContainerDumper needs Exec.
 			api.WithRestoreRunner(restoreRunner),
 			api.WithServiceVolumeRestoreRunner(restoreRunner),
@@ -433,6 +436,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		builder.SetPortAdmitter(rt)
 	}
 	wireBindMountSettings(rt)
+	// Push builds share the API's post build cache quota hook.
+	if wh, ok := webhookHandler.(interface{ SetAfterBuildFinish(func(string)) }); ok {
+		wh.SetAfterBuildFinish(rt.AfterBuildFinish)
+	}
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b))))), rt
 }
 

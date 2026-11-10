@@ -273,7 +273,7 @@ export function ImportPlanEditor({
             </div>
           </div>
           <div className="overflow-x-auto rounded-md border border-border">
-            <Table>
+            <Table aria-label={t('a11y.tables.importPlan', { ns: 'common' })}>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8">
@@ -666,7 +666,7 @@ function ResultsTable({
   const { t } = useTranslation('newApp')
   return (
     <div className="overflow-x-auto rounded-md border border-border">
-      <Table>
+      <Table aria-label={t('a11y.tables.importPlanServices', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('plan.columns.name')}</TableHead>

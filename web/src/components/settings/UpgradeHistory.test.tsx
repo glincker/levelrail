@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -83,7 +83,7 @@ describe('UpgradeHistory', () => {
     ).toBeInTheDocument()
   })
 
-  it('flags an unacknowledged upgrade, an unknown initiator and a moved schema', async () => {
+  it('shows a compact row, then details with rollback and release link', async () => {
     renderWith({
       current_version: 'v0.0.2',
       unacknowledged: 1,
@@ -91,9 +91,14 @@ describe('UpgradeHistory', () => {
       agent_changes: [],
     })
     expect(
-      await screen.findByRole('button', { name: /Acknowledge/ }),
+      await screen.findByRole('button', { name: 'Acknowledge v0.0.2' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Initiator unknown/)).toBeInTheDocument()
+    expect(screen.getByText('1 change to review')).toBeInTheDocument()
+    expect(screen.getByText('Unknown initiator')).toBeInTheDocument()
+    expect(screen.getByText('Schema 10 to 12')).toBeInTheDocument()
+    expect(screen.getByText('No backup, schema changed')).toBeInTheDocument()
+    expect(screen.queryByText(/Roll back to/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Details for v0.0.2' }))
     expect(screen.getByText(/database schema changed/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Roll back to v0.0.1/ }),
@@ -102,5 +107,73 @@ describe('UpgradeHistory', () => {
       'href',
       base.release_url,
     )
+  })
+
+  it('acknowledges a row and announces it', async () => {
+    const acked = { ...base, acknowledged: true, acked_by: 'dev' }
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            current_version: 'v0.0.2',
+            unacknowledged: 1,
+            entries: [base],
+            agent_changes: [],
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(acked),
+      })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            current_version: 'v0.0.2',
+            unacknowledged: 0,
+            entries: [acked],
+            agent_changes: [],
+          }),
+      })
+    vi.stubGlobal('fetch', fetchMock)
+    render(
+      <I18nextProvider i18n={testI18n}>
+        <QueryClientProvider client={createTestQueryClient()}>
+          <UpgradeHistory />
+        </QueryClientProvider>
+      </I18nextProvider>,
+    )
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Acknowledge v0.0.2' }),
+    )
+    expect(
+      await screen.findByText('Upgrade to v0.0.2 acknowledged'),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Acknowledged')).toBeInTheDocument()
+  })
+
+  it('caps at 10 rows and reveals the rest with Show all', async () => {
+    const entries = Array.from({ length: 12 }, (_, i) => ({
+      ...base,
+      id: `uh_${String(i)}`,
+      to_version: `v1.0.${String(i)}`,
+      acknowledged: true,
+    }))
+    renderWith({
+      current_version: 'v1.0.0',
+      unacknowledged: 0,
+      entries,
+      agent_changes: [],
+    })
+    expect(await screen.findAllByRole('listitem')).toHaveLength(10)
+    fireEvent.click(screen.getByRole('button', { name: 'Show all 12' }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(12)
+    fireEvent.click(screen.getByRole('button', { name: 'Show latest 10' }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(10)
   })
 })

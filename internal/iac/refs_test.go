@@ -89,3 +89,19 @@ func TestDatabaseRefUnknownDatabaseFailsPlan(t *testing.T) {
 		t.Fatalf("plan = %+v", plan.Changes)
 	}
 }
+
+func TestPlanWarnsJobsNeedRootTier(t *testing.T) {
+	f := newFake()
+	plan := planFor(t, f, refsFixture, Options{})
+	for _, c := range plan.Changes {
+		if c.Kind != KindApp {
+			continue
+		}
+		for _, w := range c.Warnings {
+			if strings.Contains(w, "root-tier") {
+				return
+			}
+		}
+	}
+	t.Fatalf("no jobs tier warning in plan: %+v", plan.Changes)
+}

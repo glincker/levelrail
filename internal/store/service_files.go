@@ -13,11 +13,14 @@ import (
 // FileSecretKey(Path), so Content is empty for it and Hash alone tells a
 // change apart without exposing the text.
 type ServiceFile struct {
-	Path    string `json:"path"`
-	Mode    string `json:"mode,omitempty"`
-	Secret  bool   `json:"secret,omitempty"`
-	Content string `json:"content,omitempty"`
-	Hash    string `json:"hash,omitempty"`
+	Path   string `json:"path"`
+	Mode   string `json:"mode,omitempty"`
+	Secret bool   `json:"secret,omitempty"`
+	// NoExpand delivers a compose-origin secret verbatim, skipping ${VAR}
+	// and $$ handling, so PEM bodies and literal dollars survive.
+	NoExpand bool   `json:"no_expand,omitempty"`
+	Content  string `json:"content,omitempty"`
+	Hash     string `json:"hash,omitempty"`
 }
 
 // AppliedFieldFiles hashes the file list, which is fixed at container create.

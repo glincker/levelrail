@@ -222,6 +222,10 @@
       "title": "Local backup root",
       "description": "Absolute directory on the control plane that confines local backup targets. Empty uses backups/ under the data directory. The next backup or restore uses a changed value; target paths stay relative to it and cannot leave it."
     },
+    "outboundTimeout": {
+      "title": "Outbound request timeout",
+      "description": "How long an outbound HTTP request from the control plane (cloud metadata, model probes, upgrade checks) may take before it is cancelled. The next request uses a changed value."
+    },
     "bootRechecks": {
       "title": "Boot recheck delays",
       "description": "Offsets after start, colon separated (for example 3s:10s), at which the control plane runs extra reconcile passes so routes are fixed when Docker publishes ports late after a host reboot. Each offset is at least 1s. Read at start."
@@ -230,9 +234,25 @@
       "title": "Boot recheck after first event",
       "description": "How long after the first Docker event the control plane runs one more reconcile pass, from 1s to 1h. Read at start."
     },
+    "bootDeferredStages": {
+      "title": "Defer non critical startup stages",
+      "description": "Start heartbeat, dynamic DNS, monitors and disk history after the HTTP listener is up so the dashboard answers sooner. GET /readyz lists the stages still pending. Read at start."
+    },
     "metricsScrapeEnabled": {
       "title": "Prometheus scrape endpoint",
       "description": "Serve app, database and node metrics in Prometheus text format at /metrics for a read token. When off, the endpoint answers 404."
+    },
+    "envApplyOnSet": {
+      "title": "Apply env changes on set",
+      "description": "When on, env set and env import restart the app so the new values reach the running container, as if --apply was passed. Pass --no-apply to keep one change pending. Off by default; a change applies to the next command."
+    },
+    "maxReplicasPerService": {
+      "title": "Replica cap per service",
+      "description": "Largest replica count the API accepts for one service when an app is created, updated or scaled; a bigger count is refused with HTTP 400. Between 1 and 1000; a change applies to the next request, running apps keep their count."
+    },
+    "containersInspectTimeout": {
+      "title": "Container inspect timeout",
+      "description": "How long the app containers view waits for a node's live inspect (health, restarts, networks, mounts), from 1s to 2m. When it runs out the view still answers, with those fields marked unavailable. The next request uses a changed value."
     }
   },
   "row": {

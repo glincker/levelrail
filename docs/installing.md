@@ -415,7 +415,7 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `.github/CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
 
-**Requirements:** Go 1.26 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
+**Requirements:** Go 1.27 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
 
 ```bash
 go build ./cmd/levelrail          # control plane
@@ -582,7 +582,7 @@ Pick the path that matches how you installed. The self-update (next section) is 
 
 ### Check first, then upgrade
 
-`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or you turned on automatic upgrades (off by default, see [Upgrade safely](/upgrade-safely#automatic-upgrades)).
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or automatic upgrades fire in their nightly window (on by default until you save a policy; turn off with `levelrail-cli upgrade auto set --mode off`, see [Upgrade safely](/upgrade-safely#automatic-upgrades)).
 
 | Check | Detail |
 | --- | --- |

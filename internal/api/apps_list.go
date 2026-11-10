@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -82,13 +83,99 @@ func parseAppListFilter(r *http.Request) store.AppListFilter {
 // caller has any IAM policies at all (none means every app is visible
 // to a caller holding the base read ability, so DB paging is exact).
 func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) bool, filtered bool, err error) {
+	return rt.callerAppAccess(r, AbilityRead)
+}
+
+// callerAppAccess is callerAppVisibility for any ability, so a deploy-only
+// route keeps the stack member rule without demanding read.
+func (rt *Router) callerAppAccess(r *http.Request, ability string) (canRead func(string) bool, filtered bool, err error) {
 	abilities, policies, scope, err := rt.callerScope(r)
 	if err != nil {
 		return nil, false, err
 	}
+	canRead = func(app string) bool {
+		return scope.authorize(abilities, policies, ability, resourcePrefixApp, app)
+	}
+	if scope.teams != nil && rt.teamDB() != nil {
+		canRead = rt.composeAwareRead(r.Context(), scope, canRead, func(stack, member string) bool {
+			return scope.authorizeAsMember(abilities, policies, ability, resourcePrefixApp, stack, member)
+		})
+	}
+	return canRead, len(policies) > 0 || scope.restricted(), nil
+}
+
+// composeAwareRead shows a compose app's records (approvals, attempts) only to a
+// caller who can read every member; unlisted members keep the instance only default.
+func (rt *Router) composeAwareRead(ctx context.Context, scope *resourceScope, canRead func(string) bool, asMember func(stack, member string) bool) func(string) bool {
+	var mu sync.Mutex
+	memo := map[string]bool{}
+	// One listing answers the sharing check for every app instead of a query each.
+	var once sync.Once
+	var sharing map[string][]string
+	var sharingErr error
+	loadSharing := func() {
+		svcs, err := rt.apps.ListDesiredServices(ctx)
+		if err != nil {
+			sharingErr = err
+			return
+		}
+		sharing = map[string][]string{}
+		for _, sv := range svcs {
+			if sv.AppID != "" && sv.AppID != sv.Name {
+				sharing[sv.AppID] = append(sharing[sv.AppID], sv.Name)
+			}
+		}
+	}
 	return func(app string) bool {
-		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixApp, app)
-	}, len(policies) > 0 || scope.restricted(), nil
+		if scope.owner(resourcePrefixApp, app) != nil {
+			if !canRead(app) {
+				return false
+			}
+			once.Do(loadSharing)
+			if sharingErr != nil {
+				return false
+			}
+			for _, m := range sharing[app] {
+				if !asMember(app, m) {
+					return false
+				}
+			}
+			return true
+		}
+		mu.Lock()
+		v, ok := memo[app]
+		mu.Unlock()
+		if ok {
+			return v
+		}
+		members, err := rt.composeMembers(ctx, app)
+		v = err == nil || canRead(app)
+		for _, m := range members {
+			v = v && asMember(app, m.Name)
+		}
+		mu.Lock()
+		memo[app] = v
+		mu.Unlock()
+		return v
+	}
+}
+
+// otherMembersReadable covers a service that took a stack's name: the other
+// services sharing its app row must be readable too. A lookup error fails closed.
+func (rt *Router) otherMembersReadable(ctx context.Context, app string, asMember func(stack, member string) bool) bool {
+	if rt.appGroups == nil {
+		return true
+	}
+	members, err := rt.appGroups.ListServicesByApp(ctx, app)
+	if err != nil {
+		return false
+	}
+	for _, m := range members {
+		if m.Name != app && !asMember(app, m.Name) {
+			return false
+		}
+	}
+	return true
 }
 
 // X-Total-Count is the match count before paging; without limit the full filtered set is returned.
@@ -127,22 +214,10 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	)
 	if rank != nil {
 		svcs, total, err = listRankedApps(r.Context(), fs, f, rank, canRead)
+	} else if filtered {
+		svcs, total, err = listVisibleAppsPaged(r.Context(), fs, f, canRead)
 	} else {
-		dbFilter := f
-		if filtered {
-			dbFilter.Limit, dbFilter.Offset = 0, 0
-		}
-		svcs, total, err = fs.ListDesiredServicesFiltered(r.Context(), dbFilter)
-		if err == nil && filtered {
-			visible := svcs[:0:0]
-			for _, s := range svcs {
-				if canRead(s.Name) {
-					visible = append(visible, s)
-				}
-			}
-			total = len(visible)
-			svcs = pageSlice(visible, f.Limit, f.Offset)
-		}
+		svcs, total, err = fs.ListDesiredServicesFiltered(r.Context(), f)
 	}
 	if err != nil {
 		rt.internalError(w, "api: list apps failed", err)
@@ -175,6 +250,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 
 	placement := rt.placementResolver(r.Context())
 	owners := rt.loadStackOwners(r.Context())
+	descriptions := rt.appDescriptions(r.Context())
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -190,6 +266,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 			Status:          summarizeAppConditions(conditions),
 			EnvironmentName: envNames[s.EnvironmentID],
 			ManagedByStack:  owners.of("App", "App/"+s.Name),
+			Description:     descriptions[s.Name],
 		}
 		if sl, ok := sleepRows[s.Name]; ok {
 			item.Sleep = &sl
@@ -200,7 +277,41 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-func pageSlice(in []store.DesiredService, limit, offset int) []store.DesiredService {
+// listVisibleAppsPaged gates names before loading rows, so a scoped caller
+// decodes one page of services instead of every app; canRead stays the
+// only authorization decision and is re-applied to the loaded page.
+func listVisibleAppsPaged(ctx context.Context, fs appFilterStore, f store.AppListFilter, canRead func(string) bool) ([]store.DesiredService, int, error) {
+	nf := f
+	nf.Limit, nf.Offset = 0, 0
+	names, err := fs.ListAppNamesFiltered(ctx, nf)
+	if err != nil {
+		return nil, 0, err
+	}
+	visible := make([]string, 0, len(names))
+	for _, n := range names {
+		if canRead(n) {
+			visible = append(visible, n)
+		}
+	}
+	page := pageSlice(visible, f.Limit, f.Offset)
+	if len(page) == 0 {
+		return nil, len(visible), nil
+	}
+	nf.Names = page
+	svcs, _, err := fs.ListDesiredServicesFiltered(ctx, nf)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := svcs[:0]
+	for _, s := range svcs {
+		if canRead(s.Name) {
+			out = append(out, s)
+		}
+	}
+	return out, len(visible), nil
+}
+
+func pageSlice[T any](in []T, limit, offset int) []T {
 	if offset >= len(in) {
 		return nil
 	}

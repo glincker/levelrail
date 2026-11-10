@@ -28,7 +28,7 @@ export function CardSkeleton({
         </CardHeader>
         <CardContent className="space-y-3">
           {Array.from({ length: rows }, (_, i) => (
-            <Skeleton key={i} decorative className="h-9 w-full" />
+            <Skeleton key={i} decorative className="h-10 w-full" />
           ))}
         </CardContent>
       </Card>

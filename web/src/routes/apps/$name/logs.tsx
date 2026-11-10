@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ArchiveGlassIcon,
+  GlobeGlassIcon,
   BugGlassIcon,
   SearchGlassIcon,
   TerminalGlassIcon,
@@ -19,9 +20,14 @@ import {
 import { AppLogBudgetField } from '../../../components/logBudgets/AppLogBudgetField'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { parseLogsSearch, type LogsTab } from '../../../lib/observabilitySearch'
+import { LogsServiceSelect } from '../../../components/LogsServiceSelect'
 import { SavedLogQueriesMenu } from '../../../components/SavedLogQueriesMenu'
 import { rangeSeconds, signatureToRegex } from '../../../lib/logExplorer'
 import type { LogQuerySpec } from '../../../types/logExplorer'
+
+const AccessLogSearchPanel = lazy(
+  () => import('../../../components/accessLog/AccessLogSearchPanel'),
+)
 
 // App-scoped logs section: a live-tailing terminal plus stored search, error
 // signatures and the archive. Search filters and the time window live in the
@@ -96,6 +102,10 @@ function LogsSection() {
             <ArchiveGlassIcon className="size-5" aria-hidden="true" />
             Archive
           </TabsTrigger>
+          <TabsTrigger value="requests" className="gap-1.5">
+            <GlobeGlassIcon className="size-5" aria-hidden="true" />
+            {t('accessSearch.tab')}
+          </TabsTrigger>
         </TabsList>
         {tab !== 'search' ? (
           <SavedLogQueriesMenu
@@ -106,7 +116,10 @@ function LogsSection() {
           />
         ) : null}
       </div>
-      <AppLogBudgetField app={name} />
+      <div className="flex flex-wrap items-center gap-2">
+        <LogsServiceSelect name={name} />
+        <AppLogBudgetField app={name} />
+      </div>
 
       <TabsContent value="live" className="flex-1">
         <LiveLogViewer appName={name} conditions={conditions} />
@@ -149,6 +162,13 @@ function LogsSection() {
       </TabsContent>
       <TabsContent value="archive" className="flex-1 overflow-y-auto">
         <LogArchivePanel appName={name} />
+      </TabsContent>
+      <TabsContent value="requests" className="flex-1 overflow-y-auto">
+        {tab === 'requests' ? (
+          <Suspense fallback={null}>
+            <AccessLogSearchPanel appName={name} />
+          </Suspense>
+        ) : null}
       </TabsContent>
       {alertDefaults ? (
         <CreateLogAlertDialog

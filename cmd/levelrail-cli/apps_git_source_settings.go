@@ -33,13 +33,19 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 	var paths, ignore csvListFlag
 	var report, waitCI bool
 	var ciChecks csvListFlag
+	var tagPattern, branchPattern string
+	var submodules, lfs bool
 	fs.Var(&paths, "paths", "deploy only when a push changes a file matching these globs (comma separated, ** supported); empty clears the filter")
 	fs.Var(&ignore, "paths-ignore", "skip the deploy when every changed file matches these globs (comma separated); empty clears the filter")
 	fs.BoolVar(&report, "report-status", true, "post deploy and pipeline state back to the git forge (GitHub Deployments and commit statuses)")
 	fs.BoolVar(&waitCI, "wait-for-ci", false, "hold a push deploy until the commit's CI checks pass (GitHub and GitLab); a failure or timeout skips the deploy")
 	fs.Var(&ciChecks, "ci-check", "check the deploy waits for (repeatable): the GitHub check name or the GitLab job name; none means every check on the commit. A GitLab job that was skipped or is allowed to fail (allow_failure) fails the gate when named here")
+	fs.StringVar(&tagPattern, "tag-pattern", "", "release mode: deploy only tags matching these globs (comma separated, * stops at /, ** crosses it, ! excludes and always wins); empty keeps every tag")
+	fs.StringVar(&branchPattern, "branch-pattern", "", "push mode: deploy pushes to branches matching these globs instead of only the configured branch (same syntax, e.g. main,release/*,!release/old); empty keeps the configured branch. An eligible branch deploy runs first and ignores this pattern, and the poller is off while it is set")
+	fs.BoolVar(&submodules, "submodules", false, "fetch git submodules (https only, within the git.submodules_* runtime limits) before each build")
+	fs.BoolVar(&lfs, "lfs", false, "replace git LFS pointer files with their objects before each build (downloads only from the repository host or git.lfs_hosts)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source settings <name> [flags]\n\nSets which pushes deploy by the files they changed, and whether deploy and\npipeline state is reported back to the git forge. Only the flags you pass\nchange. The server kill switch APP_GIT_STATUS_ENABLED=false turns reporting\noff for every app.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source settings <name> [flags]\n\nSets which pushes deploy by the files they changed, and whether deploy and\npipeline state is reported back to the git forge, and which tags or branches\ntrigger a deploy (--tag-pattern, --branch-pattern), and whether builds fetch\nsubmodules and LFS objects (--submodules, --lfs). Only the flags you pass\nchange. The server kill switch APP_GIT_STATUS_ENABLED=false turns reporting\noff for every app.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -63,10 +69,18 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 		case "ci-check":
 			v := []string(ciChecks)
 			req.CIRequiredChecks = &v
+		case "tag-pattern":
+			req.TagPattern = &tagPattern
+		case "branch-pattern":
+			req.BranchPattern = &branchPattern
+		case "submodules":
+			req.FetchSubmodules = &submodules
+		case "lfs":
+			req.FetchLFS = &lfs
 		}
 	})
-	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil {
-		_, _ = fmt.Fprintf(stderr, "%s: apps git-source settings needs --paths, --paths-ignore, --report-status, --wait-for-ci or --ci-check\n\n", prog)
+	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil && req.TagPattern == nil && req.BranchPattern == nil && req.FetchSubmodules == nil && req.FetchLFS == nil {
+		_, _ = fmt.Fprintf(stderr, "%s: apps git-source settings needs --paths, --paths-ignore, --report-status, --wait-for-ci, --ci-check, --tag-pattern, --branch-pattern, --submodules or --lfs\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
@@ -84,6 +98,10 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 		_, _ = fmt.Fprintf(stdout, "report_status:       %t\n", got.ReportStatus)
 		_, _ = fmt.Fprintf(stdout, "wait_for_ci:         %t\n", got.WaitForCI)
 		_, _ = fmt.Fprintf(stdout, "ci_required_checks:  %s\n", strings.Join(got.CIRequiredChecks, ", "))
+		_, _ = fmt.Fprintf(stdout, "tag_pattern:         %s\n", strings.ReplaceAll(got.TagPattern, "\n", ", "))
+		_, _ = fmt.Fprintf(stdout, "branch_pattern:      %s\n", strings.ReplaceAll(got.BranchPattern, "\n", ", "))
+		_, _ = fmt.Fprintf(stdout, "fetch_submodules:    %t\n", got.FetchSubmodules)
+		_, _ = fmt.Fprintf(stdout, "fetch_lfs:           %t\n", got.FetchLFS)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

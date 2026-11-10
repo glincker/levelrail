@@ -17,6 +17,8 @@ import { HelpLink } from '../HelpLink'
 import { LazyNodesDiagram } from '../banners/LazyInfraDiagrams'
 import type { NodeResource } from '../../types/nodeDetail'
 import type { NodeResourceUsage } from '../../types/fleetResourceUsage'
+import { ListKeyboardHint } from '../ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { LoadMore } from '../../components/ui/load-more'
 
 // Column labels match NODE_LIST_GRID so the header never drifts from the rows.
@@ -58,6 +60,11 @@ export function NodeListView({
   const { t } = useTranslation('nodes')
   const solo = nodes.every((n) => n.is_local)
   const size = solo ? 'hero' : 'compact'
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
   return (
     <div className={PAGE_WRAPPER}>
       <PageBanner
@@ -87,18 +94,24 @@ export function NodeListView({
       ) : null}
       <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
+      {nodes.length > 0 ? (
+        <>
+          <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+          <div
+            ref={setListContainer}
+            className="min-w-0 overflow-x-auto rounded-lg"
+          >
+            <NodesTable
+              nodes={nodes}
+              usageByNodeId={usageByNodeId}
+              counts={counts}
+            />
+          </div>
+        </>
+      ) : null}
       <ZoneSpreadCard />
       <LazyNodeDomainsCard />
       <ResilienceCard />
-      {nodes.length > 0 ? (
-        <div className="min-w-0 overflow-x-auto rounded-lg">
-          <NodesTable
-            nodes={nodes}
-            usageByNodeId={usageByNodeId}
-            counts={counts}
-          />
-        </div>
-      ) : null}
       {footer}
     </div>
   )

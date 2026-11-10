@@ -219,6 +219,12 @@ func (rt *Router) handleListPrivateNetworks(w http.ResponseWriter, r *http.Reque
 		sort.Strings(members)
 		out.Networks = append(out.Networks, privateNetworkResource{ID: n.ID, Name: n.Name, ProjectID: n.ProjectID, DefaultDeny: n.DefaultDeny, Members: members, CreatedAt: n.CreatedAt})
 	}
+	sortQuery(r, out.Networks, map[string]func(a, b privateNetworkResource) int{
+		"name": func(a, b privateNetworkResource) int {
+			return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+		},
+		"created": func(a, b privateNetworkResource) int { return strings.Compare(a.CreatedAt, b.CreatedAt) },
+	})
 	for _, ru := range rules {
 		out.Rules = append(out.Rules, privateNetworkRuleResource{ID: ru.ID, From: nameOf(ru.FromApp), To: nameOf(ru.ToApp), Note: ru.Note, CreatedAt: ru.CreatedAt})
 	}

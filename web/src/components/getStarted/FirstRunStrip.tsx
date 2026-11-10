@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowRightGlassIcon,
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
   CircleDashedGlassIcon,
@@ -17,7 +18,8 @@ import type {
   FirstRunStepState,
 } from '../../lib/firstRunSteps'
 
-const LINK = 'text-xs text-foreground underline-offset-2 hover:underline'
+const LINK =
+  'inline-flex items-center gap-1 pointer-coarse:min-h-10 text-xs font-medium text-foreground underline-offset-2 hover:underline'
 
 function StateIcon({ state }: { state: FirstRunStepState }) {
   const base = 'size-5 shrink-0'
@@ -82,7 +84,7 @@ function StepItem({
         <p className="text-sm font-medium text-foreground">
           {index}. {t(`strip.steps.${step.id}.title`)}
         </p>
-        <p className="truncate text-xs text-muted-foreground">
+        <p className="line-clamp-2 text-xs text-muted-foreground">
           {step.detail || t(`strip.steps.${step.id}.${step.state}`)}
         </p>
         {children}
@@ -195,11 +197,13 @@ export function FirstRunStrip({
             step.state !== 'todo' ? (
               <Link to="/inbox" className={LINK}>
                 {t('strip.review')}
+                <ArrowRightGlassIcon aria-hidden className="size-4" />
               </Link>
             ) : null}
             {step.id === 'deploy' && step.state === 'todo' ? (
               <Link to="/apps/new" className={LINK}>
                 {t('strip.gitUrl')}
+                <ArrowRightGlassIcon aria-hidden className="size-4" />
               </Link>
             ) : null}
             {step.id === 'deploy' &&
@@ -211,6 +215,7 @@ export function FirstRunStrip({
                 className={LINK}
               >
                 {t('strip.viewApp')}
+                <ArrowRightGlassIcon aria-hidden className="size-4" />
               </Link>
             ) : null}
           </StepItem>

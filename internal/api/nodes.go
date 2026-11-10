@@ -500,6 +500,7 @@ func (rt *Router) setNodeSchedulable(w http.ResponseWriter, r *http.Request, sch
 		return
 	}
 
+	rt.changes.Publish(changeNodes, id)
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: set node schedulable: reload after update failed", err, slog.String("node_id", id))
@@ -764,7 +765,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 	}
 	resp := createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint, ControlPlaneAddr: addr}
 	if addr != "" {
-		cmds := rt.buildJoinCommands(r.Context(), addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh, domain)
+		cmds := rt.buildJoinCommands(r.Context(), addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh || rt.mesh != nil, domain)
 		resp.JoinCommands = &cmds
 	}
 	writeJSON(w, http.StatusCreated, resp)

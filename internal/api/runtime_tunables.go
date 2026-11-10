@@ -61,6 +61,14 @@ func (rt *Router) deployExplainLines(ctx context.Context) int {
 	return rt.tunableInt(ctx, runtimesettings.KeyDeployExplainLogLines, envDeployExplainLines, defaultDeployExplainLines)
 }
 
+// procfileWebPort returns the live Procfile web port, or 0 to keep the translator default.
+func (rt *Router) procfileWebPort(ctx context.Context) int {
+	if rt.runtimeSettings == nil {
+		return 0
+	}
+	return rt.runtimeSettings.Int(ctx, runtimesettings.KeyDeployProcfileDefaultPort)
+}
+
 // cdnPurgeHistory returns the shared purge history with its cap refreshed from the setting.
 func (rt *Router) cdnPurgeHistory(ctx context.Context) *cdn.History {
 	h := cdn.DefaultHistory()

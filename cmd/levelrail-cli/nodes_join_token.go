@@ -31,7 +31,7 @@ func runNodesJoinToken(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		if created.JoinCommands != nil {
 			_, _ = fmt.Fprintln(stdout)
-			printJoinCommands(stdout, created)
+			printJoinCommands(stdout, created, installAgentOpts{})
 		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)

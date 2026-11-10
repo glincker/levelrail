@@ -292,7 +292,8 @@ func (r *Runner) RunAttempt(ctx context.Context, task store.ScheduledTask) (Atte
 		return AttemptOutcome{}, err
 	}
 	res := r.execute(ctx, task, runID)
-	err = r.closeRun(ctx, task, trig, runID, started, res)
+	// A cancelled attempt still records its result, so the close must not inherit the cancel.
+	err = r.closeRun(context.WithoutCancel(ctx), task, trig, runID, started, res)
 	return AttemptOutcome{RunID: runID, Status: res.status}, err
 }
 

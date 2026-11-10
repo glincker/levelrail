@@ -1206,3 +1206,25 @@ func TestNewNotifier_UnknownKind_FallsBackToGeneric(t *testing.T) {
 		t.Errorf("payload = %+v, want the generic shape (unknown NotifyKind falls back to generic)", got)
 	}
 }
+
+func TestNotifyTelegram_ForumTopicThread(t *testing.T) {
+	var got telegramPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "x", Kind: KindThreshold, ResourceID: "service:web", NotifyKind: NotifyTelegram,
+		NotifyURL: srv.URL + "/bot1:A/sendMessage?chat_id=-1001&message_thread_id=42"}
+	if err := NewNotifier(nil, nil, nil, r).Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.ThreadID != 42 {
+		t.Errorf("ThreadID = %d, want 42", got.ThreadID)
+	}
+
+	r.NotifyURL = srv.URL + "/bot1:A/sendMessage?chat_id=-1001&message_thread_id=abc"
+	if err := NewNotifier(nil, nil, nil, r).Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("a non numeric message_thread_id must fail")
+	}
+}

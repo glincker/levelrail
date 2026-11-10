@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { useState } from 'react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import {
   deriveMonitorState,
   uptimePercent,
@@ -62,5 +63,54 @@ describe('MonitorsList', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByText(/empty|No monitors/i)).toBeTruthy()
+  })
+})
+
+describe('MonitorsList rotate control', () => {
+  const hb: Monitor = { ...mon, id: 'h1', name: 'Nightly', kind: 'heartbeat' }
+  it('offers rotate for heartbeat rows only and asks first', () => {
+    const onRotate = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MonitorsList
+          monitors={[mon, hb]}
+          onDelete={() => undefined}
+          onRotate={onRotate}
+        />
+      </QueryClientProvider>,
+    )
+    expect(screen.queryAllByLabelText(/rotate\.action/)).toHaveLength(1)
+    fireEvent.click(screen.getByLabelText(/rotate\.action/))
+    expect(onRotate).toHaveBeenCalledWith(hb)
+  })
+})
+
+describe('MonitorsList pause toggle', () => {
+  it('flips the label and fires the action once per click', () => {
+    const onToggle = vi.fn()
+    function Harness() {
+      const [m, setM] = useState<Monitor>(mon)
+      return (
+        <QueryClientProvider client={new QueryClient()}>
+          <MonitorsList
+            monitors={[m]}
+            onDelete={() => undefined}
+            onToggle={(row) => {
+              onToggle(row)
+              setM({ ...row, enabled: !row.enabled })
+            }}
+          />
+        </QueryClientProvider>
+      )
+    }
+    render(<Harness />)
+    expect(screen.queryByLabelText(/resume\.action/)).toBeNull()
+    fireEvent.click(screen.getByLabelText(/pause\.action/))
+    expect(onToggle).toHaveBeenCalledTimes(1)
+    expect(onToggle).toHaveBeenCalledWith(mon)
+    expect(screen.queryByLabelText(/pause\.action/)).toBeNull()
+    fireEvent.click(screen.getByLabelText(/resume\.action/))
+    expect(onToggle).toHaveBeenCalledTimes(2)
+    expect(screen.getByLabelText(/pause\.action/)).toBeTruthy()
   })
 })

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -39,7 +40,7 @@ func openReadPool(ctx context.Context, path string) *sql.DB {
 	q.Add("mode", "ro")
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "query_only(1)")
-	ro, err := sql.Open("sqlite", "file:"+path+"?"+q.Encode())
+	ro, err := sql.Open(timedDriverName, "file:"+path+"?"+q.Encode())
 	if err != nil {
 		return nil
 	}
@@ -55,6 +56,11 @@ func openReadPool(ctx context.Context, path string) *sql.DB {
 
 // Close shuts down the read pool and then the writer connection.
 func (db *DB) Close() error {
+	db.closeTouches()
+	// Best effort: stale planner stats cost more than a failed pragma on shutdown.
+	octx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_ = db.Optimize(octx)
+	cancel()
 	var roErr error
 	if db.ro != nil {
 		roErr = db.ro.Close()
@@ -95,4 +101,27 @@ func (r readConn) QueryRowContext(ctx context.Context, query string, args ...any
 	row := r.db.QueryRowContext(ctx, query, args...)
 	r.m.observe(query, time.Since(start))
 	return row
+}
+
+// readConnsSource supplies the live pool size; one control plane DB per process.
+var readConnsSource atomic.Pointer[func() int]
+
+// SetReadConnsSource installs the runtime setting reader polled by the WAL tick.
+func SetReadConnsSource(fn func() int) { readConnsSource.Store(&fn) }
+
+// ApplyReadConnsSource resizes the pool from the installed source, if any.
+func (db *DB) ApplyReadConnsSource() {
+	if fn := readConnsSource.Load(); fn != nil {
+		db.SetReadConns((*fn)())
+	}
+}
+
+// SetReadConns resizes the read pool. It does nothing when no pool exists
+// (boot env 0, in-memory) or n is outside the live range.
+func (db *DB) SetReadConns(n int) {
+	if db.ro == nil || n < 1 || n == db.ro.Stats().MaxOpenConnections {
+		return
+	}
+	db.ro.SetMaxOpenConns(n)
+	db.ro.SetMaxIdleConns(n)
 }

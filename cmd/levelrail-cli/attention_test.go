@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -79,5 +80,19 @@ func TestBuildAttentionItems(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestSeverityCellAlignsIgnoringEscapes(t *testing.T) {
+	plain := severityCell(termStyle{}, attentionWarning)
+	if len(plain) != attentionSeverityWidth {
+		t.Fatalf("plain width = %d", len(plain))
+	}
+	colored := severityCell(termStyle{color: true}, attentionCritical)
+	if !strings.Contains(colored, "\x1b[31m") || !strings.HasPrefix(strings.TrimPrefix(colored, "\x1b[31m"), "critical\x1b[0m") {
+		t.Fatalf("critical not colored and padded: %q", colored)
+	}
+	if severityCell(termStyle{color: true}, "info") != "info    " {
+		t.Fatal("info must stay uncolored")
 	}
 }

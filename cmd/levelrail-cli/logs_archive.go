@@ -27,6 +27,7 @@ func logsUsage(prog string) string {
   %[1]s logs query <app> [--level L] [--since 30m] [--deploy ID] [--text T] [--max-lines N]   capped excerpt of the newest matching lines
   %[1]s logs search <app> [--q T] [--level L] [--container ID] [--stream S] [--field k=v]... [--since 1h] [--limit N]   full text and structured field search
   %[1]s logs failure <app>                     last 200 lines of the crashlooping container or the failed deploy
+  %[1]s logs access [--app A] [--status 5xx] [--path /p] [--q T] [--since 1h]   search recent HTTP requests at the edge
   %[1]s logs signatures <app> [--since 24h] [--new]   top clusters of similar error lines
   %[1]s logs saved list|create|run|delete       named searches, optionally shared or pinned to an app
   %[1]s logs alert-from <app> --name N (--count N | --per-minute R) [filters]   alert rule from a search
@@ -62,6 +63,8 @@ func runLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAPICmd(prog, logsSearchCommand(), rest, stdout, stderr, lookupEnv)
 	case "failure":
 		return runAPICmd(prog, logsFailureCommand(), rest, stdout, stderr, lookupEnv)
+	case "access":
+		return runAPICmd(prog, logsAccessCommand(), rest, stdout, stderr, lookupEnv)
 	case "signatures", "saved", "alert-from":
 		return runLogsExplorer(prog, args[0], rest, stdout, stderr, lookupEnv)
 	default:

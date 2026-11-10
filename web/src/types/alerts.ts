@@ -29,11 +29,15 @@ import type { Severity } from './alertNoise'
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
+  | 'oom_killed'
   | 'cert_expiry'
   | 'patch_status'
   | 'scheduled_task_failure'
   | 'scheduled_task_missed'
   | 'scheduled_task_running_long'
+  // job_failing is scoped to the app (service:<app>) and covers every job
+  // with alert_on_failure set.
+  | 'job_failing'
   | 'node_disk_space'
   | 'node_resource_usage'
   | 'domain_health'
@@ -49,6 +53,7 @@ export type AlertRuleKind =
   | 'log_level_rate'
   | 'budget_threshold'
   | 'email_delivery_failing'
+  | 'cleanup_failing'
   | 'deploy_failed'
   | 'monitor_down'
   | 'database_disk_high'

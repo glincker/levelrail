@@ -32,6 +32,8 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "check":
 		return runAppsEnvCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "convert-to-secret":
+		return runAppsEnvConvertToSecret(prog, args[1:], stdout, stderr, lookupEnv)
 	case "history":
 		return runAppsEnvHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -46,6 +48,7 @@ func appsEnvUsage(prog string) string {
   %[1]s apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [flags]   merge a .env file: sensitive keys to secrets, the rest to plain env
   %[1]s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json]      write an app's env vars as .env text
   %[1]s apps env get <name> <KEY> [--reveal] [flags]                              print one variable
+  %[1]s apps env convert-to-secret <name> <KEY> [flags]                           move a plain variable into the secret store
   %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
   %[1]s apps env check <name> [--fix] [flags]                                     find empty, shadowed, duplicate and missing variables
   %[1]s apps env history <name> [--limit N] [flags]                               list who added, changed or removed which variable
@@ -97,12 +100,13 @@ type envImportResult struct {
 func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env import", "print the import plan as JSON to stdout and nothing else", stderr)
 	var file string
-	var dryRun, keepExisting, apply, allSecrets, allPlain bool
+	var dryRun, keepExisting, apply, noApply, allSecrets, allPlain bool
 	var secretPatterns string
 	fs.BoolVar(&allSecrets, "all-secrets", false, "send every imported key to the secret store")
 	fs.BoolVar(&allPlain, "all-plain", false, "send every imported key to plain env, even ones that look sensitive")
 	fs.StringVar(&secretPatterns, "secret-pattern", "", "comma-separated key globs (for example STRIPE_*,*_DSN) that also go to the secret store")
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
+	fs.BoolVar(&noApply, "no-apply", false, "leave the change pending even when apps.env_apply_on_set is on")
 	fs.StringVar(&file, "file", "", "path to the .env file to import (required)")
 	fs.BoolVar(&dryRun, "dry-run", false, "show what would change without saving")
 	fs.BoolVar(&keepExisting, "keep-existing", false, "leave keys that already exist with a different value untouched")
@@ -120,6 +124,9 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 	}
 	if file == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("apps env import requires --file"))
+	}
+	if envApplyConflict(stderr, prog, apply, noApply) {
+		return exitUsage
 	}
 	if allSecrets && allPlain {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--all-secrets and --all-plain cannot be combined"))
@@ -196,7 +203,8 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 		if of.Format == outputJSON || of.Query != "" {
 			hintOut = io.Discard
 		}
-		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
+		doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
+		if applyCode := afterConfigWriteReason(ctx, client, prog, name, doApply, reason, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}
 	}

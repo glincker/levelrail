@@ -135,15 +135,15 @@ export function DeployFailureSummaryCard({
               className="size-5 text-destructive"
               aria-hidden="true"
             />
-            What went wrong
+            {t('failureCard.title')}
           </h2>
           <dl className="space-y-3 text-sm">
             <div>
-              <FieldLabel as="dt">Failing stage</FieldLabel>
+              <FieldLabel as="dt">{t('failureCard.stage')}</FieldLabel>
               <dd className="mt-1 text-foreground">{summary.stageLabel}</dd>
             </div>
             <div>
-              <FieldLabel as="dt">Error</FieldLabel>
+              <FieldLabel as="dt">{t('failureCard.error')}</FieldLabel>
               <dd className="mt-1">
                 <p
                   id={messageId}
@@ -161,7 +161,9 @@ export function DeployFailureSummaryCard({
                     aria-controls={messageId}
                     onClick={() => setExpanded((v) => !v)}
                   >
-                    {expanded ? 'Show less' : 'Show more'}
+                    {expanded
+                      ? t('failureCard.showLess')
+                      : t('failureCard.showMore')}
                   </Button>
                 ) : null}
               </dd>

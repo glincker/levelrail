@@ -5,6 +5,7 @@ import { ShieldCheckGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { BackupsEmptyState } from '../../components/empty/BackupsEmptyState'
 import { PageBanner } from '../../components/PageBanner'
 import { HelpLink } from '../../components/HelpLink'
 import { LazyBackupsDiagram } from '../../components/banners/LazyDiagrams'
@@ -102,6 +103,9 @@ function BackupsPage() {
         <FirstRunSetup unprotected={data.summary.total} />
       ) : (
         <>
+          {data.resources.length === 0 ? (
+            <BackupsEmptyState total={data.resources.length} />
+          ) : null}
           {isEmpty ? null : (
             <CoverageSummary summary={data.summary} showAction={false} />
           )}

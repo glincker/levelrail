@@ -555,6 +555,49 @@ describe('BansTable', () => {
     )
   })
 
+  it('searches, sorts and lifts selected bans in bulk', async () => {
+    const user = userEvent.setup()
+    const mk = (ip: string, hits: number) => ({
+      ip,
+      reason: 'rule',
+      started: '2026-10-17T10:00:00Z',
+      ends: '2026-10-17T11:00:00Z',
+      hits,
+    })
+    const api = install({
+      'GET /api/v1/firewall/edge/bans': [
+        mk('198.51.100.4', 1),
+        mk('198.51.100.9', 7),
+        mk('203.0.113.2', 3),
+      ],
+      'DELETE /api/v1/firewall/edge/bans/198.51.100.4': () =>
+        ({
+          ok: true,
+          status: 204,
+          json: () => Promise.resolve(null),
+        }) as Response,
+      'DELETE /api/v1/firewall/edge/bans/198.51.100.9': () =>
+        ({
+          ok: true,
+          status: 204,
+          json: () => Promise.resolve(null),
+        }) as Response,
+    })
+    wrap(<BansTable />)
+    await screen.findByText('203.0.113.2')
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Search bans' }),
+      '198.51',
+    )
+    expect(screen.queryByText('203.0.113.2')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Blocked' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Select all bans' }))
+    await user.click(screen.getByRole('button', { name: 'Lift selected' }))
+    await waitFor(() =>
+      expect(api.calls.filter((c) => c.method === 'DELETE')).toHaveLength(2),
+    )
+  })
+
   it('virtualizes long lists instead of rendering every row', async () => {
     const bans = Array.from({ length: 200 }, (_, i) => ({
       ip: `10.0.${Math.floor(i / 250)}.${i % 250}`,

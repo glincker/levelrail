@@ -75,7 +75,7 @@ if [ -n "$SRC_USER" ]; then set -- "$@" --username "$SRC_USER" --password "$SRC_
 if [ -n "$SRC_DB" ]; then set -- "$@" --db "$SRC_DB"; fi
 if [ -n "$SRC_TLS" ]; then set -- "$@" --tls; fi
 exec mongodump --archive "$@"`
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		script = `if [ -n "$SRC_PASSWORD" ]; then export REDISCLI_AUTH="$SRC_PASSWORD"; fi
 set -- -h "$SRC_HOST" -p "$SRC_PORT"
 if [ -n "$SRC_USER" ]; then set -- "$@" --user "$SRC_USER"; fi
@@ -111,7 +111,7 @@ q() { mariadb --protocol=tcp -h"$SRC_HOST" -P"$SRC_PORT" -u"$SRC_USER" $ssl -N -
 if [ -n "$SRC_USER" ]; then set -- "$@" --username "$SRC_USER" --password "$SRC_PASSWORD"; fi
 if [ -n "$SRC_TLS" ]; then set -- "$@" --tls; fi
 exec mongosh "$@" --eval '` + mongoCountJS + `'`
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		script = `if [ -n "$SRC_PASSWORD" ]; then export REDISCLI_AUTH="$SRC_PASSWORD"; fi
 set -- -h "$SRC_HOST" -p "$SRC_PORT"
 if [ -n "$SRC_USER" ]; then set -- "$@" --user "$SRC_USER"; fi
@@ -121,6 +121,22 @@ printf 'keys|%s\n' "$n"`
 	default:
 		return nil, fmt.Errorf("copying data is not supported for engine %q", engine)
 	}
+	return []string{"sh", "-c", script}, nil
+}
+
+// TargetEmptinessCommand is TargetCountCommand except Redis sums the keys of every
+// logical database, so data held only in db 1 or higher still counts as data.
+func TargetEmptinessCommand(engine string) ([]string, error) {
+	if !isRedisFamily(engine) {
+		return TargetCountCommand(engine)
+	}
+	script := `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi
+info=$(redis-cli $RTLS INFO keyspace) || exit 1
+# Anything but a real keyspace reply (LOADING, NOAUTH, empty) must not read as an empty target.
+if ! printf '%s\n' "$info" | grep -q '^# Keyspace'; then printf 'keys|unknown\n'; exit 0; fi
+n=0
+for k in $(printf '%s\n' "$info" | sed -n 's/^db[0-9][0-9]*:keys=\([0-9][0-9]*\).*/\1/p'); do n=$((n+k)); done
+printf 'keys|%s\n' "$n"`
 	return []string{"sh", "-c", script}, nil
 }
 
@@ -139,7 +155,7 @@ SQL`
 		script = mysqlCountScript(`q() { mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -B "$@" "$MARIADB_DATABASE"; }`)
 	case EngineMongoDB:
 		script = `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval '` + mongoCountJS + `'`
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		script = `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi
 n=$(redis-cli $RTLS DBSIZE) || exit 1
 printf 'keys|%s\n' "$n"`

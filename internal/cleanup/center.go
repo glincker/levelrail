@@ -15,6 +15,8 @@ import (
 
 const (
 	failureNoticeWindow = 24 * time.Hour
+	// failedRunsScanLimit caps the rows an alert evaluation reads.
+	failedRunsScanLimit = 500
 	maxErrorChars       = 200
 	recordTimeout       = 10 * time.Second
 	auditActorSystem    = "system"
@@ -545,6 +547,19 @@ func (c *Center) Runs(ctx context.Context, f RunsFilter) (RunsPage, error) {
 		page.Runs = append(page.Runs, recordOf(r))
 	}
 	return page, nil
+}
+
+// FailedRealRuns counts failed non-dry runs since the cutoff and names the latest failing target.
+func (c *Center) FailedRealRuns(ctx context.Context, since time.Time) (int, string, error) {
+	dry := false
+	rows, err := c.cfg.Store.ListCleanupRuns(ctx, store.CleanupRunFilter{Since: since, DryRun: &dry, Status: "failed", Limit: failedRunsScanLimit})
+	if err != nil {
+		return 0, "", fmt.Errorf("cleanup: list failed runs: %w", err)
+	}
+	if len(rows) == 0 {
+		return 0, "", nil
+	}
+	return len(rows), rows[0].Target, nil
 }
 
 func firstNonEmpty(a, b string) string {

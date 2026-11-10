@@ -126,7 +126,10 @@ function VerificationStatusBadge({
   if (status === 'running') {
     return (
       <Badge variant="muted" className="rounded-full">
-        <LoaderGlassIcon className="size-4.5 animate-spin" aria-hidden="true" />
+        <LoaderGlassIcon
+          className="size-4.5 animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         {auto ? 'Auto-verifying...' : 'Verifying...'}
       </Badge>
     )

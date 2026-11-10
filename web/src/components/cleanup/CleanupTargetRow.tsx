@@ -1,3 +1,4 @@
+import '@/styles/cleanupMotion.css'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'

@@ -29,6 +29,7 @@ import {
   SlowRouteTable,
   TopRoutesCard,
 } from './TrafficTables'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 const WINDOWS: TrafficWindow[] = ['5m', '1h', '24h', '7d']
 
@@ -149,25 +150,12 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
         <p className="max-w-xl text-sm text-muted-foreground">
           {t('subtitle')}
         </p>
-        <div
-          role="group"
+        <SegmentedControl<TrafficWindow>
           aria-label={t('windowLabel')}
-          className="flex items-center gap-1"
-        >
-          {WINDOWS.map((w) => (
-            <Button
-              key={w}
-              size="sm"
-              variant={w === win ? 'secondary' : 'outline'}
-              aria-pressed={w === win}
-              onClick={() => {
-                setWin(w)
-              }}
-            >
-              {t(`windows.${w}`)}
-            </Button>
-          ))}
-        </div>
+          value={win}
+          onValueChange={setWin}
+          options={WINDOWS.map((w) => ({ value: w, label: t(`windows.${w}`) }))}
+        />
       </div>
 
       {error && !data ? (

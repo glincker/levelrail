@@ -18,19 +18,26 @@ func NextImageCacheVolume(service string) string {
 	return volumeName(service, "next-images")
 }
 
-// nextImageCachePath is the in-container mount path for a source build. Railpack runs
-// next start from its working dir, so the cache lives under that dir, not a guessed /app.
-func nextImageCachePath() string {
+// nextStandaloneDir is where the standalone server runs; it chdirs to its own
+// directory, so the cache resolves under it rather than under the working dir.
+const nextStandaloneDir = ".next/standalone"
+
+// nextImageCachePath is the in-container mount path for a source build. The
+// standalone server writes under .next/standalone, plain next start under the working dir.
+func nextImageCachePath(standalone bool) string {
+	if standalone {
+		return path.Join(rpbuildkit.WorkingDir, nextStandaloneDir, nextImageCacheRel)
+	}
 	return path.Join(rpbuildkit.WorkingDir, nextImageCacheRel)
 }
 
 // nextImageCacheTarget returns the mount path when the service opted in and the
 // source is a Next.js app, else empty.
-func nextImageCacheTarget(req Request, prof build.NextProfile) string {
+func nextImageCacheTarget(req Request, prof build.NextProfile, standalone bool) string {
 	if !req.Service.Next.UsesPersistentImageCache() || !prof.Detected {
 		return ""
 	}
-	return nextImageCachePath()
+	return nextImageCachePath(standalone)
 }
 
 // applyNextImageCache adds the cache volume once; a missing path leaves desired untouched.

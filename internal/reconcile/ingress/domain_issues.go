@@ -9,7 +9,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const reasonDomainsDropped = "DomainsDropped"
+const (
+	reasonDomainsDropped = "DomainsDropped"
+	reasonTuningDropped  = "TuningDropped"
+)
 
 // domainIssues collects the per-domain problems one reconcile pass finds.
 type domainIssues struct {

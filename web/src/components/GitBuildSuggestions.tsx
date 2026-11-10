@@ -1,5 +1,10 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
-import { LoaderGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import {
+  LoaderGlassIcon,
+  TriangleAlertGlassIcon,
+  InboxGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { GitBuildDetection, GitBuildSuggestion } from '../types/gitSource'
@@ -80,7 +85,7 @@ export function GitBuildSuggestions({
           className="flex items-center gap-2 text-sm text-muted-foreground"
           role="status"
         >
-          <LoaderGlassIcon className="size-5 animate-spin" />
+          <LoaderGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
           {t('detected.loading')}
         </p>
       ) : null}
@@ -100,7 +105,11 @@ export function GitBuildSuggestions({
       ) : null}
 
       {detection && detection.suggestions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('detected.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('detected.empty')}
+        />
       ) : null}
 
       {detection && detection.suggestions.length > 0 ? (

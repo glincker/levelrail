@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
 
 export interface PrivateNetwork {
   id: string
@@ -101,7 +102,7 @@ export function privateNetworkMapOptions() {
   return queryOptions({
     queryKey: privateNetworkKeys.map,
     queryFn: () => send<PrivateNetworkMap>(`${BASE}/map`, 'GET'),
-    refetchInterval: 15_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

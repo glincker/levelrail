@@ -16,6 +16,7 @@ import {
 } from '../../queries/usage'
 import { formatMoney } from '../../lib/usageFormat'
 import type { BudgetLevel, UsageBudget } from '../../types/usage'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 const LEVEL_VARIANT: Record<
   BudgetLevel,
@@ -98,26 +99,18 @@ function AddBudget() {
 
   return (
     <div className="space-y-3">
-      <div
-        className="flex flex-wrap gap-1"
-        role="group"
+      <SegmentedControl
         aria-label={t('budgets.scope')}
-      >
-        {(['project', 'team'] as const).map((s) => (
-          <Button
-            key={s}
-            size="sm"
-            variant={scope === s ? 'secondary' : 'ghost'}
-            aria-pressed={scope === s}
-            onClick={() => {
-              setScope(s)
-              setTarget('')
-            }}
-          >
-            {t(s === 'project' ? 'budgets.scopeProject' : 'budgets.scopeTeam')}
-          </Button>
-        ))}
-      </div>
+        value={scope}
+        onValueChange={(s) => {
+          setScope(s)
+          setTarget('')
+        }}
+        options={[
+          { value: 'project', label: t('budgets.scopeProject') },
+          { value: 'team', label: t('budgets.scopeTeam') },
+        ]}
+      />
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1">
           <Label htmlFor={targetId}>{t('budgets.target')}</Label>

@@ -141,6 +141,8 @@ func alertRuleCondition(r alertRuleResource) string {
 			cond += " for " + r.ForDuration
 		}
 		return cond
+	case "oom_killed":
+		return fmt.Sprintf("%d kernel out-of-memory kills in %s", r.RestartCountThreshold, r.RestartWindow)
 	case "crashloop":
 		return fmt.Sprintf("%d restarts in %s", r.RestartCountThreshold, r.RestartWindow)
 	case "cert_expiry":
@@ -155,10 +157,16 @@ func alertRuleCondition(r alertRuleResource) string {
 		return "any node over its disk-usage percentage threshold (platform-wide)"
 	case "node_resource_usage":
 		return "any node over its summed CPU or memory threshold (platform-wide)"
+	case "node_cpu":
+		return "any node over its CPU percent for the sustained interval count (platform-wide, per-node overrides apply)"
+	case "node_memory":
+		return "any node over its memory percent for the sustained interval count (platform-wide, per-node overrides apply)"
 	case "scheduled_task_failure":
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	case "control_plane_backup_stale":
 		return "the control plane's newest self-backup snapshot older than its age limit (platform-wide)"
+	case "volume_usage":
+		return "any volume at or above the volumes.usage_alert_percent setting (platform-wide)"
 	case "log_archive_stale":
 		return "a log archive policy failed or has not succeeded within its age limit (platform-wide)"
 	case "export_behind":
@@ -211,14 +219,14 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		if comparator == "" {
 			return newValidationError("--comparator is required for --kind threshold")
 		}
-	case "crashloop":
+	case "crashloop", "oom_killed":
 		if restartCountThreshold <= 0 {
-			return newValidationError("--restart-count-threshold must be a positive integer for --kind crashloop")
+			return newValidationError("--restart-count-threshold must be a positive integer for --kind %s", kind)
 		}
 		if restartWindow == "" {
-			return newValidationError("--restart-window is required for --kind crashloop")
+			return newValidationError("--restart-window is required for --kind %s", kind)
 		}
-	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_offline", "node_cert_expiring":
+	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_cpu", "node_memory", "node_offline", "node_cert_expiring":
 		// These kinds watch platform-wide resources, so no app-specific flags apply.
 	case "scheduled_task_failure":
 		if scheduledTaskID == "" {

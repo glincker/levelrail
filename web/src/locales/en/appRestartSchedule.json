@@ -1,0 +1,20 @@
+{
+  "title": "Scheduled restart",
+  "description": "Restart the app on a schedule to cap slow memory leaks. It uses the normal restart, so rollout and disruption rules apply. Restarts are at least {{min}} apart.",
+  "none": "No restart schedule.",
+  "current": "Restarts on {{schedule}} ({{zone}}). Next at {{next}}.",
+  "last": {
+    "started": "Last run {{at}}: started.",
+    "succeeded": "Last run {{at}}: restarted.",
+    "skipped": "Last run {{at}}: skipped, {{reason}}.",
+    "failed": "Last run {{at}}: failed, retried after a backoff."
+  },
+  "scheduleLabel": "Cron or @every",
+  "timezoneLabel": "Time zone",
+  "save": "Save schedule",
+  "saved": "Restart schedule saved",
+  "cleared": "Restart schedule cleared",
+  "failed": "Restart schedule change failed",
+  "clear": "Clear schedule",
+  "hint": "For example 0 3 * * * or @every 24h. Stopped apps, protected environments, freezes and running deploys are skipped, never forced."
+}

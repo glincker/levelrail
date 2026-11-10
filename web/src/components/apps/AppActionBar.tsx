@@ -31,6 +31,7 @@ import type { AppDetail } from '../../types/appDetail'
 import { useAppAsleep, useAppSleepActions } from '../../queries/appSleep'
 import { useGitSource } from '../../queries/gitSources'
 import { DeployLinkDialog } from '../newapp/DeployLinkDialog'
+import { CopyAsCommand } from '../CopyAsCommand'
 
 // One primary action, Restart beside it, everything else behind the overflow
 // menu so Delete never carries the same visual weight as Deploy.
@@ -95,6 +96,15 @@ export function AppActionBar({
         <span className="max-md:sr-only">{actions.restartLabel}</span>
       </Button>
       {actions.confirmDialog}
+      <CopyAsCommand
+        subject={app.name}
+        actions={[
+          { kind: 'app.restart', app: app.name },
+          { kind: app.suspended ? 'app.start' : 'app.stop', app: app.name },
+          { kind: 'app.scale', app: app.name, replicas: app.replicas },
+          { kind: 'app.rollback', app: app.name },
+        ]}
+      />
       <ActionMenu
         trigger={
           <Button

@@ -64,7 +64,7 @@ func builtinAuthGate(row store.DomainAuthGate, b builtinGate, timeout time.Durat
 // authGatesByDomain maps every enabled row to its gate; a nil value marks a
 // gated domain whose stored config is invalid.
 func authGatesByDomain(ctx context.Context, logger *slog.Logger, rows []store.DomainAuthGate, getenv func(string) string, b builtinGate) map[string]*ingress.AuthGate {
-	defaultTimeout, err := ingress.AuthGateTimeoutFromEnv(getenv)
+	defaultTimeout, err := ingress.CurrentAuthGateTimeout(ctx, getenv)
 	if err != nil {
 		logger.WarnContext(ctx, "ingress: ignoring invalid auth gate timeout", slog.String("error", err.Error()))
 	}

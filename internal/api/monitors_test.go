@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -74,4 +76,56 @@ func between(s, start, end string) string {
 		return s[:j]
 	}
 	return s
+}
+
+func TestMonitors_PatchEnabledPausesAndResumes(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "false")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	cfg, err := monitor.ConfigFromEnv(func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SetMonitors(monitor.New(monitor.Options{Config: cfg, Store: db, Logger: slog.New(slog.NewTextHandler(discardWriter{}, nil))}))
+	rec := apiDo(t, rt, cookie, http.MethodPost, "/api/v1/monitors", `{"name":"site","kind":"http","url":"https://example.com/health","interval_seconds":60,"timeout_ms":3000}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+	}
+	path := "/api/v1/monitors/" + between(rec.Body.String(), `"id":"`, `"`)
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{"enabled":false}`); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), `"enabled":false`) {
+		t.Fatalf("pause = %d %s", r.Code, r.Body.String())
+	}
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{"enabled":true}`); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), `"enabled":true`) {
+		t.Fatalf("resume = %d %s", r.Code, r.Body.String())
+	}
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{}`); r.Code != http.StatusBadRequest {
+		t.Errorf("empty patch = %d, want 400", r.Code)
+	}
+	if r := apiDo(t, rt, cookie, http.MethodPatch, "/api/v1/monitors/mon_missing", `{"enabled":false}`); r.Code != http.StatusNotFound {
+		t.Errorf("missing = %d, want 404", r.Code)
+	}
+}
+
+func TestMonitors_PatchWritesAuditRow(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "false")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	cfg, err := monitor.ConfigFromEnv(func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SetMonitors(monitor.New(monitor.Options{Config: cfg, Store: db, Logger: slog.New(slog.NewTextHandler(discardWriter{}, nil))}))
+	rec := apiDo(t, rt, cookie, http.MethodPost, "/api/v1/monitors", `{"name":"site","kind":"http","url":"https://example.com/health","interval_seconds":60,"timeout_ms":3000}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+	}
+	path := "/api/v1/monitors/" + between(rec.Body.String(), `"id":"`, `"`)
+	if r := apiDo(t, rt, cookie, http.MethodPatch, path, `{"enabled":false}`); r.Code != http.StatusOK {
+		t.Fatalf("pause = %d %s", r.Code, r.Body.String())
+	}
+	// The ability middleware records every write, so the PATCH needs no handler-level audit call.
+	entries, err := db.ListAuditEntries(context.Background(), 50, nil, store.AuditEntryFilter{Path: path, Method: http.MethodPatch})
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("PATCH audit entries = %d, err = %v", len(entries), err)
+	}
 }

@@ -1,0 +1,17 @@
+{
+  "name": "production",
+  "applications": [
+    {
+      "uuid": "app-static", "name": "docs", "build_pack": "static",
+      "git_repository": "acme/docs", "git_branch": "main", "base_directory": "/site",
+      "install_command": "npm ci", "build_command": "npm run build", "start_command": "",
+      "publish_directory": "/dist", "ports_exposes": "80,8080", "tags": ["web"]
+    },
+    {
+      "uuid": "app-unsafe", "name": "api", "build_pack": "dockerfile",
+      "git_repository": "acme/api", "base_directory": "/../../etc", "dockerfile_location": "/Dockerfile",
+      "start_command": "DB_PASSWORD=fake-inline node server.js", "pre_deployment_command": "npm run migrate"
+    }
+  ],
+  "postgresqls": [], "redis": [], "mongodbs": [], "mysqls": [], "mariadbs": [], "services": []
+}

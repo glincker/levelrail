@@ -2,6 +2,8 @@ import { useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
+import { ListKeyboardHint } from '@/components/ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { Badge } from '@/components/ui/badge'
 import { formatBytes, formatDate } from '../../lib/format'
 import type { CoverageRow, CoverageTarget } from '../../types/backupCoverage'
@@ -59,7 +61,10 @@ function Row({
 }) {
   const { t } = useTranslation('backups')
   return (
-    <li className="grid gap-2 border-b border-border px-3 py-3 last:border-b-0 md:grid-cols-[minmax(0,1.6fr)_auto_minmax(0,1.4fr)_auto] md:items-center md:gap-4">
+    <li
+      data-list-row
+      className="grid gap-2 border-b border-border px-3 py-3 last:border-b-0 md:grid-cols-[minmax(0,1.6fr)_auto_minmax(0,1.4fr)_auto] md:items-center md:gap-4"
+    >
       <ResourceName row={row} />
       <div>
         <Badge variant={coverageBadgeVariant(row.state)}>
@@ -146,26 +151,37 @@ export function CoverageList({
   targets: CoverageTarget[]
   onNeedTarget: () => void
 }) {
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      {rows.length > VIRTUALIZE_AFTER ? (
-        <VirtualRows
-          rows={rows}
-          targets={targets}
-          onNeedTarget={onNeedTarget}
-        />
-      ) : (
-        <ul>
-          {rows.map((row) => (
-            <Row
-              key={rowKey(row)}
-              row={row}
-              targets={targets}
-              onNeedTarget={onNeedTarget}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
+    <>
+      <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+      <div
+        ref={setListContainer}
+        className="overflow-hidden rounded-lg border border-border"
+      >
+        {rows.length > VIRTUALIZE_AFTER ? (
+          <VirtualRows
+            rows={rows}
+            targets={targets}
+            onNeedTarget={onNeedTarget}
+          />
+        ) : (
+          <ul>
+            {rows.map((row) => (
+              <Row
+                key={rowKey(row)}
+                row={row}
+                targets={targets}
+                onNeedTarget={onNeedTarget}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   )
 }

@@ -99,7 +99,7 @@ Using a coding agent? `npx skills add https://github.com/glincker/levelrail --sk
   <tr>
     <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-overview.png"><img src="docs/assets/screenshots/app-overview-light.png" alt="Levelrail app metrics: CPU, memory and deploy markers" loading="lazy"></picture></a><br><sub><b>Metrics and logs, no Grafana stack</b></sub></td>
     <td width="33%" valign="top"><a href="docs/multi-node.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/nodes.png"><img src="docs/assets/screenshots/nodes-light.png" alt="Levelrail nodes list with health and capacity" loading="lazy"></picture></a><br><sub><b>Nodes and their capacity</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/alerts.png"><img src="docs/assets/screenshots/alerts-light.png" alt="Levelrail alerts inbox" loading="lazy"></picture></a><br><sub><b>Alerts in one inbox</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/new-app-wizard.png"><img src="docs/assets/screenshots/new-app-wizard-light.png" alt="Levelrail New app page: start from a Git repository, template, container image or sample app" loading="lazy"></picture></a><br><sub><b>New app from a repo, template or image</b></sub></td>
   </tr>
 </table>
 

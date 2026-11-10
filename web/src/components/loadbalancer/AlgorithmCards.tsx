@@ -1,5 +1,6 @@
 import { selectableCardClass } from '@/components/ui/selectable-card'
 import type { ComponentType } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ChartColumnGlassIcon,
   CookieGlassIcon,
@@ -14,54 +15,63 @@ import { cn } from '@/lib/utils'
 import { ALGORITHM_OPTIONS } from '../../lib/loadBalancer'
 import type { LoadBalancerAlgorithm } from '../../queries/appLoadBalancer'
 
+type AlgoKey =
+  | 'roundRobin'
+  | 'leastConn'
+  | 'ipHash'
+  | 'clientIpHash'
+  | 'uriHash'
+  | 'cookie'
+  | 'weighted'
+
 interface Meta {
   icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
-  useWhen: string
-  tradeoff: string
+  useWhen: `lb.algo.${AlgoKey}Use`
+  tradeoff: `lb.algo.${AlgoKey}Tradeoff`
   lines: [number, number, number]
 }
 
 const META: Record<LoadBalancerAlgorithm, Meta> = {
   round_robin: {
     icon: RefreshCwGlassIcon,
-    useWhen: 'Requests cost about the same.',
-    tradeoff: 'Simple and fair, but ignores how busy a replica is.',
+    useWhen: 'lb.algo.roundRobinUse',
+    tradeoff: 'lb.algo.roundRobinTradeoff',
     lines: [2, 2, 2],
   },
   least_conn: {
     icon: ScaleGlassIcon,
-    useWhen: 'Requests vary in duration.',
-    tradeoff: 'Evens out load, slightly more bookkeeping per request.',
+    useWhen: 'lb.algo.leastConnUse',
+    tradeoff: 'lb.algo.leastConnTradeoff',
     lines: [1, 3, 1],
   },
   ip_hash: {
     icon: HashGlassIcon,
-    useWhen: 'You need clients to stay put without cookies.',
-    tradeoff: 'Clients behind one proxy or CDN all land on one replica.',
+    useWhen: 'lb.algo.ipHashUse',
+    tradeoff: 'lb.algo.ipHashTradeoff',
     lines: [0, 3, 0],
   },
   client_ip_hash: {
     icon: FingerprintPatternGlassIcon,
-    useWhen: 'You want IP stickiness behind a CDN or proxy.',
-    tradeoff: 'Needs APP_INGRESS_TRUSTED_PROXIES, else it matches IP hash.',
+    useWhen: 'lb.algo.clientIpHashUse',
+    tradeoff: 'lb.algo.clientIpHashTradeoff',
     lines: [0, 3, 0],
   },
   uri_hash: {
     icon: LinkGlassIcon,
-    useWhen: 'Replicas keep per-path caches.',
-    tradeoff: 'Hot paths can overload one replica.',
+    useWhen: 'lb.algo.uriHashUse',
+    tradeoff: 'lb.algo.uriHashTradeoff',
     lines: [3, 0, 1],
   },
   cookie: {
     icon: CookieGlassIcon,
-    useWhen: 'Sessions live in replica memory.',
-    tradeoff: 'Pins a browser to one replica, so uneven load is possible.',
+    useWhen: 'lb.algo.cookieUse',
+    tradeoff: 'lb.algo.cookieTradeoff',
     lines: [0, 3, 0],
   },
   weighted: {
     icon: ChartColumnGlassIcon,
-    useWhen: 'Canaries or replicas of different sizes.',
-    tradeoff: 'You maintain the weights by hand.',
+    useWhen: 'lb.algo.weightedUse',
+    tradeoff: 'lb.algo.weightedTradeoff',
     lines: [4, 1, 1],
   },
 }
@@ -100,10 +110,11 @@ export function AlgorithmCards({
   value: LoadBalancerAlgorithm
   onChange: (algorithm: LoadBalancerAlgorithm) => void
 }) {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <div
       role="radiogroup"
-      aria-label="Balancing algorithm"
+      aria-label={t('lb.algo.label')}
       className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
     >
       {ALGORITHM_OPTIONS.map((o) => {
@@ -129,13 +140,13 @@ export function AlgorithmCards({
                   {o.label}
                 </span>
                 <span className="block text-xs text-muted-foreground">
-                  {meta.useWhen}
+                  {t(meta.useWhen)}
                 </span>
               </span>
             </button>
             <span className="absolute top-2 right-2">
-              <InfoTip label={`About ${o.label}`}>
-                {o.description} {meta.tradeoff}
+              <InfoTip label={t('lb.algo.about', { name: o.label })}>
+                {o.description} {t(meta.tradeoff)}
               </InfoTip>
             </span>
           </div>

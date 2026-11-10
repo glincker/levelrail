@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func runAppsSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -31,6 +33,8 @@ func runAppsSecrets(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsSecretsLock(prog, args[1:], stdout, stderr, lookupEnv)
 	case "build-time":
 		return runAppsSecretsBuildTime(prog, args[1:], stdout, stderr, lookupEnv)
+	case "scan":
+		return runAppsSecretsScan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rotation":
 		return runAppsSecretsRotation(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -276,4 +280,54 @@ func printSecretKeysHuman(out io.Writer, keys []secretKeyResource) {
 		_, _ = fmt.Fprintf(tw, "%s\t%t\t%s\t%t\t%t\n", k.Key, k.Locked, formatSecretAge(k.UpdatedAt), k.Stale, k.BuildTime)
 	}
 	_ = tw.Flush()
+}
+
+// runAppsSecretsScan scans the app's env, or shows the scan recorded for one deployment.
+func runAppsSecretsScan(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps secrets scan", "print the findings as JSON", stderr)
+	var deployment string
+	fs.StringVar(&deployment, "deployment", "", "show the secret scan recorded for this deployment id instead of scanning the env")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps secrets scan <name> [--deployment ID] [flags]\n\nScans an app's env for suspected credentials, or shows the scan\nrecorded for one deployment. Findings carry a fingerprint, never a value.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest, ok := requireArgs(fs, stderr, prog, "apps secrets scan", "an app name", 1)
+	if !ok {
+		return exitUsage
+	}
+	name := rest[0]
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	ctx := context.Background()
+	if deployment != "" {
+		run, err := client.GetDeploymentSecretScan(ctx, name, deployment)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("get secret scan for deployment %s of app %q: %w", deployment, name, err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, run, func() {
+			_, _ = fmt.Fprintf(stdout, "deployment %s: %s (%s), %d files, %d findings\n", run.DeploymentID, run.Status, run.Action, run.FilesScanned, len(run.Findings))
+			printSecretFindings(stdout, run.Findings)
+		})
+	}
+	res, err := client.RunSecretScan(ctx, name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("scan env of app %q: %w", name, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		_, _ = fmt.Fprintf(stdout, "%d findings\n", len(res.Findings))
+		printSecretFindings(stdout, res.Findings)
+	})
+}
+
+func printSecretFindings(w io.Writer, findings []apiclient.SecretFinding) {
+	for _, f := range findings {
+		where := f.Var
+		if where == "" {
+			where = fmt.Sprintf("%s:%d", f.Path, f.Line)
+		}
+		_, _ = fmt.Fprintf(w, "  %s  %s  %s\n", f.RuleID, where, f.Fingerprint)
+	}
 }

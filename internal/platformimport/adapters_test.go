@@ -79,8 +79,8 @@ func TestCoolifyDiscover(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Apps) != 3 || len(d.Databases) != 2 || len(d.Unsupported) != 2 {
-		t.Fatalf("apps=%d dbs=%d unsupported=%d", len(d.Apps), len(d.Databases), len(d.Unsupported))
+	if len(d.Apps) != 3 || len(d.Databases) != 2 || len(d.Unsupported) != 1 || len(d.ComposeApps) != 1 {
+		t.Fatalf("apps=%d dbs=%d unsupported=%d compose=%d", len(d.Apps), len(d.Databases), len(d.Unsupported), len(d.ComposeApps))
 	}
 	web := d.Apps[0]
 	checks := []struct {
@@ -131,6 +131,7 @@ func TestDokployDiscover(t *testing.T) {
 	srv := readOnlyServer(t, map[string]string{
 		"/api/project.all":                          "dokploy/project_all.json",
 		"/api/application.one?applicationId=a-gh":   "dokploy/app_gh.json",
+		"/api/compose.one?composeId=c1":             "dokploy/compose_stack.json",
 		"/api/application.one?applicationId=a-img":  "dokploy/app_img.json",
 		"/api/application.one?applicationId=a-drop": "dokploy/app_drop.json",
 	}, "", "x-api-key", "key-fixture")
@@ -142,8 +143,8 @@ func TestDokployDiscover(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Apps) != 3 || len(d.Databases) != 3 || len(d.Unsupported) != 2 {
-		t.Fatalf("apps=%d dbs=%d unsupported=%d", len(d.Apps), len(d.Databases), len(d.Unsupported))
+	if len(d.Apps) != 3 || len(d.Databases) != 3 || len(d.Unsupported) != 1 || len(d.ComposeApps) != 1 || d.ComposeApps[0].Verdict != ComposeReady {
+		t.Fatalf("apps=%d dbs=%d unsupported=%d compose=%+v", len(d.Apps), len(d.Databases), len(d.Unsupported), d.ComposeApps)
 	}
 	gh := d.Apps[0]
 	if gh.GitURL != "https://github.com/acme/storefront" || gh.BuildMethod != "railpack" || gh.Replicas != 3 {
@@ -200,6 +201,14 @@ func TestCapRoverDiscover(t *testing.T) {
 	}
 	if !envOf(blog, "DB_PASSWORD").Secret || envOf(blog, "url").Secret {
 		t.Errorf("env: %+v", blog.Env)
+	}
+	if !blog.Policy.ForceHTTPS || !blog.Policy.WebSocket || blog.Policy.RedirectTo == "" || blog.Policy.BasicAuthUser == "" {
+		t.Errorf("policy: %+v", blog.Policy)
+	}
+	for _, n := range blog.Notes {
+		if strings.Contains(n.Reason, "forced HTTPS") || strings.Contains(n.Reason, "basic auth") {
+			t.Errorf("proxy flags must live in the policy only: %+v", n)
+		}
 	}
 	job := d.Apps[1]
 	if len(job.Domains) != 0 || job.Replicas != 1 || job.Port != 80 || len(job.Notes) < 2 {

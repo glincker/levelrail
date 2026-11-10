@@ -199,7 +199,10 @@ export function ChipBar({
 export function PaletteFooter({ children }: { children?: React.ReactNode }) {
   const { t } = useTranslation('palette')
   return (
-    <div className="flex items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+    <div
+      data-slot="command-palette-footer"
+      className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-border px-3 py-2 text-xs text-muted-foreground"
+    >
       <span aria-hidden="true" className="flex items-center gap-1">
         <Kbd>Up</Kbd>
         <Kbd>Down</Kbd>

@@ -1,4 +1,5 @@
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { Alert } from '@/components/ui/alert'
 import { Link } from '@tanstack/react-router'
 import { useLogStream } from '../hooks/useLogStream'
 import { buildLiveDatabaseLogStreamUrl } from '../queries/liveDatabaseLogs'
@@ -45,7 +46,7 @@ export function LiveDatabaseLogViewer({
       </div>
 
       {problem ? (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+        <Alert variant="warning" className="flex items-start gap-2.5">
           <TriangleAlertGlassIcon
             className="mt-0.5 size-6 shrink-0 text-tone-warning"
             aria-hidden="true"
@@ -67,7 +68,7 @@ export function LiveDatabaseLogViewer({
               View status to troubleshoot
             </Link>
           </div>
-        </div>
+        </Alert>
       ) : null}
 
       <LogTerminal

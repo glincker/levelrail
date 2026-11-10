@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useUpdateStackSettings } from '../../queries/stacks'
@@ -89,27 +89,19 @@ export function StackSettingsCard({
             {t('settings.driftHint')}
           </div>
         </div>
-        <div
-          className="flex gap-1"
-          role="group"
+        <SegmentedControl<'warn' | 'lock'>
           aria-label={t('settings.driftPolicy')}
-        >
-          {(['warn', 'lock'] as const).map((p) => (
-            <Button
-              key={p}
-              type="button"
-              size="xs"
-              variant={stack.drift_policy === p ? 'default' : 'outline'}
-              aria-pressed={stack.drift_policy === p}
-              disabled={disabled}
-              onClick={() => {
-                if (stack.drift_policy !== p) save({ drift_policy: p })
-              }}
-            >
-              {t(p === 'warn' ? 'settings.driftWarn' : 'settings.driftLock')}
-            </Button>
-          ))}
-        </div>
+          value={stack.drift_policy}
+          disabled={disabled}
+          className="shrink-0"
+          options={[
+            { value: 'warn', label: t('settings.driftWarn') },
+            { value: 'lock', label: t('settings.driftLock') },
+          ]}
+          onValueChange={(p) => {
+            if (stack.drift_policy !== p) save({ drift_policy: p })
+          }}
+        />
       </div>
       {isRoot ? null : (
         <p className="text-xs text-muted-foreground">

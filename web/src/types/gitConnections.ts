@@ -57,5 +57,6 @@ export interface UseRepoAsSourceRequest {
   branch?: string
   build_type?: 'dockerfile' | 'railpack' | 'static'
   build_path?: string
+  base_directory?: string
   trigger_mode?: 'push' | 'release'
 }

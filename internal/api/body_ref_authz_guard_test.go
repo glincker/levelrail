@@ -34,6 +34,10 @@ var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not cr
 	"handleCIOIDCExchange":      "unauthenticated by design; the app name only selects trusts, and a token is minted only after the CI provider JWT verifies against a trust of that app",
 	"parseDeploymentQuery":      "pure parser; handleListDeployments intersects the filter with visibleAppNames",
 	"pushOutcome":               "signature-verified webhook outcome: the app comes from the matched git source, the body names no resource the caller could reach",
+	"handleCreateSavedLogQuery": "validateSavedQueryRequest checks the app against appVisibilityFilter before anything is stored",
+	"handleUpdateSavedLogQuery": "validateSavedQueryRequest checks the app against appVisibilityFilter before anything is stored",
+	"handleListBuilds":          "rows come from buildCenterRows, already limited to visibleAppNames; the app query only narrows them",
+	"writeAlertHistory":         "every row is filtered through scopedAppVisibility; the app query only narrows the list",
 }
 
 func TestBodyResourceRefsAreAuthorized(t *testing.T) {

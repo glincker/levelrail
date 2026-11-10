@@ -41,6 +41,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		_ = os.Setenv(envNoColor, "1")
 	}
 	args, debug := extractDebugFlag(args)
+	args, noColorFlag = extractNoColorFlag(args)
 	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
@@ -324,6 +325,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runDeployLink(prog, args[1:], stdout, stderr, lookupEnv)
 	case "search":
 		return runSearch(prog, args[1:], stdout, stderr, lookupEnv)
+	case "views":
+		return runViews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "janitor":
 		return runJanitor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
@@ -408,7 +411,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n", prog, args[0])
-		_, _ = fmt.Fprint(stderr, unknownVerbHint(prog, nil, args[0]))
+		_, _ = fmt.Fprint(stderr, unknownCommandHint(prog, args))
 		return exitUsage
 	}
 }
@@ -437,6 +440,7 @@ Usage:
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps run <name> [--service S] -- <cmd> [args...]   run a command once in a fresh container, exits with its exit code
   %[1]s deploy <name> [flags]        convenience alias for apps deploy
   %[1]s rollback <name> [flags]      convenience alias for apps rollback
   %[1]s restart <name> [--wait]      convenience alias for apps restart
@@ -565,6 +569,7 @@ Usage:
   %[1]s control-plane rehydrate plan|run|status [flags]   whole-server recovery: restore data for every app, database and volume
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
+  %[1]s views list|save|delete|apply [--list L] [flags]       saved list filters for apps, databases, domains, builds and deployments, private or shared with your team
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes export|import <app> <volume> [flags]          move a volume out of or into Levelrail as a tar.gz
@@ -612,6 +617,7 @@ Usage:
   %[1]s app-volume-backups restores <app> <volume> [flags]   volume restore attempt history
 
 Auth and target:
+  --no-color              disable ANSI color (also NO_COLOR and CI mode)
   --debug                 trace every outgoing request's method, URL, and
                           response status/timing to stderr (never stdout);
                           Authorization and any token are always redacted

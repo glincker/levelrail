@@ -59,6 +59,9 @@ type RemoteRequest struct {
 	// Network is the control plane's resolved build network mode. The node
 	// runs the stricter of it and its own setting, never a looser one.
 	Network NetworkMode
+
+	// RailpackProvider is the app's provider pin, re-checked on the build node.
+	RailpackProvider string
 }
 
 // NewRemoteRequest turns a local Dockerfile build into a dispatchable
@@ -97,12 +100,13 @@ func NewRemoteRailpackRequest(req RailpackRequest, cache CacheConfig) (RemoteReq
 		return RemoteRequest{}, err
 	}
 	return RemoteRequest{
-		Kind:       RemoteKindRailpack,
-		ContextDir: req.SourceDir,
-		Tag:        req.Tag,
-		BuildArgs:  req.Env,
-		Cache:      CacheConfig{RegistryRef: cache.RegistryRef, RegistryInsecure: cache.RegistryInsecure},
-		Network:    req.Network,
+		Kind:             RemoteKindRailpack,
+		ContextDir:       req.SourceDir,
+		Tag:              req.Tag,
+		BuildArgs:        req.Env,
+		Cache:            CacheConfig{RegistryRef: cache.RegistryRef, RegistryInsecure: cache.RegistryInsecure},
+		Network:          req.Network,
+		RailpackProvider: req.Provider,
 	}, nil
 }
 
@@ -141,7 +145,7 @@ func (c *Client) SolveRemote(ctx context.Context, req RemoteRequest, out io.Writ
 	case RemoteKindRailpack:
 		// Railpack ignores cache config here exactly as BuildRailpack does
 		// locally: newRailpackSolveOpt wires no cache entries at all.
-		return c.solveRailpack(ctx, RailpackRequest{SourceDir: req.ContextDir, Tag: req.Tag, Network: req.Network, Env: req.BuildArgs}, out, progress)
+		return c.solveRailpack(ctx, RailpackRequest{SourceDir: req.ContextDir, Tag: req.Tag, Network: req.Network, Env: req.BuildArgs, Provider: req.RailpackProvider}, out, progress)
 	default:
 		return nil, fmt.Errorf("build: dispatched build has an unrecognized kind %q", req.Kind)
 	}

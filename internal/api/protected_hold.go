@@ -13,10 +13,10 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,7 +27,13 @@ func (rt *Router) protectedEnvironmentOf(ctx context.Context, name string) (env 
 		return store.Environment{}, false, nil
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, name)
-	if err != nil || svc == nil || svc.EnvironmentID == "" {
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return rt.composeProtectedEnvironment(ctx, name)
+	}
+	if err != nil {
+		return store.Environment{}, false, fmt.Errorf("load service: %w", err)
+	}
+	if svc == nil || svc.EnvironmentID == "" {
 		return store.Environment{}, false, nil
 	}
 	e, err := rt.environments.GetEnvironment(ctx, svc.EnvironmentID)
@@ -53,6 +59,7 @@ func (rt *Router) holdIfProtected(ctx context.Context, name string, hr deploy.He
 		return false, 0, ""
 	}
 	rt.supersedeHeldDeploys(ctx, name)
+	hr.BuildSettings = rt.snapshotBuildSettings(ctx, name)
 	id, err := rt.HoldForApproval(ctx, env, name, image, source, hr, actor)
 	if err != nil {
 		rt.logger.Error("api: hold protected deploy failed", slog.String("name", name), slog.String("error", err.Error()))
@@ -99,7 +106,7 @@ func (rt *Router) pinBranchSHA(ctx context.Context, name, branch string) (string
 	if err != nil {
 		return "", fmt.Errorf("resolve deploy token: %w", err)
 	}
-	sha, err := rt.resolveBranchSHA(ctx, gs.RepoURL, branch, token)
+	sha, err := rt.resolveBranchSHA(rt.gitAuthCtx(ctx, name, gs.RepoURL), gs.RepoURL, branch, token)
 	if err != nil {
 		return "", fmt.Errorf("resolve latest commit: %w", err)
 	}
@@ -114,11 +121,11 @@ var resolveTagSHA resolveTagSHAFunc = resolveRemoteTagSHA
 // resolveRemoteTagSHA returns the commit a tag points at, peeling annotated tags.
 func resolveRemoteTagSHA(ctx context.Context, repoURL, tag, token string) (string, error) {
 	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{Name: "origin", URLs: []string{repoURL}})
-	opts := &git.ListOptions{PeelingOption: git.AppendPeeled}
-	if token != "" {
-		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	auth, err := sourcecache.RemoteAuth(ctx, repoURL, token)
+	if err != nil {
+		return "", fmt.Errorf("list refs: %w", err)
 	}
-	refs, err := remote.ListContext(ctx, opts)
+	refs, err := remote.ListContext(ctx, &git.ListOptions{PeelingOption: git.AppendPeeled, Auth: auth})
 	if err != nil {
 		return "", fmt.Errorf("list refs: %w", err)
 	}
@@ -143,7 +150,7 @@ func (rt *Router) pinTagSHA(ctx context.Context, name, repoURL, tag string) (str
 	if err != nil {
 		return "", fmt.Errorf("resolve deploy token: %w", err)
 	}
-	return resolveTagSHA(ctx, repoURL, tag, token)
+	return resolveTagSHA(rt.gitAuthCtx(ctx, name, repoURL), repoURL, tag, token)
 }
 
 // holdGitPush parks a validated push on a protected app. The pushed commit is
@@ -185,6 +192,7 @@ func (rt *Router) holdGitPush(ctx context.Context, name string, plan *gitPushPla
 // replayGitPush builds a held push from the push mirror at the pushed commit.
 func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.HeldRequest) error {
 	defer rt.dropHeldRef(req)
+	ctx = withHeldBuildSettings(ctx, req.BuildSettings)
 	if rt.builder == nil {
 		return errors.New("builds are not configured on this control plane")
 	}
@@ -201,12 +209,13 @@ func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.Hel
 	if err != nil {
 		return errors.New("the held commit is no longer stored, push again")
 	}
-	buildType, path, base := rt.gitPushBuildConfig(ctx, name, commit)
+	buildType, path, base, _ := rt.gitPushBuildConfig(ctx, name, commit)
 	treq := triggerBuildRequest{
 		RepoURL: req.PushMirror, Ref: req.CommitSHA,
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{Branch: req.Branch, Message: pushCommitSubject(commit.Message), Author: commit.Author.Name})
 	run := rt.beginManualBuild(dctx, *existing, buildReq, buildType, store.DeployAttemptSourceGitPush, "", "", false)
 	run.repoURL, run.ref, run.fromCache = req.PushMirror, req.CommitSHA, true

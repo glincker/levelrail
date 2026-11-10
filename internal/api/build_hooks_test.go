@@ -24,8 +24,12 @@ func createHook(t *testing.T, rt *Router, cookie *http.Cookie, body string) buil
 }
 
 func postHook(rt *Router, path, body string) *httptest.ResponseRecorder {
+	return postHookFrom(rt, path, body, "203.0.113.9:4444")
+}
+
+func postHookFrom(rt *Router, path, body, remote string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
-	req.RemoteAddr = "203.0.113.9:4444"
+	req.RemoteAddr = remote
 	return serve(rt, req)
 }
 
@@ -213,5 +217,88 @@ func TestBuildHookPayloadAndArgs(t *testing.T) {
 func TestLoggablePath_RedactsBuildHookToken(t *testing.T) {
 	if got := loggablePath(buildHookURLPrefix + "bh_1/s3cret"); strings.Contains(got, "s3cret") {
 		t.Errorf("loggablePath leaked the token: %q", got)
+	}
+}
+
+func TestBuildHookAllowlist(t *testing.T) {
+	rt, db, cookie := newSafetyRouter(t, stubResolver{})
+	res := createHook(t, rt, cookie, `{"name":"ci","allowed_cidrs":["198.51.100.0/24"]}`)
+	if got := postHook(rt, res.Path, "").Code; got != http.StatusForbidden {
+		t.Fatalf("outside allowlist = %d, want 403", got)
+	}
+	h, err := db.GetBuildHook(context.Background(), res.ID)
+	if err != nil || h.TriggerCount != 0 || h.LastUsedAt == nil || !strings.HasPrefix(h.LastRefusal, "refused:") || h.LastResult != "" {
+		t.Fatalf("hook after refused call = %+v, %v; want no run, a last-used time and a refusal kept apart from the result", h, err)
+	}
+	rec := serve(rt, authedRequest(t, cookie, http.MethodPatch, "/api/v1/apps/web/build-hooks/"+res.ID, `{"allowed_cidrs":["203.0.113.9","203.0.113.0/24","10.0.0.0/8"]}`))
+	var upd buildHookResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &upd); rec.Code != http.StatusOK || err != nil {
+		t.Fatalf("update = %d %s", rec.Code, rec.Body.String())
+	}
+	if strings.Join(upd.AllowedCIDRs, ",") != "203.0.113.9/32,203.0.113.0/24,10.0.0.0/8" || upd.Token != "" {
+		t.Fatalf("update allowlist = %v token %q, want canonical ranges and no secret", upd.AllowedCIDRs, upd.Token)
+	}
+	if got := postHook(rt, res.Path, "").Code; got != http.StatusAccepted {
+		t.Fatalf("inside allowlist = %d, want 202", got)
+	}
+	if h, _ = db.GetBuildHook(context.Background(), res.ID); h.TriggerCount != 1 {
+		t.Fatalf("trigger count = %d, want 1", h.TriggerCount)
+	}
+}
+
+func TestBuildHookAllowlistValidation(t *testing.T) {
+	t.Setenv("APP_BUILD_HOOK_MAX_CIDRS", "2")
+	rt, db, cookie := newSafetyRouter(t, stubResolver{})
+	for _, body := range []string{
+		`{"name":"a","allowed_cidrs":["not-a-cidr"]}`,
+		`{"name":"b","allowed_cidrs":["10.0.0.0/33"]}`,
+		`{"name":"c","allowed_cidrs":["10.0.0.0/8","10.1.0.0/16","10.2.0.0/16"]}`,
+		`{"name":"d","allowed_cidrs":["10.1.2.3/8"]}`,
+		`{"name":"e","allowed_cidrs":["0.0.0.0/0"]}`,
+	} {
+		if rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/build-hooks", body)); rec.Code != http.StatusBadRequest {
+			t.Errorf("create %s = %d, want 400", body, rec.Code)
+		}
+	}
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodPatch, "/api/v1/apps/web/build-hooks/bh_missing", `{"allow_any":true}`)); rec.Code != http.StatusNotFound {
+		t.Errorf("update unknown = %d, want 404", rec.Code)
+	}
+	res := createHook(t, rt, cookie, `{"name":"ci","allowed_cidrs":["198.51.100.0/24"]}`)
+	path := "/api/v1/apps/web/build-hooks/" + res.ID
+	for _, body := range []string{`{}`, `{"allowed_cidrs":[]}`, `{"allowed_cidrs":null}`, `{"cidrs":["10.0.0.0/8"]}`, `{"allowed_cidrs":["::/0"]}`, `{"allowed_cidrs":["10.0.0.0/8"],"allow_any":true}`} {
+		if rec := serve(rt, authedRequest(t, cookie, http.MethodPatch, path, body)); rec.Code != http.StatusBadRequest {
+			t.Errorf("update %s = %d, want 400", body, rec.Code)
+		}
+	}
+	if h, _ := db.GetBuildHook(context.Background(), res.ID); len(h.AllowedCIDRs) != 1 {
+		t.Fatalf("rejected updates changed the allowlist: %v", h.AllowedCIDRs)
+	}
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodPatch, path, `{"allow_any":true}`)); rec.Code != http.StatusOK {
+		t.Fatalf("allow_any = %d %s", rec.Code, rec.Body.String())
+	}
+	if h, _ := db.GetBuildHook(context.Background(), res.ID); len(h.AllowedCIDRs) != 0 {
+		t.Fatalf("allow_any left %v", h.AllowedCIDRs)
+	}
+}
+
+// Refused sources spend their own bucket: they are throttled, and an allowed caller still gets through.
+func TestBuildHookRefusedDoNotDrainAllowed(t *testing.T) {
+	t.Setenv(envBuildHookRate, "1")
+	rt, db, cookie := newSafetyRouter(t, stubResolver{})
+	res := createHook(t, rt, cookie, `{"name":"ci","allowed_cidrs":["198.51.100.0/24"]}`)
+	if got := postHook(rt, res.Path, "").Code; got != http.StatusForbidden {
+		t.Fatalf("first refused = %d, want 403", got)
+	}
+	if got := postHook(rt, res.Path, "").Code; got != http.StatusTooManyRequests {
+		t.Fatalf("second refused = %d, want 429", got)
+	}
+	if got := postHookFrom(rt, res.Path, "", "198.51.100.5:4444").Code; got != http.StatusAccepted {
+		t.Fatalf("allowed caller after refusals = %d, want 202", got)
+	}
+	if got := postHookFrom(rt, res.Path, "", "198.51.100.5:4444").Code; got != http.StatusTooManyRequests {
+		t.Fatalf("allowed caller over limit = %d, want 429", got)
+	}
+	if h, _ := db.GetBuildHook(context.Background(), res.ID); h.TriggerCount != 1 || h.LastRefusal != "refused: source address not allowed" {
+		t.Fatalf("hook = %+v, want one run and only the first refusal recorded", h)
 	}
 }

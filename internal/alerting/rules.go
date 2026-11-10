@@ -30,8 +30,11 @@ const (
 	// KindNodeHostGuardrail is registered for rules that watch per-node disk, inode, memory and swap guardrails.
 	KindNodeHostGuardrail Kind = "node_host_guardrail"
 	KindNodeResourceUsage Kind = "node_resource_usage"
-	KindDomainHealth      Kind = "domain_health"
-	KindBackupMissing     Kind = "backup_missing"
+	// KindNodeCPU and KindNodeMemory fire once a node stays over its CPU or memory percent for the sustained interval count.
+	KindNodeCPU       Kind = "node_cpu"
+	KindNodeMemory    Kind = "node_memory"
+	KindDomainHealth  Kind = "domain_health"
+	KindBackupMissing Kind = "backup_missing"
 
 	// KindControlPlaneBackupStale is platform-wide: it watches the newest control plane snapshot's age.
 	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"
@@ -65,6 +68,14 @@ const (
 	// KindEmailDeliveryFailing is platform-wide: it fires while most recent
 	// outbound emails are failing (email_delivery_failing.go).
 	KindEmailDeliveryFailing Kind = "email_delivery_failing"
+
+	// KindCleanupFailing is platform-wide: it fires while the cleanup center
+	// has failed real runs in its look-back window (cleanup_failing.go).
+	KindCleanupFailing Kind = "cleanup_failing"
+
+	// KindOOMKilled is per-app: it fires when the kernel OOM-kills the app
+	// RestartCountThreshold times inside RestartWindow (oom_killed.go).
+	KindOOMKilled Kind = "oom_killed"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

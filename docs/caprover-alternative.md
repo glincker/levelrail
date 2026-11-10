@@ -55,6 +55,32 @@ CapRover is a long-standing project with a large install base and a one-click ap
 
 [Read the full comparison](/comparison)
 
+## Where each familiar feature lives
+
+Every command below exists on the current release branch. Run `levelrail-cli <command> --help` for the full flag list.
+
+| If you used this in CapRover | In Levelrail | Command |
+| --- | --- | --- |
+| Deploy an image | App deploy | `levelrail-cli apps deploy <name> --image IMAGE` |
+| Deploy a docker-compose file | Compose deploy | `levelrail-cli compose deploy <app> -f compose.yaml` |
+| One-click apps | Template catalog | `levelrail-cli templates install <id>` |
+| Previous deploys and rollback | Release history | `levelrail-cli apps rollback <name>` |
+| Instance count | Replicas and resource limits | `levelrail-cli apps scale <name> --replicas N` |
+| Custom domains and HTTPS | Domains with automatic certificates | `levelrail-cli apps domains add <name> <domain>` |
+| Environment variables | App env with encrypted secrets | `levelrail-cli apps env import <name> --file .env` |
+| Persistent directories | App volumes | `levelrail-cli apps volumes attach <name> --name NAME --path PATH` |
+| App logs | Log viewer and search | `levelrail-cli apps logs <name>` |
+| Shell into a container | Exec and console | `levelrail-cli apps console <name>` |
+| Backups | Backup targets and schedules | `levelrail-cli apps backups schedule set <app> <service> --target ID --cron EXPR` |
+| Cluster nodes | Agent per node | `levelrail-cli nodes list` |
+| Git push-to-deploy | Repository source with webhooks | `levelrail-cli apps webhook-deliveries list <app-name>` |
+
+## Not there yet
+
+- **Definition files.** CapRover reads a `captain-definition` file from the repository. Levelrail has no equivalent file format yet; describe the app in the dashboard, with `apps deploy-spec`, or with platform-as-code. A definition-file format is planned.
+- **Template import.** You cannot paste a CapRover one-click app definition into Levelrail yet. Pick the matching entry from the template catalog or deploy the service as a Compose file. Template import is planned.
+- **Images built on CapRover** are not recoverable through its API, so the importer needs a repository or registry for each app.
+
 ## Move over safely
 
 <Steps>

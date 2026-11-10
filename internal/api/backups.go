@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -200,6 +201,9 @@ type backupHistoryResource struct {
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 	// Codec is "zstd+age" for an encrypted object, empty for a raw one.
 	Codec string `json:"codec,omitempty"`
+	// HookOutput is a failing volume hook's masked output, filled only for
+	// callers who may change that app's hooks.
+	HookOutput string `json:"hook_output,omitempty"`
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
@@ -370,6 +374,8 @@ type backupScheduleResource struct {
 	// RetainDays is a second, independent retention dimension: 0 means
 	// no age limit, mirroring Retain's own zero-means-unlimited meaning.
 	RetainDays int `json:"retain_days,omitempty"`
+	// Paused is true while the scheduler skips this schedule; the config stays saved.
+	Paused bool `json:"paused,omitempty"`
 }
 
 // setBackupScheduleRequest is handleSetBackupSchedule's request body.
@@ -415,6 +421,9 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 	if !decodeReq(w, r, &req) {
 		return
 	}
+	if req.Retain == 0 {
+		req.Retain = rt.tunableInt(r.Context(), runtimesettings.KeyBackupsScheduleRetainDefault, "APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", 0)
+	}
 	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
 		return
 	}
@@ -431,12 +440,17 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	paused := false
+	if d, err := rt.databases.GetDesiredDatabase(r.Context(), name); err == nil {
+		paused = d.BackupPaused
+	}
 	writeJSON(w, http.StatusOK, backupScheduleResource{
 		DatabaseName: name,
 		TargetID:     req.TargetID,
 		Schedule:     req.Schedule,
 		Retain:       req.Retain,
 		RetainDays:   req.RetainDays,
+		Paused:       paused,
 	})
 }
 
@@ -482,4 +496,38 @@ func randomBackupHistoryID() (string, error) {
 		return "", fmt.Errorf("api: generate backup history id: %w", err)
 	}
 	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// handlePauseBackupSchedule and handleResumeBackupSchedule flip the paused flag; the saved cron, target and retention stay.
+func (rt *Router) handlePauseBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setDatabaseBackupPaused(w, r, true)
+}
+
+func (rt *Router) handleResumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setDatabaseBackupPaused(w, r, false)
+}
+
+func (rt *Router) setDatabaseBackupPaused(w http.ResponseWriter, r *http.Request, paused bool) {
+	name := r.PathValue("name")
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: pause backup schedule: load database failed", err, slog.String("name", name))
+		return
+	}
+	if d.BackupSchedule == "" {
+		writeError(w, http.StatusConflict, "database has no backup schedule")
+		return
+	}
+	if err := rt.databases.SetDatabaseBackupPaused(r.Context(), name, paused); err != nil {
+		rt.internalError(w, "api: pause backup schedule failed", err, slog.String("name", name))
+		return
+	}
+	writeJSON(w, http.StatusOK, backupScheduleResource{
+		DatabaseName: name, TargetID: d.BackupTargetID, Schedule: d.BackupSchedule,
+		Retain: d.BackupRetain, RetainDays: d.BackupRetainDays, Paused: paused,
+	})
 }

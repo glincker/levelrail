@@ -31,12 +31,26 @@ type OneShotJob struct {
 	Message        string     `json:"message,omitempty"`
 	StartedAt      time.Time  `json:"started_at"`
 	FinishedAt     *time.Time `json:"finished_at,omitempty"`
+	// Latest attempt's result; the server fills these on GET.
+	ExitCode        *int   `json:"exit_code,omitempty"`
+	RunStatus       string `json:"run_status,omitempty"`
+	Output          string `json:"output,omitempty"`
+	OutputTruncated bool   `json:"output_truncated,omitempty"`
+	// OutputWithheld means the run printed output this token may not read (it lacks read_sensitive).
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 // RunOneShotJob calls POST /api/v1/jobs/runs.
 func (c *Client) RunOneShotJob(ctx context.Context, req OneShotJobRequest) (OneShotJob, error) {
 	var out OneShotJob
 	err := c.do(ctx, http.MethodPost, "/api/v1/jobs/runs", req, &out)
+	return out, err
+}
+
+// CancelOneShotJob calls POST /api/v1/jobs/runs/{id}/cancel.
+func (c *Client) CancelOneShotJob(ctx context.Context, id string) (OneShotJob, error) {
+	var out OneShotJob
+	err := c.do(ctx, http.MethodPost, "/api/v1/jobs/runs/"+PathEscape(id)+"/cancel", nil, &out)
 	return out, err
 }
 

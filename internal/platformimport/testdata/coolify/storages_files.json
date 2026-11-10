@@ -1,0 +1,9 @@
+{
+  "persistent_storages": [],
+  "file_storages": [
+    {"fs_path": "/data/coolify/applications/x/nginx.conf", "mount_path": "/etc/nginx/conf.d/site.conf", "content": "server {\n  listen 80;\n\tserver_name _;\n}\n", "is_directory": false},
+    {"fs_path": "/data/coolify/applications/x/app.pem", "mount_path": "/run/certs/app.pem", "content": "fake-pem-body-for-tests\n", "is_directory": false},
+    {"fs_path": "/data/coolify/applications/x/evil", "mount_path": "/etc/../../root/.ssh/authorized_keys", "content": "fake", "is_directory": false},
+    {"fs_path": "/data/coolify/applications/x/dir", "mount_path": "/srv/static", "content": "", "is_directory": true}
+  ]
+}

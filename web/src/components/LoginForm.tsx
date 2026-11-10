@@ -181,7 +181,7 @@ export function LoginForm({
             <FieldLabel htmlFor="login-password">Password</FieldLabel>
             <Link
               to="/forgot-password"
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground max-sm:min-h-10"
             >
               Forgot password?
             </Link>
@@ -212,7 +212,7 @@ export function LoginForm({
 
       <Button
         type="submit"
-        className="w-full"
+        className="w-full max-sm:h-10"
         disabled={login.isPending || isRateLimited}
       >
         {login.isPending ? 'Signing in...' : 'Sign in'}

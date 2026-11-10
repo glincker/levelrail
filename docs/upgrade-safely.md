@@ -20,7 +20,7 @@ This is the runbook for moving a running server to a newer release. The self-upd
 | See what an upgrade would change | `levelrail-cli upgrade --plan` (same as `--dry-run`) | Anywhere with the CLI. Changes nothing. |
 | Upgrade now, with automatic rollback | `levelrail-cli upgrade --apply`, or **Upgrade now** in Settings > Updates | Anywhere with the CLI, applied on the host. |
 | Upgrade at a set time | `levelrail-cli upgrade schedule --at TIME` | Anywhere with the CLI. |
-| Apply safe patch releases on their own | `levelrail-cli upgrade auto set` | Anywhere with the CLI. Off by default. |
+| Apply safe patch releases on their own | `levelrail-cli upgrade auto set` | Anywhere with the CLI. On by default (any eligible release, 03:00 UTC window) until you save a policy. |
 | Upgrade from the server shell | `sudo levelrail self-upgrade --to vX.Y.Z` | On the server, as root. |
 | Update only the CLI on your laptop | `levelrail-cli update` | Your machine. |
 | Install or reinstall with the install script | `install.sh`, see [Installing](/installing) | On the server, as root. |
@@ -129,7 +129,7 @@ Refused at scheduling time: a time in the past or more than `APP_UPGRADE_SCHEDUL
 
 ## Automatic upgrades
 
-Off by default. Settings > Updates > **Automatic upgrades**, or:
+On by default for an install that has never saved a policy: mode `any`, a nightly window at 03:00 UTC lasting 2 hours, and a minimum release age of 3 days. `levelrail-cli upgrade auto get` shows `source: default (no policy saved yet)` until you save one. Majors, releases with breaking changes that need acknowledgement, and releases younger than 3 days are held, never applied. To turn it off, run `levelrail-cli upgrade auto set --mode off` (or use Settings > Updates > **Automatic upgrades**); a saved choice, including off, always wins. To ship a fleet with it off, set `APP_UPGRADE_AUTO_DEFAULT_MODE=off` on the control plane. Change it in Settings > Updates > **Automatic upgrades**, or:
 
 ```bash
 levelrail-cli upgrade auto set --mode patch --window-cron "0 3 * * *" --window-duration 2h --timezone UTC --min-age-days 3

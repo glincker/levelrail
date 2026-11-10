@@ -47,7 +47,7 @@ const STATUS_ICON: Record<DeployStageStatus, UiIcon> = {
 
 const STATUS_ICON_CLASS: Record<DeployStageStatus, string> = {
   pending: 'text-muted-foreground',
-  running: 'text-primary animate-spin',
+  running: 'text-primary animate-spin motion-reduce:animate-none',
   done: 'text-green-600 dark:text-green-400',
   failed: 'text-destructive',
   skipped: 'text-muted-foreground/60',

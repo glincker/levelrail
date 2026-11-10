@@ -168,16 +168,17 @@ export function CreateAlertRuleDialog({
           </DialogTitle>
           <DialogDescription>
             A threshold rule watches a metric; a crashloop rule watches
-            container restarts; a certificate expiry rule watches every
-            certificate on the control plane; a node patch status rule watches
-            every node&apos;s pending OS security patches; a node disk space
-            rule watches every node&apos;s disk usage percentage; a node
-            CPU/memory usage rule watches every node&apos;s summed CPU and
-            memory usage; a scheduled task failure rule watches one of this
-            app&apos;s scheduled tasks; a domain health rule watches every
-            domain configured on this app; a backup missing rule watches a
-            database or one of this app&apos;s volumes for a scheduled backup
-            that stopped running. All nine notify the same way once they fire.
+            container restarts; an OOM killed rule watches out-of-memory kills;
+            a certificate expiry rule watches every certificate on the control
+            plane; a node patch status rule watches every node&apos;s pending OS
+            security patches; a node disk space rule watches every node&apos;s
+            disk usage percentage; a node CPU/memory usage rule watches every
+            node&apos;s summed CPU and memory usage; a scheduled task failure
+            rule watches one of this app&apos;s scheduled tasks; a domain health
+            rule watches every domain configured on this app; a backup missing
+            rule watches a database or one of this app&apos;s volumes for a
+            scheduled backup that stopped running. All nine notify the same way
+            once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -544,7 +545,11 @@ export function CreateAlertRuleDialog({
             />
           ) : kind === 'email_delivery_failing' ? (
             <AlertKindGuidance kind="email_delivery_failing" />
-          ) : kind === 'deploy_failed' || kind === 'monitor_down' ? (
+          ) : kind === 'cleanup_failing' ? (
+            <AlertKindGuidance kind="cleanup_failing" />
+          ) : kind === 'deploy_failed' ||
+            kind === 'job_failing' ||
+            kind === 'monitor_down' ? (
             <AlertKindGuidance kind={kind} />
           ) : kind === 'budget_threshold' ? (
             <p className="text-sm text-muted-foreground">

@@ -87,6 +87,9 @@ func (rt *Router) handlePutEnvSettings(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if rt.refuseIfProtected(w, r, name) {
+		return
+	}
 	svc, ok := rt.loadRevealApp(w, r, name)
 	if !ok {
 		return
@@ -166,6 +169,9 @@ func (rt *Router) handleConvertEnvToSecret(w http.ResponseWriter, r *http.Reques
 	}
 	if value == "" {
 		writeError(w, http.StatusBadRequest, "an empty variable cannot become a secret")
+		return
+	}
+	if !rt.allowProviderRefs(w, r, value) {
 		return
 	}
 	err := rt.secrets.SetValueGuarded(r.Context(), name, key, value, false)

@@ -286,6 +286,9 @@ func TestTouchNodeLastSeen(t *testing.T) {
 	if err := db.TouchNodeLastSeen(ctx, "node_1"); err != nil {
 		t.Fatalf("TouchNodeLastSeen() error = %v", err)
 	}
+	if err := db.FlushTouches(ctx); err != nil {
+		t.Fatalf("FlushTouches() error = %v", err)
+	}
 
 	got, err := db.GetNode(ctx, "node_1")
 	if err != nil {

@@ -401,6 +401,11 @@ func (rt *Router) applyBulkTag(ctx context.Context, cs ResourceConsoleStore, req
 		}
 		if ref.Kind == store.ResourceKindApp {
 			_, err = rt.attachTagByName(ctx, ref.Name, name)
+		} else if ts := rt.databaseTagStore(); ts != nil {
+			// Only reached when the add would raise the count, so over-cap resources keep what they have.
+			if err = ts.AttachResourceTagCapped(ctx, tag.ID, ref, rt.maxTagsPerResource(ctx)); errors.Is(err, store.ErrResourceTagCap) {
+				err = errTooManyResourceTags
+			}
 		} else {
 			err = cs.AttachResourceTag(ctx, tag.ID, ref)
 		}

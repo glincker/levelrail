@@ -9,8 +9,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { useTranslation } from 'react-i18next'
 import { useBrand } from '../hooks/useBrand'
 import { AccountMenu } from './shell/AccountMenu'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
@@ -18,8 +20,13 @@ import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
+import { useRecordRecent } from './shell/useNavPrefs'
+const SidebarCustomize = lazy(() =>
+  import('./shell/SidebarCustomize').then((m) => ({
+    default: m.SidebarCustomize,
+  })),
+)
 import { VersionFooter } from './shell/VersionFooter'
-import { SidebarVersionLink } from './shell/SidebarVersionLink'
 import {
   scheduleResetSidebarScroll,
   scheduleScrollActiveNavItem,
@@ -72,6 +79,7 @@ function warmScopedSidebars() {
 // header, account footer, and outer chrome stay written once instead of
 // duplicated across a parent chooser and per-mode components.
 export function AppSidebar() {
+  const { t } = useTranslation()
   const brand = useBrand()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
@@ -86,27 +94,31 @@ export function AppSidebar() {
     return scheduleResetSidebarScroll()
   }, [isMobile, openMobile])
   useEffect(warmScopedSidebars, [])
+  useRecordRecent(pathname)
 
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader>
+      <SidebarHeader className="min-h-12 justify-center gap-0 px-2 py-1 group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               render={<Link to="/" />}
-              className="cursor-pointer gap-3 rounded-md transition-colors duration-150 ease-out motion-reduce:transition-none data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent/70 active:bg-sidebar-accent"
+              className="cursor-pointer gap-2 rounded-md transition-colors duration-150 ease-out motion-reduce:transition-none data-[slot=sidebar-menu-button]:!p-1 h-7 hover:bg-sidebar-accent/70 active:bg-sidebar-accent"
             >
-              <span className="relative flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
-                <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
+              <span className="relative flex size-5 shrink-0 items-center justify-center text-sm font-bold text-foreground">
+                <BrandMarkGlyph svgWrapperClassName="flex size-5 items-center justify-center [&_svg]:size-full" />
               </span>
-              <span className="truncate text-sm font-semibold">
+              <span className="truncate text-sm font-semibold group-data-[collapsible=icon]:hidden">
                 {brand.ShortName || brand.Name}
               </span>
             </SidebarMenuButton>
-            <SidebarVersionLink />
           </SidebarMenuItem>
         </SidebarMenu>
+        <SidebarTrigger
+          aria-label={t('shell.toggleSidebar')}
+          className="hidden size-9 group-data-[collapsible=icon]:inline-flex"
+        />
       </SidebarHeader>
 
       {/* A missing app or database makes the scoped nav throw; without this the
@@ -141,8 +153,13 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="gap-0.5 px-2 pb-2 pt-1 group-data-[collapsible=icon]:items-center">
         <VersionFooter />
+        {scopedAppName || scopedDatabaseName || isSettingsScoped ? null : (
+          <Suspense fallback={null}>
+            <SidebarCustomize />
+          </Suspense>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <AccountMenu />

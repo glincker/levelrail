@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"log/slog"
 	"net/http"
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/abuse"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -39,11 +42,16 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 		rt.logger.Warn("api: capture runtime settings at boot failed", slog.String("error", err.Error()))
 	}
 	rt.runtimeSettings = svc
+	runtimesettings.BindRuntimeLimits(svc)
 	build.SetNetworkResolver(func(ctx context.Context) (string, error) { return svc.StringChecked(ctx, build.KeyBuildNetwork) })
 	wireBuildCacheSettings(svc)
 	wireJobHTTPSettings(svc)
+	wireJobGuardSettings(svc)
+	netclient.SetTimeoutSource(func() time.Duration { return svc.Duration(context.Background(), runtimesettings.KeyNetOutboundTimeout) })
 	wireNextSkewSettings(svc)
 	wireDiagnosticSettings(svc)
+	abuse.SetLiveLimits(svc.AbuseLimits)
+	ingress.SetLiveAuthGateTimeout(svc.AuthGateTimeout)
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 

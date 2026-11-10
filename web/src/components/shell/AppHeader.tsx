@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { loadDeferredStyles } from '@/lib/deferredStyles'
+import '@/styles/material.css'
 import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -6,16 +9,12 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
 import { TeamSwitcher } from '../teams/TeamSwitcher'
 import { ScopePicker } from '../environments/ScopePicker'
-import { DockToggle } from '../dock/DockToggle'
-import { HelpMenu } from '../HelpMenu'
-import { ThemeToggle } from '../ThemeToggle'
 import { CliModal } from '../cli/CliModal'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
-import { HeaderOverflow } from './HeaderOverflow'
+import { HeaderOverflow, HeaderUtilities } from './HeaderOverflow'
 import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
-import { WhatsNewPanel } from './WhatsNewPanel'
 import { usePageTitle } from './pageTitleStore'
 import { useMainScrolled } from './useMainScrolled'
 
@@ -30,6 +29,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
   const { t } = useTranslation()
   const scrolled = useMainScrolled()
   const pageTitle = usePageTitle()
+  useEffect(loadDeferredStyles, [])
 
   return (
     <>
@@ -40,13 +40,14 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
       >
         <div
           aria-hidden="true"
+          data-slot="bar-surface"
           className="absolute inset-0 origin-top border-b border-border bg-background transition-transform duration-150 group-data-[scrolled=true]/bar:@4xl:scale-y-90 motion-reduce:transition-none"
         />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 shadow-header transition-opacity duration-150 not-group-data-[scrolled=true]/bar:opacity-0 motion-reduce:transition-none"
         />
-        <div className="relative flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @max-md:flex-nowrap @xl:gap-x-2 @xl:px-4 @5xl:flex-nowrap @5xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
+        <div className="relative flex min-h-14 look-glass:min-h-(--glinr-bar-h) flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @max-md:flex-nowrap @xl:gap-x-2 @xl:px-4 @5xl:flex-nowrap @5xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
           <SidebarTrigger
             className="-ml-1 @max-md:size-10"
             aria-label={t('shell.toggleSidebar')}
@@ -83,20 +84,19 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
               {pageTitle}
             </span>
           ) : null}
-          <div className="ml-auto flex min-w-0 items-center gap-2 @xl:gap-2.5">
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <div className="flex items-center gap-2 @max-md:hidden @xl:gap-2.5">
               <TeamSwitcher />
               <CliStatusBadge />
             </div>
             <StatusChip />
-            <InboxBadge />
-            <div className="flex items-center gap-2 @max-md:hidden @xl:gap-2.5">
-              <NotificationCenter />
-              <WhatsNewPanel />
-              <DockToggle />
-              <HelpMenu />
-              <ThemeToggle />
+            <div className="flex items-center rounded-full @md:border @md:border-border @md:bg-background">
+              <InboxBadge />
+              <div className="flex items-center @max-md:hidden">
+                <NotificationCenter />
+              </div>
             </div>
+            <HeaderUtilities />
             <HeaderOverflow />
           </div>
         </div>

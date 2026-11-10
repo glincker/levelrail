@@ -131,6 +131,7 @@
   "targets": {
     "title": "Pinned rollback targets",
     "empty": "No pinned releases yet. A release is pinned when it takes traffic.",
+    "emptyTitle": "No pinned releases",
     "live": "Live"
   },
   "publishLock": {
@@ -174,5 +175,13 @@
       "failed": "Failed",
       "rolled_back": "Rolled back"
     }
-  }
+  },
+  "freezeBanner": {
+    "title": "Deploy freeze active",
+    "titleUntil": "Deploy freeze active until {{when}}",
+    "body": "A manual deploy now overrides the freeze. Say why; the reason is recorded on the deploy.",
+    "reasonLabel": "Freeze override reason",
+    "reasonPlaceholder": "e.g. hotfix for a security issue"
+  },
+  "pullFresh": "Require a fresh registry lookup: fail instead of deploying the cached image if the registry is unreachable."
 }

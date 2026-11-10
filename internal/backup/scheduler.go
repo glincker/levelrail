@@ -159,6 +159,9 @@ type Scheduler struct {
 	// both nil is valid and leaves only the count/age rules.
 	Policies VolumePolicyLookup
 	GFS      GFSStore
+	// ComposeServices, if set, runs compose database service schedules; the store must also
+	// satisfy ComposeServiceScheduleStore. nil disables them.
+	ComposeServices ScheduledComposeServiceRunner
 	// Tombstones, if set, keeps failed object deletes for retry instead of only logging them.
 	Tombstones TombstoneStore
 	// DefaultRetentionHours, if set, gives backups with no count or age rule of their own a
@@ -184,6 +187,10 @@ type Scheduler struct {
 	// baseNextRun is the next fire time of each database's own base backup
 	// cron, kept apart from nextRun because the two schedules are independent.
 	baseNextRun map[string]time.Time
+	// composeNextRun is the next fire time of each compose database service schedule.
+	composeNextRun map[string]time.Time
+	// composeOrphanLogged remembers schedules of deleted apps already reported.
+	composeOrphanLogged map[string]struct{}
 }
 
 // NewScheduler builds a Scheduler ready to Tick or Run. logger defaults
@@ -329,6 +336,10 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 
 	if verrs := s.tickServiceVolumes(ctx, now); verrs != nil {
 		errs = append(errs, verrs)
+	}
+
+	if cerrs := s.tickComposeServices(ctx, now); cerrs != nil {
+		errs = append(errs, cerrs)
 	}
 
 	s.sweepTombstones(ctx)

@@ -57,6 +57,7 @@
     "title": "Leftover resources",
     "description": "Containers, volumes and certificates that no app or database accounts for. They are removed automatically once they stay orphaned past the grace period. Database data volumes are never removed.",
     "empty": "Nothing left over. Every container and volume belongs to a live app or database.",
+    "emptyTitle": "No orphaned resources",
     "localNode": "this node",
     "kind": {
       "container": "Container",
@@ -736,6 +737,10 @@
     "groupCount": "{{count}} pages",
     "noMatchTitle": "No settings match \"{{query}}\"",
     "noMatchDescription": "Try a different word, or clear the search to see every area.",
+    "searchLoading": "Searching settings",
+    "searchFailedTitle": "Search could not finish",
+    "searchFailedDescription": "Showing the matches found in the menu. Try the full search again.",
+    "retry": "Retry",
     "title": "Settings",
     "description": "Account, team, and platform configuration.",
     "jumpTo": "Jump to an area"
@@ -1201,6 +1206,16 @@
       "vs": "(baseline {{baseline}}, limit {{limit}})",
       "meterLabel": "{{metric}} against its limit",
       "footnote": "CPU is averaged over the last {{seconds}} s. Memory is held to the baseline peak. Limits come from the IDLE_TOL_* settings. The node agent is not measured here."
+    },
+    "statementTiming": {
+      "title": "Statement timing",
+      "on": "Recording",
+      "off": "Off",
+      "basis": "Statements at or above {{threshold}} ms are kept, up to {{size}} distinct statements. Text only, never values.",
+      "offHint": "Turn on the Database statement timing setting to record slow statements and send a Server-Timing header to admins.",
+      "empty": "No statement has crossed the threshold yet.",
+      "loadError": "Could not load slow statements.",
+      "row": "Worst {{max}} ms, last {{last}} ms, seen {{count}} times"
     }
   },
   "generalPage": {
@@ -3187,7 +3202,7 @@
     "openSettings": "Provider settings",
     "scopes": "Scopes: {{scopes}}",
     "banner": {
-      "description": "Connect GitHub, GitLab, Bitbucket, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
+      "description": "Connect GitHub, GitLab, Bitbucket, Azure DevOps, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
       "whatFor": "Connect one account per person, team or organization. Apps stay tied to the account they were created from, so you can add or remove accounts without touching your apps.",
       "diagram": {
         "repos": "Repos",
@@ -3683,9 +3698,11 @@
     },
     "font": {
       "title": "Font",
-      "description": "Local fonts only, nothing is downloaded.",
-      "system": "System",
-      "systemHint": "Your device font",
+      "description": "Geist ships with the app, the others use fonts already on your device.",
+      "system": "Geist",
+      "systemHint": "Default, bundled with the app",
+      "device": "System",
+      "deviceHint": "Your device font",
       "rounded": "Rounded",
       "roundedHint": "Soft letter shapes",
       "serif": "Serif",
@@ -3728,6 +3745,7 @@
       "color": "Color",
       "type": "Type",
       "layout": "Layout",
+      "look": "Look and background",
       "sync": "Sync"
     },
     "motion": {
@@ -3755,6 +3773,22 @@
       "importBad": "That file is not a valid appearance export.",
       "imported": "Imported."
     },
+    "look": {
+      "title": "Look",
+      "description": "Glass-forward adds a soft backdrop, rounder corners and capsule buttons. Restrained is flatter and denser.",
+      "glass": "Glass-forward",
+      "glassHint": "Soft wash, capsules",
+      "restrained": "Restrained",
+      "restrainedHint": "Flat, compact corners"
+    },
+    "backdrop": {
+      "title": "Background",
+      "description": "Branded adds a soft colour wash behind the app. Plain keeps the background fully dark or light.",
+      "branded": "Branded",
+      "brandedHint": "Soft colour wash",
+      "plain": "Plain",
+      "plainHint": "No wash, solid background"
+    },
     "radius": {
       "title": "Corner roundness",
       "description": "How round buttons, cards and inputs are.",
@@ -3778,9 +3812,11 @@
     },
     "codeFont": {
       "title": "Code font",
-      "description": "Used for code, logs, terminals and diffs. Local fonts only, nothing is downloaded.",
-      "system-mono": "System mono",
-      "system-monoHint": "Your device default",
+      "description": "Used for code, logs, terminals and diffs. Geist Mono ships with the app, the others use fonts already on your device.",
+      "system-mono": "Geist Mono",
+      "system-monoHint": "Default, bundled with the app",
+      "device-mono": "System mono",
+      "device-monoHint": "Your device default",
       "jetbrains": "JetBrains Mono",
       "jetbrainsHint": "If installed",
       "fira": "Fira Code",
@@ -3795,6 +3831,91 @@
       "reset": "Reset size",
       "sample": "$ deploy --app web\n12:00:01 INFO build ok",
       "sampleLabel": "Code sample"
+    },
+    "hub": {
+      "saved": "Saved",
+      "resetDone": "Reset to defaults",
+      "theme": {
+        "title": "Theme",
+        "system": "System",
+        "systemHint": "Follows your device",
+        "light": "Light",
+        "lightHint": "Bright surfaces",
+        "dark": "Dark",
+        "darkHint": "Low glare",
+        "oled": "OLED",
+        "oledHint": "True black, this device"
+      },
+      "preview": {
+        "title": "Live preview",
+        "nav": "Sample navigation",
+        "apps": "Apps",
+        "deployments": "Deployments",
+        "servers": "Servers",
+        "running": "Running",
+        "stopped": "Stopped",
+        "field": "App name",
+        "fieldValue": "web",
+        "primary": "Deploy",
+        "secondary": "Cancel",
+        "toast": "Deployed web in 12s",
+        "dialogTitle": "Delete app?",
+        "dialogBody": "This cannot be undone.",
+        "danger": "Delete"
+      }
+    },
+    "listKeys": {
+      "title": "Keyboard shortcuts for lists",
+      "description": "Single keys move through lists: j and k move, x selects, Enter opens, / focuses the filter, ? shows the keys. Turn them off if they clash with a screen reader or speech input.",
+      "on": "Enabled",
+      "onHint": "j, k, x, Enter, /, ?",
+      "off": "Disabled",
+      "offHint": "Mouse and Tab only"
     }
+  },
+  "secretProviders": {
+    "title": "Secret providers",
+    "hint": "Read-only references resolved at container start; fails closed. Use as an app env value:",
+    "namePlaceholder": "prod",
+    "formLabel": "Secret provider",
+    "name": "Name",
+    "type": "Provider",
+    "projectDoppler": "Project",
+    "projectInfisical": "Workspace ID",
+    "envDoppler": "Config",
+    "envInfisical": "Environment slug",
+    "path": "Path (optional)",
+    "baseUrl": "Base URL (self-hosted)",
+    "projectOnePassword": "Default vault",
+    "baseUrlConnect": "Connect server URL",
+    "errBaseUrl": "A Connect server URL is required.",
+    "readOnly": "Only administrators can change secret providers.",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "tokenOrIdentity": "Access token (or use a client ID and secret)",
+    "errIdentity": "Enter both the client ID and the client secret (the ID cannot contain colons or spaces).",
+    "errIdentityReenter": "Enter the client secret again when you change the client ID.",
+    "errVault": "A default vault is required.",
+    "errIdentityOrToken": "Use either an access token or a client ID and secret, not both.",
+    "token": "Token",
+    "errName": "Name must start with a letter and use lowercase letters, digits or underscores (max 40).",
+    "errScope": "Project and environment are required.",
+    "errToken": "A token is required the first time.",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "add": "Add provider",
+    "edit": "Edit",
+    "remove": "Remove",
+    "test": "Test",
+    "testing": "Testing...",
+    "testOk": "Connection works.",
+    "testFail": "Test failed.",
+    "selfHosted": "Self-hosted",
+    "noToken": "No token",
+    "loading": "Loading providers...",
+    "empty": "No secret providers yet.",
+    "removeTitle": "Remove {{name}}?",
+    "removeConsequence": "Apps referencing this provider will fail to start until it is re-added."
   }
 }

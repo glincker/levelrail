@@ -3,5 +3,83 @@
     "saving": "Guardando",
     "saved": "Guardado",
     "error": "No se pudo guardar"
+  },
+  "breadcrumb": {
+    "label": "Ruta de navegación"
+  },
+  "pagination": {
+    "label": "Paginación",
+    "status": "Página {{page}} de {{count}}",
+    "previous": "Página anterior",
+    "next": "Página siguiente"
+  },
+  "stepper": {
+    "decrease": "Disminuir",
+    "increase": "Aumentar"
+  },
+  "chip": {
+    "remove": "Quitar {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "Rango de tiempo",
+    "refresh": "Actualizar"
+  },
+  "logToolbar": {
+    "level": "Nivel de log",
+    "levels": {
+      "all": "Todos",
+      "errors": "Errores",
+      "warnings": "Avisos",
+      "info": "Info",
+      "debug": "Depuración"
+    },
+    "filterPlaceholder": "Filtrar líneas",
+    "filterLabel": "Filtrar líneas de log",
+    "jumpToError": "Ir al primer error",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copiedAnnounce": "Copiado al portapapeles",
+    "download": "Descargar",
+    "shownOf": "{{shown}} de {{total}} líneas"
+  },
+  "filterChips": {
+    "group": "Filtros activos",
+    "clearAll": "Quitar todos los filtros",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "emptyTitle": "Nada coincide con estos filtros",
+    "emptyBody": "Los {{total}} elementos siguen aquí. Quita un filtro o quítalos todos.",
+    "status": "Estado: {{value}}",
+    "search": "Búsqueda: {{value}}",
+    "tag": "Etiqueta: {{value}}",
+    "environment": "Entorno: {{value}}",
+    "engine": "Motor: {{value}}",
+    "labels": "Etiquetas: {{value}}"
+  },
+  "listKeys": {
+    "title": "Atajos de teclado",
+    "down": "fila siguiente",
+    "up": "fila anterior",
+    "select": "seleccionar fila",
+    "open": "abrir fila",
+    "filter": "ir al filtro",
+    "hint": "mostrar u ocultar esto",
+    "close": "Ocultar atajos de teclado"
+  },
+  "guidedEmpty": {
+    "viaCli": "O hazlo desde la CLI",
+    "cliLabel": "Comando de la CLI"
+  },
+  "savedViews": {
+    "button": "Vistas",
+    "label": "Vistas guardadas",
+    "empty": "Aún no hay vistas guardadas.",
+    "apply": "Aplicar la vista {{name}}",
+    "delete": "Eliminar la vista {{name}}",
+    "deleted": "Vista eliminada",
+    "saved": "Vista {{name}} guardada",
+    "namePlaceholder": "Guardar los filtros actuales como",
+    "shareTeam": "Compartir con mi equipo",
+    "teamBadge": "Equipo",
+    "save": "Guardar vista"
   }
 }

@@ -49,6 +49,7 @@
     "delete": "Eliminar",
     "deleteLabel": "Eliminar el grupo {{name}}",
     "empty": "Aún no hay grupos. Los grupos se muestran como secciones plegables en la página pública.",
+    "emptyTitle": "Sin grupos",
     "limit": "Se alcanzó el límite de grupos.",
     "moveDown": "Bajar {{name}}",
     "moveUp": "Subir {{name}}",

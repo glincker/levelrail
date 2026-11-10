@@ -12,8 +12,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
-func coolifyExitBody(url, only string) string {
-	return `{"platform":"coolify","url":"` + url + `","token":"` + exportfixture.Token + `","allow_loopback":true,"only":["` + only + `"]}`
+func coolifyExitBody(url string) string {
+	return `{"platform":"coolify","url":"` + url + `","token":"` + exportfixture.Token + `","allow_loopback":true,"only":["storefront"]}`
 }
 
 func TestCoolifyExitReportAndCronImport(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCoolifyExitReportAndCronImport(t *testing.T) {
 		return rec
 	}
 
-	rec := post("/api/v1/migration/coolify/exit-report", coolifyExitBody(src.URL, "storefront"))
+	rec := post("/api/v1/migration/coolify/exit-report", coolifyExitBody(src.URL))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("report status %d: %s", rec.Code, rec.Body.String())
 	}
@@ -46,7 +46,7 @@ func TestCoolifyExitReportAndCronImport(t *testing.T) {
 		t.Fatal("the report must not create anything")
 	}
 
-	if rec = post("/api/v1/imports/platform/apply", coolifyExitBody(src.URL, "storefront")); rec.Code != http.StatusOK {
+	if rec = post("/api/v1/imports/platform/apply", coolifyExitBody(src.URL)); rec.Code != http.StatusOK {
 		t.Fatalf("apply status %d: %s", rec.Code, rec.Body.String())
 	}
 	jobs, err := db.ListScheduledTasksForService(t.Context(), "storefront")
@@ -59,7 +59,7 @@ func TestCoolifyExitReportAndCronImport(t *testing.T) {
 		}
 	}
 
-	rec = post("/api/v1/migration/coolify/exit-report", coolifyExitBody(src.URL, "storefront"))
+	rec = post("/api/v1/migration/coolify/exit-report", coolifyExitBody(src.URL))
 	var after coolifyexit.Report
 	if err := json.Unmarshal(rec.Body.Bytes(), &after); err != nil || after.Mode != coolifyexit.ModeVerify {
 		t.Fatalf("verify: %v mode=%q body=%s", err, after.Mode, rec.Body.String())
@@ -70,5 +70,32 @@ func TestCoolifyExitReportAndCronImport(t *testing.T) {
 
 	if rec = post("/api/v1/migration/coolify/exit-report", `{"platform":"docker","snapshot":"[]"}`); rec.Code != http.StatusBadRequest {
 		t.Errorf("a pasted-file platform status %d", rec.Code)
+	}
+}
+
+func TestPlatformImportSkipsJobsForNonRoot(t *testing.T) {
+	t.Setenv(platformimport.AllowLoopbackEnv, "true")
+	src := exportfixture.New(t)
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithSecretSetter(&fakeSecretSetter{}))
+	tok := seedMatrixToken(t, db, "importer", []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive, AbilityDeploy})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/imports/platform/apply", strings.NewReader(coolifyExitBody(src.URL)))
+	req.Header.Set("Content-Type", "application/json")
+	bearer(tok)(req)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("apply status %d: %s", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(t.Context(), "storefront"); err != nil {
+		t.Fatalf("app must still be imported: %v", err)
+	}
+	jobs, err := db.ListScheduledTasksForService(t.Context(), "storefront")
+	if err != nil || len(jobs) != 0 {
+		t.Fatalf("non-root import created %d job(s), err = %v", len(jobs), err)
+	}
+	if !strings.Contains(rec.Body.String(), "scheduled job(s) were skipped") {
+		t.Errorf("result must say jobs were skipped: %s", rec.Body.String())
 	}
 }

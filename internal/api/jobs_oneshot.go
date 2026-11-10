@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -70,13 +71,6 @@ func oneShotInit() {
 	})
 }
 
-// registerOneShotJobRoutes serves one-shot jobs. Starting one runs a command
-// right now, so it needs AbilityDeploy on the app, like "run now".
-func (rt *Router) registerOneShotJobRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/v1/jobs/runs", rt.requireAbilityForResource(AbilityDeploy, oneShotAppFromBody, rt.handleStartOneShotJob))
-	mux.HandleFunc("GET /api/v1/jobs/runs/{id}", rt.requireAbilityForResource(AbilityRead, rt.oneShotAppFromID, rt.handleGetOneShotJob))
-}
-
 // oneShotAppFromBody names the app resource from the JSON body without
 // consuming it, so the policy check sees the app the job will run against.
 func oneShotAppFromBody(r *http.Request) string {
@@ -128,6 +122,49 @@ type oneShotResponse struct {
 	Message        string     `json:"message,omitempty"`
 	StartedAt      time.Time  `json:"started_at"`
 	FinishedAt     *time.Time `json:"finished_at,omitempty"`
+	// Latest attempt's result, filled on GET so a caller needs no second lookup.
+	ExitCode        *int   `json:"exit_code,omitempty"`
+	RunStatus       string `json:"run_status,omitempty"`
+	Output          string `json:"output,omitempty"`
+	OutputTruncated bool   `json:"output_truncated,omitempty"`
+	// OutputWithheld is set when the run printed output the caller may not read without read_sensitive.
+	OutputWithheld bool `json:"output_withheld,omitempty"`
+}
+
+// oneShotTruncatedHeader is the prefix the runner puts on output it cut to the job output limit.
+const oneShotTruncatedHeader = "[output truncated"
+
+// oneShotOutputTail is how many trailing output bytes a job response carries: the job output limit,
+// so the answer never holds more than a run keeps.
+func oneShotOutputTail() int {
+	return scheduledtask.LimitsFromEnv(os.LookupEnv).MaxOutputBytes
+}
+
+// attachOneShotOutput adds the newest attempt's exit code and output tail.
+// Output was redacted when the run was recorded; a lookup failure leaves the status-only answer.
+// Redaction only covers known secrets, so the output itself needs read_sensitive.
+func (rt *Router) attachOneShotOutput(ctx context.Context, taskID string, withOutput bool, resp *oneShotResponse) {
+	if taskID == "" || rt.scheduledTasks == nil {
+		return
+	}
+	runs, err := rt.scheduledTasks.ListScheduledTaskRuns(ctx, store.ScheduledTaskRunFilter{ServiceName: resp.App, TaskID: taskID, Limit: 1})
+	if err != nil || len(runs) == 0 {
+		return
+	}
+	run, err := rt.scheduledTasks.GetScheduledTaskRun(ctx, runs[0].ID)
+	if err != nil {
+		return
+	}
+	resp.ExitCode, resp.RunStatus = run.ExitCode, run.Status
+	if !withOutput {
+		resp.OutputWithheld = run.Output != ""
+		return
+	}
+	resp.Output = run.Output
+	resp.OutputTruncated = strings.HasPrefix(resp.Output, oneShotTruncatedHeader)
+	if limit := oneShotOutputTail(); limit > 0 && len(resp.Output) > limit {
+		resp.Output, resp.OutputTruncated = resp.Output[len(resp.Output)-limit:], true
+	}
 }
 
 func toOneShotResponse(e *scheduledtask.OneShotEntry) oneShotResponse {
@@ -161,11 +198,6 @@ func fromStoredOneShot(j store.OneShotJob) oneShotResponse {
 // lands in the normal run history; the answer is 202 with the job to poll.
 func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) {
 	oneShotInit()
-	attempter, ok := rt.scheduledTaskRunner.(oneShotAttempter)
-	if !ok {
-		writeError(w, http.StatusNotImplemented, "scheduled task execution is not configured on this control plane")
-		return
-	}
 	var req oneShotRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -178,7 +210,12 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.App)) {
 		return
 	}
-	if !rt.requireJobApp(w, r, req.App, "start one-shot job") {
+	if !rt.requireJobApp(w, r, req.App, "start one-shot job") || !rt.requireJobExecAccess(w, r, req.App) {
+		return
+	}
+	attempter, ok := rt.scheduledTaskRunner.(oneShotAttempter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "scheduled task execution is not configured on this control plane")
 		return
 	}
 	spec := scheduledtask.OneShotSpec{
@@ -196,6 +233,17 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 	if req.TimeoutSeconds > 0 {
 		timeout = req.TimeoutSeconds
 	}
+	timeout = rt.clampOneShotTimeout(r.Context(), timeout)
+	release, ok := rt.acquireOneShotSlot(w, r, req.App)
+	if !ok {
+		return
+	}
+	launched := false
+	defer func() {
+		if !launched {
+			release()
+		}
+	}()
 
 	jobID, err := randomOneShotID()
 	if err != nil {
@@ -209,10 +257,11 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 	}
 	now := time.Now().UTC()
 	task := store.ScheduledTask{
-		ID: taskID, ServiceName: req.App, Command: req.Command, Schedule: "@yearly", Enabled: false,
-		Name: "oneshot-" + jobID, Mode: store.ScheduledTaskModeFresh, TimeoutSeconds: timeout,
+		ID: taskID, ServiceName: req.App, Command: req.Command, Schedule: oneShotTaskSchedule, Enabled: false,
+		Name: oneShotTaskNamePrefix + jobID, Mode: store.ScheduledTaskModeFresh, TimeoutSeconds: timeout,
 		Source: store.ScheduledTaskSourceAPI, CreatedAt: now, UpdatedAt: now,
 	}
+	rt.applyOneShotResourceLimits(r.Context(), &task)
 	if err := rt.scheduledTasks.SaveScheduledTask(r.Context(), task); err != nil {
 		rt.internalError(w, "api: start one-shot job: save task failed", err, slog.String("app", req.App))
 		return
@@ -235,16 +284,29 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 		rt.pruneOneShotJobs(bg, p)
 	}
 	oneShotRegistry.Add(entry)
-	go entry.Job.Run(context.WithoutCancel(r.Context()), spec, func(ctx context.Context, _, _ int) scheduledtask.AttemptOutcome {
-		out, err := attempter.RunAttempt(ctx, task)
-		if err != nil {
-			rt.logger.Error("api: one-shot attempt failed", slog.String("error", err.Error()), slog.String("job", jobID))
-			if out.Status == "" {
-				out.Status = store.ScheduledTaskStatusFailed
+	// Detached from the request so a poll-based client can disconnect; cancel goes through the cancel route.
+	runCtx, cancelCause := context.WithCancelCause(context.WithoutCancel(r.Context()))
+	cancel := func() { cancelCause(scheduledtask.ErrRunCancelled) }
+	oneShotRuns.track(jobID, cancel)
+	launched = true
+	go func() {
+		defer func() {
+			oneShotRuns.untrack(jobID)
+			cancel()
+			release()
+		}()
+		entry.Job.Run(runCtx, spec, func(ctx context.Context, _, _ int) scheduledtask.AttemptOutcome {
+			out, err := attempter.RunAttempt(ctx, task)
+			if err != nil {
+				rt.logger.Error("api: one-shot attempt failed", slog.String("error", err.Error()), slog.String("job", jobID))
+				if out.Status == "" {
+					out.Status = store.ScheduledTaskStatusFailed
+				}
 			}
-		}
-		return out
-	})
+			return out
+		})
+	}()
+	rt.auditOneShot(r, auditActionOneShotStart, req.App, jobID, req.Command, http.StatusAccepted)
 	writeJSON(w, http.StatusAccepted, toOneShotResponse(entry))
 }
 
@@ -254,13 +316,17 @@ func (rt *Router) handleGetOneShotJob(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	p := rt.oneShotPersister(r.Context())
 	if entry, ok := oneShotRegistry.Get(id); ok {
-		writeJSON(w, http.StatusOK, toOneShotResponse(entry))
+		resp := toOneShotResponse(entry)
+		rt.attachOneShotOutput(r.Context(), entry.TaskID, rt.callerHasAbility(r, AbilityReadSensitive), &resp)
+		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 	if p != nil {
 		j, err := p.GetOneShotJob(r.Context(), id)
 		if err == nil {
-			writeJSON(w, http.StatusOK, fromStoredOneShot(j))
+			resp := fromStoredOneShot(j)
+			rt.attachOneShotOutput(r.Context(), j.TaskID, rt.callerHasAbility(r, AbilityReadSensitive), &resp)
+			writeJSON(w, http.StatusOK, resp)
 			return
 		}
 		if !errors.Is(err, store.ErrOneShotJobNotFound) {

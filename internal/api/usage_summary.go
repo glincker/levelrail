@@ -9,7 +9,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 const (
@@ -141,7 +143,11 @@ func (rt *Router) databaseUsage(ctx context.Context, dbs []store.DesiredDatabase
 		return out
 	}
 	for _, metric := range resourceUsageMetrics {
-		samples, err := rt.telemetry.LatestByMetric(ctx, metric)
+		// Unscoped samples are shared across callers; visibility is applied below.
+		got, err := rt.expensiveRead(ctx, fmt.Sprintf("usage-db-metric:%p:%s", rt, metric), func(ctx context.Context) (any, error) {
+			return rt.telemetry.LatestByMetric(ctx, metric)
+		})
+		samples, _ := got.([]telemetry.Sample)
 		if err != nil {
 			rt.logger.Warn("api: usage summary: query metric failed", slog.String("metric", metric), slog.String("error", err.Error()))
 			continue
@@ -174,10 +180,14 @@ func (rt *Router) fillVolumeUsage(ctx context.Context, res *volumeUsageResource,
 		res.NotConfigured = true
 		return nil
 	}
-	vols, err := rt.orphanedVolumes.ListNamedVolumes(ctx)
+	// Unscoped compute is shared; visibility filtering happens below per caller.
+	cached, err := rt.expensiveRead(ctx, fmt.Sprintf("usage-volumes:%p", rt), func(ctx context.Context) (any, error) {
+		return rt.orphanedVolumes.ListNamedVolumes(ctx)
+	})
 	if err != nil {
 		return fmt.Errorf("list named volumes: %w", err)
 	}
+	vols, _ := cached.([]docker.NamedVolume)
 	services, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
 		return fmt.Errorf("list desired services: %w", err)
@@ -234,10 +244,13 @@ func (rt *Router) fillBackupUsage(ctx context.Context, res *backupUsageResource,
 	if !ok {
 		return nil
 	}
-	rows, err := src.SumBackupUsage(ctx)
+	got, err := rt.expensiveRead(ctx, fmt.Sprintf("usage-backups:%p", rt), func(ctx context.Context) (any, error) {
+		return src.SumBackupUsage(ctx)
+	})
 	if err != nil {
 		return fmt.Errorf("sum backup usage: %w", err)
 	}
+	rows, _ := got.([]store.BackupUsage)
 	for _, u := range rows {
 		item := backupUsageItem{Count: u.Count, Bytes: u.Bytes}
 		if u.ResourceKind == store.BackupResourceKindVolume {

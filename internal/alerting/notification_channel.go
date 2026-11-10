@@ -199,7 +199,11 @@ func sendTextNotification(ctx context.Context, client *http.Client, sender email
 		if err != nil {
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
-		return postJSON(ctx, client, notifyURL, telegramPayload{ChatID: chatID, Text: testText})
+		thread, err := parseTelegramThreadID(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		return postJSON(ctx, client, notifyURL, telegramPayload{ChatID: chatID, ThreadID: thread, Text: testText})
 	case NotifyPushover:
 		token, user, err := parsePushoverCreds(notifyURL)
 		if err != nil {

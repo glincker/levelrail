@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { TagsGlassIcon } from '@thesvg/ui-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
@@ -80,10 +82,12 @@ function LabelsForm({ nodeId, saved }: { nodeId: string; saved: NodeLabels }) {
   return (
     <>
       {rows.length === 0 ? (
-        <div className="text-sm">
-          <p className="text-foreground">{t('labels.empty')}</p>
-          <p className="text-muted-foreground">{t('labels.emptyHint')}</p>
-        </div>
+        <EmptyState
+          kind="first-run"
+          icon={<TagsGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('labels.empty')}
+          description={t('labels.emptyHint')}
+        />
       ) : null}
 
       <LabelRowsEditor

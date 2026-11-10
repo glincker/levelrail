@@ -161,7 +161,7 @@ function OrganizationDetailPage() {
 function OrganizationDetailPending() {
   return (
     <div className="space-y-6">
-      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="h-6 w-48 animate-pulse motion-reduce:animate-none rounded bg-muted" />
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div
           className={`${PROJECT_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-[13px] font-medium text-muted-foreground`}

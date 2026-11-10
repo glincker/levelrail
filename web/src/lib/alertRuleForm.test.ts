@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ALERT_KIND_OPTIONS,
   ALERT_RULE_DEFAULT_VALUES,
   alertRuleFormSchema,
   buildAlertRuleRequest,
@@ -155,5 +156,44 @@ describe('traffic alert kinds', () => {
   it('reads the domain back from a saved resource id', () => {
     expect(domainFromResourceId('domain:a.io')).toBe('a.io')
     expect(domainFromResourceId('service:web')).toBe('')
+  })
+})
+
+describe('oom_killed rule', () => {
+  it('sends the restart count and window like a crashloop rule', () => {
+    const req = buildAlertRuleRequest(
+      values({ kind: 'oom_killed', restartCountThreshold: 3 }),
+      'web',
+    )
+    expect(req).toMatchObject({
+      kind: 'oom_killed',
+      restart_count_threshold: 3,
+      restart_window: '5m',
+    })
+    expect(req.metric).toBeUndefined()
+  })
+})
+
+describe('job_failing kind', () => {
+  it('is offered in the kind picker', () => {
+    expect(ALERT_KIND_OPTIONS.some((o) => o.value === 'job_failing')).toBe(true)
+  })
+
+  it('needs no threshold fields and sends none, leaving the app scope to the server', () => {
+    const parsed = alertRuleFormSchema.safeParse({
+      ...ALERT_RULE_DEFAULT_VALUES,
+      name: 'jobs',
+      kind: 'job_failing',
+      metric: '',
+      forDuration: 'not a duration',
+    })
+    expect(parsed.success).toBe(true)
+    const req = buildAlertRuleRequest(values({ kind: 'job_failing' }), 'demo')
+    expect(req).toEqual({
+      name: 'rule',
+      kind: 'job_failing',
+      channel_id: undefined,
+      enabled: ALERT_RULE_DEFAULT_VALUES.enabled,
+    })
   })
 })

@@ -95,7 +95,7 @@ func LoadEmbedded() (*Brand, error) {
 	return &b, nil
 }
 
-// applyVisualDefaults fills an empty logo and colors from the embedded default
+// applyVisualDefaults fills an empty logo, colors and repository from the embedded default
 // brand, only while the name is still the default one: a rebranded deployment
 // must never inherit another identity's mark.
 func (b *Brand) applyVisualDefaults() {
@@ -105,6 +105,9 @@ func (b *Brand) applyVisualDefaults() {
 	}
 	if b.LogoSVG == "" {
 		b.LogoSVG = def.LogoSVG
+	}
+	if b.RepoURL == "" {
+		b.RepoURL = def.RepoURL
 	}
 	if b.PrimaryColor == "" {
 		b.PrimaryColor = def.PrimaryColor

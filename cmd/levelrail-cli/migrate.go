@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 // runMigrate dispatches "migrate <source> [flags]".
@@ -48,6 +50,10 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateStep(prog, args[1:], stdout, stderr, lookupEnv)
 	case "agent":
 		return runMigrateAgent(prog, args[1:], stdout, stderr, lookupEnv)
+	case "hub":
+		return runMigrateHub(prog, args[1:], stdout, stderr, lookupEnv)
+	case "checklist":
+		return runMigrateChecklist(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown migrate source %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, migrateUsage(prog))
@@ -65,6 +71,10 @@ func migrateUsage(prog string) string {
 
   %[1]s migrate [coolify|dokploy|caprover|server] --resume JOB [--retry] [--follow] [--retire [--probe] [--ack STEP]]
                                                            resume a migration job: status, retry failures, safe-to-delete check
+
+Database migration hub and cutover checklists:
+  %[1]s migrate hub sessions <list|show|select|step|apply|receipt|connection|reveal|delete>
+  %[1]s migrate checklist <list|show|step>
 
 Data and cutover steps, after "import platform":
 `+migrateDataUsage(prog)+`
@@ -101,12 +111,42 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 	}
 	defer func() { report.Apps = append(plain.Apps, composeApps...) }()
 
+	nodeMap, err := platformimport.ParseNodeMap(f.nodeMap)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("%s", err.Error()))
+	}
+	linkNetworkPeers(plain.Apps)
+	placeApps(plain.Apps, nodeMap)
 	if f.apply {
 		profile := resolveProfile(f.targetProfile, lookupEnv)
-		client := NewClient(resolveAPIURL(f.targetAPIURL, lookupEnv, prog, profile), resolveToken(f.targetToken, lookupEnv, prog, profile))
-		applyMigration(ctx, client, &plain)
-	} else if err := writeMigrationFiles(f.outDir, &plain); err != nil {
-		return reportError(stdout, stderr, f.jsonOut, err)
+		targetURL := resolveAPIURL(f.targetAPIURL, lookupEnv, prog, profile)
+		client := NewClient(targetURL, resolveToken(f.targetToken, lookupEnv, prog, profile))
+		// Unknown node names are refused here, before any app is created.
+		if err := resolvePlacements(ctx, client, plain.Apps, nodeMap); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
+		var jr *applyJournal
+		if f.source != "" {
+			if jr, err = openApplyJournal(prog, f.source, f.journalPath, f.sourceURL, targetURL, f.resume, lookupEnv); err != nil {
+				return reportError(stdout, stderr, f.jsonOut, err)
+			}
+			defer jr.close()
+		}
+		applyMigrationJournaled(ctx, client, &plain, jr)
+		applyBackupImport(ctx, client, plain.Backups, jr)
+		applyChannelImport(ctx, client, plain.Channels, jr)
+		if f.createWebhooks {
+			applyMigrationWebhooks(ctx, client, plain.Apps, lookupEnv)
+			jr.recordWebhooks(plain.Apps)
+		}
+		printJournalFooter(stderr, prog, f.source, jr)
+	} else {
+		if f.createWebhooks {
+			planMigrationWebhooks(plain.Apps, lookupEnv)
+		}
+		if err := writeMigrationFiles(f.outDir, &plain); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
 	}
 
 	if f.jsonOut {
@@ -120,6 +160,8 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 	}
 	printMigrationReportHuman(stdout, plain, prog, f.outDir)
 	printStagedServices(stdout, composeApps)
+	printBackupImport(stdout, plain.Backups)
+	printChannelImport(stdout, plain.Channels)
 	return exitOK
 }
 
@@ -156,4 +198,11 @@ type migratePipelineFlags struct {
 	targetToken   string
 	targetAPIURL  string
 	targetProfile string
+	// nodeMap is the raw --node-map value: source-server=node pairs.
+	nodeMap string
+	// createWebhooks writes to the user's git host, so it is opt-in.
+	createWebhooks bool
+	// source names the journal's importer; empty keeps --apply unjournaled (CapRover).
+	source, sourceURL, journalPath string
+	resume                         bool
 }

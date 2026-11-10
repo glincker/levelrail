@@ -43,3 +43,7 @@ Focus stays inside the palette while it is open and goes back to the page when y
 | `g` then `t` | Go to Settings |
 
 The second key of a `g` chord must follow within 1.5 seconds. Shortcuts are ignored while you type in an input, textarea, select or editable field, while Ctrl, Cmd or Alt is held, and while any dialog is open. They run in the browser only, so there is no API or CLI equivalent. The [load balancer](/load-balancing) and AI models shortcuts need their [experimental feature](/experimental-features) switched on.
+
+## Dashboard refresh cadence
+
+Dashboard lists refresh on shared tiers instead of per-screen timers: live (5s), active (15s), steady (30s) and idle (60s). Hidden tabs do not poll and refresh when you return. When you build the dashboard yourself, set `VITE_POLL_LIVE_MS`, `VITE_POLL_ACTIVE_MS`, `VITE_POLL_STEADY_MS` or `VITE_POLL_IDLE_MS` (milliseconds, 1000 or more) to change a tier.

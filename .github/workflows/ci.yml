@@ -609,7 +609,7 @@ jobs:
         if: env.LINT != 'none'
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.12
+          version: v2.15
           args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
           skip-save-cache: ${{ env.CI_SAVE_CACHE != 'true' }}
 
@@ -657,7 +657,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.12
+          version: v2.15
           working-directory: kit
           skip-save-cache: ${{ env.CI_SAVE_CACHE != 'true' }}
 

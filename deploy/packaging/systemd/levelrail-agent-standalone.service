@@ -1,0 +1,29 @@
+[Unit]
+Description=Levelrail node agent
+Documentation=https://docs.levelrail.com/multi-node-quickstart
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+# Root: the agent talks to /var/run/docker.sock and owns the host side of the mesh.
+User=root
+EnvironmentFile=/etc/levelrail-agent/agent.env
+Environment=APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json
+# Creates the state directory (0700) for the node identity and certificates.
+StateDirectory=levelrail-agent
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/levelrail-agent
+# The agent keeps containers running while it is down, so always come back.
+Restart=always
+RestartSec=5
+# Stops the agent or its children from gaining privileges through setuid binaries.
+NoNewPrivileges=true
+# The agent never reads home directories.
+ProtectHome=true
+# Blocks setuid/setgid file creation. Docker is unaffected: the daemon creates containers, not the agent.
+RestrictSUIDSGID=true
+# PrivateTmp is left off on purpose: bind mounts and build contexts staged under /tmp must stay visible to the Docker daemon.
+
+[Install]
+WantedBy=multi-user.target

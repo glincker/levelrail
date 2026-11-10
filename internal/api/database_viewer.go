@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -62,8 +63,15 @@ func (rt *Router) viewerTarget(w http.ResponseWriter, r *http.Request, wantKV bo
 		Exec:        nodeRuntime,
 		ContainerID: state.ID,
 		Dialect:     dialect,
-		Limits:      dbviewer.LimitsFromEnv(nil),
+		Limits:      rt.databaseViewerLimits(r.Context()),
 	}, desired, true
+}
+
+// databaseViewerLimits reads the live settings so a change applies to the next query.
+func (rt *Router) databaseViewerLimits(ctx context.Context) dbviewer.Limits {
+	l := rt.runtimeSettings.DatabaseViewerLimits(ctx)
+	return dbviewer.Limits{Timeout: l.Timeout, MaxRows: l.MaxRows, MaxBytes: l.MaxBytes,
+		MaxCellBytes: l.MaxCellBytes, SchemaRows: l.SchemaRows, SQLBytes: l.SQLBytes}
 }
 
 // writeViewerError maps a dbviewer failure to a response. Database error

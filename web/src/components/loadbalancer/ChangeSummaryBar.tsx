@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowRightGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Kbd } from '@/components/kit'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ export function ChangeSummaryBar({
   onSave,
   onRevert,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const [confirm, setConfirm] = useState(false)
   const risks = chips.filter((c) => c.risky)
   const canSave = !blocker && !saving && chips.length > 0
@@ -65,7 +67,7 @@ export function ChangeSummaryBar({
     <>
       <div
         role="region"
-        aria-label="Unsaved changes"
+        aria-label={t('lb.bar.region')}
         data-dock-avoid=""
         className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 space-y-2 rounded-2xl border bg-popover p-3 shadow-floating kit-enter"
       >
@@ -79,7 +81,7 @@ export function ChangeSummaryBar({
               {c.risky ? (
                 <TriangleAlertGlassIcon
                   className="size-6 text-tone-warning"
-                  aria-label="Risky change"
+                  aria-label={t('lb.bar.risky')}
                 />
               ) : null}
               <span className="text-muted-foreground">{c.label}</span>
@@ -96,16 +98,15 @@ export function ChangeSummaryBar({
             {blocker ?? effect}
           </p>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={onRevert}>
-              {creating ? 'Cancel' : 'Revert'}
+            <Button type="button" variant="ghost" onClick={onRevert}>
+              {creating ? t('lb.bar.cancel') : t('lb.bar.revert')}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canSave}
-              onClick={requestSave}
-            >
-              {saving ? 'Saving' : creating ? 'Create' : 'Save'}
+            <Button type="button" disabled={!canSave} onClick={requestSave}>
+              {saving
+                ? t('lb.bar.saving')
+                : creating
+                  ? t('lb.bar.create')
+                  : t('lb.bar.save')}
               <Kbd keys={['S']} />
             </Button>
           </div>
@@ -114,10 +115,8 @@ export function ChangeSummaryBar({
       <Dialog open={confirm} onOpenChange={setConfirm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Save risky changes?</DialogTitle>
-            <DialogDescription>
-              These take effect on live traffic right away.
-            </DialogDescription>
+            <DialogTitle>{t('lb.bar.confirmTitle')}</DialogTitle>
+            <DialogDescription>{t('lb.bar.confirmHint')}</DialogDescription>
           </DialogHeader>
           <ul className="space-y-2 text-sm">
             {risks.map((c) => (
@@ -138,7 +137,7 @@ export function ChangeSummaryBar({
               variant="outline"
               onClick={() => setConfirm(false)}
             >
-              Keep editing
+              {t('lb.bar.keepEditing')}
             </Button>
             <Button
               type="button"
@@ -147,7 +146,7 @@ export function ChangeSummaryBar({
                 onSave()
               }}
             >
-              Save anyway
+              {t('lb.bar.saveAnyway')}
             </Button>
           </DialogFooter>
         </DialogContent>

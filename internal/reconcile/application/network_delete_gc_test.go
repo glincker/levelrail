@@ -57,9 +57,10 @@ func (multiNodeStore) ListNodes(context.Context) ([]store.Node, error) {
 func TestDeleteFinalizer_RemoveAppNetworkEveryNode(t *testing.T) {
 	name := NetworkName("lr", "shop")
 	foreign := map[string]string{appspec.InstanceLabelKey: "other"}
+	own := map[string]string{appspec.InstanceLabelKey: "inst-1"}
 	nodes := map[string]*agentNetRuntime{
 		"n0": {fakeRuntime: newFakeRuntime(0)},
-		"n1": {fakeRuntime: newFakeRuntime(0), nets: []docker.NetworkInfo{{ID: "a", Name: name}, {ID: "b", Name: name + "-2"}}},
+		"n1": {fakeRuntime: newFakeRuntime(0), nets: []docker.NetworkInfo{{ID: "a", Name: name, Labels: own}, {ID: "b", Name: name + "-2", Labels: own}}},
 		"n2": {fakeRuntime: newFakeRuntime(0), nets: []docker.NetworkInfo{{ID: "c", Name: name}}, inUse: map[string]bool{name: true}},
 		"n3": {fakeRuntime: newFakeRuntime(0), nets: []docker.NetworkInfo{{ID: "d", Name: name, Labels: foreign}}},
 	}

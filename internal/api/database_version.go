@@ -15,6 +15,9 @@ var databaseVersionPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63
 
 type setDatabaseVersionRequest struct {
 	Version string `json:"version"`
+	// DropIncompatibleParams removes running engine parameters the new
+	// version refuses instead of blocking the change with 409.
+	DropIncompatibleParams bool `json:"drop_incompatible_params"`
 }
 
 // handleSetDatabaseVersion handles PUT /api/v1/databases/{name}/version:
@@ -46,11 +49,46 @@ func (rt *Router) handleSetDatabaseVersion(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	desired := *existing
-	desired.Version = req.Version
-	if err := rt.databases.SaveDesiredDatabase(r.Context(), desired); err != nil {
-		rt.internalError(w, "api: set database version failed", err, slog.String("name", name))
+	plan, ok := rt.planParamsForVersion(w, r, existing, req.Version, req.DropIncompatibleParams)
+	if !ok {
 		return
+	}
+	if plan.drops() {
+		// The version change and the drop commit together or not at all.
+		audit, ok := rt.dropAudit(r, http.MethodPut, name, plan)
+		if !ok {
+			rt.internalError(w, "api: database version: build drop audit entry", errors.New("audit entry could not be built"))
+			return
+		}
+		dropper, _ := rt.databases.(databaseParamsDropper)
+		if err := dropper.SetDatabaseVersionDroppingEngineParams(r.Context(), name, existing.Version, req.Version, plan.applied, plan.keep, audit); err != nil {
+			if errors.Is(err, store.ErrEngineParamsConflict) {
+				writeError(w, http.StatusConflict, "the database changed meanwhile: reload and try again")
+				return
+			}
+			rt.internalError(w, "api: set database version failed", err, slog.String("name", name))
+			return
+		}
+	} else if dropper, ok := rt.databases.(databaseParamsDropper); ok && plan.checked {
+		// Only while the re-validated set still runs, so a concurrent apply cannot slip past.
+		if err := dropper.SetDatabaseVersionIfEngineParams(r.Context(), name, existing.Version, req.Version, plan.applied); err != nil {
+			if errors.Is(err, store.ErrEngineParamsConflict) {
+				writeError(w, http.StatusConflict, "the database changed meanwhile: reload and try again")
+				return
+			}
+			rt.internalError(w, "api: set database version failed", err, slog.String("name", name))
+			return
+		}
+	} else {
+		desired := *existing
+		desired.Version = req.Version
+		if err := rt.databases.SaveDesiredDatabase(r.Context(), desired); err != nil {
+			rt.internalError(w, "api: set database version failed", err, slog.String("name", name))
+			return
+		}
+	}
+	if plan.pending {
+		w.Header().Set(paramsPendingHeader, "staged")
 	}
 	rt.reloadAndWriteDatabase(w, r, name, "set database version")
 }

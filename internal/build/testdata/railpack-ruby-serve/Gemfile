@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+# Sinatra 2.x stays on Rack 2, which still ships the rackup executable the start command needs.
+gem "sinatra", "~> 2.2"
+gem "puma"

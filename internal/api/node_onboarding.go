@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -122,16 +123,11 @@ func (rt *Router) RunNodeOnboarding(ctx context.Context) {
 	if rt.nodeOnb == nil {
 		return
 	}
-	t := time.NewTicker(envDurationOr(envOnboardingSyncInterval, defaultOnboardingSyncInterval))
-	defer t.Stop()
-	for {
+	rt.syncDetectedDomains(ctx)
+	_ = footprint.Every(ctx, "node onboarding sync", envDurationOr(envOnboardingSyncInterval, defaultOnboardingSyncInterval), rt.logger, func(ctx context.Context) error {
 		rt.syncDetectedDomains(ctx)
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
-	}
+		return nil
+	})
 }
 
 func (rt *Router) syncDetectedDomains(ctx context.Context) {

@@ -10,6 +10,7 @@ import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 import type { SpendGuardMode } from '../types/costExplorer'
+import { pollMs } from '@/lib/pollTier'
 
 export type SpendCapAction = 'none' | 'throttle' | 'pause'
 export type { SpendGuardMode }
@@ -95,6 +96,7 @@ export interface SpendCapEvent {
 }
 
 export const spendCapKeys = {
+  list: () => ['costs', 'app-caps'] as const,
   detail: (appName: string) => [...appKeys.detail(appName), 'budget'] as const,
   history: (appName: string) =>
     [...appKeys.detail(appName), 'budget-history'] as const,
@@ -148,7 +150,7 @@ export function spendCapQueryOptions(appName: string) {
   return queryOptions({
     queryKey: spendCapKeys.detail(appName),
     queryFn: () => getSpendCap(appName),
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
     retry: false,
   })
 }
@@ -221,4 +223,17 @@ export function appPauseUrl(appName: string): string {
 
 export function budgetPauseUrl(budgetId: string): string {
   return `/api/v1/costs/budgets/${encodeURIComponent(budgetId)}/dry-run`
+}
+
+export function spendCapsQueryOptions() {
+  return queryOptions({
+    queryKey: spendCapKeys.list(),
+    queryFn: async (): Promise<SpendCap[]> => {
+      const res = await fetch('/api/v1/costs/app-caps')
+      if (!res.ok) return fail(res, 'app caps')
+      return ((await res.json()) as { caps: SpendCap[] }).caps
+    },
+    refetchInterval: pollMs('idle'),
+    retry: false,
+  })
 }

@@ -287,10 +287,13 @@ type Controller struct {
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	pendingReady        *PendingReadiness               // nil keeps the blocking readiness wait, see WithReadinessRequeue
 	readinessRequeue    time.Duration
-	deferReadiness      bool                    // this run uses pendingReady: set per run from the strategy
-	retained            RetainedDeploys         // nil means no service is a retained deploy URL
-	restartBackoff      *RestartBackoff         // nil disables crash restart backoff, see WithRestartBackoff
-	meshPaths           meshpath.Resolver       // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	deferReadiness      bool              // this run uses pendingReady: set per run from the strategy
+	retained            RetainedDeploys   // nil means no service is a retained deploy URL
+	restartBackoff      *RestartBackoff   // nil disables crash restart backoff, see WithRestartBackoff
+	meshPaths           meshpath.Resolver // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	meshRetry           func(context.Context) time.Duration
+	meshWaitMu          sync.Mutex
+	meshWaitStreak      int
 	gateDefaults        *deploysafety.Effective // nil: one readiness pass is enough, see WithStabilityGate
 	gateSource          DeploySafetySource
 	gateRecorder        GateRecorder
@@ -680,6 +683,10 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return *blocked, nil
 	}
 
+	if blocked := c.meshWaitBlock(ctx, desired); blocked != nil {
+		return *blocked, nil
+	}
+
 	// Defensive, not redundant: store.SaveDesiredService already
 	// defaults an empty Strategy/zero Replicas before persisting, but
 	// GetDesiredService's caller here is this package's own tests (and
@@ -986,6 +993,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	if readOnlyRootfsDrifted(state, desired) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonReadOnlyRootfsDriftRecreate}, fmt.Errorf("remove %q to apply its changed security.read_only_rootfs: %w", target, err)
+		}
+		state = nil
+	}
+
+	if runtimeOptionsDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonRuntimeOptionsDriftRecreate}, fmt.Errorf("remove %q to apply its changed runtime options: %w", target, err)
 		}
 		state = nil
 	}
@@ -1339,6 +1353,12 @@ func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.Desire
 		return nil
 	}
 	networkName := NetworkName(c.networkPrefix, desired.AppID)
+	if le, ok := c.runtime.(docker.LabeledNetworkEnsurer); ok && c.instanceID != "" {
+		if _, err := le.EnsureLabeledNetwork(ctx, networkName, map[string]string{appspec.InstanceLabelKey: c.instanceID}); err != nil {
+			return fmt.Errorf("ensure network %q: %w", networkName, err)
+		}
+		return nil
+	}
 	if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
 		return fmt.Errorf("ensure network %q: %w", networkName, err)
 	}
@@ -1411,11 +1431,18 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	traceRegistryAuth(ctx, tr, desired, spec.RegistryAuth)
 	if c.meshDNSAddr != "" {
-		spec.DNS = []string{c.meshDNSAddr}
+		spec.DNS = append([]string{c.meshDNSAddr}, spec.DNS...)
+		// The mesh resolver counts against the resolver limit; user entries beyond it are dropped.
+		if limit := appspec.RuntimeDNSMax(); len(spec.DNS) > limit {
+			slog.Warn("application: resolver limit reached, dropping user resolvers", slog.String("service", desired.Name), slog.Any("dropped", spec.DNS[limit:]))
+			spec.DNS = spec.DNS[:limit]
+		}
 	}
-	if spec.ExtraHosts, err = c.databaseExtraHosts(ctx, desired); err != nil {
+	meshHosts, err := c.databaseExtraHosts(ctx, desired)
+	if err != nil {
 		return fmt.Errorf("database mesh hosts: %w", err)
 	}
+	spec.ExtraHosts = append(meshHosts, spec.ExtraHosts...)
 	if err := traceStep(ctx, tr, deploytrace.StepEnsureNetwork, deploytrace.StepEnsureNetwork, "ensuring app network",
 		func() error { return c.ensureAppNetwork(ctx, desired) }, "EnsureNetworkFailed", networkTraceLabel(c.networkPrefix, desired)); err != nil {
 		return err
@@ -2844,6 +2871,11 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 	if len(desired.Entrypoint) > 0 {
 		spec.Entrypoint = desired.Entrypoint
 	}
+	spec.User, spec.WorkingDir = desired.User, desired.WorkingDir
+	if err := desired.Runtime.Validate(); err != nil {
+		return spec, fmt.Errorf("stored runtime options no longer pass validation, edit them in the app spec: %w", err)
+	}
+	applyRuntimeOptions(&spec, desired.Runtime)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every
@@ -2885,6 +2917,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 	}
 	spec.ShmSizeBytes, spec.Labels = shmSpec(desired, spec.Labels)
 	spec.Labels = readOnlyRootfsSpec(desired, spec.Labels)
+	spec.Labels = runtimeOptionsSpec(desired, spec.Labels)
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}

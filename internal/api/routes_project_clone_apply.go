@@ -182,6 +182,11 @@ func (rt *Router) cloneTargetEnvironment(ctx context.Context, projectID string, 
 }
 
 func (rt *Router) saveClonedService(ctx context.Context, svc store.DesiredService) error {
+	// The plan picked free names earlier; re-check under the lock a create also takes.
+	defer lockAppName(svc.Name)()
+	if err := rt.appNameFree(ctx, svc.Name); err != nil {
+		return err
+	}
 	if s, ok := rt.apps.(suspendedServiceSaver); ok {
 		return s.SaveSuspendedDesiredService(ctx, svc)
 	}

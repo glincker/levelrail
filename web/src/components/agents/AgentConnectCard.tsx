@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { CodeBlock } from '@/components/ui/code-block'
 import {
@@ -39,6 +40,7 @@ export function AgentConnectCard({
   binary: string
   apiURL: string
 }) {
+  const { t: tc } = useTranslation('common')
   const [mode, setMode] = useState<AgentModeId>('agent-core')
   const snippet = buildMcpConfig({ serverKey, binary, mode, apiURL })
 
@@ -84,7 +86,7 @@ export function AgentConnectCard({
 
         <CodeBlock code={snippet} language="json" label="MCP config" />
 
-        <Table>
+        <Table aria-label={tc('a11y.tables.agentConnect')}>
           <TableHeader>
             <TableRow>
               <TableHead>Mode</TableHead>

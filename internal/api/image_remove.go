@@ -102,7 +102,7 @@ func (rt *Router) handleImageRemove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, e := range resp.Candidates {
-		if err := removeImageEntry(r.Context(), inv, e); err != nil {
+		if _, err := removeImageEntry(r.Context(), inv, e); err != nil {
 			resp.Failed = append(resp.Failed, imageGCFailure{ID: e.ID, Error: err.Error()})
 			continue
 		}

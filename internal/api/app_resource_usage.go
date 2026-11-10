@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -14,6 +15,8 @@ var resourceUsageMetrics = []string{
 	"memory_limit_bytes",
 	"network_rx_bytes",
 	"network_tx_bytes",
+	"disk_read_bytes",
+	"disk_write_bytes",
 }
 
 // Fields are omitted, not zero, when telemetry has never recorded that metric for the app.
@@ -24,6 +27,8 @@ type appResourceUsageResource struct {
 	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
 	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
 	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
+	DiskReadBytes    *float64 `json:"disk_read_bytes,omitempty"`
+	DiskWriteBytes   *float64 `json:"disk_write_bytes,omitempty"`
 }
 
 // handleAppResourceUsage returns every app in one call, so the dashboard avoids per-app fetches.
@@ -33,28 +38,41 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return
 	}
-
-	svcs, err := rt.apps.ListDesiredServices(r.Context())
+	all, err := rt.expensiveRead(r.Context(), "app-resource-usage", func(ctx context.Context) (any, error) {
+		return rt.computeAppResourceUsage(ctx)
+	})
 	if err != nil {
 		rt.internalError(w, "api: app resource usage: list apps failed", err)
 		return
 	}
-
 	canSee, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: app resource usage: visibility", err)
 		return
 	}
+	out := []appResourceUsageResource{}
+	for _, u := range all.([]appResourceUsageResource) {
+		if canSee(u.Name) {
+			out = append(out, u)
+		}
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// computeAppResourceUsage is unscoped so one cached result serves every caller, who then filter by visibility.
+func (rt *Router) computeAppResourceUsage(ctx context.Context) ([]appResourceUsageResource, error) {
+	svcs, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	byName := make(map[string]*appResourceUsageResource, len(svcs))
 	for _, svc := range svcs {
-		if !canSee(svc.Name) {
-			continue
-		}
 		byName[svc.Name] = &appResourceUsageResource{Name: svc.Name}
 	}
 
 	for _, metric := range resourceUsageMetrics {
-		samples, err := rt.latestByMetric(r.Context(), metric)
+		samples, err := rt.latestByMetric(ctx, metric)
 		if err != nil {
 			// A failing metric query must not blank out the metrics that succeeded.
 			rt.logger.Warn("api: app resource usage: query metric failed", slog.String("metric", metric), slog.String("error", err.Error()))
@@ -81,6 +99,10 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 				usage.NetworkRxBytes = &value
 			case "network_tx_bytes":
 				usage.NetworkTxBytes = &value
+			case "disk_read_bytes":
+				usage.DiskReadBytes = &value
+			case "disk_write_bytes":
+				usage.DiskWriteBytes = &value
 			}
 		}
 	}
@@ -91,5 +113,5 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 
-	writeJSON(w, http.StatusOK, out)
+	return out, nil
 }

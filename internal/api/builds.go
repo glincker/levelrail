@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -128,6 +129,8 @@ type triggerBuildRequest struct {
 	FromCache bool `json:"from_cache,omitempty"`
 	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// InlineSource builds a pasted Dockerfile plus optional files, no git host or repository needed.
+	InlineSource *inlineSourceInput `json:"inline_source,omitempty"`
 	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
 	NoCache bool `json:"no_cache,omitempty"`
 	// RerunOf is the deploy attempt of this app that this build retries or rebuilds.
@@ -200,6 +203,22 @@ func (rt *Router) storedGitSourceAppAuth(ctx context.Context, name string) bool 
 	return err != nil || gs == nil || gs.AppAuth
 }
 
+// sshTriggerRefusal explains why an ssh repo_url may not build, or is empty when
+// it may: the URL must be the app's own connected source and a deploy key must exist.
+func (rt *Router) sshTriggerRefusal(ctx context.Context, name, repoURL string) string {
+	if rt.gitSources == nil {
+		return "repo_url must use http or https"
+	}
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if err != nil || gs == nil || !sameRepoURL(gs.RepoURL, repoURL) {
+		return "an ssh repo_url must match the app's connected git source; connect it first"
+	}
+	if !rt.hasSSHDeployKey(ctx, name, repoURL) {
+		return "this ssh repository has no deploy key yet; create one with the ssh-key command or API, add it to the repository, then build again"
+	}
+	return ""
+}
+
 // tokenForRepo resolves a token for repoURL: name's own stored
 // git-source PAT first (scoped to that one app and repo already, so no
 // extra permission check needed), else a minted GitHub App installation
@@ -212,6 +231,10 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 // cloneCredential is tokenForRepo plus a stable scope naming whose credential
 // the token is (not the token value, which rotates), for source mirror keys.
 func (rt *Router) cloneCredential(ctx context.Context, name, repoURL string, allowPrivateRepoAuth bool) (token, scope string) {
+	// An SSH deploy key carries no token; the scope alone keeps its mirror private.
+	if rt.hasSSHDeployKey(ctx, name, repoURL) {
+		return "", "app:" + name
+	}
 	if t := rt.storedGitSourceToken(ctx, name, repoURL); t != "" {
 		return t, "app:" + name
 	}
@@ -372,6 +395,16 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var inline inlineMeta
+	if req.InlineSource != nil {
+		var status int
+		var msg string
+		if inline, status, msg = rt.prepareInlineBuild(r, name, &req, buildType); status != 0 {
+			writeError(w, status, msg)
+			return
+		}
+	}
+
 	if buildType == spec.BuildImage {
 		if req.Build.Image == "" {
 			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
@@ -385,12 +418,17 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "from_cache needs a git source, not build.type \"image\"")
 			return
 		}
-	} else if req.UploadHash == "" {
+	} else if req.UploadHash == "" && inline.hash == "" {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
 			return
 		}
-		if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil {
+		if gitsshkey.IsSSHURL(req.RepoURL) {
+			if msg := rt.sshTriggerRefusal(r.Context(), name, req.RepoURL); msg != "" {
+				writeError(w, http.StatusBadRequest, msg)
+				return
+			}
+		} else if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil {
 			writeError(w, http.StatusBadRequest, "repo_url must use http or https")
 			return
 		}
@@ -437,22 +475,28 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	rt.applyAppBuildSettings(r.Context(), name, &buildReq)
 	source := store.DeployAttemptSourceManual
 	attemptCtx := r.Context()
 	if req.UploadHash != "" {
 		source = store.DeployAttemptSourceUpload
 		attemptCtx = withUploadCommitMeta(attemptCtx, upload)
 	}
+	if inline.hash != "" {
+		source = store.DeployAttemptSourceUpload
+		attemptCtx = withInlineCommitMeta(attemptCtx, inline)
+	}
 
 	rt.buildStartMu.Lock()
 	if rt.deploySafety != nil {
 		if rt.deployBlocker(r.Context(), name) {
-			resp, err := rt.enqueueManualBuild(r.Context(), *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
+			resp, err := rt.enqueueManualBuild(attemptCtx, *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
 			rt.buildStartMu.Unlock()
 			if err != nil {
 				rt.internalError(w, "api: trigger build: queue failed", err, slog.String("name", name))
 				return
 			}
+			rt.auditInlineSource(r, name, inline)
 			writeJSON(w, http.StatusAccepted, resp)
 			return
 		}
@@ -467,6 +511,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache
 	go rt.runManualBuild(run) //nolint:gosec // the build outlives the request; runManualBuild derives its own context
 
+	rt.auditInlineSource(r, name, inline)
 	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id})
 }
 
