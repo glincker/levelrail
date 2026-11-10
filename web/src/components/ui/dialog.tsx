@@ -187,7 +187,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        'sticky bottom-0 -mx-(--glinr-dialog-pad) -mb-(--glinr-dialog-pad) flex flex-col-reverse gap-2 rounded-b-container border-t bg-muted p-(--glinr-dialog-pad) max-sm:*:data-[slot=button]:w-full sm:flex-row sm:justify-end',
+        'sticky bottom-[calc(-1*var(--glinr-dialog-pad))] -mx-(--glinr-dialog-pad) -mb-(--glinr-dialog-pad) flex flex-col-reverse gap-2 rounded-b-container border-t bg-muted p-(--glinr-dialog-pad) max-sm:*:data-[slot=button]:w-full sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
