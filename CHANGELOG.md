@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.6](https://github.com/glincker/levelrail/compare/v0.9.5...v0.9.6) (2026-11-10)
+
+
+### Features
+
+* Levelrail v0.9.6, build options, runtime, importers, new dashboard UI ([#1478](https://github.com/glincker/levelrail/issues/1478)) ([b5f9d08](https://github.com/glincker/levelrail/commit/b5f9d08b93b5c05c9d3d9a3186ffec737ceeb1d9))
+
+
+### Documentation
+
+* refresh README product tour gif with the new dashboard ([#1483](https://github.com/glincker/levelrail/issues/1483)) ([607342e](https://github.com/glincker/levelrail/commit/607342e317097cdf3e47453fc0c1d8babd34cb0a))
+
 ## [0.9.5](https://github.com/glincker/levelrail/compare/v0.9.3...v0.9.5) (2026-11-08)
 
 
