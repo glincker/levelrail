@@ -1151,6 +1151,8 @@ levelrail-cli monitors create --name NAME --kind http --url URL [--method GET] [
 levelrail-cli monitors create --name NAME --kind tcp --host HOST --port PORT [--interval 60s] [--timeout 5s]
 levelrail-cli monitors list
 levelrail-cli monitors results <id> [--window 24h] [--limit N]
+levelrail-cli monitors update <id> [--status-link=true|false] [--link-confirm N] [--link-recovery 2m]
+levelrail-cli monitors rotate-token <id>
 levelrail-cli monitors delete <id>
 ```
 

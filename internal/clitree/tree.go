@@ -296,7 +296,7 @@ var Tree = map[string]*Node{
 		"webhook":    {Subs: map[string]*Node{"list": nil, "add": nil, "rotate": nil, "pause": nil, "resume": nil, "delete": nil, "test": nil}},
 	}},
 	"mcp-clients":        {Subs: map[string]*Node{"create": nil, "list": nil, "delete": nil}},
-	"monitors":           {Subs: map[string]*Node{"create": nil, "list": nil, "results": nil, "delete": nil, "pause": nil, "resume": nil}},
+	"monitors":           {Subs: map[string]*Node{"create": nil, "list": nil, "results": nil, "update": nil, "rotate-token": nil, "delete": nil, "pause": nil, "resume": nil}},
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
 	"env":                {Subs: map[string]*Node{"set": nil, "unset": nil, "pull": nil, "push": nil}},
