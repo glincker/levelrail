@@ -1,25 +1,32 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
+import { cn } from '@/lib/utils'
 import { useServiceTemplates } from '../../queries/serviceTemplates'
 import { pickFeatured } from '../../lib/featuredTemplates'
 import { TemplateLogoTile } from '../TemplateLogoTile'
 
 const COUNT = 8
 
-/** Wide-screen filler under the repo field: real popular templates, same-height tiles. */
-export function PopularTemplatesRow() {
+/** Real popular templates as same-height tiles; hidden under 80rem unless the caller overrides className. */
+export function PopularTemplatesRow({
+  className = 'hidden min-[80rem]:block',
+  count = COUNT,
+}: {
+  className?: string
+  count?: number
+}) {
   const { t } = useTranslation('newApp')
   const { data } = useServiceTemplates()
   const featured = useMemo(
-    () => pickFeatured(Array.isArray(data) ? data : []).slice(0, COUNT),
-    [data],
+    () => pickFeatured(Array.isArray(data) ? data : []).slice(0, count),
+    [data, count],
   )
   if (featured.length === 0) return null
   return (
     <section
       aria-labelledby="new-app-popular"
-      className="hidden space-y-2 min-[80rem]:block"
+      className={cn('space-y-2', className)}
     >
       <h2
         id="new-app-popular"
@@ -27,7 +34,7 @@ export function PopularTemplatesRow() {
       >
         {t('source.templates.popular')}
       </h2>
-      <ul className="grid grid-cols-4 gap-2">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {featured.map((tpl) => (
           <li key={tpl.id}>
             <Link
