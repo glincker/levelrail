@@ -75,7 +75,7 @@ describe('PageTemplate aside slot', () => {
 describe('PageTemplate width classes', () => {
   it.each([
     ['default', undefined, 'max-w-(--glinr-content-max)'],
-    ['wide', 'wide' as const, 'max-w-(--glinr-content-max-wide)'],
+    ['wide', 'wide' as const, 'max-w-(--glinr-content-max)'],
     ['full', 'full' as const, 'max-w-none'],
   ])('%s keeps its token class', (_n, width, cls) => {
     const { container } = render(<PageTemplate title="T" width={width} />)

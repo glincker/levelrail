@@ -41,7 +41,7 @@ export interface PageTemplateProps {
   /** Page-level banners, rendered between the hero and the content. */
   banners?: ReactNode
   width?: PageTemplateWidth
-  /** Right rail, 20rem and sticky from xl (1280px of the content area), after the main content below it. */
+  /** Right rail, 20rem and sticky from 68rem (1088px) of the content area, after the main content below it. */
   aside?: ReactNode
   /** Accessible name of the aside landmark. */
   asideLabel?: string
@@ -172,7 +172,7 @@ export function PageTemplate({
       {aside ? (
         <div
           data-page-body=""
-          className="grid grid-cols-1 items-start gap-(--glinr-space-6) @min-[80rem]/page:grid-cols-[minmax(0,1fr)_var(--glinr-aside-width)]"
+          className="grid grid-cols-1 items-start gap-(--glinr-space-6) @min-[68rem]/page:grid-cols-[minmax(0,1fr)_var(--glinr-aside-width)]"
         >
           <div
             data-page-main=""
@@ -183,7 +183,7 @@ export function PageTemplate({
           <aside
             data-page-aside=""
             aria-label={asideLabel}
-            className="flex min-w-0 flex-col gap-(--glinr-page-gap) @min-[80rem]/page:sticky @min-[80rem]/page:top-(--glinr-aside-top)"
+            className="flex min-w-0 flex-col gap-(--glinr-page-gap) @min-[68rem]/page:sticky @min-[68rem]/page:top-(--glinr-aside-top)"
           >
             {aside}
           </aside>
