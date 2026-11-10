@@ -325,7 +325,7 @@ var automationBatchTemplates = []Template{
       start_period: 60s
 `,
 	},
-	{ //nolint:gosec // DB_PASSWORD/DB_ROOT_PASSWD below are compose magic-var tokens, not real credentials
+	{ //nolint:gosec // SEAFILE_MYSQL_DB_PASSWORD/INIT_SEAFILE_MYSQL_ROOT_PASSWORD below are compose magic-var tokens, not real credentials
 		ID:                     "seafile",
 		Name:                   "Seafile",
 		Slogan:                 "Self-hosted file sync and share with real file-level versioning and client-side encryption options.",
@@ -337,12 +337,18 @@ var automationBatchTemplates = []Template{
     image: seafileltd/seafile-mc:13.0.28
     ports: ["8080:80"]
     environment:
-      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-localhost:8080}
-      DB_HOST: mariadb
-      DB_PORT: "3306"
-      DB_ROOT_PASSWD: $SERVICE_PASSWORD_MYSQLROOT
-      DB_USER: $SERVICE_USER_MYSQL
-      DB_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-127.0.0.1}
+      SEAFILE_MYSQL_DB_HOST: mariadb
+      SEAFILE_MYSQL_DB_PORT: "3306"
+      INIT_SEAFILE_MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+      SEAFILE_MYSQL_DB_USER: $SERVICE_USER_MYSQL
+      SEAFILE_MYSQL_DB_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
+      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
+      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: seahub_db
+      CACHE_PROVIDER: memcached
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: "11211"
       TIME_ZONE: UTC
       INIT_SEAFILE_ADMIN_EMAIL: admin@example.com
       INIT_SEAFILE_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
@@ -374,11 +380,6 @@ var automationBatchTemplates = []Template{
   memcached:
     image: memcached:latest
     entrypoint: ["memcached", "-m", "256"]
-    healthcheck:
-      test: ["CMD-SHELL", "echo version | nc -w 1 127.0.0.1 11211 || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
 `,
 	},
 	{
