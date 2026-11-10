@@ -114,20 +114,6 @@ function SettingsHubPage() {
         }
       />
 
-      {query.trim() === '' ? (
-        <nav aria-label={t('nav.jumpTo')} className="flex flex-wrap gap-2">
-          {sections.map((section) => (
-            <a
-              key={section.id}
-              href={`#settings-${section.id}`}
-              className="rounded-full border border-border px-3 py-1 text-xs pointer-coarse:py-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              {section.title}
-            </a>
-          ))}
-        </nav>
-      ) : null}
-
       {searching ? (
         <div
           role="status"
