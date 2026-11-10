@@ -1,0 +1,29 @@
+id: tasmoadmin
+name: TasmoAdmin
+description: A web panel to manage and update many Tasmota smart home devices from one place.
+icon: lightbulb
+category: Applications
+documentation_url: https://github.com/TasmoAdmin/TasmoAdmin
+source_repo: https://github.com/TasmoAdmin/TasmoAdmin
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/TasmoAdmin/TasmoAdmin/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Open the address and set the admin account on the first visit, then scan your network for devices.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: tasmoadmin
+    port: 80
+    description: Public address of TasmoAdmin.
+healthcheck:
+  service: tasmoadmin
+  port: 80
+  path: /

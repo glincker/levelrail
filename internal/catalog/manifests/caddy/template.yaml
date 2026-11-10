@@ -1,0 +1,25 @@
+id: caddy
+name: Caddy
+description: "A fast web server with automatic HTTPS and a simple config file, on the official image serving its default page. Mount your own Caddyfile or site files to host real sites."
+icon: globe
+category: Infrastructure
+documentation_url: https://caddyserver.com/docs/
+source_repo: https://github.com/caddyserver/caddy
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/caddyserver/caddy/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Open the address to see the default Caddy page, then replace /etc/caddy/Caddyfile to serve your own site.
+domains:
+  - service: caddy
+    port: 80
+    description: Public address of the web page.
+healthcheck:
+  service: caddy
+  port: 80
+  path: /
