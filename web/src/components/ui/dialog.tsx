@@ -45,7 +45,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        'motion-scrim fixed inset-0 isolate z-50 bg-black/20 data-starting-style:opacity-0 data-ending-style:opacity-0',
+        'motion-scrim fixed inset-0 isolate z-50 bg-black/50 backdrop-blur-[2px] data-starting-style:opacity-0 data-ending-style:opacity-0',
         className,
       )}
       {...props}
@@ -82,7 +82,7 @@ function DialogOverlay({
 // treatment rather than a true edge-to-edge one, and sidesteps the
 // mismatch entirely by never changing the radius at all.
 const dialogContentVariants = cva(
-  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 glass glass-thick motion-overlay rounded-container p-(--glinr-dialog-pad) text-sm text-popover-foreground outline-none',
+  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 glass motion-overlay rounded-container p-(--glinr-dialog-pad) text-sm text-popover-foreground outline-none',
   {
     variants: {
       size: {
