@@ -84,15 +84,15 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
               {pageTitle}
             </span>
           ) : null}
-          <div className="ml-auto flex min-w-0 items-center gap-2 @xl:gap-2.5">
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <div className="flex items-center gap-2 @max-md:hidden @xl:gap-2.5">
               <TeamSwitcher />
               <CliStatusBadge />
             </div>
             <StatusChip />
-            <div className="flex items-center gap-1">
+            <div className="flex items-center rounded-full border border-border bg-background">
               <InboxBadge />
-              <div className="flex items-center gap-1 @max-md:hidden">
+              <div className="flex items-center @max-md:hidden">
                 <NotificationCenter />
               </div>
             </div>

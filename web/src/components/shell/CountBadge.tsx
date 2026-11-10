@@ -2,7 +2,6 @@ import { cn } from '@/lib/utils'
 
 const TONES = {
   destructive: 'bg-destructive text-white',
-  neutral: 'bg-secondary text-secondary-foreground ring-1 ring-border',
   primary: 'bg-primary text-primary-foreground',
 } as const
 
@@ -12,8 +11,21 @@ export function CountBadge({
   tone,
 }: {
   count: number
-  tone: keyof typeof TONES
+  tone: keyof typeof TONES | 'neutral'
 }) {
+  const text = count > 99 ? '99+' : count > 9 ? '9+' : count
+  if (tone === 'neutral') {
+    // Inline muted text inside the control, so it can never be clipped.
+    return (
+      <span
+        aria-hidden="true"
+        data-slot="count-badge"
+        className="text-xs leading-none font-medium text-muted-foreground tabular-nums"
+      >
+        {text}
+      </span>
+    )
+  }
   return (
     <span
       aria-hidden="true"
@@ -23,7 +35,7 @@ export function CountBadge({
         TONES[tone],
       )}
     >
-      {count > 99 ? '99+' : count > 9 ? '9+' : count}
+      {text}
     </span>
   )
 }

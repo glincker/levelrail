@@ -14,9 +14,9 @@ export function InboxBadge() {
     unread > 0 ? t('page.badge', { count: unread }) : t('page.badgeNone')
   return (
     <Button
-      variant="outline"
-      size="icon-sm"
-      className="relative @max-md:size-10"
+      variant="ghost"
+      size="icon"
+      className="h-(--glinr-control-h) w-auto gap-1 rounded-full px-2 @max-md:min-h-10"
       aria-label={label}
       title={label}
       render={<Link to="/inbox" />}

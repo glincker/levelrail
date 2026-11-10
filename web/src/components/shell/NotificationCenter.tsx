@@ -77,9 +77,9 @@ export function NotificationCenter() {
         render={
           <Button
             type="button"
-            variant="outline"
-            size="icon-sm"
-            className="relative"
+            variant="ghost"
+            size="icon"
+            className="h-(--glinr-control-h) w-auto gap-1 rounded-full px-2"
             aria-label={
               unread > 0
                 ? tShell('shell.notifications.unread', { count: unread })
