@@ -94,9 +94,6 @@ export function NodeListView({
       ) : null}
       <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
-      <ZoneSpreadCard />
-      <LazyNodeDomainsCard />
-      <ResilienceCard />
       {nodes.length > 0 ? (
         <>
           <ListKeyboardHint open={hintOpen} onClose={closeHint} />
@@ -112,6 +109,9 @@ export function NodeListView({
           </div>
         </>
       ) : null}
+      <ZoneSpreadCard />
+      <LazyNodeDomainsCard />
+      <ResilienceCard />
       {footer}
     </div>
   )
