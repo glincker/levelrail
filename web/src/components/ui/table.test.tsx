@@ -35,4 +35,11 @@ describe('Table', () => {
       'selected',
     )
   })
+
+  it('defaults to balanced density and accepts compact and spacious', () => {
+    const { container, rerender } = render(<Table />)
+    expect(container.querySelector('table')?.dataset.density).toBe('balanced')
+    rerender(<Table density="compact" />)
+    expect(container.querySelector('table')?.dataset.density).toBe('compact')
+  })
 })
