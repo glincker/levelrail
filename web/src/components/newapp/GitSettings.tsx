@@ -76,12 +76,19 @@ export function GitSettings({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
-        render={<Button type="button" size="sm" variant="outline" />}
+        render={
+          <Button
+            type="button"
+            size="sm"
+            variant="link"
+            className="h-auto p-0 text-muted-foreground hover:text-foreground"
+          />
+        }
       >
         <SettingsGlassIcon size="1.4em" aria-hidden="true" />
         {t('gitSettings.open')}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 gap-3 p-3">
+      <PopoverContent align="start" className="w-80 gap-3 p-3">
         <section aria-label={t('gitSettings.accounts')} className="space-y-2">
           <h3 className="text-xs font-medium text-muted-foreground uppercase">
             {t('gitSettings.accounts')}

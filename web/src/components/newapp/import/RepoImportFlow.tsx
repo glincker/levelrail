@@ -75,6 +75,7 @@ export function RepoImportFlow({
   failure,
   onDeploy,
   onFallback,
+  hint,
 }: {
   accounts: ConnectedRepos
   renderPicker: (ctx: PickerContext) => ReactNode
@@ -86,6 +87,8 @@ export function RepoImportFlow({
     edits: NewAppEdits,
   ) => void
   onFallback: (source: GitRepoSourceValue) => void
+  /** Replaces the default helper text under the field. */
+  hint?: string
 }) {
   const { t } = useTranslation('newApp')
   const draft = useDraft('repo-import-url', { input: '' })
@@ -199,20 +202,10 @@ export function RepoImportFlow({
     <div className="min-w-0 space-y-5">
       <DraftBanner draft={draft} />
       <Field>
-        <div className="flex items-center justify-between gap-2">
-          <FieldLabel htmlFor="new-app-url">
-            {t('source.find.label')}
-          </FieldLabel>
-          <GitSettings
-            accounts={accounts}
-            defaults={defaults}
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-          />
-        </div>
+        <FieldLabel htmlFor="new-app-url">{t('source.find.label')}</FieldLabel>
         <div className="relative">
           <SearchGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -225,7 +218,8 @@ export function RepoImportFlow({
             inputMode="url"
             autoComplete="off"
             spellCheck={false}
-            className="pr-9 pl-8"
+            className="h-12 pr-10 pl-10 text-base"
+            autoFocus
             aria-invalid={urlLooksBroken}
           />
           {input.trim() !== '' || picked ? (
@@ -243,9 +237,19 @@ export function RepoImportFlow({
             </Button>
           ) : null}
         </div>
-        <FieldDescription>
-          {urlLooksBroken ? t('import.urlInvalid') : t('source.find.hint')}
-        </FieldDescription>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <FieldDescription className="min-w-0 flex-1">
+            {urlLooksBroken
+              ? t('import.urlInvalid')
+              : (hint ?? t('source.find.hint'))}
+          </FieldDescription>
+          <GitSettings
+            accounts={accounts}
+            defaults={defaults}
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+          />
+        </div>
       </Field>
       {renderPicker({
         query: input,

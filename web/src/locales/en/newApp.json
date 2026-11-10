@@ -44,7 +44,8 @@
       "connected": "Connected",
       "needsAddress": "GitHub sign-in needs a public address for this server.",
       "useUrlInstead": "Use a repository URL instead",
-      "manage": "Manage connections"
+      "manage": "Manage connections",
+      "noProviderHint": "Public repositories deploy without a git provider. Connect one below for private repos and deploy on push."
     },
     "templates": {
       "title": "Start from a template",
@@ -56,7 +57,9 @@
       "retry": "Retry",
       "search": "Search templates",
       "categories": "Template categories",
-      "noMatch": "No template matches \"{{query}}\". Try another word or browse the full catalog."
+      "noMatch": "No template matches \"{{query}}\". Try another word or browse the full catalog.",
+      "popular": "Popular templates",
+      "browseAll": "Browse all {{count}}"
     },
     "errorManage": "Check Git connections",
     "find": {
@@ -65,6 +68,28 @@
       "hint": "Type to filter your repositories, or paste a GitHub, GitLab, Gitea or Bitbucket URL (https, git@ or a /tree/branch link).",
       "useUrl": "Use this URL",
       "clear": "Clear"
+    },
+    "choose": {
+      "label": "Choose where your app comes from",
+      "git": {
+        "title": "Git repository",
+        "hint": "Paste a URL or pick a repo"
+      },
+      "template": {
+        "title": "Template",
+        "hint": "Self-host a ready-made app"
+      },
+      "image": {
+        "title": "Container image",
+        "hint": "Also Compose, docker run, site"
+      },
+      "sample": {
+        "title": "Sample app",
+        "hint": "Try it with one click"
+      }
+    },
+    "sample": {
+      "body": "Deploys a small public sample app so you can see a running deploy in seconds."
     }
   },
   "findings": {
