@@ -101,11 +101,13 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 			_, _ = fmt.Fprint(w, ": ping\n\n")
 			flusher.Flush()
 		case ev := <-events:
-			if fresh, _, err := rt.callerAppVisibility(r); err == nil {
-				canRead = fresh
+			fresh, _, verr := rt.callerAppVisibility(r)
+			if verr != nil {
+				continue
 			}
+			canRead = fresh
 			d, found := rt.fetchDeployment(r.Context(), ds, ev.AttemptID, ev.Kind == deploylog.StateFinished)
-			if !found || !canRead(d.Attempt.ServiceName) {
+			if !found || !rt.canReadDeploymentApp(r.Context(), canRead, d.Attempt.ServiceName) {
 				continue
 			}
 			out := deploymentEvent{Type: deploymentEventType(ev.Kind), Deployment: rt.toDeploymentResource(d)}

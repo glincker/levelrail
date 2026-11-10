@@ -227,12 +227,19 @@ func (rt *Router) visibleAppNames(r *http.Request) ([]string, error) {
 		return nil, fmt.Errorf("list apps: %w", err)
 	}
 	names := make([]string, 0, len(svcs))
+	// A service that took a stack's name also needs that stack's other members readable.
+	sharing := map[string][]string{}
 	for _, s := range svcs {
-		if canRead(s.Name) {
+		if s.AppID != "" && s.AppID != s.Name {
+			sharing[s.AppID] = append(sharing[s.AppID], s.Name)
+		}
+	}
+	for _, s := range svcs {
+		if canRead(s.Name) && stackReadable(s.Name, sharing[s.Name], canRead) {
 			names = append(names, s.Name)
 		}
 	}
-	return names, nil
+	return append(names, visibleStackNames(svcs, canRead)...), nil
 }
 
 // handleListDeployments handles GET /api/v1/deployments: deploy attempts
@@ -328,4 +335,65 @@ func (rt *Router) handleDeploymentsSummary(w http.ResponseWriter, r *http.Reques
 		Duration:       deploymentDurations{MedianMS: s.MedianMS, P95MS: s.P95MS, Samples: s.FinishedInRange},
 		PerDay:         s.PerDay,
 	})
+}
+
+// visibleStackNames lists compose stacks the caller can read: the stack and
+// every member must be readable, since stack rows carry the stack name only.
+func visibleStackNames(svcs []store.DesiredService, canRead func(string) bool) []string {
+	members := map[string][]string{}
+	var order []string
+	for _, s := range svcs {
+		if s.AppID == "" || s.AppID == s.Name {
+			continue
+		}
+		if _, ok := members[s.AppID]; !ok {
+			order = append(order, s.AppID)
+		}
+		members[s.AppID] = append(members[s.AppID], s.Name)
+	}
+	var out []string
+	for _, stack := range order {
+		if stackReadable(stack, members[stack], canRead) {
+			out = append(out, stack)
+		}
+	}
+	return out
+}
+
+// stackReadable is true only when the caller can read the stack and each member.
+func stackReadable(stack string, members []string, canRead func(string) bool) bool {
+	if !canRead(stack) {
+		return false
+	}
+	for _, m := range members {
+		if !canRead(m) {
+			return false
+		}
+	}
+	return true
+}
+
+// canReadDeploymentApp is the read gate for a deployment row's app name. A
+// service must have its sharing stack mates readable too; a stack name needs
+// every member. Any lookup error hides the row.
+func (rt *Router) canReadDeploymentApp(ctx context.Context, canRead func(string) bool, name string) bool {
+	if !canRead(name) {
+		return false
+	}
+	_, err := rt.apps.GetDesiredService(ctx, name)
+	switch {
+	case err == nil:
+		return rt.otherMembersReadable(ctx, name, func(_, member string) bool { return canRead(member) })
+	case errors.Is(err, store.ErrServiceNotFound):
+		members, merr := rt.composeMembers(ctx, name)
+		if merr != nil {
+			return false
+		}
+		names := make([]string, 0, len(members))
+		for _, m := range members {
+			names = append(names, m.Name)
+		}
+		return stackReadable(name, names, canRead)
+	}
+	return false
 }

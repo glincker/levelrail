@@ -49,7 +49,7 @@ The `minio/minio` image is no longer pullable from Docker Hub. Two S3-compatible
 
 ## Automatic drills
 
-Every resource that has a succeeded backup is drilled on its newest backup once per `APP_BACKUP_DRILL_INTERVAL_HOURS` (default `168`, one week; `0` turns scheduled drills off). The result history is on the **Backups** page and in `levelrail-cli backups drill list`.
+Every resource that has a succeeded backup is drilled on its newest backup once per drill interval (default `168` hours, one week; `0` turns scheduled drills off). Change it live in Settings under `backups.drill_interval_hours`; `APP_BACKUP_DRILL_INTERVAL_HOURS` only seeds the default. The result history is on the **Backups** page and in `levelrail-cli backups drill list`.
 
 A failed drill fires the platform-wide `restore_drill_failed` alert rule. Create it under **Alerts** like any other rule; it resolves when the next drill of that resource passes. A resource also shows **Failing** on the Backups page until then.
 
@@ -154,7 +154,9 @@ Buckets count periods that actually have a backup, so a week with no backups doe
 | `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | `4096` | Seeds `backup.hook_max_output_bytes`, the failing hook output kept after masking. |
 | `APP_BACKUP_HOOK_KILL_GRACE_SECONDS` | `5` | Extra wait after a hook's limit for the in-container kill to end it, at least 2. |
 | `APP_BACKUP_UPLOAD_ATTEMPTS` | `1` | How many times a failed upload is retried from a fresh archive. |
-| `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Scheduled drill period per resource. `0` disables. |
+| `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Seeds the `backups.drill_interval_hours` runtime setting. `0` disables. |
+| `APP_BACKUP_DRILL_RETENTION_DAYS` | `90` | Seeds `backups.drill_retention_days`: days of drill results kept, newest per resource always kept. `0` keeps all. |
+| `APP_BACKUP_DRILL_TIMEOUT` | `1h` | Seeds `backups.drill_timeout`: cancels a scheduled drill that runs too long. |
 | `APP_BACKUP_DRILL_MEMORY_MB` | `1024` | Memory cap for a scratch database container. It also runs with no network. |
 | `APP_BACKUP_DRILL_CPU_MILLI` | `1000` | CPU cap for a scratch container, in thousandths of a core. |
 

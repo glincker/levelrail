@@ -38,6 +38,8 @@ func runCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runComposeRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "down":
 		return runComposeDown(prog, args[1:], stdout, stderr, lookupEnv)
+	case "schedules":
+		return runComposeSchedules(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown compose command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, composeUsage(prog))
@@ -55,6 +57,7 @@ func composeUsage(prog string) string {
   %[1]s compose redeploy <app> [--service S]                       recreate every service, or one
   %[1]s compose rollback <app> [--revision N]                      re-apply an earlier compose file
   %[1]s compose down <app> [--volumes]                             remove the stack (volumes kept by default)
+  %[1]s compose schedules <list|add|run|runs|pause|resume|rm> ...  cron commands inside one service
 
 Run "%[1]s compose <subcommand> -h" for a subcommand's own flags.
 `, prog)

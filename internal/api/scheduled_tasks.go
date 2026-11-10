@@ -320,7 +320,8 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 	}
 
 	mode := defaultJobMode(r)
-	req := scheduledTaskResource{Enabled: mode == store.ScheduledTaskModeFresh, Mode: mode}
+	// A compose schedule is armed on create, like a job; legacy exec tasks stay opt-in.
+	req := scheduledTaskResource{Enabled: mode == store.ScheduledTaskModeFresh || isComposeScheduleRequest(r), Mode: mode}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return

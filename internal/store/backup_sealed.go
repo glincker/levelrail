@@ -201,6 +201,22 @@ func (db *DB) StartBackupDrill(ctx context.Context, d BackupDrill) error {
 	return nil
 }
 
+// PruneBackupDrills deletes finished drills that started before cutoff, always
+// keeping the newest drill of each resource so the health and alert state survives.
+func (db *DB) PruneBackupDrills(ctx context.Context, cutoff string) (int64, error) {
+	res, err := db.ExecContext(ctx, `
+		DELETE FROM backup_drills WHERE status != ? AND started_at < ? AND EXISTS (
+			SELECT 1 FROM backup_drills n WHERE n.resource_kind = backup_drills.resource_kind
+			AND n.database_name = backup_drills.database_name AND n.service_name = backup_drills.service_name
+			AND n.volume_name = backup_drills.volume_name AND n.started_at > backup_drills.started_at)
+	`, DrillStatusRunning, cutoff)
+	if err != nil {
+		return 0, fmt.Errorf("store: prune backup drills: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 // FinishBackupDrill records a drill's final outcome.
 func (db *DB) FinishBackupDrill(ctx context.Context, d BackupDrill) error {
 	res, err := db.ExecContext(ctx, `

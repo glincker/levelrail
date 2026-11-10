@@ -166,5 +166,18 @@
       "noMasterKey": "Las conexiones git necesitan una clave maestra en este plano de control.",
       "generic": "Algo salió mal."
     }
+  },
+  "schedules": {
+    "title": "Programaciones",
+    "description": "Comandos que se ejecutan con un horario cron dentro del contenedor de un servicio.",
+    "empty": "Aún no hay programaciones. Añade una con levelrail-cli compose schedules add {{app}} <service> --schedule CRON -- CMD.",
+    "paused": "En pausa",
+    "history": "Historial",
+    "noRuns": "Aún no hay ejecuciones.",
+    "none": "ninguno",
+    "exitCode": "salida {{code}}",
+    "runNow": "Ejecutar ahora",
+    "runNowLabel": "Ejecutar {{name}} en {{service}} ahora",
+    "started": "Ejecución {{id}} iniciada"
   }
 }

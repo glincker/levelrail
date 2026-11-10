@@ -143,6 +143,9 @@ func (rt *Router) attemptExitLines(ctx context.Context, a store.DeployAttempt) [
 // deployId may be "latest".
 func (rt *Router) handleGetDeploy(w http.ResponseWriter, r *http.Request) {
 	name, id := r.PathValue("name"), r.PathValue("deployId")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	ctx := r.Context()
 
 	if _, err := rt.apps.GetDesiredService(ctx, name); errors.Is(err, store.ErrServiceNotFound) {

@@ -48,6 +48,7 @@
     "timeout": "Tiempo agotado",
     "container_not_running": "Contenedor detenido",
     "skipped_concurrency": "Omitida, la anterior sigue en curso",
+    "skipped_freeze": "Omitida, congelación de despliegues activa",
     "replaced": "Reemplazada por una ejecución más reciente",
     "missed": "No se ejecutó a su hora",
     "interrupted": "Interrumpida por un reinicio"

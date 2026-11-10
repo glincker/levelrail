@@ -13,7 +13,15 @@ import (
 
 // lookupAppAttempt loads the app and one of its deploy attempts, writing the
 // error response itself when either is missing.
-func (rt *Router) lookupAppAttempt(w http.ResponseWriter, r *http.Request) (*store.DeployAttempt, bool) {
+func (rt *Router) lookupAppAttempt(w http.ResponseWriter, r *http.Request, ability string) (*store.DeployAttempt, bool) {
+	if !rt.requireAppAccess(w, r, r.PathValue("name"), ability) {
+		return nil, false
+	}
+	return rt.loadAppAttempt(w, r)
+}
+
+// loadAppAttempt is lookupAppAttempt for a caller that already ran requireAppAccess.
+func (rt *Router) loadAppAttempt(w http.ResponseWriter, r *http.Request) (*store.DeployAttempt, bool) {
 	name, deployID := r.PathValue("name"), r.PathValue("deployId")
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); err != nil {
 		if errors.Is(err, store.ErrServiceNotFound) {
@@ -44,7 +52,7 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "deploy cancellation is not configured on this control plane")
 		return
 	}
-	a, ok := rt.lookupAppAttempt(w, r)
+	a, ok := rt.lookupAppAttempt(w, r, AbilityDeploy)
 	if !ok {
 		return
 	}

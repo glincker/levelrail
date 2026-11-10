@@ -281,3 +281,28 @@ func TestRecreatedJobDoesNotInheritGuards(t *testing.T) {
 		t.Errorf("recreated job guards = %+v, %v, want zero", g, err)
 	}
 }
+
+func TestPruneScheduledTaskRuns_FreezeSkipsDoNotDisplaceRealRuns(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedScheduledTaskService(t, db, "web")
+	_ = db.SaveScheduledTask(ctx, newTestScheduledTask("st_1", "web"))
+	base := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	for i := 0; i < 13; i++ {
+		at := base.Add(time.Duration(i) * time.Minute)
+		status := ScheduledTaskStatusSkippedFreeze
+		if i < 3 {
+			status = ScheduledTaskStatusSuccess
+		}
+		_ = db.CreateScheduledTaskRun(ctx, ScheduledTaskRun{ID: fmt.Sprintf("jr_%02d", i), TaskID: "st_1", ServiceName: "web",
+			Trigger: ScheduledTaskTriggerSchedule, Status: status, StartedAt: at, FinishedAt: &at})
+	}
+	if err := db.PruneScheduledTaskRuns(ctx, "st_1", RunRetention{Keep: 3, SkippedKeep: 2, MaxRows: 100}); err != nil {
+		t.Fatalf("PruneScheduledTaskRuns: %v", err)
+	}
+	ok, _ := db.ListScheduledTaskRuns(ctx, ScheduledTaskRunFilter{ServiceName: "web", TaskID: "st_1", Status: ScheduledTaskStatusSuccess, Limit: 100})
+	skipped, _ := db.ListScheduledTaskRuns(ctx, ScheduledTaskRunFilter{ServiceName: "web", TaskID: "st_1", Status: ScheduledTaskStatusSkippedFreeze, Limit: 100})
+	if len(ok) != 3 || len(skipped) != 2 {
+		t.Fatalf("after prune: %d real, %d freeze skips, want 3 and 2", len(ok), len(skipped))
+	}
+}

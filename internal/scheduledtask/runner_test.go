@@ -362,3 +362,30 @@ func TestTailCappedWriter_KeepsMostRecentBytes(t *testing.T) {
 		t.Error("truncated() = false, want true")
 	}
 }
+
+func TestRunner_PausedTickRecordsSkippedFreezeWithoutExec(t *testing.T) {
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
+	runs := &fakeRunStore{}
+	rt := &fakeRuntime{
+		inspectState: &docker.ContainerState{ID: "c1", Running: true},
+		execReader:   io.NopCloser(strings.NewReader("hello\n")),
+	}
+	r := newTestRunner(apps, runs, rt, nil)
+	r.Paused = func(context.Context, store.ScheduledTask) string { return "skipped: deploy freeze active" }
+
+	if err := r.RunTrigger(context.Background(), testTask(), Trigger{Kind: store.ScheduledTaskTriggerSchedule}); err != nil {
+		t.Fatalf("RunTrigger() error = %v", err)
+	}
+	if rt.gotCmd != nil {
+		t.Fatalf("exec ran %v during a freeze", rt.gotCmd)
+	}
+	if len(runs.calls) != 1 || runs.calls[0].status != store.ScheduledTaskStatusSkippedFreeze {
+		t.Fatalf("recorded = %+v, want one skipped_freeze", runs.calls)
+	}
+	if err := r.Run(context.Background(), testTask()); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if rt.gotCmd == nil {
+		t.Fatal("a manual run must not be paused by a freeze")
+	}
+}

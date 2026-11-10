@@ -83,16 +83,22 @@ func parseAppListFilter(r *http.Request) store.AppListFilter {
 // caller has any IAM policies at all (none means every app is visible
 // to a caller holding the base read ability, so DB paging is exact).
 func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) bool, filtered bool, err error) {
+	return rt.callerAppAccess(r, AbilityRead)
+}
+
+// callerAppAccess is callerAppVisibility for any ability, so a deploy-only
+// route keeps the stack member rule without demanding read.
+func (rt *Router) callerAppAccess(r *http.Request, ability string) (canRead func(string) bool, filtered bool, err error) {
 	abilities, policies, scope, err := rt.callerScope(r)
 	if err != nil {
 		return nil, false, err
 	}
 	canRead = func(app string) bool {
-		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixApp, app)
+		return scope.authorize(abilities, policies, ability, resourcePrefixApp, app)
 	}
 	if scope.teams != nil && rt.teamDB() != nil {
 		canRead = rt.composeAwareRead(r.Context(), scope, canRead, func(stack, member string) bool {
-			return scope.authorizeAsMember(abilities, policies, AbilityRead, resourcePrefixApp, stack, member)
+			return scope.authorizeAsMember(abilities, policies, ability, resourcePrefixApp, stack, member)
 		})
 	}
 	return canRead, len(policies) > 0 || scope.restricted(), nil
@@ -103,9 +109,38 @@ func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) boo
 func (rt *Router) composeAwareRead(ctx context.Context, scope *resourceScope, canRead func(string) bool, asMember func(stack, member string) bool) func(string) bool {
 	var mu sync.Mutex
 	memo := map[string]bool{}
+	// One listing answers the sharing check for every app instead of a query each.
+	var once sync.Once
+	var sharing map[string][]string
+	var sharingErr error
+	loadSharing := func() {
+		svcs, err := rt.apps.ListDesiredServices(ctx)
+		if err != nil {
+			sharingErr = err
+			return
+		}
+		sharing = map[string][]string{}
+		for _, sv := range svcs {
+			if sv.AppID != "" && sv.AppID != sv.Name {
+				sharing[sv.AppID] = append(sharing[sv.AppID], sv.Name)
+			}
+		}
+	}
 	return func(app string) bool {
 		if scope.owner(resourcePrefixApp, app) != nil {
-			return canRead(app)
+			if !canRead(app) {
+				return false
+			}
+			once.Do(loadSharing)
+			if sharingErr != nil {
+				return false
+			}
+			for _, m := range sharing[app] {
+				if !asMember(app, m) {
+					return false
+				}
+			}
+			return true
 		}
 		mu.Lock()
 		v, ok := memo[app]
@@ -123,6 +158,24 @@ func (rt *Router) composeAwareRead(ctx context.Context, scope *resourceScope, ca
 		mu.Unlock()
 		return v
 	}
+}
+
+// otherMembersReadable covers a service that took a stack's name: the other
+// services sharing its app row must be readable too. A lookup error fails closed.
+func (rt *Router) otherMembersReadable(ctx context.Context, app string, asMember func(stack, member string) bool) bool {
+	if rt.appGroups == nil {
+		return true
+	}
+	members, err := rt.appGroups.ListServicesByApp(ctx, app)
+	if err != nil {
+		return false
+	}
+	for _, m := range members {
+		if m.Name != app && !asMember(app, m.Name) {
+			return false
+		}
+	}
+	return true
 }
 
 // X-Total-Count is the match count before paging; without limit the full filtered set is returned.

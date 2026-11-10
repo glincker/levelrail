@@ -443,6 +443,11 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
 		return nil, fmt.Errorf("check existing app: %w", err)
 	}
+	if taken, err := rt.stackNameTaken(ctx, p.Name); err != nil {
+		return nil, fmt.Errorf("check stack name: %w", err)
+	} else if taken {
+		return nil, errors.New("an app with this name already exists")
+	}
 	for k, v := range p.Secrets {
 		if !a.providerRefs && rt.resolvesThroughProvider(ctx, v) {
 			return nil, fmt.Errorf("secret %q: %s", k, providerRefNeedsRoot)

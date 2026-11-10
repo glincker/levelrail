@@ -14,6 +14,9 @@ import (
 // the Next.js route table and warnings parsed from that attempt's stored build log.
 func (rt *Router) handleNextBuildReport(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	deployID := r.PathValue("deployId")
 
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {

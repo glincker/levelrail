@@ -15,6 +15,9 @@ import (
 // handleDownloadDeployLog serves live lines while the attempt runs, then the persisted log.
 func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	deployID := r.PathValue("deployId")
 
 	_, err := rt.apps.GetDesiredService(r.Context(), name)

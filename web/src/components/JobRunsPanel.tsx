@@ -39,6 +39,7 @@ const STATUSES: ScheduledTaskRunStatus[] = [
   'interrupted',
   'container_not_running',
   'skipped_concurrency',
+  'skipped_freeze',
   'replaced',
 ]
 

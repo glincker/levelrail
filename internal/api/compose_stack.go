@@ -32,6 +32,8 @@ const (
 )
 
 type composeDeployOpts struct {
+	// nameLocked: the caller already holds composeGitLock then lockAppName for the name.
+	nameLocked bool
 	isTrial    bool
 	profiles   []string
 	source     string

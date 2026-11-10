@@ -277,6 +277,10 @@ func (rt *Router) handleImportAppBundle(w http.ResponseWriter, r *http.Request) 
 	if !rt.authorizeBundleTarget(w, r, name, deployNow, replace) {
 		return
 	}
+	// Same order as every compose deploy: composeGitLock, then the name lock.
+	mu := composeGitLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 	defer lockAppName(name)()
 	resp := appBundleImportResponse{App: name, DryRun: dryRun, SHA256: hex.EncodeToString(sum[:]), SecretsToSet: secretNames}
 	services, ok := rt.planBundleServices(w, r, name, files[bundleComposeName], plain, &resp)
@@ -309,7 +313,7 @@ func (rt *Router) handleImportAppBundle(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	sw := &bundleStatusWriter{ResponseWriter: w, code: http.StatusCreated}
-	_, ok = rt.lockedComposeDeploy(sw, r, name, files[bundleComposeName], composeDeployOpts{source: store.ComposeRevisionSourceAPI, interpEnv: plain, suspended: !deployNow})
+	_, ok = rt.deployComposeBody(sw, r, name, files[bundleComposeName], composeDeployOpts{source: store.ComposeRevisionSourceAPI, interpEnv: plain, suspended: !deployNow, nameLocked: true})
 	// Audited on failure too: a failed import may have saved some services.
 	rt.auditAppImportBundle(r, resp, deployNow && ok, sw.code)
 	if !ok {
