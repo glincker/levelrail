@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 const (
@@ -111,7 +112,7 @@ func smokeTemplate(ctx context.Context, t catalog.Template, o options) (r result
 	r.Services = p.inspect(ictx, services)
 	r = classify(r, upErr)
 	if hc != nil && r.Status == statusPass {
-		status, ok, detail := probeHealth(ictx, p, *hc, max(o.probeWait, time.Duration(t.Manifest.FirstBootWait(catalog.FirstBootCeiling(ictx, nil)))*time.Second))
+		status, ok, detail := probeHealth(ictx, p, *hc, max(o.probeWait, time.Duration(t.Manifest.FirstBootWait((*runtimesettings.Service)(nil).Int(ictx, runtimesettings.KeyTemplatesFirstBootMaxSeconds)))*time.Second))
 		r.HTTPStatus = status
 		if !ok {
 			return failed(r, detail)

@@ -139,7 +139,7 @@ func (m Manifest) validateMarketplaceFields() []error {
 	}
 	if m.FirstBootSeconds < 0 {
 		errs = append(errs, fmt.Errorf("first_boot_seconds must not be negative"))
-	} else if ceiling := firstBootCeiling(); m.FirstBootSeconds > ceiling {
+	} else if ceiling := maxFirstBootSeconds; m.FirstBootSeconds > ceiling {
 		errs = append(errs, fmt.Errorf("first_boot_seconds %d is above the allowed maximum %d", m.FirstBootSeconds, ceiling))
 	}
 	return errs
