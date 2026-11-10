@@ -24,10 +24,10 @@ import (
 // the last third to retry through outages (the step-ca and cert-manager
 // default).
 const (
-	DefaultRenewFraction = 2.0 / 3.0
-	defaultRenewJitter   = 0.05
-	defaultRenewRetryMin = time.Minute
-	defaultRenewRetryMax = time.Hour
+	DefaultRenewFraction   = 2.0 / 3.0
+	defaultRenewJitter     = 0.05
+	defaultRenewRetryFloor = time.Minute
+	defaultRenewRetryMax   = time.Hour
 )
 
 // RenewConfig tunes when and how often the agent renews its certificate.
@@ -50,7 +50,7 @@ func (c RenewConfig) withDefaults() RenewConfig {
 		c.Jitter = min(defaultRenewJitter, (1-c.Fraction)/2)
 	}
 	if c.RetryMin <= 0 {
-		c.RetryMin = defaultRenewRetryMin
+		c.RetryMin = defaultRenewRetryFloor
 	}
 	if c.RetryMax < c.RetryMin {
 		c.RetryMax = max(defaultRenewRetryMax, c.RetryMin)

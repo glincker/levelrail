@@ -35,9 +35,10 @@ func (s *Service) upgradeRows(ctx context.Context, rows []store.RuntimeSettingRo
 			}
 		}
 	}
+	// A FailClosed setting keeps its bad row so StringChecked can refuse instead of using the default.
 	for key, row := range m {
 		d, known := s.definition(key)
-		if !known || savedValueUsable(d, row.Value) {
+		if !known || d.FailClosed || savedValueUsable(d, row.Value) {
 			continue
 		}
 		if _, seen := warnedStoredValue.LoadOrStore(key, struct{}{}); !seen {

@@ -10,7 +10,7 @@ import (
 
 const (
 	bootDockerCallTimeout = 10 * time.Second
-	eventRetryMin         = time.Second
+	eventRetryFloor       = time.Second
 	eventRetryMax         = 30 * time.Second
 )
 
@@ -20,7 +20,7 @@ func resilientEvents(ctx context.Context, subscribe func(context.Context) (<-cha
 	out := make(chan docker.Event)
 	go func() {
 		defer close(out)
-		wait := eventRetryMin
+		wait := eventRetryFloor
 		for ctx.Err() == nil {
 			events, errs := subscribe(ctx)
 			start := time.Now()
@@ -38,7 +38,7 @@ func resilientEvents(ctx context.Context, subscribe func(context.Context) (<-cha
 				return
 			}
 			if time.Since(start) > eventRetryMax {
-				wait = eventRetryMin
+				wait = eventRetryFloor
 			}
 			logger.Warn("docker event stream ended, resubscribing", slog.Duration("in", wait))
 			select {

@@ -19,11 +19,11 @@ const (
 	envBootTimeout = "APP_DOCKER_BOOT_TIMEOUT"
 	envCallTimeout = "APP_DOCKER_CALL_TIMEOUT"
 
-	defaultBootTimeout = 10 * time.Second
-	defaultCallTimeout = 30 * time.Second
-	breakerHold        = 2 * time.Second
-	negotiateRetryMin  = 2 * time.Second
-	negotiateRetryMax  = 30 * time.Second
+	defaultBootTimeout  = 10 * time.Second
+	defaultCallTimeout  = 30 * time.Second
+	breakerHold         = 2 * time.Second
+	negotiateRetryFloor = 2 * time.Second
+	negotiateRetryMax   = 30 * time.Second
 )
 
 // ErrDaemonUnresponsive is returned fast while a recent call to the daemon timed out.
@@ -148,7 +148,7 @@ func negotiateUpFront(n negotiator, boot time.Duration, stop <-chan struct{}) {
 	slog.Warn("docker: daemon did not answer API version negotiation, retrying in background",
 		slog.Duration("timeout", boot))
 	go func() {
-		wait := negotiateRetryMin
+		wait := negotiateRetryFloor
 		for {
 			select {
 			case <-stop:

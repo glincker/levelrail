@@ -20,7 +20,7 @@ func TestMeshApplyClampsOutOfRangeEnvSeeds(t *testing.T) {
 		{"tiny", map[string]string{
 			"APP_MESH_WAKE_DEBOUNCE": "1ms", "APP_MESH_APPLY_TIMEOUT": "1ms",
 			"APP_MESH_APPLY_RETRY_DELAY": "1ms", "APP_MESH_APPLY_RETRIES": "-3",
-		}, meshWakeDebounceMin, meshApplyTimeoutMin, meshRetryDelayMin, 0},
+		}, meshWakeDebounceFloor, meshApplyTimeoutFloor, meshRetryDelayFloor, 0},
 		{"huge", map[string]string{
 			"APP_MESH_WAKE_DEBOUNCE": "100h", "APP_MESH_APPLY_TIMEOUT": "100h",
 			"APP_MESH_APPLY_RETRY_DELAY": "100h", "APP_MESH_APPLY_RETRIES": "1000",

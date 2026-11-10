@@ -75,7 +75,7 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotImplemented, "live deployment streaming is not configured on this control plane")
 		return
 	}
-	canRead, _, err := rt.callerAppVisibility(r)
+	_, _, err := rt.callerAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: deployment stream: resolve caller", err)
 		return
@@ -101,11 +101,10 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 			_, _ = fmt.Fprint(w, ": ping\n\n")
 			flusher.Flush()
 		case ev := <-events:
-			fresh, _, verr := rt.callerAppVisibility(r)
+			canRead, _, verr := rt.callerAppVisibility(r)
 			if verr != nil {
 				continue
 			}
-			canRead = fresh
 			d, found := rt.fetchDeployment(r.Context(), ds, ev.AttemptID, ev.Kind == deploylog.StateFinished)
 			if !found || !rt.canReadDeploymentApp(r.Context(), canRead, d.Attempt.ServiceName) {
 				continue

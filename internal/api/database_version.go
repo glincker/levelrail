@@ -57,7 +57,7 @@ func (rt *Router) handleSetDatabaseVersion(w http.ResponseWriter, r *http.Reques
 		// The version change and the drop commit together or not at all.
 		audit, ok := rt.dropAudit(r, http.MethodPut, name, plan)
 		if !ok {
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: database version: build drop audit entry", errors.New("audit entry could not be built"))
 			return
 		}
 		dropper, _ := rt.databases.(databaseParamsDropper)

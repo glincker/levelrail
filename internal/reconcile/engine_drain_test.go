@@ -37,13 +37,14 @@ func TestEngine_Run_PassFinishesAfterShutdownSignal(t *testing.T) {
 	<-c.started
 	cancel()
 	select {
-	case <-done:
-		t.Fatal("Run returned while a pass was still running")
+	case err := <-done:
+		t.Fatalf("Run returned while a pass was still running: %v", err)
 	case <-time.After(100 * time.Millisecond):
 	}
 	close(c.release)
 	select {
-	case <-done:
+	case err := <-done:
+		_ = err
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run did not return after the pass finished")
 	}
@@ -63,7 +64,8 @@ func TestEngine_Run_PassCutAtDrainLimit(t *testing.T) {
 	<-c.started
 	cancel()
 	select {
-	case <-done:
+	case err := <-done:
+		_ = err
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run did not return after the drain limit")
 	}

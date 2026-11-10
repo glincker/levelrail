@@ -25,7 +25,7 @@ const (
 
 	defaultCacheTTL      = 5 * time.Minute
 	defaultCacheStaleMax = 24 * time.Hour
-	defaultRefreshMin    = 10 * time.Second
+	defaultRefreshFloor  = 10 * time.Second
 	defaultListMax       = 10000
 	fetchTimeout         = 3 * time.Minute
 )
@@ -45,7 +45,7 @@ type Config struct {
 
 // ConfigFromEnv reads the cache bounds from the environment.
 func ConfigFromEnv() Config {
-	c := Config{TTL: defaultCacheTTL, StaleMax: defaultCacheStaleMax, RefreshMin: defaultRefreshMin, MaxItems: defaultListMax}
+	c := Config{TTL: defaultCacheTTL, StaleMax: defaultCacheStaleMax, RefreshMin: defaultRefreshFloor, MaxItems: defaultListMax}
 	if d, err := time.ParseDuration(os.Getenv(envCacheTTL)); err == nil && d >= 0 {
 		c.TTL = d
 	}

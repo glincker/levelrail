@@ -178,7 +178,7 @@ func TestOrgProfile_AvatarRejects(t *testing.T) {
 		t.Fatal(err)
 	}
 	var bomb bytes.Buffer
-	if err := png.Encode(&bomb, image.NewGray(image.Rect(0, 0, 6000, 6000))); err != nil {
+	if err := png.Encode(&bomb, image.NewGray(image.Rect(0, 0, 4096, 4096))); err != nil {
 		t.Fatal(err)
 	}
 	cases := []struct {
