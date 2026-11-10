@@ -169,6 +169,9 @@ func extractDispatchedVerbs(t *testing.T) map[string]bool {
 			t.Fatalf("parse %s: %v", f, err)
 		}
 		ast.Inspect(file, func(n ast.Node) bool {
+			if cl, ok := n.(*ast.CompositeLit); ok {
+				collectAPICmdKeys(cl, found)
+			}
 			sw, ok := n.(*ast.SwitchStmt)
 			if !ok || !isArgsZero(sw.Tag) {
 				return true
@@ -215,6 +218,28 @@ func collectCaseStrings(sw *ast.SwitchStmt, found map[string]bool) {
 				continue
 			}
 			found[v] = true
+		}
+	}
+}
+
+// collectAPICmdKeys counts the keys of a map[string]apiCmd literal as dispatched verbs, since dispatchSub tables have no switch.
+func collectAPICmdKeys(cl *ast.CompositeLit, found map[string]bool) {
+	mt, ok := cl.Type.(*ast.MapType)
+	if !ok {
+		return
+	}
+	if v, ok := mt.Value.(*ast.Ident); !ok || v.Name != "apiCmd" {
+		return
+	}
+	for _, el := range cl.Elts {
+		kv, ok := el.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		if lit, ok := kv.Key.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+			if v, err := strconv.Unquote(lit.Value); err == nil {
+				found[v] = true
+			}
 		}
 	}
 }
