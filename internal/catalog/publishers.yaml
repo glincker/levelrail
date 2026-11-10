@@ -1,0 +1,108 @@
+# Verified publishers: image namespaces a maintainer confirmed are published
+# by the upstream project. Each entry needs evidence, a reviewer and an expiry.
+# An expired entry stops validating, and a test fails until it is renewed.
+- namespace: docker.io/rssbridge
+  source_orgs: [RSS-Bridge]
+  evidence: https://github.com/RSS-Bridge/rss-bridge/blob/master/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names rssbridge/rss-bridge as the project image
+- namespace: docker.io/hyperdx
+  source_orgs: [hyperdxio]
+  evidence: https://github.com/hyperdxio/hyperdx/blob/main/DEPLOY.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: deploy guide names hyperdx/hyperdx-all-in-one
+- namespace: docker.io/opensearchproject
+  source_orgs: [opensearch-project]
+  evidence: https://github.com/opensearch-project/documentation-website/blob/main/_install-and-configure/install-opensearch/docker.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: official install docs pull opensearchproject/opensearch
+- namespace: docker.io/redash
+  source_orgs: [getredash]
+  evidence: https://github.com/getredash/redash/blob/master/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names redash/redash
+- namespace: docker.io/prom
+  source_orgs: [prometheus]
+  evidence: https://github.com/prometheus/node_exporter/blob/master/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names prom/node-exporter; pushgateway and blackbox_exporter READMEs name prom/pushgateway and prom/blackbox-exporter
+- namespace: docker.io/swaggerapi
+  source_orgs: [swagger-api]
+  evidence: https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/installation.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: install docs name swaggerapi/swagger-ui
+- namespace: docker.io/evcc
+  source_orgs: [evcc-io]
+  evidence: https://github.com/evcc-io/evcc/blob/master/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names evcc/evcc
+- namespace: docker.io/aaronleopold
+  source_orgs: [stumpapp]
+  evidence: https://github.com/stumpapp/stump/blob/main/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names aaronleopold/stump, the maintainer's own Docker Hub account
+- namespace: docker.io/mrcas
+  source_orgs: [Casvt]
+  evidence: https://github.com/Casvt/Kapowarr/blob/development/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names mrcas/kapowarr
+- namespace: docker.io/lmscommunity
+  source_orgs: [LMS-Community]
+  evidence: https://github.com/LMS-Community/slimserver/blob/public/9.1/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names lmscommunity/lyrionmusicserver
+- namespace: docker.io/zwavejs
+  source_orgs: [zwave-js]
+  evidence: https://github.com/zwave-js/zwave-js-ui/blob/master/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names zwavejs/zwave-js-ui
+- namespace: docker.io/adamboutcher
+  source_orgs: [statping-ng]
+  evidence: https://github.com/statping-ng/statping-ng/blob/dev/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names adamboutcher/statping-ng
+- namespace: docker.io/djmaze
+  source_orgs: [the-djmaze]
+  evidence: https://github.com/the-djmaze/snappymail/blob/master/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names djmaze/snappymail
+- namespace: docker.io/greptime
+  source_orgs: [GreptimeTeam]
+  evidence: https://github.com/GreptimeTeam/greptimedb/blob/main/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names greptime/greptimedb
+- namespace: docker.io/uozi
+  source_orgs: [0xJacky]
+  evidence: https://github.com/0xJacky/nginx-ui/blob/dev/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-10"
+  note: README names uozi/nginx-ui

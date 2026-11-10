@@ -620,6 +620,7 @@
               "self-host/domoticz",
               "self-host/drupal",
               "self-host/espocrm",
+              "self-host/evcc",
               "self-host/ghost",
               "self-host/glpi",
               "self-host/grav",
@@ -647,7 +648,8 @@
               "self-host/vvveb",
               "self-host/wizarr",
               "self-host/wordpress",
-              "self-host/yourls"
+              "self-host/yourls",
+              "self-host/zwave-js-ui"
             ]
           },
           {
@@ -748,6 +750,12 @@
             ]
           },
           {
+            "group": "Databases",
+            "pages": [
+              "self-host/greptimedb"
+            ]
+          },
+          {
             "group": "Developer Tools",
             "pages": [
               "self-host/appsmith",
@@ -792,6 +800,7 @@
               "self-host/mkdocs-material",
               "self-host/mazanoke",
               "self-host/meilisearch",
+              "self-host/nginx-ui",
               "self-host/nocobase",
               "self-host/onedev",
               "self-host/opengist",
@@ -881,7 +890,8 @@
           {
             "group": "Mail",
             "pages": [
-              "self-host/maildev"
+              "self-host/maildev",
+              "self-host/snappymail"
             ]
           },
           {
@@ -897,9 +907,11 @@
               "self-host/jackett",
               "self-host/jellyfin",
               "self-host/jellyseerr",
+              "self-host/kapowarr",
               "self-host/kavita",
               "self-host/komga",
               "self-host/lidarr",
+              "self-host/lyrion",
               "self-host/metube",
               "self-host/navidrome",
               "self-host/nzbget",
@@ -915,6 +927,7 @@
               "self-host/radarr",
               "self-host/romm",
               "self-host/sonarr",
+              "self-host/stump",
               "self-host/tdarr",
               "self-host/transmission",
               "self-host/yamtrack"
@@ -952,6 +965,7 @@
               "self-host/pushgateway",
               "self-host/smokeping",
               "self-host/speedtest-tracker",
+              "self-host/statping-ng",
               "self-host/statusnook",
               "self-host/tautulli",
               "self-host/uptime-kuma",

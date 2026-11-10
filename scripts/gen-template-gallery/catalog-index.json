@@ -1289,7 +1289,7 @@
      "service": "alertmanager",
      "image": "prom/alertmanager",
      "tag": "v0.27.0",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -4277,7 +4277,7 @@
      "service": "blackbox",
      "image": "prom/blackbox-exporter",
      "tag": "v0.29.1",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -13861,6 +13861,120 @@
    }
   },
   {
+   "id": "evcc",
+   "aliases": [],
+   "name": "evcc",
+   "slogan": "A smart charging controller that charges your electric car from solar surplus and cheap tariffs.",
+   "description": "A smart charging controller that charges your electric car from solar surplus and cheap tariffs.",
+   "first_run": [
+    "Open the address and finish the setup wizard to add your charger, meter and vehicle."
+   ],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/evcc-io/evcc",
+   "documentation_url": "https://docs.evcc.io/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/evcc-io/evcc/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "evcc",
+     "image": "evcc/evcc",
+     "tag": "0.319.0",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "evcc",
+     "image": "evcc/evcc:0.319.0",
+     "ports": [
+      7070
+     ],
+     "volumes": [
+      "data -> /root/.evcc"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "evcc",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "evcc"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "excalidraw",
    "aliases": [],
    "name": "Excalidraw",
@@ -20626,6 +20740,105 @@
    }
   },
   {
+   "id": "greptimedb",
+   "aliases": [],
+   "name": "GreptimeDB",
+   "slogan": "A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port.",
+   "description": "A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port.",
+   "first_run": [],
+   "category": "Databases",
+   "status": "active",
+   "source_repo": "https://github.com/GreptimeTeam/greptimedb",
+   "documentation_url": "https://docs.greptime.com/getting-started/installation/greptimedb-standalone/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/GreptimeTeam/greptimedb/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "greptimedb",
+     "image": "greptime/greptimedb",
+     "tag": "v1.3.0",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "greptimedb",
+     "image": "greptime/greptimedb:v1.3.0",
+     "ports": [
+      4000
+     ],
+     "volumes": [
+      "data -> /greptimedb_data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "greptimedb"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "grimmory",
    "aliases": [],
    "name": "Grimmory",
@@ -23271,7 +23484,7 @@
      "service": "hyperdx",
      "image": "hyperdx/hyperdx-all-in-one",
      "tag": "2.43.1",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -26923,6 +27136,109 @@
        "kanboard"
       ],
       "detail": "kanboard_data, kanboard_plugins",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kapowarr",
+   "aliases": [],
+   "name": "Kapowarr",
+   "slogan": "A comic book library manager that tracks volumes, finds issues and organises files.",
+   "description": "A comic book library manager that tracks volumes, finds issues and organises files.",
+   "first_run": [
+    "Open the address and set the root folder to /comics-1 in the settings."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/Casvt/Kapowarr",
+   "documentation_url": "https://casvt.github.io/Kapowarr/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Casvt/Kapowarr/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kapowarr",
+     "image": "mrcas/kapowarr",
+     "tag": "v1.3.2",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kapowarr",
+     "image": "mrcas/kapowarr:v1.3.2",
+     "ports": [
+      5656
+     ],
+     "volumes": [
+      "db -> /app/db",
+      "downloads -> /app/temp_downloads",
+      "comics -> /comics-1"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kapowarr"
+      ],
+      "detail": "comics, db, downloads",
       "message": "Stores data in named volumes"
      }
     ],
@@ -33173,6 +33489,127 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "lyrion",
+   "aliases": [],
+   "name": "Lyrion Music Server",
+   "slogan": "The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.",
+   "description": "The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.",
+   "first_run": [
+    "Open the address, set the music folder to /music in the first run wizard."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/LMS-Community/slimserver",
+   "documentation_url": "https://lyrion.org/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/LMS-Community/slimserver/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "lyrion",
+     "image": "lmscommunity/lyrionmusicserver",
+     "tag": "9.1.2",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "lyrion",
+     "image": "lmscommunity/lyrionmusicserver:9.1.2",
+     "ports": [
+      9000
+     ],
+     "volumes": [
+      "config -> /config",
+      "playlists -> /playlist",
+      "music -> /music"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "lyrion",
+     "name": "HTTP_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "lyrion",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "lyrion"
+      ],
+      "detail": "config, music, playlists",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -41274,6 +41711,108 @@
    }
   },
   {
+   "id": "nginx-ui",
+   "aliases": [],
+   "name": "Nginx UI",
+   "slogan": "A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes.",
+   "description": "A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes.",
+   "first_run": [
+    "Open the address and create the first administrator account in the setup wizard."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/0xJacky/nginx-ui",
+   "documentation_url": "https://nginxui.com/guide/getting-started.html",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/0xJacky/nginx-ui/blob/dev/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "nginx-ui",
+     "image": "uozi/nginx-ui",
+     "tag": "v3.0.1",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "nginx-ui",
+     "image": "uozi/nginx-ui:v3.0.1",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "nginx_config -> /etc/nginx",
+      "ui_config -> /etc/nginx-ui"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "nginx-ui"
+      ],
+      "detail": "nginx_config, ui_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "nocobase",
    "aliases": [],
    "name": "NocoBase",
@@ -41632,7 +42171,7 @@
      "service": "node-exporter",
      "image": "prom/node-exporter",
      "tag": "v1.12.1",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -45007,7 +45546,7 @@
      "service": "opensearch",
      "image": "opensearchproject/opensearch",
      "tag": "3.3.0",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -51809,7 +52348,7 @@
      "service": "prometheus",
      "image": "prom/prometheus",
      "tag": "v2.54.1",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -52175,7 +52714,7 @@
      "service": "pushgateway",
      "image": "prom/pushgateway",
      "tag": "v1.11.4",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -53588,7 +54127,7 @@
      "service": "redash",
      "image": "redash/redash",
      "tag": "25.8.0",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -53608,7 +54147,7 @@
      "service": "scheduler",
      "image": "redash/redash",
      "tag": "25.8.0",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -53618,7 +54157,7 @@
      "service": "worker",
      "image": "redash/redash",
      "tag": "25.8.0",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -55499,7 +56038,7 @@
      "service": "rss-bridge",
      "image": "rssbridge/rss-bridge",
      "tag": "2025-08-05",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -58280,6 +58819,120 @@
    }
   },
   {
+   "id": "snappymail",
+   "aliases": [],
+   "name": "SnappyMail",
+   "slogan": "A fast, light webmail client that connects to your IMAP and SMTP servers.",
+   "description": "A fast, light webmail client that connects to your IMAP and SMTP servers.",
+   "first_run": [
+    "The admin panel is at /?admin and its generated password is in the data volume under _data_/_default_/admin_password.txt."
+   ],
+   "category": "Mail",
+   "status": "active",
+   "source_repo": "https://github.com/the-djmaze/snappymail",
+   "documentation_url": "https://snappymail.eu/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/the-djmaze/snappymail/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "snappymail",
+     "image": "djmaze/snappymail",
+     "tag": "v3.0.1.1",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "snappymail",
+     "image": "djmaze/snappymail:v3.0.1.1",
+     "ports": [
+      8888
+     ],
+     "volumes": [
+      "data -> /snappymail/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "snappymail",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "snappymail"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "snipe-it",
    "aliases": [],
    "name": "Snipe-IT",
@@ -60244,6 +60897,153 @@
    }
   },
   {
+   "id": "statping-ng",
+   "aliases": [],
+   "name": "Statping-ng",
+   "slogan": "A status page and uptime monitor for sites, APIs and TCP services with alerts.",
+   "description": "A status page and uptime monitor for sites, APIs and TCP services with alerts.",
+   "first_run": [
+    "Sign in as admin with the generated password."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/statping-ng/statping-ng",
+   "documentation_url": "https://github.com/statping-ng/statping-ng",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/statping-ng/statping-ng/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "statping-ng",
+     "image": "adamboutcher/statping-ng",
+     "tag": "v0.90.78",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "statping-ng",
+     "image": "adamboutcher/statping-ng:v0.90.78",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "app -> /app"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "statping-ng",
+     "name": "ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "statping-ng",
+     "name": "ADMIN_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "statping-ng",
+     "name": "DB_CONN",
+     "kind": "preset"
+    },
+    {
+     "service": "statping-ng",
+     "name": "DESCRIPTION",
+     "kind": "preset"
+    },
+    {
+     "service": "statping-ng",
+     "name": "NAME",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "statping-ng"
+      ],
+      "detail": "ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "statping-ng"
+      ],
+      "detail": "app",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "statusnook",
    "aliases": [],
    "name": "Statusnook",
@@ -60667,6 +61467,114 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "stump",
+   "aliases": [],
+   "name": "Stump",
+   "slogan": "A comics, manga and digital book server with a web reader and OPDS support.",
+   "description": "A comics, manga and digital book server with a web reader and OPDS support.",
+   "first_run": [
+    "Create the owner account on first visit, then add a library that points at the data volume."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/stumpapp/stump",
+   "documentation_url": "https://www.stumpapp.dev/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/stumpapp/stump/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "stump",
+     "image": "aaronleopold/stump",
+     "tag": "0.1.12",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "stump",
+     "image": "aaronleopold/stump:0.1.12",
+     "ports": [
+      10801
+     ],
+     "volumes": [
+      "config -> /config",
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "stump",
+     "name": "STUMP_CONFIG_DIR",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "stump"
+      ],
+      "detail": "config, data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -61387,7 +62295,7 @@
      "service": "swagger-ui",
      "image": "swaggerapi/swagger-ui",
      "tag": "v5.34.1",
-     "source_class": "community",
+     "source_class": "verified_publisher",
      "signed": null,
      "provenance": false,
      "sbom": false,
@@ -70425,6 +71333,145 @@
        "zipline"
       ],
       "detail": "zipline_db_data, zipline_uploads",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "zwave-js-ui",
+   "aliases": [],
+   "name": "Z-Wave JS UI",
+   "slogan": "A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.",
+   "description": "A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.",
+   "first_run": [
+    "Open the address and pick your Z-Wave serial adapter in Settings."
+   ],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/zwave-js/zwave-js-ui",
+   "documentation_url": "https://zwave-js.github.io/zwave-js-ui/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/zwave-js/zwave-js-ui/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "zwave-js-ui",
+     "image": "zwavejs/zwave-js-ui",
+     "tag": "11.26.2",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "SESSION_SECRET",
+      "label": "Session secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "zwave-js-ui",
+     "image": "zwavejs/zwave-js-ui:11.26.2",
+     "ports": [
+      8091,
+      3000
+     ],
+     "volumes": [
+      "store -> /usr/src/app/store"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "zwave-js-ui",
+     "name": "SESSION_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "zwave-js-ui",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "zwave-js-ui"
+      ],
+      "detail": "SESSION_SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "zwave-js-ui"
+      ],
+      "detail": "store",
       "message": "Stores data in named volumes"
      }
     ],

@@ -67,22 +67,16 @@ var mutableTags = map[string]bool{
 	"nightly": true, "dev": true, "beta": true, "rc": true,
 }
 
-// Maintainer exception lists. Each entry needs a reason; the lists start empty
-// and a review that grants one adds a line here.
+// Maintainer exception lists. Each entry needs a reason. Image namespaces are
+// granted through publishers.yaml, not here.
 var (
 	shortTagExceptions = map[string]string{
 		"languagetool": "the community image erikvl87/languagetool publishes X.Y tags only (6.8, last pushed 2026-06-15), no X.Y.Z tags exist",
 	}
-	communityImageExceptions = map[string]string{
-		"languagetool":      "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64",
-		"rss-bridge":        "the project publishes its image under its own Docker Hub org rssbridge, while its source org is RSS-Bridge",
-		"hyperdx":           "the project's own Docker Hub org is hyperdx while its source org is hyperdxio",
-		"opensearch":        "the project publishes its image under its own Docker Hub org opensearchproject, while its source org is opensearch-project",
-		"redash":            "the project publishes its image under its own Docker Hub org redash, while its source org is getredash",
-		"node-exporter":     "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
-		"pushgateway":       "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
-		"blackbox-exporter": "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
-		"swagger-ui":        "the project publishes its image under its own Docker Hub org swaggerapi, while its source org is swagger-api",
+	// noUpstreamImage covers projects that publish no server image at all, so no
+	// publisher namespace can be verified. Each entry needs a reason.
+	noUpstreamImage = map[string]string{
+		"languagetool": "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64 (https://github.com/Erikvl87/docker-languagetool)",
 	}
 	fetchExceptions = map[string]string{}
 )
@@ -223,6 +217,9 @@ func ImageSourceClass(ref, sourceRepo string) string {
 	if org != "" && len(host) > 0 && strings.ToLower(host[0]) == org {
 		return SourceUpstream
 	}
+	if verifiedPublisherFor(img, sourceRepo, publisherClock()) {
+		return SourceVerifiedPublisher
+	}
 	return SourceCommunity
 }
 
@@ -278,7 +275,7 @@ func (m Manifest) checkImage(service, ref string) []error {
 	case shortTagPattern.MatchString(tag) && !pinned && shortTagExceptions[m.ID] == "":
 		errs = append(errs, fmt.Errorf("service %s: tag %q is not a full version; use X.Y.Z, pin the image by digest too, or ask a maintainer for an exception", service, tag))
 	}
-	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && communityImageExceptions[m.ID] == "" {
+	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && noUpstreamImage[m.ID] == "" {
 		errs = append(errs, fmt.Errorf("service %s: image %s is not from the upstream namespace, a Docker Official Image or an allowed rebuilder", service, ref))
 	}
 	return errs

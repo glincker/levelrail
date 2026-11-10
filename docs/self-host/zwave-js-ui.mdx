@@ -1,0 +1,68 @@
+---
+title: "Self-host Z-Wave JS UI with Docker"
+sidebarTitle: "Z-Wave JS UI"
+description: "A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant."
+"og:url": "https://docs.levelrail.com/self-host/zwave-js-ui"
+---
+
+A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.
+
+This page describes the Levelrail template for Z-Wave JS UI (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://zwave-js.github.io/zwave-js-ui/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `zwave-js-ui` | `zwavejs/zwave-js-ui:11.26.2` | 8091, 3000 | `store -&#62; /usr/src/app/store` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `zwave-js-ui` | `SESSION_SECRET` | Generated at deploy |
+| `zwave-js-ui` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`zwave-js-ui`): SESSION_SECRET.
+- Stores data in named volumes (`zwave-js-ui`): store.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Z-Wave JS UI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Z-Wave JS UI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy zwave-js-ui --name my-zwave-js-ui
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Domoticz](/self-host/domoticz)
+
+All templates are listed in the [self-host gallery](/self-host).

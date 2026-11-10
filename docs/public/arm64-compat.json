@@ -2,14 +2,14 @@
   "generated_at": "2026-11-02T03:14:45Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 451,
-    "images": 495,
+    "templates": 460,
+    "images": 504,
     "arm64_yes": 393,
     "arm64_no": 15,
-    "arm64_unknown": 43,
+    "arm64_unknown": 52,
     "image_arm64_yes": 434,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 46
+    "image_arm64_unknown": 55
   },
   "templates": [
     {
@@ -2254,6 +2254,20 @@
       ]
     },
     {
+      "id": "evcc",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "evcc/evcc:0.319.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "excalidraw",
       "amd64": "yes",
       "arm64": "yes",
@@ -3368,6 +3382,20 @@
       ]
     },
     {
+      "id": "greptimedb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "greptime/greptimedb:v1.3.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "grimmory",
       "amd64": "yes",
       "arm64": "yes",
@@ -4422,6 +4450,20 @@
       ]
     },
     {
+      "id": "kapowarr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mrcas/kapowarr:v1.3.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "karakeep",
       "amd64": "yes",
       "arm64": "yes",
@@ -5394,6 +5436,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T22:50:28Z"
+        }
+      ]
+    },
+    {
+      "id": "lyrion",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lmscommunity/lyrionmusicserver:9.1.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6640,6 +6696,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "nginx-ui",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "uozi/nginx-ui:v3.0.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9338,6 +9408,20 @@
       ]
     },
     {
+      "id": "snappymail",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "djmaze/snappymail:v3.0.1.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "snipe-it",
       "amd64": "yes",
       "arm64": "yes",
@@ -9660,6 +9744,20 @@
       ]
     },
     {
+      "id": "statping-ng",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "adamboutcher/statping-ng:v0.90.78",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "statusnook",
       "amd64": "yes",
       "arm64": "yes",
@@ -9726,6 +9824,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "stump",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "aaronleopold/stump:0.1.12",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -11345,6 +11457,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "zwave-js-ui",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "zwavejs/zwave-js-ui:11.26.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     }

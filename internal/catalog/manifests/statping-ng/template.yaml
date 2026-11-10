@@ -1,0 +1,31 @@
+id: statping-ng
+name: Statping-ng
+description: A status page and uptime monitor for sites, APIs and TCP services with alerts.
+icon: pulse
+category: Monitoring
+documentation_url: https://github.com/statping-ng/statping-ng
+source_repo: https://github.com/statping-ng/statping-ng
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/statping-ng/statping-ng/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Sign in as admin with the generated password.
+env:
+  - key: ADMIN_PASSWORD
+    label: Admin password
+    description: Password for the admin user.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: statping-ng
+    port: 8080
+    description: Public address of Statping-ng.
+healthcheck:
+  service: statping-ng
+  port: 8080
+  path: /

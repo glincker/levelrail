@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 451 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 52 not checked** of 460 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -239,6 +239,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `espocrm` | yes | linux/amd64, linux/arm64 |
 | `etcd` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `etherpad` | yes | linux/amd64, linux/arm64 |
+| `evcc` | not checked | - |
 | `excalidraw` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `factorio` | yes | linux/amd64, linux/arm64 |
 | `fastapi-postgres-starter` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
@@ -282,6 +283,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `grafana-postgres` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `gramps-web` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `grav` | not checked | - |
+| `greptimedb` | not checked | - |
 | `grimmory` | yes | linux/amd64, linux/arm64 |
 | `grist` | yes | linux/amd64, linux/arm64 |
 | `grocy` | yes | linux/amd64, linux/arm64 |
@@ -322,6 +324,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `jupyter-notebook-python` | yes | linux/amd64, linux/arm64 |
 | `kafka` | not checked | - |
 | `kanboard` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kapowarr` | not checked | - |
 | `karakeep` | yes | linux/amd64, linux/arm64 |
 | `kavita` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `keycloak` | yes | linux/amd64, linux/arm64 |
@@ -359,6 +362,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `lowcoder` | yes | linux/amd64, linux/arm64 |
 | `lubelogger` | yes | linux/amd64, linux/arm64 |
 | `lychee` | yes | linux/amd64, linux/arm64 |
+| `lyrion` | not checked | - |
 | `mafl` | not checked | - |
 | `mage-ai` | yes | linux/amd64, linux/arm64 |
 | `mail-mox` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
@@ -412,6 +416,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `nginx` | not checked | - |
 | `nginx-multi-backend-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nginx-proxy-manager` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `nginx-ui` | not checked | - |
 | `nocobase` | yes | linux/amd64, linux/arm64 |
 | `nocodb` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `node-exporter` | not checked | - |
@@ -523,6 +528,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `slash` | yes | linux/amd64, linux/arm64 |
 | `smokeping` | yes | linux/amd64, linux/arm64 |
 | `snapdrop` | not checked | - |
+| `snappymail` | not checked | - |
 | `snipe-it` | yes | linux/amd64, linux/arm64 |
 | `soketi` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `solr` | not checked | - |
@@ -536,9 +542,11 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `stable-diffusion-webui` | amd64 only | linux/amd64 |
 | `stalwart` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `static-site-api-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
+| `statping-ng` | not checked | - |
 | `statusnook` | yes | linux/amd64, linux/arm64 |
 | `stirling-pdf` | yes | linux/amd64, linux/arm64 |
 | `strapi` | yes | linux/amd64, linux/arm64 |
+| `stump` | not checked | - |
 | `superset` | yes | linux/amd64, linux/arm64 |
 | `supertokens` | yes | linux/amd64, linux/arm64 |
 | `sure` | yes | linux/amd64, linux/arm64 |
@@ -600,6 +608,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 43 not checked** of 4
 | `zabbix` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `zipkin` | not checked | - |
 | `zipline` | yes | linux/amd64, linux/arm64 |
+| `zwave-js-ui` | not checked | - |
 {/* END GENERATED ARM64 TABLE */}
 
 ## Upgrade paths, top 20

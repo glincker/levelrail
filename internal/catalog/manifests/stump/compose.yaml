@@ -1,0 +1,15 @@
+services:
+  stump:
+    image: aaronleopold/stump:0.1.12
+    ports: ["10801"]
+    environment:
+      STUMP_CONFIG_DIR: "/config"
+    volumes:
+      - config:/config
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:10801 || wget -q -O /dev/null http://127.0.0.1:10801"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

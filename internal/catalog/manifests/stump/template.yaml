@@ -1,0 +1,24 @@
+id: stump
+name: Stump
+description: A comics, manga and digital book server with a web reader and OPDS support.
+icon: book-open
+category: Media
+documentation_url: https://www.stumpapp.dev/
+source_repo: https://github.com/stumpapp/stump
+license: MIT
+license_class: permissive
+license_url: https://github.com/stumpapp/stump/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Create the owner account on first visit, then add a library that points at the data volume.
+domains:
+  - service: stump
+    port: 10801
+    description: Public address of Stump.
+healthcheck:
+  service: stump
+  port: 10801
+  path: /

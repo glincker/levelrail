@@ -1,0 +1,63 @@
+---
+title: "Self-host Kapowarr with Docker"
+sidebarTitle: "Kapowarr"
+description: "A comic book library manager that tracks volumes, finds issues and organises files."
+"og:url": "https://docs.levelrail.com/self-host/kapowarr"
+---
+
+A comic book library manager that tracks volumes, finds issues and organises files.
+
+This page describes the Levelrail template for Kapowarr (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://casvt.github.io/Kapowarr/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `kapowarr` | `mrcas/kapowarr:v1.3.2` | 5656 | `db -&#62; /app/db`<br />`downloads -&#62; /app/temp_downloads`<br />`comics -&#62; /comics-1` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`kapowarr`): comics, db, downloads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Kapowarr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kapowarr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kapowarr --name my-kapowarr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

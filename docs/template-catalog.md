@@ -25,30 +25,31 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (451 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (460 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 36 |
 | [Analytics](#analytics) | 10 |
-| [Applications](#applications) | 35 |
+| [Applications](#applications) | 37 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
 | [Database Tools](#database-tools) | 34 |
-| [Developer Tools](#developer-tools) | 67 |
+| [Developer Tools](#developer-tools) | 68 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
 | [Infrastructure](#infrastructure) | 20 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 31 |
-| [Monitoring](#monitoring) | 36 |
+| [Media](#media) | 34 |
+| [Monitoring](#monitoring) | 37 |
 | [Productivity](#productivity) | 82 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 16 |
 | [Backups](#backups) | 1 |
-| [Mail](#mail) | 1 |
+| [Databases](#databases) | 1 |
+| [Mail](#mail) | 2 |
 
 ## AI
 
@@ -117,6 +118,7 @@ Generated from `internal/catalog.Templates` (451 entries as of this build). Run 
 | [Domoticz](https://www.domoticz.com/wiki/) | A home automation system with a web UI that links sensors, switches and many device protocols. | `domoticz` |  |
 | [Drupal](https://www.drupal.org/docs) | A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. | `drupal` |  |
 | [EspoCRM](https://docs.espocrm.com) | An open-source CRM for managing sales, support, and customer relationships end to end. | `espocrm` |  |
+| [evcc](https://docs.evcc.io/) | A smart charging controller that charges your electric car from solar surplus and cheap tariffs. | `evcc` |  |
 | [Ghost](https://ghost.org/docs/) | A fast, modern publishing platform for blogs and newsletters, with built-in memberships. | `ghost` |  |
 | [GLPI](https://glpi-project.org/documentation/) | An IT asset and service management platform with helpdesk ticketing built in. | `glpi` |  |
 | [Grav](https://learn.getgrav.org/) | A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume. | `grav` |  |
@@ -145,6 +147,7 @@ Generated from `internal/catalog.Templates` (451 entries as of this build). Run 
 | [Wizarr](https://docs.wizarr.dev/) | An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server. | `wizarr` |  |
 | [WordPress](https://wordpress.org/documentation/) | The world's most widely used content management system, self-hosted with its own database. | `wordpress` |  |
 | [YOURLS](https://yourls.org/docs/) | A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form. | `yourls` |  |
+| [Z-Wave JS UI](https://zwave-js.github.io/zwave-js-ui/) | A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant. | `zwave-js-ui` |  |
 
 ## Automation
 
@@ -289,6 +292,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) | A documentation site generator with a searchable Material theme. This serves your Markdown files live; put them in the docs volume and edit the generated config to set the site name and navigation. | `mkdocs-material` |  |
 | [MAZANOKE](https://github.com/civilblur/mazanoke) | A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server. | `mazanoke` |  |
 | [Meilisearch](https://www.meilisearch.com/docs) | A fast, typo-tolerant search engine API you can drop into any app's search bar. | `meilisearch` |  |
+| [Nginx UI](https://nginxui.com/guide/getting-started.html) | A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes. | `nginx-ui` |  |
 | [NocoBase](https://docs.nocobase.com/) | An extensible no-code/low-code platform for building internal tools and databases. | `nocobase` |  |
 | [OneDev](https://docs.onedev.io/installation-guide/run-as-docker-container) | A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container. | `onedev` |  |
 | [Opengist](https://opengist.io/docs) | A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin. | `opengist` |  |
@@ -388,9 +392,11 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Jackett](https://github.com/Jackett/Jackett#readme) | A proxy that translates queries from your media apps into torrent tracker searches. | `jackett` |  |
 | [Jellyfin](https://jellyfin.org/docs/) | A free media server for streaming your own movies, shows, and music to any device. | `jellyfin` |  |
 | [Jellyseerr](https://docs.jellyseerr.dev) | A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr. | `jellyseerr` |  |
+| [Kapowarr](https://casvt.github.io/Kapowarr/) | A comic book library manager that tracks volumes, finds issues and organises files. | `kapowarr` |  |
 | [Kavita](https://wiki.kavitareader.com/installation/docker/) | A fast, feature-rich reader server for manga, comics, and ebooks. | `kavita` |  |
 | [Komga](https://komga.org/docs/installation/docker) | A media server for comics, manga, and digital books with a clean reading interface. | `komga` |  |
 | [Lidarr](https://wiki.servarr.com/lidarr) | Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. | `lidarr` |  |
+| [Lyrion Music Server](https://lyrion.org/) | The successor to Logitech Media Server, streaming your music to Squeezebox players and apps. | `lyrion` |  |
 | [MeTube](https://github.com/alexta69/metube) | A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. | `metube` |  |
 | [Navidrome](https://www.navidrome.org/docs/) | Stream your own music collection from a Subsonic-compatible server to any device, anywhere. | `navidrome` |  |
 | [NZBGet](https://nzbget.com/documentation/) | A fast, light Usenet downloader with a web interface and scripting support. | `nzbget` |  |
@@ -406,6 +412,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Radarr](https://wiki.servarr.com/radarr) | Watches your favorite indexers for movies and automatically grabs, sorts, and renames them. | `radarr` |  |
 | [RomM](https://docs.romm.app/latest/) | A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login. | `romm` |  |
 | [Sonarr](https://wiki.servarr.com/sonarr) | Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them. | `sonarr` |  |
+| [Stump](https://www.stumpapp.dev/) | A comics, manga and digital book server with a web reader and OPDS support. | `stump` |  |
 | [Tdarr](https://docs.tdarr.io) | Automated media transcoding, health checks, and library-wide format standardization. | `tdarr` |  |
 | [Transmission](https://docs.linuxserver.io/images/docker-transmission/) | A fast, lightweight BitTorrent client with a simple web interface. | `transmission` |  |
 | [Yamtrack](https://github.com/FuzzyGrim/Yamtrack/wiki) | A self-hosted media tracker for movies, TV, anime, manga, games, and books. | `yamtrack` |  |
@@ -443,6 +450,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Pushgateway](https://prometheus.io/docs/practices/pushing/) | A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume. | `pushgateway` |  |
 | [SmokePing](https://oss.oetiker.ch/smokeping/doc/index.en.html) | A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy. | `smokeping` |  |
 | [Speedtest Tracker](https://docs.speedtest-tracker.dev) | Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. | `speedtest-tracker` |  |
+| [Statping-ng](https://github.com/statping-ng/statping-ng) | A status page and uptime monitor for sites, APIs and TCP services with alerts. | `statping-ng` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
 | [Tautulli](https://docs.tautulli.com) | Monitors your Plex server and shows who watched what, with history, stats, and notifications. | `tautulli` |  |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma/wiki) | A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks. | `uptime-kuma` |  |
@@ -601,11 +609,18 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | --- | --- | --- | --- |
 | [Backrest](https://garethgeorge.github.io/backrest/) | A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly. | `backrest` |  |
 
+## Databases
+
+| Template | Slogan | ID | Notes |
+| --- | --- | --- | --- |
+| [GreptimeDB](https://docs.greptime.com/getting-started/installation/greptimedb-standalone/) | A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port. | `greptimedb` |  |
+
 ## Mail
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [MailDev](https://maildev.github.io/maildev/) | A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered. | `maildev` |  |
+| [SnappyMail](https://snappymail.eu/) | A fast, light webmail client that connects to your IMAP and SMTP servers. | `snappymail` |  |
 
 {/* END GENERATED CATALOG TABLE */}
 

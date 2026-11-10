@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 43 unknown, of 451 templates.
+393 listed, 15 amd64 only, 52 unknown, of 460 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -116,6 +116,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `espocrm` | listed | not tested |
 | `etcd` | listed | pass |
 | `etherpad` | listed | not tested |
+| `evcc` | unknown | not tested |
 | `excalidraw` | listed | pass |
 | `factorio` | listed | not tested |
 | `fastapi-postgres-starter` | listed | not tested |
@@ -159,6 +160,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `grafana-postgres` | listed | not tested |
 | `gramps-web` | listed | not tested |
 | `grav` | unknown | not tested |
+| `greptimedb` | unknown | not tested |
 | `grimmory` | listed | not tested |
 | `grist` | listed | not tested |
 | `grocy` | listed | not tested |
@@ -199,6 +201,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `jupyter-notebook-python` | listed | not tested |
 | `kafka` | unknown | not tested |
 | `kanboard` | listed | not tested |
+| `kapowarr` | unknown | not tested |
 | `karakeep` | listed | not tested |
 | `kavita` | listed | pass |
 | `keycloak` | listed | pass |
@@ -236,6 +239,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `lowcoder` | listed | not tested |
 | `lubelogger` | listed | not tested |
 | `lychee` | listed | not tested |
+| `lyrion` | unknown | not tested |
 | `mafl` | unknown | not tested |
 | `mage-ai` | listed | not tested |
 | `mail-mox` | listed | not tested |
@@ -289,6 +293,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `nginx` | unknown | not tested |
 | `nginx-multi-backend-starter` | listed | not tested |
 | `nginx-proxy-manager` | listed | not tested |
+| `nginx-ui` | unknown | not tested |
 | `nocobase` | listed | not tested |
 | `nocodb` | listed | pass |
 | `node-exporter` | unknown | not tested |
@@ -400,6 +405,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `slash` | listed | not tested |
 | `smokeping` | listed | not tested |
 | `snapdrop` | unknown | pull_failed |
+| `snappymail` | unknown | not tested |
 | `snipe-it` | listed | not tested |
 | `soketi` | listed | not tested |
 | `solr` | unknown | not tested |
@@ -413,9 +419,11 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `stable-diffusion-webui` | amd64 only | not tested |
 | `stalwart` | listed | not tested |
 | `static-site-api-starter` | listed | not tested |
+| `statping-ng` | unknown | not tested |
 | `statusnook` | listed | not tested |
 | `stirling-pdf` | listed | not tested |
 | `strapi` | listed | pass |
+| `stump` | unknown | not tested |
 | `superset` | listed | not tested |
 | `supertokens` | listed | not tested |
 | `sure` | listed | not tested |
@@ -477,3 +485,4 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `zabbix` | listed | not tested |
 | `zipkin` | unknown | not tested |
 | `zipline` | listed | not tested |
+| `zwave-js-ui` | unknown | not tested |
