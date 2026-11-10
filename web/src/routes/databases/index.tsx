@@ -93,7 +93,14 @@ function DatabaseListPage() {
   )
 
   if (databases.length === 0) {
-    return <DatabasesPage databases={databases} />
+    return (
+      <DatabasesPage
+        databases={databases}
+        onPickEngine={(engine) => {
+          void navigate({ search: { create: '1', engine }, replace: true })
+        }}
+      />
+    )
   }
 
   const setFilters = (next: DatabaseListFilters) => {

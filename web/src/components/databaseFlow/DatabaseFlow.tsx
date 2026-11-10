@@ -58,7 +58,10 @@ function Hint({ children }: Readonly<{ children: React.ReactNode }>) {
   return <p className="text-xs text-muted-foreground">{children}</p>
 }
 
-export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
+export function DatabaseFlow({
+  onClose,
+  initialEngine: wanted,
+}: Readonly<{ onClose: () => void; initialEngine?: string }>) {
   const { t } = useTranslation('databases')
   const navigate = useNavigate()
   const engineQuery = useDatabaseEnginesOptional()
@@ -69,7 +72,10 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const systemStatus = useSystemStatusOptional()
   const create = useCreateDatabase()
 
-  const initialEngine = engines[0]?.id ?? DEFAULT_ENGINE.id
+  const initialEngine =
+    engines.find((e) => e.id === wanted)?.id ??
+    engines[0]?.id ??
+    DEFAULT_ENGINE.id
   const [base, setValues] = useState<DbValues>({
     engine: initialEngine,
     version: '',

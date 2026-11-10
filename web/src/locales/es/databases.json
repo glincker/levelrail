@@ -690,6 +690,12 @@
   "banner": {
     "title": "Bases de datos",
     "description": "Crea una base de datos administrada junto a tus aplicaciones. Las credenciales se inyectan por ti, las copias de seguridad corren según una programación y puedes restaurar a un punto en el tiempo.",
+    "pickEngine": "Elige un motor",
+    "value": {
+      "credentials": "Credenciales inyectadas por ti",
+      "backups": "Copias de seguridad programadas",
+      "restore": "Restauración a un punto en el tiempo"
+    },
     "whatFor": "Elige un motor, acepta los valores por defecto y tu primera base de datos estará en ejecución en menos de un minuto. ¿Ya tienes una en otro lugar? Conéctala como base de datos externa.",
     "diagram": {
       "app": "aplicación",

@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { ConnectDatabaseDialog } from './ConnectDatabaseDialog'
 import { CreateDatabaseDialog } from './CreateDatabaseDialog'
+import { DatabasesEnginePicker } from './DatabasesEnginePicker'
 import { DatabasesTable } from './DatabasesTable'
 import { PageBanner, type PageBannerSize } from './PageBanner'
 
@@ -15,6 +16,8 @@ const DatabasesDiagram = lazy(() =>
     default: m.DatabasesDiagram,
   })),
 )
+
+function noop() {}
 
 const DESCRIPTION_KEY = {
   banner: 'databases:banner.description',
@@ -56,15 +59,16 @@ export function DatabasesShell({
 
 export function DatabasesPage({
   databases,
-}: Readonly<{ databases: readonly DatabaseListEntry[] }>) {
-  const { t } = useTranslation('databases')
+  onPickEngine,
+}: Readonly<{
+  databases: readonly DatabaseListEntry[]
+  onPickEngine?: (engineId: string) => void
+}>) {
   const isEmpty = databases.length === 0
   return (
     <DatabasesShell size={isEmpty ? 'hero' : 'compact'} empty={isEmpty}>
       {isEmpty ? (
-        <p className="max-w-prose text-sm text-muted-foreground">
-          {t('banner.whatFor')}
-        </p>
+        <DatabasesEnginePicker onPick={onPickEngine ?? noop} />
       ) : (
         <DatabasesTable databases={databases} />
       )}

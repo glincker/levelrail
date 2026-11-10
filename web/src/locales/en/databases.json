@@ -690,6 +690,12 @@
   "banner": {
     "title": "Databases",
     "description": "Create a managed database beside your apps. Credentials are injected for you, backups run on a schedule, and you can restore to a point in time.",
+    "pickEngine": "Pick an engine",
+    "value": {
+      "credentials": "Credentials injected for you",
+      "backups": "Backups on a schedule",
+      "restore": "Restore to a point in time"
+    },
     "whatFor": "Pick an engine, accept the defaults, and your first database is running in under a minute. Already have one elsewhere? Connect it as an external database.",
     "diagram": {
       "app": "app",

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { DatabasesPage } from './DatabasesPage'
 import i18next from 'i18next'
@@ -37,6 +37,19 @@ vi.mock('./CreateDatabaseDialog', () => ({
 }))
 
 describe('DatabasesPage', () => {
+  it('shows an engine grid and reports the picked engine', () => {
+    const onPick = vi.fn()
+    render(
+      <Providers>
+        <DatabasesPage databases={[]} onPickEngine={onPick} />
+      </Providers>,
+    )
+    const tiles = screen.getAllByRole('button', { name: /postgres|redis/i })
+    expect(tiles.length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: /^redis/i }))
+    expect(onPick).toHaveBeenCalledWith('redis')
+  })
+
   it('shows the hero banner with one create action and no empty-state card', () => {
     render(
       <Providers>
