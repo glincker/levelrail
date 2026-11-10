@@ -184,7 +184,9 @@ func TestEngine_Run_ResyncTickCorrectsDriftThatNoEventAnnounced(t *testing.T) {
 		}
 	}
 	cancel()
-	<-done
+	if err := <-done; err != nil {
+		t.Logf("run returned: %v", err)
+	}
 
 	if got := st.calls(); got < 2 {
 		t.Errorf("status writes = %d, want the repair persisted on top of the first write even with a long full resync", got)
