@@ -32,6 +32,14 @@ type DatabaseParams struct {
 	StagedAt        string            `json:"staged_at,omitempty"`
 	Previous        map[string]string `json:"previous"`
 	MaxConnections  int               `json:"max_connections_ceiling"`
+	// RolledBack is set after an automatic rollback of the last applied set.
+	RolledBack *DatabaseParamsRollback `json:"rolled_back,omitempty"`
+}
+
+// DatabaseParamsRollback is when and why the previous set was restored.
+type DatabaseParamsRollback struct {
+	At     string `json:"at"`
+	Reason string `json:"reason"`
 }
 
 // DatabaseParamsChange is the body of PUT /api/v1/databases/{name}/params.

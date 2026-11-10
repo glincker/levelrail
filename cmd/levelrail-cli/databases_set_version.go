@@ -12,6 +12,7 @@ import (
 func runDatabasesSetVersion(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases set-version", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesSetVersionUsage(prog)) }
+	dropParams := fs.Bool("drop-incompatible-params", false, "remove running engine parameters the new version refuses instead of failing")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -26,7 +27,7 @@ func runDatabasesSetVersion(prog string, args []string, stdout, stderr io.Writer
 	name, version := rest[0], rest[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	updated, err := client.SetDatabaseVersion(context.Background(), name, version)
+	updated, err := client.SetDatabaseVersionWith(context.Background(), name, version, *dropParams)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set version for database %q: %w", name, err))
 	}
@@ -43,7 +44,9 @@ Changes a database's image tag, for a minor or patch update (16 to 16.4).
 The container is recreated over the same data volume. A major version change
 is refused because the data files are not portable: for Postgres use
 "databases major-upgrade", otherwise back up and restore into a new database.
-Take a backup first.
+Take a backup first. Running engine parameters the new version refuses block
+the change unless --drop-incompatible-params removes them. A staged parameter
+set is never applied by a version change.
 
 `, prog) + databaseMoveNodeFlagsUsage()
 }

@@ -193,22 +193,24 @@ func (rt *Router) approvalScopeStatus(ctx context.Context, scope *teamScope, a s
 		if app == "" {
 			continue
 		}
-		owner, err := rt.ownerForResource(ctx, resourcePrefixApp, app)
+		owners, err := rt.ownersForResource(ctx, resourcePrefixApp, app)
 		if err != nil {
 			return 0, "", err
 		}
-		if owner == nil && !scope.instance {
-			return http.StatusNotFound, "approval not found", nil
+		// Visibility first for every owner, so a partial member of a compose stack gets the same 404.
+		for _, o := range owners {
+			if scope.roleFor(o.owner) == "" {
+				return http.StatusNotFound, "approval not found", nil
+			}
 		}
-		role := scope.roleFor(owner)
-		if role == "" {
-			return http.StatusNotFound, "approval not found", nil
-		}
-		if !hasAbility(capAbilities(abilities, ownerTeam(owner), role), required) {
-			return http.StatusForbidden, msgTeamRoleTooLow, nil
-		}
-		if required != AbilityRead && app == a.ServiceName && !store.TeamRoleAtLeast(role, store.TeamRoleAdmin) {
-			return http.StatusForbidden, "deciding a protected environment deploy needs the admin or owner role", nil
+		for _, o := range owners {
+			role := scope.roleFor(o.owner)
+			if !hasAbility(capAbilities(abilities, ownerTeam(o.owner), role), required) {
+				return http.StatusForbidden, msgTeamRoleTooLow, nil
+			}
+			if required != AbilityRead && app == a.ServiceName && !store.TeamRoleAtLeast(role, store.TeamRoleAdmin) {
+				return http.StatusForbidden, "deciding a protected environment deploy needs the admin or owner role", nil
+			}
 		}
 	}
 	return 0, "", nil

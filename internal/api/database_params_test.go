@@ -147,3 +147,57 @@ func TestDatabaseParams_MemoryCeilingAndStart(t *testing.T) {
 		t.Fatalf("start after stop did not apply: %q", d.EngineParams)
 	}
 }
+
+func TestDatabaseParams_VersionChangeRevalidates(t *testing.T) {
+	rt, db, _ := newAccessTestRouter(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "pg", Engine: store.EnginePostgres, Version: "10.5"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE desired_databases SET engine_params = '{"jit":"off","work_mem":"8MB"}' WHERE name = 'pg'`); err != nil {
+		t.Fatalf("seed params: %v", err)
+	}
+	cookie := loginTestSession(t, rt, db)
+	if rec := viewerDo(t, rt, cookie, http.MethodPut, "/api/v1/databases/pg/params", `{"set":{"work_mem":"16MB"}}`); rec.Code != http.StatusOK {
+		t.Fatalf("stage = %d %s", rec.Code, rec.Body.String())
+	}
+
+	rec := viewerDo(t, rt, cookie, http.MethodPut, "/api/v1/databases/pg/version", `{"version":"10.6"}`)
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "jit") {
+		t.Fatalf("incompatible set-version = %d %s, want 409 naming jit", rec.Code, rec.Body.String())
+	}
+	if d, _ := db.GetDesiredDatabase(ctx, "pg"); d.Version != "10.5" {
+		t.Fatalf("version changed despite 409: %s", d.Version)
+	}
+
+	rec = viewerDo(t, rt, cookie, http.MethodPut, "/api/v1/databases/pg/version", `{"version":"10.6","drop_incompatible_params":true}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("drop set-version = %d %s", rec.Code, rec.Body.String())
+	}
+	d, _ := db.GetDesiredDatabase(ctx, "pg")
+	if applied := d.EngineParams.Map(); d.Version != "10.6" || applied["jit"] != "" || applied["work_mem"] != "8MB" {
+		t.Fatalf("after drop = %s %v", d.Version, applied)
+	}
+	p, _ := db.GetDatabaseEngineParams(ctx, "pg")
+	if rec.Header().Get(paramsPendingHeader) != "staged" {
+		t.Fatal("a staged set was not surfaced on the version change")
+	}
+	if p.Pending["work_mem"] != "16MB" {
+		t.Fatalf("version change touched the staged set: %v", p.Pending)
+	}
+}
+
+func TestDatabaseParams_ApplyRefusesSetInvalidOnVersion(t *testing.T) {
+	rt, db, _ := newAccessTestRouter(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "pg", Engine: store.EnginePostgres, Version: "10.5"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE desired_databases SET engine_params_pending = '{"jit":"off"}' WHERE name = 'pg'`); err != nil {
+		t.Fatalf("seed pending: %v", err)
+	}
+	cookie := loginTestSession(t, rt, db)
+	if rec := viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/pg/params/apply", `{"confirm":true}`); rec.Code != http.StatusConflict {
+		t.Fatalf("apply = %d %s, want 409", rec.Code, rec.Body.String())
+	}
+}

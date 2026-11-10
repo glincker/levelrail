@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbparams"
@@ -46,6 +47,14 @@ type databaseParamsResponse struct {
 	StagedAt        string              `json:"staged_at,omitempty"`
 	Previous        map[string]string   `json:"previous"`
 	MaxConnections  int                 `json:"max_connections_ceiling"`
+	// RolledBack is set when the reconciler restored the previous set after
+	// the last applied one failed to start; the next apply clears it.
+	RolledBack *databaseParamsRollback `json:"rolled_back,omitempty"`
+}
+
+type databaseParamsRollback struct {
+	At     string `json:"at"`
+	Reason string `json:"reason"`
 }
 
 type stageDatabaseParamsRequest struct {
@@ -116,6 +125,9 @@ func (rt *Router) databaseParamsView(ctx context.Context, d *store.DesiredDataba
 		Params: make([]databaseParamView, 0, len(specs)), HasPending: p.Pending != nil,
 		RestartRequired: p.Pending != nil, StagedBy: p.StagedBy, StagedAt: p.StagedAt,
 		Previous: p.Previous, MaxConnections: lim.MaxConnections,
+	}
+	if p.RolledBackAt != "" {
+		resp.RolledBack = &databaseParamsRollback{At: p.RolledBackAt, Reason: p.RolledBackReason}
 	}
 	for _, s := range specs {
 		// A shown default above the admin ceiling would not validate if submitted.
@@ -262,6 +274,10 @@ func (rt *Router) handleApplyDatabaseParams(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusConflict, "no staged parameter change to apply")
 		return
 	}
+	if bad := rt.stagedParamsIncompatible(r.Context(), d, p.Pending); len(bad) > 0 {
+		writeError(w, http.StatusConflict, "staged parameters "+strings.Join(bad, ", ")+" are not valid on version "+d.Version+": stage the set again")
+		return
+	}
 	applied, err := s.ApplyDatabaseEngineParams(r.Context(), d.Name, *p.PendingRaw)
 	if err != nil {
 		rt.internalError(w, "api: apply database params failed", err, slog.String("name", d.Name))
@@ -284,6 +300,14 @@ func (rt *Router) applyStagedDatabaseParams(r *http.Request, name string) {
 	}
 	p, err := s.GetDatabaseEngineParams(r.Context(), name)
 	if err != nil || p.PendingRaw == nil {
+		return
+	}
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if err != nil {
+		return
+	}
+	if bad := rt.stagedParamsIncompatible(r.Context(), d, p.Pending); len(bad) > 0 {
+		rt.logger.Warn("api: staged database params not applied on start: invalid on this version", slog.String("name", name), slog.String("params", strings.Join(bad, ",")))
 		return
 	}
 	applied, err := s.ApplyDatabaseEngineParams(r.Context(), name, *p.PendingRaw)
@@ -309,11 +333,23 @@ func (rt *Router) auditDatabaseParams(r *http.Request, action, ability, method, 
 	if rt.auditLog == nil {
 		return
 	}
+	entry, ok := rt.paramsAuditEntry(r, action, ability, method, name, params)
+	if !ok {
+		return
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: database params audit save failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+}
+
+// paramsAuditEntry builds the audit row, for callers that write it in the
+// same transaction as the change.
+func (rt *Router) paramsAuditEntry(r *http.Request, action, ability, method, name string, params map[string]string) (store.AuditEntry, bool) {
 	a := rt.accessActor(r)
 	id, err := store.NewAuditEntryID()
 	if err != nil {
 		rt.logger.Warn("api: database params audit id failed", slog.String("error", err.Error()))
-		return
+		return store.AuditEntry{}, false
 	}
 	names := make([]string, 0, len(params))
 	for k := range params {
@@ -321,14 +357,11 @@ func (rt *Router) auditDatabaseParams(r *http.Request, action, ability, method, 
 	}
 	sort.Strings(names)
 	detail, _ := json.Marshal(map[string]any{"database": name, "params": params, "names": names})
-	entry := store.AuditEntry{
+	return store.AuditEntry{
 		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
 		Ability: ability, Method: method, Path: r.URL.Path, StatusCode: http.StatusOK,
 		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 		Action:     action, Detail: string(detail),
-	}
-	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
-		rt.logger.Warn("api: database params audit save failed", slog.String("error", err.Error()), slog.String("name", name))
-	}
+	}, true
 }

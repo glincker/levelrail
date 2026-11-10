@@ -118,3 +118,22 @@ func TestDatabaseParamsArgsRenderSeparateTokens(t *testing.T) {
 		t.Error("empty set has a fingerprint")
 	}
 }
+
+func TestIncompatibleForVersion(t *testing.T) {
+	params := map[string]string{"jit": "off", "max_connections": "200", "work_mem": "8MB"}
+	if got := Incompatible("postgres", "10.23", params, Limits{}); len(got) != 1 || got[0] != "jit" {
+		t.Fatalf("postgres 10 = %v, want [jit]", got)
+	}
+	if got := Incompatible("postgres", "16.4", params, Limits{}); len(got) != 0 {
+		t.Fatalf("postgres 16 = %v, want none", got)
+	}
+	if got := Incompatible("postgres", "16.4", params, Limits{MaxConnections: 150}); len(got) != 1 || got[0] != "max_connections" {
+		t.Fatalf("capped connections = %v, want [max_connections]", got)
+	}
+	if got := Incompatible("postgres", "latest", map[string]string{"jit": "on"}, Limits{}); len(got) != 0 {
+		t.Fatalf("unknown major = %v, want none", got)
+	}
+	if got := Incompatible("postgres", "16", map[string]string{"archive_command": "x"}, Limits{}); len(got) != 1 {
+		t.Fatalf("denied name = %v, want it listed", got)
+	}
+}

@@ -17,6 +17,12 @@ type DatabaseEngineParams struct {
 	Previous map[string]string
 	StagedBy string
 	StagedAt string
+	// AppliedAt is when the running set was last promoted, empty before any apply.
+	AppliedAt string
+	// RolledBackAt and RolledBackReason record the last automatic rollback;
+	// they are cleared by the next apply.
+	RolledBackAt     string
+	RolledBackReason string
 	// PendingRaw is the stored pending JSON, nil when NULL, for compare and set writes.
 	PendingRaw *string
 }
@@ -76,8 +82,8 @@ func (db *DB) GetDatabaseEngineParams(ctx context.Context, name string) (Databas
 	var applied, previous string
 	var pending sql.NullString
 	var p DatabaseEngineParams
-	err := db.QueryRowContext(ctx, `SELECT engine_params, engine_params_pending, engine_params_previous, engine_params_staged_by, engine_params_staged_at FROM desired_databases WHERE name = ?`, name).
-		Scan(&applied, &pending, &previous, &p.StagedBy, &p.StagedAt)
+	err := db.QueryRowContext(ctx, `SELECT engine_params, engine_params_pending, engine_params_previous, engine_params_staged_by, engine_params_staged_at, engine_params_applied_at, engine_params_rolled_back_at, engine_params_rolled_back_reason FROM desired_databases WHERE name = ?`, name).
+		Scan(&applied, &pending, &previous, &p.StagedBy, &p.StagedAt, &p.AppliedAt, &p.RolledBackAt, &p.RolledBackReason)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrDatabaseNotFound
 	}
@@ -115,7 +121,7 @@ func (db *DB) DiscardDatabaseEngineParams(ctx context.Context, name string, expe
 // ApplyDatabaseEngineParams promotes exactly the staged set the caller read
 // and keeps the old one for rollback. applied is false when it changed or is gone.
 func (db *DB) ApplyDatabaseEngineParams(ctx context.Context, name, expected string) (bool, error) {
-	res, err := db.ExecContext(ctx, `UPDATE desired_databases SET engine_params_previous = engine_params, engine_params = engine_params_pending, engine_params_pending = NULL, engine_params_staged_by = '', engine_params_staged_at = '', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ? AND engine_params_pending = ?`, name, expected)
+	res, err := db.ExecContext(ctx, `UPDATE desired_databases SET engine_params_previous = engine_params, engine_params = engine_params_pending, engine_params_pending = NULL, engine_params_staged_by = '', engine_params_staged_at = '', engine_params_applied_at = ?, engine_params_rolled_back_at = '', engine_params_rolled_back_reason = '', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ? AND engine_params_pending = ?`, time.Now().UTC().Format(time.RFC3339Nano), name, expected)
 	if err != nil {
 		return false, fmt.Errorf("store: apply engine params for database %q: %w", name, err)
 	}
@@ -135,6 +141,104 @@ func (db *DB) execDatabaseRow(ctx context.Context, name, what, query string, arg
 		return fmt.Errorf("store: %s for database %q: rows affected: %w", what, name, err)
 	} else if n == 0 {
 		return ErrEngineParamsConflict
+	}
+	return nil
+}
+
+// AuditActionDatabaseParamsAutoRollback is the system audit action of an
+// automatic rollback; the reconciler writes it with the rollback itself.
+const AuditActionDatabaseParamsAutoRollback = "database.params.auto_rollback"
+
+// RollbackDatabaseEngineParams swaps the running and previous sets when the
+// running set and its apply time are still expected and no rollback happened
+// since; the failed set stays in previous for re-staging. Audit is in the same transaction.
+func (db *DB) RollbackDatabaseEngineParams(ctx context.Context, name string, expected map[string]string, expectedAppliedAt, reason string, at time.Time, audit AuditEntry) (rolled bool, err error) {
+	raw, err := encodeEngineParams(expected)
+	if err != nil {
+		return false, err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("store: begin engine params rollback: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `UPDATE desired_databases SET engine_params = engine_params_previous, engine_params_previous = engine_params, engine_params_rolled_back_at = ?, engine_params_rolled_back_reason = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ? AND engine_params = ? AND engine_params_applied_at = ? AND engine_params_rolled_back_at = '' AND engine_params_previous <> engine_params`,
+		at.UTC().Format(time.RFC3339), reason, name, raw, expectedAppliedAt)
+	if err != nil {
+		return false, fmt.Errorf("store: roll back engine params for database %q: %w", name, err)
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return false, err
+	}
+	if err := insertAuditEntry(ctx, tx, audit); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("store: commit engine params rollback: %w", err)
+	}
+	return true, nil
+}
+
+// DropDatabaseEngineParams replaces the running set with keep when it is
+// still expected, with its audit row in the same transaction. previous
+// becomes keep too, so no later rollback restores a refused parameter.
+func (db *DB) DropDatabaseEngineParams(ctx context.Context, name string, expected, keep map[string]string, audit AuditEntry) error {
+	return db.dropEngineParams(ctx, name, "", "", expected, keep, audit)
+}
+
+// SetDatabaseVersionDroppingEngineParams changes the version from fromVersion
+// to toVersion and drops refused parameters in one transaction, so neither
+// happens without the other.
+func (db *DB) SetDatabaseVersionDroppingEngineParams(ctx context.Context, name, fromVersion, toVersion string, expected, keep map[string]string, audit AuditEntry) error {
+	return db.dropEngineParams(ctx, name, fromVersion, toVersion, expected, keep, audit)
+}
+
+// SetDatabaseVersionIfEngineParams changes the version only while the running
+// set is still expected, so a concurrent apply cannot slip past re-validation.
+func (db *DB) SetDatabaseVersionIfEngineParams(ctx context.Context, name, fromVersion, toVersion string, expected map[string]string) error {
+	raw, err := encodeEngineParams(expected)
+	if err != nil {
+		return err
+	}
+	return db.execDatabaseRow(ctx, name, "set version",
+		`UPDATE desired_databases SET version = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ? AND version = ? AND engine_params = ?`,
+		toVersion, name, fromVersion, raw)
+}
+
+func (db *DB) dropEngineParams(ctx context.Context, name, fromVersion, toVersion string, expected, keep map[string]string, audit AuditEntry) error {
+	oldRaw, err := encodeEngineParams(expected)
+	if err != nil {
+		return err
+	}
+	newRaw, err := encodeEngineParams(keep)
+	if err != nil {
+		return err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin engine params drop: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	query := `UPDATE desired_databases SET engine_params = ?, engine_params_previous = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ? AND engine_params = ?`
+	args := []any{newRaw, newRaw, name, oldRaw}
+	if toVersion != "" {
+		query = `UPDATE desired_databases SET engine_params = ?, engine_params_previous = ?, version = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ? AND engine_params = ? AND version = ?`
+		args = []any{newRaw, newRaw, toVersion, name, oldRaw, fromVersion}
+	}
+	res, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("store: drop engine params for database %q: %w", name, err)
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return fmt.Errorf("store: drop engine params for database %q: rows affected: %w", name, err)
+	} else if n == 0 {
+		return ErrEngineParamsConflict
+	}
+	if err := insertAuditEntry(ctx, tx, audit); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit engine params drop: %w", err)
 	}
 	return nil
 }

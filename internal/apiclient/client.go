@@ -1111,8 +1111,15 @@ func (c *Client) SetDatabaseResources(ctx context.Context, name string, resource
 // SetDatabaseVersion calls PUT /api/v1/databases/{name}/version: a minor or
 // patch image change over the same data volume.
 func (c *Client) SetDatabaseVersion(ctx context.Context, name, version string) (DatabaseResource, error) {
+	return c.SetDatabaseVersionWith(ctx, name, version, false)
+}
+
+// SetDatabaseVersionWith is SetDatabaseVersion with drop_incompatible_params,
+// which removes running engine parameters the new version refuses.
+func (c *Client) SetDatabaseVersionWith(ctx context.Context, name, version string, dropIncompatibleParams bool) (DatabaseResource, error) {
 	var out DatabaseResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/version", map[string]string{"version": version}, &out)
+	body := map[string]any{"version": version, "drop_incompatible_params": dropIncompatibleParams}
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/version", body, &out)
 	return out, err
 }
 

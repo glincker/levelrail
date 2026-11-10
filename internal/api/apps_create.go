@@ -106,6 +106,14 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
+	// A compose stack's name has no service row; taking it would hand the stack to the creator's team.
+	if _, merr := rt.composeMembers(r.Context(), req.Name); merr == nil {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
+		return
+	} else if !errors.Is(merr, store.ErrServiceNotFound) {
+		rt.internalError(w, "api: create app: check stack name failed", merr, slog.String("name", req.Name))
+		return
+	}
 
 	desired := req.toDesiredService()
 	// Required: false for every entry here, since this endpoint has no

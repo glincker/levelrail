@@ -270,9 +270,13 @@ type Controller struct {
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
-	recreates            recreateGuard
 	agentVersion         AgentVersionLookup
 	now                  func() time.Time
+	// shared holds the params watch and recreate guard across the per pass
+	// controller rebuild; New gives a private one when none is wired.
+	shared *SharedState
+	// remoteNode means the control plane cannot dial the container address.
+	remoteNode bool
 }
 
 // Option configures optional Controller behavior.
@@ -387,7 +391,16 @@ func New(dbName string, dbStore Store, runtime docker.Runtime, opts ...Option) *
 	for _, opt := range opts {
 		opt(ctrl)
 	}
+	if ctrl.shared == nil {
+		ctrl.shared = NewSharedState()
+	}
 	return ctrl
+}
+
+// WithRemoteNode marks a database on a remote agent node, where no ready
+// probe can reach the container, so no params watch is started.
+func WithRemoteNode(remote bool) Option {
+	return func(c *Controller) { c.remoteNode = remote }
 }
 
 // Name implements reconcile.Controller.
@@ -401,12 +414,14 @@ func WithProvisionRecorder(rec *dbprovision.Recorder) Option {
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if c.provRec == nil {
-		return c.reconcileOnce(ctx)
+		res, err := c.reconcileOnce(ctx)
+		return c.rollbackFailedParams(ctx, res), err
 	}
 	c.prov = c.provRec.Open(ctx, c.dbName)
 	defer func() { c.prov = nil }()
 	res, err := c.reconcileOnce(ctx)
 	c.finishProvision(ctx, res, err)
+	res = c.rollbackFailedParams(ctx, res)
 	return res, err
 }
 
@@ -602,6 +617,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 // retried into an error. Does not remove the container's data volume;
 // see dataVolumeName's own doc comment.
 func (c *Controller) Teardown(ctx context.Context) error {
+	c.shared.clearWatch(c.dbName)
 	// The pooler shares the database's namespace, so it goes first.
 	if err := c.removePooler(ctx); err != nil {
 		return err
@@ -781,6 +797,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// there is unknowable: adopt the container rather than recreate it.
 	outdated := state != nil && c.agentOutdated(ctx, desired.NodeID)
 	labelsKnown := state != nil && !state.LabelsUnknown && !outdated
+	// A running container whose tuning args are about to change is the healthy
+	// baseline a failed start of the new args may roll back to.
+	prevParams, prevRunning, sameImage := "", state != nil && state.Running, false
+	if state != nil {
+		prevParams = state.Labels[engineParamsLabelKey]
+		sameImage = docker.SameImageRef(state.Image, image)
+	}
 
 	justDeployed := false
 	switch {
@@ -906,7 +929,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if err != nil {
 			return notReady("InspectFailed", err), fmt.Errorf("database/%s: re-inspect %q after start: %w", c.dbName, target, err)
 		}
+		c.watchParamsStart(prevRunning && labelsKnown && sameImage, prevParams, spec.Labels[engineParamsLabelKey])
 		if state == nil || !state.Running {
+			c.noteVanished(spec.Labels[engineParamsLabelKey])
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("database/%s: %q not running immediately after starting it", c.dbName, target)
 		}
 	}
@@ -998,7 +1023,7 @@ func (c *Controller) replaceContainer(ctx context.Context, old *docker.Container
 	if err := c.requireVolume(ctx, dataVolumeName(c.dbName), spec); err != nil {
 		return err
 	}
-	if err := c.recreates.allow(c.clock()); err != nil {
+	if err := c.shared.guard(c.dbName).allow(c.clock()); err != nil {
 		return err
 	}
 	if old.Running {

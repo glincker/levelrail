@@ -189,6 +189,20 @@ func (s *resourceScope) authorize(abilities []string, policies []store.Policy, a
 	return authorizeResource(abilities, policies, ability, prefix+name, environmentResources(ref)...)
 }
 
+// authorizeAsMember is authorize for a compose stack name, using one member's
+// owner and environment while policies still match the stack's own name.
+func (s *resourceScope) authorizeAsMember(abilities []string, policies []store.Policy, ability, prefix, name, member string) bool {
+	if ref := s.lookup(prefix, name); s.vis.Restricted && (ref == nil || !s.vis.Allows(ref.ID)) {
+		return false
+	}
+	owner, mref := s.owner(prefix, member), s.lookup(prefix, member)
+	role := s.teams.roleFor(owner)
+	if role == "" || protectedDenied(role, ability, mref) {
+		return false
+	}
+	return authorizeResource(capAbilities(abilities, ownerTeam(owner), role), policies, ability, prefix+name, environmentResources(mref)...)
+}
+
 func ownerTeam(o *store.ResourceOwner) string {
 	if o == nil {
 		return store.DefaultTeamID
@@ -271,20 +285,39 @@ func (rt *Router) authorizeResourceInEnvironment(ctx context.Context, principalT
 		return true, true, nil
 	}
 	if teams != nil {
-		owner, err := rt.ownerForResource(ctx, prefix, name)
-		if err != nil {
-			return false, false, fmt.Errorf("api: resource owner: %w", err)
-		}
-		role := teams.roleFor(owner)
-		if role == "" {
-			return true, true, nil
-		}
-		if protectedDenied(role, ability, ref) {
-			return false, false, nil
-		}
-		abilities = capAbilities(abilities, ownerTeam(owner), role)
+		return rt.authorizeForOwners(ctx, teams, abilities, policies, ability, resource, ref)
 	}
 	return authorizeResource(abilities, policies, ability, resource, environmentResources(ref)...), false, nil
+}
+
+// authorizeForOwners needs the caller allowed under every owner; a compose app
+// has one per member, each checked against that member's environment.
+func (rt *Router) authorizeForOwners(ctx context.Context, teams *teamScope, abilities []string, policies []store.Policy, ability, resource string, ref *store.EnvironmentRef) (allowed, hidden bool, err error) {
+	prefix, name, _ := splitResource(resource)
+	owners, err := rt.ownersForResource(ctx, prefix, name)
+	if err != nil {
+		return false, false, fmt.Errorf("api: resource owner: %w", err)
+	}
+	for _, o := range owners {
+		if teams.roleFor(o.owner) == "" {
+			return true, true, nil
+		}
+	}
+	for _, o := range owners {
+		role, oref := teams.roleFor(o.owner), ref
+		if o.name != name {
+			if oref, err = rt.environmentForResource(ctx, prefix, o.name); err != nil {
+				return false, false, fmt.Errorf("api: resource environment: %w", err)
+			}
+		}
+		if protectedDenied(role, ability, oref) {
+			return false, false, nil
+		}
+		if !authorizeResource(capAbilities(abilities, ownerTeam(o.owner), role), policies, ability, resource, environmentResources(oref)...) {
+			return false, false, nil
+		}
+	}
+	return true, false, nil
 }
 
 func hiddenResourceMessage(resource string) string {

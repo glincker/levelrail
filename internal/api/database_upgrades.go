@@ -74,6 +74,9 @@ type dbUpgradeRunResource struct {
 	Timings         map[string]string `json:"timings"`
 	CreatedAt       string            `json:"created_at"`
 	FinishedAt      string            `json:"finished_at,omitempty"`
+	// ParamsPending is set on upgrade-now when a staged parameter set exists;
+	// the upgrade does not apply it, params apply does.
+	ParamsPending bool `json:"params_pending,omitempty"`
 }
 
 func toDBUpgradeRunResource(r store.DBUpgradeRun) dbUpgradeRunResource {
@@ -269,6 +272,8 @@ func (rt *Router) handlePutPlatformUpgradePolicy(w http.ResponseWriter, r *http.
 type upgradeNowRequest struct {
 	Version string `json:"version"`
 	Confirm string `json:"confirm"`
+	// DropIncompatibleParams has the same meaning as on PUT .../version.
+	DropIncompatibleParams bool `json:"drop_incompatible_params"`
 }
 
 // handleDatabaseUpgradeNow handles POST /api/v1/databases/{name}/upgrade-now:
@@ -292,12 +297,31 @@ func (rt *Router) handleDatabaseUpgradeNow(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "version must be an image tag such as \"16.4\"")
 		return
 	}
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: upgrade now: load database failed", err, slog.String("name", name))
+		return
+	}
+	plan, ok := rt.planParamsForVersion(w, r, d, req.Version, req.DropIncompatibleParams)
+	if !ok {
+		return
+	}
 	run, err := rt.dbUpgrader.UpgradeNow(r.Context(), name, req.Version, rt.checkedByFromRequest(r))
 	if err != nil {
 		rt.writeUpgradeError(w, err, "api: upgrade now failed")
 		return
 	}
-	writeJSON(w, http.StatusAccepted, toDBUpgradeRunResource(run))
+	// Dropped only once the upgrade was accepted, so a refusal changes nothing.
+	if plan.drops() {
+		rt.dropParamsAfterUpgradeAccepted(r, name, plan)
+	}
+	res := toDBUpgradeRunResource(run)
+	res.ParamsPending = plan.pending
+	writeJSON(w, http.StatusAccepted, res)
 }
 
 type dbUpgradeSummaryItem struct {
@@ -362,6 +386,25 @@ func (rt *Router) handleDatabaseUpgradeSummary(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// dropParamsAfterUpgradeAccepted runs right after the run was accepted. The
+// run first takes a backup and only then changes the image, so the drop lands
+// before the new version starts in practice; it is not part of the run itself.
+func (rt *Router) dropParamsAfterUpgradeAccepted(r *http.Request, name string, plan versionParamsPlan) {
+	ctx := context.WithoutCancel(r.Context())
+	audit, ok := rt.dropAudit(r, http.MethodPost, name, plan)
+	if !ok {
+		rt.logger.Warn("api: upgrade now: incompatible database params not dropped: audit entry unavailable", slog.String("name", name))
+		return
+	}
+	dropper, ok := rt.databases.(databaseParamsDropper)
+	if !ok {
+		return
+	}
+	if err := dropper.DropDatabaseEngineParams(ctx, name, plan.applied, plan.keep, audit); err != nil {
+		rt.logger.Warn("api: upgrade now: drop incompatible database params failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
 }
 
 // SetDatabaseUpgrader is WithDatabaseUpgrader for wiring after NewRouter.

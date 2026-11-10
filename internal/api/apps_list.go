@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -86,9 +87,42 @@ func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) boo
 	if err != nil {
 		return nil, false, err
 	}
-	return func(app string) bool {
+	canRead = func(app string) bool {
 		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixApp, app)
-	}, len(policies) > 0 || scope.restricted(), nil
+	}
+	if scope.teams != nil && rt.teamDB() != nil {
+		canRead = rt.composeAwareRead(r.Context(), scope, canRead, func(stack, member string) bool {
+			return scope.authorizeAsMember(abilities, policies, AbilityRead, resourcePrefixApp, stack, member)
+		})
+	}
+	return canRead, len(policies) > 0 || scope.restricted(), nil
+}
+
+// composeAwareRead shows a compose app's records (approvals, attempts) only to a
+// caller who can read every member; unlisted members keep the instance only default.
+func (rt *Router) composeAwareRead(ctx context.Context, scope *resourceScope, canRead func(string) bool, asMember func(stack, member string) bool) func(string) bool {
+	var mu sync.Mutex
+	memo := map[string]bool{}
+	return func(app string) bool {
+		if scope.owner(resourcePrefixApp, app) != nil {
+			return canRead(app)
+		}
+		mu.Lock()
+		v, ok := memo[app]
+		mu.Unlock()
+		if ok {
+			return v
+		}
+		members, err := rt.composeMembers(ctx, app)
+		v = err == nil || canRead(app)
+		for _, m := range members {
+			v = v && asMember(app, m.Name)
+		}
+		mu.Lock()
+		memo[app] = v
+		mu.Unlock()
+		return v
+	}
 }
 
 // X-Total-Count is the match count before paging; without limit the full filtered set is returned.
