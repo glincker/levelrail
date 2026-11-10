@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -210,7 +211,16 @@ func (m Manifest) CapabilityGrants(p CapabilityPolicy) ([]CapabilityGrant, error
 		if spec.tier != CapTierReview && !p.Enabled[c.Class] {
 			return nil, fmt.Errorf("%w: %s (%s tier) is off in runtime settings", ErrCapabilityDisabled, c.Class, spec.tier)
 		}
-		out = append(out, CapabilityGrant{Class: c.Class, Tier: spec.tier, Service: c.Service, Reason: c.Reason, Caps: normCaps(c.Caps)})
+		caps := normCaps(c.Caps)
+		if c.Class == CapClassCapAdd {
+			// Validate already checks this; repeating it keeps a bypassed manifest from granting more than Review.
+			for _, cp := range caps {
+				if !slices.Contains(normCaps(dockerguard.ReviewTierCaps), cp) {
+					return nil, fmt.Errorf("capability %s is outside the Review allowlist for %s", cp, c.Class)
+				}
+			}
+		}
+		out = append(out, CapabilityGrant{Class: c.Class, Tier: spec.tier, Service: c.Service, Reason: c.Reason, Caps: caps})
 	}
 	return out, nil
 }

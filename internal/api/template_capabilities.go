@@ -49,17 +49,37 @@ func (rt *Router) resolveTemplateCapabilities(w http.ResponseWriter, r *http.Req
 	return grants, true
 }
 
-// auditCapabilityGrants writes one event per grant, after the deploy succeeded.
-func (rt *Router) auditCapabilityGrants(r *http.Request, app string, m *catalog.Manifest, grants []catalog.CapabilityGrant) {
-	if rt.auditLog == nil {
-		return
+// templateCapGrants re-derives the cap_add grants for an app that came from a
+// template, through the same checks as install. Revisions never store grants.
+func (rt *Router) templateCapGrants(w http.ResponseWriter, r *http.Request, templateID string) (map[string][]string, bool) {
+	if templateID == "" {
+		return nil, true
 	}
+	tpl, ok := catalog.TemplateByID(templateID)
+	if !ok || tpl.Manifest == nil {
+		return nil, true
+	}
+	grants, ok := rt.resolveTemplateCapabilities(w, r, tpl.Manifest)
+	if !ok {
+		return nil, false
+	}
+	return catalog.CapGrantMap(grants), true
+}
+
+// auditCapabilityGrants writes one event per grant, after the deploy succeeded.
+// It returns false when any event could not be written so the caller can say so.
+func (rt *Router) auditCapabilityGrants(r *http.Request, app string, m *catalog.Manifest, grants []catalog.CapabilityGrant) bool {
+	if rt.auditLog == nil {
+		return true
+	}
+	clean := true
 	a := rt.accessActor(r)
 	digest := m.CapabilityDigest()
 	for _, g := range grants {
 		id, err := store.NewAuditEntryID()
 		if err != nil {
 			rt.logger.Warn("api: capability audit id failed", slog.String("error", err.Error()))
+			clean = false
 			continue
 		}
 		detail, _ := json.Marshal(map[string]any{"app": app, "template": m.ID, "class": g.Class, "tier": g.Tier, "service": g.Service, "caps": g.Caps, "digest": digest})
@@ -72,6 +92,8 @@ func (rt *Router) auditCapabilityGrants(r *http.Request, app string, m *catalog.
 		}
 		if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
 			rt.logger.Warn("api: capability audit save failed", slog.String("error", err.Error()), slog.String("app", app))
+			clean = false
 		}
 	}
+	return clean
 }

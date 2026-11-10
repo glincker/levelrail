@@ -160,7 +160,7 @@ func TestValidate_CapGrants(t *testing.T) {
 	}{
 		{"no grant", "[CHOWN]", nil, true},
 		{"review granted", "[CHOWN, cap_setuid]", map[string][]string{"app": {"CHOWN", "SETUID"}}, false},
-		{"net_admin granted", "[NET_ADMIN]", map[string][]string{"app": {"NET_ADMIN"}}, false},
+		{"net_admin refused until an Elevated runtime path exists", "[NET_ADMIN]", map[string][]string{"app": {"NET_ADMIN"}}, true},
 		{"grant on other service", "[CHOWN]", map[string][]string{"other": {"CHOWN"}}, true},
 		{"sys_admin never, even if passed", "[SYS_ADMIN]", map[string][]string{"app": {"SYS_ADMIN"}}, true},
 		{"partial grant", "[CHOWN, FOWNER]", map[string][]string{"app": {"CHOWN"}}, true},

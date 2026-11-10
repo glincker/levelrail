@@ -178,8 +178,15 @@ func (rt *Router) handleApplyTemplateUpgrade(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusConflict, templateUpgradeRefusal{Error: "an upgrade of this app is already running", Code: codeUpgradeInProgress})
 		return
 	}
+	grants, ok := rt.templateCapGrants(w, r, st.latest.TemplateID)
+	if !ok {
+		rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {
+			cur.State, cur.Message, cur.FinishedAt = upgradeStateRefused, "the capability grants were refused, nothing changed", time.Now().UTC().Format(time.RFC3339)
+		})
+		return
+	}
 	resp, ok := rt.lockedComposeDeploy(w, r, appID, []byte(merged), composeDeployOpts{
-		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceTemplate, templateID: st.latest.TemplateID,
+		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceTemplate, templateID: st.latest.TemplateID, capGrants: grants,
 	})
 	if !ok {
 		rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {
@@ -259,9 +266,13 @@ func (rt *Router) watchTemplateUpgrade(r *http.Request, st templateUpgradeState,
 	}
 	rt.logger.Warn("api: template upgrade failed, rolling back", slog.String("app", appID), slog.String("reason", reason))
 	rb := &captureWriter{header: http.Header{}}
-	resp, ok := rt.lockedComposeDeploy(rb, r, appID, []byte(st.latest.Compose), composeDeployOpts{
-		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceRollback, templateID: st.latest.TemplateID,
-	})
+	grants, ok := rt.templateCapGrants(rb, r, st.latest.TemplateID)
+	var resp composeDeployResponse
+	if ok {
+		resp, ok = rt.lockedComposeDeploy(rb, r, appID, []byte(st.latest.Compose), composeDeployOpts{
+			profiles: st.latest.Profiles, source: store.ComposeRevisionSourceRollback, templateID: st.latest.TemplateID, capGrants: grants,
+		})
+	}
 	rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {
 		cur.FinishedAt = time.Now().UTC().Format(time.RFC3339)
 		if ok {

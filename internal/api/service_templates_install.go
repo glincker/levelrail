@@ -80,6 +80,8 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	rt.auditCapabilityGrants(r, name, tpl.Manifest, grants)
+	if !rt.auditCapabilityGrants(r, name, tpl.Manifest, grants) {
+		w.Header().Set("X-Audit-Incomplete", "true")
+	}
 	writeJSON(w, http.StatusOK, resp)
 }

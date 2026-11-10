@@ -66,14 +66,24 @@ func TestInstallTemplate_CapabilityGrantAudited(t *testing.T) {
 	}
 }
 
-func TestInstallTemplate_NetAdminBlockedWhenSettingOff(t *testing.T) {
-	addCapTemplate(t, "  - {class: net_admin, service: web, reason: vpn tunnel, caps: [NET_ADMIN]}\n", "NET_ADMIN")
+// net_admin has no compose path until an Elevated runtime exists, so such a manifest cannot load at all.
+func TestNetAdminTemplateCannotLoad(t *testing.T) {
+	fsys := fstest.MapFS{
+		"m/captpl/template.yaml": {Data: []byte(capTplManifest + "  - {class: net_admin, service: web, reason: vpn tunnel, caps: [NET_ADMIN]}\n")},
+		"m/captpl/compose.yaml":  {Data: []byte("services:\n  web:\n    image: nginx:1.27.0\n    ports: [\"80\"]\n    cap_add: [NET_ADMIN]\n")},
+	}
+	if _, err := catalog.LoadManifest(fsys, "m/captpl"); err == nil {
+		t.Fatal("a net_admin manifest must not load until an Elevated runtime path exists")
+	}
+}
+
+func TestCapAddTemplate_RollbackRederivesGrantsAndUserComposeStillFails(t *testing.T) {
+	addCapTemplate(t, "  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n", "CHOWN")
 	rt, db := newTestRouterWithComposeSecrets(t)
 	cookie := loginTestSession(t, rt, db)
-	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/captpl/install", `{"name":"vpnapp","domains":{"web":"vpn.example.com"}}`, http.StatusForbidden)
-	for _, e := range listAuditLog(t, rt, cookie) {
-		if e.Action == AuditActionCapabilityGranted {
-			t.Fatalf("a blocked install must not log a grant: %+v", e)
-		}
-	}
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/captpl/install", `{"name":"rbapp","domains":{"web":"rb.example.com"}}`, http.StatusOK)
+	plain := "services:\n  web:\n    image: nginx:1.27.0\n    ports: [\"80\"]\n"
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/rbapp/compose", plain, http.StatusOK)
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/rbapp/compose", plain+"    cap_add: [CHOWN]\n", http.StatusBadRequest)
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/rbapp/compose/rollback", `{"revision":1}`, http.StatusOK)
 }

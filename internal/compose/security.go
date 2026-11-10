@@ -109,14 +109,13 @@ func ServiceHostViolations(h HostAccess, hostPaths []string) []string {
 	return out
 }
 
-// undeclaredCaps returns the cap_add values not covered by a grant. A grant
-// outside the Review and Grantable sets never counts, whatever the caller passed.
+// undeclaredCaps returns the cap_add values not covered by a grant. Only the
+// Review set can be granted until an Elevated runtime path exists.
 func undeclaredCaps(capAdd, granted []string) []string {
 	var out []string
 	for _, c := range capAdd {
 		n := dockerguard.NormalizeCap(c)
-		grantable := capInSet(n, dockerguard.ReviewTierCaps) || capInSet(n, dockerguard.GrantableCaps)
-		if !capInSet(n, granted) || !grantable {
+		if !capInSet(n, granted) || !capInSet(n, dockerguard.ReviewTierCaps) {
 			out = append(out, c)
 		}
 	}

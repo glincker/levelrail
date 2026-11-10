@@ -21,7 +21,7 @@ func TestManifestCapabilities_Validation(t *testing.T) {
 	cases := []struct {
 		name, caps, compose, want string
 	}{
-		{"declared and used", "capabilities:\n  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n  - {class: net_admin, service: web, reason: raw sockets, caps: [NET_RAW]}\n", capCompose, ""},
+		{"net_admin class cannot reach compose until an Elevated runtime path exists", "capabilities:\n  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n  - {class: net_admin, service: web, reason: raw sockets, caps: [NET_RAW]}\n", capCompose, "net_raw is not allowed unless"},
 		{"undeclared cap_add", "", capCompose, "does not declare it"},
 		{"partly declared", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN]}\n", capCompose, "NET_RAW in cap_add but the manifest does not declare"},
 		{"unused declaration", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN, FOWNER]}\n  - {class: net_admin, service: web, reason: r, caps: [NET_RAW]}\n", capCompose, "FOWNER is declared for service \"web\" but its cap_add does not use it"},
@@ -87,5 +87,12 @@ func TestRequirements_ReportsDeclaredCapabilities(t *testing.T) {
 	r := ComputeRequirementsFor(capCompose, &m)
 	if len(r.Capabilities) != 1 || r.Capabilities[0].Tier != CapTierReview || r.Capabilities[0].Reason != "chown" {
 		t.Fatalf("capabilities = %+v", r.Capabilities)
+	}
+}
+
+func TestCapabilityGrants_CapAddOutsideReviewAllowlist(t *testing.T) {
+	m := Manifest{Capabilities: []ManifestCapability{{Class: CapClassCapAdd, Service: "web", Reason: "r", Caps: []string{"NET_ADMIN"}}}}
+	if _, err := m.CapabilityGrants(CapabilityPolicy{Enabled: map[string]bool{CapClassNetAdmin: true}}); err == nil {
+		t.Fatal("cap_add class carrying NET_ADMIN must be refused even when Validate was bypassed")
 	}
 }
