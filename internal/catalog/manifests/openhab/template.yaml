@@ -1,0 +1,24 @@
+id: openhab
+name: openHAB
+description: A vendor neutral home automation hub that connects thousands of smart devices and services.
+icon: house
+category: Applications
+documentation_url: https://www.openhab.org/docs/
+source_repo: https://github.com/openhab/openhab-core
+license: EPL-2.0
+license_class: copyleft
+license_url: https://github.com/openhab/openhab-core/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Create the admin account on first visit, then install bindings from the add-on store.
+domains:
+  - service: openhab
+    port: 8080
+    description: Public address of openHAB.
+healthcheck:
+  service: openhab
+  port: 8080
+  path: /

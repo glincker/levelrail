@@ -1,0 +1,35 @@
+id: tubesync
+name: TubeSync
+description: Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy.
+icon: download-simple
+category: Media
+documentation_url: https://github.com/meeb/tubesync
+source_repo: https://github.com/meeb/tubesync
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/meeb/tubesync/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in as admin with the generated password, then add a source.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+  - key: ADMIN_PASSWORD
+    label: Web password
+    description: Password for the admin user of the web interface.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: tubesync
+    port: 4848
+    description: Public address of TubeSync.
+healthcheck:
+  service: tubesync
+  port: 4848
+  path: /healthcheck

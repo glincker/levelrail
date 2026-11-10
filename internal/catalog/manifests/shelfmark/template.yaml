@@ -1,0 +1,29 @@
+id: shelfmark
+name: Shelfmark
+description: A web app to search for books and audiobooks and send them to your library folders.
+icon: books
+category: Media
+documentation_url: https://github.com/calibrain/shelfmark
+source_repo: https://github.com/calibrain/shelfmark
+license: MIT
+license_class: permissive
+license_url: https://github.com/calibrain/shelfmark/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the settings page and pick your sources and the destination folder.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: shelfmark
+    port: 8084
+    description: Public address of Shelfmark.
+healthcheck:
+  service: shelfmark
+  port: 8084
+  path: /

@@ -1,0 +1,24 @@
+id: thingsboard
+name: ThingsBoard
+description: An IoT platform to collect, store and visualise device data, in one container with its own PostgreSQL.
+icon: chart-line-up
+category: Applications
+documentation_url: https://thingsboard.io/docs/
+source_repo: https://github.com/thingsboard/thingsboard
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/thingsboard/thingsboard/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 4294967296
+first_run:
+  - Sign in as tenant@thingsboard.org with password tenant and change it at once. The first start takes several minutes.
+domains:
+  - service: thingsboard
+    port: 8080
+    description: Public address of ThingsBoard.
+healthcheck:
+  service: thingsboard
+  port: 8080
+  path: /

@@ -1,0 +1,24 @@
+id: caddy
+name: Caddy
+description: A fast web server with automatic HTTPS and a simple config file, serving a static site from a volume.
+icon: globe
+category: Infrastructure
+documentation_url: https://caddyserver.com/docs/
+source_repo: https://github.com/caddyserver/caddy
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/caddyserver/caddy/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Put your static files in the site volume, or replace the Caddyfile to proxy other services.
+domains:
+  - service: caddy
+    port: 80
+    description: Public address of Caddy.
+healthcheck:
+  service: caddy
+  port: 80
+  path: /

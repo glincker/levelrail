@@ -1,0 +1,19 @@
+services:
+  nzbget:
+    image: nzbgetcom/nzbget:v26.3
+    ports: ["6789"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: ${TZ}
+      NZBGET_USER: "admin"
+      NZBGET_PASS: ${ADMIN_PASSWORD}
+    volumes:
+      - config:/config
+      - downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6789"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
