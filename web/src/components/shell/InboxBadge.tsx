@@ -23,7 +23,7 @@ export function InboxBadge() {
       nativeButton={false}
     >
       <InboxGlassIcon size="1.4em" />
-      {unread > 0 ? <CountBadge count={unread} tone="destructive" /> : null}
+      {unread > 0 ? <CountBadge count={unread} tone="neutral" /> : null}
     </Button>
   )
 }

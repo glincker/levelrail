@@ -90,7 +90,7 @@ export function NotificationCenter() {
         }
       >
         <BellGlassIcon size="1.4em" />
-        {unread > 0 ? <CountBadge count={unread} tone="destructive" /> : null}
+        {unread > 0 ? <CountBadge count={unread} tone="neutral" /> : null}
       </PopoverTrigger>
       <PopoverContent
         align="end"

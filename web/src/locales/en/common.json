@@ -628,7 +628,8 @@
       }
     },
     "navAttention": "{{count}} need attention",
-    "headerMore": "More header controls"
+    "headerMore": "More header controls",
+    "headerUtilities": "What's new, chat, help and theme"
   },
   "cliConsole": {
     "title": "Console",

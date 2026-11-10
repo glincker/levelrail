@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 
 const TONES = {
   destructive: 'bg-destructive text-white',
+  neutral: 'bg-secondary text-secondary-foreground ring-1 ring-border',
   primary: 'bg-primary text-primary-foreground',
 } as const
 

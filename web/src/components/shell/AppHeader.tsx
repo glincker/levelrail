@@ -9,16 +9,12 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
 import { TeamSwitcher } from '../teams/TeamSwitcher'
 import { ScopePicker } from '../environments/ScopePicker'
-import { DockToggle } from '../dock/DockToggle'
-import { HelpMenu } from '../HelpMenu'
-import { ThemeToggle } from '../ThemeToggle'
 import { CliModal } from '../cli/CliModal'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
-import { HeaderOverflow } from './HeaderOverflow'
+import { HeaderOverflow, HeaderUtilities } from './HeaderOverflow'
 import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
-import { WhatsNewPanel } from './WhatsNewPanel'
 import { usePageTitle } from './pageTitleStore'
 import { useMainScrolled } from './useMainScrolled'
 
@@ -94,14 +90,13 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
               <CliStatusBadge />
             </div>
             <StatusChip />
-            <InboxBadge />
-            <div className="flex items-center gap-2 @max-md:hidden @xl:gap-2.5">
-              <NotificationCenter />
-              <WhatsNewPanel />
-              <DockToggle />
-              <HelpMenu />
-              <ThemeToggle />
+            <div className="flex items-center gap-1">
+              <InboxBadge />
+              <div className="flex items-center gap-1 @max-md:hidden">
+                <NotificationCenter />
+              </div>
             </div>
+            <HeaderUtilities />
             <HeaderOverflow />
           </div>
         </div>

@@ -18,6 +18,32 @@ import { WhatsNewPanel } from './WhatsNewPanel'
 // Holds every header control that does not fit one row on a phone; the header
 // shows this only below its @md container width.
 export function HeaderOverflow() {
+  return (
+    <OverflowMenu label="shell.headerMore" triggerClass="@md:hidden" full />
+  )
+}
+
+// Rarely used utilities (what's new, chat, help, theme) live behind one
+// button on wider headers so the bar keeps a single calm cluster of alerts.
+export function HeaderUtilities() {
+  return (
+    <OverflowMenu
+      label="shell.headerUtilities"
+      triggerClass="@max-md:hidden"
+      full={false}
+    />
+  )
+}
+
+function OverflowMenu({
+  label,
+  triggerClass,
+  full,
+}: {
+  label: string
+  triggerClass: string
+  full: boolean
+}) {
   const { t } = useTranslation()
   return (
     <Popover>
@@ -27,21 +53,27 @@ export function HeaderOverflow() {
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={t('shell.headerMore')}
-            className="@max-md:size-10 @md:hidden"
+            aria-label={t(label)}
+            className={`@max-md:size-10 ${triggerClass}`}
           />
         }
       >
         <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))]">
-        <div className="empty:hidden">
-          <ScopePicker />
-        </div>
+        {full ? (
+          <div className="empty:hidden">
+            <ScopePicker />
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-1">
-          <TeamSwitcher />
-          <CliStatusBadge />
-          <NotificationCenter />
+          {full ? (
+            <>
+              <TeamSwitcher />
+              <CliStatusBadge />
+              <NotificationCenter />
+            </>
+          ) : null}
           <WhatsNewPanel />
           <DockToggle />
           <HelpMenu />
