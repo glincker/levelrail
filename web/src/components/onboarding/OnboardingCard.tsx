@@ -19,13 +19,13 @@ export function OnboardingCard() {
   return (
     <div
       data-testid="onboarding-note"
-      className="flex flex-col items-start gap-2 rounded-xl bg-muted/50 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-4"
+      className="flex flex-col items-start gap-3 rounded-xl bg-muted/50 px-4 py-3"
     >
-      <p className="min-w-0 text-sm text-muted-foreground sm:flex-1">
-        <span className="font-medium text-foreground">
+      <p className="min-w-0 text-sm text-muted-foreground">
+        <span className="block font-medium text-foreground">
           {resuming ? t('card.resumeTitle') : t('card.title')}
         </span>
-        <span className="sm:before:content-['\00a0\00b7\00a0']">
+        <span className="block">
           {resuming
             ? t('card.resumeBody', {
                 current: stepIndex(data.current_step) + 1,

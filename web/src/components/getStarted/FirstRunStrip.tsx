@@ -84,7 +84,7 @@ function StepItem({
         <p className="text-sm font-medium text-foreground">
           {index}. {t(`strip.steps.${step.id}.title`)}
         </p>
-        <p className="truncate text-xs text-muted-foreground">
+        <p className="line-clamp-2 text-xs text-muted-foreground">
           {step.detail || t(`strip.steps.${step.id}.${step.state}`)}
         </p>
         {children}
