@@ -3,6 +3,7 @@ archivebox
 authelia
 backrest
 bentopdf
+castopod
 cleanuparr
 consul
 couchdb

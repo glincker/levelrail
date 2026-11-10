@@ -40,6 +40,7 @@ func TestTemplates_ComposeParsesAndValidates(t *testing.T) {
 			if err != nil {
 				t.Fatalf("template %q: compose.Parse() error = %v", tpl.ID, err)
 			}
+			f.CapGrants = manifestCapGrants(tpl)
 			if err := f.Validate(); err != nil {
 				t.Fatalf("template %q: (*compose.File).Validate() error = %v", tpl.ID, err)
 			}
@@ -161,6 +162,7 @@ func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("compose.Parse() error = %v", err)
 			}
+			f.CapGrants = manifestCapGrants(tpl)
 			services, warnings, err := compose.ToDesiredServices("test", f)
 			if err != nil {
 				t.Fatalf("compose.ToDesiredServices() error = %v", err)
@@ -184,4 +186,13 @@ func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
 			}
 		})
 	}
+}
+
+// manifestCapGrants is what an install would pass to compose for this template.
+func manifestCapGrants(tpl Template) map[string][]string {
+	if tpl.Manifest == nil {
+		return nil
+	}
+	grants, _ := tpl.Manifest.CapabilityGrants(CapabilityPolicy{})
+	return CapGrantMap(grants)
 }

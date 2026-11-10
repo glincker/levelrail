@@ -190,13 +190,6 @@
  "cap-captcha": {
   "description": "A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha. Runs 2 containers (cap, valkey), with cap listening on port 3000 and keeps its data in named volumes."
  },
- "castopod": {
-  "source_repo": "https://github.com/ad-aures/castopod",
-  "license": "AGPL-3.0-or-later",
-  "license_class": "network-copyleft",
-  "license_url": "https://github.com/ad-aures/castopod/blob/develop/LICENSE.md",
-  "description": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes."
- },
  "changedetection": {
   "source_repo": "https://github.com/dgtlmoon/changedetection.io",
   "license": "Apache-2.0",

@@ -1,0 +1,50 @@
+services:
+  castopod:
+    image: castopod/castopod:1.15.4
+    ports: ["8080:8080"]
+    cap_add: [CHOWN]
+    environment:
+      MYSQL_DATABASE: castopod
+      MYSQL_USER: $SERVICE_USER_MYSQL
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      CP_DISABLE_HTTPS: "1"
+      CP_BASEURL: ${SERVICE_URL_CASTOPOD:-http://localhost:8080}
+      CP_ANALYTICS_SALT: $SERVICE_REALBASE64_64_SALT
+      CP_CACHE_HANDLER: redis
+      CP_REDIS_HOST: redis
+      CP_REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
+    volumes:
+      - castopod_media:/var/www/castopod/public/media
+    depends_on: [mariadb, redis]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+  mariadb:
+    image: mariadb:11.2
+    environment:
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      MYSQL_DATABASE: castopod
+      MYSQL_USER: $SERVICE_USER_MYSQL
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_MYSQL
+    volumes:
+      - castopod_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
+  redis:
+    image: redis:7.2-alpine
+    environment:
+      REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
+    command: ["/bin/sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
+    volumes:
+      - castopod_cache:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG || exit 1"]
+      interval: 5s
+      timeout: 20s
+      retries: 10

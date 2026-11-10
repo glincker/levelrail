@@ -6463,7 +6463,7 @@
    "id": "castopod",
    "aliases": [],
    "name": "Castopod",
-   "slogan": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation.",
+   "slogan": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes.",
    "description": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
@@ -6477,7 +6477,7 @@
    },
    "hosted_use": "unknown",
    "listing": {
-    "by": "maintainers"
+    "by": "community"
    },
    "trust": {
     "level": "listed"
@@ -6644,8 +6644,17 @@
     }
    ],
    "requirements": {
-    "level": "standard",
+    "level": "elevated",
     "findings": [
+     {
+      "code": "cap_add",
+      "severity": "elevated",
+      "services": [
+       "castopod"
+      ],
+      "detail": "CHOWN",
+      "message": "Adds extra Linux capabilities"
+     },
      {
       "code": "published_ports",
       "severity": "info",

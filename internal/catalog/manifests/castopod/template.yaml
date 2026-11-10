@@ -1,0 +1,27 @@
+id: castopod
+name: Castopod
+description: An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes.
+icon: podcast
+category: Media
+documentation_url: https://docs.castopod.org/
+source_repo: https://github.com/ad-aures/castopod
+license: AGPL-3.0-or-later
+license_class: network-copyleft
+license_url: https://github.com/ad-aures/castopod/blob/develop/LICENSE.md
+recommended_memory_bytes: 1073741824
+domains:
+  - service: castopod
+    port: 8080
+    description: Public address of Castopod.
+healthcheck:
+  service: castopod
+  port: 8080
+  path: /health
+status: active
+listing:
+  by: community
+capabilities:
+  - class: cap_add
+    service: castopod
+    reason: s6-overlay needs chown on /run
+    caps: [CHOWN]
