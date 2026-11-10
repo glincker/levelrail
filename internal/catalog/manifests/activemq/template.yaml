@@ -1,0 +1,25 @@
+id: activemq
+name: ActiveMQ Classic
+description: "A message broker with JMS, AMQP and MQTT support and a web console, with a data volume. The console login is admin with the password admin, so change it right after the first sign in."
+icon: share
+category: Infrastructure
+documentation_url: https://activemq.apache.org/components/classic/documentation
+source_repo: https://github.com/apache/activemq
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/apache/activemq/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in to the console as admin with the password admin and change it, because it is public knowledge. Connect clients at activemq:61616.
+domains:
+  - service: activemq
+    port: 8161
+    description: Public address of the web page.
+healthcheck:
+  service: activemq
+  port: 8161
+  kind: tcp

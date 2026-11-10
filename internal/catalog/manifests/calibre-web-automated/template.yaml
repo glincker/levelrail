@@ -1,0 +1,29 @@
+id: calibre-web-automated
+name: Calibre-Web Automated
+description: A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder.
+icon: books
+category: Media
+documentation_url: https://github.com/crocodilestick/Calibre-Web-Automated
+source_repo: https://github.com/crocodilestick/Calibre-Web-Automated
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/crocodilestick/Calibre-Web-Automated/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in as admin with password admin123 and change it right away. Drop books into the ingest volume.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: calibre-web-automated
+    port: 8083
+    description: Public address of Calibre-Web Automated.
+healthcheck:
+  service: calibre-web-automated
+  port: 8083
+  path: /

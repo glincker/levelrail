@@ -1,0 +1,23 @@
+services:
+  stash:
+    image: stashapp/stash:v0.32.0
+    ports: ["9999"]
+    environment:
+      STASH_STASH: "/data/"
+      STASH_GENERATED: "/generated/"
+      STASH_METADATA: "/metadata/"
+      STASH_CACHE: "/cache/"
+      STASH_PORT: "9999"
+    volumes:
+      - config:/root/.stash
+      - data:/data
+      - generated:/generated
+      - metadata:/metadata
+      - cache:/cache
+      - blobs:/blobs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9999/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s

@@ -1,0 +1,36 @@
+id: esphome
+name: ESPHome
+description: A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices.
+icon: cpu
+category: Applications
+documentation_url: https://esphome.io/
+source_repo: https://github.com/esphome/esphome
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/esphome/esphome/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in as admin with the generated password.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+  - key: ADMIN_PASSWORD
+    label: Dashboard password
+    description: Password for the admin user of the dashboard.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: esphome
+    port: 6052
+    description: Public address of ESPHome.
+healthcheck:
+  service: esphome
+  port: 6052
+  path: /
+  expect: 401

@@ -45,6 +45,8 @@ type Manifest struct {
 	Env                    []EnvPrompt          `yaml:"env" json:"env,omitempty"`
 	Domains                []DomainPrompt       `yaml:"domains" json:"domains,omitempty"`
 	Healthcheck            *ManifestHealthcheck `yaml:"healthcheck" json:"healthcheck,omitempty"`
+	// FirstBootSeconds is how long a slow first start may take before the install is judged failed. It is capped by the first_boot_max_seconds runtime setting.
+	FirstBootSeconds int `yaml:"first_boot_seconds" json:"first_boot_seconds,omitempty"`
 	// ConsoleCommand is the argv "apps console" runs in the container. It must read any secret from the container env, never carry one.
 	ConsoleCommand []string `yaml:"console_command" json:"console_command,omitempty"`
 	Compose        string   `yaml:"-" json:"-"`
@@ -78,6 +80,8 @@ type ManifestHealthcheck struct {
 	Expect int `yaml:"expect" json:"expect,omitempty"`
 	// Kind is http (default) or tcp for services with no HTTP surface.
 	Kind string `yaml:"kind" json:"kind,omitempty"`
+	// Reason says why the default check cannot be used (no shell, answers 404 with no routes). A 4xx Expect other than 401 or 403 needs it; a tcp kind should carry one.
+	Reason string `yaml:"reason" json:"reason,omitempty"`
 }
 
 // ManifestListing says who stands behind the entry.
@@ -232,4 +236,16 @@ func (m Manifest) Template() (Template, error) {
 		ID: m.ID, Name: m.Name, Slogan: m.Description, Description: m.Description, Category: m.Category, DocumentationURL: m.DocumentationURL,
 		Compose: body, RecommendedMemoryBytes: m.RecommendedMemoryBytes, Manifest: &mm,
 	}, nil
+}
+
+// FirstBootWait is the first-boot allowance in seconds: the manifest value
+// lowered to ceiling, or 0 when the manifest declares none.
+func (m Manifest) FirstBootWait(ceiling int) int {
+	if m.FirstBootSeconds <= 0 {
+		return 0
+	}
+	if ceiling > 0 && m.FirstBootSeconds > ceiling {
+		return ceiling
+	}
+	return m.FirstBootSeconds
 }

@@ -1,0 +1,29 @@
+id: domoticz
+name: Domoticz
+description: A home automation system with a web UI that links sensors, switches and many device protocols.
+icon: house
+category: Applications
+documentation_url: https://www.domoticz.com/wiki/
+source_repo: https://github.com/domoticz/domoticz
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/domoticz/domoticz/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the address, then set a login under Setup and Settings and add your hardware.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: domoticz
+    port: 8080
+    description: Public address of Domoticz.
+healthcheck:
+  service: domoticz
+  port: 8080
+  path: /

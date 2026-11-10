@@ -1,0 +1,69 @@
+---
+title: "Self-host Stash with Docker"
+sidebarTitle: "Stash"
+description: "A self hosted organiser and player for your personal video library, with tags and scraping."
+"og:url": "https://docs.levelrail.com/self-host/stash"
+---
+
+A self hosted organiser and player for your personal video library, with tags and scraping.
+
+This page describes the Levelrail template for Stash (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.stashapp.cc/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `stash` | `stashapp/stash:v0.32.0` | 9999 | `config -&#62; /root/.stash`<br />`data -&#62; /data`<br />`generated -&#62; /generated`<br />`metadata -&#62; /metadata`<br />`cache -&#62; /cache`<br />`blobs -&#62; /blobs` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `stash` | `STASH_CACHE` | Preset in the template |
+| `stash` | `STASH_GENERATED` | Preset in the template |
+| `stash` | `STASH_METADATA` | Preset in the template |
+| `stash` | `STASH_PORT` | Preset in the template |
+| `stash` | `STASH_STASH` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`stash`): blobs, cache, config, data, generated, metadata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Stash with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Stash. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy stash --name my-stash
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+- [Calibre-Web Automated](/self-host/calibre-web-automated)
+
+All templates are listed in the [self-host gallery](/self-host).

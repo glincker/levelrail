@@ -1,0 +1,29 @@
+id: gonic
+name: gonic
+description: A lightweight music server that speaks the Subsonic API, with a small web admin.
+icon: music-notes
+category: Media
+documentation_url: https://github.com/sentriz/gonic
+source_repo: https://github.com/sentriz/gonic
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/sentriz/gonic/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Sign in as admin with password admin and change it at once. Add music to the music volume.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: gonic
+    port: 4747
+    description: Public address of gonic.
+healthcheck:
+  service: gonic
+  port: 4747
+  path: /

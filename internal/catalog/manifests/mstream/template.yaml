@@ -1,0 +1,29 @@
+id: mstream
+name: mStream
+description: A lightweight personal music streaming server with a web player and mobile apps.
+icon: music-notes
+category: Media
+documentation_url: https://mstream.io/
+source_repo: https://github.com/IrosTheBeggar/mStream
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/IrosTheBeggar/mStream/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Create the admin account on first visit, then upload music into the music volume.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: mstream
+    port: 3000
+    description: Public address of mStream.
+healthcheck:
+  service: mstream
+  port: 3000
+  path: /

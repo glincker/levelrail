@@ -57,6 +57,7 @@ var (
 	httpsURLPattern   = regexp.MustCompile(`^https://[^\s/]+(/\S*)?$`)
 	githubRepoPattern = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9][A-Za-z0-9-]*)/[A-Za-z0-9._-]+$`)
 	bareMajorPattern  = regexp.MustCompile(`^v?\d+$`)
+	digestPattern     = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
 	shortTagPattern   = regexp.MustCompile(`^v?\d+\.\d+$`)
 	fetchPattern      = regexp.MustCompile(`\b(curl|wget|git clone|pip3? install|npm (i|install)|apk add|apt(-get)? (install|update))\b`)
 )
@@ -66,22 +67,16 @@ var mutableTags = map[string]bool{
 	"nightly": true, "dev": true, "beta": true, "rc": true,
 }
 
-// Maintainer exception lists. Each entry needs a reason; the lists start empty
-// and a review that grants one adds a line here.
+// Maintainer exception lists keyed by the exact image repo, never by template id. Each entry needs a reason. Image namespaces are
+// granted through publishers.yaml, not here.
 var (
 	shortTagExceptions = map[string]string{
-		"languagetool": "the community image erikvl87/languagetool publishes X.Y tags only (6.8, last pushed 2026-06-15), no X.Y.Z tags exist",
+		"erikvl87/languagetool": "the community image erikvl87/languagetool publishes X.Y tags only (6.8, last pushed 2026-06-15), no X.Y.Z tags exist",
 	}
-	communityImageExceptions = map[string]string{
-		"languagetool":      "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64",
-		"rss-bridge":        "the project publishes its image under its own Docker Hub org rssbridge, while its source org is RSS-Bridge",
-		"hyperdx":           "the project's own Docker Hub org is hyperdx while its source org is hyperdxio",
-		"opensearch":        "the project publishes its image under its own Docker Hub org opensearchproject, while its source org is opensearch-project",
-		"redash":            "the project publishes its image under its own Docker Hub org redash, while its source org is getredash",
-		"node-exporter":     "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
-		"pushgateway":       "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
-		"blackbox-exporter": "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
-		"swagger-ui":        "the project publishes its image under its own Docker Hub org swaggerapi, while its source org is swagger-api",
+	// noUpstreamImage covers projects that publish no server image at all, so no
+	// publisher namespace can be verified. Each entry needs a reason.
+	noUpstreamImage = map[string]string{
+		"erikvl87/languagetool": "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64 (https://github.com/Erikvl87/docker-languagetool)",
 	}
 	fetchExceptions = map[string]string{}
 )
@@ -128,9 +123,18 @@ func (m Manifest) validateMarketplaceFields() []error {
 		default:
 			errs = append(errs, fmt.Errorf("healthcheck kind %q must be http or tcp", h.Kind))
 		}
-		if h.Expect != 0 && h.Expect != 401 && h.Expect != 403 {
-			errs = append(errs, fmt.Errorf("healthcheck expect %d must be 401 or 403 (200 to 399 is the default)", h.Expect))
+		reason := strings.TrimSpace(h.Reason) != ""
+		switch {
+		case h.Expect == 0, h.Expect == 401, h.Expect == 403:
+		case (h.Expect == 404 || h.Expect == 405) && reason:
+		default:
+			errs = append(errs, fmt.Errorf("healthcheck expect %d must be 401 or 403, or 404 or 405 with a reason (200 to 399 is the default)", h.Expect))
 		}
+	}
+	if m.FirstBootSeconds < 0 {
+		errs = append(errs, fmt.Errorf("first_boot_seconds must not be negative"))
+	} else if ceiling := maxFirstBootSeconds; m.FirstBootSeconds > ceiling {
+		errs = append(errs, fmt.Errorf("first_boot_seconds %d is above the allowed maximum %d", m.FirstBootSeconds, ceiling))
 	}
 	return errs
 }
@@ -190,6 +194,30 @@ func (m Manifest) validateListingBlock() []error {
 	return errs
 }
 
+// splitRegistry separates an explicit registry host from the repository path.
+// A first segment with a dot or port, or localhost, is a host.
+func splitRegistry(img string) (host, path string) {
+	first, rest, ok := strings.Cut(strings.ToLower(img), "/")
+	if ok && (strings.ContainsAny(first, ".:") || first == "localhost") {
+		return first, rest
+	}
+	return "", strings.ToLower(img)
+}
+
+// imageRepo is the exact lowercase repository of a ref with no tag, digest or
+// docker.io prefix, so exceptions cannot be claimed through a different registry.
+func imageRepo(ref string) string {
+	if i := strings.Index(ref, "@"); i >= 0 {
+		ref = ref[:i]
+	}
+	img, _ := SplitImageRef(ref)
+	host, path := splitRegistry(img)
+	if host == "" || host == "docker.io" {
+		return path
+	}
+	return host + "/" + path
+}
+
 // ImageSourceClass says who owns the namespace of an image ref relative to the source repo.
 func ImageSourceClass(ref, sourceRepo string) string {
 	img, _ := SplitImageRef(ref)
@@ -206,12 +234,17 @@ func ImageSourceClass(ref, sourceRepo string) string {
 	if m := githubRepoPattern.FindStringSubmatch(sourceRepo); m != nil {
 		org = strings.ToLower(m[1])
 	}
-	host := strings.Split(img, "/")
-	if strings.Contains(host[0], ".") { // registry host form: ghcr.io/org/app
-		host = host[1:]
+	host, path := splitRegistry(img)
+	owner := strings.ToLower(strings.SplitN(path, "/", 2)[0])
+	// Only registries where the owner segment is an enforced account name can claim upstream.
+	switch host {
+	case "", "docker.io", "ghcr.io", "quay.io":
+		if org != "" && owner == org {
+			return SourceUpstream
+		}
 	}
-	if org != "" && len(host) > 0 && strings.ToLower(host[0]) == org {
-		return SourceUpstream
+	if verifiedPublisherFor(img, sourceRepo, publisherClock()) {
+		return SourceVerifiedPublisher
 	}
 	return SourceCommunity
 }
@@ -253,6 +286,10 @@ func (m Manifest) ValidateSubmission() error {
 
 func (m Manifest) checkImage(service, ref string) []error {
 	var errs []error
+	pinned := digestPattern.MatchString(ref)
+	if pinned {
+		ref = ref[:strings.LastIndex(ref, "@")]
+	}
 	_, tag := SplitImageRef(ref)
 	switch {
 	case mutableTags[strings.ToLower(tag)] || tag == "":
@@ -261,10 +298,10 @@ func (m Manifest) checkImage(service, ref string) []error {
 		errs = append(errs, fmt.Errorf("service %s: tag %q contains no version number", service, tag))
 	case bareMajorPattern.MatchString(tag):
 		errs = append(errs, fmt.Errorf("service %s: tag %q is a bare major version, pin the full version", service, tag))
-	case shortTagPattern.MatchString(tag) && shortTagExceptions[m.ID] == "":
-		errs = append(errs, fmt.Errorf("service %s: tag %q is not a full version; use X.Y.Z or ask a maintainer for an exception", service, tag))
+	case shortTagPattern.MatchString(tag) && !pinned && shortTagExceptions[imageRepo(ref)] == "":
+		errs = append(errs, fmt.Errorf("service %s: tag %q is not a full version; use X.Y.Z, pin the image by digest too, or ask a maintainer for an exception", service, tag))
 	}
-	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && communityImageExceptions[m.ID] == "" {
+	if ImageSourceClass(ref, m.SourceRepo) == SourceCommunity && noUpstreamImage[imageRepo(ref)] == "" {
 		errs = append(errs, fmt.Errorf("service %s: image %s is not from the upstream namespace, a Docker Official Image or an allowed rebuilder", service, ref))
 	}
 	return errs

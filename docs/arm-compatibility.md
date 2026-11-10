@@ -22,12 +22,13 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 40 unknown, of 448 templates.
+393 listed, 15 amd64 only, 82 unknown, of 490 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
 | `2fauth` | listed | pass |
 | `ackee` | listed | not tested |
+| `activemq` | unknown | not tested |
 | `activepieces` | listed | not tested |
 | `actual-budget` | listed | pass |
 | `actualbudget` | listed | not tested |
@@ -41,6 +42,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `apprise-api` | listed | pass |
 | `appsmith` | listed | pass |
 | `appwrite` | listed | not tested |
+| `arangodb` | unknown | not tested |
 | `archivebox` | listed | pass |
 | `athens` | unknown | not tested |
 | `audiobookshelf` | listed | not tested |
@@ -61,8 +63,11 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `bugsink` | listed | not tested |
 | `bytebase` | listed | not tested |
 | `bytestash` | listed | pass |
+| `caddy` | unknown | not tested |
 | `calcom` | amd64 only | not tested |
+| `calibre` | unknown | not tested |
 | `calibre-web` | listed | not tested |
+| `calibre-web-automated` | unknown | not tested |
 | `campfire` | listed | not tested |
 | `cap-captcha` | listed | not tested |
 | `cassandra` | unknown | not tested |
@@ -79,6 +84,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `cloudflare-ddns` | listed | not tested |
 | `cloudreve` | listed | not tested |
 | `cockpit-cms` | listed | not tested |
+| `cockroachdb` | unknown | not tested |
 | `code-server` | listed | not tested |
 | `comfyui` | amd64 only | not tested |
 | `commafeed` | unknown | not tested |
@@ -90,8 +96,10 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `crawl4ai` | listed | pass |
 | `cryptgeon` | listed | not tested |
 | `cyberchef` | amd64 only | fail |
+| `dashdot` | unknown | not tested |
 | `dashy` | listed | pass |
 | `databasus` | listed | not tested |
+| `dbgate` | unknown | not tested |
 | `deluge` | listed | not tested |
 | `directus` | listed | pass |
 | `diun` | listed | not tested |
@@ -103,6 +111,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `docuseal` | listed | not tested |
 | `dokuwiki` | listed | not tested |
 | `dolibarr` | listed | not tested |
+| `domoticz` | unknown | not tested |
 | `drawio` | listed | not tested |
 | `drupal` | listed | not tested |
 | `duplicati` | listed | not tested |
@@ -112,6 +121,8 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `element-web` | listed | not tested |
 | `emby` | listed | not tested |
 | `embystat` | listed | not tested |
+| `emqx` | unknown | not tested |
+| `esphome` | unknown | not tested |
 | `espocrm` | listed | not tested |
 | `etcd` | listed | pass |
 | `etherpad` | listed | not tested |
@@ -129,6 +140,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `flaresolverr` | listed | not tested |
 | `flatnotes` | listed | pass |
 | `flipt` | listed | not tested |
+| `flood` | unknown | not tested |
 | `flowise` | listed | not tested |
 | `flowise-postgres` | listed | not tested |
 | `focalboard` | amd64 only | not tested |
@@ -140,6 +152,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `gatus` | listed | not tested |
 | `ghost` | listed | pass |
 | `ghostfolio` | listed | not tested |
+| `gitbucket` | unknown | not tested |
 | `gitea` | listed | pass |
 | `gitea-postgres` | listed | not tested |
 | `gitlab` | amd64 only | not tested |
@@ -149,8 +162,11 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `glances` | listed | not tested |
 | `glitchtip` | listed | not tested |
 | `glpi` | listed | not tested |
+| `go2rtc` | unknown | not tested |
 | `goatcounter` | listed | pass |
+| `gocd` | unknown | not tested |
 | `gogs` | listed | not tested |
+| `gonic` | unknown | not tested |
 | `gotenberg` | listed | pass |
 | `gotify` | listed | pass |
 | `grafana` | listed | pass |
@@ -166,6 +182,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `healthchecks` | listed | not tested |
 | `hedgedoc` | listed | not tested |
 | `heimdall` | listed | pass |
+| `hertzbeat` | unknown | not tested |
 | `heyform` | listed | not tested |
 | `homarr` | listed | not tested |
 | `home-assistant` | listed | not tested |
@@ -203,8 +220,10 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `keycloak` | listed | pass |
 | `keycloak-postgres` | listed | not tested |
 | `kimai` | listed | not tested |
+| `kitchenowl` | unknown | not tested |
 | `kokoro-fastapi` | listed | not tested |
 | `komga` | listed | not tested |
+| `kong` | unknown | not tested |
 | `kopia` | listed | pass |
 | `kroki` | unknown | not tested |
 | `kutt` | listed | not tested |
@@ -222,6 +241,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `linkace` | listed | not tested |
 | `linkding` | listed | pass |
 | `linkding-plus` | listed | not tested |
+| `linkstack` | unknown | not tested |
 | `linkwarden` | listed | not tested |
 | `listmonk` | listed | pass |
 | `litellm` | listed | not tested |
@@ -237,6 +257,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `mafl` | unknown | not tested |
 | `mage-ai` | listed | not tested |
 | `mail-mox` | listed | not tested |
+| `mailcatcher` | unknown | not tested |
 | `maildev` | unknown | not tested |
 | `mailhog` | amd64 only | fail |
 | `mailpit` | listed | pass |
@@ -269,6 +290,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `monica` | listed | not tested |
 | `moodle` | listed | not tested |
 | `mosquitto` | listed | pass |
+| `mstream` | unknown | not tested |
 | `multi-scrobbler` | listed | not tested |
 | `mylar3` | listed | not tested |
 | `mysql` | unknown | not tested |
@@ -293,7 +315,9 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `node-postgres-starter` | listed | not tested |
 | `node-red` | listed | not tested |
 | `nodebb` | listed | not tested |
+| `nsq` | unknown | not tested |
 | `ntfy` | listed | pass |
+| `nzbget` | unknown | not tested |
 | `obsidian-livesync` | listed | not tested |
 | `odoo` | listed | not tested |
 | `ollama` | listed | not tested |
@@ -311,11 +335,14 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `open-webui` | listed | pass |
 | `openclaw` | listed | not tested |
 | `opengist` | listed | not tested |
+| `openhab` | unknown | not tested |
 | `openobserve` | listed | not tested |
+| `openresty` | unknown | not tested |
 | `opensearch` | unknown | not tested |
 | `openspeedtest` | unknown | not tested |
 | `orangehrm` | amd64 only | not tested |
 | `organizr` | listed | not tested |
+| `orientdb` | unknown | not tested |
 | `osticket` | unknown | not tested |
 | `otel-lgtm` | unknown | not tested |
 | `outline` | listed | pass |
@@ -356,6 +383,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `prowlarr` | listed | not tested |
 | `proxyscotch` | listed | not tested |
 | `pushgateway` | unknown | not tested |
+| `pyroscope` | unknown | not tested |
 | `qbittorrent` | listed | not tested |
 | `qdrant` | listed | not tested |
 | `questdb` | unknown | not tested |
@@ -363,9 +391,11 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `radarr` | listed | not tested |
 | `radicale` | listed | pass |
 | `rallly` | listed | not tested |
+| `rclone` | unknown | not tested |
 | `reactive-resume` | listed | not tested |
 | `readeck` | listed | pass |
 | `redash` | unknown | not tested |
+| `redis` | unknown | not tested |
 | `redis-cache-starter` | listed | not tested |
 | `redis-commander` | unknown | not tested |
 | `redis-insight` | listed | not tested |
@@ -374,6 +404,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `redmine` | listed | not tested |
 | `registry` | listed | not tested |
 | `remark42` | unknown | not tested |
+| `rethinkdb` | unknown | not tested |
 | `rocketchat` | listed | pass |
 | `romm` | listed | not tested |
 | `roundcube` | listed | not tested |
@@ -383,6 +414,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `rustfs` | listed | pass |
 | `ryot` | listed | not tested |
 | `sabnzbd` | listed | not tested |
+| `scylladb` | unknown | not tested |
 | `seafile` | listed | not tested |
 | `searxng` | listed | pass |
 | `seaweedfs` | listed | not tested |
@@ -390,6 +422,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `semaphore` | listed | not tested |
 | `sftpgo` | listed | not tested |
 | `shaarli` | listed | not tested |
+| `shelfmark` | unknown | not tested |
 | `shiori` | listed | pass |
 | `shlink` | listed | not tested |
 | `silverbullet` | listed | pass |
@@ -409,6 +442,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `spoolman` | listed | not tested |
 | `stable-diffusion-webui` | amd64 only | not tested |
 | `stalwart` | listed | not tested |
+| `stash` | unknown | not tested |
 | `static-site-api-starter` | listed | not tested |
 | `statusnook` | listed | not tested |
 | `stirling-pdf` | listed | not tested |
@@ -416,9 +450,11 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `superset` | listed | not tested |
 | `supertokens` | listed | not tested |
 | `sure` | listed | not tested |
+| `surrealdb` | unknown | not tested |
 | `swagger-ui` | unknown | not tested |
 | `syncthing` | listed | pass |
 | `tandoor-recipes` | listed | not tested |
+| `tasmoadmin` | unknown | not tested |
 | `tautulli` | listed | pass |
 | `tdarr` | listed | not tested |
 | `teable` | listed | not tested |
@@ -429,15 +465,18 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `text-embeddings-inference` | amd64 only | not tested |
 | `text-generation-inference` | amd64 only | not tested |
 | `thelounge` | unknown | not tested |
+| `thingsboard` | unknown | not tested |
 | `tianji` | listed | not tested |
 | `timescaledb` | unknown | not tested |
 | `tinyauth` | listed | not tested |
 | `tolgee` | listed | not tested |
 | `traccar` | listed | not tested |
+| `traefik` | unknown | not tested |
 | `trailbase` | listed | not tested |
 | `transmission` | listed | not tested |
 | `trilium` | listed | not tested |
 | `triliumnext` | listed | pass |
+| `tubesync` | unknown | not tested |
 | `twenty` | listed | not tested |
 | `typesense` | listed | pass |
 | `umami` | listed | pass |
@@ -449,7 +488,9 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `vault` | listed | not tested |
 | `vaultwarden` | listed | pass |
 | `verdaccio` | listed | pass |
+| `vernemq` | unknown | not tested |
 | `vert` | listed | not tested |
+| `victorialogs` | unknown | not tested |
 | `victoriametrics` | listed | not tested |
 | `vikunja` | listed | pass |
 | `vllm` | listed | not tested |
@@ -460,6 +501,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `weaviate` | listed | not tested |
 | `web-check` | listed | not tested |
 | `weblate` | listed | not tested |
+| `webtop` | unknown | not tested |
 | `wekan` | listed | not tested |
 | `whoogle` | listed | not tested |
 | `wikijs` | listed | not tested |

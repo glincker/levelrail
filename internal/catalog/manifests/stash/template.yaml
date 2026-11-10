@@ -1,0 +1,24 @@
+id: stash
+name: Stash
+description: A self hosted organiser and player for your personal video library, with tags and scraping.
+icon: film-strip
+category: Media
+documentation_url: https://docs.stashapp.cc/
+source_repo: https://github.com/stashapp/stash
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/stashapp/stash/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Run the setup wizard on first visit and set a username and password.
+domains:
+  - service: stash
+    port: 9999
+    description: Public address of Stash.
+healthcheck:
+  service: stash
+  port: 9999
+  path: /healthz

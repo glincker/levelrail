@@ -1,0 +1,63 @@
+---
+title: "Self-host HertzBeat with Docker"
+sidebarTitle: "HertzBeat"
+description: "A real time monitoring system with agentless collection, alerts and a web console, on the embedded database with a data volume. Change the default login after the first sign in."
+"og:url": "https://docs.levelrail.com/self-host/hertzbeat"
+---
+
+A real time monitoring system with agentless collection, alerts and a web console, on the embedded database with a data volume. Change the default login after the first sign in.
+
+This page describes the Levelrail template for HertzBeat (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://hertzbeat.apache.org/docs/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `hertzbeat` | `apache/hertzbeat:1.7.3` | 1157 | `hertzbeat_data -&#62; /opt/hertzbeat/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`hertzbeat`): hertzbeat_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy HertzBeat with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select HertzBeat. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy hertzbeat --name my-hertzbeat
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Blackbox Exporter](/self-host/blackbox-exporter)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+
+All templates are listed in the [self-host gallery](/self-host).

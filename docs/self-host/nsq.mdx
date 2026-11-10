@@ -1,0 +1,65 @@
+---
+title: "Self-host NSQ with Docker"
+sidebarTitle: "NSQ"
+description: "A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151."
+"og:url": "https://docs.levelrail.com/self-host/nsq"
+---
+
+A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151.
+
+This page describes the Levelrail template for NSQ (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://nsq.io/overview/design.html.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `nsqadmin` | `nsqio/nsq:v1.3.0` | 4171 | none |
+| `nsqd` | `nsqio/nsq:v1.3.0` | 4150, 4151 | `nsqd_data -&#62; /data` |
+| `nsqlookupd` | `nsqio/nsq:v1.3.0` | 4161 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`nsqd`): nsqd_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy NSQ with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select NSQ. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy nsq --name my-nsq
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,25 @@
+id: linkstack
+name: LinkStack
+description: "A self hosted link in bio page builder with a web setup wizard and a data volume. Finish the setup on first visit, because the first visitor creates the admin account."
+icon: link
+category: Applications
+documentation_url: https://docs.linkstack.org/
+source_repo: https://github.com/LinkStackOrg/LinkStack
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/LinkStackOrg/LinkStack/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the public address at once and finish the setup wizard to create the admin account.
+domains:
+  - service: linkstack
+    port: 80
+    description: Public address of the web page.
+healthcheck:
+  service: linkstack
+  port: 80
+  path: /

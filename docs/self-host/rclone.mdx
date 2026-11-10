@@ -1,0 +1,64 @@
+---
+title: "Self-host rclone with Docker"
+sidebarTitle: "rclone"
+description: "The rclone remote control web GUI for managing and syncing files across dozens of cloud storage providers."
+"og:url": "https://docs.levelrail.com/self-host/rclone"
+---
+
+The rclone remote control web GUI for managing and syncing files across dozens of cloud storage providers.
+
+This page describes the Levelrail template for rclone (Backups). It deploys the services below as one Docker Compose app on your own server. Project site: https://rclone.org/gui/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `rclone` | `rclone/rclone:1.76.0` | 5572 | `config -&#62; /config/rclone`<br />`data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `rclone` | `RCLONE_RC_PASS` | Generated at deploy |
+| `rclone` | `RCLONE_RC_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`rclone`): RCLONE_RC_PASS.
+- Stores data in named volumes (`rclone`): config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy rclone with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select rclone. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy rclone --name my-rclone
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Backups templates
+
+- [Backrest](/self-host/backrest)
+
+All templates are listed in the [self-host gallery](/self-host).

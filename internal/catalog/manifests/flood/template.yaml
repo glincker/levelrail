@@ -1,0 +1,24 @@
+id: flood
+name: Flood
+description: A modern web interface for rTorrent, qBittorrent, Transmission and Deluge.
+icon: download
+category: Media
+documentation_url: https://flood.js.org/
+source_repo: https://github.com/jesec/flood
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/jesec/flood/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Create the admin user on first visit, then point Flood at your torrent client.
+domains:
+  - service: flood
+    port: 3000
+    description: Public address of Flood.
+healthcheck:
+  service: flood
+  port: 3000
+  path: /

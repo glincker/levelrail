@@ -1,0 +1,14 @@
+services:
+  kitchenowl:
+    image: tombursch/kitchenowl:v0.8.1
+    ports: ["8080"]
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET}
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080 || wget -q -O /dev/null http://127.0.0.1:8080"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

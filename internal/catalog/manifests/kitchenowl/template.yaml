@@ -1,0 +1,31 @@
+id: kitchenowl
+name: KitchenOwl
+description: A shared grocery list, recipe and expense app for your household, with web and mobile clients.
+icon: shopping-cart
+category: Productivity
+documentation_url: https://docs.kitchenowl.org/
+source_repo: https://github.com/TomBursch/kitchenowl
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/TomBursch/kitchenowl/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Create the first account on the web page, it becomes the admin.
+env:
+  - key: JWT_SECRET
+    label: Session secret
+    description: Secret used to sign login tokens.
+    generate: hex
+    length: 32
+    secret: true
+domains:
+  - service: kitchenowl
+    port: 8080
+    description: Public address of KitchenOwl.
+healthcheck:
+  service: kitchenowl
+  port: 8080
+  path: /

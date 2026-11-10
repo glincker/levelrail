@@ -334,6 +334,7 @@ telemetry.logs_retention
 telemetry.metrics_retention
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
+templates.first_boot_max_seconds
 templates.import_max_bytes
 templates.import_timeout
 tokens.default_ttl_days

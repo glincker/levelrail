@@ -1,0 +1,62 @@
+---
+title: "Self-host Dashdot with Docker"
+sidebarTitle: "Dashdot"
+description: "A clean dashboard that shows CPU, memory, network and storage use of the host it runs on."
+"og:url": "https://docs.levelrail.com/self-host/dashdot"
+---
+
+A clean dashboard that shows CPU, memory, network and storage use of the host it runs on.
+
+This page describes the Levelrail template for Dashdot (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://getdashdot.com/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `dashdot` | `mauricenino/dashdot:6.3.4` | 3001 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Dashdot with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Dashdot. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy dashdot --name my-dashdot
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Blackbox Exporter](/self-host/blackbox-exporter)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+
+All templates are listed in the [self-host gallery](/self-host).

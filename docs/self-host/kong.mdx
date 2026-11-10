@@ -1,0 +1,70 @@
+---
+title: "Self-host Kong Gateway with Docker"
+sidebarTitle: "Kong Gateway"
+description: "An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state."
+"og:url": "https://docs.levelrail.com/self-host/kong"
+---
+
+An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state.
+
+This page describes the Levelrail template for Kong Gateway (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.konghq.com/gateway/latest/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `kong` | `kong:3.8.0` | 8000, 8001 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `kong` | `KONG_ADMIN_ACCESS_LOG` | Preset in the template |
+| `kong` | `KONG_ADMIN_ERROR_LOG` | Preset in the template |
+| `kong` | `KONG_ADMIN_LISTEN` | Preset in the template |
+| `kong` | `KONG_DATABASE` | Preset in the template |
+| `kong` | `KONG_PROXY_ACCESS_LOG` | Preset in the template |
+| `kong` | `KONG_PROXY_ERROR_LOG` | Preset in the template |
+| `kong` | `KONG_PROXY_LISTEN` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Kong Gateway with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kong Gateway. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kong --name my-kong
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+
+All templates are listed in the [self-host gallery](/self-host).
