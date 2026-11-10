@@ -195,7 +195,7 @@ var catalogBatch6Templates = []Template{
     volumes:
       - marimo_data:/app
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health"]
       interval: 15s
       timeout: 10s
       retries: 5

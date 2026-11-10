@@ -189,6 +189,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		services[i].IsTrial = isTrial
 		services[i].TemplateID = opts.templateID
 	}
+	rt.applyFirstBootTimeout(r.Context(), opts.templateID, services)
 
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)
 	if !portsOK {
