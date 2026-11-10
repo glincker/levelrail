@@ -1,0 +1,67 @@
+---
+title: "Self-host KitchenOwl with Docker"
+sidebarTitle: "KitchenOwl"
+description: "A shared grocery list, recipe and expense app for your household, with web and mobile clients."
+"og:url": "https://docs.levelrail.com/self-host/kitchenowl"
+---
+
+A shared grocery list, recipe and expense app for your household, with web and mobile clients.
+
+This page describes the Levelrail template for KitchenOwl (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.kitchenowl.org/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `kitchenowl` | `tombursch/kitchenowl:v0.8.1` | 8080 | `data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `kitchenowl` | `JWT_SECRET_KEY` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`kitchenowl`): JWT_SECRET_KEY.
+- Stores data in named volumes (`kitchenowl`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy KitchenOwl with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select KitchenOwl. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kitchenowl --name my-kitchenowl
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+
+All templates are listed in the [self-host gallery](/self-host).

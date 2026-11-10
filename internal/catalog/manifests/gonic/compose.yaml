@@ -7,11 +7,13 @@ services:
       GONIC_MUSIC_PATH: "/music"
       GONIC_PODCAST_PATH: "/podcasts"
       GONIC_CACHE_PATH: "/cache"
+      GONIC_PLAYLISTS_PATH: "/playlists"
     volumes:
       - data:/data
       - music:/music
       - podcasts:/podcasts
       - cache:/cache
+      - playlists:/playlists
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4747"]
       interval: 15s

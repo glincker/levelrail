@@ -1,0 +1,67 @@
+---
+title: "Self-host Calibre-Web Automated with Docker"
+sidebarTitle: "Calibre-Web Automated"
+description: "A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder."
+"og:url": "https://docs.levelrail.com/self-host/calibre-web-automated"
+---
+
+A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder.
+
+This page describes the Levelrail template for Calibre-Web Automated (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/crocodilestick/Calibre-Web-Automated.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `calibre-web-automated` | `crocodilestick/calibre-web-automated:v4.0.8` | 8083 | `config -&#62; /config`<br />`ingest -&#62; /cwa-book-ingest`<br />`library -&#62; /calibre-library` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `calibre-web-automated` | `PGID` | Preset in the template |
+| `calibre-web-automated` | `PUID` | Preset in the template |
+| `calibre-web-automated` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`calibre-web-automated`): config, ingest, library.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Calibre-Web Automated with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Calibre-Web Automated. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy calibre-web-automated --name my-calibre-web-automated
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+
+All templates are listed in the [self-host gallery](/self-host).

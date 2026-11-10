@@ -2,7 +2,7 @@ services:
   rclone:
     image: rclone/rclone:1.76.0
     ports: ["5572"]
-    command: ["rcd", "--rc-web-gui", "--rc-addr=:5572", "--rc-web-gui-no-open-browser"]
+    command: ["rcd", "--rc-addr=:5572"]
     environment:
       RCLONE_RC_USER: "admin"
       RCLONE_RC_PASS: ${ADMIN_PASSWORD}

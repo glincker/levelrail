@@ -1,0 +1,63 @@
+---
+title: "Self-host GoCD with Docker"
+sidebarTitle: "GoCD"
+description: "A continuous delivery server with pipeline visualisation, running on a data volume. Needs about 1 GB of memory. Authentication is off until you set it up, so restrict access first."
+"og:url": "https://docs.levelrail.com/self-host/gocd"
+---
+
+A continuous delivery server with pipeline visualisation, running on a data volume. Needs about 1 GB of memory. Authentication is off until you set it up, so restrict access first.
+
+This page describes the Levelrail template for GoCD (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.gocd.org/current/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `gocd` | `gocd/gocd-server:v26.1.0` | 8153 | `gocd_data -&#62; /godata` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`gocd`): gocd_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy GoCD with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select GoCD. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gocd --name my-gocd
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

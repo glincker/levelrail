@@ -25,29 +25,29 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (451 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (490 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 36 |
 | [Analytics](#analytics) | 10 |
-| [Applications](#applications) | 35 |
+| [Applications](#applications) | 42 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 34 |
-| [Developer Tools](#developer-tools) | 67 |
+| [Database Tools](#database-tools) | 42 |
+| [Developer Tools](#developer-tools) | 70 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 20 |
+| [Infrastructure](#infrastructure) | 27 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 31 |
-| [Monitoring](#monitoring) | 36 |
-| [Productivity](#productivity) | 82 |
+| [Media](#media) | 39 |
+| [Monitoring](#monitoring) | 40 |
+| [Productivity](#productivity) | 83 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 16 |
-| [Backups](#backups) | 1 |
+| [Backups](#backups) | 2 |
 | [Mail](#mail) | 1 |
 
 ## AI
@@ -116,13 +116,16 @@ Generated from `internal/catalog.Templates` (451 entries as of this build). Run 
 | [Deluge](https://deluge.readthedocs.io/) | A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited. | `deluge` |  |
 | [Domoticz](https://www.domoticz.com/wiki/) | A home automation system with a web UI that links sensors, switches and many device protocols. | `domoticz` |  |
 | [Drupal](https://www.drupal.org/docs) | A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. | `drupal` |  |
+| [ESPHome](https://esphome.io/) | A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices. | `esphome` |  |
 | [EspoCRM](https://docs.espocrm.com) | An open-source CRM for managing sales, support, and customer relationships end to end. | `espocrm` |  |
 | [Ghost](https://ghost.org/docs/) | A fast, modern publishing platform for blogs and newsletters, with built-in memberships. | `ghost` |  |
 | [GLPI](https://glpi-project.org/documentation/) | An IT asset and service management platform with helpdesk ticketing built in. | `glpi` |  |
+| [go2rtc](https://github.com/AlexxIT/go2rtc) | A camera streaming hub that turns RTSP, HomeKit and other sources into WebRTC, HLS and MJPEG. | `go2rtc` |  |
 | [Grav](https://learn.getgrav.org/) | A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume. | `grav` |  |
 | [Huginn](https://github.com/huginn/huginn/wiki) | A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container. | `huginn` |  |
 | [Joomla](https://docs.joomla.org) | A long-established CMS with a large extension ecosystem for business sites, portals, and communities. | `joomla` |  |
 | [Kutt](https://docs.kutt.it/) | A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis. | `kutt` |  |
+| [LinkStack](https://docs.linkstack.org/) | A self hosted link in bio page builder with a web setup wizard and a data volume. Finish the setup on first visit, because the first visitor creates the admin account. | `linkstack` |  |
 | [Lowcoder](https://docs.lowcoder.cloud) | An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. | `lowcoder` |  |
 | [LubeLogger](https://docs.lubelogger.com/) | A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account. | `lubelogger` |  |
 | [Lychee](https://lycheeorg.dev/docs/) | A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login. | `lychee` |  |
@@ -134,6 +137,7 @@ Generated from `internal/catalog.Templates` (451 entries as of this build). Run 
 | [Nextcloud](https://docs.nextcloud.com) | Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. | `nextcloud` |  |
 | [Odoo](https://www.odoo.com/documentation) | An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. | `odoo` |  |
 | [Ombi](https://docs.ombi.app/) | A request portal where media server users ask for movies and shows and your download apps fill them. GPL-2.0 licensed. On first open, the wizard creates the admin account and connects your media server and Sonarr or Radarr. | `ombi` |  |
+| [openHAB](https://www.openhab.org/docs/) | A vendor neutral home automation hub that connects thousands of smart devices and services. | `openhab` |  |
 | [OrangeHRM](https://docs.orangehrm.com/) | An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. | `orangehrm` |  |
 | [Redlib](https://github.com/redlib-org/redlib) | A private, lightweight front-end for browsing Reddit without tracking or ads. | `redlib` |  |
 | [RSS-Bridge](https://rss-bridge.github.io/rss-bridge/) | Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use. | `rss-bridge` |  |
@@ -141,7 +145,10 @@ Generated from `internal/catalog.Templates` (451 entries as of this build). Run 
 | [SearXNG](https://docs.searxng.org) | A privacy-respecting metasearch engine that aggregates results from dozens of search services. | `searxng` |  |
 | [Seerr](https://docs.seerr.dev/) | A media request manager for Jellyfin, Plex and Emby with Sonarr and Radarr hand-off, the merged successor of Overseerr and Jellyseerr. MIT licensed. On first open, sign in with your media server account to become the admin. | `seerr` |  |
 | [Spoolman](https://github.com/Donkie/Spoolman) | A filament spool inventory manager for 3D printers with usage tracking and printer firmware integrations. MIT licensed. On first open, add your filaments and vendors; there is no login, so keep it behind a private network or an auth proxy. | `spoolman` |  |
+| [TasmoAdmin](https://github.com/TasmoAdmin/TasmoAdmin) | A web panel to manage and update many Tasmota smart home devices from one place. | `tasmoadmin` |  |
+| [ThingsBoard](https://thingsboard.io/docs/) | An IoT platform to collect, store and visualise device data, in one container with its own PostgreSQL. | `thingsboard` |  |
 | [Vvveb CMS](https://docs.vvveb.com) | A CMS for building websites, blogs, and ecommerce stores. | `vvveb` |  |
+| [Webtop](https://docs.linuxserver.io/images/docker-webtop/) | A full Linux desktop in your browser, running as a container with a login. | `webtop` |  |
 | [Wizarr](https://docs.wizarr.dev/) | An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server. | `wizarr` |  |
 | [WordPress](https://wordpress.org/documentation/) | The world's most widely used content management system, self-hosted with its own database. | `wordpress` |  |
 | [YOURLS](https://yourls.org/docs/) | A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form. | `yourls` |  |
@@ -211,12 +218,15 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Adminer](https://www.adminer.org) | A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more. | `adminer` |  |
 | [Apache Cassandra](https://cassandra.apache.org/doc/latest/) | A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory. | `cassandra` |  |
 | [Apache Solr](https://solr.apache.org/guide/solr/latest/) | The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983. | `solr` |  |
+| [ArangoDB](https://docs.arangodb.com/3.12/) | A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line. | `arangodb` |  |
 | [Baserow](https://baserow.io/docs/installation%2Finstall-with-docker) | A no-code database and spreadsheet hybrid you can build internal tools and apps on top of. | `baserow` |  |
 | [Bytebase](https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker) | A database schema change and migration tool with review workflows built in. | `bytebase` |  |
 | [Chroma](https://docs.trychroma.com) | A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host. | `chroma` |  |
 | [ClickHouse](https://hub.docker.com/r/clickhouse/clickhouse-server) | A columnar database built for fast analytical queries over large datasets. | `clickhouse` |  |
 | [CloudBeaver](https://dbeaver.com/docs/cloudbeaver/) | A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more. | `cloudbeaver` |  |
+| [CockroachDB](https://www.cockroachlabs.com/docs/) | A distributed SQL database that speaks the Postgres wire protocol, run as one insecure node for development and small workloads. The SQL port is private, the admin console is the web page. Source available license. | `cockroachdb` |  |
 | [CouchDB](https://docs.couchdb.org/) | A document database with an HTTP API, built-in replication and the Fauxton admin console. | `couchdb` |  |
+| [DbGate](https://docs.dbgate.io/) | A web database client for SQL and NoSQL databases with a generated login and a data volume. Sign in as admin with the generated password, then add connections to other services here. | `dbgate` |  |
 | [Elasticsearch + Kibana](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker) | Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. | `elasticsearch-kibana` |  |
 | [FerretDB](https://docs.ferretdb.io/) | A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017. | `ferretdb` |  |
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
@@ -229,6 +239,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Neo4j](https://neo4j.com/docs/) | A graph database with the Cypher query language, Community Edition, including the browser console. | `neo4j` |  |
 | [NocoDB](https://docs.nocodb.com) | Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. | `nocodb` |  |
 | [OpenSearch](https://opensearch.org/docs/latest/) | A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200. | `opensearch` |  |
+| [OrientDB](https://orientdb.org/docs/3.2.x/) | A multi model database for graphs and documents with the Studio web console, a generated root password and data volumes. The binary protocol port 2424 stays private. | `orientdb` |  |
 | [PG Back Web](https://github.com/eduardolat/pgbackweb) | A web UI for scheduling, encrypting, and restoring PostgreSQL backups. | `pgbackweb` |  |
 | [pgAdmin](https://www.pgadmin.org/docs/) | A full-featured web GUI for administering and querying PostgreSQL databases. | `pgadmin` |  |
 | [pgvector Postgres](https://github.com/pgvector/pgvector) | PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. | `pgvector` |  |
@@ -236,9 +247,13 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [PostgreSQL](https://www.postgresql.org/docs/17/) | The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432. | `postgres` |  |
 | [Qdrant](https://qdrant.tech/documentation/) | A vector similarity search engine for storing, searching, and managing embeddings. | `qdrant` |  |
 | [QuestDB](https://questdb.com/docs/) | A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain. | `questdb` |  |
+| [Redis](https://redis.io/docs/) | The Redis in-memory data store on the BSD licensed 7.2 line, with append-only persistence and a generated password. It is not published on the host, so reach it from other services in this project at redis:6379. | `redis` |  |
 | [Redis Commander](https://github.com/joeferner/redis-commander) | A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables. | `redis-commander` |  |
 | [Redis Insight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. | `redis-insight` |  |
 | [RedisInsight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for browsing keys, running commands, and profiling performance on any Redis instance. | `redisinsight` |  |
+| [RethinkDB](https://rethinkdb.com/docs) | A document database with live query feeds and a web admin console, on the official image with a data volume. The console has no login, so restrict access before exposing it. Client driver port 28015 stays private. | `rethinkdb` |  |
+| [ScyllaDB](https://opensource.docs.scylladb.com/stable/) | A wide column database compatible with Cassandra, running as one node in developer mode with a data volume. It has no web page, so connect over the project network at scylladb:9042. | `scylladb` |  |
+| [SurrealDB](https://surrealdb.com/docs) | A multi-model database for documents, graphs and relations with a SQL-like query language, using the RocksDB engine on a named volume. The root password is generated at install. Source available under the BSL. | `surrealdb` |  |
 | [TimescaleDB](https://docs.timescale.com/) | PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432. | `timescaledb` |  |
 | [Valkey](https://valkey.io/docs/) | A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence. | `valkey` |  |
 | [Weaviate](https://weaviate.io/developers/weaviate) | An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API. | `weaviate` |  |
@@ -257,19 +272,21 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [CyberChef](https://github.com/gchq/CyberChef/wiki) | The cyber swiss army knife: encode, decode, hash, and analyse data in the browser. | `cyberchef` |  |
 | [Databasus](https://databasus.com/installation) | A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases. | `databasus` |  |
 | [Directus](https://docs.directus.io) | An open-source headless CMS and instant REST/GraphQL API layer over your own database. | `directus` |  |
-| [Docker Registry](https://distribution.github.io/distribution/) | A private registry for storing and distributing your own container images. | `docker-registry` |  |
 | [Docker Registry](https://distribution.github.io/distribution/) | The official open source registry for storing and distributing your own container images. | `registry` |  |
+| [Docker Registry](https://distribution.github.io/distribution/) | A private registry for storing and distributing your own container images. | `docker-registry` |  |
 | [Docker Registry (Authenticated)](https://distribution.github.io/distribution/) | A private container registry with HTTP basic auth baked in at boot, unlike the catalog's open registry entry. | `docker-registry-auth` |  |
 | [Flagsmith](https://docs.flagsmith.com/) | A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin. | `flagsmith` |  |
 | [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | A headless-browser proxy that solves Cloudflare and DDoS-Guard challenges for other self-hosted tools. | `flaresolverr` |  |
 | [Flipt](https://www.flipt.io/docs) | A self-hosted feature flag and experimentation platform with a built-in UI and REST/gRPC APIs. | `flipt` |  |
 | [Forgejo](https://forgejo.org/docs/latest/admin/installation-docker/) | A lightweight, community-governed Git forge with issues, pull requests, and CI runners. | `forgejo` |  |
 | [Forgejo (Postgres)](https://forgejo.org/docs/latest/admin/installation-docker/) | Forgejo backed by Postgres instead of its default SQLite, for a multi-writer-safe production setup. | `forgejo-postgres` |  |
+| [GitBucket](https://github.com/gitbucket/gitbucket/wiki) | A Git hosting platform with issues, pull requests and a wiki, on a data volume. The first account is root with the password root, so change it right after the first sign in. | `gitbucket` |  |
 | [Gitea](https://docs.gitea.com) | A lightweight, self-hosted Git service with issues, pull requests, and a package registry. | `gitea` |  |
 | [Gitea (Postgres)](https://docs.gitea.com) | Gitea backed by Postgres instead of its default MySQL, for operators standardizing on one database engine. | `gitea-postgres` |  |
 | [GitLab](https://docs.gitlab.com/ee/install/docker.html) | GitLab Community Edition: Git hosting, CI/CD, issues, and a container registry in one Omnibus image. | `gitlab` |  |
 | [GitLab CE](https://docs.gitlab.com/install/docker/installation/) | A complete DevOps platform for source control, code review, issues, and CI/CD in one place. | `gitlab-ce` |  |
 | [Gitness](https://docs.harness.io/open-source) | Harness Open Source, a Git host with code review, pipelines and an artifact registry in one binary. Apache-2.0 licensed. Uses an embedded SQLite database on the data volume. The first user to register becomes the admin, then turn off sign-ups. Pipelines that run containers need Docker access, which this template does not grant. | `gitness` |  |
+| [GoCD](https://docs.gocd.org/current/) | A continuous delivery server with pipeline visualisation, running on a data volume. Needs about 1 GB of memory. Authentication is off until you set it up, so restrict access first. | `gocd` |  |
 | [Gogs](https://gogs.io/docs) | A painless self-hosted Git service written in Go, light enough to run on a small VPS. | `gogs` |  |
 | [Gotenberg](https://gotenberg.dev/docs/getting-started/introduction) | A stateless API for converting HTML, Markdown, Office, and PDF documents in the background. | `gotenberg` |  |
 | [Hasura](https://hasura.io/docs/2.0/deployment/docker/) | An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console. | `hasura` |  |
@@ -283,6 +300,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Kroki](https://docs.kroki.io/) | An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it. | `kroki` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
 | [Mage AI](https://docs.mage.ai/getting-started/setup) | A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI. | `mage-ai` |  |
+| [MailCatcher](https://mailcatcher.me/) | A development SMTP server that catches every message and shows it in a web inbox. Send mail from services in this project to mailcatcher:1025. Messages are kept in memory only. | `mailcatcher` |  |
 | [MailHog](https://github.com/mailhog/MailHog) | An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox. | `mailhog` |  |
 | [Mailpit](https://mailpit.axllent.org/docs/) | A local SMTP server and web inbox for catching and inspecting outgoing email during development. | `mailpit` |  |
 | [marimo](https://marimo.io/) | A reactive Python notebook that is reproducible, git-friendly, and shareable as an app. | `marimo` |  |
@@ -345,11 +363,14 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [ActiveMQ Classic](https://activemq.apache.org/components/classic/documentation) | A message broker with JMS, AMQP and MQTT support and a web console, with a data volume. The console login is admin with the password admin, so change it right after the first sign in. | `activemq` |  |
 | [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome/wiki/Docker) | Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. | `adguard-home` |  |
 | [Apache Kafka](https://kafka.apache.org/documentation/) | A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092. | `kafka` |  |
+| [Caddy](https://caddyserver.com/docs/) | A fast web server with automatic HTTPS and a simple config file, on the official image serving its default page. Mount your own Caddyfile or site files to host real sites. | `caddy` |  |
 | [Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns) | Keeps Cloudflare DNS records pointed at your current public IP address. | `cloudflare-ddns` |  |
 | [Consul](https://developer.hashicorp.com/consul/docs) | HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store. | `consul` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. | `elasticsearch` |  |
+| [EMQX](https://docs.emqx.com/en/emqx/latest/) | A scalable MQTT broker for IoT and smart home devices with a web dashboard. | `emqx` |  |
 | [etcd](https://etcd.io/docs/) | A distributed key-value store for configuration and coordination, running as a single member. | `etcd` |  |
 | [Headscale](https://headscale.net/stable/) | Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create). | `headscale` |  |
 | [imgproxy](https://docs.imgproxy.net/) | A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served. | `imgproxy` |  |
@@ -359,12 +380,16 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
 | [Nginx](https://nginx.org/en/docs/) | The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files. | `nginx` |  |
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |
+| [NSQ](https://nsq.io/overview/design.html) | A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151. | `nsq` |  |
+| [OpenResty](https://openresty.org/en/) | The OpenResty web platform, Nginx with LuaJIT, on the Alpine image with a persistent web root. It serves the default page until you add content or configuration. | `openresty` |  |
 | [Pi-hole](https://docs.pi-hole.net) | Network-wide ad blocking that works as a DNS sinkhole for your whole network. | `pi-hole` |  |
 | [Portainer](https://docs.portainer.io) | A web UI for managing containers, images, volumes, and networks. | `portainer` |  |
 | [RabbitMQ](https://www.rabbitmq.com/documentation.html) | A widely used open-source message broker supporting AMQP, MQTT, and STOMP. | `rabbitmq` |  |
 | [RustDesk Server](https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/) | Self-hosted RustDesk ID and relay servers (AGPL-3.0). | `rustdesk-server` |  |
 | [Snipe-IT](https://snipe-it.readme.io/docs/docker) | IT asset management for tracking hardware, licenses, and accessories, and who currently has what. | `snipe-it` |  |
 | [Technitium DNS Server](https://technitium.com/dns/) | A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console. | `technitium-dns` |  |
+| [Traefik](https://doc.traefik.io/traefik/) | A cloud native reverse proxy and load balancer with a built-in dashboard, on the official image. The dashboard has no login, so put it behind an access rule before you give it a public address. | `traefik` |  |
+| [VerneMQ](https://docs.vernemq.com/) | A scalable MQTT broker with a status page and a data volume, with one generated admin user and anonymous access off. MQTT on 1883 stays private. | `vernemq` |  |
 
 ## IoT
 
@@ -380,9 +405,13 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | --- | --- | --- | --- |
 | [Audiobookshelf](https://www.audiobookshelf.org/docs) | A self-hosted server for your audiobooks and podcasts, with sync across every device. | `audiobookshelf` |  |
 | [Bazarr](https://wiki.bazarr.media) | Companion to Sonarr and Radarr that finds and downloads subtitles for your media library. | `bazarr` |  |
+| [Calibre](https://manual.calibre-ebook.com/) | The Calibre e-book manager in a browser desktop session, for organising, converting and reading your library. | `calibre` |  |
 | [Calibre-Web](https://github.com/janeczku/calibre-web/wiki) | A clean web interface for browsing, reading, and downloading your existing Calibre ebook library. | `calibre-web` |  |
+| [Calibre-Web Automated](https://github.com/crocodilestick/Calibre-Web-Automated) | A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder. | `calibre-web-automated` |  |
 | [Castopod](https://docs.castopod.org/) | An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. | `castopod` |  |
 | [Emby](https://emby.media/support/articles/Home.html) | A media server that organizes your movies, shows, and music and streams them to any device. | `emby` |  |
+| [Flood](https://flood.js.org/) | A modern web interface for rTorrent, qBittorrent, Transmission and Deluge. | `flood` |  |
+| [gonic](https://github.com/sentriz/gonic) | A lightweight music server that speaks the Subsonic API, with a small web admin. | `gonic` |  |
 | [Grimmory](https://github.com/grimmory-tools/grimmory) | Organize, read, annotate, and sync your entire book collection from one place. | `grimmory` |  |
 | [Immich](https://immich.app/docs) | Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search. | `immich` |  |
 | [Jackett](https://github.com/Jackett/Jackett#readme) | A proxy that translates queries from your media apps into torrent tracker searches. | `jackett` |  |
@@ -392,6 +421,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Komga](https://komga.org/docs/installation/docker) | A media server for comics, manga, and digital books with a clean reading interface. | `komga` |  |
 | [Lidarr](https://wiki.servarr.com/lidarr) | Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. | `lidarr` |  |
 | [MeTube](https://github.com/alexta69/metube) | A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. | `metube` |  |
+| [mStream](https://mstream.io/) | A lightweight personal music streaming server with a web player and mobile apps. | `mstream` |  |
 | [Navidrome](https://www.navidrome.org/docs/) | Stream your own music collection from a Subsonic-compatible server to any device, anywhere. | `navidrome` |  |
 | [NZBGet](https://nzbget.com/documentation/) | A fast, light Usenet downloader with a web interface and scripting support. | `nzbget` |  |
 | [Overseerr](https://docs.overseerr.dev) | Lets your Plex users request new movies and TV shows straight from a shared web UI. | `overseerr` |  |
@@ -405,9 +435,12 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [qBittorrent](https://github.com/qbittorrent/qBittorrent/wiki) | A free, self-hosted BitTorrent client with a full web UI for remote download management. | `qbittorrent` |  |
 | [Radarr](https://wiki.servarr.com/radarr) | Watches your favorite indexers for movies and automatically grabs, sorts, and renames them. | `radarr` |  |
 | [RomM](https://docs.romm.app/latest/) | A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login. | `romm` |  |
+| [Shelfmark](https://github.com/calibrain/shelfmark) | A web app to search for books and audiobooks and send them to your library folders. | `shelfmark` |  |
 | [Sonarr](https://wiki.servarr.com/sonarr) | Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them. | `sonarr` |  |
+| [Stash](https://docs.stashapp.cc/) | A self hosted organiser and player for your personal video library, with tags and scraping. | `stash` |  |
 | [Tdarr](https://docs.tdarr.io) | Automated media transcoding, health checks, and library-wide format standardization. | `tdarr` |  |
 | [Transmission](https://docs.linuxserver.io/images/docker-transmission/) | A fast, lightweight BitTorrent client with a simple web interface. | `transmission` |  |
+| [TubeSync](https://github.com/meeb/tubesync) | Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy. | `tubesync` |  |
 | [Yamtrack](https://github.com/FuzzyGrim/Yamtrack/wiki) | A self-hosted media tracker for movies, TV, anime, manga, games, and books. | `yamtrack` |  |
 
 ## Monitoring
@@ -421,6 +454,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Changedetection.io](https://github.com/dgtlmoon/changedetection.io/wiki) | Monitor any webpage for changes and get notified the moment content updates. | `changedetection` |  |
 | [Checkmate](https://docs.checkmate.so) | An open-source uptime and server monitoring app with incident history and status pages. | `checkmate` |  |
 | [Chronograf](https://docs.influxdata.com/chronograf/) | A web interface to explore, graph and alert on time series stored in InfluxDB. Add your InfluxDB connection from the first screen; it has no login of its own, so restrict who can reach it. | `chronograf` |  |
+| [Dashdot](https://getdashdot.com/) | A clean dashboard that shows CPU, memory, network and storage use of the host it runs on. | `dashdot` |  |
 | [Diun](https://crazymax.dev/diun/) | Watches your running containers and notifies you the moment a new image tag is published. | `diun` |  |
 | [Gatus](https://github.com/TwiN/gatus#configuration) | Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services. | `gatus` |  |
 | [Glances](https://nicolargo.github.io/glances/) | A cross-platform system monitor showing CPU, memory, disk, and network at a glance. | `glances` |  |
@@ -431,6 +465,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
 | [Grafana OTel LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) | An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP). | `otel-lgtm` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
+| [HertzBeat](https://hertzbeat.apache.org/docs/) | A real time monitoring system with agentless collection, alerts and a web console, on the embedded database with a data volume. Change the default login after the first sign in. | `hertzbeat` |  |
 | [HyperDX](https://clickhouse.com/docs/use-cases/observability/clickstack) | An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login. | `hyperdx` |  |
 | [Jaeger](https://www.jaegertracing.io/docs/) | Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory. | `jaeger` |  |
 | [Jellystat](https://github.com/CyferShepard/Jellystat) | A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key. | `jellystat` |  |
@@ -441,12 +476,14 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [OpenSpeedTest](https://openspeedtest.com/) | A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results. | `openspeedtest` |  |
 | [Prometheus](https://prometheus.io/docs/introduction/overview/) | A metrics time-series database and alerting engine built for pull-based scraping. | `prometheus` |  |
 | [Pushgateway](https://prometheus.io/docs/practices/pushing/) | A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume. | `pushgateway` |  |
+| [Pyroscope](https://grafana.com/docs/pyroscope/latest/) | A continuous profiling database with a web UI and a data volume. The UI has no login, so restrict access before exposing it. Applications push profiles to port 4040. | `pyroscope` |  |
 | [SmokePing](https://oss.oetiker.ch/smokeping/doc/index.en.html) | A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy. | `smokeping` |  |
 | [Speedtest Tracker](https://docs.speedtest-tracker.dev) | Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. | `speedtest-tracker` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
 | [Tautulli](https://docs.tautulli.com) | Monitors your Plex server and shows who watched what, with history, stats, and notifications. | `tautulli` |  |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma/wiki) | A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks. | `uptime-kuma` |  |
 | [Uptime Kuma (MariaDB)](https://github.com/louislam/uptime-kuma/wiki) | Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file. | `uptime-kuma-mariadb` |  |
+| [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) | A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it. | `victorialogs` |  |
 | [VictoriaMetrics](https://docs.victoriametrics.com) | A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host. | `victoriametrics` |  |
 | [Zabbix](https://www.zabbix.com/documentation/current/en/manual/installation/containers) | Enterprise-grade network, server, and application monitoring with alerting and trend graphs. | `zabbix` |  |
 | [Zipkin](https://zipkin.io/) | A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts. | `zipkin` |  |
@@ -490,6 +527,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Kanboard](https://docs.kanboard.org) | A minimalist, keyboard-friendly kanban board for personal and team task tracking. | `kanboard` |  |
 | [Karakeep](https://docs.karakeep.app) | A self-hosted bookmark, note, and read-it-later manager with full-text search and tagging. | `karakeep` |  |
 | [Kimai](https://www.kimai.org/documentation/) | A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting. | `kimai` |  |
+| [KitchenOwl](https://docs.kitchenowl.org/) | A shared grocery list, recipe and expense app for your household, with web and mobile clients. | `kitchenowl` |  |
 | [LanguageTool](https://dev.languagetool.org/http-server) | A multilingual grammar, style and spell checking server with an HTTP API at /v2/check. LGPL-2.1 licensed. Runs the community server image in one container without the optional n-gram data. There is no web login, so keep the address private or put it behind an access rule. | `languagetool` |  |
 | [Leantime](https://docs.leantime.io) | A goals-focused project management tool built for people who aren't professional project managers. | `leantime` |  |
 | [LibreOffice (Remote Desktop)](https://www.libreoffice.org/discover/libreoffice/) | A full LibreOffice desktop running in a container, reachable from any browser, for editing office documents. | `libreoffice` |  |
@@ -600,6 +638,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [Backrest](https://garethgeorge.github.io/backrest/) | A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly. | `backrest` |  |
+| [rclone](https://rclone.org/gui/) | The rclone remote control web GUI for managing and syncing files across dozens of cloud storage providers. | `rclone` |  |
 
 ## Mail
 

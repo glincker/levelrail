@@ -1,0 +1,62 @@
+---
+title: "Self-host Traefik with Docker"
+sidebarTitle: "Traefik"
+description: "A cloud native reverse proxy and load balancer with a built-in dashboard, on the official image. The dashboard has no login, so put it behind an access rule before you give it a public address."
+"og:url": "https://docs.levelrail.com/self-host/traefik"
+---
+
+A cloud native reverse proxy and load balancer with a built-in dashboard, on the official image. The dashboard has no login, so put it behind an access rule before you give it a public address.
+
+This page describes the Levelrail template for Traefik (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://doc.traefik.io/traefik/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `traefik` | `traefik:v3.2.1` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Traefik with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Traefik. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy traefik --name my-traefik
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+
+All templates are listed in the [self-host gallery](/self-host).
