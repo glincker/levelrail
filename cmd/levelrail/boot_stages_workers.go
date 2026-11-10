@@ -165,6 +165,13 @@ func (s *bootState) startAlerting() {
 		l := apiRouter.RuntimeSettings().LogRuleLimits(context.Background())
 		return alerting.LogRulePolicy{EvalEvery: l.EvalEvery, MaxWindow: l.MaxWindow, MaxRows: l.MaxRows, Samples: l.Samples}
 	})
+	alertingEngine.SetNodeThresholds(func() alerting.NodeThresholdPolicy {
+		c, rs := context.Background(), apiRouter.RuntimeSettings()
+		return alerting.NodeThresholdPolicy{
+			CPUPercent: float64(rs.Int(c, runtimesettings.KeyNodeCPUThresholdPercent)), MemoryPercent: float64(rs.Int(c, runtimesettings.KeyNodeMemoryThresholdPercent)),
+			DiskPercent: float64(rs.Int(c, runtimesettings.KeyNodeDiskThresholdPercent)), SustainedIntervals: rs.Int(c, runtimesettings.KeyNodeThresholdSustained),
+		}
+	}, db)
 	alertingEngine.SetDomainTraffic(apiRouter)
 	wireVolumeUsage(ctx, alertingEngine, client, db, telemetryDB, logger)
 	alertingEngine.SetEmailDelivery(db)

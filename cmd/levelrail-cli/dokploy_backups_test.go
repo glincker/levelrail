@@ -124,9 +124,9 @@ func testJournal(t *testing.T, res ...journalResource) *applyJournal {
 func runBackupImportWith(t *testing.T, api *fakeBackupAPI, jr *applyJournal) *backupImport {
 	t.Helper()
 	client := newFakeBackupAPI(t, api)
-	imp := planDokployBackups(backupsDiscovery(), backupPlanOptions{limit: 50, checkEndpoint: func(string) error { return nil }})
-	imp.finishPlan(true)
-	imp.creds = func(_ context.Context, id string) (string, string, error) {
+	imp := planDokployBackups(backupsDiscovery(), backupPlanOptions{Limit: 50, CheckEndpoint: func(string) error { return nil }})
+	imp.FinishPlan(true)
+	imp.Creds = func(_ context.Context, id string) (string, string, error) {
 		if id != "dst-r2" {
 			return "", "", platformimport.ErrNoCredentials
 		}
@@ -193,7 +193,7 @@ func TestDokployBackupImportNeverOverwritesExistingTarget(t *testing.T) {
 func TestDokployBackupPlanRejectsBadCronAndEndpoint(t *testing.T) {
 	d := backupsDiscovery()
 	d.Databases[1].Backups[0].Schedule = "not a cron"
-	imp := planDokployBackups(d, backupPlanOptions{limit: 50, checkEndpoint: func(raw string) error {
+	imp := planDokployBackups(d, backupPlanOptions{Limit: 50, CheckEndpoint: func(raw string) error {
 		if strings.Contains(raw, "example.com") {
 			return platformimport.ErrBlockedAddress
 		}
@@ -227,8 +227,8 @@ func TestDokployBackupPlanHostileFieldsGoToReview(t *testing.T) {
 	d.Destinations = append(d.Destinations,
 		platformimport.BackupDestination{SourceID: "s3", Name: "$$$", Bucket: "ok-bucket"},
 		platformimport.BackupDestination{SourceID: "s4", Name: strings.Repeat("a", 80), Bucket: "ok-bucket"})
-	imp := planDokployBackups(d, backupPlanOptions{limit: 50})
-	imp.finishPlan(false)
+	imp := planDokployBackups(d, backupPlanOptions{Limit: 50})
+	imp.FinishPlan(false)
 	for i, tg := range imp.Targets {
 		if tg.State != backupReview || strings.Contains(tg.Detail, "backup-targets create --name") {
 			t.Fatalf("target %d: %+v", i, tg)
@@ -244,8 +244,8 @@ func TestDokployBackupPlanHostileFieldsGoToReview(t *testing.T) {
 func TestDokployBackupHintIsShellQuoted(t *testing.T) {
 	d := backupsDiscovery()
 	d.Destinations[1].Region = "eu-'1"
-	imp := planDokployBackups(d, backupPlanOptions{limit: 50})
-	imp.finishPlan(false)
+	imp := planDokployBackups(d, backupPlanOptions{Limit: 50})
+	imp.FinishPlan(false)
 	hint := imp.Targets[1].Detail
 	if !strings.Contains(hint, "--endpoint 'https://s3.example.com'") || !strings.Contains(hint, `--region 'eu-'\''1'`) || !strings.Contains(hint, "--bucket 'db-dumps'") {
 		t.Fatalf("hint: %s", hint)

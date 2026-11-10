@@ -1010,5 +1010,20 @@
     "drainNothing": "Un vaciado no movería nada: aquí no se ejecuta ninguna app ni base de datos visible para ti.",
     "drainSummary": "Un vaciado movería fuera de este nodo las {{apps}} app(s) y {{databases}} base(s) de datos visibles para ti. Nada cambia hasta que vacíes.",
     "drainOrder": "Primero se mueven las bases de datos y luego las apps, una a una, verificadas en su nuevo nodo."
+  },
+  "thresholds": {
+    "title": "Umbrales de alerta",
+    "cpu_percent": "CPU %",
+    "memory_percent": "Memoria %",
+    "disk_percent": "Disco %",
+    "defaultPlaceholder": "Predeterminado {{value}}",
+    "effective": "En uso: {{value}}%",
+    "save": "Guardar umbrales",
+    "reset": "Usar predeterminados",
+    "saved": "Umbrales guardados",
+    "loading": "Cargando umbrales...",
+    "invalid": "Usa un número entero de 1 a 100, o deja el campo vacío para el valor predeterminado.",
+    "description_one": "Deja un campo vacío para seguir el valor de la plataforma. Las alertas de CPU y memoria se activan tras {{count}} evaluación por encima del límite.",
+    "description_other": "Deja un campo vacío para seguir el valor de la plataforma. Las alertas de CPU y memoria se activan tras {{count}} evaluaciones seguidas por encima del límite."
   }
 }

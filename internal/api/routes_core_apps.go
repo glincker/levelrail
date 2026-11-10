@@ -154,6 +154,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/build-hooks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListBuildHooks))
 	mux.HandleFunc("POST /api/v1/apps/{name}/build-hooks", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateBuildHook))
 	mux.HandleFunc("POST /api/v1/apps/{name}/build-hooks/{id}/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateBuildHook))
+	mux.HandleFunc("PATCH /api/v1/apps/{name}/build-hooks/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleUpdateBuildHook))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-hooks/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRevokeBuildHook))
 	mux.HandleFunc("POST /api/v1/hooks/deploy/{id}/{token}", rt.handleBuildHookTrigger)
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)

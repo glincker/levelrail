@@ -709,7 +709,50 @@
     "insecure": "Skip TLS verification (self-signed source)",
     "readFailed": "Could not read the source",
     "reading": "Reading source...",
-    "discover": "Discover"
+    "discover": "Discover",
+    "extras": {
+      "title": "Backups and alert channels",
+      "target": "Backup target {{name}}",
+      "schedule": "Backup schedule for {{name}}",
+      "channel": "Alert channel {{name}}",
+      "hasKeys": "keys on source",
+      "noKeys": "no keys on source",
+      "hasSecret": "token on source",
+      "noSecret": "no token on source",
+      "retain_one": "keep {{count}}",
+      "retain_other": "keep {{count}}",
+      "paused": "paused",
+      "running": "running",
+      "enabled": "enabled",
+      "disabled": "disabled",
+      "includeCredentials": "Include credentials",
+      "includeCredentialsWarning": "Copies the source's storage keys and channel tokens to this instance. They are sent straight to the create calls and never shown here.",
+      "enableSchedules": "Keep backup schedules running",
+      "enableSchedulesWarning": "Off: imported schedules are created paused. On: schedules that ran on the source start running here.",
+      "enableChannels": "Create alert channels enabled",
+      "enableChannelsWarning": "Off: imported channels are created disabled. On: enabled channels immediately receive broadcast notices.",
+      "importOnly": "Import backups and channels only",
+      "undoButton_one": "Undo {{count}} imported item",
+      "undoButton_other": "Undo {{count}} imported items",
+      "undoFailed": "Undo failed",
+      "undoItem": "{{name}}: {{action}}",
+      "undo": {
+        "removed": "removed",
+        "skipped": "left in place",
+        "failed": "failed"
+      },
+      "state": {
+        "would_create": "Will be created",
+        "needs_secret": "Needs credentials",
+        "created": "Created",
+        "exists": "Already exists",
+        "pending": "Pending",
+        "skipped": "Skipped",
+        "review": "Review",
+        "failed": "Failed",
+        "unsupported": "Not supported"
+      }
+    }
   },
   "importPlan": {
     "anonymousVolume": "(anonymous)",

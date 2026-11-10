@@ -91,14 +91,14 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	report.Apps = append(report.Apps, composeApps...)
 	if disc != nil {
 		report.Backups = planDokployBackups(disc, backupPlanOptionsFromEnv(ctx, f.enableBackups, lookupEnv))
-		report.Backups.finishPlan(f.includeSecretValues)
+		report.Backups.FinishPlan(f.includeSecretValues)
 		if report.Backups != nil && f.apply && f.includeSecretValues {
-			report.Backups.creds = src.DestinationCredentials
+			report.Backups.Creds = src.DestinationCredentials
 		}
 		report.Channels = planDokployChannels(disc, channelPlanOptionsFromEnv(ctx, f.enableChannels, lookupEnv))
-		report.Channels.finishPlan(f.includeSecretValues)
+		report.Channels.FinishPlan(f.includeSecretValues)
 		if report.Channels != nil && f.apply && f.includeSecretValues {
-			report.Channels.target = src.NotificationTarget
+			report.Channels.Target = src.NotificationTarget
 		}
 	}
 

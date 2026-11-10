@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
 	"io"
 	"net"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
@@ -37,7 +37,6 @@ const (
 	defaultMigrateWebhookLimit = 200
 	envMigrateRepoURLMaxLen    = "APP_MIGRATE_REPO_URL_MAX_LEN"
 	defaultMigrateRepoURLMax   = 2048
-	webhookDetailMaxRunes      = 300
 )
 
 const createWebhooksHelp = "with --apply, register one push webhook per git-sourced app through the connected git provider for its host (off by default because it writes to the git host); without --apply the report lists what would be created"
@@ -51,15 +50,7 @@ const (
 )
 
 func envPositiveInt(lookupEnv func(string) (string, bool), name string, def, ceiling int) int {
-	if lookupEnv == nil {
-		return def
-	}
-	if v, ok := lookupEnv(name); ok {
-		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
-			return min(n, ceiling)
-		}
-	}
-	return def
+	return dokployextras.EnvPositiveInt(lookupEnv, name, def, ceiling)
 }
 
 // webhookLimits reads the per-run hook cap and the repo URL length cap from env.
@@ -68,27 +59,13 @@ func webhookLimits(lookupEnv func(string) (string, bool)) (maxHooks, maxURL int)
 		envPositiveInt(lookupEnv, envMigrateRepoURLMaxLen, defaultMigrateRepoURLMax, ceilingMigrateRepoURLMax)
 }
 
-// unsafeRune covers control and format characters (bidi overrides, zero-width marks).
-func unsafeRune(r rune) bool {
-	return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
-}
-
 func hasControlChar(s string) bool {
-	return strings.IndexFunc(s, unsafeRune) >= 0
+	return dokployextras.HasControlChar(s)
 }
 
 // cleanDetail keeps a provider or server message printable and short.
 func cleanDetail(s string) string {
-	s = strings.Map(func(r rune) rune {
-		if unsafeRune(r) {
-			return ' '
-		}
-		return r
-	}, s)
-	if r := []rune(s); len(r) > webhookDetailMaxRunes {
-		s = string(r[:webhookDetailMaxRunes]) + "..."
-	}
-	return strings.TrimSpace(s)
+	return dokployextras.CleanDetail(s)
 }
 
 // httpsOrigin returns scheme, lowercase host and explicit port, so a repo and a

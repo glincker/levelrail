@@ -107,6 +107,8 @@ db.space_report_rows
 deploy.approval_claim_timeout_seconds
 deploy.approval_max_required
 deploy.approve_digest_check_timeout_seconds
+deploy.build_hook_max_cidrs
+deploy.build_hook_triggers_per_minute
 deploy.ci_gate_max_waits_per_app
 deploy.drain_timeout
 deploy.explain_log_lines
@@ -185,6 +187,9 @@ images.keep_per_app
 images.prune_schedule
 images.pull_concurrency
 images.remove_max_per_request
+incidents.postmortem_action_items_max
+incidents.postmortem_body_max
+incidents.postmortem_field_max
 ingress.ca_switch_retry_base
 ingress.ca_switch_retry_max
 ingress.cloudflare_ips_max_bytes
@@ -220,6 +225,10 @@ net.outbound_timeout
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+nodes.alert_cpu_percent
+nodes.alert_disk_percent
+nodes.alert_memory_percent
+nodes.alert_sustained_intervals
 nodes.patch_adopt_limit
 nodes.patch_apply_timeout
 nodes.patch_output_tail_lines

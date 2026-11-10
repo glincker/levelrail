@@ -33,7 +33,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStatusReasonRoutes(mux)
 	rt.registerComplianceRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
-	rt.registerPlatformImportRoutes(mux)
+	platformImport := rt.registerPlatformImportRoutes(mux)
 	rt.registerMigrationAgentRoutes(mux)
 	rt.registerAppImportRoutes(mux)
 	rt.registerTakeoverRoutes(mux)
@@ -130,6 +130,7 @@ func (rt *Router) Handler() http.Handler {
 	}
 	mcpHTTP.inner = h
 	shell.inner = h
+	platformImport.inner = h
 	return h
 }
 

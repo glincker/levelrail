@@ -77,6 +77,8 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// boundary and nil-telemetry 501 shape as every route above, and the
 	// same query-param contract as GET /apps/{name}/metrics above it.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/metrics", rt.requireAbility(AbilityRoot, rt.handleQueryNodeMetrics))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/thresholds", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleGetNodeThresholds))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/thresholds", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleSetNodeThresholds))
 	// Fleet-wide latest CPU/memory/disk snapshot plus rollup
 	// (node_resource_usage.go), the node-scoped counterpart to
 	// GET /apps/resource-usage above: registered as a literal path

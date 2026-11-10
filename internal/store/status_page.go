@@ -393,10 +393,17 @@ func (db *DB) ListStatusIncidents(ctx context.Context, limit int) ([]StatusIncid
 	return out, nil
 }
 
-// DeleteStatusIncident removes an incident and its updates.
+// DeleteStatusIncident removes an incident and its updates; one with a published postmortem is kept.
 func (db *DB) DeleteStatusIncident(ctx context.Context, id string) error {
-	if _, err := db.ExecContext(ctx, `DELETE FROM status_incidents WHERE id = ?`, id); err != nil {
+	res, err := db.ExecContext(ctx, `DELETE FROM status_incidents WHERE id = ? AND id NOT IN (`+publishedPostmortemIDs+`)`, id)
+	if err != nil {
 		return fmt.Errorf("store: delete status incident %q: %w", id, err)
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		var locked int
+		if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM incident_postmortems WHERE incident_id = ? AND state = 'published'`, id).Scan(&locked); err == nil && locked > 0 {
+			return ErrIncidentPostmortemPublished
+		}
 	}
 	return nil
 }

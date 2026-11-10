@@ -80,10 +80,10 @@ func newFakeChannelAPI(t *testing.T, api *fakeChannelAPI) *Client {
 }
 
 func planChannelsForTest(useSecrets bool) *channelImport {
-	imp := planDokployChannels(channelsDiscovery(), channelPlanOptions{limit: 50, checkURL: func(string) error { return nil }})
-	imp.finishPlan(useSecrets)
+	imp := planDokployChannels(channelsDiscovery(), channelPlanOptions{Limit: 50, CheckURL: func(string) error { return nil }})
+	imp.FinishPlan(useSecrets)
 	if useSecrets {
-		imp.target = func(_ context.Context, id string) (platformimport.NotifyTarget, error) {
+		imp.Target = func(_ context.Context, id string) (platformimport.NotifyTarget, error) {
 			return fixtureTargets[id], nil
 		}
 	}
@@ -195,7 +195,7 @@ func TestDokployChannelCreateErrorIsRedacted(t *testing.T) {
 func TestDokployChannelPolicyRefusalSkipsCreate(t *testing.T) {
 	api := &fakeChannelAPI{}
 	imp := planChannelsForTest(true)
-	imp.checkURL = func(string) error {
+	imp.CheckURL = func(string) error {
 		return platformimport.ValidateNotifyEndpoint(context.Background(), "http://x", platformimport.NetworkPolicy{})
 	}
 	applyChannelImport(context.Background(), newFakeChannelAPI(t, api), imp, nil)
@@ -233,7 +233,7 @@ func TestDokployChannelHostileNamesGoToReview(t *testing.T) {
 		{SourceID: "e", Name: "mixed", Kind: "slack", Mismatch: true},
 		{SourceID: "d", Name: "bad-ntfy", Kind: "ntfy", Server: "https://ntfy.example.com/?topic=x"},
 	}}
-	imp := planDokployChannels(d, channelPlanOptions{limit: 50})
+	imp := planDokployChannels(d, channelPlanOptions{Limit: 50})
 	for _, c := range imp.Channels {
 		if c.State != backupReview || c.Server != "" {
 			t.Fatalf("%+v should go to review", c)
@@ -271,7 +271,7 @@ func TestDokployChannelServerEnabledIsDeleted(t *testing.T) {
 func TestDokployChannelSourceChangedSincePlan(t *testing.T) {
 	api := &fakeChannelAPI{}
 	imp := planChannelsForTest(true)
-	imp.target = func(_ context.Context, id string) (platformimport.NotifyTarget, error) {
+	imp.Target = func(_ context.Context, id string) (platformimport.NotifyTarget, error) {
 		tgt := fixtureTargets[id]
 		if tgt.Kind == "ntfy" {
 			tgt.Server = "https://elsewhere.example.com"

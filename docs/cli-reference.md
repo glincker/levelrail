@@ -270,6 +270,8 @@ levelrail-cli apps moves get <name> <id> [flags]
 ### Deploy history, approvals and automation
 
 ```
+levelrail-cli apps inspect <app> effective-config [--key K] [--context C] [--branch B] [flags]
+levelrail-cli apps inspect <app> pending-changes|failure-context|rollback-targets|image-status [flags]
 levelrail-cli apps deploys list <name> [flags]
 levelrail-cli apps deploys show <name> [deploy-id] [flags]
 levelrail-cli apps deploys wait <name> [deploy-id] [--timeout 10m] [--poll-interval 2s] [flags]
@@ -309,7 +311,7 @@ levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
 levelrail-cli apps sleep list [flags]
 levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]   (start takes --stages, --interval, --max-error-rate, --max-p95-ratio for a staged canary)
-levelrail-cli apps build-hooks list|create|rotate|revoke <app-name> [flags]
+levelrail-cli apps build-hooks list|create|allow|rotate|revoke <app-name> [flags]   (create and allow take --allow-cidrs; allow --allow-any clears the source allowlist)
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
@@ -319,6 +321,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps deploys wait` blocks until one deploy is healthy, failed, canceled, superseded or blocked (a freeze window or approval) and prints the result with its failure. Exit 0 healthy, 7 failed, canceled, superseded or blocked, 6 timeout. Without a deploy id it resolves the newest deploy once and follows it by id.
 - `apps deploys build-report <name> <deploy-id>` prints the Next.js route table (static, ISR or dynamic, with sizes), the shared first-load size and build warnings parsed from that attempt's stored build log. Sizes read 0 when the log has no size columns.
 - `apps deploys compare` diffs two deploy attempts, or one against the current live state. `apps deploys logs` prints one attempt's full build and log output to stdout. `apps deploys steps` streams the pipeline steps (detecting, building, pushing, deploying) until the attempt ends and exits non-zero if a step failed; an already finished attempt replays only a short summary.
+- `apps inspect <app> <view>` is read-only and shows what the dashboard cards show: `effective-config` (resolved env and build settings with the source of each, `--key` narrows to named env keys), `pending-changes` (saved settings no deploy has applied yet), `failure-context` (last lines of the failing container or the build log), `rollback-targets` (pinned releases, newest first) and `image-status` (whether the tag moved and the architecture matches the node). `--json` prints the API body unchanged (with `--key`, only the env list is narrowed). The view may also come first, as in `apps inspect image-status web`. Secret values stay masked as the API returns them.
 - `apps deploys failed` lists every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target.
 - `apps deploys cancel` cancels a queued or in-progress deploy before it cuts traffic. `apps deploys rollback-to` redeploys a past succeeded deploy's exact image, pinned by digest or rollback pin, with that deploy's config; `--watch` follows it through the readiness gate.
 - `apps deploys gate` (alias `deploy status`) prints a release's gate timeline: readiness passes, stable window, cutover, drain, rollback pin and post-deploy watch. `--watch` follows it until the release clears its watch, fails, is rolled back or is replaced. Exit 0 healthy or in progress, 7 failed or rolled back. `apps deploy-safety` shows and overrides the per-app thresholds (`set web --stable-window 20s --auto-rollback false`, `default` clears one) and lists pinned rollback targets. See [Deploy safety](/deploy-safety#readiness-gate).
@@ -2317,9 +2320,15 @@ levelrail-cli incidents note <id> --body <text>
 levelrail-cli incidents promote <alert-rule-id> [--title <text>]
 levelrail-cli incidents draft <id> --title <text> --body <text> [--status <s>] [--impact <i>] [--components a,b]
 levelrail-cli incidents publish <id> [--updated-at <ts>]
+levelrail-cli incidents postmortem show <id> [--json]
+levelrail-cli incidents postmortem draft <id>
+levelrail-cli incidents postmortem edit <id> [--summary <text>] [--impact <text>] [--root-cause <text>] [--resolution <text>] [--action-item <text>]...
+levelrail-cli incidents postmortem publish <id>
 ```
 
 `list` and `show` need `read:sensitive`; the rest need `write`. `publish` refuses an empty draft client side and sends the `updated_at` it fetched, so a draft edited by someone else in the meantime is not published unreviewed.
+
+`incidents postmortem` works on resolved incidents only. `draft` fills the impact window and alert list from the incident, `edit` changes only the flags you pass (`--action-item` replaces the saved list), and `publish` locks the postmortem for good.
 
 ## Analysis reports
 

@@ -4,10 +4,12 @@ import {
   CopyGlassIcon,
   LinkGlassIcon,
   RefreshCwGlassIcon,
+  ShieldGlassIcon,
   TrashGlassIcon,
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { toast } from '@/components/ui/toast'
@@ -16,6 +18,8 @@ import {
   useCreateBuildHook,
   useRevokeBuildHook,
   useRotateBuildHook,
+  useUpdateBuildHookAllowlist,
+  splitCidrs,
   type BuildHook,
 } from '../queries/buildHooks'
 
@@ -26,8 +30,13 @@ export function BuildHooksCard({ appName }: { appName: string }) {
   const create = useCreateBuildHook(appName)
   const rotate = useRotateBuildHook(appName)
   const revoke = useRevokeBuildHook(appName)
+  const updateAllow = useUpdateBuildHookAllowlist(appName)
   const [name, setName] = useState('')
   const [branch, setBranch] = useState('')
+  const [allow, setAllow] = useState('')
+  const [editing, setEditing] = useState('')
+  const [editAllow, setEditAllow] = useState('')
+  const [editAllowAny, setEditAllowAny] = useState(false)
   const [revealed, setRevealed] = useState<BuildHook | null>(null)
   const [confirming, setConfirming] = useState('')
 
@@ -41,13 +50,44 @@ export function BuildHooksCard({ appName }: { appName: string }) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    const cidrs = splitCidrs(allow)
     create.mutate(
-      { name: name.trim(), branch: branch.trim() },
+      {
+        name: name.trim(),
+        branch: branch.trim(),
+        ...(cidrs.length > 0 ? { allowed_cidrs: cidrs } : {}),
+      },
       {
         onSuccess: (hook) => {
           setRevealed(hook)
           setName('')
           setBranch('')
+          setAllow('')
+        },
+        onError: fail,
+      },
+    )
+  }
+
+  function startEdit(hook: BuildHook) {
+    setEditing(hook.id)
+    setEditAllow((hook.allowed_cidrs ?? []).join(', '))
+    setEditAllowAny(false)
+  }
+
+  function saveAllow(e: React.FormEvent, id: string) {
+    e.preventDefault()
+    const cidrs = splitCidrs(editAllow)
+    if (!editAllowAny && cidrs.length === 0) return
+    updateAllow.mutate(
+      editAllowAny ? { id, allow_any: true } : { id, allowed_cidrs: cidrs },
+      {
+        onSuccess: () => {
+          setEditing('')
+          toast.add({
+            title: t('buildHooks.toast.allowSaved'),
+            type: 'success',
+          })
         },
         onError: fail,
       },
@@ -131,8 +171,39 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                         })
                       : t('buildHooks.neverTriggered')}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    {hook.allowed_cidrs && hook.allowed_cidrs.length > 0
+                      ? t('buildHooks.allowList', {
+                          cidrs: hook.allowed_cidrs.join(', '),
+                        })
+                      : t('buildHooks.allowAny')}
+                    {hook.last_used_at
+                      ? ` ${t('buildHooks.lastUsed', {
+                          when: new Date(hook.last_used_at).toLocaleString(),
+                        })}`
+                      : ''}
+                  </p>
+                  {hook.last_refusal ? (
+                    <p className="text-xs text-tone-warning">
+                      {t('buildHooks.lastRefusal', {
+                        reason: hook.last_refusal,
+                      })}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    aria-expanded={editing === hook.id}
+                    onClick={() =>
+                      editing === hook.id ? setEditing('') : startEdit(hook)
+                    }
+                  >
+                    <ShieldGlassIcon className="size-5" />
+                    {t('buildHooks.editAllow')}
+                  </Button>
                   <Button
                     type="button"
                     size="sm"
@@ -173,6 +244,49 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                       : t('buildHooks.revoke')}
                   </Button>
                 </div>
+                {editing === hook.id ? (
+                  <form
+                    onSubmit={(e) => saveAllow(e, hook.id)}
+                    className="flex w-full flex-wrap items-end gap-2"
+                  >
+                    <label className="min-w-64 flex-1 space-y-1 text-xs text-muted-foreground">
+                      {t('buildHooks.allowLabel')}
+                      <Input
+                        value={editAllow}
+                        onChange={(e) => setEditAllow(e.target.value)}
+                        placeholder={t('buildHooks.allowPlaceholder')}
+                        disabled={editAllowAny}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Checkbox
+                        checked={editAllowAny}
+                        onCheckedChange={(checked) =>
+                          setEditAllowAny(checked === true)
+                        }
+                      />
+                      {t('buildHooks.allowAnyToggle')}
+                    </label>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={
+                        updateAllow.isPending ||
+                        (!editAllowAny && splitCidrs(editAllow).length === 0)
+                      }
+                    >
+                      {t('buildHooks.saveAllow')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditing('')}
+                    >
+                      {t('buildHooks.cancel')}
+                    </Button>
+                  </form>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -197,6 +311,14 @@ export function BuildHooksCard({ appName }: { appName: string }) {
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
               placeholder={t('buildHooks.branchPlaceholder')}
+            />
+          </label>
+          <label className="space-y-1 text-xs text-muted-foreground">
+            {t('buildHooks.allowLabel')}
+            <Input
+              value={allow}
+              onChange={(e) => setAllow(e.target.value)}
+              placeholder={t('buildHooks.allowPlaceholder')}
             />
           </label>
           <Button

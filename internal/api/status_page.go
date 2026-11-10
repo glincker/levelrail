@@ -638,6 +638,10 @@ func (rt *Router) handleDeleteStatusIncident(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err := rt.statusPage.DeleteStatusIncident(r.Context(), r.PathValue("id")); err != nil {
+		if errors.Is(err, store.ErrIncidentPostmortemPublished) {
+			writeError(w, http.StatusConflict, "this incident has a published postmortem and is kept")
+			return
+		}
 		rt.internalError(w, "api: delete status incident failed", err)
 		return
 	}

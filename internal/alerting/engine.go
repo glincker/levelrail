@@ -85,6 +85,9 @@ type Engine struct {
 	nodeDiskSpaceThreshold      float64
 	nodeCPUThreshold            float64
 	nodeMemoryThreshold         float64
+	nodePolicy                  func() NodeThresholdPolicy
+	nodeOverrides               NodeThresholdOverrideSource
+	nodeStreaks                 nodeStreaks
 	domainHealthCheckInterval   time.Duration
 	domainHealthThrottle        *domainHealthThrottle
 	backupMissingGracePeriod    time.Duration
@@ -436,7 +439,11 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: node_disk_space rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, diskSpaceNotices, err = EvaluateNodeDiskSpace(ctx, e.nodes, e.metrics, r, e.nodeDiskSpaceThreshold, now, e.logger)
+			diskLimit := e.nodeDiskSpaceThreshold
+			if e.nodePolicy != nil {
+				diskLimit = e.nodePolicy().DiskPercent
+			}
+			next, diskSpaceNotices, err = EvaluateNodeDiskSpaceWithOverrides(ctx, e.nodes, e.metrics, r, diskLimit, e.loadNodeOverrides(ctx), now, e.logger)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -478,6 +485,18 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindNodeCPU, KindNodeMemory:
+			if e.nodes == nil || e.nodePolicy == nil {
+				e.logger.Warn("alerting: node pressure rule found but no node source or threshold policy configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			var streaks map[string]int
+			next, resourceUsageNotices, streaks, err = EvaluateNodePressure(ctx, e.nodes, e.nodeServices, e.metrics, r, e.nodePolicy(), e.loadNodeOverrides(ctx), e.nodeStreaks.get(r.ID), now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+			e.nodeStreaks.put(r.ID, streaks)
 		case KindDomainHealth:
 			if e.domainApps == nil || e.domainChecker == nil {
 				e.logger.Warn("alerting: domain_health rule found but no app/domain check source configured, skipping", slog.String("rule_id", r.ID))
@@ -796,7 +815,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindNodeCertExpiring && !resolved {
 		ev.NodeCertNotices = nodeNotices
 	}
-	if r.Kind == KindNodeResourceUsage && !resolved {
+	if (r.Kind == KindNodeResourceUsage || r.Kind == KindNodeCPU || r.Kind == KindNodeMemory) && !resolved {
 		ev.ResourceUsageNotices = resourceUsageNotices
 	}
 	if (r.Kind == KindScheduledTaskFailure || r.Kind == KindScheduledTaskMissed || r.Kind == KindScheduledTaskRunningLong) && !resolved {

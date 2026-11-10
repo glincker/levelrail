@@ -115,6 +115,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsWatch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-safety":
 		return runAppsDeploySafety(prog, args[1:], stdout, stderr, lookupEnv)
+	case "inspect":
+		return runAppsInspect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploys":
 		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "promote":
@@ -370,12 +372,13 @@ func appsUsage(prog string) string {
   %[1]s apps error-tracking enable|status|disable <name> [flags]   the app's Sentry DSN to set as SENTRY_DSN
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
   %[1]s apps split start|status|weights|promote|stop <name> [flags]   split testing: send a share of visitors to a branch deploy or release, sticky per visitor
-  %[1]s apps build-hooks list|create|rotate|revoke <name> [flags]   secret URLs that build and deploy the app when POSTed to
+  %[1]s apps build-hooks list|create|allow|rotate|revoke <name> [flags]   secret URLs that build and deploy the app when POSTed to
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps upgrade-plan <name> [flags]   show what a template upgrade would change (read-only)
   %[1]s apps upgrade <name> --yes [flags]   apply a template upgrade, watch it and roll back on failure
   %[1]s apps settings predeploy-snapshot <name> [--mode off|on|require]   snapshot linked databases before each deploy; "apps rollback <name> --with-data" restores them
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
+  %[1]s apps inspect <app> <view> [flags]                         read-only diagnostics: effective-config, pending-changes, failure-context, rollback-targets, image-status
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment

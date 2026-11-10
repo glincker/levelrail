@@ -1010,5 +1010,20 @@
     "drainNothing": "A drain would move nothing: no app or database you can see runs here.",
     "drainSummary": "A drain would move the {{apps}} app(s) and {{databases}} database(s) you can see off this node. Nothing changes until you drain.",
     "drainOrder": "Databases move first, then apps, one at a time, each verified on its new node."
+  },
+  "thresholds": {
+    "title": "Alert thresholds",
+    "cpu_percent": "CPU %",
+    "memory_percent": "Memory %",
+    "disk_percent": "Disk %",
+    "defaultPlaceholder": "Default {{value}}",
+    "effective": "In use: {{value}}%",
+    "save": "Save thresholds",
+    "reset": "Use defaults",
+    "saved": "Thresholds saved",
+    "loading": "Loading thresholds...",
+    "invalid": "Use a whole number from 1 to 100, or leave blank for the default.",
+    "description_one": "Leave a field blank to follow the platform default. CPU and memory alerts fire after {{count}} evaluation over the limit.",
+    "description_other": "Leave a field blank to follow the platform default. CPU and memory alerts fire after {{count}} evaluations in a row over the limit."
   }
 }

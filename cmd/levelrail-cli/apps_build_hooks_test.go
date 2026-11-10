@@ -37,6 +37,10 @@ func TestRun_AppsBuildHooks(t *testing.T) {
 	}{
 		{"list", []string{"list", "web"}, "GET", "/api/v1/apps/web/build-hooks", "", "deployed", exitOK},
 		{"create", []string{"create", "--name", "cms", "--branch", "main", "web"}, "POST", "/api/v1/apps/web/build-hooks", `{"branch":"main","name":"cms"}`, srv.URL + "/api/v1/hooks/deploy/bh_1/tok", exitOK},
+		{"create with allowlist", []string{"create", "--name", "cms", "--allow-cidrs", "10.0.0.0/8, 192.0.2.1", "web"}, "POST", "/api/v1/apps/web/build-hooks", `{"allowed_cidrs":["10.0.0.0/8","192.0.2.1"],"branch":"","name":"cms"}`, "shown once", exitOK},
+		{"allow", []string{"allow", "--allow-cidrs", "10.0.0.0/8", "web", "bh_1"}, "PATCH", "/api/v1/apps/web/build-hooks/bh_1", `{"allowed_cidrs":["10.0.0.0/8"]}`, "hook cms", exitOK},
+		{"allow any", []string{"allow", "--allow-any", "web", "bh_1"}, "PATCH", "/api/v1/apps/web/build-hooks/bh_1", `{"allow_any":true}`, "allows any", exitOK},
+		{"allow without list", []string{"allow", "web", "bh_1"}, "", "", "", "", exitUsage},
 		{"rotate", []string{"rotate", "web", "bh_1"}, "POST", "/api/v1/apps/web/build-hooks/bh_1/rotate", "", "shown once", exitOK},
 		{"revoke", []string{"revoke", "web", "bh_1"}, "DELETE", "/api/v1/apps/web/build-hooks/bh_1", "", "revoked bh_1", exitOK},
 		{"create without name", []string{"create", "web"}, "", "", "", "", exitUsage},

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2111 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2119 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -158,6 +158,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBuildHooks", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateBuildHook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-hooks/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevokeBuildHook", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/apps/{name}/build-hooks/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateBuildHook", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks/{id}/rotate", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotateBuildHook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResetAppBuildLimits", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildLimits", Description: ""},
@@ -1060,6 +1061,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/{id}/security/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeSecurityEvents", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/taints", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeTaints", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/taints", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeTaints", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/thresholds", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeThresholds", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/thresholds", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeThresholds", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/uncordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleUncordonNode", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/workloads", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeWorkloads", Description: ""},
 	{Method: "GET", Path: "/.well-known/jwks.json", Ability: "Public", Group: "Other", Handler: "handleOIDCJWKS", Description: ""},
@@ -1364,6 +1367,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/hosted/preflight", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleHostedPreflight", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/hosted/run", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleHostedRun", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
+	{Method: "POST", Path: "/api/v1/imports/platform/undo", Ability: "AbilityWrite", Group: "Other", Handler: "handleUndo", Description: "Undo deletes through the normal delete routes, which check their own abilities."},
 	{Method: "POST", Path: "/api/v1/imports/repo/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportRepoApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/repo/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportRepoPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/inbox", Ability: "AbilityRead", Group: "Other", Handler: "handleListInbox", Description: ""},
@@ -1381,6 +1385,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/incidents/{id}/ack", Ability: "AbilityWrite", Group: "Other", Handler: "handleAckIncident", Description: ""},
 	{Method: "PUT", Path: "/api/v1/incidents/{id}/draft", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveIncidentDraft", Description: ""},
 	{Method: "POST", Path: "/api/v1/incidents/{id}/notes", Ability: "AbilityWrite", Group: "Other", Handler: "handleAddIncidentNote", Description: ""},
+	{Method: "GET", Path: "/api/v1/incidents/{id}/postmortem", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleGetIncidentPostmortem", Description: ""},
+	{Method: "PUT", Path: "/api/v1/incidents/{id}/postmortem", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveIncidentPostmortem", Description: ""},
+	{Method: "POST", Path: "/api/v1/incidents/{id}/postmortem/draft", Ability: "AbilityWrite", Group: "Other", Handler: "handleDraftIncidentPostmortem", Description: ""},
+	{Method: "POST", Path: "/api/v1/incidents/{id}/postmortem/publish", Ability: "AbilityWrite", Group: "Other", Handler: "handlePublishIncidentPostmortem", Description: ""},
 	{Method: "POST", Path: "/api/v1/incidents/{id}/publish", Ability: "AbilityWrite", Group: "Other", Handler: "handlePublishIncident", Description: ""},
 	{Method: "POST", Path: "/api/v1/incidents/{id}/resolve", Ability: "AbilityWrite", Group: "Other", Handler: "handleResolveIncident", Description: ""},
 	{Method: "GET", Path: "/api/v1/ingress/connectivity", Ability: "AbilityRead", Group: "Other", Handler: "handleIngressConnectivity", Description: ""},

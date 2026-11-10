@@ -776,6 +776,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/restart-schedule | AbilityRead | handleGetAppRestartSchedule |
 | PUT | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleSetAppRestartSchedule |
 | DELETE | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleClearAppRestartSchedule |
+| PATCH | /api/v1/apps/{name}/build-hooks/{id} | AbilityWriteSensitive | handleUpdateBuildHook |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1126,6 +1127,8 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/patch/apply | AbilityRoot | handleNodePatchApply |
 | GET | /api/v1/nodes/{id}/patch/runs | AbilityRoot | handleListNodePatchRuns |
 | GET | /api/v1/nodes/{id}/resources | AbilityRead | handleListNodeResources |
+| GET | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleGetNodeThresholds |
+| PUT | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleSetNodeThresholds |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -2335,6 +2338,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/shell | AbilityRead | handleShellOverview |
 | GET | /api/v1/builds/cache/quota | AbilityRead | handleBuildCacheQuota |
 | GET | /api/v1/logs/access | AbilityRead | handleAccessSearch |
+| POST | /api/v1/imports/platform/undo | AbilityWrite | handleUndo |
+| GET | /api/v1/incidents/{id}/postmortem | AbilityReadSensitive | handleGetIncidentPostmortem |
+| POST | /api/v1/incidents/{id}/postmortem/draft | AbilityWrite | handleDraftIncidentPostmortem |
+| PUT | /api/v1/incidents/{id}/postmortem | AbilityWrite | handleSaveIncidentPostmortem |
+| POST | /api/v1/incidents/{id}/postmortem/publish | AbilityWrite | handlePublishIncidentPostmortem |
 | POST | /mcp | Public |  |
 
 ## See also

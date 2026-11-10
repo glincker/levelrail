@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -42,6 +43,19 @@ type platformImportRequest struct {
 	TeamID string `json:"team_id,omitempty"`
 	// SSH is the login of a docker-ssh source: read-only access to its Docker socket.
 	SSH *sshConnection `json:"ssh,omitempty"`
+	// IncludeCredentials lets apply read the source's backup keys and notify URLs and pass
+	// them straight into the create calls. Off by default; the route needs write:sensitive.
+	IncludeCredentials bool `json:"include_credentials,omitempty"`
+	// ExtrasOnly skips the app and database import and applies only backups and channels.
+	ExtrasOnly bool `json:"extras_only,omitempty"`
+	// ImportExtras applies the planned backups and channels alongside the apps.
+	ImportExtras bool `json:"import_extras,omitempty"`
+	// EnableBackupSchedules keeps imported schedules running; they are created paused otherwise.
+	EnableBackupSchedules bool `json:"enable_backup_schedules,omitempty"`
+	// EnableImportedChannels creates imported alert channels enabled; they are created disabled otherwise.
+	EnableImportedChannels bool `json:"enable_imported_channels,omitempty"`
+	// Journal is an earlier run's records, so a re-run resumes instead of creating twice.
+	Journal []dokployextras.Record `json:"journal,omitempty"`
 }
 
 func envTrue(name string) bool {
@@ -135,16 +149,16 @@ func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequ
 	return src, true
 }
 
-func (rt *Router) buildImportPlan(ctx context.Context, req platformImportRequest, src platformimport.Source) (*platformimport.Plan, error) {
+func (rt *Router) buildImportPlan(ctx context.Context, req platformImportRequest, src platformimport.Source) (*platformimport.Plan, *platformimport.Discovery, error) {
 	disc, err := src.Discover(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("reading the source platform: %w", err)
+		return nil, nil, fmt.Errorf("reading the source platform: %w", err)
 	}
 	opts, _, err := rt.importPlanOptions(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return platformimport.BuildPlan(disc, opts), nil
+	return platformimport.BuildPlan(disc, opts), disc, nil
 }
 
 // importPlanOptions reads what already exists here, so a plan can mark
@@ -225,29 +239,35 @@ func (rt *Router) handleDiscoverPlatformImport(w http.ResponseWriter, r *http.Re
 		return
 	}
 	defer req.wipeSecrets()
-	plan, err := rt.buildImportPlan(r.Context(), req, src)
+	plan, disc, err := rt.buildImportPlan(r.Context(), req, src)
 	if err != nil {
 		rt.writeImportError(w, err, req.Token)
 		return
 	}
 	stripBindMounts(rt, r, plan)
-	writeJSON(w, http.StatusOK, plan.Report)
+	resp := platformImportResponse{Report: plan.Report}
+	resp.Backups, resp.Channels = importExtras(r.Context(), req, disc)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // handleApplyPlatformImport handles POST /api/v1/imports/platform/apply.
-func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Request) {
+func (ip *importInproc) handleApplyPlatformImport(w http.ResponseWriter, r *http.Request) {
+	rt := ip.rt
 	req, src, ok := rt.decodePlatformImport(w, r)
 	if !ok {
 		return
 	}
 	defer req.wipeSecrets()
-	plan, err := rt.buildImportPlan(r.Context(), req, src)
+	plan, disc, err := rt.buildImportPlan(r.Context(), req, src)
 	if err != nil {
 		rt.writeImportError(w, err, req.Token)
 		return
 	}
 	stripBindMounts(rt, r, plan)
 	needsSecrets := false
+	if req.ExtrasOnly {
+		plan.Apps = nil
+	}
 	for _, a := range plan.Apps {
 		if len(a.Secrets) > 0 {
 			needsSecrets = true
@@ -257,10 +277,17 @@ func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
-	report := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt, providerRefs: rt.callerHasAbility(r, AbilityRoot)})
+	// An empty only list means every app, so an extras-only run skips the app import outright.
+	report := plan.Report
+	if !req.ExtrasOnly {
+		report = platformimport.Apply(r.Context(), plan, &importApplier{rt: rt, providerRefs: rt.callerHasAbility(r, AbilityRoot)})
+	}
+	resp := platformImportResponse{Report: report}
+	resp.Backups, resp.Channels = importExtras(r.Context(), req, disc)
+	ip.applyImportExtras(r, req, src, &resp)
 	rt.nudgeReconciler()
-	rt.logger.Info("api: platform import applied", slog.String("platform", req.Platform), slog.Any("counts", report.Counts))
-	writeJSON(w, http.StatusOK, report)
+	rt.logger.Info("api: platform import applied", slog.String("platform", req.Platform), slog.Any("counts", report.Counts), slog.Int("extras_created", len(resp.Journal)))
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // stripBindMounts drops host bind mounts and cron jobs for callers without the

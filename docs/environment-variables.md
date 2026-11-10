@@ -198,6 +198,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT_SECONDS` | [`deploy.approval_claim_timeout_seconds`](/runtime-settings#deploys) | `900` |
 | `APP_DEPLOY_APPROVAL_MAX_REQUIRED` | [`deploy.approval_max_required`](/runtime-settings#deploys) | `10` |
 | `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | [`deploy.approve_digest_check_timeout_seconds`](/runtime-settings#deploys) | `0` |
+| `APP_BUILD_HOOK_MAX_CIDRS` | [`deploy.build_hook_max_cidrs`](/runtime-settings#deploys) | `32` |
+| `APP_BUILD_HOOK_TRIGGERS_PER_MINUTE` | [`deploy.build_hook_triggers_per_minute`](/runtime-settings#deploys) | `6` |
 | `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
 | `APP_INLINE_SOURCE_KEEP` | [`deploy.inline_source_keep`](/runtime-settings#deploys) | `10` |
@@ -321,6 +323,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HEARTBEAT_JOB_BACKOFF_MAX` | [`heartbeat.job_backoff_max`](/runtime-settings#observability) | `30s` |
 | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | [`heartbeat.job_max_attempts`](/runtime-settings#observability) | `3` |
 | `APP_HEARTBEAT_JOB_QUEUE` | [`heartbeat.job_queue`](/runtime-settings#observability) | `64` |
+| `APP_INCIDENT_POSTMORTEM_ACTION_ITEMS_MAX` | [`incidents.postmortem_action_items_max`](/runtime-settings#observability) | `50` |
+| `APP_INCIDENT_POSTMORTEM_BODY_MAX` | [`incidents.postmortem_body_max`](/runtime-settings#observability) | `1048576` |
+| `APP_INCIDENT_POSTMORTEM_FIELD_MAX` | [`incidents.postmortem_field_max`](/runtime-settings#observability) | `8000` |
 | `APP_LOG_RULE_EVAL_INTERVAL` | [`log_rules.eval_interval`](/runtime-settings#observability) | `1m` |
 | `APP_LOG_RULE_MAX_ROWS` | [`log_rules.max_rows`](/runtime-settings#observability) | `5000` |
 | `APP_LOG_RULE_MAX_WINDOW` | [`log_rules.max_window`](/runtime-settings#observability) | `1h` |
@@ -329,6 +334,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_ALERT_NODE_CPU_PERCENT` | [`nodes.alert_cpu_percent`](/runtime-settings#observability) | `85` |
+| `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` | [`nodes.alert_disk_percent`](/runtime-settings#observability) | `90` |
+| `APP_ALERT_NODE_MEMORY_PERCENT` | [`nodes.alert_memory_percent`](/runtime-settings#observability) | `90` |
+| `APP_ALERT_NODE_SUSTAINED_INTERVALS` | [`nodes.alert_sustained_intervals`](/runtime-settings#observability) | `3` |
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |

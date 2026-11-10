@@ -160,6 +160,20 @@ Imported backup targets and schedules are journaled by name, id, shape fingerpri
 
 Undo removes only the apps the journal records as created by that run, newest first, with your own token and the normal delete route, so protected environments and delete confirmations still apply. Apps that existed before the run are never touched. An app deployed since the run is listed and skipped unless you pass `--force`. An app whose fingerprint is missing or no longer matches (it changed since the run, or the run stopped before recording it) is always skipped unless you name it with `--force-app NAME`; `--force` never overrides that. Undo checks each app again right before it deletes it. Apps have no immutable id in the API, so the fingerprint is the app's shape (image, domains, port, node, volumes and similar, never env values): if someone deletes an app and re-creates one with the same name and shape, undo cannot tell them apart, so read the plan before passing `--yes`. An app holding volume data is skipped unless you pass `--include-data` and type the number of such apps to confirm; its volumes are then deleted with it. Undo refuses a journal that is a symlink or sits in a symlinked folder, readable by others, over `APP_MIGRATE_JOURNAL_MAX_BYTES` (default 4 MiB), written for another control plane, or with a name that is not a valid app name.
 
+## Import backups and alert channels from the dashboard {#dashboard-extras}
+
+The import page in the dashboard (Settings, Import from a platform, Dokploy) shows the same backup and alert channel plan as `migrate dokploy`. For each S3 destination it lists the target name, provider, endpoint host, bucket and whether the source holds keys. For each database backup it lists the database, cron, retention and whether the schedule will run or stay paused. For each notification provider it lists the channel name, kind, whether the source holds a token and whether the channel will be enabled. Providers with no matching channel kind and items that need a review are listed with the reason.
+
+Three switches control the apply step. All are off by default:
+
+- **Include credentials** copies the source's storage keys and channel tokens to this instance. They go straight into the normal create calls and are never shown in the page, the response or the journal. It needs a token with `write:sensitive`.
+- **Keep backup schedules running**: off, imported schedules are created paused. On, schedules that ran on the source keep running.
+- **Create alert channels enabled**: off, imported channels are created disabled. On, enabled channels immediately receive broadcast notices.
+
+Targets, schedules and channels are created through the same API calls as a manual create, so the same abilities, team scope, validation and audit apply. A name that already exists is left unchanged. When no app or database is selected, the page imports backups and channels only.
+
+After the apply, **Undo** removes what this run created. It removes an item only when it still reads back by its recorded id with the same fingerprint, and leaves anything changed since in place. The journal behind the button is kept in the page only: closing or reloading the page drops it, and undo is then done by hand.
+
 ## Choose to stay if
 
 Dokploy's Swarm multi-node scheduling and its compose workflow are what you rely on, or you cannot afford a write freeze on your databases. Levelrail does not use Swarm, and its migration path has no recorded run against a live Dokploy. See [Dokploy alternative](/dokploy-alternative) and the [comparison](/comparison).

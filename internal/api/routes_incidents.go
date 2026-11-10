@@ -13,4 +13,8 @@ func (rt *Router) registerIncidentRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/incidents/{id}/notes", rt.requireAbilityForResource(AbilityWrite, incidentsResource, rt.handleAddIncidentNote))
 	mux.HandleFunc("PUT /api/v1/incidents/{id}/draft", rt.requireAbilityForResource(AbilityWrite, incidentsResource, rt.handleSaveIncidentDraft))
 	mux.HandleFunc("POST /api/v1/incidents/{id}/publish", rt.requireAbilityForResource(AbilityWrite, incidentsResource, rt.handlePublishIncident))
+	mux.HandleFunc("GET /api/v1/incidents/{id}/postmortem", rt.requireAbilityForResource(AbilityReadSensitive, incidentsResource, rt.handleGetIncidentPostmortem))
+	mux.HandleFunc("POST /api/v1/incidents/{id}/postmortem/draft", rt.requireAbilityForResource(AbilityWrite, incidentsResource, rt.handleDraftIncidentPostmortem))
+	mux.HandleFunc("PUT /api/v1/incidents/{id}/postmortem", rt.requireAbilityForResource(AbilityWrite, incidentsResource, rt.handleSaveIncidentPostmortem))
+	mux.HandleFunc("POST /api/v1/incidents/{id}/postmortem/publish", rt.requireAbilityForResource(AbilityWrite, incidentsResource, rt.handlePublishIncidentPostmortem))
 }

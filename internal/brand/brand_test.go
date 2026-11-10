@@ -223,3 +223,27 @@ func TestLoad_VisualDefaults(t *testing.T) {
 		}
 	})
 }
+
+func TestLoadFillsRepoOnlyForTheDefaultBrand(t *testing.T) {
+	minimal := func(name string) string {
+		return "name: " + name + "\nshort_name: X\nbinary_name: x\n"
+	}
+	var def Brand
+	if err := yaml.Unmarshal(defaultsYAML, &def); err != nil {
+		t.Fatal(err)
+	}
+	stock, err := Load(writeYAML(t, minimal(def.Name)))
+	if err != nil {
+		t.Skipf("minimal fixture is not a valid brand here: %v", err)
+	}
+	if stock.RepoSlug() == "" {
+		t.Fatal("the stock brand without repo_url must inherit the release repository")
+	}
+	other, err := Load(writeYAML(t, minimal("Acme")))
+	if err != nil {
+		t.Skipf("minimal fixture is not a valid brand here: %v", err)
+	}
+	if other.RepoSlug() != "" {
+		t.Fatalf("a rebranded deployment must not inherit the release repository, got %q", other.RepoSlug())
+	}
+}
