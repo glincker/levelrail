@@ -53,7 +53,7 @@ func runDomainsLimitsVerb(prog, verb string, args []string, stdout, stderr io.Wr
 	var maxBody string
 	var readT, writeT int
 	if verb == "set" {
-		fs.StringVar(&maxBody, "max-body", "0", "request body cap such as 100MiB, 0 for no domain cap")
+		fs.StringVar(&maxBody, "max-body", "0", "request body cap such as 100MiB (at least 1MiB, up to the domains.limits_max_body_bytes ceiling), 0 for no domain cap")
 		fs.IntVar(&readT, "read-timeout", 0, "seconds to wait reading from the app, 0 for the default")
 		fs.IntVar(&writeT, "write-timeout", 0, "seconds to wait writing to the app, 0 for the default")
 	}

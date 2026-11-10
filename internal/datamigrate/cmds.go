@@ -75,7 +75,7 @@ if [ -n "$SRC_USER" ]; then set -- "$@" --username "$SRC_USER" --password "$SRC_
 if [ -n "$SRC_DB" ]; then set -- "$@" --db "$SRC_DB"; fi
 if [ -n "$SRC_TLS" ]; then set -- "$@" --tls; fi
 exec mongodump --archive "$@"`
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		script = `if [ -n "$SRC_PASSWORD" ]; then export REDISCLI_AUTH="$SRC_PASSWORD"; fi
 set -- -h "$SRC_HOST" -p "$SRC_PORT"
 if [ -n "$SRC_USER" ]; then set -- "$@" --user "$SRC_USER"; fi
@@ -111,7 +111,7 @@ q() { mariadb --protocol=tcp -h"$SRC_HOST" -P"$SRC_PORT" -u"$SRC_USER" $ssl -N -
 if [ -n "$SRC_USER" ]; then set -- "$@" --username "$SRC_USER" --password "$SRC_PASSWORD"; fi
 if [ -n "$SRC_TLS" ]; then set -- "$@" --tls; fi
 exec mongosh "$@" --eval '` + mongoCountJS + `'`
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		script = `if [ -n "$SRC_PASSWORD" ]; then export REDISCLI_AUTH="$SRC_PASSWORD"; fi
 set -- -h "$SRC_HOST" -p "$SRC_PORT"
 if [ -n "$SRC_USER" ]; then set -- "$@" --user "$SRC_USER"; fi
@@ -127,7 +127,7 @@ printf 'keys|%s\n' "$n"`
 // TargetEmptinessCommand is TargetCountCommand except Redis sums the keys of every
 // logical database, so data held only in db 1 or higher still counts as data.
 func TargetEmptinessCommand(engine string) ([]string, error) {
-	if engine != EngineRedis {
+	if !isRedisFamily(engine) {
 		return TargetCountCommand(engine)
 	}
 	script := `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi
@@ -155,7 +155,7 @@ SQL`
 		script = mysqlCountScript(`q() { mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -B "$@" "$MARIADB_DATABASE"; }`)
 	case EngineMongoDB:
 		script = `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval '` + mongoCountJS + `'`
-	case EngineRedis:
+	case EngineRedis, EngineValkey:
 		script = `RTLS=""; if [ -f /certs/tls.crt ]; then RTLS="--tls --insecure -p 6380"; fi
 n=$(redis-cli $RTLS DBSIZE) || exit 1
 printf 'keys|%s\n' "$n"`

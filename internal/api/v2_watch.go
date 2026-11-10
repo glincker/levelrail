@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -153,6 +154,7 @@ func (s *v2Server) handleWatch(kind string, w http.ResponseWriter, r *http.Reque
 	stop := s.rt.watchAuthorization(r, AbilityRead, func(*http.Request) string { return v2PathApps }, cancel)
 	defer stop()
 
+	defer footprint.Stream(r.Context(), "stream:v2 watch")()
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("X-Accel-Buffering", "no")

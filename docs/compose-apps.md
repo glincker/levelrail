@@ -253,6 +253,22 @@ levelrail-cli apps env export blog-db
 
 Effective env of one service, lowest to highest precedence: the `environment:` block in the compose file, then env set on the member app, then branch or pull request overrides on that member for previews. Generated secrets are encrypted per member and masked when listed. To give several services the same value, set it on each member.
 
+## Scheduled commands in a service
+
+A schedule runs a command inside one service's running container, through the same exec path as the console, so console exec must be on for that service (`PUT /api/v1/apps/<app>-<service>/exec-access`).
+
+```bash
+levelrail-cli compose schedules add shop web --schedule "0 3 * * *" --name nightly-report -- php artisan report:send
+levelrail-cli compose schedules run shop web nightly-report
+levelrail-cli compose schedules runs shop web nightly-report
+```
+
+- Every run is kept in history with its trigger, status, exit code, duration and the tail of its output. How many bytes of output a run keeps is the `scheduled_tasks.max_output_bytes` runtime setting, and how many runs are kept is `scheduled_tasks.history_keep`. Output is shown only to callers with `read_sensitive`.
+- A scheduled tick is skipped and recorded as `skipped_freeze` while a deploy freeze covers the service, the stack or everything. Run now still works during a freeze. A global freeze pauses compose service schedules only, not plain app jobs, and a freeze skip sends no heartbeat monitor ping.
+- Creating, running and pausing a schedule need access to both the stack and that service. An unknown stack, an unknown service and one you cannot read all answer `404 app not found`.
+- The stack page shows every schedule in the Schedules card, with run now and the last runs of each.
+- API: `GET /api/v1/apps/{name}/compose/schedules` lists them all; `/api/v1/apps/{name}/compose/services/{service}/schedules` takes `POST`, and `/{id}` takes `GET`, `DELETE`, `POST /run`, `POST /enable`, `POST /disable` and `GET /runs`.
+
 ## Troubleshooting
 
 ### Compose file was rejected as invalid
@@ -344,3 +360,30 @@ docker exec -i <container> sh -c 'psql -U "${POSTGRES_USER:-postgres}" "${POSTGR
 # MySQL or MariaDB
 docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" mysql -uroot' < dump.sql
 ```
+## Imported stacks
+
+`migrate coolify` and `migrate dokploy` stage multi-service stacks from those platforms as compose apps. Imported files are treated as untrusted: they go through the same parser and host-access rules as a pasted file, so a rejected key keeps the stack blocked with the same reason, and the importer never fetches anything over the network for them. Staged files land under `--stage-dir` with owner-only permissions; deploy them with `levelrail-cli compose deploy <app> -f <path>`.
+
+## Deploy a compose app from a git repository
+
+Keep the compose file in a repository and let pushes redeploy the stack.
+Deploy the stack once (paste or template), then connect its repository:
+
+```
+levelrail-cli apps git-source compose <name> --repo https://github.com/org/stack.git --branch main --path docker/compose.yml
+levelrail-cli apps git-source compose-deploy <name>
+```
+
+The API is `PUT /api/v1/apps/{name}/compose-source` (write:sensitive), `GET` on the same path, and `POST /api/v1/apps/{name}/compose-source/deploy`. The webhook secret is shown once; rotate it, change trigger patterns or disconnect with the usual `git-source` commands.
+
+- The file goes through the same deploy path as a pasted compose file, so every check (ports, quotas, privileged and host mounts, name ownership) applies unchanged.
+- The path is relative to the repository root. `..`, absolute paths and symlinks that leave the checkout are refused. The size cap is the `compose.repo_file_max_bytes` runtime setting.
+- `include:`, `build:` and `extends:` from another file are refused. `env_file:` is ignored as for a pasted file, and no `.env` is read from the repository: keep secrets in app env vars or secret placeholders.
+- Only pushes to the configured branch deploy and trigger patterns apply (trigger mode push or release). A push is held when any service of the stack is in a protected environment or a freeze window. Deploy now is refused in a protected environment. A held push belongs to the team that owns the stack's services: an admin of that team decides it, and when the services belong to different teams the decider needs the admin role in every one of them.
+- A push answers 202 and joins the deploy queue as one attempt under the app name, so the global deploy cap applies. Deploys of one stack run one at a time, at most one push waits (the newest), and a commit already deployed or older than the deployed or waiting one is ignored. The apply is bounded by the `compose.repo_deploy_timeout` runtime setting. Manual compose deploys, rollbacks and redeploys of the stack wait for a running push. The git poller does not poll compose sources.
+- A queued compose push shares the deploy queue and its global cap with every other app, so it can wait behind other deploys. Approving a held compose push, or the end of a freeze window, applies the stack before that step returns. A freeze window on the stack, on any of its services or a global one holds a waiting push, and a released or approved compose push is not applied while one is active unless the request overrode the freeze (it fails with the freeze reason; push again after the window). When the freeze state cannot be read, the deploy waits. Deploy now records the commit's parent and time, so a later push of an older commit is ignored.
+- A push deploy runs without a caller, so a file that bind-mounts a host directory is refused there; deploy that stack by hand as a root user. A push that adds a service whose name another app already uses fails with 409.
+- The path is at most 512 bytes, with no control or format characters.
+- An app has either a compose source or a single-service git source, never both (409).
+- Removing the stack (`DELETE /api/v1/apps/{name}/compose`) cancels its queued, held and approval-waiting deploys. The repository stays connected, but pushes do nothing until the stack is deployed again by hand.
+- Commit times more than a day ahead of the server clock are not used to order pushes.

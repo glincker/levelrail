@@ -126,3 +126,21 @@ func TestVerify(t *testing.T) {
 		t.Error("tag reference must be refused")
 	}
 }
+
+func TestBuildKeepCountsDistinctImagesAndAllDigests(t *testing.T) {
+	now := time.Now()
+	recs := []docker.ImageRecord{
+		{ID: "sha256:cur", Tags: []string{"w:2"}, CreatedAt: now.Add(-48 * time.Hour)},
+		{ID: "sha256:prev", Tags: []string{"w:1"}, RepoDigests: []string{"a/w@sha256:aaa", "b/w@sha256:bbb"}, CreatedAt: now.Add(-48 * time.Hour)},
+	}
+	app := AppState{Name: "w", LiveImage: "w:2", Attempts: []Attempt{
+		{ID: "3", Image: "w:2", Status: "succeeded", StartedAt: now},
+		{ID: "2", Image: "w:2", Status: "succeeded", StartedAt: now.Add(-time.Hour)},
+		{ID: "1", Image: "b/w@sha256:bbb", Status: "succeeded", StartedAt: now.Add(-2 * time.Hour)},
+	}}
+	for _, e := range Build(recs, []AppState{app}, 2, 0, now) {
+		if e.ID == "sha256:prev" && (!e.Protected || !hasRole(e.Apps, RoleRecent)) {
+			t.Errorf("previous release %+v not kept as recent", e)
+		}
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -345,6 +346,9 @@ type volumeBackupPolicyResource struct {
 	PreHook       string `json:"pre_hook"`
 	PostHook      string `json:"post_hook"`
 	Quiesce       string `json:"quiesce"`
+	// HooksHidden is set when the caller lacks write:sensitive: hooks often
+	// carry credentials (an RCON password), so readers never see them.
+	HooksHidden bool `json:"hooks_hidden,omitempty"`
 }
 
 // handleGetVolumeBackupPolicy handles
@@ -363,10 +367,14 @@ func (rt *Router) handleGetVolumeBackupPolicy(w http.ResponseWriter, r *http.Req
 		rt.internalError(w, "api: get volume backup policy failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, volumeBackupPolicyResource{
+	res := volumeBackupPolicyResource{
 		ServiceName: svc, VolumeName: vol, RetainDaily: p.RetainDaily, RetainWeekly: p.RetainWeekly,
 		RetainMonthly: p.RetainMonthly, PreHook: p.PreHook, PostHook: p.PostHook, Quiesce: p.Quiesce,
-	})
+	}
+	if (res.PreHook != "" || res.PostHook != "") && !rt.callerMayEditBackupHooks(r, svc) {
+		res.PreHook, res.PostHook, res.HooksHidden = "", "", true
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // maxHookLength bounds a pre or post backup hook command.
@@ -402,11 +410,17 @@ func (rt *Router) handleSetVolumeBackupPolicy(w http.ResponseWriter, r *http.Req
 		ServiceName: svc, VolumeName: vol, RetainDaily: req.RetainDaily, RetainWeekly: req.RetainWeekly,
 		RetainMonthly: req.RetainMonthly, PreHook: strings.TrimSpace(req.PreHook), PostHook: strings.TrimSpace(req.PostHook), Quiesce: req.Quiesce,
 	}
+	prev, err := rt.backupProtectionStore.GetVolumeBackupPolicy(r.Context(), svc, vol)
+	if err != nil && !errors.Is(err, store.ErrVolumeBackupPolicyNotFound) {
+		rt.internalError(w, "api: set volume backup policy: load current failed", err)
+		return
+	}
 	if err := rt.backupProtectionStore.SetVolumeBackupPolicy(r.Context(), p); err != nil {
 		rt.internalError(w, "api: set volume backup policy failed", err)
 		return
 	}
-	req.ServiceName, req.VolumeName, req.PreHook, req.PostHook = svc, vol, p.PreHook, p.PostHook
+	rt.auditVolumeBackupHooks(r, svc, vol, prev, p)
+	req.ServiceName, req.VolumeName, req.PreHook, req.PostHook, req.HooksHidden = svc, vol, p.PreHook, p.PostHook, false
 	writeJSON(w, http.StatusOK, req)
 }
 
@@ -548,3 +562,66 @@ func (rt *Router) chooseRestoreVolumeName(w http.ResponseWriter, req volumeResto
 
 // restoreVolumePrefix is the name prefix an app's own volumes carry.
 func restoreVolumePrefix(app string) string { return "app-" + app + "-" }
+
+// hookChange names what happened to one hook; the command never leaves here.
+func hookChange(prev, next string) string {
+	switch {
+	case prev == next:
+		return ""
+	case next == "":
+		return "cleared"
+	default:
+		return "set"
+	}
+}
+
+// auditVolumeBackupHooks records that a hook was set or cleared. The command
+// text stays out of the audit log, it is remote code that may hold secrets.
+func (rt *Router) auditVolumeBackupHooks(r *http.Request, app, volume string, prev, next store.VolumeBackupPolicy) {
+	pre, post := hookChange(prev.PreHook, next.PreHook), hookChange(prev.PostHook, next.PostHook)
+	if rt.auditLog == nil || (pre == "" && post == "") {
+		return
+	}
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: backup hook audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	detail := map[string]string{}
+	if pre != "" {
+		detail["pre_hook"] = pre
+	}
+	if post != "" {
+		detail["post_hook"] = post
+	}
+	raw, _ := json.Marshal(detail)
+	a := rt.accessActor(r)
+	entry := store.AuditEntry{
+		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityWriteSensitive, Method: r.Method, Path: "/api/v1/apps/" + app + "/volumes/" + volume + "/backup-policy#hooks",
+		StatusCode: http.StatusOK, RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")), Detail: string(raw),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: backup hook audit save failed", slog.String("error", err.Error()), slog.String("app", app))
+	}
+}
+
+// callerMayEditBackupHooks applies the same resource-aware write:sensitive
+// decision as the PUT route (teams, protected environments, IAM). Any lookup
+// error hides hooks: this gate must never fail open.
+func (rt *Router) callerMayEditBackupHooks(r *http.Request, app string) bool {
+	if rt.policies == nil {
+		return false
+	}
+	ptype, pid, abilities, err := rt.callerPrincipal(r)
+	if err != nil {
+		return false
+	}
+	policies, err := rt.policies.ListPoliciesForPrincipal(r.Context(), ptype, pid)
+	if err != nil {
+		return false
+	}
+	allowed, hidden, err := rt.authorizeResourceInEnvironment(r.Context(), ptype, pid, abilities, policies, AbilityWriteSensitive, resourcePrefixApp+app)
+	return err == nil && allowed && !hidden
+}

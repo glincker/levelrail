@@ -2,7 +2,9 @@ package api
 
 import (
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 )
 
 // pageQuery applies optional limit (capped at appListMaxLimit) and offset query params to items
@@ -60,4 +62,21 @@ func pageWithInfo[T any](w http.ResponseWriter, r *http.Request, items []T) ([]T
 		info.NextOffset = &next
 	}
 	return paged, info
+}
+
+// sortQuery orders items by the ?sort= key (a leading "-" reverses it). Unknown keys keep the
+// store order so a stale client never gets an error for a column it invented.
+func sortQuery[T any](r *http.Request, items []T, cmps map[string]func(a, b T) int) {
+	key := r.URL.Query().Get("sort")
+	desc := strings.HasPrefix(key, "-")
+	cmp, ok := cmps[strings.TrimPrefix(key, "-")]
+	if !ok {
+		return
+	}
+	slices.SortStableFunc(items, func(a, b T) int {
+		if desc {
+			return cmp(b, a)
+		}
+		return cmp(a, b)
+	})
 }

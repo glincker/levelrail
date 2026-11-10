@@ -56,7 +56,7 @@ type RunStore interface {
 type HistoryStore interface {
 	CreateScheduledTaskRun(ctx context.Context, run store.ScheduledTaskRun) error
 	FinishScheduledTaskRun(ctx context.Context, run store.ScheduledTaskRun) error
-	PruneScheduledTaskRuns(ctx context.Context, taskID string, keep int, outputCutoff time.Time) error
+	PruneScheduledTaskRuns(ctx context.Context, taskID string, p store.RunRetention) error
 }
 
 // SpecBuilder derives a one-off container spec from a service, so a fresh
@@ -105,6 +105,11 @@ type Runner struct {
 	Limits   Limits
 	// HistoryKeepFn reads the live scheduled_tasks.history_keep setting.
 	HistoryKeepFn func(context.Context) int
+	// OutputCapFn reads the per-run output bound live from runtime settings.
+	OutputCapFn func(context.Context) int
+	// Paused returns a reason to skip a scheduled tick (a deploy freeze), or "".
+	// Manual runs are an explicit operator action and are never paused.
+	Paused func(context.Context, store.ScheduledTask) string
 	// Target and HTTPConfigs serve http-mode jobs; Client overrides the
 	// HTTP client (nil uses http.DefaultClient).
 	Target      HTTPTarget
@@ -155,9 +160,9 @@ func (r *Runner) attemptTimeout(task store.ScheduledTask) time.Duration {
 	case r.Timeout > 0:
 		return r.Timeout
 	case task.TimeoutSeconds > 0:
-		return time.Duration(task.TimeoutSeconds) * time.Second
+		return clampTimeout(time.Duration(task.TimeoutSeconds) * time.Second)
 	default:
-		return r.limits().DefaultTimeout
+		return clampTimeout(r.limits().DefaultTimeout)
 	}
 }
 
@@ -205,6 +210,8 @@ type result struct {
 	attempts    int
 	secrets     []string
 	infraErr    error
+	// refused marks an attempt blocked by policy, which a retry cannot change.
+	refused bool
 }
 
 // RunTrigger runs task once. task.ConcurrencyPolicy governs a still
@@ -214,6 +221,11 @@ type result struct {
 // inside the one run. The returned error is only an infrastructure
 // failure; a failing command is a recorded outcome, not an error.
 func (r *Runner) RunTrigger(ctx context.Context, task store.ScheduledTask, trig Trigger) error {
+	if trig.Kind == store.ScheduledTaskTriggerSchedule && r.Paused != nil {
+		if reason := r.Paused(ctx, task); reason != "" {
+			return r.settleWithoutRunning(ctx, task, trig, store.ScheduledTaskStatusSkippedFreeze, reason)
+		}
+	}
 	policy := normalizeConcurrencyPolicy(task.ConcurrencyPolicy)
 
 	runCtx, cleanup, skip := r.beginRun(ctx, task.ID, policy)
@@ -321,8 +333,7 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 		if err := r.History.FinishScheduledTaskRun(ctx, row); err != nil {
 			return fmt.Errorf("scheduledtask: finish run %q of %q: %w", runID, task.ID, err)
 		}
-		l := r.limits()
-		if err := r.History.PruneScheduledTaskRuns(ctx, task.ID, r.historyKeep(ctx), ended.Add(-l.OutputRetention)); err != nil {
+		if err := r.History.PruneScheduledTaskRuns(ctx, task.ID, r.retention(ctx, task.ID, ended)); err != nil {
 			r.log().Warn("scheduledtask: prune history failed", slog.String("task_id", task.ID), slog.String("error", err.Error()))
 		}
 	}
@@ -336,6 +347,11 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 }
 
 func (r *Runner) outputCap() int {
+	if r.OutputCapFn != nil {
+		if n := r.OutputCapFn(context.Background()); n > 0 {
+			return n
+		}
+	}
 	if n := r.limits().MaxOutputBytes; n > 0 {
 		return n
 	}
@@ -374,7 +390,7 @@ func (r *Runner) execute(runCtx context.Context, task store.ScheduledTask, runID
 	for attempt := 1; ; attempt++ {
 		res = r.attempt(runCtx, task, runID)
 		res.attempts = attempt
-		if res.status == store.ScheduledTaskStatusSuccess || !retryable(res.status) || attempt > retries || runCtx.Err() != nil {
+		if res.status == store.ScheduledTaskStatusSuccess || res.refused || !retryable(res.status) || attempt > retries || runCtx.Err() != nil {
 			break
 		}
 		history = append(history, fmt.Sprintf("attempt %d: %s", attempt, res.status))
@@ -435,6 +451,13 @@ func (r *Runner) attempt(runCtx context.Context, task store.ScheduledTask, runID
 		}
 	}
 	res := result{nodeID: svc.NodeID}
+
+	// Exec access is read at fire time so turning it off stops existing schedules too.
+	if !svc.ExecEnabled {
+		res.status, res.refused = store.ScheduledTaskStatusFailed, true
+		res.message = fmt.Sprintf("refused: exec access is disabled for app %q; enable it with PUT /api/v1/apps/%s/exec-access", task.ServiceName, task.ServiceName)
+		return res
+	}
 
 	rt, err := r.Resolver(svc.NodeID)
 	if err != nil {
@@ -509,6 +532,10 @@ func (r *Runner) attemptExec(execCtx, runCtx context.Context, task store.Schedul
 			return res
 		}
 		if errors.Is(execCtx.Err(), context.Canceled) {
+			if errors.Is(context.Cause(execCtx), ErrRunCancelled) {
+				res.status, res.message = store.ScheduledTaskStatusInterrupted, cancelledMessage
+				return res
+			}
 			res.status, res.output = store.ScheduledTaskStatusInterrupted, shutdownMessage
 			return res
 		}
@@ -518,6 +545,11 @@ func (r *Runner) attemptExec(execCtx, runCtx context.Context, task store.Schedul
 }
 
 const shutdownMessage = "control plane shut down while this run was in flight"
+
+// ErrRunCancelled is the cancel cause of a run an operator stopped, so it is not reported as a shutdown.
+var ErrRunCancelled = errors.New("run cancelled by the operator")
+
+const cancelledMessage = "cancelled by the operator; the container was killed and removed"
 
 func (r *Runner) execOutcome(res result, out *tailCappedWriter, err error) result {
 	if err == nil {
@@ -574,6 +606,13 @@ func (r *Runner) attemptFresh(execCtx, runCtx context.Context, task store.Schedu
 	case err == nil:
 	case isReplaced(execCtx):
 		res.status, res.output = store.ScheduledTaskStatusReplaced, replacedOutputMessage
+		return res
+	case errors.Is(err, context.Canceled) && errors.Is(context.Cause(execCtx), ErrRunCancelled):
+		res.status, res.message = store.ScheduledTaskStatusInterrupted, cancelledMessage
+		if out.ExitCode > 0 {
+			code := out.ExitCode
+			res.exitCode = &code
+		}
 		return res
 	case errors.Is(err, context.Canceled):
 		res.status, res.message = store.ScheduledTaskStatusInterrupted, shutdownMessage

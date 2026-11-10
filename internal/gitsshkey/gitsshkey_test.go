@@ -131,3 +131,19 @@ func TestHostKeyCallbackRejectsAnyBadLine(t *testing.T) {
 		t.Fatal("a pin with an invalid later line must be refused")
 	}
 }
+
+// Only the ssh transport may reach the deploy key path; git and file URLs must not count as ssh.
+func TestIsSSHURL(t *testing.T) {
+	cases := map[string]bool{
+		"ssh://git@github.com/org/repo.git": true,
+		"git@github.com:org/repo.git":       true,
+		"git://github.com/org/repo.git":     false,
+		"file:///srv/repo":                  false,
+		"https://github.com/org/repo.git":   false,
+	}
+	for repo, want := range cases {
+		if got := IsSSHURL(repo); got != want {
+			t.Errorf("IsSSHURL(%q) = %v, want %v", repo, got, want)
+		}
+	}
+}

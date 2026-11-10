@@ -23,16 +23,19 @@ func callerTeamScope(ctx context.Context) (scope *teamScope, ok bool) {
 // teams may call. Each one filters by team itself; everything else answers
 // 403 for them, so a new route is closed to tenants until reviewed.
 var tenantRoutes = map[string]bool{
-	"GET /api/v1/apps":                   true,
-	"POST /api/v1/apps":                  true,
-	"GET /api/v1/apps/resource-usage":    true,
-	"GET /api/v1/databases":              true,
-	"POST /api/v1/databases":             true,
-	"GET /api/v1/deployments":            true,
-	"GET /api/v1/deployments/summary":    true,
-	"GET /api/v1/deployments/stream":     true,
-	"GET /api/v1/deploy-approvals":       true,
-	"GET /api/v1/attention/feed":         true,
+	"GET /api/v1/apps":                true,
+	"POST /api/v1/apps":               true,
+	"GET /api/v1/apps/resource-usage": true,
+	"GET /api/v1/databases":           true,
+	"POST /api/v1/databases":          true,
+	"GET /api/v1/deployments":         true,
+	"GET /api/v1/deployments/summary": true,
+	"GET /api/v1/deployments/stream":  true,
+	"GET /api/v1/events/changes":      true,
+	"GET /api/v1/deploy-approvals":    true,
+	"GET /api/v1/attention/feed":      true,
+	// Each section is replayed through the gate as its own request.
+	"GET /api/v1/shell":                  true,
 	"GET /api/v1/traffic/summary":        true,
 	"GET /api/v1/usage/summary":          true,
 	"GET /api/v1/static-sites":           true,
@@ -180,26 +183,34 @@ func (rt *Router) approvalDecision(r *http.Request, scope *teamScope, required s
 	if err != nil {
 		return 0, "", err
 	}
+	return rt.approvalScopeStatus(r.Context(), scope, a, required, abilities)
+}
+
+// approvalScopeStatus is approvalDecision's team check for a loaded approval,
+// also re-run on each counted vote when a deploy needs several approvers.
+func (rt *Router) approvalScopeStatus(ctx context.Context, scope *teamScope, a store.DeployApproval, required string, abilities []string) (int, string, error) {
 	for _, app := range []string{a.ServiceName, a.SourceServiceName} {
 		if app == "" {
 			continue
 		}
-		owner, err := rt.ownerForResource(r.Context(), resourcePrefixApp, app)
+		owners, err := rt.ownersForResource(ctx, resourcePrefixApp, app)
 		if err != nil {
 			return 0, "", err
 		}
-		if owner == nil && !scope.instance {
-			return http.StatusNotFound, "approval not found", nil
+		// Visibility first for every owner, so a partial member of a compose stack gets the same 404.
+		for _, o := range owners {
+			if scope.roleFor(o.owner) == "" {
+				return http.StatusNotFound, "approval not found", nil
+			}
 		}
-		role := scope.roleFor(owner)
-		if role == "" {
-			return http.StatusNotFound, "approval not found", nil
-		}
-		if !hasAbility(capAbilities(abilities, ownerTeam(owner), role), required) {
-			return http.StatusForbidden, msgTeamRoleTooLow, nil
-		}
-		if required != AbilityRead && app == a.ServiceName && !store.TeamRoleAtLeast(role, store.TeamRoleAdmin) {
-			return http.StatusForbidden, "deciding a protected environment deploy needs the admin or owner role", nil
+		for _, o := range owners {
+			role := scope.roleFor(o.owner)
+			if !hasAbility(capAbilities(abilities, ownerTeam(o.owner), role), required) {
+				return http.StatusForbidden, msgTeamRoleTooLow, nil
+			}
+			if required != AbilityRead && app == a.ServiceName && !store.TeamRoleAtLeast(role, store.TeamRoleAdmin) {
+				return http.StatusForbidden, "deciding a protected environment deploy needs the admin or owner role", nil
+			}
 		}
 	}
 	return 0, "", nil

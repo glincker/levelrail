@@ -22,7 +22,7 @@ export const FLOAT_MIN_H = 280
 export const FLOAT_DEFAULT_W = 420
 export const BOTTOM_MIN = 200
 export const SIDE_MIN = 320
-export const LAUNCHER_SIZE = 56
+export const LAUNCHER_SIZE = 40
 export const KEY_STEP = 16
 export const KEY_STEP_LARGE = 64
 

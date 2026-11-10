@@ -152,6 +152,12 @@ func (rt *Router) handleListEventWebhooks(w http.ResponseWriter, r *http.Request
 	for i, h := range hooks {
 		out[i] = rt.eventWebhookResource(r.Context(), svc, h)
 	}
+	sortQuery(r, out, map[string]func(a, b eventWebhookResource) int{
+		"name": func(a, b eventWebhookResource) int {
+			return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+		},
+		"created": func(a, b eventWebhookResource) int { return strings.Compare(a.CreatedAt, b.CreatedAt) },
+	})
 	writeJSON(w, http.StatusOK, out)
 }
 

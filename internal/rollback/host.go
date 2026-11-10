@@ -83,6 +83,10 @@ func SwapInBackup(dbPath, backupPath string, now time.Time) (string, error) {
 		_ = UndoSwap(dbPath, aside)
 		return "", fmt.Errorf("close database: %w", err)
 	}
+	if err := store.KeepRestoredAppExpiries(context.Background(), dbPath); err != nil {
+		_ = UndoSwap(dbPath, aside)
+		return "", err
+	}
 	return aside, nil
 }
 

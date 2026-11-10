@@ -169,13 +169,16 @@ func (db *DB) GetSessionActivity(ctx context.Context, sessionID string) (Session
 
 // TouchSessionActivity records that the session was used at now.
 func (db *DB) TouchSessionActivity(ctx context.Context, sessionID, userID string, now time.Time) error {
-	_, err := db.ExecContext(ctx, `INSERT INTO session_activity (session_id, user_id, last_seen_at) VALUES (?, ?, ?)
-		ON CONFLICT (session_id) DO UPDATE SET last_seen_at = excluded.last_seen_at`, sessionID, userID, now.Unix())
-	if err != nil {
-		return fmt.Errorf("store: touch session activity: %w", err)
-	}
-	return nil
+	return db.touchSession(sessionID, userID, now, func() error {
+		if _, err := db.ExecContext(ctx, sessionTouchSQL, sessionID, userID, now.Unix()); err != nil {
+			return fmt.Errorf("store: touch session activity: %w", err)
+		}
+		return nil
+	})
 }
+
+const sessionTouchSQL = `INSERT INTO session_activity (session_id, user_id, last_seen_at) VALUES (?, ?, ?)
+		ON CONFLICT (session_id) DO UPDATE SET last_seen_at = excluded.last_seen_at`
 
 // SetSessionMethod records how a session signed in, for policies that trust the IdP's MFA.
 func (db *DB) SetSessionMethod(ctx context.Context, sessionID, userID, method string, now time.Time) error {

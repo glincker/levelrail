@@ -20,6 +20,7 @@ import { jobErrorMessage } from '../lib/jobAccess'
 import { HistoryKeptCard } from './HistoryKeptCard'
 import { JobDialog } from './JobDialog'
 import { JobRunsPanel } from './JobRunsPanel'
+import { guardsSummaryParts } from '../lib/jobGuards'
 import { JobStatusBadge } from './JobStatusBadge'
 import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
@@ -40,13 +41,33 @@ function jobLabel(task: ScheduledTask): string {
   return task.name || jobTarget(task)
 }
 
+function GuardsSummary({ task }: { task: ScheduledTask }) {
+  const { t } = useTranslation('jobs')
+  const parts = guardsSummaryParts(task)
+  if (parts.length === 0) return null
+  return (
+    <span className="text-xs text-muted-foreground">
+      {parts
+        .map((p) =>
+          t(`guards.summary.${p.key}`, { seconds: p.seconds, count: p.count }),
+        )
+        .join(' · ')}
+    </span>
+  )
+}
+
 function LastRunCell({ task }: { task: ScheduledTask }) {
   const { t } = useTranslation('jobs')
   if (task.running_since) {
     return <JobStatusBadge status="running" />
   }
   if (!task.last_run_at || !task.last_run_status) {
-    return <span className="text-muted-foreground">{t('neverRun')}</span>
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="text-muted-foreground">{t('neverRun')}</span>
+        <GuardsSummary task={task} />
+      </div>
+    )
   }
   return (
     <div className="flex flex-col gap-1">
@@ -64,6 +85,7 @@ function LastRunCell({ task }: { task: ScheduledTask }) {
           {t('missedInARow', { count: task.consecutive_missed })}
         </span>
       ) : null}
+      <GuardsSummary task={task} />
     </div>
   )
 }

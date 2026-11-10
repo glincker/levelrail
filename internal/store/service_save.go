@@ -244,12 +244,9 @@ func newIncarnation() (string, error) {
 
 // EnsureServiceIncarnation gives a legacy row its id and returns the stored one. The conditional UPDATE keeps two racing passes on one value.
 func (db *DB) EnsureServiceIncarnation(ctx context.Context, name string) (string, error) {
-	id, err := newIncarnation()
-	if err != nil {
-		return "", fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
-	}
-	if _, err := db.ExecContext(ctx, `UPDATE desired_services SET incarnation = ? WHERE name = ? AND incarnation = ''`, id, name); err != nil {
-		return "", fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
+	id, _, err := db.ClaimServiceIncarnation(ctx, name)
+	if err != nil || id != "" {
+		return id, err
 	}
 	var got string
 	if err := db.QueryRowContext(ctx, `SELECT incarnation FROM desired_services WHERE name = ?`, name).Scan(&got); err != nil {
@@ -259,6 +256,23 @@ func (db *DB) EnsureServiceIncarnation(ctx context.Context, name string) (string
 		return "", fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
 	}
 	return got, nil
+}
+
+// ClaimServiceIncarnation sets a new id only on a row that has none and
+// returns it; updated is false when another caller set one first.
+func (db *DB) ClaimServiceIncarnation(ctx context.Context, name string) (id string, updated bool, err error) {
+	next, err := newIncarnation()
+	if err != nil {
+		return "", false, fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
+	}
+	err = db.QueryRowContext(ctx, `UPDATE desired_services SET incarnation = ? WHERE name = ? AND incarnation = '' RETURNING incarnation`, next, name).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
+	}
+	return id, true, nil
 }
 
 // claimServiceDomains makes serviceName's service_domains rows match

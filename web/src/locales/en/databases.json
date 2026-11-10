@@ -690,6 +690,12 @@
   "banner": {
     "title": "Databases",
     "description": "Create a managed database beside your apps. Credentials are injected for you, backups run on a schedule, and you can restore to a point in time.",
+    "pickEngine": "Pick an engine",
+    "value": {
+      "credentials": "Credentials injected for you",
+      "backups": "Backups on a schedule",
+      "restore": "Restore to a point in time"
+    },
     "whatFor": "Pick an engine, accept the defaults, and your first database is running in under a minute. Already have one elsewhere? Connect it as an external database.",
     "diagram": {
       "app": "app",
@@ -1013,5 +1019,90 @@
       "done": "Dump imported.",
       "failed": "Import failed."
     }
+  },
+  "filter": {
+    "search": "Search databases",
+    "engines": "Engines",
+    "enginesCount_one": "{{count}} engine",
+    "enginesCount_other": "{{count}} engines",
+    "statusGroup": "Filter by status",
+    "clear": "Clear filters",
+    "status": {
+      "healthy": "Healthy",
+      "attention": "Needs attention",
+      "reconciling": "Reconciling",
+      "stopped": "Stopped"
+    },
+    "emptyTitle": "No databases match these filters",
+    "emptyBody": "Try another search, engine or status, or clear the filters to see every database.",
+    "tags": "Tags",
+    "tagOption": "#{{tag}}"
+  },
+  "bulk": {
+    "region": "Bulk actions",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "selectAll_one": "Select the {{count}} shown database",
+    "selectAll_other": "Select all {{count}} shown databases",
+    "selectOne": "Select {{name}}",
+    "clear": "Clear selection",
+    "action": {
+      "start": "Start",
+      "stop": "Stop",
+      "backup": "Back up"
+    },
+    "reviewTitle_one": "{{action}} {{count}} database",
+    "reviewTitle_other": "{{action}} {{count}} databases",
+    "reviewDescription": "Each database is checked against your permissions on its own. Ones that cannot take this action are skipped.",
+    "resultsTitle": "{{action}}: results",
+    "summary": "{{ok}} done, {{failed}} failed, {{skipped}} skipped.",
+    "stopWarning_one": "Stopping removes the container for {{count}} database. Data stays on its volume and apps lose their connection until you start it again.",
+    "stopWarning_other": "Stopping removes the containers for {{count}} databases. Data stays on their volumes and apps lose their connection until you start them again.",
+    "confirm_one": "{{action}} {{count}}",
+    "confirm_other": "{{action}} {{count}}",
+    "cancel": "Cancel",
+    "close": "Close",
+    "working": "Working...",
+    "result": {
+      "planned": "Ready",
+      "ok": "Done",
+      "skipped": "Skipped",
+      "denied": "Not allowed",
+      "protected": "Protected",
+      "notFound": "Not found",
+      "error": "Failed"
+    },
+    "skip": {
+      "external": "External, not run here",
+      "notCreated": "Not created yet",
+      "running": "Already running",
+      "stopped": "Already stopped",
+      "noTarget": "No backup target",
+      "noBackups": "No backups for this engine"
+    }
+  },
+  "rowActions": {
+    "label": "Actions for {{name}}",
+    "open": "Open",
+    "copyConnection": "Copy connection string",
+    "copied": "Connection string copied, password left out.",
+    "noBackupTarget": "Set up backups first"
+  },
+  "params": {
+    "title": "Engine parameters",
+    "description": "Tune the engine from a fixed list of safe settings. Changes are staged and only take effect when you apply them or start the database.",
+    "staged": "Change staged",
+    "name": "Parameter",
+    "default": "Default",
+    "current": "Running",
+    "next": "Next",
+    "engineDefault": "engine default",
+    "stage": "Stage change",
+    "apply": "Apply and restart",
+    "confirmApply": "Confirm restart",
+    "discard": "Discard",
+    "failed": "Could not update parameters",
+    "note": "Clear a field to go back to the engine default.",
+    "pendingNote": "Applying restarts the database. A start after a stop applies it too."
   }
 }

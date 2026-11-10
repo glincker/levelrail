@@ -167,6 +167,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		ingressOpts = append(ingressOpts, skewIngress, ingressreconcile.WithDomainLimitCeilings(func(ctx context.Context) (int64, int) {
 			s := deps.settingsService()
 			return int64(s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxBodyBytes)), s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxTimeoutSeconds)
+		}), ingressreconcile.WithDomainTuningBounds(func(ctx context.Context) ingressreconcile.TuningBounds {
+			s := deps.settingsService()
+			return ingressreconcile.TuningBounds{
+				MinSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMinTimeoutSeconds), MaxSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMaxTimeoutSeconds),
+				MaxStreamSeconds: s.Limit(ctx, runtimesettings.KeyDomainTuningMaxStreamSeconds),
+			}
 		}))
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial), ingressreconcile.WithGateSecret(deps.gateSecret))
@@ -423,6 +429,11 @@ func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []s
 // A database whose credentials fail to resolve still gets a controller, and is retried on the next pass.
 func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
 	controllers := make([]reconcile.Controller, 0, len(databases))
+	live := make([]string, 0, len(databases))
+	for _, desired := range databases {
+		live = append(live, desired.Name)
+	}
+	databaseSharedState().Retain(live)
 	for _, desired := range databases {
 		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, desired.NodeID))
 		if err != nil {
@@ -438,7 +449,14 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
 		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
+		dbOpts = append(dbOpts, database.WithSharedState(databaseSharedState()), database.WithRemoteNode(runtimeNodeID(deps, desired.NodeID) != ""))
 		dbOpts = append(dbOpts, database.WithAgentVersion(agentVersionLookup(deps)))
+		dbOpts = append(dbOpts, database.WithParamsMaxMemory(func() int {
+			if svc := deps.settingsService(); svc != nil {
+				return svc.DatabaseParamsMaxMemoryMB(context.Background())
+			}
+			return 0
+		}))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
@@ -453,6 +471,17 @@ var (
 func pendingReadiness() *application.PendingReadiness {
 	pendingReadinessOnce.Do(func() { pendingReadinessInst = application.NewPendingReadiness() })
 	return pendingReadinessInst
+}
+
+var (
+	databaseSharedOnce sync.Once
+	databaseSharedInst *database.SharedState
+)
+
+// databaseSharedState is shared so params watches and recreate guards survive the per-pass controller rebuild.
+func databaseSharedState() *database.SharedState {
+	databaseSharedOnce.Do(func() { databaseSharedInst = database.NewSharedState() })
+	return databaseSharedInst
 }
 
 var (

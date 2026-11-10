@@ -110,3 +110,35 @@ func TestRun_MigrateDokploy_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
 	}
 }
+
+func TestRun_MigrateDokploy_DryRunNeverPrintsBasicAuthPassword(t *testing.T) {
+	const canary = "dry-run-canary-pw-91"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/project.all":
+			_, _ = w.Write([]byte(`[{"projectId":"p1","name":"default"}]`))
+		case "/api/project.one":
+			_, _ = w.Write([]byte(`{"projectId":"p1","applications":[{"applicationId":"a1","name":"portal"}]}`))
+		case "/api/application.one":
+			_, _ = w.Write([]byte(`{"applicationId":"a1","name":"portal","sourceType":"github","buildType":"dockerfile","security":[{"username":"ops","password":"` + canary + `"}]}`))
+		case "/api/domain.byApplicationId":
+			_, _ = w.Write([]byte(`[{"host":"portal.example.com","port":3000}]`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	// Without --apply the command is the dry run: it prints the plan and writes only app.yaml.
+	for _, extra := range [][]string{{}, {"--json"}} {
+		args := append([]string{"migrate", "dokploy", "--url", srv.URL, "--token", "t", "--out-dir", t.TempDir()}, extra...)
+		var stdout, stderr bytes.Buffer
+		if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
+			t.Fatalf("exit = %d (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())
+		}
+		if strings.Contains(stdout.String()+stderr.String(), canary) {
+			t.Fatalf("dry-run output %v leaked the basic-auth password", extra)
+		}
+	}
+}

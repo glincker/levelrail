@@ -6,35 +6,56 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 )
 
 type migrateDokployFlags struct {
 	dokployURL          string
 	dokployToken        string
 	outDir              string
+	stageDir            string
 	apply               bool
 	includeSecretValues bool
 	jsonOut             bool
+	nodeMap             string
+	createWebhooks      bool
+	enableBackups       bool
+	enableChannels      bool
 }
 
 // runMigrateDokploy implements "migrate dokploy", mirroring
 // runMigrateCoolify (migrate_coolify.go) exactly: same flag surface,
 // same file-vs-apply modes, same report shape.
 func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	resume := false
+	if len(args) > 0 {
+		switch args[0] {
+		case "resume":
+			resume, args = true, args[1:]
+		case "undo":
+			return runMigrateUndo(prog, "dokploy", args[1:], os.Stdin, stdout, stderr, lookupEnv)
+		}
+	}
 	fs := flag.NewFlagSet(prog+" migrate dokploy", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
 	var f migrateDokployFlags
-	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag string
+	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag, journalFlag string
 	fs.StringVar(&f.dokployURL, "url", "", "Dokploy instance base URL, e.g. https://dokploy.example.com (required)")
 	fs.StringVar(&f.dokployToken, "token", "", "Dokploy API key (required)")
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
+	fs.StringVar(&f.stageDir, "stage-dir", defaultStageDir, "directory compose stacks are staged into as compose.yaml plus stack.env, both owner-only")
 	fs.BoolVar(&f.apply, "apply", false, "create apps directly on the target Levelrail instance (POST /api/v1/apps) instead of writing files")
 	fs.BoolVar(&f.includeSecretValues, "include-secret-values", false, "write the real env var values already returned by Dokploy into a companion secrets file, or apply them via PUT .../secrets/{key}; never written into a generated app.yaml")
 	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+apiTokenEnvHelp+" and the credentials file)")
 	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&targetProfileFlag, "target-profile", "", "named credentials profile to read the target Levelrail instance from, --apply only (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
+	fs.StringVar(&f.nodeMap, "node-map", "", "comma-separated source-server=node pairs; --apply puts each app on the named node, unknown nodes are refused before anything is created")
+	fs.BoolVar(&f.createWebhooks, "create-webhooks", false, createWebhooksHelp)
+	fs.StringVar(&journalFlag, "journal", "", journalFlagHelp)
+	fs.BoolVar(&f.enableChannels, "enable-imported-channels", false, "create imported alert channels enabled, which receive broadcast notices (key rotation, maintenance, updates) right away (default: created disabled)")
+	fs.BoolVar(&f.enableBackups, "enable-backup-schedules", false, "keep imported database backup schedules running when they were on in Dokploy (default: imported paused)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateDokployUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -44,6 +65,12 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitUsage
 	}
 
+	if resume {
+		f.apply = true
+	}
+	if journalFlag != "" && !f.apply {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("%s", "--journal records an --apply run: add --apply, or use resume or undo"))
+	}
 	if f.dokployURL == "" || f.dokployToken == "" {
 		return reportError(stdout, stderr, f.jsonOut, newValidationError("--url and --token (Dokploy's own) are both required"))
 	}
@@ -60,10 +87,26 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	for _, summary := range apps {
 		report.Apps = append(report.Apps, fetchAndMapDokployApplication(ctx, dokploy, summary, f.includeSecretValues))
 	}
+	composeApps, disc, src := discoverDokployCompose(ctx, f, lookupEnv, stderr)
+	report.Apps = append(report.Apps, composeApps...)
+	if disc != nil {
+		report.Backups = planDokployBackups(disc, backupPlanOptionsFromEnv(ctx, f.enableBackups, lookupEnv))
+		report.Backups.FinishPlan(f.includeSecretValues)
+		if report.Backups != nil && f.apply && f.includeSecretValues {
+			report.Backups.Creds = src.DestinationCredentials
+		}
+		report.Channels = planDokployChannels(disc, channelPlanOptionsFromEnv(ctx, f.enableChannels, lookupEnv))
+		report.Channels.FinishPlan(f.includeSecretValues)
+		if report.Channels != nil && f.apply && f.includeSecretValues {
+			report.Channels.Target = src.NotificationTarget
+		}
+	}
 
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
-		apply: f.apply, outDir: f.outDir, jsonOut: f.jsonOut,
-		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag,
+		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
+		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag, nodeMap: f.nodeMap,
+		createWebhooks: f.createWebhooks,
+		source:         "dokploy", sourceURL: f.dokployURL, journalPath: journalFlag, resume: resume,
 	}, prog, stdout, stderr, lookupEnv)
 }
 
@@ -83,6 +126,8 @@ func fetchAndMapDokployApplication(ctx context.Context, dokploy *DokployClient, 
 func migrateDokployUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s migrate dokploy --url URL --token TOKEN [flags]
+  %[1]s migrate dokploy resume --journal FILE --url URL --token TOKEN [flags]
+  %[1]s migrate dokploy undo --journal FILE [--dry-run] [--yes] [--force] [--include-data]
 
 One-way migration from a live Dokploy instance to Levelrail. Default
 mode writes app.yaml files plus a migration report; --apply creates apps
@@ -92,19 +137,61 @@ Flags:
   --url string                     Dokploy instance base URL, e.g. https://dokploy.example.com (required)
   --token string                   Dokploy API key (required)
   --out-dir string                directory for generated files, default ./migrated (file mode only)
+  --stage-dir string               directory compose stacks are staged into, default ./migrated/compose
   --apply                            create apps on the target Levelrail instance instead of writing files
   --include-secret-values     write real env var values already returned by Dokploy into a secrets file or apply them
   --target-token string        Levelrail API token, --apply only (default: %[2]s env var, then the credentials file)
   --target-profile string      named credentials profile for the target Levelrail instance, --apply only
   --target-api-url string    Levelrail control plane base URL, --apply only (default: %[3]s env var, then %[4]s)
   --json                             print the migration report as JSON to stdout, nothing else
+  --node-map string               source-server=node pairs, comma-separated; --apply places each app on its node,
+                                  an unmapped server stays on the control plane node, an unknown node is refused
+  --create-webhooks                with --apply, register one push webhook per git-sourced app through the
+                                  connected git provider for its host (default off, it writes to the git host);
+                                  without --apply the report lists what would be created
+  --journal string                with --apply, the apply journal to write (default under the config dir,
+                                  printed at the end); resume reads it and continues the open steps
+  --enable-backup-schedules       keep imported database backup schedules running when they were on in
+                                  Dokploy; by default they are imported paused
+  --enable-imported-channels      create imported alert channels enabled; by default they are created
+                                  disabled so nothing is sent until you turn them on; an enabled channel
+                                  receives broadcast notices (key rotation reminders, maintenance and
+                                  update notices) right away, with no routing needed
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 
+Compose stacks are staged as compose apps (compose.yaml plus stack.env)
+after the same validation a manual compose deploy runs; deploy each with
+the printed compose deploy command.
+
 Dokploy's docker (prebuilt image) and drop (file upload) source types,
 and its nixpacks/heroku_buildpacks/paketo_buildpacks build types, have no
 Levelrail equivalent and are reported for manual review, not migrated.
+
+Object-storage backup destinations and database backup schedules are
+imported too. A destination's keys are used only with --apply and
+--include-secret-values, go straight to the backup target create call and
+are never printed or journaled; otherwise the target is reported as
+needs_secret with the create command to run. A name that already exists
+is skipped, never overwritten. Schedules bind to the database of the same
+name on the target and are imported paused unless
+--enable-backup-schedules is given.
+
+Notification providers become alert channels of the matching kind (slack,
+discord, telegram, email, gotify, ntfy, lark, pushover; custom becomes
+generic). Tokens and webhook URLs are read only with --apply and
+--include-secret-values and go straight to the channel create call;
+otherwise the channel is reported as needs_secret with a placeholder
+command. Channels are created disabled unless --enable-imported-channels
+is given, an existing name is skipped, and other kinds are listed as
+unsupported.
+
+Every --apply run writes a journal of what it created, step by step (names
+and step states only, never values or secrets). "resume" re-reads the
+source with the same flags and finishes the open steps without re-creating
+anything; apps that already existed are left alone. "undo" removes only
+what the run created; see "%[1]s migrate dokploy undo -h".
 
 Git repo/branch identity is not persisted Levelrail state today: the
 report prints the exact "apps create --repo ... --ref ..." follow-up

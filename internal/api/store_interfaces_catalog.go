@@ -23,6 +23,8 @@ type AppComposeStore interface {
 	SaveApp(ctx context.Context, a store.App) error
 	GetAppByName(ctx context.Context, name string) (store.App, error)
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+	// SaveSuspendedDesiredService saves the row already stopped, in one transaction.
+	SaveSuspendedDesiredService(ctx context.Context, svc store.DesiredService) error
 }
 
 // CustomTemplateStore is the store surface save-as-template needs

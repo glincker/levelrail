@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
+import { ListKeyboardHint } from '@/components/ListKeyboardHint'
+import { useListKeyboard } from '../hooks/useListKeyboard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -58,7 +60,7 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
 
   const nameClass = 'truncate font-mono text-sm font-medium text-foreground'
   return (
-    <div className="py-2.5">
+    <div data-list-row className="py-2.5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-1 basis-56 items-center gap-2">
           {appName ? (
@@ -128,6 +130,11 @@ export function CertificateCenterTable({
   rows: CertificateCenterRow[]
 }) {
   const { t } = useTranslation('settings')
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -140,10 +147,16 @@ export function CertificateCenterTable({
   }
 
   return (
-    <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
-      {rows.map((row) => (
-        <CertificateRow key={row.domain} row={row} />
-      ))}
-    </div>
+    <>
+      <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+      <div
+        ref={setListContainer}
+        className="divide-y divide-border rounded-lg border border-border bg-card px-4"
+      >
+        {rows.map((row) => (
+          <CertificateRow key={row.domain} row={row} />
+        ))}
+      </div>
+    </>
   )
 }

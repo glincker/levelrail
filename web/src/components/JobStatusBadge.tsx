@@ -15,6 +15,7 @@ const VARIANT: Record<
   interrupted: 'warning',
   container_not_running: 'muted',
   skipped_concurrency: 'muted',
+  skipped_freeze: 'muted',
   replaced: 'muted',
 }
 

@@ -30,7 +30,10 @@ export function RuleRow({
   const { t } = useTranslation('firewall')
   const when = rule.conditions.map(conditionText).join(' AND ')
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2 text-sm">
+    <div
+      data-list-row
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2 text-sm"
+    >
       {onSelect ? (
         <Checkbox
           aria-label={t('list.selectRow', { name: rule.name })}

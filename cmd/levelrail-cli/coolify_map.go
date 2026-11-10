@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +22,7 @@ const (
 	issueDropped  issueSeverity = "dropped"  // has no Levelrail equivalent, silently lost otherwise
 	issueReview   issueSeverity = "review"   // migrated with a caveat the operator should check
 	issueBlocking issueSeverity = "blocking" // the whole app could not be mapped at all
+	issuePlanned  issueSeverity = "planned"  // carried as a follow-up step the import cannot apply directly
 )
 
 type migrationIssue struct {
@@ -53,6 +56,7 @@ type mappedApp struct {
 	Ref         string           `json:"ref,omitempty"`
 	Service     mappedService    `json:"service"`
 	Compose     *stagedCompose   `json:"compose,omitempty"`
+	Files       []mappedFile     `json:"files,omitempty"`
 	Issues      []migrationIssue `json:"issues,omitempty"`
 	Blocking    bool             `json:"blocking"`
 
@@ -66,6 +70,17 @@ type mappedApp struct {
 	CreateError   string   `json:"create_error,omitempty"`
 	SecretsSet    []string `json:"secrets_set,omitempty"`
 	SecretsFailed []string `json:"secrets_failed,omitempty"`
+
+	// SourceServer is the source host the app ran on; Node is the target node --node-map put it on.
+	SourceServer string `json:"source_server,omitempty"`
+	Node         string `json:"node,omitempty"`
+	// NetworkPeers are apps that shared a custom docker network with this one in the source.
+	NetworkPeers []string `json:"network_peers,omitempty"`
+	// Webhook is what --create-webhooks did, or would do, for a git-sourced app.
+	Webhook      *webhookOutcome `json:"webhook,omitempty"`
+	network      string
+	nodeID       string
+	gitSourceSet bool
 }
 
 type mappedService struct {
@@ -77,10 +92,25 @@ type mappedService struct {
 	Memory    string        `json:"memory,omitempty"`
 	CPU       float64       `json:"cpu,omitempty"`
 	EnvKeys   []string      `json:"env_keys,omitempty"`
+	// Build settings carried from the source; commands holding an inline secret are never set here.
+	BaseDirectory string       `json:"base_directory,omitempty"`
+	BuildCommand  string       `json:"build_command,omitempty"`
+	PublishDir    string       `json:"publish_dir,omitempty"`
+	StartCommand  string       `json:"start_command,omitempty"`
+	Hooks         *mappedHooks `json:"hooks,omitempty"`
+	// BuildTimeKeys names variables the source exposed to the build; values live only in EnvLiteral.
+	BuildTimeKeys []string `json:"build_time_keys,omitempty"`
 	// Previews is set only by the Dokploy mapper, applied through the preview policy route.
 	Previews *mappedPreviews `json:"previews,omitempty"`
+	// Ingress holds validated auth, redirect and header settings from the source proxy; no credential.
+	Ingress *platformimport.IngressPlan `json:"ingress,omitempty"`
 	// EnvLiteral is set only when includeSecretValues was requested; it is never serialized or written to app.yaml.
 	EnvLiteral map[string]string `json:"-"`
+}
+
+type mappedHooks struct {
+	PreDeploy  string `json:"pre_deploy,omitempty"`
+	PostDeploy string `json:"post_deploy,omitempty"`
 }
 
 type mappedPreviews struct {
@@ -136,6 +166,9 @@ func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, include
 
 	out.RepoURL, out.Issues = sanitizeRepoForReport(app.GitRepository, out.Issues)
 	out.ServiceName, out.Issues = mapServiceName("Coolify", app.Name, out.Issues)
+	if app.BuildPack == "dockercompose" {
+		return mapCoolifyComposeApp(app, envs, includeSecretValues)
+	}
 
 	buildType, buildIssue, blocking := mapBuildPack(app.BuildPack)
 	if buildIssue != nil {
@@ -146,9 +179,6 @@ func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, include
 		return out
 	}
 	out.Service.BuildType = buildType
-	if loc := strings.TrimPrefix(strings.TrimSpace(app.DockerfileLocation), "/"); loc != "" && loc != "Dockerfile" && buildType == spec.BuildDockerfile {
-		out.Service.BuildPath = loc
-	}
 
 	out.Service.Domains, out.Issues = mapDomains(app.FQDN, out.Issues)
 	out.Service.Port, out.Issues = mapPort(app.PortsExposes, buildType, out.Issues)
@@ -156,8 +186,180 @@ func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, include
 	out.Service.Memory, out.Issues = mapMemory(app.LimitsMemory, out.Issues)
 	out.Service.CPU, out.Issues = mapCPU(app.LimitsCPUs, out.Issues)
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapEnv(envs, includeSecretValues, out.Issues)
-
+	out.Issues = mapBuildSettings(app, envs, &out.Service, out.Issues)
+	out.Issues = mapReportOnly(app, out.ServiceName, out.Issues)
+	out.Service.Ingress, out.Issues = mapIngress(app, out.ServiceName, out.Service.Domains, out.Issues)
+	if app.PreviewsEnabled {
+		out.Service.Previews = &mappedPreviews{}
+		out.Issues = appendIssue(out.Issues, "is_preview_deployments_enabled", issuePlanned, "preview deployments were on in the source: previews are turned on with the default policy, review its limits before the first pull request")
+	}
+	out.SourceServer = app.Destination.Server.Name
+	if out.SourceServer == "" {
+		out.SourceServer = app.ServerName
+	}
+	if n := strings.TrimSpace(app.Destination.Network); n != "" && n != "coolify" {
+		out.network = n
+	}
 	return out
+}
+
+// mapIngress translates basic auth, the www rule and proxy labels; unknown labels stay as dropped issues.
+func mapIngress(app coolifyApplication, serviceName string, domains []string, issues []migrationIssue) (*platformimport.IngressPlan, []migrationIssue) {
+	first := ""
+	if len(domains) > 0 {
+		first = domains[0]
+	}
+	p := platformimport.TranslateIngress(platformimport.IngressSource{Labels: app.CustomLabels, BasicAuth: app.BasicAuthEnabled,
+		Redirect: app.Redirect, App: serviceName, Domain: first}, nil)
+	for _, n := range p.Manual {
+		issues = appendIssue(issues, "custom_labels", issueDropped, n.Reason+": "+n.Manual)
+	}
+	if !p.Translated() {
+		return nil, issues
+	}
+	if p.BasicAuth {
+		issues = appendIssue(issues, "is_http_basic_auth_enabled", issueReview, fmt.Sprintf("HTTP basic auth was on in the source: the app is public until basic auth is set. --apply gates each domain with a random placeholder password that is never shown; set the real one with domains basic-auth set %s <domain> (file mode sets nothing)", serviceName))
+	}
+	if p.Canonical != "" || p.ForceHTTPS || len(p.Forwarders) > 0 || len(p.Headers) > 0 {
+		issues = appendIssue(issues, "ingress", issuePlanned, fmt.Sprintf("redirects and headers from the source proxy are set on the first domain by --apply (canonical %q, force https %t, %d forwarder and %d header rule(s))",
+			p.Canonical, p.ForceHTTPS, len(p.Forwarders), len(p.Headers)))
+	}
+	return &p, issues
+}
+
+// linkNetworkPeers records, for each app on a custom network, the other apps on that network.
+func linkNetworkPeers(apps []mappedApp) {
+	byNet := map[string][]string{}
+	for _, a := range apps {
+		if a.network != "" && !a.Blocking {
+			byNet[a.network] = append(byNet[a.network], a.ServiceName)
+		}
+	}
+	for i := range apps {
+		a := &apps[i]
+		members := byNet[a.network]
+		if a.network == "" || len(members) < 2 {
+			continue
+		}
+		for _, m := range members {
+			if m != a.ServiceName {
+				a.NetworkPeers = append(a.NetworkPeers, m)
+			}
+		}
+		a.Issues = appendIssue(a.Issues, "network", issuePlanned, fmt.Sprintf("shared a custom docker network with %s: put them in one project and use the service name or internal host as the address; no connection is created automatically", strings.Join(a.NetworkPeers, ", ")))
+	}
+}
+
+// sourceCommand validates one Coolify command; a rejected one is reported by name only, its text may hold a secret.
+func sourceCommand(field, raw string, values []string, issues []migrationIssue) (string, []migrationIssue) {
+	cmd, err := platformimport.CleanSourceCommand(field, raw, values...)
+	if err != nil {
+		issues = appendIssue(issues, field, issuePlanned, err.Error()+", so it is not carried over; set it by hand and keep any secret in an app secret referenced as $NAME")
+	}
+	return cmd, issues
+}
+
+// mapBuildSettings carries base directory, commands, publish directory, deploy hooks and build-time keys.
+func mapBuildSettings(app coolifyApplication, envs []coolifyEnvVar, svc *mappedService, issues []migrationIssue) []migrationIssue {
+	base, err := platformimport.CleanSourcePath("base_directory", app.BaseDirectory)
+	if err != nil {
+		issues = appendIssue(issues, "base_directory", issueDropped, err.Error()+", the repository root is used")
+	}
+	svc.BaseDirectory = base
+	// The server reads build.path from the repository root, while Coolify keeps it relative to the base directory.
+	if loc, err := platformimport.CleanSourcePath("dockerfile_location", app.DockerfileLocation); err != nil {
+		issues = appendIssue(issues, "dockerfile_location", issueDropped, err.Error()+", the default Dockerfile path is used")
+	} else if full := path.Join(base, loc); loc != "" && full != "Dockerfile" && svc.BuildType == spec.BuildDockerfile {
+		svc.BuildPath = full
+	}
+	values := make([]string, 0, 2*len(envs))
+	for _, e := range envs {
+		values = append(values, e.RealValue, e.Value)
+	}
+	var install, build, start, pre, post string
+	install, issues = sourceCommand("install_command", app.InstallCommand, values, issues)
+	build, issues = sourceCommand("build_command", app.BuildCommand, values, issues)
+	start, issues = sourceCommand("start_command", app.StartCommand, values, issues)
+	pre, issues = sourceCommand("pre_deployment_command", app.PreDeployment, values, issues)
+	post, issues = sourceCommand("post_deployment_command", app.PostDeployment, values, issues)
+	if (pre != "" || post != "") && svc.BuildType == spec.BuildStatic {
+		issues = appendIssue(issues, "deploy_commands", issueDropped, "pre and post deployment commands need a running container, a static site has none: run them in CI or the build command")
+	} else if pre != "" || post != "" {
+		svc.Hooks = &mappedHooks{PreDeploy: pre, PostDeploy: post}
+	}
+
+	publish, err := platformimport.CleanSourcePath("publish_directory", app.PublishDirectory)
+	if err != nil {
+		issues = appendIssue(issues, "publish_directory", issueDropped, err.Error())
+	}
+	if svc.BuildType == spec.BuildStatic {
+		issues = mapStaticBuild(install, build, start, publish, svc, issues)
+	} else {
+		for _, c := range []struct{ field, val string }{{"install_command", install}, {"build_command", build}} {
+			if c.val != "" {
+				issues = appendIssue(issues, c.field, issuePlanned, fmt.Sprintf("%q is not applied to a %s build: Railpack detects the step itself and a Dockerfile defines its own; put it in the Dockerfile or the repository if the result differs", c.val, svc.BuildType))
+			}
+		}
+		if start != "" {
+			svc.StartCommand = start
+		}
+		if publish != "" {
+			issues = appendIssue(issues, "publish_directory", issueDropped, "publish directory only applies to static builds")
+		}
+	}
+
+	for _, e := range envs {
+		if e.IsBuildTime || e.IsBuildtime {
+			svc.BuildTimeKeys = append(svc.BuildTimeKeys, e.Key)
+		}
+	}
+	for _, e := range envs {
+		if slices.Contains(platformimport.NodePinKeys, e.Key) {
+			issues = appendIssue(issues, "node_version", issuePlanned, fmt.Sprintf("the source pins Node through %s: pin it in the repository with engines.node in package.json or a .node-version file, which Railpack reads", e.Key))
+			break
+		}
+	}
+	sort.Strings(svc.BuildTimeKeys)
+	if len(svc.BuildTimeKeys) > 0 {
+		issues = appendIssue(issues, "environment_variables", issuePlanned, fmt.Sprintf("build-time variable(s) %s are stored as secrets with build access on apply; declare each as a build secret (RUN --mount=type=secret) or ARG where the build reads it", strings.Join(svc.BuildTimeKeys, ", ")))
+	}
+	return issues
+}
+
+// mapStaticBuild maps a static app: a build command needs a publish subdirectory, else committed files are served.
+func mapStaticBuild(install, build, start, publish string, svc *mappedService, issues []migrationIssue) []migrationIssue {
+	if start != "" {
+		issues = appendIssue(issues, "start_command", issueDropped, "static sites are served directly, no start command runs")
+	}
+	cmd := build
+	if install != "" && build != "" {
+		cmd = install + " && " + build
+	} else if install != "" {
+		issues = appendIssue(issues, "install_command", issuePlanned, fmt.Sprintf("install command %q has no build command to run with, add the build step by hand", install))
+	}
+	switch {
+	case cmd != "" && publish != "":
+		svc.BuildCommand, svc.PublishDir = cmd, publish
+	case cmd != "":
+		issues = appendIssue(issues, "publish_directory", issuePlanned, fmt.Sprintf("build command %q needs a publish subdirectory, set build.publish to the folder the build writes", cmd))
+	case publish != "":
+		svc.BuildPath = path.Join(svc.BaseDirectory, publish)
+	}
+	return issues
+}
+
+// mapReportOnly lists settings with no direct field here, each with a reason, so none is dropped silently.
+func mapReportOnly(app coolifyApplication, serviceName string, issues []migrationIssue) []migrationIssue {
+	if strings.TrimSpace(app.DockerRunOptions) != "" {
+		issues = appendIssue(issues, "custom_docker_run_options", issueDropped, "custom docker run options are not copied: translate each option into app settings by hand")
+	}
+	if app.WebhookGithub != "" || app.WebhookGitlab != "" || app.WebhookBitbucket != "" || app.WebhookGitea != "" {
+		issues = appendIssue(issues, "deploy_webhook", issuePlanned, fmt.Sprintf("a deploy webhook secret is set in the source (never read into this report): run apps build-hooks create %s --name deploy, point the git host or CI at the new URL, then remove the old webhook", serviceName))
+	}
+	if tags := platformimport.ParseSourceTags(app.Tags); len(tags) > 0 {
+		issues = appendIssue(issues, "tags", issuePlanned, fmt.Sprintf("source tags %s have no tag field here: group the apps in one project or give them a shared name prefix", strings.Join(tags, ", ")))
+	}
+	return issues
 }
 
 func mapBuildPack(buildPack string) (buildType string, issue *migrationIssue, blocking bool) {
@@ -170,8 +372,6 @@ func mapBuildPack(buildPack string) (buildType string, issue *migrationIssue, bl
 		return spec.BuildStatic, nil, false
 	case "nixpacks":
 		return "", blockingIssue("build_pack", "Coolify's nixpacks build pack has no Levelrail equivalent (Levelrail uses Railpack, not Nixpacks); pick dockerfile, railpack, or static manually and create this app by hand"), true
-	case "dockercompose":
-		return "", blockingIssue("build_pack", "Coolify's dockercompose build pack is multi-service; Levelrail does not yet support Compose as a deploy target, and this tool does not attempt to translate the compose file"), true
 	default:
 		return "", blockingIssue("build_pack", fmt.Sprintf("unrecognized Coolify build_pack %q", buildPack)), true
 	}
@@ -404,6 +604,18 @@ func mapCoolifyService(s platformimport.Service, domainSuffix string) mappedApp 
 		return out
 	}
 
+	if blocked := platformimport.HostAccessBlocked(tr.Compose); len(blocked) > 0 {
+		for _, r := range blocked {
+			issues = appendIssue(issues, "compose", issueBlocking, r)
+		}
+		out.Issues, out.Blocking = issues, true
+		return out
+	}
+	if _, rest := platformimport.CheckCompose(relativeBindsAsVolumes(tr.Compose)); len(rest) > 0 {
+		for _, r := range rest {
+			issues = appendIssue(issues, "compose", issueReview, "the compose deploy rejects this until fixed in the staged file: "+r)
+		}
+	}
 	sc := &stagedCompose{Yaml: tr.Compose, Generated: tr.Generated, Hosts: tr.Hosts, Unsupported: append([]string(nil), tr.Unsupported...)}
 	for _, tok := range tr.Unsupported {
 		issues = appendIssue(issues, tok, issueDropped, "magic variable has no Levelrail equivalent and was left in place, set a real value before deploying")
@@ -443,8 +655,87 @@ func mapCoolifyService(s platformimport.Service, domainSuffix string) mappedApp 
 	return out
 }
 
+// relativeBindsAsVolumes swaps relative bind sources for placeholder volumes in a check copy only:
+// they are reported for review below, and the host-access rules must still run on the rest.
+func relativeBindsAsVolumes(yaml string) string {
+	out := yaml
+	for i, m := range composeVolumeEntry.FindAllStringSubmatch(yaml, -1) {
+		if strings.HasPrefix(m[1], ".") || strings.HasPrefix(m[1], "~") {
+			out = strings.Replace(out, m[0], strings.Replace(m[0], m[1], "import-bind-"+strconv.Itoa(i), 1), 1)
+		}
+	}
+	return out
+}
+
 // hasRawMagicVar reports whether a SERVICE_ token survived translation, which
 // the compose deploy would reject.
 func hasRawMagicVar(yaml string) bool {
 	return len(compose.FindMagicVars(yaml)) > 0
+}
+
+// mappedFile is a config file copied from the source; Content is never serialized or printed.
+type mappedFile struct {
+	Path       string `json:"path"`
+	Secret     bool   `json:"secret,omitempty"`
+	Content    []byte `json:"-"`
+	StagedPath string `json:"staged_path,omitempty"`
+}
+
+// mapCoolifyComposeApp stages a dockercompose build pack app like a one-click service, with
+// generated secrets resolved and the same compose validation a manual deploy runs.
+func mapCoolifyComposeApp(app coolifyApplication, envs []coolifyEnvVar, includeSecretValues bool) mappedApp {
+	out := mapCoolifyService(platformimport.Service{SourceID: app.UUID, Name: app.Name, Compose: app.DockerComposeRaw}, "")
+	out.RepoURL, out.Ref = app.GitRepository, app.GitBranch
+	if out.Blocking {
+		return out
+	}
+	out.Service.Domains, out.Issues = mapDomains(app.FQDN, out.Issues)
+	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapEnv(envs, includeSecretValues, out.Issues)
+	return out
+}
+
+// mapFileStorages copies file mounts byte for byte, only when real values were requested since
+// any config file may hold a credential. Refused, duplicate and nested paths stay out with a reason.
+func mapFileStorages(st coolifyStorageList, includeSecretValues bool, issues []migrationIssue) ([]mappedFile, []migrationIssue) {
+	var out []mappedFile
+	seen := map[string]bool{}
+	for _, fs := range st.Files {
+		if fs.IsDirectory {
+			issues = appendIssue(issues, "file_storages", issueReview, "directory mount "+fs.MountPath+" is not copied, recreate its files with apps files set")
+			continue
+		}
+		f, err := platformimport.NewAppFile(fs.MountPath, []byte(fs.Content))
+		if err != nil {
+			issues = appendIssue(issues, "file_storages", issueDropped, "file mount refused: "+err.Error())
+			continue
+		}
+		if seen[f.Path] {
+			issues = appendIssue(issues, "file_storages", issueDropped, "file "+f.Path+" is mounted twice, only the first is kept")
+			continue
+		}
+		seen[f.Path] = true
+		if !includeSecretValues {
+			issues = appendIssue(issues, "file_storages", issueReview, fmt.Sprintf("file %s (%d bytes) was not copied, re-run with --include-secret-values or set it with apps files set", f.Path, len(f.Content)))
+			continue
+		}
+		out = append(out, mappedFile{Path: f.Path, Secret: f.Secret, Content: f.Content})
+	}
+	return dropNestedFiles(out, issues)
+}
+
+// dropNestedFiles refuses a file whose path sits under another file's path, which no directory tree can hold.
+func dropNestedFiles(files []mappedFile, issues []migrationIssue) ([]mappedFile, []migrationIssue) {
+	var out []mappedFile
+	for _, f := range files {
+		nested := false
+		for _, g := range files {
+			nested = nested || strings.HasPrefix(f.Path, g.Path+"/")
+		}
+		if nested {
+			issues = appendIssue(issues, "file_storages", issueDropped, "file "+f.Path+" sits under another mounted file and was not copied")
+			continue
+		}
+		out = append(out, f)
+	}
+	return out, issues
 }

@@ -117,6 +117,11 @@ type GitSource struct {
 	// them. Both are set only via SetGitSourceCIGate.
 	WaitForCI        bool
 	CIRequiredChecks []string
+	// TagPattern and BranchPattern narrow which pushed refs deploy (newline
+	// separated globs, spec.MatchRefPatterns). Empty keeps the mode's match.
+	// Set only via SetGitSourceTriggerPatterns.
+	TagPattern    string
+	BranchPattern string
 	// ConnectionID is the git_provider_connections row the repository was
 	// picked from; empty for a pasted URL or a GitHub source. Set only via
 	// SetGitSourceConnection.
@@ -124,9 +129,16 @@ type GitSource struct {
 	// AppAuth lets non-request flows (webhooks, poller, pipelines, previews)
 	// clone this source with the GitHub App. False when a team scoped caller
 	// set the source. Set only via SetGitSourceAppAuth.
-	AppAuth   bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	AppAuth bool
+	// FetchSubmodules and FetchLFS make builds fetch submodules and LFS
+	// objects. Off by default; set only via SetGitSourceFetchExtras.
+	FetchSubmodules bool
+	FetchLFS        bool
+	// ComposePath is the repo-relative compose file of a compose app source;
+	// empty for a single-service source. The two kinds never share a row.
+	ComposePath string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -198,8 +210,8 @@ func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) err
 		triggerMode = spec.TriggerModePush
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, static_spa, additional_services, services_spec, databases_spec, trigger_mode, app_auth, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 1), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, static_spa, additional_services, services_spec, databases_spec, trigger_mode, app_auth, compose_path, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 1), ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
@@ -213,9 +225,10 @@ func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) err
 			services_spec = excluded.services_spec,
 			databases_spec = excluded.databases_spec,
 			trigger_mode = excluded.trigger_mode,
+			compose_path = excluded.compose_path,
 			app_auth = COALESCE(?, service_git_sources.app_auth),
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, staticSPAInt, additionalJSON, servicesJSON, databasesJSON, triggerMode, authArg, authArg)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, staticSPAInt, additionalJSON, servicesJSON, databasesJSON, triggerMode, authArg, g.ComposePath, authArg)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -226,7 +239,7 @@ func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) err
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, static_spa, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks, app_auth
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, static_spa, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks, app_auth, trigger_tag_pattern, trigger_branch_pattern, fetch_submodules, fetch_lfs, compose_path
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -427,6 +440,22 @@ func (db *DB) SetGitSourceDeploySettings(ctx context.Context, serviceName string
 	return nil
 }
 
+// SetGitSourceTriggerPatterns replaces a connected source's tag and branch
+// trigger patterns; it returns ErrGitSourceNotFound if none is connected.
+func (db *DB) SetGitSourceTriggerPatterns(ctx context.Context, serviceName, tagPattern, branchPattern string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET trigger_tag_pattern = ?, trigger_branch_pattern = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, tagPattern, branchPattern, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set source %q trigger patterns: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
 // SetGitSourceCIGate replaces a connected source's CI wait flag and required
 // check names; it returns ErrGitSourceNotFound if no source is connected.
 func (db *DB) SetGitSourceCIGate(ctx context.Context, serviceName string, wait bool, checks []string) error {
@@ -444,6 +473,22 @@ func (db *DB) SetGitSourceCIGate(ctx context.Context, serviceName string, wait b
 	`, flag, string(checksJSON), serviceName)
 	if err != nil {
 		return fmt.Errorf("store: set source %q ci gate: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
+// SetGitSourceFetchExtras sets whether builds fetch submodules and LFS
+// objects; it returns ErrGitSourceNotFound if no source is connected.
+func (db *DB) SetGitSourceFetchExtras(ctx context.Context, serviceName string, submodules, lfs bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET fetch_submodules = ?, fetch_lfs = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, boolInt(submodules), boolInt(lfs), serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set source %q fetch extras: %w", serviceName, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrGitSourceNotFound
@@ -560,11 +605,12 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		waitForCI                     int
 		appAuth                       int
 		staticSPA                     int
+		fetchSub, fetchLFS            int
 		ciChecksJSON                  string
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &staticSPA, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON, &appAuth); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &staticSPA, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON, &appAuth, &g.TagPattern, &g.BranchPattern, &fetchSub, &fetchLFS, &g.ComposePath); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
@@ -575,6 +621,8 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	g.WaitForCI = waitForCI != 0
 	g.AppAuth = appAuth != 0
 	g.StaticSPA = staticSPA != 0
+	g.FetchSubmodules = fetchSub != 0
+	g.FetchLFS = fetchLFS != 0
 	if err := json.Unmarshal([]byte(ciChecksJSON), &g.CIRequiredChecks); err != nil {
 		return nil, fmt.Errorf("unmarshal ci_required_checks: %w", err)
 	}

@@ -113,6 +113,8 @@ export const NAMESPACES = [
   'demo',
   'statePlaceholders',
   'secretScan',
+  'appExpiry',
+  'appRestartSchedule',
   'appFiles',
   'appContainers',
   'maintenance',

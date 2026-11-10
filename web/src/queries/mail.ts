@@ -9,6 +9,10 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_3000_MS = 3000
+const POLL_2000_MS = 2000
+
 export interface MailToken {
   name: string
   description: string
@@ -453,7 +457,7 @@ export function useMailBroadcasts() {
       query.state.data?.some(
         (b) => b.status === 'sending' || b.status === 'scheduled',
       )
-        ? 3000
+        ? POLL_3000_MS
         : false,
   })
 }
@@ -468,7 +472,7 @@ export function useMailBroadcast(id: string | null) {
         `/api/v1/mail/broadcasts/${encodeURIComponent(id ?? '')}`,
       ),
     refetchInterval: (query) =>
-      query.state.data?.broadcast.status === 'sending' ? 2000 : false,
+      query.state.data?.broadcast.status === 'sending' ? POLL_2000_MS : false,
   })
 }
 

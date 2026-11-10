@@ -218,7 +218,7 @@ func TestManager_IssueToken_SignatureVerifiesAgainstJWKS(t *testing.T) {
 	}
 	x, _ := base64.RawURLEncoding.DecodeString(jwk.X)
 	y, _ := base64.RawURLEncoding.DecodeString(jwk.Y)
-	pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: new(big.Int).SetBytes(x), Y: new(big.Int).SetBytes(y)}
+	pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: new(big.Int).SetBytes(x), Y: new(big.Int).SetBytes(y)} //nolint:staticcheck // test rebuilds the key from JWK coordinates
 
 	digest := sha256.Sum256([]byte(signingInput))
 	r := new(big.Int).SetBytes(sig[:32])

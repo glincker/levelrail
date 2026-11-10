@@ -37,7 +37,7 @@ func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttem
 // or rollback pin, with its config restored (?config=false keeps the
 // current config), through the same freeze, approval and readiness gates.
 func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request) {
-	target, ok := rt.lookupAppAttempt(w, r)
+	target, ok := rt.lookupAppAttempt(w, r, AbilityDeploy)
 	if !ok {
 		return
 	}

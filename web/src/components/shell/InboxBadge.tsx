@@ -14,16 +14,16 @@ export function InboxBadge() {
     unread > 0 ? t('page.badge', { count: unread }) : t('page.badgeNone')
   return (
     <Button
-      variant="outline"
-      size="icon-sm"
-      className="relative @max-md:size-10"
+      variant="ghost"
+      size="icon"
+      className="h-(--glinr-control-h) w-auto gap-1 rounded-full px-2 @max-md:min-h-10"
       aria-label={label}
       title={label}
       render={<Link to="/inbox" />}
       nativeButton={false}
     >
       <InboxGlassIcon size="1.4em" />
-      {unread > 0 ? <CountBadge count={unread} tone="destructive" /> : null}
+      {unread > 0 ? <CountBadge count={unread} tone="neutral" /> : null}
     </Button>
   )
 }

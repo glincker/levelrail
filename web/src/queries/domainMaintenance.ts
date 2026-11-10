@@ -14,6 +14,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '../lib/pollTier'
 
 // Mirrors internal/api's domainMaintenanceResource wire shape exactly.
 export interface DomainMaintenance {
@@ -82,7 +83,7 @@ export function fleetMaintenanceQueryOptions() {
       return (await res.json()) as FleetMaintenance
     },
     staleTime: 15_000,
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
 }
 

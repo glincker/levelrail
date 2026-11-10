@@ -73,7 +73,9 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        initialFocus={focusCancel ? cancelRef : undefined}
+        initialFocus={
+          focusCancel || tone === 'destructive' ? cancelRef : undefined
+        }
         size="confirm"
       >
         <DialogHeader>
@@ -82,7 +84,10 @@ export function ConfirmDialog({
             <DialogDescription>{description}</DialogDescription>
           ) : null}
         </DialogHeader>
-        {consequences && consequences.length > 0 ? (
+        {consequences && consequences.length === 1 ? (
+          <p className="text-sm text-muted-foreground">{consequences[0]}</p>
+        ) : null}
+        {consequences && consequences.length > 1 ? (
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {consequences.map((c) => (
               <li key={c}>{c}</li>

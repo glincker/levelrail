@@ -27,7 +27,7 @@ func databasesUpgradesUsage(prog string) string {
       --revert=false           leave a failed upgrade in place instead of reverting
       --notify chn_a,chn_b     notification channel ids
       --inherit                drop the database's own policy, use the platform default
-  %[1]s databases upgrade-now <name> <version> [--confirm <name>] [flags]
+  %[1]s databases upgrade-now <name> <version> [--confirm <name>] [--drop-incompatible-params] [flags]
       Back up, verify the backup, upgrade, health check, and revert on failure, now.
 `, prog)
 }
@@ -260,6 +260,7 @@ func runDatabasesUpgradeNow(prog string, args []string, stdout, stderr io.Writer
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases upgrade-now", "print the started run as JSON to stdout and nothing else", stderr)
 	var confirm string
 	fs.StringVar(&confirm, "confirm", "", "must equal the database name to skip the interactive prompt")
+	dropParams := fs.Bool("drop-incompatible-params", false, "remove running engine parameters the new version refuses instead of failing")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesUpgradesUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -277,9 +278,12 @@ func runDatabasesUpgradeNow(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	run, err := client.UpgradeDatabaseNow(context.Background(), name, version, name)
+	run, err := client.UpgradeDatabaseNowWith(context.Background(), name, version, name, *dropParams)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("upgrade database %q to %q: %w", name, version, err))
+	}
+	if run.ParamsPending {
+		_, _ = fmt.Fprintf(stderr, "note: staged engine parameters are not applied by the upgrade; run \"%s databases params apply %s\" to apply them\n", prog, name)
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, run, func() {
 		_, _ = fmt.Fprintf(stdout, "upgrade %s of database %q from %s to %s started; follow it with \"%s databases upgrades %s\"\n", run.ID, name, run.FromVersion, run.ToVersion, prog, name)

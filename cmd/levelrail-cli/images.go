@@ -22,6 +22,8 @@ func imagesUsage(prog string) string {
   %[1]s images lint <Dockerfile> [--fix]
   %[1]s images health
   %[1]s images status <app>
+  %[1]s images retention get <app>
+  %[1]s images retention set <app> --keep N [--dry-run]
 
 Every image on a node with its size, which apps use it and why it is kept.
 gc previews by default and only removes images with --apply. Live images,
@@ -31,6 +33,9 @@ rm removes the images you name and prune --unmanaged removes every image no
 app owns and no container uses. Both print the plan and stop unless you pass
 --yes; --dry-run never removes. Images a container, a live app or a rollback
 needs are refused one by one.
+retention keeps the newest N successful deploy images of one app, from 2 to
+1000; 0 follows the global setting. set --dry-run lists what the next cleanup
+would remove (count, size and names) and saves nothing.
 `, prog)
 }
 
@@ -64,6 +69,8 @@ func runImages(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runImagesHealth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runImagesStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "retention":
+		return runImagesRetention(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown images subcommand %q\n\n%s", prog, args[0], imagesUsage(prog))
 	return exitUsage
@@ -294,4 +301,61 @@ func runImagesRemove(prog string, args []string, stdout, stderr io.Writer, looku
 			_, _ = fmt.Fprintf(stdout, "could not remove %s: %s\n", shortImageID(f.ID), f.Error)
 		}
 	})
+}
+
+// runImagesRetention implements "images retention get|set <app>".
+func runImagesRetention(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 || (args[0] != "get" && args[0] != "set") {
+		return usageError(stderr, prog, "images retention takes get or set")
+	}
+	verb := args[0]
+	keep := -1
+	var dryRun bool
+	c, code, ok := parseImagesCall(prog, "images retention "+verb, args[1:], stderr, lookupEnv, func(fs *flag.FlagSet) {
+		if verb == "set" {
+			fs.IntVar(&keep, "keep", -1, "newest successful deploy images to keep, 2 to 1000, or 0 to follow the global setting")
+			fs.BoolVar(&dryRun, "dry-run", false, "list what the next cleanup would remove and save nothing")
+		}
+	})
+	if !ok {
+		return code
+	}
+	if len(c.rest) != 1 {
+		return usageError(stderr, prog, "images retention "+verb+" takes one app name")
+	}
+	app := c.rest[0]
+	if verb == "get" {
+		res, err := c.client.GetImageRetention(bg(), app)
+		if err != nil {
+			return reportError(stdout, stderr, c.jsonO, fmt.Errorf("image retention: %w", err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, c.of, res, func() { printImageRetention(stdout, res) })
+	}
+	if keep < 0 {
+		return usageError(stderr, prog, "images retention set needs --keep N")
+	}
+	if dryRun {
+		res, err := c.client.PreviewImageRetention(bg(), app, apiclient.ImageRetentionRequest{Keep: &keep, Node: c.node})
+		if err != nil {
+			return reportError(stdout, stderr, c.jsonO, fmt.Errorf("image retention preview: %w", err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
+			for _, e := range res.Remove {
+				_, _ = fmt.Fprintf(stdout, "would remove %s %s (%s)\n", shortImageID(e.ID), strings.Join(e.Tags, ","), humanBytes(e.ReclaimBytes))
+			}
+			_, _ = fmt.Fprintf(stdout, "keeping %d: %d images, %s would be freed by the next cleanup. Nothing was saved.\n", res.EffectiveKeep, res.RemoveCount, humanBytes(res.ReclaimBytes))
+		})
+	}
+	res, err := c.client.SetImageRetention(bg(), app, keep)
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("image retention: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() { printImageRetention(stdout, res) })
+}
+
+func printImageRetention(w io.Writer, res apiclient.ImageRetentionResource) {
+	_, _ = fmt.Fprintf(w, "%s keeps the newest %d deploy images (source: %s, global %d)\n", res.App, res.EffectiveKeep, res.Source, res.GlobalKeep)
+	if res.ProtectedEnvironment != "" {
+		_, _ = fmt.Fprintf(w, "protected environment %s: the count cannot go below the global setting\n", res.ProtectedEnvironment)
+	}
 }

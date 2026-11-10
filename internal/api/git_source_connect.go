@@ -30,11 +30,16 @@ const (
 	gitConnectWarnUploads   = "uploads_stop"
 	gitConnectWarnNotBuilt  = "never_deployed"
 	gitConnectWarnProtected = "protected_environment"
+	// The protection state could not be read; deploy now refuses until it can.
+	gitConnectWarnProtectedUnknown = "protection_unknown"
+	gitConnectWarnConnNeedsRead    = "connection_needs_read_sensitive"
 )
 
 type gitSourcePlanRequest struct {
 	RepoURL string `json:"repo_url,omitempty"`
 	Branch  string `json:"branch,omitempty"`
+	// ConnectionID picks the provider connection whose token reads a private repo.
+	ConnectionID string `json:"connection_id,omitempty"`
 }
 
 // gitSourcePlanPreserved lists what a switch to git keeps; counts only, never values.
@@ -68,6 +73,7 @@ type gitSourcePlanResponse struct {
 	Detection     *repolayout.Result       `json:"detection,omitempty"`
 	DetectError   string                   `json:"detect_error,omitempty"`
 	Warnings      []string                 `json:"warnings"`
+	Group         []gitSourcePlanMember    `json:"group"`
 }
 
 // handleGitSourcePlan handles POST /api/v1/apps/{name}/git-source/plan: a
@@ -99,7 +105,7 @@ func (rt *Router) handleGitSourcePlan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	out := gitSourcePlanResponse{App: name, Warnings: []string{}}
+	out := gitSourcePlanResponse{App: name, Warnings: []string{}, Group: []gitSourcePlanMember{}}
 	out.Static = rt.isStaticSiteApp(ctx, name)
 	out.Preserved = planPreserved(*svc)
 	out.CurrentSource = gitConnectSourceImage
@@ -121,7 +127,15 @@ func (rt *Router) handleGitSourcePlan(w http.ResponseWriter, r *http.Request) {
 	if svc.AppID != "" && svc.AppID != name {
 		out.Warnings = append(out.Warnings, gitConnectWarnGroup)
 	}
-	if _, protected, _ := rt.protectedEnvironmentOf(ctx, name); protected {
+	canRead, _, verr := rt.callerAppVisibility(r)
+	if verr != nil {
+		// Fail closed: an unreadable scope lists no siblings.
+		canRead = func(string) bool { return false }
+	}
+	out.Group = rt.planGroupMembers(ctx, *svc, canRead)
+	if _, protected, perr := rt.protectedEnvironmentOf(ctx, name); perr != nil {
+		out.Warnings = append(out.Warnings, gitConnectWarnProtectedUnknown)
+	} else if protected {
 		out.Warnings = append(out.Warnings, gitConnectWarnProtected)
 	}
 
@@ -132,7 +146,12 @@ func (rt *Router) handleGitSourcePlan(w http.ResponseWriter, r *http.Request) {
 		}
 		// A deploy-only caller must not read private repos through the org GitHub App.
 		allowAppToken := rt.callerHasAbility(r, AbilityReadSensitive) && gitHubAppTokenAllowed(ctx)
-		res, derr := rt.detectLayoutFor(ctx, name, req.RepoURL, out.Branch, allowAppToken)
+		connID := strings.TrimSpace(req.ConnectionID)
+		if connID != "" && !allowAppToken {
+			out.Warnings = append(out.Warnings, gitConnectWarnConnNeedsRead)
+			connID = ""
+		}
+		res, derr := rt.detectLayoutFor(ctx, name, req.RepoURL, out.Branch, connID, allowAppToken)
 		if derr != nil {
 			out.DetectError = planDetectError(derr)
 			rt.logger.Info("api: git source plan: detect failed", slog.String("name", name), slog.String("repo_url", redactURLCredentials(req.RepoURL)), slog.String("error", derr.Error()))
@@ -181,14 +200,20 @@ func planDetectError(err error) string {
 
 // detectLayoutFor reads a repository that is not connected yet, with the
 // credential the app would clone it with.
-func (rt *Router) detectLayoutFor(ctx context.Context, name, repoURL, branch string, allowAppToken bool) (repolayout.Result, error) {
+func (rt *Router) detectLayoutFor(ctx context.Context, name, repoURL, branch, connectionID string, allowAppToken bool) (repolayout.Result, error) {
 	if gitsshkey.IsSSHURL(repoURL) {
 		return repolayout.Result{}, errPlanSSHNotDetectable
 	}
 	if err := requireHTTPOrHTTPSScheme(repoURL); err != nil {
 		return repolayout.Result{}, err
 	}
-	token := rt.tokenForRepo(ctx, name, repoURL, allowAppToken)
+	token := ""
+	if connectionID != "" && allowAppToken {
+		token = rt.planConnectionToken(ctx, repoURL, connectionID)
+	}
+	if token == "" {
+		token = rt.tokenForRepo(ctx, name, repoURL, allowAppToken)
+	}
 	open := rt.repoLayoutSource
 	if open == nil {
 		open = planRepoLayoutSource

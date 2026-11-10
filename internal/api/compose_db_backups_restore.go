@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -109,11 +111,25 @@ func (rt *Router) handleRestoreComposeDBBackup(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusConflict, "a restore is already running for this service")
 		return
 	}
+	timeout := rt.tunableDuration(r.Context(), runtimesettings.KeyBackupsComposeRestoreTimeout, "APP_COMPOSE_RESTORE_TIMEOUT", backup.ComposeRestoreTimeout())
+	release, lockErr := backup.AcquireComposeRestoreLock(app, service, safetyID, timeout+time.Minute)
+	if lockErr != nil {
+		composeRestoreInFlight.Delete(flightKey)
+		if errors.Is(lockErr, backup.ErrComposeRestoreBusy) {
+			writeError(w, http.StatusConflict, lockErr.Error())
+			return
+		}
+		rt.internalError(w, "api: restore compose db: lock failed", lockErr)
+		return
+	}
 	actorType, actorID, actorName, _ := rt.currentActor(r)
 	path := r.URL.Path
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled when this handler returns, as in handleTriggerComposeDBBackup
 		defer composeRestoreInFlight.Delete(flightKey)
-		err := rt.composeDBRestoreRunner.RunComposeServiceRestore(context.Background(), safetyID, app, service, det.engine, run)
+		defer release()
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		err := rt.composeDBRestoreRunner.RunComposeServiceRestore(ctx, safetyID, app, service, det.engine, run)
 		outcome, status := "succeeded", http.StatusOK
 		if err != nil {
 			outcome, status = "failed", http.StatusInternalServerError

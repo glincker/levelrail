@@ -1266,3 +1266,16 @@ Proxy a domain to a port or URL with no app behind it.
 ## Request limits per domain
 
 `levelrail-cli domains limits set <app> <domain> --max-body 100MiB --read-timeout 120 --write-timeout 120` caps the request body of one domain and bounds the ingress read and write time on the connection to the app. A domain cap beats the app cap and the instance cap. 0 or unset keeps today's behavior. Allowed ranges come from the runtime settings `domains.limits_max_body_bytes` and `domains.limits_max_timeout_seconds`. Limits apply to app and standalone proxy domains. A redirect-only or maintenance-mode domain renders no proxy route, so its limits have no effect. The timeouts apply to the main upstream, not to path forwarders, and a read timeout shorter than a websocket idle period cuts that websocket. A lowered ceiling also tightens limits already stored. `domains limits clear` removes them.
+
+## Proxy tuning per domain
+
+`levelrail-cli domains tuning set <app> <domain> --preset websocket` picks proxy behavior by use case. The dashboard shows the same presets on the domain page under More options.
+
+| Preset | What it changes |
+| --- | --- |
+| `api` | Compresses text responses with zstd or gzip and waits up to 60 seconds for the app's response headers. |
+| `uploads` | Waits up to 300 seconds for response headers, for slow uploads and long jobs. |
+| `streaming` | Sends each response chunk at once (server-sent events, long polling) and waits up to 300 seconds for headers. |
+| `websocket` | Keeps open sockets alive for 60 seconds across a config reload and closes any socket after 24 hours at most. |
+
+Flags given after `--preset` override it: `--compression`, `--streaming`, `--websocket`, `--dial-timeout`, `--response-timeout`, `--stream-timeout` and `--close-delay` (seconds). Compression cannot be combined with streaming or websocket, and the stream flags need websocket on. Every number must sit between the runtime settings `domains.tuning_min_timeout_seconds` and `domains.tuning_max_timeout_seconds` (`domains.tuning_max_stream_seconds` for the stream lifetime), and preset values are clamped to them. A lowered bound also tightens tuning already stored. Tuning never changes host matching, authentication or the websocket upgrade itself, and it accepts no raw proxy config. If the ingress ever rejects a config that carries domain tuning, it applies the same config again without any tuning so every other domain keeps its changes, and the running config keeps serving until then. The tuned domains then show a `tuning_dropped` condition, the ingress reports `TuningDropped`, `domains tuning get` shows `effective: false`, and the same tuning is not tried again until it changes. A timeout or connection error never drops tuning. Saving needs deploy access on the app and writes an audit entry with the changed keys. `domains tuning clear` goes back to the defaults.

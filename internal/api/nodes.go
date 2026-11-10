@@ -500,6 +500,7 @@ func (rt *Router) setNodeSchedulable(w http.ResponseWriter, r *http.Request, sch
 		return
 	}
 
+	rt.changes.Publish(changeNodes, id)
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: set node schedulable: reload after update failed", err, slog.String("node_id", id))

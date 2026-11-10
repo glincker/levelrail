@@ -64,10 +64,10 @@ func TestMapCoolifyApplication(t *testing.T) {
 			wantIssueSubstr: "Nixpacks",
 		},
 		{
-			name:            "dockercompose build is blocking",
+			name:            "dockercompose build without a compose body is blocking",
 			app:             coolifyApplication{Name: "stack", BuildPack: "dockercompose"},
 			wantBlocking:    true,
-			wantIssueSubstr: "multi-service",
+			wantIssueSubstr: "no readable compose body",
 		},
 		{
 			name:            "unrecognized build pack is blocking",

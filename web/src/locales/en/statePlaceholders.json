@@ -484,5 +484,37 @@
         "action": "Raise to {{next}}s"
       }
     }
+  },
+  "guided": {
+    "databases": {
+      "title": "No databases yet",
+      "body": "Create a managed Postgres, MySQL, Redis or MongoDB database on one of your nodes, with backups and credentials handled for you.",
+      "action": "Create a database"
+    },
+    "builds": {
+      "title": "No builds yet",
+      "body": "Builds appear here when an app deploys from a Git repo or a Dockerfile. Deploy an app to start the first one.",
+      "action": "Deploy an app"
+    },
+    "backups": {
+      "title": "Nothing is backed up yet",
+      "body": "Add a database or volume to a backup schedule, or connect a backup target, and its copies show up here.",
+      "action": "Manage backup targets"
+    },
+    "firewall": {
+      "title": "No firewall rules yet",
+      "body": "Only the ports your apps publish are open. Add a rule to allow or deny a port from a source range.",
+      "action": "Add a rule"
+    },
+    "alerts": {
+      "title": "No alerts yet",
+      "body": "Alerts belong to an app. Pick an app and add a rule for crash loops, domain health or certificate expiry.",
+      "action": "Choose an app"
+    },
+    "certificates": {
+      "title": "No certificates yet",
+      "body": "Certificates are issued automatically when you add a domain to an app.",
+      "action": "Add a domain"
+    }
   }
 }

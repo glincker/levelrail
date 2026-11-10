@@ -107,6 +107,10 @@ func TestSessionPolicyLifetimeAndIdle(t *testing.T) {
 	if rec := servePolicy(rt, authedRequest(t, admin, http.MethodGet, "/api/v1/auth/session", "")); rec.Code != http.StatusOK {
 		t.Fatalf("active session refused: %d", rec.Code)
 	}
+	// Touches are written behind; flush so the row exists before the test ages it.
+	if err := db.FlushTouches(ctx); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.ExecContext(ctx, `UPDATE session_activity SET last_seen_at = ?`, time.Now().Add(-time.Hour).Unix()); err != nil {
 		t.Fatal(err)
 	}

@@ -9,6 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"filippo.io/age"
+
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
@@ -58,5 +61,47 @@ func TestDatabaseImport_RestoreFailureLogsNoDumpText(t *testing.T) {
 	}
 	if !strings.Contains(logs.String(), "error_class=dump_not_readable") || !strings.Contains(logs.String(), "exit_status=3") {
 		t.Errorf("log lacks the error class and exit status: %q", logs.String())
+	}
+}
+
+// sealedOpenerProtection embeds the interface so only the opener is real.
+type sealedOpenerProtection struct {
+	BackupProtection
+	p *backup.Protection
+}
+
+func (s sealedOpenerProtection) OpenSealedExport(r io.Reader) (io.ReadCloser, error) {
+	return s.p.OpenSealedExport(r)
+}
+
+func sealerFor(t *testing.T) *backup.Sealer {
+	t.Helper()
+	id, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &backup.Sealer{Recipients: []age.Recipient{id.Recipient()}, Identities: []age.Identity{id}}
+}
+
+func TestDatabaseImport_SealedExportRoundTripAndKeyMismatch(t *testing.T) {
+	const dump = "select 1; -- CANARY-PLAIN"
+	own, other := sealerFor(t), sealerFor(t)
+	seal := func(s *backup.Sealer) string {
+		b, err := io.ReadAll(s.Seal(strings.NewReader(dump)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+	rt, _, fake, tok := newImportFixture(t, "")
+	rt.backupProtection = sealedOpenerProtection{p: &backup.Protection{Sealer: own}}
+
+	rec := incTokenPost(rt, tok, "/api/v1/databases/main/import", seal(other))
+	if rec.Code != http.StatusBadRequest || fake.restores != 0 || !strings.Contains(rec.Body.String(), "different instance key") {
+		t.Fatalf("foreign export = %d restores=%d body=%s, want 400 key mismatch and no restore", rec.Code, fake.restores, rec.Body.String())
+	}
+	rec = incTokenPost(rt, tok, "/api/v1/databases/main/import", seal(own))
+	if rec.Code != http.StatusOK || fake.restores != 1 || fake.restoredN != len(dump) {
+		t.Fatalf("own export = %d restores=%d bytes=%d body=%s, want 200 with the plain dump restored", rec.Code, fake.restores, fake.restoredN, rec.Body.String())
 	}
 }

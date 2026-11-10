@@ -476,6 +476,8 @@ Each rule tracks its own pending and firing state and notifies only on transitio
 | `patch_status` | platform-wide | every node's pending OS security patch count | none required (threshold is a control-plane default or env var, not a rule field) |
 | `node_disk_space` | platform-wide | every node's disk-used percentage | none required |
 | `node_resource_usage` | platform-wide | every node's summed placed-container CPU and memory | none required |
+| `node_cpu` | platform-wide | every node's summed placed-container CPU percent, firing after `nodes.alert_sustained_intervals` evaluations in a row over the node's limit | none required |
+| `node_memory` | platform-wide | every node's used host memory percent, with the same sustained-interval rule | none required |
 | `node_offline` | platform-wide | any node whose status is offline (agent stopped heartbeating); resolves when all are back | none required |
 | `node_cert_expiring` | platform-wide | any node's agent certificate inside the warning window (renewal failing) or expired; revoked nodes are left out (see [agent certificates](/multi-node#agent-certificates-renewal-and-re-enrollment)) | `for_duration` (optional, overrides `APP_NODE_CERT_EXPIRY_WARNING`, default 21 days) |
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
@@ -501,10 +503,26 @@ Thresholds have defaults and can be overridden per control plane, not per rule.
 | Cert expiry warning window | 14 days | none |
 | Patch status | 1 pending security patch | `APP_ALERT_PATCH_STATUS_THRESHOLD` |
 | Node disk space | 90% used | `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` |
+| Volume usage | 85% used | `APP_ALERT_VOLUME_USAGE_THRESHOLD_PERCENT` (samples every `APP_VOLUME_USAGE_SAMPLE_INTERVAL`, capacity from the filesystem at `APP_VOLUME_USAGE_TOTAL_PATH`) |
 | Node CPU | 80% | `APP_ALERT_NODE_CPU_THRESHOLD_PERCENT` |
 | Node memory | 4 GiB | `APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES` |
 | Domain health check interval | built-in default | `APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL` |
 | Backup missing grace period | 6h | `APP_ALERT_BACKUP_MISSING_GRACE_PERIOD` (or per rule via `for_duration`) |
+
+#### Node pressure thresholds, live and per node
+
+`node_cpu`, `node_memory` and `node_disk_space` read their limits from runtime settings, so a change applies on the next evaluation without a restart. Env vars only seed the first value.
+
+| Setting | Default | Seeded from |
+| --- | --- | --- |
+| `nodes.alert_cpu_percent` | 85 | `APP_ALERT_NODE_CPU_PERCENT` |
+| `nodes.alert_memory_percent` | 90 | `APP_ALERT_NODE_MEMORY_PERCENT` |
+| `nodes.alert_disk_percent` | 90 | `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` |
+| `nodes.alert_sustained_intervals` | 3 | `APP_ALERT_NODE_SUSTAINED_INTERVALS` |
+
+A node can override any of the three percents, for example a build node that runs hotter than an edge node. Set it on the node page (Alert thresholds card), with `levelrail nodes thresholds set <id> --cpu 95`, or with `PUT /api/v1/nodes/{id}/thresholds`. Values are whole percents from 1 to 100; `default` (CLI) or `null` (API) goes back to the platform value. A rule fires once when a node stays over its limit and resolves once when every node is back under it.
+
+The node metrics endpoint also takes `range=15m|1h|6h|24h|7d` as a short form of `from`.
 
 <Accordion title="Backup missing rule logic">
 The `backup_missing` rule has no cadence logic of its own. It reads the same `backup_schedule` cron expression and `backup_history` rows that `internal/backup.Scheduler` uses, computes the expected interval from the cron expression (`kit/cronexpr`), and fires once the last succeeded attempt is older than that interval plus a grace period.
@@ -1116,3 +1134,33 @@ The seeded `Certificate expires within N days` rules (14, 7, 3 and 1 days) are t
 
 API: `GET` and `PUT /api/v1/alert-defaults/cert-expiry/email` read and set the email opt-in.
 
+
+## App metrics endpoint
+
+An app that serves metrics in the text exposition format can have them stored next to platform metrics. Set the container port and path once:
+
+```
+levelrail-cli apps metrics web --scraped --scrape-port 9100 --scrape-path /metrics
+levelrail-cli apps metrics web --scraped                       # list stored names
+levelrail-cli apps metrics web --scraped --metric http_requests_total --since 6h
+levelrail-cli apps metrics web --scraped --scrape-off
+```
+
+The same target and a metric picker sit at the bottom of the app's Metrics page. API: `GET|PUT|DELETE /api/v1/apps/{name}/scrape-target` and `GET /api/v1/apps/{name}/scraped-metrics[?metric=&from=&to=]`.
+
+The control plane only ever connects to the app container's own address on its own app network; the port and path are the only inputs, a path with a host, query or `..` is refused, and redirects are never followed. Invalid metric or label names, label names over 64 bytes, label values that are not UTF-8, non-finite values and series with too many labels are dropped. Each label set is stored once and samples point to it. A failed scrape records a short fixed reason (refused, timed out, status, too large, redirect) on the target, never the raw error. Limits are runtime settings that apply live (each seeded by its env var):
+
+| Setting | Default | What it bounds |
+| --- | --- | --- |
+| `app_metrics.scrape_interval` | 60s | time between scrapes |
+| `app_metrics.scrape_timeout` | 5s | one scrape, connect plus body |
+| `app_metrics.max_body_bytes` | 1048576 | response size; larger fails the scrape |
+| `app_metrics.max_series` | 500 | distinct series stored per scrape |
+| `app_metrics.max_labels` | 10 | labels per series |
+| `app_metrics.retention_hours` | 72 | how long samples are kept |
+| `app_metrics.query_max_points` | 10000 | samples one query returns |
+| `app_metrics.max_label_bytes` | 65536 | label text kept per scrape |
+| `app_metrics.max_stored_rows` | 500000 | samples stored per app; at the limit new scrapes are dropped |
+| `app_metrics.scrape_workers` | 4 | apps scraped at once (1 to 16) |
+
+Reads need read access to the app, so a team member only sees apps of their own teams.

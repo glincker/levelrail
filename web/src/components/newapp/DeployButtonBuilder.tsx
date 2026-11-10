@@ -36,14 +36,14 @@ export default function DeployButtonBuilder() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-4 rounded-lg border p-4">
+    <section className="@container w-full space-y-4 rounded-lg border p-4">
       <div>
         <h2 className="text-base font-medium">{t('deployButton.title')}</h2>
         <p className="text-sm text-muted-foreground">
           {t('deployButton.description')}
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @md:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="db-image">{t('deployButton.image')}</FieldLabel>
           <Input

@@ -946,6 +946,8 @@ message BuildRequest {
   // or block-private). Empty means open. The node applies the stricter of
   // this and its own setting.
   string network = 8;
+  // railpack_provider, when set, fails a Railpack build that detects another provider.
+  string railpack_provider = 9;
 }
 
 enum BuildKind {

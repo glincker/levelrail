@@ -50,7 +50,7 @@ const (
 	DefaultIdleMin                 = 5
 	DefaultIdleMax                 = 7 * 24 * 60
 	DefaultIdleDefault             = 30
-	DefaultHoldMin                 = 10 * time.Second
+	DefaultHoldFloor               = 10 * time.Second
 	DefaultHoldMax                 = 120 * time.Second
 	DefaultHoldDefault             = 30 * time.Second
 	DefaultHoldHeadroom            = 1.5
@@ -91,7 +91,7 @@ func ConfigFromEnv(getenv func(string) string) Config {
 		IdleMin:                 int(envInt64(getenv, EnvIdleMin, DefaultIdleMin)),
 		IdleMax:                 int(envInt64(getenv, EnvIdleMax, DefaultIdleMax)),
 		IdleDefault:             int(envInt64(getenv, EnvIdleDefault, DefaultIdleDefault)),
-		HoldMin:                 envDuration(getenv, EnvHoldMin, DefaultHoldMin),
+		HoldMin:                 envDuration(getenv, EnvHoldMin, DefaultHoldFloor),
 		HoldMax:                 envDuration(getenv, EnvHoldMax, DefaultHoldMax),
 		HoldDefault:             envDuration(getenv, EnvHoldDefault, DefaultHoldDefault),
 		HoldHeadroom:            DefaultHoldHeadroom,
@@ -111,7 +111,7 @@ func (c Config) normalized() Config {
 	}
 	c.IdleDefault = min(max(c.IdleDefault, c.IdleMin), c.IdleMax)
 	if c.HoldMin <= 0 || c.HoldMax < c.HoldMin {
-		c.HoldMin, c.HoldMax = DefaultHoldMin, DefaultHoldMax
+		c.HoldMin, c.HoldMax = DefaultHoldFloor, DefaultHoldMax
 	}
 	c.HoldDefault = min(max(c.HoldDefault, c.HoldMin), c.HoldMax)
 	return c

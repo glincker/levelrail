@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { buttonVariants, Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   onboardingActive,
   useMeOnboarding,
@@ -18,22 +17,28 @@ export function OnboardingCard() {
   if (data.state !== 'not_started' && data.state !== 'in_progress') return null
   const resuming = data.state === 'in_progress'
   return (
-    <Card>
-      <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">
-            {resuming ? t('card.resumeTitle') : t('card.title')}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {resuming
-              ? t('card.resumeBody', {
-                  current: stepIndex(data.current_step) + 1,
-                  total: ONBOARDING_STEPS.length,
-                })
-              : t('card.body')}
-          </p>
-        </div>
-        <Link to="/welcome" className={buttonVariants({ size: 'sm' })}>
+    <div
+      data-testid="onboarding-note"
+      className="flex flex-col items-start gap-3 rounded-xl bg-muted/50 px-4 py-3"
+    >
+      <p className="min-w-0 text-sm text-muted-foreground">
+        <span className="block font-medium text-foreground">
+          {resuming ? t('card.resumeTitle') : t('card.title')}
+        </span>
+        <span className="block">
+          {resuming
+            ? t('card.resumeBody', {
+                current: stepIndex(data.current_step) + 1,
+                total: ONBOARDING_STEPS.length,
+              })
+            : t('card.body')}
+        </span>
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          to="/welcome"
+          className={buttonVariants({ size: 'sm', variant: 'outline' })}
+        >
           {resuming ? t('card.resume') : t('card.start')}
         </Link>
         <Button
@@ -45,7 +50,7 @@ export function OnboardingCard() {
         >
           {t('card.dismiss')}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

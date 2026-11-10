@@ -251,11 +251,13 @@ var (
 // importCustomTemplateRequest is POST /api/v1/templates/custom's body.
 // Variables names the ${NAME} placeholders the operator fills in at deploy.
 type importCustomTemplateRequest struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description,omitempty"`
-	ComposeYAML string   `json:"compose_yaml"`
-	Variables   []string `json:"variables,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	ComposeYAML string `json:"compose_yaml"`
+	// URL is an https address to download the compose file from instead of sending compose_yaml.
+	URL       string   `json:"url,omitempty"`
+	Variables []string `json:"variables,omitempty"`
 }
 
 // importCustomTemplateResponse omits the compose body so an imported file is never echoed back.
@@ -287,8 +289,20 @@ func (rt *Router) handleImportCustomTemplate(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "name is required (up to 120 characters) and description is limited to 2000")
 		return
 	}
+	if strings.TrimSpace(req.URL) != "" {
+		if strings.TrimSpace(req.ComposeYAML) != "" {
+			writeError(w, http.StatusBadRequest, "send either compose_yaml or url, not both")
+			return
+		}
+		body, ferr := rt.loadTemplateImportURL(r, req.URL)
+		if ferr != nil {
+			writeError(w, http.StatusUnprocessableEntity, ferr.Error())
+			return
+		}
+		req.ComposeYAML = body
+	}
 	if strings.TrimSpace(req.ComposeYAML) == "" {
-		writeError(w, http.StatusBadRequest, "compose_yaml is required")
+		writeError(w, http.StatusBadRequest, "compose_yaml or url is required")
 		return
 	}
 	if _, builtin := catalog.TemplateByID(req.ID); builtin {

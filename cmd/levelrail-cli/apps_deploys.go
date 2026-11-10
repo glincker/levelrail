@@ -26,7 +26,7 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsDeploysUsage(prog))
 		return exitOK
-	case "list":
+	case "list", "attempts":
 		return runAppsDeploysList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "wait":
 		return runAppsDeploysWait(prog, args[1:], stdout, stderr, lookupEnv)
@@ -72,6 +72,7 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 func appsDeploysUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
+  %[1]s apps deploys attempts <name> [--fail-on-error]            alias of list; exit 7 when the latest attempt failed
   %[1]s apps deploys wait <name> [deploy-id] [--timeout 10m]      block until a deploy is healthy or fails, exit 7 when it does not succeed
   %[1]s apps deploys show <name> [deploy-id] [flags]              one deploy attempt with its structured failure (newest by default)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
@@ -104,6 +105,8 @@ func runAppsDeploysList(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.StringVar(&filter.Status, "status", "", "only deploys with this status (succeeded, failed, running, ...)")
 	fs.StringVar(&filter.Query, "search", "", "only deploys whose message, image, branch or author contains this text")
 	fs.IntVar(&filter.Limit, "limit", 0, "show at most this many deploys (newest first)")
+	var failOnError bool
+	fs.BoolVar(&failOnError, "fail-on-error", false, "exit non-zero when the newest listed attempt failed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysListUsage(prog)) }
 
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps deploys list", "app name"}, lookupEnv)
@@ -116,7 +119,11 @@ func runAppsDeploysList(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list deploy attempts for app %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, of, attempts, func() { printDeployAttemptsHuman(stdout, attempts) })
+	code := writeScheduledTaskResult(stdout, stderr, of, attempts, func() { printDeployAttemptsHuman(stdout, attempts) })
+	if code == exitOK && failOnError && len(attempts) > 0 && attempts[0].Status == "failed" {
+		return exitDeployNotHealthy
+	}
+	return code
 }
 
 func appsDeploysListUsage(prog string) string {
@@ -135,6 +142,7 @@ Flags:
   --status string         only deploys with this status
   --search string         only deploys whose message, image, branch or author contains this text
   --limit int             show at most this many deploys
+  --fail-on-error         exit 7 when the newest listed attempt failed
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

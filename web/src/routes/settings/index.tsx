@@ -34,16 +34,18 @@ export const Route = createFileRoute('/settings/')({
 function HubCardLink({ item }: { item: LabelledSettingsItem }) {
   const { t } = useTranslation()
   const card = (
-    <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="h-full rounded-[var(--glinui-radius-lg)] p-0 transition-colors hover:bg-muted/40 hover:ring-foreground/20">
+      <CardHeader className="gap-1 p-3">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
           <item.icon className="size-5" />
           {item.title}
           {item.locked ? (
             <Badge variant="muted">{t('shell.locked.badge')}</Badge>
           ) : null}
         </CardTitle>
-        <CardDescription>{item.description}</CardDescription>
+        <CardDescription className="line-clamp-2 text-[13px]">
+          {item.description}
+        </CardDescription>
       </CardHeader>
     </Card>
   )
@@ -114,26 +116,12 @@ function SettingsHubPage() {
         }
       />
 
-      {query.trim() === '' ? (
-        <nav aria-label={t('nav.jumpTo')} className="flex flex-wrap gap-2">
-          {sections.map((section) => (
-            <a
-              key={section.id}
-              href={`#settings-${section.id}`}
-              className="rounded-full border border-border px-3 py-1 text-xs pointer-coarse:py-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              {section.title}
-            </a>
-          ))}
-        </nav>
-      ) : null}
-
       {searching ? (
         <div
           role="status"
           aria-busy="true"
           aria-label={t('nav.searchLoading')}
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-3"
         >
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} className="h-20 w-full" />
@@ -173,17 +161,22 @@ function SettingsHubPage() {
         <section
           key={section.id}
           id={`settings-${section.id}`}
-          className="scroll-mt-20 space-y-3"
+          className="scroll-mt-20 space-y-2 pt-3"
         >
-          <div>
-            <h2 className="text-sm font-medium text-foreground">
-              {section.title}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {section.description}
-            </p>
+          <div className="flex items-baseline justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium text-foreground">
+                {section.title}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {section.description}
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {section.items.length}
+            </span>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-3">
             {section.items.map((item) => (
               <HubCardLink key={item.to} item={item} />
             ))}

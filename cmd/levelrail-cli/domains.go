@@ -30,6 +30,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsAuthGate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "limits":
 		return runDomainsLimits(prog, args[1:], stdout, stderr, lookupEnv)
+	case "tuning":
+		return runDomainsTuning(prog, args[1:], stdout, stderr, lookupEnv)
 	case "maintenance":
 		return runDomainsMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "redirect":
@@ -130,6 +132,7 @@ func domainsUsage(prog string) string {
   %[1]s domains basic-auth <verb> [flags]       protect an app's domain with HTTP Basic Auth
   %[1]s domains auth-gate <verb> [flags]        check every request with your auth service or built-in sign-in
   %[1]s domains limits <verb> [flags]           cap a domain's request body size and upstream timeouts
+  %[1]s domains tuning <verb> [flags]           proxy tuning presets: compression, streaming, websocket, timeouts
   %[1]s domains maintenance <verb> [flags]      take one of an app's domains in or out of maintenance mode
   %[1]s domains redirect <verb> [flags]         point one of an app's domains at a target URL
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate

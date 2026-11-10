@@ -60,6 +60,7 @@ export function AppRow({
         >
           {app.name}
         </Link>
+        <AppDescription text={app.description} />
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <StatusLabel status={app.status} />
           <FailureReason status={app.status} name={app.name} />
@@ -129,6 +130,20 @@ export function StatusLabel({ status }: { status: AppStatusSummary }) {
       >
         {status.label}
       </span>
+    </span>
+  )
+}
+
+function AppDescription({ text }: { text?: string }) {
+  const { t } = useTranslation('appRows')
+  if (!text) return null
+  return (
+    <span
+      className="max-w-full min-w-0 truncate text-xs text-muted-foreground"
+      title={text}
+      aria-label={t('description', { text })}
+    >
+      {text}
     </span>
   )
 }

@@ -25,10 +25,8 @@ export function TeamSwitcher() {
   const { data: teams } = useQuery(teamListQueryOptions())
   const { data: projects } = useQuery(projectListQueryOptions())
 
-  if (!teams || teams.length < 2) {
-    const only = teams?.[0]
-    return only?.role ? <TeamRoleBadge role={only.role} /> : null
-  }
+  // With one team the role has no switcher to sit beside; the account menu shows it.
+  if (!teams || teams.length < 2) return null
   const current = teams.find((tm) => tm.id === scope.team)
   const teamProjects = (projects ?? []).filter(
     (p) => scope.team === '' || p.org_id === scope.team,

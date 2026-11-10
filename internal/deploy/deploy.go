@@ -175,6 +175,10 @@ type Request struct {
 	Commit func() error
 	// NoCache disables BuildKit's layer cache for a dockerfile build.
 	NoCache bool
+	// Target is the Dockerfile stage to build; empty builds the last stage.
+	Target string
+	// RailpackProvider, when set, fails a Railpack build that detects another provider.
+	RailpackProvider string
 	// RefreshDesired, when set, runs on the service just before it is saved so
 	// fields edited during a long build are not overwritten by the snapshot
 	// the request was built from.
@@ -336,6 +340,9 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		if _, err := os.Stat(filepath.Join(buildRoot, "Dockerfile")); err != nil {
 			dockerfilePath = definitionDockerfile(req.SourceDir, buildRoot)
 		}
+		if note := definitionIgnoredNote(req.SourceDir, buildRoot); note != "" && progress != nil {
+			progress(build.ProgressEvent{Step: stepBuildEnv, Log: "warning: " + note, Stream: "stderr"})
+		}
 	}
 
 	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {
@@ -355,6 +362,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		S3Cache:        s3Cache,
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
+		Target:         req.Target,
 	}
 	if err := checkPreviewBuildSecrets(req.Preview, req.Service.Build.Secrets); err != nil {
 		cacheDone()
@@ -422,6 +430,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		Tag:       tag,
 		Env:       buildEnv,
 		CacheID:   railpackCacheID(ctx, req, tag),
+		Provider:  req.RailpackProvider,
 	}, progress)
 	if err != nil {
 		var unsupported *build.UnsupportedProviderError

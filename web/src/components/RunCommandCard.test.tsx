@@ -85,6 +85,32 @@ describe('RunCommandCard', () => {
     })
   })
 
+  it('says the output is withheld instead of showing an empty run', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        json(
+          {
+            id: 'j3',
+            app: 'shop',
+            state: 'Succeeded',
+            exit_code: 0,
+            output_withheld: true,
+          },
+          202,
+        ),
+      ),
+    )
+    renderCard()
+    await user.type(screen.getByLabelText('Command'), 'true')
+    await user.click(screen.getByRole('button', { name: 'Run' }))
+    expect(
+      await screen.findByText(/Output is withheld/, {}, { timeout: 4000 }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('(no output)')).not.toBeInTheDocument()
+  })
+
   it('shows a succeeded run and the server error text inline', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
@@ -116,5 +142,42 @@ describe('RunCommandCard', () => {
     expect(
       await screen.findByText(/follow console exec access rules/),
     ).toBeInTheDocument()
+  })
+
+  it('sends the timeout, cancels a running job and lists it in history', async () => {
+    const user = userEvent.setup()
+    let cancelled = false
+    const fetchMock = vi.fn((url: string) => {
+      if (url.endsWith('/cancel')) {
+        cancelled = true
+        return json({ id: 'j3', app: 'shop', state: 'Running' }, 202)
+      }
+      if (url.endsWith('/jobs/runs'))
+        return json({ id: 'j3', app: 'shop', state: 'Running' }, 202)
+      return json(
+        cancelled
+          ? { id: 'j3', app: 'shop', state: 'Failed', message: 'cancelled' }
+          : { id: 'j3', app: 'shop', state: 'Running' },
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    renderCard()
+
+    await user.type(screen.getByLabelText('Command'), 'sleep 99')
+    await user.type(screen.getByLabelText('Timeout (s)'), '30')
+    await user.click(screen.getByRole('button', { name: 'Run' }))
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+
+    expect(
+      await screen.findByText('Recent runs', {}, { timeout: 4000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('sleep 99')).toBeInTheDocument()
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      timeout_seconds: 30,
+    })
+    expect(
+      fetchMock.mock.calls.some(([u]) => String(u).endsWith('/j3/cancel')),
+    ).toBe(true)
   })
 })

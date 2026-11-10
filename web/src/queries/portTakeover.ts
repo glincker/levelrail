@@ -5,6 +5,9 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import { beginRestart } from '../lib/restartTracker'
 import { fetchSystemRestart } from './systemRestart'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2500_MS = 2500
+
 export type TakeoverCheckStatus = 'pass' | 'warn' | 'block'
 
 export interface TakeoverFix {
@@ -146,7 +149,8 @@ export function useTakeoverStatus(acceptUnmanaged: boolean) {
     retry: (count, err) =>
       count < 20 && !(err instanceof ApiError && err.status < 500),
     retryDelay: 1500,
-    refetchInterval: (q) => (takeoverSettled(q.state.data?.run) ? false : 2500),
+    refetchInterval: (q) =>
+      takeoverSettled(q.state.data?.run) ? false : POLL_2500_MS,
   })
 }
 

@@ -188,6 +188,8 @@ func buildExplainTable() map[string]Explanation {
 			"Press Fix on this check to see which program holds the port and the guided step to free it.", "mesh.udp_port.holder", KindGuided),
 		ex("public_address", "Other nodes do not know this host's public address.", "They cannot connect back to it.",
 			nextFixButton+"It offers the detected addresses to choose from.", "mesh.public_address.set", KindAuto),
+		ex("container_log_rotation", "Some containers keep a log with no size limit.", "A chatty app can fill the disk over time.",
+			"Open Settings, set the container log size and file count, then redeploy the apps so new containers use them.", "", KindGuided),
 		ex("local_node", "This host is not registered as a node.", "The mesh cannot place apps on it.",
 			"Open Nodes and press Add this host, then press Re-check.", "", KindGuided),
 		ex("database_connections_high", "A database is close to its connection limit.", "New connections fail and apps show errors.",

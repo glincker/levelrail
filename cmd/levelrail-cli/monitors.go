@@ -16,7 +16,8 @@ import (
 // runMonitors dispatches "monitors <verb>": experimental uptime checks, off unless the server sets APP_MONITORS_ENABLED.
 func runMonitors(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	subs := map[string]apiCmd{"create": monitorsCreateCommand(), "list": monitorsListCommand(), "results": monitorsResultsCommand(), "update": monitorsUpdateCommand(),
-		"delete": monitorsDeleteCommand(), "rotate-token": monitorsRotateCommand()}
+		"delete": monitorsDeleteCommand(), "rotate-token": monitorsRotateCommand(),
+		"pause": monitorsEnabledCommand("pause", false), "resume": monitorsEnabledCommand("resume", true)}
 	return dispatchSub(prog, "monitors", monitorsUsage, subs, args, stdout, stderr, lookupEnv)
 }
 
@@ -28,9 +29,13 @@ func monitorsUsage(prog string) string {
   %[1]s monitors create --name N --kind tls --host HOST [--port 443] [--interval 24h] [--warn-days 21] [--crit-days 7] [--status-link]
   %[1]s monitors rotate-token <id>
   %[1]s monitors update <id> [--status-link=true|false] [--link-confirm N] [--link-recovery 2m]
+  %[1]s monitors pause <id>
+  %[1]s monitors resume <id>
   %[1]s monitors list
   %[1]s monitors results <id> [--window 24h] [--limit N]
   %[1]s monitors delete <id>
+
+pause stops probing a monitor without deleting its history; resume starts it again.
 
 --status-link opens a status page incident on the monitor's component while it is confirmed
 down and resolves it after recovery. It is off by default; --link-confirm and --link-recovery
@@ -228,5 +233,13 @@ func monitorsUpdateCommand() apiCmd {
 			return m, func(w io.Writer) {
 				_, _ = fmt.Fprintf(w, "monitor %s status link: %t\n", m.ID, m.StatusLink)
 			}, err
+		}}
+}
+
+func monitorsEnabledCommand(verb string, enabled bool) apiCmd {
+	return apiCmd{label: "monitors " + verb, usage: monitorsUsage, args: 1,
+		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
+			m, err := c.SetMonitorEnabled(ctx, pos[0], enabled)
+			return m, func(w io.Writer) { _, _ = fmt.Fprintf(w, "monitor %s %sd\n", pos[0], verb) }, err
 		}}
 }

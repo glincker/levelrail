@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -139,6 +140,9 @@ type Cache struct {
 	probeFn func(ctx context.Context, repoURL string) error
 	now     func() time.Time
 	export  func(mirrorDir string, commit plumbing.Hash, dest string) error
+	// subFetch and lfsClient are seams for tests; nil means the real ones.
+	subFetch  subFetchFunc
+	lfsClient *http.Client
 }
 
 // New builds a Cache; a nil logger discards logs.
@@ -213,6 +217,15 @@ func (c *Cache) Checkout(ctx context.Context, repoURL, ref, token string) (Check
 			return fail(fmt.Errorf("%w: %s", ErrCommitNotFound, shortRef(ref)))
 		}
 		return fail(fmt.Errorf("sourcecache: check out %s: %w", shortRef(ref), err))
+	}
+	if ex, ok := extrasOf(ctx); ok {
+		// Extras never read the mirror, so let it be pruned or fetched meanwhile.
+		c.touch(mirrorDir)
+		release()
+		if err := c.checkoutExtras(ctx, dest, repoURL, token, ex); err != nil {
+			_ = os.RemoveAll(dest)
+			return Checkout{}, err
+		}
 	}
 	c.touch(mirrorDir)
 	var once sync.Once
@@ -362,4 +375,17 @@ func cleanURL(raw string) string {
 	}
 	u.User = nil
 	return u.String()
+}
+
+// checkoutExtras fetches submodules and LFS objects; both need the host, so
+// an offline checkout of such a source fails instead of building empty dirs.
+func (c *Cache) checkoutExtras(ctx context.Context, dest, repoURL, token string, ex Extras) error {
+	if IsOffline(ctx) {
+		return fmt.Errorf("%w: %w", ErrNotCached, errExtrasNeedsNetwork)
+	}
+	auth := authOf(ctx)
+	if auth == nil {
+		auth = authFor(repoURL, token)
+	}
+	return c.fetchExtras(ctx, dest, repoURL, auth, ex)
 }

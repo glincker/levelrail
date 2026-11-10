@@ -32,8 +32,9 @@ type domainOwnerLookup interface {
 }
 
 // preGateStaticPreview writes the basic auth gate before the site exists, so its route is never served ungated.
-// It returns whether the gate row is new (and so safe to remove on failure); a domain owned by someone else is left alone.
-func (rt *Router) preGateStaticPreview(ctx context.Context, appName, previewName, domain string, s store.PreviewAppSettings) (created bool, err error) {
+// A domain owned by someone else is left alone. gated is false when the claim does not exist yet,
+// so the caller must gate right after Deploy and before the route is reconciled.
+func (rt *Router) preGateStaticPreview(ctx context.Context, appName, previewName, domain string, s store.PreviewAppSettings) (gated bool, err error) {
 	if !s.GateBasicAuth || domain == "" {
 		return false, nil
 	}
@@ -52,7 +53,7 @@ func (rt *Router) preGateStaticPreview(ctx context.Context, appName, previewName
 	if err := rt.gatePreviewDomain(ctx, appName, domain, store.PreviewAppSettings{GateUsername: s.GateUsername}); err != nil {
 		return false, fmt.Errorf("apply basic auth gate: %w", err)
 	}
-	return false, nil
+	return true, nil
 }
 
 // deployPreviewStatic publishes the PR's head commit as its own static site
@@ -75,14 +76,11 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 	svcSpec.Domains = domainSlice(wantDomain)
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName, Preview: true}
 
-	newGate, err := rt.preGateStaticPreview(ctx, appName, previewName, wantDomain, policy)
+	preGated, err := rt.preGateStaticPreview(ctx, appName, previewName, wantDomain, policy)
 	if err != nil {
 		return "", false, err
 	}
 	_, deployErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger))
-	if deployErr != nil && newGate {
-		rt.removePreviewGates(ctx, []string{wantDomain})
-	}
 	usedDomain = wantDomain
 	var domainTaken *store.ErrDomainTaken
 	if deployErr != nil && wantDomain != "" && errors.As(deployErr, &domainTaken) {
@@ -94,6 +92,15 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 	}
 	if deployErr != nil {
 		return "", false, deployErr
+	}
+	// A first deploy has no claim to gate before Deploy, so gate before the reconciler can publish the route.
+	if policy.GateBasicAuth && usedDomain != "" && !preGated {
+		if gateErr := rt.gatePreviewDomain(ctx, appName, usedDomain, store.PreviewAppSettings{GateUsername: policy.GateUsername}); gateErr != nil {
+			if rmErr := rt.removeStaticSite(ctx, previewName); rmErr != nil {
+				rt.logger.Error("api: remove ungated preview site failed", slog.String("error", rmErr.Error()), slog.String("preview_app_id", previewName))
+			}
+			return "", false, fmt.Errorf("apply basic auth gate: %w", gateErr)
+		}
 	}
 	rt.nudgeReconciler()
 	return usedDomain, domainConflict, nil

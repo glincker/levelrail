@@ -20,6 +20,7 @@ import {
   useSaveIncidentDraft,
 } from '../../queries/incidents'
 import type { Incident, IncidentPublicStatus } from '../../types/incident'
+import { IncidentPostmortem } from './IncidentPostmortem'
 
 const STATUSES: IncidentPublicStatus[] = [
   'investigating',
@@ -367,6 +368,9 @@ export function IncidentDetail({
         monitorName={monitorName}
         onRefresh={() => void query.refetch()}
       />
+      {inc.internal_state === 'resolved' ? (
+        <IncidentPostmortem id={inc.id} />
+      ) : null}
     </div>
   )
 }

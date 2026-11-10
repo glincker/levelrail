@@ -85,6 +85,9 @@ func timelineBefore(at time.Time, id string, c *store.AppEventCursor) bool {
 // lifecycle events merged with deploy attempts, newest first.
 func (rt *Router) handleAppTimeline(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

@@ -90,10 +90,7 @@ func (m *dbMetrics) observe(query string, d time.Duration) {
 		return
 	}
 	m.slow++
-	q := strings.Join(strings.Fields(query), " ")
-	if len(q) > maxLoggedStatement {
-		q = q[:maxLoggedStatement]
-	}
+	q := redactStatement(query)
 	m.recent = append(m.recent, SlowQuery{SQL: q, DurationMS: float64(d) / float64(time.Millisecond), At: time.Now().UTC()})
 	if len(m.recent) > slowQueryKeep {
 		m.recent = m.recent[len(m.recent)-slowQueryKeep:]

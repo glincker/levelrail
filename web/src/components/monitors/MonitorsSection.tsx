@@ -1,7 +1,14 @@
 import { EmptyState } from '@/components/ui/empty-state'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusGlassIcon, TrashGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
+import {
+  PlusGlassIcon,
+  TrashGlassIcon,
+  InboxGlassIcon,
+  RefreshCwGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -18,9 +25,11 @@ import {
   useDeleteMonitor,
   useMonitorResults,
   useMonitors,
+  useRotateMonitorToken,
+  useSetMonitorEnabled,
 } from '../../queries/monitors'
 import type { Monitor } from '../../types/monitor'
-import { MonitorForm } from './MonitorForm'
+import { MonitorForm, PingPanel } from './MonitorForm'
 
 const STATE_VARIANT: Record<
   MonitorState,
@@ -38,9 +47,13 @@ const STATE_VARIANT: Record<
 export function MonitorRow({
   monitor,
   onDelete,
+  onRotate,
+  onToggle,
 }: {
   monitor: Monitor
   onDelete: (m: Monitor) => void
+  onRotate?: (m: Monitor) => void
+  onToggle?: (m: Monitor) => void
 }) {
   const { t } = useTranslation('monitors')
   const ref = useRef<HTMLLIElement>(null)
@@ -88,6 +101,38 @@ export function MonitorRow({
       >
         {uptime === undefined ? t('notAvailable') : `${uptime.toFixed(1)}%`}
       </span>
+      {onToggle ? (
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={t(monitor.enabled ? 'pause.action' : 'resume.action', {
+            name: monitor.name,
+          })}
+          onClick={() => {
+            onToggle(monitor)
+          }}
+        >
+          {monitor.enabled ? (
+            <PauseGlassIcon className="size-5" aria-hidden="true" />
+          ) : (
+            <PlayGlassIcon className="size-5" aria-hidden="true" />
+          )}
+        </Button>
+      ) : null}
+      {monitor.kind === 'heartbeat' && onRotate ? (
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={t('rotate.action', { name: monitor.name })}
+          onClick={() => {
+            onRotate(monitor)
+          }}
+        >
+          <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
+        </Button>
+      ) : null}
       <Button
         type="button"
         size="icon-sm"
@@ -109,9 +154,13 @@ export function MonitorRow({
 export function MonitorsList({
   monitors,
   onDelete,
+  onRotate,
+  onToggle,
 }: {
   monitors: Monitor[]
   onDelete: (m: Monitor) => void
+  onRotate?: (m: Monitor) => void
+  onToggle?: (m: Monitor) => void
 }) {
   const { t } = useTranslation('monitors')
   if (monitors.length === 0) {
@@ -138,9 +187,17 @@ export function MonitorsList({
         <span className="w-28">{t('columns.lastCheck')}</span>
         <span className="w-14 text-right">{t('columns.uptime')}</span>
         <span className="size-8" />
+        {onToggle ? <span className="size-8" /> : null}
+        {onRotate ? <span className="size-8" /> : null}
       </li>
       {monitors.map((m) => (
-        <MonitorRow key={m.id} monitor={m} onDelete={onDelete} />
+        <MonitorRow
+          key={m.id}
+          monitor={m}
+          onDelete={onDelete}
+          onRotate={onRotate}
+          onToggle={onToggle}
+        />
       ))}
     </ul>
   )
@@ -152,7 +209,11 @@ export function MonitorsSection() {
   const query = useMonitors()
   const del = useDeleteMonitor()
   const [adding, setAdding] = useState(false)
+  const rotate = useRotateMonitorToken()
+  const setEnabled = useSetMonitorEnabled()
   const [pendingDelete, setPendingDelete] = useState<Monitor | null>(null)
+  const [pendingRotate, setPendingRotate] = useState<Monitor | null>(null)
+  const [rotated, setRotated] = useState<Monitor | null>(null)
 
   if (!query.isError && !query.data) return null
 
@@ -186,8 +247,52 @@ export function MonitorsSection() {
           {t('loadError', { message: query.error.message })}
         </p>
       ) : (
-        <MonitorsList monitors={query.data ?? []} onDelete={setPendingDelete} />
+        <MonitorsList
+          monitors={query.data ?? []}
+          onDelete={setPendingDelete}
+          onRotate={setPendingRotate}
+          onToggle={(m) => {
+            setEnabled.mutate(
+              { id: m.id, enabled: !m.enabled },
+              {
+                onError: (e) => {
+                  toast.add({ title: e.message, type: 'error' })
+                },
+              },
+            )
+          }}
+        />
       )}
+      {rotated ? (
+        <PingPanel
+          monitor={rotated}
+          onDone={() => {
+            setRotated(null)
+          }}
+        />
+      ) : null}
+      <ConfirmDialog
+        open={pendingRotate !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingRotate(null)
+        }}
+        title={t('rotate.title', { name: pendingRotate?.name ?? '' })}
+        description={t('rotate.description')}
+        confirmLabel={t('rotate.confirm')}
+        pendingLabel={t('rotate.pending')}
+        tone="destructive"
+        pending={rotate.isPending}
+        error={rotate.error?.message ?? null}
+        onConfirm={() => {
+          if (!pendingRotate) return
+          rotate.mutate(pendingRotate.id, {
+            onSuccess: (m) => {
+              setPendingRotate(null)
+              setRotated(m)
+            },
+          })
+        }}
+      />
       <ConfirmDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => {

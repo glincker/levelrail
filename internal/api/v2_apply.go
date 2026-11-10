@@ -225,6 +225,7 @@ func (s *v2Server) applyMerged(w http.ResponseWriter, r *http.Request, fs v2Fiel
 	}
 	req := iacRequest{Files: []iacFile{{Name: name + ".yaml", Content: string(src)}}, Vars: s.keptEnvValues(ctx, kind, name, sent, out.merged)}
 	res, opts, issues := req.build()
+	opts = s.rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, v2ApplyResponse{Error: "the merged manifest is invalid", Issues: issues})
 		return

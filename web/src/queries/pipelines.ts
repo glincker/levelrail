@@ -24,6 +24,10 @@ import type {
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+const POLL_3000_MS = 3000
+
 export const pipelineKeys = {
   all: (app: string) => [...appKeys.detail(app), 'pipelines'] as const,
   list: (app: string) => [...pipelineKeys.all(app), 'list'] as const,
@@ -108,7 +112,9 @@ export function usePipelineRuns(app: string, pipeline?: string) {
         'fetch pipeline runs',
       ),
     refetchInterval: (query) =>
-      query.state.data?.some((r) => !isTerminalStatus(r.status)) ? 3000 : false,
+      query.state.data?.some((r) => !isTerminalStatus(r.status))
+        ? POLL_3000_MS
+        : false,
   })
 }
 
@@ -123,7 +129,7 @@ export function usePipelineRun(app: string, id: string) {
     refetchInterval: (query) =>
       query.state.data && isTerminalStatus(query.state.data.status)
         ? false
-        : 2000,
+        : POLL_2000_MS,
   })
 }
 
@@ -136,7 +142,7 @@ export function usePipelineRunLogs(
 ) {
   const stepParam = step === undefined ? '' : `&step=${step}`
   return useQuery({
-    refetchInterval: live ? 2000 : false,
+    refetchInterval: live ? POLL_2000_MS : false,
     queryKey: pipelineKeys.logs(app, id, job, step),
     queryFn: () =>
       requestJson<PipelineLogLine[]>(

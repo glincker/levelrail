@@ -1,0 +1,107 @@
+name: Release verify
+
+# Notices a failed or incomplete release within minutes and files one issue.
+# It only reports: it never edits, dispatches or deletes release state.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  verify:
+    name: Verify release assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      EVENT: ${{ github.event_name }}
+      RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+      RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      RELEASE_TAG_EVENT: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # A workflow_run of a tag push carries the tag as head_branch; a manual
+      # dispatch on main does not, so those fall back to the latest release.
+      - name: Resolve tag
+        id: tag
+        run: |
+          set -euo pipefail
+          tag="$RELEASE_TAG_EVENT"
+          if [ -z "$tag" ]; then
+            case "$RUN_BRANCH" in
+            v*) tag="$RUN_BRANCH" ;;
+            *) tag="$(gh release list --repo "$REPO" --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName')" ;;
+            esac
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Verify assets
+        id: verify
+        run: |
+          set +e
+          out="$(scripts/release/verify-assets.sh "${{ steps.tag.outputs.tag }}" --repo "$REPO" 2>&1)"
+          code=$?
+          echo "$out"
+          {
+            echo "missing<<EOF"
+            echo "$out"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "ok=$([ $code -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Open, update or close the issue
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          OK: ${{ steps.verify.outputs.ok }}
+          MISSING: ${{ steps.verify.outputs.missing }}
+        run: |
+          set -euo pipefail
+          title="Release ${TAG} incomplete"
+          run_url="${RUN_URL:-https://github.com/${REPO}/actions/workflows/release.yml}"
+          existing="$(gh issue list --repo "$REPO" --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")"
+
+          # A release event fires before the assets are uploaded, so only the
+          # finished Release run may open an issue; the event can still close one.
+          failed=false
+          if [ "$EVENT" = "workflow_run" ]; then
+            [ "$OK" = "true" ] || failed=true
+            [ "$RUN_CONCLUSION" = "failure" ] && failed=true
+          fi
+
+          if [ "$failed" = "false" ]; then
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" --repo "$REPO" --comment "Release ${TAG} now has every expected asset."
+            fi
+            exit 0
+          fi
+
+          fence='```'
+          body="$(
+            echo "Release run: ${run_url}"
+            echo
+            echo "Verification result:"
+            echo "$fence"
+            echo "$MISSING"
+            echo "$fence"
+            echo
+            echo "Redispatch once the cause is fixed:"
+            echo "$fence"
+            echo "gh workflow run release.yml --ref main -f tag=${TAG}"
+            echo "$fence"
+          )"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPO" --body "$body"
+          else
+            gh issue create --repo "$REPO" --title "$title" --body "$body"
+          fi

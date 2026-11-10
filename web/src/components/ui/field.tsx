@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
+import { CircleAlertGlassIcon, ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -54,7 +54,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="field-group"
       className={cn(
-        'group/field-group @container/field-group flex w-full flex-col gap-5 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4',
+        'group/field-group @container/field-group flex w-full flex-col gap-4 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4',
         className,
       )}
       {...props}
@@ -63,7 +63,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 const fieldVariants = cva(
-  'group/field flex w-full gap-2 data-[invalid=true]:text-destructive',
+  'group/field flex w-full gap-1.5 data-[invalid=true]:text-destructive',
   {
     variants: {
       orientation: {
@@ -236,7 +236,7 @@ function FieldDescription({
       id={descId}
       data-slot="field-description"
       className={cn(
-        'text-left text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5',
+        'text-left text-xs leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5',
         'last:mt-0 nth-last-2:-mt-1',
         '[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary',
         className,
@@ -398,9 +398,16 @@ function FieldError({
       id={errorId}
       role={announce ? 'alert' : undefined}
       data-slot="field-error"
-      className={cn('text-sm font-normal text-destructive', className)}
+      className={cn(
+        'flex items-start gap-1.5 text-xs font-normal text-tone-danger',
+        className,
+      )}
       {...props}
     >
+      <CircleAlertGlassIcon
+        className="mt-px size-4 shrink-0"
+        aria-hidden="true"
+      />
       {content}
     </div>
   )

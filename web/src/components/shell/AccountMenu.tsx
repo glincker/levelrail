@@ -29,6 +29,8 @@ import { preferencesQueryOptions } from '../../queries/accountSelf'
 import { sessionQueryOptions } from '../../queries/security'
 import { useLogout } from '../../queries/auth'
 import { UserAvatar } from '../account/UserAvatar'
+import { teamListQueryOptions } from '../../queries/teams'
+import { TeamRoleBadge } from '../teams/TeamRoleBadge'
 import { useTheme, type Theme } from '../ThemeProvider'
 import { useAttentionSummary } from './useAttentionSummary'
 
@@ -106,6 +108,8 @@ export function AccountMenu() {
   const logout = useLogout()
   const session = useQuery(sessionQueryOptions()).data
   const prefs = useQuery(preferencesQueryOptions()).data
+  const teams = useQuery(teamListQueryOptions()).data
+  const role = teams?.length === 1 ? teams[0]?.role : undefined
   const name = session?.display_name || username || '?'
   const email = session?.username.includes('@') ? session.username : undefined
   const avatar = (
@@ -146,7 +150,10 @@ export function AccountMenu() {
         <div className="flex items-center gap-3 border-b border-border px-3 py-3">
           {avatar}
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-semibold">{name}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-semibold">{name}</span>
+              {role ? <TeamRoleBadge role={role} /> : null}
+            </span>
             {email ? (
               <span className="truncate text-xs text-muted-foreground">
                 {email}

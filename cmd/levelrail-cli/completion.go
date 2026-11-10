@@ -18,7 +18,7 @@ type cmdNode = clitree.Node
 var cliCommandTree = clitree.Tree
 
 // Flags offered as completions at every command depth.
-var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "-h", "--help"}
+var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "--no-color", "-h", "--help"}
 
 // One entry per node with children; path is the space-joined verb sequence.
 type treeEntry struct {

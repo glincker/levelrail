@@ -149,5 +149,6 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
 	keys := buildTimeEnvChanges(existing.Env, desired.Env)
+	rt.changes.Publish(changeApps, name)
 	writeJSON(w, http.StatusOK, appUpdateResponse{appResource: req, RebuildRequired: len(keys) > 0, RebuildKeys: keys})
 }

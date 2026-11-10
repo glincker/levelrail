@@ -19,6 +19,7 @@ type MonitorService interface {
 	Get(ctx context.Context, id string) (monitor.Monitor, error)
 	Delete(ctx context.Context, id string) error
 	SetStatusLink(ctx context.Context, id string, l monitor.StatusLink) (monitor.Monitor, error)
+	SetEnabled(ctx context.Context, id string, enabled bool) (monitor.Monitor, error)
 	State(id string) string
 	Status(id string) monitor.Status
 	Results(ctx context.Context, id string, window time.Duration, limit int) (monitor.History, error)
@@ -61,11 +62,13 @@ type monitorRequest struct {
 	CritDays     int `json:"crit_days"`
 }
 
-// monitorLinkRequest changes only the status page link settings.
+// monitorLinkRequest is the PATCH body: status page link settings and the enabled flag.
+// Absent fields are left unchanged.
 type monitorLinkRequest struct {
-	StatusLink          bool `json:"status_link"`
-	LinkConfirmFailures int  `json:"link_confirm_failures"`
-	LinkRecoverySeconds int  `json:"link_recovery_seconds"`
+	StatusLink          *bool `json:"status_link"`
+	LinkConfirmFailures int   `json:"link_confirm_failures"`
+	LinkRecoverySeconds int   `json:"link_recovery_seconds"`
+	Enabled             *bool `json:"enabled"`
 }
 
 // monitorResource never carries header values, only their names.
@@ -202,8 +205,20 @@ func (rt *Router) handleUpdateMonitorLink(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	m, err := rt.monitors.SetStatusLink(r.Context(), r.PathValue("id"), monitor.StatusLink{Enabled: req.StatusLink,
-		ConfirmFailures: req.LinkConfirmFailures, RecoverySeconds: req.LinkRecoverySeconds})
+	if req.StatusLink == nil && req.Enabled == nil {
+		writeError(w, http.StatusBadRequest, "nothing to update")
+		return
+	}
+	id := r.PathValue("id")
+	var m monitor.Monitor
+	var err error
+	if req.StatusLink != nil {
+		m, err = rt.monitors.SetStatusLink(r.Context(), id, monitor.StatusLink{Enabled: *req.StatusLink,
+			ConfirmFailures: req.LinkConfirmFailures, RecoverySeconds: req.LinkRecoverySeconds})
+	}
+	if err == nil && req.Enabled != nil {
+		m, err = rt.monitors.SetEnabled(r.Context(), id, *req.Enabled)
+	}
 	if err != nil {
 		rt.monitorError(w, "update monitor", err)
 		return

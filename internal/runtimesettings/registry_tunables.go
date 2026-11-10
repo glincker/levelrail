@@ -19,11 +19,46 @@ const (
 	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
 	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
 	KeyAppsContainersInspectTimeout  = "apps.containers_inspect_timeout"
+	KeyBackupsComposeRestoreTimeout  = "backups.compose_restore_timeout"
+	KeyBackupsScheduleRetainDefault  = "backups.schedule_retain_default"
+	KeyBackupsDrillIntervalHours     = "backups.drill_interval_hours"
+	KeyBackupsDrillRetentionDays     = "backups.drill_retention_days"
+	KeyBackupsDrillTimeout           = "backups.drill_timeout"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyBackupsDrillRetentionDays, Category: CategoryRetention, Kind: KindInt, Default: "90",
+		Env: "APP_BACKUP_DRILL_RETENTION_DAYS", Apply: ApplyLive, CheckValue: intRangeCheck(0, 3650),
+		Title:       "Restore drill history retention",
+		Description: "Days of restore drill results to keep, from 0 to 3650. 0 keeps every result. The newest drill of each resource is always kept so health and alerts stay accurate. The next scheduler pass uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyBackupsDrillTimeout, Category: CategoryRetention, Kind: KindDuration, Default: "1h",
+		Env: "APP_BACKUP_DRILL_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Minute, 24*time.Hour),
+		Title:       "Restore drill timeout",
+		Description: "How long one scheduled restore drill may run before it is cancelled and recorded as failed, from 1m to 24h. The next drill uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyBackupsDrillIntervalHours, Category: CategoryRetention, Kind: KindInt, Default: "168",
+		Env: "APP_BACKUP_DRILL_INTERVAL_HOURS", Apply: ApplyLive, CheckValue: intRangeCheck(0, 8760),
+		Title:       "Restore drill interval",
+		Description: "Hours between scheduled restore drills of each backed up database or volume, from 0 to 8760. 0 turns scheduled drills off. A drill restores the newest backup into a throwaway target and records a pass or fail. The next scheduler pass uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyBackupsScheduleRetainDefault, Category: CategoryRetention, Kind: KindInt, Default: "0",
+		Env: "APP_BACKUP_SCHEDULE_RETAIN_DEFAULT", Apply: ApplyLive, CheckValue: intRangeCheck(0, 1000),
+		Title:       "Compose backup schedule retain default",
+		Description: "How many backups a compose database schedule keeps when it is saved without a retain count, from 0 to 1000. 0 keeps every backup. Schedules already saved are not changed.",
+	})
+	Register(Definition{
+		Key: KeyBackupsComposeRestoreTimeout, Category: CategoryRetention, Kind: KindDuration, Default: "2h",
+		Env: "APP_COMPOSE_RESTORE_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Minute, 24*time.Hour),
+		Title:       "Compose database restore timeout",
+		Description: "How long one in-place restore of a compose database may run before it is cancelled, from 1m to 24h. The next restore uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyAppsContainersInspectTimeout, Category: CategoryObservability, Kind: KindDuration, Default: "5s",
 		Env: "APP_CONTAINERS_INSPECT_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, 2*time.Minute),

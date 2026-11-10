@@ -370,6 +370,14 @@ With the secret, the release PR runs CI like any other PR, and the tag push star
 
 `release.yml` has a `release-gate` job between the binary build and everything that publishes (the release assets and both container images wait on it). It runs `scripts/release-gate.sh` with the candidate `levelrail-linux-amd64`, the previous published release's binary (checksum verified against its `checksums.txt`) and the seeded databases from `scripts/upgrade-fixtures/generate.sh`. It fails the release if the schema version goes backwards, if the previous release cannot be replaced by the candidate on the same data (checked through the control plane's own `/readyz`, no Docker), or if the candidate does not refuse a newer database with exit 78. A release with no earlier release to compare against only warns. The `release` job also refuses to publish when `release-manifest.json`, the file the Updates page reads the schema from, is missing from the signed `checksums.txt`. `scripts/test-release-gate.sh` builds two binaries and checks the gate passes the good path and refuses the bad ones; it is not part of PR CI.
 
+## Release dry run and asset check
+
+`release-dryrun.yml` runs `scripts/release/web-build.sh`, the same script `release.yml` uses for the frontend, on every pull request into `main` and on manual dispatch, so a heap or `tsc` failure shows up on the release PR instead of on the tag. `RELEASE_NODE_HEAP_MB` (default 8192) sets the Node heap cap.
+
+`release-verify.yml` runs after the `Release` workflow completes and when a release is published. It runs `scripts/release/verify-assets.sh <tag>`, which fails unless `checksums.txt`, `checksums.txt.sigstore.json`, the control plane, CLI and agent binaries and the agent deb and rpm packages are all attached. On failure it opens (or updates) one issue titled `Release <tag> incomplete` with the run link and the redispatch command, and closes it once the check passes. It never changes release state. `scripts/test-release-verify.sh` tests the checker with a fake `gh`.
+
+`scripts/release/ship.sh <version>` reports release PR checks and prints the squash message. With `--after-merge` it waits (bounded by `SHIP_WAIT_SECS`, default 1800) for the tag and the Release run, then verifies the assets. It only reports; merging and dispatching stay manual.
+
 ## Publishing the CLI to Homebrew and npm
 
 The release workflow builds every binary, attaches them to the GitHub Release, and then runs two independent jobs. A failure in one never blocks the other or the release itself.

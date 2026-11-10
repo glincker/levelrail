@@ -285,6 +285,15 @@ func (rt *Router) authorizeServiceNames(w http.ResponseWriter, r *http.Request, 
 			continue
 		}
 		if _, err := rt.apps.GetDesiredService(r.Context(), n); errors.Is(err, store.ErrServiceNotFound) {
+			taken, terr := rt.stackNameTaken(r.Context(), n)
+			if terr != nil {
+				rt.internalError(w, "api: service names: check stack name", terr)
+				return false
+			}
+			if taken {
+				writeError(w, http.StatusConflict, "an app named "+n+" already exists")
+				return false
+			}
 			continue
 		} else if err != nil {
 			rt.internalError(w, "api: service names: check existing service", err)

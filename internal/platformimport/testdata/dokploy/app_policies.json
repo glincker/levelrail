@@ -1,0 +1,10 @@
+{
+  "applicationId": "a-pol", "name": "portal", "sourceType": "docker", "dockerImage": "ghcr.io/acme/portal:1",
+  "env": "NODE_ENV=production\n",
+  "domains": [{"host": "portal.example.com", "port": 8080}],
+  "redirects": [{"regex": "^https://portal.example.com/old/(.*)", "replacement": "https://portal.example.com/new", "permanent": true}],
+  "security": [{"username": "ops", "password": "must-not-leak-pw"}],
+  "ports": [{"publishedPort": 9000, "targetPort": 9000, "protocol": "tcp"}],
+  "preDeployCommand": "npm run migrate",
+  "postDeployCommand": "npm run warm"
+}

@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
+import { ListKeyboardHint } from '../ListKeyboardHint'
 import { useFirewallRules, useFirewallStatus } from '../../queries/firewallEdge'
 import { AttackModeCard } from './AttackModeCard'
 import { BansTable } from './BansTable'
@@ -26,6 +28,11 @@ export function RulesView({
   const { t } = useTranslation('firewall')
   const { data: rules, error, refetch } = useFirewallRules()
   const status = useFirewallStatus('', '1h')
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
 
   if (error) return <LoadError error={error} onRetry={() => void refetch()} />
   if (!rules) {
@@ -52,34 +59,37 @@ export function RulesView({
     : undefined
 
   return (
-    <div className="grid items-start gap-(--glinr-page-gap) xl:grid-cols-2">
-      <div className="min-w-0 space-y-(--glinr-page-gap)">
-        <CustomRulesCard
-          all={rules}
-          custom={custom}
-          onNew={onNewRule}
-          onEdit={onEditRule}
-        />
-        <BansTable retention={ban} />
-        {scope ? <DomainLimitsCard domain={scope} /> : null}
+    <div ref={setListContainer} className="contents">
+      <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+      <div className="grid items-start gap-(--glinr-page-gap) xl:grid-cols-2">
+        <div className="min-w-0 space-y-(--glinr-page-gap)">
+          <CustomRulesCard
+            all={rules}
+            custom={custom}
+            onNew={onNewRule}
+            onEdit={onEditRule}
+          />
+          <BansTable retention={ban} />
+          {scope ? <DomainLimitsCard domain={scope} /> : null}
+        </div>
+        <div className="min-w-0 space-y-(--glinr-page-gap)">
+          <IpListCard
+            kind="block"
+            rules={blocks}
+            scope={scope}
+            actions={actions}
+          />
+          <IpListCard
+            kind="bypass"
+            rules={bypass}
+            scope={scope}
+            actions={actions}
+          />
+          <BotManagementCard banNote={ban} />
+          <AttackModeCard />
+        </div>
+        {actions.dialog}
       </div>
-      <div className="min-w-0 space-y-(--glinr-page-gap)">
-        <IpListCard
-          kind="block"
-          rules={blocks}
-          scope={scope}
-          actions={actions}
-        />
-        <IpListCard
-          kind="bypass"
-          rules={bypass}
-          scope={scope}
-          actions={actions}
-        />
-        <BotManagementCard banNote={ban} />
-        <AttackModeCard />
-      </div>
-      {actions.dialog}
     </div>
   )
 }

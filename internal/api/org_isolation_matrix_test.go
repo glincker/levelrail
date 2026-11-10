@@ -119,6 +119,9 @@ func newOrgFixture(t *testing.T) *orgFixture {
 		OwnerID: bu.ID, OwnerName: "b", Visibility: "shared", CreatedAt: time.Now(), UpdatedAt: time.Now()}))
 	must(f.db.SaveBackupTarget(ctx, store.BackupTarget{ID: "bt_orgb", Name: "target-" + orgBMarker, Provider: "custom", Endpoint: "https://s3.example.test", Region: "r", Bucket: "bucket-" + orgBMarker, CreatedAt: "2026-10-01T00:00:00Z"}))
 	must(f.db.CreateSilence(ctx, store.Silence{ID: "sil_orgb", IssueKey: "app:" + appB, CreatedBy: "seed", Reason: orgBMarker, CreatedAt: time.Now()}))
+	_, err = f.db.UpsertSavedView(ctx, store.SavedView{ID: "sv_orgb", Owner: "user:" + bu.ID, TeamID: teamB, List: "apps", Name: "view-" + orgBMarker,
+		Filter: `{"q":"` + orgBMarker + `"}`, Shared: store.SavedViewTeam}, 100)
+	must(err)
 	auditID, err := store.NewAuditEntryID()
 	must(err)
 	must(f.db.SaveAuditEntry(ctx, store.AuditEntry{ID: auditID, ActorType: "session", ActorID: bu.ID, ActorName: "owner@org-b.test", Ability: AbilityWrite,
@@ -323,6 +326,7 @@ func TestOrgIsolation_TenantListsAndCounts(t *testing.T) {
 		"/api/v1/mail/domains", "/api/v1/mail/mailboxes", "/api/v1/static-sites",
 		"/api/v1/attention/feed", "/api/v1/deploy-approvals?status=all",
 		"/api/v1/search?q=b&limit=100", "/api/v1/search?q=" + orgBMarker, "/api/v1/search?q=web", "/api/v1/search/suggest?q=b", "/api/v1/search/suggest?q=" + orgBMarker,
+		"/api/v1/saved-views", "/api/v1/saved-views?list=apps",
 	}
 	leaks := map[string]string{}
 	var checked []string

@@ -100,6 +100,24 @@ func (db *DB) SaveDesiredServiceOrdered(ctx context.Context, svc DesiredService,
 	}, false)
 }
 
+// AdvanceDeployCursor records order as applied for a deploy that saves desired
+// state outside SaveDesiredServiceOrdered, such as a compose app from git.
+func (db *DB) AdvanceDeployCursor(ctx context.Context, serviceName string, order DeployOrder) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: advance deploy cursor for %q: %w", serviceName, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	cursor, err := getDeployCursor(ctx, tx.QueryRowContext, serviceName)
+	if err != nil {
+		return err
+	}
+	if err := advanceDeployCursor(ctx, tx, serviceName, cursor, order); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func advanceDeployCursor(ctx context.Context, tx *sql.Tx, serviceName string, cursor DeployCursor, order DeployOrder) error {
 	next := cursor
 	if order.Sequence > next.AppliedSequence {

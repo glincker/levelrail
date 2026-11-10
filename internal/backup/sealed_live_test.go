@@ -3,6 +3,7 @@ package backup
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -290,10 +291,10 @@ func TestSealedVolumeBackup_Live_HooksAndPause(t *testing.T) {
 
 	hist.policies["web/data"] = store.VolumeBackupPolicy{PreHook: "exit 3"}
 	err = runner.RunVolumeBackup(ctx, "bkh_hookfail", "web", "data", vol, "bkt_test", "")
-	if err != nil {
-		t.Fatalf("failing pre-hook must still back up, got %v", err)
+	if !errors.Is(err, ErrPreHookFailed) {
+		t.Fatalf("failing pre-hook must abort the backup, got %v", err)
 	}
-	if row := hist.rows["bkh_hookfail"]; row.Status != store.BackupStatusSucceeded || !strings.HasPrefix(row.Error, "inconsistent") {
+	if row := hist.rows["bkh_hookfail"]; row.Status != store.BackupStatusFailed {
 		t.Fatalf("row = %+v", row)
 	}
 }

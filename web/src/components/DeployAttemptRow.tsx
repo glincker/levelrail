@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast, toastAction } from '@/components/ui/toast'
+import { CopyAsCommand } from './CopyAsCommand'
 
 const TONE_TEXT: Record<string, string> = {
   success: 'text-tone-success',
@@ -424,6 +425,14 @@ export function DeployAttemptRow({
               ? t('deployHistory.failedLog')
               : t('deployHistory.viewLogs')}
         </Button>
+        {attempt.status === 'succeeded' && !isLatestAttempt ? (
+          <CopyAsCommand
+            subject={attempt.id}
+            actions={[
+              { kind: 'deploy.rollback', app: appName, deployId: attempt.id },
+            ]}
+          />
+        ) : null}
         <ActionMenu
           trigger={
             <Button

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -26,6 +26,12 @@ import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
+
+const ComposeSchedulesCard = lazy(() =>
+  import('./ComposeSchedulesCard').then((m) => ({
+    default: m.ComposeSchedulesCard,
+  })),
+)
 
 type BadgeVariant = 'success' | 'warning' | 'destructive' | 'muted' | 'info'
 
@@ -146,86 +152,91 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-center gap-2">
-          <LayersGlassIcon className="size-5" aria-hidden="true" />
-          {t('stack.title')}
-          <Badge variant={PHASE_VARIANT[data.phase]}>
-            {t(`stack.phase.${data.phase}`)}
-          </Badge>
-          {data.revision ? (
-            <Badge variant="outline">
-              {t('stack.revision', { revision: data.revision })}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center gap-2">
+            <LayersGlassIcon className="size-5" aria-hidden="true" />
+            {t('stack.title')}
+            <Badge variant={PHASE_VARIANT[data.phase]}>
+              {t(`stack.phase.${data.phase}`)}
             </Badge>
-          ) : null}
-        </CardTitle>
-        <CardDescription>
-          {t('stack.description', { count: data.services.length })}
-          {data.deployed_at
-            ? ` ${t('stack.deployedAt', { when: formatAge(data.deployed_at) })}`
-            : null}
-          {data.template_id
-            ? `, ${t('stack.fromTemplate', { id: data.template_id })}`
-            : null}
-        </CardDescription>
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={redeploy.isPending}
-            onClick={() => {
-              runRedeploy()
-            }}
-          >
-            <RotateCwGlassIcon size="1.4em" />
-            {t('stack.redeployAll')}
-          </Button>
-          <ComposeRollbackDialog
-            appId={data.app_id}
-            currentRevision={data.revision}
+            {data.revision ? (
+              <Badge variant="outline">
+                {t('stack.revision', { revision: data.revision })}
+              </Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription>
+            {t('stack.description', { count: data.services.length })}
+            {data.deployed_at
+              ? ` ${t('stack.deployedAt', { when: formatAge(data.deployed_at) })}`
+              : null}
+            {data.template_id
+              ? `, ${t('stack.fromTemplate', { id: data.template_id })}`
+              : null}
+          </CardDescription>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={redeploy.isPending}
+              onClick={() => {
+                runRedeploy()
+              }}
+            >
+              <RotateCwGlassIcon size="1.4em" />
+              {t('stack.redeployAll')}
+            </Button>
+            <ComposeRollbackDialog
+              appId={data.app_id}
+              currentRevision={data.revision}
+            />
+            <ComposeDownDialog appId={data.app_id} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveTable
+            rows={data.services}
+            columns={columns}
+            getRowId={(svc) => svc.name}
+            ariaLabel={t('stack.tableLabel')}
+            renderActions={(svc) => (
+              <div className="flex justify-end gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  render={
+                    <Link to="/apps/$name/logs" params={{ name: svc.name }} />
+                  }
+                  nativeButton={false}
+                >
+                  {t('stack.logs')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-label={t('stack.redeployServiceLabel', {
+                    service: svc.key,
+                  })}
+                  disabled={redeploy.isPending}
+                  onClick={() => {
+                    runRedeploy(svc.key)
+                  }}
+                >
+                  {t('stack.redeployService')}
+                </Button>
+              </div>
+            )}
           />
-          <ComposeDownDialog appId={data.app_id} />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveTable
-          rows={data.services}
-          columns={columns}
-          getRowId={(svc) => svc.name}
-          ariaLabel={t('stack.tableLabel')}
-          renderActions={(svc) => (
-            <div className="flex justify-end gap-1">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                render={
-                  <Link to="/apps/$name/logs" params={{ name: svc.name }} />
-                }
-                nativeButton={false}
-              >
-                {t('stack.logs')}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                aria-label={t('stack.redeployServiceLabel', {
-                  service: svc.key,
-                })}
-                disabled={redeploy.isPending}
-                onClick={() => {
-                  runRedeploy(svc.key)
-                }}
-              >
-                {t('stack.redeployService')}
-              </Button>
-            </div>
-          )}
-        />
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      <Suspense fallback={null}>
+        <ComposeSchedulesCard appId={data.app_id} />
+      </Suspense>
+    </>
   )
 }

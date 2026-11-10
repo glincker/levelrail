@@ -6,6 +6,7 @@ const (
 	KeyLogExportMaxLines             = "logs.export_max_lines"
 	KeyStackHistoryLimit             = "stacks.history_limit"
 	KeyMaxTagsPerApp                 = "tags.max_per_app"
+	KeyMaxTagsPerResource            = "tags.max_per_resource"
 	KeyFixitMaxPerHour               = "fixit.max_per_hour"
 	KeyDeployApprovalClaimTimeoutSec = "deploy.approval_claim_timeout_seconds"
 	KeyApproveDigestCheckTimeoutSec  = "deploy.approve_digest_check_timeout_seconds"
@@ -31,6 +32,11 @@ func init() {
 		Key: KeyMaxTagsPerApp, Category: CategoryDeploys, Default: "20", Env: "APP_MAX_TAGS_PER_APP", Apply: ApplyLive,
 		Title:       "Tags per app",
 		Description: "Most tags one app may carry. From 1 to 500. Tags already attached are kept when the value is lowered.",
+	}, 1, 500)
+	registerLimit(Definition{
+		Key: KeyMaxTagsPerResource, Category: CategoryDeploys, Default: "20", Env: "APP_MAX_TAGS_PER_RESOURCE", Apply: ApplyLive,
+		Title:       "Tags per resource",
+		Description: "Most tags one database, node, domain, bucket or network may carry. From 1 to 500. A resource already over the cap keeps its tags but cannot gain more.",
 	}, 1, 500)
 	registerLimit(Definition{
 		Key: KeyFixitMaxPerHour, Category: CategorySecurity, Default: "0", Env: "APP_FIXIT_MAX_PER_HOUR", Apply: ApplyRestart,

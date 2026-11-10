@@ -28,7 +28,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
   const domain = app.domains?.[0]
   const extra = (app.domains?.length ?? 0) - 1
   return (
-    <span className="flex min-w-0 flex-wrap items-center gap-1">
+    <span className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
       {app.is_trial ? (
         <Badge variant="accent" className="gap-1 px-1.5 py-0">
           <FlaskConicalGlassIcon
@@ -56,6 +56,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
       {domain ? (
         <Badge
           variant="outline"
+          title={domain}
           className="max-w-44 gap-1 px-1.5 py-0 text-muted-foreground"
         >
           <GlobeGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />

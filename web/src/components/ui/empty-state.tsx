@@ -122,7 +122,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-2 rounded-lg border border-border bg-card px-4 py-5 text-center',
+        'flex flex-col items-center gap-3 px-4 py-10 text-center',
         className,
       )}
     >
@@ -135,14 +135,14 @@ export function EmptyState({
         </span>
       ) : (
         <span
-          className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground"
           aria-hidden="true"
         >
           {icon}
         </span>
       )}
       <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-base font-semibold text-foreground">{title}</p>
         {description ? (
           <p className="mx-auto max-w-sm text-sm text-muted-foreground">
             {description}

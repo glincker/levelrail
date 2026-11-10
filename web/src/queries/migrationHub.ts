@@ -5,6 +5,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { CopyTable } from './migration'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+
 export type HubStep = 'inventory' | 'preflight' | 'copy' | 'verify' | 'cutover'
 export type HubItemStatus = 'pending' | 'copying' | 'verified' | 'failed'
 export type HubSeverity = 'ok' | 'warn' | 'block'
@@ -168,7 +171,7 @@ export function useHubSession(id: string | null) {
     queryKey: hubKeys.one(id ?? ''),
     enabled: id !== null,
     queryFn: () => send<HubSession>(`${base}/${encodeURIComponent(id ?? '')}`),
-    refetchInterval: (q) => (q.state.data?.running ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.running ? POLL_2000_MS : false),
   })
 }
 

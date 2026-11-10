@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -41,7 +42,13 @@ Flags for create and update:
   --schedule CRON        5-field cron expression
   --timezone ZONE        IANA zone the schedule is read in (default UTC)
   --mode MODE            fresh (default), exec or http
-  --concurrency POLICY   allow, forbid (skip), replace or queue
+  --concurrency POLICY   allow, forbid (skip), replace, queue or queue-one
+  --overlap POLICY       allow, skip or queue-one (what a run that is due while
+                         the previous one still runs does)
+  --alert-on-failure     report failed runs to job_failing alert rules
+                         (--alert-on-failure=false turns it off)
+  --keep-runs N          keep at most N runs of history (0: server default)
+  --keep-days N          keep runs for at most N days (0: server default)
   --http-path PATH       http mode: path on the app to call (wakes it if asleep)
   --http-method METHOD   http mode: GET, POST (default), PUT, PATCH or DELETE
   --http-body TEXT       http mode: request body
@@ -101,6 +108,9 @@ type jobFlags struct {
 	count                                          int
 	status, runID                                  string
 	limit                                          int
+	overlap                                        string
+	alertOnFailure                                 *bool
+	keepRuns, keepDays                             *int
 }
 
 func (f jobFlags) apply(req *scheduledTaskRequest) {
@@ -113,6 +123,22 @@ func (f jobFlags) apply(req *scheduledTaskRequest) {
 	if f.httpPath != "" || f.httpMethod != "" || f.httpBody != "" || f.background {
 		req.HTTP = &apiclient.JobHTTP{Method: f.httpMethod, Path: f.httpPath, Body: f.httpBody, Background: f.background}
 	}
+	if f.overlap != "" {
+		req.ConcurrencyPolicy = f.overlap
+	}
+	req.AlertOnFailure, req.KeepRuns, req.KeepDays = f.alertOnFailure, f.keepRuns, f.keepDays
+}
+
+// intPtrFlag parses a non-negative int flag into a pointer so unset stays nil.
+func intPtrFlag(dst **int) func(string) error {
+	return func(v string) error {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			return fmt.Errorf("must be a non-negative integer")
+		}
+		*dst = &n
+		return nil
+	}
 }
 
 func runJobsVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -121,7 +147,25 @@ func runJobsVerb(prog, verb string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.schedule, "schedule", "", "5-field cron expression")
 	fs.StringVar(&f.timezone, "timezone", "", "IANA time zone the schedule is read in")
 	fs.StringVar(&f.mode, "mode", "", "fresh or exec")
-	fs.StringVar(&f.concurrency, "concurrency", "", "allow, forbid or replace")
+	fs.StringVar(&f.concurrency, "concurrency", "", "allow, forbid, replace, queue or queue-one")
+	fs.Func("overlap", "allow, skip or queue-one", func(v string) error {
+		switch v {
+		case "allow", "skip", "queue-one":
+			f.overlap = v
+			return nil
+		}
+		return fmt.Errorf("must be allow, skip or queue-one")
+	})
+	fs.BoolFunc("alert-on-failure", "report failed runs to job_failing alert rules", func(v string) error {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return err
+		}
+		f.alertOnFailure = &b
+		return nil
+	})
+	fs.Func("keep-runs", "keep at most this many runs (0: server default)", intPtrFlag(&f.keepRuns))
+	fs.Func("keep-days", "keep runs for at most this many days (0: server default)", intPtrFlag(&f.keepDays))
 	fs.StringVar(&f.catchUp, "catch-up", "", "skip or run_once")
 	fs.DurationVar(&f.timeout, "timeout", 0, "per-attempt timeout")
 	fs.DurationVar(&f.retryBackoff, "retry-backoff", 0, "first retry delay")
@@ -325,6 +369,8 @@ func printJob(out io.Writer, j scheduledTaskResource) {
 	_, _ = fmt.Fprintf(out, "name:        %s\nid:          %s\napp:         %s\nmode:        %s\ncommand:     %s\nschedule:    %s (%s)\nenabled:     %t\nconcurrency: %s\n",
 		j.Name, j.ID, j.ServiceName, j.Mode, jobTarget(j), j.Schedule, orStr(j.Timezone, "UTC"), j.Enabled, j.ConcurrencyPolicy)
 	_, _ = fmt.Fprintf(out, "timeout:     %ds, retries %d (backoff %ds), catch-up %s\n", j.TimeoutSeconds, j.MaxRetries, j.RetryBackoffSeconds, orStr(j.CatchUp, "skip"))
+	_, _ = fmt.Fprintf(out, "guards:      overlap %s, alert on failure %t, keep %d runs, %d days (0: default)\n",
+		orStr(j.OverlapPolicy, j.ConcurrencyPolicy), j.AlertOnFailure, j.KeepRuns, j.KeepDays)
 	_, _ = fmt.Fprintf(out, "source:      %s\nlast run:    %s\nfailures:    %d in a row, %d missed\n", orStr(j.Source, "api"), lastRunSummary(j), j.ConsecutiveFailures, j.ConsecutiveMissed)
 	if j.NextRunAt != nil {
 		_, _ = fmt.Fprintf(out, "next run:    %s\n", j.NextRunAt.Format(time.RFC3339))

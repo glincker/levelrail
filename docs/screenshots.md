@@ -83,6 +83,8 @@ scripts/screenshots/capture-demo.sh
 
 Prerequisites are Go, Node/npm, Python 3 with Playwright, and shot-scraper. Set `OUT_DIR` to write somewhere other than `docs/assets/screenshots`. It writes the same file names as `capture.sh` (dark, plus `-light`), so it refreshes those images in place. The demo banner, guided tour, blocked-write toast and floating help bubble are hidden per shot, with the tour marked done in the saved browser state.
 
+Speed: the web bundle and binary are cached under `${XDG_CACHE_HOME:-$HOME/.cache}/levelrail-screenshots` and rebuilt only when the git HEAD or the `web/`, `cmd/`, `internal/` changes differ (`FORCE_BUILD=1` rebuilds). Dark and light run in parallel, each split into `SHOT_WORKERS` (default 4) `shot-scraper` processes, and every shot waits for the page to be ready (main mounted, no skeleton or `aria-busy`) with only a short floor (`WAIT_FLOOR_MS`, default 800). Subset runs: `ONLY="dashboard-home,apps-list"` (output names without `.png` or `-light`) and `THEMES=dark`. A timing summary prints at the end.
+
 Use `capture.sh` for settings, setup and anything that needs real containers (logs, load balancer, database detail). The page list for the demo run lives in `scripts/screenshots/shots-demo.yml`.
 
 ## Files
@@ -108,3 +110,7 @@ If you lose access to the admin account on a cluster you own, `sudo APP_DATA_DIR
 - [Identity and access](/identity-and-access) for device login flow details
 - [Feature catalog](/feature-catalog) to understand which dashboard pages are captured
 - `scripts/screenshots/capture-demo.sh` and `shots-demo.yml`: the Docker-free demo-mode variant.
+
+## Shot list
+
+`scripts/screenshots/shots-demo.yml` shoots full pages at 1440x900 so side panels and wide grids show. New names: `new-app-wizard` (/apps/new) and `settings-hub` (/settings). Rejected in the demo: databases and the engine picker (empty), backups, the Add node dialog (writes are blocked).

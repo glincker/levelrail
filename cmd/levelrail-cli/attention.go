@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/attention"
 )
+
+const attentionSeverityWidth = len("SEVERITY")
 
 const (
 	attentionCritical = attention.Critical
@@ -54,16 +58,39 @@ func printAttentionHuman(out io.Writer, items []attentionItem) {
 		_, _ = fmt.Fprintln(out, styleFor(out).paint(ansiGreen, styleFor(out).symbol("✔ ", "")+"All systems healthy."))
 		return
 	}
-	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "SEVERITY\tKIND\tSUBJECT\tDETAIL\tNEXT")
+	st := styleFor(out)
+	// The severity column is padded by hand so ANSI bytes never reach tabwriter's width math.
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "KIND\tSUBJECT\tDETAIL\tNEXT")
 	for _, it := range items {
 		detail := it.Detail
 		if it.Fixable {
 			detail += " [fixable: apps diagnose " + it.Subject + "]"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", it.Severity, it.Kind, it.Subject, detail, it.Action)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", it.Kind, it.Subject, detail, it.Action)
 	}
 	_ = tw.Flush()
+	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+	for i, line := range lines {
+		cell := "SEVERITY"
+		if i > 0 {
+			cell = items[i-1].Severity
+		}
+		_, _ = fmt.Fprintf(out, "%s  %s\n", severityCell(st, cell), line)
+	}
+}
+
+// severityCell pads to a fixed visible width, then colors, so alignment ignores escape bytes.
+func severityCell(st termStyle, sev string) string {
+	padded := fmt.Sprintf("%-*s", attentionSeverityWidth, sev)
+	switch sev {
+	case attentionCritical:
+		return st.paint(ansiRed, padded)
+	case attentionWarning:
+		return st.paint(ansiYellow, padded)
+	}
+	return padded
 }
 
 func attentionUsage(prog string) string {

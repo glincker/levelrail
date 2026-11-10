@@ -58,3 +58,23 @@ export function deltaLabel(delta: number | undefined): string | null {
   if (delta === undefined || delta === 0) return null
   return `${delta > 0 ? '+' : '-'}${formatBytes(Math.abs(delta))}`
 }
+
+const BUILD_STATUS_FILTERS = ['queued', 'running', 'failed'] as const
+export type BuildStatusFilter = (typeof BUILD_STATUS_FILTERS)[number]
+
+/** parseBuildStatusFilter keeps only the statuses the Builds tiles can filter by. */
+export function parseBuildStatusFilter(
+  value: unknown,
+): BuildStatusFilter | undefined {
+  return BUILD_STATUS_FILTERS.find((s) => s === value)
+}
+
+/** matchesBuildStatus treats held builds as queued, the same grouping the Queued tile counts. */
+export function matchesBuildStatus(
+  status: string,
+  filter: BuildStatusFilter,
+): boolean {
+  return filter === 'queued'
+    ? status === 'queued' || status === 'held'
+    : status === filter
+}

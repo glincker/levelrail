@@ -81,16 +81,16 @@ export function DockLauncher() {
       {...drag}
       className={cn(
         // The top bar already has a chat toggle, so on phones the bubble only shows for unread replies and never covers page actions.
-        'fixed top-0 left-0 z-40 flex max-md:in-[body:has([role=menu])]:invisible size-14',
+        'fixed top-0 left-0 z-40 flex max-md:in-[body:has([role=menu])]:invisible size-10',
         !unread && 'max-md:hidden',
-        'touch-none animate-in items-center justify-center rounded-full bg-primary text-primary-foreground shadow-floating transition-[transform,opacity] duration-200 outline-none fade-in-0 hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[dragging=true]:transition-none motion-reduce:animate-none motion-reduce:transition-none',
+        'touch-none animate-in items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-floating transition-[transform,opacity] duration-200 outline-none fade-in-0 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[dragging=true]:transition-none motion-reduce:animate-none motion-reduce:transition-none',
       )}
     >
-      <MessageCircleGlassIcon className="size-8" />
+      <MessageCircleGlassIcon className="size-5" />
       {unread ? (
         <span
           aria-hidden="true"
-          className="absolute top-1 right-1 size-3 rounded-full border-2 border-background bg-destructive"
+          className="absolute top-0.5 right-0.5 size-2.5 rounded-full border-2 border-background bg-destructive"
         />
       ) : null}
     </button>

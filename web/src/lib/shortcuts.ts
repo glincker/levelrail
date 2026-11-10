@@ -56,6 +56,10 @@ export const BASE_DOCS: ShortcutDoc[] = [
   { keys: ['g', 'c'], description: 'Open CLI setup' },
   { keys: ['/'], description: 'Focus the search field on this page' },
   { keys: ['Esc'], description: 'Close a dialog, or leave the search field' },
+  { keys: ['j', 'k'], description: 'Move through list rows' },
+  { keys: ['x'], description: 'Select the focused list row' },
+  { keys: ['Enter'], description: 'Open the focused list row' },
+  { keys: ['?'], description: 'Show the list shortcut hint' },
 ]
 
 export interface ChordState {

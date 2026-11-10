@@ -83,7 +83,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
 		}
 	}
-	resp, ok := rt.deployComposeBody(w, r, name, body, opts)
+	resp, ok := rt.lockedComposeDeploy(w, r, name, body, opts)
 	if !ok {
 		return
 	}
@@ -108,6 +108,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	if instanceOnlyTemplates[opts.templateID] && !callerIsInstance(r) {
 		writeError(w, http.StatusForbidden, msgTemplateInstanceOnly)
 		return composeDeployResponse{}, false
+	}
+	// Serializes the stack name with create and clone; every caller holds composeGitLock first.
+	if !opts.nameLocked {
+		defer lockAppName(name)()
 	}
 	trace := deploytrace.NewBuffered()
 	parseSpan := trace.Begin(r.Context(), deploytrace.StepComposeParse, fmt.Sprintf("parsing compose file (%d bytes)", len(body)))
@@ -195,7 +199,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	for _, svc := range services {
 		serviceNames = append(serviceNames, svc.Name)
 	}
-	if !rt.authorizeServiceNames(w, r, name, serviceNames) {
+	if opts.noCaller {
+		if !rt.refuseForeignServiceNames(r.Context(), w, name, previousServices, serviceNames) {
+			return composeDeployResponse{}, false
+		}
+	} else if !rt.authorizeServiceNames(w, r, name, serviceNames) {
 		return composeDeployResponse{}, false
 	}
 
@@ -220,7 +228,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	traceComposePlan(r.Context(), trace, name, services)
 	out := make([]appResource, 0, len(services))
 	for _, svc := range services {
-		if err := rt.appCompose.SaveDesiredService(r.Context(), svc); err != nil {
+		save := rt.appCompose.SaveDesiredService
+		if opts.suspended {
+			save = rt.appCompose.SaveSuspendedDesiredService
+		}
+		if err := save(r.Context(), svc); err != nil {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
 		}

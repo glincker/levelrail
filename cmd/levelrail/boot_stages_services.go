@@ -65,7 +65,12 @@ func (s *bootState) buildRunners() error {
 			Secrets:    secretsManager,
 			Downloader: routedStorage(agentRegistry),
 		}
-		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger)
+		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger, func() *runtimesettings.Service {
+			if s.apiRouter != nil {
+				return s.apiRouter.RuntimeSettings()
+			}
+			return nil
+		})
 		if err != nil {
 			return err
 		}
@@ -75,14 +80,29 @@ func (s *bootState) buildRunners() error {
 
 	// Shared by the manual trigger and the cron loop; needs no master key since exec'd commands carry no credential.
 	jobLimits := scheduledtask.LimitsFromEnv(os.LookupEnv)
-	historySettings := runtimesettings.New(db, os.LookupEnv)
+	// Runs start after the router exists; its shared service sees saves at once, the boot copy never would.
+	bootHistorySettings := runtimesettings.New(db, os.LookupEnv)
 	scheduledTaskRunner := &scheduledtask.Runner{
 		Apps:    db,
 		Runs:    db,
 		History: db,
 		Limits:  jobLimits,
 		HistoryKeepFn: func(c context.Context) int {
-			return historySettings.Int(c, runtimesettings.KeyScheduledTasksHistoryKeep)
+			settings := bootHistorySettings
+			if s.apiRouter != nil && s.apiRouter.RuntimeSettings() != nil {
+				settings = s.apiRouter.RuntimeSettings()
+			}
+			return settings.Int(c, runtimesettings.KeyScheduledTasksHistoryKeep)
+		},
+		OutputCapFn: func(c context.Context) int {
+			settings := bootHistorySettings
+			if s.apiRouter != nil && s.apiRouter.RuntimeSettings() != nil {
+				settings = s.apiRouter.RuntimeSettings()
+			}
+			return settings.Int(c, runtimesettings.KeyScheduledTasksMaxOutputBytes)
+		},
+		Paused: func(c context.Context, task store.ScheduledTask) string {
+			return composeJobFreezeReason(c, db, logger, task.ServiceName, time.Now())
 		},
 		NamePrefix: b.ShortName,
 		Resolver: func(nodeID string) (docker.Runtime, error) {
@@ -189,7 +209,8 @@ func (s *bootState) wireRouter() {
 	telemetryDB := s.telemetryDB
 	webhookHandler := s.webhookHandler
 	apiHandler, apiRouter := rootHandler(rootDeps{
-		logger: logger, b: b, db: db, telemetryDB: telemetryDB, alertingDB: alertingDB,
+		pendingStages: s.pending.List,
+		logger:        logger, b: b, db: db, telemetryDB: telemetryDB, alertingDB: alertingDB,
 		secretsManager: secretsManager, masterKeyFilePath: masterKeyFilePath, webhookHandler: webhookHandler,
 		client: client, builder: builder, buildClient: s.buildClient, deployRecorder: deployRecorder, logBroadcaster: logBroadcaster,
 		deployDispatcher: deployDispatcher, backupRunner: backupRunner, backupVerifyRunner: backupVerifyRunner,
@@ -247,6 +268,7 @@ func (s *bootState) wireRouter() {
 		IdleTimeout: 120 * time.Second,
 	}
 	s.apiRouter = apiRouter
+	useSharedGitSettings(apiRouter.RuntimeSettings())
 	s.gateSecret = gateSecret
 	s.cpDR = cpDR
 	s.httpServer = httpServer
@@ -275,7 +297,7 @@ func (s *bootState) startMesh() error {
 		go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)
 	}
 
-	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, logger)
+	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, apiRouter.RuntimeSettings(), logger)
 	if err != nil {
 		// Non-fatal: a misconfigured mesh should not stop a control plane that runs fine without it.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))

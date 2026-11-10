@@ -222,6 +222,7 @@ func (rt *Router) registerResourceLabelRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("PUT "+base, rt.requireAbilityForResource(AbilityWrite, k.resource, rt.labelsHandler(k.kind, applyLabelPut)))
 		mux.HandleFunc("PATCH "+base, rt.requireAbilityForResource(AbilityWrite, k.resource, rt.labelsHandler(k.kind, applyLabelPatch)))
 	}
+	rt.registerResourceNotesRoutes(mux)
 }
 
 // filterNodesByLabels keeps nodes whose stored labels satisfy sel.

@@ -355,6 +355,20 @@ func (s *Service) SetStatusLink(ctx context.Context, id string, l StatusLink) (M
 	return m, nil
 }
 
+// SetEnabled pauses or resumes a stored monitor and updates the schedule at once.
+func (s *Service) SetEnabled(ctx context.Context, id string, enabled bool) (Monitor, error) {
+	m, err := s.store.GetMonitor(ctx, id)
+	if err != nil {
+		return Monitor{}, err
+	}
+	m.Enabled = enabled
+	if err := s.store.SaveMonitor(ctx, m); err != nil {
+		return Monitor{}, err
+	}
+	s.sched.Add(m, s.now())
+	return m, nil
+}
+
 func newID() (string, error) {
 	b := make([]byte, 8)
 	if _, err := rand.Read(b); err != nil {

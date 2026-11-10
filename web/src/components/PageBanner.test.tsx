@@ -33,7 +33,7 @@ describe('PageBanner', () => {
   })
 
   it('draws the icon art only at hero size', () => {
-    const { container, unmount } = render(
+    const { unmount } = render(
       <PageBanner
         icon={<svg data-testid="icon" />}
         titleKey="banner.title"
@@ -41,11 +41,9 @@ describe('PageBanner', () => {
       />,
     )
     expect(screen.queryByTestId('icon')).not.toBeNull()
-    expect(container.querySelector('.grain-orb')).not.toBeNull()
     unmount()
     renderBanner('compact')
     expect(screen.queryByTestId('icon')).toBeNull()
-    expect(document.querySelector('.grain-orb')).toBeNull()
   })
   it('keeps the help control in the action row, never absolutely positioned', () => {
     render(

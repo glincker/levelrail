@@ -162,13 +162,21 @@ func (rt *Router) beginBranchDeploy(ctx context.Context, appName, branch, slug s
 	if limit := branchDeployMaxPerApp(); len(existing) >= limit {
 		return nil, http.StatusOK, fmt.Sprintf("ignored: %q already has %d branch deploys (limit %d, set %s)\n", appName, len(existing), limit, envBranchDeployMaxPerApp)
 	}
+	deployApp := branchdeploy.AppName(appName, slug)
+	// A new branch deploy must not land on a compose stack's name and join its records.
+	if taken, terr := rt.stackNameTaken(ctx, deployApp); terr != nil {
+		rt.logger.Error("api: branch deploy: check app name failed", slog.String("error", terr.Error()), slog.String("deploy_app", deployApp))
+		return nil, http.StatusInternalServerError, "internal error\n"
+	} else if taken {
+		return nil, http.StatusConflict, fmt.Sprintf("refused: branch app name %q is already an app\n", deployApp)
+	}
 	id, err := store.NewBranchDeployID()
 	if err != nil {
 		rt.logger.Error("api: branch deploy: mint id failed", slog.String("error", err.Error()))
 		return nil, http.StatusInternalServerError, "internal error\n"
 	}
 	row = &store.BranchDeploy{
-		ID: id, AppName: appName, Branch: branch, Slug: slug, DeployAppID: branchdeploy.AppName(appName, slug),
+		ID: id, AppName: appName, Branch: branch, Slug: slug, DeployAppID: deployApp,
 		HeadSHA: ev.After, HeadMessage: firstLine(ev.HeadMessage, branchMessageMax), Status: store.BranchDeployDeploying, CreatedAt: now, UpdatedAt: now,
 	}
 	if err := rt.branchDeploys.SaveBranchDeploy(ctx, *row); err != nil {

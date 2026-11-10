@@ -9,6 +9,7 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys, createApp } from './apps'
 import { triggerBuild } from './builds'
+import { pollMs } from '@/lib/pollTier'
 
 export type FunctionWindow = '1h' | '24h' | '7d'
 
@@ -65,7 +66,7 @@ export function functionsQueryOptions(window: FunctionWindow) {
         `/api/v1/functions?window=${window}`,
         'fetch functions',
       ),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

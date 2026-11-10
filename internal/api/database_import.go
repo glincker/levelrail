@@ -78,7 +78,7 @@ func databaseHoldsData(engine, probeOutput string) bool {
 		if !ok || label == "" {
 			continue
 		}
-		if engine != store.EngineRedis {
+		if engine != store.EngineRedis && engine != store.EngineValkey {
 			return true
 		}
 		if n, err := strconv.Atoi(strings.TrimSpace(count)); err != nil || n != 0 {
@@ -96,7 +96,7 @@ func (rt *Router) importTarget(w http.ResponseWriter, r *http.Request) (*store.D
 		return nil, nil, false
 	}
 	if !datamigrate.Supported(db.Engine) {
-		writeError(w, http.StatusBadRequest, "importing a dump is available for postgres, mysql, mariadb, mongodb and redis databases")
+		writeError(w, http.StatusBadRequest, "importing a dump is available for postgres, mysql, mariadb, mongodb, redis and valkey databases")
 		return nil, nil, false
 	}
 	if rt.execRuntime == nil {
@@ -212,6 +212,19 @@ func (rt *Router) handleDatabaseImport(w http.ResponseWriter, r *http.Request) {
 	if n == 0 {
 		fail(http.StatusBadRequest, "the dump is empty; nothing was restored")
 		return
+	}
+	if isAge, aerr := isAgeExport(spool.f); aerr == nil && isAge {
+		plain, pn, msg := rt.unsealImport(spool, maxBytes)
+		if msg != "" {
+			fail(http.StatusBadRequest, msg)
+			return
+		}
+		spool, written = plain, pn
+		defer spool.discard()
+		if pn == 0 {
+			fail(http.StatusBadRequest, "the dump is empty; nothing was restored")
+			return
+		}
 	}
 	if msg, herr := sealedImportReason(spool.f, db.Engine); herr != nil || msg != "" {
 		if herr != nil {

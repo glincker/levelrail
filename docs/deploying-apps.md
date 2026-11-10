@@ -710,6 +710,8 @@ Changing or removing an app's domain drops its route on the next ingress pass, a
 | `DELETE` | `/api/v1/apps/{name}` | `write` |
 | `POST` | `/api/v1/apps/{name}/compose` | `deploy` (+ `root` if the file bind-mounts a host directory) |
 | `POST` | `/api/v1/apps/{name}/deploy-spec` | `deploy` (+ `root` if any service bind-mounts a host directory) |
+| `GET` | `/api/v1/apps/{name}/build-hooks` | `read` |
+| `POST`, `PATCH`, `DELETE` | `/api/v1/apps/{name}/build-hooks[/{id}]` | `write:sensitive` (PATCH sets the source CIDR allowlist, see [Build hooks](/build-hooks)) |
 | `POST` | `/api/v1/apps/{name}/builds` | `deploy` |
 | `POST` | `/api/v1/build/detect` | `deploy` |
 | `POST` | `/api/v1/apps/{name}/deploys` | `deploy` |

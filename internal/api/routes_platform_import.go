@@ -5,9 +5,12 @@ import "net/http"
 // registerPlatformImportRoutes registers the import-from-another-platform
 // routes. Both take the source credential in the body, so both are
 // AbilityWriteSensitive even though discover changes nothing.
-func (rt *Router) registerPlatformImportRoutes(mux *http.ServeMux) {
+func (rt *Router) registerPlatformImportRoutes(mux *http.ServeMux) *importInproc {
+	ip := &importInproc{rt: rt}
 	mux.HandleFunc("POST /api/v1/imports/platform/discover", rt.requireAbility(AbilityWriteSensitive, rt.handleDiscoverPlatformImport))
-	mux.HandleFunc("POST /api/v1/imports/platform/apply", rt.requireAbility(AbilityWriteSensitive, rt.handleApplyPlatformImport))
+	mux.HandleFunc("POST /api/v1/imports/platform/apply", rt.requireAbility(AbilityWriteSensitive, ip.handleApplyPlatformImport))
+	// Undo deletes through the normal delete routes, which check their own abilities.
+	mux.HandleFunc("POST /api/v1/imports/platform/undo", rt.requireAbility(AbilityWrite, ip.handleUndo))
 	mux.HandleFunc("GET /api/v1/imports/platform/databases", rt.requireAbility(AbilityRead, rt.handleListDatabaseDataCopies))
 	mux.HandleFunc("GET /api/v1/imports/platform/databases/{name}", rt.requireAbility(AbilityRead, rt.handleGetDatabaseDataCopy))
 	mux.HandleFunc("POST /api/v1/imports/platform/databases/{name}/copy", rt.requireAbility(AbilityWriteSensitive, rt.handleCopyDatabaseData))
@@ -34,4 +37,5 @@ func (rt *Router) registerPlatformImportRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/migration/hub/sessions/{id}/receipt", rt.requireAbility(AbilityRead, rt.handleHubReceipt))
 	mux.HandleFunc("GET /api/v1/migration/hub/sessions/{id}/items/{db}/connection", rt.requireAbility(AbilityRead, rt.handleHubConnection))
 	mux.HandleFunc("POST /api/v1/migration/hub/sessions/{id}/items/{db}/reveal", rt.requireAbility(AbilityReadSensitive, rt.handleHubReveal))
+	return ip
 }

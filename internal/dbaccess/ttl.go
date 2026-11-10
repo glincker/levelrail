@@ -15,7 +15,7 @@ const (
 	EnvTTLDefaultMinutes = "APP_DB_TEMP_TTL_DEFAULT_MINUTES"
 	EnvSweepSeconds      = "APP_DB_TEMP_SWEEP_SECONDS"
 
-	defaultTTLMin     = 15 * time.Minute
+	defaultTTLFloor   = 15 * time.Minute
 	defaultTTLMax     = 24 * time.Hour
 	defaultTTLDefault = time.Hour
 	defaultSweep      = 30 * time.Second
@@ -31,7 +31,7 @@ type TTLLimits struct {
 
 // DefaultTTLLimits returns the built-in 15 minute to 24 hour window.
 func DefaultTTLLimits() TTLLimits {
-	return TTLLimits{Min: defaultTTLMin, Max: defaultTTLMax, Default: defaultTTLDefault}
+	return TTLLimits{Min: defaultTTLFloor, Max: defaultTTLMax, Default: defaultTTLDefault}
 }
 
 // TTLLimitsFromEnv reads overrides through getenv, ignoring unparseable or

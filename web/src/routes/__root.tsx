@@ -10,10 +10,12 @@ import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
 import { demoQueryOptions } from '../queries/demo'
+import { shellCacheReady } from '../queries/shell'
 import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { useShortcuts } from '../hooks/useShortcuts'
+import { useChangesStream } from '../hooks/useChangesStream'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { PreferencesApplier } from '../components/account/PreferencesApplier'
 import { AppearanceSyncApplier } from '../components/account/AppearanceSyncApplier'
@@ -115,6 +117,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   // screen itself). BrandProvider below reads the same cache entry via
   // useSuspenseQuery, so this is the one network call, not two.
   loader: async ({ context: { queryClient } }) => {
+    // The shell aggregate (main.tsx) may already be seeding these keys.
+    await shellCacheReady()
     // demo probe never throws; awaiting it makes the demo store ready before first paint.
     const [brand] = await Promise.all([
       queryClient.ensureQueryData(brandQueryOptions()),
@@ -150,6 +154,7 @@ function RootLayout() {
 // not an incremental change to it.
 function AppShell() {
   const username = useAuthUsername()
+  useChangesStream(Boolean(username))
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
   const [paletteMounted, setPaletteMounted] = React.useState(false)
   const openPalette = React.useCallback(() => {
@@ -218,7 +223,7 @@ function AppShell() {
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
-          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 pt-4 pb-24 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:py-6"
+          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 pt-4 pb-24 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:pt-6 md:pb-18"
         >
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>

@@ -19,9 +19,7 @@ const MetricGaugePrefix = "gauge:"
 
 // Settings read by the gauge scraper.
 const (
-	EnvGaugePath    = "APP_AUTOSCALE_GAUGE_PATH"
-	EnvGaugeTimeout = "APP_AUTOSCALE_GAUGE_TIMEOUT"
-	EnvGaugeMaxBody = "APP_AUTOSCALE_GAUGE_MAX_BYTES"
+	EnvGaugePath = "APP_AUTOSCALE_GAUGE_PATH"
 
 	DefaultGaugePath    = "/metrics"
 	DefaultGaugeTimeout = 3 * time.Second

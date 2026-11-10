@@ -50,7 +50,7 @@ remote: Deploy succeeded: 3f2a9c1 is rolling out.
 - The image is tagged by the pushed commit, and the deploy shows in the app's deploy history with the commit, message and author. Rollback works as for any other deploy.
 - If the build fails, git shows `[remote rejected] ... deploy failed`, the previous release keeps running, and the branch on the server does not move. After fixing the build, run the same `git push` again.
 - A Dockerfile at the repository root is built as a Dockerfile, anything else with Railpack. If the app has a connected [git source](/git-integrations) its build settings are used instead.
-- A `Procfile` is not read at deploy time. A Dockerfile uses its own `CMD`, and a Railpack build uses the start command it detects. To run several process types, describe them as services in `app.yaml`; `levelrail-cli import config` turns a `Procfile` into a first draft. See [Buildpack apps](/importing-apps#buildpack-apps).
+- With no `app.yaml`, a first push of a repo that has a `Procfile` deploys each process type as a service. An `app.json` next to it supplies healthchecks, `formation` replica counts and `scripts.dokku` pre and post deploy hooks. Any other `app.json` key is reported as a warning in the deploy result, never dropped silently. An app that already deployed keeps its single service. To run several process types by hand, describe them as services in `app.yaml`; `levelrail-cli import config` turns a `Procfile` into a first draft. See [Buildpack apps](/importing-apps#buildpack-apps).
 - One deploy per app at a time. A push during a running deploy or a deploy freeze is refused with a message.
 
 Other branches, tags, deletes and pushes of several branches at once are rejected with a message that names the deploy branch. Change it with:
@@ -70,6 +70,23 @@ levelrail-cli git remote branch my-app release
 ## GitHub App access for stored sources
 
 Git sources set by a team scoped user no longer clone with the connected GitHub App (`app_auth` is false). Multi-team admins should review stored git sources after upgrading: existing sources keep App access.
+
+## Submodules and LFS
+
+Builds skip git submodules and LFS objects unless you turn them on per app. The toggles apply to push deploys only; preview and branch deploys (including pull requests from forks) never fetch submodules or LFS objects.
+
+```sh
+levelrail apps git-source settings my-app --submodules --lfs
+```
+
+The same toggles are on the app's Source tab and in `PUT /api/v1/apps/{name}/git-source/deploy-settings` (`fetch_submodules`, `fetch_lfs`). Changing them needs the same access as other git source settings.
+
+- Submodule URLs must be `https://`, or a `./` or `../` path relative to the app's repository that stays on its host. `ssh`, `git://`, `file://`, and URLs with a user name or password are refused, and the build fails with the module name.
+- A submodule path must stay inside the checkout: absolute paths, `..`, `.git` and symlinked directories are refused.
+- The app's git credentials go only to the repository's own host. A submodule on another host is fetched anonymously unless an admin lists that host in `git.submodules_credential_hosts`. A private submodule without access fails with a clear `submodule needs credentials` error that names the host.
+- LFS objects download only from the repository's host. If your git server redirects downloads to a storage host, list it in `git.lfs_hosts`; the app's credentials are never sent there. Each object is checked against its pointer's size and hash.
+- Submodule and LFS hosts must resolve to public addresses. Loopback, private, link-local, CGNAT, multicast and unspecified addresses are refused at connect time; an admin can allow a self-hosted git server's network in `git.submodules_allowed_cidrs`. Any network failure is reported as `submodule host unreachable` with the host name; the cause is in the server log.
+- Runtime settings cap each build: `git.submodules_max_depth` (nesting), `git.submodules_max_count`, `git.submodules_max_mb` (checkout plus submodules plus LFS) and `git.submodules_timeout`. They apply to the next build.
 
 ## Limits
 

@@ -10,6 +10,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /api/v1/databases", rt.requireAbility(AbilityRead, rt.handleListDatabases))
 	mux.HandleFunc("POST /api/v1/databases", rt.requireAbility(AbilityWrite, rt.handleCreateDatabase))
+	// Per-database authz and audit happen in the handler, at the single-item ability.
+	mux.HandleFunc("POST /api/v1/databases/bulk", rt.requireAbility(AbilityWriteSensitive, rt.handleBulkDatabases))
 	// Resource-scoped, same reasoning as the apps routes above.
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))

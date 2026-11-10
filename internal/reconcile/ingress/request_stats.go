@@ -14,5 +14,8 @@ func (c *Controller) publishRequestHostOwners(claimedHosts map[string]string) {
 		}
 		owners[host] = owner
 	}
-	ingress.DefaultRequestStats().SetHostOwners(owners)
+	// A host that left or changed hands must not show its old rows to the new owner.
+	for _, key := range ingress.DefaultRequestStats().ReplaceHostOwners(owners) {
+		ingress.DefaultAccessLog().Purge(key)
+	}
 }

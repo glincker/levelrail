@@ -79,8 +79,8 @@ func databasesImportUsage(prog string) string {
   %[1]s databases import <name> --in FILE|- [--force] [--yes] [flags]
 
 Restores a dump into a managed database, the reverse of "databases export".
-The dump must come from the same engine (postgres, mysql, mariadb, mongodb
-or redis). A database that already holds data is refused unless you pass
+The dump must come from the same engine (postgres, mysql, mariadb, mongodb,
+redis or valkey). A database that already holds data is refused unless you pass
 --force, which also asks you to type the database name; --yes skips that
 prompt (needed with --in -). The dump is streamed, never printed or logged,
 and its size is capped by the databases.import_max_bytes setting.

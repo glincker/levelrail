@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -76,7 +77,7 @@ func (c *Client) ListSignInRequests(ctx context.Context) (SignInRequests, error)
 // A token must hold signin:approve.
 func (c *Client) RevealLoginCode(ctx context.Context, id string) (RevealedLoginCode, error) {
 	var out RevealedLoginCode
-	err := c.do(ctx, http.MethodPost, "/api/v1/auth/sign-in-requests/codes/"+PathEscape(id)+"/reveal", nil, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/sign-in-requests/codes/"+url.PathEscape(id)+"/reveal", nil, &out)
 	return out, err
 }
 
@@ -105,7 +106,7 @@ func (c *Client) ListTrustedDevices(ctx context.Context) ([]TrustedDevice, error
 
 // RevokeTrustedDevice calls DELETE /api/v1/auth/trusted-devices/{id}.
 func (c *Client) RevokeTrustedDevice(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/auth/trusted-devices/"+PathEscape(id), nil, nil)
+	return c.do(ctx, http.MethodDelete, "/api/v1/auth/trusted-devices/"+url.PathEscape(id), nil, nil)
 }
 
 // GetCodeLoginSettings calls GET /api/v1/settings/auth/code-login.

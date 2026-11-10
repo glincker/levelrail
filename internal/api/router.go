@@ -212,13 +212,14 @@ type Router struct {
 	// same "this package never reads the environment directly"
 	// convention WithSessionTTL's own doc comment establishes.
 	requestLogThresholds    requestLogThresholds
-	alertRules              AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	lb                      lbDeps          // zero value is valid: load balancer routes return 501
-	iac                     iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
-	alertNoise              AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
-	alertDefaults           AlertDefaults   // nil is valid: default alert routes return 501
-	inbox                   InboxStore      // nil is valid: notification inbox routes return 501
-	statusPage              StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
+	presence                *telemetry.Presence // nil is valid: touches are no-ops
+	alertRules              AlertRules          // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                      lbDeps              // zero value is valid: load balancer routes return 501
+	iac                     iacDeps             // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise              AlertNoise          // nil is valid: silence, maintenance window and alert history routes return 501
+	alertDefaults           AlertDefaults       // nil is valid: default alert routes return 501
+	inbox                   InboxStore          // nil is valid: notification inbox routes return 501
+	statusPage              StatusPageStore     // nil is valid: status page routes return 501 and the public page stays off
 	statusView              StatusPageViewer
 	incidents               IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
 	incidentBodyMax         int
@@ -247,6 +248,7 @@ type Router struct {
 	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness               ReadinessProbes
+	pendingStages           func() []string
 	meshSettings            meshSettingsState                                             // see mesh_settings.go
 	serverProfile           serverProfileState                                            // see server_profile.go
 	fixit                   fixitState                                                    // see fixit.go
@@ -316,6 +318,7 @@ type Router struct {
 	domainRedirect          DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility  DomainSearchVisibilityStore // always set, core Store
 	domainLimits            DomainLimitsStore           // always set, core Store
+	domainTuning            DomainTuningStore           // always set, core Store
 	domainACME              DomainACMEChallengeStore    // per-host DNS-01 flag, domain_cutover_cert.go
 	domainPolicy            domainPolicyDeps            // per-domain traffic controls, domain_policies.go
 	cachePurges             CachePurgeStore             // purge history, cache_app.go
@@ -800,6 +803,7 @@ type Router struct {
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
+	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 	deviceFlow                   *apiRateLimiter          // per-IP device-login-start token bucket
@@ -938,6 +942,7 @@ type Router struct {
 
 	branchDeploys  BranchDeployStore // always set
 	contextConfigs ContextConfigStore
+	buildSettings  BuildSettingsStore
 	branchDeployMu sync.Mutex
 
 	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
@@ -984,6 +989,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
 		domainLimits:                s,
+		domainTuning:                s,
 		domainACME:                  s,
 		domainPolicy:                domainPolicyDeps{store: s},
 		cachePurges:                 s,
@@ -1181,6 +1187,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.attachCertLedger(s)
 	if cs, ok := s.(ContextConfigStore); ok {
 		rt.contextConfigs = cs
+	}
+	if bs, ok := s.(BuildSettingsStore); ok {
+		rt.buildSettings = bs
 	}
 	return rt
 }

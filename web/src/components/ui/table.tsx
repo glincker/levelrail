@@ -5,11 +5,20 @@ import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
+export type TableDensity = 'compact' | 'balanced' | 'spacious'
+
+/** Right aligned, tabular figures for numeric cells. */
+export const TABLE_NUMERIC = 'text-right tabular-nums'
+
 function Table({
   className,
   containerClassName,
+  density = 'balanced',
   ...props
-}: React.ComponentProps<'table'> & { containerClassName?: string }) {
+}: React.ComponentProps<'table'> & {
+  containerClassName?: string
+  density?: TableDensity
+}) {
   const [scrolled, setScrolled] = useState(false)
   return (
     <div
@@ -22,6 +31,7 @@ function Table({
       )}
     >
       <table
+        data-density={density}
         data-slot="table"
         className={cn(
           'group/table w-full caption-bottom text-sm',
@@ -38,7 +48,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   return (
     <thead
       data-slot="table-header"
-      className={cn('[&_tr]:border-b', className)}
+      className={cn('[&_tr]:border-b [&_tr]:border-border', className)}
       {...props}
     />
   )
@@ -72,7 +82,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot="table-row"
       className={cn(
-        'border-b transition-colors hover:bg-glinr-hover has-aria-expanded:bg-glinr-hover data-[state=selected]:bg-glinr-accent-soft data-[state=selected]:[&>td:first-child]:shadow-[inset_2px_0_0_var(--state-active-bar)] aria-selected:bg-glinr-accent-soft aria-selected:[&>td:first-child]:shadow-[inset_2px_0_0_var(--state-active-bar)]',
+        'border-b border-border/60 transition-colors duration-100 hover:bg-glinr-hover has-aria-expanded:bg-glinr-hover data-[state=selected]:bg-glinr-accent-soft data-[state=selected]:[&>td:first-child]:shadow-[inset_2px_0_0_var(--state-active-bar)] aria-selected:bg-glinr-accent-soft aria-selected:[&>td:first-child]:shadow-[inset_2px_0_0_var(--state-active-bar)]',
         className,
       )}
       {...props}
@@ -85,7 +95,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
     <th
       data-slot="table-head"
       className={cn(
-        'h-9 px-2 text-left align-middle text-xs font-medium whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0',
+        'h-9 px-3 py-2 text-left align-middle text-xs font-medium whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0',
         className,
       )}
       {...props}
@@ -98,7 +108,7 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
     <td
       data-slot="table-cell"
       className={cn(
-        'h-(--glinr-row-h) px-2 py-0 align-middle group-data-[density=dense]/table:h-9 whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+        'h-10 px-3 py-2 align-middle whitespace-nowrap group-data-[density=compact]/table:h-8 group-data-[density=compact]/table:py-1 group-data-[density=spacious]/table:h-12 [&:has([role=checkbox])]:pr-0',
         className,
       )}
       {...props}

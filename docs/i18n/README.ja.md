@@ -320,7 +320,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - 質問、アイデア、作ったものの紹介は [GitHub Discussions](https://github.com/glincker/levelrail/discussions)、バグは [Issues](https://github.com/glincker/levelrail/issues) へ。
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99)：メンテナーとのライブチャット。`#levelrail` フォーラムチャンネルで行っています。
 - 直接のサポートは [support@levelrail.com](mailto:support@levelrail.com)、脆弱性を非公開で報告するには[セキュリティポリシー](../../.github/SECURITY.md)をご覧ください。
-- [コントリビューション](../../.github/CONTRIBUTING.md)：開発ループ、テスト、コミット規約。ソースからのビルドには Go 1.26 以降と Docker が必要です。[インストール](../../docs/installing.md#option-3-build-from-source)を参照してください。
+- [コントリビューション](../../.github/CONTRIBUTING.md)：開発ループ、テスト、コミット規約。ソースからのビルドには Go 1.27 以降と Docker が必要です。[インストール](../../docs/installing.md#option-3-build-from-source)を参照してください。
 
 ## リポジトリにスターを付ける
 

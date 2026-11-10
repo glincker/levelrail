@@ -61,6 +61,19 @@
     "pending": "Eliminando...",
     "done": "Monitor {{name}} eliminado"
   },
+  "pause": {
+    "action": "Pausar {{name}}"
+  },
+  "resume": {
+    "action": "Reanudar {{name}}"
+  },
+  "rotate": {
+    "action": "Rotar el token de {{name}}",
+    "title": "¿Rotar la URL de ping de {{name}}?",
+    "description": "La URL anterior deja de funcionar al instante. La nueva se muestra una sola vez, así que actualiza tu tarea enseguida.",
+    "confirm": "Rotar",
+    "pending": "Rotando..."
+  },
   "incidents": {
     "title": "Incidentes",
     "empty": "Sin incidentes. Las caídas confirmadas de monitores y las alertas promovidas aparecen aquí.",
@@ -106,6 +119,34 @@
       "already": "Publicado. Envía más actualizaciones públicas desde los ajustes de la página de estado.",
       "stale": "Este incidente cambió desde que lo cargaste. Actualiza y revisa el borrador de nuevo.",
       "changed": "El borrador cambió mientras publicabas. No se publicó nada; revísalo de nuevo."
+    },
+    "postmortem": {
+      "title": "Postmortem",
+      "none": "Aun no hay postmortem. El borrador rellena la ventana de impacto y las alertas de este incidente.",
+      "start": "Crear borrador",
+      "refresh": "Actualizar ventana y alertas",
+      "save": "Guardar",
+      "publish": "Publicar postmortem",
+      "pending": "Publicando...",
+      "confirmTitle": "Publicar este postmortem?",
+      "confirmBody": "Al publicarlo queda bloqueado. Nadie podra editarlo despues.",
+      "window": "Impacto de {{start}} a {{end}}",
+      "ongoing": "sin registrar",
+      "alerts": "Alertas",
+      "noAlerts": "No se registraron alertas para este incidente.",
+      "itemsHint": "Una accion por linea",
+      "publishedBy": "Publicado {{at}} por {{by}}",
+      "state": {
+        "draft": "Borrador",
+        "published": "Publicado"
+      },
+      "fields": {
+        "summary": "Resumen",
+        "impact": "Impacto",
+        "root_cause": "Causa raiz",
+        "resolution": "Resolucion",
+        "action_items": "Acciones"
+      }
     }
   }
 }

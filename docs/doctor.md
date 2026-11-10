@@ -72,6 +72,7 @@ One or more checks failed. See above.
 | | `container_runtime`, `docker_privilege`, `docker_guard`, `container_hardening` | Engine kind, privileges, API guard, hardening |
 | | `network_pool` | Docker network address pool usage, with an auto fix for orphans |
 | | `docker_orphans` | Unreferenced images, build cache, anonymous volumes, orphan networks (`APP_DOCTOR_ORPHAN_WARN_BYTES`) |
+| | `container_log_rotation` | Running containers whose json-file log has no size limit, read with one inspect per container up to `APP_DOCTOR_LOG_ROTATION_MAX_INSPECT` (50) |
 | This server | `disk_space` | Free space on the data volume, with an auto cleanup fix |
 | | `inodes` | Free inodes on the data volume (`APP_DOCTOR_INODE_WARN_PERCENT`) |
 | | `docker_root_disk` | Free space under Docker's storage root |

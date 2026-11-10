@@ -59,8 +59,8 @@
   --glinr-badge-h-comfortable: 1.5rem;
   --glinr-dialog-pad: 1.5rem;
   --glinr-dialog-w-confirm: 25rem;
-  --glinr-dialog-w-form: 30rem;
-  --glinr-dialog-w-rich: 35rem;
+  --glinr-dialog-w-form: 32.5rem;
+  --glinr-dialog-w-rich: 45rem;
   --glinr-sheet-w: 30rem;
   --glinr-capsule-h: 2rem;
   --glinr-capsule-h-sm: 1.75rem;
@@ -84,6 +84,9 @@
   --glinr-radius-menu: 0.875rem;
   --glinr-radius-group: 1rem;
   --glinr-radius-card: 1.25rem;
+  --glinr-radius-inner: 0.5rem;
+  --glinr-radius-element: 0.75rem;
+  --glinr-radius-container: 1rem;
   --glinr-radius-pill: 999px;
   --glinr-elev-1: 0 1px 1px oklch(0.3 0.05 250 / 4%), 0 2px 2px oklch(0.3 0.05 250 / 4%), 0 4px 4px oklch(0.3 0.05 250 / 3%);
   --glinr-elev-2: 0 1px 2px oklch(0.3 0.05 250 / 5%), 0 4px 8px oklch(0.3 0.05 250 / 5%), 0 8px 16px oklch(0.3 0.05 250 / 4%);

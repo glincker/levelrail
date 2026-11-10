@@ -49,6 +49,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesEvents(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":
 		return runNodesMetrics(prog, rest, stdout, stderr, lookupEnv)
+	case "thresholds":
+		return runNodesThresholds(prog, rest, stdout, stderr, lookupEnv)
 	case "resource-usage":
 		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "capacity-forecast":
@@ -91,6 +93,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesMove(prog, rest, stdout, stderr, lookupEnv)
 	case "moves":
 		return runNodesMoves(prog, rest, stdout, stderr, lookupEnv)
+	case "resources":
+		return runNodesResources(prog, rest, stdout, stderr, lookupEnv)
 	case "drains":
 		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
 	case "taint":
@@ -142,6 +146,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
   %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node
   %[1]s nodes drains <id> [flags]                                    show a node's drains and their moves
+  %[1]s nodes resources <id> [flags]                                 list the apps and databases placed on a node
   %[1]s nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
   %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
@@ -151,6 +156,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
   %[1]s nodes failure-policy get|set <id> [--mode M] [--grace S]    what happens when a node stays unreachable
+  %[1]s nodes thresholds get|set <id> [--cpu N] [--memory N]       per-node CPU, memory and disk alert percents
   %[1]s nodes lost <id> [--dry-run] [--yes]                          declare a node lost, showing the plan first
   %[1]s nodes failure-resolve <id> <kind> <name> --wait|--restore    decide for an app or database with node-local data
   %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node

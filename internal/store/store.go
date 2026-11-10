@@ -46,7 +46,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	seedFromTemplate(ctx, path, opts)
 	dsn := dsn(path)
 
-	sqlDB, err := sql.Open("sqlite", dsn)
+	sqlDB, err := sql.Open(timedDriverName, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("store: open %s: %w", path, err)
 	}

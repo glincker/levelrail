@@ -2,6 +2,8 @@ import { useId, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface SettingRowProps {
+  /** Anchor for an On this page jump link. */
+  id?: string
   title: ReactNode
   description?: ReactNode
   /** Small status element beside the title. */
@@ -28,6 +30,7 @@ export function SettingRows({
 
 /** SettingRow puts title and helper text left and the control right from md up, one column below. */
 export function SettingRow({
+  id,
   title,
   description,
   badge,
@@ -39,15 +42,16 @@ export function SettingRow({
   const descId = useId()
   return (
     <div
+      id={id}
       role="group"
       aria-labelledby={titleId}
       aria-describedby={description ? descId : undefined}
       className={cn(
-        'grid gap-x-8 gap-y-2 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]',
+        'grid scroll-mt-24 gap-x-8 gap-y-2 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]',
         className,
       )}
     >
-      <div className="min-w-0 space-y-0.5">
+      <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
           <span id={titleId}>{title}</span>
           {badge}

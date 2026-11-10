@@ -28,6 +28,8 @@ func runTags(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runTagsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runTagsApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "databases":
+		return runTagsDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown tags subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, tagsUsage(prog))
@@ -42,6 +44,7 @@ func tagsUsage(prog string) string {
   %[1]s tags rename <old> <new> [flags]   rename a tag, keeping its attachments
   %[1]s tags delete <name> [flags]        delete a tag by name (detaches it from every app it was on)
   %[1]s tags apps <name> [flags]          list every app attached to a tag, by tag name
+  %[1]s tags databases <name> [flags]     list every database you can read that carries a tag
 
 Every tag identifier this CLI's flags/arguments take is the tag's name,
 never its numeric/opaque ID; commands that need the ID internally

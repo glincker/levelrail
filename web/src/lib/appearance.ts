@@ -43,6 +43,7 @@ export const RADII = ['sharp', 'normal', 'soft'] as const
 export const LOOKS = ['glass', 'restrained'] as const
 export const BACKDROPS = ['branded', 'plain'] as const
 export const CONTRASTS = ['system', 'on', 'off'] as const
+export const LIST_KEYS = ['on', 'off'] as const
 // 'system-mono' is the bundled Geist Mono default; 'device-mono' is the OS monospace.
 export const CODE_FONTS = [
   'system-mono',
@@ -66,6 +67,7 @@ export type Radius = (typeof RADII)[number]
 export type Look = (typeof LOOKS)[number]
 export type Backdrop = (typeof BACKDROPS)[number]
 export type Contrast = (typeof CONTRASTS)[number]
+export type ListKeys = (typeof LIST_KEYS)[number]
 export type CodeFont = (typeof CODE_FONTS)[number]
 
 export interface Appearance {
@@ -87,6 +89,8 @@ export interface Appearance {
   codeSize: number
   /** Content column max width in px, used when the page width is custom. */
   contentWidth: number
+  /** Single key list shortcuts (j, k, x, /); WCAG 2.1.4 needs a way to turn them off. */
+  listKeys: ListKeys
 }
 
 export const APPEARANCE_DEFAULTS: Appearance = {
@@ -105,6 +109,7 @@ export const APPEARANCE_DEFAULTS: Appearance = {
   codeFont: 'system-mono',
   codeSize: CODE_SIZE_DEFAULT,
   contentWidth: CONTENT_WIDTH_DEFAULT,
+  listKeys: 'on',
 }
 
 // Where the choice differs from the default, these mark the recommended pick.
@@ -137,6 +142,7 @@ const ATTRS: Record<keyof Appearance, string> = {
   codeFont: 'data-code-font',
   codeSize: 'data-code-size',
   contentWidth: '',
+  listKeys: '',
 }
 
 function pick<T extends string>(
@@ -218,6 +224,7 @@ export function parseAppearance(raw: string | null): Appearance {
     codeFont: pick(CODE_FONTS, data.codeFont, d.codeFont),
     codeSize: clampCodeSize(data.codeSize),
     contentWidth: clampContentWidth(data.contentWidth),
+    listKeys: pick(LIST_KEYS, data.listKeys, d.listKeys),
   }
 }
 

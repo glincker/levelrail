@@ -17,8 +17,27 @@ func buildAppYAML(m mappedApp) ([]byte, error) {
 	if svc.BuildPath != "" {
 		buildPairs = append(buildPairs, scalarNode("path"), scalarNode(svc.BuildPath))
 	}
+	if svc.BaseDirectory != "" {
+		buildPairs = append(buildPairs, scalarNode("baseDirectory"), scalarNode(svc.BaseDirectory))
+	}
+	if svc.BuildCommand != "" {
+		buildPairs = append(buildPairs, scalarNode("command"), scalarNode(svc.BuildCommand), scalarNode("publish"), scalarNode(svc.PublishDir))
+	}
 
 	servicePairs := []*yaml.Node{scalarNode("build"), mappingNode(buildPairs...)}
+	if svc.StartCommand != "" {
+		servicePairs = append(servicePairs, scalarNode("command"), stringSeqNode([]string{"/bin/sh", "-c", svc.StartCommand}))
+	}
+	if h := svc.Hooks; h != nil {
+		var hookPairs []*yaml.Node
+		if h.PreDeploy != "" {
+			hookPairs = append(hookPairs, scalarNode("preDeploy"), scalarNode(h.PreDeploy))
+		}
+		if h.PostDeploy != "" {
+			hookPairs = append(hookPairs, scalarNode("postDeploy"), scalarNode(h.PostDeploy))
+		}
+		servicePairs = append(servicePairs, scalarNode("hooks"), mappingNode(hookPairs...))
+	}
 	if len(svc.Domains) > 0 {
 		servicePairs = append(servicePairs, scalarNode("domains"), stringSeqNode(svc.Domains))
 	}

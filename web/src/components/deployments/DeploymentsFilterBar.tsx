@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { SEARCH_DEBOUNCE_MS } from '../../lib/searchDebounce'
 import { useTranslation } from 'react-i18next'
 import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -13,8 +14,6 @@ import {
 import { AddFilterMenu } from './AddFilterMenu'
 import { pillsFor } from '../../lib/deploymentFilterLabels'
 
-const SEARCH_DEBOUNCE_MS = 300
-
 export interface DeploymentsFilterBarProps {
   filters: DeploymentFilters
   facets: Facets
@@ -24,6 +23,8 @@ export interface DeploymentsFilterBarProps {
   onToggle: (key: FilterKey, value: string) => void
   onRemove: (key: FilterKey, value: string) => void
   onClear: () => void
+  /** Extra controls on the search row, such as the saved views menu. */
+  extra?: ReactNode
 }
 
 export function DeploymentsFilterBar({
@@ -35,6 +36,7 @@ export function DeploymentsFilterBar({
   onToggle,
   onRemove,
   onClear,
+  extra,
 }: DeploymentsFilterBarProps) {
   const { t } = useTranslation('deploys')
   const [text, setText] = useState(filters.q)
@@ -81,6 +83,7 @@ export function DeploymentsFilterBar({
           onOpenChange={onAddOpenChange}
           onToggle={onToggle}
         />
+        {extra}
       </div>
       {(pills.length > 0 || filters.q) && (
         <ul

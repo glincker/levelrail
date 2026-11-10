@@ -11,7 +11,7 @@ import (
 )
 
 // briefFromSQL skips the display-only joins; preview rows are unique per app.
-const briefFromSQL = `FROM deploy_attempts d JOIN desired_services s ON s.name = d.service_name`
+const briefFromSQL = `FROM deploy_attempts d JOIN ` + deploymentServicesSQL + ` s ON s.name = d.service_name`
 
 // DeploymentBrief is the slim row deployment summaries are computed from.
 type DeploymentBrief struct {

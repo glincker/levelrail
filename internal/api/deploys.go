@@ -629,6 +629,9 @@ func describeResolution(res deploy.ImageResolution) (digestReason, reason string
 // rather than something this handler fakes with an invented log format.
 func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if !rt.requireReadableApp(w, r, name) {
+		return
+	}
 
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {

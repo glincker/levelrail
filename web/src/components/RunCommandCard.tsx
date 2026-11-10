@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlayGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
+import {
+  PlayGlassIcon,
+  SquareGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { useOneShotRun } from '../queries/oneShotJob'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -38,8 +42,17 @@ export function RunCommandCard({
   const { t } = useTranslation('appRun')
   const [line, setLine] = useState('')
   const [service, setService] = useState(services?.[0] ?? '')
-  const { run, job, startError, startForbidden, pollError, running } =
-    useOneShotRun()
+  const [timeout, setTimeoutSeconds] = useState('')
+  const {
+    run,
+    cancel,
+    history,
+    job,
+    startError,
+    startForbidden,
+    pollError,
+    running,
+  } = useOneShotRun()
 
   const multi = (services?.length ?? 0) >= 2
   const target = multi && service ? `${name}-${service}` : name
@@ -48,7 +61,7 @@ export function RunCommandCard({
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (argv.length === 0 || running) return
-    run(target, argv)
+    run(target, argv, Number(timeout) || 0)
   }
 
   const error = startForbidden ? t('accessRule') : (startError ?? pollError)
@@ -102,6 +115,19 @@ export function RunCommandCard({
               {t('hint')}
             </p>
           </Field>
+          <Field className="sm:w-28">
+            <FieldLabel htmlFor="run-timeout">{t('timeout')}</FieldLabel>
+            <Input
+              id="run-timeout"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={timeout}
+              onChange={(e) => setTimeoutSeconds(e.target.value)}
+              placeholder={t('timeoutPlaceholder')}
+              disabled={running}
+            />
+          </Field>
           <Button
             type="submit"
             disabled={argv.length === 0 || running}
@@ -110,6 +136,17 @@ export function RunCommandCard({
             <PlayGlassIcon className="size-5" data-icon="inline-start" />
             {running ? t('running') : t('run')}
           </Button>
+          {running && job?.id ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void cancel()}
+              className="sm:self-start sm:mt-6"
+            >
+              <SquareGlassIcon className="size-5" data-icon="inline-start" />
+              {t('cancel')}
+            </Button>
+          ) : null}
         </form>
 
         <div aria-live="polite">
@@ -152,7 +189,9 @@ export function RunCommandCard({
                     {t('output')}
                   </p>
                   <pre className="max-h-80 overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs break-all whitespace-pre-wrap">
-                    {job.output || t('empty')}
+                    {job.output_withheld
+                      ? t('outputWithheld')
+                      : job.output || t('empty')}
                   </pre>
                   {job.output_truncated ? (
                     <p className="text-xs text-muted-foreground">
@@ -164,6 +203,36 @@ export function RunCommandCard({
             </div>
           ) : null}
         </div>
+
+        {history.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              {t('history')}
+            </p>
+            <ul className="divide-y rounded-md border text-xs">
+              {history.map((h) => (
+                <li
+                  key={h.job.id}
+                  className="flex items-center gap-2 px-3 py-2"
+                >
+                  <Badge
+                    variant={
+                      h.job.state === 'Succeeded' ? 'success' : 'outline'
+                    }
+                  >
+                    {h.job.state}
+                  </Badge>
+                  <code className="flex-1 truncate font-mono">{h.command}</code>
+                  {h.job.exit_code !== undefined ? (
+                    <span className="text-muted-foreground">
+                      {t('exitCode')} {h.job.exit_code}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )

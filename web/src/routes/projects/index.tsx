@@ -12,6 +12,8 @@ import {
   ProjectRow,
   RowSkeleton,
 } from '../../components/ProjectRow'
+import { ListKeyboardHint } from '../../components/ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { CreateProjectDialog } from '../../components/CreateProjectDialog'
 import { useTranslation } from 'react-i18next'
 import { PageBanner } from '../../components/PageBanner'
@@ -53,6 +55,11 @@ function ListHeader() {
 function ProjectListPage() {
   const { data: projects } = useProjects()
   const parentRef = useRef<HTMLDivElement>(null)
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
 
   const virtualizer = useVirtualizer({
     count: projects.length,
@@ -96,41 +103,48 @@ function ProjectListPage() {
           action={<CreateProjectDialog />}
         />
       ) : (
-        <div
-          ref={parentRef}
-          className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
-        >
-          <ListHeader />
+        <>
+          <ListKeyboardHint open={hintOpen} onClose={closeHint} />
           <div
-            style={{
-              height: virtualizer.getTotalSize(),
-              position: 'relative',
+            ref={(el) => {
+              parentRef.current = el
+              setListContainer(el)
             }}
+            className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
           >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const project = projects[virtualRow.index]
-              if (!project) {
-                return null
-              }
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <ProjectRow project={project} />
-                </div>
-              )
-            })}
+            <ListHeader />
+            <div
+              style={{
+                height: virtualizer.getTotalSize(),
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const project = projects[virtualRow.index]
+                if (!project) {
+                  return null
+                }
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    data-list-row
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <ProjectRow project={project} />
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </PageTemplate>
   )

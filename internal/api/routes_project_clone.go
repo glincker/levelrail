@@ -116,6 +116,10 @@ func (rt *Router) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.applyProjectClone(r, plan); err != nil {
+		if errors.Is(err, errAppNameTaken) {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 		rt.internalError(w, "api: clone project: apply failed", err, slog.String("id", src.ID))
 		return
 	}
@@ -248,7 +252,14 @@ func (rt *Router) freeAppName(r *http.Request, base string, taken map[string]boo
 			lookupErr = err
 			return false
 		}
-		return err == nil && svc != nil
+		if err == nil && svc != nil {
+			return true
+		}
+		taken, serr := rt.stackNameTaken(r.Context(), c)
+		if serr != nil {
+			lookupErr = serr
+		}
+		return taken
 	})
 	if lookupErr != nil {
 		return "", lookupErr

@@ -14,6 +14,7 @@ import type {
   DataExportTestResult,
   UpdateDataExportDestinationRequest,
 } from '../types/dataExport'
+import { pollMs } from '@/lib/pollTier'
 
 export const dataExportKeys = {
   all: ['data-export'] as const,
@@ -21,7 +22,7 @@ export const dataExportKeys = {
 }
 
 // Delivery counters change every few seconds, so the list is polled.
-const DESTINATIONS_REFETCH_MS = 10_000
+const DESTINATIONS_REFETCH_MS = pollMs('active')
 
 async function request<T>(
   path: string,

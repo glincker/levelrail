@@ -91,20 +91,19 @@ func runDatabasesExport(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	_, _ = fmt.Fprintf(stderr, "downloading backup %s of database %q\n", historyID, name)
-	data, err := client.DownloadBackup(ctx, name, historyID)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download backup %q of database %q: %w", historyID, name, err))
-	}
 	if toStdout {
-		if _, err := stdout.Write(data); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("write dump: %w", err))
+		if _, err := client.DownloadBackupTo(ctx, name, historyID, stdout); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("download backup %q of database %q: %w", historyID, name, err))
 		}
 		return exitOK
 	}
-	if err := writeDumpFile(outPath, data, force); err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+	n, err := writeDumpFile(outPath, force, func(w io.Writer) (int64, error) {
+		return client.DownloadBackupTo(ctx, name, historyID, w)
+	})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download backup %q of database %q: %w", historyID, name, err))
 	}
-	_, _ = fmt.Fprintf(stderr, "wrote %d bytes to %s\n", len(data), outPath)
+	_, _ = fmt.Fprintf(stderr, "wrote %d bytes to %s\n", n, outPath)
 	return exitOK
 }
 
@@ -175,37 +174,38 @@ func pickExportBackup(ctx context.Context, client *Client, prog, name, targetID 
 
 // writeDumpFile writes via a private temp file in the same directory, then
 // publishes it by link (no overwrite) or rename (--force), so a partial dump never appears.
-func writeDumpFile(path string, data []byte, force bool) error {
+func writeDumpFile(path string, force bool, fill func(io.Writer) (int64, error)) (int64, error) {
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".dump-*")
 	if err != nil {
-		return fmt.Errorf("create temp file next to %s: %w", path, err)
+		return 0, fmt.Errorf("create temp file next to %s: %w", path, err)
 	}
 	tmpName := tmp.Name()
 	defer func() { _ = os.Remove(tmpName) }()
 	if err := tmp.Chmod(0o600); err != nil {
 		_ = tmp.Close()
-		return fmt.Errorf("restrict dump file mode: %w", err)
+		return 0, fmt.Errorf("restrict dump file mode: %w", err)
 	}
-	if _, err := tmp.Write(data); err != nil {
+	n, err := fill(tmp)
+	if err != nil {
 		_ = tmp.Close()
-		return fmt.Errorf("write dump: %w", err)
+		return 0, err
 	}
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("write dump: %w", err)
+		return 0, fmt.Errorf("write dump: %w", err)
 	}
 	if force {
 		if err := os.Rename(tmpName, path); err != nil {
-			return fmt.Errorf("move dump into place: %w", err)
+			return 0, fmt.Errorf("move dump into place: %w", err)
 		}
-		return nil
+		return n, nil
 	}
 	if err := os.Link(tmpName, path); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return newValidationError("%s already exists; pass --force to overwrite it", path)
+			return 0, newValidationError("%s already exists; pass --force to overwrite it", path)
 		}
-		return fmt.Errorf("move dump into place: %w", err)
+		return 0, fmt.Errorf("move dump into place: %w", err)
 	}
-	return nil
+	return n, nil
 }
 
 func databasesExportUsage(prog string) string {

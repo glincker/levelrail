@@ -77,9 +77,9 @@ export function NotificationCenter() {
         render={
           <Button
             type="button"
-            variant="outline"
-            size="icon-sm"
-            className="relative"
+            variant="ghost"
+            size="icon"
+            className="h-(--glinr-control-h) w-auto gap-1 rounded-full px-2"
             aria-label={
               unread > 0
                 ? tShell('shell.notifications.unread', { count: unread })
@@ -90,7 +90,7 @@ export function NotificationCenter() {
         }
       >
         <BellGlassIcon size="1.4em" />
-        {unread > 0 ? <CountBadge count={unread} tone="destructive" /> : null}
+        {unread > 0 ? <CountBadge count={unread} tone="neutral" /> : null}
       </PopoverTrigger>
       <PopoverContent
         align="end"

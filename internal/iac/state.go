@@ -44,6 +44,8 @@ type State struct {
 	projectEnv map[string]map[string]string
 	envEnv     map[string]map[string]string
 	managed    map[string]bool
+	// protected holds managed apps that refuse deletes, so prune can refuse at plan time.
+	protected  map[string]bool
 	denied     map[string]error
 	envsLoaded map[string]bool
 	// ledger, when set, decides ownership and prune instead of the tag.
@@ -73,7 +75,7 @@ func newState() *State {
 		projects: map[string]wireProject{}, projectsByID: map[string]wireProject{}, envs: map[string]wireEnvironment{}, envsByID: map[string]wireEnvironment{},
 		tags: map[string]wireTag{}, databases: map[string]wireDatabase{}, nodes: map[string]*liveNode{}, nodeDupes: map[string]bool{}, nodeNames: map[string]string{}, settings: map[string]*liveSetting{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
 		pipelines: map[string]map[string]wirePipeline{}, alerts: map[string]map[string]wireAlert{}, channels: map[string]string{},
-		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
+		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, protected: map[string]bool{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
 	}
 }
 
@@ -129,6 +131,9 @@ func Load(ctx context.Context, d Doer, res []*Resource, opts Options) (*State, e
 		}
 	}
 	for _, name := range st.ManagedApps() {
+		if err := l.protection(ctx, name); err != nil {
+			return nil, err
+		}
 		if err := l.lb(ctx, name); err != nil {
 			return nil, err
 		}
@@ -234,6 +239,23 @@ func (l loader) managedApps(ctx context.Context, source string, apps map[string]
 	for _, m := range members {
 		l.st.managed[m.Name] = true
 		apps[m.Name] = true
+	}
+	return nil
+}
+
+// protection records whether a managed app is protected; a missing app is not.
+func (l loader) protection(ctx context.Context, name string) error {
+	var res struct {
+		Protected bool `json:"protected"`
+	}
+	if err := l.get(ctx, "/api/v1/apps/"+esc(name)+"/protection", &res); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return l.st.note(resourceKey(KindApp, "", name), fmt.Errorf("read protection of app %s: %w", name, err))
+	}
+	if res.Protected {
+		l.st.protected[name] = true
 	}
 	return nil
 }

@@ -283,26 +283,6 @@ func (db *DB) ListScheduledTaskRuns(ctx context.Context, f ScheduledTaskRunFilte
 	return scanScheduledTaskRuns(rows)
 }
 
-// PruneScheduledTaskRuns keeps the newest keep runs of a task and blanks the
-// output of runs started before outputCutoff (zero skips the output pass).
-func (db *DB) PruneScheduledTaskRuns(ctx context.Context, taskID string, keep int, outputCutoff time.Time) error {
-	if keep > 0 {
-		if _, err := db.ExecContext(ctx, `
-			DELETE FROM scheduled_task_runs WHERE task_id = ? AND status != ? AND id NOT IN (
-				SELECT id FROM scheduled_task_runs WHERE task_id = ? ORDER BY started_at DESC, id DESC LIMIT ?)
-		`, taskID, ScheduledTaskStatusRunning, taskID, keep); err != nil {
-			return fmt.Errorf("store: prune scheduled task runs for %q: %w", taskID, err)
-		}
-	}
-	if !outputCutoff.IsZero() {
-		if _, err := db.ExecContext(ctx, `UPDATE scheduled_task_runs SET output = '' WHERE task_id = ? AND output != '' AND started_at < ?`,
-			taskID, formatTime(outputCutoff)); err != nil {
-			return fmt.Errorf("store: prune scheduled task run output for %q: %w", taskID, err)
-		}
-	}
-	return nil
-}
-
 // SyncSpecScheduledTasks makes the spec-sourced jobs of a service match
 // jobs (keyed by Name): new ones are inserted, existing ones updated in
 // place (keeping ID and history), and spec-sourced jobs no longer listed

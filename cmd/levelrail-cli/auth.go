@@ -38,7 +38,9 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "deny":
 		return runAuthDecide(prog, args[1:], false, stdout, stderr, lookupEnv)
 	case "devices":
-		return runAuthDevices(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAuthDevicesGroup(prog, args[1:], stdout, stderr, lookupEnv)
+	case "sign-in-requests":
+		return runAuthSignInRequests(prog, args[1:], stdout, stderr, lookupEnv)
 	case "code-login":
 		return runAuthCodeLogin(prog, args[1:], stdout, stderr, lookupEnv)
 	case "activity":
@@ -73,6 +75,8 @@ func authUsage(prog string) string {
   %[1]s auth approve <id>            approve a new-browser sign-in
   %[1]s auth deny <id>               deny a new-browser sign-in
   %[1]s auth devices [revoke <id>]   list or revoke browsers trusted for password sign-in
+  %[1]s auth devices trusted list|revoke  the same, as list and revoke (revoke asks first)
+  %[1]s auth sign-in-requests list|reveal  list waiting sign-ins, or print one code once
   %[1]s auth code-login [flags]      show or change the auth.code_login setting
   %[1]s auth activity [flags]        show your own account activity feed
   %[1]s auth preferences get|set     your timezone, language, theme, landing page and avatar

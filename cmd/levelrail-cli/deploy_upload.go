@@ -58,7 +58,7 @@ func wantsUploadDeploy(args []string) bool {
 	for _, a := range args {
 		name := strings.TrimLeft(strings.SplitN(a, "=", 2)[0], "-")
 		switch name {
-		case "image", "commit", "latest", "branch", "from-cache", "diff", "confirm":
+		case "image", "commit", "latest", "branch", "from-cache", "diff", "confirm", "dockerfile", "dockerfile-file", "context-file":
 			if strings.HasPrefix(a, "-") {
 				return false
 			}

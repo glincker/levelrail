@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { Incident, IncidentDraftInput } from '../types/incident'
+import { pollMs } from '../lib/pollTier'
 
 export const incidentKeys = {
   all: ['incidents'] as const,
@@ -28,7 +29,7 @@ export function useIncidents() {
     queryKey: incidentKeys.list(),
     queryFn: fetchIncidents,
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

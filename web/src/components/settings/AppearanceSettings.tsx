@@ -41,6 +41,7 @@ import {
   RADII,
   BACKDROPS,
   LOOKS,
+  LIST_KEYS,
   clampCodeSize,
   clampContentWidth,
   DARK_BASES,
@@ -521,6 +522,14 @@ export function AppearanceSettings() {
     hint: t(`appearancePage.look.${v}Hint`),
     isDefault: v === DEF.look,
   }))
+  const listKeyOptions: Choice<(typeof LIST_KEYS)[number]>[] = LIST_KEYS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.listKeys.${v}`),
+      hint: t(`appearancePage.listKeys.${v}Hint`),
+      isDefault: v === DEF.listKeys,
+    }),
+  )
   const backdropOptions: Choice<(typeof BACKDROPS)[number]>[] = BACKDROPS.map(
     (v) => ({
       value: v,
@@ -586,6 +595,11 @@ export function AppearanceSettings() {
       id: 'layout',
       label: t('appearancePage.sections.layout'),
       icon: <LayoutDashboardGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'look',
+      label: t('appearancePage.sections.look'),
+      icon: <SparklesGlassIcon size="1.1em" />,
     },
     {
       id: 'sync',
@@ -879,6 +893,7 @@ export function AppearanceSettings() {
             ) : null}
           </SettingRow>
           <SettingRow
+            id="look"
             wide
             title={t('appearancePage.look.title')}
             description={t('appearancePage.look.description')}
@@ -903,6 +918,21 @@ export function AppearanceSettings() {
               value={appearance.backdrop}
               options={backdropOptions}
               onChange={(backdrop) => setAppearance({ backdrop })}
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            id="list-keys"
+            wide
+            title={t('appearancePage.listKeys.title')}
+            description={t('appearancePage.listKeys.description')}
+          >
+            <ChoiceGroup
+              compact
+              label={t('appearancePage.listKeys.title')}
+              value={appearance.listKeys}
+              options={listKeyOptions}
+              onChange={(listKeys) => setAppearance({ listKeys })}
               {...common}
             />
           </SettingRow>

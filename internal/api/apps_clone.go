@@ -78,6 +78,13 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: clone app: check new name failed", err, slog.String("new_name", req.NewName))
 		return
 	}
+	if taken, merr := rt.stackNameTaken(r.Context(), req.NewName); merr != nil {
+		rt.internalError(w, "api: clone app: check stack name failed", merr, slog.String("new_name", req.NewName))
+		return
+	} else if taken {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
+		return
+	}
 
 	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, errCloneEnvironmentMsg), environmentRef(req.EnvironmentID)) {
 		return
@@ -139,5 +146,6 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.copyEnvSettings(r.Context(), name, req.NewName)
+	rt.copyResourceNotes(r, store.LabelKindApp, name, req.NewName)
 	writeJSON(w, http.StatusCreated, rt.appOut(r.Context(), *cloned))
 }

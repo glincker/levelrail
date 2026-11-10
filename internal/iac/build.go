@@ -27,6 +27,9 @@ type Options struct {
 	// Project limits prune to managed apps of this project, matching the
 	// project filter applied to the files.
 	Project string
+	// BelowRoot is set by a caller whose token is under the root tier; job
+	// writes then fail the plan instead of stopping partway.
+	BelowRoot bool
 	// Prune deletes managed resources absent from the files.
 	Prune bool
 	// NoDeploy skips the restart that applies an env change to a running app.

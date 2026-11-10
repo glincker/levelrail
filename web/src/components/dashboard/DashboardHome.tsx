@@ -115,7 +115,6 @@ function StartView({
 
   return (
     <div className="flex flex-col gap-(--glinr-page-gap)">
-      <OnboardingCard />
       <RestoreDueCard />
       <StatusStrip
         apps={summary.total}
@@ -180,6 +179,7 @@ function StartView({
         </div>
       </div>
       <RecommendationsLine showSetup={false} />
+      <OnboardingCard />
       <CopyRetryDialog />
     </div>
   )
@@ -206,20 +206,24 @@ export function DashboardHome({
 
   if (!hasApps || (deployStarted && !firstRunDone)) {
     const firstRun = (
-      <div className="space-y-8">
-        <OnboardingCard />
-        <Suspense fallback={null}>
-          <FirstRunStripLive
-            onStarted={() => {
-              setDeployStarted(true)
-            }}
-            onDone={() => {
-              setFirstRunDone(true)
-            }}
-          />
-          {deployStarted ? null : <FirstDeploy secondary />}
-        </Suspense>
-        {hasApps ? null : <RecommendationsLine showSetup={isRoot} />}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0 space-y-8">
+          <Suspense fallback={null}>
+            <FirstRunStripLive
+              onStarted={() => {
+                setDeployStarted(true)
+              }}
+              onDone={() => {
+                setFirstRunDone(true)
+              }}
+            />
+            {deployStarted ? null : <FirstDeploy secondary />}
+          </Suspense>
+        </div>
+        <div className="min-w-0 space-y-4 empty:hidden">
+          {hasApps ? null : <RecommendationsLine showSetup={isRoot} />}
+          <OnboardingCard />
+        </div>
       </div>
     )
     // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.

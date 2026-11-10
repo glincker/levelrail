@@ -43,24 +43,36 @@ export interface GitSourcePlan {
     | 'ssh_not_detectable'
     | 'unsupported_host'
   warnings: string[]
+  group: GitSourcePlanMember[]
+}
+
+export interface GitSourcePlanMember {
+  name: string
+  current_source: GitSourceCurrentKind
+  effect: 'unchanged' | 'keeps_own_source' | 'built_with_this_source'
 }
 
 export const gitSourceConnectKeys = {
-  plan: (name: string, repoUrl: string, branch: string) =>
-    ['git-sources', 'plan', name, repoUrl, branch] as const,
+  plan: (name: string, repoUrl: string, branch: string, connectionId = '') =>
+    ['git-sources', 'plan', name, repoUrl, branch, connectionId] as const,
 }
 
 export async function fetchGitSourcePlan(
   name: string,
   repoUrl: string,
   branch: string,
+  connectionId = '',
 ): Promise<GitSourcePlan> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(name)}/git-source/plan`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_url: repoUrl, branch }),
+      body: JSON.stringify({
+        repo_url: repoUrl,
+        branch,
+        ...(connectionId ? { connection_id: connectionId } : {}),
+      }),
     },
   )
   if (!res.ok) {
@@ -77,10 +89,11 @@ export function gitSourcePlanOptions(
   name: string,
   repoUrl: string,
   branch: string,
+  connectionId = '',
 ) {
   return queryOptions({
-    queryKey: gitSourceConnectKeys.plan(name, repoUrl, branch),
-    queryFn: () => fetchGitSourcePlan(name, repoUrl, branch),
+    queryKey: gitSourceConnectKeys.plan(name, repoUrl, branch, connectionId),
+    queryFn: () => fetchGitSourcePlan(name, repoUrl, branch, connectionId),
     retry: false,
   })
 }
@@ -90,8 +103,12 @@ export function useGitSourcePlan(
   repoUrl: string,
   branch: string,
   enabled: boolean,
+  connectionId = '',
 ) {
-  return useQuery({ ...gitSourcePlanOptions(name, repoUrl, branch), enabled })
+  return useQuery({
+    ...gitSourcePlanOptions(name, repoUrl, branch, connectionId),
+    enabled,
+  })
 }
 
 export interface GitSourceDeployResult {

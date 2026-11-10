@@ -41,7 +41,7 @@ func runAppsAccess(prog string, args []string, stdout, stderr io.Writer, lookupE
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
 		_, _ = fmt.Fprintln(tw, "TIME\tSTATUS\tMS\tMETHOD\tPATH\tREQUEST ID\tTRACE ID")
 		for _, r := range recs {
-			_, _ = fmt.Fprintf(tw, "%s\t%d\t%.0f\t%s\t%s\t%s\t%s\n", r.Time.UTC().Format(time.RFC3339), r.Status, r.Millis, r.Method, r.Path, r.RequestID, r.TraceID)
+			_, _ = fmt.Fprintf(tw, "%s\t%d\t%.0f\t%s\t%s\t%s\t%s\n", r.Time.UTC().Format(time.RFC3339), r.Status, r.Millis, safeTerminalText(r.Method), safeTerminalText(r.Path), safeTerminalText(r.RequestID), safeTerminalText(r.TraceID))
 		}
 		_ = tw.Flush()
 	})

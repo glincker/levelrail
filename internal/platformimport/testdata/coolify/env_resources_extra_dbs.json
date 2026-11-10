@@ -1,0 +1,6 @@
+{
+  "applications": [],
+  "keydbs": [{"uuid": "db-keydb", "name": "sessions", "image": "eqalpha/keydb:latest"}],
+  "dragonflies": [{"uuid": "db-dfly", "name": "hot\u0007cache", "image": "docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1"}],
+  "clickhouses": [{"uuid": "db-ch", "name": "analytics", "image": "clickhouse/clickhouse-server:24.8"}]
+}

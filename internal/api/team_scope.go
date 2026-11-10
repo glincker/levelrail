@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
@@ -252,4 +254,66 @@ func (rt *Router) ownerForResource(ctx context.Context, prefix, name string) (*s
 		return db.OwnerOfDatabase(ctx, name)
 	}
 	return db.OwnerOfApp(ctx, name)
+}
+
+// resourceOwnerRef is one owner of a resource and the row it came from.
+type resourceOwnerRef struct {
+	owner *store.ResourceOwner
+	name  string
+}
+
+// withOtherMemberOwners adds the owners of other services sharing name's app
+// row, so a service that took a stack's name cannot act for the stack alone.
+func (rt *Router) withOtherMemberOwners(ctx context.Context, prefix, name string, owner *store.ResourceOwner) ([]resourceOwnerRef, error) {
+	out := []resourceOwnerRef{{owner: owner, name: name}}
+	if rt.appGroups == nil {
+		return out, nil
+	}
+	members, err := rt.appGroups.ListServicesByApp(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("list app members: %w", err)
+	}
+	for _, m := range members {
+		if m.Name == name {
+			continue
+		}
+		o, err := rt.ownerForResource(ctx, prefix, m.Name)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, resourceOwnerRef{owner: o, name: m.Name})
+	}
+	return out, nil
+}
+
+// ownersForResource resolves an app with no row of its own, a compose app,
+// through its member services: a caller must be allowed for every one. A nil
+// owner (unlisted members included) leaves the app to instance members only.
+func (rt *Router) ownersForResource(ctx context.Context, prefix, name string) ([]resourceOwnerRef, error) {
+	owner, err := rt.ownerForResource(ctx, prefix, name)
+	if err != nil || prefix != resourcePrefixApp || rt.teamDB() == nil {
+		return []resourceOwnerRef{{owner: owner, name: name}}, err
+	}
+	if owner != nil {
+		return rt.withOtherMemberOwners(ctx, prefix, name, owner)
+	}
+	members, err := rt.composeMembers(ctx, name)
+	if err != nil {
+		if !errors.Is(err, store.ErrServiceNotFound) {
+			rt.logger.Warn("api: owners: list compose members failed", slog.String("name", name), slog.String("error", err.Error()))
+		}
+		return []resourceOwnerRef{{name: name}}, nil
+	}
+	out := make([]resourceOwnerRef, 0, len(members))
+	for _, m := range members {
+		o, err := rt.ownerForResource(ctx, prefix, m.Name)
+		if err != nil {
+			return nil, err
+		}
+		if o == nil {
+			return []resourceOwnerRef{{name: name}}, nil
+		}
+		out = append(out, resourceOwnerRef{owner: o, name: m.Name})
+	}
+	return out, nil
 }

@@ -49,7 +49,7 @@ The `minio/minio` image is no longer pullable from Docker Hub. Two S3-compatible
 
 ## Automatic drills
 
-Every resource that has a succeeded backup is drilled on its newest backup once per `APP_BACKUP_DRILL_INTERVAL_HOURS` (default `168`, one week; `0` turns scheduled drills off). The result history is on the **Backups** page and in `levelrail-cli backups drill list`.
+Every resource that has a succeeded backup is drilled on its newest backup once per drill interval (default `168` hours, one week; `0` turns scheduled drills off). Change it live in Settings under `backups.drill_interval_hours`; `APP_BACKUP_DRILL_INTERVAL_HOURS` only seeds the default. The result history is on the **Backups** page and in `levelrail-cli backups drill list`.
 
 A failed drill fires the platform-wide `restore_drill_failed` alert rule. Create it under **Alerts** like any other rule; it resolves when the next drill of that resource passes. A resource also shows **Failing** on the Backups page until then.
 
@@ -110,11 +110,15 @@ Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older b
 
 A running database's files are only consistent if it is quiet. Per volume you can set, from the **Policy** button or `levelrail-cli backups volumes policy set`:
 
-- Command before backup: runs inside the app's container. If it exits non-zero or times out, the backup is still taken but is recorded as succeeded with an `inconsistent:` warning, so you keep a copy and can see it may not restore cleanly.
-- Command after backup: always runs, even if the backup or the pre-command failed, so an app is never left with saving switched off.
+- Command before backup: runs inside the app's container, as the container's own user, never on the host. If it exits non-zero or times out, the backup is not taken and is recorded as failed with a short reason such as `pre-backup hook failed: exit 3` or `timed out`. At the time limit the command and everything it started (its process group, when the image has `setsid`) is killed inside the container, and the after command runs only once the control plane has seen it end. If it has not ended within `APP_BACKUP_HOOK_KILL_GRACE_SECONDS` (default 5, at least 2) more, the reason says it may still be running and the after command still runs.
+- Command after backup: always runs, even if the backup or the pre-command failed or timed out, so an app is never left with saving switched off.
 - Pause the app: freezes the container while the archive streams. It resumes when the upload ends.
 
-Each hook is cut off after `APP_BACKUP_HOOK_TIMEOUT_SECONDS` (default 60), never longer than `APP_BACKUP_HOOK_MAX_SECONDS` (default 600). At most `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` (default 65536) of a hook's output is read and the output is never stored. Hook errors never include the command or its output, because hooks often carry credentials. No hooks and no schedule are enabled by default.
+Each hook is cut off after the `backup.hook_timeout_seconds` runtime setting (default 60, seeded by `APP_BACKUP_HOOK_TIMEOUT_SECONDS`), never longer than `APP_BACKUP_HOOK_MAX_SECONDS` (default 600). At most `backup.hook_max_output_bytes` (default 4096, seeded by `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES`) of a failing hook's output is kept, after masking the command text and known secret shapes; the rest is discarded. The output is never written to logs or to the backup's error, and the volume backup list returns it as `hook_output` only to callers who may change that app's hooks, because masking cannot catch a secret the command expands at run time. Both settings apply to the next hook without a restart. Hook errors never include the command, because hooks often carry credentials. No hooks and no schedule are enabled by default.
+
+Setting or clearing a hook needs the `write:sensitive` ability on that app, because a hook is code that runs inside your container. Team roles, protected environments and IAM policies apply as they do for the change itself; callers who cannot change the hooks see `hooks_hidden: true` instead of the commands.
+
+Only one backup of a volume runs at a time, so one run's after command cannot resume an app another run has just frozen. A second manual backup gets `409` with `another backup of this volume is running`, and a scheduled one that overlaps is recorded as failed with the same reason. Each change writes an audit row that says which hook was set or cleared, never the command itself.
 
 `policy set` merges: a flag you leave out keeps the stored value, so setting only `--pre-hook` does not touch the post-hook or the retention counts. Remove a hook on purpose with `--clear-pre-hook` or `--clear-post-hook` (or pass an empty string, as in `--post-hook ''`), and stop pausing with `--no-pause`. If the pre-hook turns saving off, as `save-off` does, always set the matching post-hook in the same change, and check the result with `policy get`.
 
@@ -146,10 +150,13 @@ Buckets count periods that actually have a backup, so a week with no backups doe
 | --- | --- | --- |
 | `APP_BACKUP_MAX_SIZE_MB` | unset | A volume archive larger than this fails the backup and is not retried. |
 | `APP_BACKUP_TIMEOUT_MINUTES` | unset | One backup, archive plus upload, is cancelled after this long. |
-| `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | `60` | Per-hook time limit, clamped by `APP_BACKUP_HOOK_MAX_SECONDS` (`600`). |
-| `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | `65536` | Hook output read before the rest is discarded. |
+| `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | `60` | Seeds `backup.hook_timeout_seconds`, the per-hook time limit, clamped by `APP_BACKUP_HOOK_MAX_SECONDS` (`600`). |
+| `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | `4096` | Seeds `backup.hook_max_output_bytes`, the failing hook output kept after masking. |
+| `APP_BACKUP_HOOK_KILL_GRACE_SECONDS` | `5` | Extra wait after a hook's limit for the in-container kill to end it, at least 2. |
 | `APP_BACKUP_UPLOAD_ATTEMPTS` | `1` | How many times a failed upload is retried from a fresh archive. |
-| `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Scheduled drill period per resource. `0` disables. |
+| `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Seeds the `backups.drill_interval_hours` runtime setting. `0` disables. |
+| `APP_BACKUP_DRILL_RETENTION_DAYS` | `90` | Seeds `backups.drill_retention_days`: days of drill results kept, newest per resource always kept. `0` keeps all. |
+| `APP_BACKUP_DRILL_TIMEOUT` | `1h` | Seeds `backups.drill_timeout`: cancels a scheduled drill that runs too long. |
 | `APP_BACKUP_DRILL_MEMORY_MB` | `1024` | Memory cap for a scratch database container. It also runs with no network. |
 | `APP_BACKUP_DRILL_CPU_MILLI` | `1000` | CPU cap for a scratch container, in thousandths of a core. |
 
@@ -191,7 +198,7 @@ These ran against real Docker volumes and a real S3 compatible server (SeaweedFS
 | Flip one byte of the stored object | Drill fails at restore, scratch volume removed |
 | Truncate the stored object | Drill fails at the object check |
 | Restore a truncated object over a live volume | Refused, the live volume is untouched |
-| Pre-backup hook, post-backup hook and pause | Hooks ran inside the container, container not left paused, a failing pre-hook still yields a backup flagged inconsistent, and the post-hook always runs |
+| Pre-backup hook, post-backup hook and pause | Hooks ran inside the container, container not left paused, a failing pre-hook aborts the backup, and the post-hook always runs |
 | Postgres dump drilled into a scratch Postgres | Restores, two tables counted; a modified dump fails |
 
 Limits: drills for engines other than Postgres, MySQL and MariaDB check the object, not a replay. Object lock and versioning detection depends on the provider answering those API calls; a provider that does not shows as Open.

@@ -221,15 +221,33 @@ Where it stands:
 - Apps, nodes, deployments, the audit log and the search palette were already paged or debounced server side, and the long lists are virtualized. The palette row above is within run to run noise, not a regression.
 - Update: the dashboard and apps page now use `GET /api/v1/apps-summary` (status, environment and attention counts) and a server paged `GET /api/v1/apps` (`limit`, `offset`, `q`, `status`, repeated `environment`, `tag` with `tag_match=any`, `X-Total-Count`); the nodes page is paged and carries `resource_count` per node; brand logos load one chunk per mark. Numbers below were not re-measured after this change.
 - Compression: GET JSON under `/api/` is gzipped when the client accepts it (`APP_API_COMPRESSION=off` disables). SSE, NDJSON and text streams, responses that set a cookie, `Cache-Control: no-store` responses (the secret-bearing ones) and `/api/v1/auth/` are never compressed, which avoids BREACH on secrets.
-- Conditional GET: read JSON under `/api/` carries a strong `ETag` and answers a matching `If-None-Match` with `304` and no body, so a dashboard poll that finds nothing changed costs a hash and a header. The `api.conditional_get` runtime setting (default on, seeded by `APP_API_CONDITIONAL_GET`) switches it live. Responses over `APP_API_CONDITIONAL_GET_MAX_BYTES` (4 MiB) skip it. `Cache-Control: no-store` responses (the secret-bearing ones), cookie setters, `/api/v1/auth/` and audited sensitive reads never get an ETag.
+- Conditional GET: read JSON under `/api/` carries a strong `ETag` and answers a matching `If-None-Match` with `304` and no body, so a dashboard poll that finds nothing changed costs a hash and a header. The `api.conditional_get` runtime setting (default on, seeded by `APP_API_CONDITIONAL_GET`) switches it live. Responses over the `api.conditional_get_max_bytes` runtime setting (default 4 MiB, seeded by `APP_API_CONDITIONAL_GET_MAX_BYTES`) skip it. `Cache-Control: no-store` responses (the secret-bearing ones), cookie setters, `/api/v1/auth/` and audited sensitive reads never get an ETag.
 - Previously not fixed: the dashboard and apps list still fetch the whole apps list (about 314 kB at 1000 apps) because status tiles and filters count client side. A server side summary endpoint is the next step. The thesvg brand logo chunks (about 250 kB each) still load on home, databases and nodes. `npm run check-bundle-size` already fails on the diagram `elk` chunk (1463 kB against a 720 kB budget) before this change.
 - Apps seeded here have no running containers, so this measures list rendering and fetching, not live metrics streaming.
+
+## Shell first paint
+
+Status: unmeasured (from code reading). No built binary or browser capture was run for this count.
+
+Signed in, the shell (`web/src/routes/__root.tsx` and the components it mounts) fires about 40 distinct GETs plus the `GET /api/v1/events/changes` stream before or during first paint. React Query sends each shared key once. Two (`/brand`, `/demo`) come from the root loader and also run on `/login`; the rest mount with the signed in layout (sidebar, header, banners, inbox and nav counts).
+
+`GET /api/v1/shell` returns, in one round trip, the bodies of 11 of them, chosen because they are small, keyed without a scope and read on every page: `/brand`, `/demo`, `/dev-mode`, `/auth/session`, `/auth/preferences`, `/me/preferences/appearance`, `/local-mode`, `/system/status`, `/auth/sign-in-requests`, `/projects` and `/teams`. The dashboard requests it at boot when a session is recorded, seeds each body under that endpoint's own query key, and the root loader waits for it, so those keys skip their first request. Each endpoint stays in place for later refetch and polling.
+
+- Each section is replayed through the full router chain as a fresh request carrying only the caller's credentials, so ability checks, the team gate and per team filtering are exactly the endpoint's own. A section the caller cannot read is left out; the response still answers 200.
+- The response is `Cache-Control: private, no-cache` with `Vary: Cookie, Authorization`, and its ETag comes from the shared conditional GET layer, so no shared cache can hand one user's body to another.
+- Not folded in (scoped keys, polled every few seconds or heavier): apps and failing apps, deploys, attention feed, inbox, deploy approvals, domains and maintenance, certificates, doctor, docker health, device requests, updates and self upgrade, users, nodes (root only), traffic, functions, setup guide and credentials.
 
 ## Database read pool
 
 The control plane keeps a pool of read-only SQLite connections beside the single writer. Size it with the runtime setting `store.read_connections` (1 to 32, default 4; `APP_DB_READ_CONNS` only seeds it). A saved change resizes the pool on the next WAL maintenance tick, with no restart. Setting `APP_DB_READ_CONNS=0` at boot sends reads to the writer and stays boot-only.
 
 SQLite connection tuning is also a runtime setting, applied to the writer and read connections on the same tick: `store.cache_size_mb` (0 to 4096, `APP_DB_CACHE_SIZE_MB`), `store.mmap_size_mb` (0 to 16384, `APP_DB_MMAP_SIZE_MB`), `store.temp_store` (`default`, `file`, `memory`, `APP_DB_TEMP_STORE`) and `store.synchronous` (`default`, `normal`, `full`, `APP_DB_SYNCHRONOUS`). The default value of each keeps the SQLite built-in. Env only seeds the defaults.
+
+## Statement timing
+
+Turn on the runtime setting `perf.statement_timing` (default off, `APP_PERF_STATEMENT_TIMING` only seeds it) to time every statement the control plane runs against its own SQLite database. It applies on the next request, with no restart. While on, API responses to callers holding the root ability carry a `Server-Timing` header with the total statement time and count for that request (`db;dur=1.42, queries;desc="6"`); other callers, anonymous requests and non API paths never get it. A statement at or above `perf.slow_statement_ms` (default 100) is logged with its prepared text only, never bound values, and kept in a ring of `perf.slow_statement_ring` (default 20) distinct statements, shown by `levelrail-cli system slow-statements`, `GET /api/v1/system/slow-statements` and the statement timing card on the control plane health page.
+
+Overhead, measured with `go test -bench StatementTiming ./internal/store` on a point SELECT: with the setting off the wrapper adds no allocations and no measurable time over the plain driver; with it on the cost is a clock read and two atomic adds per statement, about 0.2 microseconds.
 
 ## Goroutine attribution
 
@@ -245,3 +263,9 @@ layer progress of its own.
 ## Reconcile cost
 
 `GET /api/v1/system/control-plane-health` and `levelrail-cli system health` list the five controllers with the most total time since start (runs, errors, total and max milliseconds), so a slow controller shows up without a profiler. The interval between full resync passes is the `reconcile.resync_seconds` runtime setting (default 30, from 5 to 3600, seeded by `APP_RECONCILE_RESYNC_SECONDS`); the engine re-reads it on each resync tick.
+
+## Build cache per app quota
+
+`build.cache_app_quota_gb` caps the builder cache mounts of one app (0, the default, turns it off). After each build of an app over its quota, from the API or a push webhook, its least recently used cache mounts are removed until it fits, at most `build.cache_reclaim_max_records` records per run and within `build.cache_reclaim_timeout` (default 2m). Only that app's own cache mounts are touched, never another app's cache, images or volumes. Cache held by a running build, or used while the reclaim scans, is skipped and reported. No reclaim starts while a build of that app runs or waits in the queue, and only one disk usage scan runs at a time.
+
+The build center shows the quota and the recent reclaims of the apps you can read; `levelrail-cli builds cache quota` shows the same and changes the quota (root or admin). `--reclaim APP` trims one app now. Every reclaim that removed something writes an audit row with the app name and bytes freed, also when it stopped early.

@@ -674,6 +674,32 @@ func (c *Client) DetachAppTag(ctx context.Context, name, tagID string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/tags/"+PathEscape(tagID), nil, nil)
 }
 
+// ListDatabasesByTag calls GET /api/v1/tags/{id}/databases.
+func (c *Client) ListDatabasesByTag(ctx context.Context, id string) ([]TagAppResource, error) {
+	var out []TagAppResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/tags/"+PathEscape(id)+"/databases", nil, &out)
+	return out, err
+}
+
+// ListDatabaseTags calls GET /api/v1/databases/{name}/tags.
+func (c *Client) ListDatabaseTags(ctx context.Context, name string) ([]TagResource, error) {
+	var out []TagResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/tags", nil, &out)
+	return out, err
+}
+
+// AttachDatabaseTag calls POST /api/v1/databases/{name}/tags, creating the tag on first use.
+func (c *Client) AttachDatabaseTag(ctx context.Context, name, tagName string) (TagResource, error) {
+	var out TagResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/tags", AttachAppTagRequest{Name: tagName}, &out)
+	return out, err
+}
+
+// DetachDatabaseTag calls DELETE /api/v1/databases/{name}/tags/{id}.
+func (c *Client) DetachDatabaseTag(ctx context.Context, name, tagID string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/tags/"+PathEscape(tagID), nil, nil)
+}
+
 // SetAppPreviewEnvOverride calls PUT /api/v1/apps/{name}/preview-env/{key}:
 // declares (or replaces) one env var's preview-specific value on an app
 // that already exists, applied only the next time a preview environment
@@ -1085,8 +1111,15 @@ func (c *Client) SetDatabaseResources(ctx context.Context, name string, resource
 // SetDatabaseVersion calls PUT /api/v1/databases/{name}/version: a minor or
 // patch image change over the same data volume.
 func (c *Client) SetDatabaseVersion(ctx context.Context, name, version string) (DatabaseResource, error) {
+	return c.SetDatabaseVersionWith(ctx, name, version, false)
+}
+
+// SetDatabaseVersionWith is SetDatabaseVersion with drop_incompatible_params,
+// which removes running engine parameters the new version refuses.
+func (c *Client) SetDatabaseVersionWith(ctx context.Context, name, version string, dropIncompatibleParams bool) (DatabaseResource, error) {
 	var out DatabaseResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/version", map[string]string{"version": version}, &out)
+	body := map[string]any{"version": version, "drop_incompatible_params": dropIncompatibleParams}
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/version", body, &out)
 	return out, err
 }
 
@@ -4319,6 +4352,39 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
 	}
 	return data, nil
+}
+
+// DownloadBackupTo streams one backup object into w without holding it in
+// memory, so dumps past httpx.MaxDownload still work. It returns bytes written.
+func (c *Client) DownloadBackupTo(ctx context.Context, name, historyID string, w io.Writer) (int64, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/backups/" + PathEscape(historyID) + "/download"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target
+	if err != nil {
+		return 0, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+	start := time.Now()
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
+		return 0, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		data, _ := httpx.ReadAll(resp.Body, httpx.MaxDownload)
+		return 0, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+	}
+	n, err := io.Copy(w, resp.Body)
+	if err != nil {
+		return n, fmt.Errorf("stream response body: %w", err)
+	}
+	return n, nil
 }
 
 // DownloadBackup calls GET /api/v1/databases/{name}/backups/{historyId}/download:

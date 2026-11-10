@@ -123,6 +123,10 @@ System endpoints for:
 | GET | /api/v1/system/storage/inventory | AbilityRead | handleStorageInventory |
 | GET | /api/v1/system/disk/history | AbilityRead | handleDiskHistory |
 | POST | /api/v1/updates/auto/notice/dismiss | AbilityRoot | handleDismissUpgradeNotice |
+| GET | /api/v1/system/db-space | AbilityRead | handleGetDBSpace |
+| POST | /api/v1/system/db-space/compact | AbilityRoot | handleCompactDB |
+| GET | /api/v1/system/processes | AbilityRoot | handleGetSystemProcesses |
+| GET | /api/v1/system/slow-statements | AbilityRoot | handleGetSlowStatements |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -751,6 +755,30 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/scheduled-tasks/{id}/disable | AbilityWrite | handleSetScheduledTaskEnabled |
 | GET | /api/v1/apps/{name}/scheduled-tasks/{id}/runs | AbilityRead | handleListScheduledTaskRuns |
 | GET | /api/v1/apps/{name}/scheduled-tasks/{id}/runs/{run} | AbilityRead | handleGetScheduledTaskRun |
+| GET | /api/v1/apps/{name}/image-retention | AbilityRead | handleGetImageRetention |
+| PUT | /api/v1/apps/{name}/image-retention | AbilityRoot | handleSetImageRetention |
+| POST | /api/v1/apps/{name}/image-retention/preview | AbilityRoot | handlePreviewImageRetention |
+| GET | /api/v1/apps/{name}/scrape-target | AbilityRead | handleGetScrapeTarget |
+| PUT | /api/v1/apps/{name}/scrape-target | AbilityWrite | handlePutScrapeTarget |
+| DELETE | /api/v1/apps/{name}/scrape-target | AbilityWrite | handleDeleteScrapeTarget |
+| GET | /api/v1/apps/{name}/scraped-metrics | AbilityRead | handleScrapedMetrics |
+| GET | /api/v1/apps/{name}/expiry | AbilityRead | handleGetAppExpiry |
+| PUT | /api/v1/apps/{name}/expiry | AbilityWrite | handleSetAppExpiry |
+| DELETE | /api/v1/apps/{name}/expiry | AbilityDeploy | handleClearAppExpiry |
+| POST | /api/v1/apps/{name}/build-cache/reclaim | AbilityDeploy | handleReclaimAppBuildCache |
+| POST | /api/v1/apps/import-bundle | AbilityWrite | handleImportAppBundle |
+| GET | /api/v1/apps/{name}/build-settings | AbilityRead | handleGetAppBuildSettings |
+| PUT | /api/v1/apps/{name}/build-settings | AbilityWrite | handleSetAppBuildSettings |
+| GET | /api/v1/apps/{name}/access/search | AbilityRead | handleAppAccessSearch |
+| GET | /api/v1/apps/{name}/compose-source | AbilityRead | handleGetComposeSource |
+| PUT | /api/v1/apps/{name}/compose-source | AbilityWriteSensitive | handleSetComposeSource |
+| POST | /api/v1/apps/{name}/compose-source/deploy | AbilityDeploy | handleDeployComposeSource |
+| GET | /api/v1/apps/{name}/restart-schedule | AbilityRead | handleGetAppRestartSchedule |
+| PUT | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleSetAppRestartSchedule |
+| DELETE | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleClearAppRestartSchedule |
+| PATCH | /api/v1/apps/{name}/build-hooks/{id} | AbilityWriteSensitive | handleUpdateBuildHook |
+| GET | /api/v1/apps/{name}/notes | AbilityRead |  |
+| PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
 </Accordion>
 
@@ -956,6 +984,16 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/branches | AbilityWriteSensitive | handleBranchDatabase |
 | GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
 | POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
+| POST | /api/v1/databases/bulk | AbilityWriteSensitive | handleBulkDatabases |
+| GET | /api/v1/databases/{name}/tags | AbilityRead | handleListDatabaseTags |
+| POST | /api/v1/databases/{name}/tags | AbilityWrite | handleAttachDatabaseTag |
+| DELETE | /api/v1/databases/{name}/tags/{id} | AbilityWrite | handleDetachDatabaseTag |
+| GET | /api/v1/databases/{name}/params | AbilityRead | handleGetDatabaseParams |
+| PUT | /api/v1/databases/{name}/params | AbilityWrite | handleStageDatabaseParams |
+| DELETE | /api/v1/databases/{name}/params/pending | AbilityWrite | handleDiscardDatabaseParams |
+| POST | /api/v1/databases/{name}/params/apply | AbilityWriteSensitive | handleApplyDatabaseParams |
+| GET | /api/v1/databases/{name}/notes | AbilityRead |  |
+| PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
 ## Projects / Organizations / Environments
 
@@ -1088,6 +1126,9 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/patch/preview | AbilityRoot | handleNodePatchPreview |
 | POST | /api/v1/nodes/{id}/patch/apply | AbilityRoot | handleNodePatchApply |
 | GET | /api/v1/nodes/{id}/patch/runs | AbilityRoot | handleListNodePatchRuns |
+| GET | /api/v1/nodes/{id}/resources | AbilityRead | handleListNodeResources |
+| GET | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleGetNodeThresholds |
+| PUT | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleSetNodeThresholds |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1229,6 +1270,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/limits | AbilityRead | handleGetDomainLimits |
 | PUT | /api/v1/apps/{name}/domains/{domain}/limits | AbilityDeploy | handleSetDomainLimits |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/limits | AbilityDeploy | handleClearDomainLimits |
+| GET | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityRead | handleGetDomainTuning |
+| PUT | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleSetDomainTuning |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleClearDomainTuning |
 
 </Accordion>
 
@@ -1419,6 +1463,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/import | AbilityWriteSensitive | handleImportVolume |
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause | AbilityWriteSensitive | handlePauseVolumeBackupSchedule |
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume | AbilityWriteSensitive | handleResumeVolumeBackupSchedule |
+| GET | /api/v1/apps/{name}/volumes/{volume}/size-history | AbilityRead | handleVolumeSizeHistory |
 
 ## App Storage / Database Attach
 
@@ -2281,9 +2326,23 @@ Routes that do not fit an existing group.
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
-| POST | /api/v1/templates/custom | AbilityWrite | handleImportCustomTemplate |
+| POST | /api/v1/templates/custom | AbilityWriteSensitive | handleImportCustomTemplate |
 | POST | /api/v1/jobs/runs | AbilityRoot | handleStartOneShotJob |
 | GET | /api/v1/jobs/runs/{id} | AbilityRead | handleGetOneShotJob |
+| POST | /api/v1/jobs/runs/{id}/cancel | AbilityRoot | handleCancelOneShotJob |
+| GET | /api/v1/saved-views | AbilityRead | handleListSavedViews |
+| POST | /api/v1/saved-views | AbilityWrite | handleSaveView |
+| DELETE | /api/v1/saved-views/{id} | AbilityWrite | handleDeleteSavedView |
+| GET | /api/v1/events/changes | AbilityRead | handleChangesStream |
+| GET | /api/v1/tags/{id}/databases | AbilityRead | handleListDatabasesByTag |
+| GET | /api/v1/shell | AbilityRead | handleShellOverview |
+| GET | /api/v1/builds/cache/quota | AbilityRead | handleBuildCacheQuota |
+| GET | /api/v1/logs/access | AbilityRead | handleAccessSearch |
+| POST | /api/v1/imports/platform/undo | AbilityWrite | handleUndo |
+| GET | /api/v1/incidents/{id}/postmortem | AbilityReadSensitive | handleGetIncidentPostmortem |
+| POST | /api/v1/incidents/{id}/postmortem/draft | AbilityWrite | handleDraftIncidentPostmortem |
+| PUT | /api/v1/incidents/{id}/postmortem | AbilityWrite | handleSaveIncidentPostmortem |
+| POST | /api/v1/incidents/{id}/postmortem/publish | AbilityWrite | handlePublishIncidentPostmortem |
 | POST | /mcp | Public |  |
 
 ## See also

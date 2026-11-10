@@ -165,6 +165,8 @@ type Tunables struct {
 	Timeout          time.Duration
 	CacheTTL         time.Duration
 	MaxResponseBytes int64
+	// MaxRPS caps provider requests per second for one connection; 0 means no cap.
+	MaxRPS int
 }
 
 // maxIdentityLifeSeconds bounds a provider supplied expiresIn so it cannot overflow or pin a token.
@@ -185,6 +187,7 @@ type Resolver struct {
 	idents  map[string]identEntry
 	// defaultBase overrides the public API hosts, for tests only.
 	defaultBase map[string]string
+	limiter     rateLimiter
 }
 
 // shared backs Default: app controllers are rebuilt each pass, so the cache must outlive them.
@@ -277,6 +280,9 @@ func (r *Resolver) call(ctx context.Context, cfg Config, method, token, path str
 	base, selfHosted, err := r.endpoint(cfg)
 	if err != nil {
 		return err
+	}
+	if !r.limiter.allow(cfg.Type+"/"+cfg.Name, t.MaxRPS, r.now()) {
+		return fmt.Errorf("%s: %w", cfg.Type, ErrRateLimited)
 	}
 	ctx, cancel := context.WithTimeout(ctx, t.Timeout)
 	defer cancel()

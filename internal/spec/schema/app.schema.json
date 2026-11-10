@@ -138,6 +138,14 @@
         "loadbalancer": { "description": "Load balancing, health and timeout settings across replicas.", "$ref": "#/$defs/loadbalancer" },
         "budget": { "description": "Egress and cost limits with an action when crossed.", "$ref": "#/$defs/budget" },
         "autoscale": { "description": "Autoscaling of replicas on a metric target.", "$ref": "#/$defs/autoscale" },
+        "images": {
+          "description": "Image retention for this service.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keep": { "description": "Newest successful deploy images to keep; 0 follows the global setting, otherwise 2 to 1000.", "type": "integer", "minimum": 0, "maximum": 1000 }
+          }
+        },
         "next": {
           "description": "Next.js options.",
           "type": "object",

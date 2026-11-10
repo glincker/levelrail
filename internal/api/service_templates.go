@@ -237,7 +237,7 @@ func (rt *Router) handleDeployServiceTemplateNow(w http.ResponseWriter, r *http.
 	// isTrial: true, the one-click path's whole point is an obviously-
 	// temporary instance the operator tears down from the app detail
 	// page's trial banner, not a deploy meant to stick around.
-	resp, ok := rt.deployComposeBody(w, r, name, []byte(tpl.Compose), composeDeployOpts{isTrial: true, source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID})
+	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(tpl.Compose), composeDeployOpts{isTrial: true, source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID})
 	if !ok {
 		return
 	}

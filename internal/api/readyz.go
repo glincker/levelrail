@@ -16,6 +16,11 @@ type ReadinessProbes struct {
 	EngineStarted func() bool
 }
 
+// WithPendingStages lets GET /readyz list deferred boot stages still running.
+func WithPendingStages(f func() []string) Option {
+	return func(rt *Router) { rt.pendingStages = f }
+}
+
 // WithReadinessProbes enables the database, migration and engine checks on GET /readyz.
 func WithReadinessProbes(p ReadinessProbes) Option {
 	return func(rt *Router) { rt.readiness = p }
@@ -31,6 +36,8 @@ type readyzCheck struct {
 type readyzResponse struct {
 	Ready  bool          `json:"ready"`
 	Checks []readyzCheck `json:"checks"`
+	// PendingStages is omitted unless boot.deferred_stages is on and some stage is still running.
+	PendingStages []string `json:"pending_stages,omitempty"`
 }
 
 // handleReadyz handles GET /readyz: unauthenticated, cheap readiness.
@@ -71,6 +78,10 @@ func (rt *Router) handleReadyz(w http.ResponseWriter, r *http.Request) {
 	}
 	if rt.dockerPinger != nil {
 		add("docker", false, rt.dockerPinger.Ping(ctx), "docker daemon unreachable")
+	}
+
+	if rt.pendingStages != nil {
+		resp.PendingStages = rt.pendingStages()
 	}
 
 	status := http.StatusOK

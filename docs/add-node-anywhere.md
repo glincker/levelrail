@@ -20,6 +20,11 @@ This feature is beta. It is tested with fake metadata servers and a real local D
 In the dashboard open **Nodes**, then **Add node**, then **I already have a server**. Leave **Where does it run?** on **Auto-detect** to let the node read its own provider, region and zone. Pick a provider and type a region and zone instead for a home server or a provider without a metadata service.
 
 </Step>
+<Step title="Check the control plane address">
+
+The agent dials the address in `APP_AGENT_ADVERTISE_HOST`, and its certificate only covers that host. Set it on the control plane to the public IP or hostname the new server can reach (an IP address when the mesh is on) before you add a remote server. Left at the loopback default it only works for a single-machine test, and `levelrail-cli doctor` warns with the exact setting to apply.
+
+</Step>
 <Step title="Run one command">
 
 The dialog shows a Docker command and an agent binary command. Both carry a single-use join token that expires after 15 minutes by default (`APP_NODE_JOIN_TOKEN_TTL` changes it, one minute to 24 hours). Give the node a name to follow it live.

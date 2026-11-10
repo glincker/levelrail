@@ -8,7 +8,9 @@ import (
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
@@ -21,12 +23,32 @@ type cloneSource struct {
 // NewCloneSource fetches branch of repoURL at depth 1 into memory. Nothing is
 // written to disk.
 func NewCloneSource(ctx context.Context, repoURL, branch, token string) (Source, error) {
-	opts := &git.CloneOptions{URL: repoURL, Depth: 1, SingleBranch: true, Tags: git.NoTags}
+	var auth transport.AuthMethod
+	if token != "" {
+		auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	}
+	return NewCloneSourceAuth(ctx, repoURL, branch, auth)
+}
+
+// NewSSHDeployKeyAuth builds clone auth from a PEM deploy key. Host keys are
+// checked against known_hosts by the transport, never skipped.
+func NewSSHDeployKeyAuth(user string, privateKeyPEM []byte) (transport.AuthMethod, error) {
+	if user == "" {
+		user = "git"
+	}
+	keys, err := gitssh.NewPublicKeys(user, privateKeyPEM, "")
+	if err != nil {
+		return nil, fmt.Errorf("repolayout: parse deploy key: %w", err)
+	}
+	return keys, nil
+}
+
+// NewCloneSourceAuth is NewCloneSource with a caller-built auth method, used
+// for ssh deploy keys. A nil auth clones anonymously.
+func NewCloneSourceAuth(ctx context.Context, repoURL, branch string, auth transport.AuthMethod) (Source, error) {
+	opts := &git.CloneOptions{URL: repoURL, Depth: 1, SingleBranch: true, Tags: git.NoTags, Auth: auth}
 	if branch != "" {
 		opts.ReferenceName = plumbing.NewBranchReferenceName(branch)
-	}
-	if token != "" {
-		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
 	}
 	repo, err := git.CloneContext(ctx, memory.NewStorage(), nil, opts)
 	if err != nil {

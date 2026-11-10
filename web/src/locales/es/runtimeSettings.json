@@ -222,6 +222,10 @@
       "title": "Raíz de copias de seguridad locales",
       "description": "Directorio absoluto del plano de control que limita los destinos de copia local. Si está vacío se usa backups/ dentro del directorio de datos. La siguiente copia o restauración usa el valor nuevo; las rutas de destino son relativas a esta raíz y no pueden salir de ella."
     },
+    "outboundTimeout": {
+      "title": "Tiempo límite de solicitudes salientes",
+      "description": "Cuánto puede tardar una solicitud HTTP saliente del plano de control (metadatos de la nube, sondeos de modelos, comprobaciones de actualización) antes de cancelarse. La siguiente solicitud usa el valor cambiado."
+    },
     "bootRechecks": {
       "title": "Retrasos de reverificación al arrancar",
       "description": "Desfases tras el arranque, separados por dos puntos (por ejemplo 3s:10s), en los que el plano de control ejecuta pasadas extra de reconciliación para corregir las rutas cuando Docker publica los puertos tarde tras reiniciar el host. Cada desfase es de al menos 1s. Se lee al arrancar."
@@ -229,6 +233,10 @@
     "bootEventRecheck": {
       "title": "Reverificación tras el primer evento al arrancar",
       "description": "Tiempo tras el primer evento de Docker en el que el plano de control ejecuta una pasada de reconciliación más, de 1s a 1h. Se lee al arrancar."
+    },
+    "bootDeferredStages": {
+      "title": "Aplazar etapas de arranque no críticas",
+      "description": "Inicia el latido, el DNS dinámico, los monitores y el historial de disco después de que el listener HTTP esté activo, para que el panel responda antes. GET /readyz lista las etapas pendientes. Se lee al arrancar."
     },
     "metricsScrapeEnabled": {
       "title": "Endpoint de scraping de Prometheus",

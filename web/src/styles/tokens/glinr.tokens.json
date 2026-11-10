@@ -624,8 +624,8 @@
       }
     },
     "dialog-w-form": {
-      "$value": "30rem",
-      "$description": "Form dialog width, 480px.",
+      "$value": "32.5rem",
+      "$description": "Form dialog width, 520px.",
       "$extensions": {
         "glinr": {
           "name": "dialog-w-form",
@@ -634,8 +634,8 @@
       }
     },
     "dialog-w-rich": {
-      "$value": "35rem",
-      "$description": "Rich dialog width, 560px.",
+      "$value": "45rem",
+      "$description": "Rich dialog width, 720px.",
       "$extensions": {
         "glinr": {
           "name": "dialog-w-rich",
@@ -878,6 +878,36 @@
       "$extensions": {
         "glinr": {
           "name": "radius-card",
+          "stability": "experimental"
+        }
+      }
+    },
+    "inner": {
+      "$value": "0.5rem",
+      "$description": "Semantic inner radius for rows and chips nested in a container (outer minus padding).",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-inner",
+          "stability": "experimental"
+        }
+      }
+    },
+    "element": {
+      "$value": "0.75rem",
+      "$description": "Semantic radius of buttons, inputs, selects and textareas.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-element",
+          "stability": "experimental"
+        }
+      }
+    },
+    "container": {
+      "$value": "1rem",
+      "$description": "Semantic radius of cards, dialogs, sheets and popovers.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-container",
           "stability": "experimental"
         }
       }

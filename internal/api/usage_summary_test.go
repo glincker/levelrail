@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 func TestHandleUsageSummary(t *testing.T) {
@@ -65,5 +67,65 @@ func TestHandleUsageSummary(t *testing.T) {
 	}
 	if got.Backups.TotalBytes != 2048 || got.Backups.Count != 1 {
 		t.Errorf("backups = %+v", got.Backups)
+	}
+}
+
+type countingUsageBackups struct {
+	BackupHistoryStore
+	calls atomic.Int32
+}
+
+func (c *countingUsageBackups) SumBackupUsage(context.Context) ([]store.BackupUsage, error) {
+	c.calls.Add(1)
+	return []store.BackupUsage{
+		{ResourceKind: store.BackupResourceKindDatabase, DatabaseName: "open", Count: 1, Bytes: 10},
+		{ResourceKind: store.BackupResourceKindDatabase, DatabaseName: "hidden", Count: 2, Bytes: 20},
+	}, nil
+}
+
+type countingUsageTelemetry struct {
+	TelemetryQuerier
+	calls atomic.Int32
+}
+
+func (c *countingUsageTelemetry) LatestByMetric(context.Context, string) ([]telemetry.Sample, error) {
+	c.calls.Add(1)
+	return []telemetry.Sample{
+		{ResourceID: resourcePrefixDatabase + "open", Value: 1},
+		{ResourceID: resourcePrefixDatabase + "hidden", Value: 2},
+	}, nil
+}
+
+func TestUsageSummaryCacheSharedAcrossVisibility(t *testing.T) {
+	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t))
+	backups := &countingUsageBackups{}
+	tel := &countingUsageTelemetry{}
+	rt.backupHistory, rt.telemetry = backups, tel
+	ctx := context.Background()
+	all := func(string) bool { return true }
+	onlyOpen := func(name string) bool { return name == "open" }
+	dbs := []store.DesiredDatabase{{Name: "open"}, {Name: "hidden"}}
+
+	var full, narrow backupUsageResource
+	if err := rt.fillBackupUsage(ctx, &full, all, all); err != nil {
+		t.Fatalf("full backups: %v", err)
+	}
+	if err := rt.fillBackupUsage(ctx, &narrow, onlyOpen, onlyOpen); err != nil {
+		t.Fatalf("narrow backups: %v", err)
+	}
+	if full.TotalBytes != 30 || narrow.TotalBytes != 10 {
+		t.Fatalf("bytes full=%d narrow=%d", full.TotalBytes, narrow.TotalBytes)
+	}
+	if got := backups.calls.Load(); got != 1 {
+		t.Fatalf("backup rows read %d times, want 1", got)
+	}
+
+	fullDBs := rt.databaseUsage(ctx, dbs, all)
+	narrowDBs := rt.databaseUsage(ctx, dbs, onlyOpen)
+	if len(fullDBs) != 2 || len(narrowDBs) != 1 || narrowDBs[0].Name != "open" {
+		t.Fatalf("databases full=%+v narrow=%+v", fullDBs, narrowDBs)
+	}
+	if got, want := int(tel.calls.Load()), len(resourceUsageMetrics); got != want {
+		t.Fatalf("samples read %d times, want %d", got, want)
 	}
 }

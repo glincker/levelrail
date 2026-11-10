@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
@@ -48,6 +49,11 @@ func (s *bootState) startTelemetry() {
 	notifyClient := s.notifyClient
 	telemetryDB := s.telemetryDB
 	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
+	presence := telemetry.NewPresence(metricsPresenceWindow)
+	collector.SetPresence(presence, metricsIdleInterval)
+	if s.apiRouter != nil {
+		s.apiRouter.SetPresence(presence)
+	}
 	go func() {
 		targets := telemetryTargets(db, client, agentRegistry, meshCfg, logger)
 		if err := collector.Run(ctx, withModelTelemetryTargets(targets, db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
@@ -144,6 +150,7 @@ func (s *bootState) startAlerting() {
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
+	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
 	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
@@ -158,7 +165,15 @@ func (s *bootState) startAlerting() {
 		l := apiRouter.RuntimeSettings().LogRuleLimits(context.Background())
 		return alerting.LogRulePolicy{EvalEvery: l.EvalEvery, MaxWindow: l.MaxWindow, MaxRows: l.MaxRows, Samples: l.Samples}
 	})
+	alertingEngine.SetNodeThresholds(func() alerting.NodeThresholdPolicy {
+		c, rs := context.Background(), apiRouter.RuntimeSettings()
+		return alerting.NodeThresholdPolicy{
+			CPUPercent: float64(rs.Int(c, runtimesettings.KeyNodeCPUThresholdPercent)), MemoryPercent: float64(rs.Int(c, runtimesettings.KeyNodeMemoryThresholdPercent)),
+			DiskPercent: float64(rs.Int(c, runtimesettings.KeyNodeDiskThresholdPercent)), SustainedIntervals: rs.Int(c, runtimesettings.KeyNodeThresholdSustained),
+		}
+	}, db)
 	alertingEngine.SetDomainTraffic(apiRouter)
+	wireVolumeUsage(ctx, alertingEngine, client, db, telemetryDB, logger)
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetCleanup(apiRouter)
 	alertingEngine.SetDatabaseHealth(apiRouter)
@@ -173,6 +188,15 @@ func (s *bootState) startAlerting() {
 	}()
 	go runUsageRollup(ctx, apiRouter)
 	rs := apiRouter.RuntimeSettings()
+	if rs != nil {
+		db.SetTouchFlushInterval(rs.Duration(ctx, runtimesettings.KeyStoreTouchFlush))
+	}
+	go runLiveSettings(ctx, rs, logger)
+	go func() {
+		if err := api.RunSpoolSweeper(ctx, logger); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("upload spool sweep stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go footprint.RunTrim(ctx, logger, os.Getenv, &footprint.LiveSettings{
 		GCPercent:       func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintGCPercent) },
 		MemLimitPercent: func(c context.Context) int { return rs.Limit(c, runtimesettings.KeyFootprintMemLimitPercent) },
@@ -431,6 +455,11 @@ func (s *bootState) startSchedulers() {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
+	go func() {
+		if err := apiRouter.RunAppRestartScheduler(ctx, api.RestartScheduleTick()); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("restart scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
 
 	// Enforces the operator's audit retention window so audit_log does not grow forever.
 	go func() {
@@ -440,6 +469,13 @@ func (s *bootState) startSchedulers() {
 	}()
 
 	go func() { _ = apiRouter.RunVitalsWorker(ctx) }() // flushes buffered web vitals counters and prunes old rows
+
+	// Scrapes apps that configured their own metrics endpoint; idle when none did.
+	go func() {
+		if err := apiRouter.RunAppMetricsScraper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("app metrics scraper stopped", slog.String("error", err.Error()))
+		}
+	}()
 
 	// Follows new domains until DNS and the certificate are ready; the set is persisted so a restart resumes it.
 	go func() {
@@ -514,6 +550,10 @@ func (s *bootState) serve() error {
 		serveErrs <- nil
 	}()
 
+	if len(s.deferredQueue) > 0 {
+		go s.runDeferredStages(s.deferredQueue)
+	}
+
 	healthy := time.AfterFunc(s.bootPolicy.HealthyAfter, s.ledger.MarkHealthy)
 	defer healthy.Stop()
 
@@ -528,6 +568,7 @@ func (s *bootState) serve() error {
 	}()
 	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
 	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
+	engine.SetResyncSource(resyncFromSettings(rsCtx, rs))
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
@@ -586,4 +627,11 @@ func bootPassDelays(logger *slog.Logger, items []string) []time.Duration {
 		out = append(out, d)
 	}
 	return out
+}
+
+// resyncFromSettings reads the live resync interval each tick; zero keeps the boot default.
+func resyncFromSettings(ctx context.Context, rs *runtimesettings.Service) func() time.Duration {
+	return func() time.Duration {
+		return time.Duration(rs.Int(ctx, runtimesettings.KeyReconcileResyncSeconds)) * time.Second
+	}
 }

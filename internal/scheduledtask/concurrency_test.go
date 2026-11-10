@@ -117,7 +117,7 @@ func TestRunner_BeginRun_Replace_CancelsPreviousAndWaits(t *testing.T) {
 // that must be skipped and recorded as ScheduledTaskStatusSkippedConcurrency
 // rather than touching the container at all.
 func TestRunner_Run_ConcurrencyForbid_SkipsWhileInFlight(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	blocking := newBlockingReadCloser()
 	t.Cleanup(func() { _ = blocking.Close() })
@@ -171,7 +171,7 @@ func TestRunner_Run_ConcurrencyForbid_SkipsWhileInFlight(t *testing.T) {
 // ScheduledTaskStatusReplaced) before the newer invocation proceeds to
 // its own exec and success outcome.
 func TestRunner_Run_ConcurrencyReplace_CancelsInFlightRun(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	blocking := newBlockingReadCloser()
 	t.Cleanup(func() { _ = blocking.Close() })
@@ -230,7 +230,7 @@ func TestRunner_Run_ConcurrencyReplace_CancelsInFlightRun(t *testing.T) {
 // behavior, now exercised explicitly against the concurrency machinery
 // rather than only implicitly.
 func TestRunner_Run_ConcurrencyAllow_BothRunsRecordIndependently(t *testing.T) {
-	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1"}}
+	apps := &fakeAppStore{svc: store.DesiredService{Name: "web", Image: "levelrail/web:1", ExecEnabled: true}}
 	runs := &fakeRunStore{}
 	rt := &fakeRuntime{
 		inspectState: &docker.ContainerState{ID: "c1", Running: true},

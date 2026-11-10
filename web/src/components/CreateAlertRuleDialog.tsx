@@ -547,7 +547,9 @@ export function CreateAlertRuleDialog({
             <AlertKindGuidance kind="email_delivery_failing" />
           ) : kind === 'cleanup_failing' ? (
             <AlertKindGuidance kind="cleanup_failing" />
-          ) : kind === 'deploy_failed' || kind === 'monitor_down' ? (
+          ) : kind === 'deploy_failed' ||
+            kind === 'job_failing' ||
+            kind === 'monitor_down' ? (
             <AlertKindGuidance kind={kind} />
           ) : kind === 'budget_threshold' ? (
             <p className="text-sm text-muted-foreground">

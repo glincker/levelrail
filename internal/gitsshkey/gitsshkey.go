@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -99,6 +100,21 @@ func Host(repoURL string) (string, error) {
 // HostKeyCallback accepts only the pinned key(s). An empty pin is an error,
 // never a fallback to accepting anything.
 func HostKeyCallback(pinned string) (ssh.HostKeyCallback, error) {
+	keys, err := parsePinned(pinned)
+	if err != nil {
+		return nil, err
+	}
+	return func(hostname string, _ net.Addr, key ssh.PublicKey) error {
+		for _, k := range keys {
+			if k.Type() == key.Type() && string(k.Marshal()) == string(key.Marshal()) {
+				return nil
+			}
+		}
+		return fmt.Errorf("gitsshkey: host key mismatch for %s (got %s)", hostname, ssh.FingerprintSHA256(key))
+	}, nil
+}
+
+func parsePinned(pinned string) ([]ssh.PublicKey, error) {
 	var keys []ssh.PublicKey
 	for _, line := range strings.Split(pinned, "\n") {
 		line = strings.TrimSpace(line)
@@ -114,14 +130,38 @@ func HostKeyCallback(pinned string) (ssh.HostKeyCallback, error) {
 	if len(keys) == 0 {
 		return nil, errors.New("gitsshkey: no pinned host key")
 	}
-	return func(hostname string, _ net.Addr, key ssh.PublicKey) error {
-		for _, k := range keys {
-			if k.Type() == key.Type() && string(k.Marshal()) == string(key.Marshal()) {
-				return nil
+	return keys, nil
+}
+
+// HostKeyAlgorithms lists only the algorithms of the pinned key types, so a
+// server holding several host keys presents the pinned one in the handshake.
+func HostKeyAlgorithms(pinned string) ([]string, error) {
+	keys, err := parsePinned(pinned)
+	if err != nil {
+		return nil, err
+	}
+	var algos []string
+	for _, k := range keys {
+		for _, a := range algorithmsForKeyType(k.Type()) {
+			if !slices.Contains(algos, a) {
+				algos = append(algos, a)
 			}
 		}
-		return fmt.Errorf("gitsshkey: host key mismatch for %s (got %s)", hostname, ssh.FingerprintSHA256(key))
-	}, nil
+	}
+	return algos, nil
+}
+
+// algorithmsForKeyType maps a key type to its signature algorithms. RSA keys
+// sign with SHA-2 only; the SHA-1 ssh-rsa algorithm is never offered.
+func algorithmsForKeyType(keyType string) []string {
+	switch keyType {
+	case ssh.KeyAlgoRSA:
+		return []string{ssh.KeyAlgoRSASHA512, ssh.KeyAlgoRSASHA256}
+	case ssh.CertAlgoRSAv01:
+		return []string{ssh.CertAlgoRSASHA512v01, ssh.CertAlgoRSASHA256v01}
+	default:
+		return []string{keyType}
+	}
 }
 
 // AuthMethod builds the go-git auth for a clone: the deploy key held in
@@ -135,10 +175,17 @@ func AuthMethod(privatePEM []byte, pinnedHostKey string) (transport.AuthMethod, 
 	if err != nil {
 		return nil, err
 	}
+	algos, err := HostKeyAlgorithms(pinnedHostKey)
+	if err != nil {
+		return nil, err
+	}
 	return &gitssh.PublicKeys{
-		User:                  "git",
-		Signer:                signer,
-		HostKeyCallbackHelper: gitssh.HostKeyCallbackHelper{HostKeyCallback: cb},
+		User:   "git",
+		Signer: signer,
+		HostKeyCallbackHelper: gitssh.HostKeyCallbackHelper{
+			HostKeyCallback:   cb,
+			HostKeyAlgorithms: algos,
+		},
 	}, nil
 }
 

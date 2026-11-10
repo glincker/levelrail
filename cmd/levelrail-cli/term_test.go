@@ -35,3 +35,23 @@ func TestTermStyleNoColorEnvAndFlag(t *testing.T) {
 		t.Fatalf("NO_COLOR ignored: %q", got)
 	}
 }
+
+func TestExtractNoColorFlagAndCompletion(t *testing.T) {
+	rest, set := extractNoColorFlag([]string{"apps", "--no-color", "list", "--", "--no-color"})
+	if !set || strings.Join(rest, " ") != "apps list -- --no-color" {
+		t.Fatalf("rest=%v set=%v", rest, set)
+	}
+	var out, errb bytes.Buffer
+	t.Cleanup(func() { noColorFlag = false })
+	run("levelrail", []string{"--no-color", "--help"}, &out, &errb, func(string) (string, bool) { return "", false })
+	if !noColorFlag || strings.Contains(out.String()+errb.String(), "unknown") {
+		t.Fatalf("dispatch did not strip the flag: out=%q err=%q", out.String(), errb.String())
+	}
+	found := false
+	for _, f := range globalFlags {
+		found = found || f == "--no-color"
+	}
+	if !found {
+		t.Fatal("completion lacks --no-color")
+	}
+}

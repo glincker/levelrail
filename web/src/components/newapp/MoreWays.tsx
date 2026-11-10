@@ -34,8 +34,11 @@ const WAYS: { key: WayKey; icon: UiIcon }[] = [
  */
 export function MoreWays({
   onPlan,
+  embedded = false,
 }: {
   onPlan: (plan: ImportPlan, request: ImportPlanRequest) => void
+  /** Drop the card chrome when the parent already frames it. */
+  embedded?: boolean
 }) {
   const { t } = useTranslation('newApp')
   const navigate = useNavigate()
@@ -44,9 +47,14 @@ export function MoreWays({
   return (
     <section
       aria-labelledby="new-app-more"
-      className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-xs"
+      className={cn(
+        'space-y-3',
+        !embedded && 'rounded-xl border border-border bg-card p-3 shadow-xs',
+      )}
     >
-      <SectionHeading id="new-app-more">{t('more.title')}</SectionHeading>
+      <div className={embedded ? 'sr-only' : undefined}>
+        <SectionHeading id="new-app-more">{t('more.title')}</SectionHeading>
+      </div>
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {WAYS.map(({ key, icon: WayIcon }) => (
           <li

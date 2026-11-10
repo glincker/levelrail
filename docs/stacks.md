@@ -114,6 +114,7 @@ The directory holds `stack.yaml`, `project.yaml`, `databases.yaml`, `apps.yaml`,
 - **Databases**: they are created empty and the data is copied separately. A connection variable (such as `DATABASE_URL` or `REDIS_URL`) that matches exactly one emitted database of its engine is written as `{ from: { database: NAME, field: url } }`, so the platform injects the value and nothing is set by hand. A variable that matches none or several stays a secret name in `SECRETS.md`.
 - **Scheduled jobs**: source cron entries become `service.jobs`. A cron command that looks like it carries a credential is left out and listed in `MIGRATION.md` instead.
 - **Not in the documents**: routes and redirects are listed in `MIGRATION.md`.
+- **Proxy flags**: when the source sets force-HTTPS, websocket support, a redirect target or basic auth, `MIGRATION.md` lists each as a domain policy line for the app. Basic auth shows the user name only; the source password hash is never read, so set a new password on the domain. Domain documents cannot carry these settings yet.
 - **Name clashes**: if Heroku and Vercel config both define `web`, both are emitted, the second as `web-vercel`.
 
 ## Ownership and prune

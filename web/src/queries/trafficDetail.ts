@@ -6,8 +6,9 @@ import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import type { TrafficDetail, TrafficWindow } from '../types/trafficDetail'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
-const LIVE_REFETCH_MS = 10_000
+const LIVE_REFETCH_MS = pollMs('active')
 
 export const trafficDetailKeys = {
   detail: (appName: string, window: TrafficWindow) =>

@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// Poll cadence while a run is in flight; settled state stops polling.
+const POLL_2000_MS = 2000
+
 export type RehydrateItemStatus =
   'planned' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'blocked'
 
@@ -98,7 +101,7 @@ export function useRehydrateReport() {
     },
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.state === 'running' ? 2000 : false,
+      query.state.data?.state === 'running' ? POLL_2000_MS : false,
   })
 }
 

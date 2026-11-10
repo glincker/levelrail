@@ -18,6 +18,13 @@ const GitSourceReliability = lazy(() =>
   })),
 )
 
+// Lazy: the submodule and LFS toggles are rarely changed, keep them out of the route chunk.
+const GitFetchExtrasToggle = lazy(() =>
+  import('./GitFetchExtrasToggle').then((m) => ({
+    default: m.GitFetchExtrasToggle,
+  })),
+)
+
 // Lazy: only SSH repo URLs need the deploy key section.
 const GitSshKeySection = lazy(() =>
   import('./GitSshKeySection').then((m) => ({ default: m.GitSshKeySection })),
@@ -79,6 +86,10 @@ export function GitSourceConnectedView({
       </dl>
 
       <GitBuildSettings appName={app.name} source={source} />
+
+      <Suspense fallback={null}>
+        <GitFetchExtrasToggle appName={app.name} source={source} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <GitSourceReliability appName={app.name} source={source} />

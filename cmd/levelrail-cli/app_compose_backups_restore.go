@@ -24,6 +24,8 @@ func appsBackupsUsage(prog string) string {
   %[1]s apps backups services <app> [flags]
   %[1]s apps backups schedule set <app> <service> --target ID --cron EXPR [--retain N] [--retain-days N] [--disable] [flags]
   %[1]s apps backups schedule clear <app> <service> [flags]
+  %[1]s apps backups schedule pause <app> <service> [flags]
+  %[1]s apps backups schedule resume <app> <service> [flags]
   %[1]s apps backups runs <app> <service> [flags]
   %[1]s apps backups run <app> <service> --target ID [flags]
   %[1]s apps backups restore <app> <service> <run> [--yes] [flags]

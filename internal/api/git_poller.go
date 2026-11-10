@@ -219,7 +219,8 @@ func (rt *Router) pollGitSource(ctx context.Context, cfg gitPollConfig, state *g
 	if err != nil || gs == nil {
 		return
 	}
-	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
+	// A compose source deploys from webhooks and deploy-now only.
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease || gs.BranchPattern != "" || gs.ComposePath != "" {
 		return
 	}
 	now := time.Now()
@@ -274,7 +275,8 @@ func (rt *Router) recordPoll(ctx context.Context, name string, at time.Time, pol
 // from a deliberate rollback, so it is never deployed. Later heads that no
 // webhook delivered are deployed once, deduped by commit SHA against webhooks.
 func (rt *Router) handlePolledHead(ctx context.Context, name string, gs store.GitSource, head string) error {
-	if rt.gitRel == nil || head == "" {
+	// One polled branch head cannot stand for a pattern of branches; it would undo pattern deploys.
+	if rt.gitRel == nil || head == "" || gs.BranchPattern != "" {
 		return nil
 	}
 	rel, err := rt.gitRel.GetGitSourceReliability(ctx, name)

@@ -18,6 +18,11 @@ export const ALERT_KIND_COPY = {
     description: 'alertKinds.deploy_failed.description',
     action: 'alertKinds.deploy_failed.action',
   },
+  job_failing: {
+    label: 'alertKinds.job_failing.label',
+    description: 'alertKinds.job_failing.description',
+    action: 'alertKinds.job_failing.action',
+  },
   monitor_down: {
     label: 'alertKinds.monitor_down.label',
     description: 'alertKinds.monitor_down.description',

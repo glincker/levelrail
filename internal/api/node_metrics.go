@@ -90,6 +90,7 @@ type nodeMetricsResponse struct {
 // real, separate change (a second ListDesiredDatabasesByNode loop plus
 // resourceIDForDatabase lookups), not attempted here.
 func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request) {
+	rt.presence.Touch()
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return
@@ -119,7 +120,7 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	from, to, err := parseTimeRange(r)
+	from, to, err := parseNodeMetricsRange(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -151,6 +152,28 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, nodeMetricsResponse{Metric: metric, Points: points, ResourceCount: resourceCount})
+}
+
+// nodeMetricsRanges are the range presets the node card offers; a preset keeps the URL short and cacheable.
+var nodeMetricsRanges = map[string]time.Duration{
+	"15m": 15 * time.Minute, "1h": time.Hour, "6h": 6 * time.Hour, "24h": 24 * time.Hour, "7d": 7 * 24 * time.Hour,
+}
+
+// parseNodeMetricsRange adds range=15m|1h|6h|24h|7d on top of from/to; an explicit from wins over range.
+func parseNodeMetricsRange(r *http.Request) (time.Time, time.Time, error) {
+	from, to, err := parseTimeRange(r)
+	if err != nil {
+		return from, to, err
+	}
+	raw := r.URL.Query().Get("range")
+	if raw == "" || r.URL.Query().Get("from") != "" {
+		return from, to, nil
+	}
+	d, ok := nodeMetricsRanges[raw]
+	if !ok {
+		return time.Time{}, time.Time{}, errors.New("range must be one of 15m, 1h, 6h, 24h, 7d")
+	}
+	return to.Add(-d), to, nil
 }
 
 // queryPlacedServiceSamples fans metric out across every service placed on

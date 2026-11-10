@@ -26,7 +26,7 @@ export function LabelFilterInput({
         placeholder={t('resourceLabels.filterPlaceholder')}
         aria-label={t('resourceLabels.filterLabel')}
         aria-invalid={invalid ? true : undefined}
-        className="max-w-xs font-mono text-xs"
+        className="max-w-xs font-mono text-xs placeholder:text-muted-foreground/70"
       />
       {invalid ? (
         <p className="text-xs text-destructive">
@@ -37,7 +37,7 @@ export function LabelFilterInput({
   )
 }
 
-/** On phones the label selector folds into a popover so the filter row stays one line. */
+/** LabelFilterField folds the label selector into a Labels popover so the filter row shows no stray selector text. */
 export function LabelFilterField(props: {
   value: string
   onChange: (next: string) => void
@@ -45,29 +45,28 @@ export function LabelFilterField(props: {
 }) {
   const { t } = useTranslation('common')
   return (
-    <>
-      <div className="sm:hidden">
-        <Popover>
-          <PopoverTrigger
-            render={
-              <Button
-                type="button"
-                variant={props.value ? 'default' : 'outline'}
-                size="icon-sm"
-                aria-label={t('resourceLabels.filterLabel')}
-              />
-            }
-          >
-            <TagGlassIcon size="1.4em" aria-hidden="true" />
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-72 p-2">
-            <LabelFilterInput {...props} />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="hidden w-72 sm:block">
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant={props.value ? 'default' : 'outline'}
+            size="sm"
+            aria-label={t('resourceLabels.filterLabel')}
+          />
+        }
+      >
+        <TagGlassIcon size="1.4em" aria-hidden="true" />
+        <span className="max-sm:sr-only">
+          {t('resourceLabels.filterButton')}
+        </span>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 space-y-1.5 p-2">
+        <p className="text-xs font-medium text-foreground">
+          {t('resourceLabels.filterLabel')}
+        </p>
         <LabelFilterInput {...props} />
-      </div>
-    </>
+      </PopoverContent>
+    </Popover>
   )
 }

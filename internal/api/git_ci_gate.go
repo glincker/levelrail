@@ -590,7 +590,7 @@ func (rt *Router) startGatedBranchDeploy(ctx context.Context, name string, gs st
 	return rt.startGatedJob(ctx, ciGateJob{
 		name: name, gs: gs, gateSHA: sha, sha: sha, label: webhookShortSHA(sha), source: source, ref: gateRef(gs.Branch),
 		run: func(c context.Context) {
-			hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: sha, CommitLabel: sha, CommitSHA: sha, Branch: gs.Branch, BuildArgs: extraBuildArgsFrom(c)}
+			hr := gatedBranchHeldRequest(c, gs, sha)
 			if held, _ := rt.holdIfFrozen(c, name, hr, name+":"+sha); held {
 				return
 			}
@@ -605,6 +605,12 @@ func (rt *Router) startGatedBranchDeploy(ctx context.Context, name string, gs st
 			}
 		},
 	})
+}
+
+// gatedBranchHeldRequest carries an accepted freeze override, so a deploy
+// queued behind a running one does not wait for the freeze to end.
+func gatedBranchHeldRequest(ctx context.Context, gs store.GitSource, sha string) deploy.HeldRequest {
+	return deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: sha, CommitLabel: sha, CommitSHA: sha, Branch: gs.Branch, BuildArgs: extraBuildArgsFrom(ctx), FreezeNote: freezeOverrideNoteFrom(ctx)}
 }
 
 // gatedPushEvent makes a tag push deploy the very commit that was gated, never

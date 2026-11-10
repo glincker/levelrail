@@ -98,3 +98,29 @@ func TestWithSSHDeployKeyFailsClosedWhenKeyUnusable(t *testing.T) {
 func sourcecacheScope(scope string) context.Context {
 	return sourcecache.WithScope(context.Background(), scope)
 }
+
+func TestSSHTriggerRefusal(t *testing.T) {
+	secrets := sshKeyFakeSecrets{newFakeGitSourceSecrets()}
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	ctx := context.Background()
+	seedApp(t, db, "web")
+	const repo = "ssh://git@git.example.com/acme/web.git"
+	if msg := rt.sshTriggerRefusal(ctx, "web", repo); !strings.Contains(msg, "connected git source") {
+		t.Fatalf("no git source: %q", msg)
+	}
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "web", RepoURL: repo, Branch: "main", BuildType: "dockerfile"}); err != nil {
+		t.Fatal(err)
+	}
+	if msg := rt.sshTriggerRefusal(ctx, "web", "ssh://git@other.example.com/acme/web.git"); !strings.Contains(msg, "connected git source") {
+		t.Fatalf("different repo: %q", msg)
+	}
+	if msg := rt.sshTriggerRefusal(ctx, "web", repo); !strings.Contains(msg, "deploy key") {
+		t.Fatalf("no key: %q", msg)
+	}
+	if err := secrets.SetValue(ctx, store.GitSourceSecretsKey("web"), gitSSHPrivateKey, "k"); err != nil {
+		t.Fatal(err)
+	}
+	if msg := rt.sshTriggerRefusal(ctx, "web", repo); msg != "" {
+		t.Fatalf("key stored and repo matches, got %q", msg)
+	}
+}

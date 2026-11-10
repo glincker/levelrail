@@ -184,6 +184,9 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 	if opts.DryRun {
 		return rep, nil
 	}
+	if err := store.KeepRestoredAppExpiries(ctx, restored); err != nil {
+		return rep, err
+	}
 	if opts.BeforeInstall != nil {
 		if err := opts.BeforeInstall(); err != nil {
 			return rep, err

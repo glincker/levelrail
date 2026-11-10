@@ -8,9 +8,11 @@ internal/build 39
 internal/canarypolicy 180
 internal/changes 25
 internal/chaos 171
+internal/cloudflareips 21
 internal/compose 62
 internal/configtranslate 29
 internal/costbudget 171
+internal/dbparams 46
 internal/dbprovision 46
 internal/defparse 29
 internal/deploy 27
@@ -24,6 +26,7 @@ internal/envredact 71
 internal/extdb 36
 internal/footprint 182
 internal/frameworks 52
+internal/gitsshkey 21
 internal/gpu 170
 internal/loadbalancer 180
 internal/meshpath 46
@@ -44,12 +47,14 @@ internal/spec 179
 internal/spendcap 182
 internal/store 169
 internal/telemetry 59
+internal/trafficpolicy 52
 internal/usagecost 170
 internal/version 36
 kit/cronexpr 180
 kit/diskspace 47
 kit/ids 83
 kit/netguard 194
+kit/pathfilter 21
 kit/probe 180
 kit/semver 32
 kit/ticker 30

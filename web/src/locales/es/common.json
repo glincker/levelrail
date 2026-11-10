@@ -105,6 +105,11 @@
     "button": "Cargar más"
   },
   "appsList": {
+    "quick": {
+      "open": "Abrir {{domain}}",
+      "redeploy": "Volver a desplegar {{name}}",
+      "logs": "Registros de {{name}}"
+    },
     "title": "Aplicaciones",
     "tableLabel": "Aplicaciones",
     "colName": "Nombre",
@@ -323,6 +328,7 @@
     "theme": {
       "label": "Tema: {{theme}}",
       "menu": "Elegir tema",
+      "heading": "Tema",
       "light": "Claro",
       "dark": "Oscuro",
       "oled": "Negro OLED",
@@ -547,7 +553,9 @@
         "team": "Equipo",
         "auditLog": "Registro de auditoría"
       }
-    }
+    },
+    "headerUtilities": "Más: novedades, chat, ayuda y tema",
+    "chat": "Chat"
   },
   "login": {
     "signInTitle": "Iniciar sesión",
@@ -1331,6 +1339,7 @@
     "empty": "Aún no hay etiquetas.",
     "filterInvalid": "No se pudo leer ese selector.",
     "filterLabel": "Filtrar por etiqueta",
+    "filterButton": "Etiquetas",
     "filterPlaceholder": "env=prod,tier!=db",
     "incomplete": "Completa la clave y el valor, o quita la fila.",
     "keyPlaceholder": "clave",
@@ -1501,6 +1510,47 @@
       "trafficErrors": "Errores de tráfico",
       "firewallRules": "Reglas del firewall",
       "mobileDevices": "Dispositivos móviles"
+    }
+  },
+  "resourceNotes": {
+    "title": "Descripción y notas",
+    "hint": "Anota el responsable, el propósito y los enlaces a runbooks. Admite Markdown.",
+    "empty": "Aún no hay descripción ni notas.",
+    "edit": "Editar notas",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Resumen de una línea que aparece en la lista",
+    "notesLabel": "Notas",
+    "notesPlaceholder": "Responsable, propósito, enlaces a runbooks",
+    "preview": "Vista previa",
+    "write": "Escribir",
+    "noSecrets": "Quien pueda leer este recurso puede leer sus notas. Nunca pongas secretos aquí.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saved": "Notas guardadas"
+  },
+  "copyCommand": {
+    "trigger": "Copiar {{name}} como comando",
+    "title": "Copiar como comando",
+    "cli": "{{action}}: comando CLI",
+    "api": "{{action}}: llamada API",
+    "copiedCli": "Comando CLI copiado",
+    "copiedApi": "Llamada API copiada, define antes la variable del token",
+    "actions": {
+      "app_restart": "Reiniciar",
+      "app_stop": "Detener",
+      "app_start": "Iniciar",
+      "app_scale": "Escalar",
+      "app_rollback": "Revertir",
+      "deploy_rollback": "Revertir a este despliegue",
+      "database_start": "Iniciar",
+      "database_stop": "Detener",
+      "database_backup": "Respaldar ahora",
+      "domain_check": "Verificar",
+      "domain_remove": "Quitar",
+      "cert_renew": "Renovar certificado",
+      "job_run": "Ejecutar ahora",
+      "node_cordon": "Acordonar",
+      "node_uncordon": "Quitar acordonamiento"
     }
   }
 }

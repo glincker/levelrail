@@ -266,12 +266,17 @@ type Controller struct {
 	// isn't set, meaning "use defaultSlowQueryThresholdMs"; see
 	// effectiveSlowQueryThresholdMs.
 	slowQueryThresholdMs int
+	paramsMaxMemoryMB    func() int
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
-	recreates            recreateGuard
 	agentVersion         AgentVersionLookup
 	now                  func() time.Time
+	// shared holds the params watch and recreate guard across the per pass
+	// controller rebuild; New gives a private one when none is wired.
+	shared *SharedState
+	// remoteNode means the control plane cannot dial the container address.
+	remoteNode bool
 }
 
 // Option configures optional Controller behavior.
@@ -386,7 +391,16 @@ func New(dbName string, dbStore Store, runtime docker.Runtime, opts ...Option) *
 	for _, opt := range opts {
 		opt(ctrl)
 	}
+	if ctrl.shared == nil {
+		ctrl.shared = NewSharedState()
+	}
 	return ctrl
+}
+
+// WithRemoteNode marks a database on a remote agent node, where no ready
+// probe can reach the container, so no params watch is started.
+func WithRemoteNode(remote bool) Option {
+	return func(c *Controller) { c.remoteNode = remote }
 }
 
 // Name implements reconcile.Controller.
@@ -400,12 +414,14 @@ func WithProvisionRecorder(rec *dbprovision.Recorder) Option {
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if c.provRec == nil {
-		return c.reconcileOnce(ctx)
+		res, err := c.reconcileOnce(ctx)
+		return c.rollbackFailedParams(ctx, res), err
 	}
 	c.prov = c.provRec.Open(ctx, c.dbName)
 	defer func() { c.prov = nil }()
 	res, err := c.reconcileOnce(ctx)
 	c.finishProvision(ctx, res, err)
+	res = c.rollbackFailedParams(ctx, res)
 	return res, err
 }
 
@@ -460,7 +476,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 	switch desired.Engine {
 	case store.EngineRedis:
 		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
@@ -478,7 +494,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			env["PGDATA"] = postgresDataPath
 		}
 		command := postgresCommand(c.tls, c.effectiveSlowQueryThresholdMs(), desired.PITREnabled)
-		res, err := c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
+		res, err := c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls, c.engineParamsSpec(desired))
 		if err != nil {
 			return res, err
 		}
@@ -504,7 +520,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
 		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -516,7 +532,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls)
+		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -536,7 +552,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		}
 		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
 		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -549,11 +565,10 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EngineValkey:
-		// Same /data path, port and image defaults (RDB snapshots, no
-		// password) as Redis; the image ships redis-server and redis-cli symlinks,
-		// and the TLS flags are the same, so the Redis command is reused.
-		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
+		// Same /data path, port and defaults as Redis and the same TLS flags,
+		// but the TLS command must name the binary the Valkey image ships.
+		command, containerPort := redisCommandAndPort(c.tls, valkeyServerBin)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired))
 
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
@@ -602,6 +617,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 // retried into an error. Does not remove the container's data volume;
 // see dataVolumeName's own doc comment.
 func (c *Controller) Teardown(ctx context.Context) error {
+	c.shared.clearWatch(c.dbName)
 	// The pooler shares the database's namespace, so it goes first.
 	if err := c.removePooler(ctx); err != nil {
 		return err
@@ -781,6 +797,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// there is unknowable: adopt the container rather than recreate it.
 	outdated := state != nil && c.agentOutdated(ctx, desired.NodeID)
 	labelsKnown := state != nil && !state.LabelsUnknown && !outdated
+	// A running container whose tuning args are about to change is the healthy
+	// baseline a failed start of the new args may roll back to.
+	prevParams, prevRunning, sameImage := "", state != nil && state.Running, false
+	if state != nil {
+		prevParams = state.Labels[engineParamsLabelKey]
+		sameImage = docker.SameImageRef(state.Image, image)
+	}
 
 	justDeployed := false
 	switch {
@@ -849,6 +872,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
+	case labelsKnown && spec.Labels[engineParamsLabelKey] != state.Labels[engineParamsLabelKey]:
+		// A newly applied tuning set; staging alone never changes this label.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return replaceFailure(c.dbName, err)
+		}
+		justDeployed = true
+
 	case labelsKnown && spec.Labels[engineConfigLabelKey] != "" && state.Labels[engineConfigLabelKey] != spec.Labels[engineConfigLabelKey]:
 		// Start command or env layout changed (boot script, memory flag):
 		// neither can be applied to a running container in place.
@@ -899,7 +929,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if err != nil {
 			return notReady("InspectFailed", err), fmt.Errorf("database/%s: re-inspect %q after start: %w", c.dbName, target, err)
 		}
+		c.watchParamsStart(prevRunning && labelsKnown && sameImage, prevParams, spec.Labels[engineParamsLabelKey])
 		if state == nil || !state.Running {
+			c.noteVanished(spec.Labels[engineParamsLabelKey])
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("database/%s: %q not running immediately after starting it", c.dbName, target)
 		}
 	}
@@ -991,7 +1023,7 @@ func (c *Controller) replaceContainer(ctx context.Context, old *docker.Container
 	if err := c.requireVolume(ctx, dataVolumeName(c.dbName), spec); err != nil {
 		return err
 	}
-	if err := c.recreates.allow(c.clock()); err != nil {
+	if err := c.shared.guard(c.dbName).allow(c.clock()); err != nil {
 		return err
 	}
 	if old.Running {
@@ -1139,9 +1171,10 @@ func mongoCommand(tls *TLSMaterial) []string {
 
 // Server binaries for the Redis TLS flag builder; the KeyDB image ships no redis-server.
 const (
-	redisServerBin = "redis-server"
-	keydbServerBin = "keydb-server"
-	keydbConfPath  = "/etc/keydb/keydb.conf"
+	redisServerBin  = "redis-server"
+	valkeyServerBin = "valkey-server"
+	keydbServerBin  = "keydb-server"
+	keydbConfPath   = "/etc/keydb/keydb.conf"
 )
 
 // redisCommandAndPort returns Redis's own container command and the port

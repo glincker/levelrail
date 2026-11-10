@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export type PanelSlot = 'plugins' | 'app-detail' | 'settings' | 'dashboard'
 
@@ -110,7 +111,7 @@ export function usePanelData(
     queryFn: () =>
       send<PanelView>('GET', `${panelPath(plugin, panel)}/data${query}`),
     staleTime: 15_000,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
     retry: false,
   })
 }

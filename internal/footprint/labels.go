@@ -46,6 +46,17 @@ func Run(ctx context.Context, name string, fn func(context.Context)) {
 	pprof.Do(ctx, pprof.Labels("subsystem", name), fn)
 }
 
+// Stream labels the calling goroutine and counts it under name until the returned func runs,
+// for handlers that cannot hand their body to Run.
+func Stream(ctx context.Context, name string) func() {
+	done := Attribute(name)
+	pprof.SetGoroutineLabels(pprof.WithLabels(ctx, pprof.Labels("subsystem", name)))
+	return func() {
+		pprof.SetGoroutineLabels(ctx)
+		done()
+	}
+}
+
 // Subsystems lists non-zero counts, largest first.
 func Subsystems() []SubsystemCount {
 	subMu.Lock()

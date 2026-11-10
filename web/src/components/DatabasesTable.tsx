@@ -1,6 +1,21 @@
 import { useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import {
+  ArchiveGlassIcon,
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+} from '@thesvg/ui-react'
+import type { ActionMenuItem } from '@/components/kit'
+import { Checkbox } from '@/components/ui/checkbox'
+import { toast } from '@/components/ui/toast'
+import { defaultConnectUser } from '@/lib/databaseConnect'
+import { buildSnippets } from '@/lib/databaseSnippets'
+import { ApiError, readErrorMessage } from '../lib/apiError'
+import { databaseAccessKeys } from '../queries/databaseAccess'
+import { triggerBackup } from '../queries/backupHistory'
+import type { DatabaseNetwork } from '../types/databaseAccess'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,13 +49,114 @@ function Dot({ on }: { on: boolean }) {
   )
 }
 
+async function fetchNetwork(name: string): Promise<DatabaseNetwork> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/network`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `network failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseNetwork
+}
+
+// Row menu mirrors the apps list. The copied URI carries a password
+// placeholder, never the secret, so it is safe to paste anywhere.
+function useRowActions() {
+  const { t } = useTranslation('databases')
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  return (db: DatabaseListEntry): ActionMenuItem[] => {
+    const managed = !db.external && !db.provision_state
+    return [
+      {
+        id: 'open',
+        label: t('rowActions.open'),
+        icon: <ExternalLinkGlassIcon size="1.4em" />,
+        onSelect: () => {
+          void navigate({ to: '/databases/$name', params: { name: db.name } })
+        },
+      },
+      {
+        id: 'backup',
+        label: t('detail.backupNow'),
+        icon: <ArchiveGlassIcon size="1.4em" />,
+        disabled: !managed || !db.backup_target_id,
+        description: db.backup_target_id
+          ? undefined
+          : t('rowActions.noBackupTarget'),
+        onSelect: () => {
+          triggerBackup(db.name, { target_id: db.backup_target_id ?? '' }).then(
+            () => {
+              toast.add({
+                title: t('detail.backupStarted', { name: db.name }),
+                type: 'success',
+              })
+            },
+            (err: unknown) => {
+              toast.add({
+                title: err instanceof Error ? err.message : String(err),
+                type: 'error',
+              })
+            },
+          )
+        },
+      },
+      {
+        id: 'copy',
+        label: t('rowActions.copyConnection'),
+        icon: <CopyGlassIcon size="1.4em" />,
+        disabled: !managed,
+        onSelect: () => {
+          queryClient
+            .fetchQuery({
+              queryKey: databaseAccessKeys.network(db.name),
+              queryFn: () => fetchNetwork(db.name),
+              staleTime: 10_000,
+            })
+            .then((net) => {
+              const uri = buildSnippets({
+                engine: db.engine,
+                host: net.internal.host,
+                port: net.internal.port,
+                user: defaultConnectUser(db.engine),
+                database: db.engine === 'postgres' ? 'postgres' : '',
+                tls: net.tls.enabled,
+                revealPlaceholder: true,
+              }).uri
+              return navigator.clipboard.writeText(uri)
+            })
+            .then(
+              () => {
+                toast.add({ title: t('rowActions.copied'), type: 'success' })
+              },
+              (err: unknown) => {
+                toast.add({
+                  title: err instanceof Error ? err.message : String(err),
+                  type: 'error',
+                })
+              },
+            )
+        },
+      },
+    ]
+  }
+}
+
 export function DatabasesTable({
   databases,
+  selected,
+  onSelect,
 }: {
   databases: readonly DatabaseListEntry[]
+  selected?: readonly string[]
+  onSelect?: (name: string, checked: boolean) => void
 }) {
   const { t } = useTranslation('databases')
   const [shown, setShown] = useState(pageSize)
+  const rowActions = useRowActions()
   const columns = useMemo<ResponsiveColumn<DatabaseListEntry>[]>(
     () => [
       {
@@ -161,12 +277,25 @@ export function DatabasesTable({
         getRowId={(db) => db.name}
         ariaLabel={t('list.tableLabel')}
         leading={{
-          width: 'w-16 min-w-16',
+          width: onSelect ? 'w-24 min-w-24' : 'w-16 min-w-16',
           header: <span className="sr-only">{t('list.colEngine')}</span>,
           cell: (db) => (
-            <BrandTile name={db.engine} label={db.engine} size="sm" />
+            <span className="relative z-10 flex items-center gap-3">
+              {onSelect ? (
+                <Checkbox
+                  checked={selected?.includes(db.name) ?? false}
+                  aria-label={t('bulk.selectOne', { name: db.name })}
+                  onCheckedChange={(checked) => {
+                    onSelect(db.name, checked)
+                  }}
+                />
+              ) : null}
+              <BrandTile name={db.engine} label={db.engine} size="sm" />
+            </span>
           ),
         }}
+        actions={rowActions}
+        actionsLabel={(db) => t('rowActions.label', { name: db.name })}
       />
       {visible.length < databases.length ? (
         <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">

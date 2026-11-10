@@ -76,22 +76,30 @@ func (rt *Router) pruneImagesOnce(ctx context.Context) {
 		return
 	}
 	plan := imagelife.PlanGC(entries)
+	plan.Remove = retentionSafeRemovals(plan.Remove)
 	removed, failed := []string{}, 0
+	var refs, failures []string
 	for _, e := range plan.Remove {
-		if err := removeImageEntry(ctx, inv, e); err != nil {
+		if !rt.removalStillSafe(ctx, e) {
+			continue
+		}
+		done, err := removeImageEntry(ctx, inv, e)
+		refs = append(refs, done...)
+		if err != nil {
 			failed++
+			failures = append(failures, e.ID)
 			continue
 		}
 		removed = append(removed, e.ID)
 	}
 	rt.logger.Info("api: scheduled image prune finished", slog.Int("removed", len(removed)), slog.Int("failed", failed))
-	if len(removed) > 0 {
-		rt.auditSystemImagePrune(ctx, "images.prune_scheduled", removed)
+	if len(refs) > 0 || failed > 0 {
+		rt.auditSystemImagePrune(ctx, "images.prune_scheduled", removed, refs, failures)
 	}
 }
 
 // auditSystemImagePrune records which images a prune removed, under the system actor.
-func (rt *Router) auditSystemImagePrune(ctx context.Context, action string, ids []string) {
+func (rt *Router) auditSystemImagePrune(ctx context.Context, action string, ids, refs, failed []string) {
 	if rt.auditLog == nil {
 		return
 	}
@@ -99,7 +107,7 @@ func (rt *Router) auditSystemImagePrune(ctx context.Context, action string, ids 
 	if err != nil {
 		return
 	}
-	detail, _ := json.Marshal(map[string]any{"removed": ids})
+	detail, _ := json.Marshal(map[string]any{"removed": ids, "refs": refs, "failed": failed})
 	entry := store.AuditEntry{
 		ID: id, ActorType: "system", ActorID: "image-prune", ActorName: "image prune",
 		Ability: AbilityWrite, Method: http.MethodPost, Path: "/api/v1/images/gc", StatusCode: http.StatusOK,

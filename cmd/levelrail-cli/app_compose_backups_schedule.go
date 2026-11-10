@@ -54,6 +54,10 @@ func runAppsBackupsSchedule(prog string, args []string, stdout, stderr io.Writer
 		return runAppsBackupsScheduleSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppsBackupsScheduleClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pause":
+		return runAppsBackupsSchedulePause(prog, args[1:], true, stdout, stderr, lookupEnv)
+	case "resume":
+		return runAppsBackupsSchedulePause(prog, args[1:], false, stdout, stderr, lookupEnv)
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsBackupsUsage(prog))
 		return exitOK
@@ -69,7 +73,7 @@ func runAppsBackupsScheduleSet(prog string, args []string, stdout, stderr io.Wri
 	var disable bool
 	fs.StringVar(&targetID, "target", "", "backup target id (required)")
 	fs.StringVar(&cron, "cron", "", "5-field cron expression (required)")
-	fs.IntVar(&retain, "retain", 0, "number of backups to keep (0: no limit)")
+	fs.IntVar(&retain, "retain", 0, "number of backups to keep (0: the server default, backups.schedule_retain_default)")
 	fs.IntVar(&retainDays, "retain-days", 0, "delete backups older than this many days (0: no limit)")
 	fs.BoolVar(&disable, "disable", false, "save the schedule but pause it")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsBackupsUsage(prog)) }
@@ -124,6 +128,29 @@ func runAppsBackupsScheduleClear(prog string, args []string, stdout, stderr io.W
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"cleared": true}, func() {
 		_, _ = fmt.Fprintf(stdout, "backup schedule removed for %s/%s; existing backup objects are kept\n", app, service)
+	})
+}
+
+func runAppsBackupsSchedulePause(prog string, args []string, paused bool, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	verb := pauseVerbName(paused)
+	fs, tokenP, urlP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "apps backups schedule "+verb, "print the schedule as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsBackupsUsage(prog)) }
+	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, urlP, profileP, jsonP, outputP, queryP}, prog, stderr)
+	if !ok {
+		return code
+	}
+	rest, ok := requireArgs(fs, stderr, prog, "apps backups schedule "+verb, "an app name and a service name", 2)
+	if !ok {
+		return exitUsage
+	}
+	app, service := rest[0], rest[1]
+	client := apiClientFromFlags(prog, apiURL, token, profile, lookupEnv)
+	saved, err := client.PauseComposeDBBackupSchedule(context.Background(), app, service, paused)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s backup schedule for %s/%s: %w", verb, app, service, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, saved, func() {
+		_, _ = fmt.Fprintf(stdout, "backup schedule for %s/%s: %sd; the saved cron, target and retention are kept\n", app, service, verb)
 	})
 }
 

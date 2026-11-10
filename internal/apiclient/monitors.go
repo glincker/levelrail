@@ -94,6 +94,13 @@ func (c *Client) UpdateMonitorLink(ctx context.Context, id string, l MonitorLink
 	return out, err
 }
 
+// SetMonitorEnabled calls PATCH /api/v1/monitors/{id} with only the enabled flag.
+func (c *Client) SetMonitorEnabled(ctx context.Context, id string, enabled bool) (Monitor, error) {
+	var out Monitor
+	err := c.do(ctx, http.MethodPatch, "/api/v1/monitors/"+PathEscape(id), map[string]bool{"enabled": enabled}, &out)
+	return out, err
+}
+
 // RotateMonitorToken calls POST /api/v1/monitors/{id}/rotate-token and returns the new ping path once.
 func (c *Client) RotateMonitorToken(ctx context.Context, id string) (Monitor, error) {
 	var out Monitor

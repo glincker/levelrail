@@ -105,7 +105,8 @@ func attemptApps(as []store.DeployAttempt) []string {
 // attempt, so the fetch window still counts as busy for concurrent requests.
 func (rt *Router) queueIfBusy(ctx context.Context, name string, gs store.GitSource, req deploy.HeldRequest, image string) (queued bool, msg string, release func()) {
 	release = func() {}
-	if rt.deploySafety == nil || len(gs.Services) > 0 {
+	// A compose source queues in deployComposeFromGitSource, under its app name.
+	if rt.deploySafety == nil || len(gs.Services) > 0 || gs.ComposePath != "" {
 		return false, "", release
 	}
 	rt.buildStartMu.Lock()
@@ -171,7 +172,8 @@ func (rt *Router) supersedeQueued(ctx context.Context, name, newID, branch strin
 	}
 	on, err := rt.deploySafety.GetServiceCancelSuperseded(ctx, name)
 	if err != nil || !on {
-		if err != nil {
+		// A compose app has no service row; supersedeComposeQueued covers it.
+		if err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 			rt.logger.Warn("api: deploy queue: read cancel_superseded failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 		return
@@ -219,7 +221,7 @@ func (rt *Router) enqueueManualBuild(ctx context.Context, existing store.Desired
 		hr.Branch = req.Ref
 	}
 	source := store.DeployAttemptSourceManual
-	if req.UploadHash != "" {
+	if req.UploadHash != "" || strings.HasPrefix(req.RepoURL, inlineURLPrefix) {
 		source = store.DeployAttemptSourceUpload
 	}
 	id, err := rt.enqueueDeploy(ctx, existing, source, buildReq.ImageRepo+":"+buildReq.CommitSHA, hr)
@@ -309,6 +311,9 @@ func (rt *Router) queuedFrozen(ctx context.Context, a store.DeployAttempt) bool 
 		return false
 	}
 	status, err := deploy.CheckFreeze(ctx, rt.deploySafety, a.ServiceName, time.Now())
+	if err == nil && !status.Frozen {
+		status = rt.composeMemberFreeze(ctx, a.ServiceName, status)
+	}
 	return err == nil && status.Frozen
 }
 
@@ -357,6 +362,7 @@ func (rt *Router) replayQueued(ctx context.Context, a store.DeployAttempt) error
 }
 
 func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.HeldRequest) error {
+	ctx = withHeldBuildSettings(ctx, hr.BuildSettings)
 	if rt.builder == nil {
 		return errors.New("manual build trigger is not configured on this control plane")
 	}
@@ -374,6 +380,7 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 	}
 	ctx = withRerunOf(ctx, req.RerunOf)
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	rt.applyAppBuildSettings(ctx, name, &buildReq)
 	source := store.DeployAttemptSourceManual
 	if req.UploadHash != "" {
 		source = store.DeployAttemptSourceUpload
@@ -381,6 +388,12 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 			if m, gerr := st.Get(name, req.UploadHash); gerr == nil {
 				ctx = withUploadCommitMeta(ctx, m)
 			}
+		}
+	}
+	if strings.HasPrefix(req.RepoURL, inlineURLPrefix) {
+		source = store.DeployAttemptSourceUpload
+		if m, ok := rt.inlineMetaFor(ctx, name, req.RepoURL); ok {
+			ctx = withInlineCommitMeta(ctx, m)
 		}
 	}
 	run := rt.beginManualBuild(ctx, *existing, buildReq, buildType, source, req.DetectedFramework, hr.FreezeNote, hr.AllowPrivateRepoAuth)

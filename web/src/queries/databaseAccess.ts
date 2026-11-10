@@ -18,6 +18,7 @@ import type {
 } from '../types/databaseAccess'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { databaseKeys } from './databases'
+import { pollMs } from '../lib/pollTier'
 
 export const databaseAccessKeys = {
   all: (name: string) => [...databaseKeys.detail(name), 'access'] as const,
@@ -73,7 +74,7 @@ export function useDatabaseTemp(name: string) {
         undefined,
         'list temporary logins',
       ),
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

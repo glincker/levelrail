@@ -464,7 +464,7 @@
   "buildHooks": {
     "title": "Build hooks",
     "infoTipLabel": "About build hooks",
-    "description": "A build hook is a secret URL. POST to it (from a headless CMS or a cron job) to build and deploy this app's git source. An optional JSON body with title and body reaches the build as the TRIGGER_TITLE and TRIGGER_BODY build args.",
+    "description": "A build hook is a secret URL. POST to it (from a headless CMS or a cron job) to build and deploy this app's git source. An optional JSON body with title and body reaches the build as the TRIGGER_TITLE and TRIGGER_BODY build args. An optional allowlist of source CIDRs refuses every other caller with 403, and nothing is built.",
     "empty": "No build hooks yet. Create one to trigger builds from outside.",
     "defaultBranch": "app's branch",
     "neverTriggered": "Never triggered",
@@ -480,10 +480,21 @@
     "copy": "Copy URL",
     "urlLabel": "Build hook URL",
     "shownOnce": "URL for {{name}}. Copy it now. It is not shown again.",
+    "allowLabel": "Allowed sources (optional)",
+    "allowPlaceholder": "CIDRs or addresses, comma separated",
+    "allowAny": "Any source may call it.",
+    "allowList": "Only {{cidrs}} may call it.",
+    "lastUsed": "Last call {{when}}.",
+    "editAllow": "Allowlist",
+    "saveAllow": "Save allowlist",
+    "cancel": "Cancel",
+    "allowAnyToggle": "Allow any source",
+    "lastRefusal": "Last refused call: {{reason}}",
     "toast": {
       "errorTitle": "Build hook request failed",
       "copied": "URL copied.",
-      "copyFailed": "Could not copy to the clipboard."
+      "copyFailed": "Could not copy to the clipboard.",
+      "allowSaved": "Allowlist saved."
     }
   },
   "banner": {
@@ -658,6 +669,8 @@
     "reject": "Reject",
     "approve": "Approve",
     "approving": "Approving...",
-    "viewQueue": "View queue"
+    "viewQueue": "View queue",
+    "progress": "{{received}} of {{required}} distinct approvers so far. The deploy runs when the last one approves.",
+    "recorded": "Approval recorded: {{received}} of {{required}} distinct approvers."
   }
 }

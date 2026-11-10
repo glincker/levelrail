@@ -51,7 +51,7 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 	var retain, retainDays int
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required)")
 	fs.StringVar(&cron, "cron", "", "standard 5-field cron expression: minute hour day-of-month month day-of-week (required)")
-	fs.IntVar(&retain, "retain", 0, "number of past backups to keep before older ones are deleted (0: no limit)")
+	fs.IntVar(&retain, "retain", 0, "number of backups to keep (0: the server default, backups.schedule_retain_default)")
 	fs.IntVar(&retainDays, "retain-days", 0, "delete backups older than this many days (0: no limit), independent of --retain")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s backups schedule set <database> --target ID --cron EXPR [flags]\n\nConfigures a recurring backup, replacing any previously configured\nschedule for <database>.\n\nFlags:\n", prog)

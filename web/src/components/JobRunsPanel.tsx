@@ -39,6 +39,7 @@ const STATUSES: ScheduledTaskRunStatus[] = [
   'interrupted',
   'container_not_running',
   'skipped_concurrency',
+  'skipped_freeze',
   'replaced',
 ]
 
@@ -136,6 +137,10 @@ function RunLogsDialog({ appName, run }: { appName: string; run: JobRun }) {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">
             {t('history.logsLoading')}
+          </p>
+        ) : data?.output_withheld ? (
+          <p className="text-sm text-muted-foreground">
+            {t('history.outputWithheld')}
           </p>
         ) : output ? (
           <CodeBlock code={output} wrap maxHeight="lg" />

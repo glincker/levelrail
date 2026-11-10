@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { topicPollMs } from '../../lib/pollTier'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import {
   keepPreviousData,
@@ -6,15 +7,13 @@ import {
   useQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DatabaseGlassIcon,
-  FunnelGlassIcon,
   LayersGlassIcon,
   PlusGlassIcon,
 } from '@thesvg/ui-react'
-import { EmptyState } from '@/components/ui/empty-state'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyAppsDiagram } from '../../components/banners/LazyDiagrams'
@@ -23,12 +22,24 @@ import {
   appsSummaryQueryOptions,
 } from '../../queries/appPages'
 import { LoadMore } from '@/components/ui/load-more'
-import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
-import { AppsBulkBar } from '../../components/AppsBulkBar'
+import { FilterChips, type ActiveFilter } from '../../components/FilterChips'
+import { ListKeyboardHint } from '../../components/ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
+import { useCanDeploy } from '../../hooks/useCanDeploy'
+
+const BulkActionsBar = lazy(() =>
+  import('../../components/apps/BulkActionsBar').then((m) => ({
+    default: m.BulkActionsBar,
+  })),
+)
 import { AppsFilterBar } from '../../components/AppsFilterBar'
+const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
+const ImportBundleDialog = lazy(
+  () => import('../../components/apps/ImportBundleDialog'),
+)
 import {
   AppsStatusChips,
   ViewToggle,
@@ -36,15 +47,14 @@ import {
 import { AppsFirstRun } from '../../components/apps/AppsFirstRun'
 import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
+import { filtersActive, type AppListFilters } from '../../lib/appViews'
 import {
-  EMPTY_FILTERS,
-  filtersActive,
-  type AppListFilters,
-} from '../../lib/appViews'
-import {
+  appFiltersFromSearch,
+  appsSearchFrom,
   loadViewMode,
-  parseStatusSearch,
+  parseAppsSearch,
   storeViewMode,
+  type AppsSearch,
   type StatusFilter,
   type ViewMode,
 } from '../../lib/appsListView'
@@ -56,15 +66,11 @@ import { useLabelMatches } from '../../queries/resourceLabels'
 
 // The loader primes the Query cache; the component only reads it. The
 // list is virtualized unconditionally (project rule for lists that can
-// exceed 50 items). `status` in the URL lets the command palette and
-// dashboard deep-link into a filtered list.
+// exceed 50 items). Every filter sits in the URL so the command palette,
+// shared links and saved views deep-link into a filtered list.
 export const Route = createFileRoute('/apps/')({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { status?: StatusFilter } => {
-    const status = parseStatusSearch(search.status)
-    return status ? { status } : {}
-  },
+  validateSearch: (search: Record<string, unknown>): AppsSearch =>
+    parseAppsSearch(search),
   loaderDeps: ({ search }) => ({ status: search.status ?? null }),
   loader: ({ context: { queryClient }, deps }) =>
     Promise.all([
@@ -83,27 +89,34 @@ function AppListPage() {
   useEnvironmentScope()
   const { t } = useTranslation('common')
   const { data: staticSites } = useSuspenseQuery(staticSitesQueryOptions())
-  const status = Route.useSearch().status ?? null
+  const search = Route.useSearch()
+  const status = search.status ?? null
+  const labelSelector = search.labels ?? ''
   const navigate = useNavigate({ from: Route.fullPath })
-  const [filters, setFilters] = useState<AppListFilters>(EMPTY_FILTERS)
-  const debouncedQuery = useDebouncedValue(filters.query, 250)
+  const filters = useMemo(() => appFiltersFromSearch(search), [search])
+  const writeSearch = (next: AppsSearch) => {
+    void navigate({ search: next, replace: true })
+  }
+  const setFilters = (next: AppListFilters) => {
+    writeSearch(appsSearchFrom(next, status, labelSelector))
+  }
   const pageParams = useMemo(
     () => ({
       status,
-      q: debouncedQuery,
+      q: filters.query,
       environments: filters.environments,
       tags: filters.tags,
     }),
-    [status, debouncedQuery, filters.environments, filters.tags],
+    [status, filters.query, filters.environments, filters.tags],
   )
   const pages = useInfiniteQuery({
     ...appPagesQueryOptions(pageParams),
-    refetchInterval: 15_000,
+    refetchInterval: () => topicPollMs('active'),
     placeholderData: keepPreviousData,
   })
   const { data: summary } = useQuery({
     ...appsSummaryQueryOptions(),
-    refetchInterval: 15_000,
+    refetchInterval: () => topicPollMs('active'),
   })
   const apps = useMemo(
     () => pages.data?.pages.flatMap((p) => p.items) ?? [],
@@ -127,7 +140,9 @@ function AppListPage() {
     }),
     [summary],
   )
-  const [labelSelector, setLabelSelector] = useState('')
+  const setLabelSelector = (next: string) => {
+    writeSearch(appsSearchFrom(filters, status, next))
+  }
   const labelMatches = useLabelMatches('apps', labelSelector)
   const filteredApps = useMemo(
     () =>
@@ -138,7 +153,17 @@ function AppListPage() {
   )
 
   const setStatus = (next: StatusFilter) => {
-    void navigate({ search: next ? { status: next } : {}, replace: true })
+    writeSearch(appsSearchFrom(filters, next, labelSelector))
+  }
+  const currentView = {
+    q: search.q ?? '',
+    status: search.status ?? '',
+    env: search.env ?? '',
+    tags: search.tags ?? '',
+    labels: labelSelector,
+  }
+  const applyView = (f: Record<string, string>) => {
+    writeSearch(parseAppsSearch(f))
   }
   const changeMode = (next: ViewMode) => {
     storeViewMode(next)
@@ -153,6 +178,68 @@ function AppListPage() {
     filteredApps.length > 0 &&
     filteredApps.every((app) => selected.includes(app.name))
   const narrowed = filtersActive(filters) || status !== null
+  const { t: tf } = useTranslation('uiShared')
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
+  const canDeploy = useCanDeploy()
+  const clearAll = () => {
+    writeSearch({})
+  }
+  const activeFilters: ActiveFilter[] = [
+    ...(status
+      ? [
+          {
+            id: 'status',
+            label: tf('filterChips.status', { value: status }),
+            onRemove: () => {
+              setStatus(null)
+            },
+          },
+        ]
+      : []),
+    ...(filters.query
+      ? [
+          {
+            id: 'q',
+            label: tf('filterChips.search', { value: filters.query }),
+            onRemove: () => {
+              setFilters({ ...filters, query: '' })
+            },
+          },
+        ]
+      : []),
+    ...filters.tags.map((tag) => ({
+      id: `tag:${tag}`,
+      label: tf('filterChips.tag', { value: tag }),
+      onRemove: () => {
+        setFilters({ ...filters, tags: filters.tags.filter((x) => x !== tag) })
+      },
+    })),
+    ...filters.environments.map((env) => ({
+      id: `env:${env}`,
+      label: tf('filterChips.environment', { value: env }),
+      onRemove: () => {
+        setFilters({
+          ...filters,
+          environments: filters.environments.filter((x) => x !== env),
+        })
+      },
+    })),
+    ...(labelSelector
+      ? [
+          {
+            id: 'labels',
+            label: tf('filterChips.labels', { value: labelSelector }),
+            onRemove: () => {
+              setLabelSelector('')
+            },
+          },
+        ]
+      : []),
+  ]
 
   // Hide the count until the first page lands so it never reads "0 apps" mid-load.
   const countLabel =
@@ -201,6 +288,9 @@ function AppListPage() {
         <DatabaseGlassIcon size="1.4em" />
         {t('appsList.newDatabase', { defaultValue: 'New database' })}
       </Button>
+      <Suspense fallback={null}>
+        <ImportBundleDialog />
+      </Suspense>
       <Button size="sm" render={<Link to="/apps/new" />} nativeButton={false}>
         <PlusGlassIcon size="1.4em" />
         {t('appsList.newApp', { defaultValue: 'New app' })}
@@ -249,38 +339,29 @@ function AppListPage() {
               onChange={setLabelSelector}
               invalid={labelMatches.isError}
             />
+            <Suspense fallback={null}>
+              <SavedViewsMenu
+                list="apps"
+                current={currentView}
+                onApply={applyView}
+              />
+            </Suspense>
           </div>
+          <FilterChips
+            filters={activeFilters}
+            shown={filteredApps.length}
+            total={totalApps}
+            onClearAll={clearAll}
+          />
+          <ListKeyboardHint open={hintOpen} onClose={closeHint} />
         </div>
       ) : null}
       {noApps ? (
         <AppsFirstRun />
       ) : pages.isPending ? (
         <AppListRowsPending />
-      ) : filteredApps.length === 0 ? (
-        <EmptyState
-          illustration="chart"
-          icon={<FunnelGlassIcon className="size-8" />}
-          title={t('appsList.noMatchTitle', { defaultValue: 'No apps match' })}
-          description={t('appsList.noMatchBody', {
-            defaultValue:
-              'No app fits the current status and search. Clear the filters to see all {{total}}.',
-            total: totalApps,
-          })}
-          action={
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setFilters(EMPTY_FILTERS)
-                setStatus(null)
-              }}
-            >
-              {t('appsList.clearFilters', { defaultValue: 'Clear filters' })}
-            </Button>
-          }
-        />
-      ) : (
-        <>
+      ) : filteredApps.length === 0 ? null : (
+        <div ref={setListContainer} className="contents">
           <AppsListBody
             apps={filteredApps}
             mode={mode}
@@ -295,15 +376,20 @@ function AppListPage() {
               void pages.fetchNextPage()
             }}
           />
-        </>
+        </div>
       )}
       <StaticSitesCard />
-      <AppsBulkBar
-        selected={selected}
-        onClear={() => {
-          setSelected([])
-        }}
-      />
+      {selected.length > 0 ? (
+        <Suspense fallback={null}>
+          <BulkActionsBar
+            selected={selected}
+            canAct={canDeploy}
+            onClear={() => {
+              setSelected([])
+            }}
+          />
+        </Suspense>
+      ) : null}
     </PageTemplate>
   )
 }

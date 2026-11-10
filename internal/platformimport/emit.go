@@ -61,6 +61,8 @@ type EmitApp struct {
 	// Connections maps an env var to the emitted database it reads from.
 	Connections map[string]EmitConnection
 	Jobs        []EmitJob
+	// Policy lists proxy flags for the domain steps in MIGRATION.md.
+	Policy DomainPolicy
 	// Notes are follow-ups for MIGRATION.md that the documents cannot express.
 	Notes []string
 }
@@ -471,12 +473,15 @@ func renderNotes(source string, o EmitOptions, apps []EmitApp, general []string)
 		fmt.Fprintf(&b, "- %s\n", n)
 	}
 	for _, a := range apps {
-		if len(a.Notes) == 0 {
+		if len(a.Notes) == 0 && a.Policy.Empty() {
 			continue
 		}
 		fmt.Fprintf(&b, "\n## App %s\n\n", a.Name)
 		for _, n := range a.Notes {
 			fmt.Fprintf(&b, "- %s\n", n)
+		}
+		for _, l := range policyLines(a.Policy) {
+			fmt.Fprintf(&b, "- domain policy: %s\n", l)
 		}
 	}
 	return b.String()
@@ -508,4 +513,23 @@ func firstNonEmpty(a, b string) string {
 		return a
 	}
 	return b
+}
+
+// policyLines names each proxy flag as a setting for every domain of the app.
+// Basic auth shows the user only: the password is set fresh on the new domain.
+func policyLines(p DomainPolicy) []string {
+	var out []string
+	if p.ForceHTTPS {
+		out = append(out, "redirect to HTTPS: on")
+	}
+	if p.WebSocket {
+		out = append(out, "websocket upgrade: on")
+	}
+	if p.RedirectTo != "" {
+		out = append(out, "redirect to "+p.RedirectTo)
+	}
+	if p.BasicAuthUser != "" {
+		out = append(out, "basic auth user "+p.BasicAuthUser+" (set a new password)")
+	}
+	return out
 }

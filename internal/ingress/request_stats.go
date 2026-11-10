@@ -152,6 +152,8 @@ type RequestStats struct {
 	mu     sync.RWMutex
 	hosts  map[string]*hostCounters
 	owners atomic.Pointer[map[string]string]
+	// ownerSince is copy-on-write like owners: when each key last changed owner.
+	ownerSince atomic.Pointer[map[string]time.Time]
 
 	totalsMu sync.Mutex
 	totals   telemetry.RequestWindow
@@ -337,11 +339,45 @@ func upstreamHostport(r *http.Request) string {
 // SetHostOwners replaces the host-to-app map used to attribute traffic. Keys
 // are configured route hosts, values are app names.
 func (s *RequestStats) SetHostOwners(owners map[string]string) {
+	s.ReplaceHostOwners(owners)
+}
+
+// ReplaceHostOwners is SetHostOwners that also returns the keys that were
+// removed or changed owner, so their recorded rows can be purged. Those keys
+// get a fresh owner start time; the first publication changes nothing.
+func (s *RequestStats) ReplaceHostOwners(owners map[string]string) (changed []string) {
 	cp := make(map[string]string, len(owners))
 	for k, v := range owners {
 		cp[k] = v
 	}
-	s.owners.Store(&cp)
+	old := s.owners.Swap(&cp)
+	if old == nil {
+		return nil
+	}
+	since := map[string]time.Time{}
+	if p := s.ownerSince.Load(); p != nil {
+		for k, t := range *p {
+			if _, ok := cp[k]; ok {
+				since[k] = t
+			}
+		}
+	}
+	now := time.Now()
+	for k, prev := range *old {
+		if cur, ok := cp[k]; !ok || cur != prev {
+			changed = append(changed, k)
+			if ok {
+				since[k] = now
+			}
+		}
+	}
+	for k := range cp {
+		if _, ok := (*old)[k]; !ok {
+			since[k] = now
+		}
+	}
+	s.ownerSince.Store(&since)
+	return changed
 }
 
 // DrainByApp returns and resets activity since the last call, merged per

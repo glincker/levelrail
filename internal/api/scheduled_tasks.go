@@ -65,8 +65,15 @@ type scheduledTaskResource struct {
 	Schedule string           `json:"schedule"`
 	Timezone string           `json:"timezone,omitempty"`
 	Enabled  bool             `json:"enabled"`
-	// ConcurrencyPolicy is allow, forbid or replace.
-	ConcurrencyPolicy      string `json:"concurrency_policy"`
+	// ConcurrencyPolicy is allow, forbid (skip), replace, queue or queue-one.
+	ConcurrencyPolicy string `json:"concurrency_policy"`
+	// OverlapPolicy is the read-only overlap name of ConcurrencyPolicy.
+	OverlapPolicy string `json:"overlap_policy,omitempty"`
+	// AlertOnFailure opts the job into job_failing alert rules; KeepRuns and
+	// KeepDays bound its history, 0 meaning the control plane default.
+	AlertOnFailure         bool   `json:"alert_on_failure"`
+	KeepRuns               int    `json:"keep_runs"`
+	KeepDays               int    `json:"keep_days"`
 	TimeoutSeconds         int    `json:"timeout_seconds,omitempty"`
 	MaxRetries             int    `json:"max_retries,omitempty"`
 	RetryBackoffSeconds    int    `json:"retry_backoff_seconds,omitempty"`
@@ -200,6 +207,7 @@ func validateScheduledTaskInput(r *scheduledTaskResource) error {
 		"timeout_seconds": r.TimeoutSeconds, "max_retries": r.MaxRetries, "retry_backoff_seconds": r.RetryBackoffSeconds,
 		"catch_up_lookback_seconds": r.CatchUpLookbackSeconds, "cpu_limit_millis": r.CPULimitMillis,
 		"memory_limit_mb": r.MemoryLimitMB, "warn_after_seconds": r.WarnAfterSeconds,
+		"keep_runs": r.KeepRuns, "keep_days": r.KeepDays,
 	} {
 		if v < 0 {
 			return fmt.Errorf("%s must not be negative", field)
@@ -214,11 +222,14 @@ func normalizeScheduledTaskConcurrencyPolicy(policy string) (string, error) {
 	switch policy {
 	case "":
 		return store.ScheduledTaskConcurrencyAllow, nil
-	case store.ScheduledTaskConcurrencyAllow, store.ScheduledTaskConcurrencyForbid, store.ScheduledTaskConcurrencyReplace, store.ScheduledTaskConcurrencyQueue:
+	case store.ScheduledTaskConcurrencySkip:
+		return store.ScheduledTaskConcurrencyForbid, nil
+	case store.ScheduledTaskConcurrencyAllow, store.ScheduledTaskConcurrencyForbid, store.ScheduledTaskConcurrencyReplace, store.ScheduledTaskConcurrencyQueue, store.ScheduledTaskConcurrencyQueueOne:
 		return policy, nil
 	default:
-		return "", fmt.Errorf("concurrency_policy: must be one of %q, %q, %q, %q (or empty for %q)",
-			store.ScheduledTaskConcurrencyAllow, store.ScheduledTaskConcurrencyForbid, store.ScheduledTaskConcurrencyReplace, store.ScheduledTaskConcurrencyQueue, store.ScheduledTaskConcurrencyAllow)
+		return "", fmt.Errorf("concurrency_policy: must be one of %q, %q, %q, %q, %q, %q (or empty for %q)",
+			store.ScheduledTaskConcurrencyAllow, store.ScheduledTaskConcurrencySkip, store.ScheduledTaskConcurrencyQueueOne, store.ScheduledTaskConcurrencyForbid,
+			store.ScheduledTaskConcurrencyReplace, store.ScheduledTaskConcurrencyQueue, store.ScheduledTaskConcurrencyAllow)
 	}
 }
 
@@ -309,7 +320,8 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 	}
 
 	mode := defaultJobMode(r)
-	req := scheduledTaskResource{Enabled: mode == store.ScheduledTaskModeFresh, Mode: mode}
+	// A compose schedule is armed on create, like a job; legacy exec tasks stay opt-in.
+	req := scheduledTaskResource{Enabled: mode == store.ScheduledTaskModeFresh || isComposeScheduleRequest(r), Mode: mode}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -357,6 +369,11 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 	if err := rt.persistJobHeartbeat(r.Context(), id, req); err != nil {
 		_ = rt.scheduledTasks.DeleteScheduledTask(r.Context(), id)
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := rt.persistJobGuards(r, name, store.ScheduledTask{ConcurrencyPolicy: store.ScheduledTaskConcurrencyAllow}, task, store.ScheduledTaskGuards{}, req); err != nil {
+		_ = rt.scheduledTasks.DeleteScheduledTask(r.Context(), id)
+		rt.internalError(w, "api: create scheduled task: save guards failed", err, slog.String("name", name))
 		return
 	}
 	saved, err := rt.scheduledTasks.GetScheduledTask(r.Context(), id)
@@ -476,6 +493,7 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 		// the four fields it always had.
 		req.Command, req.Schedule, req.Enabled, req.ConcurrencyPolicy = nil, "", false, ""
 	}
+	prevGuards := guardsOf(req)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -513,6 +531,10 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 	}
 	if err := rt.persistJobHeartbeat(r.Context(), existing.ID, req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := rt.persistJobGuards(r, name, existing, updated, prevGuards, req); err != nil {
+		rt.internalError(w, "api: update scheduled task: save guards failed", err, slog.String("id", existing.ID))
 		return
 	}
 	reloaded, err := rt.scheduledTasks.GetScheduledTask(r.Context(), existing.ID)

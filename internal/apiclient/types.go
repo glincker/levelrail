@@ -329,6 +329,20 @@ type BuildTriggerRequest struct {
 	DetectedFramework string `json:"detected_framework,omitempty"`
 	// UploadHash builds a directory sent with UploadSource instead of a git checkout; RepoURL and Ref stay empty.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// InlineSource builds pasted Dockerfile text plus optional files; RepoURL and Ref stay empty.
+	InlineSource *InlineSource `json:"inline_source,omitempty"`
+}
+
+// InlineSource is a Dockerfile and extra build context files sent as text, no git repository needed.
+type InlineSource struct {
+	Dockerfile string       `json:"dockerfile"`
+	Files      []InlineFile `json:"files,omitempty"`
+}
+
+// InlineFile is one extra build context file of an InlineSource, at a clean relative path.
+type InlineFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input
@@ -413,6 +427,8 @@ type DeployApprovalResource struct {
 	CreatedAt         string `json:"created_at"`
 	ExpiresAt         string `json:"expires_at"`
 	DecidedAt         string `json:"decided_at,omitempty"`
+	ApprovalsRequired int    `json:"approvals_required,omitempty"`
+	ApprovalsReceived int    `json:"approvals_received,omitempty"`
 }
 
 // DeployApprovalListResult mirrors internal/api's
@@ -2007,6 +2023,8 @@ type GitSourceResource struct {
 	Branch      string `json:"branch"`
 	BuildType   string `json:"build_type"`
 	BuildPath   string `json:"build_path,omitempty"`
+	// ComposePath is set only for a compose app deployed from git.
+	ComposePath string `json:"compose_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
 	// BuildCommand and PublishDir build a static site before serving it.
@@ -2055,6 +2073,10 @@ type GitDeploySettings struct {
 	ReportStatus      bool     `json:"report_status"`
 	WaitForCI         bool     `json:"wait_for_ci"`
 	CIRequiredChecks  []string `json:"ci_required_checks"`
+	TagPattern        string   `json:"tag_pattern"`
+	BranchPattern     string   `json:"branch_pattern"`
+	FetchSubmodules   bool     `json:"fetch_submodules"`
+	FetchLFS          bool     `json:"fetch_lfs"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -2065,6 +2087,10 @@ type SetGitDeploySettingsRequest struct {
 	ReportStatus      *bool     `json:"report_status,omitempty"`
 	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
 	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
+	TagPattern        *string   `json:"tag_pattern,omitempty"`
+	BranchPattern     *string   `json:"branch_pattern,omitempty"`
+	FetchSubmodules   *bool     `json:"fetch_submodules,omitempty"`
+	FetchLFS          *bool     `json:"fetch_lfs,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest
@@ -2295,6 +2321,11 @@ type ScheduledTaskResource struct {
 	// of itself still executing. Empty on a request defaults to "allow"
 	// server-side.
 	ConcurrencyPolicy string `json:"concurrency_policy"`
+	// OverlapPolicy is allow, skip or queue-one; empty for replace and queue.
+	OverlapPolicy  string `json:"overlap_policy,omitempty"`
+	AlertOnFailure bool   `json:"alert_on_failure"`
+	KeepRuns       int    `json:"keep_runs"`
+	KeepDays       int    `json:"keep_days"`
 
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
@@ -2388,6 +2419,10 @@ type ScheduledTaskRequest struct {
 	HeartbeatClear   bool   `json:"heartbeat_clear,omitempty"`
 	// HTTP makes the job call a path on the app (Mode "http").
 	HTTP *JobHTTP `json:"http,omitempty"`
+	// Guard rails are pointers so an update leaves unset ones alone.
+	AlertOnFailure *bool `json:"alert_on_failure,omitempty"`
+	KeepRuns       *int  `json:"keep_runs,omitempty"`
+	KeepDays       *int  `json:"keep_days,omitempty"`
 }
 
 // JobHTTP mirrors internal/api's jobHTTPResource. Background jobs are
@@ -2911,6 +2946,8 @@ type EnvironmentResource struct {
 	Kind      string `json:"kind,omitempty"`
 	Scope     string `json:"scope,omitempty"`
 	SortOrder int    `json:"sort_order,omitempty"`
+	// RequiredApprovers is set on PATCH responses; 0 when not reported.
+	RequiredApprovers int `json:"required_approvers,omitempty"`
 }
 
 // CreateEnvironmentRequest mirrors internal/api's

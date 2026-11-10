@@ -22,6 +22,7 @@ const (
 	DomainCondBasicAuthUnresolved  = "basic_auth_unresolved"
 	DomainCondDNS01Unavailable     = "dns01_unavailable"
 	DomainCondTargetUnavailable    = "target_unavailable"
+	DomainCondTuningDropped        = "tuning_dropped"
 )
 
 // DomainCondition is one domain's problem from the last ingress pass.

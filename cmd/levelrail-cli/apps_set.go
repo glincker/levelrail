@@ -51,6 +51,9 @@ func runAppsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	var commands, forks onOffFlag
 	fs.Var(&commands, "pr-comment-commands", "on or off: let write-access users run /levelrail commands from pull request comments")
 	fs.Var(&forks, "pr-comment-commands-forks", "on or off: also accept those commands on pull requests from forks")
+	var desc, notesFile optionalString
+	fs.Var(&desc, "description", "one line description of the app (empty clears it)")
+	fs.Var(&notesFile, "notes-file", "markdown file with the app's notes, - reads stdin (an empty file clears them)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsSetUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -61,11 +64,27 @@ func runAppsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	if !ok {
 		return exitUsage
 	}
-	if !commands.set && !forks.set {
-		return reportError(stdout, stderr, jsonOut, newValidationError("apps set needs --pr-comment-commands or --pr-comment-commands-forks"))
+	update, notesSet, err := notesUpdate(desc, notesFile)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if !commands.set && !forks.set && !notesSet {
+		return reportError(stdout, stderr, jsonOut, newValidationError("apps set needs --description, --notes-file, --pr-comment-commands or --pr-comment-commands-forks"))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if notesSet {
+		n, err := client.SetResourceNotes(context.Background(), "apps", name, update)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set notes for app %q: %w", name, err))
+		}
+		if !commands.set && !forks.set {
+			return writeScheduledTaskResult(stdout, stderr, of, n, func() {
+				_, _ = fmt.Fprintf(stdout, "app %q: description and notes saved\n", name)
+				printAppNotes(stdout, n.Description, n.Notes)
+			})
+		}
+	}
 	res, err := client.SetPRCommentCommands(context.Background(), name, commands.ptr(), forks.ptr())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set pull request comment commands for app %q: %w", name, err))
@@ -80,15 +99,22 @@ func printPRCommentCommands(out io.Writer, name string, res apiclient.PreviewSet
 
 func appsSetUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps set <app-name> [--pr-comment-commands on|off] [--pr-comment-commands-forks on|off] [flags]
+  %[1]s apps set <app-name> [--description text] [--notes-file path|-] [--pr-comment-commands on|off] [--pr-comment-commands-forks on|off] [flags]
 
-Changes app settings. Pull request comment commands let a user with write
+Changes app settings. --description sets a one line summary shown on the
+apps list and --notes-file sets markdown notes (owner, purpose, runbook
+links) shown on the app overview; both are searchable from the apps list.
+Never put secrets in notes: every user who can read the app can read them.
+
+Pull request comment commands let a user with write
 access to the repository run "/levelrail redeploy", "/levelrail rollback",
 "/levelrail status" and "/levelrail preview redeploy" from a pull request
 comment. They are off by default, and the control plane's
 APP_PR_COMMENT_COMMANDS_DISABLED switch overrides this setting.
 
 Flags:
+  --description string                one line description; an empty value clears it
+  --notes-file string                 markdown notes from a file, or - for stdin; an empty file clears them
   --pr-comment-commands string        on or off: accept /levelrail commands from pull request comments
   --pr-comment-commands-forks string  on or off: also accept them on pull requests from forks (default off)
   --token string          API token (default: %[2]s env var, then the credentials file)

@@ -43,6 +43,8 @@ type bootState struct {
 	stop                context.CancelFunc
 	logger              *slog.Logger
 	deferred            []func()
+	pending             pendingStages
+	deferredQueue       []bootStage
 	restartRequested    atomic.Bool
 	ledger              *safemode.Ledger
 	bootPolicy          safemode.Policy

@@ -25,6 +25,11 @@ func nodeDiskResourceID(nodeID string) string {
 // EvaluateNodeDiskSpace fires as soon as any node's used-disk percent meets thresholdPercent, with no debounce.
 // Nodes without a recent sample or with a non-positive total are skipped; a failing node query is logged and skipped.
 func EvaluateNodeDiskSpace(ctx context.Context, nodes NodeSource, metrics MetricsSource, r Rule, thresholdPercent float64, now time.Time, logger *slog.Logger) (Rule, []string, error) {
+	return EvaluateNodeDiskSpaceWithOverrides(ctx, nodes, metrics, r, thresholdPercent, nil, now, logger)
+}
+
+// EvaluateNodeDiskSpaceWithOverrides is EvaluateNodeDiskSpace where a node's own disk override replaces the default.
+func EvaluateNodeDiskSpaceWithOverrides(ctx context.Context, nodes NodeSource, metrics MetricsSource, r Rule, thresholdPercent float64, overrides map[string]store.NodeThresholdOverride, now time.Time, logger *slog.Logger) (Rule, []string, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -57,7 +62,11 @@ func EvaluateNodeDiskSpace(ctx context.Context, nodes NodeSource, metrics Metric
 	)
 
 	for _, node := range all {
-		percent, have, firing := evaluateNodeDiskSpaceForNode(ctx, metrics, r.ID, node, thresholdPercent, from, now, logger)
+		limit := thresholdPercent
+		if o, ok := overrides[node.ID]; ok && o.DiskPercent != nil {
+			limit = float64(*o.DiskPercent)
+		}
+		percent, have, firing := evaluateNodeDiskSpaceForNode(ctx, metrics, r.ID, node, limit, from, now, logger)
 		if !have {
 			continue
 		}
@@ -68,7 +77,7 @@ func EvaluateNodeDiskSpace(ctx context.Context, nodes NodeSource, metrics Metric
 
 		if firing {
 			anyUnhealthy = true
-			notices = append(notices, diskSpaceNotice(node, percent, thresholdPercent))
+			notices = append(notices, diskSpaceNotice(node, percent, limit))
 		}
 	}
 

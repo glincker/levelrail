@@ -32,6 +32,10 @@ func TestBuildRequestWireRoundTrip(t *testing.T) {
 			name: "railpack with nothing but a tag",
 			req:  build.RemoteRequest{Kind: build.RemoteKindRailpack, Tag: "app:sha"},
 		},
+		{
+			name: "railpack with a provider pin",
+			req:  build.RemoteRequest{Kind: build.RemoteKindRailpack, Tag: "app:sha", RailpackProvider: "node"},
+		},
 	}
 
 	for _, tt := range tests {

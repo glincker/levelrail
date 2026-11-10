@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface FunctionInvocation {
   id: string
@@ -79,7 +80,7 @@ export function useFunctionInvocations(name: string) {
         'fetch invocations',
         'GET',
       ),
-    refetchInterval: 10_000,
+    refetchInterval: pollMs('active'),
   })
 }
 

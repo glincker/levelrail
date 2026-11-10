@@ -39,7 +39,7 @@ func (p *Plan) EmitInput() EmitInput {
 	in.Notes = append(in.Notes, p.Report.Notes...)
 	for _, a := range p.Apps {
 		app := EmitApp{Name: a.Name, Port: a.Port, Replicas: a.Replicas, Env: a.Env, Domains: a.Domains,
-			MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs, Notes: notes[a.Name]}
+			MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs, Notes: notes[a.Name], Policy: a.Policy}
 		if perAppScope {
 			app.Project, app.Environment = sanitizeOptional(a.Project), sanitizeOptional(a.Environment)
 		}

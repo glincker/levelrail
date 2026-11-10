@@ -7,7 +7,14 @@ import (
 	"strings"
 )
 
-var secretKeyRe = regexp.MustCompile(`(?i)(^|_)(secret|password|passwd|pwd|token|api_?key|private_?key|credential|auth|dsn)($|_)|_key$|^database_url$|^redis_url$|^mongo(db)?_url$|^db_url$`)
+var secretKeyRe = regexp.MustCompile(`(?i)(^|_)(secret|password|passwd|pwd|token|api_?key|private_?key|credential|auth|dsn)($|_)|_key$|^database_url$|^redis_url$|^mongo(db)?_url$|^db_url$|pass|secret|token|api_?key|credential|dsn`)
+
+var userinfoValueRe = regexp.MustCompile(`[A-Za-z][A-Za-z0-9+.-]*://[^\s/@]*:[^\s/@]+@`)
+
+// ValueLooksSecret reports whether a value embeds URL credentials, such as amqp://u:p@host.
+func ValueLooksSecret(v string) bool {
+	return userinfoValueRe.MatchString(v)
+}
 
 // LooksSecret reports whether an env var name suggests a secret value.
 func LooksSecret(key string) bool {
@@ -149,6 +156,21 @@ func engineFromImage(image string) (engine, version string) {
 	case strings.Contains(name, "memcached"):
 		engine = "memcached"
 	}
+	if engine == "dragonfly" {
+		// Dragonfly publishes only full vX.Y.Z tags, so a shortened one would not pull.
+		if dragonflyTagPattern.MatchString(tag) {
+			return engine, tag
+		}
+		return engine, ""
+	}
+	if engine == "keydb" {
+		// The managed engine runs eqalpha/keydb with the version as its tag, so only an exact tag of that image is kept.
+		repo := strings.TrimPrefix(strings.ToLower(strings.TrimSuffix(image, ":"+tag)), "docker.io/")
+		if repo == "eqalpha/keydb" && keydbTagPattern.MatchString(tag) {
+			return engine, tag
+		}
+		return engine, ""
+	}
 	if m := regexp.MustCompile(`^v?(\d+(\.\d+)?)`).FindStringSubmatch(tag); m != nil {
 		version = m[1]
 		if engine == "meilisearch" || engine == "qdrant" {
@@ -158,6 +180,11 @@ func engineFromImage(image string) (engine, version string) {
 	}
 	return engine, version
 }
+
+var (
+	dragonflyTagPattern = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	keydbTagPattern     = regexp.MustCompile(`^(?:[a-z0-9]+(?:_[a-z0-9]+)*_)?v?\d+\.\d+\.\d+$`)
+)
 
 func splitImageRef(image string) (repo, tag string) {
 	if i := strings.LastIndex(image, ":"); i > strings.LastIndex(image, "/") {

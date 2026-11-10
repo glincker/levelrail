@@ -39,6 +39,9 @@ type HistoryStore interface {
 // constructor" pattern every other cross-package dependency in this
 // codebase already follows) and calls RunBackup per triggered backup.
 type Runner struct {
+	// volumeLocks keeps two backups of one volume from overlapping.
+	volumeLocks *volumeLockSet
+
 	Store    HistoryStore
 	Secrets  SecretsResolver
 	Dumper   Dumper
@@ -206,6 +209,11 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 // instead of Dumper.Dump) and what identifies the row
 // (ServiceName/VolumeName/ResourceKind instead of DatabaseName).
 func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string) error {
+	release, ok := r.locks().tryLock(serviceName, volumeName)
+	if !ok {
+		return r.recordVolumeBusy(ctx, historyID, serviceName, volumeName, targetID)
+	}
+	defer release()
 	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
 		return err
 	}
@@ -264,6 +272,7 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt); err != nil {
 		return fmt.Errorf("backup: finish history %q: %w", historyID, err)
 	}
+	r.saveHookOutput(ctx, historyID, runErr)
 	return runErr
 }
 

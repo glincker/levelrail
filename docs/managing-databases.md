@@ -208,6 +208,22 @@ Delete stops and removes the container and the database record, but **keeps the 
 
 If apps still connect to the database, delete is refused with a `409` naming them. The dashboard then offers "Delete anyway" and the CLI takes `--force`.
 
+### Filter the list and act on many databases
+
+The Databases page has a search box, engine toggles and a status strip (Healthy, Needs attention, Reconciling, Stopped) whose counts double as quick filters. The filters live in the URL (`?q=orders&engine=postgres,redis&status=stopped`), so a filtered list can be bookmarked or shared. On a narrow screen the engine toggles fold behind a Filters button.
+
+Tick rows (or press Ctrl or Cmd plus A inside the list) to open the bulk bar with Start, Stop and Back up. Each action opens a review dialog first: databases that cannot take the action (already running, already stopped, external, not created yet, no backup target) are listed as skipped. Stop asks for confirmation. The dashboard then sends one audited call, `POST /api/v1/databases/bulk`, and reports every database on its own, so a permission error or a protected database fails only that row.
+
+```bash
+levelrail-cli databases bulk start db-a db-b
+levelrail-cli databases bulk backup --selector engine=postgres,project=<id> --dry-run
+levelrail-cli databases bulk stop db-a db-b --confirm-count 2 --output json
+```
+
+Every database is authorized on its own at the same ability as the single-database action (`write:sensitive`), and gets its own audit row. `--dry-run` (`dry_run: true`) returns the plan, what would run and what is skipped and why, and changes nothing. A real stop needs `confirm_count` equal to the number of targets, and refuses databases in a protected environment (stop those one at a time). Results are `ok`, `skipped` (with a reason code), `denied`, `protected`, `not_found` or `error`, in a 207 response. How many databases run at once and how many one call may target are the runtime settings `databases.bulk_concurrency` and `databases.bulk_max_items`.
+
+Each row also has a menu with Open, Back up now and Copy connection string. The copied string holds a `<password>` placeholder, never the real password.
+
 ### Reusing a name after a delete
 
 Because the data volume survives, a new database with the same name would find the old data. The create is still accepted (`201`), but the reconciler's Create storage step stops and asks you to choose, showing the volume name and size: "Reuse the existing volume", "Remove leftover volume and retry" (needs an explicit confirm) or "Choose another name". Sending `existing_volume` in the create request stores the choice up front:
@@ -299,13 +315,13 @@ levelrail-cli databases clone <database> <new-name> --backup <backup-id>
 
 The command waits up to `--wait` for the fresh backup. The default is 15 minutes, and the `LEVELRAIL_EXPORT_WAIT` environment variable sets a different default. Progress goes to stderr and stdout carries only the dump. The command refuses to print a dump to a terminal, writes the file with mode `0600`, and replaces an existing file only with `--force`. If the backup fails or the wait runs out, it exits with an error that names the backup to check. `--target` picks the backup target when more than one is configured.
 
-`import` is the reverse of `export`: it streams a dump from a file or stdin into a running database of the same engine (Postgres, MySQL, MariaDB, MongoDB or Redis). The dump is never printed or logged. A database that already holds data is refused unless you pass `--force`, which also asks you to type the database name; `--yes` skips that prompt and is required with `--in -`. The route is `POST /api/v1/databases/{name}/import` and needs the root ability, like an in-place restore. The largest accepted dump is the `databases.import_max_bytes` setting (default 1 GiB), and the upload is received in full first, so a bigger or interrupted one fails with `413` or `400` before anything is restored. The audit log records the database name, byte count and outcome, never the dump.
+`import` is the reverse of `export`: it streams a dump from a file or stdin into a running database of the same engine (Postgres, MySQL, MariaDB, MongoDB, Redis or Valkey; Valkey shares the Redis path). KeyDB and Dragonfly databases are refused with `400` by `import`. An encrypted export from `export` is decrypted with the instance key and restored, on the same instance only; an export from another instance is refused. The dump is never printed or logged. A database that already holds data is refused unless you pass `--force`, which also asks you to type the database name; `--yes` skips that prompt and is required with `--in -`. The route is `POST /api/v1/databases/{name}/import` and needs the root ability, like an in-place restore. The largest accepted dump is the `databases.import_max_bytes` setting (default 1 GiB), and the upload is received in full first, so a bigger or interrupted one fails with `413` or `400` before anything is restored. The audit log records the database name, byte count and outcome, never the dump.
 
 `clone` creates a new database from a backup of the source. Without `--backup` it takes a fresh backup first and waits for it, the same as `export`. It can also set `--version` for a different engine version and `--project` for the project the new database joins. The source is never changed. The command prints the started clone and returns. Check progress with `levelrail-cli databases get <new-name>`.
 
 On the dashboard, the **Data transfer** card on a database's Overview page offers the same three actions plus **Back up now**. **Back up now** picks a backup target (the first one by default) and starts a backup through the existing backup endpoint; the button shows as running while the newest history row is running, and it needs `write:sensitive`. **Download latest dump** streams the newest succeeded backup (it does not take a new one, so run a backup first for current data) and needs `read:sensitive`. **Clone** is prefilled with `<name>-clone` and starts a restore into a new database from that backup, which needs `write:sensitive`. **Import** takes a dump file, checks first whether the database already holds data, and for a non-empty database asks you to type its name before replacing it. It shows upload progress and the server's own error text, and needs `root`. Controls you lack the ability for are disabled with one line saying why.
 
-Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). It has not run against a live control plane, and `import` has not restored into a real database.
+Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). `export`, `clone` and a plain dump `import` ran against a managed Postgres database on a real host (arm64 Ubuntu VM, 2026-11-08), as did a Redis import guard check. Other engines have no real-host run.
 
 ### Scheduled backups
 
@@ -574,6 +590,25 @@ Both engines have an "encrypt without verifying" mode in their standard connecti
 <Accordion title="Certificate details">
 The certificate is self-signed ECDSA P-256 and valid for ten years. It is never presented to a party that verifies its issuer, so rotation is a deliberate operator action, not forced by expiry. It is ECDSA rather than ed25519 because libpq's SCRAM channel binding fails on an ed25519 certificate, which broke `psql`, psycopg2, and other libpq clients using the default `sslmode=require` URL. Databases created by an earlier release get a new certificate and are recreated once, automatically, the next time the reconciler sees them.
 </Accordion>
+
+## Engine parameters {#engine-parameters}
+
+Tune a running engine without a custom image: `GET /api/v1/databases/{name}/params` lists each allowed parameter with its default, the value the container runs with, and any staged value. Only a fixed allowlist per engine is accepted, each with a typed check (whole number or decimal ranges, sizes such as `256MB`, fixed options, on or off). Values are re-rendered from the parsed number or option, so quotes, spaces, `;`, `=`, backslashes and newlines are refused.
+
+| Engine | Parameters |
+| --- | --- |
+| Postgres | `max_connections`, `shared_buffers`, `effective_cache_size`, `work_mem`, `maintenance_work_mem`, `max_wal_size`, `checkpoint_completion_target`, `random_page_cost`, `effective_io_concurrency`, `default_statistics_target`, `statement_timeout`, `idle_in_transaction_session_timeout`, `jit` |
+| MySQL, MariaDB | `max_connections`, `innodb_buffer_pool_size`, `max_allowed_packet`, `tmp_table_size`, `max_heap_table_size`, `sort_buffer_size`, `table_open_cache`, `wait_timeout`, `interactive_timeout`, `innodb_flush_log_at_trx_commit`, `character_set_server` |
+| Redis, Valkey | `maxmemory`, `maxmemory-policy`, `maxclients`, `timeout`, `tcp-keepalive`, `hz`, `appendfsync`, `lazyfree-lazy-eviction` |
+| MongoDB | `wiredTigerCacheSizeGB`, `maxConns`, `slowms` |
+
+Settings that change network exposure, TLS, authentication, file paths, archiving, plugins or included files (for example `listen_addresses`, `archive_command`, `shared_preload_libraries`, `local_infile`, `secure_file_priv`, `requirepass`, `rename-command`, `bind_ip`, Redis `appendonly`) are managed by the platform and always refused. The connection parameters are capped by the `databases.params_max_connections` runtime setting (default 5000). Memory sizes are capped at 75 percent of the database memory limit, or by `databases.params_max_memory_mb` (default 4096) when it has none. The memory cap is applied again when the container is rendered: a stored size above the current cap runs at the cap, in the same unit. A change to `databases.params_max_memory_mb` never restarts a database by itself, it applies when the database next restarts or a change is applied. The connection cap is checked only when a change is staged. `appendonly` stays refused for Redis and Valkey because in-place restores of a server that runs with an append only file are not AOF-aware yet.
+
+A change never restarts the database by itself. `PUT .../params` with `{"set": {...}, "unset": [...]}` (or `{"rollback": true}` for the set that ran before the last apply) stages it and needs write ability on the database. `POST .../params/apply` with `{"confirm": true}` (write:sensitive) promotes it, and the reconciler replaces the container through its usual sequential replace and recreate guard; the next `databases start` applies a staged change too. `DELETE .../params/pending` discards it. Every stage, apply and discard is in the audit log with the parameter names and values. The dashboard has a **Engine parameters** card on the database overview. It is built and tested with fakes, not yet proven on a real host.
+
+If a running database is replaced with a newly applied set and the new container then never accepts connections within the readiness timeout (`APP_DB_READY_TIMEOUT`, measured from when the new container started), crash loops (`APP_DB_CRASH_LOOP_RESTARTS`), or exits with a non-zero code on two starts in a row, the reconciler restores the set that ran before, once per apply, and replaces the container again over the same data volume. The failed set is kept as the previous set, so it can be staged again with `{"rollback": true}`. Image pull, volume and replace failures never trigger it, and neither does a fresh create (for example the start of a stopped database) since there is no running baseline to return to. A replace that also changes the image (a version change) is not watched, so a failing upgrade never rolls back a good set, and databases on remote agent nodes are not watched because the control plane cannot probe their containers. The watch lives in the control plane process, so a restart during that window skips the rollback. `GET .../params` then shows `rolled_back` with `at` and `reason`, and the audit log has a `database.params.auto_rollback` entry from the system actor. If the restored set fails too it stays as is, and the next explicit apply clears the record.
+
+A version change never applies a staged set: `PUT .../version` answers with a `Levelrail-Params-Pending: staged` header and `upgrade-now` with `params_pending: true`, and `databases upgrade-now` prints a note to run `databases params apply`. Both re-check the running set against the new version with the same validators staging uses. A parameter the new version refuses blocks the change with 409 listing it, unless `drop_incompatible_params` (`--drop-incompatible-params` in the CLI) removes it, which is audited as `database.params.drop_incompatible`. On `PUT .../version` the drop and the version change commit together; on `upgrade-now` the drop happens right after the upgrade was accepted and before its backup finishes, outside the upgrade run itself. An apply also refuses a staged set the current version would not accept.
 
 ## Change the version
 
@@ -957,3 +992,7 @@ The dashboard (and `levelrail-cli databases create --wait`) shows each step. `le
 9. Apply size and backups, then 10. Ready.
 
 A failed step marks every later step as skipped. Retry starts a new attempt; the last few attempts are kept (`APP_DB_PROVISION_KEEP_ATTEMPTS`, default 5), and progress events are throttled by `APP_DB_PROVISION_EVENT_INTERVAL` (default 500ms).
+
+## Keyboard on list pages
+
+The Apps, Databases and Builds lists share one keyboard layer. `j` and `k` move between rows, `x` selects the focused row, `Enter` opens it, `/` jumps to the filter and `?` shows or hides the shortcut line. Keys are ignored while you type in a field, and row scrolling is instant when reduced motion is on. Active filters show as chips with a clear-all; a filter that hides every row says so instead of looking like an empty list.

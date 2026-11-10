@@ -29,6 +29,9 @@ export interface DeployApprovalResource {
   created_at: string
   expires_at: string
   decided_at?: string
+  // Set when the environment needs more than one distinct approver.
+  approvals_required?: number
+  approvals_received?: number
 }
 
 export interface DeployApprovalListResult {

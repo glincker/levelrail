@@ -35,6 +35,9 @@ export type AlertRuleKind =
   | 'scheduled_task_failure'
   | 'scheduled_task_missed'
   | 'scheduled_task_running_long'
+  // job_failing is scoped to the app (service:<app>) and covers every job
+  // with alert_on_failure set.
+  | 'job_failing'
   | 'node_disk_space'
   | 'node_resource_usage'
   | 'domain_health'

@@ -464,7 +464,7 @@
   "buildHooks": {
     "title": "Build hooks",
     "infoTipLabel": "Acerca de los build hooks",
-    "description": "Un build hook es una URL secreta. Haz POST a ella (desde un CMS headless o un cron) para compilar y desplegar el código git de esta aplicación. Un cuerpo JSON opcional con title y body llega a la compilación como los build args TRIGGER_TITLE y TRIGGER_BODY.",
+    "description": "Un build hook es una URL secreta. Haz POST a ella (desde un CMS headless o un cron) para compilar y desplegar el código git de esta aplicación. Un cuerpo JSON opcional con title y body llega a la compilación como los build args TRIGGER_TITLE y TRIGGER_BODY. Una lista opcional de CIDR de origen rechaza a cualquier otro llamante con 403 y no se compila nada.",
     "empty": "Aún no hay build hooks. Crea uno para disparar compilaciones desde fuera.",
     "defaultBranch": "rama de la aplicación",
     "neverTriggered": "Nunca se ha disparado",
@@ -480,10 +480,21 @@
     "copy": "Copiar URL",
     "urlLabel": "URL del build hook",
     "shownOnce": "URL de {{name}}. Cópiala ahora, no se vuelve a mostrar.",
+    "allowLabel": "Orígenes permitidos (opcional)",
+    "allowPlaceholder": "CIDR o direcciones, separados por comas",
+    "allowAny": "Cualquier origen puede llamarlo.",
+    "allowList": "Solo {{cidrs}} puede llamarlo.",
+    "lastUsed": "Última llamada {{when}}.",
+    "editAllow": "Lista de permitidos",
+    "saveAllow": "Guardar lista",
+    "cancel": "Cancelar",
+    "allowAnyToggle": "Permitir cualquier origen",
+    "lastRefusal": "Última llamada rechazada: {{reason}}",
     "toast": {
       "errorTitle": "Falló la solicitud del build hook",
       "copied": "URL copiada.",
-      "copyFailed": "No se pudo copiar al portapapeles."
+      "copyFailed": "No se pudo copiar al portapapeles.",
+      "allowSaved": "Lista de permitidos guardada."
     }
   },
   "banner": {
@@ -658,6 +669,8 @@
     "reject": "Rechazar",
     "approve": "Aprobar",
     "approving": "Aprobando...",
-    "viewQueue": "Ver cola"
+    "viewQueue": "Ver cola",
+    "progress": "{{received}} de {{required}} aprobadores distintos por ahora. El despliegue se ejecuta cuando apruebe el último.",
+    "recorded": "Aprobación registrada: {{received}} de {{required}} aprobadores distintos."
   }
 }

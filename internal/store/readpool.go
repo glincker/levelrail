@@ -40,7 +40,7 @@ func openReadPool(ctx context.Context, path string) *sql.DB {
 	q.Add("mode", "ro")
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "query_only(1)")
-	ro, err := sql.Open("sqlite", "file:"+path+"?"+q.Encode())
+	ro, err := sql.Open(timedDriverName, "file:"+path+"?"+q.Encode())
 	if err != nil {
 		return nil
 	}

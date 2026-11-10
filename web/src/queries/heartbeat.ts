@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface HeartbeatStatus {
   configured: boolean
@@ -48,7 +49,7 @@ export function heartbeatQueryOptions() {
   return queryOptions({
     queryKey: heartbeatKeys.all,
     queryFn: fetchHeartbeat,
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
   })
 }
 

@@ -105,3 +105,46 @@ func TestDeploySpecResponseCarriesWarnings(t *testing.T) {
 		t.Fatalf("warnings = %v, want one", resp.Warnings)
 	}
 }
+
+func TestDefinitionKeysDeploy(t *testing.T) {
+	appJSON := `{
+  "healthchecks": {"web": [{"type": "startup", "path": "/up"}]},
+  "formation": {"worker": {"quantity": 3}},
+  "scripts": {"dokku": {"predeploy": "npm run migrate"}},
+  "cron": [{"command": "node tidy.js", "schedule": "0 3 * * *"}],
+  "mystery_key": true
+}`
+	dir := procfileCheckout(t, map[string]string{
+		"Procfile": "web: node server.js\nworker: node jobs.js\n",
+		"app.json": appJSON,
+	})
+	svcs, findings, ok, err := deploy.ProcfileServices(dir, 0)
+	if err != nil || !ok {
+		t.Fatalf("ProcfileServices ok=%v err=%v", ok, err)
+	}
+	web, worker := svcs["web"], svcs["worker"]
+	if web.Health == nil {
+		t.Errorf("healthcheck did not reach the web service: %+v", web)
+	}
+	if worker.Replicas != 3 {
+		t.Errorf("worker replicas = %d, want 3", worker.Replicas)
+	}
+	var hooked bool
+	for _, s := range svcs {
+		if s.Hooks != nil && s.Hooks.PreDeploy != "" {
+			hooked = true
+		}
+	}
+	if !hooked {
+		t.Error("predeploy script did not become a hook")
+	}
+	var unknown bool
+	for _, f := range findings {
+		if f.Code == "heroku.appjson.key.unsupported" && f.Subject == "mystery_key" {
+			unknown = true
+		}
+	}
+	if !unknown {
+		t.Errorf("unknown key produced no finding: %v", deploy.FindingLines(findings))
+	}
+}

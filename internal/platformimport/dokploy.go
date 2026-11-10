@@ -53,13 +53,14 @@ type dokployAppRef struct {
 }
 
 type dokployDB struct {
-	ID          string `json:"postgresId"`
-	MysqlID     string `json:"mysqlId"`
-	MariadbID   string `json:"mariadbId"`
-	MongoID     string `json:"mongoId"`
-	RedisID     string `json:"redisId"`
-	Name        string `json:"name"`
-	DockerImage string `json:"dockerImage"`
+	ID          string          `json:"postgresId"`
+	MysqlID     string          `json:"mysqlId"`
+	MariadbID   string          `json:"mariadbId"`
+	MongoID     string          `json:"mongoId"`
+	RedisID     string          `json:"redisId"`
+	Name        string          `json:"name"`
+	DockerImage string          `json:"dockerImage"`
+	Backups     []dokployBackup `json:"backups"`
 }
 
 func (d dokployDB) id() string {
@@ -81,41 +82,47 @@ type dokployMount struct {
 	HostPath   string `json:"hostPath"`
 	VolumeName string `json:"volumeName"`
 	MountPath  string `json:"mountPath"`
+	Content    string `json:"content"`
 }
 
 type dokployApp struct {
-	ApplicationID       string          `json:"applicationId"`
-	Name                string          `json:"name"`
-	SourceType          string          `json:"sourceType"`
-	BuildType           string          `json:"buildType"`
-	BuildPath           string          `json:"buildPath"`
-	Dockerfile          string          `json:"dockerfile"`
-	DockerImage         string          `json:"dockerImage"`
-	Env                 string          `json:"env"`
-	Replicas            int             `json:"replicas"`
-	MemoryLimit         string          `json:"memoryLimit"`
-	CPULimit            string          `json:"cpuLimit"`
-	Owner               string          `json:"owner"`
-	Repository          string          `json:"repository"`
-	Branch              string          `json:"branch"`
-	GitlabOwner         string          `json:"gitlabOwner"`
-	GitlabRepository    string          `json:"gitlabRepository"`
-	GitlabBranch        string          `json:"gitlabBranch"`
-	BitbucketOwner      string          `json:"bitbucketOwner"`
-	BitbucketRepository string          `json:"bitbucketRepository"`
-	BitbucketBranch     string          `json:"bitbucketBranch"`
-	GiteaOwner          string          `json:"giteaOwner"`
-	GiteaRepository     string          `json:"giteaRepository"`
-	GiteaBranch         string          `json:"giteaBranch"`
-	CustomGitURL        string          `json:"customGitUrl"`
-	CustomGitBranch     string          `json:"customGitBranch"`
-	AutoDeploy          *bool           `json:"autoDeploy"`
-	CleanCache          bool            `json:"cleanCache"`
-	PreviewActive       bool            `json:"isPreviewDeploymentsActive"`
-	PreviewLimit        int             `json:"previewLimit"`
-	PreviewWildcard     string          `json:"previewWildcard"`
-	Domains             []dokployDomain `json:"domains"`
-	Mounts              []dokployMount  `json:"mounts"`
+	ApplicationID       string            `json:"applicationId"`
+	Name                string            `json:"name"`
+	SourceType          string            `json:"sourceType"`
+	BuildType           string            `json:"buildType"`
+	BuildPath           string            `json:"buildPath"`
+	Dockerfile          string            `json:"dockerfile"`
+	DockerImage         string            `json:"dockerImage"`
+	Env                 string            `json:"env"`
+	Replicas            int               `json:"replicas"`
+	MemoryLimit         string            `json:"memoryLimit"`
+	CPULimit            string            `json:"cpuLimit"`
+	Owner               string            `json:"owner"`
+	Repository          string            `json:"repository"`
+	Branch              string            `json:"branch"`
+	GitlabOwner         string            `json:"gitlabOwner"`
+	GitlabRepository    string            `json:"gitlabRepository"`
+	GitlabBranch        string            `json:"gitlabBranch"`
+	BitbucketOwner      string            `json:"bitbucketOwner"`
+	BitbucketRepository string            `json:"bitbucketRepository"`
+	BitbucketBranch     string            `json:"bitbucketBranch"`
+	GiteaOwner          string            `json:"giteaOwner"`
+	GiteaRepository     string            `json:"giteaRepository"`
+	GiteaBranch         string            `json:"giteaBranch"`
+	CustomGitURL        string            `json:"customGitUrl"`
+	CustomGitBranch     string            `json:"customGitBranch"`
+	AutoDeploy          *bool             `json:"autoDeploy"`
+	CleanCache          bool              `json:"cleanCache"`
+	PreviewActive       bool              `json:"isPreviewDeploymentsActive"`
+	PreviewLimit        int               `json:"previewLimit"`
+	PreviewWildcard     string            `json:"previewWildcard"`
+	Domains             []dokployDomain   `json:"domains"`
+	Mounts              []dokployMount    `json:"mounts"`
+	Redirects           []DokployRedirect `json:"redirects"`
+	Security            []DokploySecurity `json:"security"`
+	Ports               []DokployPort     `json:"ports"`
+	PreDeployCommand    string            `json:"preDeployCommand"`
+	PostDeployCommand   string            `json:"postDeployCommand"`
 	HealthCheckSwarm    *struct {
 		Test     []string `json:"Test"`
 		Interval int64    `json:"Interval"`
@@ -144,6 +151,8 @@ func (s *DokploySource) Discover(ctx context.Context) (*Discovery, error) {
 			s.collect(ctx, d, p.Name, res)
 		}
 	}
+	s.collectDestinations(ctx, d)
+	s.collectNotifications(ctx, d)
 	return d, nil
 }
 
@@ -163,8 +172,7 @@ func (s *DokploySource) collect(ctx context.Context, d *Discovery, project strin
 		d.Apps = append(d.Apps, app)
 	}
 	for _, c := range res.Compose {
-		d.Unsupported = append(d.Unsupported, Unsupported{Kind: "compose", SourceID: c.ID, Name: c.Name,
-			Reason: "compose stacks are multi-service", Manual: "deploy the compose file with the compose deploy command"})
+		d.ComposeApps = append(d.ComposeApps, s.readCompose(ctx, project, c))
 	}
 	dbs := []struct {
 		engine string
@@ -173,7 +181,8 @@ func (s *DokploySource) collect(ctx context.Context, d *Discovery, project strin
 	for _, g := range dbs {
 		for _, db := range g.list {
 			_, ver := engineFromImage(db.DockerImage)
-			d.Databases = append(d.Databases, Database{SourceID: db.id(), Name: db.Name, Project: project, Engine: g.engine, Version: ver})
+			d.Databases = append(d.Databases, Database{SourceID: db.id(), Name: db.Name, Project: project, Engine: g.engine, Version: ver,
+				Backups: mapDokployBackups(db.Backups)})
 		}
 	}
 }
@@ -204,6 +213,8 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 			app.Volumes = append(app.Volumes, Volume{Name: m.VolumeName, ContainerPath: m.MountPath})
 		case "bind":
 			app.Volumes = append(app.Volumes, Volume{HostPath: m.HostPath, ContainerPath: m.MountPath})
+		case "file":
+			app.Notes = append(app.Notes, dokployFileMount(&app, m)...)
 		default:
 			app.Notes = append(app.Notes, Note{Reason: "file mount " + m.MountPath + " is not imported", Manual: "bake the file into the image or use a volume"})
 		}
@@ -236,6 +247,18 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 		app.Kind, app.GitURL, app.GitBranch = SourceGit, a.CustomGitURL, a.CustomGitBranch
 	}
 	app.scrubGitURL()
+	values := make([]string, 0, len(app.Env))
+	for _, e := range app.Env {
+		values = append(values, e.Value)
+	}
+	first := ""
+	if len(app.Domains) > 0 {
+		first = app.Domains[0]
+	}
+	tr := TranslateDokployPolicies(DokployPolicies{Redirects: a.Redirects, Security: a.Security, Ports: a.Ports,
+		PreDeploy: a.PreDeployCommand, PostDeploy: a.PostDeployCommand}, first, values)
+	app.Ingress, app.Build.PreDeploy, app.Build.PostDeploy = tr.Ingress, tr.PreDeploy, tr.PostDeploy
+	app.Notes = append(app.Notes, tr.Notes...)
 	if app.Kind == SourceGit {
 		switch strings.ToLower(a.BuildType) {
 		case "dockerfile":
@@ -305,7 +328,7 @@ func parseEnvBlob(blob string) []Env {
 		if len(v) >= 2 && (v[0] == '"' && v[len(v)-1] == '"' || v[0] == '\'' && v[len(v)-1] == '\'') {
 			v = v[1 : len(v)-1]
 		}
-		out = append(out, Env{Key: k, Value: v, Secret: LooksSecret(k)})
+		out = append(out, Env{Key: k, Value: v, Secret: LooksSecret(k) || ValueLooksSecret(v)})
 	}
 	return out
 }

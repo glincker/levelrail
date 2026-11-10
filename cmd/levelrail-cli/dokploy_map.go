@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -14,6 +17,10 @@ func mapDokployApplication(app dokployApplication, domains []dokployDomain, incl
 	out := mappedApp{SourceName: app.Name}
 
 	out.ServiceName, out.Issues = mapServiceName("Dokploy", app.Name, out.Issues)
+	out.SourceServer = app.ServerID
+	if app.Server != nil && app.Server.Name != "" {
+		out.SourceServer = app.Server.Name
+	}
 
 	buildType, buildPath, buildIssue, blocking := mapDokployBuildConfig(app)
 	if buildIssue != nil {
@@ -33,6 +40,7 @@ func mapDokployApplication(app dokployApplication, domains []dokployDomain, incl
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapDokployEnv(app.Env, includeSecretValues, out.Issues)
 
 	out.Service.Previews, out.Issues = mapDokployPreviews(app, out.Issues)
+	out.Issues = mapDokployPolicies(app, &out)
 
 	return out
 }
@@ -206,4 +214,97 @@ func mapDokployEnv(raw string, includeSecretValues bool, issues []migrationIssue
 		return keys, nil, issues
 	}
 	return keys, parsed, issues
+}
+
+// discoverDokployCompose maps compose stacks through the read-only import source and returns the
+// discovery for the backup import. A read failure only warns, so applications still migrate.
+func discoverDokployCompose(ctx context.Context, f migrateDokployFlags, lookupEnv func(string) (string, bool), stderr io.Writer) ([]mappedApp, *platformimport.Discovery, *platformimport.DokploySource) {
+	src, err := platformimport.NewDokploy(f.dokployURL, f.dokployToken, platformimport.ClientOptions{Policy: platformimport.NetworkPolicy{
+		AllowPrivate: envIsTrue(lookupEnv, platformimport.AllowPrivateEnv), AllowLoopback: envIsTrue(lookupEnv, platformimport.AllowLoopbackEnv)}})
+	if err == nil {
+		var disc *platformimport.Discovery
+		if disc, err = src.Discover(ctx); err == nil {
+			out := make([]mappedApp, 0, len(disc.ComposeApps))
+			for _, c := range disc.ComposeApps {
+				out = append(out, mapDokployCompose(c, f.includeSecretValues))
+			}
+			return out, disc, src
+		}
+	}
+	_, _ = fmt.Fprintf(stderr, "warning: could not read Dokploy compose stacks and backups, they are not included: %v\n", err)
+	return nil, nil, nil
+}
+
+// mapDokployCompose stages a stack as a compose app. Env values are staged only when real values
+// were requested, matching the env import, since a key name cannot prove a value is harmless.
+func mapDokployCompose(c platformimport.ComposeApp, includeSecretValues bool) mappedApp {
+	name, issues := mapServiceName("Dokploy", c.Name, nil)
+	out := mappedApp{SourceName: c.Name, ServiceName: name}
+	for _, n := range c.Notes {
+		issues = appendIssue(issues, "compose", issueReview, n.Reason+", "+n.Manual)
+	}
+	if c.Verdict != platformimport.ComposeReady {
+		for _, r := range c.Blocked {
+			issues = appendIssue(issues, "compose", issueBlocking, r)
+		}
+		out.Issues, out.Blocking = issues, true
+		return out
+	}
+	plain, secrets := c.SplitEnv()
+	literal := map[string]string{}
+	if includeSecretValues {
+		for _, m := range []map[string]string{plain, secrets} {
+			for k, v := range m {
+				literal[k] = v
+			}
+		}
+	} else if len(plain)+len(secrets) > 0 {
+		issues = appendIssue(issues, "env", issueReview, fmt.Sprintf("%d env var(s) staged as names only; re-run with --include-secret-values to write their values into stack.env", len(plain)+len(secrets)))
+	}
+	keys := make([]string, 0, len(plain)+len(secrets))
+	for k := range plain {
+		keys = append(keys, k)
+	}
+	for k := range secrets {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out.Service.EnvKeys, out.Service.Domains = keys, c.Domains
+	if len(literal) > 0 {
+		out.Service.EnvLiteral = literal
+	}
+	out.Compose = &stagedCompose{Yaml: c.Compose, Hosts: c.Domains, Volumes: c.Volumes}
+	out.Issues = issues
+	return out
+}
+
+// mapDokployPolicies stages redirects and basic auth as the shared ingress plan and deploy commands as hooks.
+// Basic auth is a flag only: --apply gates the domain with a placeholder, never the source credential.
+func mapDokployPolicies(app dokployApplication, out *mappedApp) []migrationIssue {
+	issues := out.Issues
+	values := parseDokployEnv(app.Env)
+	vals := make([]string, 0, len(values))
+	for _, v := range values {
+		vals = append(vals, v)
+	}
+	first := ""
+	if len(out.Service.Domains) > 0 {
+		first = out.Service.Domains[0]
+	}
+	tr := platformimport.TranslateDokployPolicies(platformimport.DokployPolicies{Redirects: app.Redirects, Security: app.Security,
+		Ports: app.Ports, PreDeploy: app.PreDeployCommand, PostDeploy: app.PostDeployCommand}, first, vals)
+	for _, n := range tr.Notes {
+		kind := issuePlanned
+		if !strings.HasPrefix(n.Reason, "planned: ") {
+			kind = issueReview
+		}
+		issues = appendIssue(issues, n.Area, kind, strings.TrimPrefix(n.Reason, "planned: ")+": "+n.Manual)
+	}
+	if tr.Ingress != nil && tr.Ingress.Translated() {
+		out.Service.Ingress = tr.Ingress
+	}
+	if (tr.PreDeploy != "" || tr.PostDeploy != "") && out.Service.BuildType != spec.BuildStatic {
+		out.Service.Hooks = &mappedHooks{PreDeploy: tr.PreDeploy, PostDeploy: tr.PostDeploy}
+	}
+	return issues
 }

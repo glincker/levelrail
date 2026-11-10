@@ -268,6 +268,13 @@ func (rt *Router) runBulkAction(ctx context.Context, req bulkAppsRequest, svc st
 			return fail("redeploy", err)
 		}
 	case bulkActionRestart:
+		if prot, ok := rt.apps.(appProtectionStore); ok {
+			if p, err := prot.GetAppProtection(ctx, svc.Name); err != nil {
+				return fail("protection check", err)
+			} else if p != nil {
+				return bulkStatusSkipped, "app is protected: " + p.Reason
+			}
+		}
 		if err := rt.apps.RestartService(ctx, svc.Name); err != nil {
 			return fail("restart", err)
 		}

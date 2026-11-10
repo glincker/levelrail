@@ -197,7 +197,7 @@ func cleanOutputPath(path string) (string, error) {
 		}
 	}
 	clean := filepath.Clean(path)
-	if fi, err := os.Stat(clean); err == nil && fi.IsDir() {
+	if fi, err := os.Stat(clean); err == nil && fi.IsDir() { //nolint:gosec // path validated above: no ".." segment
 		return "", fmt.Errorf("benchreport: output path %q is a directory", path)
 	}
 	return clean, nil

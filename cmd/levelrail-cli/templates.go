@@ -40,6 +40,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runTemplatesImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runTemplatesDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "service":
+		return runTemplatesService(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown templates subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, templatesUsage(prog))
@@ -58,6 +60,7 @@ func templatesUsage(prog string) string {
   %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
   %[1]s templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [flags]   save a compose file as a custom template
   %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
+  %[1]s templates service <list|show|validate|install|deploy>   server side catalog verbs; "templates service -h" for details
 
 "deploy" defaults the app name to <id>; pass --name to deploy under a
 different name (e.g. deploying the same template twice). A custom

@@ -58,13 +58,14 @@ func TestExitReportDryRun(t *testing.T) {
 		t.Fatalf("mode=%s ready=%v", r.Mode, r.ReadyToRetire)
 	}
 
-	// Engines the managed catalog lacks must be reported, not dropped.
-	for _, name := range []string{"sessions", "analytics"} {
-		if row := find(t, r, "database", name); row.Outcome != coolifyexit.Skipped {
-			t.Errorf("%s outcome = %s, want skipped", name, row.Outcome)
-		}
+	// A pinned ClickHouse tag is imported; a KeyDB "latest" tag has no version to pin, so it stays reported.
+	if row := find(t, r, "database", "analytics"); row.Outcome == coolifyexit.Skipped {
+		t.Errorf("analytics outcome = %s, want imported or manual", row.Outcome)
 	}
-	if row := find(t, r, "app", "collab"); row.Outcome != coolifyexit.Skipped {
+	if row := find(t, r, "database", "sessions"); row.Outcome != coolifyexit.Skipped {
+		t.Errorf("sessions outcome = %s, want skipped", row.Outcome)
+	}
+	if row := find(t, r, "compose", "collab"); row.Outcome != coolifyexit.Skipped {
 		t.Errorf("compose app outcome = %s", row.Outcome)
 	}
 	if row := find(t, r, "service", "plausible"); row.Outcome != coolifyexit.Skipped {
@@ -73,7 +74,7 @@ func TestExitReportDryRun(t *testing.T) {
 
 	web := find(t, r, "app", "storefront")
 	joined := strings.Join(web.Reasons, "\n")
-	for _, want := range []string{"custom build command", "custom start command", "custom container labels", "build-time only variables", "preview deployments", "www redirect"} {
+	for _, want := range []string{"build command", "start command", "has no translation here", "build-time only variables", "preview deployments", "the www rule becomes"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("storefront reasons lack %q:\n%s", want, joined)
 		}
@@ -172,7 +173,7 @@ func assertNoSecrets(t *testing.T, r coolifyexit.Report) {
 func TestExitReportVerifyModeAndRetire(t *testing.T) {
 	_, d := discover(t)
 	d.Unsupported, d.Servers = nil, nil
-	d.Databases = nil
+	d.Databases, d.ComposeApps = nil, nil
 	d.Apps = d.Apps[:0]
 	d.Apps = append(d.Apps, platformimport.App{SourceID: "a1", Name: "solo", Kind: platformimport.SourceImage, Image: "nginx:1", Port: 80})
 	plan := platformimport.BuildPlan(d, platformimport.PlanOptions{ExistingApps: map[string]string{"coolify:a1": "solo"}})

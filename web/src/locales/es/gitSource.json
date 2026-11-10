@@ -177,5 +177,108 @@
     "removeBody": "Las descargas por SSH fallarán hasta generar una clave nueva.",
     "removeConfirm": "Eliminar clave",
     "cancel": "Cancelar"
+  },
+  "dialog": {
+    "open": "Conectar fuente Git",
+    "title": "Conectar una fuente Git",
+    "step": {
+      "source": "Paso 1 de 3: elige un proveedor conectado o pega la URL de un repositorio y una rama.",
+      "review": "Paso 2 de 3: revisa la build detectada y lo que la app conserva.",
+      "finish": "Paso 3 de 3: el primer despliegue desde este repositorio."
+    },
+    "next": "Siguiente",
+    "back": "Atrás",
+    "done": "Listo",
+    "linkOnly": "Solo vincular",
+    "linked": "Repositorio vinculado. Haz push a la rama o despliega cuando quieras.",
+    "reading": "Leyendo el repositorio",
+    "pickService": "¿Qué servicio construye este repositorio?",
+    "effect": {
+      "unchanged": "conserva su imagen actual",
+      "keeps_own_source": "conserva su propia fuente Git",
+      "built_with_this_source": "también se reconstruye desde este repositorio"
+    },
+    "detected": "Build detectada: {{build}}",
+    "detectError": {
+      "not_found": "Repositorio o rama no encontrados.",
+      "access_denied": "Sin acceso a este repositorio. Elígelo desde un proveedor conectado.",
+      "unreadable": "No se pudo leer el repositorio. Aún puedes elegir la build a mano.",
+      "ssh_not_detectable": "Las URL SSH se leen después de conectar.",
+      "unsupported_host": "Este host no se puede leer antes de conectar."
+    },
+    "kept": "Se conserva: {{env}} variables y secretos, {{domains}} dominios, {{volumes}} volúmenes.",
+    "protected": "Esta app está en un entorno protegido. Solo vincula y haz push a la rama para que el despliegue pase por aprobación.",
+    "failingStep": "Falló en: {{step}}",
+    "status": {
+      "queued": "En cola",
+      "building": "Construyendo",
+      "ready": "Activo",
+      "failed": "Fallido",
+      "canceled": "Cancelado",
+      "held": "Retenido",
+      "awaiting_approval": "Esperando aprobación",
+      "rolled_back": "Revertido",
+      "superseded": "Reemplazado"
+    },
+    "connectionNeedsRead": "Tu acceso no puede usar la conexión elegida para leer repos privados, así que el repositorio se leyó sin ella."
+  },
+  "inline": {
+    "title": "Desplegar desde un Dockerfile",
+    "hint": "No hace falta un repositorio git. Pega un Dockerfile o cárgalo desde tu equipo.",
+    "loadFile": "Cargar desde archivo",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "Añadir archivo de contexto",
+    "filePath": "Ruta del archivo de contexto {{n}}",
+    "fileContent": "Contenido del archivo de contexto {{n}}",
+    "pathPlaceholder": "ruta/en/contexto.txt",
+    "removeFile": "Quitar archivo de contexto {{n}}",
+    "deploy": "Desplegar",
+    "started": "Compilación iniciada.",
+    "failed": "No se pudo iniciar la compilación",
+    "deployId": "Despliegue {{id}} iniciado."
+  },
+  "triggerPatterns": {
+    "title": "Patrones de despliegue",
+    "tagHelp": "El modo release despliega hoy cada tag enviado. Indica patrones de tag para desplegar solo los que coincidan, como v* para un tren de versiones.",
+    "branchHelp": "El modo push despliega hoy los envios a {{branch}}. Indica patrones de rama para desplegar en su lugar las ramas de este repositorio que coincidan, como main y release/*.",
+    "tagLabel": "Tags que despliegan",
+    "branchLabel": "Ramas que despliegan",
+    "syntax": "Un patron por linea o separados por comas. * queda dentro de un segmento, ** cruza /, ? es un caracter. Un patron que empieza con ! excluye y siempre gana. Deja vacio para mantener el valor por defecto. Los envios omitidos muestran el motivo en las entregas del webhook.",
+    "save": "Guardar patrones",
+    "saving": "Guardando...",
+    "saved": "Patrones guardados.",
+    "failed": "No se pudieron guardar los patrones."
+  },
+  "fetchExtras": {
+    "title": "Submódulos y LFS",
+    "note": "Descarga los submódulos de git (solo https) y los objetos LFS antes de cada compilación. Las credenciales solo se envían al host del repositorio.",
+    "submodules": "Descargar submódulos",
+    "lfs": "Descargar objetos LFS",
+    "saved": "Ajustes de descarga del código guardados.",
+    "failed": "No se pudieron guardar los ajustes de descarga del código"
+  },
+  "buildSettings": {
+    "title": "Ajustes de compilación",
+    "description": "Opciones guardadas que usa cada compilación posterior. Guardar no inicia un despliegue.",
+    "builder": "Compilador",
+    "dockerfile": "Ruta del Dockerfile",
+    "target": "Etapa objetivo",
+    "provider": "Proveedor de Railpack",
+    "providerAuto": "Detectar automáticamente",
+    "noCache": "Omitir la caché de capas en compilaciones con Dockerfile",
+    "needsGit": "Conecta un origen git para cambiar el compilador o la ruta del Dockerfile.",
+    "save": "Guardar ajustes de compilación",
+    "saving": "Guardando...",
+    "saved": "Ajustes de compilación guardados",
+    "failed": "No se pudieron guardar los ajustes de compilación",
+    "errors": {
+      "tooLong": "Este valor es demasiado largo.",
+      "targetCharset": "Usa letras, dígitos, puntos, guiones bajos o guiones, empezando por una letra o un dígito.",
+      "pathRelative": "Usa una ruta dentro del repositorio, sin .. ni barra inicial.",
+      "provider": "Elige un proveedor compatible."
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
   }
 }

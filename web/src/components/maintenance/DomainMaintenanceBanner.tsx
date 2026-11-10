@@ -13,6 +13,7 @@ import {
 } from '../../queries/domainMaintenance'
 import { isEnforced } from '../../lib/domainEnforcement'
 import { elapsedSince, formatElapsed } from '../../lib/maintenanceElapsed'
+import { pollMs } from '@/lib/pollTier'
 
 const MAX_SHOWN = 3
 const TICK_MS = 30_000
@@ -125,7 +126,7 @@ export function DomainMaintenanceBanner() {
   const { t } = useTranslation('maintenance')
   const { data } = useQuery({
     ...domainsQueryOptions(),
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
   const { data: fleet } = useQuery(fleetMaintenanceQueryOptions())
   const now = useNow()

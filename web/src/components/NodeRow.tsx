@@ -23,6 +23,7 @@ import { DrainNodeDialog } from './DrainNodeDialog'
 import { NodeCertBadge } from './NodeCertBadge'
 import { NodeNeverConnectedBadge } from './NodeNeverConnected'
 import { NodeCPUCell, NodeMemoryCell } from './NodeUtilizationCells'
+import { CopyAsCommand } from './CopyAsCommand'
 
 // Same anatomy as DATABASE_LIST_GRID: icon, name with status beneath, lg-only
 // columns, trailing kebab. Shared by the sticky header and every row.
@@ -143,7 +144,16 @@ export function NodeRow({
         {formatAge(node.last_seen_at, t('list.never'))}
       </span>
 
-      <span className="relative z-10 justify-self-end">
+      <span className="relative z-10 flex items-center gap-1 justify-self-end">
+        <CopyAsCommand
+          subject={node.name}
+          actions={[
+            {
+              kind: node.schedulable ? 'node.cordon' : 'node.uncordon',
+              nodeId: node.id,
+            },
+          ]}
+        />
         <ActionMenu
           trigger={
             <Button

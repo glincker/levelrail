@@ -70,8 +70,8 @@ func TestEnvFile_Rejections(t *testing.T) {
 	}{
 		{name: "traversal", path: "../../etc/passwd", wantErr: "inside the repository"},
 		{name: "absolute", path: "/etc/passwd", wantErr: "inside the repository"},
-		{name: "missing", path: "nope.env", wantErr: "file not found"},
-		{name: "symlink escape", path: "link.env", wantErr: "outside the repository", setup: func(t *testing.T, root string) {
+		{name: "missing", path: "nope.env", wantErr: "file not found in the repository"},
+		{name: "symlink escape", path: "link.env", wantErr: "file not found in the repository", setup: func(t *testing.T, root string) {
 			if err := os.Symlink(filepath.Join(outside, "secret.env"), filepath.Join(root, "link.env")); err != nil {
 				t.Skipf("symlink: %v", err)
 			}

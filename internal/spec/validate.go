@@ -152,6 +152,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.Autoscale.Validate(name, svc.Replicas); err != nil {
 		return err
 	}
+	if err := svc.Images.Validate(name); err != nil {
+		return err
+	}
 	if err := svc.validateNext(name); err != nil {
 		return err
 	}

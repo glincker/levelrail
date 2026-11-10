@@ -344,6 +344,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 					writeError(w, http.StatusForbidden, "this session link lacks the required ability (needs "+required+")")
 					return
 				}
+				markTimingCaller(r, pinned.pinnedAbilities)
 				next(w, r)
 			}
 			// actorType "token", not "session": a pinned session's real
@@ -381,6 +382,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 					writeError(w, http.StatusForbidden, "your account lacks the required ability (needs "+required+")")
 					return
 				}
+				markTimingCaller(r, user.Abilities)
 				next(w, r)
 			}
 			rt.callAudited(w, r, required, "session", userID, "", gated)
@@ -466,6 +468,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		}
 
 		r = r.WithContext(withTokenIdentity(withAgentName(r.Context(), rec.AgentName), rec))
+		markTimingCaller(r, rec.Abilities)
 		rt.callAudited(w, r, required, "token", rec.ID, rec.Name, next)
 	}
 }

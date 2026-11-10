@@ -275,3 +275,19 @@ func TestTargetEmptinessCommandFailsClosedOnOddReplies(t *testing.T) {
 		})
 	}
 }
+
+func TestValkeyUsesRedisPaths(t *testing.T) {
+	if !Supported(EngineValkey) || DefaultPort(EngineValkey) != 6379 {
+		t.Fatal("valkey must be supported on the redis port")
+	}
+	cmd, err := TargetEmptinessCommand(EngineValkey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(cmd[len(cmd)-1], "INFO keyspace") {
+		t.Fatal("valkey emptiness probe must read every database")
+	}
+	if err := (&Source{Host: "cache"}).Validate(EngineValkey); err != nil {
+		t.Fatalf("valkey source without a database must validate: %v", err)
+	}
+}

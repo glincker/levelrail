@@ -50,6 +50,13 @@ var (
 		netip.MustParsePrefix("fd00:ec2::/32"),
 		netip.MustParsePrefix("100.100.100.200/32"),
 	}
+	// Translation and embedding ranges can carry any IPv4 address, metadata included, so they are never dialed.
+	embeddedPrefixes = []netip.Prefix{
+		netip.MustParsePrefix("64:ff9b::/96"),
+		netip.MustParsePrefix("2002::/16"),
+		netip.MustParsePrefix("::/96"),
+		netip.MustParsePrefix("0.0.0.0/8"),
+	}
 	internalPrefixes = []netip.Prefix{
 		netip.MustParsePrefix("100.64.0.0/10"),
 		netip.MustParsePrefix("198.18.0.0/15"),
@@ -73,6 +80,11 @@ func (p NetworkPolicy) Check(addr netip.Addr) error {
 			return nil
 		}
 		return fmt.Errorf("%w: %s is loopback (set %s=true and allow_loopback to permit)", ErrBlockedAddress, addr, AllowLoopbackEnv)
+	}
+	for _, pre := range embeddedPrefixes {
+		if pre.Contains(addr) {
+			return fmt.Errorf("%w: %s is in an address translation or reserved range and can never be used", ErrBlockedAddress, addr)
+		}
 	}
 	internal := addr.IsPrivate()
 	for _, pre := range internalPrefixes {

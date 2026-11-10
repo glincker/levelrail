@@ -4,6 +4,7 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { LoadBalancerAlgorithm } from './appLoadBalancer'
+import { pollMs } from '../lib/pollTier'
 
 export type LoadBalancerOverviewState = 'balancing' | 'degraded' | 'none'
 
@@ -60,7 +61,7 @@ export function loadBalancerListQueryOptions(params: LoadBalancerListParams) {
   return queryOptions({
     queryKey: loadBalancerListKeys.list(params),
     queryFn: () => fetchLoadBalancers(params),
-    refetchInterval: 5000,
+    refetchInterval: pollMs('live'),
     placeholderData: keepPreviousData,
   })
 }

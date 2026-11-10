@@ -68,6 +68,17 @@ func (c *Client) DeleteComposeDBBackupSchedule(ctx context.Context, app, service
 	return c.do(ctx, http.MethodDelete, composeDBServicePath(app, service)+"/backup-schedule", nil, nil)
 }
 
+// PauseComposeDBBackupSchedule calls POST .../backup-schedule/pause or /resume.
+func (c *Client) PauseComposeDBBackupSchedule(ctx context.Context, app, service string, paused bool) (ComposeDBServiceResource, error) {
+	verb := "resume"
+	if paused {
+		verb = "pause"
+	}
+	var out ComposeDBServiceResource
+	err := c.do(ctx, http.MethodPost, composeDBServicePath(app, service)+"/backup-schedule/"+verb, nil, &out)
+	return out, err
+}
+
 // ListComposeDBBackupRuns calls GET .../compose-db-services/{service}/backups.
 func (c *Client) ListComposeDBBackupRuns(ctx context.Context, app, service string) ([]ComposeDBBackupRunResource, error) {
 	var out []ComposeDBBackupRunResource

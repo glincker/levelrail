@@ -35,6 +35,9 @@ vi.mock('./useDomainCheckState', () => ({
   }),
 }))
 vi.mock('./useRecheckCountdown', () => ({ useRecheckCountdown: () => 0 }))
+vi.mock('../domain-tuning/DomainTuningSection', () => ({
+  default: () => null,
+}))
 vi.mock('./DomainTrafficLimitsControl', () => ({
   DomainTrafficLimitsControl: () => <button type="button">Save limits</button>,
 }))

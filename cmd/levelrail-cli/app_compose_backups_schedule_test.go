@@ -23,6 +23,8 @@ func TestRun_ComposeBackups(t *testing.T) {
 		{"services", []string{"services", "shop"}, "GET", base, "", `[{"service":"db","engine":"postgres","scheduled":true,"schedule":"0 3 * * *","enabled":true}]`, "postgres"},
 		{"schedule set", []string{"schedule", "set", "shop", "db", "--target", "t1", "--cron", "0 3 * * *", "--retain", "5"}, "PUT", base + "/db/backup-schedule", `{"target_id":"t1","schedule":"0 3 * * *","retain":5}`, `{"service":"db","schedule":"0 3 * * *","target_id":"t1","enabled":true}`, "set for shop/db"},
 		{"schedule clear", []string{"schedule", "clear", "shop", "db"}, "DELETE", base + "/db/backup-schedule", "", ``, "kept"},
+		{"schedule pause", []string{"schedule", "pause", "shop", "db"}, "POST", base + "/db/backup-schedule/pause", "", `{"service":"db","enabled":true}`, "paused"},
+		{"schedule resume", []string{"schedule", "resume", "shop", "db"}, "POST", base + "/db/backup-schedule/resume", "", `{"service":"db","enabled":true}`, "resumed"},
 		{"runs", []string{"runs", "shop", "db"}, "GET", base + "/db/backups", "", `[{"id":"r1","status":"succeeded"}]`, "r1"},
 		{"run", []string{"run", "shop", "db", "--target", "t1"}, "POST", base + "/db/backups", `{"target_id":"t1"}`, `{"id":"r2","status":"running"}`, "r2"},
 	}

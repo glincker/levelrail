@@ -144,7 +144,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindOOMKilled, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindCleanupFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown,
+	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindOOMKilled, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindJobFailing, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindNodeCPU, alerting.KindNodeMemory, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindCleanupFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown, alerting.KindVolumeUsage,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving,
 		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry:
@@ -440,6 +440,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	rt.changes.Publish(changeAlerts, r.PathValue("name"))
 	res := toRuleResource(*saved)
 	res.Warnings = ruleWarnings(*saved)
 	writeJSON(w, http.StatusCreated, res)

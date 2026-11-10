@@ -177,5 +177,108 @@
     "removeBody": "Fetches over SSH will fail until a new key is generated.",
     "removeConfirm": "Remove key",
     "cancel": "Cancel"
+  },
+  "dialog": {
+    "open": "Connect Git source",
+    "title": "Connect a Git source",
+    "step": {
+      "source": "Step 1 of 3: choose a connected provider or paste a repository URL, then a branch.",
+      "review": "Step 2 of 3: review the detected build and what the app keeps.",
+      "finish": "Step 3 of 3: the first deploy from this repository."
+    },
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "linkOnly": "Link only",
+    "linked": "Repository linked. Push to the branch or deploy when ready.",
+    "reading": "Reading the repository",
+    "pickService": "Which service does this repository build?",
+    "effect": {
+      "unchanged": "keeps its current image",
+      "keeps_own_source": "keeps its own Git source",
+      "built_with_this_source": "also rebuilt from this repository"
+    },
+    "detected": "Detected build: {{build}}",
+    "detectError": {
+      "not_found": "Repository or branch not found.",
+      "access_denied": "No access to this repository. Pick it from a connected provider.",
+      "unreadable": "The repository could not be read. You can still pick the build by hand.",
+      "ssh_not_detectable": "SSH URLs are read after connecting.",
+      "unsupported_host": "This host cannot be read before connecting."
+    },
+    "kept": "Kept: {{env}} env vars and secrets, {{domains}} domains, {{volumes}} volumes.",
+    "protected": "This app is in a protected environment. Link only, then push to the branch so the deploy goes through approval.",
+    "failingStep": "Failed at: {{step}}",
+    "status": {
+      "queued": "Queued",
+      "building": "Building",
+      "ready": "Live",
+      "failed": "Failed",
+      "canceled": "Canceled",
+      "held": "Held",
+      "awaiting_approval": "Awaiting approval",
+      "rolled_back": "Rolled back",
+      "superseded": "Superseded"
+    },
+    "connectionNeedsRead": "Your access cannot use the picked connection to read private repos, so the repository was read without it."
+  },
+  "inline": {
+    "title": "Deploy from a Dockerfile",
+    "hint": "No git repo needed. Paste a Dockerfile or load one from your machine.",
+    "loadFile": "Load from file",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "Add context file",
+    "filePath": "Context file {{n}} path",
+    "fileContent": "Context file {{n}} content",
+    "pathPlaceholder": "path/in/context.txt",
+    "removeFile": "Remove context file {{n}}",
+    "deploy": "Deploy",
+    "started": "Build started.",
+    "failed": "Could not start the build",
+    "deployId": "Deploy {{id}} started."
+  },
+  "triggerPatterns": {
+    "title": "Deploy trigger patterns",
+    "tagHelp": "Release mode deploys every tag push today. List tag patterns to deploy only matching tags, such as v* for a release train.",
+    "branchHelp": "Push mode deploys pushes to {{branch}} today. List branch patterns to deploy matching branches of this repository instead, such as main and release/*.",
+    "tagLabel": "Tags that deploy",
+    "branchLabel": "Branches that deploy",
+    "syntax": "One pattern per line or comma separated. * stays inside one path segment, ** crosses /, ? is one character. A pattern starting with ! excludes and always wins. Leave empty to keep the default. Skipped pushes show their reason in webhook deliveries.",
+    "save": "Save patterns",
+    "saving": "Saving...",
+    "saved": "Trigger patterns saved.",
+    "failed": "Could not save trigger patterns."
+  },
+  "fetchExtras": {
+    "title": "Submodules and LFS",
+    "note": "Fetch git submodules (https only) and LFS objects before each build. Credentials go only to the repository host.",
+    "submodules": "Fetch submodules",
+    "lfs": "Fetch LFS objects",
+    "saved": "Source fetch settings saved.",
+    "failed": "Could not save source fetch settings"
+  },
+  "buildSettings": {
+    "title": "Build settings",
+    "description": "Saved options every later build uses. Saving does not start a deploy.",
+    "builder": "Builder",
+    "dockerfile": "Dockerfile path",
+    "target": "Target stage",
+    "provider": "Railpack provider",
+    "providerAuto": "Detect automatically",
+    "noCache": "Skip the layer cache on Dockerfile builds",
+    "needsGit": "Connect a git source to change the builder or Dockerfile path.",
+    "save": "Save build settings",
+    "saving": "Saving...",
+    "saved": "Build settings saved",
+    "failed": "Could not save build settings",
+    "errors": {
+      "tooLong": "This value is too long.",
+      "targetCharset": "Use letters, digits, dots, underscores or hyphens, starting with a letter or digit.",
+      "pathRelative": "Use a path inside the repository, without .. or a leading slash.",
+      "provider": "Pick a supported provider."
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
   }
 }

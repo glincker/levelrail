@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -34,25 +35,34 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.apps.RestartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+	if err := rt.restartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
 		return
 	}
-	// Own attempt row, like a rollback: the rollout outcome lands on it
-	// instead of the deploy being restarted.
-	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
-		if rt.offlineNodeFor(r.Context(), *svc) != nil {
-			rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
-		} else {
-			rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
-		}
-	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventRestart, Title: "Restarted"})
 	rt.reloadAndWriteApp(w, r, name, "restart app")
+}
+
+// restartService is the one restart path, shared by the manual and the
+// scheduled restart, so both roll out through the same cutover.
+func (rt *Router) restartService(ctx context.Context, name string) error {
+	if err := rt.apps.RestartService(ctx, name); err != nil {
+		return err
+	}
+	// Own attempt row, like a rollback: the rollout outcome lands on it
+	// instead of the deploy being restarted.
+	if svc, err := rt.apps.GetDesiredService(ctx, name); err == nil {
+		if rt.offlineNodeFor(ctx, *svc) != nil {
+			rt.recordPendingAttempt(ctx, *svc, svc.Image, store.DeployAttemptSourceRestart)
+		} else {
+			rt.recordInstantDeployAttempt(ctx, *svc, svc.Image, store.DeployAttemptSourceRestart)
+		}
+	}
+	return nil
 }
 
 // handleStopApp handles POST /api/v1/apps/{name}/stop: sets Suspended,

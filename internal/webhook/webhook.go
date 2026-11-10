@@ -243,6 +243,8 @@ type Handler struct {
 	// other optional collaborator in this codebase has, never a panic or
 	// a swallowed error.
 	notifier DeployNotifier
+	// afterFinish runs once a push build is recorded as finished (the cache quota hook); nil skips it.
+	afterFinish func(app string)
 	// nudger requests an immediate reconcile pass after a successful
 	// deploy; nil (e.g. this package's own dispatch-logic tests) just
 	// means the reconciler waits for its next resyncInterval tick
@@ -388,6 +390,9 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 		if err := h.attempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
 			h.log.Error("webhook: finish deploy attempt failed", "attempt_id", id, "error", err)
 			return
+		}
+		if h.afterFinish != nil {
+			go h.afterFinish(req.ServiceName)
 		}
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if h.notifier != nil {
@@ -801,4 +806,9 @@ func (h *Handler) cloneAndCheckout(ctx context.Context, repoURL, sha string, pro
 
 func isZeroSHA(sha string) bool {
 	return sha != "" && strings.Trim(sha, "0") == ""
+}
+
+// SetAfterBuildFinish installs the post build hook; call it before the handler serves.
+func (h *Handler) SetAfterBuildFinish(fn func(app string)) {
+	h.afterFinish = fn
 }

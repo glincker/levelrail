@@ -11,6 +11,7 @@ import { appKeys } from './apps'
 import { deployAttemptKeys } from './deployAttempts'
 import { postJson } from './deployControl'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollMs } from '@/lib/pollTier'
 
 export interface PublishLock {
   locked: boolean
@@ -65,7 +66,7 @@ export function publishLockQueryOptions(appName: string) {
       }
       return (await res.json()) as PublishLock
     },
-    refetchInterval: 30_000,
+    refetchInterval: pollMs('steady'),
     retry: false,
   })
 }

@@ -83,6 +83,8 @@ type (
 	setDomainAuthGateRequest         = apiclient.SetDomainAuthGateRequest
 	domainLimitsResource             = apiclient.DomainLimitsResource
 	setDomainLimitsRequest           = apiclient.SetDomainLimitsRequest
+	domainTuningResource             = apiclient.DomainTuningResource
+	setDomainTuningRequest           = apiclient.SetDomainTuningRequest
 	authGateRule                     = apiclient.AuthGateRule
 	authGateEventsResponse           = apiclient.AuthGateEventsResponse
 	apiAuthGateEvent                 = apiclient.AuthGateEvent

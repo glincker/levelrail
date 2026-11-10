@@ -3,77 +3,81 @@
 # __BASE_URL__ and __CHROME_JS__ are substituted by capture-demo.sh. Output
 # paths use the same names as shots.yml so the demo run is a drop-in refresh;
 # __OUT_DIR__ is replaced with OUT_DIR. Only pages that render cleanly in demo
-# mode are listed. Rejected: databases-list (renders the empty
-# state), backups (never leaves its loading skeleton), status-page (a wall of warnings),
-# /public/status (every component reads Unknown without a reconciler) and
-# settings/account (access denied in the demo).
+# mode are listed. Full page shots use 1440x900 so the right side panels
+# (from about 1088px of content) and the 4 to 5 column grids show.
+# Rejected: databases-list and the engine picker (empty in the demo), backups
+# (never leaves its loading skeleton), status-page (a wall of warnings),
+# settings/account (access denied in the demo) and add-node-dialog (the demo
+# blocks the Add node write and shows a read-only toast instead of the dialog).
+# status-page-public: the Vite dev server has no /public/status route (404);
+# only the demo backend serves it, and components read Unknown there.
 
 - output: __OUT_DIR__/dashboard-home.png
   url: __BASE_URL__/?board=start
-  width: 1280
+  width: 1440
   height: 900
   wait: 4000
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/apps-list.png
   url: __BASE_URL__/apps/
-  width: 1280
-  height: 800
+  width: 1440
+  height: 900
   wait: 2500
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/app-overview.png
   url: __BASE_URL__/apps/marketing-site/metrics
-  width: 1280
+  width: 1440
   height: 900
   wait: 4000
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/deploy-history.png
   url: __BASE_URL__/apps/marketing-site/deploys
-  width: 1280
-  height: 800
+  width: 1440
+  height: 900
   wait: 2500
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/deployments-all.png
   url: __BASE_URL__/deployments
-  width: 1500
-  height: 800
+  width: 1440
+  height: 900
   wait: 2500
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/nodes.png
   url: __BASE_URL__/nodes/
-  width: 1280
-  height: 700
+  width: 1440
+  height: 900
   wait: 2500
-  javascript: "__CHROME_JS__; const n = [...document.querySelectorAll('h2,h3,th')].find(e => /^(Name|Nodes? )/.test(e.textContent || '')); if (n) n.scrollIntoView({block: 'start'});"
+  javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/alerts.png
   url: __BASE_URL__/alerts
-  width: 1280
-  height: 800
+  width: 1440
+  height: 900
   wait: 2500
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/inbox.png
   url: __BASE_URL__/inbox
-  width: 1280
-  height: 800
+  width: 1440
+  height: 900
   wait: 2500
   javascript: "__CHROME_JS__"
 
 - output: __OUT_DIR__/app-releases.png
   url: __BASE_URL__/apps/marketing-site/overview
-  width: 1280
+  width: 1440
   height: 900
   wait: 4500
   javascript: "__CHROME_JS__; new Promise((done) => { let n = 0; const tick = () => { const h = [...document.querySelectorAll('h2,h3')].find(e => /^releases$/i.test((e.textContent || '').trim())); if (h) { h.scrollIntoView({block: 'center'}); setTimeout(done, 800); } else if (n++ < 40) { setTimeout(tick, 250); } else { done(); } }; tick(); })"
 
 - output: __OUT_DIR__/app-analysis.png
   url: __BASE_URL__/apps/marketing-site/overview
-  width: 1280
+  width: 1440
   height: 900
   wait: 4500
   javascript: "__CHROME_JS__; new Promise((done) => { let n = 0; const tick = () => { const h = [...document.querySelectorAll('h2,h3')].find(e => /analysis/i.test((e.textContent || '').trim()) && (e.textContent || '').length < 40); if (h) { h.scrollIntoView({block: 'start'}); window.scrollBy(0, -60); setTimeout(done, 800); } else if (n++ < 40) { setTimeout(tick, 250); } else { done(); } }; tick(); })"
@@ -86,7 +90,21 @@
 
 - output: __OUT_DIR__/status-page-admin.png
   url: __BASE_URL__/settings/status-page
-  width: 1280
+  width: 1440
   height: 1000
   wait: 3500
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/new-app-wizard.png
+  url: __BASE_URL__/apps/new
+  width: 1440
+  height: 900
+  wait: 3000
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/settings-hub.png
+  url: __BASE_URL__/settings
+  width: 1440
+  height: 900
+  wait: 3000
   javascript: "__CHROME_JS__"

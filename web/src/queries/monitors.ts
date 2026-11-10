@@ -5,6 +5,7 @@ import type {
   Monitor,
   MonitorResults,
 } from '../types/monitor'
+import { pollMs } from '../lib/pollTier'
 
 export const monitorKeys = {
   all: ['monitors'] as const,
@@ -43,7 +44,7 @@ export function useMonitorResults(id: string, enabled = true) {
     queryFn: () => fetchMonitorResults(id),
     retry: false,
     enabled,
-    refetchInterval: 60_000,
+    refetchInterval: pollMs('idle'),
   })
 }
 
@@ -83,6 +84,51 @@ export function useDeleteMonitor() {
           await readErrorMessage(res, `delete monitor failed: ${res.status}`),
         )
       }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: monitorKeys.all })
+    },
+  })
+}
+
+export function useRotateMonitorToken() {
+  const queryClient = useQueryClient()
+  return useMutation<Monitor, ApiError, string>({
+    mutationFn: async (id) => {
+      const res = await fetch(
+        `/api/v1/monitors/${encodeURIComponent(id)}/rotate-token`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `rotate token failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as Monitor
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: monitorKeys.all })
+    },
+  })
+}
+
+export function useSetMonitorEnabled() {
+  const queryClient = useQueryClient()
+  return useMutation<Monitor, ApiError, { id: string; enabled: boolean }>({
+    mutationFn: async ({ id, enabled }) => {
+      const res = await fetch(`/api/v1/monitors/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `update monitor failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as Monitor
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: monitorKeys.all })

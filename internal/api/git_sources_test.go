@@ -840,6 +840,9 @@ func TestRequireHTTPOrHTTPSScheme(t *testing.T) {
 		{name: "http ok", repoURL: "http://example.com/web.git"},
 		{name: "file rejected", repoURL: "file:///etc/passwd", wantErr: true},
 		{name: "ssh rejected", repoURL: "ssh://git@github.com/org/web.git", wantErr: true},
+		{name: "git rejected", repoURL: "git://github.com/org/web.git", wantErr: true},
+		{name: "scp style rejected", repoURL: "git@github.com:org/web.git", wantErr: true},
+		{name: "padded file rejected", repoURL: " file:///etc/passwd", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -848,5 +851,20 @@ func TestRequireHTTPOrHTTPSScheme(t *testing.T) {
 				t.Errorf("requireHTTPOrHTTPSScheme(%q) error = %v, wantErr %v", tt.repoURL, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+// git:// and file:// are neither http(s) nor ssh, so no connect path may accept them.
+func TestHandleSetGitSource_RejectsGitAndFileSchemes(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	for _, repo := range []string{"git://github.com/org/web.git", "file:///srv/repo", "FILE:///srv/repo", "GIT://github.com/org/web.git"} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"`+repo+`"}`))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("repo_url %q: status = %d, want %d, body = %s", repo, rec.Code, http.StatusBadRequest, rec.Body.String())
+		}
 	}
 }

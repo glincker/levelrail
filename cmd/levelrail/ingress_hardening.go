@@ -92,6 +92,8 @@ func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStor
 	h := e.layeredHardening(ctx, db, logger)
 	if h != nil && rs != nil {
 		h.MaxBodyBytes = ingressBodyCap(ctx, rs, h.MaxBodyBytes)
+		h.UnmatchedMode = rs.String(ctx, runtimesettings.KeyIngressUnmatchedMode)
+		h.UnmatchedRedirectURL = rs.String(ctx, runtimesettings.KeyIngressUnmatchedRedirectURL)
 		if rs.TrustedProxyPreset(ctx) == runtimesettings.TrustedProxyPresetCloudflare {
 			m := h.WithCloudflarePreset(cloudflareips.Default().CIDRs())
 			h = &m

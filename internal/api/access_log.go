@@ -25,6 +25,7 @@ type EdgeAccess struct {
 
 // AppAccess implements AccessSource.
 func (e EdgeAccess) AppAccess(app string, f ingress.AccessFilter) []ingress.AccessRecord {
+	f.KeySince = e.Stats.OwnerSince()
 	return e.Log.Query(e.Stats.KeysForApp(app), f)
 }
 
