@@ -55,7 +55,7 @@ function NewAppPage() {
       <NewAppWizard />
       {prefill.active ? null : (
         <>
-          <div className="mx-auto w-full max-w-3xl">
+          <div className="w-full max-w-3xl">
             <Button
               variant="outline"
               size="sm"
@@ -70,9 +70,16 @@ function NewAppPage() {
           {linkOpen ? (
             <DeployLinkDialog open onOpenChange={setLinkOpen} />
           ) : null}
-          <Suspense fallback={null}>
-            <DeployButtonBuilder />
-          </Suspense>
+          <details className="group w-full max-w-3xl">
+            <summary className="inline-flex min-h-8 cursor-pointer list-none items-center text-sm font-medium text-muted-foreground hover:text-foreground">
+              {t('deployButton.title')}
+            </summary>
+            <div className="pt-3">
+              <Suspense fallback={null}>
+                <DeployButtonBuilder />
+              </Suspense>
+            </div>
+          </details>
         </>
       )}
     </PageTemplate>

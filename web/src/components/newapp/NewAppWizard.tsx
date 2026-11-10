@@ -202,7 +202,7 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
   const last = STEPS.length - 1
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="w-full max-w-3xl space-y-6">
       <ol className="flex items-center gap-3" aria-label={t('steps.label')}>
         {STEPS.map((s, i) => (
           <li
