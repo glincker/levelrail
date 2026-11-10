@@ -151,7 +151,7 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-5 right-5 size-8"
                 size="icon-sm"
               />
             }
@@ -169,7 +169,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn('flex flex-col gap-2', className)}
+      className={cn('flex flex-col gap-1.5 pr-10', className)}
       {...props}
     />
   )
@@ -187,7 +187,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        '-mx-(--glinr-dialog-pad) -mb-(--glinr-dialog-pad) flex flex-col-reverse gap-2 rounded-b-container border-t bg-muted/50 p-(--glinr-dialog-pad) sm:flex-row sm:justify-end',
+        'sticky bottom-0 -mx-(--glinr-dialog-pad) -mb-(--glinr-dialog-pad) flex flex-col-reverse gap-2 rounded-b-container border-t bg-muted p-(--glinr-dialog-pad) max-sm:*:data-[slot=button]:w-full sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
@@ -206,7 +206,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-base leading-none font-medium', className)}
+      className={cn('text-base leading-snug font-semibold', className)}
       {...props}
     />
   )
