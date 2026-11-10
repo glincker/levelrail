@@ -199,4 +199,36 @@ describe('LoginScreen', () => {
       screen.getByRole('complementary', { name: /^About / }),
     ).toBeInTheDocument()
   })
+
+  it('shows the approval panel when quick dev login is held for approval', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const url = input instanceof Request ? input.url : String(input)
+        const body = url.endsWith('/api/v1/auth/login')
+          ? {
+              approval_required: true,
+              approval_id: 'la_test123',
+              approval_expires_at: new Date(Date.now() + 300000).toISOString(),
+              approval_match: 57,
+            }
+          : url.endsWith('/api/v1/auth/setup-status')
+            ? { needs_setup: false }
+            : url.includes('/oauth/providers')
+              ? []
+              : { enabled: true }
+        return Promise.resolve(
+          new Response(JSON.stringify(body), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      }),
+    )
+    renderScreen()
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Quick dev login/ }),
+    )
+    expect(await screen.findByTestId('approval-match')).toHaveTextContent('57')
+  })
 })

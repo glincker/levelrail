@@ -50,16 +50,26 @@ export function SignInFlow({
   username,
   onUsernameChange,
   resumeApprovalId,
+  initialApproval,
 }: {
   username: string
   onUsernameChange: (value: string) => void
   // Set when an OAuth sign-in came back held for new browser approval.
   resumeApprovalId?: string
+  // An approval hold handed in by a sign-in started outside this flow.
+  initialApproval?: ApprovalRequiredResponse
 }) {
   const [step, setStep] = useState<Step>(
-    resumeApprovalId
-      ? { kind: 'resume', id: resumeApprovalId }
-      : { kind: 'username' },
+    initialApproval
+      ? {
+          kind: 'approval',
+          id: initialApproval.approval_id,
+          expiresAt: initialApproval.approval_expires_at,
+          match: initialApproval.approval_match,
+        }
+      : resumeApprovalId
+        ? { kind: 'resume', id: resumeApprovalId }
+        : { kind: 'username' },
   )
   const begin = useBeginPasskeyLogin()
   const discoverable = useDiscoverablePasskeyLogin()

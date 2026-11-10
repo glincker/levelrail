@@ -13,6 +13,8 @@ import {
   setupStatusQueryOptions,
   useConsumeSessionLink,
   useLogin,
+  isApprovalRequired,
+  type ApprovalRequiredResponse,
 } from '../queries/auth'
 import { getLastUsername } from '../lib/authStore'
 import { Card, CardContent } from './ui/card'
@@ -85,6 +87,8 @@ export function LoginScreen({
   // Optional convenience: never blocks or fails the form.
   const devMode = useQuery(devModeQueryOptions())
   const quickLogin = useLogin()
+  const [quickApproval, setQuickApproval] =
+    useState<ApprovalRequiredResponse | null>(null)
 
   function handleTabChange(value: unknown): void {
     if (value === 'sign-in' || value === 'register') {
@@ -94,6 +98,8 @@ export function LoginScreen({
 
   const signInContent = (
     <SignInFlow
+      key={quickApproval?.approval_id ?? 'flow'}
+      initialApproval={quickApproval ?? undefined}
       username={username}
       onUsernameChange={setUsername}
       resumeApprovalId={resumeApprovalId}
@@ -230,10 +236,19 @@ export function LoginScreen({
                 className="w-full max-sm:h-10"
                 disabled={quickLogin.isPending}
                 onClick={() => {
-                  quickLogin.mutate({
-                    username: DEV_MODE_USERNAME,
-                    password: DEV_MODE_PASSWORD,
-                  })
+                  quickLogin.mutate(
+                    {
+                      username: DEV_MODE_USERNAME,
+                      password: DEV_MODE_PASSWORD,
+                    },
+                    {
+                      onSuccess: (result) => {
+                        if (isApprovalRequired(result)) {
+                          setQuickApproval(result)
+                        }
+                      },
+                    },
+                  )
                 }}
               >
                 <FlaskConicalGlassIcon size="1.4em" />
