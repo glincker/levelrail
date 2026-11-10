@@ -49,7 +49,7 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            'z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 glass glass-regular motion-overlay rounded-lg p-2.5 text-sm text-popover-foreground outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+            'z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 glass glass-regular motion-overlay rounded-container p-2.5 text-sm text-popover-foreground outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
             !glass && 'glass-solid',
             className,
           )}

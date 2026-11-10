@@ -882,6 +882,36 @@
         }
       }
     },
+    "inner": {
+      "$value": "0.5rem",
+      "$description": "Semantic inner radius for rows and chips nested in a container (outer minus padding).",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-inner",
+          "stability": "experimental"
+        }
+      }
+    },
+    "element": {
+      "$value": "0.75rem",
+      "$description": "Semantic radius of buttons, inputs, selects and textareas.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-element",
+          "stability": "experimental"
+        }
+      }
+    },
+    "container": {
+      "$value": "1rem",
+      "$description": "Semantic radius of cards, dialogs, sheets and popovers.",
+      "$extensions": {
+        "glinr": {
+          "name": "radius-container",
+          "stability": "experimental"
+        }
+      }
+    },
     "pill": {
       "$value": "999px",
       "$description": "Capsules: badges, segmented, toggles, toasts.",

@@ -179,6 +179,9 @@ body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-inner: calc(var(--radius) * 0.8);
+  --radius-element: calc(var(--radius) * 1.2);
+  --radius-container: calc(var(--radius) * 1.6);
 }
 
 .dark {
@@ -263,7 +266,7 @@ body {
 
 /* Kit tokens. Tones: success, warning, danger, info, accent, neutral, each with
    fg (text/icon), soft (tinted surface), border, solid (dots, bars).
-   Spacing: 8px scale (gap-2/4/6). Radii: rounded-xl (12) and rounded-2xl (16). */
+   Spacing: 8px scale (gap-2/4/6). Radii: rounded-inner (8), rounded-element (12), rounded-container (16). */
 :root {
   --tone-neutral-fg: var(--glinr-status-neutral-fg);
   --tone-neutral-soft: var(--glinr-status-neutral-soft);
