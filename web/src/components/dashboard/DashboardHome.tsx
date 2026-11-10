@@ -115,7 +115,6 @@ function StartView({
 
   return (
     <div className="flex flex-col gap-(--glinr-page-gap)">
-      <OnboardingCard />
       <RestoreDueCard />
       <StatusStrip
         apps={summary.total}
@@ -180,6 +179,7 @@ function StartView({
         </div>
       </div>
       <RecommendationsLine showSetup={false} />
+      <OnboardingCard />
       <CopyRetryDialog />
     </div>
   )
