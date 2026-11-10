@@ -7,7 +7,6 @@ import { AutoHostList } from '../../components/certificates/AutoHostList'
 import { CertBudgetCard } from '../../components/certificates/CertBudgetCard'
 import { CertificateCenterTable } from '../../components/CertificateCenterTable'
 import { CertificatesEmptyState } from '../../components/empty/CertificatesEmptyState'
-import { DomainsTabs } from '../../components/domains/DomainsTabs'
 import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyDomainsDiagram } from '../../components/banners/LazyDiagrams'
@@ -47,7 +46,6 @@ function DomainsHeader({ children }: { children: React.ReactNode }) {
         />
       }
     >
-      <DomainsTabs active="certificates" />
       {children}
     </PageTemplate>
   )

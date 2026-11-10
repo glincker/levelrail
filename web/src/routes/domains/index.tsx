@@ -17,7 +17,6 @@ import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { DomainsTable } from '../../components/DomainsTable'
 import { ParkedDomainsGroup } from '../../components/domains/ParkedDomainsGroup'
 import { DomainsFirstRun } from '../../components/domains/DomainsFirstRun'
-import { DomainsTabs } from '../../components/domains/DomainsTabs'
 import { usePlatformStatus } from '../../components/platform/usePlatformStatus'
 import { DomainsStatusBar } from '../../components/domains/DomainsStatusBar'
 import { serverAddressQueryOptions } from '../../queries/serverAddress'
@@ -140,7 +139,6 @@ function DomainsPage() {
         />
       }
     >
-      <DomainsTabs />
       <DomainsStatusBar
         onAdd={() => {
           setAddOpen(true)
