@@ -674,5 +674,13 @@
       "branch": "Usa un nombre simple de rama o etiqueta.",
       "name": "Usa letras minúsculas, dígitos y guiones."
     }
+  },
+  "aside": {
+    "title": "Lo que obtendras",
+    "detect": "Detectamos el stack y los puertos de tu codigo.",
+    "review": "Revisas el plan y los ajustes.",
+    "deploy": "Un clic lo despliega con comprobaciones de salud.",
+    "address": "Las apps reciben una direccion bajo {{domain}}.",
+    "label": "Lo que obtendras y otras formas de empezar"
   }
 }

@@ -197,7 +197,7 @@ function Step({
         <FieldLabel as="span" id={`cli-step-${n}`} className="text-foreground">
           {n}. {title}
         </FieldLabel>
-        <span className="text-xs text-muted-foreground">{status}</span>
+        <span className="text-sm text-muted-foreground">{status}</span>
       </div>
       {children}
     </section>

@@ -65,7 +65,13 @@ export interface WizardInitial {
  * review and deploy. The analysis is read-only; nothing exists until the
  * final Deploy.
  */
-export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
+export function NewAppWizard({
+  initial,
+  connectSlot,
+}: {
+  initial?: WizardInitial
+  connectSlot?: HTMLElement | null
+} = {}) {
   const { t } = useTranslation('newApp')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -202,7 +208,7 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
   const last = STEPS.length - 1
 
   return (
-    <div className="w-full max-w-3xl space-y-6">
+    <div className="w-full max-w-4xl space-y-6">
       <ol className="flex items-center gap-3" aria-label={t('steps.label')}>
         {STEPS.map((s, i) => (
           <li
@@ -249,6 +255,7 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
           ) : null}
           <div className={analyze.isPending ? 'hidden' : undefined}>
             <SourceStep
+              connectSlot={connectSlot}
               busy={analyze.isPending}
               error={analyze.isError ? analyze.error.message : null}
               deploying={deploy.isPending}

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
 import { SampleAppButton } from '../getStarted/SampleAppButton'
 import { MoreWays } from './MoreWays'
+import { PopularTemplatesRow } from './PopularTemplatesRow'
 import { SectionHeading } from './SectionHeading'
 import { RepoList } from './RepoList'
 
@@ -55,12 +57,15 @@ export function SourceStep({
   failure,
   onSource,
   onImport,
+  connectSlot,
 }: {
   busy: boolean
   error: string | null
   deploying: boolean
   failure: string | null
   onSource: (source: GitRepoSourceValue) => void
+  /** Aside element that hosts the provider card on wide screens. */
+  connectSlot?: HTMLElement | null
   onImport: (
     source: GitRepoSourceValue,
     analysis: ImportAnalysis,
@@ -107,6 +112,29 @@ export function SourceStep({
       />
     )
   }
+
+  const connectCard = noProvider
+    ? (() => {
+        const card = (
+          <section
+            aria-labelledby="new-app-connect"
+            className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-xs"
+          >
+            <h2
+              id="new-app-connect"
+              className="text-sm font-medium text-foreground"
+            >
+              {t('newAppNoGit:connect.title')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t('newAppNoGit:connect.reason')}
+            </p>
+            <GitProviderCards />
+          </section>
+        )
+        return connectSlot ? createPortal(card, connectSlot) : card
+      })()
+    : null
 
   return (
     <div className="space-y-6">
@@ -223,23 +251,8 @@ export function SourceStep({
             </Suspense>
           </section>
 
-          {noProvider ? (
-            <section
-              aria-labelledby="new-app-connect"
-              className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-xs"
-            >
-              <h2
-                id="new-app-connect"
-                className="text-sm font-medium text-foreground"
-              >
-                {t('newAppNoGit:connect.title')}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t('newAppNoGit:connect.reason')}
-              </p>
-              <GitProviderCards />
-            </section>
-          ) : null}
+          {connectCard}
+          <PopularTemplatesRow />
         </div>
       ) : null}
 

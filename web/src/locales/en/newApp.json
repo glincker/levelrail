@@ -674,5 +674,13 @@
       "branch": "Use a plain branch or tag name.",
       "name": "Use lowercase letters, digits and hyphens."
     }
+  },
+  "aside": {
+    "title": "What you will get",
+    "detect": "We detect the stack and ports from your code.",
+    "review": "You review the plan and settings.",
+    "deploy": "One click deploys it with health checks.",
+    "address": "Apps get an address under {{domain}}.",
+    "label": "What you will get and other ways in"
   }
 }
