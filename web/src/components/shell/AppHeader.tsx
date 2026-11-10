@@ -90,7 +90,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
               <CliStatusBadge />
             </div>
             <StatusChip />
-            <div className="flex items-center rounded-full border border-border bg-background">
+            <div className="flex items-center rounded-full @md:border @md:border-border @md:bg-background">
               <InboxBadge />
               <div className="flex items-center @max-md:hidden">
                 <NotificationCenter />
