@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowRightGlassIcon,
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
   CircleDashedGlassIcon,
@@ -18,7 +19,7 @@ import type {
 } from '../../lib/firstRunSteps'
 
 const LINK =
-  'inline-flex items-center pointer-coarse:min-h-10 text-xs text-foreground underline-offset-2 hover:underline'
+  'inline-flex items-center gap-1 pointer-coarse:min-h-10 text-xs font-medium text-foreground underline-offset-2 hover:underline'
 
 function StateIcon({ state }: { state: FirstRunStepState }) {
   const base = 'size-5 shrink-0'
@@ -196,11 +197,13 @@ export function FirstRunStrip({
             step.state !== 'todo' ? (
               <Link to="/inbox" className={LINK}>
                 {t('strip.review')}
+                <ArrowRightGlassIcon aria-hidden className="size-4" />
               </Link>
             ) : null}
             {step.id === 'deploy' && step.state === 'todo' ? (
               <Link to="/apps/new" className={LINK}>
                 {t('strip.gitUrl')}
+                <ArrowRightGlassIcon aria-hidden className="size-4" />
               </Link>
             ) : null}
             {step.id === 'deploy' &&
@@ -212,6 +215,7 @@ export function FirstRunStrip({
                 className={LINK}
               >
                 {t('strip.viewApp')}
+                <ArrowRightGlassIcon aria-hidden className="size-4" />
               </Link>
             ) : null}
           </StepItem>

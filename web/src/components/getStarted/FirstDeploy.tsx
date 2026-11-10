@@ -170,28 +170,30 @@ export function FirstDeploy({
   )
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-            <RocketGlassIcon
-              aria-hidden="true"
-              className="size-8 text-primary"
-            />
-            {live ? t('first.titleLive') : t('first.title')}
-          </h1>
-          {app || secondary ? null : (
-            <Link to="/apps/new" className={buttonVariants({ size: 'sm' })}>
-              {t('first.primary')}
-            </Link>
+    <div className={secondary ? 'space-y-3' : 'space-y-6'}>
+      {secondary && !app ? null : (
+        <header className="space-y-1">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+              <RocketGlassIcon
+                aria-hidden="true"
+                className="size-8 text-primary"
+              />
+              {live ? t('first.titleLive') : t('first.title')}
+            </h1>
+            {app || secondary ? null : (
+              <Link to="/apps/new" className={buttonVariants({ size: 'sm' })}>
+                {t('first.primary')}
+              </Link>
+            )}
+          </div>
+          {live ? null : (
+            <p className="max-w-prose text-sm text-muted-foreground">
+              {t('first.subtitle')}
+            </p>
           )}
-        </div>
-        {live ? null : (
-          <p className="max-w-prose text-sm text-muted-foreground">
-            {t('first.subtitle')}
-          </p>
-        )}
-      </header>
+        </header>
+      )}
 
       {app ? (
         <FirstAppStatus app={app} phase={phase} onDone={onDone} />
