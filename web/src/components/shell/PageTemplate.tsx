@@ -7,11 +7,16 @@ import { RelatedLinks } from './RelatedLinks'
 
 const DESCRIPTION_LINE_PX = 24
 
-export type PageTemplateWidth = 'default' | 'wide' | 'full'
+export type PageTemplateWidth =
+  'narrow' | 'medium' | 'default' | 'wide' | 'full'
 
+// Side padding comes from the shell main (--glinr-page-pad-x); every mode centers
+// with mx-auto. `wide` shares the default cap so 1920px screens keep one content line.
 const WIDTH: Record<PageTemplateWidth, string> = {
+  narrow: 'max-w-(--glinr-content-narrow)',
+  medium: 'max-w-[60rem]',
   default: 'max-w-(--glinr-content-max)',
-  wide: 'max-w-(--glinr-content-max-wide)',
+  wide: 'max-w-(--glinr-content-max)',
   full: 'max-w-none',
 }
 

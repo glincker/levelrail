@@ -27,6 +27,8 @@ describe('PageTemplate hero', () => {
 describe('PageTemplate aside slot', () => {
   const cases = [
     { name: 'default', width: undefined, expected: 'default' },
+    { name: 'narrow', width: 'narrow' as const, expected: 'narrow' },
+    { name: 'medium', width: 'medium' as const, expected: 'medium' },
     { name: 'wide', width: 'wide' as const, expected: 'wide' },
     { name: 'full', width: 'full' as const, expected: 'full' },
   ]
@@ -100,4 +102,15 @@ describe('PageTemplate header height', () => {
     expect(cls).toContain('lg:basis-auto')
     expect(cls).not.toContain('min-h-')
   })
+})
+
+describe('PageTemplate width classes', () => {
+  it.each(['narrow', 'medium', 'default', 'wide', 'full'] as const)(
+    'centers the %s width',
+    (width) => {
+      render(<PageTemplate title="T" width={width} />)
+      const root = document.querySelector('[data-page-width]')
+      expect(root?.className).toContain('mx-auto')
+    },
+  )
 })
