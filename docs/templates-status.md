@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 514 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 112 not checked** of 520 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -160,6 +160,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 
 | `affine` | yes | linux/amd64, linux/arm64 |
 | `alertmanager` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `answer` | yes | linux/amd64, linux/arm64 |
+| `anubis` | not checked | - |
 | `anythingllm` | yes | linux/amd64, linux/arm64 |
 | `appflowy` | yes | linux/amd64, linux/arm64 |
 | `apprise-api` | yes | linux/amd64, linux/arm64 |
@@ -225,6 +226,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 
 | `dashy` | yes | linux/amd64, linux/arm64 |
 | `databasus` | yes | linux/amd64, linux/arm64 |
 | `dbgate` | not checked | - |
+| `ddns-updater` | not checked | - |
 | `deluge` | yes | linux/amd64, linux/arm64 |
 | `directus` | yes | linux/amd64, linux/arm64 |
 | `diun` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
@@ -376,6 +378,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 
 | `linkwarden` | yes | linux/amd64, linux/arm64 |
 | `listmonk` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `litellm` | yes | linux/amd64, linux/arm64 |
+| `livekit` | not checked | - |
 | `llama-cpp` | yes | linux/amd64, linux/arm64, linux/s390x |
 | `lldap` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `lobe-chat` | yes | linux/amd64, linux/arm64 |
@@ -451,6 +454,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 
 | `node-postgres-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `node-red` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nodebb` | yes | linux/amd64, linux/arm64 |
+| `notifiarr` | not checked | - |
 | `nsq` | not checked | - |
 | `ntfy` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nzbget` | not checked | - |
@@ -603,6 +607,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 
 | `tdarr` | yes | linux/amd64, linux/arm64 |
 | `teable` | yes | linux/amd64, linux/arm64 |
 | `technitium-dns` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `tempo` | not checked | - |
 | `temporal` | yes | linux/amd64, linux/arm64 |
 | `termix` | yes | linux/amd64, linux/arm64 |
 | `terraria` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
@@ -627,6 +632,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 106 not checked** of 
 | `ubooquity` | not checked | - |
 | `umami` | yes | linux/amd64, linux/arm64 |
 | `unleash-postgres` | yes | linux/amd64, linux/arm64 |
+| `unpoller` | not checked | - |
 | `unstructured` | yes | linux/amd64, linux/arm64 |
 | `uptime-kuma` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `uptime-kuma-mariadb` | yes | linux/amd64, linux/arm64 |

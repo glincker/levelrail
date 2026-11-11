@@ -1,0 +1,15 @@
+services:
+  ddns-updater:
+    image: ghcr.io/qdm12/ddns-updater:v2.10.0
+    ports: ["8000"]
+    environment:
+      CONFIG_FILEPATH: /updater/config.json
+      DATADIR: /updater/data
+    volumes:
+      - data:/updater/data
+    healthcheck:
+      test: ["CMD", "/updater/ddns-updater", "healthcheck"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 10s

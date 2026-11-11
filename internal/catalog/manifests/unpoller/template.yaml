@@ -1,0 +1,59 @@
+id: unpoller
+name: UnPoller
+description: Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login.
+icon: wifi-high
+category: Monitoring
+documentation_url: https://unpoller.com/docs/install/docker
+source_repo: https://github.com/unpoller/unpoller
+license: MIT
+license_class: permissive
+license_url: https://github.com/unpoller/unpoller/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Create a read-only local user on your UniFi controller and enter its address and login. Scrape port 9130 from Prometheus.
+env:
+  - key: UNIFI_URL
+    label: UniFi controller URL
+    description: Address of your controller, for example https://192.168.1.1.
+    required: true
+  - key: UNIFI_USER
+    label: UniFi username
+    description: A local read-only user on the controller.
+    required: true
+  - key: UNIFI_PASSWORD
+    label: UniFi password
+    description: Password of that user.
+    required: true
+    secret: true
+  - key: UNPOLLER_CONFIG
+    type: file
+    service: unpoller
+    path: /etc/unpoller/up.conf
+    mode: "0400"
+    label: up.conf
+    description: The full UnPoller configuration, mounted read-only.
+    secret: true
+    default: |
+      [poller]
+        debug = false
+      [prometheus]
+        http_listen = "0.0.0.0:9130"
+      [influxdb]
+        disable = true
+      [unifi.defaults]
+        url = "${UNIFI_URL}"
+        user = "${UNIFI_USER}"
+        pass = "${UNIFI_PASSWORD}"
+        verify_ssl = false
+domains:
+  - service: unpoller
+    port: 9130
+    description: Public address of the metrics endpoint. Keep it private or put it behind auth.
+healthcheck:
+  service: unpoller
+  port: 9130
+  path: /metrics

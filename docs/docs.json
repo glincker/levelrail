@@ -696,6 +696,7 @@
               "self-host/freescout",
               "self-host/gotify",
               "self-host/listmonk",
+              "self-host/livekit",
               "self-host/mail-mox",
               "self-host/matrix-synapse",
               "self-host/matrix-synapse-postgres",
@@ -955,6 +956,7 @@
               "self-host/metube",
               "self-host/mstream",
               "self-host/navidrome",
+              "self-host/notifiarr",
               "self-host/nzbget",
               "self-host/overseerr",
               "self-host/owncast",
@@ -999,6 +1001,7 @@
               "self-host/grafana-alloy",
               "self-host/loki",
               "self-host/otel-lgtm",
+              "self-host/tempo",
               "self-host/healthchecks",
               "self-host/hertzbeat",
               "self-host/hyperdx",
@@ -1017,12 +1020,19 @@
               "self-host/statping-ng",
               "self-host/statusnook",
               "self-host/tautulli",
+              "self-host/unpoller",
               "self-host/uptime-kuma",
               "self-host/uptime-kuma-mariadb",
               "self-host/victorialogs",
               "self-host/victoriametrics",
               "self-host/zabbix",
               "self-host/zipkin"
+            ]
+          },
+          {
+            "group": "Networking",
+            "pages": [
+              "self-host/ddns-updater"
             ]
           },
           {
@@ -1118,6 +1128,7 @@
             "group": "Security",
             "pages": [
               "self-host/2fauth",
+              "self-host/anubis",
               "self-host/authelia",
               "self-host/authentik",
               "self-host/cap-captcha",

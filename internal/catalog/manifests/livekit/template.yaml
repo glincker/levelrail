@@ -1,0 +1,52 @@
+id: livekit
+name: LiveKit
+description: Open-source WebRTC server for real-time audio, video and data, with an API for rooms and tokens. The install form carries livekit.yaml as an editable file and generates the API key and secret.
+icon: video-camera
+category: Communication
+documentation_url: https://docs.livekit.io/
+source_repo: https://github.com/livekit/livekit
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/livekit/livekit/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Use the generated API key and secret with a LiveKit SDK to mint tokens. Media flows over TCP port 7881 here; UDP media ports are not published by this template.
+env:
+  - key: LIVEKIT_API_KEY
+    label: API key
+    description: Public key name clients use when minting tokens.
+    generate: password
+    length: 16
+  - key: LIVEKIT_API_SECRET
+    label: API secret
+    description: Signs access tokens. LiveKit requires at least 32 characters.
+    generate: password
+    length: 40
+    secret: true
+  - key: LIVEKIT_CONFIG
+    type: file
+    service: livekit
+    path: /etc/livekit.yaml
+    mode: "0400"
+    label: livekit.yaml
+    description: The full LiveKit server configuration, mounted read-only.
+    secret: true
+    default: |
+      port: 7880
+      rtc:
+        tcp_port: 7881
+        use_external_ip: false
+      keys:
+        ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+domains:
+  - service: livekit
+    port: 7880
+    description: Public address of the LiveKit signaling and API endpoint.
+healthcheck:
+  service: livekit
+  port: 7880
+  path: /

@@ -1,0 +1,40 @@
+id: anubis
+name: Anubis
+description: A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you.
+icon: shield
+category: Security
+documentation_url: https://anubis.techaro.lol/
+source_repo: https://github.com/TecharoHQ/anubis
+license: MIT
+license_class: permissive
+license_url: https://github.com/TecharoHQ/anubis/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Point a domain at this address. Requests that pass the challenge are forwarded to the upstream URL you entered.
+env:
+  - key: ANUBIS_TARGET
+    label: Upstream URL
+    description: The site to protect, reachable from this container, for example http://my-app:8080.
+    required: true
+  - key: ANUBIS_DIFFICULTY
+    label: Difficulty
+    description: Leading zero hex digits the client must find. Higher is slower for scrapers and for visitors.
+    default: "4"
+  - key: ANUBIS_KEY
+    label: Signing key
+    description: Signs the pass cookie. Keep it stable or every visitor must solve the challenge again.
+    generate: hex
+    length: 64
+    secret: true
+domains:
+  - service: anubis
+    port: 8923
+    description: Public address of the protected site.
+healthcheck:
+  service: anubis
+  port: 9090
+  path: /metrics

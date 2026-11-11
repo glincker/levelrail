@@ -2,14 +2,14 @@
   "generated_at": "2026-11-02T03:14:45Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 514,
-    "images": 558,
+    "templates": 520,
+    "images": 564,
     "arm64_yes": 393,
     "arm64_no": 15,
-    "arm64_unknown": 106,
+    "arm64_unknown": 112,
     "image_arm64_yes": 434,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 109
+    "image_arm64_unknown": 115
   },
   "templates": [
     {
@@ -288,6 +288,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:53:56Z"
+        }
+      ]
+    },
+    {
+      "id": "anubis",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/techarohq/anubis:v1.28.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1778,6 +1792,20 @@
       "images": [
         {
           "ref": "dbgate/dbgate:7.3.4-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "ddns-updater",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/qdm12/ddns-updater:v2.10.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -5581,6 +5609,20 @@
       ]
     },
     {
+      "id": "livekit",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "livekit/livekit-server:v1.13.11",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "llama-cpp",
       "amd64": "yes",
       "arm64": "yes",
@@ -7258,6 +7300,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "notifiarr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/notifiarr/notifiarr:v0.10.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10767,6 +10823,20 @@
       ]
     },
     {
+      "id": "tempo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "grafana/tempo:2.8.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "temporal",
       "amd64": "yes",
       "arm64": "yes",
@@ -11320,6 +11390,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "unpoller",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/unpoller/unpoller:v5.9.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

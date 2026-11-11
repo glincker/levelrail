@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-514 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+520 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -137,6 +137,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [FreeScout](/self-host/freescout): A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout.
 - [Gotify](/self-host/gotify): A simple push notification server with a REST API and web UI, for sending messages to your devices.
 - [Listmonk](/self-host/listmonk): A self-hosted newsletter and mailing list manager with a fast, dependency-light core.
+- [LiveKit](/self-host/livekit): Open-source WebRTC server for real-time audio, video and data, with an API for rooms and tokens. The install form carries livekit.yaml as an editable file and generates the API key and secret.
 - [Mail server (mox, experimental)](/self-host/mail-mox): Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.
 Install with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.
 Ports 25, 465, 587 and 993 are published on the host with a private bind by default. After install, open them with the CLI command mail ports open --confirm (or Open mail ports on the Mail page): that makes only those four ports public and allows them in the host firewall, then set up DNS. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.
@@ -382,6 +383,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [MeTube](/self-host/metube): A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.
 - [mStream](/self-host/mstream): A lightweight personal music streaming server with a web player and mobile apps.
 - [Navidrome](/self-host/navidrome): Stream your own music collection from a Subsonic-compatible server to any device, anywhere.
+- [Notifiarr](/self-host/notifiarr): Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key.
 - [NZBGet](/self-host/nzbget): A fast, light Usenet downloader with a web interface and scripting support.
 - [Overseerr](/self-host/overseerr): Lets your Plex users request new movies and TV shows straight from a shared web UI.
 - [Owncast](/self-host/owncast): Run your own live video streaming server with built-in chat, no third-party platform required.
@@ -424,6 +426,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Grafana Alloy](/self-host/grafana-alloy): A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
 - [Grafana Loki](/self-host/loki): A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
 - [Grafana OTel LGTM](/self-host/otel-lgtm): An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).
+- [Grafana Tempo](/self-host/tempo): Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file.
 - [Healthchecks](/self-host/healthchecks): Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.
 - [HertzBeat](/self-host/hertzbeat): A real time monitoring system with agentless collection, alerts and a web console, on the embedded database with a data volume. Change the default login after the first sign in.
 - [HyperDX](/self-host/hyperdx): An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
@@ -442,12 +445,17 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Statping-ng](/self-host/statping-ng): A status page and uptime monitor for sites, APIs and TCP services with alerts.
 - [Statusnook](/self-host/statusnook): Deploy a status page and start monitoring endpoints in minutes.
 - [Tautulli](/self-host/tautulli): Monitors your Plex server and shows who watched what, with history, stats, and notifications.
+- [UnPoller](/self-host/unpoller): Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login.
 - [Uptime Kuma](/self-host/uptime-kuma): A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.
 - [Uptime Kuma (MariaDB)](/self-host/uptime-kuma-mariadb): Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file.
 - [VictoriaLogs](/self-host/victorialogs): A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it.
 - [VictoriaMetrics](/self-host/victoriametrics): A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.
 - [Zabbix](/self-host/zabbix): Enterprise-grade network, server, and application monitoring with alerting and trend graphs.
 - [Zipkin](/self-host/zipkin): A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts.
+
+## Networking
+
+- [DDNS Updater](/self-host/ddns-updater): Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there.
 
 ## Productivity
 
@@ -539,6 +547,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 ## Security
 
 - [2FAuth](/self-host/2fauth): A web app to manage your two-factor authentication accounts and generate one-time codes.
+- [Anubis](/self-host/anubis): A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you.
 - [Authelia](/self-host/authelia): Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt.
 - [authentik](/self-host/authentik): An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth.
 - [Cap](/self-host/cap-captcha): A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha.

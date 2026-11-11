@@ -1578,6 +1578,159 @@
    }
   },
   {
+   "id": "anubis",
+   "aliases": [],
+   "name": "Anubis",
+   "slogan": "A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you.",
+   "description": "A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you.",
+   "first_run": [
+    "Point a domain at this address. Requests that pass the challenge are forwarded to the upstream URL you entered."
+   ],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/TecharoHQ/anubis",
+   "documentation_url": "https://anubis.techaro.lol/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/TecharoHQ/anubis/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "anubis",
+     "image": "ghcr.io/techarohq/anubis",
+     "tag": "v1.28.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ANUBIS_TARGET",
+      "label": "Upstream URL",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "ANUBIS_DIFFICULTY",
+      "label": "Difficulty",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ANUBIS_KEY",
+      "label": "Signing key",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "anubis",
+     "image": "ghcr.io/techarohq/anubis:v1.28.2",
+     "ports": [
+      8923
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "anubis",
+     "name": "BIND",
+     "kind": "preset"
+    },
+    {
+     "service": "anubis",
+     "name": "DIFFICULTY",
+     "kind": "preset"
+    },
+    {
+     "service": "anubis",
+     "name": "ED25519_PRIVATE_KEY_HEX",
+     "kind": "generated"
+    },
+    {
+     "service": "anubis",
+     "name": "METRICS_BIND",
+     "kind": "preset"
+    },
+    {
+     "service": "anubis",
+     "name": "TARGET",
+     "kind": "required"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "required_secrets",
+      "severity": "info",
+      "services": [
+       "anubis"
+      ],
+      "detail": "TARGET",
+      "message": "You must provide one or more secrets before it can deploy"
+     },
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "anubis"
+      ],
+      "detail": "ED25519_PRIVATE_KEY_HEX",
+      "message": "Passwords and keys are generated at deploy time"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "anythingllm",
    "aliases": [],
    "name": "AnythingLLM",
@@ -11194,6 +11347,125 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ddns-updater",
+   "aliases": [],
+   "name": "DDNS Updater",
+   "slogan": "Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there.",
+   "description": "Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there.",
+   "first_run": [
+    "The starter config has no providers. Edit the config.json setting, add one entry per record using the provider guides in the project docs, and reinstall or update to apply it."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/qdm12/ddns-updater",
+   "documentation_url": "https://github.com/qdm12/ddns-updater",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/qdm12/ddns-updater/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ddns-updater",
+     "image": "ghcr.io/qdm12/ddns-updater",
+     "tag": "v2.10.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 32,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DDNS_CONFIG",
+      "label": "config.json",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "ddns-updater",
+     "image": "ghcr.io/qdm12/ddns-updater:v2.10.0",
+     "ports": [
+      8000
+     ],
+     "volumes": [
+      "data -> /updater/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ddns-updater",
+     "name": "CONFIG_FILEPATH",
+     "kind": "preset"
+    },
+    {
+     "service": "ddns-updater",
+     "name": "DATADIR",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ddns-updater"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -34793,6 +35065,111 @@
    }
   },
   {
+   "id": "livekit",
+   "aliases": [],
+   "name": "LiveKit",
+   "slogan": "Open-source WebRTC server for real-time audio, video and data, with an API for rooms and tokens. The install form carries livekit.yaml as an editable file and generates the API key and secret.",
+   "description": "Open-source WebRTC server for real-time audio, video and data, with an API for rooms and tokens. The install form carries livekit.yaml as an editable file and generates the API key and secret.",
+   "first_run": [
+    "Use the generated API key and secret with a LiveKit SDK to mint tokens. Media flows over TCP port 7881 here; UDP media ports are not published by this template."
+   ],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/livekit/livekit",
+   "documentation_url": "https://docs.livekit.io/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/livekit/livekit/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "livekit",
+     "image": "livekit/livekit-server",
+     "tag": "v1.13.11",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "LIVEKIT_API_KEY",
+      "label": "API key",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "LIVEKIT_API_SECRET",
+      "label": "API secret",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "LIVEKIT_CONFIG",
+      "label": "livekit.yaml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "livekit",
+     "image": "livekit/livekit-server:v1.13.11",
+     "ports": [
+      7880,
+      7881
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "llama-cpp",
    "aliases": [],
    "name": "llama.cpp Server",
@@ -45716,6 +46093,139 @@
        "postgres"
       ],
       "detail": "nodebb_build, nodebb_config, nodebb_postgres_data, nodebb_uploads",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "notifiarr",
+   "aliases": [],
+   "name": "Notifiarr",
+   "slogan": "Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key.",
+   "description": "Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key.",
+   "first_run": [
+    "Create an account on notifiarr.com, copy your API key into the install form, then open the address to add your apps."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/Notifiarr/notifiarr",
+   "documentation_url": "https://notifiarr.wiki/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/Notifiarr/notifiarr/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "notifiarr",
+     "image": "ghcr.io/notifiarr/notifiarr",
+     "tag": "v0.10.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "NOTIFIARR_API_KEY",
+      "label": "Notifiarr API key",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "NOTIFIARR_UI_PASSWORD",
+      "label": "Web UI password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "NOTIFIARR_CONFIG",
+      "label": "notifiarr.conf",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "notifiarr",
+     "image": "ghcr.io/notifiarr/notifiarr:v0.10.0",
+     "ports": [
+      5454
+     ],
+     "volumes": [
+      "config -> /config"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "required_secrets",
+      "severity": "info",
+      "services": [
+       "notifiarr"
+      ],
+      "detail": "/etc/notifiarr/notifiarr.conf",
+      "message": "You must provide one or more secrets before it can deploy"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "notifiarr"
+      ],
+      "detail": "config",
       "message": "Stores data in named volumes"
      }
     ],
@@ -68702,6 +69212,116 @@
    }
   },
   {
+   "id": "tempo",
+   "aliases": [],
+   "name": "Grafana Tempo",
+   "slogan": "Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file.",
+   "description": "Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file.",
+   "first_run": [
+    "Send OTLP traces to port 4317 (gRPC) or 4318 (HTTP) and add this address as a Tempo data source in Grafana."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/grafana/tempo",
+   "documentation_url": "https://grafana.com/docs/tempo/latest/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/grafana/tempo/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "tempo",
+     "image": "grafana/tempo",
+     "tag": "2.8.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TEMPO_CONFIG",
+      "label": "tempo.yaml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "tempo",
+     "image": "grafana/tempo:2.8.2",
+     "ports": [
+      3200,
+      4317,
+      4318
+     ],
+     "volumes": [
+      "data -> /var/tempo"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "tempo"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "temporal",
    "aliases": [],
    "name": "Temporal",
@@ -72222,6 +72842,130 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "unpoller",
+   "aliases": [],
+   "name": "UnPoller",
+   "slogan": "Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login.",
+   "description": "Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login.",
+   "first_run": [
+    "Create a read-only local user on your UniFi controller and enter its address and login. Scrape port 9130 from Prometheus."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/unpoller/unpoller",
+   "documentation_url": "https://unpoller.com/docs/install/docker",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/unpoller/unpoller/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "unpoller",
+     "image": "ghcr.io/unpoller/unpoller",
+     "tag": "v5.9.5",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "UNIFI_URL",
+      "label": "UniFi controller URL",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "UNIFI_USER",
+      "label": "UniFi username",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "UNIFI_PASSWORD",
+      "label": "UniFi password",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "UNPOLLER_CONFIG",
+      "label": "up.conf",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "unpoller",
+     "image": "ghcr.io/unpoller/unpoller:v5.9.5",
+     "ports": [
+      9130
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "required_secrets",
+      "severity": "info",
+      "services": [
+       "unpoller"
+      ],
+      "detail": "/etc/unpoller/up.conf",
+      "message": "You must provide one or more secrets before it can deploy"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "health_gated_deploy",

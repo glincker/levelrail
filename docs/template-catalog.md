@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (514 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (520 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -33,7 +33,7 @@ Generated from `internal/catalog.Templates` (514 entries as of this build). Run 
 | [Analytics](#analytics) | 10 |
 | [Applications](#applications) | 44 |
 | [Automation](#automation) | 8 |
-| [Communication](#communication) | 21 |
+| [Communication](#communication) | 22 |
 | [Dashboard](#dashboard) | 8 |
 | [Database Tools](#database-tools) | 43 |
 | [Developer Tools](#developer-tools) | 72 |
@@ -41,15 +41,16 @@ Generated from `internal/catalog.Templates` (514 entries as of this build). Run 
 | [Games](#games) | 5 |
 | [Infrastructure](#infrastructure) | 29 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 44 |
-| [Monitoring](#monitoring) | 41 |
+| [Media](#media) | 45 |
+| [Monitoring](#monitoring) | 43 |
 | [Productivity](#productivity) | 84 |
-| [Security](#security) | 20 |
+| [Security](#security) | 21 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 17 |
 | [Backups](#backups) | 2 |
 | [Databases](#databases) | 1 |
 | [Mail](#mail) | 2 |
+| [Networking](#networking) | 1 |
 
 ## AI
 
@@ -187,6 +188,7 @@ Generated from `internal/catalog.Templates` (514 entries as of this build). Run 
 | [FreeScout](https://github.com/freescout-helpdesk/freescout/wiki) | A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. | `freescout` |  |
 | [Gotify](https://gotify.net/docs/) | A simple push notification server with a REST API and web UI, for sending messages to your devices. | `gotify` |  |
 | [Listmonk](https://listmonk.app/docs/) | A self-hosted newsletter and mailing list manager with a fast, dependency-light core. | `listmonk` |  |
+| [LiveKit](https://docs.livekit.io/) | Open-source WebRTC server for real-time audio, video and data, with an API for rooms and tokens. The install form carries livekit.yaml as an editable file and generates the API key and secret. | `livekit` |  |
 | [Mail server (mox, experimental)](https://www.xmox.nl/) | Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.
 Install with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.
 Ports 25, 465, 587 and 993 are published on the host with a private bind by default. After install, open them with the CLI command mail ports open --confirm (or Open mail ports on the Mail page): that makes only those four ports public and allows them in the host firewall, then set up DNS. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.
@@ -439,6 +441,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [MeTube](https://github.com/alexta69/metube) | A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. | `metube` |  |
 | [mStream](https://mstream.io/) | A lightweight personal music streaming server with a web player and mobile apps. | `mstream` |  |
 | [Navidrome](https://www.navidrome.org/docs/) | Stream your own music collection from a Subsonic-compatible server to any device, anywhere. | `navidrome` |  |
+| [Notifiarr](https://notifiarr.wiki/) | Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key. | `notifiarr` |  |
 | [NZBGet](https://nzbget.com/documentation/) | A fast, light Usenet downloader with a web interface and scripting support. | `nzbget` |  |
 | [Overseerr](https://docs.overseerr.dev) | Lets your Plex users request new movies and TV shows straight from a shared web UI. | `overseerr` |  |
 | [Owncast](https://owncast.online/docs) | Run your own live video streaming server with built-in chat, no third-party platform required. | `owncast` |  |
@@ -483,6 +486,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Grafana Alloy](https://grafana.com/docs/alloy/latest/) | A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere. | `grafana-alloy` |  |
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
 | [Grafana OTel LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) | An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP). | `otel-lgtm` |  |
+| [Grafana Tempo](https://grafana.com/docs/tempo/latest/) | Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file. | `tempo` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
 | [HertzBeat](https://hertzbeat.apache.org/docs/) | A real time monitoring system with agentless collection, alerts and a web console, on the embedded database with a data volume. Change the default login after the first sign in. | `hertzbeat` |  |
 | [HyperDX](https://clickhouse.com/docs/use-cases/observability/clickstack) | An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login. | `hyperdx` |  |
@@ -501,6 +505,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Statping-ng](https://github.com/statping-ng/statping-ng) | A status page and uptime monitor for sites, APIs and TCP services with alerts. | `statping-ng` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
 | [Tautulli](https://docs.tautulli.com) | Monitors your Plex server and shows who watched what, with history, stats, and notifications. | `tautulli` |  |
+| [UnPoller](https://unpoller.com/docs/install/docker) | Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login. | `unpoller` |  |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma/wiki) | A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks. | `uptime-kuma` |  |
 | [Uptime Kuma (MariaDB)](https://github.com/louislam/uptime-kuma/wiki) | Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file. | `uptime-kuma-mariadb` |  |
 | [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) | A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it. | `victorialogs` |  |
@@ -602,6 +607,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [2FAuth](https://docs.2fauth.app) | A web app to manage your two-factor authentication accounts and generate one-time codes. | `2fauth` |  |
+| [Anubis](https://anubis.techaro.lol/) | A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you. | `anubis` |  |
 | [Authelia](https://www.authelia.com/configuration/prologue/introduction/) | Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt. | `authelia` |  |
 | [authentik](https://docs.goauthentik.io) | An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth. | `authentik` |  |
 | [Cap](https://capjs.js.org/) | A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha. | `cap-captcha` |  |
@@ -675,6 +681,12 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | --- | --- | --- | --- |
 | [MailDev](https://maildev.github.io/maildev/) | A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered. | `maildev` |  |
 | [SnappyMail](https://snappymail.eu/) | A fast, light webmail client that connects to your IMAP and SMTP servers. | `snappymail` |  |
+
+## Networking
+
+| Template | Slogan | ID | Notes |
+| --- | --- | --- | --- |
+| [DDNS Updater](https://github.com/qdm12/ddns-updater) | Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there. | `ddns-updater` |  |
 
 {/* END GENERATED CATALOG TABLE */}
 
