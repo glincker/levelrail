@@ -115,8 +115,16 @@ func (m Manifest) validatePrompts() []error {
 		}
 		declared[p.Key] = true
 	}
+	errs = append(errs, m.validateFilePrompts()...)
 	used := map[string]bool{}
-	for _, match := range placeholderPattern.FindAllStringSubmatch(m.Compose, -1) {
+	scan := m.Compose
+	for _, p := range m.Env {
+		if p.isFile() {
+			used[p.Key] = true
+			scan += "\n" + p.Default
+		}
+	}
+	for _, match := range placeholderPattern.FindAllStringSubmatch(scan, -1) {
 		key := match[1]
 		if len(key) > 8 && key[:8] == "SERVICE_" {
 			continue

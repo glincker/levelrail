@@ -894,6 +894,7 @@
               "self-host/elasticsearch",
               "self-host/emqx",
               "self-host/etcd",
+              "self-host/haproxy",
               "self-host/headscale",
               "self-host/imgproxy",
               "self-host/kong",

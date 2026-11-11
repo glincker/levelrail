@@ -62,6 +62,11 @@ type EnvPrompt struct {
 	Length      int    `yaml:"length" json:"length,omitempty"`
 	Required    bool   `yaml:"required" json:"required,omitempty"`
 	Secret      bool   `yaml:"secret" json:"secret,omitempty"`
+	// Type "file" makes the prompt a config file mounted into Service at Path; Default is its body. Empty means a plain env value.
+	Type    string `yaml:"type" json:"type,omitempty"`
+	Service string `yaml:"service" json:"service,omitempty"`
+	Path    string `yaml:"path" json:"path,omitempty"`
+	Mode    string `yaml:"mode" json:"mode,omitempty"`
 }
 
 // DomainPrompt is a service the installer offers to put behind a domain.
@@ -119,6 +124,9 @@ func (m Manifest) Render(in InstallInput, allowMissing bool) (string, error) {
 		return "", fmt.Errorf("template %s: parse compose: %w", m.ID, err)
 	}
 	substitute(&doc, values)
+	if err := m.addFiles(&doc, in.Env, values, allowMissing); err != nil {
+		return "", err
+	}
 	if err := m.addDomains(&doc, in.Domains); err != nil {
 		return "", err
 	}
@@ -133,6 +141,9 @@ func (m Manifest) promptValues(supplied map[string]string, allowMissing bool) (m
 	values := make(map[string]string, len(m.Env))
 	var missing []string
 	for _, p := range m.Env {
+		if p.isFile() {
+			continue
+		}
 		v := supplied[p.Key]
 		switch {
 		case v != "":
@@ -177,18 +188,22 @@ func (m Manifest) hasPrompt(key string) bool {
 
 func substitute(n *yaml.Node, values map[string]string) {
 	if n.Kind == yaml.ScalarNode {
-		n.Value = placeholderPattern.ReplaceAllStringFunc(n.Value, func(tok string) string {
-			key := placeholderPattern.FindStringSubmatch(tok)[1]
-			if v, ok := values[key]; ok {
-				return v
-			}
-			return tok
-		})
+		n.Value = expandPlaceholders(n.Value, values)
 		return
 	}
 	for _, c := range n.Content {
 		substitute(c, values)
 	}
+}
+
+func expandPlaceholders(s string, values map[string]string) string {
+	return placeholderPattern.ReplaceAllStringFunc(s, func(tok string) string {
+		key := placeholderPattern.FindStringSubmatch(tok)[1]
+		if v, ok := values[key]; ok {
+			return v
+		}
+		return tok
+	})
 }
 
 func (m Manifest) addDomains(doc *yaml.Node, domains map[string]string) error {

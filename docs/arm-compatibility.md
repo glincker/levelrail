@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 105 unknown, of 513 templates.
+393 listed, 15 amd64 only, 106 unknown, of 514 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -182,6 +182,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `grimmory` | listed | not tested |
 | `grist` | listed | not tested |
 | `grocy` | listed | not tested |
+| `haproxy` | unknown | not tested |
 | `hasura` | listed | not tested |
 | `headscale` | listed | pass |
 | `healthchecks` | listed | not tested |
