@@ -1,0 +1,15 @@
+services:
+  quickwit:
+    image: quickwit/quickwit:v0.9.3
+    ports: ["7280"]
+    command: ["run"]
+    environment:
+      QW_LISTEN_ADDRESS: 0.0.0.0
+    volumes:
+      - data:/quickwit/qwdata
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:7280/health/livez"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s

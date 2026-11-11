@@ -1,0 +1,24 @@
+id: cube
+name: Cube
+description: A semantic layer that serves one set of metric definitions to dashboards, notebooks and AI tools over SQL and REST. Apache-2.0 licensed. This runs in development mode with the playground enabled, so keep it private.
+icon: chart
+category: Analytics
+documentation_url: https://github.com/cube-js/cube
+source_repo: https://github.com/cube-js/cube
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/cube-js/cube/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the playground, connect a database and generate a data model.
+domains:
+  - service: cube
+    port: 4000
+    description: Public address of Cube.
+healthcheck:
+  service: cube
+  port: 4000
+  path: /readyz

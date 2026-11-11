@@ -1,0 +1,63 @@
+---
+title: "Self-host Trivy Server with Docker"
+sidebarTitle: "Trivy Server"
+description: "A vulnerability and misconfiguration scanner run as a server so CI jobs and the CLI can scan images without each downloading the database. Apache-2.0 licensed. It downloads its vulnerability database on first start and has no login, so keep it private."
+"og:url": "https://docs.levelrail.com/self-host/trivy"
+---
+
+A vulnerability and misconfiguration scanner run as a server so CI jobs and the CLI can scan images without each downloading the database. Apache-2.0 licensed. It downloads its vulnerability database on first start and has no login, so keep it private.
+
+This page describes the Levelrail template for Trivy Server (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/aquasecurity/trivy.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `trivy` | `aquasec/trivy:0.76.2` | 4954 | `cache -&#62; /root/.cache/trivy` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`trivy`): cache.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Trivy Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Trivy Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy trivy --name my-trivy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Authelia](/self-host/authelia)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+
+All templates are listed in the [self-host gallery](/self-host).

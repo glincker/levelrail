@@ -1,0 +1,25 @@
+id: maxkb
+name: MaxKB
+description: A knowledge base and chat assistant builder that answers questions from your documents with your choice of model, with an embedded database. GPL-3.0 licensed. The first start takes a few minutes.
+icon: chat
+category: AI
+documentation_url: https://github.com/1Panel-dev/MaxKB
+source_repo: https://github.com/1Panel-dev/MaxKB
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/1Panel-dev/MaxKB/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 2147483648
+first_run:
+  - Sign in as admin with the default password shown in the project docs and change it at once, then add a model and upload documents.
+first_boot_seconds: 600
+domains:
+  - service: maxkb
+    port: 8080
+    description: Public address of MaxKB.
+healthcheck:
+  service: maxkb
+  port: 8080
+  path: /

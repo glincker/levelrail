@@ -1,0 +1,24 @@
+id: attu
+name: Attu
+description: A web admin for Milvus vector databases to browse collections, run searches and manage indexes. Apache-2.0 licensed. Enter the address of your Milvus server on the first screen.
+icon: database
+category: Database Tools
+documentation_url: https://github.com/zilliztech/attu
+source_repo: https://github.com/zilliztech/attu
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/zilliztech/attu/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the app and enter the address of your Milvus server.
+domains:
+  - service: attu
+    port: 3000
+    description: Public address of Attu.
+healthcheck:
+  service: attu
+  port: 3000
+  path: /

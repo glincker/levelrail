@@ -1,0 +1,24 @@
+id: portkey-gateway
+name: Portkey Gateway
+description: A fast AI gateway that routes requests to many model providers behind one OpenAI compatible API with retries and fallbacks. MIT licensed. It stores nothing and has no login.
+icon: network
+category: AI
+documentation_url: https://github.com/Portkey-AI/gateway
+source_repo: https://github.com/Portkey-AI/gateway
+license: MIT
+license_class: permissive
+license_url: https://github.com/Portkey-AI/gateway/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Send requests to the address with your provider key in the headers.
+domains:
+  - service: portkey-gateway
+    port: 8787
+    description: Public address of Portkey Gateway.
+healthcheck:
+  service: portkey-gateway
+  port: 8787
+  path: /

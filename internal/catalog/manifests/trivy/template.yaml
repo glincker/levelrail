@@ -1,0 +1,24 @@
+id: trivy
+name: Trivy Server
+description: A vulnerability and misconfiguration scanner run as a server so CI jobs and the CLI can scan images without each downloading the database. Apache-2.0 licensed. It downloads its vulnerability database on first start and has no login, so keep it private.
+icon: shield
+category: Security
+documentation_url: https://github.com/aquasecurity/trivy
+source_repo: https://github.com/aquasecurity/trivy
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/aquasecurity/trivy/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Point scanners at the address with trivy image --server URL IMAGE. The first start downloads the vulnerability database.
+domains:
+  - service: trivy
+    port: 4954
+    description: Public address of Trivy Server.
+healthcheck:
+  service: trivy
+  port: 4954
+  path: /healthz

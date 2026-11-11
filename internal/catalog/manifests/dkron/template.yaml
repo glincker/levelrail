@@ -1,0 +1,24 @@
+id: dkron
+name: Dkron
+description: A distributed job scheduler with a web UI that runs cron style jobs on one or many nodes. LGPL-3.0 licensed. This runs one server node with no login, so keep it private.
+icon: clock
+category: Infrastructure
+documentation_url: https://github.com/distribworks/dkron
+source_repo: https://github.com/distribworks/dkron
+license: LGPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/distribworks/dkron/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the UI and create your first job.
+domains:
+  - service: dkron
+    port: 8080
+    description: Public address of Dkron.
+healthcheck:
+  service: dkron
+  port: 8080
+  path: /v1

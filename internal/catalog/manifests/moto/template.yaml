@@ -1,0 +1,24 @@
+id: moto
+name: Moto
+description: A mock AWS server for tests that speaks the AWS APIs on one endpoint, so you can run integration tests without an account. Apache-2.0 licensed. State lives in memory and there is no login.
+icon: cloud
+category: Developer Tools
+documentation_url: https://github.com/getmoto/moto
+source_repo: https://github.com/getmoto/moto
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/getmoto/moto/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Point your AWS SDK endpoint at the address with any dummy credentials.
+domains:
+  - service: moto
+    port: 5000
+    description: Public address of Moto.
+healthcheck:
+  service: moto
+  port: 5000
+  path: /moto-api/

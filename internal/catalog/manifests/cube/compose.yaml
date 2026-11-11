@@ -1,0 +1,15 @@
+services:
+  cube:
+    image: cubejs/cube:v1.8.21
+    ports: ["4000"]
+    environment:
+      CUBEJS_DEV_MODE: "true"
+      CUBEJS_API_SECRET: $SERVICE_PASSWORD_CUBE
+    volumes:
+      - conf:/cube/conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4000/readyz"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s

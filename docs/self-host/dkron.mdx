@@ -1,0 +1,63 @@
+---
+title: "Self-host Dkron with Docker"
+sidebarTitle: "Dkron"
+description: "A distributed job scheduler with a web UI that runs cron style jobs on one or many nodes. LGPL-3.0 licensed. This runs one server node with no login, so keep it private."
+"og:url": "https://docs.levelrail.com/self-host/dkron"
+---
+
+A distributed job scheduler with a web UI that runs cron style jobs on one or many nodes. LGPL-3.0 licensed. This runs one server node with no login, so keep it private.
+
+This page describes the Levelrail template for Dkron (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/distribworks/dkron.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `dkron` | `dkron/dkron:4.2.1` | 8080 | `data -&#62; /dkron/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`dkron`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Dkron with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Dkron. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy dkron --name my-dkron
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+
+All templates are listed in the [self-host gallery](/self-host).

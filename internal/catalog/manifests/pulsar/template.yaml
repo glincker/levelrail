@@ -1,0 +1,25 @@
+id: pulsar
+name: Apache Pulsar
+description: A distributed messaging and streaming system, run here as a single standalone node for development and small workloads. Apache-2.0 licensed. The broker has no authentication, so keep it private.
+icon: queue
+category: Infrastructure
+documentation_url: https://github.com/apache/pulsar
+source_repo: https://github.com/apache/pulsar
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/apache/pulsar/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1610612736
+first_run:
+  - Connect clients to port 6650 and use the admin API on the web address.
+first_boot_seconds: 300
+domains:
+  - service: pulsar
+    port: 8080
+    description: Public address of Apache Pulsar.
+healthcheck:
+  service: pulsar
+  port: 8080
+  path: /admin/v2/brokers/health

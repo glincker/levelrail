@@ -1,0 +1,24 @@
+id: quickwit
+name: Quickwit
+description: A search engine for logs and traces that keeps indexes on local storage and serves an Elasticsearch compatible API. Apache-2.0 licensed. This runs one node with no login, so keep it private.
+icon: search
+category: Observability
+documentation_url: https://github.com/quickwit-oss/quickwit
+source_repo: https://github.com/quickwit-oss/quickwit
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/quickwit-oss/quickwit/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Create an index with the API or the UI, then ingest logs.
+domains:
+  - service: quickwit
+    port: 7280
+    description: Public address of Quickwit.
+healthcheck:
+  service: quickwit
+  port: 7280
+  path: /health/livez

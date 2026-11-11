@@ -1,0 +1,10 @@
+services:
+  snmp-exporter:
+    image: prom/snmp-exporter:v0.31.0
+    ports: ["9116"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9116/"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 10s

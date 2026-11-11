@@ -1,0 +1,57 @@
+---
+title: "Self-host Quickwit with Docker"
+sidebarTitle: "Quickwit"
+description: "A search engine for logs and traces that keeps indexes on local storage and serves an Elasticsearch compatible API. Apache-2.0 licensed. This runs one node with no login, so keep it private."
+"og:url": "https://docs.levelrail.com/self-host/quickwit"
+---
+
+A search engine for logs and traces that keeps indexes on local storage and serves an Elasticsearch compatible API. Apache-2.0 licensed. This runs one node with no login, so keep it private.
+
+This page describes the Levelrail template for Quickwit (Observability). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/quickwit-oss/quickwit.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `quickwit` | `quickwit/quickwit:v0.9.3` | 7280 | `data -&#62; /quickwit/qwdata` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `quickwit` | `QW_LISTEN_ADDRESS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`quickwit`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Quickwit with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Quickwit. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy quickwit --name my-quickwit
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+All templates are listed in the [self-host gallery](/self-host).

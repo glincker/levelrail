@@ -1,0 +1,63 @@
+---
+title: "Self-host Apache Pulsar with Docker"
+sidebarTitle: "Apache Pulsar"
+description: "A distributed messaging and streaming system, run here as a single standalone node for development and small workloads. Apache-2.0 licensed. The broker has no authentication, so keep it private."
+"og:url": "https://docs.levelrail.com/self-host/pulsar"
+---
+
+A distributed messaging and streaming system, run here as a single standalone node for development and small workloads. Apache-2.0 licensed. The broker has no authentication, so keep it private.
+
+This page describes the Levelrail template for Apache Pulsar (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/apache/pulsar.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `pulsar` | `apachepulsar/pulsar:5.0.1` | 8080, 6650 | `data -&#62; /pulsar/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`pulsar`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Apache Pulsar with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Apache Pulsar. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy pulsar --name my-pulsar
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+
+All templates are listed in the [self-host gallery](/self-host).

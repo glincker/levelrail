@@ -116,3 +116,66 @@
   reviewed_at: "2026-11-10"
   expires: "2027-11-22"
   note: release workflow publishes uozi/nginx-ui
+- namespace: docker.io/aquasec
+  source_orgs: [aquasecurity]
+  evidence: https://github.com/aquasecurity/trivy/blob/0e40f8178a375c68aeca146e4dc4e89ff1009587/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-24"
+  note: README names aquasec/trivy; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/1panel
+  source_orgs: [1Panel-dev]
+  evidence: https://github.com/1Panel-dev/MaxKB/blob/2900bd8b5a18ed1e9e26a858e8f9501b729d8f94/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-26"
+  note: README names 1panel/maxkb; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/cubejs
+  source_orgs: [cube-js]
+  evidence: https://github.com/cube-js/cube/blob/f20441f84270826384303341e8645057f9ff2905/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-28"
+  note: README names cubejs/cube; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/apachepulsar
+  source_orgs: [apache]
+  evidence: https://github.com/apache/pulsar/blob/0c0cb36d3fa771b8b5ffdc538428a253fdc9c54c/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-11-30"
+  note: README names apachepulsar/pulsar; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/portkeyai
+  source_orgs: [Portkey-AI]
+  evidence: https://github.com/Portkey-AI/gateway/blob/669825cbe89ee51569918b8f78a9db486fd69dd4/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-12-02"
+  note: README names portkeyai/gateway; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/quickwit
+  source_orgs: [quickwit-oss]
+  evidence: https://github.com/quickwit-oss/quickwit/blob/ea02864a8b388b68d3a1a17602a6aba18ce592bc/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-12-04"
+  note: README names quickwit/quickwit; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/motoserver
+  source_orgs: [getmoto]
+  evidence: https://github.com/getmoto/moto/blob/fdae5abc2af511d07b0d2613359e63dec76bc2b1/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-12-06"
+  note: README names motoserver/moto; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/zilliz
+  source_orgs: [zilliztech]
+  evidence: https://github.com/zilliztech/attu/blob/d51e1c785e09e0bf07f454685392f905825a4ec4/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-12-08"
+  note: README names zilliz/attu; placeholder reviewer, owner sign-off pending
+- namespace: docker.io/dkron
+  source_orgs: [distribworks]
+  evidence: https://github.com/distribworks/dkron/blob/5cca42de0764b67d0b9cbb505df1aa61ade0b9b5/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-10"
+  expires: "2027-12-10"
+  note: README names dkron/dkron; placeholder reviewer, owner sign-off pending

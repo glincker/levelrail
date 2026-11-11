@@ -1,0 +1,13 @@
+services:
+  pulsar:
+    image: apachepulsar/pulsar:5.0.1
+    ports: ["8080", "6650"]
+    command: ["bin/pulsar", "standalone"]
+    volumes:
+      - data:/pulsar/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/admin/v2/brokers/health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 60s
