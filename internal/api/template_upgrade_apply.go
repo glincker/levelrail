@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,6 +40,7 @@ const (
 	codeUpgradeBlocked      = "upgrade_blocked"
 	codeUpgradeUpToDate     = "upgrade_up_to_date"
 	codeUpgradeRiskAck      = "upgrade_risk_unacknowledged"
+	codeUpgradeCapsAck      = "upgrade_capabilities_unacknowledged"
 	codeUpgradeBackup       = "upgrade_backup_required"
 	codeUpgradeInProgress   = "upgrade_in_progress"
 	codeUpgradeUserServices = "upgrade_user_services"
@@ -173,16 +175,22 @@ func (rt *Router) handleApplyTemplateUpgrade(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: template upgrade: merge failed", err, slog.String("app", appID))
 		return
 	}
+	grants, ok := rt.templateCapGrants(w, r, st.latest.TemplateID)
+	if !ok {
+		return
+	}
+	added, err := rt.widenedCapGrants(r.Context(), appID, grants)
+	if err != nil {
+		rt.internalError(w, "api: template upgrade: read held capabilities failed", err, slog.String("app", appID))
+		return
+	}
+	if len(added) > 0 && !req.AcceptRisk {
+		writeJSON(w, http.StatusConflict, templateUpgradeRefusal{Error: "the upgrade adds capabilities (" + strings.Join(added, ", ") + ") and needs accept_risk", Code: codeUpgradeCapsAck, Plan: &plan})
+		return
+	}
 	run := templateUpgradeRun{AppID: appID, State: upgradeStateWatching, FromRevision: st.latest.Revision, StartedAt: time.Now().UTC().Format(time.RFC3339)}
 	if !rt.templateUpgrades.start(run) {
 		writeJSON(w, http.StatusConflict, templateUpgradeRefusal{Error: "an upgrade of this app is already running", Code: codeUpgradeInProgress})
-		return
-	}
-	grants, ok := rt.templateCapGrants(w, r, st.latest.TemplateID)
-	if !ok {
-		rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {
-			cur.State, cur.Message, cur.FinishedAt = upgradeStateRefused, "the capability grants were refused, nothing changed", time.Now().UTC().Format(time.RFC3339)
-		})
 		return
 	}
 	resp, ok := rt.lockedComposeDeploy(w, r, appID, []byte(merged), composeDeployOpts{

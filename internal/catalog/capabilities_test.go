@@ -21,7 +21,7 @@ func TestManifestCapabilities_Validation(t *testing.T) {
 	cases := []struct {
 		name, caps, compose, want string
 	}{
-		{"net_admin class cannot reach compose until an Elevated runtime path exists", "capabilities:\n  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n  - {class: net_admin, service: web, reason: raw sockets, caps: [NET_RAW]}\n", capCompose, "net_raw is not allowed unless"},
+		{"net_admin class reaches compose as an Elevated grant", "capabilities:\n  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n  - {class: net_admin, service: web, reason: raw sockets, caps: [NET_RAW]}\n", capCompose, ""},
 		{"undeclared cap_add", "", capCompose, "does not declare it"},
 		{"partly declared", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN]}\n", capCompose, "NET_RAW in cap_add but the manifest does not declare"},
 		{"unused declaration", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN, FOWNER]}\n  - {class: net_admin, service: web, reason: r, caps: [NET_RAW]}\n", capCompose, "FOWNER is declared for service \"web\" but its cap_add does not use it"},

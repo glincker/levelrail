@@ -160,7 +160,7 @@ func TestValidate_CapGrants(t *testing.T) {
 	}{
 		{"no grant", "[CHOWN]", nil, true},
 		{"review granted", "[CHOWN, cap_setuid]", map[string][]string{"app": {"CHOWN", "SETUID"}}, false},
-		{"net_admin refused until an Elevated runtime path exists", "[NET_ADMIN]", map[string][]string{"app": {"NET_ADMIN"}}, true},
+		{"net_admin granted", "[NET_ADMIN]", map[string][]string{"app": {"NET_ADMIN"}}, false},
 		{"grant on other service", "[CHOWN]", map[string][]string{"other": {"CHOWN"}}, true},
 		{"sys_admin never, even if passed", "[SYS_ADMIN]", map[string][]string{"app": {"SYS_ADMIN"}}, true},
 		{"partial grant", "[CHOWN, FOWNER]", map[string][]string{"app": {"CHOWN"}}, true},
@@ -176,5 +176,35 @@ func TestValidate_CapGrants(t *testing.T) {
 				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestToDesiredServices_GrantedCapsOnlyOnGrantedService(t *testing.T) {
+	f, err := Parse([]byte("services:\n  web:\n    image: nginx:1.27.0\n    cap_add: [chown, CAP_NET_ADMIN]\n  db:\n    image: postgres:16.2\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.CapGrants = map[string][]string{"web": {"CHOWN", "NET_ADMIN"}}
+	got, _, err := ToDesiredServices("app", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices: %v", err)
+	}
+	for _, d := range got {
+		want := []string(nil)
+		if d.Name == "app-web" {
+			want = []string{"CHOWN", "NET_ADMIN"}
+		}
+		if !slices.Equal(d.GrantedCaps, want) {
+			t.Errorf("%s GrantedCaps = %v, want %v", d.Name, d.GrantedCaps, want)
+		}
+	}
+	f.CapGrants = map[string][]string{"web": {"CHOWN"}}
+	if _, _, err := ToDesiredServices("app", f); err == nil {
+		t.Fatal("a cap_add outside the grant must be rejected, not applied")
+	}
+	f.CapGrants = map[string][]string{"web": {"CHOWN", "NET_ADMIN", "SYS_ADMIN"}}
+	f.Services["web"] = Service{Image: "nginx:1.27.0", HostAccess: HostAccess{CapAdd: []string{"SYS_ADMIN"}}}
+	if _, _, err := ToDesiredServices("app", f); err == nil {
+		t.Fatal("a cap outside the grantable tiers must be rejected even when granted")
 	}
 }

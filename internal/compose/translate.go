@@ -2,6 +2,8 @@ package compose
 
 import (
 	"fmt"
+	"slices"
+	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -67,6 +69,8 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			warnings = append(warnings, fmt.Sprintf("service %q: %s", key, w))
 		}
 		d.Runtime = rt
+		// Validate already limited cap_add to the approved grants for this service key.
+		d.GrantedCaps = grantedCaps(svc.HostAccess.CapAdd)
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -188,4 +192,17 @@ func splitPorts(ports []Port, publishTCP []int) (int, []spec.PublishedPort, erro
 // volume).
 func volumeName(appName, serviceKey, logicalName string) string {
 	return "app-" + appName + "-" + serviceKey + "-" + logicalName
+}
+
+// grantedCaps normalizes the validated cap_add of one service into the stored record.
+func grantedCaps(capAdd []string) []string {
+	if len(capAdd) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(capAdd))
+	for _, c := range capAdd {
+		out = append(out, spec.NormalizeCap(c))
+	}
+	sort.Strings(out)
+	return slices.Compact(out)
 }

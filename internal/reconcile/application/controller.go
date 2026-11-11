@@ -2876,6 +2876,8 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		return spec, fmt.Errorf("stored runtime options no longer pass validation, edit them in the app spec: %w", err)
 	}
 	applyRuntimeOptions(&spec, desired.Runtime)
+	// The hardening profile drops ALL and adds this record back, so only approved grants reach the container.
+	spec.CapAdd = append([]string(nil), desired.GrantedCaps...)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

@@ -6,6 +6,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
@@ -23,8 +26,8 @@ func (rt *Router) capabilityPolicy(ctx context.Context) catalog.CapabilityPolicy
 }
 
 // resolveTemplateCapabilities returns the grants an install may carry, or writes the refusal.
-// Elevated needs AbilityRoot on top of the setting; the container side of an Elevated
-// grant is not persisted yet, so it is refused rather than dropped silently.
+// Elevated needs AbilityRoot on top of the setting; the setting is read on every
+// install, upgrade and rollback, so turning a tier off stops the next deploy from carrying it.
 func (rt *Router) resolveTemplateCapabilities(w http.ResponseWriter, r *http.Request, m *catalog.Manifest) ([]catalog.CapabilityGrant, bool) {
 	grants, err := m.CapabilityGrants(rt.capabilityPolicy(r.Context()))
 	if errors.Is(err, catalog.ErrCapabilityDisabled) {
@@ -43,8 +46,6 @@ func (rt *Router) resolveTemplateCapabilities(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusForbidden, "capability "+g.Class+" needs the root ability")
 			return nil, false
 		}
-		writeError(w, http.StatusConflict, "capability "+g.Class+" is allowed by settings but the runtime does not carry it to containers yet")
-		return nil, false
 	}
 	return grants, true
 }
@@ -96,4 +97,27 @@ func (rt *Router) auditCapabilityGrants(r *http.Request, app string, m *catalog.
 		}
 	}
 	return clean
+}
+
+// widenedCapGrants lists "service:CAP" for every grant the app does not hold yet,
+// so an upgrade can never add a capability the owner has not seen.
+func (rt *Router) widenedCapGrants(ctx context.Context, app string, want map[string][]string) ([]string, error) {
+	members, err := rt.appGroups.ListServicesByApp(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	held := map[string][]string{}
+	for _, m := range members {
+		held[strings.TrimPrefix(m.Name, app+"-")] = m.GrantedCaps
+	}
+	var added []string
+	for svc, caps := range want {
+		for _, c := range caps {
+			if !slices.Contains(held[svc], c) {
+				added = append(added, svc+":"+c)
+			}
+		}
+	}
+	sort.Strings(added)
+	return added, nil
 }
