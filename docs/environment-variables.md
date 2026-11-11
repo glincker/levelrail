@@ -86,6 +86,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
 | `APP_SECRET_PROVIDER_MAX_RPS` | [`secrets.provider_max_rps`](/runtime-settings#security) | `20` |
 | `APP_SECRET_PROVIDER_TIMEOUT_SECONDS` | [`secrets.provider_timeout_seconds`](/runtime-settings#security) | `10` |
+| `APP_VAULT_CACHE_TTL_SECONDS` | [`secrets.vault_cache_ttl_seconds`](/runtime-settings#security) | `30` |
+| `APP_VAULT_TOKEN_RENEW_PERCENT` | [`secrets.vault_token_renew_percent`](/runtime-settings#security) | `80` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
 | `APP_BIND_BLOCK_CREDENTIAL_DIRS` | [`security.bind_block_credential_dirs`](/runtime-settings#security) | `true` |
@@ -98,6 +100,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
+| `APP_VAULT_ALLOW_PRIVATE_ADDRESS` | [`vault.allow_private_address`](/runtime-settings#security) | `false` |
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
