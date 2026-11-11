@@ -71,7 +71,7 @@ func TestLoadUsesEnvFallback(t *testing.T) {
 }
 
 func TestShippedProfilesValid(t *testing.T) {
-	files, err := filepath.Glob("../../stress/profiles/*.yaml")
+	files, err := filepath.Glob("../../test/stress/profiles/*.yaml")
 	if err != nil || len(files) < 3 {
 		t.Fatalf("expected the shipped profiles, got %v (%v)", files, err)
 	}

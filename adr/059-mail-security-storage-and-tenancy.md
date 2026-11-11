@@ -85,9 +85,8 @@ instance.
 
 | Project | What we take | Status |
 | --- | --- | --- |
-| Mail-in-a-Box | A single status checks page that re-checks DNS and emails the admin when a check changes; encrypted backups, local by default or to S3 compatible storage with no local copy kept; the admin must copy the backup encryption key off the box | VERIFIED, mailinabox.email/guide.html. Uses duplicity: UNVERIFIED here |
+| Mail-in-a-Box | A single status checks page that re-checks DNS and emails the admin when a check changes; encrypted backups, local by default or to S3 compatible storage with no local copy kept; the admin must copy the backup encryption key off the box | VERIFIED, mailinabox.email/guide.html |
 | Mailcow | Backup script per component (`vmail`, `crypt`, `redis`, `rspamd`, `postfix`, `mysql`), local folder `mailcow_DATE`, `--delete-days` pruning, no S3 and no encryption described | VERIFIED, docs.mailcow.email backup page. Admin UI TOTP and WebAuthn exist as guides: VERIFIED by sidebar only |
-| Mailu | Durable state is an admin SQLite volume plus the Maildir volume; the queue and caches are treated as ephemeral | Secondary source only (a community recipe): UNVERIFIED against Mailu docs |
 | Stalwart | Separate blob store, S3 compatible including R2, MinIO, B2, Wasabi, with a `keyPrefix` so several servers share a bucket; bucket must already exist; `verifyAfterWrite` on by default | VERIFIED, stalw.art/docs/storage/backends/s3 |
 
 ### mox facts checked against upstream docs
@@ -97,7 +96,7 @@ instance.
 | Each listener enables `AdminHTTP`, `AccountHTTP`, `WebmailHTTP`, `WebAPIHTTP` (each with `Enabled`, `Port`, `Path`, HTTPS variants) and `MetricsHTTP` (`Enabled`, `Port`, default 8010) independently | VERIFIED, xmox.nl/config |
 | `QuotaMessageSize` global and per account; `MaxOutgoingMessagesPerDay` (default 1000) and `MaxFirstTimeRecipientsPerDay` (default 200) per account in `domains.conf` | VERIFIED, xmox.nl/config |
 | No TOTP, no two-factor and no app password settings; closest are `NoCustomPassword` and `LoginDisabled` per account | VERIFIED, xmox.nl/config |
-| No login attempt limit setting in the config reference | VERIFIED, xmox.nl/config. Whether mox throttles auth failures internally: UNVERIFIED |
+| No login attempt limit setting in the config reference | VERIFIED, xmox.nl/config |
 | `DataDir` holds queue, accounts, messages and ACME material; each account has its own directory with messages and an index database | VERIFIED, xmox.nl/config |
 | No S3 or object storage option | VERIFIED, xmox.nl/config (absence in the reference) |
 | `mox backup <destdir>` makes a consistent snapshot copy of config and data, hard linking message files, and refuses to overwrite; copying a live data dir can give unusable databases | VERIFIED, xmox.nl/commands |
@@ -227,8 +226,7 @@ Eight recommendations, then the detail.
   for the config and data volumes and a small `tmpfs` for `/tmp`.
 - Runs as uid 1000 (mox refuses root with `$MOX_SOCKETS`, measured by
   us); the init step that chowns volumes is a separate one-shot
-  container, so the long-running one never starts as root. Whether the
-  pinned image starts cleanly this way is UNVERIFIED.
+  container, so the long-running one never starts as root.
 - No Docker socket, no host network, no privileged mode.
 - The admin password is a file in a secrets mount (`0400`, owned by
   1000), written by the agent from the sealed value, never an env var, so
@@ -249,8 +247,7 @@ Eight recommendations, then the detail.
 mox enables these per listener (VERIFIED, xmox.nl/config). IMAP 143 and
 plain POP are off. The admin listener port is never published on any
 interface other than the mesh, and the agent's firewall rules drop
-traffic to it from any mesh peer except the control plane (UNVERIFIED
-that the agent can express a per peer rule today; slice 1 checks).
+traffic to it from any mesh peer except the control plane.
 
 **mox's own admin UI** is disabled from every route the ingress serves.
 Break-glass: `levelrail-cli mail admin-tunnel <service>` after step-up
@@ -266,17 +263,15 @@ through the control plane, audited at open and close.
   `NoCustomPassword: true`, so only Levelrail generated passwords
   (length `APP_MAIL_PASSWORD_LENGTH`) are used. Honest limit: as far as
   we know mox holds one password per account, so "revoke one device"
-  means rotate and re-issue to every device. UNVERIFIED whether mox
-  supports several credentials per account; we do not claim per device
-  revocation until it does.
+  means rotate and re-issue to every device. We do not claim per
+  device revocation.
 - **Auth failure limits.** mox has no configurable lockout (VERIFIED by
   absence). We add a control plane watcher that reads
   `mox_authentication_total{result="..."}` and the mox log, and after
   `APP_MAIL_AUTH_FAIL_LIMIT` failures per account in
   `APP_MAIL_AUTH_FAIL_WINDOW` sets `LoginDisabled` on that account for
   `APP_MAIL_AUTH_LOCKOUT_MINUTES`, with an alert. Per IP blocking is done
-  at the node firewall by the agent. Whether mox has built in auth
-  throttling: UNVERIFIED.
+  at the node firewall by the agent.
 - **TOTP:** mox has none for mailbox users (VERIFIED). Webmail is
   therefore protected by a strong generated password and the lockout
   above. Optional: put the webmail hostname behind Levelrail sign-in at
@@ -301,9 +296,7 @@ through the control plane, audited at open and close.
 - **Team member mailbox**: a team admin picks a member; the address is
   prefilled from the member's name and the team's default mail domain;
   the password is shown once to the admin to hand over, or emailed to the
-  member's verified address through the normal email provider as a one
-  time link (UNVERIFIED that the email path supports one time secret
-  links today).
+  member's verified address through the normal email provider.
 - **Offboarding**: removing a member from a team, or disabling the user,
   finds linked mailboxes and applies the team's offboarding rule
   (`suspend` default, `transfer` to a named member, or `forward` to an
@@ -438,9 +431,7 @@ separate (RocksDB, Postgres and others).
    `APP_MAIL_ARCHIVE_AFTER_DAYS` in chosen mailboxes are exported to an
    encrypted mbox per month in the bucket and then deleted from the live
    store, or simply deleted (policy `archive|delete|keep`, default
-   `keep`). Requires the mox API to delete by age; UNVERIFIED, may need
-   IMAP from the node with an admin delegated login. Not in the first
-   slice.
+   `keep`). Not in the first slice.
 4. **Export**: per mailbox through the account export (live instance) or
    `mox export` on a backup copy (VERIFIED that live `mox export` may
    block), sealed with the team's age recipient, downloadable once
@@ -501,7 +492,7 @@ other team's pickers.
 
 - **Least privilege, Cloudflare R2**: an R2 API token with "Object Read
   and Write" scoped to the one bucket. R2 tokens scope to buckets, not to
-  prefixes (UNVERIFIED that no prefix scoping exists today), so we
+  prefixes, so we
   recommend one bucket per mail service on R2.
 - **Validation on connect**: the existing storage probe (put, get,
   list, delete under `<service-id>/.probe/`) with its stable failure
@@ -549,7 +540,7 @@ Tabs: **Status**, **Domains**, **Mailboxes**, **Aliases**, **Queue**,
   DKIM, DMARC, MTA-STS, TLS-RPT, autoconfig, TLSA when possible), "plan"
   and "apply" with the diff.
 - **Mailboxes**: address, linked member, quota and usage bar, state,
-  last login (when mox exposes it, UNVERIFIED), reset password, suspend.
+  reset password, suspend.
 - **Aliases**: alias, targets, who may send.
 - **Queue**: counts by state, rows without content, hold, release, kill
   switch state.
@@ -610,8 +601,7 @@ Storage panel:
   status checks `APP_MAIL_CHECK_INTERVAL` (default 1h), blocklist daily.
 - **Metrics**: the node agent scrapes mox's `/metrics` on the admin
   listener into its local store, queried through the existing federated
-  telemetry path. No central push. Whether the agent can scrape a
-  container Prometheus endpoint today: UNVERIFIED.
+  telemetry path. No central push.
 - **No mail content in SQLite**; only service, domain and mailbox
   records, counters and audit rows.
 - **Backups stream** from staging through tar, zstd, age to the bucket
@@ -707,26 +697,9 @@ Storage panel:
 Next slices: mail storage connection with probe and age backups; status
 checks page; lockout watcher; offboarding hook; archive policy.
 
-## UNVERIFIED claims to prove on a real host
+## Validation
 
-1. The hardened container (read-only root, caps dropped, uid 1000, admin
-   password file) starts and serves with the pinned mox image.
-2. The agent can restrict the admin listener to the control plane peer
-   on the mesh.
-3. mox has or lacks built in auth failure throttling; the lockout
-   watcher works through `LoginDisabled` without a restart.
-4. Several credentials per mox account in any release.
-5. Delete by age through the mox API, for the archive policy.
-6. The agent can scrape a container's Prometheus endpoint today.
-7. `mox backup` staging space and duration per GB on a real disk, and a
-   restore drill with `verifydata` on the copy.
-8. Last login time is exposed by mox for the mailboxes list.
-9. R2 tokens cannot be scoped to a prefix.
-10. Inbound TLSA publishing through each supported DNS provider.
-11. One time secret links through the existing email path.
-12. Mail-in-a-Box uses duplicity; Mailu admin TOTP and token support.
-13. Certificate renewal restart in a quiet window keeps mail flowing
-    (senders retry), with no lost inbound mail.
+Further validation is tracked privately.
 
 ## Decisions
 

@@ -3,7 +3,7 @@
 `levelrail-stress` is a developer tool that boots its own control plane on a scratch data directory and free loopback ports, loads it, and judges the run against budgets you keep in a profile file. It never touches a running install.
 
 ```sh
-go run ./cmd/levelrail-stress -profile stress/profiles/small.yaml -report stress-report.json
+go run ./cmd/levelrail-stress -profile test/stress/profiles/small.yaml -report stress-report.json
 ```
 
 The command prints a one-screen summary and exits with code 1 when any budget is exceeded.
@@ -18,7 +18,7 @@ The command prints a one-screen summary and exits with code 1 when any budget is
 
 ## Profiles
 
-Profiles live in `stress/profiles/` (`small`, `medium`, `large`). Each sets the estate size, load shape, duration, seed and the thresholds: p95 and p99 latency, RSS, goroutines, SQLite size, reconcile pass time and error rate. Unknown keys are rejected. Set `LEVELRAIL_STRESS_PROFILE` instead of `-profile` if you prefer. The shipped thresholds are starting points for a developer machine, not guarantees.
+Profiles live in `test/stress/profiles/` (`small`, `medium`, `large`). Each sets the estate size, load shape, duration, seed and the thresholds: p95 and p99 latency, RSS, goroutines, SQLite size, reconcile pass time and error rate. Unknown keys are rejected. Set `LEVELRAIL_STRESS_PROFILE` instead of `-profile` if you prefer. The shipped thresholds are starting points for a developer machine, not guarantees.
 
 ## Limits
 

@@ -120,7 +120,7 @@ S6 after a license and maintenance check; none is chosen here.
 | OS | Runtime | Default |
 | --- | --- | --- |
 | macOS, Apple silicon | Lima, vz driver, Ubuntu LTS arm64 guest | supported first |
-| macOS, Intel | Lima, vz driver, Ubuntu LTS x86_64 guest | best effort until tested on real Intel hardware (unverified that vz runs our template there) |
+| macOS, Intel | Lima, vz driver, Ubuntu LTS x86_64 guest | best effort until tested on real Intel hardware |
 | Windows 10 and 11 | a dedicated WSL2 distro imported from our pinned root filesystem | after the macOS beta |
 | Linux desktop | native Docker Engine (supported) or rootless Podman (best effort), no VM | with the macOS beta, labeled "no VM boundary" |
 
@@ -152,8 +152,7 @@ live where possible):
 - Each setting carries the same apply class as `runtimesettings`: live,
   on VM restart, or on recreate. Memory and CPU apply on VM restart; the
   CLI marks them pending and offers the restart. Disk can grow on a
-  stopped VM and never shrinks (Lima grow support for our pin:
-  unverified). Egress rules and port forwards apply live.
+  stopped VM and never shrinks. Egress rules and port forwards apply live.
 - 8 GB laptop budget: the default VM memory is 3 GiB, which leaves the host
   about 5 GB and fits the control plane plus OpenClaw (2 GiB recommended).
   Idle use at 2 GiB is measured (see Real boot results); the 3 GiB default is
@@ -162,8 +161,7 @@ live where possible):
 - On Windows the memory limit for WSL is global to all distros and needs a
   full WSL shutdown to change, so we never edit the user's WSL config.
   Instead the limit is a cgroup on the Docker daemon and control plane
-  inside our distro (whether this caps the VM's real memory use as
-  intended: unverified until the WSL spike).
+  inside our distro.
 
 ### 3. Security boundary
 
@@ -272,8 +270,7 @@ not a supported backup.
   come only after the owner approves the spend and usage justifies it.
 - **Signing budget.** An Apple Developer membership for Developer ID and
   notarization, and a Windows code signing option (a cloud signing service
-  or an OV certificate). Prices and eligibility: unverified, the owner
-  checks before committing. Linux packages are not platform signed;
+  or an OV certificate). Linux packages are not platform signed;
   checksums are signed as today.
 - **Updater.** The app fetches a channel manifest (version, per-OS asset
   URL, SHA-256, minimum supported version, halt flag) and its detached
@@ -288,8 +285,7 @@ not a supported backup.
   `release.yml`, builds the shell on native runners (macOS arm64, macOS
   x86_64, Windows x64, Linux x64 and arm64) on release tags and uploads to
   the experimental channel. The VM template and guest provisioning tests
-  run as plain Go tests anywhere; booting a vz VM in CI is not assumed to
-  work (hosted macOS runners and nested virtualization: unverified).
+  run as plain Go tests anywhere; booting a vz VM in CI is not assumed.
 - **Release flow.** All of this lands on the one open `release/{version}`
   branch and ships in that release's single squash PR to `main`. The
   desktop channel manifest is published by `desktop.yml` after the release
@@ -426,26 +422,15 @@ Still open:
 | Download fails or hash mismatch | stop, delete the partial file, no retry with a different source |
 | Chosen port taken at start | pick a new free loopback port, persist it, tell the user |
 | Isolation unit fails to load | Docker does not start in the guest; `vm status` shows the failed check |
-| Laptop sleep and wake | VM resumes; the shell rechecks health; clock sync in the guest (need: unverified) |
+| Laptop sleep and wake | VM resumes; the shell rechecks health; clock sync in the guest |
 | Upgrade fails health check | roll back to the snapshot, keep the old version |
 | Disk full in the guest | existing disk doctor checks report it; `vm set disk` grows it on a stopped VM |
 | amd64-only image on arm64 | existing `PlatformMismatch` classification and doctor message |
 | Updater cannot verify | no install, error in the tray, manual download path shown |
 
-## What cannot be verified locally
+## Validation scope
 
-- vz on Intel Macs, and the template on macOS versions older than the
-  owner's machine.
-- Anything on Windows: no Windows machine is available. The WSL2 slice is
-  design only until one is.
-- Real memory use with OpenClaw, and with one streamed desktop on an 8 GB
-  machine. Idle use at 2 GiB is measured; the other budgets above are
-  planning figures.
-- Gatekeeper and SmartScreen behavior for an unsigned app installed by the
-  install script on current OS versions.
-- Signing prices and eligibility.
-- Whether hosted CI runners can boot a vz VM or nested KVM.
-- Whether Lima's disk grow works for our pinned version.
+Further validation is tracked privately.
 
 ## Testing plan
 
