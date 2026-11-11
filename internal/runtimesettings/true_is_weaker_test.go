@@ -12,6 +12,8 @@ func TestSettingTrueIsWeaker(t *testing.T) {
 		{KeyDoctorReachabilityDialbackAllowPrivate, `false`, false},
 		{KeyVolumesImportOverwrite, `true`, true},
 		{KeyVolumesImportOverwrite, `false`, false},
+		{KeyTemplatesCapNetAdmin, `true`, true},
+		{KeyTemplatesCapNetAdmin, `false`, false},
 		{KeyAuditSensitiveReads, `false`, true},
 	} {
 		if got := svc.WeakensTo(t.Context(), tc.key, raw(tc.val)); got != tc.want {

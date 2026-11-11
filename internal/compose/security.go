@@ -30,7 +30,7 @@ func validateHostAccess(f *File) []error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
 		svc := f.Services[name]
-		for _, msg := range hostAccessViolations(svc) {
+		for _, msg := range hostAccessViolations(svc, f.CapGrants[name]) {
 			errs = append(errs, fmt.Errorf("service %q: %s", name, msg))
 		}
 		for _, v := range svc.Volumes {
@@ -42,7 +42,7 @@ func validateHostAccess(f *File) []error {
 	return errs
 }
 
-func hostAccessViolations(svc Service) []string {
+func hostAccessViolations(svc Service, granted []string) []string {
 	h := svc.HostAccess
 	var out []string
 	if h.Privileged {
@@ -66,8 +66,8 @@ func hostAccessViolations(svc Service) []string {
 			out = append(out, fmt.Sprintf("%s: host shares a host namespace and is not allowed [%s]", ns.key, ns.rule))
 		}
 	}
-	if len(h.CapAdd) > 0 {
-		out = append(out, fmt.Sprintf("cap_add: %s is not allowed [%s]", strings.Join(h.CapAdd, ", "), dockerguard.RuleCapAdd))
+	if denied := undeclaredCaps(h.CapAdd, granted); len(denied) > 0 {
+		out = append(out, fmt.Sprintf("cap_add: %s is not allowed unless the manifest declares it as a capability [%s]", strings.Join(denied, ", "), dockerguard.RuleCapAdd))
 	}
 	if len(h.Devices) > 0 {
 		out = append(out, fmt.Sprintf("devices: is not allowed; GPUs go through deploy.resources.reservations.devices [%s]", dockerguard.RuleDevices))
@@ -100,11 +100,33 @@ func isDockerSocket(hostPath string) bool {
 // ServiceHostViolations reports what validate rejects for one service's host access and
 // bind sources, for callers that cannot fully parse a file yet still must enforce the rules.
 func ServiceHostViolations(h HostAccess, hostPaths []string) []string {
-	out := hostAccessViolations(Service{HostAccess: h})
+	out := hostAccessViolations(Service{HostAccess: h}, nil)
 	for _, p := range hostPaths {
 		if isDockerSocket(p) {
 			out = append(out, fmt.Sprintf("mounting the Docker socket (%s) is never allowed: it grants root on the host [%s]", p, dockerguard.RuleBindSensitive))
 		}
 	}
 	return out
+}
+
+// undeclaredCaps returns the cap_add values not covered by a grant. Only the
+// Review set can be granted until an Elevated runtime path exists.
+func undeclaredCaps(capAdd, granted []string) []string {
+	var out []string
+	for _, c := range capAdd {
+		n := dockerguard.NormalizeCap(c)
+		if !capInSet(n, granted) || !capInSet(n, dockerguard.ReviewTierCaps) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func capInSet(c string, set []string) bool {
+	for _, s := range set {
+		if dockerguard.NormalizeCap(s) == c {
+			return true
+		}
+	}
+	return false
 }

@@ -335,6 +335,7 @@ telemetry.metrics_retention
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
 templates.file_input_max_bytes
+templates.capability_net_admin_enabled
 templates.first_boot_max_seconds
 templates.import_max_bytes
 templates.import_timeout

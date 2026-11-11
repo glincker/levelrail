@@ -127,8 +127,12 @@ func (rt *Router) handleRollbackCompose(w http.ResponseWriter, r *http.Request) 
 	mu := composeGitLock(appID)
 	mu.Lock()
 	defer mu.Unlock()
+	grants, ok := rt.templateCapGrants(w, r, rev.TemplateID)
+	if !ok {
+		return
+	}
 	resp, ok := rt.deployComposeBody(w, r, appID, []byte(rev.Compose), composeDeployOpts{
-		profiles: rev.Profiles, source: store.ComposeRevisionSourceRollback, templateID: rev.TemplateID,
+		profiles: rev.Profiles, source: store.ComposeRevisionSourceRollback, templateID: rev.TemplateID, capGrants: grants,
 	})
 	if !ok {
 		return

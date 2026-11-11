@@ -77,9 +77,16 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env)})
+	grants, ok := rt.resolveTemplateCapabilities(w, r, tpl.Manifest)
 	if !ok {
 		return
+	}
+	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants)})
+	if !ok {
+		return
+	}
+	if !rt.auditCapabilityGrants(r, name, tpl.Manifest, grants) {
+		w.Header().Set("X-Audit-Incomplete", "true")
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

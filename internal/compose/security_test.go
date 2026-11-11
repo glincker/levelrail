@@ -150,3 +150,31 @@ func TestApplyProfiles_DependencyOnDroppedService(t *testing.T) {
 		t.Fatalf("ApplyProfiles() error = %v, want a dependency error", err)
 	}
 }
+
+func TestValidate_CapGrants(t *testing.T) {
+	tests := []struct {
+		name    string
+		capAdd  string
+		grants  map[string][]string
+		wantErr bool
+	}{
+		{"no grant", "[CHOWN]", nil, true},
+		{"review granted", "[CHOWN, cap_setuid]", map[string][]string{"app": {"CHOWN", "SETUID"}}, false},
+		{"net_admin refused until an Elevated runtime path exists", "[NET_ADMIN]", map[string][]string{"app": {"NET_ADMIN"}}, true},
+		{"grant on other service", "[CHOWN]", map[string][]string{"other": {"CHOWN"}}, true},
+		{"sys_admin never, even if passed", "[SYS_ADMIN]", map[string][]string{"app": {"SYS_ADMIN"}}, true},
+		{"partial grant", "[CHOWN, FOWNER]", map[string][]string{"app": {"CHOWN"}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := Parse([]byte("services:\n  app:\n    image: nginx:alpine\n    cap_add: " + tt.capAdd + "\n"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.CapGrants = tt.grants
+			if err := f.Validate(); (err != nil) != tt.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
