@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-394 listed, 15 amd64 only, 124 unknown, of 533 templates.
+394 listed, 15 amd64 only, 130 unknown, of 539 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -391,6 +391,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `photoview` | listed | not tested |
 | `phpmyadmin` | listed | pass |
 | `pi-hole` | listed | not tested |
+| `picoshare` | unknown | not tested |
 | `pigallery2` | unknown | not tested |
 | `pinchflat` | amd64 only | not tested |
 | `pingvin-share` | listed | not tested |
@@ -506,6 +507,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `thingsboard` | unknown | not tested |
 | `tianji` | listed | not tested |
 | `tidb` | unknown | not tested |
+| `tika` | unknown | not tested |
 | `timescaledb` | unknown | not tested |
 | `tinyauth` | listed | not tested |
 | `tolgee` | listed | not tested |
@@ -515,6 +517,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `transmission` | listed | not tested |
 | `trilium` | listed | not tested |
 | `triliumnext` | listed | pass |
+| `ttyd` | unknown | not tested |
 | `tubesync` | unknown | not tested |
 | `twenty` | listed | not tested |
 | `typesense` | listed | pass |
@@ -523,11 +526,13 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `unleash-postgres` | listed | not tested |
 | `unpoller` | unknown | not tested |
 | `unstructured` | listed | not tested |
+| `upsnap` | unknown | not tested |
 | `uptime-kuma` | listed | pass |
 | `uptime-kuma-mariadb` | listed | not tested |
 | `valkey` | listed | pass |
 | `vault` | listed | not tested |
 | `vaultwarden` | listed | pass |
+| `vector` | unknown | not tested |
 | `verdaccio` | listed | pass |
 | `vernemq` | unknown | not tested |
 | `vert` | listed | not tested |
@@ -541,6 +546,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `wallos` | listed | pass |
 | `weaviate` | listed | not tested |
 | `web-check` | listed | not tested |
+| `webdav` | unknown | not tested |
 | `weblate` | listed | not tested |
 | `webtop` | unknown | not tested |
 | `wekan` | listed | not tested |

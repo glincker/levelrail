@@ -54896,6 +54896,142 @@
    }
   },
   {
+   "id": "picoshare",
+   "aliases": [],
+   "name": "PicoShare",
+   "slogan": "Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.",
+   "description": "Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.",
+   "first_run": [
+    "Sign in with the generated shared secret shown in the deployment variables, then upload a file to get a link."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/mtlynch/picoshare",
+   "documentation_url": "https://github.com/mtlynch/picoshare#readme",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/mtlynch/picoshare/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "picoshare",
+     "image": "mtlynch/picoshare",
+     "tag": "v1.5.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "PICOSHARE_SECRET",
+      "label": "Shared secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "picoshare",
+     "image": "mtlynch/picoshare:v1.5.4",
+     "ports": [
+      4001
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "picoshare",
+     "name": "PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "picoshare",
+     "name": "PS_SHARED_SECRET",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "picoshare"
+      ],
+      "detail": "PS_SHARED_SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "picoshare"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "picoshare"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "pigallery2",
    "aliases": [],
    "name": "PiGallery2",
@@ -71911,6 +72047,96 @@
    }
   },
   {
+   "id": "tika",
+   "aliases": [],
+   "name": "Apache Tika Server",
+   "slogan": "Detects and extracts text and metadata from over a thousand file types over a simple HTTP API. Single container, no storage.",
+   "description": "Detects and extracts text and metadata from over a thousand file types over a simple HTTP API. Single container, no storage.",
+   "first_run": [
+    "Send a file with PUT to /tika for plain text or /meta for metadata. The server has no login, so keep it private."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/apache/tika",
+   "documentation_url": "https://tika.apache.org/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/tika/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "tika",
+     "image": "apache/tika",
+     "tag": "4.2.0-1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "tika",
+     "image": "apache/tika:4.2.0-1",
+     "ports": [
+      9998
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "tika"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "timescaledb",
    "aliases": [],
    "name": "TimescaleDB",
@@ -73171,6 +73397,122 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ttyd",
+   "aliases": [],
+   "name": "ttyd",
+   "slogan": "Shares a terminal over the web. Starts a shell inside its own container behind a generated password, handy for demos and short lived admin tasks.",
+   "description": "Shares a terminal over the web. Starts a shell inside its own container behind a generated password, handy for demos and short lived admin tasks.",
+   "first_run": [
+    "Sign in as admin with the generated password shown in the deployment variables. The shell sees only this container, never the host."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/tsl0922/ttyd",
+   "documentation_url": "https://github.com/tsl0922/ttyd#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/tsl0922/ttyd/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ttyd",
+     "image": "tsl0922/ttyd",
+     "tag": "1.7.7",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TTYD_PASSWORD",
+      "label": "Password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "ttyd",
+     "image": "tsl0922/ttyd:1.7.7",
+     "ports": [
+      7681
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "ttyd",
+     "name": "TTYD_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "ttyd"
+      ],
+      "detail": "TTYD_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "ttyd"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "rollback",
@@ -74489,6 +74831,111 @@
    }
   },
   {
+   "id": "upsnap",
+   "aliases": [],
+   "name": "UpSnap",
+   "slogan": "Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.",
+   "description": "Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.",
+   "first_run": [
+    "Open the address and create the first admin account. Wake on LAN needs the container on the same network as the devices, so check reachability from a test device."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/seriousm4x/UpSnap",
+   "documentation_url": "https://github.com/seriousm4x/UpSnap/wiki",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/seriousm4x/UpSnap/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "upsnap",
+     "image": "ghcr.io/seriousm4x/upsnap",
+     "tag": "5.7.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "upsnap",
+     "image": "ghcr.io/seriousm4x/upsnap:5.7.3",
+     "ports": [
+      8090
+     ],
+     "volumes": [
+      "data -> /app/pb_data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "upsnap"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "upsnap"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "uptime-kuma",
    "aliases": [],
    "name": "Uptime Kuma",
@@ -75137,6 +75584,115 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "vector",
+   "aliases": [],
+   "name": "Vector",
+   "slogan": "High performance observability data pipeline for logs and metrics. The install form carries vector.yaml as an editable file, so it starts with an HTTP source and a console sink.",
+   "description": "High performance observability data pipeline for logs and metrics. The install form carries vector.yaml as an editable file, so it starts with an HTTP source and a console sink.",
+   "first_run": [
+    "Post JSON to port 8080 and watch the container log, then edit the config file setting to add transforms and real sinks. The API is on port 8686."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/vectordotdev/vector",
+   "documentation_url": "https://vector.dev/docs/",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/vectordotdev/vector/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "vector",
+     "image": "timberio/vector",
+     "tag": "0.61.0-alpine",
+     "source_class": "verified_publisher",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "VECTOR_CONFIG",
+      "label": "vector.yaml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "vector",
+     "image": "timberio/vector:0.61.0-alpine",
+     "ports": [
+      8686,
+      8080
+     ],
+     "volumes": [
+      "data -> /var/lib/vector"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "vector"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -76935,6 +77491,124 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "webdav",
+   "aliases": [],
+   "name": "WebDAV Server",
+   "slogan": "Small standalone WebDAV server with per user permissions. The install form carries config.yml as an editable file and a generated admin password.",
+   "description": "Small standalone WebDAV server with per user permissions. The install form carries config.yml as an editable file and a generated admin password.",
+   "first_run": [
+    "Connect a WebDAV client to the address with the user admin and the generated password shown in the deployment variables."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/hacdias/webdav",
+   "documentation_url": "https://github.com/hacdias/webdav#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/hacdias/webdav/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "webdav",
+     "image": "hacdias/webdav",
+     "tag": "v5.17.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 32,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "WEBDAV_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "WEBDAV_CONFIG",
+      "label": "config.yml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "webdav",
+     "image": "hacdias/webdav:v5.17.3",
+     "ports": [
+      6060
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "webdav"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "webdav"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",

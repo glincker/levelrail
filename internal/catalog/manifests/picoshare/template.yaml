@@ -1,0 +1,32 @@
+id: picoshare
+name: PicoShare
+description: Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.
+icon: share
+category: Storage
+documentation_url: https://github.com/mtlynch/picoshare#readme
+source_repo: https://github.com/mtlynch/picoshare
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/mtlynch/picoshare/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Sign in with the generated shared secret shown in the deployment variables, then upload a file to get a link.
+env:
+  - key: PICOSHARE_SECRET
+    label: Shared secret
+    description: Secret you type on the upload page to sign in.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: picoshare
+    port: 4001
+    description: Public address of the upload page and shared links.
+healthcheck:
+  service: picoshare
+  port: 4001
+  path: /

@@ -1,0 +1,50 @@
+id: vector
+name: Vector
+description: High performance observability data pipeline for logs and metrics. The install form carries vector.yaml as an editable file, so it starts with an HTTP source and a console sink.
+icon: funnel
+category: Monitoring
+documentation_url: https://vector.dev/docs/
+source_repo: https://github.com/vectordotdev/vector
+license: MPL-2.0
+license_class: copyleft
+license_url: https://github.com/vectordotdev/vector/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Post JSON to port 8080 and watch the container log, then edit the config file setting to add transforms and real sinks. The API is on port 8686.
+env:
+  - key: VECTOR_CONFIG
+    type: file
+    service: vector
+    path: /etc/vector/vector.yaml
+    mode: "0444"
+    label: vector.yaml
+    description: The full Vector configuration, mounted read-only.
+    default: |
+      data_dir: /var/lib/vector
+      api:
+        enabled: true
+        address: 0.0.0.0:8686
+      sources:
+        http_in:
+          type: http_server
+          address: 0.0.0.0:8080
+          decoding:
+            codec: json
+      sinks:
+        console_out:
+          type: console
+          inputs: [http_in]
+          encoding:
+            codec: json
+domains:
+  - service: vector
+    port: 8686
+    description: Public address of the Vector API. Keep it private.
+healthcheck:
+  service: vector
+  port: 8686
+  path: /health

@@ -1,0 +1,19 @@
+services:
+  picoshare:
+    image: mtlynch/picoshare:v1.5.4
+    ports: ["4001"]
+    environment:
+      PORT: 4001
+      PS_SHARED_SECRET: ${PICOSHARE_SECRET}
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 4001
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

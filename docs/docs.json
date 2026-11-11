@@ -785,6 +785,7 @@
           {
             "group": "Developer Tools",
             "pages": [
+              "self-host/tika",
               "self-host/appsmith",
               "self-host/appwrite",
               "self-host/athens",
@@ -850,6 +851,7 @@
               "self-host/termix",
               "self-host/tolgee",
               "self-host/trailbase",
+              "self-host/ttyd",
               "self-host/typesense",
               "self-host/unleash-postgres",
               "self-host/verdaccio",
@@ -1032,6 +1034,7 @@
               "self-host/unpoller",
               "self-host/uptime-kuma",
               "self-host/uptime-kuma-mariadb",
+              "self-host/vector",
               "self-host/victorialogs",
               "self-host/victoriametrics",
               "self-host/zabbix",
@@ -1043,7 +1046,8 @@
             "pages": [
               "self-host/blocky",
               "self-host/coredns",
-              "self-host/ddns-updater"
+              "self-host/ddns-updater",
+              "self-host/upsnap"
             ]
           },
           {
@@ -1188,12 +1192,14 @@
               "self-host/kopia",
               "self-host/minio",
               "self-host/owncloud",
+              "self-host/picoshare",
               "self-host/pingvin-share",
               "self-host/rustfs",
               "self-host/seafile",
               "self-host/seaweedfs",
               "self-host/sftpgo",
               "self-host/syncthing",
+              "self-host/webdav",
               "self-host/zipline"
             ]
           }

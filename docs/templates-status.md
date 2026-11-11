@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 124 not checked** of 533 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 539 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -514,6 +514,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 124 not checked** of 
 | `photoview` | yes | linux/amd64, linux/arm64 |
 | `phpmyadmin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `pi-hole` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `picoshare` | not checked | - |
 | `pigallery2` | not checked | - |
 | `pinchflat` | amd64 only | linux/amd64 |
 | `pingvin-share` | yes | linux/amd64, linux/arm64 |
@@ -629,6 +630,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 124 not checked** of 
 | `thingsboard` | not checked | - |
 | `tianji` | yes | linux/amd64, linux/arm64 |
 | `tidb` | not checked | - |
+| `tika` | not checked | - |
 | `timescaledb` | not checked | - |
 | `tinyauth` | yes | linux/amd64, linux/arm64 |
 | `tolgee` | yes | linux/amd64, linux/arm64 |
@@ -638,6 +640,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 124 not checked** of 
 | `transmission` | yes | linux/amd64, linux/arm64 |
 | `trilium` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `triliumnext` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `ttyd` | not checked | - |
 | `tubesync` | not checked | - |
 | `twenty` | yes | linux/amd64, linux/arm64 |
 | `typesense` | yes | linux/amd64, linux/arm64 |
@@ -646,11 +649,13 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 124 not checked** of 
 | `unleash-postgres` | yes | linux/amd64, linux/arm64 |
 | `unpoller` | not checked | - |
 | `unstructured` | yes | linux/amd64, linux/arm64 |
+| `upsnap` | not checked | - |
 | `uptime-kuma` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `uptime-kuma-mariadb` | yes | linux/amd64, linux/arm64 |
 | `valkey` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `vault` | yes | linux/386, linux/amd64, linux/arm64 |
 | `vaultwarden` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `vector` | not checked | - |
 | `verdaccio` | yes | linux/amd64, linux/arm64 |
 | `vernemq` | not checked | - |
 | `vert` | yes | linux/amd64, linux/arm64 |
@@ -664,6 +669,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 124 not checked** of 
 | `wallos` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `weaviate` | yes | linux/amd64, linux/arm64 |
 | `web-check` | yes | linux/amd64, linux/arm64 |
+| `webdav` | not checked | - |
 | `weblate` | yes | linux/amd64, linux/arm64 |
 | `webtop` | not checked | - |
 | `wekan` | yes | linux/amd64, linux/arm64 |

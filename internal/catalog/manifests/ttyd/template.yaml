@@ -1,0 +1,34 @@
+id: ttyd
+name: ttyd
+description: Shares a terminal over the web. Starts a shell inside its own container behind a generated password, handy for demos and short lived admin tasks.
+icon: terminal-window
+category: Developer Tools
+documentation_url: https://github.com/tsl0922/ttyd#readme
+source_repo: https://github.com/tsl0922/ttyd
+license: MIT
+license_class: permissive
+license_url: https://github.com/tsl0922/ttyd/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Sign in as admin with the generated password shown in the deployment variables. The shell sees only this container, never the host.
+env:
+  - key: TTYD_PASSWORD
+    label: Password
+    description: Password for the admin user.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: ttyd
+    port: 7681
+    description: Public address of the web terminal. Keep it private.
+healthcheck:
+  service: ttyd
+  port: 7681
+  path: /
+  expect: 401
+  reason: answers 401 until a client sends credentials

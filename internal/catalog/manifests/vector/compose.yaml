@@ -1,0 +1,13 @@
+services:
+  vector:
+    image: timberio/vector:0.61.0-alpine
+    ports: ["8686", "8080"]
+    command: ["--config", "/etc/vector/vector.yaml"]
+    volumes:
+      - data:/var/lib/vector
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8686/health || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

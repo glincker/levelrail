@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-533 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+539 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -224,6 +224,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 ## Developer Tools
 
+- [Apache Tika Server](/self-host/tika): Detects and extracts text and metadata from over a thousand file types over a simple HTTP API. Single container, no storage.
 - [Appsmith](/self-host/appsmith): A low-code platform for building internal tools and admin panels on top of your own data.
 - [Appwrite](/self-host/appwrite): An open-source backend-as-a-service with auth, databases, storage, and functions behind one API.
 - [Athens](/self-host/athens): A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.
@@ -289,6 +290,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Termix](/self-host/termix): A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard.
 - [Tolgee](/self-host/tolgee): A localization management platform where developers and translators work in one shared UI.
 - [TrailBase](/self-host/trailbase): A fast Rust and SQLite application server with type-safe APIs and auth.
+- [ttyd](/self-host/ttyd): Shares a terminal over the web. Starts a shell inside its own container behind a generated password, handy for demos and short lived admin tasks.
 - [Typesense](/self-host/typesense): A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch.
 - [Unleash (Postgres)](/self-host/unleash-postgres): An open-source feature flag platform with gradual rollouts, A/B testing, and a permission model.
 - [Verdaccio](/self-host/verdaccio): A lightweight private npm proxy registry with caching and local package publishing.
@@ -457,6 +459,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [UnPoller](/self-host/unpoller): Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login.
 - [Uptime Kuma](/self-host/uptime-kuma): A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.
 - [Uptime Kuma (MariaDB)](/self-host/uptime-kuma-mariadb): Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file.
+- [Vector](/self-host/vector): High performance observability data pipeline for logs and metrics. The install form carries vector.yaml as an editable file, so it starts with an HTTP source and a console sink.
 - [VictoriaLogs](/self-host/victorialogs): A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it.
 - [VictoriaMetrics](/self-host/victoriametrics): A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.
 - [Zabbix](/self-host/zabbix): Enterprise-grade network, server, and application monitoring with alerting and trend graphs.
@@ -467,6 +470,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Blocky](/self-host/blocky): DNS proxy and ad blocker with caching and conditional forwarding. The install form carries config.yml as an editable file, so it starts with a small denylist and public upstream resolvers.
 - [CoreDNS](/self-host/coredns): Plugin based DNS server on the official image. The install form carries the Corefile as an editable file, so it starts as a caching forwarder with health and readiness endpoints.
 - [DDNS Updater](/self-host/ddns-updater): Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there.
+- [UpSnap](/self-host/upsnap): Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.
 
 ## Productivity
 
@@ -603,10 +607,12 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Kopia](/self-host/kopia): Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.
 - [MinIO](/self-host/minio): S3-compatible object storage you run yourself, with a built-in web console.
 - [ownCloud](/self-host/owncloud): The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking.
+- [PicoShare](/self-host/picoshare): Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.
 - [Pingvin Share](/self-host/pingvin-share): A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links.
 - [RustFS](/self-host/rustfs): An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time.
 - [Seafile](/self-host/seafile): Self-hosted file sync and share with real file-level versioning and client-side encryption options.
 - [SeaweedFS](/self-host/seaweedfs): A distributed file and object store with an S3 gateway, built for billions of small files.
 - [SFTPGo](/self-host/sftpgo): An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends.
 - [Syncthing](/self-host/syncthing): Continuous, peer-to-peer file synchronization between your own devices, no cloud in between.
+- [WebDAV Server](/self-host/webdav): Small standalone WebDAV server with per user permissions. The install form carries config.yml as an editable file and a generated admin password.
 - [Zipline](/self-host/zipline): A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.

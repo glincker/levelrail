@@ -116,3 +116,10 @@
   reviewed_at: "2026-11-10"
   expires: "2027-11-22"
   note: release workflow publishes uozi/nginx-ui
+- namespace: docker.io/timberio
+  source_orgs: [vectordotdev]
+  evidence: https://github.com/vectordotdev/vector/blob/7671fae8af98a38a11c01cb00b58677c07ad888d/distribution/docker/README.md
+  reviewed_by: levelrail-maintainers
+  reviewed_at: "2026-11-11"
+  expires: "2027-12-13"
+  note: Docker guide in the repo names timberio/vector; the Docker Hub org profile links to vector.dev; image updated 2026-11-11; arm64 manifest present for 0.61.0-alpine

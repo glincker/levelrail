@@ -1,0 +1,18 @@
+services:
+  webdav:
+    image: hacdias/webdav:v5.17.3
+    ports: ["6060"]
+    command: ["-c", "/config.yml"]
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      expect_status: 401
+      port: 6060
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

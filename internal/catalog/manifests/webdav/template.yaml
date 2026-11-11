@@ -1,0 +1,50 @@
+id: webdav
+name: WebDAV Server
+description: Small standalone WebDAV server with per user permissions. The install form carries config.yml as an editable file and a generated admin password.
+icon: folder-open
+category: Storage
+documentation_url: https://github.com/hacdias/webdav#readme
+source_repo: https://github.com/hacdias/webdav
+license: MIT
+license_class: permissive
+license_url: https://github.com/hacdias/webdav/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 33554432
+first_run:
+  - Connect a WebDAV client to the address with the user admin and the generated password shown in the deployment variables.
+env:
+  - key: WEBDAV_PASSWORD
+    label: Admin password
+    description: Password for the admin user.
+    generate: password
+    length: 24
+    secret: true
+  - key: WEBDAV_CONFIG
+    type: file
+    service: webdav
+    path: /config.yml
+    mode: "0444"
+    label: config.yml
+    description: The full WebDAV server configuration, mounted read-only. Credentials are in it, so treat it as secret.
+    secret: true
+    default: |
+      address: 0.0.0.0
+      port: 6060
+      directory: /data
+      permissions: CRUD
+      users:
+        - username: admin
+          password: "${WEBDAV_PASSWORD}"
+domains:
+  - service: webdav
+    port: 6060
+    description: Public address of the WebDAV endpoint.
+healthcheck:
+  service: webdav
+  port: 6060
+  path: /
+  expect: 401
+  reason: answers 401 until a client sends credentials
