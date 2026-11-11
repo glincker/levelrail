@@ -6,7 +6,7 @@ services:
       SW_STORAGE: h2
       JAVA_OPTS: -Xms512m -Xmx1g
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:12800/internal/l7check > /dev/null || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/11800'"]
       interval: 15s
       timeout: 6s
       retries: 10
@@ -20,7 +20,7 @@ services:
       skywalking-oap:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/ > /dev/null || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8080'"]
       interval: 15s
       timeout: 6s
       retries: 10
