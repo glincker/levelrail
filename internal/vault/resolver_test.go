@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -42,7 +43,7 @@ func TestResolver_Resolve_TokenAuth(t *testing.T) {
 	srv := fakeVaultServer(t, "my-token", map[string]any{"api_key": "s3cr3t"})
 	defer srv.Close()
 
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{
 		Address:    srv.URL,
 		AuthMethod: store.VaultAuthMethodToken,
@@ -61,7 +62,7 @@ func TestResolver_Resolve_AppRoleAuth(t *testing.T) {
 	srv := fakeVaultServer(t, "approle-issued-token", map[string]any{"api_key": "role-secret"})
 	defer srv.Close()
 
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{
 		Address:    srv.URL,
 		AuthMethod: store.VaultAuthMethodAppRole,
@@ -81,7 +82,7 @@ func TestResolver_Resolve_DefaultMountPath(t *testing.T) {
 	srv := fakeVaultServer(t, "my-token", map[string]any{"api_key": "default-mount"})
 	defer srv.Close()
 
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{
 		Address:    srv.URL,
 		AuthMethod: store.VaultAuthMethodToken,
@@ -100,7 +101,7 @@ func TestResolver_Resolve_MissingKey(t *testing.T) {
 	srv := fakeVaultServer(t, "my-token", map[string]any{"other_field": "x"})
 	defer srv.Close()
 
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{Address: srv.URL, AuthMethod: store.VaultAuthMethodToken, MountPath: "secret"}
 	if _, err := r.Resolve(context.Background(), cfg, "my-token", "myapp/config", "api_key"); err == nil {
 		t.Fatal("Resolve() error = nil, want an error for a missing field")
@@ -111,7 +112,7 @@ func TestResolver_Resolve_NonStringValue(t *testing.T) {
 	srv := fakeVaultServer(t, "my-token", map[string]any{"api_key": 12345})
 	defer srv.Close()
 
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{Address: srv.URL, AuthMethod: store.VaultAuthMethodToken, MountPath: "secret"}
 	if _, err := r.Resolve(context.Background(), cfg, "my-token", "myapp/config", "api_key"); err == nil {
 		t.Fatal("Resolve() error = nil, want an error for a non-string field")
@@ -122,7 +123,7 @@ func TestResolver_Resolve_WrongTokenRejected(t *testing.T) {
 	srv := fakeVaultServer(t, "correct-token", map[string]any{"api_key": "s3cr3t"})
 	defer srv.Close()
 
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{Address: srv.URL, AuthMethod: store.VaultAuthMethodToken, MountPath: "secret"}
 	if _, err := r.Resolve(context.Background(), cfg, "wrong-token", "myapp/config", "api_key"); err == nil {
 		t.Fatal("Resolve() error = nil, want an error for a rejected token (unreachable/auth-failure case)")
@@ -130,9 +131,16 @@ func TestResolver_Resolve_WrongTokenRejected(t *testing.T) {
 }
 
 func TestResolver_Resolve_UnreachableServer(t *testing.T) {
-	r := NewResolver()
+	r := testResolver()
 	cfg := store.VaultSettings{Address: "http://127.0.0.1:1", AuthMethod: store.VaultAuthMethodToken, MountPath: "secret"}
 	if _, err := r.Resolve(context.Background(), cfg, "my-token", "myapp/config", "api_key"); err == nil {
 		t.Fatal("Resolve() error = nil, want an error when Vault is unreachable")
 	}
+}
+
+// testResolver allows loopback so httptest servers pass the address guard.
+func testResolver() *Resolver {
+	return NewResolverWith(func(context.Context) Tunables {
+		return Tunables{Timeout: 5 * time.Second, AllowPrivate: true, RenewPercent: 80}
+	})
 }

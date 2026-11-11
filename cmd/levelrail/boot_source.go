@@ -292,7 +292,7 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithDatabaseAttachments(deps.db),
 		application.WithDatabaseScope(deps.db),
 		application.WithVaultSettings(deps.db),
-		application.WithVaultResolver(vault.NewResolver()),
+		application.WithVaultResolver(vault.NewResolverWith(vault.TunablesFrom(deps.settingsService()))),
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(sharedEnvResolver),
 		application.WithOrganizationEnv(sharedEnvResolver),
