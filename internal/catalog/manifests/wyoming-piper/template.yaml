@@ -1,0 +1,26 @@
+id: wyoming-piper
+name: Wyoming Piper
+description: Fast local text to speech over the Wyoming protocol, used by Home Assistant voice assistants. Downloads the chosen voice on first start.
+icon: speaker-high
+category: AI
+documentation_url: https://github.com/rhasspy/wyoming-piper#readme
+source_repo: https://github.com/rhasspy/wyoming-piper
+license: MIT
+license_class: permissive
+license_url: https://github.com/rhasspy/wyoming-piper/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Add the Wyoming integration in Home Assistant and point it at port 10200. The first start downloads the voice, so wait a minute.
+domains:
+  - service: wyoming-piper
+    port: 10200
+    description: Wyoming endpoint. Keep it private.
+healthcheck:
+  service: wyoming-piper
+  port: 10200
+  kind: tcp
+  reason: speaks the Wyoming protocol, not HTTP

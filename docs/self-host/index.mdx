@@ -4,11 +4,12 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-539 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+547 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
 - [AnythingLLM](/self-host/anythingllm): A private chat workspace over your documents, with built-in RAG and support for local or hosted models.
+- [Bifrost](/self-host/bifrost): Fast open source LLM gateway that routes requests to many providers behind one OpenAI compatible API, with a web UI for keys and routing rules.
 - [Big-AGI](/self-host/big-agi): A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
 - [ComfyUI](/self-host/comfyui): A node-graph editor for building and running Stable Diffusion and other image generation pipelines.
 - [Crawl4AI](/self-host/crawl4ai): An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header.
@@ -51,6 +52,8 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Text Generation Inference](/self-host/text-generation-inference): Hugging Face's production inference server for transformer language models, with continuous batching and streaming.
 - [Unstructured](/self-host/unstructured): An API that turns PDFs, Word files, and other documents into clean data for RAG pipelines.
 - [vLLM](/self-host/vllm): A fast, high-throughput inference server that exposes an OpenAI-compatible API for open-weight language models.
+- [Wyoming openWakeWord](/self-host/wyoming-openwakeword): Local wake word detection over the Wyoming protocol for Home Assistant voice assistants, preloaded with the ok nabu model.
+- [Wyoming Piper](/self-host/wyoming-piper): Fast local text to speech over the Wyoming protocol, used by Home Assistant voice assistants. Downloads the chosen voice on first start.
 
 ## Analytics
 
@@ -163,6 +166,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 ## Dashboard
 
 - [Dashy](/self-host/dashy): A feature-rich, self-hosted start page with widgets, status checks, and full visual customization.
+- [Fenrus](/self-host/fenrus): Self-hosted dashboard that groups your apps as tiles with live status widgets, themes and per user pages.
 - [Flame](/self-host/flame): A self-hosted start page with an app launcher, bookmarks, and Docker label integration.
 - [Glance](/self-host/glance): A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.
 - [Heimdall](/self-host/heimdall): An application dashboard that gathers links to all your self-hosted services on one start page.
@@ -186,6 +190,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [CouchDB](/self-host/couchdb): A document database with an HTTP API, built-in replication and the Fauxton admin console.
 - [DbGate](/self-host/dbgate): A web database client for SQL and NoSQL databases with a generated login and a data volume. Sign in as admin with the generated password, then add connections to other services here.
 - [Elasticsearch + Kibana](/self-host/elasticsearch-kibana): Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.
+- [FalkorDB](/self-host/falkordb): Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.
 - [FerretDB](/self-host/ferretdb): A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017.
 - [InfluxDB](/self-host/influxdb): An open-source time-series database for metrics, events, and IoT analytics.
 - [libSQL Server](/self-host/libsql): Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume.
@@ -342,6 +347,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Kong Gateway](/self-host/kong): An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state.
 - [MeshCentral](/self-host/meshcentral): A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server.
 - [NATS](/self-host/nats): A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.
+- [netboot.xyz](/self-host/netbootxyz): Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.
 - [NetBox](/self-host/netbox): Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.
 - [Nginx](/self-host/nginx): The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.
 - [Nginx Proxy Manager](/self-host/nginx-proxy-manager): A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.
@@ -434,6 +440,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Grafana (Postgres)](/self-host/grafana-postgres): Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups.
 - [Grafana Alloy](/self-host/grafana-alloy): A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
 - [Grafana Loki](/self-host/loki): A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
+- [Grafana Mimir](/self-host/mimir): Horizontally scalable long term storage for Prometheus metrics, run here as one process on local disk. The install form carries mimir.yaml as an editable file.
 - [Grafana OTel LGTM](/self-host/otel-lgtm): An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).
 - [Grafana Tempo](/self-host/tempo): Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file.
 - [Healthchecks](/self-host/healthchecks): Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.
@@ -566,6 +573,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Authelia](/self-host/authelia): Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt.
 - [authentik](/self-host/authentik): An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth.
 - [Cap](/self-host/cap-captcha): A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha.
+- [CrowdSec Local API](/self-host/crowdsec): Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off.
 - [Cryptgeon](/self-host/cryptgeon): A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption.
 - [Dex](/self-host/dex): OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose.
 - [Infisical](/self-host/infisical): An open-source secrets manager to centralize API keys, database credentials, and app config.

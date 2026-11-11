@@ -1,0 +1,25 @@
+id: crowdsec
+name: CrowdSec Local API
+description: Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off.
+icon: shield
+category: Security
+documentation_url: https://docs.crowdsec.net/
+source_repo: https://github.com/crowdsecurity/crowdsec
+license: MIT
+license_class: permissive
+license_url: https://github.com/crowdsecurity/crowdsec/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Register an agent or bouncer with cscli machines add or cscli bouncers add inside the container, then point it at this address.
+domains:
+  - service: crowdsec
+    port: 8080
+    description: Public address of the local API. Keep it private.
+healthcheck:
+  service: crowdsec
+  port: 8080
+  path: /health

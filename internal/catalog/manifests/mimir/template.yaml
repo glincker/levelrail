@@ -1,0 +1,75 @@
+id: mimir
+name: Grafana Mimir
+description: Horizontally scalable long term storage for Prometheus metrics, run here as one process on local disk. The install form carries mimir.yaml as an editable file.
+icon: chart-line
+category: Monitoring
+documentation_url: https://grafana.com/docs/mimir/latest/
+source_repo: https://github.com/grafana/mimir
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/grafana/mimir/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Point a Prometheus remote_write at /api/v1/push on this address and add the same address with /prometheus as a data source in Grafana.
+env:
+  - key: MIMIR_CONFIG
+    type: file
+    service: mimir
+    path: /etc/mimir/mimir.yaml
+    mode: "0444"
+    label: mimir.yaml
+    description: The full Mimir configuration, mounted read-only.
+    default: |
+      target: all
+      multitenancy_enabled: false
+      server:
+        http_listen_port: 9009
+        grpc_listen_port: 9095
+      common:
+        storage:
+          backend: filesystem
+          filesystem:
+            dir: /data/common
+      blocks_storage:
+        storage_prefix: blocks
+        tsdb:
+          dir: /data/tsdb
+        bucket_store:
+          sync_dir: /data/tsdb-sync
+      compactor:
+        data_dir: /data/compactor
+        sharding_ring:
+          kvstore:
+            store: inmemory
+      distributor:
+        ring:
+          instance_addr: 127.0.0.1
+          kvstore:
+            store: inmemory
+      ingester:
+        ring:
+          instance_addr: 127.0.0.1
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+      store_gateway:
+        sharding_ring:
+          replication_factor: 1
+          kvstore:
+            store: inmemory
+      ruler_storage:
+        storage_prefix: ruler
+      alertmanager_storage:
+        storage_prefix: alertmanager
+domains:
+  - service: mimir
+    port: 9009
+    description: Public address of the Mimir API. Keep it private.
+healthcheck:
+  service: mimir
+  port: 9009
+  path: /ready

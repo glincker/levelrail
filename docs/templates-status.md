@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 539 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 547 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -179,6 +179,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 
 | `bazarr` | yes | linux/amd64, linux/arm64 |
 | `bentopdf` | yes | linux/amd64, linux/arm64 |
 | `beszel` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `bifrost` | not checked | - |
 | `big-agi` | not checked | - |
 | `blackbox-exporter` | not checked | - |
 | `blocky` | not checked | - |
@@ -222,6 +223,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 
 | `coredns` | not checked | - |
 | `couchdb` | yes | linux/amd64, linux/arm64, linux/s390x |
 | `crawl4ai` | yes | linux/amd64, linux/arm64 |
+| `crowdsec` | not checked | - |
 | `cryptgeon` | yes | linux/amd64, linux/arm64 |
 | `cyberchef` | amd64 only | linux/amd64 |
 | `dashdot` | not checked | - |
@@ -262,7 +264,9 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 
 | `evcc` | not checked | - |
 | `excalidraw` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `factorio` | yes | linux/amd64, linux/arm64 |
+| `falkordb` | not checked | - |
 | `fastapi-postgres-starter` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
+| `fenrus` | not checked | - |
 | `ferretdb` | not checked | - |
 | `fider` | yes | linux/amd64, linux/arm64 |
 | `filebrowser` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -424,6 +428,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 
 | `metamcp` | yes | linux/amd64, linux/arm64 |
 | `metube` | yes | linux/amd64, linux/arm64 |
 | `milvus` | yes | linux/amd64, linux/arm64 |
+| `mimir` | not checked | - |
 | `mindsdb` | not checked | - |
 | `minecraft` | yes | linux/amd64, linux/arm64 |
 | `minecraft-bedrock` | yes | linux/amd64, linux/arm64 |
@@ -447,6 +452,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 
 | `nats` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `navidrome` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `neo4j` | yes | linux/amd64, linux/arm64 |
+| `netbootxyz` | not checked | - |
 | `netbox` | yes | linux/amd64, linux/arm64 |
 | `netdata` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `new-api` | yes | linux/amd64, linux/arm64 |
@@ -681,6 +687,8 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 130 not checked** of 
 | `woodpecker` | yes | freebsd/amd64, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64 |
 | `wordpress` | yes | linux/amd64, linux/arm64 |
 | `worker-redis-queue-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
+| `wyoming-openwakeword` | not checked | - |
+| `wyoming-piper` | not checked | - |
 | `yamtrack` | yes | linux/amd64, linux/arm64 |
 | `yourls` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `zabbix` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |

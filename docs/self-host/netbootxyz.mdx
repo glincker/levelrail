@@ -1,0 +1,63 @@
+---
+title: "Self-host netboot.xyz with Docker"
+sidebarTitle: "netboot.xyz"
+description: "Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror."
+"og:url": "https://docs.levelrail.com/self-host/netbootxyz"
+---
+
+Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.
+
+This page describes the Levelrail template for netboot.xyz (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://netboot.xyz/docs/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `netbootxyz` | `netbootxyz/netbootxyz:0.7.6-nbxyz27` | 3000, 8080 | `config -&#62; /config`<br />`assets -&#62; /assets` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`netbootxyz`).
+- Stores data in named volumes (`netbootxyz`): assets, config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy netboot.xyz with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select netboot.xyz. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy netbootxyz --name my-netbootxyz
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+
+All templates are listed in the [self-host gallery](/self-host).

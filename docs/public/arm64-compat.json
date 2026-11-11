@@ -2,14 +2,14 @@
   "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 539,
-    "images": 583,
+    "templates": 547,
+    "images": 591,
     "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 130,
+    "arm64_unknown": 138,
     "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 133
+    "image_arm64_unknown": 141
   },
   "templates": [
     {
@@ -743,6 +743,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "bifrost",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "maximhq/bifrost:v2.5.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1713,6 +1727,20 @@
       ]
     },
     {
+      "id": "crowdsec",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "crowdsecurity/crowdsec:v1.8.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "cryptgeon",
       "amd64": "yes",
       "arm64": "yes",
@@ -2585,6 +2613,20 @@
       ]
     },
     {
+      "id": "falkordb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "falkordb/falkordb:6.0.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "fastapi-postgres-starter",
       "amd64": "yes",
       "arm64": "yes",
@@ -2620,6 +2662,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T00:10:24Z"
+        }
+      ]
+    },
+    {
+      "id": "fenrus",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "revenz/fenrus:26.10@sha256:7728749bb98c3b0862c853ebf9f741d7e43fddcd84a1ddb8ac73d03ae9741f99",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6482,6 +6538,20 @@
       ]
     },
     {
+      "id": "mimir",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "grafana/mimir:3.2.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "mindsdb",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -6991,6 +7061,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "netbootxyz",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "netbootxyz/netbootxyz:0.7.6-nbxyz27",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -12387,6 +12471,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "wyoming-openwakeword",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rhasspy/wyoming-openwakeword:2.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "wyoming-piper",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rhasspy/wyoming-piper:2.5.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

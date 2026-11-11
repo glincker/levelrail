@@ -558,6 +558,7 @@
             "group": "AI",
             "pages": [
               "self-host/anythingllm",
+              "self-host/bifrost",
               "self-host/big-agi",
               "self-host/comfyui",
               "self-host/crawl4ai",
@@ -599,7 +600,9 @@
               "self-host/text-embeddings-inference",
               "self-host/text-generation-inference",
               "self-host/unstructured",
-              "self-host/vllm"
+              "self-host/vllm",
+              "self-host/wyoming-openwakeword",
+              "self-host/wyoming-piper"
             ]
           },
           {
@@ -718,6 +721,7 @@
             "group": "Dashboard",
             "pages": [
               "self-host/dashy",
+              "self-host/fenrus",
               "self-host/flame",
               "self-host/glance",
               "self-host/heimdall",
@@ -743,6 +747,7 @@
               "self-host/couchdb",
               "self-host/dbgate",
               "self-host/elasticsearch-kibana",
+              "self-host/falkordb",
               "self-host/ferretdb",
               "self-host/influxdb",
               "self-host/libsql",
@@ -909,6 +914,7 @@
               "self-host/kong",
               "self-host/meshcentral",
               "self-host/nats",
+              "self-host/netbootxyz",
               "self-host/netbox",
               "self-host/nginx",
               "self-host/nginx-proxy-manager",
@@ -1009,6 +1015,7 @@
               "self-host/grafana-postgres",
               "self-host/grafana-alloy",
               "self-host/loki",
+              "self-host/mimir",
               "self-host/otel-lgtm",
               "self-host/tempo",
               "self-host/healthchecks",
@@ -1147,6 +1154,7 @@
               "self-host/authelia",
               "self-host/authentik",
               "self-host/cap-captcha",
+              "self-host/crowdsec",
               "self-host/cryptgeon",
               "self-host/dex",
               "self-host/infisical",

@@ -1,0 +1,16 @@
+services:
+  fenrus:
+    image: revenz/fenrus:26.10@sha256:7728749bb98c3b0862c853ebf9f741d7e43fddcd84a1ddb8ac73d03ae9741f99
+    ports: ["3000"]
+    volumes:
+      - data:/app/data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 3000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

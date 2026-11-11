@@ -4619,6 +4619,111 @@
    }
   },
   {
+   "id": "bifrost",
+   "aliases": [],
+   "name": "Bifrost",
+   "slogan": "Fast open source LLM gateway that routes requests to many providers behind one OpenAI compatible API, with a web UI for keys and routing rules.",
+   "description": "Fast open source LLM gateway that routes requests to many providers behind one OpenAI compatible API, with a web UI for keys and routing rules.",
+   "first_run": [
+    "Open the address, add provider keys in the web UI, then point your OpenAI compatible clients at it. Keep it private or add a login in front."
+   ],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/maximhq/bifrost",
+   "documentation_url": "https://docs.getbifrost.ai/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/maximhq/bifrost/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "bifrost",
+     "image": "maximhq/bifrost",
+     "tag": "v2.5.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "bifrost",
+     "image": "maximhq/bifrost:v2.5.1",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "data -> /app/data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "bifrost"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "bifrost"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "big-agi",
    "aliases": [],
    "name": "Big-AGI",
@@ -10884,6 +10989,123 @@
    }
   },
   {
+   "id": "crowdsec",
+   "aliases": [],
+   "name": "CrowdSec Local API",
+   "slogan": "Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off.",
+   "description": "Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off.",
+   "first_run": [
+    "Register an agent or bouncer with cscli machines add or cscli bouncers add inside the container, then point it at this address."
+   ],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/crowdsecurity/crowdsec",
+   "documentation_url": "https://docs.crowdsec.net/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/crowdsecurity/crowdsec/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "crowdsec",
+     "image": "crowdsecurity/crowdsec",
+     "tag": "v1.8.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "crowdsec",
+     "image": "crowdsecurity/crowdsec:v1.8.2",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "config -> /etc/crowdsec",
+      "data -> /var/lib/crowdsec/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "crowdsec",
+     "name": "DISABLE_AGENT",
+     "kind": "preset"
+    },
+    {
+     "service": "crowdsec",
+     "name": "DISABLE_ONLINE_API",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "crowdsec"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "crowdsec"
+      ],
+      "detail": "config, data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "cryptgeon",
    "aliases": [],
    "name": "Cryptgeon",
@@ -16464,6 +16686,108 @@
    }
   },
   {
+   "id": "falkordb",
+   "aliases": [],
+   "name": "FalkorDB",
+   "slogan": "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.",
+   "description": "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.",
+   "first_run": [
+    "Connect any Redis client to port 6379 and use GRAPH.QUERY, or open the address for the browser UI. There is no login, so keep it private."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/FalkorDB/FalkorDB",
+   "documentation_url": "https://docs.falkordb.com/",
+   "license": {
+    "spdx": "SSPL-1.0",
+    "class": "source-available",
+    "url": "https://github.com/FalkorDB/FalkorDB/blob/master/LICENSE"
+   },
+   "hosted_use": "restricted",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "falkordb",
+     "image": "falkordb/falkordb",
+     "tag": "6.0.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "falkordb",
+     "image": "falkordb/falkordb:6.0.4",
+     "ports": [
+      3000,
+      6379
+     ],
+     "volumes": [
+      "data -> /var/lib/falkordb/data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "falkordb"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "fastapi-postgres-starter",
    "aliases": [],
    "name": "FastAPI + PostgreSQL",
@@ -16618,6 +16942,111 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "fenrus",
+   "aliases": [],
+   "name": "Fenrus",
+   "slogan": "Self-hosted dashboard that groups your apps as tiles with live status widgets, themes and per user pages.",
+   "description": "Self-hosted dashboard that groups your apps as tiles with live status widgets, themes and per user pages.",
+   "first_run": [
+    "Open the address, create your account on first visit, then add groups and app tiles."
+   ],
+   "category": "Dashboard",
+   "status": "active",
+   "source_repo": "https://github.com/revenz/Fenrus",
+   "documentation_url": "https://github.com/revenz/Fenrus#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/revenz/Fenrus/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "fenrus",
+     "image": "revenz/fenrus:26.10@sha256:7728749bb98c3b0862c853ebf9f741d7e43fddcd84a1ddb8ac73d03ae9741f99",
+     "tag": "",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "fenrus",
+     "image": "revenz/fenrus:26.10@sha256:7728749bb98c3b0862c853ebf9f741d7e43fddcd84a1ddb8ac73d03ae9741f99",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "data -> /app/data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "fenrus"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "fenrus"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",
@@ -41132,6 +41561,114 @@
    }
   },
   {
+   "id": "mimir",
+   "aliases": [],
+   "name": "Grafana Mimir",
+   "slogan": "Horizontally scalable long term storage for Prometheus metrics, run here as one process on local disk. The install form carries mimir.yaml as an editable file.",
+   "description": "Horizontally scalable long term storage for Prometheus metrics, run here as one process on local disk. The install form carries mimir.yaml as an editable file.",
+   "first_run": [
+    "Point a Prometheus remote_write at /api/v1/push on this address and add the same address with /prometheus as a data source in Grafana."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/grafana/mimir",
+   "documentation_url": "https://grafana.com/docs/mimir/latest/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/grafana/mimir/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mimir",
+     "image": "grafana/mimir",
+     "tag": "3.2.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MIMIR_CONFIG",
+      "label": "mimir.yaml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "mimir",
+     "image": "grafana/mimir:3.2.4",
+     "ports": [
+      9009
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mimir"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "mindsdb",
    "aliases": [],
    "name": "MindsDB",
@@ -44749,6 +45286,113 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "netbootxyz",
+   "aliases": [],
+   "name": "netboot.xyz",
+   "slogan": "Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.",
+   "description": "Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.",
+   "first_run": [
+    "Open the address to manage menus and download boot assets. Boot clients still need DHCP options pointing at this host's TFTP port."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/netbootxyz/netboot.xyz",
+   "documentation_url": "https://netboot.xyz/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/netbootxyz/netboot.xyz/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "netbootxyz",
+     "image": "netbootxyz/netbootxyz",
+     "tag": "0.7.6-nbxyz27",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "netbootxyz",
+     "image": "netbootxyz/netbootxyz:0.7.6-nbxyz27",
+     "ports": [
+      3000,
+      8080
+     ],
+     "volumes": [
+      "config -> /config",
+      "assets -> /assets"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "netbootxyz"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "netbootxyz"
+      ],
+      "detail": "assets, config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",
@@ -79457,6 +80101,201 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "wyoming-openwakeword",
+   "aliases": [],
+   "name": "Wyoming openWakeWord",
+   "slogan": "Local wake word detection over the Wyoming protocol for Home Assistant voice assistants, preloaded with the ok nabu model.",
+   "description": "Local wake word detection over the Wyoming protocol for Home Assistant voice assistants, preloaded with the ok nabu model.",
+   "first_run": [
+    "Add the Wyoming integration in Home Assistant and point it at port 10400."
+   ],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/rhasspy/wyoming-openwakeword",
+   "documentation_url": "https://github.com/rhasspy/wyoming-openwakeword#readme",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/rhasspy/wyoming-openwakeword/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "wyoming-openwakeword",
+     "image": "rhasspy/wyoming-openwakeword",
+     "tag": "2.1.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "wyoming-openwakeword",
+     "image": "rhasspy/wyoming-openwakeword:2.1.0",
+     "ports": [
+      10400
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "wyoming-openwakeword"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "wyoming-piper",
+   "aliases": [],
+   "name": "Wyoming Piper",
+   "slogan": "Fast local text to speech over the Wyoming protocol, used by Home Assistant voice assistants. Downloads the chosen voice on first start.",
+   "description": "Fast local text to speech over the Wyoming protocol, used by Home Assistant voice assistants. Downloads the chosen voice on first start.",
+   "first_run": [
+    "Add the Wyoming integration in Home Assistant and point it at port 10200. The first start downloads the voice, so wait a minute."
+   ],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/rhasspy/wyoming-piper",
+   "documentation_url": "https://github.com/rhasspy/wyoming-piper#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/rhasspy/wyoming-piper/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "wyoming-piper",
+     "image": "rhasspy/wyoming-piper",
+     "tag": "2.5.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "wyoming-piper",
+     "image": "rhasspy/wyoming-piper:2.5.2",
+     "ports": [
+      10200
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "wyoming-piper"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "wyoming-piper"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",

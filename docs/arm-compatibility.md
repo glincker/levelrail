@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-394 listed, 15 amd64 only, 130 unknown, of 539 templates.
+394 listed, 15 amd64 only, 138 unknown, of 547 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -56,6 +56,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `bazarr` | listed | not tested |
 | `bentopdf` | listed | pass |
 | `beszel` | listed | not tested |
+| `bifrost` | unknown | not tested |
 | `big-agi` | unknown | not tested |
 | `blackbox-exporter` | unknown | not tested |
 | `blocky` | unknown | not tested |
@@ -99,6 +100,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `coredns` | unknown | not tested |
 | `couchdb` | listed | pass |
 | `crawl4ai` | listed | pass |
+| `crowdsec` | unknown | not tested |
 | `cryptgeon` | listed | not tested |
 | `cyberchef` | amd64 only | fail |
 | `dashdot` | unknown | not tested |
@@ -139,7 +141,9 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `evcc` | unknown | not tested |
 | `excalidraw` | listed | pass |
 | `factorio` | listed | not tested |
+| `falkordb` | unknown | not tested |
 | `fastapi-postgres-starter` | listed | not tested |
+| `fenrus` | unknown | not tested |
 | `ferretdb` | unknown | not tested |
 | `fider` | listed | not tested |
 | `filebrowser` | listed | pass |
@@ -301,6 +305,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `metamcp` | listed | not tested |
 | `metube` | listed | pass |
 | `milvus` | listed | not tested |
+| `mimir` | unknown | not tested |
 | `mindsdb` | unknown | not tested |
 | `minecraft` | listed | not tested |
 | `minecraft-bedrock` | listed | not tested |
@@ -324,6 +329,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `nats` | listed | pass |
 | `navidrome` | listed | pass |
 | `neo4j` | listed | not tested |
+| `netbootxyz` | unknown | not tested |
 | `netbox` | listed | not tested |
 | `netdata` | listed | not tested |
 | `new-api` | listed | not tested |
@@ -558,6 +564,8 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `woodpecker` | listed | fail |
 | `wordpress` | listed | pass |
 | `worker-redis-queue-starter` | listed | not tested |
+| `wyoming-openwakeword` | unknown | not tested |
+| `wyoming-piper` | unknown | not tested |
 | `yamtrack` | listed | not tested |
 | `yourls` | listed | not tested |
 | `zabbix` | listed | not tested |

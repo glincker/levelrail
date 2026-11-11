@@ -1,0 +1,25 @@
+id: netbootxyz
+name: netboot.xyz
+description: Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.
+icon: hard-drives
+category: Infrastructure
+documentation_url: https://netboot.xyz/docs/
+source_repo: https://github.com/netbootxyz/netboot.xyz
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/netbootxyz/netboot.xyz/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the address to manage menus and download boot assets. Boot clients still need DHCP options pointing at this host's TFTP port.
+domains:
+  - service: netbootxyz
+    port: 3000
+    description: Public address of the web configuration page.
+healthcheck:
+  service: netbootxyz
+  port: 3000
+  path: /

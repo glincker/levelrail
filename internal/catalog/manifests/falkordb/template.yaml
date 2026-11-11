@@ -1,0 +1,25 @@
+id: falkordb
+name: FalkorDB
+description: Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.
+icon: graph
+category: Database Tools
+documentation_url: https://docs.falkordb.com/
+source_repo: https://github.com/FalkorDB/FalkorDB
+license: SSPL-1.0
+license_class: source-available
+license_url: https://github.com/FalkorDB/FalkorDB/blob/master/LICENSE
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Connect any Redis client to port 6379 and use GRAPH.QUERY, or open the address for the browser UI. There is no login, so keep it private.
+domains:
+  - service: falkordb
+    port: 3000
+    description: Public address of the browser UI. Keep it private.
+healthcheck:
+  service: falkordb
+  port: 3000
+  path: /

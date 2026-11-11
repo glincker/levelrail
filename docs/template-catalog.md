@@ -25,26 +25,26 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (539 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (547 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
-| [AI](#ai) | 43 |
+| [AI](#ai) | 46 |
 | [Analytics](#analytics) | 10 |
 | [Applications](#applications) | 44 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 23 |
-| [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 44 |
+| [Dashboard](#dashboard) | 9 |
+| [Database Tools](#database-tools) | 45 |
 | [Developer Tools](#developer-tools) | 76 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 30 |
+| [Infrastructure](#infrastructure) | 31 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 45 |
-| [Monitoring](#monitoring) | 47 |
+| [Monitoring](#monitoring) | 48 |
 | [Productivity](#productivity) | 84 |
-| [Security](#security) | 23 |
+| [Security](#security) | 24 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 19 |
 | [Backups](#backups) | 2 |
@@ -57,6 +57,7 @@ Generated from `internal/catalog.Templates` (539 entries as of this build). Run 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [AnythingLLM](https://docs.anythingllm.com) | A private chat workspace over your documents, with built-in RAG and support for local or hosted models. | `anythingllm` |  |
+| [Bifrost](https://docs.getbifrost.ai/) | Fast open source LLM gateway that routes requests to many providers behind one OpenAI compatible API, with a web UI for keys and routing rules. | `bifrost` |  |
 | [Big-AGI](https://github.com/enricoros/big-AGI) | A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server. | `big-agi` |  |
 | [ComfyUI](https://docs.comfy.org) | A node-graph editor for building and running Stable Diffusion and other image generation pipelines. | `comfyui` | Requires GPU |
 | [Crawl4AI](https://docs.crawl4ai.com/core/docker-deployment/) | An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header. | `crawl4ai` |  |
@@ -99,6 +100,8 @@ Generated from `internal/catalog.Templates` (539 entries as of this build). Run 
 | [Text Generation Inference](https://huggingface.co/docs/text-generation-inference) | Hugging Face's production inference server for transformer language models, with continuous batching and streaming. | `text-generation-inference` | Requires GPU |
 | [Unstructured](https://github.com/Unstructured-IO/unstructured-api) | An API that turns PDFs, Word files, and other documents into clean data for RAG pipelines. | `unstructured` |  |
 | [vLLM](https://docs.vllm.ai) | A fast, high-throughput inference server that exposes an OpenAI-compatible API for open-weight language models. | `vllm` | Requires GPU |
+| [Wyoming openWakeWord](https://github.com/rhasspy/wyoming-openwakeword#readme) | Local wake word detection over the Wyoming protocol for Home Assistant voice assistants, preloaded with the ok nabu model. | `wyoming-openwakeword` |  |
+| [Wyoming Piper](https://github.com/rhasspy/wyoming-piper#readme) | Fast local text to speech over the Wyoming protocol, used by Home Assistant voice assistants. Downloads the chosen voice on first start. | `wyoming-piper` |  |
 
 ## Analytics
 
@@ -216,6 +219,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [Dashy](https://dashy.to/docs) | A feature-rich, self-hosted start page with widgets, status checks, and full visual customization. | `dashy` |  |
+| [Fenrus](https://github.com/revenz/Fenrus#readme) | Self-hosted dashboard that groups your apps as tiles with live status widgets, themes and per user pages. | `fenrus` |  |
 | [Flame](https://github.com/pawelmalak/flame#readme) | A self-hosted start page with an app launcher, bookmarks, and Docker label integration. | `flame` |  |
 | [Glance](https://github.com/glanceapp/glance/blob/main/docs/configuration.md) | A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page. | `glance` |  |
 | [Heimdall](https://github.com/linuxserver/Heimdall) | An application dashboard that gathers links to all your self-hosted services on one start page. | `heimdall` |  |
@@ -241,6 +245,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [CouchDB](https://docs.couchdb.org/) | A document database with an HTTP API, built-in replication and the Fauxton admin console. | `couchdb` |  |
 | [DbGate](https://docs.dbgate.io/) | A web database client for SQL and NoSQL databases with a generated login and a data volume. Sign in as admin with the generated password, then add connections to other services here. | `dbgate` |  |
 | [Elasticsearch + Kibana](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker) | Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. | `elasticsearch-kibana` |  |
+| [FalkorDB](https://docs.falkordb.com/) | Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. | `falkordb` |  |
 | [FerretDB](https://docs.ferretdb.io/) | A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017. | `ferretdb` |  |
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
 | [libSQL Server](https://github.com/tursodatabase/libsql/tree/main/libsql-server) | Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume. | `libsql` |  |
@@ -401,6 +406,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Kong Gateway](https://docs.konghq.com/gateway/latest/) | An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state. | `kong` |  |
 | [MeshCentral](https://meshcentral.com/docs/) | A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server. | `meshcentral` |  |
 | [NATS](https://docs.nats.io/) | A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. | `nats` |  |
+| [netboot.xyz](https://netboot.xyz/docs/) | Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror. | `netbootxyz` |  |
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
 | [Nginx](https://nginx.org/en/docs/) | The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files. | `nginx` |  |
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |
@@ -494,6 +500,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Grafana (Postgres)](https://grafana.com/docs/grafana/latest/) | Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. | `grafana-postgres` |  |
 | [Grafana Alloy](https://grafana.com/docs/alloy/latest/) | A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere. | `grafana-alloy` |  |
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
+| [Grafana Mimir](https://grafana.com/docs/mimir/latest/) | Horizontally scalable long term storage for Prometheus metrics, run here as one process on local disk. The install form carries mimir.yaml as an editable file. | `mimir` |  |
 | [Grafana OTel LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) | An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP). | `otel-lgtm` |  |
 | [Grafana Tempo](https://grafana.com/docs/tempo/latest/) | Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file. | `tempo` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
@@ -623,6 +630,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Authelia](https://www.authelia.com/configuration/prologue/introduction/) | Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt. | `authelia` |  |
 | [authentik](https://docs.goauthentik.io) | An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth. | `authentik` |  |
 | [Cap](https://capjs.js.org/) | A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha. | `cap-captcha` |  |
+| [CrowdSec Local API](https://docs.crowdsec.net/) | Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off. | `crowdsec` |  |
 | [Cryptgeon](https://github.com/cupcakearmy/cryptgeon) | A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption. | `cryptgeon` |  |
 | [Dex](https://dexidp.io/docs/) | OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose. | `dex` |  |
 | [Infisical](https://infisical.com/docs/self-hosting/overview) | An open-source secrets manager to centralize API keys, database credentials, and app config. | `infisical` |  |
