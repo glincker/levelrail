@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 112 not checked** of 520 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 112 not checked** of 521 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -473,6 +473,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 112 not checked** of 
 | `onetimesecret` | yes | linux/amd64, linux/arm64 |
 | `open-notebook` | yes | linux/amd64, linux/arm64 |
 | `open-webui` | yes | linux/amd64, linux/arm64 |
+| `openbao` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `openclaw` | yes | linux/amd64, linux/arm64 |
 | `opengist` | yes | linux/amd64, linux/arm64 |
 | `openhab` | not checked | - |
@@ -637,7 +638,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 112 not checked** of 
 | `uptime-kuma` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `uptime-kuma-mariadb` | yes | linux/amd64, linux/arm64 |
 | `valkey` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
-| `vault` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `vault` | yes | linux/386, linux/amd64, linux/arm64 |
 | `vaultwarden` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `verdaccio` | yes | linux/amd64, linux/arm64 |
 | `vernemq` | not checked | - |

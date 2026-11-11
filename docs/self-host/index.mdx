@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-520 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+521 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -558,13 +558,14 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [lldap](/self-host/lldap): A lightweight LDAP server with a friendly web UI, built for homelab and small-team authentication.
 - [Logto](/self-host/logto): Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing.
 - [One-Time Secret](/self-host/onetimesecret): Share a password or API key through a link that self-destructs after the first view, backed by Redis.
+- [OpenBao](/self-host/openbao): OpenBao, the open source secrets manager forked from Vault, with integrated Raft storage. It is reachable only from services in this project at openbao:8200 over plain HTTP and is not published on the host.
 - [Passbolt](/self-host/passbolt): An open-source password manager built for teams, compatible with the usual browser extensions.
 - [Pocket ID](/self-host/pocket-id): A simple, secure OIDC provider that authenticates with passkeys instead of passwords.
 - [PrivateBin](/self-host/privatebin): A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.
 - [Step CA](/self-host/step-ca): A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables.
 - [SuperTokens](/self-host/supertokens): A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres.
 - [Tinyauth](/self-host/tinyauth): A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.
-- [Vault](/self-host/vault): HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.
+- [Vault](/self-host/vault): HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it.
 - [Vaultwarden](/self-host/vaultwarden): A lightweight, self-hosted password manager server compatible with the Bitwarden clients.
 - [Whoogle Search](/self-host/whoogle): A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required.
 

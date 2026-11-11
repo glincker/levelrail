@@ -1139,6 +1139,7 @@
               "self-host/lldap",
               "self-host/logto",
               "self-host/onetimesecret",
+              "self-host/openbao",
               "self-host/passbolt",
               "self-host/pocket-id",
               "self-host/privatebin",

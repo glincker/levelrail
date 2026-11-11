@@ -1,11 +1,11 @@
 ---
 title: "Self-host Vault with Docker"
 sidebarTitle: "Vault"
-description: "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode."
+description: "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it."
 "og:url": "https://docs.levelrail.com/self-host/vault"
 ---
 
-HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.
+HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it.
 
 This page describes the Levelrail template for Vault (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://developer.hashicorp.com/vault/docs/deploy/run-container.
 
@@ -15,7 +15,7 @@ Recommended memory: about 256 MiB.
 
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
-| `vault` | `hashicorp/vault:1.18` | 8200 | `vault_data -&#62; /vault/file` |
+| `vault` | `hashicorp/vault:2.1.2` | 8200 | `vault_data -&#62; /vault/file` |
 
 ## Environment variables
 
@@ -32,7 +32,6 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`vault`): 8200:8200.
 - Stores data in named volumes (`vault`): vault_data.
 
 What Levelrail adds around it:

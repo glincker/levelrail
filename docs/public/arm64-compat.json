@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-11-02T03:14:45Z",
+  "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 520,
-    "images": 564,
-    "arm64_yes": 393,
+    "templates": 521,
+    "images": 565,
+    "arm64_yes": 394,
     "arm64_no": 15,
     "arm64_unknown": 112,
-    "image_arm64_yes": 434,
+    "image_arm64_yes": 435,
     "image_arm64_no": 15,
     "image_arm64_unknown": 115
   },
@@ -7701,6 +7701,28 @@
       ]
     },
     {
+      "id": "openbao",
+      "amd64": "yes",
+      "arm64": "yes",
+      "images": [
+        {
+          "ref": "ghcr.io/openbao/openbao:2.7.2",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-11T22:14:40Z"
+        }
+      ]
+    },
+    {
       "id": "openclaw",
       "amd64": "yes",
       "arm64": "yes",
@@ -11502,17 +11524,16 @@
       "arm64": "yes",
       "images": [
         {
-          "ref": "hashicorp/vault:1.18",
+          "ref": "hashicorp/vault:2.1.2",
           "platforms": [
             "linux/386",
             "linux/amd64",
-            "linux/arm",
             "linux/arm64"
           ],
           "amd64": "yes",
           "arm64": "yes",
           "source": "manifest",
-          "checked_at": "2026-10-31T23:54:42Z"
+          "checked_at": "2026-11-11T22:14:40Z"
         }
       ]
     },

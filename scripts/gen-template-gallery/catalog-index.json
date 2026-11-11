@@ -48863,6 +48863,127 @@
    }
   },
   {
+   "id": "openbao",
+   "aliases": [],
+   "name": "OpenBao",
+   "slogan": "OpenBao, the open source secrets manager forked from Vault, with integrated Raft storage. It is reachable only from services in this project at openbao:8200 over plain HTTP and is not published on the host.",
+   "description": "OpenBao, the open source secrets manager forked from Vault, with integrated Raft storage. It is reachable only from services in this project at openbao:8200 over plain HTTP and is not published on the host.",
+   "first_run": [
+    "OpenBao starts uninitialized and sealed. Open the app console and run bao operator init, then bao operator unseal with the printed keys. Keep the unseal keys and root token offline.",
+    "Plain HTTP is for the internal network only. Attach a domain with HTTPS before anything outside this project talks to it."
+   ],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/openbao/openbao",
+   "documentation_url": "https://openbao.org/docs/",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/openbao/openbao/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "openbao",
+     "image": "ghcr.io/openbao/openbao",
+     "tag": "2.7.2",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "openbao",
+     "image": "ghcr.io/openbao/openbao:2.7.2",
+     "ports": [
+      8200
+     ],
+     "volumes": [
+      "openbao_data -> /openbao/file"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "openbao",
+     "name": "BAO_ADDR",
+     "kind": "preset"
+    },
+    {
+     "service": "openbao",
+     "name": "BAO_LOCAL_CONFIG",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "openbao"
+      ],
+      "detail": "openbao_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "openclaw",
    "aliases": [],
    "name": "OpenClaw",
@@ -73609,7 +73730,7 @@
    "id": "vault",
    "aliases": [],
    "name": "Vault",
-   "slogan": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.",
+   "slogan": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it.",
    "description": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode. Runs as a single container from the vault image, listening on port 8200 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
@@ -73636,12 +73757,11 @@
     {
      "service": "vault",
      "image": "hashicorp/vault",
-     "tag": "1.18",
+     "tag": "2.1.2",
      "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
-      "linux/arm",
       "linux/arm64"
      ],
      "signed": null,
@@ -73659,7 +73779,7 @@
    "services": [
     {
      "name": "vault",
-     "image": "hashicorp/vault:1.18",
+     "image": "hashicorp/vault:2.1.2",
      "ports": [
       8200
      ],
@@ -73683,15 +73803,6 @@
    "requirements": {
     "level": "standard",
     "findings": [
-     {
-      "code": "published_ports",
-      "severity": "info",
-      "services": [
-       "vault"
-      ],
-      "detail": "8200:8200",
-      "message": "Publishes ports directly on the host"
-     },
      {
       "code": "persistent_data",
       "severity": "info",
