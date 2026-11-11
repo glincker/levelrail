@@ -1,0 +1,71 @@
+---
+title: "Self-host SillyTavern with Docker"
+sidebarTitle: "SillyTavern"
+description: "A local chat front end for language models with characters, lorem books and extensions, bringing your own model API. AGPL-3.0 licensed. Sign in with the admin user and the generated password."
+"og:url": "https://docs.levelrail.com/self-host/sillytavern"
+---
+
+A local chat front end for language models with characters, lorem books and extensions, bringing your own model API. AGPL-3.0 licensed. Sign in with the admin user and the generated password.
+
+This page describes the Levelrail template for SillyTavern (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/SillyTavern/SillyTavern.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `sillytavern` | `ghcr.io/sillytavern/sillytavern:1.19.0` | 8000 | `config -&#62; /home/node/app/config`<br />`data -&#62; /home/node/app/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `sillytavern` | `SILLYTAVERN_BASICAUTHMODE` | Preset in the template |
+| `sillytavern` | `SILLYTAVERN_BASICAUTHUSER_PASSWORD` | Generated at deploy |
+| `sillytavern` | `SILLYTAVERN_BASICAUTHUSER_USERNAME` | Preset in the template |
+| `sillytavern` | `SILLYTAVERN_LISTEN` | Preset in the template |
+| `sillytavern` | `SILLYTAVERN_WHITELISTMODE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`sillytavern`): SILLYTAVERN_BASICAUTHUSER_PASSWORD.
+- Stores data in named volumes (`sillytavern`): config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy SillyTavern with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select SillyTavern. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy sillytavern --name my-sillytavern
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [Big-AGI](/self-host/big-agi)
+- [ComfyUI](/self-host/comfyui)
+- [Crawl4AI](/self-host/crawl4ai)
+- [Docling Serve](/self-host/docling-serve)
+
+All templates are listed in the [self-host gallery](/self-host).

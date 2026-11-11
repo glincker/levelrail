@@ -1,0 +1,24 @@
+id: tidb
+name: TiDB
+description: A MySQL compatible distributed SQL database, run here as a single node on local storage for development and testing. Apache-2.0 licensed. The root user has no password, so keep it private.
+icon: database
+category: Database Tools
+documentation_url: https://github.com/pingcap/tidb
+source_repo: https://github.com/pingcap/tidb
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/pingcap/tidb/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Connect with any MySQL client on port 4000 as root with an empty password, then create a user and password.
+domains:
+  - service: tidb
+    port: 10080
+    description: Public address of TiDB.
+healthcheck:
+  service: tidb
+  port: 10080
+  path: /

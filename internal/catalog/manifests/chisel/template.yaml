@@ -1,0 +1,24 @@
+id: chisel
+name: Chisel
+description: A fast TCP and UDP tunnel over HTTP secured by SSH, for reaching services behind firewalls. MIT licensed. The tunnel password is generated for you.
+icon: network
+category: Infrastructure
+documentation_url: https://github.com/jpillora/chisel
+source_repo: https://github.com/jpillora/chisel
+license: MIT
+license_class: permissive
+license_url: https://github.com/jpillora/chisel/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 33554432
+first_run:
+  - Connect a client with chisel client --auth admin:PASSWORD and your public address, using the generated password.
+domains:
+  - service: chisel
+    port: 8080
+    description: Public address of Chisel.
+healthcheck:
+  service: chisel
+  port: 8080
+  path: /

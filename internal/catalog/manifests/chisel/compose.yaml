@@ -1,0 +1,13 @@
+services:
+  chisel:
+    image: jpillora/chisel:1.12.0
+    ports: ["8080"]
+    command: ["server", "--port", "8080"]
+    environment:
+      CHISEL_AUTH: admin:$SERVICE_PASSWORD_CHISEL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 10s

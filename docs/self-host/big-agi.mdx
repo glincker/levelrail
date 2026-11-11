@@ -1,0 +1,62 @@
+---
+title: "Self-host Big-AGI with Docker"
+sidebarTitle: "Big-AGI"
+description: "A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server."
+"og:url": "https://docs.levelrail.com/self-host/big-agi"
+---
+
+A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
+
+This page describes the Levelrail template for Big-AGI (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/enricoros/big-AGI.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `big-agi` | `ghcr.io/enricoros/big-agi:v2.1.3` | 3000 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Big-AGI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Big-AGI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy big-agi --name my-big-agi
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Crawl4AI](/self-host/crawl4ai)
+- [Docling Serve](/self-host/docling-serve)
+- [Flowise](/self-host/flowise)
+
+All templates are listed in the [self-host gallery](/self-host).
