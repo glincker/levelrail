@@ -24,7 +24,7 @@ func WithSecretScan(h SecretScanHook) Option {
 func plainEnv(env map[string]spec.EnvVar) map[string]string {
 	out := make(map[string]string, len(env))
 	for k, v := range env {
-		if v.Value != "" && !v.Secret && v.From == "" && v.Vault == nil {
+		if v.Value != "" && !v.Secret && v.From == "" && v.Vault == nil && v.SecretRef == nil {
 			out[k] = v.Value
 		}
 	}

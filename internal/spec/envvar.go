@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/GLINCKER/levelrail/internal/secretsource"
 )
 
 // EnvVar is one entry in a service's env block. app.yaml allows two
@@ -41,6 +43,11 @@ type EnvVar struct {
 	// this platform at all: the alternative to Secret above, not a
 	// variant of it. nil means not vault-backed.
 	Vault *VaultRef
+	// SecretRef points at a value in a named secret connection, written
+	// { secret: { conn, path, key } } or the string secret://conn/path#key.
+	// Resolved at container create, never stored as a value. Mutually
+	// exclusive with every other source.
+	SecretRef *secretsource.Ref
 }
 
 // VaultRef is app.yaml's { vault: { path, key } } env var shape: Path is
@@ -63,20 +70,54 @@ func (e *EnvVar) UnmarshalYAML(node *yaml.Node) error {
 		if err := node.Decode(&asString); err != nil {
 			return fmt.Errorf("env value: %w", err)
 		}
+		if secretsource.IsRef(asString) {
+			ref, err := secretsource.ParseRef(asString)
+			if err != nil {
+				return fmt.Errorf("env value: %w", err)
+			}
+			*e = EnvVar{SecretRef: &ref}
+			return nil
+		}
 		*e = EnvVar{Value: asString}
 		return nil
 	}
 
 	var asObject struct {
 		From     string    `yaml:"from"`
-		Secret   bool      `yaml:"secret"`
+		Secret   yaml.Node `yaml:"secret"`
 		Required bool      `yaml:"required"`
 		Vault    *VaultRef `yaml:"vault"`
 	}
 	if err := node.Decode(&asObject); err != nil {
 		return fmt.Errorf("env value must be a string or an object with from/secret/required/vault: %w", err)
 	}
-	if asObject.Vault != nil && asObject.Secret {
+	var secretFlag bool
+	var secretRef *secretsource.Ref
+	switch asObject.Secret.Kind {
+	case 0:
+	case yaml.MappingNode:
+		var rs secretsource.RefSpec
+		if err := asObject.Secret.Decode(&rs); err != nil {
+			return fmt.Errorf("env value: secret reference: %w", err)
+		}
+		ref, err := rs.Ref()
+		if err != nil {
+			return fmt.Errorf("env value: secret reference: %w", err)
+		}
+		secretRef = &ref
+	default:
+		if err := asObject.Secret.Decode(&secretFlag); err != nil {
+			return fmt.Errorf("env value: secret must be true or a { conn, path, key } reference")
+		}
+	}
+	if secretRef != nil {
+		if asObject.Vault != nil || asObject.From != "" {
+			return fmt.Errorf("env value: a secret reference is mutually exclusive with from and vault")
+		}
+		*e = EnvVar{Required: asObject.Required, SecretRef: secretRef}
+		return nil
+	}
+	if asObject.Vault != nil && secretFlag {
 		return fmt.Errorf("env value: vault and secret are mutually exclusive")
 	}
 	if asObject.Vault != nil && asObject.From != "" {
@@ -88,7 +129,7 @@ func (e *EnvVar) UnmarshalYAML(node *yaml.Node) error {
 
 	*e = EnvVar{
 		From:     asObject.From,
-		Secret:   asObject.Secret,
+		Secret:   secretFlag,
 		Required: asObject.Required,
 		Vault:    asObject.Vault,
 	}

@@ -212,6 +212,9 @@ type TagAppResource struct {
 type AppVaultEnvRef struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+	// Conn and Version name a secret connection reference; empty Conn is the legacy Vault form.
+	Conn    string `json:"conn,omitempty"`
+	Version int    `json:"version,omitempty"`
 }
 
 // setAppPreviewEnvOverrideRequest mirrors internal/api's own

@@ -194,3 +194,40 @@ func (x *executor) syncConnections(ctx context.Context, app string, want map[str
 	}
 	return changed, nil
 }
+
+// syncSecretRefs writes secret connection references through the vault-env API.
+// Only reference text travels; the control plane resolves values at container create.
+func (x *executor) syncSecretRefs(ctx context.Context, app string, want map[string]string, live *wireApp, prune bool) (bool, error) {
+	base := "/api/v1/apps/" + esc(app) + "/vault-env/"
+	have := map[string]string{}
+	if live != nil {
+		for k, v := range live.VaultEnv {
+			if ref := wireSecretRef(v); ref != "" {
+				have[k] = ref
+			}
+		}
+	}
+	changed := false
+	for _, env := range sortedKeys(want) {
+		if have[env] == want[env] {
+			continue
+		}
+		if err := x.do(ctx, http.MethodPut, base+esc(env), map[string]string{"ref": want[env]}, nil); err != nil {
+			return changed, fmt.Errorf("set secret reference for %s: %w", env, err)
+		}
+		changed = true
+	}
+	if !prune {
+		return changed, nil
+	}
+	for _, env := range sortedKeys(have) {
+		if _, ok := want[env]; ok {
+			continue
+		}
+		if err := x.do(ctx, http.MethodDelete, base+esc(env), nil, nil); err != nil {
+			return changed, fmt.Errorf("clear secret reference for %s: %w", env, err)
+		}
+		changed = true
+	}
+	return changed, nil
+}

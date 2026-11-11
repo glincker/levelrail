@@ -153,7 +153,7 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
-		if v.Secret || v.From != "" || v.Vault != nil {
+		if v.Secret || v.From != "" || v.Vault != nil || v.SecretRef != nil {
 			continue
 		}
 		out[k] = v.Value
@@ -170,11 +170,16 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 func vaultEnvRefs(env map[string]spec.EnvVar) map[string]store.VaultEnvRef {
 	var out map[string]store.VaultEnvRef
 	for k, v := range env {
-		if v.Vault == nil {
+		if v.Vault == nil && v.SecretRef == nil {
 			continue
 		}
 		if out == nil {
 			out = make(map[string]store.VaultEnvRef)
+		}
+		if v.SecretRef != nil {
+			r := v.SecretRef
+			out[k] = store.VaultEnvRef{Conn: r.Conn, Path: r.Path, Key: r.Key, Version: r.Version}
+			continue
 		}
 		out[k] = store.VaultEnvRef{Path: v.Vault.Path, Key: v.Vault.Key}
 	}

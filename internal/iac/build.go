@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
+	"github.com/GLINCKER/levelrail/internal/secretsource"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -393,7 +394,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	decodeSpec(d, &sp, s)
 	svcNode := mapValue(d.SpecNode, "service")
-	env, secrets, conns, existing := appEnv(svcNode, s, opts)
+	env, secrets, conns, existing, refs := appEnv(svcNode, s, opts)
 
 	trimmed := *svcNode
 	trimmed.Content = nil
@@ -420,7 +421,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	f := appFields{Image: svc.Build.Image, Port: svc.Port, HostPort: svc.HostPort, BindAddress: svc.EffectiveBindAddress(),
 		Replicas: svc.EffectiveReplicas(), Strategy: svc.EffectiveStrategy(), Domains: sortedUnique(svc.Domains), Env: nonEmptyMap(env),
 		SecretEnv: sortedUnique(secrets), Labels: nonEmptyMap(svc.Labels), Command: svc.Command, Project: sp.Project, Environment: sp.Environment,
-		Tags: sortedUnique(sp.Tags), Connections: nonEmptyMap(conns)}
+		Tags: sortedUnique(sp.Tags), Connections: nonEmptyMap(conns), SecretRefs: nonEmptyMap(refs)}
 	if opts.Source != "" {
 		f.Tags = sortedUnique(append(f.Tags, tagManagedPre+opts.Source))
 	}
@@ -502,13 +503,15 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 }
 
-func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string) {
+// appEnv returns literals, stored secret names, database connections, existing secret names and secret connection references.
+func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string, map[string]string) {
 	envNode := mapValue(svcNode, "env")
 	if envNode == nil {
-		return nil, nil, nil, nil
+		return nil, nil, nil, nil, nil
 	}
 	literal := map[string]string{}
 	conns := map[string]string{}
+	refs := map[string]string{}
 	var secrets, existing []string
 	for i := 0; i+1 < len(envNode.Content); i += 2 {
 		k, vn := envNode.Content[i].Value, envNode.Content[i+1]
@@ -519,6 +522,14 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 		}
 		switch vn.Kind {
 		case yaml.ScalarNode:
+			if secretsource.IsRef(vn.Value) {
+				if ref, err := secretsource.ParseRef(vn.Value); err != nil {
+					s.at(path, "invalid secret reference: %v", err)
+				} else {
+					refs[k] = ref.String()
+				}
+				continue
+			}
 			if m := secretPlaceRe.FindStringSubmatch(vn.Value); m != nil {
 				secrets = appendSecret(secrets, k, m[1], path, s)
 				continue
@@ -527,6 +538,12 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 				literal[k] = v
 			}
 		case yaml.MappingNode:
+			if text, found := secretRefMapping(vn, path, s); found {
+				if text != "" {
+					refs[k] = text
+				}
+				continue
+			}
 			if from := mapValue(vn, "from"); from != nil {
 				if ref, ok := parseFromRef(from, path+".from", s); ok {
 					conns[k] = ref
@@ -540,7 +557,7 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 			}
 		}
 	}
-	return literal, secrets, conns, existing
+	return literal, secrets, conns, existing, refs
 }
 
 // isExistingRef reports { secretRef, existing: true }, a pointer at a secret
@@ -661,4 +678,36 @@ func cloneNode(n *yaml.Node) *yaml.Node {
 		c.Content[i] = cloneNode(ch)
 	}
 	return &c
+}
+
+// secretRefMapping reads { secret: {conn, path, key} } and { secretRef: {connection, path, key} }.
+// found is true when the node used one of those object forms; text is "" after an issue was recorded.
+func secretRefMapping(vn *yaml.Node, path string, s *issueSink) (text string, found bool) {
+	n := mapValue(vn, "secret")
+	if n == nil || n.Kind != yaml.MappingNode {
+		n = mapValue(vn, "secretRef")
+	}
+	if n == nil || n.Kind != yaml.MappingNode {
+		return "", false
+	}
+	var in struct {
+		Conn       string `yaml:"conn"`
+		Connection string `yaml:"connection"`
+		Path       string `yaml:"path"`
+		Key        string `yaml:"key"`
+		Version    int    `yaml:"version"`
+	}
+	if err := n.Decode(&in); err != nil {
+		s.at(path, "secret reference must have conn, path and key")
+		return "", true
+	}
+	if in.Conn == "" {
+		in.Conn = in.Connection
+	}
+	ref, err := secretsource.RefSpec{Conn: in.Conn, Path: in.Path, Key: in.Key, Version: in.Version}.Ref()
+	if err != nil {
+		s.at(path, "invalid secret reference: %v", err)
+		return "", true
+	}
+	return ref.String(), true
 }

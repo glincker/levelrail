@@ -96,7 +96,7 @@ func preserveUnsentAppFields(desired *store.DesiredService, existing store.Desir
 	if req.VaultEnv != nil {
 		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
 		for k, v := range req.VaultEnv {
-			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
+			desired.VaultEnv[k] = v.store()
 		}
 	}
 	if req.SecretEnv == nil {

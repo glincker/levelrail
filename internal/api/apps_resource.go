@@ -239,6 +239,13 @@ type appResource struct {
 type appVaultEnvRef struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+	// Conn and Version name a secret connection reference; empty Conn is the legacy Vault form.
+	Conn    string `json:"conn,omitempty"`
+	Version int    `json:"version,omitempty"`
+}
+
+func (r appVaultEnvRef) store() store.VaultEnvRef {
+	return store.VaultEnvRef{Path: r.Path, Key: r.Key, Conn: r.Conn, Version: r.Version}
 }
 
 // toAppResource builds the wire resource with sensitive env values masked
@@ -261,7 +268,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 	if len(svc.VaultEnv) > 0 {
 		vaultEnv = make(map[string]appVaultEnvRef, len(svc.VaultEnv))
 		for k, v := range svc.VaultEnv {
-			vaultEnv[k] = appVaultEnvRef{Path: v.Path, Key: v.Key}
+			vaultEnv[k] = appVaultEnvRef{Path: v.Path, Key: v.Key, Conn: v.Conn, Version: v.Version}
 		}
 	}
 	var attachment *appDatabaseResource
