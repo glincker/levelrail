@@ -50,6 +50,16 @@ var media1Templates = []Template{
       interval: 30s
       timeout: 5s
       retries: 3
+    # From outside the container the WebUI answers 401 (the localhost auth bypass only covers the in-container check), so 401 counts as serving.
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 8080
+      expect_status: "200-299,401"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 `,
 	},
 	{
