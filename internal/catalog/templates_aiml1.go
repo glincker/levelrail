@@ -344,6 +344,12 @@ var aiml1Templates = []Template{
       SECRETKEY_PATH: /home/node/.flowise
       LOG_PATH: /home/node/.flowise/logs
       BLOB_STORAGE_PATH: /home/node/.flowise/storage
+      JWT_AUTH_TOKEN_SECRET: $SERVICE_HEX_32_JWTAUTH
+      JWT_REFRESH_TOKEN_SECRET: $SERVICE_HEX_32_JWTREFRESH
+      EXPRESS_SESSION_SECRET: $SERVICE_HEX_32_SESSION
+      TOKEN_HASH_SECRET: $SERVICE_HEX_32_TOKENHASH
+      # 3.1.4's sqlite session store crashes at boot (connect-sqlite3 gets a string db), so use the in-memory store.
+      EXPIRE_AUTH_TOKENS_ON_RESTART: "true"
     volumes:
       - flowise_data:/home/node/.flowise
     healthcheck:

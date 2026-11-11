@@ -68,14 +68,30 @@ var automationBatchTemplates = []Template{
       PORT: "3000"
       FLOWISE_USERNAME: $SERVICE_USER_FLOWISE
       FLOWISE_PASSWORD: $SERVICE_PASSWORD_FLOWISE
-      DATABASE_PATH: /root/.flowise
-      APIKEY_PATH: /root/.flowise
-      SECRETKEY_PATH: /root/.flowise
-      LOG_PATH: /root/.flowise/logs
-      BLOB_STORAGE_PATH: /root/.flowise/storage
+      DATABASE_PATH: /home/node/.flowise
+      APIKEY_PATH: /home/node/.flowise
+      SECRETKEY_PATH: /home/node/.flowise
+      LOG_PATH: /home/node/.flowise/logs
+      BLOB_STORAGE_PATH: /home/node/.flowise/storage
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: recordmanager
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: flowise_records
+      DATABASE_USER: flowise
+      DATABASE_PASSWORD: $SERVICE_PASSWORD_RECORDMANAGER
+      JWT_AUTH_TOKEN_SECRET: $SERVICE_HEX_32_JWTAUTH
+      JWT_REFRESH_TOKEN_SECRET: $SERVICE_HEX_32_JWTREFRESH
+      EXPRESS_SESSION_SECRET: $SERVICE_HEX_32_SESSION
+      TOKEN_HASH_SECRET: $SERVICE_HEX_32_TOKENHASH
     volumes:
-      - flowise_pg_data:/root/.flowise
-    depends_on: [recordmanager, cache, qdrant]
+      - flowise_pg_data:/home/node/.flowise
+    depends_on:
+      recordmanager:
+        condition: service_healthy
+      cache:
+        condition: service_started
+      qdrant:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/v1/ping || exit 1"]
       interval: 10s

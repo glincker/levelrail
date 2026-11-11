@@ -17954,6 +17954,16 @@
     },
     {
      "service": "flowise",
+     "name": "EXPIRE_AUTH_TOKENS_ON_RESTART",
+     "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "EXPRESS_SESSION_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "flowise",
      "name": "FLOWISE_PASSWORD",
      "kind": "generated"
     },
@@ -17961,6 +17971,16 @@
      "service": "flowise",
      "name": "FLOWISE_USERNAME",
      "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "JWT_AUTH_TOKEN_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "flowise",
+     "name": "JWT_REFRESH_TOKEN_SECRET",
+     "kind": "generated"
     },
     {
      "service": "flowise",
@@ -17976,6 +17996,11 @@
      "service": "flowise",
      "name": "SECRETKEY_PATH",
      "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "TOKEN_HASH_SECRET",
+     "kind": "generated"
     }
    ],
    "requirements": {
@@ -17996,7 +18021,7 @@
       "services": [
        "flowise"
       ],
-      "detail": "FLOWISE_PASSWORD",
+      "detail": "EXPRESS_SESSION_SECRET, FLOWISE_PASSWORD, JWT_AUTH_TOKEN_SECRET, JWT_REFRESH_TOKEN_SECRET, TOKEN_HASH_SECRET",
       "message": "Passwords and keys are generated at deploy time"
      },
      {
@@ -18159,7 +18184,7 @@
       3000
      ],
      "volumes": [
-      "flowise_pg_data -> /root/.flowise"
+      "flowise_pg_data -> /home/node/.flowise"
      ]
     },
     {
@@ -18192,8 +18217,43 @@
     },
     {
      "service": "flowise",
+     "name": "DATABASE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "DATABASE_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "DATABASE_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "flowise",
      "name": "DATABASE_PATH",
      "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "DATABASE_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "DATABASE_TYPE",
+     "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "DATABASE_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "EXPRESS_SESSION_SECRET",
+     "kind": "generated"
     },
     {
      "service": "flowise",
@@ -18203,6 +18263,16 @@
     {
      "service": "flowise",
      "name": "FLOWISE_USERNAME",
+     "kind": "generated"
+    },
+    {
+     "service": "flowise",
+     "name": "JWT_AUTH_TOKEN_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "flowise",
+     "name": "JWT_REFRESH_TOKEN_SECRET",
      "kind": "generated"
     },
     {
@@ -18219,6 +18289,11 @@
      "service": "flowise",
      "name": "SECRETKEY_PATH",
      "kind": "preset"
+    },
+    {
+     "service": "flowise",
+     "name": "TOKEN_HASH_SECRET",
+     "kind": "generated"
     },
     {
      "service": "qdrant",
@@ -18261,7 +18336,7 @@
        "qdrant",
        "recordmanager"
       ],
-      "detail": "FLOWISE_PASSWORD, FLOWISE_USERNAME, POSTGRES_PASSWORD, QDRANT__SERVICE__API_KEY",
+      "detail": "DATABASE_PASSWORD, EXPRESS_SESSION_SECRET, FLOWISE_PASSWORD, FLOWISE_USERNAME, JWT_AUTH_TOKEN_SECRET, JWT_REFRESH_TOKEN_SECRET, TOKEN_HASH_SECRET, POSTGRES_PASSWORD, QDRANT__SERVICE__API_KEY",
       "message": "Passwords and keys are generated at deploy time"
      },
      {

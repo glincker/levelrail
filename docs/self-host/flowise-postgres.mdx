@@ -16,7 +16,7 @@ Recommended memory: about 2048 MiB.
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
 | `cache` | `redis:7-alpine` | none | `flowise_pg_redis_data -&#62; /data` |
-| `flowise` | `flowiseai/flowise:3.1.4` | 3000 | `flowise_pg_data -&#62; /root/.flowise` |
+| `flowise` | `flowiseai/flowise:3.1.4` | 3000 | `flowise_pg_data -&#62; /home/node/.flowise` |
 | `qdrant` | `qdrant/qdrant:v1.19.1` | none | `flowise_pg_qdrant_data -&#62; /qdrant/storage` |
 | `recordmanager` | `postgres:16-alpine` | none | `flowise_pg_recordmanager_data -&#62; /var/lib/postgresql/data` |
 
@@ -26,12 +26,22 @@ Recommended memory: about 2048 MiB.
 | --- | --- | --- |
 | `flowise` | `APIKEY_PATH` | Preset in the template |
 | `flowise` | `BLOB_STORAGE_PATH` | Preset in the template |
+| `flowise` | `DATABASE_HOST` | Preset in the template |
+| `flowise` | `DATABASE_NAME` | Preset in the template |
+| `flowise` | `DATABASE_PASSWORD` | Generated at deploy |
 | `flowise` | `DATABASE_PATH` | Preset in the template |
+| `flowise` | `DATABASE_PORT` | Preset in the template |
+| `flowise` | `DATABASE_TYPE` | Preset in the template |
+| `flowise` | `DATABASE_USER` | Preset in the template |
+| `flowise` | `EXPRESS_SESSION_SECRET` | Generated at deploy |
 | `flowise` | `FLOWISE_PASSWORD` | Generated at deploy |
 | `flowise` | `FLOWISE_USERNAME` | Generated at deploy |
+| `flowise` | `JWT_AUTH_TOKEN_SECRET` | Generated at deploy |
+| `flowise` | `JWT_REFRESH_TOKEN_SECRET` | Generated at deploy |
 | `flowise` | `LOG_PATH` | Preset in the template |
 | `flowise` | `PORT` | Preset in the template |
 | `flowise` | `SECRETKEY_PATH` | Preset in the template |
+| `flowise` | `TOKEN_HASH_SECRET` | Generated at deploy |
 | `qdrant` | `QDRANT__SERVICE__API_KEY` | Generated at deploy |
 | `recordmanager` | `POSTGRES_DB` | Preset in the template |
 | `recordmanager` | `POSTGRES_PASSWORD` | Generated at deploy |
@@ -46,7 +56,7 @@ Level: **Standard**.
 What this template needs:
 
 - Publishes ports directly on the host (`flowise`): 3000:3000.
-- Passwords and keys are generated at deploy time (`flowise`, `qdrant`, `recordmanager`): FLOWISE_PASSWORD, FLOWISE_USERNAME, POSTGRES_PASSWORD, QDRANT__SERVICE__API_KEY.
+- Passwords and keys are generated at deploy time (`flowise`, `qdrant`, `recordmanager`): DATABASE_PASSWORD, EXPRESS_SESSION_SECRET, FLOWISE_PASSWORD, FLOWISE_USERNAME, JWT_AUTH_TOKEN_SECRET, JWT_REFRESH_TOKEN_SECRET, TOKEN_HASH_SECRET, POSTGRES_PASSWORD, QDRANT__SERVICE__API_KEY.
 - Stores data in named volumes (`cache`, `flowise`, `qdrant`, `recordmanager`): flowise_pg_data, flowise_pg_qdrant_data, flowise_pg_recordmanager_data, flowise_pg_redis_data.
 
 What Levelrail adds around it:
