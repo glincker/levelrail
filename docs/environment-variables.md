@@ -86,6 +86,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
 | `APP_SECRET_PROVIDER_MAX_RPS` | [`secrets.provider_max_rps`](/runtime-settings#security) | `20` |
 | `APP_SECRET_PROVIDER_TIMEOUT_SECONDS` | [`secrets.provider_timeout_seconds`](/runtime-settings#security) | `10` |
+| `APP_SECRETREF_MAX_CONN` | [`secrets.ref_max_conn_bytes`](/runtime-settings#security) | `63` |
+| `APP_SECRETREF_MAX_KEY` | [`secrets.ref_max_key_bytes`](/runtime-settings#security) | `128` |
+| `APP_SECRETREF_MAX_PATH` | [`secrets.ref_max_path_bytes`](/runtime-settings#security) | `512` |
+| `APP_SECRETREF_MAX_SEGMENTS` | [`secrets.ref_max_path_depth`](/runtime-settings#security) | `16` |
+| `APP_SECRETREF_MAX_REF` | [`secrets.ref_max_ref_bytes`](/runtime-settings#security) | `1024` |
 | `APP_VAULT_CACHE_TTL_SECONDS` | [`secrets.vault_cache_ttl_seconds`](/runtime-settings#security) | `30` |
 | `APP_VAULT_TOKEN_RENEW_PERCENT` | [`secrets.vault_token_renew_percent`](/runtime-settings#security) | `80` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |

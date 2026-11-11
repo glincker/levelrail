@@ -27,7 +27,7 @@ func (r *Resolver) Redactor() *Redactor { return r.redactor }
 // Register binds a connection name to a provider. Rebinding is rejected;
 // call Unregister first so a swap is always deliberate.
 func (r *Resolver) Register(conn string, p Provider) error {
-	if err := ValidConnName(conn, LimitsFromEnv().MaxConn); err != nil {
+	if err := ValidConnName(conn, CurrentLimits().MaxConn); err != nil {
 		return err
 	}
 	if p == nil {

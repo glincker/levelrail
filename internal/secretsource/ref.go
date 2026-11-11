@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 const scheme = "secret://"
@@ -25,15 +26,34 @@ func envInt(name string, def int) int {
 	return def
 }
 
-// LimitsFromEnv reads LEVELRAIL_SECRETREF_MAX_{REF,CONN,PATH,SEGMENTS,KEY}.
+// LimitsFromEnv reads APP_SECRETREF_MAX_{REF,CONN,PATH,SEGMENTS,KEY}, the seed for the runtime settings.
 func LimitsFromEnv() Limits {
 	return Limits{
-		MaxRef:      envInt("LEVELRAIL_SECRETREF_MAX_REF", 1024),
-		MaxConn:     envInt("LEVELRAIL_SECRETREF_MAX_CONN", 63),
-		MaxPath:     envInt("LEVELRAIL_SECRETREF_MAX_PATH", 512),
-		MaxSegments: envInt("LEVELRAIL_SECRETREF_MAX_SEGMENTS", 16),
-		MaxKey:      envInt("LEVELRAIL_SECRETREF_MAX_KEY", 128),
+		MaxRef:      envInt("APP_SECRETREF_MAX_REF", 1024),
+		MaxConn:     envInt("APP_SECRETREF_MAX_CONN", 63),
+		MaxPath:     envInt("APP_SECRETREF_MAX_PATH", 512),
+		MaxSegments: envInt("APP_SECRETREF_MAX_SEGMENTS", 16),
+		MaxKey:      envInt("APP_SECRETREF_MAX_KEY", 128),
 	}
+}
+
+var limitsSource atomic.Pointer[func() Limits]
+
+// SetLimitsSource makes the runtime settings the limit source; nil goes back to env.
+func SetLimitsSource(f func() Limits) {
+	if f == nil {
+		limitsSource.Store(nil)
+		return
+	}
+	limitsSource.Store(&f)
+}
+
+// CurrentLimits is the live limit set: the runtime source when wired, else env then defaults.
+func CurrentLimits() Limits {
+	if f := limitsSource.Load(); f != nil {
+		return (*f)()
+	}
+	return LimitsFromEnv()
 }
 
 // Ref points at one secret value in one named connection. It holds no value.
@@ -69,8 +89,8 @@ type RefSpec struct {
 // Ref validates the object form with the same rules as the URI form.
 func (s Spec) Ref() (Ref, error) { return s.Secret.Ref() }
 
-// Ref validates the parts with limits from the environment.
-func (s RefSpec) Ref() (Ref, error) { return s.RefWith(LimitsFromEnv()) }
+// Ref validates the parts with the current limits.
+func (s RefSpec) Ref() (Ref, error) { return s.RefWith(CurrentLimits()) }
 
 // RefWith validates the parts against explicit limits.
 func (s RefSpec) RefWith(l Limits) (Ref, error) {
@@ -87,8 +107,8 @@ func (s RefSpec) RefWith(l Limits) (Ref, error) {
 // IsRef reports whether s looks like a secret:// reference.
 func IsRef(s string) bool { return strings.HasPrefix(s, scheme) }
 
-// ParseRef parses secret://conn/path#key[?version=N] using env limits.
-func ParseRef(s string) (Ref, error) { return ParseRefWith(s, LimitsFromEnv()) }
+// ParseRef parses secret://conn/path#key[?version=N] using the current limits.
+func ParseRef(s string) (Ref, error) { return ParseRefWith(s, CurrentLimits()) }
 
 // ParseRefWith parses against explicit limits. Errors never echo the input
 // beyond a short reason, since a mistyped value may be a secret itself.
@@ -128,8 +148,8 @@ func ParseRefWith(s string, l Limits) (Ref, error) {
 	return r, nil
 }
 
-// Validate checks the parts with limits from the environment.
-func (r Ref) Validate() error { return r.ValidateWith(LimitsFromEnv()) }
+// Validate checks the parts with the current limits.
+func (r Ref) Validate() error { return r.ValidateWith(CurrentLimits()) }
 
 // ValidateWith checks every part. Connection names are lowercase only, so
 // two spellings can never name two connections. Paths and keys keep case.

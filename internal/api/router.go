@@ -745,6 +745,7 @@ type Router struct {
 	dnsNS                        dnsNameserverState                                         // lazy delegation checker, registrar lookup and demo zones (dns_zones_delegation.go)
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
+	secretConns                  SecretConnectionService                                    // nil until boot wires it: reads return an empty list, writes 501
 	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above
 	vaultSecrets                 VaultSecrets                                               // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
 	registryCatalog              RegistryCatalogClient                                      // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is

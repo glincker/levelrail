@@ -42,6 +42,8 @@ var (
 	ErrNotFound        = errors.New("secret not found in provider")
 	ErrBlockedAddress  = errors.New("provider address is private or link-local and is not an admin set self-hosted URL")
 	ErrRedirectBlocked = errors.New("provider redirected to another host or scheme")
+	// ErrUnavailable marks a timeout, an unreachable host or a 5xx answer, as opposed to a refusal or a missing secret.
+	ErrUnavailable = errors.New("provider unavailable")
 )
 
 var defaultBaseURLs = map[string]string{
@@ -276,6 +278,12 @@ func (r *Resolver) dropIdentity(name, access string) {
 	}
 }
 
+// unavailableError keeps its message and also matches ErrUnavailable.
+type unavailableError struct{ msg string }
+
+func (e unavailableError) Error() string        { return e.msg }
+func (e unavailableError) Is(target error) bool { return target == ErrUnavailable }
+
 func (r *Resolver) call(ctx context.Context, cfg Config, method, token, path string, query url.Values, payload []byte, t Tunables, out any) error {
 	base, selfHosted, err := r.endpoint(cfg)
 	if err != nil {
@@ -310,9 +318,9 @@ func (r *Resolver) call(ctx context.Context, cfg Config, method, token, path str
 		case errors.Is(err, ErrRedirectBlocked), errors.Is(err, ErrBlockedAddress):
 			return fmt.Errorf("%s: %w", cfg.Type, unwrapKnown(err))
 		case errors.Is(err, context.DeadlineExceeded) || isTimeout(err):
-			return fmt.Errorf("%s: provider did not answer within %s", cfg.Type, t.Timeout)
+			return unavailableError{fmt.Sprintf("%s: provider did not answer within %s", cfg.Type, t.Timeout)}
 		}
-		return fmt.Errorf("%s: provider unreachable at %s", cfg.Type, base.Host)
+		return unavailableError{fmt.Sprintf("%s: provider unreachable at %s", cfg.Type, base.Host)}
 	}
 	defer func() { _ = resp.Body.Close() }()
 	switch {
@@ -320,6 +328,8 @@ func (r *Resolver) call(ctx context.Context, cfg Config, method, token, path str
 		return fmt.Errorf("%s: %w (HTTP %d)", cfg.Type, ErrUnauthorized, resp.StatusCode)
 	case resp.StatusCode == http.StatusNotFound:
 		return fmt.Errorf("%s: %w (HTTP 404)", cfg.Type, ErrNotFound)
+	case resp.StatusCode >= http.StatusInternalServerError:
+		return unavailableError{fmt.Sprintf("%s: provider answered HTTP %d", cfg.Type, resp.StatusCode)}
 	case resp.StatusCode != http.StatusOK:
 		return fmt.Errorf("%s: provider answered HTTP %d", cfg.Type, resp.StatusCode)
 	}

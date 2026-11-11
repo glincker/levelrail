@@ -43,6 +43,8 @@ func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runSecretsScan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "provider":
 		return runSecretsProvider(prog, args[1:], stdout, stderr, lookupEnv)
+	case "connection":
+		return runSecretsConnection(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown secrets subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))
@@ -57,6 +59,7 @@ func secretsUsage(prog string) string {
   %[1]s secrets binding-status [flags]
   %[1]s secrets rebind [flags]
   %[1]s secrets scan [<app> | --path DIR] [flags]
+  %[1]s secrets connection list|create|update|delete|test [flags]
   %[1]s secrets key-status | rotate-dek <app>|--all | key-policy [flags]
 
 scan looks for credentials in a directory or an app's plain env values and
