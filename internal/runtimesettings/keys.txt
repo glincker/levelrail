@@ -293,6 +293,11 @@ secrets.provider_cache_ttl_seconds
 secrets.provider_max_response_kib
 secrets.provider_max_rps
 secrets.provider_timeout_seconds
+secrets.ref_max_conn_bytes
+secrets.ref_max_key_bytes
+secrets.ref_max_path_bytes
+secrets.ref_max_path_depth
+secrets.ref_max_ref_bytes
 secrets.vault_cache_ttl_seconds
 secrets.vault_token_renew_percent
 security.audit_sensitive_reads

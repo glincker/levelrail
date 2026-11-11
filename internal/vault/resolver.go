@@ -24,6 +24,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// ErrSecretMissing marks a secret, field or version that does not exist, so callers can tell it from an outage.
+var ErrSecretMissing = errors.New("vault: secret not found")
+
 // Resolver reads secrets from a HashiCorp Vault or OpenBao KV v2 engine.
 // It keeps an AppRole login token and a short read cache in memory only.
 type Resolver struct {
@@ -155,14 +158,17 @@ func (r *Resolver) read(ctx context.Context, client *vaultapi.Client, cfg store.
 				r.dropSession(fp)
 				continue
 			}
+			if errors.Is(err, vaultapi.ErrSecretNotFound) || (errors.As(err, &re) && re.StatusCode == http.StatusNotFound) {
+				err = fmt.Errorf("%w: %w", ErrSecretMissing, err)
+			}
 			return "", fmt.Errorf("vault: read secret %q: %w", path, err)
 		}
 		if secret == nil {
-			return "", fmt.Errorf("vault: secret %q not found", path)
+			return "", fmt.Errorf("%w: %q", ErrSecretMissing, path)
 		}
 		raw, ok := secret.Data[key]
 		if !ok {
-			return "", fmt.Errorf("vault: secret %q has no field %q", path, key)
+			return "", fmt.Errorf("%w: %q has no field %q", ErrSecretMissing, path, key)
 		}
 		value, ok := raw.(string)
 		if !ok {

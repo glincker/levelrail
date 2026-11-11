@@ -47,7 +47,7 @@ func TestParseRef(t *testing.T) {
 }
 
 func TestParseRefLimitsFromEnv(t *testing.T) {
-	t.Setenv("LEVELRAIL_SECRETREF_MAX_PATH", "4")
+	t.Setenv("APP_SECRETREF_MAX_PATH", "4")
 	if _, err := ParseRef("secret://c/abcde#k"); err == nil {
 		t.Fatal("env path cap not applied")
 	}
