@@ -225,6 +225,7 @@
     "blocked": "needs manual steps",
     "apply": "Upgrade",
     "applying": "Starting",
+    "capabilities": "Grants extra Linux capabilities: {{caps}}. Applying accepts them.",
     "confirmTitle": "Upgrade to the current template?",
     "confirmBody": "Risk: {{risk}}. A fresh volume backup is required. The release is watched and rolled back automatically if it crash loops or fails.",
     "envCount_one": "{{count}} env change",

@@ -3,9 +3,8 @@ package application
 import (
 	"context"
 	"log/slog"
-	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,7 +24,7 @@ func (c *Controller) withPolicyCaps(ctx context.Context, desired *store.DesiredS
 	allowElevated := c.elevatedCaps != nil && c.elevatedCaps(ctx) && desired.Egress == nil
 	kept := make([]string, 0, len(desired.GrantedCaps))
 	for _, g := range desired.GrantedCaps {
-		if slices.Contains(dockerguard.GrantableCaps, g) && !allowElevated {
+		if appspec.IsElevatedCap(g) && !allowElevated {
 			continue
 		}
 		kept = append(kept, g)

@@ -224,6 +224,7 @@
     "badge": "Hay una actualización del template",
     "blocked": "requiere pasos manuales",
     "apply": "Actualizar",
+    "capabilities": "Concede capacidades de Linux adicionales: {{caps}}. Al aplicar se aceptan.",
     "applying": "Iniciando",
     "confirmTitle": "¿Actualizar al template actual?",
     "confirmBody": "Riesgo: {{risk}}. Se requiere un respaldo reciente del volumen. Se vigila el release y se revierte automáticamente si entra en crashloop o falla.",

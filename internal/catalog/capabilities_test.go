@@ -4,6 +4,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 const capCompose = `services:
@@ -94,5 +97,16 @@ func TestCapabilityGrants_CapAddOutsideReviewAllowlist(t *testing.T) {
 	m := Manifest{Capabilities: []ManifestCapability{{Class: CapClassCapAdd, Service: "web", Reason: "r", Caps: []string{"NET_ADMIN"}}}}
 	if _, err := m.CapabilityGrants(CapabilityPolicy{Enabled: map[string]bool{CapClassNetAdmin: true}}); err == nil {
 		t.Fatal("cap_add class carrying NET_ADMIN must be refused even when Validate was bypassed")
+	}
+}
+
+func TestElevatedCapListsAgree(t *testing.T) {
+	for _, c := range dockerguard.GrantableCaps {
+		if !spec.IsElevatedCap(c) {
+			t.Errorf("spec.IsElevatedCap(%q) = false, but the guard lists it as grantable", c)
+		}
+	}
+	if spec.IsElevatedCap("CHOWN") {
+		t.Error("CHOWN is a Review cap")
 	}
 }
