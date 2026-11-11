@@ -48,6 +48,13 @@ type composeDeployOpts struct {
 	noCaller bool
 	// capGrants are the per-service cap_add values a template manifest declared and the install approved.
 	capGrants map[string][]string
+	// dropUngrantedCaps lets a rollback drop a Review or Elevated cap_add the current policy no longer grants.
+	dropUngrantedCaps bool
+	// capGate sees the caps this deploy would newly add, under the app lock and computed
+	// from the translated services; it writes the refusal and returns false to stop.
+	capGate func(added []string) bool
+	// addedCaps, when set, receives the newly added caps once the gate has passed.
+	addedCaps *[]string
 }
 
 type composeServiceStatus struct {

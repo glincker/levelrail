@@ -16,6 +16,8 @@ type TemplateUpgradePlan struct {
 	Automatic   bool                  `json:"automatic"`
 	Blockers    []TemplateUpgradeStop `json:"blockers"`
 	Services    []TemplateUpgradeSvc  `json:"services"`
+	// AddedCapabilities lists "service:CAP" the upgrade would add.
+	AddedCapabilities []string `json:"added_capabilities,omitempty"`
 }
 
 // TemplateUpgradeStop is one reason an upgrade cannot run unattended.
@@ -72,9 +74,13 @@ type TemplateUpgradeRun struct {
 }
 
 // ApplyTemplateUpgrade calls POST /api/v1/apps/{name}/template-upgrade.
-func (c *Client) ApplyTemplateUpgrade(ctx context.Context, name string, acceptRisk bool) (TemplateUpgradeRun, error) {
+// acceptCapabilities must list exactly the capabilities the plan says the upgrade adds.
+func (c *Client) ApplyTemplateUpgrade(ctx context.Context, name string, acceptRisk bool, acceptCapabilities []string) (TemplateUpgradeRun, error) {
 	var out TemplateUpgradeRun
-	body := map[string]bool{"accept_risk": acceptRisk}
+	body := map[string]any{"accept_risk": acceptRisk}
+	if len(acceptCapabilities) > 0 {
+		body["accept_capabilities"] = acceptCapabilities
+	}
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/template-upgrade", body, &out)
 	return out, err
 }

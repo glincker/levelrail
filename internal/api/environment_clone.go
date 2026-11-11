@@ -8,10 +8,12 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -641,6 +643,7 @@ func cloneDesiredService(source store.DesiredService, newName string, domains []
 		User:                 source.User,
 		WorkingDir:           source.WorkingDir,
 		Runtime:              cloneRuntime(source.Runtime),
+		GrantedCaps:          reviewCapsOnly(source.GrantedCaps),
 		PullPolicy:           source.PullPolicy,
 		RegistryCredentialID: source.RegistryCredentialID,
 		SecretEnv:            secretEnv,
@@ -708,4 +711,15 @@ func slugify(s string) string {
 // sourceApp would always collide with the source app itself.
 func suggestClonedAppName(sourceApp, newEnvironmentName string) string {
 	return sourceApp + "-" + slugify(newEnvironmentName)
+}
+
+// reviewCapsOnly keeps the Review-tier grants for a clone; Elevated ones need their own approval.
+func reviewCapsOnly(caps []string) []string {
+	var out []string
+	for _, c := range caps {
+		if !slices.Contains(dockerguard.GrantableCaps, c) {
+			out = append(out, c)
+		}
+	}
+	return out
 }

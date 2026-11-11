@@ -275,6 +275,7 @@ type Controller struct {
 	previousReleaseHold time.Duration                                 // 0 removes the previous release at cutover
 	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
+	elevatedCaps        func(context.Context) bool                    // nil fails closed: no elevated capability is applied, see WithElevatedCaps
 	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
@@ -637,7 +638,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
-	desired = c.withIncarnation(ctx, desired)
+	desired = c.withPolicyCaps(ctx, c.withIncarnation(ctx, desired))
 
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
 	// own doc comment): converge to zero containers and return early,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -47,6 +48,9 @@ func printTemplateUpgradePlan(out io.Writer, p apiclient.TemplateUpgradePlan) {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%d\t%d\n", s.Name, s.Status, img, len(s.Env), len(s.Volumes), len(s.Ports))
 	}
 	_ = tw.Flush()
+	if len(p.AddedCapabilities) > 0 {
+		_, _ = fmt.Fprintf(out, "ADDS CAPABILITIES: %s (apply needs --accept-capabilities)\n", strings.Join(p.AddedCapabilities, ", "))
+	}
 	for _, b := range p.Blockers {
 		_, _ = fmt.Fprintf(out, "BLOCKER %s (%s): %s\n", b.Code, b.Service, b.Detail)
 	}

@@ -77,6 +77,8 @@ func (rt *Router) writeTemplateUpgradeErr(w http.ResponseWriter, appID string, e
 type templateUpgradePlanResponse struct {
 	templateupgrade.Plan
 	RecheckSeconds int `json:"recheck_seconds"`
+	// AddedCapabilities lists "service:CAP" the upgrade would add; apply must echo them in accept_capabilities.
+	AddedCapabilities []string `json:"added_capabilities,omitempty"`
 }
 
 // handleGetTemplateUpgrade handles GET /api/v1/apps/{name}/template-upgrade:
@@ -89,7 +91,13 @@ func (rt *Router) handleGetTemplateUpgrade(w http.ResponseWriter, r *http.Reques
 		rt.writeTemplateUpgradeErr(w, appID, e)
 		return
 	}
-	writeJSON(w, http.StatusOK, templateUpgradePlanResponse{Plan: st.plan, RecheckSeconds: int(templateUpgradeSettingsFromEnv().recheck.Seconds())})
+	resp := templateUpgradePlanResponse{Plan: st.plan, RecheckSeconds: int(templateUpgradeSettingsFromEnv().recheck.Seconds())}
+	if merged, err := templateupgrade.Merge(st.latest.Compose, st.tpl, st.plan); err == nil {
+		if held, herr := rt.heldCaps(r.Context(), appID); herr == nil {
+			resp.AddedCapabilities = addedCaps(held, composeCapAdds(merged))
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // templateBaseline is the app's first template revision, the closest thing

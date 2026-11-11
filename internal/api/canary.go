@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/canary"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -212,6 +213,9 @@ func (rt *Router) handleStartCanary(w http.ResponseWriter, r *http.Request) {
 	canaryName := store.CanaryServiceName(name)
 	clone := cloneDesiredService(*source, canaryName, nil)
 	clone.Image = req.Image
+	if !docker.ImageIdentityMatches(source.Image, req.Image) {
+		clone.GrantedCaps = nil
+	}
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
 		rt.internalError(w, "api: start canary: save clone", err, slog.String("name", name))
 		return
