@@ -55,6 +55,9 @@ type DesiredService struct {
 	WorkingDir string
 	// Runtime holds the allowlisted docker run options; nil means none.
 	Runtime *spec.RuntimeOptions
+	// GrantedCaps are the approved template capabilities added to this service's
+	// containers. Kept apart from Runtime so no user-editable block can set them.
+	GrantedCaps []string
 	// DependsOn names sibling services (bare key, e.g. "db") this service waits
 	// on before its containers start, like compose depends_on service_started.
 	DependsOn []string

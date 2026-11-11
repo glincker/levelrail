@@ -4,6 +4,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 const capCompose = `services:
@@ -21,7 +24,7 @@ func TestManifestCapabilities_Validation(t *testing.T) {
 	cases := []struct {
 		name, caps, compose, want string
 	}{
-		{"net_admin class cannot reach compose until an Elevated runtime path exists", "capabilities:\n  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n  - {class: net_admin, service: web, reason: raw sockets, caps: [NET_RAW]}\n", capCompose, "net_raw is not allowed unless"},
+		{"net_admin class reaches compose as an Elevated grant", "capabilities:\n  - {class: cap_add, service: web, reason: chown data dir, caps: [CHOWN]}\n  - {class: net_admin, service: web, reason: raw sockets, caps: [NET_RAW]}\n", capCompose, ""},
 		{"undeclared cap_add", "", capCompose, "does not declare it"},
 		{"partly declared", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN]}\n", capCompose, "NET_RAW in cap_add but the manifest does not declare"},
 		{"unused declaration", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN, FOWNER]}\n  - {class: net_admin, service: web, reason: r, caps: [NET_RAW]}\n", capCompose, "FOWNER is declared for service \"web\" but its cap_add does not use it"},
@@ -94,5 +97,16 @@ func TestCapabilityGrants_CapAddOutsideReviewAllowlist(t *testing.T) {
 	m := Manifest{Capabilities: []ManifestCapability{{Class: CapClassCapAdd, Service: "web", Reason: "r", Caps: []string{"NET_ADMIN"}}}}
 	if _, err := m.CapabilityGrants(CapabilityPolicy{Enabled: map[string]bool{CapClassNetAdmin: true}}); err == nil {
 		t.Fatal("cap_add class carrying NET_ADMIN must be refused even when Validate was bypassed")
+	}
+}
+
+func TestElevatedCapListsAgree(t *testing.T) {
+	for _, c := range dockerguard.GrantableCaps {
+		if !spec.IsElevatedCap(c) {
+			t.Errorf("spec.IsElevatedCap(%q) = false, but the guard lists it as grantable", c)
+		}
+	}
+	if spec.IsElevatedCap("CHOWN") {
+		t.Error("CHOWN is a Review cap")
 	}
 }

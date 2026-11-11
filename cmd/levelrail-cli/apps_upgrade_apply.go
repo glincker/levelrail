@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -14,6 +15,7 @@ import (
 func runAppsUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps upgrade", "print the result as JSON to stdout and nothing else", stderr)
 	yes := fs.Bool("yes", false, "apply the upgrade; without it only the plan is shown")
+	acceptCaps := fs.Bool("accept-capabilities", false, "accept the Linux capabilities the upgrade adds, as listed in the plan")
 	noWait := fs.Bool("no-wait", false, "return once the upgrade is started instead of following it")
 	interval := fs.Duration("interval", 5*time.Second, "how often to poll the upgrade while following it")
 	waitMax := fs.Duration("wait-timeout", 15*time.Minute, "stop following after this long")
@@ -37,7 +39,14 @@ func runAppsUpgrade(prog string, args []string, stdout, stderr io.Writer, lookup
 		}
 		return code
 	}
-	run, err := client.ApplyTemplateUpgrade(ctx, name, true)
+	var accepted []string
+	if plan, perr := client.GetTemplateUpgradePlan(ctx, name); perr == nil && len(plan.AddedCapabilities) > 0 {
+		if !*acceptCaps {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("upgrade of app %q adds capabilities (%s); review them and re-run with --accept-capabilities", name, strings.Join(plan.AddedCapabilities, ", ")))
+		}
+		accepted = plan.AddedCapabilities
+	}
+	run, err := client.ApplyTemplateUpgrade(ctx, name, true, accepted)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("upgrade app %q: %w", name, err))
 	}

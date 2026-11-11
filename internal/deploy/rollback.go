@@ -72,6 +72,10 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 	updated := existing
 	resolution.apply(&updated)
 	updated.EnvDirty = false
+	// Template grants belong to the template's own image; another image must not inherit them.
+	if !docker.ImageIdentityMatches(existing.Image, image) {
+		updated.GrantedCaps = nil
+	}
 
 	heldID, err := t.holdIfLocked(ctx, updated)
 	if err != nil {

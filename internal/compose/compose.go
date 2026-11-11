@@ -46,6 +46,9 @@ type File struct {
 	// CapGrants lists, per service key, the cap_add values a manifest declared and
 	// the caller approved. Never read from YAML; unset means cap_add is rejected.
 	CapGrants map[string][]string
+	// DropUngrantedCaps drops a Review or Elevated cap_add that CapGrants no longer
+	// covers instead of rejecting it, for a rollback to a revision made under older policy.
+	DropUngrantedCaps bool
 	// Domains maps a service key to the real domain it should be
 	// reachable at, from the top-level x-levelrail-domains extension
 	// (Compose's own reserved x- prefix for tool-specific keys). Used

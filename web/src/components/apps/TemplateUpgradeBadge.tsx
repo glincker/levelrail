@@ -63,6 +63,15 @@ export function TemplateUpgradeBadge({
   if (!data?.has_changes) return null
 
   const blocked = data.blockers.length > 0
+  const addedCaps = data.added_capabilities ?? []
+  const consequences = data.services
+    .filter((s) => s.status !== 'unchanged')
+    .map((s) => serviceLine(s, t))
+  if (addedCaps.length > 0) {
+    consequences.push(
+      t('templateUpgrade.capabilities', { caps: addedCaps.join(', ') }),
+    )
+  }
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Badge variant="info" className="gap-1">
@@ -90,19 +99,20 @@ export function TemplateUpgradeBadge({
         description={t('templateUpgrade.confirmBody', {
           risk: t(`templateUpgrade.risk.${data.risk}`),
         })}
-        consequences={data.services
-          .filter((s) => s.status !== 'unchanged')
-          .map((s) => serviceLine(s, t))}
+        consequences={consequences}
         confirmLabel={t('templateUpgrade.apply')}
         pendingLabel={t('templateUpgrade.applying')}
         pending={apply.isPending}
         error={apply.isError ? apply.error.message : null}
         onConfirm={() => {
-          apply.mutate(true, {
-            onSuccess: () => {
-              setOpen(false)
+          apply.mutate(
+            { acceptRisk: true, acceptCapabilities: addedCaps },
+            {
+              onSuccess: () => {
+                setOpen(false)
+              },
             },
-          })
+          )
         }}
       />
     </div>

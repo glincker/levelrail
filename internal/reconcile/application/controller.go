@@ -275,6 +275,7 @@ type Controller struct {
 	previousReleaseHold time.Duration                                 // 0 removes the previous release at cutover
 	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
+	elevatedCaps        func(context.Context) bool                    // nil fails closed: no elevated capability is applied, see WithElevatedCaps
 	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
@@ -637,7 +638,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
-	desired = c.withIncarnation(ctx, desired)
+	desired = c.withPolicyCaps(ctx, c.withIncarnation(ctx, desired))
 
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
 	// own doc comment): converge to zero containers and return early,
@@ -2876,6 +2877,8 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		return spec, fmt.Errorf("stored runtime options no longer pass validation, edit them in the app spec: %w", err)
 	}
 	applyRuntimeOptions(&spec, desired.Runtime)
+	// The hardening profile drops ALL and adds this record back, so only approved grants reach the container.
+	spec.CapAdd = append([]string(nil), desired.GrantedCaps...)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

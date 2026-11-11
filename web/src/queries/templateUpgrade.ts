@@ -31,6 +31,7 @@ export interface TemplateUpgradePlan {
   blockers: ReadonlyArray<UpgradeBlocker>
   services: ReadonlyArray<UpgradeServicePlan>
   recheck_seconds: number
+  added_capabilities?: ReadonlyArray<string>
 }
 
 export type UpgradeRunState =
@@ -95,11 +96,20 @@ export function useApplyTemplateUpgrade(app: string) {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { errorToast: false },
-    mutationFn: async (acceptRisk: boolean): Promise<TemplateUpgradeRun> => {
+    mutationFn: async ({
+      acceptRisk,
+      acceptCapabilities,
+    }: {
+      acceptRisk: boolean
+      acceptCapabilities: ReadonlyArray<string>
+    }): Promise<TemplateUpgradeRun> => {
       const res = await fetch(base(app), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accept_risk: acceptRisk }),
+        body: JSON.stringify({
+          accept_risk: acceptRisk,
+          accept_capabilities: acceptCapabilities,
+        }),
       })
       if (!res.ok) {
         throw new ApiError(

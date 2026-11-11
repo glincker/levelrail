@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -33,12 +34,13 @@ func TestRun_AppsUpgradePlanIsReadOnly(t *testing.T) {
 func TestRun_AppsUpgradeYesAppliesWithoutWait(t *testing.T) {
 	var gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("method %s", r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode(apiclient.TemplateUpgradePlan{AppID: "web", HasChanges: true})
+			return
 		}
 		b, _ := io.ReadAll(r.Body)
 		gotBody = string(b)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(apiclient.TemplateUpgradeRun{AppID: "web", State: "watching", FromRevision: 1, ToRevision: 2})
 	}))
@@ -47,5 +49,30 @@ func TestRun_AppsUpgradeYesAppliesWithoutWait(t *testing.T) {
 	stdout, _ := runCLIExpectOK(t, []string{"apps", "upgrade", "web", "--yes", "--no-wait", "--api-url", srv.URL})
 	if !strings.Contains(gotBody, `"accept_risk":true`) || !strings.Contains(stdout, "watching") {
 		t.Fatalf("body %q stdout %q", gotBody, stdout)
+	}
+}
+
+func TestRun_AppsUpgradeYesNeedsCapabilityAcceptance(t *testing.T) {
+	var posted string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode(apiclient.TemplateUpgradePlan{AppID: "web", HasChanges: true, AddedCapabilities: []string{"web:NET_ADMIN"}})
+			return
+		}
+		b, _ := io.ReadAll(r.Body)
+		posted = string(b)
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(apiclient.TemplateUpgradeRun{AppID: "web", State: "watching"})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	if code := run("levelrail-cli-test", []string{"apps", "upgrade", "web", "--yes", "--no-wait", "--api-url", srv.URL}, &out, &errOut, envMap()); code == exitOK || posted != "" {
+		t.Fatalf("without --accept-capabilities: exit %d, posted %q; want a refusal and no POST", code, posted)
+	}
+	_, _ = runCLIExpectOK(t, []string{"apps", "upgrade", "web", "--yes", "--no-wait", "--accept-capabilities", "--api-url", srv.URL})
+	if !strings.Contains(posted, `"accept_capabilities":["web:NET_ADMIN"]`) {
+		t.Fatalf("posted %q, want the plan's capabilities echoed", posted)
 	}
 }

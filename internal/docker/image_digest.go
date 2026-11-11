@@ -235,3 +235,30 @@ func (c *Client) InspectImageLayers(ctx context.Context, ref string) ([]string, 
 	}
 	return resp.RootFS.Layers, nil
 }
+
+// ImageIdentityMatches reports whether requested names the same image source as
+// current: same repository, no conflicting tag or digest. A moving digest behind an
+// unchanged floating reference still matches; a different repository never does.
+func ImageIdentityMatches(current, requested string) bool {
+	if current == requested {
+		return true
+	}
+	c, cerr := reference.ParseNormalizedNamed(current)
+	r, rerr := reference.ParseNormalizedNamed(requested)
+	if cerr != nil || rerr != nil || c.Name() != r.Name() {
+		return false
+	}
+	ct, rt := tagOf(c), tagOf(r)
+	if ct != "" && rt != "" && ct != rt {
+		return false
+	}
+	cd, rd := ImageDigestOf(current), ImageDigestOf(requested)
+	return cd == "" || rd == "" || cd == rd
+}
+
+func tagOf(n reference.Named) string {
+	if t, ok := n.(reference.Tagged); ok {
+		return t.Tag()
+	}
+	return ""
+}

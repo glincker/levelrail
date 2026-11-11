@@ -240,3 +240,25 @@ func TestImageDigestExistsTreatsRegistryAuthFailureAsInconclusive(t *testing.T) 
 		})
 	}
 }
+
+func TestImageIdentityMatches(t *testing.T) {
+	const d1 = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+	const d2 = "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+	cases := []struct {
+		name, cur, req string
+		want           bool
+	}{
+		{"same string", "nginx:1.27.0", "nginx:1.27.0", true},
+		{"digest moved behind the same tag", "nginx:1.27.0@" + d1, "nginx:1.27.0", true},
+		{"normalized registry form", "docker.io/library/nginx:1.27.0", "nginx:1.27.0", true},
+		{"other repository", "nginx:1.27.0", "evil/nginx:1.27.0", false},
+		{"other tag", "nginx:1.27.0", "nginx:1.28.0", false},
+		{"two pinned digests", "nginx@" + d1, "nginx@" + d2, false},
+		{"unparsable", "nginx:1.27.0", "::::", false},
+	}
+	for _, c := range cases {
+		if got := ImageIdentityMatches(c.cur, c.req); got != c.want {
+			t.Errorf("%s: ImageIdentityMatches(%q, %q) = %v, want %v", c.name, c.cur, c.req, got, c.want)
+		}
+	}
+}

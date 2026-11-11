@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/placement"
@@ -84,6 +85,10 @@ func preserveUnsentAppFields(desired *store.DesiredService, existing store.Desir
 	desired.DependsOn = existing.DependsOn
 	desired.DependsOnHealthy = existing.DependsOnHealthy
 	desired.Health = store.KeepComposeHealth(desired.Health, existing.Health)
+	// Grants follow the template's own image and command; either changing drops them.
+	if !imageChanged && slices.Equal(desired.Command, existing.Command) {
+		desired.GrantedCaps = existing.GrantedCaps
+	}
 	if !imageChanged {
 		desired.ImageID, desired.ImageIDRef = existing.ImageID, existing.ImageIDRef
 	}

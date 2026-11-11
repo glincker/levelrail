@@ -182,3 +182,15 @@ func TestImageTriggerRollbackToPinnedImageKeepsDigest(t *testing.T) {
 		t.Fatalf("reason = %q", st.attempts[0].DigestReason)
 	}
 }
+
+func TestImageTriggerDropsGrantsOnlyWhenTheImageChanges(t *testing.T) {
+	existing := store.DesiredService{Name: "web", Image: "nginx:1.27.0@sha256:1111111111111111111111111111111111111111111111111111111111111111", GrantedCaps: []string{"NET_ADMIN"}}
+	same, err := ImageTrigger{Store: &fakeImageDeployStore{}}.Deploy(context.Background(), existing, "nginx:1.27.0")
+	if err != nil || len(same.GrantedCaps) != 1 {
+		t.Fatalf("same image: caps = %v, %v; want kept", same.GrantedCaps, err)
+	}
+	other, err := ImageTrigger{Store: &fakeImageDeployStore{}}.Deploy(context.Background(), existing, "evil/payload:1")
+	if err != nil || len(other.GrantedCaps) != 0 {
+		t.Fatalf("other image: caps = %v, %v; want dropped", other.GrantedCaps, err)
+	}
+}

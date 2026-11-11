@@ -427,6 +427,13 @@ func NormalizeCap(c string) string {
 	return strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), "CAP_")
 }
 
+// IsElevatedCap reports the capabilities a template needs the elevated tier for. It mirrors
+// the guard's grantable list, which a catalog test keeps in step.
+func IsElevatedCap(c string) bool {
+	n := NormalizeCap(c)
+	return n == "NET_ADMIN" || n == "NET_RAW"
+}
+
 // NormalizeTmpfs gives a size-less tmpfs entry a bounded default size, since
 // an unsized tmpfs may grow to half of host memory.
 func NormalizeTmpfs(entry string) string {

@@ -127,16 +127,19 @@ func (rt *Router) handleRollbackCompose(w http.ResponseWriter, r *http.Request) 
 	mu := composeGitLock(appID)
 	mu.Lock()
 	defer mu.Unlock()
-	grants, ok := rt.templateCapGrants(w, r, rev.TemplateID)
+	grants, ok := rt.rollbackCapGrants(w, r, appID, rev.TemplateID)
 	if !ok {
 		return
 	}
+	var added []string
 	resp, ok := rt.deployComposeBody(w, r, appID, []byte(rev.Compose), composeDeployOpts{
-		profiles: rev.Profiles, source: store.ComposeRevisionSourceRollback, templateID: rev.TemplateID, capGrants: grants,
+		profiles: rev.Profiles, source: store.ComposeRevisionSourceRollback, templateID: rev.TemplateID,
+		capGrants: grants, dropUngrantedCaps: rev.TemplateID != "", addedCaps: &added,
 	})
 	if !ok {
 		return
 	}
+	rt.auditAddedCapabilities(r, appID, rev.TemplateID, "compose_rollback", added)
 	rt.logger.Info("api: compose: rolled back", slog.String("app", appID), slog.Int("from", latest.Revision), slog.Int("to", target), slog.Int("revision", resp.Revision))
 	writeJSON(w, http.StatusOK, map[string]any{"app_id": appID, "rolled_back_to": target, "deploy": resp})
 }
