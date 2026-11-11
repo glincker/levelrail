@@ -1,0 +1,72 @@
+id: envoy
+name: Envoy Proxy
+description: Cloud native edge and service proxy on the official image. The install form carries envoy.yaml as an editable file, so it starts with a working listener instead of exiting on a missing config.
+icon: shuffle
+category: Infrastructure
+documentation_url: https://www.envoyproxy.io/docs/envoy/latest/
+source_repo: https://github.com/envoyproxy/envoy
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/envoyproxy/envoy/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Open the address to see the greeting, then edit the config file setting to add your own listeners, routes and clusters. The admin interface is on port 9901.
+env:
+  - key: ENVOY_GREETING
+    label: Greeting
+    description: Text the starter config answers with.
+    default: envoy is up
+  - key: ENVOY_CONFIG
+    type: file
+    service: envoy
+    path: /etc/envoy/envoy.yaml
+    mode: "0444"
+    label: envoy.yaml
+    description: The full Envoy bootstrap configuration, mounted read-only.
+    default: |
+      admin:
+        address:
+          socket_address:
+            address: 0.0.0.0
+            port_value: 9901
+      static_resources:
+        listeners:
+          - name: main
+            address:
+              socket_address:
+                address: 0.0.0.0
+                port_value: 10000
+            filter_chains:
+              - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      stat_prefix: ingress
+                      route_config:
+                        name: local
+                        virtual_hosts:
+                          - name: all
+                            domains: ["*"]
+                            routes:
+                              - match:
+                                  prefix: "/"
+                                direct_response:
+                                  status: 200
+                                  body:
+                                    inline_string: "${ENVOY_GREETING}"
+                      http_filters:
+                        - name: envoy.filters.http.router
+                          typed_config:
+                            "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+domains:
+  - service: envoy
+    port: 10000
+    description: Public address of the proxy listener.
+healthcheck:
+  service: envoy
+  port: 10000
+  path: /

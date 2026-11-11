@@ -1,0 +1,25 @@
+id: libsql
+name: libSQL Server
+description: Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume.
+icon: database
+category: Database Tools
+documentation_url: https://github.com/tursodatabase/libsql/tree/main/libsql-server
+source_repo: https://github.com/tursodatabase/libsql
+license: MIT
+license_class: permissive
+license_url: https://github.com/tursodatabase/libsql/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Connect a libSQL client to this address. The server has no login, so keep it private or put an auth layer in front.
+domains:
+  - service: libsql
+    port: 8080
+    description: Public address of the libSQL HTTP API. Keep it private.
+healthcheck:
+  service: libsql
+  port: 8080
+  path: /health

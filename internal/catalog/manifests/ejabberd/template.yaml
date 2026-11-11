@@ -1,0 +1,26 @@
+id: ejabberd
+name: ejabberd
+description: Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.
+icon: chat
+category: Communication
+documentation_url: https://docs.ejabberd.im/
+source_repo: https://github.com/processone/ejabberd
+license: GPL-2.0-only
+license_class: copyleft
+license_url: https://github.com/processone/ejabberd/blob/master/COPYING
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Register users with the container command ejabberdctl register, then connect an XMPP client to port 5222. The web admin is on port 5280.
+domains:
+  - service: ejabberd
+    port: 5280
+    description: Public address of the ejabberd web listener.
+healthcheck:
+  service: ejabberd
+  port: 5280
+  kind: tcp
+  reason: the HTTP listener answers only on configured routes

@@ -1,0 +1,25 @@
+id: promptfoo
+name: Promptfoo
+description: Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume.
+icon: flask
+category: AI
+documentation_url: https://www.promptfoo.dev/docs/
+source_repo: https://github.com/promptfoo/promptfoo
+license: MIT
+license_class: permissive
+license_url: https://github.com/promptfoo/promptfoo/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the address to browse evals. Run evaluations from the CLI with this server as the share target.
+domains:
+  - service: promptfoo
+    port: 3000
+    description: Public address of the results viewer.
+healthcheck:
+  service: promptfoo
+  port: 3000
+  path: /

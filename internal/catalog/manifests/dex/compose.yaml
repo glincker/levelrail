@@ -1,0 +1,17 @@
+services:
+  dex:
+    image: ghcr.io/dexidp/dex:v2.46.1
+    ports: ["5556"]
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+    volumes:
+      - data:/var/dex
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /dex/.well-known/openid-configuration
+      port: 5556
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

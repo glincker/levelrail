@@ -592,6 +592,7 @@
               "self-host/open-webui",
               "self-host/openclaw",
               "self-host/paperless-ai",
+              "self-host/promptfoo",
               "self-host/sillytavern",
               "self-host/speaches",
               "self-host/stable-diffusion-webui",
@@ -692,6 +693,7 @@
               "self-host/apprise-api",
               "self-host/campfire",
               "self-host/chatwoot",
+              "self-host/ejabberd",
               "self-host/element-web",
               "self-host/freescout",
               "self-host/gotify",
@@ -743,6 +745,7 @@
               "self-host/elasticsearch-kibana",
               "self-host/ferretdb",
               "self-host/influxdb",
+              "self-host/libsql",
               "self-host/mariadb",
               "self-host/memcached",
               "self-host/milvus",
@@ -819,6 +822,7 @@
               "self-host/jupyter-notebook-python",
               "self-host/kroki",
               "self-host/libretranslate",
+              "self-host/livebook",
               "self-host/mage-ai",
               "self-host/mailcatcher",
               "self-host/mailhog",
@@ -853,7 +857,8 @@
               "self-host/web-check",
               "self-host/weblate",
               "self-host/wiremock",
-              "self-host/woodpecker"
+              "self-host/woodpecker",
+              "self-host/zot"
             ]
           },
           {
@@ -894,6 +899,7 @@
               "self-host/consul",
               "self-host/elasticsearch",
               "self-host/emqx",
+              "self-host/envoy",
               "self-host/etcd",
               "self-host/haproxy",
               "self-host/headscale",
@@ -993,6 +999,7 @@
               "self-host/chronograf",
               "self-host/dashdot",
               "self-host/diun",
+              "self-host/fluent-bit",
               "self-host/gatus",
               "self-host/glances",
               "self-host/glitchtip",
@@ -1007,6 +1014,7 @@
               "self-host/hyperdx",
               "self-host/jaeger",
               "self-host/jellystat",
+              "self-host/karma",
               "self-host/librespeed",
               "self-host/netdata",
               "self-host/node-exporter",
@@ -1020,6 +1028,7 @@
               "self-host/statping-ng",
               "self-host/statusnook",
               "self-host/tautulli",
+              "self-host/telegraf",
               "self-host/unpoller",
               "self-host/uptime-kuma",
               "self-host/uptime-kuma-mariadb",
@@ -1032,6 +1041,8 @@
           {
             "group": "Networking",
             "pages": [
+              "self-host/blocky",
+              "self-host/coredns",
               "self-host/ddns-updater"
             ]
           },
@@ -1133,6 +1144,7 @@
               "self-host/authentik",
               "self-host/cap-captcha",
               "self-host/cryptgeon",
+              "self-host/dex",
               "self-host/infisical",
               "self-host/keycloak",
               "self-host/keycloak-postgres",

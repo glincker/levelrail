@@ -1,0 +1,63 @@
+---
+title: "Self-host Zot Registry with Docker"
+sidebarTitle: "Zot Registry"
+description: "OCI native container image registry with a web UI, search and optional sync. The install form carries config.json as an editable file and images are stored on a volume."
+"og:url": "https://docs.levelrail.com/self-host/zot"
+---
+
+OCI native container image registry with a web UI, search and optional sync. The install form carries config.json as an editable file and images are stored on a volume.
+
+This page describes the Levelrail template for Zot Registry (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://zotregistry.dev/latest/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `zot` | `ghcr.io/project-zot/zot:v2.1.23` | 5000 | `data -&#62; /var/lib/registry` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`zot`).
+- Stores data in named volumes (`zot`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Zot Registry with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Zot Registry. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy zot --name my-zot
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

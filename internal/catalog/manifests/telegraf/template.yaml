@@ -1,0 +1,47 @@
+id: telegraf
+name: Telegraf
+description: Plugin driven agent that collects metrics and exposes them for Prometheus. The install form carries telegraf.conf as an editable file, so it starts with CPU, memory and disk inputs already wired.
+icon: chart-line
+category: Monitoring
+documentation_url: https://docs.influxdata.com/telegraf/
+source_repo: https://github.com/influxdata/telegraf
+license: MIT
+license_class: permissive
+license_url: https://github.com/influxdata/telegraf/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Scrape port 9273 from Prometheus or open the address to see the raw metrics, then edit the config file setting to add inputs and outputs.
+env:
+  - key: TELEGRAF_CONFIG
+    type: file
+    service: telegraf
+    path: /etc/telegraf/telegraf.conf
+    mode: "0444"
+    label: telegraf.conf
+    description: The full Telegraf configuration, mounted read-only.
+    default: |
+      [agent]
+        interval = "10s"
+        flush_interval = "10s"
+        omit_hostname = false
+
+      [[inputs.cpu]]
+        percpu = false
+        totalcpu = true
+      [[inputs.mem]]
+      [[inputs.system]]
+
+      [[outputs.prometheus_client]]
+        listen = ":9273"
+domains:
+  - service: telegraf
+    port: 9273
+    description: Public address of the metrics endpoint. Keep it private.
+healthcheck:
+  service: telegraf
+  port: 9273
+  path: /metrics

@@ -1,0 +1,16 @@
+services:
+  promptfoo:
+    image: ghcr.io/promptfoo/promptfoo:0.125.1
+    ports: ["3000"]
+    volumes:
+      - data:/home/promptfoo/.promptfoo
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 3000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

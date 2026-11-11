@@ -1,0 +1,51 @@
+id: blocky
+name: Blocky
+description: DNS proxy and ad blocker with caching and conditional forwarding. The install form carries config.yml as an editable file, so it starts with a small denylist and public upstream resolvers.
+icon: shield
+category: Networking
+documentation_url: https://0xerr0r.github.io/blocky/
+source_repo: https://github.com/0xERR0R/blocky
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/0xERR0R/blocky/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Point a client at the DNS port to resolve through Blocky, then edit the config file setting to add real blocklists. The HTTP API is on port 4000.
+env:
+  - key: BLOCKY_CONFIG
+    type: file
+    service: blocky
+    path: /app/config.yml
+    mode: "0444"
+    label: config.yml
+    description: The full Blocky configuration, mounted read-only.
+    default: |
+      upstreams:
+        groups:
+          default:
+            - 1.1.1.1
+            - 9.9.9.9
+      blocking:
+        denylists:
+          ads:
+            - |
+              ads.example.com
+        clientGroupsBlock:
+          default:
+            - ads
+      ports:
+        dns: 5353
+        http: 4000
+domains:
+  - service: blocky
+    port: 4000
+    description: Public address of the Blocky API. Keep it private.
+healthcheck:
+  service: blocky
+  port: 4000
+  kind: tcp
+  reason: the API has no plain health route, a TCP connect proves it is serving

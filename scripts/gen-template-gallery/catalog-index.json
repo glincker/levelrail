@@ -4789,6 +4789,104 @@
    }
   },
   {
+   "id": "blocky",
+   "aliases": [],
+   "name": "Blocky",
+   "slogan": "DNS proxy and ad blocker with caching and conditional forwarding. The install form carries config.yml as an editable file, so it starts with a small denylist and public upstream resolvers.",
+   "description": "DNS proxy and ad blocker with caching and conditional forwarding. The install form carries config.yml as an editable file, so it starts with a small denylist and public upstream resolvers.",
+   "first_run": [
+    "Point a client at the DNS port to resolve through Blocky, then edit the config file setting to add real blocklists. The HTTP API is on port 4000."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/0xERR0R/blocky",
+   "documentation_url": "https://0xerr0r.github.io/blocky/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/0xERR0R/blocky/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "blocky",
+     "image": "ghcr.io/0xerr0r/blocky",
+     "tag": "v0.36.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "BLOCKY_CONFIG",
+      "label": "config.yml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "blocky",
+     "image": "ghcr.io/0xerr0r/blocky:v0.36.0",
+     "ports": [
+      4000,
+      5353
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "blocky"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "bookstack",
    "aliases": [],
    "name": "BookStack",
@@ -10410,6 +10508,110 @@
    }
   },
   {
+   "id": "coredns",
+   "aliases": [],
+   "name": "CoreDNS",
+   "slogan": "Plugin based DNS server on the official image. The install form carries the Corefile as an editable file, so it starts as a caching forwarder with health and readiness endpoints.",
+   "description": "Plugin based DNS server on the official image. The install form carries the Corefile as an editable file, so it starts as a caching forwarder with health and readiness endpoints.",
+   "first_run": [
+    "Point a client at the DNS port to resolve through the cache, then edit the Corefile setting to add zones, rewrites or other plugins."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/coredns/coredns",
+   "documentation_url": "https://coredns.io/manual/toc/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/coredns/coredns/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "coredns",
+     "image": "coredns/coredns",
+     "tag": "1.15.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "COREDNS_UPSTREAM",
+      "label": "Upstream resolvers",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "COREDNS_COREFILE",
+      "label": "Corefile",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "coredns",
+     "image": "coredns/coredns:1.15.0",
+     "ports": [
+      8080,
+      1053
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "coredns"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "couchdb",
    "aliases": [],
    "name": "CouchDB",
@@ -11601,6 +11803,124 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "dex",
+   "aliases": [],
+   "name": "Dex",
+   "slogan": "OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose.",
+   "description": "OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose.",
+   "first_run": [
+    "Open the address followed by /dex/.well-known/openid-configuration to see the discovery document, then edit the config file setting to add connectors and static clients."
+   ],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/dexidp/dex",
+   "documentation_url": "https://dexidp.io/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/dexidp/dex/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "dex",
+     "image": "ghcr.io/dexidp/dex",
+     "tag": "v2.46.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DEX_ISSUER",
+      "label": "Issuer URL",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "DEX_CONFIG",
+      "label": "config.yaml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "dex",
+     "image": "ghcr.io/dexidp/dex:v2.46.1",
+     "ports": [
+      5556
+     ],
+     "volumes": [
+      "data -> /var/dex"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "dex"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "dex"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",
@@ -14224,6 +14544,108 @@
    }
   },
   {
+   "id": "ejabberd",
+   "aliases": [],
+   "name": "ejabberd",
+   "slogan": "Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.",
+   "description": "Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.",
+   "first_run": [
+    "Register users with the container command ejabberdctl register, then connect an XMPP client to port 5222. The web admin is on port 5280."
+   ],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/processone/ejabberd",
+   "documentation_url": "https://docs.ejabberd.im/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/processone/ejabberd/blob/master/COPYING"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ejabberd",
+     "image": "ghcr.io/processone/ejabberd:26.09@sha256:ec5cf7bc85627fd9bde47309a34600d6c16895e9808807ec9ff57426f2508115",
+     "tag": "",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "ejabberd",
+     "image": "ghcr.io/processone/ejabberd:26.09@sha256:ec5cf7bc85627fd9bde47309a34600d6c16895e9808807ec9ff57426f2508115",
+     "ports": [
+      5280,
+      5222
+     ],
+     "volumes": [
+      "database -> /opt/ejabberd/database"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ejabberd"
+      ],
+      "detail": "database",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "elasticsearch",
    "aliases": [],
    "name": "Elasticsearch",
@@ -14988,6 +15410,110 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "envoy",
+   "aliases": [],
+   "name": "Envoy Proxy",
+   "slogan": "Cloud native edge and service proxy on the official image. The install form carries envoy.yaml as an editable file, so it starts with a working listener instead of exiting on a missing config.",
+   "description": "Cloud native edge and service proxy on the official image. The install form carries envoy.yaml as an editable file, so it starts with a working listener instead of exiting on a missing config.",
+   "first_run": [
+    "Open the address to see the greeting, then edit the config file setting to add your own listeners, routes and clusters. The admin interface is on port 9901."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/envoyproxy/envoy",
+   "documentation_url": "https://www.envoyproxy.io/docs/envoy/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/envoyproxy/envoy/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "envoy",
+     "image": "envoyproxy/envoy",
+     "tag": "v1.40.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ENVOY_GREETING",
+      "label": "Greeting",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ENVOY_CONFIG",
+      "label": "envoy.yaml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "envoy",
+     "image": "envoyproxy/envoy:v1.40.2",
+     "ports": [
+      10000,
+      9901
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "envoy"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "rollback",
@@ -18368,6 +18894,104 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "fluent-bit",
+   "aliases": [],
+   "name": "Fluent Bit",
+   "slogan": "Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint.",
+   "description": "Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint.",
+   "first_run": [
+    "Send records to port 24224 with the forward protocol, then edit the config file setting to add parsers, filters and real outputs. The starter prints records to the container log."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/fluent/fluent-bit",
+   "documentation_url": "https://docs.fluentbit.io/manual/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/fluent/fluent-bit/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "fluent-bit",
+     "image": "fluent/fluent-bit",
+     "tag": "5.2.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "FLUENTBIT_CONFIG",
+      "label": "fluent-bit.conf",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "fluent-bit",
+     "image": "fluent/fluent-bit:5.2.0",
+     "ports": [
+      2020,
+      24224
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "fluent-bit"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "rollback",
@@ -30122,6 +30746,109 @@
    }
   },
   {
+   "id": "karma",
+   "aliases": [],
+   "name": "Karma",
+   "slogan": "Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view.",
+   "description": "Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view.",
+   "first_run": [
+    "Set the Alertmanager address in the install form to an instance this host can reach, then open the address."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/prymitive/karma",
+   "documentation_url": "https://github.com/prymitive/karma#readme",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/prymitive/karma/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "karma",
+     "image": "ghcr.io/prymitive/karma:v0.134@sha256:479c7bfad3c176b9c35c5a48c2ad8fa72d748f204314daff748fb51488f043da",
+     "tag": "",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "KARMA_ALERTMANAGER",
+      "label": "Alertmanager address",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "karma",
+     "image": "ghcr.io/prymitive/karma:v0.134@sha256:479c7bfad3c176b9c35c5a48c2ad8fa72d748f204314daff748fb51488f043da",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "karma",
+     "name": "ALERTMANAGER_URI",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "karma"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "kavita",
    "aliases": [],
    "name": "Kavita",
@@ -33578,6 +34305,122 @@
    }
   },
   {
+   "id": "libsql",
+   "aliases": [],
+   "name": "libSQL Server",
+   "slogan": "Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume.",
+   "description": "Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume.",
+   "first_run": [
+    "Connect a libSQL client to this address. The server has no login, so keep it private or put an auth layer in front."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/tursodatabase/libsql",
+   "documentation_url": "https://github.com/tursodatabase/libsql/tree/main/libsql-server",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/tursodatabase/libsql/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "libsql",
+     "image": "ghcr.io/tursodatabase/libsql-server",
+     "tag": "v0.24.32",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "libsql",
+     "image": "ghcr.io/tursodatabase/libsql-server:v0.24.32",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "data -> /var/lib/sqld"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "libsql",
+     "name": "SQLD_HTTP_LISTEN_ADDR",
+     "kind": "preset"
+    },
+    {
+     "service": "libsql",
+     "name": "SQLD_NODE",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "libsql"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "libsql"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "lidarr",
    "aliases": [],
    "name": "Lidarr",
@@ -35123,6 +35966,142 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "livebook",
+   "aliases": [],
+   "name": "Livebook",
+   "slogan": "Interactive and collaborative code notebooks for Elixir with a built in package manager and visualizations. A generated password protects the editor.",
+   "description": "Interactive and collaborative code notebooks for Elixir with a built in package manager and visualizations. A generated password protects the editor.",
+   "first_run": [
+    "Sign in with the generated password shown in the deployment variables. Notebooks run code in this container, so keep the address private."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/livebook-dev/livebook",
+   "documentation_url": "https://livebook.dev/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/livebook-dev/livebook/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "livebook",
+     "image": "ghcr.io/livebook-dev/livebook",
+     "tag": "0.19.10",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "LIVEBOOK_PASSWORD",
+      "label": "Password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "livebook",
+     "image": "ghcr.io/livebook-dev/livebook:0.19.10",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "livebook",
+     "name": "LIVEBOOK_IP",
+     "kind": "preset"
+    },
+    {
+     "service": "livebook",
+     "name": "LIVEBOOK_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "livebook"
+      ],
+      "detail": "LIVEBOOK_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "livebook"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "livebook"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",
@@ -56777,6 +57756,111 @@
    }
   },
   {
+   "id": "promptfoo",
+   "aliases": [],
+   "name": "Promptfoo",
+   "slogan": "Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume.",
+   "description": "Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume.",
+   "first_run": [
+    "Open the address to browse evals. Run evaluations from the CLI with this server as the share target."
+   ],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/promptfoo/promptfoo",
+   "documentation_url": "https://www.promptfoo.dev/docs/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/promptfoo/promptfoo/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "promptfoo",
+     "image": "ghcr.io/promptfoo/promptfoo",
+     "tag": "0.125.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "promptfoo",
+     "image": "ghcr.io/promptfoo/promptfoo:0.125.1",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "data -> /home/promptfoo/.promptfoo"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "promptfoo"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "promptfoo"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "prowlarr",
    "aliases": [],
    "name": "Prowlarr",
@@ -69408,6 +70492,103 @@
    }
   },
   {
+   "id": "telegraf",
+   "aliases": [],
+   "name": "Telegraf",
+   "slogan": "Plugin driven agent that collects metrics and exposes them for Prometheus. The install form carries telegraf.conf as an editable file, so it starts with CPU, memory and disk inputs already wired.",
+   "description": "Plugin driven agent that collects metrics and exposes them for Prometheus. The install form carries telegraf.conf as an editable file, so it starts with CPU, memory and disk inputs already wired.",
+   "first_run": [
+    "Scrape port 9273 from Prometheus or open the address to see the raw metrics, then edit the config file setting to add inputs and outputs."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/influxdata/telegraf",
+   "documentation_url": "https://docs.influxdata.com/telegraf/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/influxdata/telegraf/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "telegraf",
+     "image": "telegraf",
+     "tag": "1.40.3",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TELEGRAF_CONFIG",
+      "label": "telegraf.conf",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "telegraf",
+     "image": "telegraf:1.40.3",
+     "ports": [
+      9273
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "telegraf"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "tempo",
    "aliases": [],
    "name": "Grafana Tempo",
@@ -78532,6 +79713,118 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "zot",
+   "aliases": [],
+   "name": "Zot Registry",
+   "slogan": "OCI native container image registry with a web UI, search and optional sync. The install form carries config.json as an editable file and images are stored on a volume.",
+   "description": "OCI native container image registry with a web UI, search and optional sync. The install form carries config.json as an editable file and images are stored on a volume.",
+   "first_run": [
+    "Push an image with docker push to this address, then open the address to browse it. The starter config has no login, so keep it private or add authentication in the config file."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/project-zot/zot",
+   "documentation_url": "https://zotregistry.dev/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/project-zot/zot/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "zot",
+     "image": "ghcr.io/project-zot/zot",
+     "tag": "v2.1.23",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ZOT_CONFIG",
+      "label": "config.json",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "zot",
+     "image": "ghcr.io/project-zot/zot:v2.1.23",
+     "ports": [
+      5000
+     ],
+     "volumes": [
+      "data -> /var/lib/registry"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "zot"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "zot"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",

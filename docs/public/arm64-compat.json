@@ -2,14 +2,14 @@
   "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 521,
-    "images": 565,
+    "templates": 533,
+    "images": 577,
     "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 112,
+    "arm64_unknown": 124,
     "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 115
+    "image_arm64_unknown": 127
   },
   "templates": [
     {
@@ -767,6 +767,20 @@
       "images": [
         {
           "ref": "prom/blackbox-exporter:v0.29.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "blocky",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/0xerr0r/blocky:v0.36.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -1648,6 +1662,20 @@
       ]
     },
     {
+      "id": "coredns",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "coredns/coredns:1.15.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "couchdb",
       "amd64": "yes",
       "arm64": "yes",
@@ -1828,6 +1856,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T23:23:03Z"
+        }
+      ]
+    },
+    {
+      "id": "dex",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/dexidp/dex:v2.46.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -2264,6 +2306,20 @@
       ]
     },
     {
+      "id": "ejabberd",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/processone/ejabberd:26.09@sha256:ec5cf7bc85627fd9bde47309a34600d6c16895e9808807ec9ff57426f2508115",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "elasticsearch",
       "amd64": "yes",
       "arm64": "yes",
@@ -2371,6 +2427,20 @@
       "images": [
         {
           "ref": "emqx/emqx:6.3.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "envoy",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "envoyproxy/envoy:v1.40.2",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -2893,6 +2963,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "fluent-bit",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "fluent/fluent-bit:5.2.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4815,6 +4899,20 @@
       ]
     },
     {
+      "id": "karma",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/prymitive/karma:v0.134@sha256:479c7bfad3c176b9c35c5a48c2ad8fa72d748f204314daff748fb51488f043da",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kavita",
       "amd64": "yes",
       "arm64": "yes",
@@ -5358,6 +5456,20 @@
       ]
     },
     {
+      "id": "libsql",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/tursodatabase/libsql-server:v0.24.32",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "lidarr",
       "amd64": "yes",
       "arm64": "yes",
@@ -5605,6 +5717,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "livebook",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/livebook-dev/livebook:0.19.10",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -8978,6 +9104,20 @@
       ]
     },
     {
+      "id": "promptfoo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/promptfoo/promptfoo:0.125.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "prowlarr",
       "amd64": "yes",
       "arm64": "yes",
@@ -10845,6 +10985,20 @@
       ]
     },
     {
+      "id": "telegraf",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "telegraf:1.40.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "tempo",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -12318,6 +12472,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "zot",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/project-zot/zot:v2.1.23",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

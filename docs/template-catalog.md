@@ -25,32 +25,32 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (521 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (533 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
-| [AI](#ai) | 42 |
+| [AI](#ai) | 43 |
 | [Analytics](#analytics) | 10 |
 | [Applications](#applications) | 44 |
 | [Automation](#automation) | 8 |
-| [Communication](#communication) | 22 |
+| [Communication](#communication) | 23 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 43 |
-| [Developer Tools](#developer-tools) | 72 |
+| [Database Tools](#database-tools) | 44 |
+| [Developer Tools](#developer-tools) | 74 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 29 |
+| [Infrastructure](#infrastructure) | 30 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 45 |
-| [Monitoring](#monitoring) | 43 |
+| [Monitoring](#monitoring) | 46 |
 | [Productivity](#productivity) | 84 |
-| [Security](#security) | 22 |
+| [Security](#security) | 23 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 17 |
 | [Backups](#backups) | 2 |
 | [Databases](#databases) | 1 |
 | [Mail](#mail) | 2 |
-| [Networking](#networking) | 1 |
+| [Networking](#networking) | 3 |
 
 ## AI
 
@@ -91,6 +91,7 @@ Generated from `internal/catalog.Templates` (521 entries as of this build). Run 
 | [Open WebUI](https://docs.openwebui.com) | A self-hosted chat interface for running local large language models through Ollama. | `open-webui` |  |
 | [OpenClaw](https://docs.openclaw.ai/install) | A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume. | `openclaw` |  |
 | [Paperless-AI](https://github.com/clusterzx/paperless-ai) | Adds automatic tagging, titles and document chat to a Paperless-ngx server using your choice of AI provider. MIT licensed. A setup wizard collects the Paperless address and token. | `paperless-ai` |  |
+| [Promptfoo](https://www.promptfoo.dev/docs/) | Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume. | `promptfoo` |  |
 | [SillyTavern](https://github.com/SillyTavern/SillyTavern) | A local chat front end for language models with characters, lorem books and extensions, bringing your own model API. AGPL-3.0 licensed. Sign in with the admin user and the generated password. | `sillytavern` |  |
 | [Speaches](https://speaches.ai) | An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API. | `speaches` |  |
 | [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki) | A browser interface for generating and editing images with Stable Diffusion checkpoints. | `stable-diffusion-webui` | Requires GPU |
@@ -184,6 +185,7 @@ Generated from `internal/catalog.Templates` (521 entries as of this build). Run 
 | [Apprise API](https://github.com/caronc/apprise-api) | A single HTTP endpoint that fans a notification out to 100+ services such as Slack, Discord, and email. | `apprise-api` |  |
 | [Campfire](https://github.com/basecamp/once-campfire) | Basecamp's open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container. | `campfire` |  |
 | [Chatwoot](https://www.chatwoot.com/docs/self-hosted/) | An open-source customer support platform for live chat, email, and social messaging. | `chatwoot` |  |
+| [ejabberd](https://docs.ejabberd.im/) | Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume. | `ejabberd` |  |
 | [Element Web](https://github.com/element-hq/element-web) | The Element Matrix web client, served as static files and pointed at the homeserver you choose, for example the Matrix Synapse template. AGPL-3.0 licensed client. No account lives here, sign in or register on your homeserver. | `element-web` |  |
 | [FreeScout](https://github.com/freescout-helpdesk/freescout/wiki) | A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. | `freescout` |  |
 | [Gotify](https://gotify.net/docs/) | A simple push notification server with a REST API and web UI, for sending messages to your devices. | `gotify` |  |
@@ -241,6 +243,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Elasticsearch + Kibana](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker) | Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. | `elasticsearch-kibana` |  |
 | [FerretDB](https://docs.ferretdb.io/) | A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017. | `ferretdb` |  |
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
+| [libSQL Server](https://github.com/tursodatabase/libsql/tree/main/libsql-server) | Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume. | `libsql` |  |
 | [MariaDB](https://mariadb.com/kb/en/documentation/) | The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306. | `mariadb` |  |
 | [Memcached](https://memcached.org/) | A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. | `memcached` |  |
 | [Milvus](https://milvus.io/docs) | A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. | `milvus` |  |
@@ -284,8 +287,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [CyberChef](https://github.com/gchq/CyberChef/wiki) | The cyber swiss army knife: encode, decode, hash, and analyse data in the browser. | `cyberchef` |  |
 | [Databasus](https://databasus.com/installation) | A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases. | `databasus` |  |
 | [Directus](https://docs.directus.io) | An open-source headless CMS and instant REST/GraphQL API layer over your own database. | `directus` |  |
-| [Docker Registry](https://distribution.github.io/distribution/) | The official open source registry for storing and distributing your own container images. | `registry` |  |
 | [Docker Registry](https://distribution.github.io/distribution/) | A private registry for storing and distributing your own container images. | `docker-registry` |  |
+| [Docker Registry](https://distribution.github.io/distribution/) | The official open source registry for storing and distributing your own container images. | `registry` |  |
 | [Docker Registry (Authenticated)](https://distribution.github.io/distribution/) | A private container registry with HTTP basic auth baked in at boot, unlike the catalog's open registry entry. | `docker-registry-auth` |  |
 | [Flagsmith](https://docs.flagsmith.com/) | A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin. | `flagsmith` |  |
 | [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | A headless-browser proxy that solves Cloudflare and DDoS-Guard challenges for other self-hosted tools. | `flaresolverr` |  |
@@ -311,6 +314,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Jupyter Notebook](https://jupyter.org/documentation) | A web-based notebook environment for interactive Python, data analysis, and visualization. | `jupyter-notebook-python` |  |
 | [Kroki](https://docs.kroki.io/) | An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it. | `kroki` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
+| [Livebook](https://livebook.dev/) | Interactive and collaborative code notebooks for Elixir with a built in package manager and visualizations. A generated password protects the editor. | `livebook` |  |
 | [Mage AI](https://docs.mage.ai/getting-started/setup) | A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI. | `mage-ai` |  |
 | [MailCatcher](https://mailcatcher.me/) | A development SMTP server that catches every message and shows it in a web inbox. Send mail from services in this project to mailcatcher:1025. Messages are kept in memory only. | `mailcatcher` |  |
 | [MailHog](https://github.com/mailhog/MailHog) | An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox. | `mailhog` |  |
@@ -346,6 +350,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Weblate](https://docs.weblate.org) | A continuous localization system for translating software with a web-based editor and review flow. | `weblate` |  |
 | [WireMock](https://github.com/wiremock/wiremock) | An HTTP mock server that stubs and records API responses for development and tests. Stubs are managed through its admin API, so restrict who can reach it. | `wiremock` |  |
 | [Woodpecker CI](https://woodpecker-ci.org/docs) | A simple, container-native CI engine with a server and an agent, driven by pipelines in your repo. | `woodpecker` |  |
+| [Zot Registry](https://zotregistry.dev/latest/) | OCI native container image registry with a web UI, search and optional sync. The install form carries config.json as an editable file and images are stored on a volume. | `zot` |  |
 
 ## Finance
 
@@ -386,6 +391,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Consul](https://developer.hashicorp.com/consul/docs) | HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store. | `consul` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. | `elasticsearch` |  |
 | [EMQX](https://docs.emqx.com/en/emqx/latest/) | A scalable MQTT broker for IoT and smart home devices with a web dashboard. | `emqx` |  |
+| [Envoy Proxy](https://www.envoyproxy.io/docs/envoy/latest/) | Cloud native edge and service proxy on the official image. The install form carries envoy.yaml as an editable file, so it starts with a working listener instead of exiting on a missing config. | `envoy` |  |
 | [etcd](https://etcd.io/docs/) | A distributed key-value store for configuration and coordination, running as a single member. | `etcd` |  |
 | [HAProxy](https://docs.haproxy.org/) | High-performance TCP and HTTP load balancer on the official image. The install form carries haproxy.cfg as an editable file, so it starts with a working config instead of exiting on a missing one. | `haproxy` |  |
 | [Headscale](https://headscale.net/stable/) | Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create). | `headscale` |  |
@@ -478,6 +484,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Chronograf](https://docs.influxdata.com/chronograf/) | A web interface to explore, graph and alert on time series stored in InfluxDB. Add your InfluxDB connection from the first screen; it has no login of its own, so restrict who can reach it. | `chronograf` |  |
 | [Dashdot](https://getdashdot.com/) | A clean dashboard that shows CPU, memory, network and storage use of the host it runs on. | `dashdot` |  |
 | [Diun](https://crazymax.dev/diun/) | Watches your running containers and notifies you the moment a new image tag is published. | `diun` |  |
+| [Fluent Bit](https://docs.fluentbit.io/manual/) | Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint. | `fluent-bit` |  |
 | [Gatus](https://github.com/TwiN/gatus#configuration) | Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services. | `gatus` |  |
 | [Glances](https://nicolargo.github.io/glances/) | A cross-platform system monitor showing CPU, memory, disk, and network at a glance. | `glances` |  |
 | [GlitchTip](https://glitchtip.com/documentation) | A lightweight, self-hosted error tracking service compatible with the Sentry SDK. | `glitchtip` |  |
@@ -492,6 +499,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [HyperDX](https://clickhouse.com/docs/use-cases/observability/clickstack) | An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login. | `hyperdx` |  |
 | [Jaeger](https://www.jaegertracing.io/docs/) | Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory. | `jaeger` |  |
 | [Jellystat](https://github.com/CyferShepard/Jellystat) | A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key. | `jellystat` |  |
+| [Karma](https://github.com/prymitive/karma#readme) | Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view. | `karma` |  |
 | [LibreSpeed](https://github.com/librespeed/speedtest) | A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required. | `librespeed` |  |
 | [Netdata](https://learn.netdata.cloud) | Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. | `netdata` |  |
 | [Node Exporter](https://prometheus.io/docs/guides/node-exporter/) | A Prometheus exporter for hardware and OS metrics of the host it runs on. It serves plain metrics at /metrics for a Prometheus server to scrape. | `node-exporter` |  |
@@ -505,6 +513,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Statping-ng](https://github.com/statping-ng/statping-ng) | A status page and uptime monitor for sites, APIs and TCP services with alerts. | `statping-ng` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
 | [Tautulli](https://docs.tautulli.com) | Monitors your Plex server and shows who watched what, with history, stats, and notifications. | `tautulli` |  |
+| [Telegraf](https://docs.influxdata.com/telegraf/) | Plugin driven agent that collects metrics and exposes them for Prometheus. The install form carries telegraf.conf as an editable file, so it starts with CPU, memory and disk inputs already wired. | `telegraf` |  |
 | [UnPoller](https://unpoller.com/docs/install/docker) | Polls a UniFi controller and exposes network, client and device statistics as Prometheus metrics. The install form carries up.conf as an editable file and asks for a read-only controller login. | `unpoller` |  |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma/wiki) | A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks. | `uptime-kuma` |  |
 | [Uptime Kuma (MariaDB)](https://github.com/louislam/uptime-kuma/wiki) | Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file. | `uptime-kuma-mariadb` |  |
@@ -612,6 +621,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [authentik](https://docs.goauthentik.io) | An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth. | `authentik` |  |
 | [Cap](https://capjs.js.org/) | A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha. | `cap-captcha` |  |
 | [Cryptgeon](https://github.com/cupcakearmy/cryptgeon) | A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption. | `cryptgeon` |  |
+| [Dex](https://dexidp.io/docs/) | OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose. | `dex` |  |
 | [Infisical](https://infisical.com/docs/self-hosting/overview) | An open-source secrets manager to centralize API keys, database credentials, and app config. | `infisical` |  |
 | [Keycloak](https://www.keycloak.org/documentation) | An open-source identity and access management server with SSO, OAuth2, and SAML support. | `keycloak` |  |
 | [Keycloak (Postgres)](https://www.keycloak.org/documentation) | Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup. | `keycloak-postgres` |  |
@@ -687,6 +697,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [Blocky](https://0xerr0r.github.io/blocky/) | DNS proxy and ad blocker with caching and conditional forwarding. The install form carries config.yml as an editable file, so it starts with a small denylist and public upstream resolvers. | `blocky` |  |
+| [CoreDNS](https://coredns.io/manual/toc/) | Plugin based DNS server on the official image. The install form carries the Corefile as an editable file, so it starts as a caching forwarder with health and readiness endpoints. | `coredns` |  |
 | [DDNS Updater](https://github.com/qdm12/ddns-updater) | Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there. | `ddns-updater` |  |
 
 {/* END GENERATED CATALOG TABLE */}
