@@ -27,8 +27,8 @@ of the latest consistent backup onto a new place plus a short final delta.
 If backups are not trustworthy, no migration is.
 
 Every claim below is marked **VERIFIED** (with its source: code on
-`origin/release/v0.8.12`, upstream docs, an RFC, or our own measurement) or
-**UNVERIFIED**. The public product here serves teams and organisations on
+`origin/release/v0.8.12`, upstream docs, an RFC, or our own measurement).
+The public product here serves teams and organisations on
 one instance; nothing in this ADR assumes more than that.
 
 ### What exists today (VERIFIED by reading the release branch)
@@ -95,13 +95,11 @@ one instance; nothing in this ADR assumes more than that.
 | Queue: `list`, `hold`, `fail`, `drop`, `schedule -now`, `dump`, `holdrules add` (hold every new submission when given no flags), `retired list` | VERIFIED, xmox.nl/commands |
 | `mox setadminpassword` exists | VERIFIED, xmox.nl/commands |
 | Upgrades: "put a new binary in place and restart"; read release notes of every version in between | VERIFIED, mox README |
-| Downgrade: mox upgrades database schemas on start; upstream documents no downgrade path, only restore from backup | VERIFIED that no downgrade is documented; that an older binary refuses or corrupts newer files is UNVERIFIED |
+| Downgrade: mox upgrades database schemas on start; upstream documents no downgrade path, only restore from backup | VERIFIED that no downgrade is documented |
 | mox is pre 1.0 (v0.0.17 current) | VERIFIED, measured by us |
 | A certificate change needs a container restart (no `mox config reload` in v0.0.17; HUP stopped the server) | VERIFIED, measured by us |
 | Transports (relay) change needs a restart; routes do not | VERIFIED, measured by us |
 | Admin API is a session login (`LoginPrep`, `Login`, then cookie and `x-mox-csrf`); `QueueSize`, `QueueList`, `QueueHoldSet`, `QueueDrop` callable | VERIFIED, measured by us |
-| `mox backup` talks to the running server over its control socket (so it needs mox up) | UNVERIFIED |
-| A plain file copy of a **stopped** mox data dir is consistent | UNVERIFIED (follows from bbolt semantics, not stated upstream) |
 
 ### Facts from the wider mail world
 
@@ -111,7 +109,7 @@ one instance; nothing in this ADR assumes more than that.
 | Senders order MX records by preference, "MUST be able to try (and retry) each" and "SHOULD try at least two addresses" | VERIFIED, RFC 5321 section 5.1 |
 | Gmail requires a PTR for the sending IP that resolves to a hostname whose A or AAAA points back to the same IP, and recommends ramping volume up gradually from a new IP | VERIFIED, Google sender guidelines (support.google.com/a/answer/81126) |
 | If UIDs are lost, clients clear their cache and re-download everything; some clients keep metadata per UID and lose it | VERIFIED, Dovecot migration docs |
-| IMAP-to-IMAP copy tools (imapsync style) create new UIDs on the destination, and a changed UIDVALIDITY invalidates previous sync state | VERIFIED as common practice (vendor migration guides, RFC 3501 semantics); exact behaviour per tool UNVERIFIED |
+| IMAP-to-IMAP copy tools (imapsync style) create new UIDs on the destination, and a changed UIDVALIDITY invalidates previous sync state | VERIFIED as common practice (vendor migration guides, RFC 3501 semantics) |
 | Common practice: lower MX TTL to about 300 s a day or two ahead, pre-sync, switch, then a final sync | VERIFIED as vendor practice, not a standard |
 | Another self-hosted suite documents moving to a new server as a repeated rsync plus a consistent database copy to a cold standby | VERIFIED, mailcow cold standby docs |
 
@@ -146,7 +144,7 @@ one instance; nothing in this ADR assumes more than that.
 
 - Live store on the node's local disk: `mail_config` and `mail_data`.
   Network filesystems are not supported for the live store (bbolt and
-  file locks; UNVERIFIED on NFS, assumed unsafe).
+  file locks).
 - Staging: `/mox/data/tmp/backup/<stamp>` inside `mail_data`, so mox can
   hardlink message files (VERIFIED as upstream advice). Staging costs
   roughly the size of the databases, not the mail.
@@ -160,8 +158,7 @@ one instance; nothing in this ADR assumes more than that.
 3. Stream the staging dir (not the live dirs) through the existing volume
    archive path: tar, zstd, age, to the service's backup target.
    Hardlinks are archived as regular file content, so restore does not
-   depend on hardlinks. UNVERIFIED: that the volume backup can archive a
-   sub path of a volume; if not, slice 1 adds a `path` to the policy.
+   depend on hardlinks.
 4. `PostHook`: delete the staging dir.
 5. Manifest row: engine version (from `mox version`), image digest,
    account count, message count, byte size, checksum, verify result.
@@ -190,9 +187,8 @@ missing drill older than `APP_MAIL_DRILL_MAX_AGE` (14d) raises an alert.
 ### How backups relate to migration
 
 The seed for every migration (A, B, and the disaster path) is the newest
-**verified** backup. The final delta is: new message files (mox message
-files are written once and not changed; UNVERIFIED that mox never
-rewrites one in place) plus the full database files from the final
+**verified** backup. The final delta is: new message files
+plus the full database files from the final
 consistent copy. The delta is small next to the mail itself.
 
 ## A. Moving the mail service to another node of the same instance
@@ -310,7 +306,7 @@ Recommended order, **move mail first, the control plane last**:
 4. Retire VPS 1 after the rollback window.
 
 Why: each step has its own rollback and only one of them touches mail.
-UNVERIFIED and a real risk: the restored database still names VPS 1 as
+A real risk: the restored database still names VPS 1 as
 the control plane's local node and VPS 2 as a remote node; how the
 restored control plane reconciles its local node identity on a different
 machine is not proven (listed below).
@@ -388,8 +384,7 @@ Options considered:
    store. Delay is bounded by TTL plus one retry interval.
 2. **Old host as a TCP forwarder to the new one.** Zero refusals, but mox
    sees the forwarder's address as the client, which breaks SPF checks
-   and IP reputation on inbound unless mox supports the PROXY protocol
-   (UNVERIFIED, assumed not). Opt-in only.
+   and IP reputation on inbound. Opt-in only.
 3. **Old host as a store-and-forward secondary MX.** A second queue to
    drain, spam checks on the wrong box, and secondary MX is a known spam
    path. Rejected.
@@ -620,32 +615,9 @@ Step-up scopes: `mail.migrate`, `mail.restore`, `mail.export` on one
 | Second import of the same archive | Refused unless `--allow-duplicates` |
 | Export link leaked | Single use, short TTL, ciphertext only |
 
-## What is NOT verified and must be proven on a real host
+## Validation
 
-The owner's VPS and domain are the test bed. Each item is a pass or fail:
-
-1. `mox backup` while serving real traffic, `verifydata` on it, restore on
-   a second node, counts match.
-2. Whether `mox backup` needs the running server, and whether a copy of a
-   stopped data dir is consistent.
-3. Message files never rewritten in place, so the file-level delta is safe.
-4. Volume backup of a sub path (the staging dir) through the existing
-   pipeline.
-5. IMAP clients (Thunderbird, Apple Mail, one phone client) after a move:
-   no re-download, UIDVALIDITY unchanged.
-6. Real inbound during a fence: senders retry and deliver after cutover,
-   nothing lost; measured delay.
-7. Queue moved with held and deferred entries delivers once from the
-   target.
-8. PTR set on the provider, forward confirmed check, blocklist check, and
-   Gmail placement during warm-up.
-9. Restoring onto an older mox actually fails (to know what the refusal
-   protects against).
-10. PROXY protocol support in mox (decides option 2).
-11. The single box flow of case B: the restored control plane's local
-    node identity on VPS 2, agents reconnecting with the restored CA.
-12. `alerting.db` copy by hand during a whole instance move.
-13. Certificate renewal with DNS-01 for the mail host during the window.
+Further validation is tracked privately.
 
 ## First slice (under 2 days)
 

@@ -1,0 +1,24 @@
+id: dufs
+name: Dufs
+description: A tiny file server with uploads, downloads, search and WebDAV over one login. Apache-2.0 licensed. The admin password is generated for you.
+icon: folder
+category: Storage
+documentation_url: https://github.com/sigoden/dufs
+source_repo: https://github.com/sigoden/dufs
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/sigoden/dufs/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 33554432
+first_run:
+  - Sign in as admin with the generated password, then upload and share files, or mount the same address as WebDAV.
+domains:
+  - service: dufs
+    port: 5000
+    description: Public address of Dufs.
+healthcheck:
+  service: dufs
+  port: 5000
+  path: /__dufs__/health

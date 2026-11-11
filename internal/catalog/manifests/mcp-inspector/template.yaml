@@ -1,0 +1,24 @@
+id: mcp-inspector
+name: MCP Inspector
+description: "The official visual tester for Model Context Protocol servers: connect, list tools and resources and call them from the browser. MIT licensed. Open the logs to copy the session token."
+icon: plug
+category: Developer Tools
+documentation_url: https://github.com/modelcontextprotocol/inspector
+source_repo: https://github.com/modelcontextprotocol/inspector
+license: MIT
+license_class: permissive
+license_url: https://github.com/modelcontextprotocol/inspector/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the deployment logs, copy the proxy session token and paste it into the Inspector configuration.
+domains:
+  - service: mcp-inspector
+    port: 6274
+    description: Public address of MCP Inspector.
+healthcheck:
+  service: mcp-inspector
+  port: 6274
+  path: /

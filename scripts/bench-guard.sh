@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the scale-suspect Go benchmarks and compares them with the committed
-# baseline (testdata/bench-baseline.json). Exits non-zero on a regression.
+# baseline (test/bench/baseline.json). Exits non-zero on a regression.
 #
 # Usage:
 #   scripts/bench-guard.sh                      # compare
@@ -20,7 +20,7 @@ tolerance="${LEVELRAIL_BENCH_TOLERANCE_PCT:-25}"
 count="${LEVELRAIL_BENCH_COUNT:-3}"
 benchtime="${LEVELRAIL_BENCH_TIME:-200ms}"
 pattern="${LEVELRAIL_BENCH_PATTERN:-BuildRoutesConfig|BuildAndMarshalRoutesConfig|ListApps|V2WatchFanout}"
-baseline="${LEVELRAIL_BENCH_BASELINE:-$repo_root/testdata/bench-baseline.json}"
+baseline="${LEVELRAIL_BENCH_BASELINE:-$repo_root/test/bench/baseline.json}"
 out="$(mktemp -t levelrail-bench.XXXXXX)"
 trap 'rm -f "$out"' EXIT
 

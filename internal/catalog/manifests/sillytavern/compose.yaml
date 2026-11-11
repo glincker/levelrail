@@ -1,0 +1,19 @@
+services:
+  sillytavern:
+    image: ghcr.io/sillytavern/sillytavern:1.19.0
+    ports: ["8000"]
+    environment:
+      SILLYTAVERN_LISTEN: "true"
+      SILLYTAVERN_WHITELISTMODE: "false"
+      SILLYTAVERN_BASICAUTHMODE: "true"
+      SILLYTAVERN_BASICAUTHUSER_USERNAME: admin
+      SILLYTAVERN_BASICAUTHUSER_PASSWORD: $SERVICE_PASSWORD_SILLYTAVERN
+    volumes:
+      - config:/home/node/app/config
+      - data:/home/node/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8000"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s

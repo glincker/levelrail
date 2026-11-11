@@ -1,0 +1,12 @@
+services:
+  mindsdb:
+    image: mindsdb/mindsdb:v26.1.0
+    ports: ["47334"]
+    volumes:
+      - storage:/root/mdb_storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:47334/"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 90s

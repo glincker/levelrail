@@ -4,16 +4,18 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-490 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+513 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
 - [AnythingLLM](/self-host/anythingllm): A private chat workspace over your documents, with built-in RAG and support for local or hosted models.
+- [Big-AGI](/self-host/big-agi): A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
 - [ComfyUI](/self-host/comfyui): A node-graph editor for building and running Stable Diffusion and other image generation pipelines.
 - [Crawl4AI](/self-host/crawl4ai): An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header.
 - [Docling Serve](/self-host/docling-serve): An API server that converts PDFs, Office files and images into Markdown, JSON or text for RAG pipelines, using the Docling library on CPU. MIT licensed. The image is about 5 GB, the interactive UI is at /ui and the API docs at /docs. There is no login, so keep it private or behind an auth proxy.
 - [Flowise](/self-host/flowise): Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow.
 - [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres): Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows.
+- [Hollama](/self-host/hollama): A minimal web chat client for Ollama and OpenAI compatible servers. MIT licensed. Add the address of your model server in settings.
 - [Jupyter GPU Notebook](/self-host/jupyter-gpu): JupyterLab with a CUDA-ready data science stack for training and experimenting with models.
 - [Kokoro TTS](/self-host/kokoro-fastapi): A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy.
 - [Label Studio](/self-host/label-studio): A flexible data labeling tool for text, images, audio, and video, with export to common ML formats.
@@ -25,8 +27,10 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Lobe Chat](/self-host/lobe-chat): A modern, open-source AI chat framework supporting many model providers.
 - [LocalAI](/self-host/localai): A drop-in OpenAI-compatible API that runs language, image, and speech models on your own hardware.
 - [MetaMCP](/self-host/metamcp): An MCP aggregator and gateway that groups many MCP servers behind one endpoint with auth, namespaces and middleware.
+- [MindsDB](/self-host/mindsdb): A query layer that connects data sources and AI models so you can ask questions in SQL. MIT licensed. Includes the web editor and the HTTP API.
 - [MLflow](/self-host/mlflow): Track experiments, compare runs, and manage models with a self-hosted MLflow tracking server.
 - [n8n AI Starter Kit](/self-host/n8n-ai-starter): n8n wired to a local Ollama model and a Qdrant vector store, ready for private AI workflows.
+- [n8n MCP](/self-host/n8n-mcp): A Model Context Protocol server that gives AI assistants searchable n8n node documentation. MIT licensed. The bearer token is generated for you.
 - [New API](/self-host/new-api): An LLM gateway and AI asset management system that unifies many model providers.
 - [Ollama](/self-host/ollama): A local LLM runtime with an HTTP API. Pull any model yourself once it's running.
 - [Ollama + Open WebUI](/self-host/ollama-open-webui): A local LLM runtime paired with a ChatGPT-style web interface, for running open models on your own hardware.
@@ -38,6 +42,8 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Open Notebook](/self-host/open-notebook): An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
 - [Open WebUI](/self-host/open-webui): A self-hosted chat interface for running local large language models through Ollama.
 - [OpenClaw](/self-host/openclaw): A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume.
+- [Paperless-AI](/self-host/paperless-ai): Adds automatic tagging, titles and document chat to a Paperless-ngx server using your choice of AI provider. MIT licensed. A setup wizard collects the Paperless address and token.
+- [SillyTavern](/self-host/sillytavern): A local chat front end for language models with characters, lorem books and extensions, bringing your own model API. AGPL-3.0 licensed. Sign in with the admin user and the generated password.
 - [Speaches](/self-host/speaches): An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API.
 - [Stable Diffusion WebUI](/self-host/stable-diffusion-webui): A browser interface for generating and editing images with Stable Diffusion checkpoints.
 - [Text Embeddings Inference](/self-host/text-embeddings-inference): A lean server that turns text into embeddings with popular open models, on CPU with no extra setup.
@@ -68,6 +74,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Drupal](/self-host/drupal): A mature, flexible CMS for structured content, multilingual sites, and large editorial teams.
 - [ESPHome](/self-host/esphome): A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices.
 - [EspoCRM](/self-host/espocrm): An open-source CRM for managing sales, support, and customer relationships end to end.
+- [evcc](/self-host/evcc): A smart charging controller that charges your electric car from solar surplus and cheap tariffs.
 - [Ghost](/self-host/ghost): A fast, modern publishing platform for blogs and newsletters, with built-in memberships.
 - [GLPI](/self-host/glpi): An IT asset and service management platform with helpdesk ticketing built in.
 - [go2rtc](/self-host/go2rtc): A camera streaming hub that turns RTSP, HomeKit and other sources into WebRTC, HLS and MJPEG.
@@ -102,6 +109,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Wizarr](/self-host/wizarr): An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server.
 - [WordPress](/self-host/wordpress): The world's most widely used content management system, self-hosted with its own database.
 - [YOURLS](/self-host/yourls): A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.
+- [Z-Wave JS UI](/self-host/zwave-js-ui): A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.
 
 ## Automation
 
@@ -201,9 +209,14 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [RethinkDB](/self-host/rethinkdb): A document database with live query feeds and a web admin console, on the official image with a data volume. The console has no login, so restrict access before exposing it. Client driver port 28015 stays private.
 - [ScyllaDB](/self-host/scylladb): A wide column database compatible with Cassandra, running as one node in developer mode with a data volume. It has no web page, so connect over the project network at scylladb:9042.
 - [SurrealDB](/self-host/surrealdb): A multi-model database for documents, graphs and relations with a SQL-like query language, using the RocksDB engine on a named volume. The root password is generated at install. Source available under the BSL.
+- [TiDB](/self-host/tidb): A MySQL compatible distributed SQL database, run here as a single node on local storage for development and testing. Apache-2.0 licensed. The root user has no password, so keep it private.
 - [TimescaleDB](/self-host/timescaledb): PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432.
 - [Valkey](/self-host/valkey): A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence.
 - [Weaviate](/self-host/weaviate): An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API.
+
+## Databases
+
+- [GreptimeDB](/self-host/greptimedb): A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port.
 
 ## Developer Tools
 
@@ -251,7 +264,9 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [marimo](/self-host/marimo): A reactive Python notebook that is reproducible, git-friendly, and shareable as an app.
 - [Material for MkDocs](/self-host/mkdocs-material): A documentation site generator with a searchable Material theme. This serves your Markdown files live; put them in the docs volume and edit the generated config to set the site name and navigation.
 - [MAZANOKE](/self-host/mazanoke): A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server.
+- [MCP Inspector](/self-host/mcp-inspector): The official visual tester for Model Context Protocol servers: connect, list tools and resources and call them from the browser. MIT licensed. Open the logs to copy the session token.
 - [Meilisearch](/self-host/meilisearch): A fast, typo-tolerant search engine API you can drop into any app's search bar.
+- [Nginx UI](/self-host/nginx-ui): A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes.
 - [NocoBase](/self-host/nocobase): An extensible no-code/low-code platform for building internal tools and databases.
 - [OneDev](/self-host/onedev): A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
 - [Opengist](/self-host/opengist): A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
@@ -306,6 +321,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [AdGuard Home](/self-host/adguard-home): Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.
 - [Apache Kafka](/self-host/kafka): A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.
 - [Caddy](/self-host/caddy): A fast web server with automatic HTTPS and a simple config file, on the official image serving its default page. Mount your own Caddyfile or site files to host real sites.
+- [Chisel](/self-host/chisel): A fast TCP and UDP tunnel over HTTP secured by SSH, for reaching services behind firewalls. MIT licensed. The tunnel password is generated for you.
 - [Cloudflare DDNS](/self-host/cloudflare-ddns): Keeps Cloudflare DNS records pointed at your current public IP address.
 - [Consul](/self-host/consul): HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.
 - [Elasticsearch](/self-host/elasticsearch): A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
@@ -339,6 +355,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 ## Mail
 
 - [MailDev](/self-host/maildev): A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered.
+- [SnappyMail](/self-host/snappymail): A fast, light webmail client that connects to your IMAP and SMTP servers.
 
 ## Media
 
@@ -356,9 +373,11 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Jackett](/self-host/jackett): A proxy that translates queries from your media apps into torrent tracker searches.
 - [Jellyfin](/self-host/jellyfin): A free media server for streaming your own movies, shows, and music to any device.
 - [Jellyseerr](/self-host/jellyseerr): A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr.
+- [Kapowarr](/self-host/kapowarr): A comic book library manager that tracks volumes, finds issues and organises files.
 - [Kavita](/self-host/kavita): A fast, feature-rich reader server for manga, comics, and ebooks.
 - [Komga](/self-host/komga): A media server for comics, manga, and digital books with a clean reading interface.
 - [Lidarr](/self-host/lidarr): Watches your indexers for new albums from artists you follow and automatically grabs and organizes them.
+- [Lyrion Music Server](/self-host/lyrion): The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.
 - [MeTube](/self-host/metube): A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.
 - [mStream](/self-host/mstream): A lightweight personal music streaming server with a web player and mobile apps.
 - [Navidrome](/self-host/navidrome): Stream your own music collection from a Subsonic-compatible server to any device, anywhere.
@@ -375,11 +394,14 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Radarr](/self-host/radarr): Watches your favorite indexers for movies and automatically grabs, sorts, and renames them.
 - [RomM](/self-host/romm): A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login.
 - [Shelfmark](/self-host/shelfmark): A web app to search for books and audiobooks and send them to your library folders.
+- [slskd](/self-host/slskd): A modern web client and server for the Soulseek peer to peer network, with a REST API.
 - [Sonarr](/self-host/sonarr): Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them.
 - [Stash](/self-host/stash): A self hosted organiser and player for your personal video library, with tags and scraping.
+- [Stump](/self-host/stump): A comics, manga and digital book server with a web reader and OPDS support.
 - [Tdarr](/self-host/tdarr): Automated media transcoding, health checks, and library-wide format standardization.
 - [Transmission](/self-host/transmission): A fast, lightweight BitTorrent client with a simple web interface.
 - [TubeSync](/self-host/tubesync): Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy.
+- [Ubooquity](/self-host/ubooquity): A home server for comics and ebooks with a reader in the browser and OPDS support, packaged by the community maintainers. GPL-3.0 licensed. Set an admin password on first visit.
 - [Yamtrack](/self-host/yamtrack): A self-hosted media tracker for movies, TV, anime, manga, games, and books.
 
 ## Monitoring
@@ -416,6 +438,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Pyroscope](/self-host/pyroscope): A continuous profiling database with a web UI and a data volume. The UI has no login, so restrict access before exposing it. Applications push profiles to port 4040.
 - [SmokePing](/self-host/smokeping): A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
 - [Speedtest Tracker](/self-host/speedtest-tracker): Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time.
+- [Statping-ng](/self-host/statping-ng): A status page and uptime monitor for sites, APIs and TCP services with alerts.
 - [Statusnook](/self-host/statusnook): Deploy a status page and start monitoring endpoints in minutes.
 - [Tautulli](/self-host/tautulli): Monitors your Plex server and shows who watched what, with history, stats, and notifications.
 - [Uptime Kuma](/self-host/uptime-kuma): A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.
@@ -486,6 +509,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Planka](/self-host/planka): A Trello-style kanban board for visualizing and tracking work across a team.
 - [Radicale](/self-host/radicale): Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file.
 - [Rallly](/self-host/rallly): Find a time that works for everyone with polls for scheduling meetings and events.
+- [Raneto](/self-host/raneto): A flat file knowledge base that renders a folder of Markdown files as a searchable wiki, packaged by the community maintainers. MIT licensed. Edit pages from the file volume or the built-in editor.
 - [Reactive Resume](/self-host/reactive-resume): A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.
 - [Readeck](/self-host/readeck): Save the readable content of web pages you want to keep, free of ads and clutter.
 - [Redmine](/self-host/redmine): A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.
@@ -527,6 +551,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Passbolt](/self-host/passbolt): An open-source password manager built for teams, compatible with the usual browser extensions.
 - [Pocket ID](/self-host/pocket-id): A simple, secure OIDC provider that authenticates with passkeys instead of passwords.
 - [PrivateBin](/self-host/privatebin): A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.
+- [Step CA](/self-host/step-ca): A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables.
 - [SuperTokens](/self-host/supertokens): A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres.
 - [Tinyauth](/self-host/tinyauth): A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.
 - [Vault](/self-host/vault): HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.
@@ -548,6 +573,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Chibisafe](/self-host/chibisafe): A file vault for uploading and sharing files from the cloud.
 - [Cloudreve](/self-host/cloudreve): A self-hosted file management and sharing system with multiple storage backends.
 - [copyparty](/self-host/copyparty): A portable file server with resumable uploads, a media player, and search, in a single small image.
+- [Dufs](/self-host/dufs): A tiny file server with uploads, downloads, search and WebDAV over one login. Apache-2.0 licensed. The admin password is generated for you.
 - [Duplicati](/self-host/duplicati): Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.
 - [File Browser](/self-host/filebrowser): A simple web UI for browsing, uploading, and sharing files from your own storage.
 - [FileBrowser Quantum](/self-host/filebrowser-quantum): A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.

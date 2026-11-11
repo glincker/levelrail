@@ -194,7 +194,7 @@ Coverage never blocks or fails a PR. `Coverage gate` runs on push to `main`
 only, is `continue-on-error`, and is not a need of `CI required`. On those
 runs a full plan checks the 70% aggregate for `internal/`, a scoped plan the
 changed-line gate at 50%. The `kit/` coverage gates follow the same rule. The
-Codecov statuses are informational and there is no PR comment (`codecov.yml`).
+Codecov statuses are informational and there is no PR comment (`.github/codecov.yml`).
 
 ## What runs where
 

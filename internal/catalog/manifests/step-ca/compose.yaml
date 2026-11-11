@@ -1,0 +1,17 @@
+services:
+  step-ca:
+    image: smallstep/step-ca:0.30.2
+    ports: ["9000"]
+    environment:
+      DOCKER_STEPCA_INIT_NAME: "Levelrail CA"
+      DOCKER_STEPCA_INIT_DNS_NAMES: localhost
+      DOCKER_STEPCA_INIT_PASSWORD: $SERVICE_PASSWORD_STEPCA
+      DOCKER_STEPCA_INIT_ACME: "true"
+    volumes:
+      - step:/home/step
+    healthcheck:
+      test: ["CMD-SHELL", "step ca health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

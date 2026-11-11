@@ -25,41 +25,44 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (490 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (513 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
-| [AI](#ai) | 36 |
+| [AI](#ai) | 42 |
 | [Analytics](#analytics) | 10 |
-| [Applications](#applications) | 42 |
+| [Applications](#applications) | 44 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 42 |
-| [Developer Tools](#developer-tools) | 70 |
+| [Database Tools](#database-tools) | 43 |
+| [Developer Tools](#developer-tools) | 72 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 27 |
+| [Infrastructure](#infrastructure) | 28 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 39 |
-| [Monitoring](#monitoring) | 40 |
-| [Productivity](#productivity) | 83 |
-| [Security](#security) | 19 |
+| [Media](#media) | 44 |
+| [Monitoring](#monitoring) | 41 |
+| [Productivity](#productivity) | 84 |
+| [Security](#security) | 20 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 16 |
+| [Storage](#storage) | 17 |
 | [Backups](#backups) | 2 |
-| [Mail](#mail) | 1 |
+| [Databases](#databases) | 1 |
+| [Mail](#mail) | 2 |
 
 ## AI
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [AnythingLLM](https://docs.anythingllm.com) | A private chat workspace over your documents, with built-in RAG and support for local or hosted models. | `anythingllm` |  |
+| [Big-AGI](https://github.com/enricoros/big-AGI) | A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server. | `big-agi` |  |
 | [ComfyUI](https://docs.comfy.org) | A node-graph editor for building and running Stable Diffusion and other image generation pipelines. | `comfyui` | Requires GPU |
 | [Crawl4AI](https://docs.crawl4ai.com/core/docker-deployment/) | An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header. | `crawl4ai` |  |
 | [Docling Serve](https://github.com/docling-project/docling-serve) | An API server that converts PDFs, Office files and images into Markdown, JSON or text for RAG pipelines, using the Docling library on CPU. MIT licensed. The image is about 5 GB, the interactive UI is at /ui and the API docs at /docs. There is no login, so keep it private or behind an auth proxy. | `docling-serve` |  |
 | [Flowise](https://docs.flowiseai.com) | Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow. | `flowise` |  |
 | [Flowise (Postgres + Qdrant)](https://docs.flowiseai.com) | Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows. | `flowise-postgres` |  |
+| [Hollama](https://github.com/fmaclen/hollama) | A minimal web chat client for Ollama and OpenAI compatible servers. MIT licensed. Add the address of your model server in settings. | `hollama` |  |
 | [Jupyter GPU Notebook](https://github.com/iot-salzburg/gpu-jupyter) | JupyterLab with a CUDA-ready data science stack for training and experimenting with models. | `jupyter-gpu` | Requires GPU |
 | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) | A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy. | `kokoro-fastapi` |  |
 | [Label Studio](https://labelstud.io/guide) | A flexible data labeling tool for text, images, audio, and video, with export to common ML formats. | `label-studio` |  |
@@ -71,8 +74,10 @@ Generated from `internal/catalog.Templates` (490 entries as of this build). Run 
 | [Lobe Chat](https://lobehub.com/docs/self-hosting/start) | A modern, open-source AI chat framework supporting many model providers. | `lobe-chat` |  |
 | [LocalAI](https://localai.io) | A drop-in OpenAI-compatible API that runs language, image, and speech models on your own hardware. | `localai` |  |
 | [MetaMCP](https://docs.metamcp.com) | An MCP aggregator and gateway that groups many MCP servers behind one endpoint with auth, namespaces and middleware. | `metamcp` |  |
+| [MindsDB](https://github.com/mindsdb/mindsdb) | A query layer that connects data sources and AI models so you can ask questions in SQL. MIT licensed. Includes the web editor and the HTTP API. | `mindsdb` |  |
 | [MLflow](https://mlflow.org/docs/latest) | Track experiments, compare runs, and manage models with a self-hosted MLflow tracking server. | `mlflow` |  |
 | [n8n AI Starter Kit](https://docs.n8n.io/advanced-ai) | n8n wired to a local Ollama model and a Qdrant vector store, ready for private AI workflows. | `n8n-ai-starter` |  |
+| [n8n MCP](https://github.com/czlonkowski/n8n-mcp) | A Model Context Protocol server that gives AI assistants searchable n8n node documentation. MIT licensed. The bearer token is generated for you. | `n8n-mcp` |  |
 | [New API](https://docs.newapi.pro/en/getting-started/) | An LLM gateway and AI asset management system that unifies many model providers. | `new-api` |  |
 | [Ollama](https://github.com/ollama/ollama) | A local LLM runtime with an HTTP API. Pull any model yourself once it's running. | `ollama` |  |
 | [Ollama + Open WebUI](https://docs.openwebui.com/) | A local LLM runtime paired with a ChatGPT-style web interface, for running open models on your own hardware. | `ollama-open-webui` |  |
@@ -84,6 +89,8 @@ Generated from `internal/catalog.Templates` (490 entries as of this build). Run 
 | [Open Notebook](https://github.com/lfnovo/open-notebook/blob/main/docs/1-INSTALLATION/docker-compose.md) | An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install. | `open-notebook` |  |
 | [Open WebUI](https://docs.openwebui.com) | A self-hosted chat interface for running local large language models through Ollama. | `open-webui` |  |
 | [OpenClaw](https://docs.openclaw.ai/install) | A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume. | `openclaw` |  |
+| [Paperless-AI](https://github.com/clusterzx/paperless-ai) | Adds automatic tagging, titles and document chat to a Paperless-ngx server using your choice of AI provider. MIT licensed. A setup wizard collects the Paperless address and token. | `paperless-ai` |  |
+| [SillyTavern](https://github.com/SillyTavern/SillyTavern) | A local chat front end for language models with characters, lorem books and extensions, bringing your own model API. AGPL-3.0 licensed. Sign in with the admin user and the generated password. | `sillytavern` |  |
 | [Speaches](https://speaches.ai) | An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API. | `speaches` |  |
 | [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki) | A browser interface for generating and editing images with Stable Diffusion checkpoints. | `stable-diffusion-webui` | Requires GPU |
 | [Text Embeddings Inference](https://huggingface.co/docs/text-embeddings-inference) | A lean server that turns text into embeddings with popular open models, on CPU with no extra setup. | `text-embeddings-inference` |  |
@@ -118,6 +125,7 @@ Generated from `internal/catalog.Templates` (490 entries as of this build). Run 
 | [Drupal](https://www.drupal.org/docs) | A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. | `drupal` |  |
 | [ESPHome](https://esphome.io/) | A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices. | `esphome` |  |
 | [EspoCRM](https://docs.espocrm.com) | An open-source CRM for managing sales, support, and customer relationships end to end. | `espocrm` |  |
+| [evcc](https://docs.evcc.io/) | A smart charging controller that charges your electric car from solar surplus and cheap tariffs. | `evcc` |  |
 | [Ghost](https://ghost.org/docs/) | A fast, modern publishing platform for blogs and newsletters, with built-in memberships. | `ghost` |  |
 | [GLPI](https://glpi-project.org/documentation/) | An IT asset and service management platform with helpdesk ticketing built in. | `glpi` |  |
 | [go2rtc](https://github.com/AlexxIT/go2rtc) | A camera streaming hub that turns RTSP, HomeKit and other sources into WebRTC, HLS and MJPEG. | `go2rtc` |  |
@@ -152,6 +160,7 @@ Generated from `internal/catalog.Templates` (490 entries as of this build). Run 
 | [Wizarr](https://docs.wizarr.dev/) | An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server. | `wizarr` |  |
 | [WordPress](https://wordpress.org/documentation/) | The world's most widely used content management system, self-hosted with its own database. | `wordpress` |  |
 | [YOURLS](https://yourls.org/docs/) | A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form. | `yourls` |  |
+| [Z-Wave JS UI](https://zwave-js.github.io/zwave-js-ui/) | A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant. | `zwave-js-ui` |  |
 
 ## Automation
 
@@ -254,6 +263,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [RethinkDB](https://rethinkdb.com/docs) | A document database with live query feeds and a web admin console, on the official image with a data volume. The console has no login, so restrict access before exposing it. Client driver port 28015 stays private. | `rethinkdb` |  |
 | [ScyllaDB](https://opensource.docs.scylladb.com/stable/) | A wide column database compatible with Cassandra, running as one node in developer mode with a data volume. It has no web page, so connect over the project network at scylladb:9042. | `scylladb` |  |
 | [SurrealDB](https://surrealdb.com/docs) | A multi-model database for documents, graphs and relations with a SQL-like query language, using the RocksDB engine on a named volume. The root password is generated at install. Source available under the BSL. | `surrealdb` |  |
+| [TiDB](https://github.com/pingcap/tidb) | A MySQL compatible distributed SQL database, run here as a single node on local storage for development and testing. Apache-2.0 licensed. The root user has no password, so keep it private. | `tidb` |  |
 | [TimescaleDB](https://docs.timescale.com/) | PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432. | `timescaledb` |  |
 | [Valkey](https://valkey.io/docs/) | A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence. | `valkey` |  |
 | [Weaviate](https://weaviate.io/developers/weaviate) | An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API. | `weaviate` |  |
@@ -306,7 +316,9 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [marimo](https://marimo.io/) | A reactive Python notebook that is reproducible, git-friendly, and shareable as an app. | `marimo` |  |
 | [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) | A documentation site generator with a searchable Material theme. This serves your Markdown files live; put them in the docs volume and edit the generated config to set the site name and navigation. | `mkdocs-material` |  |
 | [MAZANOKE](https://github.com/civilblur/mazanoke) | A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server. | `mazanoke` |  |
+| [MCP Inspector](https://github.com/modelcontextprotocol/inspector) | The official visual tester for Model Context Protocol servers: connect, list tools and resources and call them from the browser. MIT licensed. Open the logs to copy the session token. | `mcp-inspector` |  |
 | [Meilisearch](https://www.meilisearch.com/docs) | A fast, typo-tolerant search engine API you can drop into any app's search bar. | `meilisearch` |  |
+| [Nginx UI](https://nginxui.com/guide/getting-started.html) | A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes. | `nginx-ui` |  |
 | [NocoBase](https://docs.nocobase.com/) | An extensible no-code/low-code platform for building internal tools and databases. | `nocobase` |  |
 | [OneDev](https://docs.onedev.io/installation-guide/run-as-docker-container) | A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container. | `onedev` |  |
 | [Opengist](https://opengist.io/docs) | A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin. | `opengist` |  |
@@ -367,6 +379,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome/wiki/Docker) | Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. | `adguard-home` |  |
 | [Apache Kafka](https://kafka.apache.org/documentation/) | A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092. | `kafka` |  |
 | [Caddy](https://caddyserver.com/docs/) | A fast web server with automatic HTTPS and a simple config file, on the official image serving its default page. Mount your own Caddyfile or site files to host real sites. | `caddy` |  |
+| [Chisel](https://github.com/jpillora/chisel) | A fast TCP and UDP tunnel over HTTP secured by SSH, for reaching services behind firewalls. MIT licensed. The tunnel password is generated for you. | `chisel` |  |
 | [Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns) | Keeps Cloudflare DNS records pointed at your current public IP address. | `cloudflare-ddns` |  |
 | [Consul](https://developer.hashicorp.com/consul/docs) | HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store. | `consul` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. | `elasticsearch` |  |
@@ -417,9 +430,11 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Jackett](https://github.com/Jackett/Jackett#readme) | A proxy that translates queries from your media apps into torrent tracker searches. | `jackett` |  |
 | [Jellyfin](https://jellyfin.org/docs/) | A free media server for streaming your own movies, shows, and music to any device. | `jellyfin` |  |
 | [Jellyseerr](https://docs.jellyseerr.dev) | A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr. | `jellyseerr` |  |
+| [Kapowarr](https://casvt.github.io/Kapowarr/) | A comic book library manager that tracks volumes, finds issues and organises files. | `kapowarr` |  |
 | [Kavita](https://wiki.kavitareader.com/installation/docker/) | A fast, feature-rich reader server for manga, comics, and ebooks. | `kavita` |  |
 | [Komga](https://komga.org/docs/installation/docker) | A media server for comics, manga, and digital books with a clean reading interface. | `komga` |  |
 | [Lidarr](https://wiki.servarr.com/lidarr) | Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. | `lidarr` |  |
+| [Lyrion Music Server](https://lyrion.org/) | The successor to Logitech Media Server, streaming your music to Squeezebox players and apps. | `lyrion` |  |
 | [MeTube](https://github.com/alexta69/metube) | A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. | `metube` |  |
 | [mStream](https://mstream.io/) | A lightweight personal music streaming server with a web player and mobile apps. | `mstream` |  |
 | [Navidrome](https://www.navidrome.org/docs/) | Stream your own music collection from a Subsonic-compatible server to any device, anywhere. | `navidrome` |  |
@@ -436,11 +451,14 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Radarr](https://wiki.servarr.com/radarr) | Watches your favorite indexers for movies and automatically grabs, sorts, and renames them. | `radarr` |  |
 | [RomM](https://docs.romm.app/latest/) | A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login. | `romm` |  |
 | [Shelfmark](https://github.com/calibrain/shelfmark) | A web app to search for books and audiobooks and send them to your library folders. | `shelfmark` |  |
+| [slskd](https://github.com/slskd/slskd) | A modern web client and server for the Soulseek peer to peer network, with a REST API. | `slskd` |  |
 | [Sonarr](https://wiki.servarr.com/sonarr) | Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them. | `sonarr` |  |
 | [Stash](https://docs.stashapp.cc/) | A self hosted organiser and player for your personal video library, with tags and scraping. | `stash` |  |
+| [Stump](https://www.stumpapp.dev/) | A comics, manga and digital book server with a web reader and OPDS support. | `stump` |  |
 | [Tdarr](https://docs.tdarr.io) | Automated media transcoding, health checks, and library-wide format standardization. | `tdarr` |  |
 | [Transmission](https://docs.linuxserver.io/images/docker-transmission/) | A fast, lightweight BitTorrent client with a simple web interface. | `transmission` |  |
 | [TubeSync](https://github.com/meeb/tubesync) | Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy. | `tubesync` |  |
+| [Ubooquity](https://github.com/linuxserver/docker-ubooquity) | A home server for comics and ebooks with a reader in the browser and OPDS support, packaged by the community maintainers. GPL-3.0 licensed. Set an admin password on first visit. | `ubooquity` |  |
 | [Yamtrack](https://github.com/FuzzyGrim/Yamtrack/wiki) | A self-hosted media tracker for movies, TV, anime, manga, games, and books. | `yamtrack` |  |
 
 ## Monitoring
@@ -479,6 +497,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Pyroscope](https://grafana.com/docs/pyroscope/latest/) | A continuous profiling database with a web UI and a data volume. The UI has no login, so restrict access before exposing it. Applications push profiles to port 4040. | `pyroscope` |  |
 | [SmokePing](https://oss.oetiker.ch/smokeping/doc/index.en.html) | A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy. | `smokeping` |  |
 | [Speedtest Tracker](https://docs.speedtest-tracker.dev) | Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. | `speedtest-tracker` |  |
+| [Statping-ng](https://github.com/statping-ng/statping-ng) | A status page and uptime monitor for sites, APIs and TCP services with alerts. | `statping-ng` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
 | [Tautulli](https://docs.tautulli.com) | Monitors your Plex server and shows who watched what, with history, stats, and notifications. | `tautulli` |  |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma/wiki) | A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks. | `uptime-kuma` |  |
@@ -551,6 +570,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Planka](https://docs.planka.cloud/docs/installation/docker/) | A Trello-style kanban board for visualizing and tracking work across a team. | `planka` |  |
 | [Radicale](https://radicale.org/v3.html) | Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file. | `radicale` |  |
 | [Rallly](https://support.rallly.co/self-hosting/introduction) | Find a time that works for everyone with polls for scheduling meetings and events. | `rallly` |  |
+| [Raneto](https://github.com/ryanlelek/Raneto) | A flat file knowledge base that renders a folder of Markdown files as a searchable wiki, packaged by the community maintainers. MIT licensed. Edit pages from the file volume or the built-in editor. | `raneto` |  |
 | [Reactive Resume](https://docs.rxresu.me/) | A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume. | `reactive-resume` |  |
 | [Readeck](https://readeck.org/en/docs/) | Save the readable content of web pages you want to keep, free of ads and clutter. | `readeck` |  |
 | [Redmine](https://www.redmine.org/projects/redmine/wiki/Guide) | A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres. | `redmine` |  |
@@ -594,6 +614,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Passbolt](https://www.passbolt.com/docs) | An open-source password manager built for teams, compatible with the usual browser extensions. | `passbolt` |  |
 | [Pocket ID](https://pocket-id.org/docs/setup/installation) | A simple, secure OIDC provider that authenticates with passkeys instead of passwords. | `pocket-id` |  |
 | [PrivateBin](https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md) | A minimalist, encrypted pastebin where the server has zero knowledge of what you paste. | `privatebin` |  |
+| [Step CA](https://github.com/smallstep/certificates) | A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables. | `step-ca` |  |
 | [SuperTokens](https://supertokens.com/docs/) | A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres. | `supertokens` |  |
 | [Tinyauth](https://tinyauth.app/docs/getting-started) | A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form. | `tinyauth` |  |
 | [Vault](https://developer.hashicorp.com/vault/docs/deploy/run-container) | HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode. | `vault` |  |
@@ -619,6 +640,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Chibisafe](https://chibisafe.app/docs/intro) | A file vault for uploading and sharing files from the cloud. | `chibisafe` |  |
 | [Cloudreve](https://docs.cloudreve.org/) | A self-hosted file management and sharing system with multiple storage backends. | `cloudreve` |  |
 | [copyparty](https://github.com/9001/copyparty) | A portable file server with resumable uploads, a media player, and search, in a single small image. | `copyparty` |  |
+| [Dufs](https://github.com/sigoden/dufs) | A tiny file server with uploads, downloads, search and WebDAV over one login. Apache-2.0 licensed. The admin password is generated for you. | `dufs` |  |
 | [Duplicati](https://duplicati.readthedocs.io) | Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage. | `duplicati` |  |
 | [File Browser](https://filebrowser.org) | A simple web UI for browsing, uploading, and sharing files from your own storage. | `filebrowser` |  |
 | [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser/wiki) | A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings. | `filebrowser-quantum` |  |
@@ -640,11 +662,18 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Backrest](https://garethgeorge.github.io/backrest/) | A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly. | `backrest` |  |
 | [rclone](https://rclone.org/gui/) | The rclone remote control web GUI for managing and syncing files across dozens of cloud storage providers. | `rclone` |  |
 
+## Databases
+
+| Template | Slogan | ID | Notes |
+| --- | --- | --- | --- |
+| [GreptimeDB](https://docs.greptime.com/getting-started/installation/greptimedb-standalone/) | A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port. | `greptimedb` |  |
+
 ## Mail
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [MailDev](https://maildev.github.io/maildev/) | A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered. | `maildev` |  |
+| [SnappyMail](https://snappymail.eu/) | A fast, light webmail client that connects to your IMAP and SMTP servers. | `snappymail` |  |
 
 {/* END GENERATED CATALOG TABLE */}
 

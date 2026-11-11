@@ -1,0 +1,70 @@
+---
+title: "Self-host Step CA with Docker"
+sidebarTitle: "Step CA"
+description: "A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables."
+"og:url": "https://docs.levelrail.com/self-host/step-ca"
+---
+
+A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables.
+
+This page describes the Levelrail template for Step CA (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/smallstep/certificates.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `step-ca` | `smallstep/step-ca:0.30.2` | 9000 | `step -&#62; /home/step` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `step-ca` | `DOCKER_STEPCA_INIT_ACME` | Preset in the template |
+| `step-ca` | `DOCKER_STEPCA_INIT_DNS_NAMES` | Preset in the template |
+| `step-ca` | `DOCKER_STEPCA_INIT_NAME` | Preset in the template |
+| `step-ca` | `DOCKER_STEPCA_INIT_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`step-ca`): DOCKER_STEPCA_INIT_PASSWORD.
+- Stores data in named volumes (`step-ca`): step.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Step CA with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Step CA. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy step-ca --name my-step-ca
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Authelia](/self-host/authelia)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+
+All templates are listed in the [self-host gallery](/self-host).

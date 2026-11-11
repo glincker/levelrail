@@ -339,13 +339,13 @@ var aiml1Templates = []Template{
       PORT: "3000"
       FLOWISE_USERNAME: admin
       FLOWISE_PASSWORD: $SERVICE_PASSWORD_ADMIN
-      DATABASE_PATH: /root/.flowise
-      APIKEY_PATH: /root/.flowise
-      SECRETKEY_PATH: /root/.flowise
-      LOG_PATH: /root/.flowise/logs
-      BLOB_STORAGE_PATH: /root/.flowise/storage
+      DATABASE_PATH: /home/node/.flowise
+      APIKEY_PATH: /home/node/.flowise
+      SECRETKEY_PATH: /home/node/.flowise
+      LOG_PATH: /home/node/.flowise/logs
+      BLOB_STORAGE_PATH: /home/node/.flowise/storage
     volumes:
-      - flowise_data:/root/.flowise
+      - flowise_data:/home/node/.flowise
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/v1/ping || wget -q -O /dev/null http://127.0.0.1:3000/api/v1/ping || exit 1"]
       interval: 30s

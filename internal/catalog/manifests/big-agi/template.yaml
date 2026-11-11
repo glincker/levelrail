@@ -1,0 +1,24 @@
+id: big-agi
+name: Big-AGI
+description: A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
+icon: chat
+category: AI
+documentation_url: https://github.com/enricoros/big-AGI
+source_repo: https://github.com/enricoros/big-AGI
+license: MIT
+license_class: permissive
+license_url: https://github.com/enricoros/big-AGI/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the app and add your model API keys under Models.
+domains:
+  - service: big-agi
+    port: 3000
+    description: Public address of Big-AGI.
+healthcheck:
+  service: big-agi
+  port: 3000
+  path: /

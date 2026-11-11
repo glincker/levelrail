@@ -558,11 +558,13 @@
             "group": "AI",
             "pages": [
               "self-host/anythingllm",
+              "self-host/big-agi",
               "self-host/comfyui",
               "self-host/crawl4ai",
               "self-host/docling-serve",
               "self-host/flowise",
               "self-host/flowise-postgres",
+              "self-host/hollama",
               "self-host/jupyter-gpu",
               "self-host/kokoro-fastapi",
               "self-host/label-studio",
@@ -574,8 +576,10 @@
               "self-host/lobe-chat",
               "self-host/localai",
               "self-host/metamcp",
+              "self-host/mindsdb",
               "self-host/mlflow",
               "self-host/n8n-ai-starter",
+              "self-host/n8n-mcp",
               "self-host/new-api",
               "self-host/ollama",
               "self-host/ollama-open-webui",
@@ -587,6 +591,8 @@
               "self-host/open-notebook",
               "self-host/open-webui",
               "self-host/openclaw",
+              "self-host/paperless-ai",
+              "self-host/sillytavern",
               "self-host/speaches",
               "self-host/stable-diffusion-webui",
               "self-host/text-embeddings-inference",
@@ -621,6 +627,7 @@
               "self-host/drupal",
               "self-host/esphome",
               "self-host/espocrm",
+              "self-host/evcc",
               "self-host/ghost",
               "self-host/glpi",
               "self-host/go2rtc",
@@ -654,7 +661,8 @@
               "self-host/webtop",
               "self-host/wizarr",
               "self-host/wordpress",
-              "self-host/yourls"
+              "self-host/yourls",
+              "self-host/zwave-js-ui"
             ]
           },
           {
@@ -758,9 +766,16 @@
               "self-host/rethinkdb",
               "self-host/scylladb",
               "self-host/surrealdb",
+              "self-host/tidb",
               "self-host/timescaledb",
               "self-host/valkey",
               "self-host/weaviate"
+            ]
+          },
+          {
+            "group": "Databases",
+            "pages": [
+              "self-host/greptimedb"
             ]
           },
           {
@@ -810,7 +825,9 @@
               "self-host/marimo",
               "self-host/mkdocs-material",
               "self-host/mazanoke",
+              "self-host/mcp-inspector",
               "self-host/meilisearch",
+              "self-host/nginx-ui",
               "self-host/nocobase",
               "self-host/onedev",
               "self-host/opengist",
@@ -871,6 +888,7 @@
               "self-host/adguard-home",
               "self-host/kafka",
               "self-host/caddy",
+              "self-host/chisel",
               "self-host/cloudflare-ddns",
               "self-host/consul",
               "self-host/elasticsearch",
@@ -907,7 +925,8 @@
           {
             "group": "Mail",
             "pages": [
-              "self-host/maildev"
+              "self-host/maildev",
+              "self-host/snappymail"
             ]
           },
           {
@@ -927,9 +946,11 @@
               "self-host/jackett",
               "self-host/jellyfin",
               "self-host/jellyseerr",
+              "self-host/kapowarr",
               "self-host/kavita",
               "self-host/komga",
               "self-host/lidarr",
+              "self-host/lyrion",
               "self-host/metube",
               "self-host/mstream",
               "self-host/navidrome",
@@ -946,11 +967,14 @@
               "self-host/radarr",
               "self-host/romm",
               "self-host/shelfmark",
+              "self-host/slskd",
               "self-host/sonarr",
               "self-host/stash",
+              "self-host/stump",
               "self-host/tdarr",
               "self-host/transmission",
               "self-host/tubesync",
+              "self-host/ubooquity",
               "self-host/yamtrack"
             ]
           },
@@ -989,6 +1013,7 @@
               "self-host/pyroscope",
               "self-host/smokeping",
               "self-host/speedtest-tracker",
+              "self-host/statping-ng",
               "self-host/statusnook",
               "self-host/tautulli",
               "self-host/uptime-kuma",
@@ -1061,6 +1086,7 @@
               "self-host/planka",
               "self-host/radicale",
               "self-host/rallly",
+              "self-host/raneto",
               "self-host/reactive-resume",
               "self-host/readeck",
               "self-host/redmine",
@@ -1104,6 +1130,7 @@
               "self-host/passbolt",
               "self-host/pocket-id",
               "self-host/privatebin",
+              "self-host/step-ca",
               "self-host/supertokens",
               "self-host/tinyauth",
               "self-host/vault",
@@ -1129,6 +1156,7 @@
               "self-host/chibisafe",
               "self-host/cloudreve",
               "self-host/copyparty",
+              "self-host/dufs",
               "self-host/duplicati",
               "self-host/filebrowser",
               "self-host/filebrowser-quantum",
