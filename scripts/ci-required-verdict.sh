@@ -53,6 +53,7 @@ if [ "$(out changes draft)" != true ]; then
 	}
 	if [ "$(out changes go)" = true ] && [ "$(out plan has_tests)" = true ]; then expect test-go; fi
 	if [ "$(out changes kit)" = true ]; then expect kit; fi
+	if [ "$(out changes templates_only)" = true ]; then expect template-lane; fi
 	if [ "$(out changes tfprovider)" = true ]; then expect tfprovider; fi
 	if [ "$(out changes web)" = full ]; then
 		case "$(out changes vitest)" in full | changed) expect web-test ;; esac

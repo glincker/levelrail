@@ -21,13 +21,14 @@
 #   installer   install.sh end-to-end job
 #   workflows   actionlint
 #   planner     scripts/test-ci-*.sh (the planner table tests) have work even when no Go package is affected
+#   templates_only  only catalog manifests (and their generated docs) changed: the template lane runs, the Go plan does not
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
 full=false go=false go_full=false lint=none tools=false kit=false tfprovider=false
 dep_full=false
-web=none vitest=none installer=false workflows=false planner=false
+web=none vitest=none installer=false workflows=false planner=false templates_only=false
 declare -A lint_dirs=()
 reasons=()
 
@@ -128,7 +129,24 @@ for f in "${files[@]}"; do
 	esac
 done
 
-if [ "$full" = false ] && [ "${#files[@]}" -gt 0 ]; then
+# Manifest-only diffs skip the Go side: the template lane runs the catalog
+# tests itself. Generated template docs ride along, and code-gen-check there
+# still catches any other stale output.
+templ_n=0
+other_n=0
+for f in "${files[@]}"; do
+	case "$f" in
+	internal/catalog/manifests/*) templ_n=$((templ_n + 1)) ;;
+	docs/template-catalog.md | gen-template-gallery/*) ;;
+	*) other_n=$((other_n + 1)) ;;
+	esac
+done
+if [ "$full" = false ] && [ "$templ_n" -gt 0 ] && [ "$other_n" -eq 0 ]; then
+	templates_only=true
+	reasons+=("manifest-only change: template lane")
+fi
+
+if [ "$full" = false ] && [ "${#files[@]}" -gt 0 ] && [ "$templates_only" = false ]; then
 	seeds="$(printf '%s\n' "${files[@]}" | scripts/affected-go-packages.sh --stdin --seeds)"
 	if [ "$seeds" = "ALL" ]; then
 		go=true go_full=true
@@ -167,10 +185,11 @@ vitest=$vitest
 installer=$installer
 workflows=$workflows
 planner=$planner
+templates_only=$templates_only
 EOF
 
 {
 	echo "changed files: ${#files[@]}"
 	for r in "${reasons[@]}"; do echo "  $r"; done
-	echo "go=$go go_full=$go_full lint=$lint tools=$tools kit=$kit tfprovider=$tfprovider web=$web vitest=$vitest installer=$installer workflows=$workflows planner=$planner"
+	echo "go=$go go_full=$go_full lint=$lint tools=$tools kit=$kit tfprovider=$tfprovider web=$web vitest=$vitest installer=$installer workflows=$workflows planner=$planner templates_only=$templates_only"
 } >&2

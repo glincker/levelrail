@@ -24,6 +24,7 @@ jobs:
       github.event.pull_request.merged == true &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Delete head branch
         env:
@@ -39,6 +40,7 @@ jobs:
     name: Weekly stale branch sweep
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Sweep
         env:

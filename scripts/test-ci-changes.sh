@@ -49,6 +49,9 @@ case_ "the Go planner reruns every Go lane, not web" "go=true go_full=true web=n
 case_ "the shard splitter reruns every Go lane" "go=true go_full=true web=none" -- scripts/ci-shard-names.sh
 case_ "planner tests alone run the planner tests, no Go lane" "go=true go_full=false planner=true web=none" -- scripts/test-ci-go-plan.sh
 case_ "shard weights alone run the planner tests" "go=true go_full=false planner=true" -- scripts/ci-test-weights.txt
+case_ "a manifest-only change runs the template lane, no Go" "go=false templates_only=true web=none full=false" -- internal/catalog/manifests/redis/manifest.yaml
+case_ "manifests plus their generated docs stay template-only" "go=false templates_only=true web=docs" -- internal/catalog/manifests/redis/manifest.yaml docs/template-catalog.md
+case_ "a manifest with a Go change keeps the Go plan" "go=true templates_only=false" -- internal/catalog/manifests/redis/manifest.yaml internal/catalog/catalog.go
 case_ "the lane runner (rerun policy) reruns every Go lane" "go=true go_full=true web=none full=false" -- scripts/ci-go-test.sh
 case_ "nightly workflow edits run actionlint only, no Go lane" "workflows=true go=false go_full=false full=false" -- .github/workflows/nightly.yml
 case_ "a moved live test still runs Go for its package" "go=true go_full=false full=false" -- test/e2e/loadbalancer_test.go

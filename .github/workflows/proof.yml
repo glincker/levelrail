@@ -15,6 +15,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: proof-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   proof:
     if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'proof'

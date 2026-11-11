@@ -19,6 +19,7 @@ jobs:
   analyze-go:
     name: analyze (go)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       security-events: write
       contents: read
@@ -33,6 +34,7 @@ jobs:
   analyze-js:
     name: analyze (javascript-typescript)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       security-events: write
       contents: read

@@ -61,6 +61,7 @@ jobs:
       installer: ${{ steps.detect.outputs.installer }}
       workflows: ${{ steps.detect.outputs.workflows }}
       planner: ${{ steps.detect.outputs.planner }}
+      templates_only: ${{ steps.detect.outputs.templates_only }}
       # Draft PRs skip the heavy jobs; CI_ON_DRAFTS=true opts back in.
       draft: ${{ github.event.pull_request.draft == true && vars.CI_ON_DRAFTS != 'true' }}
     steps:
@@ -541,6 +542,71 @@ jobs:
           flags: go
           fail_ci_if_error: false
 
+  # Catalog manifest-only diffs (ci-changes.sh templates_only) skip the Go
+  # plan and run this lane instead: catalog and stack tests, validation of the
+  # changed templates, the logo guard and every generator.
+  template-lane:
+    name: Template lane
+    needs: changes
+    if: >-
+      ${{ !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.templates_only == 'true'
+      && needs.changes.outputs.draft != 'true' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    env:
+      BASE: ${{ needs.changes.outputs.base }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-templates
+          save: ${{ env.CI_SAVE_CACHE == 'true' }}
+
+      - name: Catalog and stack template tests
+        run: go test -short -count=1 -timeout=10m ./internal/catalog/... ./internal/stacktemplates/...
+
+      # Only the templates this diff touches. Without a base, validate them all.
+      - name: Validate changed templates
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ]; then
+            GOFLAGS=-buildvcs=false go run ./scripts/validate-templates
+            exit 0
+          fi
+          mapfile -t ids < <(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- internal/catalog/manifests | cut -d/ -f4 | sort -u)
+          for id in "${ids[@]}"; do
+            [ -n "$id" ] && [ -d "internal/catalog/manifests/$id" ] || continue
+            GOFLAGS=-buildvcs=false go run ./scripts/validate-templates -id "$id"
+          done
+
+      # Generators run before web/ installs, so gen-route-tree stays skipped.
+      - name: Generated files are current
+        run: scripts/code-gen-check.sh
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: Template logo guard
+        working-directory: web
+        run: npm exec --no -- vitest run src/lib/templateLogos.test.ts
+
   # Go lint and, when a workflow file changed, actionlint: one check line
   # instead of two.
   lint:
@@ -987,7 +1053,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
+    needs: [changes, plan, build-vet, lint, kit, tfprovider, template-lane, test-go, test-api, test-rest, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
     if: always()
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3
