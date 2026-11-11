@@ -101,11 +101,20 @@ export interface TemplateProtection {
   label: string
 }
 
+export interface TemplateCapability {
+  class: string
+  tier: 'review' | 'elevated' | 'privileged'
+  service: string
+  reason: string
+  caps?: string[]
+}
+
 // Mirrors internal/catalog's Requirements.
 export interface TemplateRequirements {
   level: RequirementsLevel
   findings: TemplateFinding[]
   protections: TemplateProtection[]
+  capabilities?: TemplateCapability[]
 }
 
 export async function fetchServiceTemplates(): Promise<

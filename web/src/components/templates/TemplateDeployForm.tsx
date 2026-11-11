@@ -26,20 +26,34 @@ import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { TemplateGeneratedField } from './TemplateGeneratedField'
+import { TemplateFileField } from './TemplateFileField'
 
 function EnvField({
   prompt,
   value,
   error,
+  sizeError,
   onChange,
 }: {
   prompt: TemplateEnvPrompt
   value: string
   error?: string
+  sizeError?: string
   onChange: (value: string) => void
 }) {
   const { t } = useTranslation('templates')
   const id = `template-env-${prompt.key}`
+  if (prompt.type === 'file') {
+    return (
+      <TemplateFileField
+        prompt={prompt}
+        value={value}
+        error={error}
+        sizeError={sizeError}
+        onChange={onChange}
+      />
+    )
+  }
   const required = !!error || (prompt.required && !prompt.default)
   return (
     <Field>
@@ -130,6 +144,12 @@ export function TemplateDeployForm({
     })
   }
 
+  // The API names the offending key in its byte-limit error; show it at that field.
+  const apiMessage = install.isError ? install.error.message : ''
+  const fileSizeError = (key: string): string | undefined =>
+    apiMessage.includes(key) && /byte limit/.test(apiMessage)
+      ? apiMessage
+      : undefined
   const domains = manifest.domains ?? []
   const optionalCount = groups.optional.length + 1
   const nameError = errors.name !== undefined
@@ -171,6 +191,7 @@ export function TemplateDeployForm({
           prompt={p}
           value={values.env[p.key] ?? ''}
           error={errors[`env:${p.key}`]}
+          sizeError={fileSizeError(p.key)}
           onChange={(v) => {
             setEnv(p.key, v)
           }}
@@ -319,6 +340,7 @@ export function TemplateDeployForm({
             <EnvField
               key={p.key}
               prompt={p}
+              sizeError={fileSizeError(p.key)}
               value={values.env[p.key] ?? ''}
               onChange={(v) => {
                 setEnv(p.key, v)
@@ -328,7 +350,7 @@ export function TemplateDeployForm({
         </div>
       </section>
 
-      {install.isError ? (
+      {install.isError && !prompts.some((p) => fileSizeError(p.key)) ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{install.error.message}</AlertDescription>
