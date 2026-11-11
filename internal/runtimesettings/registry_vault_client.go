@@ -15,10 +15,10 @@ func init() {
 		Description: "Seconds a value read from Vault or OpenBao is kept in memory and reused, from 0 to 3600. 0 reads Vault on every container start. Values are never written to disk and are dropped when the connection or credential changes.",
 	})
 	Register(Definition{
-		Key: KeyVaultAllowPrivate, Category: CategorySecurity, Kind: KindBool, Default: "false",
+		Key: KeyVaultAllowPrivate, Category: CategorySecurity, Kind: KindBool, Default: "true",
 		Env: "APP_VAULT_ALLOW_PRIVATE_ADDRESS", Apply: ApplyLive,
 		Title:       "Vault: allow private addresses",
-		Description: "Allow the Vault address to resolve to a loopback or private network address, for a Vault or OpenBao running on the same host or LAN. Link-local and metadata addresses are always blocked, and redirects to another host are never followed.",
+		Description: "Allow the Vault address, which an admin sets, to resolve to a loopback or private network address, for a Vault or OpenBao on the same host or LAN. On by default; turn it off to refuse private addresses. Link-local, metadata, unspecified and multicast addresses are always blocked, and redirects to another host are never followed.",
 	})
 	Register(Definition{
 		Key: KeyVaultTokenRenewAfter, Category: CategorySecurity, Kind: KindInt, Default: "80",

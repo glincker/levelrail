@@ -92,7 +92,7 @@ An unresolved reference fails the deploy. The container is never started with th
 | `approle login` | Wrong role ID or secret ID, or the role is not allowed to log in. | Check the role and secret ID in Vault. |
 | `read secret "PATH"` | Vault refused the read: bad token, missing policy, wrong mount or namespace, or Vault unreachable. | Check the token policy allows read on the path, then `--mount-path` and `--namespace`. |
 | `secret "PATH" not found` | Nothing exists at that path. | Check the path has no mount prefix and no `data/`. |
-| `vault address is link-local, metadata or private` | The Vault address resolves to a loopback or private address and `vault.allow_private_address` is off (the default). Link-local and metadata addresses are always refused. | For a Vault or OpenBao on the same host or LAN, run `levelrail-cli settings runtime set vault.allow_private_address true`. After an upgrade this applies to connections saved earlier. |
+| `vault address is link-local, metadata or private` | The Vault address resolves to a loopback or private address and an admin turned `vault.allow_private_address` off (it is on by default). Link-local and metadata addresses are always refused. | For a Vault or OpenBao on the same host or LAN, run `levelrail-cli settings runtime set vault.allow_private_address true`. Connections saved earlier keep working on private addresses after an upgrade unless the setting was turned off. |
 | `has no field "KEY"` | The secret exists but not that field. | Check the field name in Vault. |
 | `is not a string` | The field holds a number, object or list. | Store the value as a string. |
 

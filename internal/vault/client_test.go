@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -153,5 +154,16 @@ func TestVaultReadCacheHitExpiryAndInvalidation(t *testing.T) {
 	r.Flush()
 	if _, err := r.Resolve(context.Background(), cfg, "sid", "app", "k"); err != nil || c.reads.Load() != 4 {
 		t.Fatalf("Flush must drop cached values, reads=%d err=%v", c.reads.Load(), err)
+	}
+}
+
+func TestVaultPrivateAddressDefaultOnKeepsMetadataBlocked(t *testing.T) {
+	// A nil settings service serves registry defaults, so this proves the shipped default.
+	tun := TunablesFrom(nil)(context.Background())
+	if !tun.AllowPrivate {
+		t.Fatal("private addresses must be allowed by default for admin-set connections")
+	}
+	if !blockedIP(net.ParseIP("169.254.169.254"), tun.AllowPrivate) || blockedIP(net.ParseIP("10.0.0.5"), tun.AllowPrivate) {
+		t.Fatal("default must block metadata and allow private ranges")
 	}
 }
