@@ -66,7 +66,7 @@
     "none": "Aucune requête comptée pour l'instant."
   },
   "cookie": {
-    "summary": "Cookie {{name}}, dure {{hours}} heures. Ajoutez ?{{param}}=<variante> à une URL pour imposer une variante."
+    "summary": "Cookie {{name}}, dure {{hours}} heures. Ajoutez ?{{param}}=<variant> à une URL pour imposer une variante."
   },
   "stop": {
     "button": "Arrêter le test",
