@@ -1,0 +1,297 @@
+{
+  "page": {
+    "eyebrow": "Sicherheit",
+    "title": "Single Sign-On",
+    "description": "Lassen Sie Personen sich über Ihren Identitätsanbieter mit SAML 2.0 anmelden, ordnen Sie Verzeichnisgruppen Rollen zu und entscheiden Sie, ob lokale Passwörter weiterhin funktionieren.",
+    "connectedCount_one": "{{count}} Verbindung aktiv",
+    "connectedCount_other": "{{count}} Verbindungen aktiv",
+    "addConnection": "SAML-Verbindung hinzufügen",
+    "setupBanner": {
+      "title": "Schließen Sie zuerst die Einrichtung ab",
+      "masterKey": "SAML benötigt den Master-Schlüssel der Control Plane, um seinen Signaturschlüssel aufzubewahren. Konfigurieren Sie den Master-Schlüssel und kommen Sie dann zurück.",
+      "baseUrl": "SAML benötigt eine https-Dashboard-URL, weil Identitätsanbieter Anmeldeantworten dorthin senden. Legen Sie eine unter Einstellungen, Allgemein fest."
+    }
+  },
+  "list": {
+    "title": "SAML-Verbindungen",
+    "description": "Jede Verbindung vertraut einem Identitätsanbieter. Aktivierte Verbindungen zeigen einen Button auf der Anmeldeseite.",
+    "emptyTitle": "Noch keine SAML-Verbindung",
+    "emptyBody": "Fügen Sie eine für Okta, Entra ID, Keycloak oder einen beliebigen SAML-2.0-Identitätsanbieter hinzu.",
+    "configure": "Konfigurieren",
+    "state": {
+      "enabled": "Aktiviert",
+      "disabled": "Aus",
+      "incomplete": "IdP-Details nötig"
+    },
+    "jit": "Erstellt Konten",
+    "certExpires": "Zertifikat läuft ab {{date}}"
+  },
+  "form": {
+    "newTitle": "Neue SAML-Verbindung",
+    "editTitle": "{{name}} konfigurieren",
+    "sheetDescription": "Geben Sie diese Service-Provider-Werte Ihrem Identitätsanbieter und importieren Sie dann dessen Metadaten.",
+    "name": "Anzeigename",
+    "nameHelp": "Wird auf dem Anmelde-Button angezeigt, zum Beispiel der Firmen- oder IdP-Name.",
+    "enabled": "Auf der Anmeldeseite anzeigen",
+    "sp": {
+      "title": "Service-Provider-Details",
+      "description": "Kopieren Sie diese in die SAML-App, die Sie bei Ihrem Identitätsanbieter erstellen.",
+      "entityId": "Entity-ID (Audience)",
+      "acsUrl": "URL des Assertion Consumer Service",
+      "metadataUrl": "Metadaten-URL",
+      "saveFirst": "Speichern Sie die Verbindung, um ihre URLs zu erhalten.",
+      "copy": "{{label}} kopieren"
+    },
+    "import": {
+      "title": "IdP-Metadaten importieren",
+      "description": "Fügen Sie die Metadaten-URL oder das XML Ihres Identitätsanbieters ein. Dies füllt die Entity-ID, die Anmelde-URL und das Signaturzertifikat; listen die Metadaten mehrere auf, wird das neueste heute gültige verwendet.",
+      "url": "Metadaten-URL",
+      "xml": "Metadaten-XML",
+      "button": "Metadaten importieren",
+      "done": "Metadaten importiert. Prüfen Sie die Verbindung und aktivieren Sie sie."
+    },
+    "idp": {
+      "title": "Identitätsanbieter",
+      "description": "Durch den Import gefüllt, oder geben Sie sie von Hand ein. Antworten müssen mit diesem Zertifikat signiert sein.",
+      "entityId": "IdP-Entity-ID (Issuer)",
+      "ssoUrl": "IdP-Anmelde-URL",
+      "certificates": "Signaturzertifikat (PEM)",
+      "certificatesHelp": "Ein Zertifikat. Rotiert der Identitätsanbieter seinen Schlüssel, fügen Sie das neue Zertifikat zum Zeitpunkt der Umstellung ein oder importieren Sie es."
+    },
+    "access": {
+      "title": "Konten und Rollen",
+      "description": "Legen Sie fest, wer sich anmelden darf und welche Rolle er erhält.",
+      "jit": "Konten bei der ersten Anmeldung erstellen",
+      "jitHelp": "Aus: Nur Personen, die hier bereits ein Konto haben, können sich anmelden.",
+      "syncRoles": "Die zugeordnete Rolle bei jeder Anmeldung anwenden",
+      "syncRolesHelp": "Gruppenänderungen beim Identitätsanbieter wirken bei der nächsten Anmeldung. Personen ohne zugeordnete Gruppe erhalten die Standardrolle oder werden ohne eine abgewiesen.",
+      "defaultRole": "Standardrolle",
+      "defaultRoleNone": "Keine: Personen ohne zugeordnete Gruppe abweisen",
+      "domains": "Erlaubte E-Mail-Domains",
+      "domainsHelp": "Erforderlich. Kommagetrennt, zum Beispiel example.com. Nur diese Domains können sich anmelden, was verhindert, dass externe Konten zu Ihren passen."
+    },
+    "attributes": {
+      "title": "Attributnamen",
+      "description": "Leer lassen, um die gängigen Namen von Okta, Entra ID und Keycloak zu verwenden.",
+      "email": "E-Mail-Attribut",
+      "name": "Attribut für den Anzeigenamen",
+      "groups": "Gruppenattribut"
+    },
+    "save": "Verbindung speichern",
+    "saved": "Verbindung gespeichert",
+    "delete": "Verbindung löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteBody": "Über diese Verbindung verknüpfte Personen behalten ihre Konten, können sich damit aber nicht mehr anmelden.",
+    "deleted": "Verbindung gelöscht"
+  },
+  "mappings": {
+    "title": "Zuordnung von Gruppen zu Rollen",
+    "description": "Wenn sich jemand anmeldet oder eine Verzeichnisgruppe sich ändert, bestimmt die passende Gruppe mit der höchsten Priorität die Rolle. Gruppennamen werden ohne Beachtung der Groß- und Kleinschreibung verglichen.",
+    "group": "Gruppenname",
+    "role": "Rolle",
+    "priority": "Priorität",
+    "add": "Zuordnung hinzufügen",
+    "remove": "Zuordnung für {{group}} entfernen",
+    "empty": "Keine Zuordnungen. Jeder erhält die Standardrolle der Verbindung.",
+    "save": "Zuordnungen speichern",
+    "saved": "Zuordnungen gespeichert"
+  },
+  "enforce": {
+    "title": "Single Sign-On verlangen",
+    "description": "Anmeldung per Passwort, Passkey und E-Mail-Code für alle außer Root-Benutzern verweigern.",
+    "label": "SSO für Nicht-Root-Benutzer verlangen",
+    "breakGlass": "Root-Benutzer behalten ihr Passwort als Notfallzugang, und recover-admin auf dem Host setzt es weiterhin zurück. Siehe die Dokumentation zum Notfallzugriff.",
+    "on": "Single Sign-On ist jetzt erforderlich",
+    "off": "Die lokale Anmeldung ist wieder erlaubt"
+  },
+  "spCert": {
+    "title": "Zertifikat des Service Providers",
+    "description": "Bei der ersten Verwendung erzeugt. Einige Identitätsanbieter verlangen es, um signierte Anfragen zu prüfen oder Assertions zu verschlüsseln.",
+    "none": "Nicht verfügbar, bis der Master-Schlüssel der Control Plane konfiguriert ist."
+  },
+  "scim": {
+    "title": "Verzeichnissynchronisierung (SCIM)",
+    "description": "Lassen Sie Ihren Identitätsanbieter Konten und Gruppen erstellen, aktualisieren und deaktivieren. Das Deaktivieren einer Person dort beendet ihre Sitzungen hier sofort.",
+    "baseUrl": "SCIM-Basis-URL",
+    "defaultRole": "Rolle für neue Verzeichnisbenutzer",
+    "defaultRoleHelp": "Wird verwendet, wenn keine Gruppenzuordnung passt. Mit Gruppenzuordnungen aktualisieren Änderungen an Verzeichnisgruppen die Rollen sofort.",
+    "roleSaved": "Standardrolle des Verzeichnisses gespeichert",
+    "tokens": "Tokens",
+    "tokenName": "Token-Name",
+    "tokenNamePlaceholder": "okta-provisioning",
+    "create": "Token erstellen",
+    "empty": "Noch kein SCIM-Token. Erstellen Sie eines und fügen Sie es in Ihren Identitätsanbieter ein.",
+    "rotate": "Rotieren",
+    "revoke": "Widerrufen",
+    "revoked": "Widerrufen",
+    "neverUsed": "Nie verwendet",
+    "lastUsed": "Zuletzt verwendet {{date}}",
+    "revokeTitle": "{{name}} widerrufen?",
+    "revokeBody": "Die Bereitstellung mit diesem Token stoppt sofort.",
+    "revokedToast": "Token widerrufen",
+    "shownOnceTitle": "Kopieren Sie das Token jetzt",
+    "shownOnceBody": "Es wird einmal angezeigt und nur als Hash gespeichert. Fügen Sie es in die SCIM-Einstellungen Ihres Identitätsanbieters ein.",
+    "done": "Fertig"
+  },
+  "policy": {
+    "eyebrow": "Sicherheit",
+    "title": "Sitzungsrichtlinie",
+    "description": "Teamweise Regeln, gegen die jede Anfrage geprüft wird: Leerlauf-Timeout, maximales Sitzungsalter, erlaubte Netzwerke und verpflichtende Zwei-Faktor-Anmeldung. Personen in mehreren Teams erhalten die strengste Kombination.",
+    "yourAddress": "Ihre Adresse: {{address}}",
+    "recoveryTitle": "Ausgesperrt?",
+    "recoveryBody": "Führen Sie auf dem Host levelrail access-policy-reset --yes aus, um jede Sitzungsrichtlinie zu entfernen, und melden Sie sich dann erneut an. Das Speichern einer Richtlinie, die Ihre eigene Adresse blockieren würde, wird abgelehnt.",
+    "noPolicy": "Keine Richtlinie",
+    "edit": "Richtlinie bearbeiten",
+    "idle": "Leerlauf-Timeout",
+    "idleHelp": "Sitzungen beenden, die so lange ungenutzt waren, zum Beispiel 30m. Mindestens 5m. Leer schaltet es aus.",
+    "maxAge": "Maximales Sitzungsalter",
+    "maxAgeHelp": "Sitzungen beenden, die älter sind, zum Beispiel 12h. Mindestens 15m. Leer schaltet es aus.",
+    "maxSessions": "Gleichzeitige Sitzungen pro Person",
+    "maxSessionsHelp": "Höchstzahl vollständiger Sitzungen, die eine Person gleichzeitig über Browser und Geräte hinweg halten darf. 0 schaltet die Obergrenze aus.",
+    "onLimit": "Wenn die Obergrenze erreicht ist",
+    "onLimitEvict": "Die älteste Sitzung abmelden",
+    "onLimitReject": "Die neue Anmeldung ablehnen",
+    "onLimitHelp": "Geprüft bei der ersten Anfrage nach der Anmeldung oder dem Zwei-Faktor-Schritt, danach alle 30 Sekunden. Sitzungen über der Obergrenze enden mit einer klaren Meldung.",
+    "allowlist": "Erlaubte Netzwerke",
+    "allowlistHelp": "Eine IP-Adresse oder CIDR pro Zeile. Gilt für Sitzungen und API-Tokens. Leer erlaubt jede Adresse.",
+    "requireMfa": "Zwei-Faktor-Anmeldung verlangen",
+    "requireMfaHelp": "Personen ohne Authenticator-App oder Passkey können nur noch eine einrichten, bis sie es getan haben. SAML-Anmeldungen zählen, da der Identitätsanbieter MFA übernimmt.",
+    "save": "Richtlinie speichern",
+    "saved": "Sitzungsrichtlinie gespeichert",
+    "clear": "Richtlinie entfernen",
+    "cleared": "Sitzungsrichtlinie entfernt",
+    "sheetTitle": "Sitzungsrichtlinie für {{team}}",
+    "summaryIdle": "Leerlauf {{value}}",
+    "summaryMaxAge": "max. {{value}}",
+    "summaryMfa": "MFA erforderlich",
+    "summarySessionsEvict_one": "{{count}} Sitzung, die älteste endet",
+    "summarySessionsEvict_other": "{{count}} Sitzungen, die älteste endet",
+    "summarySessionsReject_one": "{{count}} Sitzung, danach ablehnen",
+    "summarySessionsReject_other": "{{count}} Sitzungen, danach ablehnen",
+    "summaryAllow_one": "{{count}} Netzwerk",
+    "summaryAllow_other": "{{count}} Netzwerke"
+  },
+  "oidc": {
+    "title": "OAuth- und OIDC-Anmeldung",
+    "description": "Dieselben Steuerungen wie bei SAML für die Anbieter, die Sie unter Einstellungen, OAuth-Anmeldung aktiviert haben: welche Gruppen welche Rolle erhalten, ob eine erste Anmeldung ein Konto erstellt und welche E-Mail-Domains sich anmelden dürfen.",
+    "emptyTitle": "Noch kein OAuth- oder OIDC-Anbieter",
+    "emptyBody": "Aktivieren Sie einen Anbieter unter Einstellungen, OAuth-Anmeldung. Er erscheint hier mit seiner Anmelderichtlinie.",
+    "syncBadge": "Synchronisiert Rollen",
+    "state": {
+      "enabled": "Aktiviert",
+      "off": "Aus"
+    },
+    "form": {
+      "title": "Anmelderichtlinie für {{name}}",
+      "sheetDescription": "Die Zuordnungen von Gruppen zu Rollen werden mit SAML und der Verzeichnissynchronisierung geteilt: Bearbeiten Sie sie in der Zuordnungskarte auf dieser Seite.",
+      "access": {
+        "title": "Zugriff",
+        "description": "Standardmäßig minimale Rechte: Unbekannte Personen werden abgewiesen, und niemand erhält mehr als die Rolle, die Sie hier wählen."
+      },
+      "jit": "Bei der ersten Anmeldung ein Konto erstellen",
+      "jitHelp": "Aus: Jemand ohne Konto hier wird abgewiesen, sofern Sie ihn nicht zuvor eingeladen haben. An: Die erste Anmeldung erstellt ein Konto mit der zugeordneten Rolle oder der Standardrolle.",
+      "syncRoles": "Die zugeordnete Rolle bei jeder Anmeldung erneut anwenden",
+      "syncRolesHelp": "Aus: Eine Rolle wird nur beim Erstellen des Kontos gesetzt. An: Sie folgt bei jeder Anmeldung den Gruppen, und Herabstufungen werden im Audit-Log festgehalten. Root-Benutzer werden nie geändert.",
+      "defaultRole": "Standardrolle",
+      "defaultRoleHelp": "Für Personen, auf die keine der Zuordnungen passt. Eine Rolle mit Root wird nie angeboten: Ein Anmelde-Claim kann sie nicht gewähren.",
+      "domains": "Erlaubte E-Mail-Domains",
+      "domainsHelp": "Kommagetrennt, zum Beispiel example.com. Nur diese Domains können sich anmelden, und die Anmeldeseite leitet sie an diesen Anbieter. Leer erlaubt jede Domain und schaltet das Routing aus.",
+      "groups": {
+        "title": "Gruppen",
+        "description": "Wo dieser Anbieter angibt, in welchen Gruppen eine Person ist.",
+        "unsupported": "Dieser Anbieter sendet kein verifiziertes ID-Token, aus dem sich Gruppen lesen ließen, daher erhält jeder die Standardrolle. Verwenden Sie zur Zuordnung von Gruppen den generischen OpenID-Connect-Anbieter mit Ihrem Identitätsanbieter."
+      },
+      "groupsClaim": "Gruppen-Claim",
+      "groupsClaimHelp": "Der Claim im ID-Token, der Gruppennamen auflistet, zum Beispiel groups, roles oder realm_access.roles. Es wird nur das signierte ID-Token gelesen.",
+      "save": "Richtlinie speichern",
+      "saved": "Anmelderichtlinie gespeichert"
+    },
+    "test": {
+      "button": "Anmeldung testen",
+      "hint": "Eine Testanmeldung meldet Sie beim Anbieter an und zeigt, was eine Anmeldung bewirken würde. Sie erstellt kein Konto, keine Rolle und keine Sitzung. Speichern Sie zuerst Ihre Änderungen.",
+      "allowed": "Diese Anmeldung wäre erlaubt",
+      "refused": "Diese Anmeldung würde abgewiesen",
+      "groups": "Gruppen",
+      "noGroups": "keine",
+      "role": "Rolle",
+      "source": {
+        "mapping": "aus einer Gruppenzuordnung",
+        "default": "die Standardrolle"
+      },
+      "account": "Konto",
+      "accountState": {
+        "linked": "bereits verknüpft",
+        "existing_by_email": "vorhandenes Konto per E-Mail zugeordnet",
+        "new_account": "ein neues Konto würde erstellt",
+        "not_provisioned": "keines, und die Kontoerstellung ist aus"
+      },
+      "issue": {
+        "no_groups_claim": "Das ID-Token hat keinen Claim \"{{claim}}\", daher erhält jeder die Standardrolle. Fügen Sie dem ID-Token bei Ihrem Identitätsanbieter einen Gruppen-Claim hinzu.",
+        "wrong_claim_name": "Das ID-Token hat keinen Claim \"{{claim}}\", enthält aber eine Liste namens \"{{value}}\".",
+        "email_unverified": "Der Anbieter hat diese E-Mail nicht als verifiziert markiert, daher wird die Anmeldung abgewiesen. Verifizieren Sie die Adresse beim Anbieter.",
+        "domain_not_allowed": "Diese E-Mail-Domain steht nicht in der Liste der erlaubten.",
+        "not_provisioned": "Für diese Person existiert kein Konto und die Kontoerstellung ist aus.",
+        "role_grants_root": "Die Rolle, die diese Anmeldung erhielte, enthält Root oder existiert nicht mehr. Ein Claim kann nie Root gewähren.",
+        "no_email": "Der Anbieter hat keine E-Mail-Adresse gesendet."
+      },
+      "fix": {
+        "set_groups_claim": "{{value}} als Gruppen-Claim verwenden",
+        "add_domain": "{{value}} erlauben",
+        "enable_jit": "Kontoerstellung einschalten"
+      },
+      "fixManual": "Beim Identitätsanbieter beheben",
+      "fixed": "Richtlinie aktualisiert. Führen Sie den Test erneut aus.",
+      "failedTitle": "Die Testanmeldung wurde nicht abgeschlossen",
+      "failedBody": "Der Anbieter oder die Weiterleitung ist fehlgeschlagen (Code {{code}}). Prüfen Sie Client-ID, Client-Secret und Weiterleitungs-URL und versuchen Sie es erneut.",
+      "nothingCreated": "Es wurde nichts erstellt: kein Konto, keine Rolle und keine Sitzung."
+    }
+  },
+  "saml": {
+    "test": {
+      "button": "Anmeldung testen",
+      "hint": "Öffnet die echte Anmeldung bei Ihrem Identitätsanbieter und zeigt, was er gesendet hat und was eine Anmeldung bewirken würde. Sie erstellt kein Konto, keine Rolle und keine Sitzung. Speichern Sie zuerst Ihre Änderungen.",
+      "allowed": "Diese Anmeldung wäre erlaubt",
+      "refused": "Diese Anmeldung würde abgewiesen",
+      "email": "E-Mail",
+      "none": "keine",
+      "fixed": "Verbindung aktualisiert. Führen Sie den Test erneut aus.",
+      "fixManual": "Beim Identitätsanbieter beheben",
+      "failureCode": "Code: {{code}}",
+      "issue": {
+        "no_groups_claim": "Die Antwort enthält kein Attribut \"{{attribute}}\", daher erhält jeder die Standardrolle. Fügen Sie bei Ihrem Identitätsanbieter eine Gruppenattribut-Anweisung hinzu und legen Sie ihren Namen als Gruppenattribut fest.",
+        "domain_not_allowed": "Diese E-Mail-Domain wird von der Verbindung nicht beansprucht.",
+        "not_provisioned": "Für diese Person existiert kein Konto und die Kontoerstellung ist aus.",
+        "role_grants_root": "Die Rolle, die diese Anmeldung erhielte, enthält Root oder existiert nicht mehr. Ein Claim kann nie Root gewähren.",
+        "no_email": "Die Antwort enthielt keine E-Mail-Adresse. Prüfen Sie den Namen des E-Mail-Attributs und das NameID-Format.",
+        "wrong_claim_name": "Die Antwort enthält kein Attribut \"{{attribute}}\". Prüfen Sie den Namen des Gruppenattributs gegen das, was der Identitätsanbieter sendet.",
+        "email_unverified": "Der Identitätsanbieter hat für diese E-Mail-Adresse nicht gebürgt."
+      },
+      "failure": {
+        "clock_skew": {
+          "title": "Zeitabweichung",
+          "step": "Die Assertion lag außerhalb ihres Gültigkeitsfensters. Prüfen Sie, dass die Uhren dieses Servers und des Identitätsanbieters innerhalb von drei Minuten übereinstimmen (NTP), und versuchen Sie es erneut."
+        },
+        "audience_mismatch": {
+          "title": "Audience stimmt nicht überein",
+          "step": "Der Identitätsanbieter hat einen anderen Service Provider adressiert. Setzen Sie seine Audience (Entity-ID) auf {{entityId}} und seine ACS-URL auf {{acs}}."
+        },
+        "signature_invalid": {
+          "title": "Signatur ungültig",
+          "step": "Die Assertion ist nicht mit dem hinterlegten Zertifikat signiert. Importieren Sie die Metadaten des Identitätsanbieters erneut und stellen Sie sicher, dass er die Assertion signiert, nicht nur die Antwort."
+        },
+        "request_mismatch": {
+          "title": "Antwort passt nicht zur Anfrage",
+          "step": "Die Antwort bezog sich auf eine andere Anfrage oder ein anderes Ziel. Starten Sie den Test erneut von dieser Seite und prüfen Sie die ACS-URL {{acs}} beim Identitätsanbieter."
+        },
+        "response_invalid": {
+          "title": "Antwort abgewiesen",
+          "step": "Die Antwort konnte nicht verifiziert werden. Prüfen Sie die Logs des Identitätsanbieters und importieren Sie dann seine Metadaten erneut."
+        },
+        "saml_unavailable": {
+          "title": "Anmeldung nicht verfügbar",
+          "step": "SAML benötigt eine https-Dashboard-URL und den Master-Schlüssel der Control Plane. Beheben Sie beides unter Einstellungen, Allgemein, und versuchen Sie es erneut."
+        }
+      }
+    }
+  }
+}
