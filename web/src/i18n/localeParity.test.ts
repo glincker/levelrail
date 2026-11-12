@@ -1,35 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import baseline from './esMissingBaseline.json'
+import { checkLanguage, languageDirs, LOCALES_DIR } from './localeCheck.mjs'
 
-const root = join(__dirname, '..', 'locales')
-
-function leafKeys(obj: object, prefix = ''): string[] {
-  return Object.entries(obj).flatMap(([k, v]) =>
-    typeof v === 'object' && v !== null
-      ? leafKeys(v as object, `${prefix}${k}.`)
-      : [`${prefix}${k}`],
-  )
-}
-
-function read(lng: string, file: string): object {
-  return JSON.parse(readFileSync(join(root, lng, file), 'utf8')) as object
-}
-
-// Only namespaces that already have an es file are held to parity; the rest
-// intentionally fall back to English.
-function missing(): string[] {
-  return readdirSync(join(root, 'es'))
-    .filter((f) => f.endsWith('.json'))
-    .flatMap((f) => {
-      const have = new Set(leafKeys(read('es', f)))
-      return leafKeys(read('en', f))
-        .filter((k) => !have.has(k))
-        .map((k) => `${f.replace('.json', '')}:${k}`)
-    })
-    .sort()
-}
+const languages = languageDirs()
 
 // Namespaces behind the first-week routes must ship a Spanish file; extend as more are added.
 const FIRST_WEEK = [
@@ -44,19 +18,24 @@ const FIRST_WEEK = [
 ]
 
 describe('first-week es namespaces', () => {
-  it.each(FIRST_WEEK)('has an es file for %s', (ns) => {
-    expect(readdirSync(join(root, 'es'))).toContain(`${ns}.json`)
-  })
+  it.skipIf(!languages.includes('es')).each(FIRST_WEEK)(
+    'has an es file for %s',
+    (ns) => {
+      expect(readdirSync(join(LOCALES_DIR, 'es'))).toContain(`${ns}.json`)
+    },
+  )
 })
 
-describe('en/es key parity', () => {
-  it('has no new English keys missing from es beyond the baseline', () => {
-    const known = new Set(baseline.missing)
-    expect(missing().filter((k) => !known.has(k))).toEqual([])
+// Every namespace a language ships must be complete (every en key, and every plural form the
+// language needs) unless missingBaseline/<lang>.json lists the gap. No baseline file means no gaps.
+describe.each(languages)('en/%s key parity', (lang) => {
+  const result = checkLanguage(lang)
+
+  it('has no English keys missing beyond the baseline', () => {
+    expect(result.unlisted).toEqual([])
   })
 
-  it('keeps the baseline free of keys that are now translated', () => {
-    const now = new Set(missing())
-    expect(baseline.missing.filter((k) => !now.has(k))).toEqual([])
+  it('keeps the baseline free of entries that are now fixed', () => {
+    expect(result.stale).toEqual([])
   })
 })

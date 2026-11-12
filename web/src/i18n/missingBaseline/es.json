@@ -213,5 +213,23 @@
     "settings:packageRegistries.ecosystems.pypi",
     "settings:packageRegistries.ecosystems.rubygems",
     "settings:vaultPage.title"
+  ],
+  "knownIssues": [
+    "cdn:edge.pipelineLabel: lost protected term \"Git\"",
+    "common:cliConsole.helpIntro: placeholders or tags differ from en",
+    "compose:source.composePath: lost protected term \"Compose\"",
+    "compose:source.errors.noMasterKey: lost protected term \"Git\"",
+    "compose:source.formLabel: lost protected term \"Git\"",
+    "compose:source.updated: lost protected term \"Git\"",
+    "deployDetail:trace.step.compose_plan: lost protected term \"Compose\"",
+    "deployDetail:trace.step.compose_service: lost protected term \"Compose\"",
+    "https:fallback.description: placeholders or tags differ from en",
+    "hubs:sources.page.description: lost protected term \"Git\"",
+    "images:sources.git_push: lost protected term \"Git\"",
+    "images:sources.webhook: lost protected term \"Git\"",
+    "newApp:gitSettings.open: lost protected term \"Git\"",
+    "runtimeSettings:items.uploadMaxBytes.description: lost protected term \"API\"",
+    "runtimeSettings:overview.items.webhookDeliveries: lost protected term \"Git\"",
+    "templates:importTemplate.composeLabel: lost protected term \"Compose\""
   ]
 }
