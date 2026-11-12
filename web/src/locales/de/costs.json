@@ -1,0 +1,166 @@
+{
+  "title": "Kostenübersicht",
+  "description": "Sehen Sie, wohin die Ausgaben im Zeitverlauf fließen, was in diesem Monat zu erwarten ist und welche Budgets gefährdet sind. Die Zahlen beruhen auf Ihren eigenen Preisen.",
+  "error": "Kosten konnten nicht geladen werden: {{message}}",
+  "groupBy": {
+    "label": "Gruppieren nach",
+    "app": "App",
+    "project": "Projekt",
+    "tag": "Tag",
+    "node": "Node",
+    "kind": "Ressourcenart"
+  },
+  "granularity": {
+    "label": "Granularität",
+    "daily": "Täglich",
+    "monthly": "Monatlich"
+  },
+  "period": {
+    "label": "Zeitraum",
+    "mtd": "Laufender Monat",
+    "30d": "Letzte 30 Tage",
+    "last_month": "Letzter Monat"
+  },
+  "months": {
+    "label": "Monate",
+    "count_one": "{{count}} Monat",
+    "count_other": "{{count}} Monate"
+  },
+  "summary": {
+    "change": "{{value}} gegenüber dem Vorzeitraum",
+    "noChange": "Kein Vorzeitraum zum Vergleichen"
+  },
+  "series": {
+    "other": "Sonstige",
+    "unassigned": "Nicht zugeordnet",
+    "untagged": "Ohne Tag"
+  },
+  "kind": {
+    "app": "Apps",
+    "database": "Datenbanken"
+  },
+  "chart": {
+    "label": "Kosten im Zeitverlauf"
+  },
+  "table": {
+    "label": "Kostenranking",
+    "name": "Name",
+    "cost": "Kosten",
+    "previous": "Vorher",
+    "change": "Änderung"
+  },
+  "forecast": {
+    "title": "Prognose zum Monatsende",
+    "range": "Voraussichtlich zwischen {{low}} und {{high}}",
+    "hint": "Hochgerechnet aus den letzten vollständigen Tagen. Der Bereich wird breiter, wenn die Tagesausgaben ungleichmäßig sind.",
+    "chart": "Kumulierte Ausgaben in diesem Monat mit dem prognostizierten Bereich",
+    "bandName": "Bereich",
+    "actual": "Bisher ausgegeben",
+    "projected": "Prognose",
+    "confidence": {
+      "low": "Geringe Sicherheit",
+      "medium": "Mittlere Sicherheit",
+      "high": "Hohe Sicherheit"
+    }
+  },
+  "movers": {
+    "title": "Größte Veränderungen",
+    "description": "Die größten Anstiege gegenüber dem Vorzeitraum.",
+    "none": "Nichts ist gegenüber dem Vorzeitraum gestiegen.",
+    "up": "{{name}} ist um {{amount}} gestiegen ({{pct}})"
+  },
+  "empty": {
+    "noData": "Für diesen Zeitraum liegen noch keine Kostendaten vor.",
+    "noTelemetryTitle": "Noch keine Nutzungsdaten",
+    "noTelemetryDescription": "Die Kosten werden aus der gemessenen Nutzung abgeleitet. Sie erscheinen, sobald Metriken erfasst werden.",
+    "notConfiguredTitle": "Legen Sie zuerst Ihre Preise fest",
+    "notConfiguredDescription": "Die Kosten sind null, bis Sie Levelrail mitteilen, was Ihre Server oder Einheiten kosten.",
+    "configure": "Preise festlegen"
+  },
+  "budgets": {
+    "title": "Budgets",
+    "description": "Monatliche Limits für ein Projekt, ein Tag oder eine App. Jedes löst pro Schwelle einmal eine Warnung aus und kann bei 100 % die betroffenen Apps pausieren oder drosseln.",
+    "empty": "Noch keine Budgets. Fügen Sie unten eines hinzu, um gewarnt zu werden, bevor die Ausgaben davonlaufen.",
+    "addTitle": "Budget hinzufügen",
+    "name": "Name",
+    "scope": "Gilt für",
+    "scopes": {
+      "project": "Projekt",
+      "tag": "Tag",
+      "app": "App"
+    },
+    "target": {
+      "project": "Projekt",
+      "tag": "Tag-Name",
+      "app": "App"
+    },
+    "monthly": "Monatsbetrag",
+    "thresholds": "Warnen bei (Prozent)",
+    "action": "Bei 100 %",
+    "actions": {
+      "none": "Nur warnen",
+      "throttle": "Traffic drosseln",
+      "pause": "Apps pausieren"
+    },
+    "actionHint": "Drosselung und Pausierung werden aufgehoben, wenn Sie das Budget erhöhen oder der Monat wechselt. Es wird nie etwas gelöscht.",
+    "create": "Budget erstellen",
+    "created": "Budget erstellt",
+    "error": "Das Budget konnte nicht gespeichert werden: {{message}}",
+    "remove": "Budget {{name}} löschen",
+    "spent": "{{spent}} von {{budget}}",
+    "forecast": "Prognose {{mid}} ({{low}} bis {{high}})",
+    "thresholdsLine": "Warnungen bei {{levels}} Prozent. Höchster erreichter Wert: {{reached}}",
+    "none": "keine",
+    "state": {
+      "ok": "Im Plan",
+      "warn": "Warnung",
+      "over": "Budget überschritten",
+      "forecast": "Prognose darüber"
+    },
+    "enforced": {
+      "pause": "Apps pausiert",
+      "throttle": "Traffic gedrosselt"
+    },
+    "deleteTitle": "Budget {{name}} löschen?",
+    "deleteDescription": "Eine dadurch angewendete Pausierung oder Drosselung wird aufgehoben. Der Verlauf der Ausgaben bleibt unberührt.",
+    "delete": "Budget löschen",
+    "alertHint": "Warnungen laufen über Ihre Alarmregel für Budgetschwellen. Fügen Sie unter Alarme eine hinzu, wenn Sie Benachrichtigungen per E-Mail, Slack oder Webhook wünschen."
+  },
+  "fix": {
+    "label": "Dieses Budget beheben",
+    "raise": "Budget auf {{amount}} erhöhen",
+    "raised": "Budget auf {{amount}} erhöht",
+    "pause": "{{app}} pausieren",
+    "pauseTitle": "{{app}} pausieren?",
+    "pauseDescription": "Die App liefert nichts mehr aus, bis Sie sie wieder starten. Ihre Daten bleiben erhalten.",
+    "pauseConfirm": "App pausieren",
+    "pausing": "Wird pausiert",
+    "rightSize": "Apps richtig dimensionieren"
+  },
+  "appCaps": {
+    "title": "Limits pro App",
+    "description": "Monatliche Egress- und Kostenlimits, die für jede App gesetzt sind, samt dem, was gerade durchgesetzt wird.",
+    "loadError": "App-Limits konnten nicht geladen werden: {{message}}",
+    "empty": "Noch keine App hat ein Limit. Öffnen Sie eine App und setzen Sie auf ihrer Budgetkarte ein Monatslimit.",
+    "app": "App",
+    "usage": "{{pct}} % des Limits",
+    "ceiling": "Kostenobergrenze",
+    "ceilingLabel": "Kostenobergrenze für {{app}}",
+    "egressLabel": "Egress-Limit in GiB für {{app}}",
+    "egressPlaceholder": "GiB",
+    "set": "Festlegen",
+    "saved": "Limit für {{app}} aktualisiert",
+    "saveFailed": "Das Limit konnte nicht aktualisiert werden: {{message}}",
+    "enforced": {
+      "none": "Innerhalb des Limits",
+      "throttle": "Gedrosselt",
+      "pause": "Pausiert"
+    },
+    "blocked": "Deployments blockiert",
+    "overridden": "Überschreibung aktiv",
+    "preview": "Testlauf",
+    "override": "Überschreiben",
+    "edit": "App öffnen",
+    "forecast": "Voraussichtlich überschritten"
+  }
+}

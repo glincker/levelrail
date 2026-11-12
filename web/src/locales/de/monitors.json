@@ -1,0 +1,152 @@
+{
+  "title": "Uptime-Monitore",
+  "add": "Monitor hinzufügen",
+  "cancel": "Abbrechen",
+  "empty": "Noch keine Monitore. Fügen Sie einen hinzu, um eine URL, einen TCP-Port, einen Cron-Job oder ein Zertifikat zu überwachen.",
+  "loadError": "Monitore konnten nicht geladen werden: {{message}}",
+  "columns": {
+    "name": "Name",
+    "target": "Ziel",
+    "state": "Status",
+    "lastCheck": "Letzte Prüfung",
+    "uptime": "Uptime (24 Std.)"
+  },
+  "state": {
+    "up": "Erreichbar",
+    "suspect": "Verdächtig",
+    "down": "Ausgefallen",
+    "recovering": "Erholt sich",
+    "degraded": "Eingeschränkt",
+    "paused": "Pausiert",
+    "unknown": "Keine Daten"
+  },
+  "notAvailable": "k. A.",
+  "never": "nie",
+  "form": {
+    "kind": "Typ",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "heartbeat": "Cron-Heartbeat",
+    "tls": "TLS-Zertifikat",
+    "grace": "Toleranz (s)",
+    "graceHint": "Zusätzliche Wartezeit nach dem Intervall, bevor der Job als verspätet gilt. Leer verwendet den Serverstandard.",
+    "warnDays": "Warnung (Tage)",
+    "critDays": "Kritisch (Tage)",
+    "daysHint": "Eingeschränkt unterhalb der Warntage, ausgefallen unterhalb der kritischen Tage. Leer verwendet den Serverstandard.",
+    "serverDefault": "Standard",
+    "pingTitle": "Fügen Sie dies zu Ihrem Job hinzu",
+    "pingHint": "Wird nur einmal angezeigt. Hängen Sie vor dem Job /start und bei einem Fehler /fail an. Rotieren Sie die URL in der Zeile oder per CLI, falls sie offengelegt wird.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "done": "Fertig",
+    "url": "URL",
+    "host": "Host",
+    "port": "Port",
+    "name": "Name",
+    "interval": "Alle (s)",
+    "timeout": "Zeitlimit (ms)",
+    "statusLink": "Vorfälle der Statusseite öffnen",
+    "statusLinkHint": "Öffnet einen Vorfall an der verknüpften Statuskomponente, solange dieser Monitor ausgefallen ist, und löst ihn nach der Erholung auf. Standardmäßig aus.",
+    "save": "Erstellen",
+    "saving": "Wird erstellt...",
+    "created": "Monitor {{name}} erstellt",
+    "error": "Der Monitor konnte nicht erstellt werden: {{message}}",
+    "urlPlaceholder": "https://example.com/health"
+  },
+  "delete": {
+    "action": "{{name}} löschen",
+    "title": "Monitor {{name}} löschen?",
+    "description": "Seine Ergebnisse und Zusammenfassungen werden mit gelöscht.",
+    "confirm": "Löschen",
+    "pending": "Wird gelöscht...",
+    "done": "Monitor {{name}} gelöscht"
+  },
+  "pause": {
+    "action": "{{name}} pausieren"
+  },
+  "resume": {
+    "action": "{{name}} fortsetzen"
+  },
+  "rotate": {
+    "action": "Token für {{name}} rotieren",
+    "title": "Ping-URL von {{name}} rotieren?",
+    "description": "Die alte URL funktioniert sofort nicht mehr. Die neue wird nur einmal angezeigt, aktualisieren Sie daher gleich danach Ihren Job.",
+    "confirm": "Rotieren",
+    "pending": "Wird rotiert..."
+  },
+  "incidents": {
+    "title": "Vorfälle",
+    "empty": "Keine Vorfälle. Bestätigte Monitor-Ausfälle und hochgestufte Alarme erscheinen hier.",
+    "loadError": "Vorfälle konnten nicht geladen werden: {{message}}",
+    "refresh": "Aktualisieren",
+    "published": "Öffentlich",
+    "detailHint": "Interner Zeitverlauf und öffentlicher Entwurf",
+    "timeline": "Interner Zeitverlauf",
+    "ack": "Bestätigen",
+    "resolve": "Beheben",
+    "state": {
+      "triggered": "Ausgelöst",
+      "acknowledged": "Bestätigt",
+      "resolved": "Behoben"
+    },
+    "status": {
+      "investigating": "Wird untersucht",
+      "identified": "Ursache gefunden",
+      "monitoring": "Wird beobachtet",
+      "resolved": "Behoben"
+    },
+    "note": {
+      "label": "Notiz hinzufügen (intern)",
+      "add": "Notiz hinzufügen"
+    },
+    "draft": {
+      "title": "Entwurf des öffentlichen Updates",
+      "name": "Titel",
+      "status": "Status",
+      "body": "Nachricht",
+      "save": "Entwurf speichern",
+      "saved": "Entwurf gespeichert",
+      "prefillBody": "Wir untersuchen: {{title}}. Betroffen: {{monitor}}.",
+      "unknownMonitor": "Dienst"
+    },
+    "publish": {
+      "action": "Veröffentlichen",
+      "confirmTitle": "Auf der öffentlichen Statusseite veröffentlichen?",
+      "confirmBody": "Das wird sofort öffentlich und lässt sich nicht zurücknehmen. Prüfen Sie den Text unten.",
+      "confirm": "Öffentlich veröffentlichen",
+      "pending": "Wird veröffentlicht...",
+      "done": "Vorfall veröffentlicht",
+      "already": "Veröffentlicht. Weitere öffentliche Updates senden Sie über die Einstellungen der Statusseite.",
+      "stale": "Dieser Vorfall hat sich seit dem Laden geändert. Aktualisieren Sie die Seite und prüfen Sie den Entwurf erneut.",
+      "changed": "Der Entwurf hat sich während des Veröffentlichens geändert. Es wurde nichts veröffentlicht, prüfen Sie ihn erneut."
+    },
+    "postmortem": {
+      "title": "Postmortem",
+      "none": "Noch kein Postmortem. Beim Entwerfen werden Auswirkungszeitraum und Alarme dieses Vorfalls übernommen.",
+      "start": "Postmortem entwerfen",
+      "refresh": "Zeitraum und Alarme aktualisieren",
+      "save": "Speichern",
+      "publish": "Postmortem veröffentlichen",
+      "pending": "Wird veröffentlicht...",
+      "confirmTitle": "Dieses Postmortem veröffentlichen?",
+      "confirmBody": "Mit dem Veröffentlichen wird das Postmortem gesperrt. Danach kann es niemand mehr bearbeiten.",
+      "window": "Auswirkung {{start}} bis {{end}}",
+      "ongoing": "nicht erfasst",
+      "alerts": "Alarme",
+      "noAlerts": "Für diesen Vorfall wurden keine Alarme erfasst.",
+      "itemsHint": "Ein Maßnahmenpunkt pro Zeile",
+      "publishedBy": "Veröffentlicht {{at}} von {{by}}",
+      "state": {
+        "draft": "Entwurf",
+        "published": "Veröffentlicht"
+      },
+      "fields": {
+        "summary": "Zusammenfassung",
+        "impact": "Auswirkung",
+        "root_cause": "Ursache",
+        "resolution": "Lösung",
+        "action_items": "Maßnahmen"
+      }
+    }
+  }
+}
