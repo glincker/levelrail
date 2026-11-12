@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -152,8 +152,27 @@ describe('CommandPalette', () => {
     await user.keyboard('{ArrowDown}')
     expect(screen.getByRole('listbox')).toBeInTheDocument()
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('listbox')).toBeNull()
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
+  })
+
+  it('jumps to a quick link with Alt+digit by key code, whatever character it types', () => {
+    window.localStorage.setItem(
+      'palette.history',
+      JSON.stringify({
+        items: { 'nav-dashboard': { n: 4, t: Date.now() } },
+        next: {},
+      }),
+    )
+    renderPalette()
+    // Option+1 on a Mac types an inverted exclamation mark, so the code is what counts.
+    const ev = fireEvent.keyDown(screen.getByRole('combobox'), {
+      code: 'Digit1',
+      key: '¡',
+      altKey: true,
+    })
+    expect(ev).toBe(false)
+    expect(navigate).toHaveBeenCalledWith({ to: '/', params: undefined })
   })
 
   it('keeps the footer outside the scrolling list so rows never sit under it', async () => {

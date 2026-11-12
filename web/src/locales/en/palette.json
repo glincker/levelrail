@@ -85,7 +85,8 @@
     "navigate": "navigate",
     "select": "select",
     "secondary": "alt action",
-    "close": "close"
+    "close": "close",
+    "groups": "groups"
   },
   "keyboardShortcuts": "Keyboard shortcuts",
   "keyboardShortcutsKeywords": "quick navigation hold l go to",
@@ -275,5 +276,10 @@
   },
   "clearInput": "Clear search",
   "resultCount_one": "{{count}} result",
-  "resultCount_other": "{{count}} results"
+  "resultCount_other": "{{count}} results",
+  "drag": {
+    "label": "Move palette",
+    "hint": "Drag to move, or hold Alt or Option with the arrow keys. Add Shift to jump to an edge. Home recenters.",
+    "moved": "Moved to {{x}}, {{y}}"
+  }
 }

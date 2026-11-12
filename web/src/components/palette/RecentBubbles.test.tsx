@@ -39,3 +39,37 @@ describe('RecentBubbles', () => {
     expect(b.onPick).toHaveBeenCalledOnce()
   })
 })
+
+describe('RecentBubbles shortcut labels', () => {
+  const setPlatform = (value: string) =>
+    vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue(value)
+
+  it('shows Option on Mac and Alt elsewhere in the tooltip', async () => {
+    for (const [platform, label] of [
+      ['MacIntel', '⌥1'],
+      ['Win32', 'Alt+1'],
+    ] as const) {
+      const spy = setPlatform(platform)
+      const { unmount } = render(<RecentBubbles bubbles={[bubble('Apps')]} />)
+      await userEvent.hover(screen.getByRole('button', { name: 'Apps' }))
+      expect(await screen.findByText(label)).toBeInTheDocument()
+      unmount()
+      spy.mockRestore()
+    }
+  })
+
+  it('dims bubbles that do not match the query but keeps them clickable', () => {
+    render(
+      <RecentBubbles
+        bubbles={[bubble('Apps'), bubble('Backups')]}
+        query="back"
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Apps' })).toHaveClass(
+      'opacity-60',
+    )
+    expect(screen.getByRole('button', { name: 'Backups' })).not.toHaveClass(
+      'opacity-60',
+    )
+  })
+})

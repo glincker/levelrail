@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { LockGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
+import { shortcutLabel } from '@/lib/platform'
 import { fuzzyMatchIndices } from '@/lib/fuzzy'
 import { spanIndices } from '@/lib/paletteGroups'
 import type { SearchSpan } from '@/queries/search'
@@ -217,6 +218,10 @@ export function PaletteFooter({ children }: { children?: React.ReactNode }) {
         <span className={hint}>
           <Kbd>Tab</Kbd>
           {t('footer.secondary')}
+        </span>
+        <span className={hint}>
+          <Kbd>{shortcutLabel('alt', '1')}</Kbd>
+          {t('footer.groups')}
         </span>
         <span className={hint}>
           <Kbd>Esc</Kbd>

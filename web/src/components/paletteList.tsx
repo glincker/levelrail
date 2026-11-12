@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { shortcutLabel } from '@/lib/platform'
 import type { PaletteItem } from './commandPaletteData'
 import { ResultRow } from './commandPaletteEntries'
 
@@ -21,7 +22,9 @@ function Header({ label, shortcut }: { label: string; shortcut?: number }) {
     >
       {label}
       {shortcut && shortcut <= GROUP_SHORTCUTS ? (
-        <span className="font-mono text-xs opacity-70">⌥{shortcut}</span>
+        <span className="font-mono text-xs opacity-70">
+          {shortcutLabel('alt', String(shortcut))}
+        </span>
       ) : null}
     </p>
   )

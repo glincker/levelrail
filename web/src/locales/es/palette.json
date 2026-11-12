@@ -85,7 +85,8 @@
     "navigate": "navegar",
     "select": "seleccionar",
     "secondary": "secundario",
-    "close": "cerrar"
+    "close": "cerrar",
+    "groups": "grupos"
   },
   "keyboardShortcuts": "Atajos de teclado",
   "keyboardShortcutsKeywords": "navegación rápida mantener l ir a",
@@ -275,5 +276,10 @@
   },
   "clearInput": "Borrar búsqueda",
   "resultCount_one": "{{count}} resultado",
-  "resultCount_other": "{{count}} resultados"
+  "resultCount_other": "{{count}} resultados",
+  "drag": {
+    "label": "Mover la paleta",
+    "hint": "Arrastra para mover, o mantén Alt u Option con las flechas. Añade Mayús para saltar a un borde. Inicio la centra.",
+    "moved": "Movida a {{x}}, {{y}}"
+  }
 }

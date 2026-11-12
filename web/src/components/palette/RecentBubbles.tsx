@@ -6,6 +6,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { shortcutLabel } from '@/lib/platform'
+import { fuzzyMatchIndices } from '@/lib/fuzzy'
 import { Kbd } from '../commandPaletteEntries'
 
 export interface Bubble {
@@ -29,7 +31,13 @@ const STAGGER = [
 ]
 
 // Round quick links next to the search pill. Alt+number picks one while the results panel is closed.
-export function RecentBubbles({ bubbles }: { bubbles: Bubble[] }) {
+export function RecentBubbles({
+  bubbles,
+  query = '',
+}: {
+  bubbles: Bubble[]
+  query?: string
+}) {
   const { t } = useTranslation('palette')
   if (bubbles.length === 0) return null
   return (
@@ -48,9 +56,12 @@ export function RecentBubbles({ bubbles }: { bubbles: Bubble[] }) {
                 aria-keyshortcuts={`Alt+${i + 1}`}
                 onClick={b.onPick}
                 className={cn(
-                  'palette-pill flex size-11 items-center justify-center rounded-full text-foreground outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-6',
+                  'palette-pill flex size-11 transition-[transform,opacity] active:scale-95 items-center justify-center rounded-full text-foreground outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-6',
                   'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-50 motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-safe:fill-mode-backwards',
                   STAGGER[i] ?? 'delay-300',
+                  query.trim() !== '' &&
+                    fuzzyMatchIndices(query, b.label).length === 0 &&
+                    'opacity-60',
                 )}
               />
             }
@@ -59,7 +70,7 @@ export function RecentBubbles({ bubbles }: { bubbles: Bubble[] }) {
           </TooltipTrigger>
           <TooltipContent side="bottom">
             {b.label}
-            <Kbd>{`Alt+${i + 1}`}</Kbd>
+            <Kbd>{shortcutLabel('alt', String(i + 1))}</Kbd>
           </TooltipContent>
         </Tooltip>
       ))}
