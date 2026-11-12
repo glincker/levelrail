@@ -134,6 +134,9 @@ type SecretSources interface {
 // connection's allow lists for the service's environment before any read. An error blocks the container.
 type SecretRefGuard interface {
 	CheckRef(ctx context.Context, envID, conn, path string) error
+	// CheckUnvettedRef is the stricter check for a reference no gated write vetted: only a
+	// connection that delegates this environment and path may serve it.
+	CheckUnvettedRef(ctx context.Context, envID, conn, path string) error
 }
 
 // ProjectEnvStore is the narrow surface this controller needs to
@@ -1871,8 +1874,17 @@ func (c *Controller) resolveSecretRefEnv(ctx context.Context, envID string, refs
 	slices.Sort(keys)
 	for _, envVar := range keys {
 		r := refs[envVar]
-		if g, ok := src.(SecretRefGuard); ok {
+		g, guarded := src.(SecretRefGuard)
+		if guarded {
 			if err := g.CheckRef(ctx, envID, r.Conn, r.Path); err != nil {
+				return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
+			}
+		}
+		if r.Unvetted {
+			if !guarded {
+				return nil, fmt.Errorf("env var %q (secret reference %s): reference was not set through the API and cannot be vetted", envVar, r.SecretRef())
+			}
+			if err := g.CheckUnvettedRef(ctx, envID, r.Conn, r.Path); err != nil {
 				return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
 			}
 		}

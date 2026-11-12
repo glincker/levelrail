@@ -186,7 +186,7 @@ func vaultEnvRefs(env map[string]spec.EnvVar) (map[string]store.VaultEnvRef, err
 			if err != nil {
 				return nil, fmt.Errorf("env var %q: %w", k, err)
 			}
-			out[k] = store.VaultEnvRef{Conn: conn, Path: path, Key: key, Version: ver}
+			out[k] = store.VaultEnvRef{Conn: conn, Path: path, Key: key, Version: ver, Unvetted: true}
 			continue
 		}
 		out[k] = store.VaultEnvRef{Path: v.Vault.Path, Key: v.Vault.Key}
@@ -424,4 +424,26 @@ func checkVolumeOwners(ctx context.Context, st any, d store.DesiredService) erro
 		}
 	}
 	return nil
+}
+
+// keepVettedRefs clears the Unvetted mark on a reference identical to one already stored and
+// vetted, so a redeploy of a root-bound reference keeps working. The deploy pipeline has no actor.
+func (p *Pipeline) keepVettedRefs(ctx context.Context, d *store.DesiredService) {
+	g, ok := p.store.(interface {
+		GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	})
+	if !ok {
+		return
+	}
+	prev, err := g.GetDesiredService(ctx, d.Name)
+	if err != nil || prev == nil {
+		return
+	}
+	for k, r := range d.VaultEnv {
+		old, found := prev.VaultEnv[k]
+		if r.Unvetted && found && !old.Unvetted && old.Conn == r.Conn && old.Path == r.Path && old.Key == r.Key && old.Version == r.Version {
+			r.Unvetted = false
+			d.VaultEnv[k] = r
+		}
+	}
 }

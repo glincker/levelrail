@@ -52,6 +52,12 @@ type Config struct {
 	BaseURL     string `json:"base_url,omitempty"`
 }
 
+// EnvIndex looks environments up by id or name.
+type EnvIndex interface {
+	GetEnvironment(ctx context.Context, id string) (store.Environment, error)
+	EnvironmentIDsByName(ctx context.Context, name string) ([]string, error)
+}
+
 // Connection is one named source; it never carries a credential value.
 type Connection struct {
 	Name          string
@@ -107,7 +113,9 @@ type Service struct {
 	VaultRes *vault.Resolver
 	ProvRes  *secretprovider.Resolver
 	ProvTun  func(context.Context) secretprovider.Tunables
-	Now      func() time.Time
+	// Envs resolves allowed_envs to environment ids; without it an env list cannot be saved or served.
+	Envs EnvIndex
+	Now  func() time.Time
 	// Build overrides adapter construction, for tests only.
 	Build func(Connection) secretsource.Provider
 
@@ -303,23 +311,25 @@ func (s *Service) Create(ctx context.Context, actor, name string, in Input) (Con
 			return Connection{}, err
 		}
 	}
-	pol, err := NormalizePolicy(in.mergePolicy(Policy{}))
+	pol, err := s.savedPolicy(ctx, in.Type, in.mergePolicy(Policy{}), true)
 	if err != nil {
 		return Connection{}, err
 	}
 	raw, _ := json.Marshal(cfg)
 	row := store.SecretConnection{Name: name, Type: in.Type, Config: string(raw), CredentialRef: in.CredentialRef, Policy: policyJSON(pol), CreatedBy: actor}
-	if in.Credential != "" {
-		if err := s.Secrets.SetValue(ctx, SecretsOwner, tokenKey(name), in.Credential); err != nil {
-			return Connection{}, fmt.Errorf("save connection credential: %w", err)
-		}
-	}
+	// The row goes in first so a losing concurrent create fails here, before it can write or
+	// delete the winner's credential.
 	if err := s.Rows.CreateSecretConnection(ctx, row); err != nil {
-		_ = s.Secrets.DeleteValue(ctx, SecretsOwner, tokenKey(name))
 		if errors.Is(err, store.ErrSecretConnectionExists) {
 			return Connection{}, ErrConflict
 		}
 		return Connection{}, err
+	}
+	if in.Credential != "" {
+		if err := s.Secrets.SetValue(ctx, SecretsOwner, tokenKey(name), in.Credential); err != nil {
+			_ = s.Rows.DeleteSecretConnection(ctx, name) // this call created the row, so it removes it
+			return Connection{}, fmt.Errorf("save connection credential: %w", err)
+		}
 	}
 	if err := s.Sync(ctx); err != nil {
 		return Connection{}, err
@@ -352,7 +362,7 @@ func (s *Service) Update(ctx context.Context, name string, in Input) (Connection
 	if err := validateCredential(cur.Type, in.Credential); err != nil {
 		return Connection{}, err
 	}
-	pol, err := NormalizePolicy(in.mergePolicy(cur.Policy))
+	pol, err := s.savedPolicy(ctx, cur.Type, in.mergePolicy(cur.Policy), in.AllowedEnvs != nil)
 	if err != nil {
 		return Connection{}, err
 	}
@@ -562,4 +572,23 @@ func (s *Service) rowCredential(ctx context.Context, r store.SecretConnection) (
 		return s.Secrets.Resolve(ctx, svc, key)
 	}
 	return s.Secrets.Resolve(ctx, SecretsOwner, tokenKey(r.Name))
+}
+
+// savedPolicy validates a policy for storage: Doppler cannot delegate by prefix, and env names
+// are resolved to ids now. resolve forces a fresh resolution; otherwise stored ids are kept.
+func (s *Service) savedPolicy(ctx context.Context, typ string, p Policy, resolve bool) (Policy, error) {
+	pol, err := NormalizePolicy(p)
+	if err != nil {
+		return Policy{}, err
+	}
+	if typ == TypeDoppler && len(pol.AllowedPrefixes) > 0 {
+		return Policy{}, invalid("allowed_prefixes cannot narrow a Doppler connection, which is scoped by project and config; use a Vault, Infisical or 1Password connection to delegate")
+	}
+	if len(pol.AllowedEnvs) > 0 && (resolve || len(pol.AllowedEnvIDs) == 0) {
+		if pol.AllowedEnvIDs, err = s.resolveEnvIDs(ctx, pol.AllowedEnvs); err != nil {
+			return Policy{}, err
+		}
+		return NormalizePolicy(pol)
+	}
+	return pol, nil
 }

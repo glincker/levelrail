@@ -65,6 +65,9 @@ func (m *memRows) GetSecretConnection(_ context.Context, n string) (store.Secret
 	return r, nil
 }
 func (m *memRows) CreateSecretConnection(_ context.Context, c store.SecretConnection) error {
+	if _, ok := m.rows[c.Name]; ok {
+		return store.ErrSecretConnectionExists
+	}
 	m.rows[c.Name] = c
 	return nil
 }

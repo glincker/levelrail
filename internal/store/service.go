@@ -173,6 +173,9 @@ type VaultEnvRef struct {
 	Key     string `json:"key"`
 	Conn    string `json:"conn,omitempty"`
 	Version int    `json:"version,omitempty"`
+	// Unvetted marks a reference written by the deploy pipeline, which has no actor to check
+	// against a connection's allow lists. Only gated API writes leave it false.
+	Unvetted bool `json:"unvetted,omitempty"`
 }
 
 // SecretRef returns the connection reference text, or "" for a legacy ref.

@@ -244,3 +244,22 @@ func scopeOrProject(s string) string {
 	}
 	return s
 }
+
+// EnvironmentIDsByName returns the ids of every environment with this name, case-insensitively,
+// across projects. Names are unique only within a project.
+func (db *DB) EnvironmentIDsByName(ctx context.Context, name string) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `SELECT id FROM environments WHERE lower(name) = lower(?) ORDER BY id`, name)
+	if err != nil {
+		return nil, fmt.Errorf("store: find environments named %q: %w", name, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("store: scan environment id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}

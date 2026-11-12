@@ -19,7 +19,7 @@ func newConnRouter(t *testing.T) (*Router, *store.DB) {
 	rt, db := newTestRouter(t)
 	sec := &fakeProviderSecrets{vals: map[string]string{}, fail: map[string]error{}}
 	rt.SetSecretConnections(&secretconn.Service{
-		Rows: db, Secrets: sec, Vault: db, Sources: secretsource.NewResolver(),
+		Rows: db, Envs: db, Secrets: sec, Vault: db, Sources: secretsource.NewResolver(),
 		VaultRes: vault.NewResolver(), ProvRes: secretprovider.NewResolver(),
 		ProvTun: secretprovider.TunablesFrom(nil),
 	})

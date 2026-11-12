@@ -89,8 +89,16 @@ func (a testRefSources) ResolveRef(ctx context.Context, conn, path, key string, 
 
 type guardedRefSources struct {
 	testRefSources
-	err error
-	got string
+	err        error
+	unvettedOK bool
+	got        string
+}
+
+func (g *guardedRefSources) CheckUnvettedRef(context.Context, string, string, string) error {
+	if g.unvettedOK {
+		return nil
+	}
+	return secretsource.ErrDenied
 }
 
 func (g *guardedRefSources) CheckRef(_ context.Context, envID, conn, path string) error {
@@ -118,5 +126,29 @@ func TestSecretRefGuardBlocksBeforeAnyRead(t *testing.T) {
 	}
 	if rt.lastCreateEnv["API"] != "" || strings.Contains(err.Error(), refCanary) {
 		t.Fatal("no value may be read or shown when the guard denies")
+	}
+}
+
+// A reference written by the deploy pipeline has no vetting actor, so only a delegating connection serves it.
+func TestUnvettedSecretRefBlockedUnlessConnectionDelegates(t *testing.T) {
+	fake := secretsource.NewFake("prod").Set("apps/web", "api", refCanary)
+	res := secretsource.NewResolver()
+	if err := res.Register("prod", fake); err != nil {
+		t.Fatal(err)
+	}
+	ref := store.VaultEnvRef{Conn: "prod", Path: "apps/web", Key: "api", Unvetted: true}
+	for _, ok := range []bool{false, true} {
+		desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, EnvironmentID: "env-1",
+			VaultEnv: map[string]store.VaultEnvRef{"API": ref}}
+		g := &guardedRefSources{testRefSources: testRefSources{res}, unvettedOK: ok}
+		rt := newFakeRuntime(0)
+		c := New("web", &fakeStore{svc: desired}, rt, WithSecretSources(func() SecretSources { return g }))
+		_, err := c.Reconcile(context.Background())
+		if ok != (err == nil) {
+			t.Fatalf("delegating=%v err=%v", ok, err)
+		}
+		if !ok && rt.lastCreateEnv["API"] != "" {
+			t.Fatal("no value may be read for a denied unvetted reference")
+		}
 	}
 }

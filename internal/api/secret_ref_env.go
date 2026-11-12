@@ -25,15 +25,7 @@ func (rt *Router) secretRefInPrefixAllowList(ctx context.Context, envID string, 
 	if !ok {
 		return false
 	}
-	envName := ""
-	if envID != "" && rt.environments != nil {
-		env, err := rt.environments.GetEnvironment(ctx, envID)
-		if err != nil {
-			return false
-		}
-		envName = env.Name
-	}
-	return p.DelegatedRefAllowed(ctx, ref.Conn, envName, ref.Path)
+	return p.DelegatedRefAllowed(ctx, ref.Conn, envID, ref.Path)
 }
 
 // allowSecretRefs writes 403 and returns false when the caller may not point an app in envID at

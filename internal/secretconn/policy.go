@@ -13,29 +13,34 @@ import (
 )
 
 // Policy narrows what a connection serves. Prefixes are path prefixes on whole
-// segments; Envs are environment names. Both empty means no restriction.
+// segments; Envs are the names or ids an operator typed, and EnvIDs are what they resolved to
+// at save. Only ids are compared, since names are not unique. Both empty means no restriction.
 type Policy struct {
 	AllowedPrefixes []string `json:"allowed_prefixes,omitempty"`
 	AllowedEnvs     []string `json:"allowed_envs,omitempty"`
+	AllowedEnvIDs   []string `json:"allowed_env_ids,omitempty"`
 }
 
 // IsZero reports whether no allow list is set.
-func (p Policy) IsZero() bool { return len(p.AllowedPrefixes) == 0 && len(p.AllowedEnvs) == 0 }
+func (p Policy) IsZero() bool {
+	return len(p.AllowedPrefixes) == 0 && len(p.AllowedEnvs) == 0 && len(p.AllowedEnvIDs) == 0
+}
+
+func (p Policy) envRestricted() bool { return len(p.AllowedEnvs) > 0 || len(p.AllowedEnvIDs) > 0 }
 
 // Delegable reports whether the lists are complete enough to let a non root writer use the connection.
-func (p Policy) Delegable() bool { return len(p.AllowedPrefixes) > 0 && len(p.AllowedEnvs) > 0 }
+func (p Policy) Delegable() bool { return len(p.AllowedPrefixes) > 0 && p.envRestricted() }
 
-// EnvAllowed matches an environment name case-insensitively; an empty list allows any.
-func (p Policy) EnvAllowed(env string) bool {
-	if len(p.AllowedEnvs) == 0 {
+// EnvAllowed matches an environment id against the resolved ids; an unrestricted policy allows any.
+func (p Policy) EnvAllowed(envID string) bool {
+	if !p.envRestricted() {
 		return true
 	}
-	env = strings.ToLower(strings.TrimSpace(env))
-	if env == "" {
+	if envID == "" {
 		return false
 	}
-	for _, e := range p.AllowedEnvs {
-		if strings.ToLower(e) == env {
+	for _, id := range p.AllowedEnvIDs {
+		if id == envID {
 			return true
 		}
 	}
@@ -113,6 +118,14 @@ func NormalizePolicy(p Policy) (Policy, error) {
 			out.AllowedEnvs = append(out.AllowedEnvs, env)
 		}
 	}
+	seen = map[string]bool{}
+	for _, raw := range p.AllowedEnvIDs {
+		if id := strings.TrimSpace(raw); id != "" && !seen[id] {
+			seen[id] = true
+			out.AllowedEnvIDs = append(out.AllowedEnvIDs, id)
+		}
+	}
+	sort.Strings(out.AllowedEnvIDs)
 	sort.Strings(out.AllowedPrefixes)
 	sort.Strings(out.AllowedEnvs)
 	return out, nil
@@ -129,19 +142,72 @@ func policyJSON(p Policy) string {
 	return string(b)
 }
 
+// resolveEnvIDs turns the operator's names or ids into environment ids. A name that matches
+// several environments, or none, is refused so a look-alike environment can never inherit access.
+func (s *Service) resolveEnvIDs(ctx context.Context, entries []string) ([]string, error) {
+	if len(entries) == 0 {
+		return nil, nil
+	}
+	if s.Envs == nil {
+		return nil, fmt.Errorf("%w: environment lookup unavailable", secretsource.ErrFailClosed)
+	}
+	var ids []string
+	for _, e := range entries {
+		if env, err := s.Envs.GetEnvironment(ctx, e); err == nil {
+			ids = append(ids, env.ID)
+			continue
+		}
+		found, err := s.Envs.EnvironmentIDsByName(ctx, e)
+		if err != nil {
+			return nil, fmt.Errorf("%w: environment lookup failed", secretsource.ErrFailClosed)
+		}
+		if len(found) != 1 {
+			return nil, invalid("allowed environment %q matches %d environments; give its environment id", e, len(found))
+		}
+		ids = append(ids, found[0])
+	}
+	return ids, nil
+}
+
+// effectiveEnvIDs is the id list a check compares against. A policy saved before ids existed
+// is resolved from its names now, and any ambiguity denies.
+func (s *Service) effectiveEnvIDs(ctx context.Context, p Policy) (Policy, error) {
+	if len(p.AllowedEnvIDs) > 0 || len(p.AllowedEnvs) == 0 {
+		return p, nil
+	}
+	ids, err := s.resolveEnvIDs(ctx, p.AllowedEnvs)
+	if err != nil {
+		return p, err
+	}
+	p.AllowedEnvIDs = ids
+	return p, nil
+}
+
 // DelegatedRefAllowed is the set-time check for a writer without root: the connection must
-// carry both lists, the environment must be listed and the path must sit inside a prefix.
-func (s *Service) DelegatedRefAllowed(ctx context.Context, conn, env, path string) bool {
+// carry both lists, the environment id must be listed and the path must sit inside a prefix.
+func (s *Service) DelegatedRefAllowed(ctx context.Context, conn, envID, path string) bool {
 	c, err := s.Get(ctx, conn)
-	if err != nil || c.Legacy {
+	if err != nil || c.Legacy || c.Type == TypeDoppler {
 		return false
 	}
-	return c.Policy.Delegable() && c.Policy.EnvAllowed(env) && c.Policy.PathAllowed(path)
+	pol, err := s.effectiveEnvIDs(ctx, c.Policy)
+	if err != nil {
+		return false
+	}
+	return pol.Delegable() && pol.EnvAllowed(envID) && pol.PathAllowed(path)
+}
+
+// CheckUnvettedRef gates a reference no actor vetted: only a delegating connection serves it.
+func (s *Service) CheckUnvettedRef(ctx context.Context, conn, envID, path string) error {
+	if !s.DelegatedRefAllowed(ctx, conn, envID, path) {
+		return fmt.Errorf("%w: reference to connection %s was not set by root or inside its allow lists; set it again through the API", secretsource.ErrDenied, conn)
+	}
+	return nil
 }
 
 // CheckResolve is the resolve-time gate. A connection without a policy is unrestricted; one with
 // a policy serves only listed environments and paths, and any lookup failure denies.
-func (s *Service) CheckResolve(ctx context.Context, conn, env, path string) error {
+func (s *Service) CheckResolve(ctx context.Context, conn, envID, path string) error {
 	c, err := s.Get(ctx, conn)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
@@ -152,10 +218,14 @@ func (s *Service) CheckResolve(ctx context.Context, conn, env, path string) erro
 	if c.Policy.IsZero() {
 		return nil
 	}
-	if !c.Policy.EnvAllowed(env) {
+	pol, err := s.effectiveEnvIDs(ctx, c.Policy)
+	if err != nil {
+		return fmt.Errorf("%w: connection %s environment list cannot be resolved", secretsource.ErrFailClosed, conn)
+	}
+	if !pol.EnvAllowed(envID) {
 		return fmt.Errorf("%w: connection %s does not allow this environment (see its allowed_envs)", secretsource.ErrDenied, conn)
 	}
-	if !c.Policy.PathAllowed(path) {
+	if !pol.PathAllowed(path) {
 		return fmt.Errorf("%w: connection %s does not allow this path (see its allowed_prefixes)", secretsource.ErrDenied, conn)
 	}
 	return nil
@@ -170,6 +240,7 @@ func (in Input) mergePolicy(base Policy) Policy {
 	}
 	if in.AllowedEnvs != nil {
 		base.AllowedEnvs = *in.AllowedEnvs
+		base.AllowedEnvIDs = nil // re-resolved at save
 	}
 	return base
 }

@@ -159,8 +159,8 @@ func TestDelegatedSecretRefWriteHonoursConnectionLists(t *testing.T) {
 	seedPolicyApp(t, rt, db, "production")
 	svc := rt.secretConns.(*secretconn.Service)
 	svc.Build = func(secretconn.Connection) secretsource.Provider { return secretsource.NewFake("team") }
-	prefixes, envs := []string{"team-a"}, []string{"production"}
-	if _, err := svc.Create(context.Background(), "root", "team", secretconn.Input{Type: secretconn.TypeDoppler, Credential: "tok",
+	prefixes, envs := []string{"team-a"}, []string{"env-production"}
+	if _, err := svc.Create(context.Background(), "root", "team", secretconn.Input{Type: secretconn.TypeInfisical, Credential: "tok",
 		Config: secretconn.Config{Project: "p", Environment: "e"}, AllowedPrefixes: &prefixes, AllowedEnvs: &envs}); err != nil {
 		t.Fatal(err)
 	}
