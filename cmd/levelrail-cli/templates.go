@@ -138,7 +138,7 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tLICENSE\tTRUST\tRAM\tGPU\tVERIFIED\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), t.Slogan)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts)+previewMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), t.Slogan)
 	}
 	_ = tw.Flush()
 }
@@ -146,6 +146,14 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 func deprecatedMark(f apiclient.TemplateFacts) string {
 	if f.Status == "deprecated" || f.Status == "yanked" {
 		return " [" + f.Status + "]"
+	}
+	return ""
+}
+
+// previewMark flags an entry with no real-engine pass yet; it stays installable.
+func previewMark(f apiclient.TemplateFacts) string {
+	if f.Preview {
+		return " [preview]"
 	}
 	return ""
 }

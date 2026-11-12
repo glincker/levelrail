@@ -348,6 +348,10 @@
       "anyLicense": "Cualquier licencia",
       "arch": "Arquitectura",
       "anyArch": "Cualquier arquitectura"
+    },
+    "preview": {
+      "badge": "Vista previa",
+      "hint": "Aún sin probar en una ejecución real del motor. Se instala igual; avisa si algo falla."
     }
   },
   "importTemplate": {

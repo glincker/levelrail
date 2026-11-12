@@ -348,6 +348,10 @@
       "anyLicense": "Any license",
       "arch": "Architecture",
       "anyArch": "Any architecture"
+    },
+    "preview": {
+      "badge": "Preview",
+      "hint": "Not tested on a real engine run yet. It still installs; please report issues."
     }
   },
   "importTemplate": {

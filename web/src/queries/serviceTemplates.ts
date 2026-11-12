@@ -74,6 +74,8 @@ export interface TemplateFacts {
   status?: 'active' | 'deprecated' | 'yanked'
   status_reason?: string
   replaced_by?: string
+  // No real-engine pass recorded yet; still installable.
+  preview?: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus

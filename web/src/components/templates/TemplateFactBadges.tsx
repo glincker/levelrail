@@ -1,6 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { BadgeCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import {
+  BadgeCheckGlassIcon,
+  FlaskConicalGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { TemplateFacts } from '../../queries/serviceTemplates'
 
@@ -25,7 +29,8 @@ export function TemplateFactBadges({
   const license = facts.license
   const verification = facts.verification
   const deprecated = isDeprecated(facts)
-  if (!license && !verification && !deprecated) return null
+  const preview = facts.preview === true
+  if (!license && !verification && !deprecated && !preview) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -47,6 +52,16 @@ export function TemplateFactBadges({
             arches: verification.arches.join(', '),
             tag: verification.tag,
           })}
+        </Badge>
+      ) : null}
+      {preview ? (
+        <Badge
+          variant="muted"
+          className="gap-1 text-xs"
+          title={t('facts.preview.hint')}
+        >
+          <FlaskConicalGlassIcon className="size-4.5" aria-hidden="true" />
+          {t('facts.preview.badge')}
         </Badge>
       ) : null}
       {deprecated ? (

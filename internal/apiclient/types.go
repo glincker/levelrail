@@ -1803,6 +1803,7 @@ type TemplateFacts struct {
 	Status       string                `json:"status,omitempty"`
 	StatusReason string                `json:"status_reason,omitempty"`
 	ReplacedBy   string                `json:"replaced_by,omitempty"`
+	Preview      bool                  `json:"preview,omitempty"`
 }
 
 // TemplateLicense is the stated license and its class.
