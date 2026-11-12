@@ -4,6 +4,50 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.0.1" description="2026-11-12">
+**Features**
+
+* 12 more proven multi-service templates (database tools, apps with sidecars)
+* 12 more proven templates (envoy, telegraf, coredns, fluent-bit, dex, libsql, blocky, ejabberd, promptfoo, zot, livebook, karma)
+* 2 more proven templates (syncthing-discovery, syncthing-relay)
+* 4 more proven templates (oauth2-proxy, jupyterhub, agentgateway, lightrag)
+* 6 more proven templates (upsnap, vector, tika, webdav, picoshare, ttyd) and the timberio publisher
+* 8 more proven templates (mimir, netbootxyz, fenrus, bifrost, falkordb, crowdsec, wyoming-piper, wyoming-openwakeword)
+* 9 more proven templates (kellnr, sonic, krakend, sqlpad, traggo, smtp4dev, inbucket, matterbridge, ocis)
+* apply approved template capability grants to containers
+* file input textarea and capability row in the template install form
+* file-input templates ddns-updater, unpoller, anubis, livekit, notifiarr, tempo
+* flag templates without a real-engine pass as preview, with a ledger-driven generator
+* guard, cache and renew vault connections
+* Levelrail v1.0.1 stable launch (#1486)
+* more proven templates, root layout tidy and ADR cleanup
+* named secret connections with vault, doppler, infisical and 1password adapters
+* prefix and environment allow lists for secret connections and a vault-required policy
+* preview cloud connections with a provider interface, store and API
+* proven templates, capabilities, verified publishers and flexible healthchecks
+* secret reference parser and provider interface
+* secret references in app specs, the reconciler and IaC
+* template capability tiers with declared grants and audit
+* template file inputs and generated secret files, haproxy proof
+
+
+**Bug Fixes**
+
+* allow private vault addresses by default for admin-set connections
+* bind the vault template internally and add an openbao template
+* check error returns in test shutdown waits (errcheck)
+* check reconcile test errors and raise catalog chunk budgets for the larger template catalog
+* check the engine run result in reconcile tests (errcheck)
+* flowise templates boot past session init with generated auth secrets
+* gate deploy-written secret refs, bind allowed_envs to environment ids, refuse Doppler delegation, create connection row before credential
+* give the CI web build the same node heap as the release build
+* key the app resource usage read cache per router
+* pending changes, failure visibility and probe depth for secret references
+* prove media and storage templates
+* qbittorrent template healthy on first start
+* tolerate gRPC Canceled in live tests, regen changelog docs, raise MCP token budgets
+</Update>
+
 <Update label="0.9.6" description="2026-11-10">
 **Features**
 
