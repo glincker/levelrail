@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.0.1](https://github.com/glincker/levelrail/compare/v0.9.6...v1.0.1) (2026-11-12)
+
+
+### Features
+
+* 12 more proven multi-service templates (database tools, apps with sidecars) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* 12 more proven templates (envoy, telegraf, coredns, fluent-bit, dex, libsql, blocky, ejabberd, promptfoo, zot, livebook, karma) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* 2 more proven templates (syncthing-discovery, syncthing-relay) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* 4 more proven templates (oauth2-proxy, jupyterhub, agentgateway, lightrag) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* 6 more proven templates (upsnap, vector, tika, webdav, picoshare, ttyd) and the timberio publisher ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* 8 more proven templates (mimir, netbootxyz, fenrus, bifrost, falkordb, crowdsec, wyoming-piper, wyoming-openwakeword) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* 9 more proven templates (kellnr, sonic, krakend, sqlpad, traggo, smtp4dev, inbucket, matterbridge, ocis) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* apply approved template capability grants to containers ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* file input textarea and capability row in the template install form ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* file-input templates ddns-updater, unpoller, anubis, livekit, notifiarr, tempo ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* flag templates without a real-engine pass as preview, with a ledger-driven generator ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* guard, cache and renew vault connections ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* Levelrail v1.0.1 stable launch ([#1486](https://github.com/glincker/levelrail/issues/1486)) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* more proven templates, root layout tidy and ADR cleanup ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* named secret connections with vault, doppler, infisical and 1password adapters ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* prefix and environment allow lists for secret connections and a vault-required policy ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* preview cloud connections with a provider interface, store and API ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* proven templates, capabilities, verified publishers and flexible healthchecks ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* secret reference parser and provider interface ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* secret references in app specs, the reconciler and IaC ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* template capability tiers with declared grants and audit ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* template file inputs and generated secret files, haproxy proof ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+
+
+### Bug Fixes
+
+* allow private vault addresses by default for admin-set connections ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* bind the vault template internally and add an openbao template ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* check error returns in test shutdown waits (errcheck) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* check reconcile test errors and raise catalog chunk budgets for the larger template catalog ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* check the engine run result in reconcile tests (errcheck) ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* flowise templates boot past session init with generated auth secrets ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* gate deploy-written secret refs, bind allowed_envs to environment ids, refuse Doppler delegation, create connection row before credential ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* give the CI web build the same node heap as the release build ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* key the app resource usage read cache per router ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* pending changes, failure visibility and probe depth for secret references ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* prove media and storage templates ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* qbittorrent template healthy on first start ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+* tolerate gRPC Canceled in live tests, regen changelog docs, raise MCP token budgets ([03cfba6](https://github.com/glincker/levelrail/commit/03cfba6652cc03ae4859ce17b97826208c190766))
+
 ## [0.9.6](https://github.com/glincker/levelrail/compare/v0.9.5...v0.9.6) (2026-11-10)
 
 
