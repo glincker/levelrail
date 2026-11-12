@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "title": "Budget de certificats",
+    "usage": "{{issued}} certificats sur {{warn}} au cours des {{days}} derniers jours",
+    "meterLabel": "Certificats émis au cours des {{days}} derniers jours",
+    "status": {
+      "ok": "Dans le budget",
+      "near": "Proche de la limite",
+      "over": "Au-dessus de la limite"
+    },
+    "body": {
+      "ok": "Beaucoup de marge avant le seuil d'avertissement.",
+      "near": "Les adresses automatiques consomment le budget Let's Encrypt partagé. Surveillez-le avant de deployer de nombreuses nouvelles apps.",
+      "over": "Les adresses automatiques consomment le budget Let's Encrypt partagé. La limitation de débit peut désormais faire échouer les premiers deploys jusqu'à ce que la fenêtre avance."
+    },
+    "threshold": "Avertir à",
+    "thresholdHelp": "S'applique immédiatement. Avertit seulement, rien n'est bloqué.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement",
+    "saved": "Enregistré",
+    "saveFailed": "Impossible d'enregistrer",
+    "invalid": "Saisissez un nombre entier supérieur ou égal à 1.",
+    "doctor": "Ouvrir le contrôle de santé",
+    "loadError": "Impossible de charger le budget de certificats.",
+    "retry": "Réessayer"
+  },
+  "autoHost": {
+    "title": "Apps utilisant une adresse automatique",
+    "help": "La désactiver supprime l'adresse automatique et son certificat pour cette app. Les domaines personnalisés ne sont pas affectés.",
+    "search": "Rechercher des apps",
+    "empty": "Aucune app pour l'instant. Créez une app et elle reçoit une adresse automatique par défaut.",
+    "noMatch": "Aucune app ne correspond à votre recherche.",
+    "name": "App",
+    "address": "Adresse",
+    "on": "Activée",
+    "off": "Désactivée",
+    "toggle": "Adresse automatique pour {{name}}",
+    "loadError": "Impossible de charger les apps.",
+    "retry": "Réessayer",
+    "showing": "{{shown}} affichées sur {{total}}",
+    "more": "Afficher plus"
+  }
+}

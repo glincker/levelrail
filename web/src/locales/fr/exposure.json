@@ -1,0 +1,73 @@
+{
+  "tableLabel": "Ports publiés",
+  "title": "Ports publiés",
+  "description": "Ports de containers publiés sur les interfaces réseau d'un serveur. Docker contourne ufw pour ceux-ci, donc un pare-feu qui semble actif ne les couvre pas.",
+  "probe": "Vérifier depuis l'extérieur",
+  "probing": "Vérification",
+  "probeNote": "Une vérification échouée est signalée comme non confirmée, jamais comme fermée : de nombreux routeurs empêchent un serveur de joindre sa propre adresse publique.",
+  "emptyTitle": "Rien de ce qui vous appartient n'est publié sur internet",
+  "emptyBody": "Aucun container de ce serveur n'écoute sur une adresse publique sans restriction.",
+  "nodeUnreachable": "Impossible d'auditer ce node : {{error}}",
+  "rulesUnreadable": "Impossible de lire la chaîne du pare-feu de l'hôte : {{reason}}",
+  "columns": {
+    "severity": "Gravité",
+    "port": "Port",
+    "container": "Container",
+    "owner": "Propriétaire",
+    "bind": "Écoute sur",
+    "state": "État"
+  },
+  "severity": {
+    "high": "Élevée",
+    "medium": "Moyenne",
+    "low": "Faible",
+    "info": "Info"
+  },
+  "class": {
+    "loopback": "Ce serveur uniquement",
+    "private": "Réseau privé",
+    "restricted": "Restreint",
+    "exposed": "Exposé",
+    "unknown": "Inconnu"
+  },
+  "owner": {
+    "database": "Base de données {{name}}",
+    "app": "App {{name}}",
+    "unmanaged": "Non géré"
+  },
+  "outside": {
+    "answers": "A répondu depuis l'extérieur de cet hôte",
+    "could_not_confirm": "Impossible de confirmer depuis cet hôte"
+  },
+  "restrictedTo": "Autorisé uniquement depuis : {{sources}}",
+  "details": "Détails",
+  "hideDetails": "Masquer les détails",
+  "restrict": "Autoriser uniquement ces sources",
+  "remove": "Retirer la restriction",
+  "removedToast": "Restriction retirée",
+  "appliedToast": "Restriction appliquée",
+  "failedToast": "Impossible de modifier le pare-feu",
+  "dialog": {
+    "title": "Restreindre le port {{port}}",
+    "description": "Seules les sources que vous listez peuvent se connecter. Tous les autres sont rejetés, y compris internet.",
+    "sources": "Sources autorisées",
+    "sourcesHint": "Une IP ou un CIDR par ligne, par exemple vos autres serveurs",
+    "localContainers": "Autoriser aussi les containers de ce serveur",
+    "preview": "Prévisualiser les règles",
+    "previewTitle": "Règles exactes",
+    "effect": "Ce qui sera rejeté",
+    "apply": "Appliquer la restriction",
+    "cancel": "Annuler",
+    "confirm": "Je comprends que ce trafic sera rejeté",
+    "persistence": "Persistance",
+    "lockoutTitle": "Risque de verrouillage",
+    "callerWarningTitle": "Votre adresse n'a pas été vérifiée",
+    "forceLockout": "J'accepte le risque et je veux l'appliquer quand même",
+    "autoRevert": "Cette règle est appliquée à l'essai et s'annule d'elle-même sauf si vous la conservez à l'étape suivante.",
+    "trialTitle": "Restriction appliquée à l'essai",
+    "trialBody": "Vérifiez que vous pouvez toujours joindre ce dont vous avez besoin. La règle s'annule à {{time}} sauf si vous la conservez.",
+    "keep": "Conserver cette règle",
+    "letRevert": "Laisser annuler",
+    "keptToast": "Restriction conservée"
+  }
+}

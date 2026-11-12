@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "pinned": "Épinglées",
+    "recentlyViewed": "Consultées récemment",
+    "troubleshooting": "Dépannage",
+    "allPages": "Toutes les pages",
+    "docsSite": "Site de documentation"
+  },
+  "pin": {
+    "label": "Épingler la page",
+    "tooltip": "Épingler cette page dans vos favoris"
+  },
+  "unpin": {
+    "label": "Désépingler la page",
+    "tooltip": "Retirer cette page de vos favoris"
+  },
+  "filter": {
+    "troubleshootingOnly": "Dépannage"
+  },
+  "toolbar": {
+    "export": "Exporter",
+    "copyMarkdown": "Copier la page en Markdown",
+    "viewSourceGitHub": "Voir la source sur GitHub",
+    "openDocsSite": "Ouvrir sur le site de documentation",
+    "copied": "Copié"
+  },
+  "offlineNotice": {
+    "title": "Copie hors ligne",
+    "description": "Ceci est la copie hors ligne intégrée à votre serveur, pour les cas où vous n'avez pas accès à internet. La dernière version de cette page se trouve sur le site de documentation.",
+    "dismiss": "Fermer"
+  },
+  "toc": {
+    "title": "Sur cette page"
+  },
+  "code": {
+    "copy": "Copier",
+    "copied": "Copié"
+  }
+}

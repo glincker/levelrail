@@ -1,0 +1,520 @@
+{
+  "loadBalancers": {
+    "loadError": "Impossible de charger les load balancers"
+  },
+  "loadBalancerPicker": {
+    "loadError": "Impossible de charger vos apps",
+    "loadErrorHint": "Fermez cette boîte de dialogue et réessayez."
+  },
+  "loadBalancerPage": {
+    "loadError": "Impossible de charger le load balancer",
+    "statusError": "Impossible de charger le statut des upstreams"
+  },
+  "healthTimeline": {
+    "loadError": "Impossible de charger l'historique des deploys",
+    "loadErrorHint": "La chronologie en a besoin. Réessayez dans un instant."
+  },
+  "mesh": {
+    "title": "Mesh WireGuard",
+    "loading": "Chargement de l'état du mesh...",
+    "disabledTitle": "Le réseau mesh n'est pas activé",
+    "disabledHint": "Définissez APP_MESH_ENABLED=1 sur ce plan de contrôle pour activer son interface WireGuard et la visibilité des pairs.",
+    "never": "Jamais",
+    "secondsAgo": "il y a {{count}} s",
+    "minutesAgo": "il y a {{count}} min",
+    "noMeshAddress": "Aucune adresse mesh pour l'instant",
+    "notPeered": "Pas encore appairé",
+    "healthy": "Sain",
+    "stale": "Périmé",
+    "noLivePeer": "Aucune entrée de pair active",
+    "backend": "Backend",
+    "unknown": "Inconnu",
+    "meshAddress": "Adresse mesh",
+    "notAssigned": "Non attribuée",
+    "publicKey": "Clé publique",
+    "notGenerated": "Pas encore générée",
+    "endpoint": "Endpoint",
+    "lastHandshake": "Dernier handshake",
+    "rotationConfirmed": "Dernier renouvellement confirmé : démarré {{started}}, confirmé {{confirmed}}",
+    "rotationConfirmedNoTime": "Dernier renouvellement confirmé : démarré {{started}}",
+    "rotationPending": "Dernier renouvellement en cours de confirmation : démarré {{started}}",
+    "noPeers": "Aucun pair configuré pour l'instant.",
+    "peersLabel": "Pairs du mesh",
+    "peer": "Pair",
+    "health": "Santé"
+  },
+  "lb": {
+    "header": {
+      "of": "sur",
+      "healthy": "sains",
+      "aboutAlgorithm": "À propos de cet algorithme",
+      "checkNow": "Contrôler maintenant",
+      "checkNowCooldown": "Contrôler maintenant ({{seconds}} s)",
+      "export": "Exporter",
+      "moreActions": "Plus d'actions",
+      "remove": "Supprimer le load balancer",
+      "removeHint": "Les domaines reviennent à un seul upstream"
+    },
+    "empty": {
+      "title": "Répartissez le trafic entre les réplicas",
+      "description": "Contrôles de santé, nouvelles tentatives et bascules propres. Le moins de connexions avec détection passive des échecs est un bon début. Ajoutez un contrôle de santé actif dès que votre app en expose un.",
+      "create": "Créer la configuration recommandée",
+      "creating": "Création",
+      "presets": "Ou partez d'un préréglage",
+      "diagram": "Configuration recommandée : clients, proxy, {{count}} réplicas",
+      "clients": "Clients",
+      "proxy": "Proxy"
+    },
+    "remove": {
+      "title": "Supprimer le load balancer ?",
+      "description": "Les domaines de {{app}} reviennent à un seul upstream. Les réplicas en cours ne sont pas touchés.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    },
+    "metrics": {
+      "healthy": "Sains",
+      "latency": "Latence",
+      "latencyInfo": "Médiane du dernier contrôle de santé sur les réplicas sains.",
+      "connections": "Connexions",
+      "connectionsInfo": "Requêtes ouvertes en ce moment, sur tous les réplicas."
+    },
+    "history": {
+      "none": "Aucun contrôle enregistré pour l'instant",
+      "passed": "{{when}} : réussi",
+      "passedIn": "{{when}} : réussi en {{ms}} ms",
+      "failed": "{{when}} : échoué",
+      "failedReason": "{{when}} : échoué, {{reason}}",
+      "failedStatus": "{{when}} : échoué, statut {{status}}"
+    },
+    "table": {
+      "label": "Upstreams",
+      "upstream": "Upstream",
+      "status": "Statut",
+      "latency": "Latence",
+      "traffic": "Trafic",
+      "conns": "Conn.",
+      "share": "Part",
+      "lastChecks": "12 derniers contrôles",
+      "latencyTrend": "Latence sur les 30 dernières minutes pour {{dial}}",
+      "noData": "aucune donnée pour l'instant",
+      "replica": "réplica {{replica}}",
+      "checked": "contrôlé",
+      "notChecked": "pas encore contrôlé",
+      "changed": "modifié",
+      "openConnections": "Connexions ouvertes",
+      "shareEstimated": "Part estimée, non mesurée",
+      "shareMeasured": "Part du trafic",
+      "actionsFor": "Actions pour {{name}}",
+      "viewDetails": "Voir les détails",
+      "viewDetailsHint": "Contrôles, changements et actions"
+    },
+    "drawer": {
+      "description": "Détails et actions de l'upstream",
+      "trafficShare": "Part du trafic",
+      "connections": "Connexions",
+      "failures": "Échecs",
+      "latency": "Latence",
+      "replica": "Réplica",
+      "node": "Node",
+      "local": "local",
+      "checked": "Contrôlé",
+      "actions": "Actions",
+      "recentChecks": "Contrôles récents",
+      "passed": "Réussi",
+      "failed": "Échoué",
+      "failedReason": "Échoué : {{reason}}",
+      "stateChanges": "Changements d'état",
+      "noChanges": "Aucun changement enregistré.",
+      "transition": "{{from}} vers {{to}}"
+    },
+    "export": {
+      "formats": "Format d'export",
+      "cdkHint": "Ceci est une classe de stack. Ajoutez-la à une app CDK et instanciez-la dans le point d'entrée de votre app, puis exécutez cdk deploy.",
+      "copy": "Copier",
+      "copied": "Copié",
+      "download": "Télécharger",
+      "contents": "Contenu de {{file}}",
+      "applyWith": "Appliquer avec",
+      "section": "Export",
+      "toggle": "Exporter sous forme de code"
+    },
+    "page": {
+      "loading": "Chargement du load balancer",
+      "reconcilerNote": "Le reconciler de l'ingress l'applique à son prochain passage.",
+      "undo": "Annuler",
+      "saveError": "Impossible d'enregistrer le load balancer.",
+      "applied": "Appliqué : {{title}}",
+      "applyError": "Impossible d'appliquer la suggestion.",
+      "unknownError": "Inconnue",
+      "checkFinished": "Contrôle terminé : {{ok}} réussis sur {{total}}",
+      "checkUnavailable": "Contrôler maintenant n'est pas encore disponible.",
+      "checkFailed": "Échec du contrôle.",
+      "adminError": "Impossible de mettre à jour l'upstream.",
+      "removed": "Load balancer supprimé.",
+      "removedHint": "{{app}} est de nouveau routée vers un seul upstream.",
+      "removeError": "Impossible de supprimer le load balancer.",
+      "created": "Load balancer créé.",
+      "saved": "Load balancer enregistré.",
+      "newTitle": "Nouveau load balancer",
+      "newHint": "Vérifiez les réglages, puis créez-le.",
+      "guide": "Guide du load balancing"
+    },
+    "algo": {
+      "label": "Algorithme d'équilibrage",
+      "about": "À propos de {{name}}",
+      "roundRobinUse": "Les requêtes coûtent à peu près la même chose.",
+      "roundRobinTradeoff": "Simple et équitable, mais ignore la charge d'un réplica.",
+      "leastConnUse": "La durée des requêtes varie.",
+      "leastConnTradeoff": "Équilibre la charge, un peu plus de comptabilité par requête.",
+      "ipHashUse": "Vous voulez que les clients restent sur le même réplica sans cookies.",
+      "ipHashTradeoff": "Les clients derrière un même proxy ou CDN arrivent tous sur un seul réplica.",
+      "clientIpHashUse": "Vous voulez une affinité par IP derrière un CDN ou un proxy.",
+      "clientIpHashTradeoff": "Nécessite APP_INGRESS_TRUSTED_PROXIES, sinon il équivaut au hash d'IP.",
+      "uriHashUse": "Les réplicas gardent des caches par chemin.",
+      "uriHashTradeoff": "Les chemins très sollicités peuvent surcharger un réplica.",
+      "cookieUse": "Les sessions vivent dans la mémoire du réplica.",
+      "cookieTradeoff": "Fixe un navigateur sur un réplica, donc une charge inégale est possible.",
+      "weightedUse": "Canaries ou réplicas de tailles différentes.",
+      "weightedTradeoff": "Vous maintenez les poids à la main.",
+      "round_robin": {
+        "label": "Round robin",
+        "description": "Chaque requête va au réplica suivant à tour de rôle."
+      },
+      "least_conn": {
+        "label": "Moins de connexions",
+        "description": "Envoie vers le réplica ayant le moins de requêtes actives."
+      },
+      "ip_hash": {
+        "label": "Hash d'IP",
+        "description": "La même adresse client atteint toujours le même réplica."
+      },
+      "client_ip_hash": {
+        "label": "Hash d'IP client",
+        "description": "Hache l'IP du client après le traitement des proxys de confiance, pour que les clients derrière un CDN se répartissent entre les réplicas."
+      },
+      "uri_hash": {
+        "label": "Hash d'URI",
+        "description": "Le même chemin atteint toujours le même réplica (favorable au cache)."
+      },
+      "cookie": {
+        "label": "Cookie d'affinité",
+        "description": "Un cookie fixe une session de navigateur sur un réplica."
+      },
+      "weighted": {
+        "label": "Pondéré",
+        "description": "Donne à chaque réplica une part du trafic, utile pour les canaries."
+      }
+    },
+    "bar": {
+      "region": "Modifications non enregistrées",
+      "risky": "Changement risqué",
+      "cancel": "Annuler",
+      "revert": "Rétablir",
+      "saving": "Enregistrement",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "confirmTitle": "Enregistrer les changements risqués ?",
+      "confirmHint": "Ils prennent effet immédiatement sur le trafic en direct.",
+      "keepEditing": "Continuer à modifier",
+      "saveAnyway": "Enregistrer quand même"
+    },
+    "configure": {
+      "section": "Configurer",
+      "toggle": "Configurer",
+      "traffic": "Trafic",
+      "health": "Santé",
+      "resilience": "Résilience",
+      "cookieName": "Nom du cookie",
+      "cookieNameInfo": "Le cookie qui fixe un navigateur sur un réplica.",
+      "presets": "Préréglages",
+      "about": "À propos de {{name}}"
+    },
+    "health": {
+      "active": "Contrôles actifs",
+      "activeInfo": "Sonde chaque réplica à intervalle régulier et cesse d'envoyer du trafic vers celui qui échoue.",
+      "path": "Chemin",
+      "pathInfo": "L'URL sondée sur chaque réplica. Elle doit répondre vite et ne dépendre que de l'app elle-même.",
+      "status": "Statut attendu",
+      "statusInfo": "Le statut HTTP qui compte comme une réussite. Vide accepte tout 2xx ou 3xx.",
+      "statusPlaceholder": "2xx ou 3xx",
+      "interval": "Intervalle",
+      "intervalInfo": "Fréquence de sondage de chaque réplica.",
+      "timeout": "Délai d'attente",
+      "timeoutInfo": "Durée d'attente d'une réponse. Doit être inférieure à l'intervalle.",
+      "fails": "Échecs pour déclarer hors service",
+      "failsInfo": "Sondes échouées consécutives avant qu'un réplica quitte le pool.",
+      "passes": "Réussites pour récupérer",
+      "passesInfo": "Sondes réussies consécutives avant qu'un réplica rejoigne le pool.",
+      "passive": "Contrôles passifs",
+      "passiveInfo": "Observe les vraies requêtes. Un réplica qui les fait échouer à répétition est ignoré un moment, plus vite que d'attendre la prochaine sonde.",
+      "maxFails": "Échecs avant d'ignorer",
+      "maxFailsInfo": "Requêtes échouées dans la fenêtre qui déclenchent une mise à l'écart.",
+      "skipFor": "Ignorer pendant",
+      "skipForInfo": "Durée pendant laquelle un réplica en échec est ignoré, et fenêtre dans laquelle les échecs sont comptés."
+    },
+    "resilience": {
+      "retries": "Nouvelles tentatives",
+      "retriesInfo": "Réessaie une requête échouée sur un autre réplica avant d'abandonner. Désactivez pour les flux qui ne peuvent pas être rejoués.",
+      "retryCountInfo": "Tentatives supplémentaires après la première. De 0 à 10.",
+      "giveUp": "Abandonner après",
+      "giveUpInfo": "Temps total passé à réessayer une requête.",
+      "requestTimeout": "Délai de requête",
+      "requestTimeoutInfo": "Durée d'attente qu'un réplica commence à répondre avant de faire échouer la requête.",
+      "drain": "Vidage lors du deploy",
+      "drainInfo": "Durée pendant laquelle les connexions ouvertes peuvent se terminer quand un réplica est remplacé lors d'un deploy.",
+      "rate": "Limite de débit",
+      "rateInfo": "Plafonne les requêtes par adresse client. Les clients au-delà de la limite reçoivent une réponse 429.",
+      "rps": "Requêtes par seconde",
+      "rpsInfo": "Débit soutenu autorisé pour chaque adresse client.",
+      "burst": "Rafale",
+      "burstInfo": "Requêtes supplémentaires autorisées lors d'un pic bref.",
+      "tls": "TLS vers les upstreams",
+      "tlsInfo": "Parle HTTPS aux réplicas au lieu de HTTP simple.",
+      "serverName": "Nom du serveur",
+      "serverNameInfo": "Nom que le certificat des réplicas doit correspondre.",
+      "skipVerify": "Ignorer la vérification",
+      "skipVerifyInfo": "Accepte n'importe quel certificat. Uniquement pour les tests : cela supprime la protection contre l'usurpation d'identité.",
+      "notVerified": "Certificats non vérifiés",
+      "verified": "Vérifié"
+    },
+    "weights": {
+      "split": "Répartition du trafic : {{parts}}",
+      "part": "réplica {{index}} {{share}} %",
+      "title": "Répartition du trafic",
+      "about": "À propos des poids",
+      "aboutBody": "Les poids suivent l'index du réplica. Un réplica de poids 3 reçoit trois fois plus de trafic qu'un réplica de poids 1.",
+      "replica": "Réplica {{index}}",
+      "weightFor": "Poids du réplica {{index}}",
+      "slowStart": "Démarrage progressif",
+      "slowStartInfo": "Un nouveau réplica monte de zéro jusqu'à son poids sur cette durée au lieu de prendre toute sa part d'un coup.",
+      "ramp": "Les nouveaux réplicas montent en charge sur {{duration}}"
+    },
+    "topology": {
+      "traffic": "Trafic",
+      "howToRead": "Comment lire le diagramme",
+      "howToReadBody": "La densité des lignes indique la part de connexions ouvertes de chaque réplica. Un mouvement plus rapide signifie une latence plus faible. Les formes et libellés indiquent la santé : le cercle coché est sain, le triangle est en vidage, le carré est hors service.",
+      "motionOff": "Animation désactivée",
+      "pause": "Pause",
+      "play": "Lecture",
+      "diagram": "Trafic des clients via le proxy vers {{total}} upstreams, {{healthy}} sains",
+      "node": "{{name}} : {{label}}, {{reason}}. Ouvrir les détails",
+      "replica": "Réplica {{replica}}",
+      "more": "+{{count}} de plus dans le tableau ci-dessous",
+      "clients": "Clients",
+      "proxy": "Proxy",
+      "noUpstreams": "Aucun upstream pour l'instant",
+      "noUpstreamsHint": "Ils apparaissent au démarrage des réplicas.",
+      "allDown": "Rien ne passe les contrôles. Les requêtes peuvent échouer jusqu'à la récupération d'un réplica.",
+      "caption": "Statut des upstreams",
+      "upstream": "Upstream",
+      "state": "État",
+      "reason": "Raison",
+      "share": "Part",
+      "connections": "Connexions"
+    },
+    "overview": {
+      "noMatch": "Aucun load balancer ne correspond à ce filtre",
+      "noMatchHint": "Effacez la recherche ou choisissez un autre état.",
+      "configure": "Configurer un load balancer",
+      "search": "Rechercher par nom d'app",
+      "searchLabel": "Rechercher des load balancers",
+      "state": "État",
+      "all": "Tous",
+      "showing": "{{shown}} affichés sur {{total}} (limite {{limit}})",
+      "listLabel": "Load balancers",
+      "app": "App",
+      "algorithm": "Algorithme",
+      "upstreams": "Upstreams",
+      "lastCheck": "Dernier contrôle",
+      "notYet": "Pas encore",
+      "secondsAgo": "il y a {{count}} s",
+      "minutesAgo": "il y a {{count}} min",
+      "hoursAgo": "il y a {{count}} h",
+      "noneObserved": "Aucun observé",
+      "healthyOf": "{{healthy}} sains sur {{total}}",
+      "stateBalancing": "Équilibrage",
+      "stateDegraded": "Dégradé",
+      "stateNone": "Aucun upstream"
+    },
+    "picker": {
+      "title": "Configurer un load balancer",
+      "description": "Choisissez l'app dont vous voulez équilibrer les réplicas.",
+      "noApps": "Vous n'avez pas encore d'apps",
+      "noAppsHint": "Un load balancer répartit le trafic entre les réplicas d'une app, donc créez d'abord une app.",
+      "createApp": "Créer une app",
+      "search": "Rechercher des apps",
+      "noMatch": "Aucune app ne correspond à cette recherche",
+      "noMatchHint": "Essayez un nom plus court ou différent.",
+      "truncated": "Affichage des {{count}} premières correspondances. Affinez la recherche pour restreindre."
+    },
+    "preset": {
+      "balanced": {
+        "name": "App web équilibrée",
+        "useWhen": "Une app web ou une API sans état typique."
+      },
+      "sticky": {
+        "name": "Sessions persistantes",
+        "useWhen": "Les sessions vivent en mémoire sur chaque réplica."
+      },
+      "websockets": {
+        "name": "WebSockets et longue durée",
+        "useWhen": "Flux, sockets ou long polling.",
+        "note": "Les nouvelles tentatives sont désactivées car les connexions mises à niveau ne peuvent pas être rejouées."
+      },
+      "cache": {
+        "name": "Favorable au cache",
+        "useWhen": "Chaque réplica garde un cache chaud par chemin."
+      },
+      "canary": {
+        "name": "Canary 90/10",
+        "useWhen": "Essayer une nouvelle version sur une partie du trafic.",
+        "note": "Les poids suivent l'index du réplica : avec 2 réplicas, la répartition est 90/10."
+      },
+      "bluegreen": {
+        "name": "Bascule blue-green",
+        "useWhen": "Échanger les versions avec un passage de relais rapide et propre."
+      },
+      "apiguard": {
+        "name": "Protection d'API publique",
+        "useWhen": "Une API exposée à internet."
+      }
+    },
+    "admin": {
+      "unsupported": "Nécessite un plan de contrôle plus récent",
+      "active": {
+        "label": "Activer",
+        "meaning": "De retour en rotation et reçoit de nouvelles requêtes."
+      },
+      "draining": {
+        "label": "Vider",
+        "meaning": "Termine les requêtes ouvertes, n'en reçoit plus de nouvelles."
+      },
+      "disabled": {
+        "label": "Désactiver",
+        "meaning": "Hors rotation jusqu'à ce que vous le réactiviez."
+      }
+    },
+    "change": {
+      "value": {
+        "off": "désactivé",
+        "unset": "non défini",
+        "na": "n/d",
+        "even": "égal",
+        "noVerify": "aucune vérification",
+        "passive": "{{fails}} échecs, ignorer {{skip}}",
+        "retries": "{{count}} en {{within}}",
+        "rate": "{{rps}}/s, rafale {{burst}}"
+      },
+      "risk": {
+        "algorithm": "Les clients peuvent passer à un autre réplica et perdre leurs sessions en mémoire.",
+        "active": "Les réplicas en échec continueront de recevoir du trafic.",
+        "rate": "Les clients au-delà de la limite reçoivent des réponses 429.",
+        "tls": "Les certificats des réplicas ne seront pas vérifiés."
+      },
+      "label": {
+        "algorithm": "Algorithme",
+        "cookie": "Cookie",
+        "weights": "Répartition du trafic",
+        "active": "Contrôle de santé",
+        "interval": "Intervalle de contrôle",
+        "timeout": "Délai de contrôle",
+        "passes": "Réussites pour récupérer",
+        "fails": "Échecs pour déclarer hors service",
+        "status": "Statut attendu",
+        "passive": "Contrôles passifs",
+        "retries": "Nouvelles tentatives",
+        "slow": "Démarrage progressif",
+        "drain": "Vidage",
+        "reqTimeout": "Délai de requête",
+        "rate": "Limite de débit",
+        "tls": "TLS vers les upstreams"
+      }
+    },
+    "effect": {
+      "none": "Aucun changement.",
+      "split": "Les nouvelles requêtes sont réparties {{split}}.",
+      "follow": "Les nouvelles requêtes suivent {{algo}}.",
+      "drain": "Les deploys conservent les flux ouverts pendant {{drain}}.",
+      "default": "S'applique aux nouvelles requêtes ; les connexions ouvertes ne sont pas coupées."
+    },
+    "suggest": {
+      "noHealth": {
+        "title": "Aucun contrôle de santé",
+        "detail": "Un réplica en échec continue de recevoir du trafic.",
+        "action": "Ajouter le contrôle /healthz"
+      },
+      "single": {
+        "title": "Un seul réplica, rien à équilibrer",
+        "detail": "Exécutez deux réplicas pour le basculement.",
+        "action": "Définir les réplicas"
+      },
+      "flapping": {
+        "title": "Un upstream oscille",
+        "detail": "3 changements d'état ou plus en 10 minutes.",
+        "action": "Exiger 3 échecs"
+      },
+      "ipHash": {
+        "title": "Hash d'IP derrière un proxy",
+        "detail": "Les clients derrière un CDN ou un proxy partagé arrivent sur un seul réplica.",
+        "action": "Utiliser un cookie d'affinité"
+      },
+      "weights": {
+        "title": "Les poids sont ignorés",
+        "detail": "Seul l'algorithme pondéré les utilise.",
+        "action": "Utiliser pondéré"
+      },
+      "passive": {
+        "title": "Les contrôles passifs sont désactivés",
+        "detail": "Les échecs de vraies requêtes pourraient écarter un réplica plus tôt.",
+        "action": "Activer"
+      },
+      "slowStart": {
+        "title": "Aucun démarrage progressif",
+        "detail": "Un nouveau réplica reçoit toute sa part d'un coup.",
+        "action": "Monter en charge sur 30 s"
+      },
+      "drain": {
+        "title": "Les deploys coupent les flux ouverts",
+        "detail": "Aucune durée de vidage n'est définie.",
+        "action": "Vider pendant 15 s"
+      },
+      "timeout": {
+        "title": "Le délai du contrôle de santé est serré",
+        "detail": "Les contrôles prennent {{ms}} ms au p95, le délai est de {{timeout}}.",
+        "action": "Relever à {{next}} s"
+      }
+    }
+  },
+  "guided": {
+    "databases": {
+      "title": "Aucune base de données pour l'instant",
+      "body": "Créez une base de données Postgres, MySQL, Redis ou MongoDB gérée sur l'un de vos nodes, avec sauvegardes et identifiants pris en charge pour vous.",
+      "action": "Créer une base de données"
+    },
+    "builds": {
+      "title": "Aucun build pour l'instant",
+      "body": "Les builds apparaissent ici quand une app est deployée depuis un dépôt Git ou un Dockerfile. Deployez une app pour lancer le premier.",
+      "action": "Deployer une app"
+    },
+    "backups": {
+      "title": "Rien n'est encore sauvegardé",
+      "body": "Ajoutez une base de données ou un volume à une planification de sauvegarde, ou connectez une cible de sauvegarde, et ses copies apparaissent ici.",
+      "action": "Gérer les cibles de sauvegarde"
+    },
+    "firewall": {
+      "title": "Aucune règle de pare-feu pour l'instant",
+      "body": "Seuls les ports que vos apps publient sont ouverts. Ajoutez une règle pour autoriser ou refuser un port depuis une plage de sources.",
+      "action": "Ajouter une règle"
+    },
+    "alerts": {
+      "title": "Aucune alerte pour l'instant",
+      "body": "Les alertes appartiennent à une app. Choisissez une app et ajoutez une règle pour les crash loops, la santé des domaines ou l'expiration des certificats.",
+      "action": "Choisir une app"
+    },
+    "certificates": {
+      "title": "Aucun certificat pour l'instant",
+      "body": "Les certificats sont émis automatiquement quand vous ajoutez un domaine à une app.",
+      "action": "Ajouter un domaine"
+    }
+  }
+}

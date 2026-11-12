@@ -1,0 +1,246 @@
+{
+  "title": "Stacks",
+  "description": "Ensembles de ressources déclaratifs avec un historique de révisions que vous pouvez comparer, épingler et annuler par rollback.",
+  "empty": {
+    "title": "Aucune stack pour l'instant",
+    "description": "Appliquez un manifeste à une stack depuis la CLI et elle apparaît ici avec ses révisions."
+  },
+  "loadFailed": "Impossible de charger les stacks.",
+  "columns": {
+    "scope": "Portée",
+    "name": "Stack",
+    "project": "Projet",
+    "revision": "Dernière",
+    "status": "Statut",
+    "flags": "Indicateurs",
+    "created": "Créée"
+  },
+  "status": {
+    "pending_approval": "En attente d'approbation",
+    "applying": "Application en cours",
+    "applied": "Appliquée",
+    "partial": "Partielle",
+    "failed": "Échouée",
+    "superseded": "Remplacée",
+    "rejected": "Rejetée",
+    "none": "Aucune révision"
+  },
+  "scope": {
+    "project": "Projet",
+    "install": "Installation",
+    "projectTip": "Appartient à un projet",
+    "installTip": "Couvre toute l'installation"
+  },
+  "flags": {
+    "locked": "Verrouillée",
+    "lockedTip": "Détenue par {{holder}} sur la révision {{revision}}",
+    "pinned": "Épinglée à r{{revision}}",
+    "driftLock": "Dérive verrouille",
+    "driftWarn": "Dérive avertit",
+    "approval": "Approbation requise",
+    "prune": "Élagage autorisé"
+  },
+  "detail": {
+    "back": "Toutes les stacks",
+    "revisionShort": "r{{number}}",
+    "inProject": "Projet {{project}}",
+    "createdBy": "Créée par {{name}}",
+    "lockedBanner": "Verrouillée par {{holder}} pour la révision {{revision}} jusqu'à {{until}}.",
+    "pinnedBanner": "Épinglée à la révision {{revision}}. Les nouvelles applications sont refusées tant que vous ne la désépinglez pas.",
+    "resources": "{{count}} ressources gérées",
+    "loadFailed": "Impossible de charger cette stack."
+  },
+  "actions": {
+    "pin": "Épingler",
+    "unpin": "Désépingler",
+    "unlock": "Déverrouiller",
+    "delete": "Supprimer",
+    "rollback": "Rollback",
+    "view": "Voir",
+    "diff": "Diff",
+    "viewRev": "Voir la révision {{number}}",
+    "diffRev": "Comparer la révision {{number}}",
+    "rollbackRev": "Rollback vers la révision {{number}}",
+    "pinRev": "Épingler la révision {{number}}",
+    "unpinRev": "Désépingler la révision {{number}}",
+    "pinned": "Épinglée à la révision {{revision}}",
+    "unpinned": "Stack désépinglée",
+    "unlocked": "Stack déverrouillée",
+    "failed": "Échec de l'action",
+    "approveRev": "Approuver la révision {{number}}",
+    "rejectRev": "Rejeter la révision {{number}}"
+  },
+  "history": {
+    "title": "Révisions",
+    "empty": "Aucune révision pour l'instant.",
+    "columns": {
+      "number": "Rév",
+      "status": "Statut",
+      "actor": "Par",
+      "source": "Source",
+      "when": "Quand"
+    },
+    "rollbackOf": "Rollback de r{{number}}",
+    "pinnedMark": "Épinglée",
+    "ariaLabel": "Révisions de la stack"
+  },
+  "revision": {
+    "title": "Révision {{number}}",
+    "files": "Fichiers générés",
+    "noFiles": "Aucun fichier stocké pour cette révision.",
+    "plan": "Plan",
+    "result": "Résultat",
+    "noPlan": "Aucun plan n'a été enregistré.",
+    "noResult": "Aucun résultat pour l'instant.",
+    "resultCounts": "{{applied}} appliqués, {{failed}} échoués, {{skipped}} ignorés",
+    "resultFailedItem": "{{kind}} {{name}} : {{reason}}",
+    "resultNoReason": "aucune raison donnée",
+    "summary": "{{create}} à créer, {{update}} à mettre à jour, {{delete}} à supprimer, {{noop}} inchangés, {{error}} erreurs",
+    "hash": "Hash du plan {{hash}}",
+    "close": "Fermer",
+    "git": "Commit {{sha}}",
+    "ciRun": "Exécution CI",
+    "loadFailed": "Impossible de charger cette révision."
+  },
+  "diff": {
+    "title": "Changements",
+    "against": "Comparer r{{number}} avec",
+    "live": "État actuel",
+    "revisionOption": "Révision {{number}}",
+    "empty": "Aucune différence.",
+    "loadFailed": "Impossible de calculer le diff.",
+    "action": {
+      "create": "Créer",
+      "update": "Mettre à jour",
+      "delete": "Supprimer",
+      "noop": "Inchangé",
+      "error": "Erreur",
+      "added": "Ajouté",
+      "removed": "Retiré",
+      "changed": "Modifié"
+    },
+    "was": "était",
+    "now": "devient"
+  },
+  "rollback": {
+    "title": "Faire un rollback vers la révision {{number}} ?",
+    "description": "Cela applique les fichiers de la révision {{number}} à {{name}} comme une nouvelle révision.",
+    "secretsNote": "Les secrets ne sont pas restaurés par le rollback. Les valeurs actuelles des secrets restent telles quelles.",
+    "dataNote": "Les données ne sont pas restaurées par le rollback. Les bases de données et volumes conservent leur contenu actuel.",
+    "confirm": "Rollback",
+    "pending": "Rollback en cours",
+    "done": "Rollback effectué vers la révision {{number}}",
+    "doneStatus": "La nouvelle révision {{number}} s'est terminée avec le statut {{status}}",
+    "failed": "Échec du rollback",
+    "pendingApproval": "La révision {{number}} est en attente d'approbation. Aucun rollback n'a encore été effectué."
+  },
+  "delete": {
+    "title": "Supprimer la stack {{name}} ?",
+    "description": "Choisissez ce qu'il advient des ressources gérées par la stack.",
+    "forget": "Oublier la stack",
+    "forgetHint": "Supprime la stack et son historique. Les ressources continuent de tourner sans être gérées.",
+    "destroy": "Détruire les ressources",
+    "destroyHint": "Supprime les apps et bases de données gérées par la stack, puis la stack.",
+    "confirm": "Supprimer la stack",
+    "pending": "Suppression",
+    "done": "Stack {{name}} supprimée",
+    "failed": "Échec de la suppression"
+  },
+  "settings": {
+    "title": "Paramètres de la stack",
+    "allowPrune": "Autoriser l'élagage",
+    "allowPruneHint": "Permet à une application de supprimer les ressources qui ont quitté le manifeste.",
+    "requireApproval": "Exiger une approbation",
+    "requireApprovalHint": "Les applications attendent qu'une personne les approuve.",
+    "driftPolicy": "Politique de dérive",
+    "driftWarn": "Avertir",
+    "driftLock": "Verrouiller",
+    "driftHint": "Verrouiller bloque les applications tant que l'état actuel diffère de la stack.",
+    "rootOnly": "Seul un admin peut modifier ces paramètres.",
+    "saved": "Paramètres de la stack enregistrés",
+    "failed": "Impossible d'enregistrer les paramètres"
+  },
+  "badge": {
+    "managedBy": "Gérée par la stack {{name}}",
+    "short": "Stack {{name}}"
+  },
+  "appPanel": {
+    "title": "Gérée par une stack",
+    "revision": "Révision {{number}}",
+    "lock": "Mode de verrouillage",
+    "hint": "Modifiez ceci dans git. Les changements faits ici peuvent être écrasés ou bloqués.",
+    "docs": "Documentation des stacks"
+  },
+  "managedNotice": {
+    "warn": "Gérée par la stack {{name}}. Les modifications manuelles peuvent être annulées ou signalées comme dérive.",
+    "lock": "Gérée par la stack {{name}}, qui verrouille ses ressources. Les modifications manuelles peuvent être refusées ou annulées."
+  },
+  "drift": {
+    "badge": "Dérive ({{count}})",
+    "title": "Dérive : {{count}} ressources diffèrent de la stack",
+    "revision": "par rapport à r{{number}}",
+    "checkedAt": "Contrôlée {{when}}",
+    "noValues": "Seuls les chemins de champs sont affichés. Les valeurs ne sont jamais stockées.",
+    "action": {
+      "changed": "Modifiée",
+      "missing": "Manquante",
+      "owner_changed": "Propriétaire modifié"
+    }
+  },
+  "approval": {
+    "expires": "Expire {{when}}",
+    "approveTitle": "Approuver la révision {{number}} ?",
+    "approveDescription": "Cela applique le plan stocké à {{name}}. Un autre admin l'a demandée.",
+    "approveDescriptionOwn": "Vous avez demandé cette révision, donc un autre admin doit l'approuver pour {{name}}.",
+    "secretsNote": "Les secrets ne sont jamais stockés. Fournissez maintenant ceux dont le manifeste a besoin. Ils sont envoyés une seule fois et non conservés.",
+    "secretName": "Nom du secret",
+    "secretValue": "Valeur du secret",
+    "addSecret": "Ajouter un secret",
+    "removeSecret": "Retirer le secret",
+    "approve": "Approuver",
+    "approving": "Approbation",
+    "approved": "Révision {{number}} approuvée",
+    "approvedStatus": "Terminée avec le statut {{status}}",
+    "stale": "Le plan a changé après sa vérification. Demandez à nouveau l'approbation.",
+    "expired": "Cette demande d'approbation a expiré. Demandez à nouveau l'approbation.",
+    "rejectTitle": "Rejeter la révision {{number}} ?",
+    "rejectDescription": "Rien n'est appliqué à {{name}} et la demande est clôturée.",
+    "reason": "Motif (facultatif)",
+    "reject": "Rejeter",
+    "rejecting": "Rejet",
+    "rejected": "Révision {{number}} rejetée"
+  },
+  "templates": {
+    "title": "Modèles de stack",
+    "description": "Ensembles de départ pour les stacks courantes. Renseignez les variables, prévisualisez les fichiers et copiez les commandes.",
+    "loadFailed": "Impossible de charger les modèles de stack.",
+    "empty": {
+      "title": "Aucun modèle de stack",
+      "description": "Ce build n'a aucun ensemble de départ."
+    },
+    "open": "Ouvrir le modèle {{name}}",
+    "secretCount_one": "{{count}} secret",
+    "secretCount_many": "{{count}} secrets",
+    "secretCount_other": "{{count}} secrets",
+    "drawerDescription": "Chargement du modèle.",
+    "var": {
+      "name": "Nom",
+      "domain": "Domaine",
+      "image": "Image"
+    },
+    "issues": "Les fichiers générés présentent des problèmes",
+    "files": "Fichiers générés",
+    "copyAll": "Tout copier",
+    "copied": "Copié",
+    "downloadAll": "Tout télécharger",
+    "secrets": {
+      "title": "Secrets à fournir",
+      "hint": "Noms uniquement. Exportez chacun comme variable d'environnement avant d'appliquer.",
+      "none": "Cet ensemble n'a besoin d'aucun secret."
+    },
+    "cli": {
+      "title": "Appliquer depuis la CLI",
+      "hint": "Écrit les fichiers dans un nouveau dossier, puis les applique comme une stack. L'application depuis le tableau de bord n'est pas encore disponible."
+    }
+  }
+}

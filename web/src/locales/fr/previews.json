@@ -1,0 +1,146 @@
+{
+  "title": "Previews",
+  "extend": {
+    "button": "Prolonger",
+    "label": "Prolonger la preview de la pull request {{number}}",
+    "hours": "Prolonger de {{hours}} heures",
+    "success": "La preview de la PR #{{number}} expire désormais {{when}}.",
+    "error": "Impossible de prolonger la preview."
+  },
+  "row": {
+    "extended": "Prolongée",
+    "logs": "Logs de build",
+    "logsLabel": "Ouvrir les logs de la preview de la pull request {{number}}",
+    "gateOn": "Basic auth activée",
+    "gateOff": "Publique",
+    "gateNeedsPassword": "La protection nécessite un mot de passe",
+    "gateTipLabel": "À propos de la protection des previews",
+    "gateTip": "Indique si cette preview est protégée par basic auth. Modifiez le réglage commun à l'app sous Cycle de vie, ressources et exposition."
+  },
+  "approve": {
+    "button": "Approuver la preview",
+    "title": "Approuver la preview de la PR #{{number}} ?",
+    "fromRepo": "Cette pull request vient de {{repo}}, pas du dépôt de cette app.",
+    "anotherRepo": "un autre dépôt",
+    "warning": "L'approbation exécute le code du fork sur votre serveur. Lisez d'abord les changements. Seul ce commit est deployé ; un nouveau push du fork attend à nouveau l'approbation.",
+    "shareSecrets": "Lui donner aussi les variables d'environnement et les secrets de cette app",
+    "shareSecretsHint": "Désactivé par défaut. N'activez cela que si vous faites confiance à l'auteur : le code peut lire et envoyer toutes les valeurs.",
+    "cancel": "Annuler",
+    "confirm": "Approuver et deployer",
+    "deploying": "La preview de la PR #{{number}} est en cours de deploy.",
+    "error": "Impossible d'approuver la preview."
+  },
+  "lifecycle": {
+    "title": "Cycle de vie, ressources et exposition",
+    "description": "Combien de previews une app conserve, leur taille, les données qu'elles peuvent atteindre et qui peut les voir.",
+    "unavailable": "Les réglages des previews ne sont pas disponibles sur ce plan de contrôle.",
+    "loading": "Chargement des réglages des previews",
+    "save": "Enregistrer les réglages",
+    "saved": "Réglages des previews enregistrés.",
+    "saveError": "Impossible d'enregistrer les réglages des previews.",
+    "maxPreviews": "Nombre maximal de previews actives pour cette app",
+    "maxPreviewsHint": "0 utilise le plafond de la plateforme ({{cap}}).",
+    "memory": "Mémoire par preview",
+    "memoryHint": "La valeur par défaut de la plateforme est {{value}}. Une preview n'obtient jamais plus que l'app elle-même.",
+    "cpu": "CPU par preview",
+    "cpuHint": "La valeur par défaut de la plateforme est {{value}}. 0 l'utilise.",
+    "idle": "Veille après des minutes d'inactivité",
+    "idleHint": "0 utilise la valeur par défaut de la plateforme ({{value}} minutes). Une preview en veille se réveille à la prochaine requête.",
+    "database": {
+      "label": "Base de données",
+      "hint": "Une preview ne se connecte jamais aux données de production sauf si vous choisissez partagée.",
+      "none": "Aucune : aucun identifiant de base de données n'atteint la preview",
+      "shared": "Partagée : utilise la base de données de production (risqué)",
+      "fresh": "Neuve : une base de données vide du même moteur",
+      "seed": "Amorcée : une copie de la dernière sauvegarde d'une base de données nommée",
+      "seedName": "Base de données d'amorçage",
+      "seedHint": "Vide utilise la base de données attachée à l'app.",
+      "sharedWarning": "Chaque preview, y compris les branches non relues, peut lire et modifier les données de production."
+    },
+    "exposure": {
+      "heading": "Qui peut voir les previews",
+      "forkSecrets": "Donner aux previews de fork l'environnement et les secrets de l'app",
+      "forkSecretsHint": "Désactivé par défaut. Une preview de fork ne reçoit aucune variable d'environnement.",
+      "forkSecretsWarning": "Toute personne pouvant ouvrir une pull request depuis un fork peut exécuter du code qui lit ces valeurs.",
+      "indexing": "Laisser les moteurs de recherche indexer les URL des previews",
+      "indexingHint": "Désactivé par défaut : les previews envoient X-Robots-Tag noindex et servent un robots.txt qui interdit tout.",
+      "gate": "Exiger une basic auth sur les previews",
+      "gateHint": "Un seul nom d'utilisateur et mot de passe pour toutes les previews de cette app.",
+      "gateUsername": "Nom d'utilisateur",
+      "gatePassword": "Mot de passe",
+      "gatePasswordSet": "Un mot de passe est défini. Laissez vide pour le conserver.",
+      "gateNeedsPassword": "Définissez un nom d'utilisateur et un mot de passe pour activer la protection."
+    }
+  },
+  "prEnv": {
+    "button": "Surcharges d'env",
+    "help": "Définissez des valeurs pour la preview de cette pull request uniquement. Elles l'emportent sur l'env de l'app et s'appliquent au prochain deploy (poussez un commit). Elles sont supprimées avec la preview.",
+    "empty": "Aucune surcharge pour cette pull request.",
+    "emptyHint": "Les surcharges définies ici ne s'appliquent qu'à la preview de cette pull request.",
+    "hidden": "masquée",
+    "remove": "Supprimer la surcharge {{key}}",
+    "key": "Variable d'env",
+    "value": "Valeur",
+    "secret": "Stocker chiffrée (secret). Elle n'est plus jamais affichée, y compris dans le commentaire de la pull request.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "saved": "Surcharge enregistrée pour la PR #{{number}}. Elle s'applique au prochain deploy."
+  },
+  "prCommands": {
+    "title": "Commandes de pull request",
+    "description": "Permet aux personnes ayant un accès en écriture au dépôt d'exécuter /levelrail redeploy, rollback, status et preview redeploy depuis un commentaire de pull request. Les gels, approbations et politiques de deploy s'appliquent toujours. Ajoutez l'événement Issue comments au webhook du dépôt.",
+    "enabledLabel": "Commandes par commentaire de pull request activées",
+    "forksTitle": "Autoriser les commandes sur les pull requests de forks",
+    "forksDescription": "Désactivé sauf si vous l'activez. Une pull request de fork peut venir de n'importe qui.",
+    "forksLabel": "Commandes par commentaire sur les pull requests de forks activées",
+    "toast": {
+      "enabled": "Commandes par commentaire de pull request activées.",
+      "disabled": "Commandes par commentaire de pull request désactivées.",
+      "forksEnabled": "Commandes sur les pull requests de forks activées.",
+      "forksDisabled": "Commandes sur les pull requests de forks désactivées.",
+      "errorTitle": "Impossible de mettre à jour les commandes par commentaire de pull request."
+    }
+  },
+  "ttl": {
+    "label": "Durée de vie des previews (heures)",
+    "save": "Enregistrer",
+    "note": "S'applique à toutes les apps. 0 conserve la valeur par défaut au démarrage. Une surcharge par app l'emporte toujours.",
+    "invalid": "Saisissez un nombre entier de 0 à {{max}}."
+  },
+  "migrate": {
+    "command": "Commande de migration",
+    "commandPlaceholder": "npm run migrate",
+    "commandHint": "S'exécute une fois avant le démarrage de chaque preview. Vide l'efface. Ne fonctionne pour l'instant que si la stratégie de base de données des previews est aucune.",
+    "strategyBlocked": "Indisponible tant que la stratégie de base de données des previews est {{strategy}}. Définissez-la sur aucune pour utiliser une commande de migration.",
+    "timeout": "Délai de migration (secondes)",
+    "timeoutDefault": "0 utilise la valeur par défaut de {{seconds}} secondes.",
+    "imageTag": "Modèle de tag d'image",
+    "imageTagHint": "Utilisez au moins l'un de {{placeholders}}. Vide l'efface.",
+    "imageTagInvalid": "Ajoutez au moins un espace réservé pour que chaque pull request ait son propre tag.",
+    "imageTagExample": "Pour la PR #{{number}} : {{tag}}",
+    "save": "Enregistrer",
+    "saved": "Réglages des previews enregistrés.",
+    "error": "Impossible de mettre à jour les réglages des previews."
+  },
+  "pushOnlyProvider": "Ce dépôt provient d'Azure DevOps, qui ne deploie qu'au push. Les previews de pull request ne sont pas disponibles.",
+  "previewMode": {
+    "groupLabel": "Mode de preview de deploy",
+    "default": "{{label}} (par défaut)",
+    "about": "À propos des previews {{label}}",
+    "off": {
+      "label": "Désactivé",
+      "summary": "Aucune preview n'est créée.",
+      "cost": "Rien ne s'exécute après un deploy et rien n'est stocké."
+    },
+    "metadata": {
+      "label": "Métadonnées",
+      "summary": "Pas de navigateur. Ne coûte presque rien.",
+      "cost": "Envoie une petite requête à l'app après chaque deploy et lit son titre et son image sociale (og:image). Pas de navigateur, pas de container et pas de téléchargement d'image de navigateur. Peut télécharger une image sociale de 2 Mo maximum par deploy. Sans image sociale, la preview est une carte de texte. Les pages qui exigent une connexion sont ignorées."
+    },
+    "screenshot": {
+      "label": "Capture d'écran",
+      "summary": "Lance un navigateur pendant environ 10 s par deploy.",
+      "cost": "Lance un container de navigateur pendant environ 10 secondes après chaque deploy et affiche la vraie page. L'image du navigateur pèse environ 143 Mo, téléchargée une fois puis supprimée quand elle reste inutilisée."
+    }
+  }
+}

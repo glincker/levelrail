@@ -1,0 +1,96 @@
+{
+  "title": "Règles de routage",
+  "description": "Redirections, réécritures et en-têtes avec lesquels ce site a été publié. Ils proviennent des fichiers _redirects et _headers du répertoire publié et de app.yaml, et ne changent qu'à un deploy.",
+  "loadFailed": "Impossible de charger les règles de routage.",
+  "retry": "Réessayer",
+  "notStatic": {
+    "title": "Cette app n'est pas un site statique",
+    "description": "Les règles de routage s'appliquent aux apps construites avec build.type: static. Les apps en container utilisent les contrôles de trafic de la page Domaines."
+  },
+  "notPublished": {
+    "title": "Publié avant l'existence des règles de routage",
+    "description": "Redeployez ce site pour activer _redirects, _headers et les options SPA, URL propres et 404. Rien n'est perdu : le site continue de servir ses fichiers comme avant."
+  },
+  "options": {
+    "title": "Options de service",
+    "spa": "Repli d'application monopage",
+    "cleanUrls": "URL propres",
+    "trailingSlash": "Barre oblique finale",
+    "notFound": "Page 404",
+    "on": "Activé",
+    "off": "Désactivé",
+    "slashOff": "Laisser tel que demandé",
+    "slashAdd": "Toujours ajouter",
+    "slashRemove": "Toujours retirer",
+    "defaultNotFound": "404.html si présent"
+  },
+  "precedence": {
+    "title": "Ordre d'évaluation",
+    "body": "Les règles s'exécutent en premier, dans l'ordre, et la première correspondance l'emporte. Une règle est ignorée quand un fichier existe au chemin demandé, sauf si elle est forcée avec !. Ensuite les fichiers sont servis, puis le repli d'application monopage, puis la page 404."
+  },
+  "rules": {
+    "title": "Redirections et réécritures",
+    "label": "Règles de redirection et de réécriture",
+    "from": "De",
+    "to": "Vers",
+    "status": "Statut",
+    "source": "Définie dans",
+    "forced": "forcée",
+    "kindRewrite": "réécriture",
+    "kindRedirect": "redirection",
+    "kindPage": "page",
+    "empty": {
+      "title": "Aucune règle de redirection ou de réécriture",
+      "description": "Ajoutez un fichier _redirects au répertoire publié, ou une liste routes à app.yaml, puis deployez."
+    }
+  },
+  "headers": {
+    "title": "En-têtes de réponse",
+    "label": "Règles d'en-têtes",
+    "path": "Chemin",
+    "set": "Définit",
+    "remove": "Retire",
+    "source": "Définie dans",
+    "empty": {
+      "title": "Aucune règle d'en-têtes",
+      "description": "Ajoutez un fichier _headers au répertoire publié, ou une liste headers à app.yaml, puis deployez."
+    }
+  },
+  "problems": {
+    "title": "Problèmes trouvés à la publication de ce deploy",
+    "description": "Ces lignes ont été ignorées et ne sont pas appliquées. Corrigez-les dans votre dépôt et deployez à nouveau.",
+    "line": "ligne {{line}}",
+    "none": "Aucun problème trouvé."
+  },
+  "test": {
+    "title": "Tester une URL",
+    "description": "Passez une requête dans les règles et fichiers actifs et voyez lequel y répond.",
+    "pathLabel": "Chemin",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "Chaîne de requête",
+    "queryPlaceholder": "id=42",
+    "run": "Tester",
+    "running": "Test en cours",
+    "result": "Résultat",
+    "redirectTo": "Redirige vers {{target}}",
+    "serves": "Sert {{file}}",
+    "plain": "Réponse simple sans page",
+    "matchedRule": "Règle : {{rule}}",
+    "noRule": "Aucune règle ne correspond, répondu par les fichiers et options",
+    "trace": "Étapes",
+    "headersApplied": "En-têtes ajoutés",
+    "invalidPath": "Saisissez un chemin commençant par /",
+    "failed": "Le test n'a pas pu s'exécuter."
+  },
+  "lint": {
+    "title": "Vérifier les règles avant de deployer",
+    "description": "Collez le contenu d'un fichier _redirects ou _headers pour voir comment il est analysé. Rien n'est deployé.",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "Vérifier",
+    "running": "Vérification",
+    "ok": "{{rules}} règles et {{headers}} blocs d'en-têtes analysés sans problème.",
+    "withProblems": "{{rules}} règles et {{headers}} blocs d'en-têtes analysés, {{problems}} lignes ignorées.",
+    "failed": "La vérification n'a pas pu s'exécuter."
+  }
+}

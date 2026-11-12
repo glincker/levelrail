@@ -1,0 +1,84 @@
+{
+  "page": {
+    "title": "Configurez votre tableau de bord",
+    "description": "Quelques choix rapides. Ignorez ce que vous voulez et revenez plus tard."
+  },
+  "rail": {
+    "label": "Étapes de configuration",
+    "progress": "Étape {{current}} sur {{total}} : {{name}}",
+    "done": "terminé"
+  },
+  "steps": {
+    "welcome": {
+      "label": "Bienvenue",
+      "title": "Bienvenue sur Levelrail",
+      "description": "Vous exécutez des apps sur ce serveur. Levelrail s'en occupe."
+    },
+    "profile": {
+      "label": "Profil",
+      "title": "Votre profil",
+      "description": "Comment votre nom et votre photo apparaissent pour votre équipe."
+    },
+    "preferences": {
+      "label": "Préférences",
+      "title": "L'apparence de Levelrail pour vous",
+      "description": "Les changements s'appliquent au fur et à mesure. Vous pourrez tout modifier plus tard dans Paramètres."
+    },
+    "finish": {
+      "label": "Terminer",
+      "title": "Votre configuration est terminée",
+      "description": "Vos choix sont enregistrés. Deux bons endroits où aller ensuite."
+    }
+  },
+  "footer": {
+    "back": "Retour",
+    "skip": "Ignorer pour l'instant",
+    "continue": "Continuer",
+    "start": "Commencer",
+    "finish": "Terminer"
+  },
+  "welcome": {
+    "deploy": "Deployez des apps depuis un dépôt, une image ou un modèle.",
+    "protect": "Levelrail configure HTTPS, fait des sauvegardes et vous prévient quand quelque chose casse.",
+    "time": "La configuration prend environ 5 minutes. Chaque étape peut être ignorée.",
+    "dismiss": "Ne plus afficher"
+  },
+  "profile": {
+    "section": "Profil",
+    "name": "Nom affiché",
+    "nameHint": "Jusqu'à {{max}} caractères.",
+    "avatar": "Avatar",
+    "avatarHint": "Initiales sur une couleur choisie à partir de votre compte. Les couleurs personnalisées arrivent bientôt.",
+    "gravatar": "Utiliser Gravatar",
+    "gravatarHint": "Charge votre photo depuis gravatar.com, votre navigateur les contacte donc. Désactivé par défaut."
+  },
+  "preferences": {
+    "section": "Préférences"
+  },
+  "finish": {
+    "deploy": "Deployez votre première app",
+    "guide": "Suivez le guide de configuration pour HTTPS, les sauvegardes et les alertes",
+    "open": "Ouvrir"
+  },
+  "card": {
+    "title": "Configurez votre tableau de bord",
+    "body": "Choisissez votre nom, votre apparence et votre langue. Cela prend environ 5 minutes.",
+    "start": "Commencer",
+    "resumeTitle": "Terminer la configuration",
+    "resumeBody": "Vous vous êtes arrêté à l'étape {{current}} sur {{total}}.",
+    "resume": "Continuer",
+    "dismiss": "Ne plus afficher"
+  },
+  "closed": {
+    "body": "La configuration est terminée. Vous pouvez la relancer quand vous voulez.",
+    "restart": "Relancer la configuration",
+    "dashboard": "Aller au tableau de bord"
+  },
+  "unavailable": {
+    "body": "La configuration guidée n'est pas disponible sur ce serveur."
+  },
+  "errors": {
+    "save": "Impossible d'enregistrer votre progression. Réessayez.",
+    "transition": "Ce déplacement n'est pas autorisé pour le moment. Rechargez la page et réessayez."
+  }
+}

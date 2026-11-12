@@ -1,0 +1,193 @@
+{
+  "common": {
+    "cancel": "Annuler"
+  },
+  "grid": {
+    "label": "Widgets du tableau de bord",
+    "controls": "Contrôles de {{title}}",
+    "moveEarlier": "Avancer {{title}}",
+    "moveLater": "Reculer {{title}}",
+    "size": "Donner à {{title}} la taille {{size}}",
+    "remove": "Retirer {{title}}"
+  },
+  "widget": {
+    "type": {
+      "metric_chart": "Graphique de métrique",
+      "request_percentiles": "Latence des requêtes",
+      "error_rate": "Taux d'erreurs",
+      "log_tail": "Suivi des logs",
+      "deploy_timeline": "Chronologie des deploys",
+      "resource_counts": "Nombre de ressources",
+      "cost": "Coût par tag",
+      "alert_status": "Statut des alertes",
+      "node_capacity": "Capacité des nodes",
+      "link": "Lien",
+      "fleet_health": "Santé de la flotte",
+      "fleet_traffic": "Trafic de la flotte",
+      "top_apps": "Apps principales",
+      "deploy_activity": "Activité de deploy",
+      "fleet_capacity": "Capacité de la flotte",
+      "attention": "Nécessite votre attention"
+    },
+    "noTraffic": "Aucune requête dans la dernière fenêtre.",
+    "p95": "latence p95",
+    "reqPerSec": "requêtes par seconde",
+    "errorShare": "part des requêtes en 4xx et 5xx",
+    "noLogs": "Aucune ligne de log dans cette plage.",
+    "noDeploys": "Aucun deploy récent.",
+    "count": {
+      "app": "Apps",
+      "database": "Bases de données",
+      "node": "Nodes",
+      "domain": "Domaines"
+    },
+    "noCost": "Aucune donnée de coût pour l'instant. Définissez les prix dans Usage et coût pour voir les dépenses par tag.",
+    "scopedCost": "Dépenses ce mois-ci dans la portée sélectionnée",
+    "untagged": "Sans tag",
+    "rulesEnabled": "règles d'alerte activées",
+    "noRules": "Cette app n'a pas encore de règles d'alerte.",
+    "unknown": "Inconnu",
+    "capacity": {
+      "disk": "Disque utilisé",
+      "memory": "Mémoire utilisée"
+    }
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_usage_bytes": "Mémoire",
+    "network_rx_bytes": "Réseau entrant",
+    "network_tx_bytes": "Réseau sortant",
+    "disk_read_bytes": "Lecture disque",
+    "disk_write_bytes": "Écriture disque",
+    "disk_used_bytes": "Disque utilisé",
+    "container_restart_count": "Redémarrages"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Base de données",
+    "node": "Node"
+  },
+  "range": {
+    "15m": "15 dernières minutes",
+    "1h": "Dernière heure",
+    "6h": "6 dernières heures",
+    "24h": "24 dernières heures",
+    "7d": "7 derniers jours",
+    "30d": "30 derniers jours"
+  },
+  "refresh": {
+    "0": "Manuel",
+    "15": "Toutes les 15 secondes",
+    "30": "Toutes les 30 secondes",
+    "60": "Toutes les minutes",
+    "300": "Toutes les 5 minutes"
+  },
+  "toolbar": {
+    "range": "Plage de temps",
+    "refresh": "Actualisation auto",
+    "refreshNow": "Actualiser",
+    "addWidget": "Ajouter un widget",
+    "shared": "Partagé avec tout le monde",
+    "project": "Projet",
+    "noProject": "Aucun projet",
+    "isDefault": "Par défaut pour le projet",
+    "save": "Enregistrer les modifications",
+    "done": "Terminer la modification"
+  },
+  "add": {
+    "title": "Ajouter un widget",
+    "description": "Choisissez ce qu'il faut afficher et d'où cela provient.",
+    "type": "Widget",
+    "kind": "Source",
+    "target": "Ressource",
+    "targetPlaceholder": "Choisir une ressource",
+    "metric": "Métrique",
+    "query": "Filtre de logs",
+    "queryPlaceholder": "Texte à rechercher, facultatif",
+    "submit": "Ajouter le widget",
+    "linkTitle": "Titre",
+    "linkTitlePlaceholder": "Runbook",
+    "linkUrl": "Adresse"
+  },
+  "template": {
+    "label": "Tableaux de bord de départ",
+    "use": "Utiliser ce modèle",
+    "pickApp": "App pour {{name}}",
+    "app-health": {
+      "name": "Santé de l'app",
+      "description": "CPU, mémoire, latence, erreurs, alertes, deploys et logs pour une app."
+    },
+    "fleet-overview": {
+      "name": "Vue d'ensemble de la flotte",
+      "description": "Combien d'apps, de bases de données, de nodes et de domaines vous exploitez."
+    },
+    "cost": {
+      "name": "Coût",
+      "description": "Dépenses du mois en cours par tag, à côté de l'utilisation des ressources qui les explique."
+    }
+  },
+  "empty": {
+    "widgetsTitle": "Ce tableau de bord est vide",
+    "widgetsBody": "Activez Modifier et ajoutez un widget pour commencer."
+  },
+  "toast": {
+    "saved": "Tableau de bord enregistré",
+    "saveFailed": "Impossible d'enregistrer le tableau de bord",
+    "imported": "{{name}} importé",
+    "importFailed": "Impossible d'importer le tableau de bord",
+    "notJson": "Ce fichier n'est pas un JSON valide.",
+    "deleted": "Tableau de bord supprimé",
+    "deleteFailed": "Impossible de supprimer le tableau de bord",
+    "created": "{{name}} créé",
+    "createFailed": "Impossible de créer le tableau de bord"
+  },
+  "fleet": {
+    "loadFailed": "Impossible de charger ces données.",
+    "health": {
+      "empty": "Aucune app pour l'instant.",
+      "barLabel": "{{running}} en marche, {{failing}} en échec, {{stopped}} arrêtées",
+      "running": "En marche",
+      "failing": "En échec",
+      "stopped": "Arrêtées",
+      "nodesOnline": "Nodes en ligne"
+    },
+    "traffic": {
+      "notConfigured": "La télémétrie n'est pas configurée.",
+      "empty": "Aucune requête dans la dernière heure.",
+      "requests": "Requêtes, dernière heure",
+      "errors": "Erreurs 5xx",
+      "tooFew": "Trop peu de requêtes",
+      "p95": "latence p95",
+      "spark": "Requêtes par seconde sur toutes les apps"
+    },
+    "top": {
+      "sortBy": "Trier par",
+      "cpu": "CPU",
+      "memory": "Mémoire",
+      "requests": "Requêtes",
+      "empty": "Rien à classer pour l'instant."
+    },
+    "deploys": {
+      "empty": "Aucun deploy terminé pour l'instant.",
+      "summary": "{{day}} en 24 heures, {{week}} en 7 jours ({{ok}} réussis, {{failed}} échoués)",
+      "succeeded": "Réussis",
+      "failed": "Échoués",
+      "sampled": "Basé sur les {{count}} apps qui ont le plus besoin d'un coup d'œil."
+    },
+    "capacity": {
+      "unavailable": "La capacité n'est pas disponible.",
+      "empty": "Aucun node ne signale encore sa capacité.",
+      "cpu": "CPU",
+      "memory": "Mémoire",
+      "disk": "Disque"
+    },
+    "attention": {
+      "clear": "Tout est en ordre. Rien ne nécessite votre attention.",
+      "critical": "Critique",
+      "warning": "Avertissement",
+      "info": "Avis",
+      "viewAll": "Ouvrir le statut",
+      "more": "{{count}} de plus dans Statut"
+    }
+  }
+}
