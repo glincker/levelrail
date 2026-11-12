@@ -1,0 +1,148 @@
+{
+  "breadcrumb": {
+    "settings": "设置",
+    "platform": "平台",
+    "label": "面包屑导航"
+  },
+  "overview": {
+    "title": "平台",
+    "description": "此服务器可通过哪些地址访问,以及如何获取证书。每个磁贴都会打开各自的页面。",
+    "tilesLabel": "平台状态",
+    "open": "打开",
+    "loading": "正在检查",
+    "https": {
+      "title": "HTTPS",
+      "off": "未启用 HTTPS",
+      "offLine": "仪表盘和你的应用在没有受信任证书的情况下提供服务。",
+      "on": "已启用 HTTPS",
+      "onLine": "正通过 HTTPS 提供 {{domain}}。",
+      "enable": "启用 HTTPS"
+    },
+    "ingress": {
+      "title": "入口",
+      "healthy": "入口正常",
+      "healthyLine": "{{host}} 上的 80 和 443 端口有响应。",
+      "healthyNoHost": "80 和 443 端口有响应。",
+      "attention": "入口需要处理",
+      "attentionLine": "打开页面查看是哪个端口或地址出了问题。"
+    },
+    "addresses": {
+      "title": "地址",
+      "set": "已设置仪表盘地址",
+      "setLine": "{{url}}",
+      "unset": "没有仪表盘地址",
+      "unsetLine": "设置人们访问此仪表盘所用的公网地址。"
+    },
+    "dns": {
+      "title": "DNS 提供商",
+      "connected": "DNS:已连接 {{providers}}",
+      "connectedLine": "可以为你处理记录和 DNS-01 证书。",
+      "none": "未连接 DNS 提供商",
+      "noneLine": "连接一个以签发通配符证书并创建记录。"
+    },
+    "search": {
+      "label": "搜索设置",
+      "placeholder": "搜索平台设置",
+      "hint": "按 / 搜索",
+      "results": "平台设置搜索结果",
+      "empty": "没有匹配 \"{{query}}\" 的平台设置。",
+      "count_other": "{{count}} 项设置",
+      "go": "在{{page}}页面中打开{{title}}"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "为仪表盘启用受信任的证书,并查看每个域名的证书状态。"
+    },
+    "ingress": {
+      "title": "入口",
+      "description": "流量如何到达此服务器:代理、其端口,以及在你自己的反向代理之后运行的指南。"
+    },
+    "addresses": {
+      "title": "地址",
+      "description": "仪表盘地址、应用的基础域名、自动备用主机名和 DNS 自动化。"
+    },
+    "dnsProviders": {
+      "title": "DNS 提供商",
+      "description": "连接 DNS 提供商,让证书和记录自动处理。"
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "入口",
+    "addresses": "地址",
+    "dns-providers": "DNS 提供商"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "启用 HTTPS",
+      "description": "签发受信任的证书,并通过 HTTPS 提供仪表盘。"
+    },
+    "certificates": {
+      "title": "证书概要",
+      "description": "每个证书的到期时间和签发者,并链接到证书中心。"
+    },
+    "ingressSettings": {
+      "title": "入口设置",
+      "description": "主域名、ACME 邮箱和 HSTS。"
+    },
+    "dns01": {
+      "title": "对每个主机使用 DNS 验证",
+      "description": "对所有证书使用 DNS-01 验证,适用于位于 CGNAT 之后或 80 端口关闭的服务器。"
+    },
+    "ddns": {
+      "title": "动态 DNS",
+      "description": "让一个 DNS 名称始终指向此服务器的公网 IP。"
+    },
+    "ingressEdge": {
+      "title": "入口边缘",
+      "description": "内置代理及其监听的端口。"
+    },
+    "connectivity": {
+      "title": "入口连通性",
+      "description": "80 和 443 端口在此服务器的地址上是否有响应。"
+    },
+    "reverseProxy": {
+      "title": "反向代理指南",
+      "description": "在你自己的反向代理之后运行此平台。"
+    },
+    "dashboardUrl": {
+      "title": "仪表盘地址",
+      "description": "链接、邮件和 webhook 中使用的公网 URL。"
+    },
+    "appsBaseDomain": {
+      "title": "应用基础域名",
+      "description": "新应用在其上获得子域名的域名。"
+    },
+    "fallbackDomains": {
+      "title": "备用域名",
+      "description": "为尚无域名的应用自动生成的主机名。"
+    },
+    "domainAutomation": {
+      "title": "域名自动化",
+      "description": "为新域名自动创建 DNS 记录。"
+    },
+    "cloudflareDns": {
+      "title": "Cloudflare DNS",
+      "description": "用于 DNS 记录和 DNS-01 证书的 API 令牌。"
+    },
+    "route53Dns": {
+      "title": "Route 53 DNS",
+      "description": "用于托管区域记录的 AWS 凭据。"
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "用于 Cloud DNS 区域的服务账号。"
+    }
+  },
+  "strip": {
+    "label": "平台状态",
+    "httpsOff": "未启用 HTTPS",
+    "httpsOn": "已启用 HTTPS",
+    "enable": "启用 HTTPS",
+    "address": "仪表盘地址",
+    "addressUnset": "未设置",
+    "manage": "平台设置"
+  }
+}
