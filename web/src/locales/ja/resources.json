@@ -1,0 +1,214 @@
+{
+  "title": "リソース",
+  "description": "すべてのアプリ、データベース、ノード、ドメイン、バケット、プライベートネットワークを、検索できる1つの一覧にまとめました。タグを付けたり、よく使うビューを保存したり、タグごとのコストを確認したりできます。",
+  "search": {
+    "label": "リソースを検索",
+    "placeholder": "名前、詳細、タグで検索"
+  },
+  "kind": {
+    "all": "すべて",
+    "app": "アプリ",
+    "database": "データベース",
+    "node": "ノード",
+    "domain": "ドメイン",
+    "bucket": "バケット",
+    "network": "プライベートネットワーク",
+    "appOne": "アプリ",
+    "databaseOne": "データベース",
+    "nodeOne": "ノード",
+    "domainOne": "ドメイン",
+    "bucketOne": "バケット",
+    "networkOne": "プライベートネットワーク"
+  },
+  "tags": {
+    "filter": "タグ",
+    "filterLabel": "タグで絞り込み。選択したタグをすべて持つリソースのみ表示します",
+    "none": "タグはまだありません。リソースを選択し、「タグを追加」で最初のタグを作成してください。",
+    "clear": "タグをクリア"
+  },
+  "list": {
+    "label": "リソース",
+    "name": "名前",
+    "detail": "詳細",
+    "tags": "タグ",
+    "selectAll": "表示中のリソースをすべて選択",
+    "selectOne": "{{name}}を選択",
+    "shown": "{{total}}件中{{shown}}件を表示",
+    "emptyTitle": "一致するリソースはありません",
+    "emptyDescription": "検索かタグのフィルターを解除すると、すべて表示されます。",
+    "emptyAction": "フィルターを解除",
+    "errorTitle": "リソースを読み込めませんでした",
+    "retry": "再試行"
+  },
+  "bulk": {
+    "selected_other": "{{count}}件選択中",
+    "addTag": "タグを追加",
+    "removeTag": "タグを削除",
+    "clear": "選択を解除"
+  },
+  "dialog": {
+    "addTitle": "{{count}}件のリソースにタグを追加",
+    "removeTitle": "{{count}}件のリソースからタグを削除",
+    "description": "先に変更内容をプレビューしてください。適用するまで何も書き込まれません。",
+    "tagLabel": "タグ",
+    "tagPlaceholder": "team:shop",
+    "tagHint": "小文字のkeyまたはkey:valueです(例: env:prod)。コストのグループ化に使えます。",
+    "preview": "変更をプレビュー",
+    "previewing": "確認中...",
+    "apply": "{{count}}件に適用",
+    "applying": "適用中...",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "summaryDry": "プレビュー: {{would}}件が変更され、{{skipped}}件はすでに指定どおりで、{{blocked}}件はブロックされます。",
+    "summaryDone": "完了: {{done}}件を変更し、{{skipped}}件はすでに指定どおりで、{{blocked}}件はブロックされました。",
+    "failed": "変更をプレビューまたは適用できませんでした。",
+    "doneToast": "{{count}}件のリソースでタグ{{tag}}を更新しました"
+  },
+  "appAction": {
+    "restart": "アプリを再起動",
+    "redeploy": "アプリを再デプロイ",
+    "restartTitle": "{{count}}件のアプリを再起動",
+    "redeployTitle": "{{count}}件のアプリを再デプロイ",
+    "restartDescription": "再起動されるアプリをプレビューします。各アプリは個別に再起動し、適用するまで何も行われません。",
+    "redeployDescription": "現在のバージョンで再デプロイされるアプリをプレビューします。適用するまで何も行われません。",
+    "summaryDry": "プレビュー: {{would}}件を実行し、{{skipped}}件をスキップし、{{blocked}}件はブロックされます。",
+    "summaryDone": "完了: {{done}}件を開始し、{{skipped}}件をスキップし、{{blocked}}件はブロックされました。",
+    "failed": "操作をプレビューまたは適用できませんでした。",
+    "restartToast": "{{count}}件のアプリを再起動しています",
+    "redeployToast": "{{count}}件のアプリを再デプロイしています"
+  },
+  "status": {
+    "ok": "変更済み",
+    "would_apply": "変更予定",
+    "skipped": "設定済み",
+    "denied": "権限なし",
+    "not_found": "見つかりません",
+    "error": "失敗"
+  },
+  "views": {
+    "button": "保存済みビュー",
+    "label": "保存済みビュー",
+    "empty": "保存済みビューはまだありません。検索を設定して、ここに保存してください。",
+    "saveTitle": "現在のフィルターを保存",
+    "namePlaceholder": "ビュー名",
+    "save": "ビューを保存",
+    "saved": "ビュー{{name}}を保存しました",
+    "apply": "ビュー{{name}}を開く",
+    "delete": "ビュー{{name}}を削除",
+    "deleted": "ビューを削除しました"
+  },
+  "cost": {
+    "title": "タグ別コスト",
+    "description": "今月分です。複数のタグを持つリソースは、それぞれのタグに計上されます。",
+    "open": "コストレポート全体を開く",
+    "empty": "アプリやデータベースにタグを付けると、コストがここにグループ化されて表示されます。",
+    "untagged": "タグなし"
+  },
+  "palette": {
+    "open": "リソースエクスプローラーを開く",
+    "openKeywords": "リソース タグ エクスプローラー 検索 すべて",
+    "tagged": "タグ{{tag}}のリソース",
+    "view": "保存済みビュー: {{name}}",
+    "bucket": "バケット {{name}}",
+    "network": "プライベートネットワーク {{name}}"
+  },
+  "scale": {
+    "title": "スケール",
+    "tag": "デプロイ後",
+    "description": "このアプリが現在使っているリソースと、余裕を持たせる方法です。ここにある数値はすべて、このサーバーからリアルタイムで読み取っています。",
+    "replicas": "レプリカ",
+    "memoryLimit": "メモリ上限",
+    "noLimit": "上限は設定されていません",
+    "cpu": "CPU(アプリ全体)",
+    "memory": "メモリ(アプリ全体)",
+    "unknown": "まだ報告されていません",
+    "autoscale": "オートスケール",
+    "autoscaleOff": "オフ",
+    "autoscaleOn": "オン、レプリカ数は{{min}}から{{max}}",
+    "lastDecision": "最後の判断: {{at}}に{{reason}}",
+    "noDecision": "判断はまだ記録されていません",
+    "replicaHealth": "レプリカのヘルス",
+    "noReplicaHealth": "このアプリにロードバランサーを設定すると、レプリカごとのヘルスがここに表示されます。",
+    "replicaRow": "レプリカ{{n}}",
+    "state": {
+      "healthy": "正常",
+      "unhealthy": "異常",
+      "draining": "ドレイン中",
+      "disabled": "無効",
+      "unknown": "不明"
+    },
+    "guide": {
+      "title": "次にやること",
+      "resize": "各レプリカに余裕を持たせる: 上のリソースセクションでメモリ上限を引き上げ、再デプロイしてください。メモリ使用量が上限に近い場合に引き上げます。",
+      "replicas": "より多くのトラフィックを処理する: デプロイ設定でレプリカ数を増やしてください。各レプリカは、負荷を分担するアプリのコピーです。",
+      "autoscale": "アプリを負荷に追従させる: 下でオートスケーリングをオンにし、最小値と最大値を選んでください。設定するまではオフです。",
+      "biggerHost": "サーバー自体のリソースが足りなくなったら、より大きなホストへ移行してください。サイズを変更してもホストのCPUやメモリが高いままの場合や、レプリカを増やしても負荷が下がらなくなった場合が目安です。1台のサーバー上のレプリカは、そのサーバーを共有します。"
+    }
+  },
+  "replicaTable": {
+    "title": "レプリカ",
+    "replica": "レプリカ",
+    "address": "アドレス",
+    "health": "ヘルス",
+    "connections": "接続数",
+    "weight": "重み",
+    "lastCheck": "最終チェック",
+    "drain": "ドレイン",
+    "never": "まだチェックされていません",
+    "replicaRow": "レプリカ{{n}}",
+    "drainReplica": "レプリカ{{n}}をドレイン",
+    "drainFailed": "レプリカを変更できませんでした",
+    "state": {
+      "healthy": "正常",
+      "unhealthy": "異常",
+      "draining": "ドレイン中",
+      "disabled": "無効",
+      "unknown": "不明"
+    }
+  },
+  "nextCache": {
+    "title": "共有キャッシュ(Next.js)",
+    "hint": "ISRとデータキャッシュをRedisに保持し、すべてのレプリカが同じページを返すようにします。",
+    "toggle": "ISRとデータキャッシュをレプリカ間で共有",
+    "linked": "リンク済みのRedisデータベース: {{name}}",
+    "notLinked": "このアプリにリンクされたRedisデータベースがありません。リンクするまでデプロイは停止します。",
+    "linkExisting": "{{name}}をリンク",
+    "create": "Redisを作成",
+    "linkedToast": "{{name}}をリンクしました",
+    "saved": "共有キャッシュを保存しました",
+    "autoNote": "NEXT_BUILD_IDとキャッシュURLは、次回のデプロイで自動的に設定されます。",
+    "suggest": "このアプリは共有キャッシュなしで{{count}}個のレプリカを実行しています。オンにして、キャッシュされたページを揃えましょう。",
+    "redeploy": "再デプロイして適用",
+    "noGit": "これを適用するにはGitソースから再デプロイしてください。このアプリにはGitソースがありません。",
+    "started": "{{name}}の再デプロイを開始しました",
+    "errorTitle": "共有キャッシュを更新できませんでした"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "スキュー保護",
+    "held": "前のリリースを保持中、削除予定",
+    "noneHeld": "保持している前のリリースはありません",
+    "cache": "共有キャッシュ",
+    "redis": "Redis",
+    "off": "オフ",
+    "configure": "設定",
+    "vitals": "Web Vitals",
+    "collecting": "収集中",
+    "notCollecting": "収集していません",
+    "cron": "cronジョブ",
+    "cronCount_other": "ジョブ{{count}}件",
+    "noCron": "なし",
+    "manage": "管理",
+    "advisor": {
+      "title": "アドバイザー",
+      "empty": "問題は見つかりませんでした",
+      "copy": "コマンドをコピー",
+      "copyFailed": "コピーできませんでした",
+      "severity": {
+        "info": "情報",
+        "warn": "警告",
+        "error": "エラー"
+      }
+    }
+  }
+}

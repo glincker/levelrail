@@ -1,0 +1,29 @@
+{
+  "title": "フレームワークのプリセット",
+  "description": "フレームワークを選ぶと、必要なポート、ヘルスチェック、ストレージが自動で入力されます。",
+  "detected": "リポジトリから検出しました",
+  "detectedShort": "検出済み",
+  "loadFailed": "フレームワークのプリセットを読み込めませんでした。",
+  "port": "ポート",
+  "healthPath": "ヘルスパス",
+  "buildType": "ビルド",
+  "outputMode": "出力",
+  "static": "静的サイト。組み込みのWebサーバーが直接配信します",
+  "envHints": "設定する環境変数",
+  "required": "必須",
+  "volumes": "永続ストレージ",
+  "mismatchTitle": "設定がプリセットと異なります",
+  "mismatchBody": "このフォームではポート{{port}}、ヘルスパス{{health}}を使っています。{{name}}のアプリは通常ポート{{presetPort}}と{{presetHealth}}を使います。",
+  "applyFix": "プリセットの設定を使う",
+  "applied": "プリセットの設定を適用しました。",
+  "dockerfile": "最適化済みDockerfileをコピー",
+  "dockerfileCopied": "Dockerfileをクリップボードにコピーしました。",
+  "dockerfileFailed": "Dockerfileをコピーできませんでした。",
+  "outputModes": {
+    "server": "Nodeまたはランタイムのサーバー",
+    "standalone": "スタンドアロンのサーバーバンドル",
+    "static": "静的ファイル",
+    "jar": "実行可能jar",
+    "binary": "単一バイナリ"
+  }
+}

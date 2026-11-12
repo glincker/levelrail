@@ -1,0 +1,68 @@
+{
+  "title": "公開",
+  "pageTitle": "公開: {{name}}",
+  "intro": "稼働中のアプリから、あなたのドメインでのhttps公開までを1つのチェックリストにまとめました。各ステップで、検出した内容と次にやることが1つ表示されます。",
+  "domainLabel": "ドメイン",
+  "noDomain": "ドメインはまだありません。最初のステップはドメインなしでも進められます。",
+  "loading": "設定を確認中",
+  "loadFailed": "チェックリストを読み込めませんでした: {{message}}",
+  "retry": "再試行",
+  "recheck": "再確認",
+  "liveBanner": "公開中: {{url}}",
+  "openSite": "{{url}}を開く",
+  "state": {
+    "not_live": "未公開",
+    "waiting_dns": "DNS待ち",
+    "waiting_certificate": "証明書待ち",
+    "live": "公開中",
+    "needs_attention": "要対応"
+  },
+  "status": {
+    "ok": "完了",
+    "warn": "警告",
+    "fail": "要対応",
+    "pending": "待機中",
+    "unknown": "不明"
+  },
+  "announce": "{{title}}: {{status}}",
+  "nextCheck": "次回の確認 {{time}}",
+  "copy": "コピー",
+  "copied": "コピーしました",
+  "copyValue": "{{label}}をコピー",
+  "blocked": "まだ利用できません: {{reason}}",
+  "actionFailed": "操作に失敗しました: {{message}}",
+  "scope": {
+    "control_plane_host": "このサーバーから確認しています。より広いインターネットから到達できることは証明できません。Let's Encryptの証明書がその証明になります。Let's Encryptが外部からドメインを検証したためです。"
+  },
+  "records": "作成するレコード",
+  "provider": {
+    "title": "{{name}}のファイアウォール手順",
+    "ports": "次のインバウンドポートを開放してください",
+    "docs": "{{name}}のガイドを開く",
+    "portRule": "{{source}}から{{port}}/{{protocol}}"
+  },
+  "fix": {
+    "title": "80番と443番ポートを開放しますか?",
+    "description": "ホストのファイアウォールを変更します。開放するのはこれらのポートだけで、ほかのルールには触れません。無効のファイアウォールは無効のままです。",
+    "willRun": "実行するコマンド: {{command}}",
+    "undo": "元に戻すコマンド: {{command}}",
+    "notPersistent": "ファイアウォールのルールを保存しない限り、再起動するとこのルールは失われます。",
+    "confirm": "ポートを開放",
+    "pending": "開放中",
+    "refused": "自動では実行できません: {{reason}}"
+  },
+  "timeline": {
+    "title": "アクティビティ",
+    "empty": "まだ何も起きていません。",
+    "scheduled": "予定済み"
+  },
+  "badge": {
+    "link": "{{domain}}の公開チェックリストを開く"
+  },
+  "cta": {
+    "title": "アプリが稼働中です。あなたのドメインで公開しましょう",
+    "body": "ドメインを向けるだけで証明書が自動で発行され、各ステップの状況をリアルタイムで確認できます。",
+    "button": "公開する"
+  },
+  "diagnoseLink": "公開チェックリストを開く"
+}

@@ -1,0 +1,152 @@
+{
+  "title": "稼働監視",
+  "add": "モニターを追加",
+  "cancel": "キャンセル",
+  "empty": "モニターはまだありません。追加すると、URL、TCPポート、cronジョブ、証明書を監視できます。",
+  "loadError": "モニターを読み込めませんでした: {{message}}",
+  "columns": {
+    "name": "名前",
+    "target": "対象",
+    "state": "状態",
+    "lastCheck": "最終チェック",
+    "uptime": "稼働率(24時間)"
+  },
+  "state": {
+    "up": "稼働中",
+    "suspect": "疑わしい",
+    "down": "停止",
+    "recovering": "復旧中",
+    "degraded": "低下",
+    "paused": "一時停止中",
+    "unknown": "データなし"
+  },
+  "notAvailable": "なし",
+  "never": "なし",
+  "form": {
+    "kind": "種類",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "heartbeat": "cronハートビート",
+    "tls": "TLS証明書",
+    "grace": "猶予(秒)",
+    "graceHint": "間隔を過ぎてから、ジョブを遅延とみなすまでの追加の待ち時間です。空欄にするとサーバーの既定値を使います。",
+    "warnDays": "警告(日)",
+    "critDays": "重大(日)",
+    "daysHint": "警告の日数を下回ると低下、重大の日数を下回ると停止とみなします。空欄にするとサーバーの既定値を使います。",
+    "serverDefault": "既定値",
+    "pingTitle": "これをジョブに追加してください",
+    "pingHint": "1度しか表示されません。ジョブの前に/startを、エラー時に/failを末尾に付けて呼び出します。漏えいした場合は、行またはCLIからローテーションしてください。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "done": "完了",
+    "url": "URL",
+    "host": "ホスト",
+    "port": "ポート",
+    "name": "名前",
+    "interval": "間隔(秒)",
+    "timeout": "タイムアウト(ミリ秒)",
+    "statusLink": "ステータスページのインシデントを開く",
+    "statusLinkHint": "このモニターが停止している間、リンクされたステータスコンポーネントにインシデントを開き、復旧後に解決します。既定ではオフです。",
+    "save": "作成",
+    "saving": "作成中...",
+    "created": "モニター{{name}}を作成しました",
+    "error": "モニターを作成できませんでした: {{message}}",
+    "urlPlaceholder": "https://example.com/health"
+  },
+  "delete": {
+    "action": "{{name}}を削除",
+    "title": "モニター{{name}}を削除しますか?",
+    "description": "結果と集計も一緒に削除されます。",
+    "confirm": "削除",
+    "pending": "削除中...",
+    "done": "モニター{{name}}を削除しました"
+  },
+  "pause": {
+    "action": "{{name}}を一時停止"
+  },
+  "resume": {
+    "action": "{{name}}を再開"
+  },
+  "rotate": {
+    "action": "{{name}}のトークンをローテーション",
+    "title": "{{name}}のpingのURLをローテーションしますか?",
+    "description": "古いURLはただちに使えなくなります。新しいURLは1度しか表示されないため、すぐにジョブを更新してください。",
+    "confirm": "ローテーション",
+    "pending": "ローテーション中..."
+  },
+  "incidents": {
+    "title": "インシデント",
+    "empty": "インシデントはありません。確認されたモニターの障害と、格上げされたアラートがここに表示されます。",
+    "loadError": "インシデントを読み込めませんでした: {{message}}",
+    "refresh": "更新",
+    "published": "公開",
+    "detailHint": "社内向けタイムラインと公開用の下書き",
+    "timeline": "社内向けタイムライン",
+    "ack": "確認済みにする",
+    "resolve": "解決",
+    "state": {
+      "triggered": "発生",
+      "acknowledged": "確認済み",
+      "resolved": "解決済み"
+    },
+    "status": {
+      "investigating": "調査中",
+      "identified": "原因特定済み",
+      "monitoring": "経過観察中",
+      "resolved": "解決済み"
+    },
+    "note": {
+      "label": "メモを追加(社内向け)",
+      "add": "メモを追加"
+    },
+    "draft": {
+      "title": "公開用アップデートの下書き",
+      "name": "タイトル",
+      "status": "ステータス",
+      "body": "メッセージ",
+      "save": "下書きを保存",
+      "saved": "下書きを保存しました",
+      "prefillBody": "調査中です: {{title}}。影響を受けているもの: {{monitor}}。",
+      "unknownMonitor": "サービス"
+    },
+    "publish": {
+      "action": "公開",
+      "confirmTitle": "公開ステータスページに公開しますか?",
+      "confirmBody": "ただちに一般公開され、取り消すことはできません。下の文面を確認してください。",
+      "confirm": "一般に公開",
+      "pending": "公開中...",
+      "done": "インシデントを公開しました",
+      "already": "公開済みです。以降の公開アップデートは、ステータスページの設定から投稿してください。",
+      "stale": "このインシデントは、読み込み後に変更されました。更新して、下書きをもう一度確認してください。",
+      "changed": "公開している間に、下書きが変更されました。何も公開されていません。もう一度確認してください。"
+    },
+    "postmortem": {
+      "title": "ポストモーテム",
+      "none": "ポストモーテムはまだありません。下書きを作成すると、このインシデントの影響期間とアラートが入力されます。",
+      "start": "ポストモーテムを下書き",
+      "refresh": "期間とアラートを更新",
+      "save": "保存",
+      "publish": "ポストモーテムを公開",
+      "pending": "公開中...",
+      "confirmTitle": "このポストモーテムを公開しますか?",
+      "confirmBody": "公開するとポストモーテムはロックされ、以降は誰も編集できません。",
+      "window": "影響期間 {{start}}から{{end}}",
+      "ongoing": "記録なし",
+      "alerts": "アラート",
+      "noAlerts": "このインシデントについて記録されたアラートはありません。",
+      "itemsHint": "1行に1件のアクション項目",
+      "publishedBy": "{{by}}が{{at}}に公開",
+      "state": {
+        "draft": "下書き",
+        "published": "公開済み"
+      },
+      "fields": {
+        "summary": "概要",
+        "impact": "影響",
+        "root_cause": "根本原因",
+        "resolution": "対処",
+        "action_items": "アクション項目"
+      }
+    }
+  }
+}

@@ -1,0 +1,678 @@
+{
+  "title": "新しいアプリ",
+  "description": "リポジトリまたはほかのソースを選びます。プロバイダーのAPI経由で読み取り、確認用の設定を提案します。デプロイするまで、クローンも作成も行われません。",
+  "steps": {
+    "label": "新しいアプリのステップ",
+    "source": "取得元",
+    "findings": "検出した内容",
+    "review": "確認してデプロイ"
+  },
+  "nav": {
+    "back": "戻る",
+    "review": "確認"
+  },
+  "source": {
+    "analyzing": "リポジトリを読み取り中...",
+    "noProvider": {
+      "lead": "Gitプロバイダーは接続されていませんが、必須ではありません。リポジトリのURLを貼り付けるか、テンプレートを選ぶか、サンプルアプリをお試しください。"
+    },
+    "privateRepo": "このリポジトリを読み取れませんでした。プライベートの場合は、Gitプロバイダーを接続して、一覧から選んでください。",
+    "privateRepoConnect": "Gitプロバイダーを接続",
+    "analyze": "リポジトリを解析",
+    "repos": {
+      "listLabel": "接続済みのリポジトリ",
+      "loading": "リポジトリを読み込み中",
+      "noMatch": "「{{query}}」に一致するリポジトリはありません。完全なURLを貼り付けて、直接使ってください。",
+      "private": "プライベートリポジトリ",
+      "pushed": "{{when}}にプッシュ",
+      "partial": "一部の接続済みアカウントを、一覧表示できませんでした。不足しているものは、URLを貼り付けてください。",
+      "retry": "再試行",
+      "refresh": "リポジトリを更新",
+      "refreshing": "更新中...",
+      "emptyTitle": "リポジトリが見つかりません",
+      "emptyBody": "接続済みのアカウントに、まだリポジトリが見えていません。アクセスを許可した後に一覧を更新するか、上でリポジトリのURLを貼り付けてください。",
+      "failedTitle": "リポジトリを一覧表示できませんでした",
+      "failedBody": "プロバイダーが応答しませんでした。更新して再試行するか、設定で接続を確認するか、上でリポジトリのURLを貼り付けてください。"
+    },
+    "git": {
+      "title": "Gitからインポート",
+      "connectTitle": "Gitプロバイダーを接続",
+      "connectBody": "アカウントを接続して、リポジトリの一覧から選ぶか、上でリポジトリのURLを貼り付けてください。",
+      "connect": "接続",
+      "manageAll": "Git接続を管理",
+      "connectLabel": "{{provider}}を接続",
+      "connected": "接続済み",
+      "needsAddress": "GitHubでのサインインには、このサーバーのパブリックアドレスが必要です。",
+      "useUrlInstead": "代わりにリポジトリのURLを使う",
+      "manage": "接続を管理",
+      "noProviderHint": "公開リポジトリは、Gitプロバイダーなしでデプロイできます。プライベートリポジトリやプッシュ時のデプロイには、下で接続してください。"
+    },
+    "templates": {
+      "title": "テンプレートから始める",
+      "seeAll": "{{count}}個のテンプレートをすべて見る",
+      "browse": "テンプレートのカタログを見る",
+      "loading": "テンプレートを読み込み中",
+      "unavailable": "現在、テンプレートの一覧は利用できません。カタログ全体には、ワンクリックで移動できます。",
+      "gridLabel": "注目のテンプレート",
+      "retry": "再試行",
+      "search": "テンプレートを検索",
+      "categories": "テンプレートのカテゴリ",
+      "noMatch": "「{{query}}」に一致するテンプレートはありません。別の語を試すか、カタログ全体を見てください。",
+      "popular": "人気のテンプレート",
+      "browseAll": "{{count}}個すべてを見る"
+    },
+    "errorManage": "Git接続を確認",
+    "find": {
+      "label": "リポジトリ",
+      "placeholder": "リポジトリを検索するか、Gitのリンクを貼り付け",
+      "hint": "入力してリポジトリを絞り込むか、GitHub、GitLab、Gitea、BitbucketのURL(https、git@、または/tree/branchのリンク)を貼り付けてください。",
+      "useUrl": "このURLを使う",
+      "clear": "クリア"
+    },
+    "choose": {
+      "label": "アプリの取得元を選択",
+      "git": {
+        "title": "Gitリポジトリ",
+        "hint": "URLを貼り付けるか、リポジトリを選ぶ"
+      },
+      "template": {
+        "title": "テンプレート",
+        "hint": "既製のアプリをセルフホスト"
+      },
+      "image": {
+        "title": "コンテナイメージ",
+        "hint": "Compose、docker run、サイトも"
+      },
+      "sample": {
+        "title": "サンプルアプリ",
+        "hint": "ワンクリックで試す"
+      }
+    },
+    "sample": {
+      "body": "小さな公開サンプルアプリをデプロイして、稼働するデプロイを数秒で確認できます。"
+    }
+  },
+  "findings": {
+    "warnings": {
+      "nothing_detected": "Dockerfile、Composeファイル、既知のフレームワークが見つかりませんでした。詳細設定でビルドの種類を選んでください。",
+      "read_budget": "ファイルの読み取り上限に達したため、一部の検出結果が欠けている可能性があります。",
+      "tree_truncated": "このリポジトリは大きく、ファイル一覧が途中で切り詰められました。",
+      "monorepo_choose_app": "複数のアプリを持つモノレポのようです。下でアプリのディレクトリを確認してください。",
+      "directory_missing": "そのディレクトリは、このブランチに存在しません。上の一覧から選ぶか、パスを修正してください。",
+      "port_unknown": "待ち受けポートが検出されませんでした。アプリが待ち受けるポートを設定してください。"
+    },
+    "app": {
+      "title": "アプリ",
+      "name": "アプリ名",
+      "domain": "ドメイン"
+    },
+    "build": {
+      "title": "ビルドと実行",
+      "app": "このリポジトリ内のアプリ",
+      "appHint": "ビルドできるアプリが複数見つかりました。デプロイするものを選んでください。"
+    },
+    "port": {
+      "label": "アプリが待ち受けるポート"
+    },
+    "health": {
+      "label": "ヘルスチェックのパス"
+    },
+    "databases": {
+      "title": "必要と思われるデータベース",
+      "attach": "{{engine}} {{version}}を作成して接続",
+      "name": "データベース名",
+      "envVar": "接続用の変数"
+    },
+    "env": {
+      "title": "環境変数",
+      "none": "このリポジトリは、環境変数を宣言していません。",
+      "required": "必須",
+      "secret": "シークレット",
+      "provided": "{{source}}から自動で入力されます。",
+      "placeholder": "値を入力",
+      "hasDefault": "空欄にすると、アプリ自身の既定値を使います",
+      "source": "{{source}}で検出",
+      "optional": "任意の変数{{count}}件",
+      "noValues": "リポジトリから読み取るのは、変数名のみです。値がインポートされることはありません。"
+    },
+    "advanced": {
+      "title": "詳細オプション",
+      "buildType": "ビルドの種類",
+      "dockerfile": "Dockerfileのパス",
+      "spa": "シングルページアプリのモード",
+      "baseDirectory": "ビルドコンテキストのディレクトリ",
+      "validateDirectory": "ディレクトリを検証",
+      "memory": "メモリ上限(MiB)",
+      "types": {
+        "railpack": "自動検出(Railpack)",
+        "dockerfile": "Dockerfile",
+        "static": "静的サイト"
+      }
+    }
+  },
+  "review": {
+    "summary": "{{framework}}のリポジトリから{{name}}を作成します。データベースは{{databases}}件で、{{domain}}で配信され、最初のビルドを開始します。",
+    "noDomain": "ドメインはまだありません",
+    "changesLabel": "作成される内容",
+    "willCreate": "作成されます",
+    "kinds": {
+      "app": "アプリ",
+      "source": "リポジトリ",
+      "database": "データベース",
+      "domain": "ドメイン",
+      "env": "環境変数"
+    },
+    "missingTitle": "必須の変数が空です",
+    "missingBody": "戻って、次を入力してください: {{keys}}",
+    "deploy": "デプロイ",
+    "deploying": "作成してデプロイ中...",
+    "failed": {
+      "generic": "デプロイが完了しませんでした",
+      "database": "データベースを作成できませんでした",
+      "app": "アプリを作成できませんでした",
+      "connection": "データベースを接続できませんでした",
+      "source": "リポジトリを接続できませんでした",
+      "build": "ビルドを開始できませんでした"
+    },
+    "failedResume": "アプリのレコードは存在します。「デプロイ」を押すと、止まった箇所から続けます。"
+  },
+  "toast": {
+    "created": "「{{name}}」を作成しています。",
+    "watching": "最初のビルドを監視しています。"
+  },
+  "deployLink": {
+    "title": "リンクから入力済みです。デプロイする前に確認してください",
+    "fromSource": "{{host}}からのリンクが、このフォームに入力しました。「デプロイ」を押すまで、何も作成されません。",
+    "fromUnknown": "リンクが、このフォームに入力しました。「デプロイ」を押すまで、何も作成されません。",
+    "ignoredTitle": "一部のリンクパラメーターは無視されました",
+    "ignoredBody": "これらは、不足しているか、無効でした: {{params}}。",
+    "name": "名前",
+    "image": "イメージ",
+    "port": "ポート",
+    "portHint": "アプリがコンテナ内で待ち受けるポートです。",
+    "health": "ヘルスチェックのパス",
+    "healthHint": "ヘルスチェックをスキップするには、空欄のままにしてください。",
+    "envTitle": "環境変数",
+    "envHint": "リンクが、これらの変数を指定しています。独自の値を入力してください。値はシークレットとして保存されます。",
+    "envValue": "{{key}}の値",
+    "deploy": "デプロイ",
+    "deploying": "作成中...",
+    "missingImage": "リンクに、有効なイメージが含まれていませんでした。下で、このアプリの取得元を選んでください。",
+    "errors": {
+      "name": "小文字、数字、ハイフンを使ってください。",
+      "image": "ghcr.io/you/app:latestのような、イメージを入力してください。",
+      "port": "1から65535のポートを入力してください。",
+      "health": "パスは、1つのスラッシュで始めてください。"
+    }
+  },
+  "detection": {
+    "title": "このリポジトリの読み取り方",
+    "why": "理由",
+    "whyFor": "{{field}}が検出された理由",
+    "fromFramework": "{{framework}}の既定値",
+    "framework": "フレームワークと言語",
+    "buildType": "ビルドの種類",
+    "port": "ポート",
+    "start": "起動コマンド",
+    "buildCommand": "ビルドコマンド",
+    "output": "出力ディレクトリ",
+    "runtime": "ランタイムのバージョン",
+    "health": "ヘルスチェックのパス",
+    "confidence": {
+      "high": "信頼度: 高",
+      "medium": "信頼度: 中",
+      "low": "信頼度: 低"
+    },
+    "warnings": {
+      "no_lockfile": {
+        "text": "ロックファイルが見つからなかったため、インストールの再現性がありません。",
+        "fix": "ロックファイルをコミットして、もう一度解析してください。"
+      },
+      "multiple_dockerfiles": {
+        "text": "複数のDockerfileが見つかりました。",
+        "fix": "選択が正しくない場合は、詳細設定で正しいものを選んでください。"
+      },
+      "malformed_manifest": {
+        "text": "マニフェストを解析できなかったため、これは最善の推測です。",
+        "fix": "JSONまたはTOMLの構文を修正して、もう一度解析してください。"
+      },
+      "dockerfile_no_expose": {
+        "text": "DockerfileにEXPOSE行がありません。",
+        "fix": "ポートを指定したEXPOSEを追加するか、下でポートを設定してください。"
+      },
+      "monorepo_no_root_app": {
+        "text": "これは、ルートにアプリがないモノレポです。",
+        "fix": "下で、パッケージごとにアプリを1つ作成してください。"
+      },
+      "railpack_unsupported": {
+        "text": "自動ビルドは、まだこの言語に対応していません。",
+        "fix": "リポジトリにDockerfileを追加して、もう一度解析してください。"
+      }
+    }
+  },
+  "starter": {
+    "open": "スターターの設定ファイル",
+    "title": "スターターのテンプレート",
+    "description": "出発点を選び、いくつかの質問に答えると、リポジトリにコミットできる、検証済みのファイルが得られます。",
+    "generate": "ファイルを生成",
+    "generating": "生成中...",
+    "copy": "コピー",
+    "copied": "{{path}}をコピーしました",
+    "next": "これらのファイルをリポジトリにコミットしてから、「取得元」のステップでデプロイしてください。",
+    "viaCli": "代わりにCLIで生成する",
+    "openHint": "リポジトリにコミットするapp.yamlを生成します。"
+  },
+  "packages": {
+    "title": "ワークスペースのパッケージ",
+    "hint": "このリポジトリには、複数のパッケージがあります。パッケージごとにアプリを1つ作成してください。各アプリは、それぞれのディレクトリからビルドされ、変更があったときにのみ再デプロイされます。",
+    "dockerfile": "Dockerfile",
+    "configure": "これを設定する",
+    "creating": "アプリを作成し、最初のビルドを開始しています...",
+    "open": "{{name}}のビルドを開く",
+    "creatingAll": "アプリを作成中...",
+    "createSelected_other": "選択した各パッケージのアプリを作成({{count}}件)",
+    "createSelected_zero": "選択した各パッケージのアプリを作成",
+    "envNote": "必須の環境変数は、ここでは尋ねません。各アプリに追加してから、再デプロイしてください。"
+  },
+  "plan": {
+    "title": "インポートの計画",
+    "hint": "何かを作成する前に、各パッケージがどのようなアプリになるか(名前、ポート、ビルドの種類、再確認すべき点)を確認できます。",
+    "review": "計画をプレビュー",
+    "loading": "リポジトリ内のすべてのパッケージを読み取り中...",
+    "error": "計画を作成できませんでした: {{message}}",
+    "retry": "再試行",
+    "empty": "ワークスペースのパッケージが見つからなかったため、計画するものがありません。下で、このリポジトリを単一のアプリとして設定してください。",
+    "summary_other": "{{count}}個のパッケージ、うち警告ありが{{flagged}}個。確定するまで、何も作成されません。",
+    "none": "なし",
+    "columns": {
+      "name": "名前",
+      "directory": "ディレクトリ",
+      "port": "ポート",
+      "build": "ビルド",
+      "dependsOn": "依存先",
+      "warnings": "警告"
+    },
+    "kinds": {
+      "dockerfile": "Dockerfile",
+      "buildpack": "ビルドパック",
+      "static": "静的サイト"
+    },
+    "warnings": {
+      "package_cap": "{{found}}個のパッケージが見つかりましたが、最初の{{cap}}個のみを表示しています。もっと表示するには、サーバーでAPP_WIZARD_MAX_PACKAGESを引き上げてください。",
+      "no_workspace": "ワークスペースのパッケージが見つかりませんでした。",
+      "tree_truncated": "リポジトリのファイル一覧が途中で切り詰められたため、一部のパッケージが欠けている可能性があります。",
+      "no_dockerfile": "ここにDockerfileはありません。ビルドは自動で検出されます。",
+      "no_port": "待ち受けポートが検出されませんでした。作成する前に、設定してください。",
+      "duplicate_port": "別のパッケージが、同じポートを提案しています。別々のコンテナなので、問題ありません。",
+      "duplicate_name": "別のパッケージが同じ名前に対応するため、サフィックスを追加しました。",
+      "name_taken": "この名前のアプリがすでに存在するため、サフィックスを追加しました。",
+      "detect_failed": "このパッケージを解析できませんでした。"
+    },
+    "editor": {
+      "project": "プロジェクト",
+      "noProject": "プロジェクトなし",
+      "environment": "環境",
+      "noEnvironment": "環境なし",
+      "protectedEnv": "{{name}}(保護されているため、ここでは使えません)",
+      "deploy": "各アプリの最初のビルドを開始",
+      "columns": {
+        "include": "含める",
+        "env": "環境変数",
+        "status": "ステータス",
+        "detail": "詳細"
+      },
+      "includeRow": "{{name}}を含める",
+      "nameOf": "{{directory}}のアプリ名",
+      "portOf": "{{name}}のポート",
+      "envButton_other": "変数{{count}}件",
+      "envTitle": "{{name}}の環境変数",
+      "envHint": "値は、アプリを作成するために1度だけ送信されます。「シークレット」にチェックを入れると、値が暗号化して保存され、二度と表示されません。",
+      "envEmpty": "変数はまだありません。",
+      "envKey": "名前",
+      "envValue": "値",
+      "envSecret": "シークレット",
+      "envRemove": "変数を削除",
+      "envAdd": "変数を追加",
+      "envDone": "完了",
+      "review_other": "作成する前に、{{count}}個のアプリを確認",
+      "checking": "確認中...",
+      "reviewHint": "まだ何も作成されません。確認で、すべての問題が先に一覧表示されます。",
+      "dryRunSummary": "{{create}}個のアプリを作成できます。{{problems}}個に問題があり、スキップされます。何も作成されていません。",
+      "create_other": "{{count}}個のアプリを作成",
+      "creating": "作成中...",
+      "backToEdit": "編集に戻る",
+      "resultsSummary": "{{created}}個のアプリを作成しました。{{failed}}個は対応が必要です。",
+      "retryFailed_other": "失敗した{{count}}個のアプリを再試行",
+      "deployError": "(最初のビルド: {{message}})",
+      "error": "インポートのリクエストに失敗しました: {{message}}",
+      "status": {
+        "created": "作成済み",
+        "already_exists": "すでに存在します",
+        "skipped_dependency": "スキップ",
+        "failed": "失敗",
+        "would_create": "準備完了"
+      },
+      "confirm": {
+        "title_other": "{{count}}個のアプリを作成しますか?",
+        "description": "{{above}}個を超えるアプリを、一度に作成します。一覧を確認してから、確定してください。",
+        "confirm_other": "{{count}}個のアプリを作成"
+      }
+    }
+  },
+  "fields": {
+    "basics": "基本",
+    "name": "名前",
+    "namePlaceholder": "例: marketing-site",
+    "image": "イメージ",
+    "imagePlaceholder": "例: ghcr.io/you/app:latest",
+    "imageHint": "実行するイメージで、タグを含めます。イメージがまだない場合は、ステップ1でGitのオプションを選ぶと、ビルドします。",
+    "networking": "ネットワーク",
+    "port": "ポート",
+    "portPlaceholder": "例: 3000",
+    "portHint": "アプリがコンテナ内で待ち受けるポートです。一般的なNext.jsアプリなら3000です。",
+    "healthCheck": "ヘルスチェック",
+    "healthEnable": "ヘルスチェックを有効にする",
+    "healthPath": "パス",
+    "healthHint": "新しいコンテナにトラフィックを移す前と、その後にクラッシュを検知するために確認します。アプリがこのパスを配信しない場合は、変更するか、オフにしてください。",
+    "hideAdvanced": "詳細オプションを隠す",
+    "showAdvanced": "詳細オプションを表示",
+    "strategy": "デプロイの方式",
+    "strategyDefault": "既定(ブルーグリーン)",
+    "strategyRecreate": "再作成",
+    "strategyBlueGreen": "ブルーグリーン",
+    "strategyRolling": "ローリング",
+    "strategyHint": "新しいバージョンの展開方法です。ブルーグリーンでは、古いバージョンの隣で新しいバージョンを起動し、正常になった時点でトラフィックを切り替えます。",
+    "replicas": "レプリカ",
+    "replicasHint": "同時に実行するアプリのコピーの数です。空欄にすると1つです。",
+    "creating": "作成中...",
+    "create": "アプリを作成"
+  },
+  "upload": {
+    "title": "自分のコンピューターからデプロイ",
+    "description": "Gitのリモートは不要です。フォルダーがアップロードされ、ビルドされて、デプロイされます。",
+    "note": "どちらも、プロジェクトのフォルダーで実行してください。.gitignore、node_modules、.envのファイルは、アップロードされません。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "tokenName": "CLIデプロイ {{date}}",
+    "createToken": "デプロイトークンを作成",
+    "creating": "作成中...",
+    "tokenHint": "{{days}}日間有効です。アプリの読み取り、編集、デプロイができます。",
+    "tokenOnce": "これらを今すぐコピーしてください。トークンは1度しか表示されず、{{days}}日間有効です。",
+    "hideToken": "コピーしました。隠す",
+    "createFailed": "トークンを作成できませんでした: {{reason}}",
+    "openTokens": "設定で作成"
+  },
+  "drop": {
+    "cardTitle": "フォルダーをドロップして公開",
+    "cardDescription": "ビルド済みのサイトのフォルダーまたは.zipをドロップして、公開中のものを置き換えます。_redirects、_headers、404.htmlは反映され、デプロイ履歴からロールバックできます。",
+    "zoneLabel": "サイトのフォルダーまたはzipをここにドロップ",
+    "dropHere": "フォルダーまたは.zipをここにドロップ",
+    "hint": "index.htmlを含むフォルダー、またはそのzipです。zip内の、単一のラッパーフォルダーは、自動で展開されます。",
+    "chooseFolder": "フォルダーを選択",
+    "chooseZip": ".zipを選択",
+    "empty": "そのドロップには、公開するものがありませんでした。空だったか、.gitやnode_modulesのような、無視されるファイルのみでした。ビルド済みのサイトを含むフォルダーをドロップしてください。",
+    "noIndex": "このフォルダーの最上位にindex.htmlがないため、サイトのルートには404が表示されます。意図したものでない場合は、index.htmlを含むフォルダーを選んでください。",
+    "preview": {
+      "source": "ソース",
+      "files": "ファイル",
+      "size": "サイズ"
+    },
+    "nameLabel": "サイト名",
+    "nameHint": "小文字、数字、ハイフンが使えます。フォルダー名またはファイル名から取得されます。必要なら変更してください。",
+    "publish": "公開",
+    "publishNew": "作成して公開",
+    "retry": "再試行",
+    "clear": "別のものを選ぶ",
+    "another": "別のものをドロップ",
+    "stage": {
+      "packing": "ファイルをまとめています...",
+      "creating": "サイトを作成しています...",
+      "uploading": "アップロード中...",
+      "publishing": "公開中..."
+    },
+    "done": "公開しました。ライブURLは、デプロイで確認してください。",
+    "doneNoIndex": "公開しましたが、zipの最上位にindex.htmlがないため、サイトのルートには404が表示されます。",
+    "errors": {
+      "tooLarge": "このサイトは、アップロードの上限を超えています。不要な大きなファイルを削除するか、管理者に上限の引き上げを依頼してください。",
+      "rejected": "アップロードが拒否されました。",
+      "nameTaken": "その名前のサイトまたはアプリが、すでに存在します。上で名前を変更して、もう一度お試しください。",
+      "network": "アップロードが中断されました。接続を確認して、もう一度お試しください。",
+      "tooManyFiles": "そのフォルダーは、1回のドロップには、ファイルが多すぎます。代わりに、より小さなビルド出力のフォルダーをzipにしてください。",
+      "generic": "公開に失敗しました。"
+    }
+  },
+  "uploadSource": {
+    "title": "ソース: CLIでのアップロード",
+    "hash": "アーカイブのハッシュ",
+    "files": "ファイル",
+    "redeploy": "プロジェクトのフォルダーから、次のコマンドで再度デプロイしてください:"
+  },
+  "importDatabase": {
+    "title": "データベースが必要ですか?",
+    "optional": "任意",
+    "detected": "このリポジトリは{{engine}}を使っているようなので、ここで提案しています。",
+    "engines": "データベースエンジン",
+    "useExisting": "既存のものを使う",
+    "summary": "{{engine}} {{version}}のデータベースを作成し、このアプリに{{envVar}}を設定します。",
+    "summaryBackups": "毎日のバックアップ付きで、{{engine}} {{version}}のデータベースを作成し、このアプリに{{envVar}}を設定します。",
+    "name": "データベース名",
+    "nameFree": "このデータベース名は使用できます。",
+    "nameError": {
+      "required": "データベースに名前を付けてください。",
+      "format": "小文字、数字、ハイフンを使ってください。",
+      "taken": "この名前のデータベースは、すでに存在します。"
+    },
+    "backups": "毎日バックアップする",
+    "noDestination": "毎日のバックアップにはバックアップ先が必要ですが、まだ設定されていません。",
+    "existingLabel": "既存のデータベース",
+    "existingPick": "データベースを選択",
+    "existingNone": "データベースはまだありません。",
+    "injected": "アプリに追加される変数",
+    "from": "{{database}}から"
+  },
+  "import": {
+    "loading": "リポジトリを読み取り中",
+    "urlInvalid": "まだ、リポジトリのURLには見えません。",
+    "summary": "{{branch}}から{{builder}}でビルドし、{{target}}にデプロイします",
+    "builders": {
+      "railpack": "Railpack",
+      "dockerfile": "お使いのDockerfile",
+      "static": "静的ホスティング",
+      "compose": "Docker Compose"
+    },
+    "card": {
+      "languages": "言語",
+      "branch": "ブランチ",
+      "commitBy": "{{author}}、{{when}}",
+      "visibility": {
+        "public": "公開",
+        "private": "非公開"
+      }
+    },
+    "detected": {
+      "line": "検出: {{stack}}、{{builder}}でビルド、ポート{{port}}で待ち受け",
+      "edit": "編集",
+      "monorepo": "複数のアプリが見つかりました。{{dir}}をデプロイします。",
+      "chooseApp": "アプリを選択"
+    },
+    "notice": {
+      "private_needs_account": "このリポジトリは、プライベートのようです。閲覧できるアカウントを接続するか、デプロイトークンを使ってください。",
+      "invalid_url": "まだ、リポジトリのURLには見えません。",
+      "not_found": "そのリポジトリが見つかりませんでした。URLを確認して、もう一度お試しください。",
+      "rate_limited": "現在、プレビューは利用できません。続行は可能です。",
+      "unsupported_host": "このホストには、プレビューがありません。続行は可能です。",
+      "connect": "アカウントを接続",
+      "useToken": "デプロイトークンを使う",
+      "tokenLabel": "デプロイトークン",
+      "tokenApply": "プレビュー",
+      "continue": "続ける"
+    },
+    "form": {
+      "name": "アプリ名",
+      "nameFree": "この名前は使用できます。",
+      "nameError": {
+        "required": "アプリに名前を付けてください。",
+        "format": "小文字、数字、ハイフンを使ってください。",
+        "taken": "この名前のアプリは、すでに存在します。"
+      },
+      "env": "環境変数",
+      "envRequired": "アプリの起動に、この変数が必要です。",
+      "addVar": "変数を追加",
+      "varName": "変数名",
+      "varValue": "変数の値",
+      "domain": "アドレス",
+      "freeAddress": "無料のアドレス",
+      "customDomain": "独自のドメインを使う",
+      "domainPlaceholder": "app.example.com",
+      "domainHint": "最初のデプロイの後で、CNAMEをこのサーバーに向けてください。",
+      "domainError": "app.example.comのようなドメインを入力してください。",
+      "advanced": "詳細設定",
+      "port": "ポート",
+      "health": "ヘルスチェックのパス",
+      "memory": "メモリ(MB)",
+      "directory": "ディレクトリ",
+      "buildType": "ビルドの種類",
+      "deploy": "デプロイ",
+      "deploying": "デプロイ中..."
+    },
+    "pushOn": "プッシュのたびにデプロイされます。",
+    "pushOff": "プッシュしても、デプロイされません。"
+  },
+  "deployOptions": {
+    "title": "デプロイのオプション",
+    "beta": "ベータ",
+    "push": {
+      "label": "{{branch}}にプッシュしたとき、自動でデプロイする",
+      "on": "このブランチへのプッシュで、アプリがビルドされ、デプロイされます。Webhookは、アプリの作成後に確認されます。",
+      "off": "プッシュしても、デプロイされません。タグまたは公開されたリリースのみです。"
+    },
+    "previews": {
+      "label": "すべてのプルリクエストをプレビュー",
+      "hint": "各プルリクエストに、専用の一時的なURLが割り当てられ、クローズされると削除されます。",
+      "unsupported": "プレビューには、GitHub、GitLab、Bitbucket、Giteaのリポジトリが必要です。"
+    },
+    "health": {
+      "label": "ヘルスチェックのパス",
+      "hint": "新しいバージョンは、トラフィックを受け取る前に、ここで200を返す必要があります。空欄にすると、検出されたパスを使います。"
+    },
+    "jobs": {
+      "title": "バックグラウンドワーカーまたはスケジュールジョブを追加",
+      "hint": "スケジュールジョブは、スケジュールに従って、HTTPリクエストとして、アプリのパスを呼び出します。別のワーカープロセスの種類はないため、長時間稼働するワーカーは、専用のアプリとして実行してください。",
+      "path": "呼び出すパス",
+      "schedule": "スケジュール",
+      "cron": "cron式",
+      "remove": "このジョブを削除",
+      "add": "スケジュールジョブを追加",
+      "pathError": "パスは/で始めてください(例: /api/cron/cleanup)。",
+      "cronError": "そのcron式は、有効ではありません。",
+      "presets": {
+        "every5": "5分ごと",
+        "hourly": "毎時",
+        "daily": "毎日 03:00 UTC",
+        "custom": "カスタムcron"
+      }
+    },
+    "failed": {
+      "deployOnPush": "プッシュ時のデプロイを設定できませんでした: {{reason}}。",
+      "previews": "プレビューを有効にできませんでした: {{reason}}。",
+      "job": "ジョブ{{path}}は作成されませんでした: {{reason}}。"
+    }
+  },
+  "gitSettings": {
+    "open": "Git設定",
+    "accounts": "接続済みのアカウント",
+    "none": "接続済みのGitアカウントはまだありません。接続すると、リポジトリの一覧から選べます。",
+    "loaded": "リポジトリ{{count}}件",
+    "failed": "一覧表示できませんでした",
+    "refreshFailed": "更新できませんでした: {{reason}}",
+    "defaults": "このアプリの既定値",
+    "pickFirst": "リポジトリを選ぶと、そのブランチ、アプリのディレクトリ、プッシュ時のデプロイを設定できます。",
+    "directory": "アプリのディレクトリ",
+    "pushOn": "このブランチへのプッシュのたびに、デプロイされます。"
+  },
+  "more": {
+    "title": "ほかの始め方",
+    "hide": "閉じる",
+    "image": {
+      "title": "コンテナイメージ",
+      "hint": "ビルド済みのイメージをデプロイします。"
+    },
+    "compose": {
+      "title": "Docker Compose",
+      "hint": "ファイルを貼り付けるか、アップロードします。"
+    },
+    "run": {
+      "title": "docker run",
+      "hint": "コマンドを、アプリに変換します。"
+    },
+    "site": {
+      "title": "静的サイト",
+      "hint": "フォルダーまたはzipをドロップします。"
+    },
+    "computer": {
+      "title": "自分のコンピューターから",
+      "hint": "CLIでフォルダーをデプロイします。"
+    }
+  },
+  "deployButton": {
+    "title": "READMEに「Deploy to Levelrail」ボタンを追加",
+    "description": "読者自身のサーバーで、このフォームを開くリンクを作成します。シークレットは含まれません。",
+    "image": "イメージ",
+    "name": "アプリ名(任意)",
+    "namePlaceholder": "my-app",
+    "port": "ポート(任意)",
+    "health": "ヘルスチェックのパス(任意)",
+    "env": "環境変数名(任意)",
+    "envHint": "名前のみを、カンマまたは改行で区切って入力します。値は、読者が自分のサーバーで入力します。",
+    "envError": "DATABASE_URLのような大文字の名前を、値なしで、最大50個まで使ってください。",
+    "snippet": "Markdownのスニペット",
+    "copy": "Markdownをコピー",
+    "copied": "コピーしました"
+  },
+  "deployPage": {
+    "title": "リンクからデプロイ",
+    "description": "リンクが入力した内容を確認してから、続けてください。「デプロイ」を押すまで、何も作成されません。",
+    "banner": "リンクから入力済みです。デプロイする前に確認してください",
+    "bannerBody": "下のリポジトリ、ブランチ、名前を確認してください。最後のステップで確定するまで、何も作成されません。",
+    "ignoredTitle": "一部のリンクパラメーターは無視されました",
+    "ignoredBody": "これらは、不足している、不明、または無効でした: {{params}}。環境変数の値とシークレットが、リンクから読み取られることはありません。",
+    "repo": "リポジトリ",
+    "branch": "ブランチ",
+    "branchDefault": "既定のブランチ",
+    "name": "推奨の名前",
+    "port": "ポート",
+    "template": "テンプレート",
+    "templateName": "{{name}}",
+    "reviewRepo": "解析して確認",
+    "reviewTemplate": "テンプレートを開く",
+    "empty": "このリンクには、有効なリポジトリまたはテンプレートが含まれていませんでした。ご自身で、新しいアプリを始めてください。",
+    "startNew": "新しいアプリを始める"
+  },
+  "deployLinkDialog": {
+    "action": "Deployボタンのリンクを取得",
+    "title": "Deployボタンのリンク",
+    "description": "READMEにこれを置いてください。リポジトリが入力済みの状態で、このダッシュボードが開きます。読者は、引き続き確認して確定します。シークレットは含まれません。",
+    "repo": "リポジトリのURL",
+    "branch": "ブランチ(任意)",
+    "name": "アプリ名(任意)",
+    "link": "リンク",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "alt": "{{brand}}にデプロイ",
+    "errors": {
+      "repo": "ユーザー名とパスワードを含まない、httpsまたはsshのGit URLを入力してください。",
+      "branch": "シンプルなブランチ名またはタグ名を使ってください。",
+      "name": "小文字、数字、ハイフンを使ってください。"
+    }
+  },
+  "aside": {
+    "title": "得られるもの",
+    "detect": "コードから、スタックとポートを検出します。",
+    "review": "計画と設定を確認します。",
+    "deploy": "ワンクリックで、ヘルスチェック付きでデプロイされます。",
+    "address": "アプリには、{{domain}}の下のアドレスが割り当てられます。",
+    "label": "得られるものと、ほかの入り口"
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "kind": {
+    "dev": "開発",
+    "test": "テスト",
+    "uat": "UAT",
+    "production": "本番",
+    "preview": "プレビュー",
+    "custom": "カスタム"
+  },
+  "settings": {
+    "title": "環境",
+    "description": "アプリとデータベース用の、インスタンス全体の環境です。保護を有効にすると、その環境への移動や環境からの移動に、別の人の承認が必要になります。",
+    "create": "環境を作成",
+    "empty": {
+      "title": "環境はまだありません",
+      "description": "最初の環境を作成して、アプリとデータベースのグループ化を始めましょう。"
+    },
+    "columns": {
+      "name": "名前",
+      "kind": "種類",
+      "protected": "保護",
+      "apps": "アプリ",
+      "databases": "データベース",
+      "actions": "操作"
+    },
+    "builtIn": "組み込み",
+    "scopeProject": "プロジェクト",
+    "protectedToggle": "保護、{{name}}",
+    "protectedOn": "環境「{{name}}」を保護しました。",
+    "protectedOff": "環境「{{name}}」の保護を解除しました。",
+    "updateFailed": "環境を更新できませんでした。",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "form": {
+    "createTitle": "環境を作成",
+    "editTitle": "環境を編集",
+    "description": "名前を付け、役割に合った種類を選んでください。",
+    "name": "名前",
+    "namePlaceholder": "Staging EU",
+    "kind": "種類",
+    "protected": "保護",
+    "protectedHint": "この環境への移動や環境からの移動は、別の人が承認するまで保留されます。",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "saving": "保存中",
+    "created": "環境「{{name}}」を作成しました。",
+    "updated": "環境「{{name}}」を更新しました。",
+    "failed": "環境を保存できませんでした。"
+  },
+  "delete": {
+    "title": "「{{name}}」を削除",
+    "description": "この操作は元に戻せません。",
+    "inUse": "アプリ{{apps}}件とデータベース{{databases}}件に、この環境のタグが付いています。削除する前に、移動先を選んでください。",
+    "moveTo": "移動先",
+    "moveToNone": "環境を選択",
+    "cancel": "キャンセル",
+    "confirm": "環境を削除",
+    "deleting": "削除中",
+    "deleted": "環境「{{name}}」を削除しました。",
+    "failed": "環境を削除できませんでした。",
+    "reserved": "組み込みの環境は削除できません。",
+    "protectedBlock": "保護された環境は、一括移動に含められません。先に保護を解除するか、1件ずつ移動してください。"
+  },
+  "switcher": {
+    "label": "環境",
+    "all": "すべての環境",
+    "aria": "環境でダッシュボードを絞り込む"
+  },
+  "move": {
+    "trigger": "変更",
+    "title": "「{{name}}」を環境へ移動",
+    "description": "このリソースが属する環境を選んでください。",
+    "field": "環境",
+    "none": "環境なし",
+    "current": "(現在)",
+    "protectedNotice": "この移動は、保護された環境「{{environment}}」に関わります。すぐには適用されず、別の人が承認する必要がある承認待ちの申請になります。",
+    "confirmLabel": "承認が必要なことを理解しました",
+    "request": "移動を申請",
+    "save": "保存",
+    "saving": "保存中",
+    "cancel": "キャンセル",
+    "moved": "「{{name}}」を移動しました。",
+    "pending": "「{{name}}」の移動は承認待ちです。",
+    "failed": "「{{name}}」を移動できませんでした。",
+    "frozen": "デプロイフリーズが有効です。終了してから再試行してください。"
+  },
+  "picker": {
+    "aria": "プロジェクトと環境を選択",
+    "allProjects": "すべてのプロジェクト",
+    "projects": "プロジェクト",
+    "environments": "環境",
+    "allEnvironments": "すべての環境"
+  }
+}
