@@ -58,6 +58,8 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// RequireRefWarnings lists literal secrets held in an environment that requires references; names only.
+	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
 	// TemplateID is the catalog template the app was deployed from, empty otherwise.
 	TemplateID string `json:"template_id,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or

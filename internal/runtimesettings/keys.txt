@@ -298,6 +298,8 @@ secrets.ref_max_key_bytes
 secrets.ref_max_path_bytes
 secrets.ref_max_path_depth
 secrets.ref_max_ref_bytes
+secrets.require_ref_environments
+secrets.require_ref_mode
 secrets.vault_cache_ttl_seconds
 secrets.vault_token_renew_percent
 security.audit_sensitive_reads

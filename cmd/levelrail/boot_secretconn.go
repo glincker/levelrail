@@ -54,13 +54,42 @@ var liveSecretConns atomic.Pointer[secretconn.Service]
 // currentSecretSources returns the resolver, or nil (not a typed nil) when unwired.
 func currentSecretSources() application.SecretSources {
 	if s := liveSecretConns.Load(); s != nil && s.Sources != nil {
-		return refSources{s.Sources}
+		return refSources{r: s.Sources, conns: s, envs: liveEnvLookup.Load()}
 	}
 	return nil
 }
 
 // refSources adapts the resolver to the controller's string based surface.
-type refSources struct{ r *secretsource.Resolver }
+type refSources struct {
+	r     *secretsource.Resolver
+	conns *secretconn.Service
+	envs  *envNameLookup
+}
+
+// envNameLookup resolves an environment ID to its name for allow list checks.
+type envNameLookup struct {
+	get func(ctx context.Context, id string) (store.Environment, error)
+}
+
+// liveEnvLookup is set at boot next to liveSecretConns.
+var liveEnvLookup atomic.Pointer[envNameLookup]
+
+// CheckRef applies the connection's allow lists at resolve time. A service with no environment
+// has an empty name, and an unreadable environment denies, so a policy always fails closed.
+func (a refSources) CheckRef(ctx context.Context, envID, conn, path string) error {
+	name := ""
+	if envID != "" {
+		if a.envs == nil || a.envs.get == nil {
+			return secretsource.ErrFailClosed
+		}
+		env, err := a.envs.get(ctx, envID)
+		if err != nil {
+			return secretsource.ErrFailClosed
+		}
+		name = env.Name
+	}
+	return a.conns.CheckResolve(ctx, conn, name, path)
+}
 
 func (a refSources) ResolveRef(ctx context.Context, conn, path, key string, version int) (string, error) {
 	v, err := a.r.Resolve(ctx, secretsource.Ref{Conn: conn, Path: path, Key: key, Version: version})

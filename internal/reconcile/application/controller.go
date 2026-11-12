@@ -130,6 +130,12 @@ type SecretSources interface {
 	ResolveRef(ctx context.Context, conn, path, key string, version int) (string, error)
 }
 
+// SecretRefGuard is an optional SecretSources capability: it vets a reference against the
+// connection's allow lists for the service's environment before any read. An error blocks the container.
+type SecretRefGuard interface {
+	CheckRef(ctx context.Context, envID, conn, path string) error
+}
+
 // ProjectEnvStore is the narrow surface this controller needs to
 // resolve store.DesiredService.ProjectID into that project's shared env
 // vars (resolveEnv's own doc comment on precedence). *store.DB satisfies
@@ -1707,7 +1713,7 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	}
 
 	if len(desired.VaultEnv) > 0 {
-		vaultEnvVars, err := c.resolveVaultEnv(ctx, desired.VaultEnv)
+		vaultEnvVars, err := c.resolveVaultEnv(ctx, desired.EnvironmentID, desired.VaultEnv)
 		if err != nil {
 			return nil, &secretResolveError{err: fmt.Errorf("resolve vault env: %w", err)}
 		}
@@ -1816,7 +1822,7 @@ func (c *Controller) resolveIntegrationField(ctx context.Context, namespace stri
 // isn't enabled, or a read fails for any reason, e.g. unreachable: a
 // container must never start with a Vault-sourced variable silently
 // missing its value.
-func (c *Controller) resolveVaultEnv(ctx context.Context, all map[string]store.VaultEnvRef) (map[string]string, error) {
+func (c *Controller) resolveVaultEnv(ctx context.Context, envID string, all map[string]store.VaultEnvRef) (map[string]string, error) {
 	vaultEnv := make(map[string]store.VaultEnvRef, len(all))
 	refEnv := make(map[string]store.VaultEnvRef)
 	for k, ref := range all {
@@ -1826,7 +1832,7 @@ func (c *Controller) resolveVaultEnv(ctx context.Context, all map[string]store.V
 			vaultEnv[k] = ref
 		}
 	}
-	out, err := c.resolveSecretRefEnv(ctx, refEnv)
+	out, err := c.resolveSecretRefEnv(ctx, envID, refEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -1846,7 +1852,7 @@ func (c *Controller) resolveVaultEnv(ctx context.Context, all map[string]store.V
 // resolveSecretRefEnv reads each secret:// reference through the connection
 // resolver at create time. Any failure blocks the container: the error names
 // the reference, never the value, and the value is registered for masking.
-func (c *Controller) resolveSecretRefEnv(ctx context.Context, refs map[string]store.VaultEnvRef) (map[string]string, error) {
+func (c *Controller) resolveSecretRefEnv(ctx context.Context, envID string, refs map[string]store.VaultEnvRef) (map[string]string, error) {
 	out := make(map[string]string, len(refs))
 	if len(refs) == 0 {
 		return out, nil
@@ -1865,6 +1871,11 @@ func (c *Controller) resolveSecretRefEnv(ctx context.Context, refs map[string]st
 	slices.Sort(keys)
 	for _, envVar := range keys {
 		r := refs[envVar]
+		if g, ok := src.(SecretRefGuard); ok {
+			if err := g.CheckRef(ctx, envID, r.Conn, r.Path); err != nil {
+				return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
+			}
+		}
 		val, err := src.ResolveRef(ctx, r.Conn, r.Path, r.Key, r.Version)
 		if err != nil {
 			return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)

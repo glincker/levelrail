@@ -29,6 +29,8 @@ type SecretConnection struct {
 	Config           SecretConnectionConfig `json:"config"`
 	HasCredential    bool                   `json:"has_credential"`
 	CredentialSource string                 `json:"credential_source,omitempty"`
+	AllowedPrefixes  []string               `json:"allowed_prefixes,omitempty"`
+	AllowedEnvs      []string               `json:"allowed_envs,omitempty"`
 	CreatedBy        string                 `json:"created_by,omitempty"`
 	UpdatedAt        *time.Time             `json:"updated_at,omitempty"`
 }
@@ -40,6 +42,9 @@ type SecretConnectionRequest struct {
 	Credential    string                 `json:"credential,omitempty"`
 	CredentialRef string                 `json:"credential_ref,omitempty"`
 	Config        SecretConnectionConfig `json:"config"`
+	// A non nil list replaces that allow list, an empty one clears it; nil keeps it.
+	AllowedPrefixes *[]string `json:"allowed_prefixes,omitempty"`
+	AllowedEnvs     *[]string `json:"allowed_envs,omitempty"`
 }
 
 // SecretConnectionTest is the outcome of a read-only health probe.

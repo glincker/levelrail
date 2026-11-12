@@ -48,6 +48,9 @@ type appResource struct {
 	EnvMeta map[string]envredact.Meta `json:"env_meta,omitempty"`
 	// SecretsWriteOnly is response-only: the owner's per-app reveal lock.
 	SecretsWriteOnly bool `json:"secrets_write_only,omitempty"`
+	// RequireRefWarnings is response-only: literal secrets this app holds in an environment that
+	// requires secret references (secrets.require_ref_mode warn or enforce). Names only, never values.
+	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
 	// SecretEnv names which env vars are backed by encrypted secret
 	// storage (store.DesiredService.SecretEnv): values live in
 	// internal/secrets, never here. Response-mirrors the store; settable

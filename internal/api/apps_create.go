@@ -53,7 +53,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if !rt.vetSecretRefs(w, r, req.Name, nil, &req) {
+	if !rt.vetSecretRefs(w, r, req.Name, req.EnvironmentID, nil, &req) {
+		return
+	}
+	if !rt.enforceSecretPolicy(r.Context(), w, req.EnvironmentID, createLiteralSecretKeys(req)) {
 		return
 	}
 	autoDomain := rt.attachAppsBaseDomain(r.Context(), &req)
@@ -255,6 +258,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		req.DNS = rt.dnsForAutoDomain(r.Context(), r, req.Name, autoDomain)
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
+	rt.attachSecretPolicy(r.Context(), &req, desired)
 	rt.changes.Publish(changeApps, req.Name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)

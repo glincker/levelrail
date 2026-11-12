@@ -191,7 +191,7 @@ Rules:
 
 - Levelrail stores the reference text only. The value is read just before the container is created and is never saved in the database, revisions, logs, events or API responses.
 - If a reference cannot be read (denied, missing, or the connection is down), the deploy is blocked. The error names the reference, never the value.
-- Setting or changing a reference needs the root ability, and an audit entry records the reference text.
+- Setting or changing a reference needs the root ability, unless the connection delegates it (see below). An audit entry records the reference text, and a refused write is audited too.
 
 From the CLI:
 
@@ -200,3 +200,18 @@ levelrail-cli env set web --secret API_KEY=secret://prod-vault/apps/web#api_key
 ```
 
 The value of `--secret` must be a `secret://` reference. A literal value is refused so it never lands in shell history. In stack files (see [Platform as code](/platform-as-code)) the same string or the `secret` object works in `env`, and `secretRef: { connection, path, key }` is accepted too. The plan shows the reference text.
+
+## Letting non-root users set references
+
+A connection can carry two allow lists. With both set, a user with the write ability may point an app at it, but only when the app's environment is in `allowed_envs` and the path is inside an `allowed_prefixes` entry. Prefixes match whole path segments, so `team-a` allows `team-a/db` but not `team-ab/db`, and traversal segments are never accepted. An app without an environment is not allowed. Root can always set references.
+
+```bash
+levelrail-cli secrets connection update team --allow-prefix team-a --allow-env production
+levelrail-cli secrets connection update team --clear-allow-lists
+```
+
+The lists also apply when the reference is read: a connection with either list set serves only those environments and paths, and a deploy outside them is blocked. A connection with no lists is unrestricted.
+
+## Requiring references in production
+
+Two runtime settings make an environment refuse pasted secrets. `secrets.require_ref_environments` lists environment names; `secrets.require_ref_mode` is `off` (default), `warn` or `enforce`. In `warn` mode, literal secret values are accepted and listed in `apps get` and in deploy results. In `enforce` mode, a new or changed literal secret is refused with an error that names the variable and the rule, never the value. Values already stored are not deleted and stay listed as warnings.

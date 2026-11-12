@@ -294,6 +294,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	_, _ = fmt.Fprintf(out, "name:     %s\n", a.Name)
 	_, _ = fmt.Fprintf(out, "image:    %s\n", a.Image)
 	_, _ = fmt.Fprintf(out, "port:     %d\n", a.Port)
+	for _, w := range a.RequireRefWarnings {
+		_, _ = fmt.Fprintf(out, "warning:  %s\n", w)
+	}
 	if a.HostPort != nil {
 		_, _ = fmt.Fprintf(out, "host port: %d (pinned)\n", *a.HostPort)
 	}

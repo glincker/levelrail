@@ -67,9 +67,12 @@ type secretConnectionResource struct {
 	Config           secretConnectionConfig `json:"config"`
 	HasCredential    bool                   `json:"has_credential"`
 	CredentialSource string                 `json:"credential_source,omitempty"`
-	CreatedBy        string                 `json:"created_by,omitempty"`
-	CreatedAt        *time.Time             `json:"created_at,omitempty"`
-	UpdatedAt        *time.Time             `json:"updated_at,omitempty"`
+	// AllowedPrefixes and AllowedEnvs let a writer without root point apps at this connection, inside those limits.
+	AllowedPrefixes []string   `json:"allowed_prefixes,omitempty"`
+	AllowedEnvs     []string   `json:"allowed_envs,omitempty"`
+	CreatedBy       string     `json:"created_by,omitempty"`
+	CreatedAt       *time.Time `json:"created_at,omitempty"`
+	UpdatedAt       *time.Time `json:"updated_at,omitempty"`
 }
 
 type secretConnectionListResponse struct {
@@ -83,6 +86,9 @@ type secretConnectionRequest struct {
 	Credential    string                 `json:"credential,omitempty"`
 	CredentialRef string                 `json:"credential_ref,omitempty"`
 	Config        secretConnectionConfig `json:"config"`
+	// A present list (even empty) replaces that allow list; an absent one keeps it.
+	AllowedPrefixes *[]string `json:"allowed_prefixes,omitempty"`
+	AllowedEnvs     *[]string `json:"allowed_envs,omitempty"`
 }
 
 // secretConnectionTestRequest is the optional body of the test route; an empty
@@ -100,7 +106,7 @@ type secretConnectionTestResponse struct {
 func toSecretConnectionResource(c secretconn.Connection) secretConnectionResource {
 	res := secretConnectionResource{
 		Name: c.Name, Type: c.Type, Legacy: c.Legacy, HasCredential: c.HasCredential, CreatedBy: c.CreatedBy,
-		Config: secretConnectionConfig(c.Config),
+		Config: secretConnectionConfig(c.Config), AllowedPrefixes: c.Policy.AllowedPrefixes, AllowedEnvs: c.Policy.AllowedEnvs,
 	}
 	switch {
 	case c.CredentialRef != "":
@@ -182,7 +188,7 @@ func (rt *Router) handleCreateSecretConnection(w http.ResponseWriter, r *http.Re
 		rt.writeSecretConnectionError(w, "api: create secret connection failed", err)
 		return
 	}
-	rt.auditSecretConnection(r, auditSecretConnCreated, c.Name, c.Type, req.credentialNote())
+	rt.auditSecretConnection(r, auditSecretConnCreated, c.Name, c.Type, req.credentialNote(), c.Policy)
 	writeJSON(w, http.StatusCreated, toSecretConnectionResource(c))
 }
 
@@ -202,7 +208,7 @@ func (rt *Router) handleUpdateSecretConnection(w http.ResponseWriter, r *http.Re
 		rt.writeSecretConnectionError(w, "api: update secret connection failed", err)
 		return
 	}
-	rt.auditSecretConnection(r, auditSecretConnUpdated, c.Name, c.Type, req.credentialNote())
+	rt.auditSecretConnection(r, auditSecretConnUpdated, c.Name, c.Type, req.credentialNote(), c.Policy)
 	writeJSON(w, http.StatusOK, toSecretConnectionResource(c))
 }
 
@@ -217,7 +223,7 @@ func (rt *Router) handleDeleteSecretConnection(w http.ResponseWriter, r *http.Re
 		rt.writeSecretConnectionError(w, "api: delete secret connection failed", err)
 		return
 	}
-	rt.auditSecretConnection(r, auditSecretConnDeleted, name, prev.Type, "")
+	rt.auditSecretConnection(r, auditSecretConnDeleted, name, prev.Type, "", prev.Policy)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -238,12 +244,13 @@ func (rt *Router) handleTestSecretConnection(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	c, _ := svc.Get(r.Context(), name)
-	rt.auditSecretConnection(r, auditSecretConnTested, name, c.Type, res.Class)
+	rt.auditSecretConnection(r, auditSecretConnTested, name, c.Type, res.Class, secretconn.Policy{})
 	writeJSON(w, http.StatusOK, secretConnectionTestResponse{OK: res.OK, Class: res.Class, Reason: res.Reason})
 }
 
 func (q secretConnectionRequest) input() secretconn.Input {
-	return secretconn.Input{Type: q.Type, Config: secretconn.Config(q.Config), Credential: q.Credential, CredentialRef: q.CredentialRef}
+	return secretconn.Input{Type: q.Type, Config: secretconn.Config(q.Config), Credential: q.Credential, CredentialRef: q.CredentialRef,
+		AllowedPrefixes: q.AllowedPrefixes, AllowedEnvs: q.AllowedEnvs}
 }
 
 // credentialNote says what happened to the credential without carrying it.
@@ -257,7 +264,7 @@ func (q secretConnectionRequest) credentialNote() string {
 	return "credential_unchanged"
 }
 
-func (rt *Router) auditSecretConnection(r *http.Request, action, name, typ, note string) {
+func (rt *Router) auditSecretConnection(r *http.Request, action, name, typ, note string, pol secretconn.Policy) {
 	if rt.auditLog == nil {
 		return
 	}
@@ -270,7 +277,12 @@ func (rt *Router) auditSecretConnection(r *http.Request, action, name, typ, note
 	if perr != nil {
 		ptype, pid = auditActorSystem, "unknown"
 	}
-	detail, _ := json.Marshal(map[string]string{"connection": name, "type": typ, "note": note})
+	fields := map[string]string{"connection": name, "type": typ, "note": note}
+	if !pol.IsZero() {
+		fields["allowed_prefixes"] = strings.Join(pol.AllowedPrefixes, ",")
+		fields["allowed_envs"] = strings.Join(pol.AllowedEnvs, ",")
+	}
+	detail, _ := json.Marshal(fields)
 	entry := store.AuditEntry{
 		ID: id, ActorType: ptype, ActorID: pid, ActorName: pid, Ability: AbilityRoot, Method: r.Method,
 		Path: secretConnectionsPath + "/" + name, StatusCode: http.StatusOK, RemoteAddr: clientIP(r),

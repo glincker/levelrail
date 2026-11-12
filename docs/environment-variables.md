@@ -91,6 +91,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SECRETREF_MAX_PATH` | [`secrets.ref_max_path_bytes`](/runtime-settings#security) | `512` |
 | `APP_SECRETREF_MAX_SEGMENTS` | [`secrets.ref_max_path_depth`](/runtime-settings#security) | `16` |
 | `APP_SECRETREF_MAX_REF` | [`secrets.ref_max_ref_bytes`](/runtime-settings#security) | `1024` |
+| `APP_SECRETS_REQUIRE_REF_ENVIRONMENTS` | [`secrets.require_ref_environments`](/runtime-settings#security) | empty |
+| `APP_SECRETS_REQUIRE_REF_MODE` | [`secrets.require_ref_mode`](/runtime-settings#security) | `off` |
 | `APP_VAULT_CACHE_TTL_SECONDS` | [`secrets.vault_cache_ttl_seconds`](/runtime-settings#security) | `30` |
 | `APP_VAULT_TOKEN_RENEW_PERCENT` | [`secrets.vault_token_renew_percent`](/runtime-settings#security) | `80` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |

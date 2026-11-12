@@ -16,6 +16,7 @@ func secretsConnectionUsage(prog string) string {
   %[1]s secrets connection list [flags]
   %[1]s secrets connection create NAME --type vault|doppler|infisical|onepassword [config flags] (--credential-file PATH|- | --credential-ref NS/KEY)
   %[1]s secrets connection update NAME [config flags] [--credential-file PATH|- | --credential-ref NS/KEY]
+  %[1]s secrets connection update NAME --allow-prefix PATH --allow-env ENV [--clear-allow-lists]
   %[1]s secrets connection delete NAME [flags]
   %[1]s secrets connection test NAME [--path PATH[#key]] [flags]
 
@@ -26,6 +27,10 @@ encrypted and never shown. Config flags: --address, --namespace, --mount,
 --auth-method, --role-id (Vault); --project, --environment, --path, --base-url.
 "test" proves login only; with --path on a Vault connection it also checks the
 credential's policy allows reading that path (no value is read or returned).
+--allow-prefix (repeatable, whole path segments) and --allow-env (repeatable) let a
+user without root point apps at the connection, only for those environments and
+paths; with either set the connection serves nothing else, and --clear-allow-lists
+removes both. Changing them on update needs no new credential.
 Addresses in the link-local, metadata, unspecified or multicast ranges are refused.
 `, prog)
 }
@@ -73,6 +78,11 @@ func runSecretsConnectionWrite(prog, verb string, args []string, stdout, stderr 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "secrets connection "+verb, secretsConnectionJSONUsage, stderr)
 	var req apiclient.SecretConnectionRequest
 	var credFile string
+	var allowPrefixes, allowEnvs stringListFlag
+	var clearAllow bool
+	fs.Var(&allowPrefixes, "allow-prefix", "secret path prefix a non root user may reference (repeatable)")
+	fs.Var(&allowEnvs, "allow-env", "environment name a non root user may use this connection in (repeatable)")
+	fs.BoolVar(&clearAllow, "clear-allow-lists", false, "remove the prefix and environment allow lists")
 	fs.StringVar(&req.Type, "type", "", "connection type: vault, doppler, infisical or onepassword")
 	fs.StringVar(&req.Config.Address, "address", "", "Vault or OpenBao address")
 	fs.StringVar(&req.Config.Namespace, "namespace", "", "Vault namespace")
@@ -100,6 +110,22 @@ func runSecretsConnectionWrite(prog, verb string, args []string, stdout, stderr 
 	if name == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: a connection NAME is required\n", prog)
 		return exitUsage
+	}
+	switch {
+	case clearAllow && (len(allowPrefixes) > 0 || len(allowEnvs) > 0):
+		_, _ = fmt.Fprintf(stderr, "%s: --clear-allow-lists cannot be combined with --allow-prefix or --allow-env\n", prog)
+		return exitUsage
+	case clearAllow:
+		req.AllowedPrefixes, req.AllowedEnvs = &[]string{}, &[]string{}
+	default:
+		if len(allowPrefixes) > 0 {
+			p := []string(allowPrefixes)
+			req.AllowedPrefixes = &p
+		}
+		if len(allowEnvs) > 0 {
+			e := []string(allowEnvs)
+			req.AllowedEnvs = &e
+		}
 	}
 	if credFile != "" {
 		v, err := readSecretFileOrStdin(credFile)
@@ -194,6 +220,7 @@ func printSecretConnections(out io.Writer, list []apiclient.SecretConnection) {
 		if c.Legacy {
 			src = "legacy"
 		}
-		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\thas_credential=%t\n", c.Name, c.Type, src, c.HasCredential)
+		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\thas_credential=%t\tallow_prefixes=%s\tallow_envs=%s\n", c.Name, c.Type, src, c.HasCredential,
+			strings.Join(c.AllowedPrefixes, ","), strings.Join(c.AllowedEnvs, ","))
 	}
 }

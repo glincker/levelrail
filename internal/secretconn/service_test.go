@@ -70,7 +70,7 @@ func (m *memRows) CreateSecretConnection(_ context.Context, c store.SecretConnec
 }
 func (m *memRows) UpdateSecretConnection(_ context.Context, c store.SecretConnection) error {
 	r := m.rows[c.Name]
-	r.Config, r.CredentialRef = c.Config, c.CredentialRef
+	r.Config, r.CredentialRef, r.Policy = c.Config, c.CredentialRef, c.Policy
 	m.rows[c.Name] = r
 	return nil
 }

@@ -57,9 +57,6 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		connRef = parsed
-		if !rt.allowSecretRefs(w, r, connRef) {
-			return
-		}
 	}
 	if req.Path == "" || req.Key == "" {
 		writeError(w, http.StatusBadRequest, "path and key are both required")
@@ -73,6 +70,9 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		rt.internalError(w, "api: set app vault env: load app failed", err, slog.String("name", name))
+		return
+	}
+	if req.Conn != "" && !rt.allowSecretRefs(w, r, existing.EnvironmentID, connRef) {
 		return
 	}
 	for _, ref := range existing.SecretEnv {

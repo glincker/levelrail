@@ -60,6 +60,7 @@ type Connection struct {
 	Config        Config
 	HasCredential bool
 	CredentialRef string
+	Policy        Policy
 	CreatedBy     string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -71,6 +72,9 @@ type Input struct {
 	Config        Config
 	Credential    string
 	CredentialRef string
+	// A non nil list replaces that allow list; nil keeps it on update.
+	AllowedPrefixes *[]string
+	AllowedEnvs     *[]string
 }
 
 // TestResult is the outcome of a health probe. Reason is a class, never provider output.
@@ -198,7 +202,7 @@ func (s *Service) fromRow(ctx context.Context, r store.SecretConnection) Connect
 	if !has {
 		has, _ = s.Secrets.Exists(ctx, SecretsOwner, tokenKey(r.Name))
 	}
-	return Connection{Name: r.Name, Type: r.Type, Config: cfg, HasCredential: has, CredentialRef: r.CredentialRef,
+	return Connection{Name: r.Name, Type: r.Type, Config: cfg, HasCredential: has, CredentialRef: r.CredentialRef, Policy: parsePolicy(r.Policy),
 		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 }
 
@@ -299,8 +303,12 @@ func (s *Service) Create(ctx context.Context, actor, name string, in Input) (Con
 			return Connection{}, err
 		}
 	}
+	pol, err := NormalizePolicy(in.mergePolicy(Policy{}))
+	if err != nil {
+		return Connection{}, err
+	}
 	raw, _ := json.Marshal(cfg)
-	row := store.SecretConnection{Name: name, Type: in.Type, Config: string(raw), CredentialRef: in.CredentialRef, CreatedBy: actor}
+	row := store.SecretConnection{Name: name, Type: in.Type, Config: string(raw), CredentialRef: in.CredentialRef, Policy: policyJSON(pol), CreatedBy: actor}
 	if in.Credential != "" {
 		if err := s.Secrets.SetValue(ctx, SecretsOwner, tokenKey(name), in.Credential); err != nil {
 			return Connection{}, fmt.Errorf("save connection credential: %w", err)
@@ -331,6 +339,9 @@ func (s *Service) Update(ctx context.Context, name string, in Input) (Connection
 	if in.Type != "" && in.Type != cur.Type {
 		return Connection{}, invalid("type cannot change; delete the connection and create it again")
 	}
+	if in.Config == (Config{}) && in.hasPolicy() {
+		in.Config = cur.Config // a policy only update keeps the connection settings
+	}
 	cfg, err := validateConfig(cur.Type, in.Config)
 	if err != nil {
 		return Connection{}, err
@@ -339,6 +350,10 @@ func (s *Service) Update(ctx context.Context, name string, in Input) (Connection
 		return Connection{}, invalid("give at most one of credential and credential_ref")
 	}
 	if err := validateCredential(cur.Type, in.Credential); err != nil {
+		return Connection{}, err
+	}
+	pol, err := NormalizePolicy(in.mergePolicy(cur.Policy))
+	if err != nil {
 		return Connection{}, err
 	}
 	// A stored credential must never be sent to an endpoint or scope it was not issued for.
@@ -359,7 +374,7 @@ func (s *Service) Update(ctx context.Context, name string, in Input) (Connection
 		ref = ""
 	}
 	raw, _ := json.Marshal(cfg)
-	if err := s.Rows.UpdateSecretConnection(ctx, store.SecretConnection{Name: name, Config: string(raw), CredentialRef: ref}); err != nil {
+	if err := s.Rows.UpdateSecretConnection(ctx, store.SecretConnection{Name: name, Config: string(raw), CredentialRef: ref, Policy: policyJSON(pol)}); err != nil {
 		if errors.Is(err, store.ErrSecretConnectionNotFound) {
 			return Connection{}, ErrNotFound
 		}

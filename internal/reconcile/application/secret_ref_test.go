@@ -86,3 +86,37 @@ func (a testRefSources) ResolveRef(ctx context.Context, conn, path, key string, 
 	}
 	return string(v.Reveal()), nil
 }
+
+type guardedRefSources struct {
+	testRefSources
+	err error
+	got string
+}
+
+func (g *guardedRefSources) CheckRef(_ context.Context, envID, conn, path string) error {
+	g.got = envID + "|" + conn + "|" + path
+	return g.err
+}
+
+func TestSecretRefGuardBlocksBeforeAnyRead(t *testing.T) {
+	fake := secretsource.NewFake("prod").Set("apps/web", "api", refCanary)
+	res := secretsource.NewResolver()
+	if err := res.Register("prod", fake); err != nil {
+		t.Fatal(err)
+	}
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, EnvironmentID: "env-1",
+		VaultEnv: map[string]store.VaultEnvRef{"API": {Conn: "prod", Path: "apps/web", Key: "api"}}}
+	g := &guardedRefSources{testRefSources: testRefSources{res}, err: secretsource.ErrDenied}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretSources(func() SecretSources { return g }))
+	_, err := c.Reconcile(context.Background())
+	if err == nil || !errors.Is(err, secretsource.ErrDenied) {
+		t.Fatalf("a denying guard must block the container, got %v", err)
+	}
+	if g.got != "env-1|prod|apps/web" {
+		t.Fatalf("guard saw %q", g.got)
+	}
+	if rt.lastCreateEnv["API"] != "" || strings.Contains(err.Error(), refCanary) {
+		t.Fatal("no value may be read or shown when the guard denies")
+	}
+}

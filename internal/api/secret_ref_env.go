@@ -11,24 +11,55 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const secretRefNeedsRoot = "a secret reference outside an allowed prefix can only be set by root, the tier that manages secret connections"
+const secretRefNeedsRoot = "a secret reference can only be set by root unless its connection allows your environment and the path through allowed_envs and allowed_prefixes"
 
-// secretRefInPrefixAllowList is the seam for per connection prefix lists; none exist yet,
-// so every reference is outside the list and needs root.
-func (rt *Router) secretRefInPrefixAllowList(_ context.Context, _ secretsource.Ref) bool {
-	return false
+// secretRefPolicy is the optional connection capability behind delegated reference writes.
+type secretRefPolicy interface {
+	DelegatedRefAllowed(ctx context.Context, conn, env, path string) bool
 }
 
-// allowSecretRefs writes 403 and returns false when the caller may not point an app at these references.
-func (rt *Router) allowSecretRefs(w http.ResponseWriter, r *http.Request, refs ...secretsource.Ref) bool {
+// secretRefInPrefixAllowList reports whether the connection delegates ref to a writer without
+// root for the app's environment. Any lookup failure denies.
+func (rt *Router) secretRefInPrefixAllowList(ctx context.Context, envID string, ref secretsource.Ref) bool {
+	p, ok := rt.secretConns.(secretRefPolicy)
+	if !ok {
+		return false
+	}
+	envName := ""
+	if envID != "" && rt.environments != nil {
+		env, err := rt.environments.GetEnvironment(ctx, envID)
+		if err != nil {
+			return false
+		}
+		envName = env.Name
+	}
+	return p.DelegatedRefAllowed(ctx, ref.Conn, envName, ref.Path)
+}
+
+// allowSecretRefs writes 403 and returns false when the caller may not point an app in envID at
+// these references. Root always may; others only inside a connection's allow lists.
+func (rt *Router) allowSecretRefs(w http.ResponseWriter, r *http.Request, envID string, refs ...secretsource.Ref) bool {
 	for _, ref := range refs {
-		if rt.secretRefInPrefixAllowList(r.Context(), ref) || rt.callerHasAbility(r, AbilityRoot) {
+		if rt.callerHasAbility(r, AbilityRoot) || rt.secretRefInPrefixAllowList(r.Context(), envID, ref) {
 			continue
 		}
+		rt.auditSecretRefDenied(r, ref)
 		writeError(w, http.StatusForbidden, secretRefNeedsRoot)
 		return false
 	}
 	return true
+}
+
+// auditSecretRefDenied records a refused reference write: the reference text, never a value.
+func (rt *Router) auditSecretRefDenied(r *http.Request, ref secretsource.Ref) {
+	a := rt.accessActor(r)
+	b, _ := json.Marshal(map[string]string{"connection": ref.Conn, "path": ref.Path, "reason": "outside_allow_list"})
+	rt.saveAppExpiryAudit(r.Context(), store.AuditEntry{
+		ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityWrite, Method: r.Method, Path: r.URL.Path, StatusCode: http.StatusForbidden,
+		RemoteAddr: clientIP(r), ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+		Action: "app.secret_ref.denied", Detail: string(b),
+	})
 }
 
 // envRefOf converts a stored reference to the parsed form.
@@ -107,7 +138,7 @@ func parseSecretRefString(s string) (secretsource.Ref, bool) {
 // vetSecretRefs lifts secret:// env values into vault_env, validates every connection
 // reference, and requires root for each one that is new or changed. It audits those.
 // existing is nil on create.
-func (rt *Router) vetSecretRefs(w http.ResponseWriter, r *http.Request, app string, existing map[string]store.VaultEnvRef, req *appResource) bool {
+func (rt *Router) vetSecretRefs(w http.ResponseWriter, r *http.Request, app, envID string, existing map[string]store.VaultEnvRef, req *appResource) bool {
 	if lifted := anySecretRefEnv(req.Env); lifted {
 		base := req.VaultEnv
 		if base == nil && len(existing) > 0 {
@@ -138,7 +169,7 @@ func (rt *Router) vetSecretRefs(w http.ResponseWriter, r *http.Request, app stri
 			continue
 		}
 		ref, _ := envRefOf(v)
-		if !rt.allowSecretRefs(w, r, ref) {
+		if !rt.allowSecretRefs(w, r, envID, ref) {
 			return false
 		}
 		changed = append(changed, change{k, ref.String()})

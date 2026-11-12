@@ -23,17 +23,19 @@ type SecretConnection struct {
 	Type          string
 	Config        string
 	CredentialRef string
-	CreatedBy     string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	// Policy is JSON of the allowed path prefixes and environments; empty or {} means no allow list.
+	Policy    string
+	CreatedBy string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-const secretConnectionCols = "name, type, config, credential_ref, created_by, created_at, updated_at" //nolint:gosec // route and column names, not credentials
+const secretConnectionCols = "name, type, config, credential_ref, policy, created_by, created_at, updated_at" //nolint:gosec // route and column names, not credentials
 
 func scanSecretConnection(sc interface{ Scan(...any) error }) (SecretConnection, error) {
 	var c SecretConnection
 	var created, updated string
-	if err := sc.Scan(&c.Name, &c.Type, &c.Config, &c.CredentialRef, &c.CreatedBy, &created, &updated); err != nil {
+	if err := sc.Scan(&c.Name, &c.Type, &c.Config, &c.CredentialRef, &c.Policy, &c.CreatedBy, &created, &updated); err != nil {
 		return SecretConnection{}, err
 	}
 	c.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
@@ -74,8 +76,8 @@ func (db *DB) GetSecretConnection(ctx context.Context, name string) (SecretConne
 // CreateSecretConnection inserts c, or returns ErrSecretConnectionExists.
 func (db *DB) CreateSecretConnection(ctx context.Context, c SecretConnection) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	_, err := db.ExecContext(ctx, `INSERT INTO secret_connections (`+secretConnectionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		c.Name, c.Type, c.Config, c.CredentialRef, c.CreatedBy, now, now)
+	_, err := db.ExecContext(ctx, `INSERT INTO secret_connections (`+secretConnectionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		c.Name, c.Type, c.Config, c.CredentialRef, normalizePolicyJSON(c.Policy), c.CreatedBy, now, now)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") || strings.Contains(err.Error(), "PRIMARY KEY") {
 			return ErrSecretConnectionExists
@@ -85,10 +87,10 @@ func (db *DB) CreateSecretConnection(ctx context.Context, c SecretConnection) er
 	return nil
 }
 
-// UpdateSecretConnection replaces config and credential_ref; type and creator never change.
+// UpdateSecretConnection replaces config, credential_ref and policy; type and creator never change.
 func (db *DB) UpdateSecretConnection(ctx context.Context, c SecretConnection) error {
-	res, err := db.ExecContext(ctx, `UPDATE secret_connections SET config = ?, credential_ref = ?, updated_at = ? WHERE name = ?`,
-		c.Config, c.CredentialRef, time.Now().UTC().Format(time.RFC3339Nano), c.Name)
+	res, err := db.ExecContext(ctx, `UPDATE secret_connections SET config = ?, credential_ref = ?, policy = ?, updated_at = ? WHERE name = ?`,
+		c.Config, c.CredentialRef, normalizePolicyJSON(c.Policy), time.Now().UTC().Format(time.RFC3339Nano), c.Name)
 	if err != nil {
 		return fmt.Errorf("store: update secret connection: %w", err)
 	}
@@ -108,4 +110,11 @@ func (db *DB) DeleteSecretConnection(ctx context.Context, name string) error {
 		return ErrSecretConnectionNotFound
 	}
 	return nil
+}
+
+func normalizePolicyJSON(p string) string {
+	if strings.TrimSpace(p) == "" {
+		return "{}"
+	}
+	return p
 }
