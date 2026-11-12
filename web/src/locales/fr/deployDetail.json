@@ -1,0 +1,358 @@
+{
+  "receipt": {
+    "button": "Reçu (JSON)",
+    "hint": "Télécharger le reçu de deploy non signé : commit, digest de l'image, demandeur, approbateur et chronologie des barrières"
+  },
+  "tabs": {
+    "build": "Build",
+    "image": "Image",
+    "rollout": "Déploiement",
+    "supply": "Chaîne d'approvisionnement"
+  },
+  "state": {
+    "title": "Statut du deploy",
+    "now": "En ce moment",
+    "next": {
+      "queued": "Il démarre automatiquement quand le deploy qui le précède se termine.",
+      "held": "Libérez-le depuis l'historique des deploys, ou attendez la fin de la fenêtre de gel.",
+      "building": "Quand le build réussit, le nouveau container démarre et doit passer son contrôle de santé avant de recevoir du trafic.",
+      "buildingStatic": "Quand le build réussit, la sortie est publiée directement. Aucun container n'est démarré.",
+      "failed": "Ouvrez l'onglet Build pour lire l'étape en échec, corrigez-la, puis deployez à nouveau.",
+      "rolloutFailed": "La version précédente continue de servir. Vérifiez les logs du container et le chemin de santé, puis redeployez ou faites un rollback.",
+      "rollingOut": "Une fois le contrôle de santé réussi, le trafic bascule et l'ancien container est supprimé.",
+      "staticPublished": "Rien d'autre à attendre. Visitez le site pour confirmer que les nouveaux fichiers sont servis."
+    },
+    "label": {
+      "queued": "En file d'attente",
+      "held": "Suspendu",
+      "awaitingApproval": "En attente d'approbation",
+      "canceled": "Annulé",
+      "superseded": "Remplacé",
+      "failed": "Échec du build",
+      "building": "En build",
+      "rolloutFailed": "Échec du déploiement",
+      "published": "Publié",
+      "live": "En ligne",
+      "rollingOut": "Déploiement en cours",
+      "buildDone": "Build terminé"
+    },
+    "headline": {
+      "queued": "Ce deploy est en file d'attente derrière un autre.",
+      "queuedWhy": "Ce deploy est en file d'attente : {{reason}}.",
+      "held": "Ce deploy est suspendu. {{reason}}",
+      "awaitingApproval": "Ce deploy attend une approbation. Approuvez-le dans le tableau de bord pour l'exécuter.",
+      "canceled": "Ce deploy a été annulé avant d'avoir changé quoi que ce soit.",
+      "superseded": "Un deploy plus récent a remplacé celui-ci avant son application.",
+      "failed": "Le build a échoué, donc rien n'a été déployé.",
+      "failedWhy": "Le build a échoué : {{error}}",
+      "building": "Build en cours depuis {{elapsed}}.",
+      "rolloutFailed": "Le build s'est terminé mais le déploiement a échoué.",
+      "rolloutFailedWhy": "Le build s'est terminé mais le déploiement a échoué : {{reason}}",
+      "staticPublished": "Site statique : publié directement par l'ingress, aucun container à contrôler.",
+      "live": "Ce deploy sert du trafic.",
+      "rollingOut": "Build terminé. En attente que le nouveau container passe son premier contrôle de santé, {{elapsed}} jusqu'ici.",
+      "rollingOutNoImage": "Build terminé. Le déploiement attend car aucune image de container n'existe encore pour cette app, {{elapsed}} jusqu'ici.",
+      "untracked": "Le build est terminé. Les résultats de déploiement ne sont suivis que pour le dernier deploy.",
+      "untrackedImage": "Une image préconstruite a été deployée. Les résultats de déploiement ne sont suivis que pour le dernier deploy."
+    },
+    "mismatch": {
+      "buildOkRolloutPending": "Le build est terminé, mais le déploiement n'est pas achevé. Le statut du build et celui du déploiement sont suivis séparément, donc les deux sont vrais à la fois.",
+      "buildOkRolloutFailed": "Le build a réussi, mais le nouveau container n'est pas devenu sain, donc la version précédente continue de servir.",
+      "staticChip": "Le statut de l'app indique \"{{chip}}\" car il reflète la disponibilité du container. Un site statique n'a pas de container, donc ce badge ne bloque pas ce deploy."
+    },
+    "stuck": {
+      "title": "Cela prend plus de temps que prévu",
+      "noImage": "Le déploiement dure depuis plus de {{limit}} et aucune image n'a été construite pour cette app. Le build n'a rien produit d'exécutable, donc il n'y a rien à démarrer.",
+      "health": "Le déploiement dure depuis plus de {{limit}}. Le nouveau container ne répond probablement pas à son contrôle de santé, ou il redémarre en boucle."
+    },
+    "action": {
+      "containerLogs": "Voir les logs du container",
+      "healthPath": "Vérifier le chemin de santé",
+      "network": "Ouvrir l'onglet Réseau",
+      "rollback": "Rollback depuis l'historique",
+      "redeploy": "Vérifier la source et redeployer",
+      "buildTab": "Ouvrir l'onglet Build"
+    }
+  },
+  "live": {
+    "live": "En direct",
+    "lastEvent": "dernier événement il y a {{ago}}",
+    "noEvents": "aucun événement pour l'instant",
+    "reconnecting": "Reconnexion",
+    "reconnectIn": "nouvel essai dans {{seconds}} s",
+    "retryNow": "Réessayer maintenant",
+    "polling": "Flux en direct indisponible. Actualisation toutes les 3 s.",
+    "closed": "Deploy terminé. Flux en direct fermé.",
+    "connecting": "Connexion"
+  },
+  "build": {
+    "source": "Source",
+    "repo": "Dépôt",
+    "branch": "Branche",
+    "commit": "Commit",
+    "builder": "Builder",
+    "framework": "Framework détecté",
+    "image": "Image",
+    "steps": "Étapes du build ({{count}})",
+    "traceSteps": "Trace du pipeline ({{count}})",
+    "download": "Télécharger",
+    "builderValue": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Railpack",
+      "static": "Fichiers statiques"
+    },
+    "empty": {
+      "noStepTitle": "Ce deploy n'avait pas d'étape de build",
+      "noStepBody": "Une image préconstruite a été deployée telle quelle, donc il n'y a pas de sortie de build. La trace du pipeline (digest, pull, démarrage, contrôles de santé, bascule) apparaît ici une fois le deploy démarré.",
+      "notCapturedTitle": "La sortie du build n'a pas été capturée",
+      "notCapturedBody": "Le build n'a enregistré aucune ligne de log. Le deploy lui-même s'est terminé, donc l'onglet Déploiement montre ce qui s'est passé ensuite.",
+      "waitingTitle": "En attente de la sortie du build",
+      "waitingBody": "Les lignes apparaissent ici dès que le builder commence à les écrire."
+    },
+    "detected": "Détecté : {{value}}",
+    "detectedBuilder": "Remplacez-le dans les réglages de build."
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "Résoudre le tag en digest",
+      "registry_auth": "Contrôle d'authentification du registre",
+      "image_pull": "Pull de l'image",
+      "image_pull_layer": "Couche",
+      "image_inspect": "Inspection de l'image",
+      "config_validate": "Validation de la configuration",
+      "ensure_network": "Vérifier le réseau",
+      "ensure_volume": "Vérifier le volume",
+      "container_create": "Créer le container",
+      "container_start": "Démarrer le container",
+      "docker_event": "Événement Docker",
+      "readiness_probe": "Sonde de disponibilité",
+      "readiness_gate": "Barrière de disponibilité",
+      "stability_gate": "Barrière de stabilité",
+      "cutover": "Bascule",
+      "drain_old": "Vider l'ancien container",
+      "retain_image": "Conserver l'image pour le rollback",
+      "compose_parse": "Analyser le fichier Compose",
+      "compose_plan": "Plan Compose",
+      "compose_service": "Service Compose",
+      "depends_on": "Ordre des dépendances",
+      "deploy_summary": "Résultat du deploy"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "Image",
+      "prepare": "Préparation",
+      "container": "Container",
+      "readiness": "Disponibilité",
+      "cutover": "Bascule",
+      "summary": "Résultat"
+    },
+    "attempts_one": "essayé {{count}} fois",
+    "attempts_many": "essayé {{count}} fois",
+    "attempts_other": "essayé {{count}} fois",
+    "pullProgress": "Progression du pull de l'image",
+    "folded": {
+      "image_pull_layer_one": "{{count}} couche",
+      "image_pull_layer_many": "{{count}} couches",
+      "image_pull_layer_other": "{{count}} couches",
+      "readiness_probe_one": "{{count}} tentative de sonde",
+      "readiness_probe_many": "{{count}} tentatives de sonde",
+      "readiness_probe_other": "{{count}} tentatives de sonde",
+      "docker_event_one": "{{count}} événement du daemon",
+      "docker_event_many": "{{count}} événements du daemon",
+      "docker_event_other": "{{count}} événements du daemon"
+    }
+  },
+  "rollout": {
+    "title": "Chronologie du déploiement",
+    "counts": {
+      "title": "Progression de la mise à jour progressive",
+      "wave": "Vague {{wave}} sur {{waves}}",
+      "ready": "Prêts",
+      "updated": "Mis à jour",
+      "unavailable": "Indisponibles",
+      "surge": "Surcharge",
+      "policy": "Surcharge max {{surge}}, indisponibles max {{unavailable}}, disponibles min {{min}}"
+    },
+    "stageStatus": {
+      "pending": "En attente",
+      "running": "En cours",
+      "done": "Terminé",
+      "failed": "Échoué",
+      "skipped": "Ignoré",
+      "unknown": "Non suivi"
+    },
+    "stage": {
+      "build": "Build",
+      "publish": "Publication",
+      "health-check": "Contrôle de santé",
+      "cutover": "Bascule",
+      "cleanup": "Nettoyage"
+    },
+    "reason": {
+      "pendingHealth": "Démarre une fois que le build a produit une image.",
+      "runningHealth": "En attente que le nouveau container passe sa sonde de disponibilité avant de recevoir du trafic.",
+      "runningNoImage": "Impossible de démarrer : aucune image de container n'existe encore pour cette app.",
+      "pendingCutover": "Démarre après la réussite du contrôle de santé.",
+      "pendingCleanup": "Démarre après le passage du trafic vers le nouveau container.",
+      "doneBuild": "Build terminé.",
+      "donePublish": "Fichiers publiés directement par l'ingress.",
+      "skippedBuild": "Aucune étape de build n'a été exécutée pour ce deploy.",
+      "stuck": "En cours depuis plus de {{limit}}."
+    },
+    "staticNote": "Site statique : publié directement par l'ingress, aucun container à contrôler.",
+    "started": "Démarré {{at}}",
+    "finished": "Terminé {{at}}",
+    "duration": "A pris {{duration}}",
+    "runningFor": "En cours depuis {{duration}}",
+    "details": "Détails",
+    "technical": "Détails techniques",
+    "gate": "Barrière de disponibilité et surveillance",
+    "probes": "Tentatives de sonde de santé",
+    "conditionLine": "{{reason}} ({{status}}) : {{message}}",
+    "noConditions": "Le reconciler n'a pas encore signalé de statut pour cette app."
+  },
+  "page": {
+    "notInHistory": "Cette tentative de deploy ne figure pas dans l'historique actuel de cette app.",
+    "currentChip": "Actuel"
+  },
+  "drawer": {
+    "whatWentWrong": "Ce qui s'est mal passé",
+    "failedAtStep": "Échec à l'étape : {{step}}",
+    "noErrorRecorded": "Le deploy a échoué. Aucune erreur n'a été enregistrée.",
+    "lastLogLines": "Dernières lignes de log",
+    "tailFailed": "Impossible de charger la fin du log.",
+    "viewFullLogs": "Voir les logs complets",
+    "live": "En direct",
+    "timing": "Durées",
+    "started": "Démarré",
+    "finished": "Terminé",
+    "duration": "Durée",
+    "notFinished": "Non terminé",
+    "source": "Source",
+    "trigger": "Déclencheur",
+    "rollbackTo": "Rollback vers",
+    "branch": "Branche",
+    "commit": "Commit",
+    "message": "Message",
+    "author": "Auteur",
+    "pullRequest": "Pull request",
+    "app": "App",
+    "image": "Image",
+    "domains": "Domaines",
+    "loadingDomains": "Chargement des domaines",
+    "noDomains": "Aucun domaine configuré.",
+    "preview": "Preview",
+    "supplyChain": "Chaîne d'approvisionnement"
+  },
+  "stream": {
+    "title": "Le flux de logs en direct s'est interrompu",
+    "bodyNoRetry": "Des lignes peuvent manquer jusqu'à la reconnexion.",
+    "nextAttempt": "Prochaine tentative {{when}}.",
+    "retryIn": "dans {{seconds}} s",
+    "retryNow": "Réessayer maintenant",
+    "switchToPolling": "Passer à l'interrogation",
+    "download": "Télécharger le log complet"
+  },
+  "fix": {
+    "title": "Corriger et redeployer",
+    "hint": "Ouvrez le réglage qui a le plus probablement causé cela, modifiez-le, puis redeployez.",
+    "link": {
+      "environment": "Modifier les variables d'environnement",
+      "source": "Vérifier les réglages de build",
+      "deploySettings": "Vérifier les réglages de deploy",
+      "resources": "Ajuster les ressources"
+    },
+    "docs": "Lire la documentation sur cette erreur"
+  },
+  "fixReturn": {
+    "body": "Vous corrigiez un deploy échoué ({{target}}). Redeployez pour appliquer vos changements.",
+    "redeploy": "Redeployer maintenant",
+    "back": "Retour au deploy échoué",
+    "dismiss": "Fermer",
+    "region": "Redeployer avec vos changements",
+    "started": "Redeploy en cours avec vos changements."
+  },
+  "rebuild": {
+    "started": "Rebuild démarré.",
+    "startedNoCache": "Rebuild sans cache démarré."
+  },
+  "report": {
+    "copy": "Copier comme rapport",
+    "copied": "Rapport copié",
+    "failed": "Impossible de copier le rapport",
+    "stage": "Étape en échec"
+  },
+  "cache": {
+    "summary": "Cache : {{cached}} étapes sur {{total}} réutilisées",
+    "unknown": "Cache : inconnu"
+  },
+  "rollback": {
+    "note": "Restaure l'image {{image}}. Les variables d'env, volumes et migrations ne sont pas restaurés."
+  },
+  "phases": {
+    "label": "Phases du build",
+    "all": "Toutes",
+    "install": "Installation",
+    "build": "Build",
+    "push": "Push",
+    "other": "Autres",
+    "chip": "{{phase}} ({{count}})",
+    "showSteps": "Afficher les étapes",
+    "hideSteps": "Masquer les étapes",
+    "stepsLabel": "Étapes du build",
+    "cached": "En cache",
+    "jump": "Aller à la première ligne de {{label}}",
+    "total": "{{phase}} : {{time}}",
+    "noTiming": "aucune durée",
+    "truncated": "Les phases n'ont été détectées que dans les {{count}} premières lignes."
+  },
+  "chain": {
+    "position": "Tentative {{position}} de cette chaîne"
+  },
+  "deployPhases": {
+    "label": "Progression du deploy",
+    "phase": {
+      "upload": "Upload",
+      "install": "Installation",
+      "build": "Build",
+      "export_image": "Export de l'image",
+      "health_check": "Contrôle de santé",
+      "cutover": "Bascule"
+    },
+    "status": {
+      "pending": "En attente",
+      "running": "En cours",
+      "done": "Terminé",
+      "failed": "Échoué",
+      "skipped": "Ignoré"
+    },
+    "eta": "Prend généralement environ {{typical}} min, {{left}} min restantes",
+    "etaOver": "Prend généralement environ {{typical}} min, celui-ci prend plus de temps",
+    "stillWorking": "Toujours en cours. Aucune nouvelle ligne de log depuis un moment, ce qui est normal pendant les longues étapes.",
+    "stillWorkingExport": "Toujours en cours. L'export de l'image peut rester silencieux plusieurs minutes, c'est normal."
+  },
+  "buildReport": {
+    "title": "Rapport de build",
+    "shared": "Premier chargement partagé",
+    "route": "Route",
+    "kind": "Type",
+    "size": "Taille",
+    "firstLoad": "Premier chargement",
+    "noRoutes": "Aucune route trouvée dans la sortie du build.",
+    "warnings": "À noter",
+    "notStored": "Les logs de build ne sont pas stockés, donc il n'y a pas de rapport pour ce deploy.",
+    "kinds": {
+      "static": "Statique",
+      "isr": "ISR",
+      "dynamic": "Dynamique",
+      "unknown": "Inconnu"
+    }
+  },
+  "failureCard": {
+    "title": "Ce qui s'est mal passé",
+    "stage": "Étape en échec",
+    "error": "Erreur",
+    "showLess": "Afficher moins",
+    "showMore": "Afficher plus"
+  }
+}

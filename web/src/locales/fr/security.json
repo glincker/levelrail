@@ -1,0 +1,439 @@
+{
+  "page": {
+    "title": "Centre de sécurité",
+    "description": "Votre score de sécurité, ce qu'il faut corriger en premier, et chaque session et appareil qui peut atteindre ce plan de contrôle.",
+    "tabs": {
+      "checklist": "Liste de contrôle",
+      "sessions": "Sessions et appareils",
+      "policy": "Politique",
+      "rotations": "Renouvellements de secrets",
+      "compliance": "Conformité",
+      "exposure": "Exposition",
+      "advisories": "Avis de sécurité"
+    },
+    "loadError": "Impossible de charger le centre de sécurité.",
+    "retry": "Réessayer"
+  },
+  "score": {
+    "label": "Score de sécurité",
+    "grade": "Note {{grade}}",
+    "generated": "Contrôlé {{time}}",
+    "failing": "{{critical}} critiques, {{high}} élevés, {{medium}} moyens, {{low}} faibles",
+    "passing": "{{count}} contrôles réussis",
+    "unknown": "{{count}} n'ont pas pu être contrôlés",
+    "recommended": "{{count}} étapes recommandées n'affectent pas le score tant que vous ne deployez pas d'app",
+    "summaryOnly": "Seuls les admins voient la liste de contrôle complète. Demandez à un admin d'examiner les éléments derrière ce score."
+  },
+  "severity": {
+    "critical": "Critique",
+    "high": "Élevée",
+    "medium": "Moyenne",
+    "low": "Faible"
+  },
+  "status": {
+    "pass": "Réussi",
+    "fail": "Action requise",
+    "recommended": "Recommandé",
+    "unknown": "Inconnu"
+  },
+  "supplyGate": {
+    "blockOnHigh": {
+      "label": "Bloquer si élevé ou critique",
+      "summary": "Suspendre les versions avec des constats sérieux.",
+      "detail": "Une version avec une vulnérabilité élevée ou critique ne passe pas en ligne. La version précédente continue de servir et le deploy enregistre la raison. Si le scanner lui-même échoue, la version est autorisée."
+    }
+  },
+  "reach": {
+    "title": "Ce que l'internet peut atteindre",
+    "description": "Chaque domaine et port publié par app et par base de données, avec une correction pour ce qui ne devrait pas être ouvert. Les corrections utilisent les mêmes contrôles que les pages d'app, de pare-feu et de base de données.",
+    "recheck": "Revérifier",
+    "rechecking": "Vérification",
+    "recheckError": "Impossible de revérifier.",
+    "loadError": "Impossible de charger le rapport d'exposition.",
+    "rulesUnreadable": "Les règles de pare-feu d'un node n'ont pas pu être lues, donc un port restreint peut apparaître comme ouvert.",
+    "clean": "Rien de risqué n'est joignable. {{count}} ports publiés sont restreints par des règles de pare-feu.",
+    "subjects": "Apps et bases de données",
+    "private": "Non joignable depuis l'extérieur",
+    "fixed": "Corrigé. Le rapport a été revérifié.",
+    "stillFailing": "Le changement a été appliqué mais le constat est toujours là.",
+    "applyError": "Impossible d'appliquer la correction.",
+    "severity": {
+      "high": "Élevée",
+      "medium": "Moyenne",
+      "low": "Faible",
+      "info": "Info"
+    },
+    "type": {
+      "app": "App",
+      "database": "Base de données"
+    },
+    "kinds": {
+      "app_direct_port": {
+        "title": "{{name}} est ouverte sur {{port}}",
+        "why": "Un port direct contourne TLS, les protections de connexion et le bouclier. La servir via le proxy ferme le port.",
+        "fix": "Servir via le proxy"
+      },
+      "app_no_shield": {
+        "title": "{{name}} n'a pas de bouclier sur {{domain}}",
+        "why": "Sans limites de débit, un seul client peut utiliser toute la capacité de l'app.",
+        "fix": "Appliquer le bouclier recommandé"
+      },
+      "database_public": {
+        "title": "La base de données {{name}} est ouverte à internet sur {{port}}",
+        "why": "Toute personne qui trouve le port peut essayer de se connecter. Restreignez-la à des adresses connues ou rendez-la privée.",
+        "fix": "Examiner l'accès"
+      },
+      "port_exposed": {
+        "title": "{{container}} est ouvert sur {{port}}",
+        "why": "Docker publie les ports en contournant le pare-feu de l'hôte, donc n'importe qui peut atteindre celui-ci.",
+        "fix": "Restreindre dans le pare-feu"
+      },
+      "docker_api": {
+        "title": "L'API Docker est ouverte sur {{port}}",
+        "why": "Toute personne qui l'atteint contrôle chaque container du serveur.",
+        "fix": "Restreindre dans le pare-feu"
+      }
+    },
+    "confirm": {
+      "title": "Fermer le port direct ?",
+      "description": "L'app est recréée avec la même image et n'est ensuite joignable que via le proxy. Tout ce qui utilise l'adresse directe cesse de fonctionner.",
+      "confirm": "Fermer le port",
+      "pending": "Application en cours"
+    }
+  },
+  "checklist": {
+    "platform": "Plateforme",
+    "account": "Votre compte",
+    "empty": "Rien à contrôler pour l'instant.",
+    "count": "{{count}} concernés",
+    "showPassing": "Afficher les contrôles réussis",
+    "hidePassing": "Masquer les contrôles réussis",
+    "fix": "Corriger",
+    "open": "Ouvrir",
+    "cli": "Depuis la CLI",
+    "applied": "Changement appliqué.",
+    "applyError": "Impossible d'appliquer le changement."
+  },
+  "items": {
+    "admin_without_mfa": {
+      "title": "Admins sans double authentification ni passkey",
+      "pass": "Chaque admin a la double authentification ou une passkey",
+      "why": "Un mot de passe d'admin divulgué suffirait à donner le contrôle total de chaque app et de chaque secret."
+    },
+    "account_flagged": {
+      "title": "Comptes signalés pour un nouveau mot de passe",
+      "pass": "Aucun compte n'est signalé pour une réinitialisation de mot de passe",
+      "why": "Quelqu'un a signalé une connexion à ces comptes qui n'était pas la sienne."
+    },
+    "recovery_codes_missing": {
+      "title": "Comptes sans codes de récupération restants",
+      "pass": "Chaque compte à double authentification a des codes de récupération",
+      "why": "Perdre l'app d'authentification verrouillerait ces comptes sans moyen d'y revenir."
+    },
+    "no_admin_passkey": {
+      "title": "Aucun admin n'a de passkey",
+      "pass": "Les admins ont {{count}} passkey(s)",
+      "why": "Les passkeys ne peuvent être ni hameçonnées ni réutilisées, contrairement aux mots de passe et aux codes."
+    },
+    "token_root": {
+      "title": "Tokens d'API détenant root",
+      "pass": "Aucun token d'API ne détient root",
+      "why": "Un token root peut faire tout ce qu'un admin peut faire, y compris créer d'autres tokens."
+    },
+    "token_no_expiry": {
+      "title": "Tokens d'API qui n'expirent jamais",
+      "pass": "Chaque token d'API a une expiration",
+      "why": "Un token sans expiration continue de fonctionner bien après que plus personne ne se souvient de son existence."
+    },
+    "token_signin_approve": {
+      "title": "Tokens d'API pouvant approuver des connexions",
+      "pass": "Aucun token d'API ne peut approuver des connexions",
+      "why": "Un tel token peut révéler des codes de connexion et approuver de nouveaux navigateurs pour son propriétaire."
+    },
+    "token_unused": {
+      "title": "Tokens d'API inutilisés depuis longtemps",
+      "pass": "Aucun token d'API inutilisé depuis longtemps",
+      "why": "Les tokens inutilisés ne sont que du risque : révoquez ce dont plus rien n'a besoin."
+    },
+    "sessions_old": {
+      "title": "Anciennes sessions toujours connectées",
+      "pass": "Aucune ancienne session",
+      "why": "Les sessions de longue durée sur des navigateurs oubliés sont une porte d'entrée facile."
+    },
+    "secret_reveal_allow": {
+      "title": "Les valeurs des secrets peuvent être révélées sans confirmation",
+      "pass": "Révéler la valeur d'un secret nécessite une confirmation par mot de passe ou passkey",
+      "why": "Avec APP_SECRET_REVEAL=allow, toute personne détenant read:sensitive ou une session volée peut lire chaque valeur de secret. Définissez-le sur step_up."
+    },
+    "new_device_approval_off": {
+      "title": "L'approbation des nouveaux navigateurs est désactivée",
+      "pass": "L'approbation des nouveaux navigateurs est activée",
+      "why": "Sans elle, un mot de passe volé permet de se connecter de n'importe où sans second contrôle."
+    },
+    "approval_password_only": {
+      "title": "Seules les connexions par mot de passe exigent l'approbation d'un nouveau navigateur",
+      "pass": "Chaque méthode de connexion exige l'approbation d'un nouveau navigateur",
+      "why": "Les connexions par passkey et OAuth depuis un nouveau navigateur sautent aujourd'hui l'étape d'approbation."
+    },
+    "code_login_admins": {
+      "title": "Les admins peuvent se connecter avec un code",
+      "pass": "Les admins ne peuvent pas se connecter avec un code",
+      "why": "Un code envoyé à une session ouverte ou par e-mail est une voie plus faible vers un compte admin."
+    },
+    "public_exposure": {
+      "title": "Ports de containers ouverts à internet",
+      "pass": "Aucun port public sans restriction",
+      "why": "Docker publie les ports en contournant le pare-feu de l'hôte, donc ils sont joignables par n'importe qui."
+    },
+    "docker_api_exposed": {
+      "title": "L'API Docker est joignable depuis internet",
+      "pass": "L'API Docker n'est pas exposée",
+      "why": "Un accès non authentifié à l'API Docker équivaut au contrôle total du serveur."
+    },
+    "offbox_backup_off": {
+      "title": "Les sauvegardes du plan de contrôle hors machine sont désactivées",
+      "pass": "Les sauvegardes chiffrées hors machine sont activées",
+      "why": "Perdre cette machine ferait perdre chaque définition d'app, secret et certificat."
+    },
+    "offsite_backup_unencrypted": {
+      "title": "Destinations de sauvegarde sans chiffrement",
+      "pass": "Chaque destination de sauvegarde est chiffrée",
+      "why": "Une copie stockée non chiffrée peut être lue par toute personne qui accède à ce stockage. Activez le chiffrement dans les paramètres de la destination de sauvegarde, puis lancez une nouvelle sauvegarde."
+    },
+    "audit_anchor_off": {
+      "title": "Aucun ancrage du journal d'audit hors machine n'est configuré",
+      "pass": "Un ancrage du journal d'audit hors machine est activé",
+      "why": "Sans copie de la tête de chaîne d'audit en dehors de cette machine, quelqu'un avec root ici peut réécrire l'historique et le re-signer sans être détecté."
+    },
+    "master_key_rotation": {
+      "title": "La clé maîtresse est absente ou son renouvellement est en retard",
+      "pass": "La clé maîtresse a été renouvelée récemment",
+      "why": "Renouveler la clé maîtresse limite ce qu'une ancienne copie divulguée peut déchiffrer."
+    },
+    "secrets_old": {
+      "title": "Secrets plus anciens que {{detail}}",
+      "pass": "Aucun secret périmé",
+      "why": "Les anciens secrets ont plus de chances d'avoir fuité quelque part en chemin."
+    },
+    "tls_not_public": {
+      "title": "Domaines sans certificat publiquement reconnu",
+      "pass": "Chaque domaine a un certificat public",
+      "why": "Les navigateurs affichent un avertissement sur ces domaines, ce qui habitue les gens à passer outre les avertissements."
+    },
+    "hsts_off": {
+      "title": "HSTS est désactivé alors que de vrais certificats sont en place",
+      "pass": "HSTS est activé ou pas encore nécessaire",
+      "why": "Sans HSTS, une première visite en HTTP simple peut être interceptée et dégradée."
+    },
+    "domains_unshielded": {
+      "title": "Domaines sans bouclier",
+      "pass": "Chaque domaine routé a un bouclier",
+      "why": "Un bouclier plafonne les requêtes par visiteur et repousse les bots abusifs, pour qu'un client bruyant ne prive pas les autres."
+    },
+    "saml_open_domains": {
+      "title": "Connexions SAML qui acceptent n'importe quel domaine d'e-mail",
+      "pass": "Chaque connexion SAML activée limite la connexion à vos domaines",
+      "why": "Sans liste de domaines autorisés, toute adresse affirmée par votre fournisseur d'identité peut correspondre à un compte ici. Ajoutez vos domaines dans les paramètres de la connexion."
+    },
+    "microsoft_no_tenant": {
+      "title": "La connexion Microsoft n'est pas liée à un seul tenant",
+      "pass": "La connexion Microsoft est désactivée ou liée à votre tenant",
+      "why": "Sur le tenant partagé, n'importe quel annuaire peut affirmer une adresse e-mail, donc aucun nouveau compte n'en est créé. Définissez l'ID de votre tenant dans les paramètres du fournisseur Microsoft."
+    },
+    "agents_outdated": {
+      "title": "Agents de nodes plus anciens que la version minimale",
+      "pass": "Chaque agent de node est à jour",
+      "why": "Les anciens agents manquent des correctifs de sécurité que le plan de contrôle attend déjà."
+    },
+    "login_anomalies": {
+      "title": "Rafales d'échecs de connexion",
+      "pass": "Aucune rafale d'échecs de connexion",
+      "why": "De nombreux mots de passe erronés en peu de temps signifient généralement que quelqu'un tente de deviner."
+    },
+    "own_mfa": {
+      "title": "Votre compte n'a ni double authentification ni passkey",
+      "pass": "Votre compte a la double authentification ou une passkey",
+      "why": "Votre mot de passe seul suffit pour se connecter en tant que vous."
+    },
+    "own_recovery_codes": {
+      "title": "Il ne vous reste aucun code de récupération",
+      "pass": "Vous avez des codes de récupération",
+      "why": "Sans eux, perdre votre authentificateur vous verrouille."
+    },
+    "own_account_flagged": {
+      "title": "Votre compte a besoin d'un nouveau mot de passe",
+      "pass": "Votre compte n'est pas signalé",
+      "why": "Une connexion à votre compte a été signalée comme n'étant pas la vôtre."
+    },
+    "agent_token_unnamed": {
+      "title": "Les tokens d'API qui peuvent modifier des choses n'ont pas de nom d'agent",
+      "pass": "Chaque token d'écriture ou de deploy est étiqueté ou examiné",
+      "why": "Un token sans nom d'agent n'est pas régi par le contrôle IA, donc un outil IA qui le détient agit sans limites de mode ni d'environnement."
+    },
+    "ai_control_admin": {
+      "title": "Le contrôle IA est en mode admin",
+      "pass": "Le contrôle IA est en dessous du mode admin",
+      "why": "Le mode admin permet aux agents de modifier les paramètres et les accès, pas seulement les apps. Le mode operate couvre les deploys du quotidien."
+    },
+    "agent_tokens_production": {
+      "title": "Les tokens d'agent peuvent modifier la production",
+      "pass": "Aucun token d'agent ne peut modifier la production",
+      "why": "Tant que le contrôle IA est au-dessus d'observe, les tokens d'agent qui peuvent écrire ou deployer peuvent encore atteindre des routes que la protection de production ne couvre pas, comme apply et les environnements."
+    },
+    "prod_env_unprotected": {
+      "title": "Environnements de production sans protection",
+      "pass": "Chaque environnement de production est protégé",
+      "why": "Un environnement protégé demande une approbation avant que les deploys, rollbacks et promotions n'y parviennent."
+    },
+    "prod_apps_unguarded": {
+      "title": "Apps de production sans politique de deploy appliquée",
+      "pass": "Chaque app de production a une politique de deploy appliquée",
+      "why": "Une règle en mode warn ne fait que signaler. Sans règle en mode enforce, rien ne bloque un deploy risqué vers une app de production."
+    },
+    "audit_sink_none": {
+      "title": "Le journal d'audit n'est envoyé nulle part",
+      "pass": "Le journal d'audit est transmis à une destination externe",
+      "why": "Un flux d'audit en dehors de cette machine conserve une trace des actions des agents et des deploys même si cet hôte est perdu."
+    }
+  },
+  "actions": {
+    "set_policy": "Appliquer la politique recommandée",
+    "disable_code_login_admins": "Désactiver la connexion par code pour les admins",
+    "review_sessions": "Examiner les sessions",
+    "enable_hsts": "Activer HSTS"
+  },
+  "hsts": {
+    "title": "Activer HSTS",
+    "description": "Nous vérifions que chaque domaine public sert un certificat publiquement reconnu avant que cela puisse être activé.",
+    "probing": "Contrôle des certificats...",
+    "probeError": "Impossible d'exécuter le contrôle des certificats.",
+    "trusted": "Certificat reconnu",
+    "notTrusted": "Auto-signé, interne ou injoignable en HTTPS",
+    "noDomains": "Aucun domaine public n'est encore configuré.",
+    "blocked": "HSTS reste désactivé tant que chaque domaine ne passe pas. Avec un certificat auto-signé, les navigateurs refuseraient le site sans moyen de passer l'avertissement.",
+    "warning": "HSTS couvre les sous-domaines et les navigateurs s'en souviennent pendant 180 jours, donc il ne peut pas être annulé pour les visiteurs qui l'ont déjà vu.",
+    "recheck": "Contrôler à nouveau",
+    "confirm": "Activer HSTS",
+    "enabled": "HSTS est activé",
+    "enableError": "Impossible d'activer HSTS"
+  },
+  "sessions": {
+    "tableLabel": "Sessions actives",
+    "title": "Sessions actives",
+    "description": "Navigateurs connectés à ce compte. L'emplacement est le réseau auquel appartient l'adresse, pas un lieu.",
+    "viewing": "Compte consulté",
+    "self": "Votre compte",
+    "browser": "Navigateur",
+    "network": "Réseau",
+    "created": "Connexion",
+    "lastSeen": "Dernière activité",
+    "current": "Ce navigateur",
+    "revoke": "Déconnecter",
+    "revokeAria": "Déconnecter la session {{id}}",
+    "revoked": "Session déconnectée.",
+    "revokeError": "Impossible de déconnecter cette session.",
+    "revokeOthers": "Déconnecter toutes les autres sessions",
+    "revokeOthersAdmin": "Déconnecter toutes les sessions de ce compte",
+    "revokeOthersDone": "{{count}} session(s) déconnectée(s). Les navigateurs de confiance et les connexions en attente ont aussi été réinitialisés.",
+    "empty": "Aucune session active.",
+    "devicesTitle": "Navigateurs de confiance",
+    "devicesDescription": "Navigateurs qui sautent l'approbation de nouveau navigateur. Retirez ceux que vous ne reconnaissez pas.",
+    "devicesEmpty": "Aucun navigateur de confiance.",
+    "deviceRemove": "Retirer",
+    "deviceRemoved": "Navigateur retiré.",
+    "tokensTitle": "Tokens d'API",
+    "tokensDescription": "Tokens appartenant à ce compte, avec la date de dernière utilisation de chacun.",
+    "tokensEmpty": "Aucun token d'API.",
+    "neverUsed": "Jamais utilisé",
+    "usedAgo": "Utilisé {{time}}",
+    "manageTokens": "Gérer les tokens",
+    "confirmTitle": "Déconnecter les autres sessions ?",
+    "confirmBody": "Chaque autre navigateur connecté à ce compte est déconnecté, et les navigateurs de confiance et connexions en attente sont réinitialisés.",
+    "confirm": "Les déconnecter",
+    "cancel": "Annuler"
+  },
+  "policy": {
+    "title": "Politique de sécurité",
+    "description": "Règles de la plateforme pour l'approbation des connexions et l'hygiène des tokens d'API. Les changements s'appliquent immédiatement.",
+    "adminOnly": "Seuls les admins peuvent modifier la politique de sécurité.",
+    "source": {
+      "saved": "Enregistrée ici",
+      "env": "Depuis l'environnement",
+      "default": "Par défaut"
+    },
+    "approvalScope": "L'approbation de nouveau navigateur s'applique à",
+    "scopePasswordOnly": "Connexions par mot de passe uniquement",
+    "scopeAllMethods": "Chaque méthode de connexion (mot de passe, passkey, OAuth)",
+    "approvalOff": "L'approbation de nouveau navigateur est désactivée sur ce serveur, donc ce réglage n'a aucun effet tant qu'elle n'est pas réactivée.",
+    "maxLifetime": "Durée de vie maximale d'un token d'API (jours, 0 pour aucune limite)",
+    "warnUnused": "Signaler les tokens inutilisés depuis (jours, 0 pour arrêter)",
+    "disableUnused": "Désactiver les tokens inutilisés depuis (jours, 0 pour arrêter)",
+    "disableHint": "Un token reçoit d'abord un avis et est désactivé {{days}} jours plus tard sauf s'il est utilisé.",
+    "save": "Enregistrer la politique",
+    "saved": "Politique de sécurité enregistrée.",
+    "saveError": "Impossible d'enregistrer la politique de sécurité."
+  },
+  "account": {
+    "title": "Exiger l'approbation des nouveaux navigateurs sur mon compte",
+    "description": "Demande à l'une de vos sessions connectées d'approuver tout nouveau navigateur, quelle que soit sa méthode de connexion.",
+    "on": "Approbation requise pour chaque méthode de connexion sur votre compte.",
+    "off": "Votre compte suit la politique de la plateforme.",
+    "saveError": "Impossible de modifier ce réglage.",
+    "flagged": "Une connexion à votre compte a été signalée comme n'étant pas la vôtre. Changez votre mot de passe maintenant ; cela efface cet avertissement."
+  },
+  "alertPage": {
+    "title": "Cette connexion n'était pas la vôtre ?",
+    "description": "Confirmez pour déconnecter ce navigateur, oublier vos navigateurs de confiance et signaler votre compte pour un nouveau mot de passe.",
+    "confirm": "Ce n'était pas moi, déconnecter",
+    "working": "Déconnexion...",
+    "done": "Terminé. Ce navigateur est déconnecté et votre compte est signalé. Connectez-vous et changez votre mot de passe maintenant.",
+    "doneNoSession": "Terminé. Cette session était déjà terminée. Votre compte est signalé : connectez-vous et changez votre mot de passe maintenant.",
+    "signIn": "Aller à la connexion",
+    "missing": "Ce lien n'a pas de token. Ouvrez à nouveau le lien depuis l'e-mail.",
+    "error": "Ce lien est invalide, déjà utilisé ou expiré."
+  },
+  "advisories": {
+    "title": "Avis de sécurité connus",
+    "off": "Aucun flux d'avis n'est configuré. Définissez APP_ADVISORY_FEED sur le serveur pour l'activer.",
+    "unsigned": "non signé",
+    "verified": "signé, vérifié",
+    "invalid": "signature invalide",
+    "feed": "{{count}} avis, {{signature}}",
+    "none": "Aucune image en cours d'exécution ne correspond à un avis connu.",
+    "summary_one": "{{count}} image en cours d'exécution correspond à un avis connu",
+    "summary_many": "{{count}} images en cours d'exécution correspondent à un avis connu",
+    "summary_other": "{{count}} images en cours d'exécution correspondent à un avis connu",
+    "fixedIn": "Corrigé dans {{version}}",
+    "reference": "Référence",
+    "loadError": "Impossible de charger les avis."
+  },
+  "imageScanning": {
+    "page": {
+      "title": "Analyse des images",
+      "description": "La politique d'analyse par défaut pour toute l'instance."
+    },
+    "scan": {
+      "label": "Analyser les images à la recherche de vulnérabilités connues"
+    },
+    "gate": {
+      "label": "Barrière de deploy",
+      "options": {
+        "off": "Désactivée",
+        "warn": "Avertir seulement",
+        "block_on_critical": "Bloquer si critique",
+        "block_on_high": "Bloquer si élevé ou critique"
+      },
+      "needsScan": "Activez l'analyse pour utiliser une barrière autre que Désactivée."
+    },
+    "save": {
+      "action": "Enregistrer la politique",
+      "pending": "Enregistrement",
+      "done": "Politique enregistrée."
+    },
+    "inherit": "Les apps sans politique propre héritent de celle-ci.",
+    "serverOff": "L'analyse de vulnérabilités est désactivée sur ce plan de contrôle, donc la politique n'a pas encore d'effet.",
+    "rootOnly": "Seul un compte root peut modifier cette politique.",
+    "loading": "Chargement de la politique",
+    "error": "Impossible de charger la politique d'analyse."
+  }
+}
