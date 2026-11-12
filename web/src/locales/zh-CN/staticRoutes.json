@@ -1,0 +1,96 @@
+{
+  "title": "路由规则",
+  "description": "此站点发布时附带的重定向、重写和响应头。它们来自发布目录中的 _redirects 和 _headers 文件以及 app.yaml,只有在你部署时才会改变。",
+  "loadFailed": "无法加载路由规则。",
+  "retry": "重试",
+  "notStatic": {
+    "title": "此应用不是静态站点",
+    "description": "路由规则适用于使用 build.type: static 构建的应用。容器应用请使用域名页面上的流量控制。"
+  },
+  "notPublished": {
+    "title": "发布于路由规则出现之前",
+    "description": "重新部署此站点以启用 _redirects、_headers 以及 SPA、简洁 URL 和 404 选项。不会丢失任何内容:站点仍会像以前一样提供其文件。"
+  },
+  "options": {
+    "title": "服务选项",
+    "spa": "单页应用回退",
+    "cleanUrls": "简洁 URL",
+    "trailingSlash": "末尾斜杠",
+    "notFound": "404 页面",
+    "on": "开",
+    "off": "关",
+    "slashOff": "保持请求原样",
+    "slashAdd": "始终添加",
+    "slashRemove": "始终移除",
+    "defaultNotFound": "存在时使用 404.html"
+  },
+  "precedence": {
+    "title": "评估顺序",
+    "body": "规则最先按顺序执行,第一个匹配的生效。如果请求路径上存在文件,则跳过该规则,除非用 ! 强制执行。之后提供文件,然后是单页应用回退,最后是 404 页面。"
+  },
+  "rules": {
+    "title": "重定向与重写",
+    "label": "重定向与重写规则",
+    "from": "来源",
+    "to": "目标",
+    "status": "状态",
+    "source": "定义于",
+    "forced": "强制",
+    "kindRewrite": "重写",
+    "kindRedirect": "重定向",
+    "kindPage": "页面",
+    "empty": {
+      "title": "没有重定向或重写规则",
+      "description": "在发布目录中添加 _redirects 文件,或在 app.yaml 中添加 routes 列表,然后部署。"
+    }
+  },
+  "headers": {
+    "title": "响应头",
+    "label": "响应头规则",
+    "path": "路径",
+    "set": "设置",
+    "remove": "移除",
+    "source": "定义于",
+    "empty": {
+      "title": "没有响应头规则",
+      "description": "在发布目录中添加 _headers 文件,或在 app.yaml 中添加 headers 列表,然后部署。"
+    }
+  },
+  "problems": {
+    "title": "此次部署发布时发现的问题",
+    "description": "这些行已被跳过,未生效。请在你的仓库中修复后重新部署。",
+    "line": "第 {{line}} 行",
+    "none": "未发现问题。"
+  },
+  "test": {
+    "title": "测试 URL",
+    "description": "让请求经过线上规则和文件,查看是哪一个来响应它。",
+    "pathLabel": "路径",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "查询字符串",
+    "queryPlaceholder": "id=42",
+    "run": "测试",
+    "running": "正在测试",
+    "result": "结果",
+    "redirectTo": "重定向到 {{target}}",
+    "serves": "提供 {{file}}",
+    "plain": "无页面的纯响应",
+    "matchedRule": "规则:{{rule}}",
+    "noRule": "没有规则匹配,由文件和选项响应",
+    "trace": "步骤",
+    "headersApplied": "已添加的响应头",
+    "invalidPath": "请输入以 / 开头的路径",
+    "failed": "无法运行测试。"
+  },
+  "lint": {
+    "title": "部署前检查规则",
+    "description": "粘贴 _redirects 或 _headers 文件的内容,查看其解析结果。不会部署任何内容。",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "检查",
+    "running": "正在检查",
+    "ok": "已解析 {{rules}} 条规则和 {{headers}} 个响应头块,没有问题。",
+    "withProblems": "已解析 {{rules}} 条规则和 {{headers}} 个响应头块,跳过了 {{problems}} 行。",
+    "failed": "无法运行检查。"
+  }
+}

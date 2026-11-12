@@ -1,0 +1,120 @@
+{
+  "title": "构建",
+  "subtitle": "所有应用的构建队列和历史:正在等待什么、正在运行什么、构建耗时多久、缓存带来多少帮助以及镜像有多大。",
+  "retry": "重试",
+  "error": {
+    "title": "无法加载构建"
+  },
+  "node": {
+    "label": "节点",
+    "local": "此服务器"
+  },
+  "tiles": {
+    "queued": "排队中",
+    "running": "运行中",
+    "finished": "已完成",
+    "failed": "失败"
+  },
+  "limits": {
+    "perNode": "每个节点上最多同时运行 {{count}} 个构建,其余的在队列中等待。",
+    "node": "{{node}}:{{running}} 个运行中,{{waiting}} 个等待中"
+  },
+  "platforms": {
+    "target": "构建目标为 {{platform}},即构建节点的平台。",
+    "singleOnly": "暂不支持多平台构建。"
+  },
+  "columns": {
+    "build": "构建",
+    "status": "状态",
+    "duration": "耗时",
+    "cache": "缓存",
+    "image": "镜像",
+    "node": "节点和平台",
+    "actions": "操作"
+  },
+  "status": {
+    "queued": "排队中",
+    "queuedAt": "排队中,第 {{position}} 位",
+    "held": "已暂缓",
+    "running": "运行中",
+    "succeeded": "成功",
+    "failed": "失败",
+    "canceled": "已取消",
+    "superseded": "已被取代",
+    "stuck": "可能已卡住"
+  },
+  "actions": {
+    "logs": "日志",
+    "cancel": "取消",
+    "cancelStuck": "取消卡住的构建",
+    "cancelDone": "构建已取消",
+    "cancelFailed": "无法取消构建",
+    "retry": "重试",
+    "retryDone": "已从连接的分支重新开始构建",
+    "retryFailed": "无法重试构建",
+    "freeCache": "释放构建缓存"
+  },
+  "empty": {
+    "title": "暂无构建",
+    "description": "当应用从 Git 来源部署时,构建会显示在这里。"
+  },
+  "cacheFull": {
+    "title": "有构建耗尽了磁盘空间",
+    "description": "可以安全地移除空闲的构建缓存。正在运行的构建会保留其缓存。"
+  },
+  "cache": {
+    "title": "构建缓存",
+    "prune": "释放空闲缓存",
+    "total": "缓存大小",
+    "inUse": "使用中",
+    "reclaimable": "可释放",
+    "records": "记录数",
+    "errorTitle": "无法加载构建缓存",
+    "unsupportedTitle": "构建缓存不可用",
+    "unsupported": "此节点尚未报告其构建缓存。"
+  },
+  "prune": {
+    "title": "释放空闲构建缓存",
+    "loading": "正在检查可释放的内容。",
+    "description": "{{count}} 条缓存记录已空闲 {{hours}} 小时或更久。移除它们可释放 {{size}}。",
+    "consequences": "在重建缓存期间,每个应用的下一次构建可能会更慢。",
+    "confirm": "释放 {{size}}",
+    "pending": "正在释放缓存",
+    "done": "已移除 {{count}} 条缓存记录,释放了 {{size}}"
+  },
+  "banner": {
+    "description": "构建会把你的源码变成可运行的镜像。首次部署后,每个应用的队列、历史和缓存都会出现在这里。",
+    "diagram": {
+      "source": "源码",
+      "build": "构建",
+      "image": "镜像",
+      "cache": "缓存"
+    }
+  },
+  "quota": {
+    "title": "缓存配额",
+    "errorTitle": "无法加载缓存配额",
+    "appQuota": "每个应用的配额",
+    "maxRecords": "每次回收的记录数",
+    "gib_other": "{{count}} GiB",
+    "off": "关",
+    "restartNote": "每个应用的配额在其下一次构建后生效,无论是来自仪表盘、CLI 还是推送。可在设置的 build.cache_app_quota_gb 中更改。",
+    "empty": "尚未回收任何缓存。",
+    "col": {
+      "app": "应用",
+      "trigger": "触发方式",
+      "when": "时间",
+      "freed": "已释放",
+      "note": "备注"
+    },
+    "trigger": {
+      "auto": "构建之后",
+      "manual": "手动"
+    },
+    "note": {
+      "running": "已跳过,有构建正在运行",
+      "bounded": "已达到记录数上限,其余将在下次构建时处理",
+      "partial": "提前停止,已释放的部分会保留"
+    }
+  }
+}
