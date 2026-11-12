@@ -1,0 +1,59 @@
+{
+  "title": "{{name}}: インフラ",
+  "description": "このプロジェクトのアプリ、データベース、ドメイン、ロードバランサー、ボリューム、ノードのつながりを、ドラッグ、移動、ズームで確認できます。位置はこのブラウザーに保存されます。",
+  "canvasLabel": "{{count}}件のリソースを表示するインフラキャンバス。リソースにフォーカスし、矢印キーで移動できます。",
+  "empty": {
+    "title": "このプロジェクトにはまだ何もありません",
+    "description": "アプリまたはデータベースをこのプロジェクトに割り当てると、関係がここに表示されます。",
+    "action": "プロジェクトに戻る"
+  },
+  "error": {
+    "title": "インフラグラフを読み込めませんでした"
+  },
+  "kind": {
+    "app": "アプリ",
+    "database": "データベース",
+    "volume": "ボリューム",
+    "domain": "ドメイン",
+    "load_balancer": "ロードバランサー",
+    "node": "ノード"
+  },
+  "edge": {
+    "database_binding": "データベース接続",
+    "depends_on": "依存先",
+    "volume_attachment": "ボリュームのアタッチ",
+    "egress_allow": "エグレス許可ルール",
+    "routing": "ルーティング",
+    "load_balances": "トラフィックの振り分け先",
+    "placed_on": "実行先"
+  },
+  "status": {
+    "healthy": "正常",
+    "deploying": "デプロイ中",
+    "failed": "失敗",
+    "idle": "状態なし",
+    "draft": "下書き(未適用)"
+  },
+  "toolbar": {
+    "label": "キャンバスの操作",
+    "zoomIn": "拡大",
+    "zoomOut": "縮小",
+    "fit": "全体を表示",
+    "resetLayout": "レイアウトをリセット",
+    "zoomLevel": "ズーム {{percent}}パーセント",
+    "hidden": "{{count}}件のリソースが画面外にあります。移動するまで描画されません。"
+  },
+  "panel": {
+    "label": "{{name}}の詳細",
+    "close": "詳細を閉じる",
+    "connections": "接続",
+    "noConnections": "このリソースにはまだ何も接続されていません。",
+    "actions": "クイック操作",
+    "overview": "概要を開く",
+    "logs": "ログを見る",
+    "deploys": "デプロイとロールバック",
+    "domains": "ドメインを管理",
+    "metrics": "メトリクスを見る"
+  },
+  "legend": "凡例"
+}

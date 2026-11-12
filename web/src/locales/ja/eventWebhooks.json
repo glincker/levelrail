@@ -1,0 +1,63 @@
+{
+  "title": "イベントWebhook",
+  "description": "何かが変わるたびに、署名付きのHTTPSリクエストを自分のエンドポイントへ送信します。配信はキューに入れられ、再試行とログ記録が行われ、デプロイを遅くすることはありません。",
+  "add": "Webhookを追加",
+  "loadError": "イベントWebhookを読み込めませんでした: {{message}}",
+  "notConfigured": "このコントロールプレーンでは、イベントWebhookを利用できません。",
+  "empty": {
+    "title": "イベントWebhookはありません",
+    "description": "HTTPSエンドポイントを追加すると、アプリのデプロイ、ユーザーの変更、設定の更新を通知で受け取れます。"
+  },
+  "form": {
+    "title": "イベントWebhookを追加",
+    "description": "リクエストは、保存後に1度だけ表示されるシークレットで署名されます。",
+    "name": "名前",
+    "namePlaceholder": "siem",
+    "url": "エンドポイントURL",
+    "urlPlaceholder": "https://hooks.example.com/events",
+    "events": "イベントタイプ",
+    "eventsPlaceholder": "apps.*, users.create",
+    "eventsHint": "タイプまたはapps.*のようなファミリーをカンマ区切りで指定します。空欄にするとすべてのイベントを受け取ります。",
+    "cancel": "キャンセル",
+    "submit": "Webhookを追加",
+    "submitting": "追加中",
+    "done": "完了"
+  },
+  "card": {
+    "allEvents": "すべてのイベント",
+    "paused": "一時停止中",
+    "deadBadge": "デッドレター{{count}}件",
+    "delivered": "配信済み",
+    "pending": "保留中",
+    "dead": "デッドレター",
+    "lastStatus": "最後のHTTPステータス",
+    "enabled": "有効",
+    "log": "配信ログ",
+    "test": "テストを送信",
+    "testing": "送信中",
+    "testOk": "{{name}}がテストイベントを受け付けました",
+    "testFailed": "{{name}}でテストに失敗しました: {{message}}",
+    "rotate": "新しいシークレット",
+    "secretOnce": "署名シークレットです。1度しか表示されません。今すぐ保管してください。再度読み取ることはできません。",
+    "delete": "削除",
+    "deleteTitle": "{{name}}を削除しますか?",
+    "deleteDescription": "配信ログと署名シークレットが削除されます。イベントの送信はただちに止まります。",
+    "deleteConfirm": "Webhookを削除",
+    "deleting": "削除中"
+  },
+  "deliveries": {
+    "loading": "配信履歴を読み込み中",
+    "loadError": "配信履歴を読み込めませんでした: {{message}}",
+    "empty": "配信履歴はまだありません。テストを送信するか、次のイベントをお待ちください。",
+    "summary": "{{attempts}}回試行、HTTP {{status}}、{{when}}",
+    "noStatus": "なし",
+    "replay": "再送",
+    "replayed": "もう一度試行するよう配信をキューに入れました",
+    "replayFailed": "再送できませんでした: {{message}}",
+    "state": {
+      "pending": "保留中",
+      "delivered": "配信済み",
+      "dead": "デッドレター"
+    }
+  }
+}

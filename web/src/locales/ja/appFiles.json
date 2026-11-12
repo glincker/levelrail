@@ -1,0 +1,47 @@
+{
+  "title": "ファイル",
+  "description": "起動時にコンテナへ書き込まれるインラインの設定ファイルです。シークレットファイルは、保存後は二度と表示されません。",
+  "empty": "インラインファイルはまだありません。",
+  "emptyHint": "ファイルを追加すると、デプロイ時にアプリへマウントされます。",
+  "add": "ファイルを追加",
+  "edit": "{{path}}を編集",
+  "delete": "{{path}}を削除",
+  "redacted": "非表示",
+  "secretBadge": "シークレット",
+  "size": "{{count}}バイト",
+  "loadError": "ファイルを読み込めませんでした。",
+  "dialog": {
+    "addTitle": "ファイルを追加",
+    "editTitle": "ファイルを編集",
+    "description": "アプリのコンテナ内に1つのファイルとして保存されます。",
+    "path": "パス",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "モード",
+    "modePlaceholder": "0644",
+    "content": "内容",
+    "contentRedactedHint": "このファイルはシークレットです。置き換えるには新しい内容を入力してください。",
+    "secret": "シークレットファイル",
+    "secretHelp": "シークレットの内容は、保存後は二度と表示されません。",
+    "restart": "今すぐ再起動して適用",
+    "cancel": "キャンセル",
+    "save": "ファイルを保存",
+    "saving": "保存中..."
+  },
+  "validation": {
+    "path": "パスは絶対パスで指定してください。",
+    "mode": "モードは0644のような8進数で指定してください。"
+  },
+  "deleteDialog": {
+    "title": "ファイルを削除しますか?",
+    "description": "{{path}}はアプリから削除されます。",
+    "restart": "今すぐ再起動して適用",
+    "confirm": "削除",
+    "deleting": "削除中..."
+  },
+  "toast": {
+    "saved": "ファイルを保存しました。",
+    "saveFailed": "ファイルを保存できませんでした。",
+    "deleted": "ファイルを削除しました。",
+    "deleteFailed": "ファイルを削除できませんでした。"
+  }
+}

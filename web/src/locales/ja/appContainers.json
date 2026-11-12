@@ -1,0 +1,46 @@
+{
+  "title": "コンテナ",
+  "count_other": "レプリカ{{count}}件",
+  "loading": "コンテナを読み込み中",
+  "forbidden": "このアプリのコンテナを確認する権限がありません。",
+  "error": "コンテナを読み込めませんでした: {{message}}",
+  "empty": {
+    "title": "実行中のコンテナはありません",
+    "description": "アプリは停止中またはスリープ中です。現在の状態: {{status}}。"
+  },
+  "unavailable": "取得不可",
+  "unavailableTip": "リモートノードでは、エージェントがこの項目を報告しません。",
+  "none": "なし",
+  "copyId": "コンテナIDをコピー",
+  "copied": "コピーしました",
+  "restarts_other": "再起動{{count}}回",
+  "uptime": "稼働時間 {{duration}}",
+  "node": "ノード",
+  "fields": {
+    "image": "イメージ",
+    "digest": "ダイジェスト",
+    "ports": "ポート",
+    "networks": "ネットワーク",
+    "mounts": "マウント",
+    "limits": "制限",
+    "cpu": "CPU",
+    "memory": "メモリ",
+    "health": "ヘルス"
+  },
+  "state": {
+    "running": "実行中",
+    "stopped": "停止中",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "正常",
+    "unhealthy": "異常",
+    "starting": "起動中",
+    "none": "チェックなし",
+    "streak": "{{count}}回連続で失敗"
+  },
+  "readOnly": "ro",
+  "limitsValue": "CPU {{cpu}}、{{memory}}",
+  "noLimit": "制限なし",
+  "usage": "{{limit}}中{{used}}"
+}

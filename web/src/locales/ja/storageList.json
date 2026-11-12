@@ -1,0 +1,60 @@
+{
+  "viewLabel": "一覧をグループ化",
+  "view": { "type": "種類別", "app": "アプリ別" },
+  "search": "名前またはIDで検索",
+  "searchLabel": "項目を検索",
+  "clearFilter": "すべてのカテゴリを表示",
+  "filterActive": "{{category}}のみ表示中",
+  "category": {
+    "appData": "アプリデータ",
+    "images": "イメージ",
+    "buildCache": "ビルドキャッシュ",
+    "containersLogs": "コンテナとログ",
+    "other": "その他"
+  },
+  "kind": {
+    "image": "イメージ",
+    "volume": "ボリューム",
+    "container": "停止中のコンテナ",
+    "buildCache": "ビルドキャッシュ"
+  },
+  "kindOne": {
+    "image": "イメージ",
+    "volume": "ボリューム",
+    "container": "コンテナ",
+    "buildCache": "ビルドキャッシュ"
+  },
+  "cols": {
+    "name": "名前",
+    "size": "サイズ",
+    "app": "所有アプリ",
+    "type": "種類",
+    "reason": "理由"
+  },
+  "sortBy": "{{column}}で並べ替え",
+  "noApp": "アプリなし",
+  "sizeUnknown": "未測定",
+  "group": {
+    "total": "合計{{size}}",
+    "count_other": "{{kind}}{{count}}件",
+    "lastDeployed": "最終デプロイ"
+  },
+  "reason": {
+    "none": "なし",
+    "orphaned": "孤立: このボリュームを所有するアプリがありません",
+    "inUse": "使用中",
+    "inUseBy": "{{app}}が使用中",
+    "unused": "未使用",
+    "stopped": "停止中のコンテナ",
+    "databaseProtected": "データベースを含むため、削除されません",
+    "buildCache": "次回のビルドで再作成されます"
+  },
+  "protected": "保護",
+  "loading": "ディスク上の内容を読み取り中",
+  "error": "ストレージのインベントリを読み取れませんでした。",
+  "retry": "再試行",
+  "empty": "ここに表示するものはありません。",
+  "emptyFiltered": "一致する項目はありません。",
+  "unsupportedTitle": "このノードにはまだ対応していません",
+  "unsupportedFallback": "Levelrailはまだこのノードの項目を一覧表示できません。ここでは何も変更されません。"
+}
