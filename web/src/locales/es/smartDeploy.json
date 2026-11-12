@@ -1,0 +1,205 @@
+{
+  "title": "Despliegue",
+  "description": "Despliega una versión nueva de esta app.",
+  "git": {
+    "headTitle": "Desplegar el último commit de {{branch}}",
+    "deployHead": "Desplegar el último commit",
+    "deployBranch": "Desplegar el head de {{branch}}",
+    "starting": "Iniciando la compilación",
+    "loading": "Cargando commits",
+    "useImage": "Desplegar una imagen en su lugar",
+    "statusUpToDate": "Al día, {{sha}} está en vivo",
+    "statusAhead_one": "{{count}} commit por delante de lo que está en vivo",
+    "statusAhead_other": "{{count}} commits por delante de lo que está en vivo",
+    "statusAheadUnknown": "Más reciente que lo que está en vivo, o en vivo desde otra rama",
+    "statusNeverDeployed": "Aún no hay ningún despliegue registrado de este origen",
+    "recent": "Commits recientes",
+    "deploy": "Desplegar",
+    "deployCommit": "Desplegar el commit {{sha}}",
+    "redeploy": "Volver a desplegar",
+    "branch": "Rama",
+    "branchOther": "No es la rama conectada. Los despliegues por push siguen a {{branch}}.",
+    "byAuthor": "{{author}}, {{age}}",
+    "noMessage": "Sin mensaje de commit",
+    "refresh": "Actualizar los commits",
+    "noCommits": "Esta rama aún no tiene commits.",
+    "degraded": "Este host no expone una lista de commits, así que solo se muestra el head de {{branch}}.",
+    "loadFailed": "No se pudieron cargar los commits",
+    "retry": "Reintentar",
+    "connectedTo": "Repositorio conectado",
+    "buildWith": "Compila con",
+    "dockerfile": "Dockerfile {{path}}",
+    "contextDir": "desde {{dir}}",
+    "buildTypes": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Detección automática (Railpack)",
+      "static": "Sitio estático",
+      "image": "Imagen precompilada"
+    },
+    "status": {
+      "deployed": "En vivo",
+      "failed": "Fallido",
+      "running": "Compilando",
+      "queued": "En cola",
+      "held": "Retenido",
+      "succeeded": "Compilado",
+      "canceled": "Cancelado",
+      "superseded": "Reemplazado"
+    },
+    "shortcuts": {
+      "title": "Atajos",
+      "redeployLast": "Volver a desplegar el último correcto",
+      "redeployLastHint": "Vuelve a ejecutar {{image}} sin compilar.",
+      "rollbackTo": "Revertir al anterior",
+      "rollbackToHint": "Volver a {{image}}.",
+      "rollbackTitle": "¿Revertir a {{image}}?",
+      "rollbackDescription": "La app volverá a ejecutar la imagen correcta anterior.",
+      "rollbackConsequence": "La versión actual deja de servir cuando la anterior esté saludable.",
+      "rollbackConfirm": "Revertir",
+      "rollbackPending": "Revirtiendo"
+    },
+    "toast": {
+      "started": "Despliegue iniciado.",
+      "startedFor": "Compilando {{sha}}.",
+      "approval": "El despliegue está esperando aprobación.",
+      "failed": "No se pudo iniciar el despliegue."
+    },
+    "viewLogs": "Ver los logs de compilación"
+  },
+  "suggestions": {
+    "title": "Sugerencias",
+    "dismiss": "Descartar la sugerencia",
+    "head_failed_to_build": {
+      "title": "El commit {{sha}} falló al compilar",
+      "detail": "Revisa el log de compilación antes de volver a desplegar.",
+      "action": "Abrir el log de compilación"
+    },
+    "webhook_signature_failing": {
+      "title": "Se están rechazando los webhooks de push",
+      "detail": "La última entrega del webhook tenía una firma no válida, así que los push no se están desplegando.",
+      "action": "Abrir los ajustes del origen"
+    },
+    "fix_build_settings": {
+      "title": "Revisa la configuración de compilación",
+      "detail": "Esto parece un monorepo, o la última compilación falló por la configuración de compilación.",
+      "action": "Abrir la configuración de compilación"
+    },
+    "webhook_not_received": {
+      "title": "Activa el despliegue con push",
+      "detail": "Aún no ha llegado ninguna entrega de webhook a esta app, así que los push no se desplegarán por sí solos.",
+      "action": "Configurar el webhook"
+    },
+    "release_trigger_only": {
+      "title": "Los despliegues solo se hacen con versiones",
+      "detail": "Los commits nuevos no se desplegarán automáticamente. Despliega uno de esta lista cuando estés listo.",
+      "action": "Abrir los ajustes del origen"
+    },
+    "enable_previews": {
+      "title": "Previsualiza cada pull request",
+      "detail": "Están llegando eventos de pull request. Las vistas previas dan a cada uno una URL en vivo.",
+      "action": "Activar las vistas previas",
+      "done": "Entornos de vista previa activados."
+    },
+    "add_health_check": {
+      "title": "Añade una comprobación de salud",
+      "detail": "Sin ella, un contenedor que arranca pero no sirve sigue contando como saludable.",
+      "action": "Abrir los ajustes de salud"
+    },
+    "add_deploy_notifications": {
+      "title": "Recibe avisos cuando terminen los despliegues",
+      "detail": "Nadie recibe un aviso cuando esta app se despliega o falla.",
+      "action": "Configurar las notificaciones"
+    }
+  },
+  "approval": {
+    "protected": "{{environment}} es un entorno protegido. Los redespliegues y rollbacks de imágenes aquí esperan la aprobación de otro usuario con permisos de despliegue.",
+    "ack": "Lo entiendo y quiero continuar."
+  },
+  "image": {
+    "current": "Imagen actual",
+    "imageLabel": "Imagen",
+    "placeholder": "registry.example.com/app:tag",
+    "suggestionsLabel": "Etiquetas recientes",
+    "deploy": "Desplegar la imagen",
+    "deploying": "Desplegando",
+    "advanced": "Avanzado",
+    "connectInstead": "Desplegar desde un repositorio git en su lugar",
+    "required": "Introduce una referencia de imagen.",
+    "toast": {
+      "started": "Despliegue iniciado.",
+      "approval": "El despliegue está esperando aprobación."
+    }
+  },
+  "connect": {
+    "title": "Elige desde dónde se despliega esta app",
+    "repoTitle": "Conectar un repositorio",
+    "repoDescription": "Cada push puede compilar y desplegar. Elige un repositorio de un proveedor conectado o pega una URL.",
+    "connect": "Conectar el repositorio",
+    "connecting": "Conectando",
+    "connected": "Repositorio conectado.",
+    "failed": "No se pudo conectar el repositorio.",
+    "orImage": "O despliega una imagen de contenedor",
+    "imageDescription": "Apunta a una imagen que ya esté compilada y subida."
+  },
+  "pending": {
+    "title": "Cambios desde el despliegue en vivo",
+    "none": "Nada difiere del despliegue en vivo.",
+    "empty": "ninguno",
+    "loadFailed": "No se pudieron cargar los cambios pendientes.",
+    "env": {
+      "added": "Env añadida",
+      "removed": "Env quitada",
+      "changed": "Env cambiada"
+    },
+    "field": {
+      "image": "Imagen",
+      "image_digest": "Digest de la imagen",
+      "commit_sha": "Commit",
+      "port": "Puerto",
+      "host_port": "Puerto del host",
+      "bind_address": "Interfaz de red",
+      "domains": "Dominios",
+      "strategy": "Estrategia de despliegue",
+      "replicas": "Réplicas",
+      "volumes": "Volúmenes",
+      "labels": "Etiquetas"
+    }
+  },
+  "schedule": {
+    "toggle": "Programar para más tarde",
+    "whenLabel": "Desplegar el",
+    "zone": "Las horas están en tu zona horaria: {{zone}}",
+    "required": "Elige una fecha y una hora.",
+    "invalid": "Esa fecha y hora no es válida.",
+    "past": "Elige una hora futura.",
+    "submit": "Programar el despliegue",
+    "submitting": "Programando",
+    "toast": {
+      "created": "Despliegue programado.",
+      "failed": "No se pudo programar el despliegue.",
+      "canceled": "Despliegue programado cancelado.",
+      "cancelFailed": "No se pudo cancelar el despliegue programado."
+    },
+    "list": {
+      "title": "Despliegues programados",
+      "description": "Despliegues únicos a la espera de ejecutarse. Como cualquier despliegue, respetan las congelaciones de despliegue, las puertas y las aprobaciones.",
+      "empty": "No hay nada programado.",
+      "image": "Imagen {{image}}",
+      "ref": "Último commit de {{ref}}",
+      "runsAt": "Se ejecuta {{when}}",
+      "cancel": "Cancelar",
+      "canceling": "Cancelando",
+      "loadFailed": "No se pudieron cargar los despliegues programados.",
+      "status": {
+        "pending": "Pendiente",
+        "running": "Iniciando",
+        "fired": "Iniciado",
+        "pending_approval": "Esperando aprobación",
+        "skipped_freeze": "Omitido, congelación de despliegues",
+        "missed": "Perdido",
+        "canceled": "Cancelado",
+        "failed": "Fallido"
+      }
+    }
+  }
+}

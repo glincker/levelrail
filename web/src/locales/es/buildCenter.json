@@ -1,0 +1,121 @@
+{
+  "title": "Compilaciones",
+  "subtitle": "La cola y el historial de compilaciones de todas las apps: qué está esperando, qué se está ejecutando, cuánto tardan las compilaciones, cuánto ayuda la caché y qué tamaño tienen las imágenes.",
+  "retry": "Reintentar",
+  "error": {
+    "title": "No se pudieron cargar las compilaciones"
+  },
+  "node": {
+    "label": "Nodo",
+    "local": "Este servidor"
+  },
+  "tiles": {
+    "queued": "En cola",
+    "running": "En ejecución",
+    "finished": "Terminadas",
+    "failed": "Fallidas"
+  },
+  "limits": {
+    "perNode": "Se ejecutan hasta {{count}} compilaciones a la vez en cada nodo, el resto espera en la cola.",
+    "node": "{{node}}: {{running}} en ejecución, {{waiting}} en espera"
+  },
+  "platforms": {
+    "target": "Las compilaciones apuntan a {{platform}}, la plataforma del nodo de compilación.",
+    "singleOnly": "Las compilaciones multiplataforma aún no se admiten."
+  },
+  "columns": {
+    "build": "Compilación",
+    "status": "Estado",
+    "duration": "Tiempo",
+    "cache": "Caché",
+    "image": "Imagen",
+    "node": "Nodo y plataforma",
+    "actions": "Acciones"
+  },
+  "status": {
+    "queued": "En cola",
+    "queuedAt": "En cola, n.º {{position}}",
+    "held": "Retenida",
+    "running": "En ejecución",
+    "succeeded": "Correcta",
+    "failed": "Fallida",
+    "canceled": "Cancelada",
+    "superseded": "Reemplazada",
+    "stuck": "Puede estar atascada"
+  },
+  "actions": {
+    "logs": "Logs",
+    "cancel": "Cancelar",
+    "cancelStuck": "Cancelar la compilación atascada",
+    "cancelDone": "Compilación cancelada",
+    "cancelFailed": "No se pudo cancelar la compilación",
+    "retry": "Reintentar",
+    "retryDone": "Compilación reiniciada desde la rama conectada",
+    "retryFailed": "No se pudo reintentar la compilación",
+    "freeCache": "Liberar la caché de compilación"
+  },
+  "empty": {
+    "title": "Aún no hay compilaciones",
+    "description": "Las compilaciones aparecen aquí cuando una app se despliega desde un origen git."
+  },
+  "cacheFull": {
+    "title": "Una compilación se quedó sin espacio en disco",
+    "description": "La caché de compilación inactiva se puede eliminar sin riesgo. Las compilaciones en ejecución conservan su caché."
+  },
+  "cache": {
+    "title": "Caché de compilación",
+    "prune": "Liberar la caché inactiva",
+    "total": "Tamaño de la caché",
+    "inUse": "En uso",
+    "reclaimable": "Se puede liberar",
+    "records": "Registros",
+    "errorTitle": "No se pudo cargar la caché de compilación",
+    "unsupportedTitle": "Caché de compilación no disponible",
+    "unsupported": "Este nodo aún no informa de su caché de compilación."
+  },
+  "prune": {
+    "title": "Liberar la caché de compilación inactiva",
+    "loading": "Comprobando qué se puede liberar.",
+    "description": "{{count}} registros de caché llevan {{hours}} horas o más inactivos. Eliminarlos libera {{size}}.",
+    "consequences": "La próxima compilación de cada app puede tardar más mientras se reconstruye su caché.",
+    "confirm": "Liberar {{size}}",
+    "pending": "Liberando la caché",
+    "done": "Se eliminaron {{count}} registros de caché y se liberaron {{size}}"
+  },
+  "banner": {
+    "description": "Las compilaciones convierten tu código fuente en una imagen ejecutable. La cola, el historial y la caché de todas las apps llegan aquí tras el primer despliegue.",
+    "diagram": {
+      "source": "origen",
+      "build": "compilación",
+      "image": "imagen",
+      "cache": "caché"
+    }
+  },
+  "quota": {
+    "title": "Cuota de caché",
+    "errorTitle": "No se pudo cargar la cuota de caché",
+    "appQuota": "Cuota por app",
+    "maxRecords": "Registros por recuperación",
+    "gib_one": "{{count}} GiB",
+    "gib_other": "{{count}} GiB",
+    "off": "Desactivada",
+    "restartNote": "La cuota por app se aplica tras la próxima compilación de cada app, desde el panel, la CLI o un push. Cámbiala en Ajustes, en build.cache_app_quota_gb.",
+    "empty": "Aún no se ha recuperado ninguna caché.",
+    "col": {
+      "app": "App",
+      "trigger": "Origen",
+      "when": "Cuándo",
+      "freed": "Liberado",
+      "note": "Nota"
+    },
+    "trigger": {
+      "auto": "Tras una compilación",
+      "manual": "Manual"
+    },
+    "note": {
+      "running": "Omitido, había una compilación en ejecución",
+      "bounded": "Se alcanzó el límite de registros, el resto sigue en la próxima compilación",
+      "partial": "Se detuvo antes de tiempo, lo liberado se conserva"
+    }
+  }
+}

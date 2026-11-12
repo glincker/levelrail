@@ -1,0 +1,71 @@
+{
+  "title": "Historial de suspensión",
+  "description": "Cuándo se suspendió esta app, qué la despertó y cuánto tardó en despertar. Abajo se dibujan los últimos 7 días.",
+  "loading": "Cargando el historial de suspensión",
+  "loadError": "No se pudo cargar el historial de suspensión.",
+  "retry": "Reintentar",
+  "asleepNow": "Suspendida desde {{since}}",
+  "awakeNow": "Activa",
+  "timelineLabel": "Activa y suspendida en los últimos 7 días",
+  "timelineStart": "Hace 7 días",
+  "timelineEnd": "Ahora",
+  "legend": {
+    "asleep": "Suspendida",
+    "awake": "Activa"
+  },
+  "stats": {
+    "asleep7d": "Suspendida, 7 días",
+    "asleep30d": "Suspendida, 30 días",
+    "wakes7d": "Despertares, 7 días",
+    "avgLatency": "Despertar medio",
+    "p95Latency": "El 5 % de despertares más lentos",
+    "lastSlept": "Última suspensión",
+    "lastWoke": "Último despertar",
+    "memorySaved": "Memoria ahorrada, 30 días",
+    "memorySavedValue": "{{value}} GiB-hora",
+    "none": "Ninguno aún"
+  },
+  "events": {
+    "title": "Eventos",
+    "empty": "Aún no hay nada registrado. Los eventos aparecen aquí cuando la app se suspende o despierta.",
+    "emptyTitle": "No hay eventos de suspensión",
+    "kind": {
+      "slept": "Se suspendió",
+      "woke": "Despertó",
+      "enabled": "Suspender al estar inactiva activado",
+      "disabled": "Suspender al estar inactiva desactivado",
+      "wake_failed": "Falló el despertar"
+    },
+    "reason": {
+      "idle_timeout": "Tiempo de inactividad",
+      "manual": "Manual",
+      "request": "Petición",
+      "schedule": "Programación",
+      "deploy": "Despliegue",
+      "api": "API",
+      "port": "Tráfico en un puerto publicado"
+    },
+    "columns": {
+      "when": "Cuándo",
+      "event": "Evento",
+      "reason": "Motivo",
+      "measure": "Duración / latencia",
+      "detail": "Detalle"
+    },
+    "sleptFor": "Suspendida {{duration}}",
+    "readyIn": "Lista en {{duration}}",
+    "idleAfter": "Tras {{minutes}} min de inactividad",
+    "fromSource": "desde {{source}}",
+    "byActor": "por {{actor}}"
+  },
+  "disabled": {
+    "title": "Suspender al estar inactiva está desactivado",
+    "body": "Actívalo para detener esta app mientras nadie la usa y ver aquí cuándo se suspendió y despertó.",
+    "action": "Activar suspender al estar inactiva",
+    "toastError": "No se pudo activar suspender al estar inactiva"
+  },
+  "badge": {
+    "title": "Suspendida, despierta con la próxima petición",
+    "asleepFor": "Suspendida {{duration}}"
+  }
+}

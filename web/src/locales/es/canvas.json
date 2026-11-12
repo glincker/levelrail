@@ -1,0 +1,121 @@
+{
+  "title": "{{name}}: Lienzo",
+  "description": "Añade apps y bases de datos y conéctalas entre sí. Cada cambio es un borrador que revisas como un plan antes de guardar nada.",
+  "beta": "Beta",
+  "link": "Lienzo",
+  "loadError": "No se pudo cargar este proyecto para el lienzo. Revisa tu conexión y recarga.",
+  "asideLabel": "Cambios en el borrador",
+  "iacOff": {
+    "title": "La plataforma como código está desactivada",
+    "description": "El lienzo convierte tu borrador en un plan con la API de plataforma como código, así que esa función debe estar activada antes de poder revisar o aplicar.",
+    "action": "Abrir funciones beta"
+  },
+  "empty": {
+    "title": "Aún no hay nada en este proyecto",
+    "description": "Añade una app o una base de datos desde el panel de borrador para empezar a construir. No se crea nada hasta que apliques."
+  },
+  "draft": {
+    "title": "Borrador",
+    "none": "Aún no hay cambios. Añade una app o una base de datos, o conecta dos elementos que ya están aquí.",
+    "count_one": "{{count}} cambio pendiente",
+    "count_other": "{{count}} cambios pendientes",
+    "remove": "Quitar del borrador: {{label}}",
+    "review": "Revisar los cambios",
+    "discard": "Descartar el borrador"
+  },
+  "add": {
+    "app": "Añadir app",
+    "database": "Añadir base de datos"
+  },
+  "appForm": {
+    "title": "Añadir una app",
+    "description": "Una app nueva que ejecuta una imagen precompilada. Se une a este proyecto cuando apliques.",
+    "name": "Nombre",
+    "image": "Imagen",
+    "imageHint": "Por ejemplo ghcr.io/acme/web:1.2.3",
+    "port": "Puerto",
+    "submit": "Añadir al borrador"
+  },
+  "databaseForm": {
+    "title": "Añadir una base de datos",
+    "description": "Una base de datos gestionada en este proyecto. Se crea cuando apliques.",
+    "name": "Nombre",
+    "engine": "Motor",
+    "version": "Versión (opcional)",
+    "versionHint": "Déjalo en blanco para usar el valor por defecto del motor.",
+    "submit": "Añadir al borrador"
+  },
+  "connect": {
+    "title": "Conectar una app a una base de datos",
+    "app": "App",
+    "database": "Base de datos",
+    "envVar": "Variable de entorno (opcional)",
+    "envVarHint": "Déjalo en blanco y el servidor elige una.",
+    "submit": "Añadir conexión",
+    "choose": "Elegir",
+    "needBoth": "Necesitas al menos una app y una base de datos en el lienzo para conectarlas."
+  },
+  "connections": {
+    "title": "Conexiones",
+    "none": "Aún no hay ninguna app conectada a una base de datos.",
+    "remove": "Quitar la conexión de {{app}} a {{database}}",
+    "more": "Mostrando {{shown}} de {{total}} conexiones."
+  },
+  "limits": {
+    "title": "Aún no se puede editar aquí",
+    "body": "Volúmenes, dominios, balanceadores de carga y dependencias. Cámbialos desde la propia app."
+  },
+  "errors": {
+    "required": "Este campo es obligatorio.",
+    "format": "Usa letras minúsculas, números y guiones, empezando y terminando con una letra o un número.",
+    "taken": "Ya existe algo con este nombre en el lienzo.",
+    "port": "Introduce un puerto entre 1 y 65535.",
+    "envVar": "Usa letras, números y guiones bajos, sin empezar por un número."
+  },
+  "ops": {
+    "addApp": "Añadir la app {{name}} ({{image}})",
+    "addDatabase": "Añadir la base de datos {{engine}} {{name}}",
+    "connect": "Conectar {{app}} a {{database}}",
+    "disconnect": "Desconectar {{app}} de {{database}}"
+  },
+  "review": {
+    "title": "Revisar los cambios",
+    "description": "Esto es lo que haría la aplicación. Aún no se ha cambiado nada.",
+    "planning": "Creando el plan...",
+    "planError": {
+      "title": "No se pudo crear el plan",
+      "retry": "Reintentar",
+      "issuesNext": "Vuelve atrás, corrige o quita el elemento indicado arriba y revisa de nuevo.",
+      "generic": "Comprueba que el servidor es accesible y que puedes escribir en este proyecto, y vuelve a intentarlo."
+    },
+    "serverChanges": "Plan del servidor",
+    "steps": {
+      "title": "Cambios de conexión",
+      "note": "Se ejecutan después de aplicar el plan de arriba, en este orden. El servidor no los previsualiza.",
+      "connect": "Conectar {{app}} a {{database}} como {{envVar}}",
+      "connectAuto": "Conectar {{app}} a {{database}}",
+      "disconnect": "Desconectar {{app}} de {{database}} ({{envVar}})",
+      "unsupported": "{{app}} llega a {{database}} mediante su app.yaml, no mediante una conexión, así que el lienzo no puede quitarla. Edita app.yaml en su lugar.",
+      "loading": "Buscando las conexiones actuales..."
+    },
+    "nothing": "No hay nada que aplicar.",
+    "apply": "Aplicar",
+    "applying": "Aplicando...",
+    "back": "Volver a editar",
+    "applied": {
+      "title": "Aplicado",
+      "failed": "Algunos cambios no se aplicaron",
+      "failedNext": "No se ejecutó nada después del paso fallido. Corrige la causa indicada abajo y revisa de nuevo los cambios restantes.",
+      "done": "Listo"
+    },
+    "stepStatus": {
+      "applied": "Aplicado",
+      "failed": "Fallido: {{error}}",
+      "skipped": "Omitido"
+    }
+  },
+  "toast": {
+    "applied": "Cambios del lienzo aplicados.",
+    "failed": "Algunos cambios del lienzo no se aplicaron."
+  }
+}

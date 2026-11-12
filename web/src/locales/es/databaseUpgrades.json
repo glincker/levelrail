@@ -1,0 +1,145 @@
+{
+  "title": "Actualizaciones",
+  "description": "Mantén esta base de datos al día con los parches. Cada actualización hace antes una copia de seguridad y se puede revertir.",
+  "loadFailed": "No se pudo cargar la información de actualizaciones: {{error}}",
+  "unavailableTitle": "Las actualizaciones no están disponibles",
+  "current": {
+    "title": "Versión actual",
+    "engine": "Motor",
+    "version": "Versión",
+    "line": "Línea de versiones {{line}}",
+    "floating": "Esta base de datos sigue una etiqueta flotante, así que la versión exacta puede cambiar en el próximo reinicio.",
+    "notComparable": "No se pudo comparar esta versión con el catálogo, así que no se ofrecen destinos de actualización.",
+    "advisories": "Avisos de seguridad conocidos que afectan a esta versión",
+    "catalogUpdated": "Catálogo actualizado {{date}}",
+    "blockersTitle": "Las actualizaciones están bloqueadas",
+    "manualReason": "Se requiere una actualización manual"
+  },
+  "support": {
+    "supported": "Con soporte",
+    "eol_soon": "Fin de vida próximo ({{date}})",
+    "eol_soonNoDate": "Fin de vida próximo",
+    "eol": "Fin de vida",
+    "unknown": "Soporte desconocido"
+  },
+  "targets": {
+    "tableLabel": "Destinos de actualización",
+    "title": "Versiones disponibles",
+    "description": "Las actualizaciones de parche y menores se pueden ejecutar desde aquí. Las mayores cambian el formato en disco y están protegidas.",
+    "emptyTitle": "No hay actualizaciones disponibles",
+    "empty": "Estás en la versión más reciente que conoce el catálogo.",
+    "columns": {
+      "version": "Versión",
+      "kind": "Tipo",
+      "details": "Detalles",
+      "actions": "Acciones"
+    },
+    "kind": {
+      "patch": "Parche",
+      "minor": "Menor",
+      "major": "Mayor"
+    },
+    "security": "Corrección de seguridad",
+    "automatic": "Automática",
+    "eol": "Fin de vida {{date}}",
+    "upgradeNow": "Actualizar ahora",
+    "majorHint": "Las actualizaciones mayores necesitan el flujo protegido de actualización mayor, no este botón."
+  },
+  "dialog": {
+    "title": "Actualizar {{name}} a {{version}}",
+    "description": "Primero se hace una copia de seguridad. La base de datos se reinicia y queda brevemente no disponible.",
+    "confirmLabel": "Escribe {{name}} para confirmar",
+    "cancel": "Cancelar",
+    "confirm": "Actualizar",
+    "starting": "Iniciando",
+    "toast": "Se inició la actualización a {{version}}",
+    "failedToast": "No se pudo iniciar la actualización"
+  },
+  "policy": {
+    "title": "Actualizaciones automáticas",
+    "description": "Elige qué se aplica por sí solo y cuándo.",
+    "inheritedNote": "Esta base de datos usa la política predeterminada de la plataforma.",
+    "override": "Personalizar para esta base de datos",
+    "useDefault": "Usar el valor predeterminado de la plataforma",
+    "autoUpgrade": "Aplicar automáticamente",
+    "auto": {
+      "off": "Desactivado, actualizar manualmente",
+      "patch": "Solo versiones de parche",
+      "minor": "Versiones de parche y menores"
+    },
+    "window": "Ventana de mantenimiento",
+    "preset": {
+      "daily": "Todos los días a las 03:00",
+      "sundays": "Los domingos a las 03:00",
+      "custom": "Cron personalizado"
+    },
+    "cron": "Expresión cron",
+    "duration": "Duración de la ventana (horas)",
+    "timezone": "Zona horaria",
+    "backupBefore": "Hacer una copia de seguridad antes de actualizar",
+    "backupBeforeHint": "Siempre activado. Una actualización nunca empieza sin una copia de seguridad reciente.",
+    "verifyAfter": "Verificar tras actualizar",
+    "verifyAfterHint": "Restaura la copia de seguridad en un contenedor temporal y comprueba que se abre.",
+    "revertOnFailure": "Revertir si falla",
+    "revertOnFailureHint": "Vuelve automáticamente a la versión anterior si la actualización falla.",
+    "notify": "Notificar a estos canales",
+    "noChannels": "Aún no hay canales de notificación.",
+    "nextWindow": "Próxima ventana",
+    "windowOpen": "Hay una ventana de mantenimiento abierta ahora",
+    "nextTarget": "Próxima actualización automática",
+    "noNextTarget": "No hay nada en cola para actualización automática.",
+    "save": "Guardar la política",
+    "saving": "Guardando",
+    "saved": "Política de actualización guardada",
+    "failedToast": "No se pudo guardar la política"
+  },
+  "history": {
+    "title": "Historial de actualizaciones",
+    "emptyTitle": "No hay historial de actualizaciones",
+    "empty": "Aún no se ha ejecutado ninguna actualización para esta base de datos.",
+    "active": "Actualización en curso",
+    "from": "{{from}} a {{to}}",
+    "backup": "Copia de seguridad {{id}}",
+    "started": "Iniciada {{date}}",
+    "finished": "Terminada {{date}}",
+    "source": {
+      "auto": "Automática",
+      "manual": "Manual"
+    },
+    "state": {
+      "pending": "Pendiente",
+      "backing_up": "Haciendo copia de seguridad",
+      "upgrading": "Actualizando",
+      "verifying": "Verificando",
+      "succeeded": "Correcta",
+      "reverted": "Revertida",
+      "failed": "Fallida"
+    },
+    "revert": {
+      "image": "Revertida mediante la imagen",
+      "volume_snapshot": "Revertida desde una instantánea del volumen",
+      "backup_restore": "Revertida desde la restauración de una copia de seguridad"
+    },
+    "reason": "Motivo: {{reason}}"
+  },
+  "steps": {
+    "backup": {
+      "title": "Primero, la copia de seguridad",
+      "body": "Se hace una copia de seguridad reciente para que siempre puedas volver a estos datos exactos.",
+      "skipped": "Omitido por la política. Activa la copia de seguridad antes de actualizar en la tarjeta de política para estar seguro."
+    },
+    "change": {
+      "title": "Cambiar la versión",
+      "body": "La base de datos se reinicia con la nueva versión. Espera una breve interrupción mientras arranca.",
+      "skipped": ""
+    },
+    "verify": {
+      "title": "Verificar",
+      "body": "La actualización se comprueba restaurando la copia de seguridad y sondeando la nueva versión.",
+      "skipped": "Omitido por la política. Nada confirma que la nueva versión funciona hasta que lo compruebes."
+    },
+    "majorWarning": "Es un salto de versión mayor. Los archivos de datos cambian de formato y no hay forma de volver atrás en el sitio. Haz y prueba una copia de seguridad, y comprueba que tu aplicación admite la nueva versión antes de continuar.",
+    "rollbackAuto": "Rollback: si la actualización falla, la versión anterior se restaura automáticamente. No se ofrece un rollback manual con un clic, así que restaura la copia de seguridad del paso 1 si necesitas volver atrás más tarde.",
+    "rollbackManual": "Rollback: la reversión automática está desactivada y no hay un rollback manual con un clic. Si algo sale mal, restaura la copia de seguridad del paso 1. Activa revertir si falla en la tarjeta de política para tener un camino automático."
+  }
+}

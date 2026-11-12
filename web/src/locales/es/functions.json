@@ -1,0 +1,361 @@
+{
+  "title": "Funciones",
+  "description": "Pequeños handlers que no cuestan nada mientras están inactivos. Una función se suspende tras un periodo de calma y la siguiente petición la despierta y espera la respuesta.",
+  "triggers": {
+    "title": "Disparadores",
+    "pick": "Función",
+    "error": "No se pudieron cargar los disparadores: {{message}}",
+    "queue": "Cola asíncrona: {{queued}} en espera, {{running}} en ejecución, {{dead}} en cola de errores.",
+    "webhook": {
+      "title": "Webhook firmado",
+      "path": "Ruta a la que el webhook reenvía",
+      "enable": "Activar el webhook",
+      "disable": "Desactivar",
+      "rotate": "Rotar el secreto",
+      "on": "Las llamadas se ponen en cola y se reenvían a {{path}}. Se rechazan las firmas con más de {{seconds}} segundos de antigüedad.",
+      "secretOnce": "Secreto de firma. Se muestra una sola vez, cópialo ahora.",
+      "signing": "Envía X-Signature-Timestamp (segundos unix) y X-Signature: sha256=HMAC-SHA256(secreto, marca de tiempo + punto + cuerpo)."
+    },
+    "schedules": {
+      "title": "Programaciones",
+      "none": "Ningún job HTTP programado llama a esta función.",
+      "manage": "Gestiona las programaciones en la pestaña Jobs de la app"
+    },
+    "dead": {
+      "title": "Cola de errores",
+      "description": "Llamadas asíncronas que agotaron sus reintentos. Reintentar devuelve una a la cola.",
+      "empty": "No hay llamadas en la cola de errores.",
+      "error": "No se pudo cargar la cola de errores: {{message}}",
+      "detail": "{{attempts}} de {{max}} intentos, HTTP {{code}} {{error}}",
+      "retry": "Reintentar",
+      "discard": "Descartar"
+    }
+  },
+  "window": {
+    "label": "Ventana de estadísticas",
+    "1h": "Última hora",
+    "24h": "Últimas 24 horas",
+    "7d": "Últimos 7 días"
+  },
+  "list": {
+    "name": "Función",
+    "state": "Estado",
+    "calls": "Llamadas",
+    "p95": "Duración p95",
+    "errors": "Errores del servidor",
+    "idle": "Se suspende tras",
+    "idleValue": "{{minutes}} min",
+    "asleep": "Suspendida",
+    "awake": "Activa",
+    "visit": "Abrir la URL",
+    "error": "No se pudieron cargar las funciones: {{message}}",
+    "retry": "Reintentar"
+  },
+  "empty": {
+    "title": "Aún no hay funciones",
+    "body": "Elige un runtime abajo, sube el handler a un repositorio y despliégalo. Obtiene una URL en vivo que se despierta con las peticiones."
+  },
+  "deploy": {
+    "open": "Desplegar una función",
+    "title": "Desplegar una función",
+    "description": "Elige qué ejecutar, apunta al código y ponla en marcha. Cada paso tiene un valor por defecto razonable.",
+    "cancel": "Cancelar",
+    "back": "Atrás",
+    "next": "Continuar",
+    "submit": "Desplegar",
+    "submitting": "Desplegando",
+    "stepLabel": "Paso {{current}} de {{total}}",
+    "steps": {
+      "template": "Qué ejecutar",
+      "source": "Dónde está el código",
+      "details": "Detalles"
+    },
+    "started": "Compilación iniciada para {{name}}. Se pone en marcha cuando termina la compilación.",
+    "failed": "No se pudo desplegar {{name}}: {{message}}",
+    "template": {
+      "heading": "¿Qué quieres ejecutar?",
+      "groupStarters": "Handlers iniciales",
+      "groupIdeas": "Ideas para empezar",
+      "groupOwn": "Trae el tuyo"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "Un handler HTTP diminuto en Go, rápido de arrancar."
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "Un handler de diez líneas en Node.js."
+      },
+      "python": {
+        "title": "Python",
+        "body": "Un handler pequeño en Python."
+      },
+      "webhook": {
+        "title": "Receptor de webhooks",
+        "body": "Acepta eventos de otros servicios y actúa sobre ellos."
+      },
+      "scheduled": {
+        "title": "Ejecutor de jobs programados",
+        "body": "Ejecuta una tarea cada vez que una programación la llama."
+      },
+      "form": {
+        "title": "Formulario a correo",
+        "body": "Convierte el envío de un formulario en un correo."
+      },
+      "shortener": {
+        "title": "Acortador de URLs",
+        "body": "Asigna rutas cortas a enlaces largos."
+      },
+      "chatbot": {
+        "title": "Bot de chat",
+        "body": "Responde a mensajes de plataformas de chat."
+      },
+      "repo": {
+        "title": "Usar mi propio repositorio",
+        "body": "Despliega un handler que ya tienes en git."
+      },
+      "image": {
+        "title": "Usar una imagen de contenedor",
+        "body": "Ejecuta una imagen precompilada de un registro."
+      }
+    },
+    "source": {
+      "headingRepo": "¿Dónde está el código?",
+      "headingImage": "¿Qué imagen de contenedor?",
+      "starterTitle": "Código inicial para empezar",
+      "starterBody": "Copia estos archivos en un repositorio nuevo y súbelo. Luego elige ese repositorio abajo.",
+      "utilityBody": "Un handler completo y probado. Copia los archivos en un repositorio nuevo y súbelo, y luego elige ese repositorio abajo.",
+      "utilityEnv": "Variables de entorno que lee",
+      "utilityRequired": "obligatoria",
+      "utilityKv": "Usa el almacén clave-valor: tras desplegar, abre la pestaña Almacén clave-valor de la función y actívalo.",
+      "utilityCli": "O desde un terminal",
+      "search": "Buscar en tus repositorios",
+      "loading": "Cargando repositorios",
+      "recent": "Primero los actualizados más recientemente",
+      "noRepos": "No se encontraron repositorios. Conecta un proveedor de git en Ajustes o pega una URL.",
+      "reposError": "No se pudieron cargar los repositorios: {{message}}",
+      "pasteInstead": "Pegar una URL en su lugar",
+      "pickInstead": "Elegir entre mis repositorios",
+      "repoUrl": "URL del repositorio",
+      "repoUrlPlaceholder": "https://github.com/tu-usuario/hello",
+      "ref": "Rama",
+      "refHint": "Por defecto, la rama principal del repositorio.",
+      "directory": "Directorio del handler",
+      "directoryHint": "Déjalo vacío cuando el handler esté en la raíz del repositorio.",
+      "detected": "Detectado {{framework}}. Railpack lo compilará.",
+      "detecting": "Comprobando el repositorio",
+      "image": "Imagen",
+      "imagePlaceholder": "ghcr.io/tu-usuario/hello:1.0",
+      "imageHint": "Incluye una etiqueta como :1.0. Sin ella se usa la etiqueta latest.",
+      "private": "Privado"
+    },
+    "details": {
+      "name": "Nombre",
+      "nameHint": "Letras minúsculas, números y guiones. Pasa a formar parte de la URL.",
+      "nameChecking": "Comprobando la disponibilidad",
+      "nameFree": "{{name}} está disponible.",
+      "idle": "Suspender tras",
+      "idleOption": {
+        "5": "5 minutos",
+        "10": "10 minutos",
+        "60": "1 hora",
+        "1440": "1 día",
+        "custom": "Personalizado"
+      },
+      "customIdle": "Minutos",
+      "idleHint": "Una función tranquila se suspende para ahorrar recursos. La siguiente petición la despierta, lo que añade un breve retraso llamado arranque en frío.",
+      "route": "Servir en una ruta (opcional)",
+      "routeHint": "Responde también en uno de tus dominios, por ejemplo example.com/hello.",
+      "routeDomain": "Dominio",
+      "routeNone": "No añadir una ruta",
+      "routePath": "Ruta",
+      "previewFunction": "URL de la función",
+      "previewRoute": "URL de la ruta",
+      "previewPending": "Se asigna cuando termina la compilación",
+      "advanced": "Ajustes avanzados",
+      "port": "Puerto",
+      "portHint": "El puerto en el que escucha tu handler. Lo recibe como la variable PORT."
+    },
+    "summary": {
+      "title": "Listo para desplegar",
+      "buildRailpack": "compilar con Railpack",
+      "buildImage": "ejecutar la imagen tal cual",
+      "text": "Esto hará lo siguiente: {{build}}, se suspenderá tras {{sleep}} y será accesible en {{url}}.",
+      "sleepMinutes": "{{count}} minutos",
+      "sleepHour": "1 hora",
+      "sleepDay": "1 día",
+      "urlPending": "una URL que se asigna cuando termina la compilación"
+    },
+    "result": {
+      "title": "Desplegando {{name}}",
+      "building": "Compilando y arrancando tu función. Esto suele tardar uno o dos minutos.",
+      "live": "{{name}} está en vivo.",
+      "failed": "La compilación falló. Abre la función para leer el log de compilación.",
+      "urlLabel": "URL de la función",
+      "waitingUrl": "La URL aparece aquí en cuanto esté lista.",
+      "copy": "Copiar la URL",
+      "copied": "Copiado",
+      "open": "Abrir la función",
+      "done": "Cerrar"
+    },
+    "validation": {
+      "repoRequired": "Elige un repositorio o pega su URL.",
+      "repoInvalid": "Introduce una URL completa que empiece por https://.",
+      "imageRequired": "Introduce la imagen que ejecutar.",
+      "imageInvalid": "Los nombres de imagen no pueden contener espacios.",
+      "nameRequired": "Ponle un nombre a la función.",
+      "nameInvalid": "Usa letras minúsculas, números y guiones, empezando y terminando con una letra o un número.",
+      "nameTooLong": "Mantén el nombre lo bastante corto para que quepa en una URL.",
+      "nameTaken": "Otra app ya usa ese nombre. Elige uno distinto.",
+      "portInvalid": "Introduce un puerto entre 1 y 65535.",
+      "idleInvalid": "Introduce un número entero de minutos, al menos el mínimo permitido.",
+      "domainRequired": "Elige un dominio para la ruta.",
+      "pathInvalid": "Usa una ruta como /hello con letras, números, guiones o puntos."
+    },
+    "name": "Nombre",
+    "repo": "URL del repositorio",
+    "ref": "Rama, etiqueta o commit",
+    "directory": "Directorio del handler (opcional)",
+    "directoryHint": "Déjalo vacío cuando el handler esté en la raíz del repositorio.",
+    "routeDomain": "Servir también en el dominio",
+    "routePath": "Prefijo de la ruta",
+    "routeHint": "Opcional. Un dominio ya asociado a una app, más una ruta como /hello, sirve esta función en dominio/hello. El prefijo se elimina antes de que la petición llegue al handler.",
+    "port": "Puerto",
+    "idle": "Minutos de inactividad para suspender"
+  },
+  "templates": {
+    "title": "Handlers iniciales",
+    "description": "Cada plantilla inicial es un handler completo de unas diez líneas. Railpack lo compila sin Dockerfile y escucha en la variable PORT.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "cliLabel": "O desde el terminal",
+    "error": "No se pudieron cargar los handlers iniciales: {{message}}"
+  },
+  "kv": {
+    "loading": "Cargando claves",
+    "error": "No se pudo cargar el almacén clave-valor: {{message}}",
+    "usage": "{{keys}} de {{maxKeys}} claves, {{bytes}} de {{maxBytes}} bytes usados",
+    "disabled": "El almacén está desactivado para esta función. Actívalo para dar a la función KV_URL y KV_TOKEN; se reinicia con ellos.",
+    "enable": "Activar el almacén",
+    "rotate": "Rotar el token",
+    "tokenIssued": "Token emitido. La función se reinicia con el nuevo KV_TOKEN.",
+    "add": "Añadir clave",
+    "empty": "Aún no hay claves.",
+    "prefixLabel": "Filtrar por prefijo",
+    "keyLabel": "Clave",
+    "valueLabel": "Valor",
+    "ttlLabel": "Caduca tras (segundos)",
+    "ttlPlaceholder": "Nunca",
+    "save": "Guardar la clave",
+    "saved": "Clave guardada",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar {{key}}?",
+    "deleteBody": "La función pierde este valor de inmediato.",
+    "loadFailed": "No se pudo cargar el valor",
+    "binary": "(binario)",
+    "never": "Nunca",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "Clave",
+      "value": "Valor",
+      "size": "Tamaño",
+      "expires": "Caduca",
+      "actions": "Acciones"
+    }
+  },
+  "detail": {
+    "back": "Todas las funciones",
+    "notFound": "No se encontró esta función. Puede que se haya eliminado o que haya dejado de suspenderse.",
+    "seconds": "{{count}} s",
+    "tabs": {
+      "overview": "Resumen",
+      "settings": "Ajustes",
+      "environment": "Entorno y secretos",
+      "versions": "Versiones",
+      "kv": "Almacén clave-valor"
+    },
+    "overview": {
+      "title": "Estado",
+      "image": "Imagen",
+      "openApp": "Abrir como app"
+    },
+    "settings": {
+      "port": "Puerto",
+      "timeout": "Tiempo de espera de la petición (segundos)",
+      "concurrency": "Concurrencia máxima",
+      "limitsTitle": "Límites de peticiones",
+      "limitsHelp": "Se aplican mientras una petición espera a que arranque una función suspendida. 0 usa el valor por defecto del servidor. Una petición que supera el límite de concurrencia recibe un 429 con Retry-After.",
+      "timeoutHelp": "Espera máxima por un arranque en frío, como mucho {{max}} s. Ahora {{effective}} s (0 significa el valor adaptativo por defecto).",
+      "concurrencyHelp": "Peticiones retenidas a la vez, como mucho {{max}}. Ahora {{effective}} (0 significa sin límite).",
+      "save": "Guardar los límites",
+      "saved": "Límites guardados",
+      "saveFailed": "No se pudieron guardar los límites"
+    },
+    "versions": {
+      "title": "Versiones",
+      "help": "Vuelve a un despliegue anterior, o fíjalo: fijar revierte y bloquea la publicación para que las compilaciones nuevas queden retenidas hasta que lo desbloquees.",
+      "empty": "Aún no hay despliegues.",
+      "live": "En vivo",
+      "rollback": "Revertir",
+      "pin": "Fijar esta versión",
+      "done": "Cambio de versión iniciado",
+      "failed": "Falló el cambio de versión"
+    }
+  },
+  "observe": {
+    "title": "Llamadas y consola de pruebas",
+    "pick": "Función",
+    "tabCalls": "Llamadas recientes",
+    "tabTest": "Consola de pruebas",
+    "time": "Hora",
+    "request": "Petición",
+    "status": "Estado",
+    "duration": "Duración",
+    "cold": "Arranque en frío",
+    "coldYes": "Arranque en frío",
+    "coldNo": "En caliente",
+    "sizes": "Entrada / salida",
+    "logs": "Logs",
+    "openLogs": "Logs",
+    "replay": "Reenviar",
+    "replayed": "Reenviada, respondió {{status}}",
+    "replayFailed": "Falló el reenvío: {{message}}",
+    "loadError": "No se pudieron cargar las llamadas: {{message}}",
+    "emptyTitle": "Aún no hay llamadas registradas",
+    "emptyBody": "Las llamadas aparecen aquí mientras el plano de control las mantiene en memoria. Envía una desde la consola de pruebas.",
+    "tableLabel": "Llamadas recientes de {{name}}",
+    "captureLabel": "Conservar la entrada de las llamadas de prueba para poder reenviarlas",
+    "captureHint": "Desactivado por defecto. Solo se conservan las llamadas enviadas desde la consola de pruebas o la CLI, nunca otro tráfico. Las cabeceras de credenciales se descartan."
+  },
+  "console": {
+    "method": "Método",
+    "path": "Ruta",
+    "headers": "Cabeceras",
+    "headersPlaceholder": "Nombre: valor, una por línea",
+    "body": "Cuerpo",
+    "bodyPlaceholder": "JSON o texto plano",
+    "send": "Enviar",
+    "sending": "Enviando",
+    "wakeHint": "Si la función está suspendida, esto espera primero a que despierte.",
+    "failed": "La llamada falló: {{message}}",
+    "result": "Respuesta",
+    "warm": "En caliente",
+    "stored": "Entrada guardada para reenviarla",
+    "truncated": "El cuerpo se cortó en el límite de tamaño."
+  },
+  "banner": {
+    "title": "Funciones",
+    "description": "Pequeños handlers que no cuestan nada mientras están inactivos. Se suspenden tras un periodo de calma y despiertan con la siguiente petición.",
+    "diagram": {
+      "browser": "navegador",
+      "request": "petición",
+      "function": "función",
+      "response": "respuesta",
+      "coldStart": "arranque en frío de aprox. 1 s",
+      "sleeps": "se suspende al estar inactiva"
+    }
+  }
+}

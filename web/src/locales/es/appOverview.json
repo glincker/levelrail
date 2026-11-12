@@ -1,0 +1,29 @@
+{
+  "title": "Resumen",
+  "image": "Imagen",
+  "port": "Puerto",
+  "memoryLimit": "Límite de memoria",
+  "cpuLimit": "Límite de CPU",
+  "swapLimit": "Límite de swap",
+  "cpuPinning": "Fijación de CPU",
+  "notSet": "sin definir",
+  "deployStrategy": "Estrategia de despliegue",
+  "replicas": "Réplicas",
+  "node": "Nodo",
+  "project": "Proyecto",
+  "environment": "Entorno",
+  "noProject": "sin proyecto",
+  "noEnvironment": "sin entorno",
+  "readinessProbe": "Sonda de disponibilidad",
+  "livenessProbe": "Sonda de vida",
+  "path": "Ruta:",
+  "interval": "Intervalo:",
+  "timeout": "Tiempo de espera:",
+  "failureThreshold": "Umbral de fallos:",
+  "notConfigured": "sin configurar",
+  "strategy": {
+    "recreate": "Recrear",
+    "blueGreen": "Blue-green",
+    "rolling": "Rolling"
+  }
+}
