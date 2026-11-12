@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -30,6 +31,7 @@ func run() error {
 	var (
 		images                                       imageFlags
 		repo, tag, product, docsURL, installURL, out string
+		siteURL, highlightsDir                       string
 		apiBase                                      string
 	)
 	flag.StringVar(&repo, "repo", os.Getenv("GITHUB_REPOSITORY"), "owner/name")
@@ -39,6 +41,8 @@ func run() error {
 	flag.StringVar(&installURL, "install-url", "", "install script URL")
 	flag.StringVar(&out, "out", "", "write the full new release body here (default stdout)")
 	flag.StringVar(&apiBase, "api", "https://api.github.com", "GitHub API base URL")
+	flag.StringVar(&siteURL, "site-url", "", "marketing site URL; enables the centered header")
+	flag.StringVar(&highlightsDir, "highlights-dir", "", "directory holding optional <tag>.md highlights")
 	flag.Var(&images, "image", "container image name (repeatable)")
 	flag.Parse()
 	if repo == "" || tag == "" || product == "" {
@@ -73,7 +77,13 @@ func run() error {
 	cur := releases[idx]
 	rel := Release{
 		Product: product, Repo: repo, Tag: tag, Prerelease: cur.Prerelease,
-		DocsURL: docsURL, InstallURL: installURL,
+		DocsURL: docsURL, InstallURL: installURL, SiteURL: siteURL,
+	}
+	if highlightsDir != "" {
+		// Absent file is the normal case: fall back to PR-derived highlights.
+		if raw, rerr := os.ReadFile(filepath.Join(highlightsDir, filepath.Base(tag)+".md")); rerr == nil {
+			rel.HighlightsMD = string(raw)
+		}
 	}
 	for _, a := range cur.Assets {
 		rel.Assets = append(rel.Assets, a.Name)

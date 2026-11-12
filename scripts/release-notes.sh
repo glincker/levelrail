@@ -28,6 +28,8 @@ trap 'rm -f "$notes"' EXIT
 
 go -C "$root/tools" run ./releasenotes \
 	-repo "$repo" -tag "$tag" -product "$binary" -docs-url "$docs_url" \
+	-site-url "https://$(sed -n 's/^domain: *//p' "$root/brand.yaml")" \
+	-highlights-dir "$root/docs/release-highlights" \
 	-image "ghcr.io/${image_owner}/${binary}" \
 	-image "ghcr.io/${image_owner}/${binary}-agent" \
 	-out "$notes"

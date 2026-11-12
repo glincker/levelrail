@@ -166,3 +166,29 @@ func TestSameStream(t *testing.T) {
 		t.Fatal("stream grouping wrong")
 	}
 }
+
+func TestRenderHeaderAndHighlightsFile(t *testing.T) {
+	r := sampleRelease()
+	r.Tag, r.Prerelease = "v1.0.1", false
+	r.SiteURL = "https://example.com"
+	r.HighlightsMD = "- 574 templates\n"
+	out := Render(r)
+	wantInOrder := []string{
+		startMarker, `<p align="center">`, "raw.githubusercontent.com/o/acme/main/docs/assets/brand/wordmark-dark.svg",
+		"wordmark-light.svg", `height="60"`, "Website</a>", "&middot;", "https://example.com/templates",
+		"https://docs.example.com/product-tour", "Security</a>", "Discussions</a>", "---",
+		"first stable release", "## Highlights\n\n- 574 templates", "## What's changed",
+	}
+	pos := 0
+	for _, s := range wantInOrder {
+		i := strings.Index(out[pos:], s)
+		if i < 0 {
+			t.Fatalf("missing (or out of order) %q in:\n%s", s, out)
+		}
+		pos += i + len(s)
+	}
+	r.SiteURL, r.HighlightsMD = "", ""
+	if out := Render(r); strings.Contains(out, "<picture>") {
+		t.Fatal("header must be off without a site URL")
+	}
+}

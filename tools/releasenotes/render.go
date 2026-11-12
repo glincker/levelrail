@@ -38,6 +38,10 @@ type Release struct {
 	Images          []Image
 	Contributors    []string
 	NewContributors []Contributor
+	// SiteURL enables the centered header; empty skips it.
+	SiteURL string
+	// HighlightsMD is hand-written markdown inserted verbatim under Highlights.
+	HighlightsMD string
 }
 
 // ImageTags returns the tags release.yml pushes for a release tag: the
@@ -102,8 +106,13 @@ func Render(r Release) string {
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	w("%s\n", startMarker)
 
+	r.renderHeader(&b)
 	if r.hasBinaries() && r.Product != "" {
-		w("%s %s is a self-hosted deployment platform: one control plane for Docker apps, databases, TLS, logs, metrics and rollback across your own servers. A lightweight alternative to Coolify, Dokploy and Kubernetes for small teams.\n\n", strings.ToUpper(r.Product[:1])+r.Product[1:], r.Tag)
+		name := strings.ToUpper(r.Product[:1]) + r.Product[1:]
+		if r.stable() {
+			w("**%s %s is the first stable release: a self-hosted deployment platform you can run in production.**\n\n", name, r.Tag)
+		}
+		w("%s is an open source, self-hosted deployment platform. One control plane deploys Docker apps and one-click templates, manages databases, TLS, secrets, logs, metrics and rollback across your own servers.\n\n", name)
 	}
 
 	if !r.hasBinaries() {
@@ -116,7 +125,9 @@ func Render(r Release) string {
 		w("> [!NOTE]\n> This is a pre-release on the `beta` channel. Pin this exact version for anything you care about staying still.\n\n")
 	}
 
-	if hl := Highlights(r.Changes, 3); len(hl) > 0 && worthHighlighting(r.Changes, hl) {
+	if md := strings.TrimSpace(r.HighlightsMD); md != "" {
+		w("## Highlights\n\n%s\n\n", md)
+	} else if hl := Highlights(r.Changes, 3); len(hl) > 0 && worthHighlighting(r.Changes, hl) {
 		w("## Highlights\n\n")
 		for _, c := range hl {
 			w("%s\n", r.line(c))
@@ -175,6 +186,36 @@ func Render(r Release) string {
 
 	w("%s\n", endMarker)
 	return b.String()
+}
+
+func (r Release) stable() bool {
+	return !r.Prerelease && !strings.Contains(r.Tag, "-")
+}
+
+// renderHeader emits the centered logo and link row. The logo comes from the
+// default branch so it keeps resolving for old release pages.
+func (r Release) renderHeader(b *strings.Builder) {
+	if r.SiteURL == "" {
+		return
+	}
+	site := strings.TrimSuffix(r.SiteURL, "/")
+	raw := fmt.Sprintf("https://raw.githubusercontent.com/%s/main/docs/assets/brand", r.Repo)
+	fmt.Fprintf(b, "<p align=\"center\">\n  <a href=\"%s\">\n    <picture>\n", site)
+	fmt.Fprintf(b, "      <source media=\"(prefers-color-scheme: dark)\" srcset=\"%s/wordmark-dark.svg\">\n", raw)
+	fmt.Fprintf(b, "      <source media=\"(prefers-color-scheme: light)\" srcset=\"%s/wordmark-light.svg\">\n", raw)
+	fmt.Fprintf(b, "      <img alt=\"Levelrail\" src=\"%s/wordmark-light.svg\" height=\"60\">\n    </picture>\n  </a>\n</p>\n\n", raw)
+	links := []string{fmt.Sprintf("<a href=\"%s\">Website</a>", site)}
+	if r.DocsURL != "" {
+		docs := strings.TrimSuffix(r.DocsURL, "/")
+		links = append(links,
+			fmt.Sprintf("<a href=\"%s\">Docs</a>", docs),
+			fmt.Sprintf("<a href=\"%s/templates\">Templates</a>", site),
+			fmt.Sprintf("<a href=\"%s/product-tour\">Product tour</a>", docs))
+	}
+	links = append(links,
+		fmt.Sprintf("<a href=\"https://github.com/%s/blob/main/.github/SECURITY.md\">Security</a>", r.Repo),
+		fmt.Sprintf("<a href=\"https://github.com/%s/discussions\">Discussions</a>", r.Repo))
+	fmt.Fprintf(b, "<p align=\"center\">\n  %s\n</p>\n\n---\n\n", strings.Join(links, "\n  &middot;\n  "))
 }
 
 // worthHighlighting skips the section when it would just repeat every
