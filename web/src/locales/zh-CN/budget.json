@@ -1,0 +1,173 @@
+{
+  "title": "预算",
+  "description": "为此应用设置每月出站流量和成本上限。用量上升时会提醒你,达到上限时应用可被限流或暂停。计数器在每月 1 日重置(UTC)。",
+  "loading": "正在加载预算",
+  "loadError": "无法加载此应用的预算。",
+  "retry": "重试",
+  "empty": {
+    "title": "未设置预算",
+    "body": "没有预算时,大量流量可能在没有任何警告的情况下推高出站流量和成本。设置上限即可在 50%、80% 和 100% 时收到告警。",
+    "action": "设置预算"
+  },
+  "status": {
+    "resets": "{{date}} 重置",
+    "month": "{{period}} 月"
+  },
+  "reason": {
+    "WithinBudget": "预算内",
+    "ThresholdReached": "已达告警级别",
+    "LimitReachedAlertOnly": "已达上限,仅告警",
+    "Throttled": "已限流",
+    "Paused": "已暂停",
+    "EnforcementPending": "正在应用",
+    "DeploysBlocked": "新部署已被阻止"
+  },
+  "usage": {
+    "egress": "出站流量",
+    "cost": "成本",
+    "ofLimit": "{{limit}} 中已用 {{used}}",
+    "costOfLimit": "{{limit}} 中已用 {{used}}",
+    "notPriced": "尚未配置价格,因此成本显示为零,其上限也不会触发。请在用量与成本页面设置价格。"
+  },
+  "summary": {
+    "alerts": "在 {{levels}} 时告警",
+    "action": {
+      "none": "达到 100% 时:仅告警,应用继续提供服务",
+      "throttle": "达到 100% 时:每个客户端限制为每秒 {{rps}} 个请求",
+      "pause": "达到 100% 时:应用将被暂停并返回维护响应"
+    },
+    "guard": {
+      "alert": "此预算永远不会阻止部署",
+      "block_deploys": "达到 100% 时:新部署会被拒绝,直到下个月、上限提高或 root 覆盖"
+    }
+  },
+  "actions": {
+    "edit": "编辑预算",
+    "remove": "移除预算",
+    "preview": "预览暂停"
+  },
+  "form": {
+    "egress": "每月出站流量上限(GiB)",
+    "egressHelp": "入口提供的 HTTP 响应字节数。留空表示无出站流量上限。",
+    "cost": "每月成本上限",
+    "costHelp": "使用用量与成本页面上的价格。留空表示无成本上限。",
+    "thresholds": "告警级别(百分比)",
+    "thresholdsHelp": "以逗号分隔,1 到 100。默认为 50、80、100。",
+    "action": "达到上限时",
+    "actionNone": "仅告警",
+    "actionNoneHelp": "应用继续提供服务。",
+    "actionThrottle": "限流",
+    "actionThrottleHelp": "将每个客户端限制为每秒一定数量的请求。这会拖慢高频调用方,但不是带宽上限。",
+    "actionPause": "暂停",
+    "actionPauseHelp": "提供维护响应,直到下个月或你提高上限。",
+    "rps": "每个客户端每秒请求数",
+    "save": "保存预算",
+    "saving": "正在保存",
+    "cancel": "取消",
+    "needLimit": "请设置出站流量上限、成本上限,或两者都设置。",
+    "badNumber": "请输入大于等于零的数字。",
+    "badThresholds": "请使用 1 到 100 的整数百分比,以逗号分隔。"
+  },
+  "remove": {
+    "title": "移除此预算?",
+    "description": "应用将不再受到限制或告警。",
+    "consequences": {
+      "lift": "生效中的任何限流或暂停都会被解除。",
+      "history": "已发生事件的历史会保留。"
+    },
+    "confirm": "移除预算",
+    "pending": "正在移除"
+  },
+  "history": {
+    "title": "历史",
+    "empty": "尚未发生任何事件。告警、限流、暂停和每月重置会列在这里。",
+    "loadError": "无法加载历史。",
+    "kind": {
+      "threshold": "已达告警级别",
+      "enforced": "已执行操作",
+      "released": "已解除操作",
+      "rollover": "月度重置",
+      "configured": "预算已更改",
+      "cleared": "预算已移除"
+    }
+  },
+  "toast": {
+    "saved": "预算已保存",
+    "removed": "预算已移除",
+    "errorTitle": "预算请求失败",
+    "overridden": "已暂时允许部署"
+  },
+  "forecast": {
+    "projected": "预计月底为 {{value}}",
+    "overLimit": "(超出上限)"
+  },
+  "guard": {
+    "legend": "达到上限时的部署",
+    "alert": {
+      "label": "继续部署",
+      "help": "达到上限时只会告警并执行上面的操作。"
+    },
+    "block_deploys": {
+      "label": "阻止新部署",
+      "help": "达到 100% 时拒绝新部署。运行中的版本继续提供服务。root 用户可以覆盖。"
+    },
+    "blocked": "此应用的新部署会被拒绝,直到下个月、上限被提高,或 root 用户允许。",
+    "overridden": "已通过覆盖允许部署,直到 {{time}}:{{reason}}",
+    "override": "允许部署"
+  },
+  "override": {
+    "title": "暂时允许部署?",
+    "description": "root 覆盖会在上限已达到的情况下放行新部署。它会自动过期。",
+    "audited": "你的名字和原因会记录在预算历史中。",
+    "expires": "覆盖在较短的时间窗口后结束,之后防护再次生效。",
+    "reason": "原因",
+    "reasonPlaceholder": "为什么此次部署不能等待",
+    "confirm": "允许部署",
+    "pending": "正在允许"
+  },
+  "preview": {
+    "title": "暂停会带来什么",
+    "description": "预览在月底之前停止范围内所有应用的效果。不会更改任何内容。",
+    "noApps": "范围内没有应用。",
+    "replicas_other": "{{count}} 个副本",
+    "saves": "约节省 {{value}}",
+    "total": "将停止 {{replicas}} 个副本,在剩余 {{days}} 天内约节省 {{value}}。",
+    "noChanges": "尚不支持真正的暂停。此预览不会更改任何内容。",
+    "close": "关闭"
+  },
+  "alertRule": {
+    "name": "支出上限告警",
+    "create": "提醒我",
+    "creating": "正在创建",
+    "created": "告警规则已创建。关联通知渠道后即可接收。"
+  },
+  "project": {
+    "title": "支出",
+    "description": "为此项目中每个应用设置的月度成本上限,带有预测和可选的部署防护。",
+    "empty": {
+      "title": "此项目没有支出上限",
+      "body": "设置月度金额,即可在项目支出时收到告警,并可选择在达到上限时阻止新部署。",
+      "action": "设置支出上限"
+    },
+    "form": {
+      "amount": "月度金额({{currency}})",
+      "save": "保存支出上限",
+      "saving": "正在保存",
+      "cancel": "取消",
+      "badAmount": "请输入大于零的金额。"
+    },
+    "summary": "本月 {{limit}} 中已用 {{spent}}",
+    "level": {
+      "over": "已超出上限",
+      "warn": "已达告警级别",
+      "forecast": "即将超出",
+      "ok": "预算内"
+    },
+    "edit": "编辑",
+    "remove": "移除",
+    "saved": "支出上限已保存",
+    "removed": "支出上限已移除",
+    "loadError": "无法加载项目支出上限。",
+    "resets": "{{date}} 重置"
+  }
+}
