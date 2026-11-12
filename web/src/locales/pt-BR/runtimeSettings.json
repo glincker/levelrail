@@ -1,0 +1,365 @@
+{
+  "title": "Segurança e runtime",
+  "description": "As proteções vêm ativadas por padrão. Altere-as aqui, pela CLI ou pela API; um valor salvo prevalece sobre o ambiente, que prevalece sobre o padrão.",
+  "loadError": "Não foi possível carregar as configurações de runtime: {{message}}",
+  "retry": "Tentar novamente",
+  "empty": {
+    "title": "Nenhuma configuração de runtime registrada",
+    "body": "Este build ainda não tem nada para configurar aqui. Recarregue após atualizar o control plane."
+  },
+  "readOnly": "Somente um administrador pode alterar estas configurações. Você ainda pode ver os valores atuais.",
+  "categories": {
+    "security": "Segurança",
+    "networking": "Rede",
+    "deploys": "Deploys",
+    "observability": "Observabilidade",
+    "experimental": "Experimental",
+    "retention": "Retenção de dados"
+  },
+  "source": {
+    "default": "Padrão",
+    "env": "Definido pelo ambiente",
+    "saved": "Salvo"
+  },
+  "badges": {
+    "restart": "Requer reinício",
+    "weakens": "Enfraquece a segurança",
+    "security": "Configuração de segurança"
+  },
+  "options": {
+    "open": "Aberta (sem restrição)",
+    "none": "Nenhuma (as etapas RUN não têm rede)",
+    "block-private": "Bloquear faixas privadas (ainda não pode ser imposto)",
+    "read_only": "Somente leitura",
+    "read_write": "Leitura e escrita"
+  },
+  "items": {
+    "buildNetwork": {
+      "title": "Rede do build",
+      "description": "Rede para as etapas RUN de um build: open, none ou block-private (reservado: os builds falham até que possa ser imposto). Lida a cada build."
+    },
+    "placementScoreMode": {
+      "title": "Modo de pontuação de posicionamento",
+      "description": "Como novas cargas de trabalho escolhem um node: spread mantém a maior folga livre em cada node, binpack preenche o node mais cheio que ainda comporta. Lido a cada posicionamento."
+    },
+    "mcpDefaultTokenScope": {
+      "title": "Escopo padrão de token",
+      "description": "Escopo de um novo token criado sem permissões explícitas: read_only ou read_write. Os tokens existentes mantêm o escopo deles."
+    },
+    "lowFreeMb": {
+      "title": "Limite de pouco disco",
+      "description": "Espaço livre em MiB no volume de dados ou do Docker abaixo do qual a proteção de disco gera um aviso e um alerta de pouco disco (64 a 1048576). O crítico é limitado a este valor quando for maior."
+    },
+    "criticalFreeMb": {
+      "title": "Limite crítico de disco",
+      "description": "Espaço livre em MiB abaixo do qual builds, pulls de imagens e backups são recusados e a reserva de disco é liberada (16 a 1048576). Um valor acima do limite de pouco disco é tratado como igual a ele."
+    },
+    "reserveMb": {
+      "title": "Tamanho da reserva de disco",
+      "description": "Tamanho em MiB do arquivo de reserva mantido no diretório de dados para que o SQLite ainda consiga gravar quando o disco enche; ele é liberado abaixo do limite crítico (0 a 4096, 0 desativa a reserva)."
+    },
+    "metricsRetention": {
+      "title": "Retenção de métricas brutas",
+      "description": "Por quanto tempo as amostras brutas de métricas de containers são mantidas antes de o job de limpeza excluí-las, de 1h a 8760h; dados mais antigos continuam disponíveis nas camadas agregadas mais grosseiras."
+    },
+    "logsRetention": {
+      "title": "Retenção de logs, traces e erros",
+      "description": "Por quanto tempo os logs, traces e eventos de erro armazenados dos apps são mantidos antes de a varredura horária excluí-los, de 1h a 8760h; a próxima varredura usa um valor alterado."
+    },
+    "logBudgetMb": {
+      "title": "Orçamento padrão de logs por app",
+      "description": "Tamanho em MiB de logs armazenados que cada app pode usar antes de a varredura remover as linhas mais antigas; 0 significa ilimitado, caso contrário de 16 a 10485760. Um orçamento por app o substitui."
+    },
+    "rawRetention": {
+      "title": "Retenção de resultados brutos do monitor",
+      "description": "Por quanto tempo cada resultado de verificação de um monitor de disponibilidade é mantido antes de o job de limpeza excluí-lo, de 1h a 8760h; os agregados por hora são mantidos em uma janela própria."
+    },
+    "webhookReplayProtection": {
+      "title": "Proteção contra replay de webhooks",
+      "description": "Ignora o corpo de um webhook Git assinado que já foi entregue dentro da janela de replay."
+    },
+    "webhookReplayWindow": {
+      "title": "Janela de replay de webhooks",
+      "description": "Por quanto tempo o corpo de um webhook assinado idêntico é lembrado."
+    },
+    "auditSensitiveReads": {
+      "title": "Auditar leituras sensíveis",
+      "description": "Registra uma entrada de auditoria quando logs, exportações de variáveis de ambiente e outros dados sensíveis são lidos."
+    },
+    "bindBlockCredentialDirs": {
+      "title": "Bloquear diretórios de credenciais em bind mounts",
+      "description": "Recusa bind mounts de .ssh, .aws, .kube e diretórios de credenciais semelhantes."
+    },
+    "bindAllowedRoots": {
+      "title": "Raízes permitidas para bind mounts",
+      "description": "Quando não está vazio, os bind mounts devem ficar dentro de um destes diretórios."
+    },
+    "statusTimeout": {
+      "title": "Timeout do ping de status de jogos",
+      "description": "Por quanto tempo o ping de status do servidor de jogo espera uma porta de jogo responder antes de informá-la como offline. Valores abaixo de 200ms são elevados para 200ms."
+    },
+    "statusCache": {
+      "title": "Tempo de cache do status de jogos",
+      "description": "Por quanto tempo uma resposta de status de servidor de jogo é reutilizada, para que vários painéis e chamadas da CLI façam ping em uma porta de jogo no máximo uma vez nesse tempo. 0s desativa o cache."
+    },
+    "trustLoopbackForwardedHeaders": {
+      "title": "Confiar nos cabeçalhos encaminhados do loopback",
+      "description": "Acredita em X-Forwarded-For quando a requisição chega deste host. Desative quando nada local faz proxy para o control plane."
+    },
+    "caSwitchRetryBase": {
+      "title": "Atraso de nova tentativa da troca de CA",
+      "description": "Primeira espera antes de tentar novamente uma troca de autoridade certificadora que falhou ao carregar; ela dobra a cada falha até o máximo."
+    },
+    "caSwitchRetryMax": {
+      "title": "Atraso máximo de nova tentativa da troca de CA",
+      "description": "Limite superior da espera entre as tentativas de uma troca de autoridade certificadora que falhou."
+    },
+    "sessionTtl": {
+      "title": "Duração da sessão do app desktop",
+      "description": "Por quanto tempo uma sessão do painel emitida para o app desktop continua válida antes de ele precisar trocar o token novamente."
+    },
+    "revokedTokenDays": {
+      "title": "Excluir tokens de API revogados após",
+      "description": "Dias em que um token de API revogado continua listado antes de a limpeza removê-lo. 0 os mantém para sempre."
+    },
+    "expiredTokenDays": {
+      "title": "Excluir tokens de API expirados após",
+      "description": "Dias em que um token de API expirado continua listado antes de a limpeza removê-lo. 0 os mantém para sempre."
+    },
+    "jobMaxAttempts": {
+      "title": "Tentativas de ping de job",
+      "description": "Quantas vezes um ping de heartbeat por job é tentado antes de ser abandonado."
+    },
+    "jobBackoffBase": {
+      "title": "Atraso de nova tentativa do ping de job",
+      "description": "Primeira espera antes de tentar novamente um ping de job que falhou; ela dobra a cada nova tentativa até o máximo."
+    },
+    "jobBackoffMax": {
+      "title": "Atraso máximo de nova tentativa do ping de job",
+      "description": "Limite superior da espera entre as novas tentativas de ping de job."
+    },
+    "jobQueue": {
+      "title": "Tamanho da fila de pings de job",
+      "description": "Quantos pings de job podem aguardar envio antes de os novos serem descartados. Uma alteração se aplica na hora."
+    },
+    "rateLimitReadRpm": {
+      "title": "Limite de taxa de leitura da API",
+      "description": "Requisições de leitura por minuto permitidas para cada token de API, usuário conectado ou endereço de cliente. Requisições acima do orçamento recebem HTTP 429 com um cabeçalho Retry-After. Mínimo de 60 para que o painel continue funcionando; uma alteração se aplica na hora e mantém o orçamento atual de cada chamador. Um limite não pode ser desativado: um valor de ambiente 0 ou abaixo do mínimo é elevado ao mínimo (versões anteriores tratavam 0 como desativado)."
+    },
+    "rateLimitWriteRpm": {
+      "title": "Limite de taxa de escrita da API",
+      "description": "Requisições de escrita e de deploy por minuto permitidas para cada token de API, usuário conectado ou endereço de cliente. Requisições acima do orçamento recebem HTTP 429 com um cabeçalho Retry-After. Mínimo de 20 para que um operador não se bloqueie; uma alteração se aplica na hora. Um limite não pode ser desativado: um valor de ambiente 0 ou abaixo do mínimo é elevado ao mínimo (versões anteriores tratavam 0 como desativado)."
+    },
+    "rateLimitRedeemRpm": {
+      "title": "Limite de taxa de redefinição de senha e resgate de convite",
+      "description": "Requisições de redefinição de senha e de aceite de convite por minuto permitidas a partir de um endereço de cliente. Requisições acima do orçamento recebem HTTP 429. Mínimo de 3; uma alteração se aplica na hora. Um limite não pode ser desativado: um valor de ambiente 0 ou abaixo do mínimo é elevado ao mínimo (versões anteriores tratavam 0 como desativado)."
+    },
+    "engineRateLimitPerIp": {
+      "title": "Limite de taxa de login por endereço",
+      "description": "Requisições de credenciais (login, redefinição de senha, MFA) por minuto permitidas a partir de um endereço de cliente antes de receber HTTP 429. Isso desacelera o credential stuffing; não pode ser desativado e o mínimo é 10 para que um admin ainda consiga fazer login. Um valor de ambiente abaixo de 10 é elevado para 10. Requer reinício porque a biblioteca de autenticação guarda o orçamento."
+    },
+    "engineRateLimitPerEmail": {
+      "title": "Limite de taxa de login por conta",
+      "description": "Requisições de credenciais por minuto permitidas para um nome de conta a partir de qualquer endereço antes de receber HTTP 429. Isso desacelera a adivinhação direcionada de senhas; não pode ser desativado e o mínimo é 10 para que o proprietário ainda consiga fazer login. Um valor de ambiente abaixo de 10 é elevado para 10. Requer reinício porque a biblioteca de autenticação guarda o orçamento."
+    },
+    "maxBodyBytes": {
+      "title": "Limite do corpo de requisições da API",
+      "description": "Maior corpo de requisição JSON em bytes que a API lê antes de qualquer handler executar; um corpo maior é cortado e a requisição falha com HTTP 413. Uploads de código-fonte, pushes do Git e uploads de assets têm limites próprios. Entre 1 MiB e 1 GiB; uma alteração se aplica à próxima requisição."
+    },
+    "uploadMaxBytes": {
+      "title": "Limite de tamanho de upload de assets",
+      "description": "Maior objeto de asset individual em bytes aceito por um upload direto ou pré-assinado; um upload maior é recusado com HTTP 413. Entre 1 MiB e 1 TiB; os uploads diretos são isentos do limite do corpo de requisições da API e obedecem apenas a este. Uma alteração se aplica ao próximo upload."
+    },
+    "maxConcurrent": {
+      "title": "Deploys simultâneos",
+      "description": "Quantos deploys podem executar ao mesmo tempo em todos os apps; os deploys extras esperam na fila e começam quando um termina. 0 significa sem limite. Uma alteração se aplica à próxima decisão da fila."
+    },
+    "dependsOnTimeout": {
+      "title": "Espera por dependências do Compose",
+      "description": "Por quanto tempo um serviço do Compose espera uma dependência de depends_on iniciar, passar na verificação de saúde ou sair com 0 antes de o deploy falhar citando essa dependência, de 5s a 1h; uma alteração se aplica na próxima passagem de reconciliação."
+    },
+    "interval": {
+      "title": "Intervalo da limpeza",
+      "description": "Com que frequência a limpeza agendada verifica cada tipo de dado. O mínimo é de 15 minutos."
+    },
+    "enabled": {
+      "title": "Executar a limpeza em um agendamento",
+      "description": "Desativa totalmente a limpeza agendada. As limpezas manuais continuam funcionando."
+    },
+    "memoryLimitMb": {
+      "title": "Limite de memória do build",
+      "description": "Memória em MiB que um build pode usar (256 a 1048576). 0 significa automático: 60 por cento da memória do host, no mínimo 512 e sempre deixando uma reserva para o control plane (APP_BUILD_MEMORY_PERCENT e APP_BUILD_MEMORY_RESERVE_MB ajustam a fórmula). O limite também restringe o swap, e os builds Node recebem um --max-old-space-size correspondente. Uma alteração se aplica ao próximo build; os builds em execução mantêm o limite deles. Um valor salvo por app ou global dos limites de build ainda prevalece."
+    },
+    "auditLogDays": {
+      "title": "Manter entradas do log de auditoria por",
+      "description": "Dias em que uma entrada do log de auditoria é mantida antes de a limpeza removê-la. As entradas de login e de política seguem uma janela própria, mais longa. 0 mantém tudo."
+    },
+    "auditSecurityDays": {
+      "title": "Manter entradas de auditoria de segurança por",
+      "description": "Dias em que as entradas de auditoria de login, step-up, token e política são mantidas. Nunca menor que a janela geral. 0 as mantém para sempre."
+    },
+    "emailLogDays": {
+      "title": "Manter o log de entrega de e-mails por",
+      "description": "Dias em que uma linha do log de entrega de e-mails é mantida. 0 as mantém para sempre."
+    },
+    "webhookDeliveryDays": {
+      "title": "Manter as entregas de webhooks recebidos por",
+      "description": "Dias em que uma entrega de webhook Git recebida é mantida para solução de problemas. 0 as mantém para sempre."
+    },
+    "eventWebhookDays": {
+      "title": "Manter as entregas de webhooks de eventos por",
+      "description": "Dias em que uma entrega concluída de webhook de evento de saída é mantida. 0 as mantém para sempre."
+    },
+    "alertHistoryDays": {
+      "title": "Manter o histórico de alertas por",
+      "description": "Dias em que uma entrada do histórico de alertas é mantida. 0 as mantém para sempre."
+    },
+    "containersRestartPolicy": {
+      "title": "Política de reinício de containers",
+      "description": "Política de reinício do Docker para containers de apps de longa duração, para que os apps voltem após a reinicialização do host ou do Docker. Aplica-se aos containers criados no próximo deploy ou recriação; os containers existentes mantêm a política antiga."
+    },
+    "backupLocalRoot": {
+      "title": "Raiz de backups locais",
+      "description": "Diretório absoluto no control plane que confina os destinos de backup locais. Vazio usa backups/ dentro do diretório de dados. O próximo backup ou restauração usa um valor alterado; os caminhos dos destinos continuam relativos a ele e não podem sair dele."
+    },
+    "outboundTimeout": {
+      "title": "Timeout de requisições de saída",
+      "description": "Quanto tempo uma requisição HTTP de saída do control plane (metadados de nuvem, sondagens de modelos, verificações de atualização) pode levar antes de ser cancelada. A próxima requisição usa um valor alterado."
+    },
+    "bootRechecks": {
+      "title": "Atrasos de nova verificação na inicialização",
+      "description": "Deslocamentos após a inicialização, separados por dois-pontos (por exemplo 3s:10s), nos quais o control plane executa passagens extras de reconciliação para que as rotas sejam corrigidas quando o Docker publica portas tarde após a reinicialização de um host. Cada deslocamento é de pelo menos 1s. Lido na inicialização."
+    },
+    "bootEventRecheck": {
+      "title": "Nova verificação após o primeiro evento na inicialização",
+      "description": "Quanto tempo depois do primeiro evento do Docker o control plane executa mais uma passagem de reconciliação, de 1s a 1h. Lido na inicialização."
+    },
+    "bootDeferredStages": {
+      "title": "Adiar etapas de inicialização não críticas",
+      "description": "Inicia o heartbeat, o DNS dinâmico, os monitores e o histórico de disco depois que o listener HTTP estiver no ar, para que o painel responda mais cedo. GET /readyz lista as etapas ainda pendentes. Lido na inicialização."
+    },
+    "metricsScrapeEnabled": {
+      "title": "Endpoint de coleta do Prometheus",
+      "description": "Serve métricas de apps, bancos de dados e nodes no formato de texto do Prometheus em /metrics para um token de leitura. Quando desativado, o endpoint responde 404."
+    },
+    "envApplyOnSet": {
+      "title": "Aplicar alterações de variáveis de ambiente ao definir",
+      "description": "Quando ativado, env set e env import reiniciam o app para que os novos valores cheguem ao container em execução, como se --apply tivesse sido passado. Passe --no-apply para manter uma alteração pendente. Desativado por padrão; uma alteração se aplica ao próximo comando."
+    },
+    "maxReplicasPerService": {
+      "title": "Limite de réplicas por serviço",
+      "description": "Maior número de réplicas que a API aceita para um serviço quando um app é criado, atualizado ou escalado; uma contagem maior é recusada com HTTP 400. Entre 1 e 1000; uma alteração se aplica à próxima requisição, e os apps em execução mantêm a contagem deles."
+    },
+    "containersInspectTimeout": {
+      "title": "Timeout de inspeção de containers",
+      "description": "Quanto tempo a visualização de containers do app espera pela inspeção ao vivo de um node (saúde, reinícios, redes, montagens), de 1s a 2m. Quando esgota, a visualização ainda responde, com esses campos marcados como indisponíveis. A próxima requisição usa um valor alterado."
+    }
+  },
+  "row": {
+    "defaultHint": "Padrão: {{value}}",
+    "updatedBy": "Salvo por {{actor}}",
+    "on": "Ativado",
+    "off": "Desativado",
+    "listLabel": "{{title}}, uma entrada por linha",
+    "listPlaceholder": "/srv/apps",
+    "save": "Salvar",
+    "saving": "Salvando",
+    "reset": "Restaurar padrão",
+    "resetting": "Restaurando",
+    "invalid": "Informe um número inteiro.",
+    "envCopy": "Copiar {{env}}",
+    "envHint": "Variável de ambiente: {{env}}"
+  },
+  "toast": {
+    "saved": "{{title}} salvo.",
+    "reset": "{{title}} voltou ao padrão.",
+    "saveError": "Não foi possível salvar {{title}}: {{message}}",
+    "resetError": "Não foi possível restaurar {{title}}: {{message}}"
+  },
+  "restart": {
+    "title_one": "É necessário reiniciar para aplicar {{count}} alteração",
+    "title_many": "É necessário reiniciar para aplicar {{count}} alterações",
+    "title_other": "É necessário reiniciar para aplicar {{count}} alterações",
+    "body": "Os valores salvos das configurações que exigem reinício entram em vigor na próxima vez que o control plane iniciar. Os apps em execução continuam atendendo.",
+    "now": "Reiniciar agora",
+    "confirmTitle": "Reiniciar o control plane?",
+    "confirmBody": "O painel e a API ficam indisponíveis por um breve momento. Os apps em execução continuam atendendo tráfego.",
+    "unsupported": "Esta instalação não consegue se reiniciar sozinha. Reinicie você mesmo o processo do control plane e verifique novamente.",
+    "recheck": "Verificar novamente",
+    "error": "Não foi possível reiniciar: {{message}}"
+  },
+  "confirm": {
+    "title": "Reduzir esta proteção?",
+    "body": "{{title}} protege esta instalação. A alteração é registrada no log de auditoria com o seu nome.",
+    "consequence": "Tudo o que dependia dela fica exposto até você reativá-la.",
+    "action": "Reduzir proteção",
+    "cancel": "Manter proteção"
+  },
+  "onboarding": {
+    "title": "Revise seus padrões de segurança",
+    "intro": "Estas proteções vêm ativadas por padrão. Deixe-as como estão, ou altere qualquer uma agora. Você pode revisitá-las depois em Configurações.",
+    "safeDefault": "Padrão seguro: {{value}}",
+    "ack": "Está bom",
+    "acking": "Salvando",
+    "ackError": "Não foi possível salvar sua revisão: {{message}}",
+    "openSettings": "Abrir todas as configurações de segurança"
+  },
+  "values": {
+    "true": "Ativado",
+    "false": "Desativado",
+    "empty": "nenhum"
+  },
+  "retention": {
+    "never": "Nunca excluir",
+    "days_one": "{{count}} dia",
+    "days_many": "{{count}} dias",
+    "days_other": "{{count}} dias",
+    "year": "1 ano",
+    "hours_one": "{{count}} hora",
+    "hours_many": "{{count}} horas",
+    "hours_other": "{{count}} horas"
+  },
+  "overview": {
+    "title": "Retenção de dados",
+    "intro": "Por quanto tempo cada tipo de histórico é mantido. As janelas dos tokens mudam aqui e em Configurações, Tokens de API; as demais são definidas por variável de ambiente ou pela própria página.",
+    "open": "Abrir",
+    "policy": "Definido pela política de limpeza",
+    "items": {
+      "revokedTokens": "Tokens de API revogados",
+      "expiredTokens": "Tokens de API expirados",
+      "auditLog": "Log de auditoria",
+      "emailLog": "Log de e-mails",
+      "eventWebhooks": "Entregas de webhooks de eventos",
+      "webhookDeliveries": "Entregas de webhooks Git",
+      "alertHistory": "Histórico de alertas",
+      "inboxArchive": "Itens arquivados da caixa de entrada",
+      "deployAttempts": "Tentativas de deploy antigas",
+      "metricsAndLogs": "Métricas e logs",
+      "pipelineArtifacts": "Artefatos de pipeline"
+    }
+  },
+  "toolbar": {
+    "searchLabel": "Buscar configurações",
+    "searchPlaceholder": "Buscar configurações",
+    "changedOnly": "Alteradas em relação ao padrão",
+    "clear": "Limpar filtros",
+    "count": "{{shown}} de {{total}}",
+    "jumpLabel": "Ir para uma categoria",
+    "noMatchTitle": "Nenhuma configuração corresponde",
+    "noMatchBody": "Tente uma busca mais curta, ou limpe os filtros para ver todas as configurações.",
+    "allCategories": "Todas as categorias"
+  },
+  "prometheus": {
+    "title": "Coleta do Prometheus",
+    "description": "Crie um token somente leitura e aponte o Prometheus para /metrics.",
+    "toggle": "Endpoint de coleta de métricas",
+    "create": "Criar token de coleta",
+    "creating": "Criando...",
+    "tokenOnce": "Copie este token agora. Ele é exibido uma vez e não pode ser recuperado depois.",
+    "tokenLabel": "Token de coleta",
+    "configLabel": "Job de coleta",
+    "dismiss": "Pronto, ocultar token",
+    "error": "Não foi possível criar o token: {{message}}",
+    "saveError": "Não foi possível salvar: {{message}}"
+  }
+}
