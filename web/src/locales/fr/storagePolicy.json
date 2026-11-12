@@ -1,0 +1,59 @@
+{
+  "label": "Politique de stockage",
+  "needsAdmin": "Droits admin requis",
+  "applied": "Appliquée",
+  "save": "Enregistrer",
+  "saving": "Enregistrement",
+  "cancel": "Annuler",
+  "close": "Fermer",
+  "range": "Le serveur vérifie la plage autorisée à l'enregistrement.",
+  "invalid": "Saisissez un nombre entier supérieur à zéro.",
+  "invalidGb": "Saisissez un nombre de Go supérieur à zéro.",
+  "cleanup": {
+    "title": "Nettoyage automatique",
+    "on": "Activé",
+    "off": "Désactivé",
+    "dryRun": "Activé, simulation",
+    "what": "Supprime les containers, images et caches de build inutilisés quand l'espace libre devient faible. La simulation signale seulement ce qui serait supprimé.",
+    "enabled": "Nettoyer automatiquement",
+    "dryRunField": "Simulation uniquement",
+    "budget": "Lancer le nettoyage sous cet espace libre",
+    "budgetUnit": "% du disque libre",
+    "budgetValue": "moins de {{percent}} % libre"
+  },
+  "keepImages": {
+    "title": "Images à conserver par app",
+    "value_one": "{{count}} image par app",
+    "value_many": "{{count}} images par app",
+    "value_other": "{{count}} images par app",
+    "field": "Images à conserver",
+    "unit": "images par app",
+    "what": "Les images plus anciennes de chaque app sont supprimées par le nettoyage des images. Les images actives et les épinglages de rollback sont toujours conservés."
+  },
+  "cacheAge": {
+    "title": "Âge maximal du cache de build",
+    "hours_one": "{{count}} heure",
+    "hours_many": "{{count}} heures",
+    "hours_other": "{{count}} heures",
+    "days_one": "{{count}} jour",
+    "days_many": "{{count}} jours",
+    "days_other": "{{count}} jours",
+    "field": "Âge maximal",
+    "unit": "heures",
+    "what": "Le cache de build plus ancien que cette limite est supprimé par le nettoyage automatique."
+  },
+  "lowDisk": {
+    "title": "Alerte de disque faible",
+    "value": "moins de {{gb}} Go libres",
+    "field": "Alerter sous",
+    "unit": "Go libres",
+    "what": "Déclenche un avertissement et une alerte de disque faible quand l'espace libre passe sous cette valeur."
+  },
+  "criticalDisk": {
+    "title": "Seuil de disque critique",
+    "value": "moins de {{gb}} Go libres",
+    "field": "Critique sous",
+    "unit": "Go libres",
+    "what": "Les builds, les pulls d'images et les sauvegardes sont refusés sous cet espace libre."
+  }
+}

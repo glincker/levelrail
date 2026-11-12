@@ -1,0 +1,32 @@
+{
+  "service": "Service",
+  "title": "Options d'exécution pour {{service}}",
+  "description": "Options de container que ce service peut définir. Tout le reste, comme les capacités ou périphériques supplémentaires, reste inaccessible.",
+  "tmpfs": {
+    "label": "Montages tmpfs",
+    "hint": "Un par ligne, /chemin:size=64m. Jusqu'à {{max}}."
+  },
+  "ulimits": {
+    "label": "Ulimits",
+    "hint": "Un par ligne, nom=soft:hard. Jusqu'à {{max}} parmi {{names}}."
+  },
+  "extraHosts": {
+    "label": "Hôtes supplémentaires",
+    "hint": "Un par ligne, nom_d'hôte:ip. Jusqu'à {{max}}."
+  },
+  "dns": { "label": "Serveurs DNS", "hint": "Une IP par ligne. Jusqu'à {{max}}." },
+  "sysctls": {
+    "label": "Sysctls",
+    "hint": "Un par ligne, clé=valeur. Autorisés : {{names}}."
+  },
+  "stopTimeout": { "label": "Délai d'arrêt (s)", "hint": "Jusqu'à {{max}}." },
+  "pids": { "label": "Limite de processus", "hint": "Jusqu'à {{max}}." },
+  "init": { "label": "Processus init", "hint": "Exécute un init minimal en tant que PID 1." },
+  "badUlimit": "Utilisez nom=soft ou nom=soft:hard sur chaque ligne.",
+  "badSysctl": "Utilisez clé=valeur sur chaque ligne.",
+  "save": "Enregistrer",
+  "saving": "Enregistrement",
+  "saved": "Options d'exécution enregistrées",
+  "recreates": "L'enregistrement recrée le container.",
+  "readOnly": "Vous avez besoin de la capacité d'écriture sensible pour modifier les options d'exécution."
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Expiration",
+  "description": "Pour les apps temporaires et de démonstration. Un avis est écrit {{notice}} heures avant, l'app est arrêtée à l'expiration, puis supprimée {{grace}} heures plus tard. Les apps avec des volumes, des bases de données liées ou un environnement protégé sont seulement arrêtées, sauf si la suppression des données est activée.",
+  "none": "Aucune expiration définie.",
+  "state": {
+    "none": "Aucune expiration définie.",
+    "scheduled": "Expire {{at}}.",
+    "noticed": "Expire {{at}}. L'avis figure dans le journal d'audit.",
+    "stopped": "Arrêtée à l'expiration. Supprimée après {{after}} sauf annulation.",
+    "kept": "Arrêtée à l'expiration et conservée."
+  },
+  "kept": "Conservée, non supprimée : {{reason}}.",
+  "clear": "Effacer l'expiration",
+  "atLabel": "Expire le",
+  "deleteData": "Supprimer aussi les données",
+  "confirmLabel": "Saisissez {{name}} pour confirmer",
+  "save": "Enregistrer l'expiration",
+  "saved": "Expiration enregistrée",
+  "cleared": "Expiration effacée, toute suppression en attente est annulée",
+  "failed": "Échec de la modification de l'expiration",
+  "hint": "Jusqu'à {{days}} jours à l'avance. Effacer annule toujours une suppression en attente ; une app arrêtée reste arrêtée tant qu'elle n'est pas démarrée.",
+  "deleteDisabled": "Suppression désactivée par l'opérateur : les apps expirées sont seulement arrêtées."
+}

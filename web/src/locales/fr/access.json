@@ -1,0 +1,69 @@
+{
+  "roles": {
+    "title": "Rôles",
+    "description": "Ensembles nommés de capacités que vous pouvez attribuer aux personnes. Les rôles intégrés sont fixes ; créez les vôtres pour tout ce qui se situe entre les deux.",
+    "create": "Créer un rôle",
+    "empty": {
+      "title": "Aucun rôle trouvé",
+      "description": "Créez un rôle pour donner aux personnes un ensemble nommé de capacités."
+    },
+    "table": {
+      "label": "Rôles",
+      "name": "Nom",
+      "abilities": "Capacités",
+      "visibility": "Voit",
+      "users": "Utilisateurs",
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    },
+    "badge": {
+      "builtin": "Intégré",
+      "visibilityAll": "Tout",
+      "visibilityGranted": "Environnements accordés uniquement"
+    },
+    "form": {
+      "createTitle": "Créer un rôle",
+      "editTitle": "Modifier {{name}}",
+      "description": "Choisissez les capacités de ce rôle et ce que ses titulaires peuvent voir.",
+      "name": "Nom",
+      "namePlaceholder": "p. ex. qa-reviewer",
+      "nameRequired": "Le nom est obligatoire",
+      "descriptionLabel": "Description",
+      "visibility": "Visibilité",
+      "visibilityAll": "Tout ce que les capacités permettent",
+      "visibilityGranted": "Uniquement les environnements accordés à chaque personne",
+      "visibilityGrantedHint": "Un rôle limité aux environnements accordés ne peut détenir que la capacité de lecture.",
+      "abilitiesRequired": "Choisissez au moins une capacité",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement..."
+    },
+    "deleteDialog": {
+      "title": "Supprimer {{name}} ?",
+      "description": "Ce rôle ne pourra plus être attribué. Un rôle auquel des personnes sont encore assignées ne peut pas être supprimé.",
+      "inUse": "{{count}} personnes détiennent ce rôle. Réassignez-les d'abord.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer",
+      "deleting": "Suppression..."
+    },
+    "toast": {
+      "created": "Rôle {{name}} créé.",
+      "updated": "Rôle {{name}} mis à jour.",
+      "deleted": "Rôle {{name}} supprimé."
+    }
+  },
+  "userRole": {
+    "trigger": "Changer de rôle",
+    "title": "Rôle pour {{email}}",
+    "description": "Choisir un rôle remplace les capacités de cette personne par celles du rôle.",
+    "label": "Rôle",
+    "grantsTitle": "Environnements que cette personne peut voir",
+    "grantsHint": "Les personnes avec un rôle à visibilité accordée ne voient que ces environnements.",
+    "grantsEmpty": "Aucun environnement n'existe pour l'instant.",
+    "grantsLoading": "Chargement des environnements...",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "toast": "{{email}} a désormais le rôle {{role}}."
+  }
+}

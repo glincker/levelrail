@@ -1,0 +1,71 @@
+{
+  "title": "Historique de veille",
+  "description": "Quand cette app s'est mise en veille, ce qui l'a réveillée et combien de temps le réveil a pris. Les 7 derniers jours sont représentés ci-dessous.",
+  "loading": "Chargement de l'historique de veille",
+  "loadError": "Impossible de charger l'historique de veille.",
+  "retry": "Réessayer",
+  "asleepNow": "En veille depuis {{since}}",
+  "awakeNow": "Active",
+  "timelineLabel": "Activité et veille sur les 7 derniers jours",
+  "timelineStart": "il y a 7 jours",
+  "timelineEnd": "Maintenant",
+  "legend": {
+    "asleep": "En veille",
+    "awake": "Active"
+  },
+  "stats": {
+    "asleep7d": "En veille, 7 jours",
+    "asleep30d": "En veille, 30 jours",
+    "wakes7d": "Réveils, 7 jours",
+    "avgLatency": "Réveil moyen",
+    "p95Latency": "5 % de réveils les plus lents",
+    "lastSlept": "Dernière mise en veille",
+    "lastWoke": "Dernier réveil",
+    "memorySaved": "Mémoire économisée, 30 jours",
+    "memorySavedValue": "{{value}} Gio-heures",
+    "none": "Aucun pour l'instant"
+  },
+  "events": {
+    "title": "Événements",
+    "empty": "Rien d'enregistré pour l'instant. Les événements apparaissent ici quand l'app se met en veille ou se réveille.",
+    "emptyTitle": "Aucun événement de veille",
+    "kind": {
+      "slept": "Mise en veille",
+      "woke": "Réveil",
+      "enabled": "Veille en cas d'inactivité activée",
+      "disabled": "Veille en cas d'inactivité désactivée",
+      "wake_failed": "Échec du réveil"
+    },
+    "reason": {
+      "idle_timeout": "Délai d'inactivité",
+      "manual": "Manuel",
+      "request": "Requête",
+      "schedule": "Planification",
+      "deploy": "Deploy",
+      "api": "API",
+      "port": "Trafic sur un port publié"
+    },
+    "columns": {
+      "when": "Quand",
+      "event": "Événement",
+      "reason": "Raison",
+      "measure": "Durée / latence",
+      "detail": "Détail"
+    },
+    "sleptFor": "En veille pendant {{duration}}",
+    "readyIn": "Prête en {{duration}}",
+    "idleAfter": "Après {{minutes}} min d'inactivité",
+    "fromSource": "depuis {{source}}",
+    "byActor": "par {{actor}}"
+  },
+  "disabled": {
+    "title": "La veille en cas d'inactivité est désactivée",
+    "body": "Activez-la pour arrêter cette app quand personne ne l'utilise et voir ici quand elle s'est mise en veille et réveillée.",
+    "action": "Activer la veille en cas d'inactivité",
+    "toastError": "Impossible d'activer la veille en cas d'inactivité"
+  },
+  "badge": {
+    "title": "En veille, se réveille à la prochaine requête",
+    "asleepFor": "En veille depuis {{duration}}"
+  }
+}

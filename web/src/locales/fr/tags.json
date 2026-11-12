@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Tags",
+    "description": "Libellés que vous attachez aux apps pour les regrouper et les filtrer."
+  },
+  "create": {
+    "label": "Nouveau tag",
+    "placeholder": "env:prod",
+    "submit": "Créer le tag",
+    "pending": "Création"
+  },
+  "table": {
+    "label": "Tags",
+    "name": "Nom",
+    "apps": "Apps",
+    "resources": "Ressources",
+    "created": "Créé",
+    "actions": "Actions"
+  },
+  "row": {
+    "showApps": "Afficher les apps avec le tag {{name}}",
+    "hideApps": "Masquer les apps avec le tag {{name}}"
+  },
+  "rename": {
+    "action": "Renommer {{name}}",
+    "label": "Nouveau nom pour {{name}}",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "delete": {
+    "action": "Supprimer {{name}}",
+    "title": "Supprimer le tag {{name}} ?",
+    "description": "Le tag est retiré de toutes les apps qui l'utilisent.",
+    "consequence": "Les apps continuent de fonctionner ; seul le libellé disparaît.",
+    "confirm": "Supprimer le tag",
+    "pending": "Suppression"
+  },
+  "apps": {
+    "loading": "Chargement des apps",
+    "empty": "Aucune app n'utilise ce tag pour l'instant.",
+    "error": "Impossible de charger les apps de ce tag.",
+    "list": "Apps avec le tag {{name}}"
+  },
+  "empty": {
+    "title": "Aucun tag pour l'instant",
+    "description": "Créez un tag ci-dessus, ou ajoutez-en un depuis la vue d'ensemble d'une app, pour commencer à regrouper les apps."
+  },
+  "error": "Impossible de charger les tags."
+}

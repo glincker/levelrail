@@ -1,0 +1,58 @@
+{
+  "title": "Contextes de deploy",
+  "description": "Définissez des variables d'env et des réglages de build statique par type de deploy. Tout ce que vous laissez vide hérite de la valeur par défaut de l'app.",
+  "editor": {
+    "context": "Contexte",
+    "branchPattern": "Motif de branche",
+    "branchPatternHint": "Nom exact ou glob comme release/*.",
+    "env": "Variables d'env",
+    "envHint": "Une CLÉ=VALEUR par ligne. Utilisez les surcharges d'env par branche pour les secrets.",
+    "buildCommand": "Commande de build",
+    "publishDir": "Répertoire de publication",
+    "buildArgs": "Arguments de build",
+    "buildArgsHint": "Une CLÉ=VALEUR par ligne.",
+    "save": "Enregistrer le contexte",
+    "saving": "Enregistrement",
+    "saved": "Contexte enregistré.",
+    "saveError": "Impossible d'enregistrer le contexte.",
+    "clear": "Effacer",
+    "cleared": "Contexte effacé.",
+    "clearError": "Impossible d'effacer le contexte.",
+    "invalidLine": "La ligne \"{{line}}\" doit être de la forme CLÉ=VALEUR.",
+    "loadError": "Impossible de charger les contextes enregistrés."
+  },
+  "contexts": {
+    "deploy-preview": "Deploy preview (pull requests)",
+    "branch-deploy": "Deploy de branche",
+    "branch": "Une branche précise"
+  },
+  "saved": {
+    "title": "Contextes enregistrés",
+    "empty": "Aucune surcharge de contexte pour l'instant. Chaque deploy utilise les valeurs par défaut de l'app.",
+    "summary": "{{env}} variables d'env, {{args}} arguments de build",
+    "edit": "Modifier"
+  },
+  "effective": {
+    "title": "Configuration effective pour ce deploy",
+    "description": "Quelle valeur l'emporte et d'où elle vient. Les secrets restent masqués.",
+    "context": "Deploy en tant que",
+    "production": "Production",
+    "branch": "Branche",
+    "branchPlaceholder": "release/1.2",
+    "env": "Variables d'env",
+    "buildCommand": "Commande de build",
+    "publishDir": "Répertoire de publication",
+    "buildArg": "Argument de build {{name}}",
+    "none": "aucun",
+    "empty": "Aucune variable d'env n'est définie pour ce deploy.",
+    "loadError": "Impossible de charger la configuration effective.",
+    "secret": "secret",
+    "source": {
+      "app": "Défaut de l'app",
+      "preview-env": "Env de preview",
+      "context": "Contexte",
+      "branch-context": "Contexte de branche",
+      "branch-env": "Surcharge de branche"
+    }
+  }
+}

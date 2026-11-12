@@ -1,0 +1,19 @@
+{
+  "title": "Web vitals",
+  "collect": "Collecter",
+  "errorTitle": "Échec de la mise à jour des web vitals",
+  "snippetHint": "Ajoutez cette balise à votre site. Elle envoie LCP, INP, CLS, TTFB et FCP issus de visites réelles, sans cookies et sans adresses IP.",
+  "copySnippet": "Copier l'extrait",
+  "copied": "Copié",
+  "createKey": "Créer une clé de balise",
+  "rotateKey": "Renouveler la clé",
+  "emptyDisabled": "Activez la collecte et ajoutez l'extrait pour voir comment les visiteurs réels vivent cette app.",
+  "emptyEnabled": "Aucune donnée pour l'instant. Visitez votre site avec l'extrait installé et les résultats apparaissent ici.",
+  "p75Label": "{{metric}} p75",
+  "route": "Route",
+  "windowNote": "p75 sur les {{days}} derniers jours.",
+  "routesTitle": "Web vitals par route",
+  "viewAllRoutes": "Voir toutes les routes ({{count}})",
+  "samples": "Échantillons",
+  "legend": "Le vert est bon, l'orange à améliorer, le rouge mauvais, selon les seuils standard des Core Web Vitals."
+}

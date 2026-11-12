@@ -1,0 +1,12 @@
+{
+  "items": {
+    "email-log": {
+      "title": "Journal d'envoi des e-mails",
+      "description": "Chaque tentative d'envoi d'e-mail sortant avec son résultat."
+    },
+    "network-shares": {
+      "title": "Partages réseau",
+      "description": "Sources de volumes distantes que tout service d'app peut attacher."
+    }
+  }
+}
