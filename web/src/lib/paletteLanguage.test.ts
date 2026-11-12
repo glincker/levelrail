@@ -16,7 +16,7 @@ const fake = (language: string, supported = ['cimode', 'en', 'es', 'de']) =>
 describe('paletteLanguage', () => {
   it('lists supported languages by native and English name', () => {
     const langs = paletteLanguages(fake('en'))
-    expect(langs.map((l) => l.code)).toEqual(['en', 'es', 'de'])
+    expect(langs.map((l) => l.code)).toEqual(['en', 'de', 'es'])
     const es = langs.find((l) => l.code === 'es')
     expect(es?.name.toLowerCase()).toContain('espa')
     expect(es?.englishName).toBe('Spanish')
