@@ -372,7 +372,7 @@
     "nameLabel": "Nom",
     "descriptionLabel": "Description (facultatif)",
     "fileLabel": "Charger un fichier compose",
-    "composeLabel": "Fichier compose",
+    "composeLabel": "Fichier Compose",
     "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
     "variablesLabel": "Variables (facultatif, séparées par des virgules)",
     "variablesPlaceholder": "DB_PASSWORD, API_KEY",
