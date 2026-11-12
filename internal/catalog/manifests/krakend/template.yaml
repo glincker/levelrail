@@ -1,0 +1,50 @@
+id: krakend
+name: KrakenD
+description: Stateless high performance API gateway on the official image. The install form carries krakend.json as an editable file, so it starts with a working route table instead of exiting on a missing config.
+icon: shuffle
+category: Infrastructure
+documentation_url: https://www.krakend.io/docs/
+source_repo: https://github.com/krakend/krakend-ce
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/krakend/krakend-ce/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Open the address followed by /__health to confirm the gateway is up, then edit the config file setting to add your endpoints and backends.
+env:
+  - key: KRAKEND_CONFIG
+    type: file
+    service: krakend
+    path: /etc/krakend/krakend.json
+    mode: "0444"
+    label: krakend.json
+    description: The full KrakenD configuration, mounted read-only.
+    default: |
+      {
+        "version": 4,
+        "port": 8080,
+        "timeout": "3s",
+        "endpoints": [
+          {
+            "endpoint": "/hello",
+            "backend": [
+              {
+                "host": ["http://127.0.0.1:8080"],
+                "url_pattern": "/__health"
+              }
+            ]
+          }
+        ]
+      }
+domains:
+  - service: krakend
+    port: 8080
+    description: Public address of the gateway.
+healthcheck:
+  service: krakend
+  port: 8080
+  path: /__health

@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (547 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (556 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -33,20 +33,20 @@ Generated from `internal/catalog.Templates` (547 entries as of this build). Run 
 | [Analytics](#analytics) | 10 |
 | [Applications](#applications) | 44 |
 | [Automation](#automation) | 8 |
-| [Communication](#communication) | 23 |
+| [Communication](#communication) | 24 |
 | [Dashboard](#dashboard) | 9 |
-| [Database Tools](#database-tools) | 45 |
-| [Developer Tools](#developer-tools) | 76 |
+| [Database Tools](#database-tools) | 47 |
+| [Developer Tools](#developer-tools) | 79 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 31 |
+| [Infrastructure](#infrastructure) | 32 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 45 |
 | [Monitoring](#monitoring) | 48 |
-| [Productivity](#productivity) | 84 |
+| [Productivity](#productivity) | 85 |
 | [Security](#security) | 24 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 19 |
+| [Storage](#storage) | 20 |
 | [Backups](#backups) | 2 |
 | [Databases](#databases) | 1 |
 | [Mail](#mail) | 2 |
@@ -203,6 +203,7 @@ The admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up t
 Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT. | `mail-mox` |  |
 | [Matrix Synapse](https://element-hq.github.io/synapse/latest/setup/installation.html) | A federated, end-to-end encrypted chat server implementing the Matrix protocol. | `matrix-synapse` |  |
 | [Matrix Synapse (Postgres)](https://element-hq.github.io/synapse/latest/) | A Matrix homeserver backed by Postgres, for self-hosted federated chat and voice/video signaling. | `matrix-synapse-postgres` |  |
+| [Matterbridge](https://github.com/42wim/matterbridge/wiki) | Bridges chat between platforms. The install form carries matterbridge.toml as an editable file with a local API gateway, so you add your own accounts there. | `matterbridge` |  |
 | [Mattermost](https://docs.mattermost.com) | An open-source, self-hosted alternative to Slack for team messaging and collaboration. | `mattermost` |  |
 | [NodeBB](https://docs.nodebb.org/) | A modern forum platform with real-time discussions, SSO, and a plugin ecosystem, backed by Postgres. | `nodebb` |  |
 | [ntfy](https://docs.ntfy.sh) | A simple pub-sub push notification service you can send alerts to from any script or app. | `ntfy` |  |
@@ -245,7 +246,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [CouchDB](https://docs.couchdb.org/) | A document database with an HTTP API, built-in replication and the Fauxton admin console. | `couchdb` |  |
 | [DbGate](https://docs.dbgate.io/) | A web database client for SQL and NoSQL databases with a generated login and a data volume. Sign in as admin with the generated password, then add connections to other services here. | `dbgate` |  |
 | [Elasticsearch + Kibana](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker) | Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. | `elasticsearch-kibana` |  |
-| [FalkorDB](https://docs.falkordb.com/) | Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. | `falkordb` |  |
+| [FalkorDB](https://docs.falkordb.com/) | Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. Source available under the SSPL-1.0, which is not an open source license, so check it before offering it as a hosted service. | `falkordb` |  |
 | [FerretDB](https://docs.ferretdb.io/) | A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017. | `ferretdb` |  |
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
 | [libSQL Server](https://github.com/tursodatabase/libsql/tree/main/libsql-server) | Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume. | `libsql` |  |
@@ -272,6 +273,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [RedisInsight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for browsing keys, running commands, and profiling performance on any Redis instance. | `redisinsight` |  |
 | [RethinkDB](https://rethinkdb.com/docs) | A document database with live query feeds and a web admin console, on the official image with a data volume. The console has no login, so restrict access before exposing it. Client driver port 28015 stays private. | `rethinkdb` |  |
 | [ScyllaDB](https://opensource.docs.scylladb.com/stable/) | A wide column database compatible with Cassandra, running as one node in developer mode with a data volume. It has no web page, so connect over the project network at scylladb:9042. | `scylladb` |  |
+| [Sonic](https://github.com/valeriansaliou/sonic#how-to-use-it) | Fast, lightweight schema less search index server that stores identifiers instead of documents. The install form carries config.cfg as an editable file and a generated channel password. | `sonic` |  |
+| [SQLPad](https://getsqlpad.com/) | Web based SQL editor for running queries against many databases, with saved queries, charts and sharing. The admin account is created from the install form. | `sqlpad` |  |
 | [SurrealDB](https://surrealdb.com/docs) | A multi-model database for documents, graphs and relations with a SQL-like query language, using the RocksDB engine on a named volume. The root password is generated at install. Source available under the BSL. | `surrealdb` |  |
 | [TiDB](https://github.com/pingcap/tidb) | A MySQL compatible distributed SQL database, run here as a single node on local storage for development and testing. Apache-2.0 licensed. The root user has no password, so keep it private. | `tidb` |  |
 | [TimescaleDB](https://docs.timescale.com/) | PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432. | `timescaledb` |  |
@@ -293,8 +296,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [CyberChef](https://github.com/gchq/CyberChef/wiki) | The cyber swiss army knife: encode, decode, hash, and analyse data in the browser. | `cyberchef` |  |
 | [Databasus](https://databasus.com/installation) | A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases. | `databasus` |  |
 | [Directus](https://docs.directus.io) | An open-source headless CMS and instant REST/GraphQL API layer over your own database. | `directus` |  |
-| [Docker Registry](https://distribution.github.io/distribution/) | A private registry for storing and distributing your own container images. | `docker-registry` |  |
 | [Docker Registry](https://distribution.github.io/distribution/) | The official open source registry for storing and distributing your own container images. | `registry` |  |
+| [Docker Registry](https://distribution.github.io/distribution/) | A private registry for storing and distributing your own container images. | `docker-registry` |  |
 | [Docker Registry (Authenticated)](https://distribution.github.io/distribution/) | A private container registry with HTTP basic auth baked in at boot, unlike the catalog's open registry entry. | `docker-registry-auth` |  |
 | [Flagsmith](https://docs.flagsmith.com/) | A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin. | `flagsmith` |  |
 | [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | A headless-browser proxy that solves Cloudflare and DDoS-Guard challenges for other self-hosted tools. | `flaresolverr` |  |
@@ -313,11 +316,13 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Hasura](https://hasura.io/docs/2.0/deployment/docker/) | An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console. | `hasura` |  |
 | [Hoppscotch](https://docs.hoppscotch.io) | An open-source API development platform, a self-hosted alternative to Postman, backed by Postgres. | `hoppscotch` |  |
 | [ImgCompress](https://imgcompress.karimzouine.com) | An offline image compression, format conversion, and background-removal API for self-hosted pipelines. | `imgcompress` |  |
+| [Inbucket](https://www.inbucket.org/) | Disposable mail server that catches mail for any address and shows it in a web inbox, for testing apps without sending real email. | `inbucket` |  |
 | [Inngest](https://www.inngest.com/docs/self-hosting) | A durable workflow engine for background jobs, queues, cron and event-driven functions, backed by Postgres and Redis. | `inngest` |  |
 | [IT Tools](https://it-tools.tech) | A collection of handy online tools for developers: converters, generators, formatters, and more. | `it-tools` |  |
 | [Jenkins](https://www.jenkins.io/doc) | The long-running automation server for building, testing, and deploying with thousands of plugins. | `jenkins` |  |
 | [Jupyter Notebook](https://jupyter.org/documentation) | A web-based notebook environment for interactive Python, data analysis, and visualization. | `jupyter-notebook-python` |  |
 | [Jupyter Notebook](https://jupyter.org/) | A Jupyter Notebook server for interactive Python data work, protected by a generated access token. | `jupyter-notebook` |  |
+| [Kellnr](https://kellnr.io/documentation) | Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume. | `kellnr` |  |
 | [Kroki](https://docs.kroki.io/) | An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it. | `kroki` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
 | [Livebook](https://livebook.dev/) | Interactive and collaborative code notebooks for Elixir with a built in package manager and visualizations. A generated password protects the editor. | `livebook` |  |
@@ -340,6 +345,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Proxyscotch](https://github.com/hoppscotch/proxyscotch) | A small CORS proxy that lets Hoppscotch call APIs from the browser. | `proxyscotch` |  |
 | [Semaphore UI](https://docs.semaphoreui.com) | A modern web UI for running Ansible, Terraform, and shell tasks with schedules, history, and access control. | `semaphore` |  |
 | [Shlink](https://shlink.io/documentation/) | A self-hosted URL shortener with a full REST API for creating and tracking short links. | `shlink` |  |
+| [smtp4dev](https://github.com/rnwood/smtp4dev/wiki) | Fake SMTP server that catches outgoing mail in a web inbox, for testing apps without sending real email. | `smtp4dev` |  |
 | [Soketi](https://docs.soketi.app) | A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features. | `soketi` |  |
 | [SonarQube Community](https://docs.sonarsource.com/sonarqube-community-build) | Continuous code quality and security analysis across 30+ languages, with quality gates for every pull request. | `sonarqube` |  |
 | [Sonatype Nexus Repository](https://help.sonatype.com/en/sonatype-nexus-repository.html) | A universal artifact repository for Maven, npm, Docker, PyPI, and more, with proxying and caching. | `nexus` |  |
@@ -404,6 +410,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Headscale](https://headscale.net/stable/) | Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create). | `headscale` |  |
 | [imgproxy](https://docs.imgproxy.net/) | A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served. | `imgproxy` |  |
 | [Kong Gateway](https://docs.konghq.com/gateway/latest/) | An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state. | `kong` |  |
+| [KrakenD](https://www.krakend.io/docs/) | Stateless high performance API gateway on the official image. The install form carries krakend.json as an editable file, so it starts with a working route table instead of exiting on a missing config. | `krakend` |  |
 | [MeshCentral](https://meshcentral.com/docs/) | A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server. | `meshcentral` |  |
 | [NATS](https://docs.nats.io/) | A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. | `nats` |  |
 | [netboot.xyz](https://netboot.xyz/docs/) | Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror. | `netbootxyz` |  |
@@ -612,6 +619,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Stirling PDF](https://docs.stirlingpdf.com) | A self-hosted, all-in-one toolkit for merging, splitting, converting, and editing PDFs. | `stirling-pdf` |  |
 | [Tandoor Recipes](https://docs.tandoor.dev/install/docker/) | A recipe manager and meal planner with shopping lists and shared cookbooks. | `tandoor-recipes` |  |
 | [Teable](https://help.teable.io/) | A spreadsheet-style visual database backed by real PostgreSQL, an Airtable alternative. | `teable` |  |
+| [Traggo](https://traggo.net/) | Self-hosted time tracking with tags instead of projects, a timeline and dashboards. Runs a single container with data on a volume. | `traggo` |  |
 | [TriliumNext](https://github.com/TriliumNext/Trilium) | A hierarchical, self-hosted notebook for building a personal knowledge base, with full-text search. | `triliumnext` |  |
 | [TriliumNext Notes](https://triliumnext.github.io/Docs/) | A hierarchical, self-hosted note-taking application built for large personal knowledge bases. | `trilium` |  |
 | [Twenty CRM](https://docs.twenty.com) | An open-source CRM you fully control, built to look and feel like a modern spreadsheet. | `twenty` |  |
@@ -676,6 +684,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Kopia](https://kopia.io/docs/installation/#quick-setup-using-docker) | Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. | `kopia` |  |
 | [MinIO](https://min.io/docs/minio/linux/index.html) | S3-compatible object storage you run yourself, with a built-in web console. | `minio` |  |
 | [ownCloud](https://doc.owncloud.com/server/) | The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking. | `owncloud` |  |
+| [ownCloud Infinite Scale](https://doc.owncloud.com/ocis/next/) | File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start. | `ocis` |  |
 | [PicoShare](https://github.com/mtlynch/picoshare#readme) | Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page. | `picoshare` |  |
 | [Pingvin Share](https://github.com/stonith404/pingvin-share) | A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. | `pingvin-share` |  |
 | [RustFS](https://docs.rustfs.com/) | An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time. | `rustfs` |  |

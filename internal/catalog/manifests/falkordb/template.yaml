@@ -1,6 +1,6 @@
 id: falkordb
 name: FalkorDB
-description: Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.
+description: Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. Source available under the SSPL-1.0, which is not an open source license, so check it before offering it as a hosted service.
 icon: graph
 category: Database Tools
 documentation_url: https://docs.falkordb.com/

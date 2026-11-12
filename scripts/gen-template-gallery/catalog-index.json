@@ -16689,8 +16689,8 @@
    "id": "falkordb",
    "aliases": [],
    "name": "FalkorDB",
-   "slogan": "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.",
-   "description": "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI.",
+   "slogan": "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. Source available under the SSPL-1.0, which is not an open source license, so check it before offering it as a hosted service.",
+   "description": "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. Source available under the SSPL-1.0, which is not an open source license, so check it before offering it as a hosted service.",
    "first_run": [
     "Connect any Redis client to port 6379 and use GRAPH.QUERY, or open the address for the browser UI. There is no login, so keep it private."
    ],
@@ -27754,6 +27754,112 @@
    }
   },
   {
+   "id": "inbucket",
+   "aliases": [],
+   "name": "Inbucket",
+   "slogan": "Disposable mail server that catches mail for any address and shows it in a web inbox, for testing apps without sending real email.",
+   "description": "Disposable mail server that catches mail for any address and shows it in a web inbox, for testing apps without sending real email.",
+   "first_run": [
+    "Point your app at port 2500 and open the address to read what it sent. It has no login, so keep it private."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/inbucket/inbucket",
+   "documentation_url": "https://www.inbucket.org/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/inbucket/inbucket/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "inbucket",
+     "image": "inbucket/inbucket",
+     "tag": "3.2.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "inbucket",
+     "image": "inbucket/inbucket:3.2.0",
+     "ports": [
+      9000,
+      2500
+     ],
+     "volumes": [
+      "data -> /storage"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "inbucket"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "inbucket"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "infisical",
    "aliases": [],
    "name": "Infisical",
@@ -31399,6 +31505,129 @@
    }
   },
   {
+   "id": "kellnr",
+   "aliases": [],
+   "name": "Kellnr",
+   "slogan": "Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume.",
+   "description": "Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume.",
+   "first_run": [
+    "Sign in as admin with the password admin and change it at once, because it is public knowledge. Set the hostname setting to the address you serve it on."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/kellnr/kellnr",
+   "documentation_url": "https://kellnr.io/documentation",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/kellnr/kellnr/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kellnr",
+     "image": "ghcr.io/kellnr/kellnr",
+     "tag": "7.1.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "KELLNR_HOSTNAME",
+      "label": "Hostname",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "kellnr",
+     "image": "ghcr.io/kellnr/kellnr:7.1.0",
+     "ports": [
+      8000
+     ],
+     "volumes": [
+      "kdata -> /opt/kdata"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "kellnr",
+     "name": "KELLNR_ORIGIN__HOSTNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "kellnr",
+     "name": "KELLNR_REGISTRY__DATA_DIR",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "kellnr"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kellnr"
+      ],
+      "detail": "kdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "keycloak",
    "aliases": [],
    "name": "Keycloak",
@@ -32583,6 +32812,103 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "krakend",
+   "aliases": [],
+   "name": "KrakenD",
+   "slogan": "Stateless high performance API gateway on the official image. The install form carries krakend.json as an editable file, so it starts with a working route table instead of exiting on a missing config.",
+   "description": "Stateless high performance API gateway on the official image. The install form carries krakend.json as an editable file, so it starts with a working route table instead of exiting on a missing config.",
+   "first_run": [
+    "Open the address followed by /__health to confirm the gateway is up, then edit the config file setting to add your endpoints and backends."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/krakend/krakend-ce",
+   "documentation_url": "https://www.krakend.io/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/krakend/krakend-ce/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "krakend",
+     "image": "krakend",
+     "tag": "3.0.3",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "KRAKEND_CONFIG",
+      "label": "krakend.json",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "krakend",
+     "image": "krakend:3.0.3",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "krakend"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "rollback",
@@ -39795,6 +40121,109 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "matterbridge",
+   "aliases": [],
+   "name": "Matterbridge",
+   "slogan": "Bridges chat between platforms. The install form carries matterbridge.toml as an editable file with a local API gateway, so you add your own accounts there.",
+   "description": "Bridges chat between platforms. The install form carries matterbridge.toml as an editable file with a local API gateway, so you add your own accounts there.",
+   "first_run": [
+    "Edit the config file setting to add your chat accounts and gateways, then reinstall or update to apply it. The starter exposes only the local API."
+   ],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/42wim/matterbridge",
+   "documentation_url": "https://github.com/42wim/matterbridge/wiki",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/42wim/matterbridge/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "matterbridge",
+     "image": "42wim/matterbridge",
+     "tag": "1.26.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MATTERBRIDGE_TOKEN",
+      "label": "API token",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "MATTERBRIDGE_CONFIG",
+      "label": "matterbridge.toml",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "matterbridge",
+     "image": "42wim/matterbridge:1.26.0",
+     "ports": [
+      4242
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "matterbridge"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "rollback",
@@ -48503,6 +48932,164 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ocis",
+   "aliases": [],
+   "name": "ownCloud Infinite Scale",
+   "slogan": "File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.",
+   "description": "File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.",
+   "first_run": [
+    "Sign in as admin with the generated password shown in the deployment variables. Set the public URL setting to the address you serve it on before first use."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/owncloud/ocis",
+   "documentation_url": "https://doc.owncloud.com/ocis/next/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/owncloud/ocis/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ocis",
+     "image": "owncloud/ocis",
+     "tag": "8.2.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "OCIS_PUBLIC_URL",
+      "label": "Public URL",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "OCIS_ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "ocis",
+     "image": "owncloud/ocis:8.2.3",
+     "ports": [
+      9200
+     ],
+     "volumes": [
+      "config -> /etc/ocis",
+      "data -> /var/lib/ocis"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ocis",
+     "name": "IDM_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "ocis",
+     "name": "OCIS_INSECURE",
+     "kind": "preset"
+    },
+    {
+     "service": "ocis",
+     "name": "OCIS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "ocis",
+     "name": "PROXY_HTTP_ADDR",
+     "kind": "preset"
+    },
+    {
+     "service": "ocis",
+     "name": "PROXY_TLS",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "ocis"
+      ],
+      "detail": "IDM_ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "ocis"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ocis"
+      ],
+      "detail": "config, data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",
@@ -66053,6 +66640,112 @@
    }
   },
   {
+   "id": "smtp4dev",
+   "aliases": [],
+   "name": "smtp4dev",
+   "slogan": "Fake SMTP server that catches outgoing mail in a web inbox, for testing apps without sending real email.",
+   "description": "Fake SMTP server that catches outgoing mail in a web inbox, for testing apps without sending real email.",
+   "first_run": [
+    "Point your app at port 25 of this container and open the address to read what it sent. It has no login, so keep it private."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/rnwood/smtp4dev",
+   "documentation_url": "https://github.com/rnwood/smtp4dev/wiki",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/rnwood/smtp4dev/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "smtp4dev",
+     "image": "rnwood/smtp4dev",
+     "tag": "3.16.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "smtp4dev",
+     "image": "rnwood/smtp4dev:3.16.1",
+     "ports": [
+      80,
+      25
+     ],
+     "volumes": [
+      "data -> /smtp4dev"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "smtp4dev"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "smtp4dev"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "snapdrop",
    "aliases": [],
    "name": "Snapdrop",
@@ -67058,6 +67751,124 @@
    }
   },
   {
+   "id": "sonic",
+   "aliases": [],
+   "name": "Sonic",
+   "slogan": "Fast, lightweight schema less search index server that stores identifiers instead of documents. The install form carries config.cfg as an editable file and a generated channel password.",
+   "description": "Fast, lightweight schema less search index server that stores identifiers instead of documents. The install form carries config.cfg as an editable file and a generated channel password.",
+   "first_run": [
+    "Connect a Sonic client library to port 1491 with the generated channel password shown in the deployment variables."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/valeriansaliou/sonic",
+   "documentation_url": "https://github.com/valeriansaliou/sonic#how-to-use-it",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/valeriansaliou/sonic/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "sonic",
+     "image": "valeriansaliou/sonic",
+     "tag": "v1.10.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "SONIC_PASSWORD",
+      "label": "Channel password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "SONIC_CONFIG",
+      "label": "config.cfg",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "sonic",
+     "image": "valeriansaliou/sonic:v1.10.2",
+     "ports": [
+      1491
+     ],
+     "volumes": [
+      "store -> /var/lib/sonic/store"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "sonic"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "sonic"
+      ],
+      "detail": "store",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "sparkyfitness",
    "aliases": [],
    "name": "SparkyFitness",
@@ -67863,6 +68674,158 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "sqlpad",
+   "aliases": [],
+   "name": "SQLPad",
+   "slogan": "Web based SQL editor for running queries against many databases, with saved queries, charts and sharing. The admin account is created from the install form.",
+   "description": "Web based SQL editor for running queries against many databases, with saved queries, charts and sharing. The admin account is created from the install form.",
+   "first_run": [
+    "Sign in with the admin email and the generated password shown in the deployment variables, then add a connection to your database."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/sqlpad/sqlpad",
+   "documentation_url": "https://getsqlpad.com/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/sqlpad/sqlpad/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "sqlpad",
+     "image": "sqlpad/sqlpad",
+     "tag": "7.5.7",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "SQLPAD_ADMIN_EMAIL",
+      "label": "Admin email",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "SQLPAD_ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "sqlpad",
+     "image": "sqlpad/sqlpad:7.5.7",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "data -> /var/lib/sqlpad"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "sqlpad",
+     "name": "SQLPAD_ADMIN",
+     "kind": "preset"
+    },
+    {
+     "service": "sqlpad",
+     "name": "SQLPAD_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "sqlpad",
+     "name": "SQLPAD_APP_LOG_LEVEL",
+     "kind": "preset"
+    },
+    {
+     "service": "sqlpad",
+     "name": "SQLPAD_DB_PATH",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "sqlpad"
+      ],
+      "detail": "SQLPAD_ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "sqlpad"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "sqlpad"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",
@@ -73548,6 +74511,142 @@
      {
       "code": "health_gated_deploy",
       "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "traggo",
+   "aliases": [],
+   "name": "Traggo",
+   "slogan": "Self-hosted time tracking with tags instead of projects, a timeline and dashboards. Runs a single container with data on a volume.",
+   "description": "Self-hosted time tracking with tags instead of projects, a timeline and dashboards. Runs a single container with data on a volume.",
+   "first_run": [
+    "Sign in as admin with the generated password shown in the deployment variables, then create tags and start a timer."
+   ],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/traggo/server",
+   "documentation_url": "https://traggo.net/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/traggo/server/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "traggo",
+     "image": "traggo/server",
+     "tag": "0.8.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TRAGGO_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "traggo",
+     "image": "traggo/server:0.8.3",
+     "ports": [
+      3030
+     ],
+     "volumes": [
+      "data -> /opt/traggo/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "traggo",
+     "name": "TRAGGO_DEFAULT_USER_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "traggo",
+     "name": "TRAGGO_DEFAULT_USER_PASS",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "traggo"
+      ],
+      "detail": "TRAGGO_DEFAULT_USER_PASS",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "traggo"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "traggo"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "rollback",

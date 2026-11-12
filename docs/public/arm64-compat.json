@@ -2,14 +2,14 @@
   "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 547,
-    "images": 591,
+    "templates": 556,
+    "images": 600,
     "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 138,
+    "arm64_unknown": 147,
     "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 141
+    "image_arm64_unknown": 150
   },
   "templates": [
     {
@@ -4396,6 +4396,20 @@
       ]
     },
     {
+      "id": "inbucket",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "inbucket/inbucket:3.2.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "infisical",
       "amd64": "yes",
       "arm64": "yes",
@@ -4988,6 +5002,20 @@
       ]
     },
     {
+      "id": "kellnr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/kellnr/kellnr:7.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "keycloak",
       "amd64": "yes",
       "arm64": "yes",
@@ -5149,6 +5177,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "krakend",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "krakend:3.0.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6252,6 +6294,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "matterbridge",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "42wim/matterbridge:1.26.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7589,6 +7645,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "ocis",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "owncloud/ocis:8.2.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10298,6 +10368,20 @@
       ]
     },
     {
+      "id": "smtp4dev",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rnwood/smtp4dev:3.16.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "snapdrop",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -10442,6 +10526,20 @@
       ]
     },
     {
+      "id": "sonic",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "valeriansaliou/sonic:v1.10.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "sparkyfitness",
       "amd64": "yes",
       "arm64": "yes",
@@ -10572,6 +10670,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T04:09:06Z"
+        }
+      ]
+    },
+    {
+      "id": "sqlpad",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "sqlpad/sqlpad:7.5.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -11436,6 +11548,20 @@
       "images": [
         {
           "ref": "traefik:v3.2.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "traggo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "traggo/server:0.8.3",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",

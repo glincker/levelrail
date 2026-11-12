@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 547 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 147 not checked** of 556 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -337,6 +337,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `imgcompress` | yes | linux/amd64, linux/arm64 |
 | `imgproxy` | yes | linux/amd64, linux/arm64 |
 | `immich` | yes | linux/amd64, linux/arm64 |
+| `inbucket` | not checked | - |
 | `infisical` | yes | linux/amd64, linux/arm64 |
 | `influxdb` | yes | linux/amd64, linux/arm64 |
 | `inngest` | yes | linux/amd64, linux/arm64 |
@@ -361,6 +362,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `karakeep` | yes | linux/amd64, linux/arm64 |
 | `karma` | not checked | - |
 | `kavita` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kellnr` | not checked | - |
 | `keycloak` | yes | linux/amd64, linux/arm64 |
 | `keycloak-postgres` | yes | linux/amd64, linux/arm64 |
 | `kimai` | yes | linux/amd64, linux/arm64 |
@@ -369,6 +371,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `komga` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `kong` | not checked | - |
 | `kopia` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `krakend` | not checked | - |
 | `kroki` | not checked | - |
 | `kutt` | yes | linux/amd64, linux/arm64 |
 | `label-studio` | yes | linux/amd64, linux/arm64 |
@@ -415,6 +418,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `matomo` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `matrix-synapse` | yes | linux/amd64, linux/arm64 |
 | `matrix-synapse-postgres` | yes | linux/amd64, linux/arm64 |
+| `matterbridge` | not checked | - |
 | `mattermost` | amd64 only | linux/amd64 |
 | `mazanoke` | not checked | - |
 | `mcp-inspector` | not checked | - |
@@ -474,6 +478,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `ntfy` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nzbget` | not checked | - |
 | `obsidian-livesync` | yes | linux/amd64, linux/arm64 |
+| `ocis` | not checked | - |
 | `odoo` | yes | linux/amd64, linux/arm64, linux/ppc64le |
 | `ollama` | yes | linux/amd64, linux/arm64 |
 | `ollama-deepseek` | yes | linux/amd64, linux/arm64 |
@@ -591,6 +596,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `slash` | yes | linux/amd64, linux/arm64 |
 | `slskd` | not checked | - |
 | `smokeping` | yes | linux/amd64, linux/arm64 |
+| `smtp4dev` | not checked | - |
 | `snapdrop` | not checked | - |
 | `snappymail` | not checked | - |
 | `snipe-it` | yes | linux/amd64, linux/arm64 |
@@ -598,11 +604,13 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `solr` | not checked | - |
 | `sonarqube` | yes | linux/amd64, linux/arm64 |
 | `sonarr` | yes | linux/amd64, linux/arm64 |
+| `sonic` | not checked | - |
 | `sparkyfitness` | yes | linux/amd64, linux/arm64 |
 | `speaches` | yes | linux/amd64, linux/arm64 |
 | `speedtest-tracker` | yes | linux/amd64, linux/arm64 |
 | `spliit` | yes | linux/amd64, linux/arm64 |
 | `spoolman` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `sqlpad` | not checked | - |
 | `stable-diffusion-webui` | amd64 only | linux/amd64 |
 | `stalwart` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `stash` | not checked | - |
@@ -642,6 +650,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 138 not checked** of 
 | `tolgee` | yes | linux/amd64, linux/arm64 |
 | `traccar` | yes | linux/amd64, linux/arm64 |
 | `traefik` | not checked | - |
+| `traggo` | not checked | - |
 | `trailbase` | yes | linux/amd64, linux/arm64 |
 | `transmission` | yes | linux/amd64, linux/arm64 |
 | `trilium` | yes | linux/amd64, linux/arm, linux/arm64 |

@@ -1,0 +1,63 @@
+---
+title: "Self-host smtp4dev with Docker"
+sidebarTitle: "smtp4dev"
+description: "Fake SMTP server that catches outgoing mail in a web inbox, for testing apps without sending real email."
+"og:url": "https://docs.levelrail.com/self-host/smtp4dev"
+---
+
+Fake SMTP server that catches outgoing mail in a web inbox, for testing apps without sending real email.
+
+This page describes the Levelrail template for smtp4dev (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/rnwood/smtp4dev/wiki.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `smtp4dev` | `rnwood/smtp4dev:3.16.1` | 80, 25 | `data -&#62; /smtp4dev` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`smtp4dev`).
+- Stores data in named volumes (`smtp4dev`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy smtp4dev with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select smtp4dev. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy smtp4dev --name my-smtp4dev
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).
