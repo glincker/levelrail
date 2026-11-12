@@ -1,0 +1,131 @@
+{
+  "title": "Autoscaling",
+  "description": "Adicione e remova réplicas conforme a carga muda, entre um mínimo e um máximo que você define. O scale up é rápido, o scale down é lento e toda decisão é registrada com seu motivo.",
+  "loading": "Carregando autoscaling",
+  "loadError": "Não foi possível carregar o autoscaling deste app.",
+  "retry": "Tentar novamente",
+  "empty": {
+    "title": "O autoscaling está desativado",
+    "body": "O app mantém o número de réplicas que você definiu manualmente. Ative o autoscaling para acompanhar a carga entre um mínimo e um máximo. Edições manuais de réplicas são recusadas enquanto ele estiver ativo.",
+    "action": "Configurar autoscaling"
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_percent": "Memória",
+    "requests_per_replica": "Requisições por réplica"
+  },
+  "reason": {
+    "Pending": "Aguardando a primeira verificação",
+    "WithinTarget": "Na meta",
+    "ScaledUp": "Scale up feito",
+    "ScaledDown": "Scale down feito",
+    "MetricsUnavailable": "Sem métricas recentes",
+    "CooldownActive": "Em resfriamento",
+    "Stabilizing": "Confirmando scale down",
+    "NoCapacity": "Sem capacidade",
+    "SpendCapPaused": "Retido pelo limite de gastos",
+    "AtMaximum": "No máximo",
+    "AtMinimum": "No mínimo",
+    "BoundsCorrected": "Movido para dentro do intervalo",
+    "Suspended": "App parado",
+    "ScaleFailed": "O escalonamento falhou",
+    "Flapping": "Oscilando"
+  },
+  "blocked": {
+    "cooldown": "resfriamento",
+    "stabilization": "janela de estabilização",
+    "spend_cap": "limite de gastos",
+    "no_capacity": "sem capacidade",
+    "max_replicas": "máximo de réplicas",
+    "min_replicas": "mínimo de réplicas",
+    "global_ceiling": "teto global",
+    "step_limit": "limite de passo",
+    "no_metrics": "sem métricas",
+    "suspended": "app parado"
+  },
+  "next": {
+    "no_capacity": "Nenhum node tem espaço para outra réplica. Adicione um node, libere capacidade ou reduza a solicitação de CPU e memória do app. Veja o cartão Posicionamento.",
+    "spend_cap": "Um limite de gastos está em vigor, então nenhuma réplica é adicionada. Aumente o orçamento ou espere o mês virar.",
+    "no_metrics": "A métrica está ausente ou desatualizada, então o número de réplicas é mantido. Verifique se o app está rodando e se as métricas estão fluindo.",
+    "max_replicas": "A carga pede mais réplicas do que o máximo permite. Aumente o máximo se o app deve crescer mais.",
+    "global_ceiling": "O teto global de réplicas do operador está limitando este app. Aumente APP_AUTOSCALE_MAX_REPLICAS no control plane para permitir mais.",
+    "flapping": "A contagem continua mudando de direção. Amplie as tolerâncias ou aumente os resfriamentos em Avançado."
+  },
+  "stats": {
+    "replicas": "Réplicas",
+    "replicasValue": "{{current}} agora, {{desired}} desejadas",
+    "range": "Intervalo",
+    "rangeValue": "{{min}} a {{max}}",
+    "band": "Scale up acima, scale down abaixo",
+    "bandValue": "+{{up}}% e -{{down}}%",
+    "metricValue": "{{value}}{{unit}} de {{target}}{{unit}}",
+    "metricUnknown": "Desconhecido"
+  },
+  "actions": {
+    "edit": "Editar política",
+    "remove": "Remover política"
+  },
+  "form": {
+    "min": "Mínimo de réplicas",
+    "minHelp": "Nunca menos que isto.",
+    "max": "Máximo de réplicas",
+    "maxHelp": "Nunca mais que isto. Limitado pelo teto global do operador.",
+    "metric": "Escalar com base em",
+    "metricCpu": "CPU",
+    "metricCpuHelp": "Uso médio como porcentagem do limite de CPU do app.",
+    "metricMemory": "Memória",
+    "metricMemoryHelp": "Uso médio como porcentagem do limite de memória do app.",
+    "metricRequests": "Requisições por réplica",
+    "metricRequestsHelp": "Requisições por segundo no ingress, divididas pelas réplicas.",
+    "target": "Meta ({{unit}})",
+    "perSecond": " req/s",
+    "targetHelp": "O valor em que manter a métrica. As réplicas mudam somente quando ela está claramente acima ou abaixo disto.",
+    "advanced": "Avançado",
+    "advancedHelp": "Deixe um campo vazio para usar o padrão. Os resfriamentos e a janela de estabilização são em minutos.",
+    "upTolerance": "Scale up acima da meta em (porcentagem)",
+    "downTolerance": "Scale down abaixo da meta em (porcentagem)",
+    "upCooldown": "Espera entre scale ups (minutos)",
+    "downCooldown": "Espera antes do scale down (minutos)",
+    "stabilization": "Confirmar um scale down por (minutos)",
+    "stepUp": "Máximo de réplicas adicionadas de uma vez",
+    "stepDown": "Máximo de réplicas removidas de uma vez",
+    "save": "Salvar política",
+    "saving": "Salvando",
+    "cancel": "Cancelar",
+    "error": {
+      "replicas": "Informe números inteiros de réplicas, com o máximo igual ou maior que o mínimo.",
+      "target": "Informe uma meta acima de zero (até 100 para CPU e memória).",
+      "advanced": "Verifique os campos avançados: use números inteiros e minutos de pelo menos 1 segundo."
+    }
+  },
+  "remove": {
+    "title": "Remover esta política?",
+    "description": "O app deixa de escalar por conta própria.",
+    "consequences": {
+      "replicas": "O número de réplicas permanece como está agora.",
+      "manual": "Você poderá definir as réplicas manualmente de novo.",
+      "history": "O histórico de decisões é mantido."
+    },
+    "confirm": "Remover política",
+    "pending": "Removendo"
+  },
+  "history": {
+    "title": "Decisões recentes",
+    "empty": "Ainda não há decisões. As mudanças de escala e os motivos para manter aparecem aqui.",
+    "loadError": "Não foi possível carregar o histórico.",
+    "replicas": "{{from}} para {{to}}",
+    "blockedBy": "limitado por {{by}}",
+    "kind": {
+      "scaled_up": "Scale up feito",
+      "scaled_down": "Scale down feito",
+      "held": "Mantido",
+      "failed": "O escalonamento falhou",
+      "configured": "Política alterada",
+      "cleared": "Política removida"
+    }
+  },
+  "toast": {
+    "saved": "Autoscaling salvo",
+    "removed": "Autoscaling removido"
+  }
+}

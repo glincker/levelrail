@@ -1,0 +1,122 @@
+{
+  "title": "{{name}}: Canvas",
+  "description": "Adicione apps e bancos de dados e conecte-os entre si. Toda alteração é um rascunho que você revisa como um plano antes de qualquer coisa ser salva.",
+  "beta": "Beta",
+  "link": "Canvas",
+  "loadError": "Não foi possível carregar este projeto para o canvas. Verifique sua conexão e recarregue.",
+  "asideLabel": "Alterações do rascunho",
+  "iacOff": {
+    "title": "A plataforma como código está desativada",
+    "description": "O Canvas transforma seu rascunho em um plano com a API de plataforma como código, então esse recurso precisa estar ativado antes de você revisar ou aplicar.",
+    "action": "Abrir recursos beta"
+  },
+  "empty": {
+    "title": "Ainda não há nada neste projeto",
+    "description": "Adicione um app ou um banco de dados pelo painel de rascunho para começar a construir. Nada é criado até você aplicar."
+  },
+  "draft": {
+    "title": "Rascunho",
+    "none": "Ainda não há alterações. Adicione um app ou um banco de dados, ou conecte duas coisas que já estão aqui.",
+    "count_one": "{{count}} alteração pendente",
+    "count_many": "{{count}} alterações pendentes",
+    "count_other": "{{count}} alterações pendentes",
+    "remove": "Remover do rascunho: {{label}}",
+    "review": "Revisar alterações",
+    "discard": "Descartar rascunho"
+  },
+  "add": {
+    "app": "Adicionar app",
+    "database": "Adicionar banco de dados"
+  },
+  "appForm": {
+    "title": "Adicionar um app",
+    "description": "Um novo app que roda uma image pré-construída. Ele entra neste projeto quando você aplica.",
+    "name": "Nome",
+    "image": "Image",
+    "imageHint": "Por exemplo ghcr.io/acme/web:1.2.3",
+    "port": "Porta",
+    "submit": "Adicionar ao rascunho"
+  },
+  "databaseForm": {
+    "title": "Adicionar um banco de dados",
+    "description": "Um banco de dados gerenciado neste projeto. Ele é criado quando você aplica.",
+    "name": "Nome",
+    "engine": "Engine",
+    "version": "Versão (opcional)",
+    "versionHint": "Deixe em branco para usar o padrão da engine.",
+    "submit": "Adicionar ao rascunho"
+  },
+  "connect": {
+    "title": "Conectar um app a um banco de dados",
+    "app": "App",
+    "database": "Banco de dados",
+    "envVar": "Variável de ambiente (opcional)",
+    "envVarHint": "Deixe em branco e o servidor escolhe uma.",
+    "submit": "Adicionar conexão",
+    "choose": "Escolher",
+    "needBoth": "Você precisa de pelo menos um app e um banco de dados no canvas para conectá-los."
+  },
+  "connections": {
+    "title": "Conexões",
+    "none": "Nenhum app está conectado a um banco de dados ainda.",
+    "remove": "Remover a conexão de {{app}} para {{database}}",
+    "more": "Mostrando {{shown}} de {{total}} conexões."
+  },
+  "limits": {
+    "title": "Ainda não editável aqui",
+    "body": "Volumes, domínios, load balancers e dependências. Altere-os pelo próprio app."
+  },
+  "errors": {
+    "required": "Este campo é obrigatório.",
+    "format": "Use letras minúsculas, números e hífens, começando e terminando com uma letra ou número.",
+    "taken": "Já existe algo com este nome no canvas.",
+    "port": "Informe uma porta entre 1 e 65535.",
+    "envVar": "Use letras, números e sublinhados, sem começar por um número."
+  },
+  "ops": {
+    "addApp": "Adicionar o app {{name}} ({{image}})",
+    "addDatabase": "Adicionar o banco de dados {{engine}} {{name}}",
+    "connect": "Conectar {{app}} a {{database}}",
+    "disconnect": "Desconectar {{app}} de {{database}}"
+  },
+  "review": {
+    "title": "Revisar alterações",
+    "description": "Isto é o que aplicar faria. Nada foi alterado ainda.",
+    "planning": "Montando o plano...",
+    "planError": {
+      "title": "Não foi possível montar o plano",
+      "retry": "Tentar novamente",
+      "issuesNext": "Volte, corrija ou remova o item indicado acima e revise de novo.",
+      "generic": "Verifique se o servidor está acessível e se você pode escrever neste projeto, e tente novamente."
+    },
+    "serverChanges": "Plano do servidor",
+    "steps": {
+      "title": "Alterações de conexão",
+      "note": "Estas rodam depois que o plano acima for aplicado, nesta ordem. O servidor não as pré-visualiza.",
+      "connect": "Conectar {{app}} a {{database}} como {{envVar}}",
+      "connectAuto": "Conectar {{app}} a {{database}}",
+      "disconnect": "Desconectar {{app}} de {{database}} ({{envVar}})",
+      "unsupported": "{{app}} acessa {{database}} pelo seu app.yaml, não por uma conexão, então o Canvas não pode removê-la. Edite o app.yaml.",
+      "loading": "Buscando as conexões atuais..."
+    },
+    "nothing": "Nada a aplicar.",
+    "apply": "Aplicar",
+    "applying": "Aplicando...",
+    "back": "Voltar à edição",
+    "applied": {
+      "title": "Aplicado",
+      "failed": "Algumas alterações não foram aplicadas",
+      "failedNext": "Nada depois da etapa com falha foi executado. Corrija a causa indicada abaixo e revise as alterações restantes novamente.",
+      "done": "Concluído"
+    },
+    "stepStatus": {
+      "applied": "Aplicado",
+      "failed": "Falhou: {{error}}",
+      "skipped": "Ignorado"
+    }
+  },
+  "toast": {
+    "applied": "Alterações do Canvas aplicadas.",
+    "failed": "Algumas alterações do Canvas não foram aplicadas."
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "gate": {
+    "title": "Gate de prontidão e monitoramento",
+    "rules": "Recebe tráfego após {{passes}} aprovações de prontidão seguidas e {{stable}} em execução sem reinício. A versão anterior é esvaziada por {{drain}} e depois esta é monitorada por {{watch}}.",
+    "pinned": "Fixada como alvo de rollback {{ref}}, então a limpeza de images nunca a removerá.",
+    "hidden_one": "{{count}} etapa anterior não é exibida.",
+    "hidden_many": "{{count}} etapas anteriores não são exibidas.",
+    "hidden_other": "{{count}} etapas anteriores não são exibidas.",
+    "empty": "Nenhuma etapa do gate registrada ainda. Elas aparecem quando o novo container inicia.",
+    "unavailable": "A linha do tempo do gate não está disponível para este deploy."
+  },
+  "phase": {
+    "readiness": "Prontidão",
+    "stability": "Janela de estabilidade",
+    "cutover": "Cutover",
+    "drain": "Esvaziamento",
+    "watch": "Monitoramento pós-deploy",
+    "rollback": "Rollback",
+    "pin": "Fixação de rollback"
+  },
+  "stage": {
+    "pending": "Pendente",
+    "gating": "Passando pelo gate",
+    "gate_failed": "Falhou no gate",
+    "watching": "Monitorando",
+    "cleared": "Liberado",
+    "watch_failed": "Monitoramento disparado",
+    "rolled_back": "Rollback feito",
+    "watch_stopped": "Monitoramento parado"
+  },
+  "settings": {
+    "title": "Segurança de deploy",
+    "infoTipLabel": "Sobre a segurança de deploy",
+    "description": "Uma nova versão só recebe tráfego depois que o probe de prontidão passa várias vezes seguidas e ela roda por uma janela estável sem reiniciar nem sofrer OOM kill. A versão anterior continua atendendo as requisições em andamento enquanto é esvaziada. Após o cutover, a versão é monitorada, e um crashloop, um OOM kill ou um pico de 5xx faz o rollback dela.",
+    "inheritHint": "Deixe um campo vazio para usar o padrão da plataforma exibido nele.",
+    "unavailable": "Não foi possível carregar as configurações de segurança de deploy.",
+    "save": "Salvar",
+    "reset": "Usar padrões da plataforma",
+    "on": "ativado",
+    "off": "desativado",
+    "field": {
+      "success_threshold": {
+        "label": "Aprovações de prontidão seguidas",
+        "hint": "Aprovações consecutivas do probe de prontidão antes de o tráfego mudar."
+      },
+      "stable_window": {
+        "label": "Janela de estabilidade",
+        "hint": "Por quanto tempo o novo container deve rodar sem reinício nem OOM kill, ex.: 10s."
+      },
+      "drain_timeout": {
+        "label": "Timeout de esvaziamento",
+        "hint": "Por quanto tempo a versão anterior continua atendendo após o cutover, ex.: 15s."
+      },
+      "watch_window": {
+        "label": "Janela de monitoramento",
+        "hint": "Por quanto tempo uma nova versão é monitorada após o cutover, ex.: 10m."
+      },
+      "watch_latency_ratio": {
+        "label": "Múltiplo da latência p95 que conta como regressão",
+        "hint": "Comparado com a versão anterior. 0 desativa a verificação de latência."
+      },
+      "watch_max_restarts": {
+        "label": "Reinícios que disparam o monitoramento",
+        "hint": "Reinícios do container dentro da janela de monitoramento que contam como crashloop."
+      },
+      "watch_error_rate": {
+        "label": "Proporção de 5xx que dispara o monitoramento (%)",
+        "hint": "Proporção de requisições respondidas com 5xx dentro da janela de monitoramento."
+      },
+      "watch_min_requests": {
+        "label": "Requisições antes de a proporção de 5xx contar",
+        "hint": "Poucas requisições não bastam para julgar uma versão."
+      }
+    },
+    "autoRollback": {
+      "label": "Fazer rollback automaticamente quando o monitoramento disparar",
+      "hint": "Definido para este app.",
+      "inherited": "Seguindo o padrão da plataforma ({{value}})."
+    },
+    "toast": {
+      "saved": "Configurações de segurança de deploy salvas.",
+      "error": "Não foi possível salvar as configurações de segurança de deploy."
+    }
+  },
+  "autoRollback": {
+    "title": "Rollback automático",
+    "infoTipLabel": "Sobre o rollback automático",
+    "description": "Depois que uma versão recebe tráfego, ela é monitorada por uma janela. Um crashloop, um OOM kill ou um pico de 5xx é um sinal forte. Uma regressão de latência p95 em relação à versão anterior é um sinal fraco e nunca faz rollback, a menos que você opte por isso.",
+    "inheritHint": "Deixe um campo vazio para usar o padrão da plataforma exibido nele.",
+    "mode": {
+      "label": "Modo",
+      "default": "Padrão da plataforma ({{value}})",
+      "off": "Desativado: não monitorar",
+      "notify": "Notificar: apenas alertar",
+      "auto": "Automático: alertar e fazer rollback"
+    },
+    "soft": {
+      "label": "Permitir que uma regressão de latência também faça rollback",
+      "hint": "Só vale no modo automático. Caso contrário, uma regressão de latência apenas envia um alerta.",
+      "inherited": "Seguindo o padrão da plataforma ({{value}})."
+    },
+    "save": "Salvar",
+    "reset": "Usar padrões da plataforma",
+    "toast": {
+      "saved": "Configurações de rollback automático salvas.",
+      "error": "Não foi possível salvar as configurações de rollback automático."
+    }
+  },
+  "watch": {
+    "watching": "Monitorando por {{window}} após o cutover, restam {{left}}.",
+    "min": "{{count}} min",
+    "sec": "{{count}} s",
+    "progress": "Progresso do monitoramento pós-deploy",
+    "tripped": "Monitoramento disparado: {{message}} ({{reason}}).",
+    "rolledBack": "Rollback feito automaticamente: {{message}} ({{reason}}).",
+    "stopped": "O monitoramento foi parado antes do fim da janela.",
+    "off": "O monitoramento pós-deploy está desativado para este app.",
+    "notice": "Atenção: {{message}}",
+    "stop": "Parar de monitorar",
+    "stopped_toast": "Monitoramento parado.",
+    "stopError": "Não foi possível parar o monitoramento.",
+    "rollbackNow": "Fazer rollback agora",
+    "rollbackTitle": "Fazer rollback desta versão?",
+    "rollbackDescription": "O tráfego volta para a versão anterior retida.",
+    "rollbackConsequence": "A versão anterior {{ref}} é implantada novamente pelo mesmo gate de prontidão.",
+    "rollbackConfirm": "Fazer rollback",
+    "rollbackPending": "Fazendo rollback",
+    "rollbackToast": "Rollback iniciado.",
+    "rollbackError": "Não foi possível fazer o rollback.",
+    "noTarget": "Ainda não há uma versão anterior retida para o rollback."
+  },
+  "targets": {
+    "title": "Alvos de rollback fixados",
+    "empty": "Nenhuma versão fixada ainda. Uma versão é fixada quando recebe tráfego.",
+    "emptyTitle": "Nenhuma versão fixada",
+    "live": "No ar"
+  },
+  "publishLock": {
+    "lock": "Bloquear publicação",
+    "unlock": "Desbloquear publicação",
+    "bannerTitle": "A publicação está bloqueada",
+    "bannerBody_one": "{{by}} a bloqueou. A versão no ar continua fixada e {{count}} build está retido.",
+    "bannerBody_many": "{{by}} a bloqueou. A versão no ar continua fixada e {{count}} builds estão retidos.",
+    "bannerBody_other": "{{by}} a bloqueou. A versão no ar continua fixada e {{count}} builds estão retidos.",
+    "reason": "Motivo: {{reason}}",
+    "publish": "Publicar",
+    "publishedToast": "Publicado. O build retido está entrando no ar.",
+    "rollbackLock": "Fazer rollback e bloquear",
+    "rollbackLockHint": "Refaz o deploy desta versão e retém todo build posterior",
+    "held": "Retido, fora do ar",
+    "error": "Não foi possível alterar o bloqueio de publicação."
+  },
+  "rolloutState": {
+    "title": "Estado do rollout",
+    "traffic": {
+      "held": "Tráfego retido",
+      "flipped": "Tráfego alternado",
+      "reverted": "Tráfego revertido"
+    },
+    "holdLeft": "A retenção termina em {{time}}",
+    "flipped": "Alternado",
+    "reverted": "Revertido",
+    "gateFailures_one": "{{count}} verificação do gate com falha",
+    "gateFailures_many": "{{count}} verificações do gate com falha",
+    "gateFailures_other": "{{count}} verificações do gate com falha",
+    "canary": "Canary {{weight}}% (estágio {{stage}} de {{total}})",
+    "settings": "Configurações de segurança de deploy"
+  },
+  "explain": {
+    "title": "Por que isto falhou",
+    "loading": "Carregando a explicação da falha",
+    "cause": "Causa:",
+    "hint": "Próximo passo:",
+    "evidence": "Evidências",
+    "lastLogs": "Últimas linhas de log",
+    "rolledBack": "Rollback feito",
+    "verdict": {
+      "failed": "Falhou",
+      "rolled_back": "Rollback feito"
+    }
+  },
+  "freezeBanner": {
+    "title": "Congelamento de deploy ativo",
+    "titleUntil": "Congelamento de deploy ativo até {{when}}",
+    "body": "Um deploy manual agora ignora o congelamento. Diga o motivo; ele é registrado no deploy.",
+    "reasonLabel": "Motivo para ignorar o congelamento",
+    "reasonPlaceholder": "ex.: hotfix para um problema de segurança"
+  },
+  "pullFresh": "Exigir uma consulta nova ao registry: falhar em vez de fazer deploy da image em cache se o registry estiver inacessível."
+}

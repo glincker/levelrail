@@ -1,0 +1,57 @@
+{
+  "rootOnly": "Revisões de acesso e pacotes de evidências estão disponíveis apenas para contas root.",
+  "kind": {
+    "user": "Conta de usuário",
+    "team_member": "Participação em equipe",
+    "api_token": "Token de API",
+    "env_grant": "Concessão de ambiente"
+  },
+  "review": {
+    "title": "Revisões de acesso",
+    "description": "Uma revisão lista cada usuário, participação em equipe, token de API e concessão de ambiente com a data da última atividade. Marque cada linha como manter ou revogar. As revogações são aplicadas quando você conclui a revisão e são gravadas no log de auditoria.",
+    "name": "Nome (opcional)",
+    "dueDays": "Prazo em dias",
+    "repeatDays": "Repetir a cada quantos dias (0 para sob demanda)",
+    "start": "Iniciar revisão",
+    "empty": "Ainda sem revisões de acesso. Inicie uma para registrar quem ainda precisa de acesso.",
+    "due": "Prazo",
+    "overdue": "Atrasada",
+    "open": "Abrir",
+    "hide": "Ocultar",
+    "status": {
+      "open": "Aberta",
+      "completed": "Concluída"
+    },
+    "lastActive": "Última atividade",
+    "never": "nunca",
+    "keep": "Manter",
+    "revoke": "Revogar",
+    "revoked": "Revogado",
+    "progress": "{{decided}} de {{total}} decididos, {{revoke}} a revogar",
+    "complete": "Concluir revisão",
+    "completing": "Aplicando",
+    "confirmTitle": "Concluir esta revisão de acesso?",
+    "confirmDescription": "{{count}} concessão(ões) de acesso será(ão) revogada(s) agora. Isso não pode ser desfeito por aqui.",
+    "completed": "Revisão concluída, {{count}} revogado(s)",
+    "partial": "{{count}} revogação(ões) falhou(aram), a revisão continua aberta"
+  },
+  "packs": {
+    "title": "Pacotes de evidências",
+    "description": "Um arquivo assinado para um intervalo de datas: log de auditoria, revisões de acesso, histórico de backups e testes de restauração, aprovações de deploy, configurações de segurança e inventário de certificados, com um manifesto de hashes SHA-256.",
+    "notCertification": "Um pacote de evidências é um registro para um auditor examinar. Não é uma certificação nem prova de conformidade com nenhum framework.",
+    "from": "De",
+    "to": "Até",
+    "rangeTo": "até",
+    "generate": "Gerar pacote",
+    "empty": "Ainda sem pacotes de evidências.",
+    "status": {
+      "running": "Gerando",
+      "complete": "Pronto",
+      "failed": "Falhou"
+    },
+    "verify": "Verificar",
+    "download": "Baixar",
+    "verifyOk": "O pacote corresponde ao manifesto e à assinatura",
+    "verifyFailed": "O pacote falhou na verificação"
+  }
+}

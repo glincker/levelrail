@@ -1,0 +1,114 @@
+{
+  "explain": {
+    "toggle": "Explicar",
+    "loading": "Carregando a explicação...",
+    "why": "Por que isso importa",
+    "next": "Próximo passo",
+    "fix": "Correção tipada"
+  },
+  "risk": {
+    "safe": "Seguro",
+    "restarts": "Reinicia um serviço",
+    "exposes": "Abre acesso"
+  },
+  "kind": {
+    "auto": "Um clique",
+    "guided": "Exige um passo no servidor",
+    "manual": "Passo manual"
+  },
+  "reversible": "Pode ser desfeito",
+  "irreversible": "Não pode ser desfeito",
+  "willChange": "O que vai mudar",
+  "cli": {
+    "summary": "Corrigir pela CLI",
+    "hint": "Prefere um terminal? Execute isto no servidor e depois use Verificar novamente."
+  },
+  "learnMore": "Saiba mais",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "apply": "Corrigir agora",
+  "applying": "Aplicando...",
+  "recheck": "Verificar novamente",
+  "rechecking": "Verificando...",
+  "confirmTitle": "Aplicar esta correção?",
+  "confirmBody": "{{title}}. Revise primeiro as alterações listadas.",
+  "paramLabel": "Endereço público",
+  "paramPlaceholder": "Endereço IP ou hostname",
+  "triedAt": "Tentado em {{at}}, ainda bloqueado porque {{why}}",
+  "rateLimited": "Aplicada várias vezes na última hora. Aguardando antes de tentar novamente.",
+  "outcome": {
+    "fixed": "Corrigido. A verificação passa agora.",
+    "still_failing": "Ainda falhando: {{detail}}",
+    "cannot_fix_here": "Não pode ser corrigido daqui: {{detail}}",
+    "skipped": "Nada a fazer: {{detail}}"
+  },
+  "settingsHealth": {
+    "title": "Saúde das configurações",
+    "loading": "Verificando esta instância...",
+    "summary": "{{failing}} de {{total}} verificações precisam de atenção",
+    "allGood": "Nada precisa de atenção."
+  },
+  "blockers_one": "{{count}} bloqueio, {{dependent}} dependem dele",
+  "blockers_many": "{{count}} bloqueios, {{dependent}} dependem deles",
+  "blockers_other": "{{count}} bloqueios, {{dependent}} dependem deles",
+  "showDependent": "Mostrar verificações dependentes",
+  "hideDependent": "Ocultar verificações dependentes",
+  "stuck": {
+    "title": "Por que isto não está rodando?",
+    "healthy": "Pronto, nada a explicar.",
+    "notReadyFor": "Não está pronto há {{duration}}",
+    "notReadyYet": "Não está pronto",
+    "timeline": "Linha do tempo das condições",
+    "noCauses": "Nenhuma causa conhecida corresponde ainda. Abra os logs e depois use Verificar novamente.",
+    "confidenceHigh": "Causa provável",
+    "confidenceMedium": "Causa possível",
+    "evidence": "Evidências",
+    "recheck": "Verificar novamente",
+    "retryDeploy": "Tentar o deploy novamente",
+    "retrying": "Tentando novamente...",
+    "retryFailed": "A nova tentativa falhou: {{message}}",
+    "retryStarted": "Deploy iniciado.",
+    "fixApplied": "Correção aplicada.",
+    "fixFailed": "A correção falhou: {{message}}",
+    "loadFailed": "Não foi possível carregar o diagnóstico.",
+    "show": "Mostrar detalhes",
+    "hide": "Ocultar detalhes"
+  },
+  "runtime": {
+    "engine": "Engine",
+    "support": "Suporte",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "Engine desconhecida"
+    },
+    "level": {
+      "supported": "Com suporte",
+      "best-effort": "Melhor esforço",
+      "unverified": "Não verificado"
+    }
+  },
+  "diagnosis": {
+    "title": "Por que isto não está funcionando",
+    "crashloop": "Este app continua travando",
+    "deployFailed": "O último deploy falhou",
+    "noCause": "Nenhuma causa conhecida corresponde ainda. Confira as linhas do log e depois use Verificar novamente.",
+    "openLogs": "Abrir logs",
+    "openDeployLogs": "Ver o log do build",
+    "copy": "Copiar linhas",
+    "copied": "Copiado",
+    "lastLine": "Última linha:",
+    "sectionLog": "Log da falha",
+    "sectionTimeline": "Linha do tempo das condições",
+    "sectionOthers": "Outras causas possíveis ({{count}})",
+    "showing": "Mostrando as últimas {{shown}} de {{total}} linhas.",
+    "linesLabel": "Últimas linhas de log do container com falha",
+    "noLines": "Nenhuma linha de log foi capturada para esta falha.",
+    "openFullLogs": "Abrir logs completos",
+    "crashSummary": "{{count}} reinicializações nos últimos {{minutes}} minutos."
+  }
+}

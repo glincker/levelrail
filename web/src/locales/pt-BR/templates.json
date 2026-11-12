@@ -1,0 +1,401 @@
+{
+  "prefill": {
+    "loading": "Abrindo {{slug}}",
+    "notFoundTitle": "Template não encontrado",
+    "notFoundDescription": "Esta instância não tem um template chamado \"{{slug}}\". Ele pode estar com o nome errado ou ausente do catálogo desta versão.",
+    "errorTitle": "Não foi possível abrir o template",
+    "browse": "Explorar templates"
+  },
+  "description": {
+    "label": "Notas de configuração"
+  },
+  "verified": {
+    "badge": "Verificado",
+    "hint": "Passou no último teste de fumaça ao vivo: iniciou e a verificação de saúde passou.",
+    "filter": "Somente verificados"
+  },
+  "detail": {
+    "back": "Voltar aos templates",
+    "ramRecommended": "~{{size}} de RAM recomendados",
+    "needsGpu": "Requer GPU NVIDIA",
+    "facts": {
+      "title": "Fatos",
+      "images": "Imagens Docker",
+      "docs": "Documentação oficial",
+      "docsLink": "Abrir documentação",
+      "memory": "Memória recomendada",
+      "ports": "Portas expostas",
+      "volumes": "Volumes",
+      "registryLink": "{{image}} em {{registry}}"
+    },
+    "deployed": {
+      "title": "O que será implantado",
+      "description": "Cada serviço abaixo é criado a partir do arquivo compose do template.",
+      "image": "Imagem",
+      "port": "Porta {{port}}",
+      "roleMain": "Serviço principal",
+      "roleSupport": "Serviço de apoio",
+      "dependsOn": "Inicia depois de {{names}}",
+      "loading": "Lendo o template",
+      "unavailable": "O detalhamento dos serviços não está disponível para este template agora. Você ainda pode fazer o deploy."
+    },
+    "env": {
+      "title": "Variáveis de ambiente",
+      "description": "Somente os nomes. Os valores são definidos quando você faz o deploy.",
+      "required": "Você informa",
+      "generated": "Geradas para você",
+      "optional": "Opcional, tem um padrão"
+    },
+    "related": {
+      "title": "Mais em {{category}}"
+    },
+    "deploy": {
+      "title": "Fazer deploy deste template",
+      "now": "Fazer deploy agora",
+      "deploying": "Fazendo deploy...",
+      "configure": "Configurar e fazer deploy",
+      "trial": "O deploy é feito como uma instância de teste. Você pode parar e excluir a qualquer momento na página dela.",
+      "configureHint": "Este template precisa de alguns valores seus antes de poder iniciar."
+    }
+  },
+  "page": {
+    "title": "Templates de serviço",
+    "description": "Apps e bancos de dados prontos. Escolha um para ver o que você recebe antes do deploy.",
+    "new": "Novo a partir de um template"
+  },
+  "marketplace": {
+    "search": {
+      "label": "Buscar templates",
+      "placeholder": "Buscar entre {{count}} templates por nome ou descrição"
+    },
+    "sort": {
+      "label": "Ordenar",
+      "relevance": "Relevância",
+      "name": "Nome, A a Z",
+      "memory": "Mais leves primeiro"
+    },
+    "density": {
+      "label": "Layout",
+      "comfortable": "Cartões",
+      "compact": "Lista"
+    },
+    "count": "{{shown}} de {{total}} templates",
+    "categories": {
+      "label": "Categorias de templates",
+      "filterLabel": "Filtrar templates por categoria",
+      "all": "Todos os templates",
+      "heading": "Categorias"
+    },
+    "featured": {
+      "title": "Kits iniciais",
+      "subtitle": "Stacks de vários serviços que funcionam. Faça o deploy de um e depois troque pelas suas próprias imagens.",
+      "hide": "Ocultar kits iniciais",
+      "show": "Mostrar kits iniciais"
+    },
+    "card": {
+      "deploy": "Deploy",
+      "deployNeedsSetup": "Deploy (requer configuração)",
+      "deploying": "Fazendo deploy...",
+      "ram": "~{{size}} de RAM",
+      "ramLabel": "Memória recomendada {{size}}",
+      "services": "{{count}} serviços",
+      "gpu": "GPU necessária",
+      "details": "Ver {{name}}",
+      "database": "Requer banco de dados",
+      "volume": "Mantém dados"
+    },
+    "empty": {
+      "title": "Nenhum template corresponde",
+      "filtered": "Nada em {{category}} corresponde a \"{{query}}\". Tente uma busca mais curta ou outra categoria.",
+      "filteredNoQuery": "Ainda não há templates em {{category}}.",
+      "clear": "Limpar filtros",
+      "catalogTitle": "O catálogo está vazio",
+      "catalogDescription": "Nenhum template está disponível agora. Você pode iniciar um novo serviço do zero."
+    }
+  },
+  "requirements": {
+    "title": "O que isto precisa e o que o Levelrail adiciona",
+    "level": {
+      "standard": "Padrão",
+      "review": "Revisão",
+      "elevated": "Acesso elevado"
+    },
+    "needsTitle": "O que isto precisa",
+    "needsNone": "Nada além de um container padrão.",
+    "addsTitle": "O que o Levelrail adiciona",
+    "showAll": "Mostrar detalhes",
+    "hideAll": "Ocultar detalhes",
+    "services": "Serviços: {{services}}",
+    "elevatedWarning": "Este template pede acesso elevado ao host. O Levelrail nunca o concede automaticamente.",
+    "acknowledge": "Entendo e aceito o acesso elevado listado acima",
+    "acknowledgeRequired": "Confirme o acesso elevado para fazer o deploy.",
+    "finding": {
+      "privileged": "Roda em modo privilegiado, o que dá ao container acesso quase root ao host",
+      "docker_socket": "Monta o socket do Docker, o que equivale a root no host",
+      "host_network": "Usa a rede do host e ignora a rede do app e o ingress",
+      "host_namespace": "Compartilha um namespace de processo, IPC ou usuário do host",
+      "cap_add": "Adiciona capabilities extras do Linux",
+      "devices": "Passa dispositivos do host para o container",
+      "security_opt": "Altera as opções de segurança do container",
+      "host_mount": "Monta um diretório do host",
+      "unpinned_image": "A imagem não está fixada em uma tag de versão, então um novo deploy pode puxar código diferente",
+      "published_ports": "Publica portas diretamente no host",
+      "required_secrets": "Você precisa informar um ou mais segredos antes que o deploy seja possível",
+      "generated_secrets": "Senhas e chaves são geradas no momento do deploy",
+      "no_healthcheck": "Sem verificação de saúde, então o deploy é avaliado apenas pelo início do processo",
+      "persistent_data": "Armazena dados em volumes nomeados",
+      "gpu": "Reserva uma GPU NVIDIA",
+      "unparsed": "Não foi possível analisar o corpo do Compose. Revise-o antes de fazer o deploy"
+    },
+    "protection": {
+      "https_ingress": "HTTPS automático e um escudo de ingress na frente de cada domínio",
+      "secret_masking": "Segredos são gerados, armazenados criptografados e mascarados nos logs e na interface",
+      "volume_backups": "Volumes nomeados podem ter backup e ser restaurados",
+      "health_gated_deploy": "Os deploys dependem da verificação de saúde antes de o tráfego mudar",
+      "rollback": "Rollback em um passo para a revisão anterior",
+      "exposure_report": "O relatório de exposição mostra o que é acessível de fora",
+      "firewall": "Regras de firewall do host gerenciadas para as portas publicadas"
+    }
+  },
+  "banner": {
+    "description": "Escolha no catálogo, defina alguns valores e o app roda no seu próprio servidor.",
+    "diagram": {
+      "catalog": "catálogo",
+      "oneClick": "um clique",
+      "server": "seu servidor"
+    }
+  },
+  "what": {
+    "title": "O que você vai receber",
+    "description_one": "Um serviço, pronto para rodar.",
+    "description_many": "{{count}} serviços, prontos para rodar juntos.",
+    "description_other": "{{count}} serviços, prontos para rodar juntos.",
+    "url": "Endereço web",
+    "urlValue": "{{slug}}.<domínio do seu servidor>",
+    "ports": "Portas",
+    "portsNone": "Sem porta web",
+    "resources": "Memória e CPU",
+    "memory": "Cerca de {{size}} de memória",
+    "memoryNone": "Nenhum limite de memória definido",
+    "cpu": "Limite de {{count}} CPU",
+    "cpuShared": "CPU compartilhada",
+    "volumes": "Armazenamento",
+    "volumesNone": "Sem armazenamento persistente",
+    "dependencies": "Dependências",
+    "databaseCreated": "Um banco de dados {{engines}} é criado para você",
+    "dependenciesNone": "Nenhuma, roda sozinho",
+    "backups": "Backups",
+    "backupsVolumes": "O armazenamento pode ter backup e ser restaurado na página Backups",
+    "backupsNone": "Nada para fazer backup"
+  },
+  "form": {
+    "title": "Configurar e fazer deploy",
+    "descriptionRequired": "Preencha os valores obrigatórios e faça o deploy. Todo o resto tem um padrão sensato.",
+    "descriptionNone": "Nada é obrigatório. Faça o deploy agora ou ajuste antes as configurações opcionais.",
+    "generated": {
+      "title": "Gerados para você",
+      "placeholder": "Criado quando você faz o deploy",
+      "reveal": "Revelar",
+      "hide": "Ocultar",
+      "regenerate": "Gerar de novo",
+      "hint": "Armazenado criptografado e reutilizado em todo novo deploy."
+    },
+    "domain": {
+      "title": "Endereço",
+      "auto": "Endereço automático",
+      "custom": "Usar meu próprio domínio",
+      "autoHint": "Você recebe na hora um endereço HTTPS funcionando. Adicione seu próprio domínio depois, se quiser.",
+      "customHint": "Aponte o DNS dele para este servidor e o HTTPS é configurado para você.",
+      "none": "Este template não tem um endereço web para configurar.",
+      "label": "Domínio de {{service}} (porta {{port}})",
+      "placeholder": "app.example.com",
+      "hint": "Opcional. Deixe vazio para usar o endereço automático."
+    },
+    "optional": {
+      "title": "Configurações opcionais",
+      "count_one": "({{count}} configuração)",
+      "count_many": "({{count}} configurações)",
+      "count_other": "({{count}} configurações)"
+    },
+    "name": {
+      "label": "Nome do app",
+      "hint": "Letras minúsculas, dígitos e hifens. Deixe vazio e escolhemos um."
+    },
+    "errors": {
+      "required": "{{field}} é obrigatório",
+      "name": "Use letras minúsculas, dígitos e hifens, começando com uma letra.",
+      "domain": "Informe um domínio válido como app.example.com.",
+      "summary_one": "Corrija {{count}} campo para continuar.",
+      "summary_many": "Corrija {{count}} campos para continuar.",
+      "summary_other": "Corrija {{count}} campos para continuar."
+    },
+    "summary": "{{name}} vai rodar como {{app}} em {{address}}. {{generated}} segredos são gerados para você.",
+    "summaryAuto": "um endereço automático",
+    "deploy": "Fazer deploy",
+    "deploying": "Fazendo deploy...",
+    "success": "Deploy de {{app}} feito",
+    "file": {
+      "secret": "Arquivo de segredo",
+      "mount": "Montado em {{service}} em {{path}}",
+      "mode": "Modo {{mode}}"
+    }
+  },
+  "card": {
+    "ramRecommended": "~{{size}} de RAM recomendados",
+    "needsGpu": "Requer GPU NVIDIA",
+    "deployNow": "Fazer deploy agora",
+    "deployNowSetup": "Fazer deploy agora (requer configuração)",
+    "deploying": "Fazendo deploy...",
+    "searchPlaceholder": "Buscar templates...",
+    "searchLabel": "Buscar templates",
+    "noMatch": "Nenhum template corresponde a \"{{search}}\"."
+  },
+  "install": {
+    "title": "O que isto instala",
+    "description_one": "Um serviço será criado.",
+    "description_many": "{{count}} serviços serão criados.",
+    "description_other": "{{count}} serviços serão criados.",
+    "volumes": "Volumes",
+    "env": "Variáveis de ambiente",
+    "pin": {
+      "digest": "Fixada por digest",
+      "tag": "Tag de versão",
+      "floating": "Tag flutuante"
+    },
+    "envKind": {
+      "generated": "gerada",
+      "required": "você informa",
+      "optional": "opcional"
+    }
+  },
+  "trust": {
+    "digest_one": "{{count}} imagem fixada por digest",
+    "digest_many": "{{count}} imagens fixadas por digest",
+    "digest_other": "{{count}} imagens fixadas por digest",
+    "digestHint": "O conteúdo exato da imagem é fixo",
+    "tag_one": "{{count}} imagem em uma tag de versão",
+    "tag_many": "{{count}} imagens em uma tag de versão",
+    "tag_other": "{{count}} imagens em uma tag de versão",
+    "tagHint": "Uma tag de versão ainda pode ser reenviada na origem",
+    "floating_one": "{{count}} imagem em uma tag flutuante",
+    "floating_many": "{{count}} imagens em uma tag flutuante",
+    "floating_other": "{{count}} imagens em uma tag flutuante",
+    "floatingHint": "A tag latest ou nenhuma tag. A imagem pode mudar entre deploys"
+  },
+  "stackFile": {
+    "title": "Ver como arquivo de stack",
+    "preview": "Prévia do arquivo compose que este template implanta",
+    "download": "Baixar",
+    "label": "Arquivo compose do template"
+  },
+  "result": {
+    "title": "Deploy de {{name}} em andamento",
+    "deployFailed": "O deploy falhou",
+    "address": "Endereço",
+    "addressPending": "O endereço aparece quando o app estiver rodando.",
+    "credentials": "Credenciais geradas",
+    "credentialsHint": "Criadas para este app. Exibidas somente quando você pede e depois ocultadas de novo.",
+    "noCredentials": "Este template não gerou credenciais.",
+    "reveal": "Revelar {{key}}",
+    "hide": "Ocultar {{key}}",
+    "copy": "Copiar {{key}}",
+    "copied": "Copiado",
+    "hidesIn": "Oculta em {{seconds}}s",
+    "revealDenied": "Revelar valores exige acesso de proprietário ou administrador, ou está desativado para este app.",
+    "openEnvironment": "Abrir Ambiente",
+    "nextSteps": "Próximos passos",
+    "openApp": "Abrir app",
+    "viewLogs": "Ver logs",
+    "close": "Fechar",
+    "accessDetails": "Detalhes de acesso",
+    "toastDeployed": "Deploy de \"{{name}}\" feito",
+    "toastRunning_one": "{{count}} serviço rodando agora.",
+    "toastRunning_many": "{{count}} serviços rodando agora.",
+    "toastRunning_other": "{{count}} serviços rodando agora.",
+    "services_one": "{{count}} serviço iniciando",
+    "services_many": "{{count}} serviços iniciando",
+    "services_other": "{{count}} serviços iniciando"
+  },
+  "access": {
+    "title": "Detalhes de acesso",
+    "description": "Endereço, logins gerados e notas de configuração deste app.",
+    "open": "Abrir detalhes de acesso"
+  },
+  "wizard": {
+    "deployedUnder_one": "{{count}} serviço implantado em \"{{app}}\".",
+    "deployedUnder_many": "{{count}} serviços implantados em \"{{app}}\".",
+    "deployedUnder_other": "{{count}} serviços implantados em \"{{app}}\".",
+    "created": "Criado",
+    "view": "Ver",
+    "done": "Concluído",
+    "back": "Voltar aos templates",
+    "ramRecommended": "RAM recomendada",
+    "documentation": "Documentação",
+    "name": "Nome",
+    "namePlaceholder": "ex.: meu-stack",
+    "nameHint": "Agrupa todos os serviços que este template define sob um único nome de app.",
+    "composeHint": "Preenchido a partir do template. Edite antes do deploy se precisar.",
+    "deploying": "Fazendo deploy...",
+    "deploy": "Fazer deploy"
+  },
+  "facts": {
+    "license": {
+      "title": "Licença: {{spdx}}",
+      "classes": {
+        "permissive": "Licença permissiva",
+        "copyleft": "Licença copyleft",
+        "network-copyleft": "Licença copyleft de rede",
+        "source-available": "Código-fonte disponível",
+        "proprietary": "Proprietária"
+      }
+    },
+    "verifiedOn": "Verificado em {{arches}} com a tag de imagem {{tag}}",
+    "deprecated": "Obsoleto",
+    "yanked": "Retirado",
+    "useInstead": "Use {{id}} no lugar",
+    "filter": {
+      "license": "Classe de licença",
+      "anyLicense": "Qualquer licença",
+      "arch": "Arquitetura",
+      "anyArch": "Qualquer arquitetura"
+    },
+    "preview": {
+      "badge": "Prévia",
+      "hint": "Ainda não testado em uma execução real do engine. Ele ainda instala; avise-nos se houver problemas."
+    }
+  },
+  "importTemplate": {
+    "button": "Importar compose",
+    "title": "Importar um template",
+    "description": "Cole ou carregue um arquivo compose para salvá-lo como seu próprio template. Nada é implantado.",
+    "idLabel": "ID do template",
+    "nameLabel": "Nome",
+    "descriptionLabel": "Descrição (opcional)",
+    "fileLabel": "Carregar um arquivo compose",
+    "composeLabel": "Arquivo Compose",
+    "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
+    "variablesLabel": "Variáveis (opcional, separadas por vírgula)",
+    "variablesPlaceholder": "DB_PASSWORD, API_KEY",
+    "cancel": "Cancelar",
+    "submit": "Importar template",
+    "submitting": "Importando...",
+    "tooLarge": "Esse arquivo é grande demais para um template.",
+    "success": "\"{{name}}\" importado como template.",
+    "idInvalid": "Use de 2 a 63 letras minúsculas, dígitos ou hifens.",
+    "nameRequired": "O nome é obrigatório.",
+    "composeRequired": "Um arquivo compose é obrigatório.",
+    "variablesInvalid": "As variáveis devem ser nomes em MAIÚSCULAS."
+  },
+  "capabilities": {
+    "title": "Acesso declarado",
+    "tier": {
+      "review": "Revisão",
+      "elevated": "Elevado",
+      "privileged": "Privilegiado"
+    },
+    "class": {
+      "cap_add": "Adiciona capabilities do Linux a um container.",
+      "net_admin": "Pode alterar configurações de rede dentro do container."
+    }
+  }
+}

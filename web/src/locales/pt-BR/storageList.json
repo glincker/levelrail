@@ -1,0 +1,62 @@
+{
+  "viewLabel": "Agrupar a lista",
+  "view": { "type": "Por tipo", "app": "Por app" },
+  "search": "Buscar por nome ou id",
+  "searchLabel": "Buscar itens",
+  "clearFilter": "Mostrar todas as categorias",
+  "filterActive": "Mostrando apenas {{category}}",
+  "category": {
+    "appData": "Dados de apps",
+    "images": "Imagens",
+    "buildCache": "Cache de build",
+    "containersLogs": "Containers e logs",
+    "other": "Outros"
+  },
+  "kind": {
+    "image": "Imagens",
+    "volume": "Volumes",
+    "container": "Containers parados",
+    "buildCache": "Cache de build"
+  },
+  "kindOne": {
+    "image": "Imagem",
+    "volume": "Volume",
+    "container": "Container",
+    "buildCache": "Cache de build"
+  },
+  "cols": {
+    "name": "Nome",
+    "size": "Tamanho",
+    "app": "App dono",
+    "type": "Tipo",
+    "reason": "Motivo"
+  },
+  "sortBy": "Ordenar por {{column}}",
+  "noApp": "Sem app",
+  "sizeUnknown": "Não medido",
+  "group": {
+    "total": "{{size}} no total",
+    "count_one": "{{count}} {{kind}}",
+    "count_many": "{{count}} {{kind}}",
+    "count_other": "{{count}} {{kind}}",
+    "lastDeployed": "Último deploy"
+  },
+  "reason": {
+    "none": "Nenhum",
+    "orphaned": "Órfão: nenhum app possui este volume",
+    "inUse": "Em uso",
+    "inUseBy": "Em uso por {{app}}",
+    "unused": "Não está em uso",
+    "stopped": "Container parado",
+    "databaseProtected": "Contém um banco de dados, nunca é removido",
+    "buildCache": "Refeito no próximo build"
+  },
+  "protected": "Protegido",
+  "loading": "Lendo o que está no disco",
+  "error": "Não foi possível ler o inventário de armazenamento.",
+  "retry": "Tentar novamente",
+  "empty": "Nada para mostrar aqui.",
+  "emptyFiltered": "Nenhum item corresponde.",
+  "unsupportedTitle": "Este node ainda não é suportado",
+  "unsupportedFallback": "O Levelrail ainda não consegue listar itens neste node. Nada aqui é alterado."
+}

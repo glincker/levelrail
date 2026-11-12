@@ -1,0 +1,60 @@
+{
+  "failing": {
+    "fallback": "Precisa de atenção, abra o app para ver o motivo.",
+    "fix": "Ver deploys",
+    "fixLabel": "Ver deploys de {{name}}"
+  },
+  "logs": {
+    "noContainer": "Nenhum container está em execução para este app, então não há nada para transmitir.",
+    "deploy": "Fazer deploy"
+  },
+  "bulkBar": {
+    "region": "Ações em massa",
+    "selected": "{{count}} selecionados",
+    "clear": "Limpar seleção",
+    "more": "Mais ações",
+    "review": "Revisar",
+    "readOnly": "Sua conta é somente leitura, então as ações em massa estão desativadas.",
+    "reviewTitle": "{{action}} {{count}} apps",
+    "reviewDescription": "Cada app é verificado de acordo com suas permissões. Os apps em que você não pode agir aparecem como negados e são deixados como estão.",
+    "resultsTitle": "{{action}}: resultados",
+    "resultsLabel": "Resultados por app",
+    "summary": "{{ok}} concluídos, {{failed}} não aplicados",
+    "typeCount": "Digite {{count}} para confirmar",
+    "checking": "Verificando alvos",
+    "working": "Trabalhando",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "confirm": "{{action}} {{count}}",
+    "warning": {
+      "stop": "Isso para {{count}} apps até você iniciá-los novamente.",
+      "delete": "Isso exclui permanentemente {{count}} apps. Cada exclusão é registrada no log de auditoria."
+    },
+    "action": {
+      "restart": "Reiniciar",
+      "redeploy": "Refazer deploy",
+      "stop": "Parar",
+      "start": "Iniciar",
+      "add-tag": "Adicionar tag",
+      "remove-tag": "Remover tag",
+      "set-environment": "Definir ambiente",
+      "move-to-project": "Mover para projeto",
+      "delete": "Excluir"
+    },
+    "value": {
+      "add-tag": "Tag (chave ou chave:valor)",
+      "remove-tag": "Tag a remover",
+      "set-environment": "Nome ou ID do ambiente",
+      "move-to-project": "ID do projeto"
+    },
+    "status": {
+      "ok": "Concluído",
+      "would_apply": "Será aplicado",
+      "denied": "Negado",
+      "not_found": "Não encontrado",
+      "skipped": "Ignorado",
+      "error": "Falhou"
+    }
+  },
+  "description": "Descrição: {{text}}"
+}

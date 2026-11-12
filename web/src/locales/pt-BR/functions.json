@@ -1,0 +1,361 @@
+{
+  "title": "Functions",
+  "description": "Pequenos handlers que não custam nada quando ociosos. Uma function dorme após um período sem uso e a próxima requisição a acorda e espera pela resposta.",
+  "triggers": {
+    "title": "Gatilhos",
+    "pick": "Function",
+    "error": "Não foi possível carregar os gatilhos: {{message}}",
+    "queue": "Fila assíncrona: {{queued}} aguardando, {{running}} em execução, {{dead}} em dead letter.",
+    "webhook": {
+      "title": "Webhook assinado",
+      "path": "Caminho para o qual o webhook encaminha",
+      "enable": "Ativar webhook",
+      "disable": "Desligar",
+      "rotate": "Rotacionar segredo",
+      "on": "As chamadas entram na fila e são encaminhadas para {{path}}. Assinaturas com mais de {{seconds}} segundos são rejeitadas.",
+      "secretOnce": "Segredo de assinatura. Ele é exibido uma vez, copie agora.",
+      "signing": "Envie X-Signature-Timestamp (segundos unix) e X-Signature: sha256=HMAC-SHA256(secret, timestamp + dot + body)."
+    },
+    "schedules": {
+      "title": "Agendamentos",
+      "none": "Nenhum job HTTP agendado chama esta function.",
+      "manage": "Gerencie os agendamentos na aba Jobs do app"
+    },
+    "dead": {
+      "title": "Dead letters",
+      "description": "Chamadas assíncronas que esgotaram as tentativas. Tentar novamente a devolve à fila.",
+      "empty": "Nenhuma chamada em dead letter.",
+      "error": "Não foi possível carregar as dead letters: {{message}}",
+      "detail": "{{attempts}} de {{max}} tentativas, HTTP {{code}} {{error}}",
+      "retry": "Tentar novamente",
+      "discard": "Descartar"
+    }
+  },
+  "window": {
+    "label": "Janela de estatísticas",
+    "1h": "Última hora",
+    "24h": "Últimas 24 horas",
+    "7d": "Últimos 7 dias"
+  },
+  "list": {
+    "name": "Function",
+    "state": "Estado",
+    "calls": "Chamadas",
+    "p95": "Duração p95",
+    "errors": "Erros do servidor",
+    "idle": "Dorme após",
+    "idleValue": "{{minutes}} min",
+    "asleep": "Dormindo",
+    "awake": "Ativa",
+    "visit": "Abrir URL",
+    "error": "Não foi possível carregar as functions: {{message}}",
+    "retry": "Tentar novamente"
+  },
+  "empty": {
+    "title": "Nenhuma function ainda",
+    "body": "Escolha um runtime abaixo, envie o handler para um repositório e faça o deploy. Ele ganha uma URL ativa que acorda sob demanda."
+  },
+  "deploy": {
+    "open": "Fazer deploy de function",
+    "title": "Fazer deploy de uma function",
+    "description": "Escolha o que rodar, aponte para o código e entre no ar. Cada etapa tem um padrão sensato.",
+    "cancel": "Cancelar",
+    "back": "Voltar",
+    "next": "Continuar",
+    "submit": "Fazer deploy",
+    "submitting": "Fazendo deploy",
+    "stepLabel": "Etapa {{current}} de {{total}}",
+    "steps": {
+      "template": "O que rodar",
+      "source": "Onde está o código",
+      "details": "Detalhes"
+    },
+    "started": "Build iniciado para {{name}}. Ela entra no ar quando o build terminar.",
+    "failed": "Não foi possível fazer o deploy de {{name}}: {{message}}",
+    "template": {
+      "heading": "O que você quer rodar?",
+      "groupStarters": "Handlers iniciais",
+      "groupIdeas": "Ideias para começar",
+      "groupOwn": "Traga o seu"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "Um pequeno handler HTTP em Go, rápido para iniciar."
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "Um handler de dez linhas em Node.js."
+      },
+      "python": {
+        "title": "Python",
+        "body": "Um pequeno handler em Python."
+      },
+      "webhook": {
+        "title": "Receptor de webhook",
+        "body": "Aceite eventos de outros serviços e reaja a eles."
+      },
+      "scheduled": {
+        "title": "Executor de jobs agendados",
+        "body": "Execute uma tarefa sempre que um agendamento a chamar."
+      },
+      "form": {
+        "title": "Formulário para e-mail",
+        "body": "Transforme o envio de um formulário em um e-mail."
+      },
+      "shortener": {
+        "title": "Encurtador de URL",
+        "body": "Mapeie caminhos curtos para links longos."
+      },
+      "chatbot": {
+        "title": "Chat bot",
+        "body": "Responda mensagens de plataformas de chat."
+      },
+      "repo": {
+        "title": "Usar meu próprio repositório",
+        "body": "Faça o deploy de um handler que você já tem no git."
+      },
+      "image": {
+        "title": "Usar uma imagem de container",
+        "body": "Rode uma imagem pronta de um registry."
+      }
+    },
+    "source": {
+      "headingRepo": "Onde está o código?",
+      "headingImage": "Qual imagem de container?",
+      "starterTitle": "Código inicial para começar",
+      "starterBody": "Copie estes arquivos para um novo repositório e envie. Depois escolha esse repositório abaixo.",
+      "utilityBody": "Um handler completo e testado. Copie os arquivos para um novo repositório e envie, depois escolha esse repositório abaixo.",
+      "utilityEnv": "Variáveis de ambiente que ele lê",
+      "utilityRequired": "obrigatória",
+      "utilityKv": "Usa o armazenamento chave-valor: depois do deploy, abra a aba Armazenamento chave-valor da function e ative-o.",
+      "utilityCli": "Ou pelo terminal",
+      "search": "Buscar seus repositórios",
+      "loading": "Carregando repositórios",
+      "recent": "Atualizados mais recentemente primeiro",
+      "noRepos": "Nenhum repositório encontrado. Conecte um provedor git em Configurações ou cole uma URL.",
+      "reposError": "Não foi possível carregar os repositórios: {{message}}",
+      "pasteInstead": "Colar uma URL",
+      "pickInstead": "Escolher entre meus repositórios",
+      "repoUrl": "URL do repositório",
+      "repoUrlPlaceholder": "https://github.com/voce/hello",
+      "ref": "Branch",
+      "refHint": "O padrão é o branch principal do repositório.",
+      "directory": "Diretório do handler",
+      "directoryHint": "Deixe vazio quando o handler estiver na raiz do repositório.",
+      "detected": "{{framework}} detectado. O Railpack vai fazer o build.",
+      "detecting": "Verificando o repositório",
+      "image": "Imagem",
+      "imagePlaceholder": "ghcr.io/voce/hello:1.0",
+      "imageHint": "Inclua uma tag como :1.0. Sem ela, a tag latest é usada.",
+      "private": "Privado"
+    },
+    "details": {
+      "name": "Nome",
+      "nameHint": "Letras minúsculas, números e hifens. Ele passa a fazer parte da URL.",
+      "nameChecking": "Verificando disponibilidade",
+      "nameFree": "{{name}} está disponível.",
+      "idle": "Dormir após",
+      "idleOption": {
+        "5": "5 minutos",
+        "10": "10 minutos",
+        "60": "1 hora",
+        "1440": "1 dia",
+        "custom": "Personalizado"
+      },
+      "customIdle": "Minutos",
+      "idleHint": "Uma function sem uso dorme para economizar recursos. A próxima requisição a acorda, o que adiciona um pequeno atraso chamado cold start.",
+      "route": "Servir em um caminho (opcional)",
+      "routeHint": "Também responde em um dos seus domínios, por exemplo example.com/hello.",
+      "routeDomain": "Domínio",
+      "routeNone": "Não adicionar um caminho",
+      "routePath": "Caminho",
+      "previewFunction": "URL da function",
+      "previewRoute": "URL do caminho",
+      "previewPending": "Atribuída quando o build terminar",
+      "advanced": "Configurações avançadas",
+      "port": "Porta",
+      "portHint": "A porta em que o seu handler escuta. Ele a recebe na variável PORT."
+    },
+    "summary": {
+      "title": "Pronto para o deploy",
+      "buildRailpack": "fazer o build com Railpack",
+      "buildImage": "rodar a imagem como está",
+      "text": "Isto vai {{build}}, dormir após {{sleep}} e ficar acessível em {{url}}.",
+      "sleepMinutes": "{{count}} minutos",
+      "sleepHour": "1 hora",
+      "sleepDay": "1 dia",
+      "urlPending": "uma URL atribuída quando o build terminar"
+    },
+    "result": {
+      "title": "Fazendo deploy de {{name}}",
+      "building": "Fazendo o build e iniciando sua function. Isso costuma levar um ou dois minutos.",
+      "live": "{{name}} está no ar.",
+      "failed": "O build falhou. Abra a function para ler o log do build.",
+      "urlLabel": "URL da function",
+      "waitingUrl": "A URL aparece aqui assim que estiver pronta.",
+      "copy": "Copiar URL",
+      "copied": "Copiado",
+      "open": "Abrir function",
+      "done": "Fechar"
+    },
+    "validation": {
+      "repoRequired": "Escolha um repositório ou cole a URL dele.",
+      "repoInvalid": "Informe uma URL completa que comece com https://.",
+      "imageRequired": "Informe a imagem a rodar.",
+      "imageInvalid": "Nomes de imagem não podem conter espaços.",
+      "nameRequired": "Dê um nome à function.",
+      "nameInvalid": "Use letras minúsculas, números e hifens, começando e terminando com uma letra ou número.",
+      "nameTooLong": "Mantenha o nome curto o bastante para caber em uma URL.",
+      "nameTaken": "Esse nome já é usado por outro app. Escolha outro.",
+      "portInvalid": "Informe uma porta entre 1 e 65535.",
+      "idleInvalid": "Informe um número inteiro de minutos, pelo menos o mínimo permitido.",
+      "domainRequired": "Escolha um domínio para o caminho.",
+      "pathInvalid": "Use um caminho como /hello com letras, números, hifens ou pontos."
+    },
+    "name": "Nome",
+    "repo": "URL do repositório",
+    "ref": "Branch, tag ou commit",
+    "directory": "Diretório do handler (opcional)",
+    "directoryHint": "Deixe vazio quando o handler estiver na raiz do repositório.",
+    "routeDomain": "Servir também no domínio",
+    "routePath": "Prefixo do caminho",
+    "routeHint": "Opcional. Um domínio já associado a um app, mais um caminho como /hello, serve esta function em dominio/hello. O prefixo é removido antes de a requisição chegar ao handler.",
+    "port": "Porta",
+    "idle": "Dormir após minutos de ociosidade"
+  },
+  "templates": {
+    "title": "Handlers iniciais",
+    "description": "Cada inicial é um handler completo de cerca de dez linhas. O Railpack faz o build sem Dockerfile e ele escuta na variável PORT.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "cliLabel": "Ou pelo terminal",
+    "error": "Não foi possível carregar os handlers iniciais: {{message}}"
+  },
+  "kv": {
+    "loading": "Carregando chaves",
+    "error": "Não foi possível carregar o armazenamento chave-valor: {{message}}",
+    "usage": "{{keys}} de {{maxKeys}} chaves, {{bytes}} de {{maxBytes}} bytes usados",
+    "disabled": "O armazenamento está desligado para esta function. Ative-o para dar à function KV_URL e KV_TOKEN; ela reinicia com eles.",
+    "enable": "Ativar armazenamento",
+    "rotate": "Rotacionar token",
+    "tokenIssued": "Token emitido. A function reinicia com o novo KV_TOKEN.",
+    "add": "Adicionar chave",
+    "empty": "Nenhuma chave ainda.",
+    "prefixLabel": "Filtrar por prefixo",
+    "keyLabel": "Chave",
+    "valueLabel": "Valor",
+    "ttlLabel": "Expira após (segundos)",
+    "ttlPlaceholder": "Nunca",
+    "save": "Salvar chave",
+    "saved": "Chave salva",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "deleteTitle": "Excluir {{key}}?",
+    "deleteBody": "A function perde este valor imediatamente.",
+    "loadFailed": "Não foi possível carregar o valor",
+    "binary": "(binário)",
+    "never": "Nunca",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "Chave",
+      "value": "Valor",
+      "size": "Tamanho",
+      "expires": "Expira",
+      "actions": "Ações"
+    }
+  },
+  "detail": {
+    "back": "Todas as functions",
+    "notFound": "Esta function não foi encontrada. Ela pode ter sido excluída ou ter parado de dormir.",
+    "seconds": "{{count}} s",
+    "tabs": {
+      "overview": "Visão geral",
+      "settings": "Configurações",
+      "environment": "Ambiente e segredos",
+      "versions": "Versões",
+      "kv": "Armazenamento chave-valor"
+    },
+    "overview": {
+      "title": "Status",
+      "image": "Imagem",
+      "openApp": "Abrir como app"
+    },
+    "settings": {
+      "port": "Porta",
+      "timeout": "Timeout da requisição (segundos)",
+      "concurrency": "Concorrência máxima",
+      "limitsTitle": "Limites de requisição",
+      "limitsHelp": "Valem enquanto uma requisição espera uma function adormecida iniciar. 0 usa o padrão do servidor. Uma requisição acima do limite de concorrência recebe um 429 com Retry-After.",
+      "timeoutHelp": "Maior espera por um cold start, no máximo {{max}} s. Agora {{effective}} s (0 significa o padrão adaptativo).",
+      "concurrencyHelp": "Requisições seguradas ao mesmo tempo, no máximo {{max}}. Agora {{effective}} (0 significa sem limite).",
+      "save": "Salvar limites",
+      "saved": "Limites salvos",
+      "saveFailed": "Não foi possível salvar os limites"
+    },
+    "versions": {
+      "title": "Versões",
+      "help": "Faça rollback para um deploy anterior ou fixe-o: fixar faz o rollback e trava a publicação, então novos builds ficam retidos até você destravar.",
+      "empty": "Nenhum deploy ainda.",
+      "live": "No ar",
+      "rollback": "Fazer rollback",
+      "pin": "Fixar esta versão",
+      "done": "Mudança de versão iniciada",
+      "failed": "A mudança de versão falhou"
+    }
+  },
+  "observe": {
+    "title": "Chamadas e console de teste",
+    "pick": "Function",
+    "tabCalls": "Chamadas recentes",
+    "tabTest": "Console de teste",
+    "time": "Hora",
+    "request": "Requisição",
+    "status": "Status",
+    "duration": "Duração",
+    "cold": "Cold start",
+    "coldYes": "Cold start",
+    "coldNo": "Quente",
+    "sizes": "Entrada / saída",
+    "logs": "Logs",
+    "openLogs": "Logs",
+    "replay": "Reproduzir",
+    "replayed": "Reproduzida, respondeu {{status}}",
+    "replayFailed": "A reprodução falhou: {{message}}",
+    "loadError": "Não foi possível carregar as chamadas: {{message}}",
+    "emptyTitle": "Nenhuma chamada registrada ainda",
+    "emptyBody": "As chamadas aparecem aqui enquanto o plano de controle as mantém na memória. Envie uma pelo console de teste.",
+    "tableLabel": "Chamadas recentes de {{name}}",
+    "captureLabel": "Manter a entrada das chamadas de teste para poder reproduzi-las",
+    "captureHint": "Desligado por padrão. Somente chamadas enviadas pelo console de teste ou pela CLI são mantidas, nunca outro tráfego. Headers de credenciais são descartados."
+  },
+  "console": {
+    "method": "Método",
+    "path": "Caminho",
+    "headers": "Headers",
+    "headersPlaceholder": "Nome: valor, um por linha",
+    "body": "Corpo",
+    "bodyPlaceholder": "JSON ou texto simples",
+    "send": "Enviar",
+    "sending": "Enviando",
+    "wakeHint": "Se a function estiver dormindo, isto espera que ela acorde primeiro.",
+    "failed": "A chamada falhou: {{message}}",
+    "result": "Resposta",
+    "warm": "Quente",
+    "stored": "Entrada armazenada para reprodução",
+    "truncated": "O corpo foi cortado no limite de tamanho."
+  },
+  "banner": {
+    "title": "Functions",
+    "description": "Pequenos handlers que não custam nada quando ociosos. Eles dormem após um período sem uso e acordam na próxima requisição.",
+    "diagram": {
+      "browser": "navegador",
+      "request": "requisição",
+      "function": "function",
+      "response": "resposta",
+      "coldStart": "cold start de cerca de 1s",
+      "sleeps": "dorme quando ocioso"
+    }
+  }
+}

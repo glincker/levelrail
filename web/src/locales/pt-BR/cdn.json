@@ -1,0 +1,301 @@
+{
+  "retry": "Tentar novamente",
+  "nav": {
+    "label": "Seções de CDN",
+    "overview": "Visão geral",
+    "caches": "Caches",
+    "redirects": "Redirecionamentos",
+    "routing": "Regras de roteamento"
+  },
+  "window": {
+    "label": "Intervalo de tempo",
+    "5m": "5 minutos",
+    "1h": "1 hora",
+    "24h": "24 horas"
+  },
+  "overview": {
+    "title": "CDN e caches",
+    "description": "Requisições, erros e acertos de cache em todos os apps, e quais dos seus servidores as responderam."
+  },
+  "tiles": {
+    "requests": "Requisições",
+    "perSecond": "{{rate}} por segundo",
+    "requestsInfo": "Requisições que o ingress tratou neste intervalo de tempo, a partir das métricas de requisição.",
+    "errors": "Erros do servidor (5xx)",
+    "errorsInfo": "Parcela das requisições respondidas com status 5xx, incluindo erros do app.",
+    "hitRate": "Taxa de acerto do cache",
+    "hitRateInfo": "Acertos sobre acertos mais erros em caminhos com cache, nos últimos {{minutes}} minutos. Requisições que ignoram o cache não são contadas.",
+    "hitRateSince": "Acertos sobre acertos mais erros em caminhos com cache. Contados na memória desde que o ingress iniciou, então zera ao reiniciar.",
+    "saved": "Banda economizada",
+    "savedInfo": "Bytes do corpo das respostas servidos pelo cache em vez do app, nos últimos {{minutes}} minutos.",
+    "savedSince": "Bytes do corpo das respostas servidos pelo cache em vez do app, desde que o ingress iniciou.",
+    "entries": "Objetos em cache",
+    "memory": "Memória do cache",
+    "memoryInfo": "Bytes mantidos no ingress em relação ao limite dele. Os objetos mais antigos e menos usados são descartados primeiro quando o limite é atingido.",
+    "none": "Sem dados"
+  },
+  "nodes": {
+    "title": "De onde o tráfego é servido",
+    "help": "As requisições são contadas para o servidor em que cada app roda. A localização do visitante não é medida.",
+    "aria": "Parcela das requisições por servidor",
+    "local": "Este servidor",
+    "apps_one": "{{count}} app",
+    "apps_many": "{{count}} apps",
+    "apps_other": "{{count}} apps",
+    "noRegions": "Nenhum rótulo de região ainda. Adicione um a um servidor na página Nodes para vê-lo aqui.",
+    "emptyTitle": "Nenhuma requisição neste intervalo de tempo",
+    "emptyBody": "As parcelas aparecem quando um app atrás de um domínio recebe tráfego.",
+    "emptyAction": "Abrir domínios"
+  },
+  "cacheCard": {
+    "title": "Cache",
+    "help": "Os acertos são respondidos pelo ingress. Os erros vão para o app.",
+    "open": "Abrir caches"
+  },
+  "chart": {
+    "empty": "Nenhuma atividade de cache ainda. Ligue o cache em um domínio para ver acertos e erros aqui.",
+    "aria": "{{hits}} acertos de cache e {{misses}} erros nos últimos {{minutes}} minutos",
+    "span": "Últimos {{minutes}} minutos",
+    "hits": "Acertos",
+    "misses": "Erros"
+  },
+  "caches": {
+    "title": "Caches",
+    "description": "O cache de respostas no ingress: como ele funciona para cada app e como limpá-lo.",
+    "scopeTitle": "Onde as entradas ficam",
+    "scopeBody": "Um cache em memória no ingress deste plano de controle atende todos os apps, inclusive apps em outros servidores. As limpezas valem ali. Os objetos são marcados com o header de resposta {{tag}}. Os contadores zeram quando o ingress reinicia, e um cache de borda por servidor ainda não está disponível.",
+    "chartTitle": "Taxa de acerto ao longo do tempo",
+    "chartHelp": "Acertos e erros de cache por minuto em todos os apps.",
+    "tabApps": "Apps",
+    "tabPurge": "Limpar",
+    "tabHistory": "Histórico"
+  },
+  "apps": {
+    "app": "App",
+    "cache": "Cache",
+    "onFor": "Ligado em {{on}} de {{total}} domínios",
+    "off": "Desligado",
+    "requests": "Requisições cacheáveis",
+    "hitRate": "Taxa de acerto",
+    "saved": "Banda economizada",
+    "aria": "Taxa de acerto do cache por app, do mais movimentado ao menos",
+    "emptyTitle": "Nenhum app ainda",
+    "emptyBody": "Faça o deploy de um app e dê um domínio a ele, depois ligue o cache.",
+    "emptyAction": "Abrir apps",
+    "why": "Por que não está em cache"
+  },
+  "picker": {
+    "label": "App"
+  },
+  "purge": {
+    "scopeLegend": "O que limpar",
+    "scope": {
+      "url": {
+        "title": "Uma URL",
+        "help": "Um caminho e query, todas as variantes.",
+        "field": "Caminho e query"
+      },
+      "prefix": {
+        "title": "Prefixo de caminho",
+        "help": "Tudo abaixo de um caminho.",
+        "field": "Prefixo de caminho"
+      },
+      "tag": {
+        "title": "Tag de cache",
+        "help": "Objetos que o seu app marcou em um header de resposta.",
+        "field": "Tag de cache"
+      },
+      "all": {
+        "title": "Tudo",
+        "help": "Esvazia todo o cache deste escopo.",
+        "field": ""
+      }
+    },
+    "allNote": "Remove todas as respostas em cache de {{target}}. A próxima requisição a cada URL vai para o app.",
+    "action": "Limpar",
+    "purging": "Limpando",
+    "done_one": "{{count}} resposta em cache removida.",
+    "done_many": "{{count}} respostas em cache removidas.",
+    "done_other": "{{count}} respostas em cache removidas.",
+    "confirmTitle": "Limpar tudo de {{target}}?",
+    "confirmBody": "Todas as respostas em cache são removidas do ingress.",
+    "consequenceOrigin": "O app volta a receber todas as requisições até o cache se reencher, então espere um pico de carga.",
+    "consequenceUndo": "Isso não pode ser desfeito. Fica registrado no histórico de limpezas.",
+    "confirm": "Limpar tudo"
+  },
+  "history": {
+    "aria": "Limpezas de cache de {{app}}, das mais recentes às mais antigas",
+    "when": "Quando",
+    "who": "Quem",
+    "domain": "Domínio",
+    "scope": "O quê",
+    "removed": "Removidas",
+    "emptyTitle": "Nenhuma limpeza ainda",
+    "emptyBody": "As limpezas feitas pelo painel, pela CLI ou pela API aparecem aqui com quem as executou."
+  },
+  "app": {
+    "subtitle": "Guarde arquivos estáticos e outras respostas seguras em cache no ingress para que requisições repetidas nunca cheguem ao seu app. Páginas dinâmicas ficam sem cache, a menos que o seu app ou uma regra permita.",
+    "presetTitle": "Guardar assets estáticos em cache",
+    "presetBody": "Adiciona uma regra para imagens, scripts, estilos e fontes e liga o cache. O Cache-Control do seu app continua prevalecendo, e respostas com cookies nunca são armazenadas.",
+    "presetAction": "Guardar assets estáticos em cache",
+    "presetApplying": "Aplicando",
+    "domain": "Domínio",
+    "state": "Cache",
+    "on": "Ligado",
+    "off": "Desligado",
+    "rules": "Regras",
+    "edit": "Editar",
+    "editRules": "Editar regras",
+    "domainsAria": "Configurações de cache dos domínios de {{app}}",
+    "chartTitle": "Taxa de acerto ao longo do tempo",
+    "counts": "{{hits}} acertos, {{misses}} erros, {{bypasses}} ignoradas desde que o ingress iniciou.",
+    "noDomainsTitle": "Este app não tem domínio",
+    "noDomainsBody": "O cache fica na frente dos domínios. Adicione um para começar a usar cache.",
+    "noDomainsAction": "Adicionar um domínio"
+  },
+  "controls": {
+    "domain": "Domínio",
+    "app": "App",
+    "open": "Abrir",
+    "docs": "Guia de controles de tráfego",
+    "tab": {
+      "redirects": "Redirecionamentos",
+      "forwarding": "Encaminhamento de caminho",
+      "headers": "Headers"
+    },
+    "redirects": {
+      "title": "Redirecionamentos",
+      "description": "Force HTTPS, escolha um host canônico e encaminhe endereços antigos. Cada domínio tem suas próprias configurações.",
+      "aria": "Domínios e suas configurações de redirecionamento"
+    },
+    "routing": {
+      "title": "Regras de roteamento",
+      "description": "Envie caminhos para outro app ou URL e defina headers de requisição e resposta. Cada domínio tem suas próprias configurações.",
+      "aria": "Domínios e suas configurações de roteamento"
+    },
+    "emptyTitle": "Nenhum domínio para configurar ainda",
+    "emptyBody": "Adicione primeiro um domínio a um app. Os controles de redirecionamento e roteamento dele aparecem aqui.",
+    "emptyAction": "Abrir domínios"
+  },
+  "thirdParty": {
+    "title": "Usando Cloudflare, Akamai ou Fastly na frente",
+    "headers": "Envie Cache-Control (e um header de tag como Cache-Tag) a partir do seu app. Tanto a CDN quanto o ingress os respeitam.",
+    "clientIp": "Adicione as faixas de endereços da CDN à configuração de proxies confiáveis para que os IPs dos visitantes, os limites de taxa e as regras de país usem o endereço real do cliente.",
+    "plugins": "Integrações oficiais para limpeza de CDN e direcionamento de tráfego estão planejadas pelo sistema de plugins. Nada está conectado hoje.",
+    "docs": "Ler o guia"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "Origem",
+      "edge": "Borda"
+    }
+  },
+  "reasons": {
+    "column": "Por que não está em cache",
+    "none": "Nada está bloqueando o cache",
+    "fixVary": "Adicione {{header}} ao Vary",
+    "nextjsHelp": "Isto parece um app Next.js. O preset do Next.js indexa as páginas em cache pelos headers do roteador dele.",
+    "nextjsFix": "Aplicar preset do Next.js",
+    "short": {
+      "vary_header": "O app varia em {{header}}",
+      "set_cookie": "As respostas definem um cookie",
+      "private": "As respostas são marcadas como private",
+      "no_store": "As respostas proíbem o armazenamento (no-store)",
+      "no_cache": "As respostas exigem revalidação (no-cache)",
+      "status_not_cached": "O status da resposta não entra no cache",
+      "too_large": "As respostas são grandes demais",
+      "range": "Requisições Range ignoram o cache",
+      "authorization": "As requisições levam credenciais",
+      "cookie_request": "As requisições levam cookies",
+      "upgrade": "Requisições de upgrade ignoram o cache",
+      "other": "Outros motivos"
+    },
+    "long": {
+      "vary_header": "as respostas variam no header {{header}}, que nenhuma regra de cache lista, então não podem ser armazenadas com segurança.",
+      "set_cookie": "as respostas definem um cookie, então são pessoais e não são armazenadas.",
+      "private": "as respostas são marcadas como private pelo app.",
+      "no_store": "requisições ou respostas dizem no-store.",
+      "no_cache": "as respostas dizem no-cache, então precisam ser conferidas com o app toda vez.",
+      "status_not_cached": "as respostas tinham um status que a regra não coloca em cache. Adicione o status à regra para guardá-lo.",
+      "too_large": "as respostas eram maiores que o limite de cache por objeto.",
+      "range": "as requisições pediam parte de um arquivo (Range), o que nunca entra no cache.",
+      "authorization": "as requisições levavam um header Authorization, então nunca entram no cache.",
+      "cookie_request": "as requisições levavam um cookie. Ligue o cache com cookies na regra se a página for igual para todos.",
+      "upgrade": "as requisições pediam troca de protocolo (WebSocket), o que nunca entra no cache.",
+      "other": "as requisições ficaram fora do cache por motivos menos comuns."
+    }
+  },
+  "proxy": {
+    "title": "Proxy da Cloudflare",
+    "body": "Passe os domínios deste app pelo proxy da Cloudflare quando o Levelrail gravar os registros DNS deles. Os registros existentes mudam na próxima vez que a correção de DNS rodar.",
+    "following": "Seguindo a configuração do servidor, agora {{state}}.",
+    "override": "Definido somente para este app.",
+    "reset": "Seguir a configuração do servidor",
+    "on": "ligado",
+    "off": "desligado"
+  },
+  "edge": {
+    "title": "Borda",
+    "pipelineLabel": "Pipeline do Git até a borda",
+    "stage": {
+      "git": "Git",
+      "build": "Build",
+      "deploy": "Deploy",
+      "dns": "DNS",
+      "edge": "Borda"
+    },
+    "noDeploy": "Nenhum deploy ainda",
+    "dns": "{{count}} registros gerenciados",
+    "dnsNone": "Nenhum registro gerenciado",
+    "health": {
+      "direct": "Direto",
+      "ok": "Com proxy",
+      "attention": "Requer atenção"
+    },
+    "cache": "Cache {{rate}}% de acerto, {{entries}} entradas",
+    "lastPurge": "Última limpeza {{when}} ({{scope}})",
+    "purgeFailed": "A limpeza falhou: {{error}}",
+    "override": "Borda forçada {{state}} para este app",
+    "overrideOn": "ligada",
+    "overrideOff": "desligada",
+    "provider": "{{provider}} zona {{zone}}, SSL {{mode}}",
+    "setup": "Configurar CDN",
+    "purges": "Limpezas recentes",
+    "loading": "Carregando o status da borda"
+  },
+  "setup": {
+    "title": "Configuração da CDN",
+    "description": "Verifica o provedor, o modo SSL, o desafio DNS e o plano de DNS. Informa correções e nunca altera as configurações da sua zona.",
+    "dryRun": "Executar simulação",
+    "running": "Verificando...",
+    "apply": "Aplicar",
+    "applying": "Aplicando...",
+    "close": "Fechar",
+    "provider": "Provedor",
+    "providerAuto": "Detectar automaticamente",
+    "fix": "Corrigir",
+    "applied": "Aplicado. O status da borda é atualizado em instantes.",
+    "dryRunDone": "Somente simulação. Nada foi alterado.",
+    "result": {
+      "ok": "Todas as verificações passaram",
+      "warn": "Passou com avisos",
+      "fail": "Corrija primeiro as etapas que falharam"
+    },
+    "status": {
+      "ok": "OK",
+      "warn": "Aviso",
+      "fail": "Falhou",
+      "skipped": "Ignorada"
+    },
+    "step": {
+      "provider": "Provedor",
+      "ssl_mode": "Modo SSL",
+      "acme_dns01": "Desafio DNS do ACME",
+      "client_address": "Endereço do cliente",
+      "dns_plan": "Plano de DNS",
+      "apply": "Aplicar",
+      "verify": "Verificar"
+    },
+    "error": "A configuração da CDN falhou: {{message}}"
+  }
+}

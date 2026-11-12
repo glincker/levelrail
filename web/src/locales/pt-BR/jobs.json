@@ -1,0 +1,232 @@
+{
+  "title": "Jobs",
+  "description": "Execute um comando em um agendamento cron, em um container novo com as variáveis de ambiente, segredos, volumes e rede deste app, ou dentro do container em execução.",
+  "unnamed": "Job sem nome",
+  "specManaged": "app.yaml",
+  "specManagedHint": "Declarado em app.yaml. Altere lá; aqui só é possível alternar a chave de ativação.",
+  "empty": {
+    "title": "Nenhum job ainda",
+    "description": "Execute uma migração, aqueça um cache ou envie um relatório em um agendamento. Cada execução fica no histórico com sua saída."
+  },
+  "columns": {
+    "job": "Job",
+    "schedule": "Agendamento",
+    "mode": "Modo",
+    "lastRun": "Última execução",
+    "nextRun": "Próxima execução",
+    "enabled": "Ativado",
+    "actions": "Ações"
+  },
+  "mode": {
+    "fresh": "Container novo",
+    "exec": "Dentro do container em execução",
+    "http": "Chamada HTTP ao app"
+  },
+  "concurrency": {
+    "allow": "Permitir sobreposição",
+    "forbid": "Pular se ainda estiver em execução",
+    "replace": "Cancelar e substituir",
+    "queue": "Enfileirar após ela",
+    "queue-one": "Enfileirar uma, pular as demais"
+  },
+  "concurrencyHint": {
+    "allow": "Inicia a nova execução mesmo que a anterior não tenha terminado.",
+    "forbid": "Pula esta execução se uma anterior ainda estiver em andamento, registrada como ignorada.",
+    "replace": "Cancela a execução anterior ainda em andamento e depois inicia esta.",
+    "queue": "Espera a execução anterior terminar e depois executa, de modo que execuções sobrepostas rodem uma após a outra.",
+    "queue-one": "Mantém uma execução até a anterior terminar; as demais execuções sobrepostas são puladas."
+  },
+  "preview": {
+    "title": "Próximas execuções ({{zone}})",
+    "invalid": "Informe um agendamento e um fuso horário válidos para pré-visualizar as próximas execuções.",
+    "none": "Este agendamento nunca é executado."
+  },
+  "status": {
+    "running": "Em execução",
+    "success": "Concluído com sucesso",
+    "failed": "Falhou",
+    "timeout": "Tempo esgotado",
+    "container_not_running": "Container não está em execução",
+    "skipped_concurrency": "Ignorado, execução anterior ainda em andamento",
+    "skipped_freeze": "Ignorado, congelamento de deploy ativo",
+    "replaced": "Substituído por execução mais recente",
+    "missed": "Perdeu o horário agendado",
+    "interrupted": "Interrompido por reinício"
+  },
+  "trigger": {
+    "schedule": "Agendamento",
+    "manual": "Manual",
+    "api": "API"
+  },
+  "neverRun": "Nunca executado",
+  "failedInARow": "{{count}} falhas seguidas",
+  "missedInARow": "{{count}} perdidas seguidas",
+  "localNode": "local",
+  "run": {
+    "now": "Executar agora",
+    "starting": "Iniciando...",
+    "started": "Job iniciado.",
+    "startedWithId": "Job iniciado (execução {{id}}).",
+    "running": "Em execução..."
+  },
+  "toggle": {
+    "label": "Ativar {{name}}"
+  },
+  "dialog": {
+    "createTrigger": "Criar job",
+    "createTitle": "Criar job",
+    "editTitle": "Editar job",
+    "created": "Job criado.",
+    "updated": "Job atualizado.",
+    "saving": "Salvando...",
+    "creating": "Criando...",
+    "save": "Salvar alterações",
+    "create": "Criar job",
+    "edit": "Editar",
+    "name": "Nome",
+    "nameHint": "Opcional. Letras minúsculas, dígitos, hifens e sublinhados.",
+    "namePlaceholder": "ex.: nightly-migrate",
+    "nameInvalid": "Use letras minúsculas, dígitos, hifens ou sublinhados.",
+    "wholeNumber": "Deve ser um número inteiro.",
+    "command": "Comando",
+    "commandPlaceholder": "ex.: rm -rf /tmp/cache/*",
+    "commandHint": "Executado por um shell (sh -c), então a image precisa de um shell. O Levelrail nunca o interpreta.",
+    "commandRequired": "O comando é obrigatório",
+    "modeLabel": "Onde executa",
+    "modeHint": {
+      "fresh": "Um container novo a partir da image atual do app, com suas variáveis de ambiente, segredos, volumes e rede. Ele é removido quando a execução termina.",
+      "exec": "Dentro do container em execução do app. Falha se o container não estiver em execução.",
+      "http": "Chama um caminho do app via HTTP. Um app em repouso é despertado primeiro e a chamada espera por ele. Qualquer resposta 2xx é um sucesso."
+    },
+    "http": {
+      "method": "Método",
+      "path": "Caminho",
+      "pathPlaceholder": "ex.: /api/cron/digest",
+      "pathHint": "Um caminho neste app, começando com /. A chamada vai direto ao app, não pelo domínio público dele.",
+      "pathInvalid": "Comece com uma única /.",
+      "body": "Corpo",
+      "bodyHint": "Opcional. Enviado como application/json.",
+      "background": "Job em segundo plano",
+      "backgroundHint": "O app pode responder 202 imediatamente e continuar trabalhando. O control plane espera a resposta até o timeout de segundo plano e registra o resultado, então ninguém precisa manter a requisição aberta.",
+      "headers": "Cabeçalhos",
+      "headersHint": "Opcional. Cada linha envia um cabeçalho cujo valor é lido de um dos segredos do app quando o job executa, então o segredo nunca fica armazenado no job.",
+      "headerName": "Nome do cabeçalho",
+      "headerSecret": "Nome do segredo",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "Prefixo",
+      "headerAdd": "Adicionar cabeçalho",
+      "headerRemove": "Remover cabeçalho"
+    },
+    "timezone": "Fuso horário",
+    "timezoneHint": "Nome IANA, como America/Sao_Paulo. O agendamento é lido neste fuso, incluindo mudanças de horário de verão.",
+    "timezoneRequired": "O fuso horário é obrigatório",
+    "concurrencyLabel": "Se uma execução anterior ainda estiver em andamento",
+    "enabled": "Ativado",
+    "advanced": "Timeout, novas tentativas e limites",
+    "timeout": "Timeout (segundos)",
+    "timeoutHint": "Por tentativa. Vazio usa o padrão do control plane.",
+    "retries": "Novas tentativas",
+    "retriesHint": "Tentativas extras após uma falha, com backoff dobrando a cada vez.",
+    "backoff": "Backoff entre tentativas (segundos)",
+    "catchUpLabel": "Após indisponibilidade do control plane",
+    "catchUp": {
+      "skip": "Pular execuções perdidas e registrá-las como perdidas",
+      "run_once": "Executar uma vez se uma execução foi perdida recentemente"
+    },
+    "lookback": "Janela de recuperação (segundos)",
+    "memory": "Limite de memória (MiB)",
+    "memoryHint": "Somente container novo. Vazio usa o limite do próprio app.",
+    "cpu": "Limite de CPU (millicores)",
+    "warnAfter": "Avisar após (segundos)",
+    "warnAfterHint": "Dispara o alerta de execução longa demais quando uma execução passa deste valor. 0 desativa."
+  },
+  "delete": {
+    "trigger": "Excluir",
+    "title": "Excluir este job?",
+    "description": "O agendamento e o histórico de execuções dele serão removidos. Isso não pode ser desfeito.",
+    "cancel": "Cancelar",
+    "confirm": "Excluir job",
+    "deleted": "Job excluído."
+  },
+  "history": {
+    "title": "Histórico de execuções",
+    "description": "As execuções mais recentes de todos os jobs deste app, da mais nova para a mais antiga.",
+    "filter": "Status",
+    "filterAll": "Todos os status",
+    "empty": "Nenhuma execução ainda. Use Executar agora para iniciar uma.",
+    "emptyTitle": "Nenhuma execução",
+    "emptyFiltered": "Nenhuma execução com este status.",
+    "columns": {
+      "started": "Início",
+      "job": "Job",
+      "status": "Status",
+      "trigger": "Origem",
+      "duration": "Duração",
+      "exit": "Saída ou HTTP",
+      "attempts": "Tentativas",
+      "node": "Node"
+    },
+    "trendLabel": "Durações das últimas {{count}} execuções concluídas",
+    "trendCaption": "Duração da execução, da mais antiga à mais nova, mais lenta {{max}}",
+    "httpStatus": "HTTP {{code}}",
+    "viewLogs": "Logs",
+    "logsTitle": "Saída da execução",
+    "logsEmpty": "Esta execução não produziu saída.",
+    "logsLoading": "Carregando saída...",
+    "logsRedacted": "Os segredos são ocultados nesta saída.",
+    "alertsHint": "Seja avisado quando um job falhar, perder execuções ou demorar demais usando Alertas, com os tipos falha de job, execução perdida ou execução longa demais.",
+    "outputWithheld": "A saída está oculta. Ver a saída do job exige acesso de leitura a dados sensíveis."
+  },
+  "historyKept": {
+    "label": "Histórico mantido (execuções por job)",
+    "save": "Salvar",
+    "note": "Execuções mais antigas são removidas automaticamente.",
+    "invalid": "Informe um número inteiro de {{min}} a {{max}}."
+  },
+  "nextRunNever": "Nunca",
+  "nextRunNeverHint": "Este agendamento não tem execução futura",
+  "accessRule": "Execuções avulsas e jobs agendados seguem as regras de acesso ao exec do console: criar, editar ou executar um job exige acesso root a este app e exec ativado nele.",
+  "guards": {
+    "title": "Proteções",
+    "description": "Limite a sobreposição, restrinja o tempo de execução, receba um alerta em caso de falha e defina quanto histórico é mantido. Estas opções são salvas sozinhas.",
+    "overlap": {
+      "allow": "Permitir sobreposição",
+      "skip": "Pular se ainda estiver em execução",
+      "queue-one": "Enfileirar uma, pular as demais",
+      "replace": "Cancelar e substituir",
+      "queue": "Enfileirar após ela"
+    },
+    "overlapHint": {
+      "allow": "Inicia a nova execução mesmo que a anterior não tenha terminado.",
+      "skip": "Pula esta execução se uma anterior ainda estiver em andamento, registrada como ignorada.",
+      "queue-one": "Mantém uma execução até a anterior terminar; as demais execuções sobrepostas são puladas.",
+      "replace": "Cancela a execução anterior ainda em andamento e depois inicia esta.",
+      "queue": "Espera a execução anterior terminar e depois executa, de modo que execuções sobrepostas rodem uma após a outra."
+    },
+    "timeoutSeconds": "Timeout (segundos)",
+    "keepRuns": "Manter últimas execuções",
+    "keepDays": "Manter dias",
+    "keepHint": "Vazio usa o padrão do control plane.",
+    "defaultPlaceholder": "Padrão",
+    "alertOnFailure": "Alertar em caso de falha",
+    "alertOnFailureHint": "Permite que uma regra de alerta de falha de job neste app avise você quando este job falhar.",
+    "save": "Salvar proteções",
+    "saved": "Proteções salvas",
+    "summary": {
+      "overlap": {
+        "skip": "Pula sobreposição",
+        "queue-one": "Enfileira uma",
+        "replace": "Substitui sobreposição",
+        "queue": "Enfileira sobreposição"
+      },
+      "timeout": "Timeout {{seconds}} s",
+      "alerts": "Alerta em caso de falha",
+      "keepRuns_one": "Mantém {{count}} execução",
+      "keepRuns_many": "Mantém {{count}} execuções",
+      "keepRuns_other": "Mantém {{count}} execuções",
+      "keepDays_one": "Mantém {{count}} dia",
+      "keepDays_many": "Mantém {{count}} dias",
+      "keepDays_other": "Mantém {{count}} dias"
+    }
+  }
+}

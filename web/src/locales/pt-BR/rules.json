@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "Condições",
+    "if": "Se",
+    "and": "E",
+    "then": "Então",
+    "fieldLabel": "Campo da condição {{n}}",
+    "nameLabel": "Nome da condição {{n}}",
+    "operatorLabel": "Operador da condição {{n}}",
+    "valueLabel": "Valor da condição {{n}}",
+    "removeCondition": "Remover condição {{n}}",
+    "addCondition": "E",
+    "maxConditions": "No máximo {{count}} condições por regra.",
+    "actionLabel": "Ação",
+    "selectAction": "Selecionar ação",
+    "ruleName": "Nome",
+    "description": "Descrição (opcional)",
+    "cancel": "Cancelar",
+    "viewCode": "Ver código",
+    "hideCode": "Ocultar código",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "codeLabel": "Regra como armazenada",
+    "codeHelp": "Isto é exatamente o que é salvo. Somente leitura."
+  }
+}

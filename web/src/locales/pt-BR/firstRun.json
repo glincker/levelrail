@@ -1,0 +1,11 @@
+{
+  "more": {
+    "show": "Mais",
+    "hide": "Menos",
+    "label": "Mais sobre como começar"
+  },
+  "paths": {
+    "show": "Outras formas de fazer deploy",
+    "hide": "Ocultar outras formas"
+  }
+}

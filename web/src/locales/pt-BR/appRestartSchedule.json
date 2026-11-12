@@ -1,0 +1,20 @@
+{
+  "title": "Reinício agendado",
+  "description": "Reinicie o app em um horário agendado para conter vazamentos lentos de memória. Usa o reinício normal, então as regras de rollout e de interrupção se aplicam. Os reinícios têm intervalo mínimo de {{min}}.",
+  "none": "Sem agendamento de reinício.",
+  "current": "Reinicia em {{schedule}} ({{zone}}). Próximo em {{next}}.",
+  "last": {
+    "started": "Última execução {{at}}: iniciada.",
+    "succeeded": "Última execução {{at}}: reiniciado.",
+    "skipped": "Última execução {{at}}: ignorada, {{reason}}.",
+    "failed": "Última execução {{at}}: falhou, nova tentativa após um intervalo."
+  },
+  "scheduleLabel": "Cron ou @every",
+  "timezoneLabel": "Fuso horário",
+  "save": "Salvar agendamento",
+  "saved": "Agendamento de reinício salvo",
+  "cleared": "Agendamento de reinício removido",
+  "failed": "Falha ao alterar o agendamento de reinício",
+  "clear": "Remover agendamento",
+  "hint": "Por exemplo 0 3 * * * ou @every 24h. Apps parados, ambientes protegidos, congelamentos e deploys em andamento são ignorados, nunca forçados."
+}

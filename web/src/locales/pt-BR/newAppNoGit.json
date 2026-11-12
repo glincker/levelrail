@@ -1,0 +1,7 @@
+{
+  "urlTitle": "URL do repositório público",
+  "connect": {
+    "title": "Precisa de repositórios privados ou deploy a cada push?",
+    "reason": "Um provedor Git permite escolher entre seus repositórios e refazer o deploy a cada push. Tudo acima funciona sem ele."
+  }
+}
