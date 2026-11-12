@@ -1,0 +1,167 @@
+{
+  "title": "计划维护",
+  "description": "在仪表盘和公开状态页上公告计划内的停机,并可选择在此期间暂缓自动部署。",
+  "notConfigured": "此控制面不支持计划维护。",
+  "schedule": "安排维护",
+  "cancel": "取消时段",
+  "until": "至",
+  "freezeBadge": "部署已暂缓",
+  "empty": {
+    "title": "没有计划中的维护",
+    "description": "在让某项服务下线之前安排一个维护时段,让用户提前看到。"
+  },
+  "state": {
+    "scheduled": "已安排",
+    "active": "进行中",
+    "ended": "已结束"
+  },
+  "scope": {
+    "all": "影响所有内容",
+    "project": "影响项目 {{target}}",
+    "app": "影响应用 {{target}}"
+  },
+  "scopeName": {
+    "all": "所有内容",
+    "project": "单个项目",
+    "app": "单个应用"
+  },
+  "banner": {
+    "active": "维护进行中:{{title}},至 {{end}}。",
+    "upcoming": "计划维护:{{title}},{{start}} 至 {{end}}。",
+    "freeze": "维护时段内自动部署会被暂缓。",
+    "more": "另有 {{count}} 个维护时段已安排。"
+  },
+  "form": {
+    "title": "安排维护",
+    "description": "时间采用你浏览器的时区({{zone}})。",
+    "name": "标题",
+    "namePlaceholder": "数据库存储升级",
+    "message": "消息(可选)",
+    "start": "开始",
+    "end": "结束",
+    "scope": "范围",
+    "target": "目标",
+    "targetPlaceholder": {
+      "project": "项目 ID",
+      "app": "应用名称"
+    },
+    "lead": "开始前多少分钟公告",
+    "leadHint": "通过你的通知渠道发送一次。0 表示不公告。",
+    "freeze": "维护时段内暂缓自动部署",
+    "badRange": "结束时间必须晚于开始时间。",
+    "cancel": "取消",
+    "submit": "安排"
+  },
+  "domainBanner": {
+    "title": "{{domain}} 已开启维护模式",
+    "titleNotEnforced": "已为 {{domain}} 保存维护设置,但未生效",
+    "body": "访客只会看到维护页面,其他内容一概不提供:脚本、样式和图片都不会提供。应用继续运行,部署也不会结束维护。",
+    "bodyNotEnforced": "访客仍可能访问到应用:此域名前面的代理尚未证实会把流量发送到内置入口。打开管理查看详情。",
+    "manage": "管理",
+    "end": "结束维护",
+    "ending": "正在结束...",
+    "ended": "{{domain}} 的维护已结束",
+    "more_other": "另有 {{count}} 个域名处于维护模式。",
+    "elapsed": "已开启 {{time}}。",
+    "endsAt": "{{date}} 结束。",
+    "autoOff": "将于 {{date}} 自动关闭。",
+    "noEnd": "没有自动结束:在你结束之前会一直开启。",
+    "long": "这比预期的时间长。"
+  },
+  "confirm": {
+    "title": "让 {{domain}} 进入维护?",
+    "description": "在你结束维护之前,访客将无法访问应用。请先查看下方页面。",
+    "visitors": "访客会在此域名的每个 URL 上得到带 Retry-After 头的 503 维护页面。",
+    "assets": "脚本、样式、图片和 API 调用同样不会提供,因此页面无法从应用加载任何内容。",
+    "running": "容器继续运行,不会被重启。",
+    "deploys": "维护期间的部署会完成,维护会一直保持开启,直到你结束它。",
+    "alerts": "此应用的宕机、DNS、证书以及请求错误或延迟告警会被静默,直到维护结束。CPU、内存、磁盘、重启和崩溃告警仍会触发。",
+    "endsAt": "它将在 {{date}} 自动结束。",
+    "autoOff": "它将在 {{hours}} 小时后自动关闭。",
+    "noEnd": "它没有自动结束。请设置结束时间或最长时长,以免一直开启。",
+    "confirm": "开启维护",
+    "pending": "正在开启..."
+  },
+  "preview": {
+    "title": "访客所见页面的预览",
+    "caption": "预览:状态 {{status}},Retry-After {{retry}} 秒",
+    "frameTitle": "维护页面预览",
+    "failed": "无法加载预览。"
+  },
+  "appBanner": {
+    "title_other": "此应用的 {{total}} 个域名中有 {{count}} 个处于维护",
+    "body": "访客在这些域名上会看到维护页面。宕机、DNS、证书以及请求错误或延迟告警会被静默,而 CPU、内存、磁盘、重启和崩溃告警仍会触发。部署会完成,但不会结束维护。",
+    "end": "对所有域名结束",
+    "ending": "正在结束...",
+    "ended": "此应用所有域名的维护已结束"
+  },
+  "appToggle": {
+    "title": "所有域名的维护",
+    "description": "一次性为此应用的所有域名开启或关闭维护。要么全部生效,要么都不生效。",
+    "on": "{{total}} 个域名中有 {{active}} 个已开启",
+    "off": "关闭",
+    "enable": "对所有域名启用",
+    "enabling": "正在启用...",
+    "disable": "对所有域名结束",
+    "disabling": "正在结束...",
+    "saved": "此应用所有域名的维护均已开启",
+    "failed": "未做任何更改。{{message}}",
+    "noDomains": "开启维护前,请先为此应用添加域名。"
+  },
+  "deployNotice": {
+    "text": "此应用正在维护。部署会完成,维护会保持开启。",
+    "tooltip": "此应用正在维护。部署会完成,维护会保持开启。"
+  },
+  "silence": {
+    "createdByMaintenance": "由维护创建(仅限宕机、DNS、证书和请求告警)",
+    "endsWithMaintenance": "{{domain}} 的维护结束时一并结束",
+    "matchApp": "应用",
+    "matchRule": "规则",
+    "matchNode": "节点",
+    "matchKind": "类型",
+    "matchSeverity": "严重程度",
+    "matchMetric": "指标",
+    "newSilence": "新建静默",
+    "dialogDescription": "匹配的告警会继续评估,并在历史中显示为已静默,但不会发出通知。你填写的每个筛选条件都必须匹配。",
+    "apps": "应用",
+    "appsPlaceholder": "web, worker",
+    "nodes": "节点",
+    "nodesPlaceholder": "edge-1",
+    "kinds": "规则类型",
+    "kindsPlaceholder": "threshold, crashloop",
+    "severity": "严重程度",
+    "severityLevel": {
+      "info": "信息",
+      "warning": "警告",
+      "critical": "严重"
+    },
+    "duration": "时长",
+    "reason": "原因",
+    "reasonPlaceholder": "计划内的数据库迁移",
+    "cancel": "取消",
+    "creating": "正在创建...",
+    "create": "创建静默",
+    "errorNoMatcher": "请至少选择一个应用、节点、类型或严重程度来匹配。",
+    "errorDuration": "时长格式应类似 30m、4h 或 24h。",
+    "silencedFor": "已静默 {{duration}}。",
+    "ended": "静默已结束。",
+    "endNow": "立即结束",
+    "colStatus": "状态",
+    "colMatches": "匹配",
+    "colUntil": "截止",
+    "colCreatedBy": "创建者",
+    "status": {
+      "active": "生效中",
+      "pending": "待生效",
+      "expired": "已过期"
+    },
+    "showExpired": "显示已过期",
+    "sectionLabel": "静默",
+    "emptyTitle": "没有生效中的静默",
+    "emptyDescription": "可在告警所在行静默该告警,或在此为计划内的变更创建静默。"
+  },
+  "effects": {
+    "alertsSilenced": "宕机、DNS、证书和请求告警已静默",
+    "statusOngoing": "状态页:进行中"
+  }
+}

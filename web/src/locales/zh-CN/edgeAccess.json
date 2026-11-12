@@ -1,0 +1,16 @@
+{
+  "title": "请求",
+  "subtitle": "此应用经过边缘的最近请求,最新的在前。仅保存在内存中,重启后会清空。",
+  "filters": {
+    "minMs": "慢于(ms)",
+    "path": "路径开头为",
+    "errorsOnly": "仅服务器错误"
+  },
+  "list": {
+    "empty": "暂无匹配的请求。向此应用的任一域名发送流量,几秒内即会显示在这里。",
+    "loadError": "无法加载请求:{{message}}",
+    "upstream": "上游错误",
+    "emptyTitle": "暂无请求",
+    "emptyAction": "检查域名"
+  }
+}

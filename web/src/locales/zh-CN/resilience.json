@@ -1,0 +1,157 @@
+{
+  "title": "韧性报告",
+  "description": "每个故障场景最近一次测得的结果,在一次性的本地容器上运行。只显示实测数值。",
+  "loadError": "无法加载韧性报告。",
+  "retry": "重新检查",
+  "status": {
+    "passed": "通过",
+    "failed": "失败",
+    "skipped": "已跳过"
+  },
+  "scenario": {
+    "kill-container": "在有流量时杀掉提供服务的容器",
+    "daemon-unreachable": "部署期间 Docker API 不可达",
+    "control-plane-restart": "在有流量时重启控制面",
+    "disk-pressure": "临时卷被写满",
+    "oom-during-readiness": "就绪等待期间 OOM 被杀",
+    "ingress-steady": "通过入口的稳步上升负载",
+    "deploy-latency": "从镜像到提供服务的部署延迟",
+    "rollout-under-traffic": "在有流量时对两个副本滚动部署",
+    "ingress-concurrency": "固定并发下的入口吞吐量",
+    "replica-failover": "在有流量时杀掉两个副本之一"
+  },
+  "metrics": {
+    "recovery": "恢复时间",
+    "errors": "失败的请求",
+    "ranAt": "测量时间"
+  },
+  "notMeasured": "尚未测量",
+  "empty": {
+    "title": "尚未记录任何混沌测试结果",
+    "body": "在装有 Docker 的机器上运行这些场景并记录,每个结果都会显示在这里。"
+  },
+  "disk": {
+    "title": "磁盘空间保护",
+    "description": "数据目录和 Docker 卷的可用空间。低于严重下限时,部署、拉取和备份会在填满磁盘之前被拒绝。",
+    "loadError": "无法加载磁盘状态。",
+    "refusing": "有卷低于严重下限。在释放空间之前,部署、镜像拉取和备份会被拒绝。",
+    "freeAction": "立即释放空间",
+    "freeing": "正在清理",
+    "free": "总计 {{total}},可用 {{free}}",
+    "thresholds": "可用空间低于 {{low}} 时警告,低于 {{critical}} 时拒绝有风险的操作。设置 APP_DISK_LOW_FREE_MB 和 APP_DISK_CRITICAL_FREE_MB 可更改。",
+    "volume": {
+      "data": "控制面数据",
+      "docker": "Docker 存储"
+    },
+    "level": {
+      "ok": "健康",
+      "low": "偏低",
+      "critical": "严重",
+      "unknown": "未知"
+    },
+    "toast": {
+      "freed": "清理完成,已回收 {{size}}",
+      "errorTitle": "无法释放空间"
+    }
+  },
+  "cli": {
+    "summary": "改为在终端运行这些场景",
+    "note": "需要使用 chaoslive 标签构建的 CLI 和本地 Docker 守护进程。"
+  },
+  "benchmarks": {
+    "title": "基准测试",
+    "description": "来自 bench chaos run 的结果文件,与产生它们的主机和构建一起保存,以便展示和比较运行结果。",
+    "refresh": "刷新",
+    "loadError": "无法加载基准测试结果。",
+    "standingCaveat": {
+      "title": "不是生产容量数据",
+      "body": "这些运行测量的是一台机器上的负载生成器和控制面。除非主机是 Linux 服务器,否则它们不是 Linux 生产环境的数据。引用任何数字之前,请先阅读每次运行的注意事项。"
+    },
+    "caveatsTitle": "请先阅读",
+    "empty": {
+      "title": "尚未存储任何基准测试运行",
+      "body": "在装有 Docker 的机器上运行这些场景并上传结果文件,每次运行都会显示在这里。"
+    },
+    "history": {
+      "title": "运行历史",
+      "keep": "保留最新的 {{count}} 次运行。",
+      "nonLinux": "部分运行来自非 Linux 主机。",
+      "select": "选择以比较",
+      "selectRun": "选择运行 {{id}} 以比较",
+      "when": "测量时间",
+      "build": "构建",
+      "host": "主机",
+      "result": "结果",
+      "actions": "操作",
+      "view": "查看",
+      "compare": "比较所选项",
+      "passed_other": "{{count}} 个通过",
+      "failed_other": "{{count}} 个失败",
+      "repeat_other": "每个运行 {{count}} 次",
+      "deleteRun": "删除运行 {{id}}"
+    },
+    "groups": {
+      "failover": "故障转移与恢复",
+      "deploy": "部署",
+      "rollout": "发布",
+      "throughput": "吞吐量"
+    },
+    "host": {
+      "title": "主机与构建",
+      "platform": "平台",
+      "kernel": "内核",
+      "cpu": "CPU 和核数",
+      "memory": "内存",
+      "docker": "Docker 引擎",
+      "load": "平均负载",
+      "loadValue": "开始时 {{start}},结束时 {{end}}",
+      "version": "版本",
+      "commit": "提交",
+      "runs": "每个场景的运行次数",
+      "note": "备注",
+      "unknown": "未知"
+    },
+    "table": {
+      "scenario": "场景",
+      "run": "运行",
+      "status": "状态",
+      "summary": "发生了什么",
+      "metric": "指标",
+      "runN": "第 {{n}} 次运行"
+    },
+    "limits": {
+      "title": "限制表",
+      "question": "问题",
+      "status": "状态"
+    },
+    "method": "这些数据是如何得到的",
+    "chart": {
+      "aria": "{{title}},按并发数统计的每秒请求数:{{summary}}"
+    },
+    "compare": {
+      "title": "比较",
+      "base": "基准",
+      "head": "目标",
+      "runs_other": "{{count}} 次运行",
+      "basis": "每个值是该侧各次运行的中位数。低于 {{noise}}% 的变化视为相同。",
+      "warningsTitle": "阅读此比较时请谨慎",
+      "statusTitle": "结果变化",
+      "to": "变为",
+      "delta": "变化",
+      "verdict": "结论",
+      "oneSided": "仅一侧有数据",
+      "direction": {
+        "better": "更好",
+        "worse": "更差",
+        "same": "相同"
+      }
+    },
+    "confirmDelete": {
+      "title": "删除此基准测试运行?",
+      "body": "运行 {{id}} 将对所有人移除。你上传的结果文件不受影响。",
+      "confirm": "删除运行"
+    },
+    "deleted": "运行已删除",
+    "deleteFailed": "无法删除运行"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "title": "清理计划",
+  "description": "查看 Levelrail 将要移除的内容,然后只应用你选中的部分。",
+  "tabs": {
+    "label": "清理分区",
+    "plan": "计划",
+    "history": "历史"
+  },
+  "stages": {
+    "containers": "容器",
+    "images": "镜像",
+    "build_cache": "构建缓存",
+    "volumes": "卷",
+    "deploy_attempts": "部署尝试",
+    "api_tokens": "API 令牌"
+  },
+  "wholeStage": "一并清理,此阶段要么全部清理,要么都不清理。",
+  "selectStage": "选择 {{stage}} 的全部",
+  "selectRow": "选择 {{name}}",
+  "locked": {
+    "database": "数据库数据永远不会被自动移除。",
+    "kept": "暂时保留。",
+    "label": "已锁定"
+  },
+  "stageNote": "未运行:{{reason}}",
+  "loading": "正在检查可移除的内容",
+  "empty": "没有需要移除的内容。",
+  "error": "无法加载清理计划。",
+  "retry": "重试",
+  "selected": "已选择 {{count}} 项,共 {{size}}",
+  "none": "未选择任何内容",
+  "preview": "预览",
+  "previewing": "正在预览",
+  "apply": "应用",
+  "applying": "正在应用",
+  "confirm": {
+    "line": "现在移除 {{count}} 项,共 {{size}}?已删除的数据无法恢复。",
+    "yes": "是,删除",
+    "cancel": "取消"
+  },
+  "result": {
+    "previewed": "预览:可回收 {{size}}。",
+    "applied": "完成:已回收 {{size}}。",
+    "ignoredTitle": "未处理",
+    "ignoredRow": "{{name}}({{stage}}):{{reason}}",
+    "failed": "运行报告了错误:{{error}}"
+  },
+  "history": {
+    "loading": "正在加载历史运行",
+    "empty": "尚无清理运行记录。",
+    "error": "无法加载清理历史。",
+    "time": "时间",
+    "by": "发起者",
+    "reclaimed": "已回收",
+    "mode": "模式",
+    "dryRun": "试运行",
+    "applied": "已应用",
+    "trigger": {
+      "scheduled": "计划",
+      "manual": "手动",
+      "disk_fix": "磁盘修复"
+    },
+    "kind": {
+      "user": "用户",
+      "api_token": "API 令牌",
+      "schedule": "计划"
+    }
+  }
+}

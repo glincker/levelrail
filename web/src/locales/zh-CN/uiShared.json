@@ -1,0 +1,85 @@
+{
+  "saveStatus": {
+    "saving": "正在保存",
+    "saved": "已保存",
+    "error": "无法保存"
+  },
+  "breadcrumb": {
+    "label": "面包屑导航"
+  },
+  "pagination": {
+    "label": "分页",
+    "status": "第 {{page}} 页,共 {{count}} 页",
+    "previous": "上一页",
+    "next": "下一页"
+  },
+  "stepper": {
+    "decrease": "减少",
+    "increase": "增加"
+  },
+  "chip": {
+    "remove": "移除 {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "时间范围",
+    "refresh": "刷新"
+  },
+  "logToolbar": {
+    "level": "日志级别",
+    "levels": {
+      "all": "全部",
+      "errors": "错误",
+      "warnings": "警告",
+      "info": "信息",
+      "debug": "调试"
+    },
+    "filterPlaceholder": "筛选行",
+    "filterLabel": "筛选日志行",
+    "jumpToError": "跳到第一个错误",
+    "copy": "复制",
+    "copied": "已复制",
+    "copiedAnnounce": "已复制到剪贴板",
+    "download": "下载",
+    "shownOf": "{{shown}} / {{total}} 行"
+  },
+  "filterChips": {
+    "group": "当前筛选条件",
+    "clearAll": "清除所有筛选条件",
+    "showing": "显示 {{shown}} / {{total}}",
+    "emptyTitle": "没有符合这些筛选条件的内容",
+    "emptyBody": "全部 {{total}} 项仍然存在。请移除某个筛选条件或全部清除。",
+    "status": "状态:{{value}}",
+    "search": "搜索:{{value}}",
+    "tag": "标签:{{value}}",
+    "environment": "环境:{{value}}",
+    "engine": "引擎:{{value}}",
+    "labels": "标签:{{value}}"
+  },
+  "listKeys": {
+    "title": "键盘快捷键",
+    "down": "下一行",
+    "up": "上一行",
+    "select": "选择行",
+    "open": "打开行",
+    "filter": "聚焦到筛选框",
+    "hint": "显示或隐藏此面板",
+    "close": "隐藏键盘快捷键"
+  },
+  "guidedEmpty": {
+    "viaCli": "或通过 CLI 完成",
+    "cliLabel": "CLI 命令"
+  },
+  "savedViews": {
+    "button": "视图",
+    "label": "已保存的视图",
+    "empty": "尚无已保存的视图。",
+    "apply": "应用视图 {{name}}",
+    "delete": "删除视图 {{name}}",
+    "deleted": "视图已删除",
+    "saved": "已保存视图 {{name}}",
+    "namePlaceholder": "将当前筛选条件另存为",
+    "shareTeam": "与我的团队共享",
+    "teamBadge": "团队",
+    "save": "保存视图"
+  }
+}

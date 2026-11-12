@@ -1,0 +1,97 @@
+{
+  "title": "Beta 功能",
+  "description": "所有仍在验证中的功能。在这里开启;如果该功能在启动时接入,请在同一张卡片中重启以使其生效。",
+  "groups": {
+    "beta": "Beta",
+    "experimental": "实验性"
+  },
+  "banner": {
+    "title": "{{name}} 是 Beta 功能",
+    "body": "开启后即可继续。",
+    "bodyRestart": "开启后重启即可生效。",
+    "ready": "{{name}} 已开启。",
+    "takeMeThere": "带我过去",
+    "unknown": "此服务器不认识该功能。"
+  },
+  "state": {
+    "on": "开",
+    "off": "关",
+    "onByEnv": "通过服务器设置开启",
+    "onBySetting": "已在设置中开启"
+  },
+  "toggle": {
+    "label": "开启 {{name}}",
+    "on": "{{name}} 已开启",
+    "off": "{{name}} 已关闭",
+    "error": "无法更改 {{name}}:{{message}}",
+    "lockedByEnv": "已由服务器设置开启,因此无法在此关闭。"
+  },
+  "env": {
+    "copy": "复制",
+    "copied": "已复制",
+    "line": "设置行",
+    "systemd": "systemd",
+    "docker": "Docker"
+  },
+  "docs": "阅读文档",
+  "error": "无法加载 Beta 功能:{{message}}",
+  "readOnly": "只有管理员可以切换 Beta 功能。",
+  "restart": {
+    "needed": "已保存。重启后此更改才会生效。进行中的部署和日志流会被中断,并在之后恢复。",
+    "now": "立即重启",
+    "unsupported": "此安装无法自行重启,因为未检测到进程管理器。请重启控制面,然后重新检查。",
+    "recheck": "重新检查",
+    "manual": "改为从服务器重启",
+    "askAdmin": "已保存。需要管理员重启控制面才能生效。"
+  },
+  "options": {
+    "open": "改用 CLI 或服务器配置",
+    "title": "用另一种方式开启 {{name}}",
+    "description": "卡片上的开关效果相同。如果你更喜欢命令行,或通过配置管理服务器,可以使用这些方式。",
+    "cli": "CLI",
+    "cliLine": "CLI 命令",
+    "cliRestartLine": "带重启的 CLI 命令",
+    "server": "服务器配置",
+    "reload": "重新加载 systemd",
+    "restartUnit": "重启该单元",
+    "recreate": "重建容器",
+    "restartNote": "此功能在服务器启动时接入,因此重启后才会生效。"
+  },
+  "profile": {
+    "title": "服务器配置档",
+    "description": "决定服务器启动哪些可选部分。在不同配置档之间切换永远不会删除数据。其中大部分在启动时接入,因此更改需重启后生效。",
+    "names": {
+      "minimal": "精简",
+      "standard": "标准",
+      "suite": "完整套件"
+    },
+    "summary": {
+      "minimal": "尽可能轻量的单台服务器。你没有要求的东西都不会运行。",
+      "standard": "默认安装。小团队所需的一切。",
+      "suite": "标准配置加上 mesh、插件和所有实验性功能。"
+    },
+    "facts": {
+      "meshOn": "Mesh 已开启",
+      "meshOff": "Mesh 已关闭",
+      "pluginsOn": "插件已开启",
+      "pluginsOff": "插件已关闭",
+      "experimentalOn": "所有实验性功能已开启",
+      "experimentalOff": "实验性功能已关闭",
+      "retention": "指标和日志保留 {{days}} 天",
+      "loopbackAgent": "在节点注册之前,Agent 监听器仅在回环地址上",
+      "lazyLoops": "安排备份时才启动备份循环",
+      "recommendations": "备份和密钥轮换显示为建议,而不是评分项",
+      "sbom": "构建时生成 SBOM"
+    },
+    "current": "当前",
+    "use": "使用此配置档",
+    "confirm": "确认并应用",
+    "saved": "{{name}} 配置档已保存",
+    "error": "无法更改配置档:{{message}}",
+    "recommended": "此机器内存较少。{{name}} 配置档是最轻量的选择。",
+    "pinned": "由服务器设置",
+    "pinnedHelp": "服务器上设置了 {{env}},由它决定配置档。在那里移除后才能从此页面选择。",
+    "neverDeletes": "降级会停止循环并隐藏路由,但永远不会删除数据行。会使已注册节点或已启用插件成为孤立项的切换将被拒绝。",
+    "readOnly": "只有管理员可以更改服务器配置档。"
+  }
+}

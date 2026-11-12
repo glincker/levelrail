@@ -1,0 +1,84 @@
+{
+  "page": {
+    "title": "设置你的仪表盘",
+    "description": "只需几个简单选择。任何一项都可以跳过,稍后再回来设置。"
+  },
+  "rail": {
+    "label": "设置步骤",
+    "progress": "第 {{current}} 步,共 {{total}} 步:{{name}}",
+    "done": "已完成"
+  },
+  "steps": {
+    "welcome": {
+      "label": "欢迎",
+      "title": "欢迎使用 Levelrail",
+      "description": "你在这台服务器上运行应用,Levelrail 负责照看它们。"
+    },
+    "profile": {
+      "label": "个人资料",
+      "title": "你的个人资料",
+      "description": "你的名称和头像在团队中的显示方式。"
+    },
+    "preferences": {
+      "label": "偏好",
+      "title": "Levelrail 对你的外观",
+      "description": "更改会立即生效。你之后可以在设置中随时修改所有这些内容。"
+    },
+    "finish": {
+      "label": "完成",
+      "title": "设置完成",
+      "description": "你的选择已保存。接下来有两个不错的去处。"
+    }
+  },
+  "footer": {
+    "back": "上一步",
+    "skip": "暂时跳过",
+    "continue": "继续",
+    "start": "开始",
+    "finish": "完成"
+  },
+  "welcome": {
+    "deploy": "从仓库、镜像或模板部署应用。",
+    "protect": "Levelrail 会配置 HTTPS、执行备份,并在出现故障时通知你。",
+    "time": "设置大约需要 5 分钟。每一步都可以跳过。",
+    "dismiss": "不再显示"
+  },
+  "profile": {
+    "section": "个人资料",
+    "name": "显示名称",
+    "nameHint": "最多 {{max}} 个字符。",
+    "avatar": "头像",
+    "avatarHint": "首字母显示在根据你的账户选取的颜色上。自定义颜色即将推出。",
+    "gravatar": "使用 Gravatar",
+    "gravatarHint": "从 gravatar.com 加载你的头像,因此你的浏览器会联系对方。默认关闭。"
+  },
+  "preferences": {
+    "section": "偏好"
+  },
+  "finish": {
+    "deploy": "部署你的第一个应用",
+    "guide": "按照设置指南配置 HTTPS、备份和告警",
+    "open": "打开"
+  },
+  "card": {
+    "title": "设置你的仪表盘",
+    "body": "选择名称、外观和语言。大约需要 5 分钟。",
+    "start": "开始",
+    "resumeTitle": "完成设置",
+    "resumeBody": "你停在了第 {{current}} 步,共 {{total}} 步。",
+    "resume": "继续",
+    "dismiss": "不再显示"
+  },
+  "closed": {
+    "body": "设置已完成。你可以随时重新运行。",
+    "restart": "重新运行设置",
+    "dashboard": "前往仪表盘"
+  },
+  "unavailable": {
+    "body": "此服务器不支持引导式设置。"
+  },
+  "errors": {
+    "save": "无法保存你的进度。请重试。",
+    "transition": "当前不允许该操作。请刷新页面后重试。"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "title": "自动清理",
+  "description": "按计划释放此节点的磁盘:未使用的容器和镜像、超出预算的构建缓存、孤立的卷(先进入隔离区)以及旧的失败部署尝试。回滚目标和运行中应用使用的卷永远不会被移除。",
+  "loadError": "无法加载清理状态。",
+  "notConfigured": "此控制面不支持清理。",
+  "mode": {
+    "off": "关闭",
+    "preview": "仅预览",
+    "removing": "移除中"
+  },
+  "status": {
+    "title": "磁盘与上次清理",
+    "free": "总计 {{total}},可用 {{free}}({{percent}}%)",
+    "freeUnknown": "此节点未报告可用空间。",
+    "budget": "按大小触发的清理在可用空间低于 {{percent}}% 时开始。",
+    "reclaimed": "累计回收:{{size}}",
+    "lastPass": "上次清理 {{when}}({{trigger}},{{size}})",
+    "noPass": "尚未运行过清理。",
+    "trigger": {
+      "scheduled": "计划",
+      "manual": "手动",
+      "disk_fix": "磁盘修复"
+    }
+  },
+  "pressure": {
+    "title": "磁盘空间低于预算",
+    "body": "立即清理会移除未使用的 Docker 数据和旧的尝试。仍在使用的内容会保留。",
+    "action": "立即清理"
+  },
+  "actions": {
+    "preview": "预览",
+    "runNow": "立即运行",
+    "running": "运行中"
+  },
+  "toast": {
+    "previewed": "预览已就绪,未移除任何内容。",
+    "ran": "清理完成,已回收 {{size}}。",
+    "failed": "清理完成但有错误:{{error}}",
+    "saved": "清理策略已保存。"
+  },
+  "report": {
+    "title": "一次清理会做什么",
+    "empty": "没有需要清理的内容。",
+    "more": "以及另外 {{count}} 项",
+    "skipped": "已跳过:{{reason}}",
+    "failed": "失败:{{error}}",
+    "previewNote": "仅预览,未移除任何内容。"
+  },
+  "stage": {
+    "containers": "已停止的容器",
+    "images": "悬空镜像",
+    "build_cache": "构建缓存",
+    "volumes": "孤立的卷",
+    "deploy_attempts": "旧的部署尝试",
+    "api_tokens": "已撤销和已过期的 API 令牌"
+  },
+  "stageHelp": {
+    "containers": "没有任何应用或数据库再需要的已停止容器。在磁盘不足时运行。",
+    "images": "仅限未打标签的镜像。已打标签的镜像(包括回滚目标)永远不会被移除。",
+    "build_cache": "超过时限的空闲构建缓存,缓存超出预算时会清理更多。",
+    "volumes": "没有应用使用的卷会先进入隔离区,只有在你允许时才会删除。数据库数据永远不会被移除。",
+    "deploy_attempts": "超过保留期的失败、被取代和已取消的尝试。成功的尝试和回滚固定项会保留。",
+    "api_tokens": "超过保留期的已撤销或已过期的 API 令牌。有效令牌永远不会被移除。可在设置的 API 令牌下配置保留期。"
+  },
+  "action": {
+    "removed": "已移除",
+    "would_remove": "将移除",
+    "quarantined": "已隔离",
+    "would_quarantine": "将隔离",
+    "kept": "已保留"
+  },
+  "quarantine": {
+    "title": "已隔离的卷",
+    "description": "没有任何内容使用的卷。只有在保留期结束且开启自动删除后才会被删除。",
+    "empty": "隔离区中没有卷。",
+    "ready": "可以删除",
+    "until": "{{date}} 起可删除",
+    "deleteOff": "自动删除已关闭"
+  },
+  "policy": {
+    "title": "策略",
+    "enabled": "计划清理",
+    "enabledHelp": "在后台运行清理。",
+    "dryRun": "仅预览",
+    "dryRunHelp": "计划清理只报告它会做什么,不会移除任何内容。关闭后才会开始移除。",
+    "interval": "两次清理间隔(分钟)",
+    "budget": "磁盘可用空间预算(%)",
+    "budgetHelp": "仅当可用空间低于此值时才清理容器和镜像。",
+    "cacheBudget": "构建缓存预算(MB)",
+    "cacheBudgetHelp": "超过此大小时,会更深入地裁剪空闲缓存。0 表示关闭预算。",
+    "cacheAge": "构建缓存最长空闲时间(小时)",
+    "quarantineDays": "卷隔离期(天)",
+    "deleteVolumes": "隔离期后删除卷",
+    "deleteVolumesHelp": "关闭则孤立的卷会一直保留在列表中。数据库卷永远不会被删除。",
+    "attemptDays": "部署尝试保留期(天)",
+    "attemptKeep": "每个应用保留的最新尝试数",
+    "stages": "阶段",
+    "save": "保存策略",
+    "rootOnly": "只有 root 账户可以更改策略。",
+    "invalid": "每个数字都必须是不小于 1 的整数。"
+  },
+  "history": {
+    "title": "回收字节历史",
+    "empty": "尚无清理运行记录。",
+    "row": "{{when}},{{trigger}}",
+    "failed": "有错误"
+  }
+}

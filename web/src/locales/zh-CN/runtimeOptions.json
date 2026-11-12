@@ -1,0 +1,32 @@
+{
+  "service": "服务",
+  "title": "{{service}} 的运行时选项",
+  "description": "此服务可以设置的容器选项。其他一切,例如额外的 capability 或设备,均不可访问。",
+  "tmpfs": {
+    "label": "Tmpfs 挂载",
+    "hint": "每行一个,/path:size=64m。最多 {{max}} 个。"
+  },
+  "ulimits": {
+    "label": "Ulimit",
+    "hint": "每行一个,name=soft:hard。最多 {{max}} 个,可选 {{names}}。"
+  },
+  "extraHosts": {
+    "label": "额外主机",
+    "hint": "每行一个,hostname:ip。最多 {{max}} 个。"
+  },
+  "dns": { "label": "DNS 服务器", "hint": "每行一个 IP。最多 {{max}} 个。" },
+  "sysctls": {
+    "label": "Sysctl",
+    "hint": "每行一个,key=value。允许:{{names}}。"
+  },
+  "stopTimeout": { "label": "停止超时(秒)", "hint": "最多 {{max}}。" },
+  "pids": { "label": "进程数限制", "hint": "最多 {{max}}。" },
+  "init": { "label": "Init 进程", "hint": "以最小化的 init 作为 PID 1 运行。" },
+  "badUlimit": "每行使用 name=soft 或 name=soft:hard。",
+  "badSysctl": "每行使用 key=value。",
+  "save": "保存",
+  "saving": "正在保存",
+  "saved": "运行时选项已保存",
+  "recreates": "保存会重建容器。",
+  "readOnly": "你需要敏感写入权限才能更改运行时选项。"
+}

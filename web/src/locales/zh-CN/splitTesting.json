@@ -1,0 +1,90 @@
+{
+  "title": "分流测试",
+  "description": "将此应用一定比例的访客分流到分支部署或保留的发布版本。每位访客通过 Cookie 保持同一变体,Cookie 仅在测试运行期间设置。",
+  "nav": "分流测试",
+  "loading": "正在加载分流测试",
+  "loadError": "无法加载分流测试:{{message}}",
+  "unsupportedTitle": "此应用不支持分流测试",
+  "unsupportedHelp": "适用于带域名的容器应用。暂不支持静态站点。",
+  "empty": {
+    "title": "没有正在运行的分流测试",
+    "body": "选择一个分支部署或保留的发布版本,为其分配一定比例的访客,并在提升获胜者之前比较请求数。"
+  },
+  "start": {
+    "title": "开始分流测试",
+    "kind": "变体来源",
+    "kindBranch": "分支部署",
+    "kindRelease": "保留的发布版本",
+    "branch": "分支部署",
+    "branchPlaceholder": "选择一个分支部署",
+    "noBranches": "没有就绪的分支部署。请先启用分支部署并推送一个分支。",
+    "release": "发布部署名称",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "变体标签",
+    "weight": "访客比例(%)",
+    "cookieName": "Cookie 名称",
+    "cookieTtl": "Cookie 有效期",
+    "cookieTtlHelp": "例如 720h。留空则使用服务器默认值。",
+    "submit": "开始测试",
+    "success": "分流测试已开始",
+    "errorTitle": "无法开始分流测试"
+  },
+  "status": {
+    "running": "运行中",
+    "stopped": "已停止",
+    "live": "线上",
+    "ready": "就绪",
+    "unavailable": "不可用"
+  },
+  "kind": {
+    "production": "生产",
+    "branch": "分支部署",
+    "release": "发布版本"
+  },
+  "table": {
+    "caption": "正在运行的分流测试的变体",
+    "variant": "变体",
+    "status": "状态",
+    "weight": "权重",
+    "requests": "请求数",
+    "actions": "操作",
+    "weightFor": "{{label}} 的访客比例",
+    "productionKeeps": "生产保留 {{percent}}%",
+    "overshoot": "各变体合计超过 100%,请调低某个权重。",
+    "saveWeights": "保存权重",
+    "weightsSaved": "权重已保存",
+    "copyQa": "复制 QA 链接",
+    "qaCopied": "QA 链接已复制",
+    "qaHelp": "打开 QA 链接会为你的浏览器强制使用该变体并保持不变。",
+    "promote": "提升",
+    "unavailableHelp": "此变体无法访问,因此其访客将看到生产版本。"
+  },
+  "stats": {
+    "title": "每小时请求数",
+    "hour": "小时",
+    "total": "测试开始以来共 {{count}} 个请求",
+    "none": "尚未统计到请求。"
+  },
+  "cookie": {
+    "summary": "Cookie {{name}},有效期 {{hours}} 小时。在 URL 后添加 ?{{param}}=<variant> 可强制使用某个变体。"
+  },
+  "stop": {
+    "button": "停止测试",
+    "title": "停止分流测试?",
+    "body": "所有访客将重新访问生产版本。请求数会保留。",
+    "confirm": "停止测试",
+    "success": "分流测试已停止"
+  },
+  "promote": {
+    "title": "提升 {{label}}?",
+    "body": "{{label}} 将通过正常部署流程成为生产部署,随后测试结束。",
+    "locked": "当应用的发布被锁定时,此操作会被拒绝。",
+    "confirm": "提升获胜者",
+    "success": "获胜者已提升"
+  },
+  "ended": {
+    "title": "上次测试",
+    "reason": "已结束:{{reason}}"
+  },
+  "error": "分流测试操作失败"
+}

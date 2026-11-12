@@ -1,0 +1,71 @@
+{
+  "title": "休眠历史",
+  "description": "此应用何时进入休眠、什么唤醒了它,以及唤醒耗时多久。下方绘制的是最近 7 天。",
+  "loading": "正在加载休眠历史",
+  "loadError": "无法加载休眠历史。",
+  "retry": "重试",
+  "asleepNow": "自 {{since}} 起休眠",
+  "awakeNow": "运行中",
+  "timelineLabel": "最近 7 天的运行与休眠情况",
+  "timelineStart": "7 天前",
+  "timelineEnd": "现在",
+  "legend": {
+    "asleep": "休眠",
+    "awake": "运行中"
+  },
+  "stats": {
+    "asleep7d": "休眠,7 天",
+    "asleep30d": "休眠,30 天",
+    "wakes7d": "唤醒,7 天",
+    "avgLatency": "平均唤醒时间",
+    "p95Latency": "最慢的 5% 唤醒",
+    "lastSlept": "上次休眠",
+    "lastWoke": "上次唤醒",
+    "memorySaved": "节省内存,30 天",
+    "memorySavedValue": "{{value}} GiB 小时",
+    "none": "暂无"
+  },
+  "events": {
+    "title": "事件",
+    "empty": "尚无记录。应用休眠或唤醒时,事件会显示在这里。",
+    "emptyTitle": "无休眠事件",
+    "kind": {
+      "slept": "进入休眠",
+      "woke": "已唤醒",
+      "enabled": "已开启空闲休眠",
+      "disabled": "已关闭空闲休眠",
+      "wake_failed": "唤醒失败"
+    },
+    "reason": {
+      "idle_timeout": "空闲超时",
+      "manual": "手动",
+      "request": "请求",
+      "schedule": "计划",
+      "deploy": "部署",
+      "api": "API",
+      "port": "已发布端口上的流量"
+    },
+    "columns": {
+      "when": "时间",
+      "event": "事件",
+      "reason": "原因",
+      "measure": "时长 / 延迟",
+      "detail": "详情"
+    },
+    "sleptFor": "休眠了 {{duration}}",
+    "readyIn": "{{duration}} 后就绪",
+    "idleAfter": "空闲 {{minutes}} 分钟后",
+    "fromSource": "来自 {{source}}",
+    "byActor": "由 {{actor}}"
+  },
+  "disabled": {
+    "title": "空闲休眠已关闭",
+    "body": "开启后,应用会在无人使用时停止,你可以在这里查看它何时休眠和唤醒。",
+    "action": "开启空闲休眠",
+    "toastError": "无法开启空闲休眠"
+  },
+  "badge": {
+    "title": "休眠中,下一次请求时唤醒",
+    "asleepFor": "已休眠 {{duration}}"
+  }
+}

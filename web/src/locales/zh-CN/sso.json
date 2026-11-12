@@ -1,0 +1,293 @@
+{
+  "page": {
+    "eyebrow": "安全",
+    "title": "单点登录",
+    "description": "让人们通过你的身份提供商以 SAML 2.0 登录,将目录组映射到角色,并决定本地密码是否仍然有效。",
+    "connectedCount_other": "{{count}} 个连接已开启",
+    "addConnection": "添加 SAML 连接",
+    "setupBanner": {
+      "title": "请先完成设置",
+      "masterKey": "SAML 需要控制面主密钥来保存其签名密钥。请先配置主密钥,然后再回来。",
+      "baseUrl": "SAML 需要 https 的仪表盘 URL,因为身份提供商会向它提交登录响应。请在设置的通用中设置。"
+    }
+  },
+  "list": {
+    "title": "SAML 连接",
+    "description": "每个连接信任一个身份提供商。已启用的连接会在登录页上显示一个按钮。",
+    "emptyTitle": "暂无 SAML 连接",
+    "emptyBody": "为 Okta、Entra ID、Keycloak 或任何 SAML 2.0 身份提供商添加一个。",
+    "configure": "配置",
+    "state": {
+      "enabled": "已启用",
+      "disabled": "关闭",
+      "incomplete": "需要 IdP 信息"
+    },
+    "jit": "自动创建账户",
+    "certExpires": "证书 {{date}} 过期"
+  },
+  "form": {
+    "newTitle": "新建 SAML 连接",
+    "editTitle": "配置 {{name}}",
+    "sheetDescription": "将这些服务提供方的值提供给你的身份提供商,然后导入其元数据。",
+    "name": "显示名称",
+    "nameHelp": "显示在登录按钮上,例如公司或 IdP 名称。",
+    "enabled": "在登录页上显示",
+    "sp": {
+      "title": "服务提供方详情",
+      "description": "将这些复制到你在身份提供商处创建的 SAML 应用中。",
+      "entityId": "实体 ID(受众)",
+      "acsUrl": "断言消费者服务 URL",
+      "metadataUrl": "元数据 URL",
+      "saveFirst": "保存连接以获取其 URL。",
+      "copy": "复制{{label}}"
+    },
+    "import": {
+      "title": "导入 IdP 元数据",
+      "description": "粘贴来自你身份提供商的元数据 URL 或 XML。这会填充实体 ID、登录 URL 和签名证书;当元数据列出多个证书时,会选用今天有效的最新一个。",
+      "url": "元数据 URL",
+      "xml": "元数据 XML",
+      "button": "导入元数据",
+      "done": "元数据已导入。请检查并启用该连接。"
+    },
+    "idp": {
+      "title": "身份提供商",
+      "description": "由导入填充,或手动输入。响应必须由此证书签名。",
+      "entityId": "IdP 实体 ID(颁发者)",
+      "ssoUrl": "IdP 登录 URL",
+      "certificates": "签名证书(PEM)",
+      "certificatesHelp": "一个证书。当身份提供商轮换其密钥时,请在切换时粘贴或导入新证书。"
+    },
+    "access": {
+      "title": "账户与角色",
+      "description": "决定谁可以登录,以及他们获得什么角色。",
+      "jit": "首次登录时创建账户",
+      "jitHelp": "关闭:只有在此处已有账户的人才能登录。",
+      "syncRoles": "每次登录时应用映射的角色",
+      "syncRolesHelp": "身份提供商处的组变更会在下次登录时生效。不在任何已映射组中的人会获得默认角色,若没有默认角色则被拒绝。",
+      "defaultRole": "默认角色",
+      "defaultRoleNone": "无:拒绝不在任何已映射组中的人",
+      "domains": "允许的邮箱域名",
+      "domainsHelp": "必填。以逗号分隔,例如 example.com。只有这些域名可以登录,这能防止外部账户与你的账户相匹配。"
+    },
+    "attributes": {
+      "title": "属性名称",
+      "description": "留空则使用 Okta、Entra ID 和 Keycloak 的常用名称。",
+      "email": "邮箱属性",
+      "name": "显示名称属性",
+      "groups": "组属性"
+    },
+    "save": "保存连接",
+    "saved": "连接已保存",
+    "delete": "删除连接",
+    "deleteTitle": "删除 {{name}}?",
+    "deleteBody": "通过此连接关联的人保留其账户,但无法再用它登录。",
+    "deleted": "连接已删除"
+  },
+  "mappings": {
+    "title": "组到角色的映射",
+    "description": "当有人登录或目录组发生变化时,优先级最高的匹配组决定其角色。组名匹配不区分大小写。",
+    "group": "组名",
+    "role": "角色",
+    "priority": "优先级",
+    "add": "添加映射",
+    "remove": "移除 {{group}} 的映射",
+    "empty": "暂无映射。所有人都获得该连接的默认角色。",
+    "save": "保存映射",
+    "saved": "映射已保存"
+  },
+  "enforce": {
+    "title": "要求单点登录",
+    "description": "对除 root 用户之外的所有人,拒绝密码、通行密钥和邮件验证码登录。",
+    "label": "对非 root 用户要求 SSO",
+    "breakGlass": "root 用户保留其密码作为应急通道,且主机上的 recover-admin 仍可重置它。请参阅紧急访问文档。",
+    "on": "现已要求单点登录",
+    "off": "再次允许本地登录"
+  },
+  "spCert": {
+    "title": "服务提供方证书",
+    "description": "首次使用时生成。某些身份提供商会要求它,以验证已签名的请求或加密断言。",
+    "none": "在配置控制面主密钥之前不可用。"
+  },
+  "scim": {
+    "title": "目录同步(SCIM)",
+    "description": "让你的身份提供商创建、更新和停用账户和组。在那里停用某人会立即结束其在此处的会话。",
+    "baseUrl": "SCIM 基础 URL",
+    "defaultRole": "新目录用户的角色",
+    "defaultRoleHelp": "在没有组映射匹配时使用。配置了组映射时,目录组的变更会立即更新角色。",
+    "roleSaved": "目录默认角色已保存",
+    "tokens": "令牌",
+    "tokenName": "令牌名称",
+    "tokenNamePlaceholder": "okta-provisioning",
+    "create": "创建令牌",
+    "empty": "暂无 SCIM 令牌。创建一个并粘贴到你的身份提供商中。",
+    "rotate": "轮换",
+    "revoke": "撤销",
+    "revoked": "已撤销",
+    "neverUsed": "从未使用",
+    "lastUsed": "上次使用 {{date}}",
+    "revokeTitle": "撤销 {{name}}?",
+    "revokeBody": "使用此令牌的配置会立即停止。",
+    "revokedToast": "令牌已撤销",
+    "shownOnceTitle": "请立即复制令牌",
+    "shownOnceBody": "它只显示一次,仅以哈希形式存储。请将其粘贴到你身份提供商的 SCIM 设置中。",
+    "done": "完成"
+  },
+  "policy": {
+    "eyebrow": "安全",
+    "title": "会话策略",
+    "description": "对每个团队设置、每个请求都会检查的规则:空闲超时、最长会话时长、允许的网络,以及必需的双因素登录。属于多个团队的人适用最严格的组合。",
+    "yourAddress": "你的地址:{{address}}",
+    "recoveryTitle": "被锁在外面了?",
+    "recoveryBody": "在主机上运行 levelrail access-policy-reset --yes 以移除所有会话策略,然后重新登录。保存会阻止你自己地址的策略会被拒绝。",
+    "noPolicy": "无策略",
+    "edit": "编辑策略",
+    "idle": "空闲超时",
+    "idleHelp": "结束空闲这么久的会话,例如 30m。至少 5m。留空则关闭。",
+    "maxAge": "最长会话时长",
+    "maxAgeHelp": "结束超过此时长的会话,例如 12h。至少 15m。留空则关闭。",
+    "maxSessions": "每人并发会话数",
+    "maxSessionsHelp": "一个人在所有浏览器和设备上同时可持有的完整会话的最大数量。0 表示关闭上限。",
+    "onLimit": "达到上限时",
+    "onLimitEvict": "登出最旧的会话",
+    "onLimitReject": "拒绝新的登录",
+    "onLimitHelp": "在登录或双因素步骤之后的第一个请求时检查,之后每 30 秒检查一次。超出上限的会话会结束并给出明确提示。",
+    "allowlist": "允许的网络",
+    "allowlistHelp": "每行一个 IP 地址或 CIDR。适用于会话和 API 令牌。留空则允许任何地址。",
+    "requireMfa": "要求双因素登录",
+    "requireMfaHelp": "没有验证器应用或通行密钥的人在注册之前只能注册一个。SAML 登录也计入,因为身份提供商负责处理 MFA。",
+    "save": "保存策略",
+    "saved": "会话策略已保存",
+    "clear": "移除策略",
+    "cleared": "会话策略已移除",
+    "sheetTitle": "{{team}} 的会话策略",
+    "summaryIdle": "空闲 {{value}}",
+    "summaryMaxAge": "最长 {{value}}",
+    "summaryMfa": "需要 MFA",
+    "summarySessionsEvict_other": "{{count}} 个会话,最旧的会结束",
+    "summarySessionsReject_other": "{{count}} 个会话,超出后拒绝",
+    "summaryAllow_other": "{{count}} 个网络"
+  },
+  "oidc": {
+    "title": "OAuth 和 OIDC 登录",
+    "description": "对你在设置的 OAuth 登录中启用的提供商,提供与 SAML 相同的控制:哪些组获得哪些角色、首次登录是否创建账户,以及哪些邮箱域名可以登录。",
+    "emptyTitle": "暂无 OAuth 或 OIDC 提供商",
+    "emptyBody": "在设置的 OAuth 登录中启用一个提供商。它会连同其登录策略显示在这里。",
+    "syncBadge": "同步角色",
+    "state": {
+      "enabled": "已启用",
+      "off": "关闭"
+    },
+    "form": {
+      "title": "{{name}} 的登录策略",
+      "sheetDescription": "组到角色的映射与 SAML 和目录同步共享:请在此页面的映射卡片中编辑。",
+      "access": {
+        "title": "访问",
+        "description": "默认采用最小权限:拒绝未知的人,没有人获得超过你在此选择的角色的权限。"
+      },
+      "jit": "首次登录时创建账户",
+      "jitHelp": "关闭:在此没有账户的人会被拒绝,除非你先邀请了他们。开启:首次登录会创建账户,角色为映射的角色或默认角色。",
+      "syncRoles": "每次登录时重新应用映射的角色",
+      "syncRolesHelp": "关闭:角色仅在创建账户时设置。开启:角色在每次登录时跟随组变化,降级会写入审计日志。root 用户永远不会被更改。",
+      "defaultRole": "默认角色",
+      "defaultRoleHelp": "用于没有任何映射匹配的人。持有 root 的角色永远不会提供:登录声明无法授予它。",
+      "domains": "允许的邮箱域名",
+      "domainsHelp": "以逗号分隔,例如 example.com。只有这些域名可以登录,且登录页会将它们引导到此提供商。留空则允许任何域名并关闭路由。",
+      "groups": {
+        "title": "组",
+        "description": "此提供商在哪里说明某人属于哪些组。",
+        "unsupported": "此提供商不发送可读取组信息的已验证 ID 令牌,因此所有人都获得默认角色。请将通用的 OpenID Connect 提供商与你的身份提供商配合使用来映射组。"
+      },
+      "groupsClaim": "组声明",
+      "groupsClaimHelp": "ID 令牌中列出组名的声明,例如 groups、roles 或 realm_access.roles。只读取已签名的 ID 令牌。",
+      "save": "保存策略",
+      "saved": "登录策略已保存"
+    },
+    "test": {
+      "button": "测试登录",
+      "hint": "测试登录会让你在提供商处登录,并显示一次登录会发生什么。它不会创建账户、角色或会话。请先保存你的更改。",
+      "allowed": "此次登录会被允许",
+      "refused": "此次登录会被拒绝",
+      "groups": "组",
+      "noGroups": "无",
+      "role": "角色",
+      "source": {
+        "mapping": "来自组映射",
+        "default": "默认角色"
+      },
+      "account": "账户",
+      "accountState": {
+        "linked": "已关联",
+        "existing_by_email": "已通过邮箱匹配到现有账户",
+        "new_account": "将创建新账户",
+        "not_provisioned": "无,且账户创建已关闭"
+      },
+      "issue": {
+        "no_groups_claim": "ID 令牌没有 \"{{claim}}\" 声明,因此所有人都获得默认角色。请在你的身份提供商处向 ID 令牌添加组声明。",
+        "wrong_claim_name": "ID 令牌没有 \"{{claim}}\" 声明,但带有一个名为 \"{{value}}\" 的列表。",
+        "email_unverified": "提供商没有将此邮箱标记为已验证,因此登录被拒绝。请在提供商处验证该地址。",
+        "domain_not_allowed": "此邮箱域名不在允许列表中。",
+        "not_provisioned": "此人没有账户,且账户创建已关闭。",
+        "role_grants_root": "此次登录将获得的角色持有 root,或已不存在。声明永远无法授予 root。",
+        "no_email": "提供商没有发送邮箱地址。"
+      },
+      "fix": {
+        "set_groups_claim": "使用 {{value}} 作为组声明",
+        "add_domain": "允许 {{value}}",
+        "enable_jit": "开启账户创建"
+      },
+      "fixManual": "在身份提供商处修复",
+      "fixed": "策略已更新。请再次运行测试。",
+      "failedTitle": "测试登录未完成",
+      "failedBody": "提供商或重定向失败(代码 {{code}})。请检查客户端 ID、客户端密钥和重定向 URL,然后重试。",
+      "nothingCreated": "未创建任何内容:没有账户、角色或会话。"
+    }
+  },
+  "saml": {
+    "test": {
+      "button": "测试登录",
+      "hint": "在你的身份提供商处打开真实的登录,并显示它发送了什么以及一次登录会发生什么。它不会创建账户、角色或会话。请先保存你的更改。",
+      "allowed": "此次登录会被允许",
+      "refused": "此次登录会被拒绝",
+      "email": "邮箱",
+      "none": "无",
+      "fixed": "连接已更新。请再次运行测试。",
+      "fixManual": "在身份提供商处修复",
+      "failureCode": "代码:{{code}}",
+      "issue": {
+        "no_groups_claim": "响应没有 \"{{attribute}}\" 属性,因此所有人都获得默认角色。请在你的身份提供商处添加组属性声明,并将其名称设为组属性。",
+        "domain_not_allowed": "此邮箱域名未被该连接声明。",
+        "not_provisioned": "此人没有账户,且账户创建已关闭。",
+        "role_grants_root": "此次登录将获得的角色持有 root,或已不存在。声明永远无法授予 root。",
+        "no_email": "响应没有携带邮箱地址。请检查邮箱属性名称和 NameID 格式。",
+        "wrong_claim_name": "响应没有 \"{{attribute}}\" 属性。请对照身份提供商发送的内容检查组属性名称。",
+        "email_unverified": "身份提供商没有为此邮箱地址作担保。"
+      },
+      "failure": {
+        "clock_skew": {
+          "title": "时钟偏差",
+          "step": "断言超出了其有效期窗口。请检查此服务器与身份提供商的时钟是否在三分钟内一致(NTP),然后重试。"
+        },
+        "audience_mismatch": {
+          "title": "受众不匹配",
+          "step": "身份提供商指向了另一个服务提供方。请将其受众(实体 ID)设为 {{entityId}},并将其 ACS URL 设为 {{acs}}。"
+        },
+        "signature_invalid": {
+          "title": "签名无效",
+          "step": "断言不是由存档的证书签名的。请重新导入身份提供商元数据,并确保它对断言签名,而不仅仅是对响应签名。"
+        },
+        "request_mismatch": {
+          "title": "响应与请求不匹配",
+          "step": "该响应针对的是另一个请求或目的地。请从此页面重新开始测试,并在身份提供商处检查 ACS URL {{acs}}。"
+        },
+        "response_invalid": {
+          "title": "响应被拒绝",
+          "step": "无法验证该响应。请检查身份提供商日志,然后重新导入其元数据。"
+        },
+        "saml_unavailable": {
+          "title": "登录不可用",
+          "step": "SAML 需要 https 的仪表盘 URL 和控制面主密钥。请在设置的通用中修复两者,然后重试。"
+        }
+      }
+    }
+  }
+}

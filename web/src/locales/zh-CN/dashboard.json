@@ -1,0 +1,314 @@
+{
+  "needsAttention": {
+    "askAi": "询问 AI",
+    "review": "查看",
+    "retryCopy": "重试复制",
+    "openDatabase": "打开数据库"
+  },
+  "fleet": {
+    "reserved": {
+      "title": "预留与已用",
+      "subtitle": "{{active}} 个运行中的应用和数据库(含副本)所配置的限制。{{suspended}} 个已停止的未计入。",
+      "cpu": "CPU",
+      "memory": "内存",
+      "cores_other": "核",
+      "reserved": "预留",
+      "used": "当前已用",
+      "capacity": "容量",
+      "unknown": "未报告",
+      "cpuCapacityScope": "CPU 容量为控制面节点的核数。",
+      "capacityPartial": "{{total}} 个节点中有 {{known}} 个报告了容量。",
+      "reservedBar": "{{resource}}预留",
+      "usedBar": "{{resource}}已用",
+      "verdict": {
+        "overCommitted": "超配 {{amount}}",
+        "idle": "已预留但空闲",
+        "headroom": "余量充足",
+        "noLimits": "未设置限制",
+        "unknownCapacity": "容量未完全报告"
+      },
+      "noLimit": {
+        "cpu_other": "{{count}} 个容器没有 CPU 限制,未计入。",
+        "memory_other": "{{count}} 个容器没有内存限制,未计入。"
+      },
+      "breakdown": "按分组的预留",
+      "groupBy": "分组依据",
+      "by": {
+        "project": "项目",
+        "environment": "环境"
+      },
+      "colReserved": "预留",
+      "colUsed": "已用",
+      "pairHint": "CPU 核数 / 内存。",
+      "unsetInGroup_other": "{{count}} 个无限制",
+      "noProject": "无项目",
+      "noEnvironment": "无环境",
+      "topReservers": "预留最多的资源",
+      "noReservers": "尚无资源设置了限制。",
+      "kind": {
+        "app": "应用",
+        "database": "数据库"
+      }
+    },
+    "storage": {
+      "title": "存储",
+      "scope": "卷大小涵盖控制面节点。备份大小涵盖所有节点。",
+      "databaseVolumes": "数据库卷",
+      "appVolumes": "应用卷",
+      "unknownSizes_other": "{{count}} 个卷大小未知",
+      "backups": "已存储的备份",
+      "backupCount_other": "{{count}} 个备份",
+      "total": "总计",
+      "totalHint": "卷加备份。",
+      "largestVolumes": "最大的卷",
+      "largestBackups": "最大的备份集",
+      "noVolumes": "未报告卷大小。",
+      "notReported": "未报告大小。",
+      "noBackups": "尚无成功的备份。"
+    }
+  },
+  "status": {
+    "ok": "所有系统正常",
+    "incidents_other": "{{count}} 个事件"
+  },
+  "tiles": {
+    "appsRunning": "运行中的应用",
+    "requests": "请求数",
+    "errorRate": "错误率",
+    "noTraffic": "无流量",
+    "deploys24h": "24 小时部署",
+    "nodesOnline": "在线节点",
+    "lastHour": "最近一小时,所有应用。",
+    "addDomain": "添加域名",
+    "deployApp": "部署应用",
+    "idle": "空闲"
+  },
+  "resources": {
+    "title": "资源",
+    "controlPlane": "控制面",
+    "cpu": "CPU",
+    "memory": "内存",
+    "disk": "磁盘",
+    "cpuOfCores": "{{cores}} 核中的 {{percent}}%",
+    "cpuContainers": "所有容器合计 {{percent}}%",
+    "noReadings": "此节点尚无主机读数。",
+    "memoryBreakdown": "内存分布",
+    "segment": {
+      "levelrail": "{{brand}}",
+      "apps": "应用",
+      "databases": "数据库",
+      "other": "其他容器",
+      "system": "系统",
+      "free": "空闲"
+    },
+    "segmentHelp": {
+      "levelrail": "控制面和节点 Agent",
+      "apps": "你已部署应用的容器",
+      "databases": "你托管数据库的容器",
+      "other": "运行在此服务器上但不由 {{brand}} 管理",
+      "system": "内核、页缓存和其他进程",
+      "free": "仍可用的内存"
+    },
+    "notManaged": "不由 {{brand}} 管理",
+    "topConsumers": "消耗最多的项",
+    "sortBy": "排序依据",
+    "sort": {
+      "memory": "内存",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "应用",
+      "database": "数据库",
+      "other": "容器"
+    },
+    "requestTrend": "{{name}} 的请求趋势",
+    "viewAll_other": "查看全部 {{count}} 项",
+    "showLess": "收起",
+    "databasesLine_other": "{{count}} 个数据库"
+  },
+  "recommendations": {
+    "line_other": "{{count}} 条建议"
+  },
+  "usageDetails": {
+    "title": "用量详情"
+  },
+  "hero": {
+    "title": "仪表盘"
+  },
+  "banners": {
+    "httpsTitle": "此仪表盘使用的是明文 HTTP",
+    "httpsDetail": "密码和会话以未加密方式传输。一键开启 HTTPS,无需 DNS。",
+    "httpsAction": "启用 HTTPS",
+    "doctorTitle_other": "Doctor 发现了 {{count}} 个问题",
+    "doctorDetail": "每个问题都有修复方法或下一步操作。",
+    "doctorAction": "打开 Doctor",
+    "nodesTitle_other": "{{count}} 个节点已离线",
+    "nodesDetail": "离线节点上的应用继续运行,但无法更改,其 mesh 入口也已中断。",
+    "nodesAction": "查看节点"
+  },
+  "nextSteps": {
+    "title": "推荐的下一步",
+    "seeAll": "状态页",
+    "continue": "继续",
+    "setupProgress": "设置已就绪 {{percent}}%",
+    "quiet": "没有需要你处理的内容。{{total}} 个应用中有 {{running}} 个在运行,最近 24 小时有 {{deploys}} 次部署。",
+    "group": {
+      "copy_other": "{{count}} 个数据库的数据复制失败",
+      "show_other": "显示全部 {{count}} 项",
+      "hide": "隐藏"
+    },
+    "review": "查看"
+  },
+  "deploys": {
+    "title": "最近的部署",
+    "empty": "暂无部署。向已连接的仓库推送后,它们会显示在这里。",
+    "emptyScoped": "此范围内的应用暂无部署。",
+    "status": {
+      "succeeded": "已部署",
+      "failed": "失败",
+      "running": "部署中",
+      "held": "已暂缓",
+      "awaiting_approval": "等待批准",
+      "superseded": "已被取代",
+      "queued": "排队中",
+      "canceled": "已取消",
+      "pending": "排队至节点恢复"
+    }
+  },
+  "strip": {
+    "nodeOffline_other": "{{count}} 个节点离线:{{names}}",
+    "nodeOfflineSince": "自",
+    "nodeOfflineView": "查看节点",
+    "ok_other": "全部 {{count}} 个应用健康",
+    "issues_other": "{{count}} 项需要处理",
+    "causes_other": "{{count}} 个问题,源自 {{causes}} 个根本原因",
+    "details": "详情",
+    "notices_other": "{{count}} 条通知",
+    "showSnoozed_other": "显示 {{count}} 个已延后"
+  },
+  "scope": {
+    "label": "正在显示 {{name}}",
+    "clear": "清除范围,显示所有项目",
+    "allProjects": "所有项目",
+    "instanceWide": "所有项目",
+    "instanceWideHint": "整个实例范围。不受你所选项目或环境的筛选。"
+  },
+  "apps": {
+    "title": "应用",
+    "search": "搜索应用",
+    "none": "没有匹配的应用。",
+    "emptyScopedTitle": "{{scope}} 中暂无应用",
+    "emptyScopedBody": "在此处部署一个,它就会出现在此范围内,或切换到所有项目查看全部内容。",
+    "emptyScopedClear": "显示所有项目",
+    "viewAll": "查看全部 {{count}} 项",
+    "view": {
+      "grid": "网格视图",
+      "list": "列表视图"
+    }
+  },
+  "widgets": {
+    "attention": "需要你处理",
+    "apps": "应用",
+    "activity": "最近的部署",
+    "fleet": "集群",
+    "resources": "资源",
+    "advisor": "资源顾问",
+    "alerts": "最近的告警",
+    "usage": "用量详情"
+  },
+  "customize": {
+    "edit": "自定义",
+    "done": "完成",
+    "reset": "重置布局",
+    "show": "显示 {{name}}",
+    "moveUp": "上移 {{name}}",
+    "moveDown": "下移 {{name}}",
+    "hide": "隐藏 {{name}}"
+  },
+  "newApp": {
+    "label": "新建应用",
+    "more": "更多部署方式",
+    "items": {
+      "git": {
+        "title": "从 Git 仓库",
+        "hint": "每次推送都会构建并部署"
+      },
+      "image": {
+        "title": "从 Docker 镜像",
+        "hint": "拉取预构建镜像"
+      },
+      "template": {
+        "title": "从模板",
+        "hint": "n8n、Uptime Kuma、MinIO 等"
+      },
+      "compose": {
+        "title": "从 Docker Compose",
+        "hint": "部署文件中的每个服务"
+      },
+      "database": {
+        "title": "数据库",
+        "hint": "Postgres、MySQL、Redis 等"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "重试向 {{name}} 的复制",
+    "description": "上一次的来源已填入。请再次输入密码,密码绝不会被存储。如果来源要求加密,复制会自动使用 TLS 重试。",
+    "loading": "正在加载上一次尝试...",
+    "missing": "此数据库没有可重试的复制。"
+  },
+  "snooze": {
+    "label": "延后一天",
+    "done_other": "已将 {{count}} 项延后一天。",
+    "undo": "撤销"
+  },
+  "tabs": {
+    "label": "仪表盘视图",
+    "start": "开始",
+    "metrics": "指标",
+    "more": "更多视图",
+    "hiddenSuffix": "{{name}}(已隐藏)",
+    "addTitle": "新建仪表盘",
+    "addDescription": "从现成的仪表盘开始,或从空白开始。",
+    "empty": "空仪表盘",
+    "metricsNote": "整个集群的汇总数据。自定义它即可创建你自己的副本。",
+    "customize": "自定义",
+    "emptyName": "未命名仪表盘",
+    "metricsEmptyTitle": "暂无指标",
+    "metricsEmptyBody": "第一个应用运行后会出现指标。部署一个即可在这里查看 CPU、内存和流量。",
+    "metricsEmptyAction": "部署你的第一个应用"
+  },
+  "manage": {
+    "label": "管理",
+    "new": "新建面板",
+    "starter": "从入门模板新建",
+    "import": "导入 JSON",
+    "importFile": "仪表盘 JSON 文件",
+    "edit": "编辑面板",
+    "doneEditing": "停止编辑",
+    "rename": "重命名",
+    "renameTitle": "重命名面板",
+    "name": "名称",
+    "export": "导出 JSON",
+    "delete": "删除",
+    "deleteTitle": "删除 {{name}}?",
+    "deleteBody": "该面板将对所有能看到它的人移除。已导出的 JSON 文件不受影响。",
+    "cancel": "取消",
+    "save": "保存"
+  },
+  "updateStrip": {
+    "label": "有可用更新",
+    "to": "到",
+    "behind_other": "落后 {{count}} 个版本",
+    "security": "包含安全修复",
+    "whatsNew": "新增内容",
+    "update": "更新",
+    "dismiss": "在下一个版本之前隐藏 {{version}}"
+  },
+  "restoreDue": {
+    "title": "测试一次恢复",
+    "body": "你有备份,但尚未测试过恢复。从未恢复过的备份只是一种猜测。",
+    "action": "测试恢复",
+    "dismiss": "忽略"
+  }
+}

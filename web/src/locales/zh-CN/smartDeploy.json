@@ -1,0 +1,204 @@
+{
+  "title": "部署",
+  "description": "部署此应用的新版本。",
+  "git": {
+    "headTitle": "部署 {{branch}} 上的最新提交",
+    "deployHead": "部署最新提交",
+    "deployBranch": "部署 {{branch}} 的最新提交",
+    "starting": "正在开始构建",
+    "loading": "正在加载提交",
+    "useImage": "改为部署镜像",
+    "statusUpToDate": "已是最新,{{sha}} 在线",
+    "statusAhead_other": "领先线上版本 {{count}} 个提交",
+    "statusAheadUnknown": "比线上版本更新,或线上版本来自其他分支",
+    "statusNeverDeployed": "尚未记录此来源的部署",
+    "recent": "最近的提交",
+    "deploy": "部署",
+    "deployCommit": "部署提交 {{sha}}",
+    "redeploy": "重新部署",
+    "branch": "分支",
+    "branchOther": "不是已连接的分支。推送部署仍然跟随 {{branch}}。",
+    "byAuthor": "{{author}},{{age}}",
+    "noMessage": "无提交说明",
+    "refresh": "刷新提交",
+    "noCommits": "此分支尚无提交。",
+    "degraded": "此主机不提供提交列表,因此只显示 {{branch}} 的最新提交。",
+    "loadFailed": "无法加载提交",
+    "retry": "重试",
+    "connectedTo": "已连接的仓库",
+    "buildWith": "构建方式",
+    "dockerfile": "Dockerfile {{path}}",
+    "contextDir": "来自 {{dir}}",
+    "buildTypes": {
+      "dockerfile": "Dockerfile",
+      "railpack": "自动检测(Railpack)",
+      "static": "静态站点",
+      "image": "预构建镜像"
+    },
+    "status": {
+      "deployed": "线上",
+      "failed": "失败",
+      "running": "构建中",
+      "queued": "排队中",
+      "held": "已暂缓",
+      "succeeded": "已构建",
+      "canceled": "已取消",
+      "superseded": "已被取代"
+    },
+    "shortcuts": {
+      "title": "快捷操作",
+      "redeployLast": "重新部署上次成功的版本",
+      "redeployLastHint": "不经构建,重新运行 {{image}}。",
+      "rollbackTo": "回滚到上一版本",
+      "rollbackToHint": "回到 {{image}}。",
+      "rollbackTitle": "回滚到 {{image}}?",
+      "rollbackDescription": "应用将再次运行上一个成功的镜像。",
+      "rollbackConsequence": "上一个版本健康后,当前版本将停止提供服务。",
+      "rollbackConfirm": "回滚",
+      "rollbackPending": "正在回滚"
+    },
+    "toast": {
+      "started": "部署已开始。",
+      "startedFor": "正在构建 {{sha}}。",
+      "approval": "部署正在等待批准。",
+      "failed": "无法开始部署。"
+    },
+    "viewLogs": "查看构建日志"
+  },
+  "suggestions": {
+    "title": "建议",
+    "dismiss": "忽略建议",
+    "head_failed_to_build": {
+      "title": "提交 {{sha}} 构建失败",
+      "detail": "再次部署前请先查看构建日志。",
+      "action": "打开构建日志"
+    },
+    "webhook_signature_failing": {
+      "title": "推送 Webhook 正在被拒绝",
+      "detail": "上一次 Webhook 投递的签名无效,因此推送不会触发部署。",
+      "action": "打开来源设置"
+    },
+    "fix_build_settings": {
+      "title": "检查构建设置",
+      "detail": "这看起来像是 monorepo,或者上次构建因构建配置而失败。",
+      "action": "打开构建设置"
+    },
+    "webhook_not_received": {
+      "title": "开启推送即部署",
+      "detail": "尚无 Webhook 投递到达此应用,因此推送不会自动部署。",
+      "action": "设置 Webhook"
+    },
+    "release_trigger_only": {
+      "title": "仅在发布时部署",
+      "detail": "新提交不会自动部署。准备好后,请从此列表中部署其中一个。",
+      "action": "打开来源设置"
+    },
+    "enable_previews": {
+      "title": "为每个拉取请求生成预览",
+      "detail": "拉取请求事件正在到来。预览会为每一个提供在线 URL。",
+      "action": "启用预览",
+      "done": "预览环境已启用。"
+    },
+    "add_health_check": {
+      "title": "添加健康检查",
+      "detail": "没有健康检查时,启动了但不提供服务的容器仍被视为健康。",
+      "action": "打开健康设置"
+    },
+    "add_deploy_notifications": {
+      "title": "部署完成时收到通知",
+      "detail": "此应用部署或失败时没有人会收到通知。",
+      "action": "设置通知"
+    }
+  },
+  "approval": {
+    "protected": "{{environment}} 是受保护的环境。此处镜像的重新部署和回滚需要等待另一位具有部署权限的用户批准。",
+    "ack": "我已了解并希望继续。"
+  },
+  "image": {
+    "current": "当前镜像",
+    "imageLabel": "镜像",
+    "placeholder": "registry.example.com/app:tag",
+    "suggestionsLabel": "最近的标签",
+    "deploy": "部署镜像",
+    "deploying": "正在部署",
+    "advanced": "高级",
+    "connectInstead": "改为从 Git 仓库部署",
+    "required": "请输入镜像引用。",
+    "toast": {
+      "started": "部署已开始。",
+      "approval": "部署正在等待批准。"
+    }
+  },
+  "connect": {
+    "title": "选择此应用的部署来源",
+    "repoTitle": "连接仓库",
+    "repoDescription": "每次推送都可以构建并部署。从已连接的提供方中选择仓库,或粘贴 URL。",
+    "connect": "连接仓库",
+    "connecting": "正在连接",
+    "connected": "仓库已连接。",
+    "failed": "无法连接仓库。",
+    "orImage": "或部署容器镜像",
+    "imageDescription": "指向一个已构建并已推送的镜像。"
+  },
+  "pending": {
+    "title": "自线上部署以来的变更",
+    "none": "与线上部署没有差异。",
+    "empty": "无",
+    "loadFailed": "无法加载待处理的变更。",
+    "env": {
+      "added": "环境变量已添加",
+      "removed": "环境变量已移除",
+      "changed": "环境变量已更改"
+    },
+    "field": {
+      "image": "镜像",
+      "image_digest": "镜像摘要",
+      "commit_sha": "提交",
+      "port": "端口",
+      "host_port": "主机端口",
+      "bind_address": "网络接口",
+      "domains": "域名",
+      "strategy": "部署策略",
+      "replicas": "副本数",
+      "volumes": "卷",
+      "labels": "标签"
+    }
+  },
+  "schedule": {
+    "toggle": "稍后安排",
+    "whenLabel": "部署时间",
+    "zone": "时间采用你的时区:{{zone}}",
+    "required": "请选择日期和时间。",
+    "invalid": "该日期和时间无效。",
+    "past": "请选择未来的时间。",
+    "submit": "安排部署",
+    "submitting": "正在安排",
+    "toast": {
+      "created": "部署已安排。",
+      "failed": "无法安排部署。",
+      "canceled": "计划部署已取消。",
+      "cancelFailed": "无法取消计划部署。"
+    },
+    "list": {
+      "title": "计划部署",
+      "description": "等待运行的一次性部署。与任何部署一样,它们遵守部署冻结、门禁和审批。",
+      "empty": "没有已安排的内容。",
+      "image": "镜像 {{image}}",
+      "ref": "{{ref}} 上的最新提交",
+      "runsAt": "{{when}} 运行",
+      "cancel": "取消",
+      "canceling": "正在取消",
+      "loadFailed": "无法加载计划部署。",
+      "status": {
+        "pending": "待处理",
+        "running": "正在启动",
+        "fired": "已开始",
+        "pending_approval": "等待批准",
+        "skipped_freeze": "已跳过,部署冻结",
+        "missed": "已错过",
+        "canceled": "已取消",
+        "failed": "失败"
+      }
+    }
+  }
+}

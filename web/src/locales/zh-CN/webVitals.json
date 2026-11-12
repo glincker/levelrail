@@ -1,0 +1,19 @@
+{
+  "title": "Web Vitals",
+  "collect": "采集",
+  "errorTitle": "Web Vitals 更新失败",
+  "snippetHint": "将此标签添加到你的站点。它会从真实访问中发送 LCP、INP、CLS、TTFB 和 FCP,不使用 Cookie,也不记录 IP 地址。",
+  "copySnippet": "复制代码片段",
+  "copied": "已复制",
+  "createKey": "创建信标密钥",
+  "rotateKey": "轮换密钥",
+  "emptyDisabled": "开启采集并添加代码片段,即可查看真实访客如何体验此应用。",
+  "emptyEnabled": "暂无数据。在安装了代码片段的情况下访问你的站点,结果会显示在这里。",
+  "p75Label": "{{metric}} p75",
+  "route": "路由",
+  "windowNote": "最近 {{days}} 天的 p75。",
+  "routesTitle": "按路由的 Web Vitals",
+  "viewAllRoutes": "查看全部路由({{count}})",
+  "samples": "样本",
+  "legend": "绿色为良好,琥珀色需要改进,红色为较差,采用标准的 Core Web Vitals 阈值。"
+}

@@ -1,0 +1,116 @@
+{
+  "title": "部署时间线",
+  "subtitle": "所有应用的每次部署,放在同一条时间轴上。运行中的部署会实时更新。",
+  "zoom": {
+    "label": "时间范围",
+    "1h": "1 小时",
+    "24h": "24 小时",
+    "7d": "7 天"
+  },
+  "filters": {
+    "label": "筛选",
+    "app": "应用",
+    "allApps": "所有应用",
+    "project": "项目",
+    "allProjects": "所有项目",
+    "node": "节点",
+    "allNodes": "所有节点",
+    "status": "状态",
+    "allStatuses": "所有状态",
+    "clear": "清除筛选"
+  },
+  "status": {
+    "building": "构建中",
+    "queued": "排队中",
+    "ready": "就绪",
+    "failed": "失败",
+    "canceled": "已取消",
+    "held": "已暂缓",
+    "awaiting_approval": "等待批准",
+    "rolled_back": "已回滚",
+    "superseded": "已被取代"
+  },
+  "stream": {
+    "connecting": "正在连接",
+    "live": "实时",
+    "reconnecting": "正在重新连接"
+  },
+  "legend": {
+    "label": "图例",
+    "ready": "就绪",
+    "building": "进行中",
+    "failed": "失败",
+    "rolledBack": "已回滚",
+    "canceled": "已取消",
+    "alert": "告警已触发",
+    "now": "现在"
+  },
+  "chart": {
+    "label": "所选时间范围内按应用统计的部署",
+    "laneLabel": "{{app}},{{count}} 次部署",
+    "barLabel": "{{app}},{{status}},开始于 {{when}},{{duration}}。打开部署详情。",
+    "axisLabel": "时间轴",
+    "alertLabel": "告警已触发:{{rule}},{{when}}",
+    "clusterLabel": "{{app}} 中有 {{count}} 次部署时间相近。显示每次部署。",
+    "clusterChip": "+{{count}}",
+    "collapse": "折叠已分组的部署",
+    "now": "现在",
+    "latest": "最新部署:{{status}}",
+    "unknownProject": "无项目"
+  },
+  "card": {
+    "title": "部署详情",
+    "commit": "提交",
+    "noCommit": "无提交",
+    "actor": "执行者",
+    "unknownActor": "未知",
+    "duration": "耗时",
+    "running": "运行中",
+    "strategy": "策略",
+    "noStrategy": "未记录",
+    "trigger": "触发方式",
+    "environment": "环境",
+    "rollbackOf": "回滚到 {{id}}",
+    "open": "打开部署"
+  },
+  "empty": {
+    "title": "此范围内没有部署",
+    "body": "在这些筛选条件下,最近 {{range}} 内没有任何部署。请尝试更长的时间范围或清除筛选。",
+    "action": "显示 7 天",
+    "sampleLabel": "示例时间线"
+  },
+  "error": {
+    "title": "无法加载部署时间线",
+    "retry": "重试"
+  },
+  "loading": "正在加载部署",
+  "more": {
+    "label": "加载更早的部署",
+    "loading": "正在加载",
+    "failed": "无法加载更多部署。请重试。"
+  },
+  "count": "{{apps}} 个应用共 {{deploys}} 次部署",
+  "banner": {
+    "description": "每个应用每次部署的时间线,失败和回滚会被标出。部署一个应用后,它的泳道就会出现在这里。"
+  },
+  "appHistory": {
+    "title": "历史",
+    "managedBy": "由栈 {{stack}} 管理",
+    "kind": {
+      "deploy": "部署",
+      "rollback": "回滚",
+      "restart": "重启"
+    },
+    "status": {
+      "running": "运行中",
+      "succeeded": "成功",
+      "failed": "失败",
+      "held": "已暂缓",
+      "awaiting_approval": "等待批准",
+      "superseded": "已被取代",
+      "queued": "排队中",
+      "canceled": "已取消",
+      "pending": "待处理"
+    }
+  }
+}

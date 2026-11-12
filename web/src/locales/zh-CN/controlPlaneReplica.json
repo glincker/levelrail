@@ -1,0 +1,7 @@
+{
+  "label": "持续副本",
+  "summary": "每 {{seconds}} 秒一次,上次发送于 {{age}}({{kb}} KB,{{ms}} ms)",
+  "neverShipped": "每 {{seconds}} 秒一次,尚未发送",
+  "pending": "自 {{age}} 起有变更等待发送",
+  "error": "上次发送失败:{{message}}"
+}

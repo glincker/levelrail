@@ -1,0 +1,520 @@
+{
+  "loadBalancers": {
+    "loadError": "无法加载负载均衡器"
+  },
+  "loadBalancerPicker": {
+    "loadError": "无法加载你的应用",
+    "loadErrorHint": "请关闭此对话框后重试。"
+  },
+  "loadBalancerPage": {
+    "loadError": "无法加载负载均衡器",
+    "statusError": "无法加载上游状态"
+  },
+  "healthTimeline": {
+    "loadError": "无法加载部署历史",
+    "loadErrorHint": "时间线需要它。请稍后重试。"
+  },
+  "mesh": {
+    "title": "WireGuard mesh",
+    "loading": "正在加载 mesh 状态...",
+    "disabledTitle": "未启用 mesh 网络",
+    "disabledHint": "在此控制面上设置 APP_MESH_ENABLED=1,以启动其 WireGuard 设备和对等节点可见性。",
+    "never": "从未",
+    "secondsAgo": "{{count}} 秒前",
+    "minutesAgo": "{{count}} 分钟前",
+    "noMeshAddress": "尚无 mesh 地址",
+    "notPeered": "尚未建立对等连接",
+    "healthy": "健康",
+    "stale": "已过期",
+    "noLivePeer": "没有实时对等节点条目",
+    "backend": "后端",
+    "unknown": "未知",
+    "meshAddress": "Mesh 地址",
+    "notAssigned": "未分配",
+    "publicKey": "公钥",
+    "notGenerated": "尚未生成",
+    "endpoint": "端点",
+    "lastHandshake": "最近握手",
+    "rotationConfirmed": "最近一次轮换已确认:开始于 {{started}},确认于 {{confirmed}}",
+    "rotationConfirmedNoTime": "最近一次轮换已确认:开始于 {{started}}",
+    "rotationPending": "最近一次轮换仍在确认中:开始于 {{started}}",
+    "noPeers": "尚未配置对等节点。",
+    "peersLabel": "Mesh 对等节点",
+    "peer": "对等节点",
+    "health": "健康"
+  },
+  "lb": {
+    "header": {
+      "of": "/",
+      "healthy": "健康",
+      "aboutAlgorithm": "关于此算法",
+      "checkNow": "立即检查",
+      "checkNowCooldown": "立即检查({{seconds}} 秒)",
+      "export": "导出",
+      "moreActions": "更多操作",
+      "remove": "移除负载均衡器",
+      "removeHint": "域名将回到单一上游"
+    },
+    "empty": {
+      "title": "在副本之间分散流量",
+      "description": "健康检查、重试和干净的切换。最少连接配合被动故障检测是个不错的起点。当你的应用提供健康检查后,再添加主动健康检查。",
+      "create": "创建推荐的设置",
+      "creating": "正在创建",
+      "presets": "或从预设开始",
+      "diagram": "推荐设置:客户端、代理、{{count}} 个副本",
+      "clients": "客户端",
+      "proxy": "代理"
+    },
+    "remove": {
+      "title": "移除负载均衡器?",
+      "description": "{{app}} 的域名将回到单一上游。运行中的副本不受影响。",
+      "cancel": "取消",
+      "confirm": "移除"
+    },
+    "metrics": {
+      "healthy": "健康",
+      "latency": "延迟",
+      "latencyInfo": "健康副本上最近一次健康检查的中位数。",
+      "connections": "连接数",
+      "connectionsInfo": "所有副本当前打开的请求数。"
+    },
+    "history": {
+      "none": "尚未记录任何检查",
+      "passed": "{{when}}:通过",
+      "passedIn": "{{when}}:{{ms}}ms 内通过",
+      "failed": "{{when}}:失败",
+      "failedReason": "{{when}}:失败,{{reason}}",
+      "failedStatus": "{{when}}:失败,状态 {{status}}"
+    },
+    "table": {
+      "label": "上游",
+      "upstream": "上游",
+      "status": "状态",
+      "latency": "延迟",
+      "traffic": "流量",
+      "conns": "连接",
+      "share": "占比",
+      "lastChecks": "最近 12 次检查",
+      "latencyTrend": "{{dial}} 最近 30 分钟的延迟",
+      "noData": "暂无数据",
+      "replica": "副本 {{replica}}",
+      "checked": "已检查",
+      "notChecked": "尚未检查",
+      "changed": "已更改",
+      "openConnections": "打开的连接数",
+      "shareEstimated": "估算占比,非实测",
+      "shareMeasured": "流量占比",
+      "actionsFor": "{{name}} 的操作",
+      "viewDetails": "查看详情",
+      "viewDetailsHint": "检查、变更和操作"
+    },
+    "drawer": {
+      "description": "上游详情和操作",
+      "trafficShare": "流量占比",
+      "connections": "连接数",
+      "failures": "失败次数",
+      "latency": "延迟",
+      "replica": "副本",
+      "node": "节点",
+      "local": "本地",
+      "checked": "检查时间",
+      "actions": "操作",
+      "recentChecks": "最近的检查",
+      "passed": "通过",
+      "failed": "失败",
+      "failedReason": "失败:{{reason}}",
+      "stateChanges": "状态变化",
+      "noChanges": "未记录任何变化。",
+      "transition": "{{from}} 变为 {{to}}"
+    },
+    "export": {
+      "formats": "导出格式",
+      "cdkHint": "这是一个栈类。将其添加到 CDK 应用并在你的应用入口点实例化,然后运行 cdk deploy。",
+      "copy": "复制",
+      "copied": "已复制",
+      "download": "下载",
+      "contents": "{{file}} 的内容",
+      "applyWith": "应用方式",
+      "section": "导出",
+      "toggle": "导出为代码"
+    },
+    "page": {
+      "loading": "正在加载负载均衡器",
+      "reconcilerNote": "入口 reconciler 会在下一轮应用它。",
+      "undo": "撤销",
+      "saveError": "无法保存负载均衡器。",
+      "applied": "已应用:{{title}}",
+      "applyError": "无法应用该建议。",
+      "unknownError": "未知",
+      "checkFinished": "检查完成:{{total}} 个中 {{ok}} 个通过",
+      "checkUnavailable": "立即检查暂不可用。",
+      "checkFailed": "检查失败。",
+      "adminError": "无法更新上游。",
+      "removed": "负载均衡器已移除。",
+      "removedHint": "{{app}} 再次路由到单一上游。",
+      "removeError": "无法移除负载均衡器。",
+      "created": "负载均衡器已创建。",
+      "saved": "负载均衡器已保存。",
+      "newTitle": "新建负载均衡器",
+      "newHint": "请检查设置,然后创建。",
+      "guide": "负载均衡指南"
+    },
+    "algo": {
+      "label": "均衡算法",
+      "about": "关于{{name}}",
+      "roundRobinUse": "请求开销大致相同。",
+      "roundRobinTradeoff": "简单且公平,但不考虑副本有多忙。",
+      "leastConnUse": "请求的耗时各不相同。",
+      "leastConnTradeoff": "使负载更均匀,每个请求会多一点额外的记录开销。",
+      "ipHashUse": "你需要客户端在不使用 Cookie 的情况下保持固定。",
+      "ipHashTradeoff": "位于同一代理或 CDN 之后的客户端都会落到同一个副本上。",
+      "clientIpHashUse": "你希望在 CDN 或代理之后实现 IP 粘性。",
+      "clientIpHashTradeoff": "需要 APP_INGRESS_TRUSTED_PROXIES,否则等同于 IP 哈希。",
+      "uriHashUse": "副本保留按路径的缓存。",
+      "uriHashTradeoff": "热点路径可能使单个副本过载。",
+      "cookieUse": "会话存放在副本内存中。",
+      "cookieTradeoff": "将浏览器固定到一个副本,因此可能出现负载不均。",
+      "weightedUse": "金丝雀发布或规格不同的副本。",
+      "weightedTradeoff": "你需要手动维护权重。",
+      "round_robin": {
+        "label": "轮询",
+        "description": "每个请求依次发送到下一个副本。"
+      },
+      "least_conn": {
+        "label": "最少连接",
+        "description": "发送到活跃请求最少的副本。"
+      },
+      "ip_hash": {
+        "label": "IP 哈希",
+        "description": "同一客户端地址始终访问同一个副本。"
+      },
+      "client_ip_hash": {
+        "label": "客户端 IP 哈希",
+        "description": "在处理完受信任代理之后对客户端 IP 做哈希,使 CDN 之后的客户端分散到各个副本。"
+      },
+      "uri_hash": {
+        "label": "URI 哈希",
+        "description": "同一路径始终访问同一个副本(利于缓存)。"
+      },
+      "cookie": {
+        "label": "粘性 Cookie",
+        "description": "Cookie 将浏览器会话固定到一个副本。"
+      },
+      "weighted": {
+        "label": "加权",
+        "description": "为每个副本分配一定的流量占比,适用于金丝雀发布。"
+      }
+    },
+    "bar": {
+      "region": "未保存的更改",
+      "risky": "有风险的更改",
+      "cancel": "取消",
+      "revert": "还原",
+      "saving": "正在保存",
+      "create": "创建",
+      "save": "保存",
+      "confirmTitle": "保存有风险的更改?",
+      "confirmHint": "这些更改会立即作用于线上流量。",
+      "keepEditing": "继续编辑",
+      "saveAnyway": "仍然保存"
+    },
+    "configure": {
+      "section": "配置",
+      "toggle": "配置",
+      "traffic": "流量",
+      "health": "健康",
+      "resilience": "韧性",
+      "cookieName": "Cookie 名称",
+      "cookieNameInfo": "将浏览器固定到一个副本的 Cookie。",
+      "presets": "预设",
+      "about": "关于{{name}}"
+    },
+    "health": {
+      "active": "主动检查",
+      "activeInfo": "按间隔探测每个副本,并停止向失败的副本发送流量。",
+      "path": "路径",
+      "pathInfo": "在每个副本上探测的 URL。它应当快速返回,且只依赖应用本身。",
+      "status": "期望状态",
+      "statusInfo": "视为通过的 HTTP 状态。留空则接受任意 2xx 或 3xx。",
+      "statusPlaceholder": "2xx 或 3xx",
+      "interval": "间隔",
+      "intervalInfo": "多久探测一次每个副本。",
+      "timeout": "超时",
+      "timeoutInfo": "等待响应多久。必须短于间隔。",
+      "fails": "判定下线所需的失败次数",
+      "failsInfo": "副本被移出池之前连续失败的探测次数。",
+      "passes": "恢复所需的通过次数",
+      "passesInfo": "副本重新加入池之前连续通过的探测次数。",
+      "passive": "被动检查",
+      "passiveInfo": "观察真实请求。持续失败的副本会被暂时跳过,比等待下一次探测更快。",
+      "maxFails": "跳过前的失败次数",
+      "maxFailsInfo": "窗口内触发跳过的失败请求数。",
+      "skipFor": "跳过时长",
+      "skipForInfo": "失败的副本被跳过多久,同时也是统计失败的窗口。"
+    },
+    "resilience": {
+      "retries": "重试",
+      "retriesInfo": "在放弃之前,在另一个副本上重试失败的请求。对无法重放的流请关闭。",
+      "retryCountInfo": "首次之后的额外尝试次数。0 到 10。",
+      "giveUp": "放弃时间",
+      "giveUpInfo": "重试单个请求所花的总时间。",
+      "requestTimeout": "请求超时",
+      "requestTimeoutInfo": "在请求失败之前,等待副本开始响应多久。",
+      "drain": "部署时排空",
+      "drainInfo": "在部署期间替换副本时,允许已打开的连接完成多久。",
+      "rate": "速率限制",
+      "rateInfo": "限制每个客户端地址的请求数。超出限制的客户端会收到 429 响应。",
+      "rps": "每秒请求数",
+      "rpsInfo": "每个客户端地址允许的持续速率。",
+      "burst": "突发",
+      "burstInfo": "短时间峰值中允许的额外请求数。",
+      "tls": "到上游的 TLS",
+      "tlsInfo": "对副本使用 HTTPS,而不是明文 HTTP。",
+      "serverName": "服务器名称",
+      "serverNameInfo": "副本证书必须匹配的名称。",
+      "skipVerify": "跳过验证",
+      "skipVerifyInfo": "接受任何证书。仅用于测试:它会移除防冒充的保护。",
+      "notVerified": "证书未验证",
+      "verified": "已验证"
+    },
+    "weights": {
+      "split": "流量拆分:{{parts}}",
+      "part": "副本 {{index}} {{share}}%",
+      "title": "流量拆分",
+      "about": "关于权重",
+      "aboutBody": "权重遵循副本索引。权重为 3 的副本获得的流量是权重为 1 的副本的三倍。",
+      "replica": "副本 {{index}}",
+      "weightFor": "副本 {{index}} 的权重",
+      "slowStart": "慢启动",
+      "slowStartInfo": "新副本会在此时间内从零逐步升到其权重,而不是一次性获得全部占比。",
+      "ramp": "新副本在 {{duration}} 内逐步升到目标权重"
+    },
+    "topology": {
+      "traffic": "流量",
+      "howToRead": "如何阅读此图",
+      "howToReadBody": "线条密度表示每个副本占打开连接的比例。运动越快表示延迟越低。形状和标签表示健康状况:带对勾的圆形为健康,三角形为排空中,方形为下线。",
+      "motionOff": "动画已关闭",
+      "pause": "暂停",
+      "play": "播放",
+      "diagram": "流量从客户端经代理到达 {{total}} 个上游,{{healthy}} 个健康",
+      "node": "{{name}}:{{label}},{{reason}}。打开详情",
+      "replica": "副本 {{replica}}",
+      "more": "下方表格中还有 +{{count}} 项",
+      "clients": "客户端",
+      "proxy": "代理",
+      "noUpstreams": "暂无上游",
+      "noUpstreamsHint": "副本启动后它们会出现。",
+      "allDown": "没有任何上游通过检查。在有副本恢复之前,请求可能会失败。",
+      "caption": "上游状态",
+      "upstream": "上游",
+      "state": "状态",
+      "reason": "原因",
+      "share": "占比",
+      "connections": "连接数"
+    },
+    "overview": {
+      "noMatch": "没有负载均衡器匹配此筛选",
+      "noMatchHint": "请清除搜索或选择其他状态。",
+      "configure": "配置负载均衡器",
+      "search": "按应用名称搜索",
+      "searchLabel": "搜索负载均衡器",
+      "state": "状态",
+      "all": "全部",
+      "showing": "显示 {{shown}} / {{total}}(上限 {{limit}})",
+      "listLabel": "负载均衡器",
+      "app": "应用",
+      "algorithm": "算法",
+      "upstreams": "上游",
+      "lastCheck": "最近检查",
+      "notYet": "尚未",
+      "secondsAgo": "{{count}} 秒前",
+      "minutesAgo": "{{count}} 分钟前",
+      "hoursAgo": "{{count}} 小时前",
+      "noneObserved": "未观察到",
+      "healthyOf": "{{total}} 个中 {{healthy}} 个健康",
+      "stateBalancing": "均衡中",
+      "stateDegraded": "性能下降",
+      "stateNone": "无上游"
+    },
+    "picker": {
+      "title": "配置负载均衡器",
+      "description": "选择你想为其副本做均衡的应用。",
+      "noApps": "你还没有应用",
+      "noAppsHint": "负载均衡器会在应用的副本之间分散流量,因此请先创建一个应用。",
+      "createApp": "创建应用",
+      "search": "搜索应用",
+      "noMatch": "没有应用匹配该搜索",
+      "noMatchHint": "请尝试更短或不同的名称。",
+      "truncated": "显示前 {{count}} 个匹配项。请细化搜索以缩小范围。"
+    },
+    "preset": {
+      "balanced": {
+        "name": "均衡的 Web 应用",
+        "useWhen": "典型的无状态 Web 应用或 API。"
+      },
+      "sticky": {
+        "name": "粘性会话",
+        "useWhen": "会话存放在每个副本的内存中。"
+      },
+      "websockets": {
+        "name": "WebSocket 和长连接",
+        "useWhen": "流、套接字或长轮询。",
+        "note": "重试已关闭,因为升级后的连接无法重放。"
+      },
+      "cache": {
+        "name": "缓存友好",
+        "useWhen": "每个副本按路径保留热缓存。"
+      },
+      "canary": {
+        "name": "金丝雀 90/10",
+        "useWhen": "用一小部分流量试用新版本。",
+        "note": "权重遵循副本索引:有 2 个副本时,拆分比例为 90/10。"
+      },
+      "bluegreen": {
+        "name": "蓝绿切换",
+        "useWhen": "以快速、干净的交接方式替换版本。"
+      },
+      "apiguard": {
+        "name": "公共 API 防护",
+        "useWhen": "暴露在互联网上的 API。"
+      }
+    },
+    "admin": {
+      "unsupported": "需要更新的控制面",
+      "active": {
+        "label": "启用",
+        "meaning": "重新加入轮转并接收新请求。"
+      },
+      "draining": {
+        "label": "排空",
+        "meaning": "完成已打开的请求,不再发送新请求。"
+      },
+      "disabled": {
+        "label": "禁用",
+        "meaning": "退出轮转,直到你再次启用。"
+      }
+    },
+    "change": {
+      "value": {
+        "off": "关",
+        "unset": "未设置",
+        "na": "不适用",
+        "even": "均分",
+        "noVerify": "不验证",
+        "passive": "{{fails}} 次失败,跳过 {{skip}}",
+        "retries": "{{within}} 内 {{count}} 次",
+        "rate": "{{rps}}/秒,突发 {{burst}}"
+      },
+      "risk": {
+        "algorithm": "客户端可能被迁移到另一个副本,并丢失内存中的会话。",
+        "active": "失败的副本将继续接收流量。",
+        "rate": "超出限制的客户端会收到 429 响应。",
+        "tls": "副本的证书将不会被验证。"
+      },
+      "label": {
+        "algorithm": "算法",
+        "cookie": "Cookie",
+        "weights": "流量拆分",
+        "active": "健康检查",
+        "interval": "检查间隔",
+        "timeout": "检查超时",
+        "passes": "恢复所需的通过次数",
+        "fails": "判定下线所需的失败次数",
+        "status": "期望状态",
+        "passive": "被动检查",
+        "retries": "重试",
+        "slow": "慢启动",
+        "drain": "排空",
+        "reqTimeout": "请求超时",
+        "rate": "速率限制",
+        "tls": "上游 TLS"
+      }
+    },
+    "effect": {
+      "none": "没有更改。",
+      "split": "新请求按 {{split}} 拆分。",
+      "follow": "新请求遵循{{algo}}。",
+      "drain": "部署会让已打开的流保持 {{drain}}。",
+      "default": "适用于新请求;已打开的连接不会被切断。"
+    },
+    "suggest": {
+      "noHealth": {
+        "title": "没有健康检查",
+        "detail": "失败的副本会继续接收流量。",
+        "action": "添加 /healthz 检查"
+      },
+      "single": {
+        "title": "只有一个副本,没有可均衡的内容",
+        "detail": "运行两个副本以实现故障转移。",
+        "action": "设置副本数"
+      },
+      "flapping": {
+        "title": "某个上游正在抖动",
+        "detail": "10 分钟内状态变化 3 次或更多。",
+        "action": "要求 3 次失败"
+      },
+      "ipHash": {
+        "title": "代理之后使用 IP 哈希",
+        "detail": "位于 CDN 或共享代理之后的客户端会落到同一个副本上。",
+        "action": "使用粘性 Cookie"
+      },
+      "weights": {
+        "title": "权重被忽略",
+        "detail": "只有加权算法才会使用它们。",
+        "action": "使用加权"
+      },
+      "passive": {
+        "title": "被动检查已关闭",
+        "detail": "真实请求的失败本可以更早地剔除副本。",
+        "action": "启用"
+      },
+      "slowStart": {
+        "title": "没有慢启动",
+        "detail": "新副本会一次性获得全部占比。",
+        "action": "在 30 秒内逐步升到目标权重"
+      },
+      "drain": {
+        "title": "部署会切断已打开的流",
+        "detail": "未设置排空时间。",
+        "action": "排空 15 秒"
+      },
+      "timeout": {
+        "title": "健康检查超时过紧",
+        "detail": "检查在 p95 耗时 {{ms}}ms,超时为 {{timeout}}。",
+        "action": "提高到 {{next}} 秒"
+      }
+    }
+  },
+  "guided": {
+    "databases": {
+      "title": "暂无数据库",
+      "body": "在你的某个节点上创建托管的 Postgres、MySQL、Redis 或 MongoDB 数据库,备份和凭据由我们为你处理。",
+      "action": "创建数据库"
+    },
+    "builds": {
+      "title": "暂无构建",
+      "body": "当应用从 Git 仓库或 Dockerfile 部署时,构建会显示在这里。部署一个应用即可开始第一个。",
+      "action": "部署应用"
+    },
+    "backups": {
+      "title": "尚未备份任何内容",
+      "body": "将数据库或卷添加到备份计划,或连接备份目标,其副本就会显示在这里。",
+      "action": "管理备份目标"
+    },
+    "firewall": {
+      "title": "暂无防火墙规则",
+      "body": "只有你的应用发布的端口是开放的。添加规则,即可允许或拒绝来自某个来源范围的端口。",
+      "action": "添加规则"
+    },
+    "alerts": {
+      "title": "暂无告警",
+      "body": "告警属于某个应用。选择一个应用,并为崩溃循环、域名健康或证书过期添加规则。",
+      "action": "选择应用"
+    },
+    "certificates": {
+      "title": "暂无证书",
+      "body": "当你为应用添加域名时,证书会自动签发。",
+      "action": "添加域名"
+    }
+  }
+}

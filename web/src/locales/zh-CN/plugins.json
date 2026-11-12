@@ -1,0 +1,275 @@
+{
+  "title": "插件",
+  "description": "在锁定的容器中运行的已签名扩展。在你信任其发布者并批准其可执行的操作之前,不会加载任何第三方内容。",
+  "install": "安装插件",
+  "tabs": {
+    "installed": "已安装",
+    "marketplace": "市场"
+  },
+  "marketplace": {
+    "search": "搜索插件",
+    "categories": "分类",
+    "allCategories": "全部",
+    "verified": "已验证",
+    "abilitiesSummary": "请求权限:{{abilities}}",
+    "install": "安装",
+    "update": "更新",
+    "uninstall": "卸载",
+    "updateAvailable": "更新到 {{version}}",
+    "installedState": "已安装 {{version}}",
+    "needsNewer": "需要控制面 {{version}} 或更高版本",
+    "showMore": "再显示 {{count}} 项",
+    "recheck": "重新检查",
+    "rechecking": "正在检查...",
+    "retry": "重试",
+    "cancel": "取消",
+    "installed": "{{name}} 已安装并启用",
+    "updated": "{{name}} 已更新",
+    "uninstalled": "{{name}} 已移除",
+    "loadFailed": "无法加载市场",
+    "empty": {
+      "title": "没有匹配的插件",
+      "description": "请尝试其他搜索或分类,或重新检查来源。"
+    },
+    "noSources": {
+      "title": "尚无市场来源",
+      "description": "请在下方添加索引来源。每个来源都由你信任的根密钥签名。"
+    },
+    "problem": {
+      "fetch": "无法访问 {{name}}",
+      "signature": "来自 {{name}} 的索引未通过签名检查,已被忽略",
+      "format": "来自 {{name}} 的索引格式错误,已被忽略",
+      "replay": "来自 {{name}} 的索引比已见过的更旧,已被忽略",
+      "too_large": "来自 {{name}} 的索引过大,已被忽略"
+    },
+    "sheet": {
+      "title": "安装 {{name}}",
+      "updateTitle": "更新 {{name}}",
+      "description": "请仔细查看此次安装会做什么。控制面在做出任何更改之前会再次检查所有这些内容。",
+      "failed": "无法验证此列表",
+      "source": "市场来源",
+      "key": "发布者密钥",
+      "digest": "镜像摘要",
+      "abilities": "将被批准的权限",
+      "exactly": "只批准这里列出的权限。不会授予其他任何权限,插件安装后即启用。",
+      "trust": "信任 {{name}} 的发布者密钥",
+      "trustHint": "该密钥会被加入你的信任列表,并标注为从市场添加。你可以随时移除它。",
+      "install": "安装并启用",
+      "update": "更新",
+      "pending": "处理中..."
+    },
+    "sources": {
+      "title": "市场来源",
+      "description": "每个来源都是一个已签名的插件索引。只显示由该来源根密钥签名的列表项。",
+      "empty": "未配置来源。",
+      "status": {
+        "ok": "已是最新",
+        "stale": "显示最近一次可用的副本",
+        "error": "不可用"
+      },
+      "rootKey": "根密钥 {{key}}",
+      "name": "名称",
+      "url": "索引 URL",
+      "rootKeyLabel": "根公钥(base64)",
+      "add": "添加来源",
+      "added": "来源已添加",
+      "remove": "移除",
+      "removeTitle": "移除 {{name}}?",
+      "removeDescription": "其列表项会消失。已从它安装的插件继续运行。"
+    }
+  },
+  "loadFailed": "无法加载插件",
+  "loadFailedHint": "插件运行时需要可访问的 Docker 守护进程。请检查控制面日志,然后刷新。",
+  "empty": {
+    "title": "未安装任何插件",
+    "description": "请先信任某个发布者的密钥,然后安装你从他们那里获得的插件包。包格式请参阅插件指南。",
+    "action": "安装你的第一个插件"
+  },
+  "columns": {
+    "name": "插件",
+    "state": "状态",
+    "requested": "请求的权限",
+    "approved": "已批准的权限",
+    "actions": "操作"
+  },
+  "publisher": "发布者:{{publisher}}",
+  "none": "无",
+  "state": {
+    "installed": "需要批准",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "removing": "正在移除",
+    "running": "运行中",
+    "stopped": "未运行"
+  },
+  "lastError": "上次错误:{{message}}",
+  "actions": {
+    "review": "审阅并批准",
+    "enable": "启用",
+    "disable": "禁用",
+    "remove": "移除",
+    "enabled": "{{name}} 已启用",
+    "disabled": "{{name}} 已禁用",
+    "removed": "{{name}} 已移除",
+    "failed": "插件操作失败",
+    "upgrade": "升级",
+    "uninstall": "卸载",
+    "restarted": "{{name}} 已重启"
+  },
+  "abilities": {
+    "read": "接收正在投递的告警事件(标题、文本、状态、资源)。",
+    "readSensitive": "同时接收附加在告警上的日志摘录,其中可能包含密钥。"
+  },
+  "approve": {
+    "title": "批准 {{name}}",
+    "description": "请仔细查看 {{publisher}} 发布的 {{name}} {{version}} 请求了什么。在你勾选并批准之前,不会授予任何权限。",
+    "requested": "请求的权限",
+    "network": "网络访问",
+    "networkNone": "无网络。插件无法访问其容器之外的任何内容。",
+    "networkHosts": "插件声明需要的主机:{{hosts}}。",
+    "networkNote": "只有在开启出口代理时才会强制执行这些主机限制。在此之前,声明了任何主机的插件拥有通用网络访问权限。",
+    "image": "镜像",
+    "signedBy": "签名密钥",
+    "never": "插件从不存储密钥。渠道的凭据仅随每次投递一并发送。",
+    "submit": "批准所选项",
+    "pending": "正在批准",
+    "later": "稍后决定",
+    "needsRead": "请勾选读取权限:没有它,通知插件无法工作。",
+    "approved": "{{name}} 已批准。启用它即可启动。",
+    "failed": "无法批准插件"
+  },
+  "installDialog": {
+    "title": "安装插件",
+    "description": "粘贴发布者提供的清单和签名。安装会验证它们并记录该包。它不会批准或启动任何内容。",
+    "manifest": "清单(plugin.yaml)",
+    "manifestHint": "请按发布者提供的原样粘贴该文件。任何修改都会破坏签名。",
+    "signature": "签名",
+    "keyId": "签名密钥",
+    "noKeys": "尚无受信任的密钥。请先在下方添加发布者的密钥。",
+    "pending": "正在验证",
+    "cancel": "取消",
+    "installed": "{{name}} 已安装。接下来请审阅其权限。",
+    "failed": "安装失败",
+    "upgradeTitle": "升级 {{name}}",
+    "reviewDescription": "请检查发布者是谁、是否通过验证,以及它具体可以做什么。批准只会授予列出的权限。",
+    "source": "来源",
+    "sourceManifest": "粘贴清单",
+    "sourceUrl": "清单 URL",
+    "url": "清单 URL(https)",
+    "urlHint": "签名从同一 URL 加上 .sig 读取,除非你在下方粘贴了签名。",
+    "signatureHint": "仅在安装未签名的包时才留空,除非操作员允许未签名插件,否则会被拒绝。",
+    "signatureHintUrl": "当清单旁边有 .sig 文件时可选。",
+    "keyAuto": "从受信任的密钥中检测",
+    "review": "审阅",
+    "reviewing": "正在验证",
+    "back": "上一步",
+    "approveInstall": "批准并安装",
+    "installedApproved": "{{name}} 已安装并批准。启用它即可启动。",
+    "wrongPlugin": "此清单对应的插件不是 {{name}}。"
+  },
+  "remove": {
+    "title": "移除 {{name}}?",
+    "description": "插件将被停止并删除。使用它的通知渠道在你选择其他渠道类型之前将停止投递。",
+    "confirm": "移除插件"
+  },
+  "keys": {
+    "title": "受信任的发布者密钥",
+    "description": "只有由此列表中的密钥签名的包才能安装。该列表初始为空。",
+    "emptyTitle": "没有受信任的密钥",
+    "emptyDescription": "无法安装任何第三方内容。请直接与发布者核实其密钥,然后添加。",
+    "name": "发布者名称",
+    "publicKey": "公钥(base64)",
+    "add": "信任密钥",
+    "adding": "正在添加",
+    "added": "密钥已信任",
+    "addFailed": "无法添加密钥",
+    "colName": "发布者",
+    "colKeyId": "密钥 ID",
+    "colAdded": "添加时间",
+    "remove": "停止信任",
+    "removeTitle": "停止信任 {{name}}?",
+    "removeDescription": "由此密钥签名的插件会在下一次监督循环时停止。它们仍保持已安装状态。",
+    "removed": "密钥已移除"
+  },
+  "fix": {
+    "restart": "修复:重启",
+    "trustKey": "修复:信任签名密钥",
+    "reinstall": "修复:重新安装已签名的包"
+  },
+  "verification": {
+    "verified": "签名已验证",
+    "unsigned": "未签名",
+    "unsigned_refused": "未签名,已拒绝",
+    "untrusted_key": "密钥不受信任",
+    "bad_signature": "签名无效",
+    "digest_mismatch": "摘要不匹配",
+    "unverified": "未验证"
+  },
+  "egress": {
+    "openTitle": "声明的主机未被强制执行",
+    "openBody": "声明了出站主机的插件共享一个通用网络。设置 APP_PLUGIN_EGRESS_MODE=proxy 可将每个插件限制在其声明的主机范围内。",
+    "summary": {
+      "none": "没有被拒绝的连接",
+      "last": "最近 {{when}}",
+      "help": "自出口代理上次重启以来的计数。被拒绝的主机名在代理日志中,而不在这里。",
+      "reasons": {
+        "host_not_allowed": "主机未声明",
+        "blocked_address": "地址被阻止",
+        "resolve_failed": "DNS 查询失败",
+        "dial_failed": "连接失败",
+        "too_many_tunnels": "连接过多",
+        "rate_limited": "已被限流",
+        "bad_request": "请求格式错误",
+        "unknown_caller": "未知调用方"
+      },
+      "count": "被拒绝的连接:{{count}}"
+    }
+  },
+  "review": {
+    "verification": "验证",
+    "digest": "镜像固定为 {{digest}}",
+    "signedBy": "由 {{key}} 签名",
+    "refused": "无法安装此包",
+    "unsignedWarn": "未签名的包未经认证。仅在你自己构建时才安装。",
+    "abilities": "它请求的权限",
+    "newAbility": "新增",
+    "removed": "不再请求:{{abilities}}",
+    "upgradeFrom": "从版本 {{version}} 升级",
+    "panels": "向此页面添加 {{count}} 个只读面板,由仪表盘根据清单渲染。",
+    "reapproval": "访问范围比以前更广",
+    "reapprovalHint": "此版本请求了已安装版本没有的权限或主机。在此批准将恰好授予上面列出的集合。"
+  },
+  "panels": {
+    "title": "插件面板",
+    "from": "{{name}},发布者 {{publisher}}"
+  },
+  "panelHost": {
+    "loadFailed": "此面板无法加载其数据。",
+    "retry": "重试",
+    "empty": "没有可显示的内容。",
+    "showMore": "再显示 {{count}} 项",
+    "widgetUnavailable": "面板的这一部分不可用",
+    "confirm": "确认",
+    "actionDone": "完成",
+    "actionFailed": "操作未完成",
+    "status": {
+      "ok": "正常",
+      "warning": "警告",
+      "error": "错误",
+      "unknown": "未知"
+    }
+  },
+  "dns": {
+    "active": "写入你的 DNS 记录",
+    "inactive": "未用于 DNS 记录,由内置客户端写入",
+    "use": "用于 DNS 记录",
+    "useBuiltIn": "使用内置客户端",
+    "test": "测试连接",
+    "testing": "正在测试...",
+    "testOk_other": "已连接,插件可以看到 {{count}} 个区域",
+    "testFailed": "测试失败:{{message}}",
+    "pluginOn": "DNS 记录现由 {{name}} 写入",
+    "builtInOn": "DNS 记录再次由内置客户端写入",
+    "needsRunning": "请批准并启用该插件,才能测试它或将其用于 DNS 记录。"
+  }
+}
