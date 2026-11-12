@@ -1,0 +1,113 @@
+{
+  "explain": {
+    "toggle": "Erklären",
+    "loading": "Erklärung wird geladen...",
+    "why": "Warum das wichtig ist",
+    "next": "Nächster Schritt",
+    "fix": "Typisierte Korrektur"
+  },
+  "risk": {
+    "safe": "Unbedenklich",
+    "restarts": "Startet einen Dienst neu",
+    "exposes": "Öffnet Zugriff"
+  },
+  "kind": {
+    "auto": "Ein Klick",
+    "guided": "Erfordert einen Schritt auf dem Server",
+    "manual": "Manueller Schritt"
+  },
+  "reversible": "Kann rückgängig gemacht werden",
+  "irreversible": "Kann nicht rückgängig gemacht werden",
+  "willChange": "Was sich ändern wird",
+  "cli": {
+    "summary": "Per CLI beheben",
+    "hint": "Lieber ein Terminal? Führen Sie dies auf dem Server aus und klicken Sie dann auf Erneut prüfen."
+  },
+  "learnMore": "Mehr erfahren",
+  "copy": "Kopieren",
+  "copied": "Kopiert",
+  "apply": "Jetzt beheben",
+  "applying": "Wird angewendet...",
+  "recheck": "Erneut prüfen",
+  "rechecking": "Wird geprüft...",
+  "confirmTitle": "Diese Korrektur anwenden?",
+  "confirmBody": "{{title}}. Prüfen Sie zuerst die aufgelisteten Änderungen.",
+  "paramLabel": "Öffentliche Adresse",
+  "paramPlaceholder": "IP-Adresse oder Hostname",
+  "triedAt": "Versucht um {{at}}, weiterhin blockiert, weil {{why}}",
+  "rateLimited": "In der letzten Stunde mehrfach angewendet. Es wird gewartet, bevor es erneut versucht wird.",
+  "outcome": {
+    "fixed": "Behoben. Die Prüfung ist jetzt bestanden.",
+    "still_failing": "Weiterhin fehlerhaft: {{detail}}",
+    "cannot_fix_here": "Von hier aus nicht behebbar: {{detail}}",
+    "skipped": "Nichts zu tun: {{detail}}"
+  },
+  "settingsHealth": {
+    "title": "Zustand der Einstellungen",
+    "loading": "Diese Instanz wird geprüft...",
+    "summary": "{{failing}} von {{total}} Prüfungen erfordern Aufmerksamkeit",
+    "allGood": "Nichts erfordert Aufmerksamkeit."
+  },
+  "blockers_one": "{{count}} Blocker, {{dependent}} hängen davon ab",
+  "blockers_other": "{{count}} Blocker, {{dependent}} hängen davon ab",
+  "showDependent": "Abhängige Prüfungen anzeigen",
+  "hideDependent": "Abhängige Prüfungen ausblenden",
+  "stuck": {
+    "title": "Warum läuft das nicht?",
+    "healthy": "Bereit, nichts zu erklären.",
+    "notReadyFor": "Seit {{duration}} nicht bereit",
+    "notReadyYet": "Nicht bereit",
+    "timeline": "Zeitverlauf der Zustände",
+    "noCauses": "Noch keine bekannte Ursache passt. Öffnen Sie die Logs und klicken Sie dann auf Erneut prüfen.",
+    "confidenceHigh": "Wahrscheinliche Ursache",
+    "confidenceMedium": "Mögliche Ursache",
+    "evidence": "Belege",
+    "recheck": "Erneut prüfen",
+    "retryDeploy": "Deployment wiederholen",
+    "retrying": "Wird wiederholt...",
+    "retryFailed": "Wiederholung fehlgeschlagen: {{message}}",
+    "retryStarted": "Deployment gestartet.",
+    "fixApplied": "Korrektur angewendet.",
+    "fixFailed": "Korrektur fehlgeschlagen: {{message}}",
+    "loadFailed": "Die Diagnose konnte nicht geladen werden.",
+    "show": "Details anzeigen",
+    "hide": "Details ausblenden"
+  },
+  "runtime": {
+    "engine": "Engine",
+    "support": "Unterstützung",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "Unbekannte Engine"
+    },
+    "level": {
+      "supported": "Unterstützt",
+      "best-effort": "Bestmöglich",
+      "unverified": "Nicht verifiziert"
+    }
+  },
+  "diagnosis": {
+    "title": "Warum das nicht funktioniert",
+    "crashloop": "Diese App stürzt immer wieder ab",
+    "deployFailed": "Das letzte Deployment ist fehlgeschlagen",
+    "noCause": "Noch keine bekannte Ursache passt. Prüfen Sie die Logzeilen und klicken Sie dann auf Erneut prüfen.",
+    "openLogs": "Logs öffnen",
+    "openDeployLogs": "Build-Log anzeigen",
+    "copy": "Zeilen kopieren",
+    "copied": "Kopiert",
+    "lastLine": "Letzte Zeile:",
+    "sectionLog": "Fehlerlog",
+    "sectionTimeline": "Zeitverlauf der Zustände",
+    "sectionOthers": "Weitere mögliche Ursachen ({{count}})",
+    "showing": "Es werden die letzten {{shown}} von {{total}} Zeilen angezeigt.",
+    "linesLabel": "Letzte Logzeilen des fehlerhaften Containers",
+    "noLines": "Für diesen Fehler wurden keine Logzeilen erfasst.",
+    "openFullLogs": "Vollständige Logs öffnen",
+    "crashSummary": "{{count}} Neustarts in den letzten {{minutes}} Minuten."
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "kind": {
+    "dev": "Entwicklung",
+    "test": "Test",
+    "uat": "UAT",
+    "production": "Produktion",
+    "preview": "Vorschau",
+    "custom": "Benutzerdefiniert"
+  },
+  "settings": {
+    "title": "Umgebungen",
+    "description": "Instanzweite Umgebungen für Apps und Datenbanken. Markieren Sie eine als geschützt, damit vor jedem Verschieben in sie hinein oder aus ihr heraus die Freigabe einer zweiten Person nötig ist.",
+    "create": "Umgebung erstellen",
+    "empty": {
+      "title": "Noch keine Umgebungen",
+      "description": "Erstellen Sie die erste, um Apps und Datenbanken zu gruppieren."
+    },
+    "columns": {
+      "name": "Name",
+      "kind": "Art",
+      "protected": "Geschützt",
+      "apps": "Apps",
+      "databases": "Datenbanken",
+      "actions": "Aktionen"
+    },
+    "builtIn": "Integriert",
+    "scopeProject": "Projekt",
+    "protectedToggle": "Geschützt, {{name}}",
+    "protectedOn": "Die Umgebung \"{{name}}\" ist jetzt geschützt.",
+    "protectedOff": "Die Umgebung \"{{name}}\" ist nicht mehr geschützt.",
+    "updateFailed": "Die Umgebung konnte nicht aktualisiert werden.",
+    "edit": "Bearbeiten",
+    "delete": "Löschen"
+  },
+  "form": {
+    "createTitle": "Umgebung erstellen",
+    "editTitle": "Umgebung bearbeiten",
+    "description": "Benennen Sie sie und wählen Sie die Art, die ihre Rolle beschreibt.",
+    "name": "Name",
+    "namePlaceholder": "Staging EU",
+    "kind": "Art",
+    "protected": "Geschützt",
+    "protectedHint": "Ein Verschieben in diese Umgebung hinein oder aus ihr heraus wartet auf die Freigabe einer anderen Person.",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "saving": "Wird gespeichert",
+    "created": "Umgebung \"{{name}}\" erstellt.",
+    "updated": "Umgebung \"{{name}}\" aktualisiert.",
+    "failed": "Die Umgebung konnte nicht gespeichert werden."
+  },
+  "delete": {
+    "title": "\"{{name}}\" löschen",
+    "description": "Das lässt sich nicht rückgängig machen.",
+    "inUse": "{{apps}} App(s) und {{databases}} Datenbank(en) sind mit dieser Umgebung markiert. Wählen Sie vor dem Löschen, wohin sie verschoben werden.",
+    "moveTo": "Verschieben nach",
+    "moveToNone": "Umgebung wählen",
+    "cancel": "Abbrechen",
+    "confirm": "Umgebung löschen",
+    "deleting": "Wird gelöscht",
+    "deleted": "Umgebung \"{{name}}\" gelöscht.",
+    "failed": "Die Umgebung konnte nicht gelöscht werden.",
+    "reserved": "Integrierte Umgebungen können nicht gelöscht werden.",
+    "protectedBlock": "Eine geschützte Umgebung kann nicht an einem Sammelverschieben teilnehmen. Heben Sie zuerst den Schutz auf oder verschieben Sie Einträge einzeln."
+  },
+  "switcher": {
+    "label": "Umgebung",
+    "all": "Alle Umgebungen",
+    "aria": "Dashboard nach Umgebung filtern"
+  },
+  "move": {
+    "trigger": "Ändern",
+    "title": "\"{{name}}\" in eine Umgebung verschieben",
+    "description": "Wählen Sie die Umgebung, zu der dies gehört.",
+    "field": "Umgebung",
+    "none": "Keine Umgebung",
+    "current": "(aktuell)",
+    "protectedNotice": "Dieses Verschieben betrifft die geschützte Umgebung \"{{environment}}\". Es wird nicht sofort angewendet: Es wird zu einer ausstehenden Freigabe, die eine andere Person bestätigen muss.",
+    "confirmLabel": "Ich verstehe, dass hierfür eine Freigabe nötig ist",
+    "request": "Verschieben anfordern",
+    "save": "Speichern",
+    "saving": "Wird gespeichert",
+    "cancel": "Abbrechen",
+    "moved": "\"{{name}}\" verschoben.",
+    "pending": "Das Verschieben von \"{{name}}\" wartet auf Freigabe.",
+    "failed": "\"{{name}}\" konnte nicht verschoben werden.",
+    "frozen": "Ein Deploy-Freeze ist aktiv. Versuchen Sie es erneut, wenn er endet."
+  },
+  "picker": {
+    "aria": "Projekt und Umgebung wählen",
+    "allProjects": "Alle Projekte",
+    "projects": "Projekte",
+    "environments": "Umgebungen",
+    "allEnvironments": "Alle Umgebungen"
+  }
+}

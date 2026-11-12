@@ -1,0 +1,104 @@
+{
+  "privateLink": "Private Netzwerke und Regeln",
+  "page": {
+    "title": "Netzwerk",
+    "description": "Wo jede App und Datenbank läuft und wie sie sich erreichen. Interne Zone {{zone}}."
+  },
+  "summary": {
+    "nodes": "Server",
+    "mesh": "Mesh",
+    "zone": "Interne Zone",
+    "resources": "Apps und Datenbanken",
+    "meshOff": "Aus",
+    "meshOn": "An",
+    "meshRestart": "Neustart nötig"
+  },
+  "group": {
+    "thisServer": "Dieser Server (Control Plane)",
+    "unplaced": "Nicht platziert",
+    "unplacedHint": "Diese Ressourcen sind auf einem Node platziert, den diese Control Plane nicht kennt ({{ids}}). Verschieben Sie sie auf diesen Server oder fügen Sie den Node erneut hinzu.",
+    "moveHint": "Öffnen Sie eine App oder Datenbank und wählen Sie einen Node, um sie auf diesen Server zu verschieben.",
+    "reAdd": "Node erneut hinzufügen",
+    "empty": "Hier läuft noch nichts.",
+    "cordoned": "Gesperrt",
+    "noMeshAddress": "Noch nicht im Mesh",
+    "viewNode": "Node-Details"
+  },
+  "resource": {
+    "app": "App",
+    "database": "Datenbank",
+    "copy": "Interne Adresse kopieren",
+    "copied": "Kopiert",
+    "local": "lokal",
+    "connectsTo": "Verbunden mit {{database}}",
+    "noMeshAddress": "Keine Mesh-Adresse",
+    "noMeshAddressHint": "Diese Ressource liegt auf einem Node ohne Mesh-Adresse, daher können andere Nodes sie nicht erreichen."
+  },
+  "legend": {
+    "title": "So lesen Sie diese Seite",
+    "server": "Ein Server, auf dem Levelrail läuft. Die erste Karte ist die Control Plane selbst.",
+    "internalName": "Der interne Name, über den andere Apps diese Ressource erreichen. Mit der Kopieren-Schaltfläche übernehmen Sie ihn in einen Verbindungsstring.",
+    "local": "Lokal bedeutet, dass die Ressource auf diesem Server liegt und direkt erreichbar ist, ohne Mesh.",
+    "mesh": "Bei aktivem Mesh erhalten Ressourcen auf anderen Servern eine Mesh-Adresse, und derselbe interne Name funktioniert serverübergreifend."
+  },
+  "empty": {
+    "title": "Noch läuft nichts",
+    "description": "Deployen Sie eine App oder erstellen Sie eine Datenbank, dann erscheint sie hier, gruppiert nach dem Server, auf dem sie läuft.",
+    "action": "Zu den Apps"
+  },
+  "error": {
+    "load": "Die Netzwerkübersicht konnte nicht geladen werden."
+  },
+  "mesh": {
+    "title": "Mesh-Netzwerk",
+    "description": "Ein privates WireGuard-Netzwerk zwischen Ihren Servern, sodass Apps und Datenbanken auf verschiedenen Servern sich über den internen Namen erreichen. Sie brauchen es nur, wenn Sie mehr als einen Server verwalten.",
+    "state": {
+      "off": "Aus",
+      "on": "An",
+      "enabling": "Neustart nötig",
+      "disabling": "Neustart zum Ausschalten nötig",
+      "error": "Konnte nicht starten"
+    },
+    "pinned": "Festgelegt durch {{envVar}} auf dem Server. Entfernen Sie die Variable dort, um das Mesh von hier aus zu verwalten.",
+    "readiness": "Bereitschaft",
+    "check": {
+      "wireguard": "WireGuard-Unterstützung",
+      "udp_port": "UDP-Port verfügbar",
+      "firewall": "Firewall",
+      "public_address": "Öffentliche Adresse der Control Plane",
+      "local_node": "Dieser Server als Node"
+    },
+    "status": {
+      "pass": "Bereit",
+      "warn": "Prüfen",
+      "fail": "Blockiert"
+    },
+    "fix": "Behebung: {{hint}}",
+    "enable": "Mesh aktivieren",
+    "disable": "Mesh deaktivieren",
+    "enableTitle": "Mesh-Netzwerk aktivieren?",
+    "enableDescription": "Das Mesh wird jetzt gespeichert und startet beim Neustart der Control Plane.",
+    "disableTitle": "Mesh-Netzwerk deaktivieren?",
+    "disableDescription": "Das Mesh stoppt beim nächsten Neustart der Control Plane.",
+    "disableNodes": "{{count}} weitere(r) Node(s) sind registriert und erreichen diese Control Plane über das Mesh. Durch das Deaktivieren werden sie getrennt.",
+    "restartRequired": "Starten Sie die Control Plane neu, um diese Änderung anzuwenden.",
+    "restartCommand": "Auf dem Server ausführen:",
+    "saved": "Mesh-Einstellung gespeichert",
+    "startError": "Das Mesh wurde nicht gestartet: {{error}}",
+    "blocked": "Beheben Sie zuerst die blockierten Prüfungen und aktivieren Sie dann das Mesh.",
+    "rootOnly": "Nur ein Administrator kann dies ändern.",
+    "otherNodes": "Weitere registrierte Nodes: {{count}}",
+    "enableConsequence1": "Dieser Server öffnet eine WireGuard-Schnittstelle und lauscht auf einem UDP-Port (standardmäßig 51820).",
+    "enableConsequence2": "Agents auf anderen Nodes verbinden sich über das Mesh mit dieser Control Plane.",
+    "enableConsequence3": "Apps und Datenbanken erhalten interne Adressen, die serverübergreifend erreichbar sind.",
+    "disableConsequence1": "Apps und Datenbanken auf anderen Servern verlieren ihre serverübergreifenden internen Adressen.",
+    "disableConsequence2": "Alles auf diesem Server funktioniert lokal weiter."
+  },
+  "banner": {
+    "diagram": {
+      "app": "App",
+      "node": "Node",
+      "server": "Server"
+    }
+  }
+}

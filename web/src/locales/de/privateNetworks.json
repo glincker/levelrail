@@ -1,0 +1,78 @@
+{
+  "page": {
+    "title": "Private Netzwerke",
+    "description": "Fassen Sie Apps zu benannten privaten Netzwerken zusammen und legen Sie fest, welche Apps miteinander kommunizieren dürfen. Apps in verschiedenen Netzwerken erreichen sich nicht, bis eine Regel es erlaubt.",
+    "back": "Netzwerkübersicht",
+    "apply": "Jetzt erneut anwenden",
+    "applied": "Netzwerke und Regeln erneut angewendet.",
+    "notApplied": "Gespeichert, aber die Durchsetzung wurde nicht abgeschlossen. Wenden Sie erneut an, um es noch einmal zu versuchen."
+  },
+  "map": {
+    "title": "Wer mit wem kommunizieren kann",
+    "description": "Grüne Linien sind erlaubte Pfade, rote gestrichelte Linien sind blockiert, bernsteinfarbene Linien weichen von dem ab, was in Docker läuft.",
+    "graphLabel": "Karte der Apps und der Pfade zwischen ihnen",
+    "empty": "Noch keine Apps zum Darstellen",
+    "emptyHint": "Erstellen Sie eine App und fügen Sie sie einem privaten Netzwerk hinzu, um ihre Pfade hier zu sehen.",
+    "legendAllowed": "Erlaubt",
+    "legendBlocked": "Blockiert",
+    "legendDrift": "Erneut anwenden nötig"
+  },
+  "paths": {
+    "title": "Pfade",
+    "none": "Jeder Pfad zwischen Ihren Apps ist erlaubt oder liegt nicht im Geltungsbereich.",
+    "pair": "{{a}} und {{b}}",
+    "allowedVia": "Erlaubt durch Netzwerk {{name}}",
+    "allowedRule": "Durch Regel erlaubt",
+    "blocked": "Blockiert, verschiedene Netzwerke",
+    "drift": "Richtlinie und Docker stimmen nicht überein",
+    "crossNode": "Über Nodes hinweg, durchgesetzt per Mesh-DNS",
+    "fixAllow": "Erlauben",
+    "fixReapply": "Erneut anwenden",
+    "allowed": "Erlaubnisregel für {{a}} und {{b}} erstellt."
+  },
+  "networks": {
+    "title": "Netzwerke",
+    "empty": "Noch keine privaten Netzwerke",
+    "emptyHint": "Erstellen Sie eines und fügen Sie die Apps hinzu, die es gemeinsam nutzen sollen.",
+    "defaultDeny": "Standardmäßig verweigern",
+    "defaultDenyHelp": "Mitglieder erreichen sich nicht, bis eine Regel ein Paar erlaubt.",
+    "members": "Mitglieder",
+    "noMembers": "Keine Mitglieder",
+    "create": "Netzwerk erstellen",
+    "name": "Name",
+    "namePlaceholder": "backend",
+    "nameHelp": "Kleinbuchstaben, Ziffern und Bindestriche.",
+    "apps": "Apps in diesem Netzwerk",
+    "noApps": "Es gibt noch keine Apps.",
+    "created": "Netzwerk {{name}} erstellt.",
+    "delete": "Löschen",
+    "deleteTitle": "Netzwerk {{name}} löschen?",
+    "deleteBody": "Seine Mitglieder verlieren den Zugriff aufeinander, sofern keine Regel ihn erlaubt.",
+    "deleted": "Netzwerk gelöscht.",
+    "saveMembers": "Mitglieder speichern"
+  },
+  "rules": {
+    "title": "Erlaubnisregeln",
+    "description": "Eine Regel erlaubt zwei Apps, sich über Netzwerkgrenzen hinweg zu erreichen.",
+    "empty": "Noch keine Regeln",
+    "from": "App",
+    "to": "Kann erreichen",
+    "note": "Notiz",
+    "notePlaceholder": "Warum dieser Pfad nötig ist",
+    "add": "Regel hinzufügen",
+    "remove": "Entfernen",
+    "removed": "Regel entfernt.",
+    "pickApp": "App auswählen"
+  },
+  "errors": {
+    "load": "Private Netzwerke konnten nicht geladen werden.",
+    "unavailable": "Private Netzwerke sind auf dieser Control Plane nicht verfügbar."
+  },
+  "banner": {
+    "description": "Fassen Sie Apps zu privaten Netzwerken zusammen und legen Sie fest, welche Apps miteinander kommunizieren dürfen. Erstellen Sie unten das erste Netzwerk.",
+    "diagram": {
+      "apps": "Apps",
+      "mesh": "Privates Mesh"
+    }
+  }
+}

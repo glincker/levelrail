@@ -1,0 +1,63 @@
+{
+  "title": "Event-Webhooks",
+  "description": "Sendet bei jeder Änderung eine signierte HTTPS-Anfrage an Ihren eigenen Endpunkt. Die Zustellung wird eingereiht, wiederholt und protokolliert und bremst nie ein Deployment aus.",
+  "add": "Webhook hinzufügen",
+  "loadError": "Event-Webhooks konnten nicht geladen werden: {{message}}",
+  "notConfigured": "Event-Webhooks sind auf dieser Control Plane nicht verfügbar.",
+  "empty": {
+    "title": "Keine Event-Webhooks",
+    "description": "Fügen Sie einen HTTPS-Endpunkt hinzu, der benachrichtigt wird, wenn Apps deployt werden, sich Benutzer ändern oder Einstellungen aktualisiert werden."
+  },
+  "form": {
+    "title": "Event-Webhook hinzufügen",
+    "description": "Anfragen werden mit einem Secret signiert, das nach dem Speichern einmal angezeigt wird.",
+    "name": "Name",
+    "namePlaceholder": "siem",
+    "url": "Endpunkt-URL",
+    "urlPlaceholder": "https://hooks.example.com/events",
+    "events": "Ereignistypen",
+    "eventsPlaceholder": "apps.*, users.create",
+    "eventsHint": "Durch Komma getrennte Typen oder Familien wie apps.*. Leer lassen, um jedes Ereignis zu erhalten.",
+    "cancel": "Abbrechen",
+    "submit": "Webhook hinzufügen",
+    "submitting": "Wird hinzugefügt",
+    "done": "Fertig"
+  },
+  "card": {
+    "allEvents": "Alle Ereignisse",
+    "paused": "Pausiert",
+    "deadBadge": "{{count}} in Dead Letter",
+    "delivered": "Zugestellt",
+    "pending": "Ausstehend",
+    "dead": "Dead Letter",
+    "lastStatus": "Letzter HTTP-Status",
+    "enabled": "Aktiviert",
+    "log": "Zustellungsprotokoll",
+    "test": "Test senden",
+    "testing": "Wird gesendet",
+    "testOk": "{{name}} hat das Testereignis akzeptiert",
+    "testFailed": "{{name}} hat den Test nicht bestanden: {{message}}",
+    "rotate": "Neues Secret",
+    "secretOnce": "Signatur-Secret, nur einmal sichtbar. Speichern Sie es jetzt, es lässt sich nicht erneut anzeigen.",
+    "delete": "Löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteDescription": "Sein Zustellungsprotokoll und das Signatur-Secret werden entfernt. Ereignisse werden sofort nicht mehr gesendet.",
+    "deleteConfirm": "Webhook löschen",
+    "deleting": "Wird gelöscht"
+  },
+  "deliveries": {
+    "loading": "Zustellungen werden geladen",
+    "loadError": "Zustellungen konnten nicht geladen werden: {{message}}",
+    "empty": "Noch keine Zustellungen. Senden Sie einen Test oder warten Sie auf das nächste Ereignis.",
+    "summary": "{{attempts}} Versuche, HTTP {{status}}, {{when}}",
+    "noStatus": "keiner",
+    "replay": "Erneut senden",
+    "replayed": "Zustellung für einen weiteren Versuch eingereiht",
+    "replayFailed": "Erneutes Senden nicht möglich: {{message}}",
+    "state": {
+      "pending": "Ausstehend",
+      "delivered": "Zugestellt",
+      "dead": "Dead Letter"
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "card": {
+    "title": "Passkeys",
+    "description": "Melden Sie sich mit Touch ID, Windows Hello, Ihrem Smartphone oder einem Sicherheitsschlüssel statt mit einem Passwort an.",
+    "statusEnabled_one": "Die Anmeldung per Passkey ist aktiv, {{count}} Passkey registriert",
+    "statusEnabled_other": "Die Anmeldung per Passkey ist aktiv, {{count}} Passkeys registriert",
+    "statusOff": "Die Anmeldung per Passkey ist aus, bis Sie einen Passkey hinzufügen",
+    "retry": "Erneut versuchen",
+    "add": "Passkey hinzufügen",
+    "test": "Anmeldung testen",
+    "testing": "Warten auf Ihren Passkey...",
+    "testOk": "Passkey verifiziert. Sonst hat sich nichts geändert.",
+    "testFailedTitle": "Der Passkey-Test wurde nicht bestanden"
+  },
+  "empty": {
+    "title": "Noch keine Passkeys",
+    "body": "Passkeys sind resistent gegen Phishing, schneller als ein Passwort und bleiben auf Ihrem Gerät oder in Ihrem Passwortmanager. Fügen Sie einen hinzu, um sich per Berührung oder Blick anzumelden.",
+    "action": "Ersten Passkey hinzufügen"
+  },
+  "nudge": {
+    "backupTitle": "Einen zweiten Passkey als Backup hinzufügen",
+    "backupBody": "Mit nur einem Passkey bedeutet der Verlust dieses Geräts, dass Sie auf Ihr Passwort zurückfallen müssen. Registrieren Sie ein weiteres Gerät oder einen Sicherheitsschlüssel.",
+    "backupAction": "Backup-Passkey hinzufügen"
+  },
+  "row": {
+    "provider": "Passkey",
+    "synced": "Synchronisiert",
+    "deviceBound": "Gerätegebunden",
+    "syncedHint": "Von Ihrem Passkey-Anbieter gesichert und auf Ihren anderen Geräten verfügbar.",
+    "deviceBoundHint": "Bleibt auf diesem Authenticator und lässt sich bei Verlust nicht wiederherstellen.",
+    "added": "Hinzugefügt",
+    "lastUsed": "Zuletzt verwendet",
+    "neverUsed": "Nie verwendet",
+    "signIns_one": "{{count}} Anmeldung",
+    "signIns_other": "{{count}} Anmeldungen",
+    "transport": {
+      "usb": "USB",
+      "nfc": "NFC",
+      "ble": "Bluetooth",
+      "internal": "Dieses Gerät",
+      "hybrid": "Smartphone",
+      "smart-card": "Smartcard"
+    },
+    "rename": "{{name}} umbenennen",
+    "renameLabel": "Name des Passkeys",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "saving": "Wird gespeichert...",
+    "renameFailed": "Dieser Passkey konnte nicht umbenannt werden. Versuchen Sie es erneut.",
+    "remove": "{{name}} entfernen"
+  },
+  "remove": {
+    "title": "Diesen Passkey entfernen?",
+    "description": "\"{{name}}\" kann sich nicht mehr bei diesem Konto anmelden.",
+    "lastWarning": "Dies ist Ihr einziger Passkey. Stellen Sie sicher, dass Sie sich weiterhin mit Ihrem Passwort oder der Zwei-Faktor-Authentifizierung anmelden können.",
+    "confirm": "Entfernen",
+    "pending": "Wird entfernt...",
+    "blockedTitle": "Sie würden sich aussperren",
+    "blockedBody": "Dies ist Ihre einzige Möglichkeit zur Anmeldung. Fügen Sie zuerst einen weiteren Passkey, ein Passwort oder die Zwei-Faktor-Authentifizierung hinzu.",
+    "blockedAddPasskey": "Weiteren Passkey hinzufügen",
+    "blockedFailed": "Dieser Passkey konnte nicht entfernt werden. Versuchen Sie es erneut."
+  },
+  "addDialog": {
+    "title": "Passkey hinzufügen",
+    "description": "Geben Sie ihm einen Namen, damit Sie ihn später erkennen, und folgen Sie dann der Aufforderung Ihres Browsers.",
+    "nameLabel": "Name",
+    "stepName": "Benennen",
+    "stepPrompt": "Im Browser bestätigen",
+    "stepSaved": "Gespeichert",
+    "continue": "Weiter",
+    "waiting": "Warten auf Ihren Browser...",
+    "saving": "Ihr Passkey wird gespeichert...",
+    "cancel": "Abbrechen",
+    "done": "Fertig",
+    "savedTitle": "Passkey hinzugefügt",
+    "savedBody": "\"{{name}}\" ist einsatzbereit.",
+    "savedProvider": "Gespeichert in {{provider}}",
+    "retry": "Erneut versuchen",
+    "defaults": {
+      "mac": "MacBook Touch ID",
+      "iphone": "iPhone",
+      "ipad": "iPad",
+      "windows": "Windows Hello",
+      "android": "Android-Smartphone",
+      "linux": "Linux-Gerät",
+      "generic": "Mein Passkey"
+    }
+  },
+  "errors": {
+    "cancelled": "Die Passkey-Aufforderung wurde geschlossen, bevor sie abgeschlossen war. Es wurde nichts gespeichert.",
+    "timeout": "Der Browser hat zu lange auf Ihren Passkey gewartet. Versuchen Sie es erneut, wenn Sie bereit sind.",
+    "alreadyRegistered": "Dieser Authenticator hat bereits einen Passkey für dieses Konto. Verwenden Sie ein anderes Gerät oder entfernen Sie zuerst den alten Passkey.",
+    "unsupported": "Dieser Browser oder dieses Gerät unterstützt keine Passkeys. Versuchen Sie einen anderen Browser oder einen Sicherheitsschlüssel.",
+    "insecureOrigin": "Passkeys funktionieren nur unter der exakten Adresse, die als Dashboard-URL konfiguriert ist, über HTTPS. Öffnen Sie das Dashboard unter dieser Adresse und versuchen Sie es erneut.",
+    "rejected": "Der Server konnte diesen Passkey nicht verifizieren. Versuchen Sie es erneut oder verwenden Sie einen anderen Authenticator.",
+    "rateLimited": "Zu viele Versuche. Warten Sie eine Minute und versuchen Sie es erneut.",
+    "unavailable": "Passkeys sind auf diesem Server noch nicht eingerichtet. Bitten Sie einen Administrator, die Dashboard-URL festzulegen.",
+    "lastMethod": "Dies ist Ihre einzige Möglichkeit zur Anmeldung. Fügen Sie zuerst einen weiteren Passkey, ein Passwort oder Zwei-Faktor hinzu.",
+    "network": "Der Server war nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "unknown": "Die Passkey-Anfrage ist fehlgeschlagen. Versuchen Sie es erneut."
+  }
+}

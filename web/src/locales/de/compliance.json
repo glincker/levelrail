@@ -1,0 +1,57 @@
+{
+  "rootOnly": "Zugriffsprüfungen und Nachweispakete stehen nur Root-Konten zur Verfügung.",
+  "kind": {
+    "user": "Benutzerkonto",
+    "team_member": "Team-Mitgliedschaft",
+    "api_token": "API-Token",
+    "env_grant": "Umgebungsfreigabe"
+  },
+  "review": {
+    "title": "Zugriffsprüfungen",
+    "description": "Eine Prüfung listet jeden Benutzer, jede Team-Mitgliedschaft, jedes API-Token und jede Umgebungsfreigabe mit dem Zeitpunkt der letzten Aktivität auf. Markieren Sie jede Zeile mit Behalten oder Widerrufen. Widerrufe werden beim Abschluss der Prüfung angewendet und im Audit-Log festgehalten.",
+    "name": "Name (optional)",
+    "dueDays": "Fällig in Tagen",
+    "repeatDays": "Wiederholen alle Tage (0 für nach Bedarf)",
+    "start": "Prüfung starten",
+    "empty": "Noch keine Zugriffsprüfungen. Starten Sie eine, um festzuhalten, wer weiterhin Zugriff benötigt.",
+    "due": "Fällig",
+    "overdue": "Überfällig",
+    "open": "Öffnen",
+    "hide": "Ausblenden",
+    "status": {
+      "open": "Offen",
+      "completed": "Abgeschlossen"
+    },
+    "lastActive": "Zuletzt aktiv",
+    "never": "nie",
+    "keep": "Behalten",
+    "revoke": "Widerrufen",
+    "revoked": "Widerrufen",
+    "progress": "{{decided}} von {{total}} entschieden, {{revoke}} zu widerrufen",
+    "complete": "Prüfung abschließen",
+    "completing": "Wird angewendet",
+    "confirmTitle": "Diese Zugriffsprüfung abschließen?",
+    "confirmDescription": "{{count}} Zugriffsberechtigung(en) werden jetzt widerrufen. Das lässt sich von hier aus nicht rückgängig machen.",
+    "completed": "Prüfung abgeschlossen, {{count}} widerrufen",
+    "partial": "{{count}} Widerruf/Widerrufe fehlgeschlagen, die Prüfung bleibt offen"
+  },
+  "packs": {
+    "title": "Nachweispakete",
+    "description": "Ein signiertes Archiv für einen Zeitraum: Audit-Log, Zugriffsprüfungen, Verlauf von Backup- und Wiederherstellungstests, Deploy-Freigaben, Sicherheitseinstellungen und Zertifikatsinventar, mit einem Manifest aus SHA-256-Hashes.",
+    "notCertification": "Ein Nachweispaket ist eine Unterlage, die ein Prüfer untersuchen kann. Es ist weder eine Zertifizierung noch ein Nachweis der Einhaltung eines Regelwerks.",
+    "from": "Von",
+    "to": "Bis",
+    "rangeTo": "bis",
+    "generate": "Paket erstellen",
+    "empty": "Noch keine Nachweispakete.",
+    "status": {
+      "running": "Wird erstellt",
+      "complete": "Bereit",
+      "failed": "Fehlgeschlagen"
+    },
+    "verify": "Prüfen",
+    "download": "Herunterladen",
+    "verifyOk": "Das Paket stimmt mit Manifest und Signatur überein",
+    "verifyFailed": "Die Prüfung des Pakets ist fehlgeschlagen"
+  }
+}
