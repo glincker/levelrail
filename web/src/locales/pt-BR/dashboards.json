@@ -1,0 +1,193 @@
+{
+  "common": {
+    "cancel": "Cancelar"
+  },
+  "grid": {
+    "label": "Widgets do painel",
+    "controls": "Controles de {{title}}",
+    "moveEarlier": "Mover {{title}} para antes",
+    "moveLater": "Mover {{title}} para depois",
+    "size": "Deixar {{title}} no tamanho {{size}}",
+    "remove": "Remover {{title}}"
+  },
+  "widget": {
+    "type": {
+      "metric_chart": "Gráfico de métrica",
+      "request_percentiles": "Latência de requisições",
+      "error_rate": "Taxa de erros",
+      "log_tail": "Cauda de logs",
+      "deploy_timeline": "Linha do tempo de deploys",
+      "resource_counts": "Contagem de recursos",
+      "cost": "Custo por tag",
+      "alert_status": "Status dos alertas",
+      "node_capacity": "Capacidade do node",
+      "link": "Link",
+      "fleet_health": "Saúde da frota",
+      "fleet_traffic": "Tráfego da frota",
+      "top_apps": "Principais apps",
+      "deploy_activity": "Atividade de deploys",
+      "fleet_capacity": "Capacidade da frota",
+      "attention": "Requer atenção"
+    },
+    "noTraffic": "Nenhuma requisição na última janela.",
+    "p95": "latência p95",
+    "reqPerSec": "requisições por segundo",
+    "errorShare": "parcela de 4xx e 5xx nas requisições",
+    "noLogs": "Nenhuma linha de log neste intervalo.",
+    "noDeploys": "Nenhum deploy recente.",
+    "count": {
+      "app": "Apps",
+      "database": "Bancos de dados",
+      "node": "Nodes",
+      "domain": "Domínios"
+    },
+    "noCost": "Ainda sem dados de custo. Defina os preços em Uso e custo para ver o gasto por tag.",
+    "scopedCost": "Gasto neste mês no escopo selecionado",
+    "untagged": "Sem tag",
+    "rulesEnabled": "regras de alerta ativadas",
+    "noRules": "Este app ainda não tem regras de alerta.",
+    "unknown": "Desconhecido",
+    "capacity": {
+      "disk": "Disco usado",
+      "memory": "Memória usada"
+    }
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_usage_bytes": "Memória",
+    "network_rx_bytes": "Entrada de rede",
+    "network_tx_bytes": "Saída de rede",
+    "disk_read_bytes": "Leitura de disco",
+    "disk_write_bytes": "Gravação em disco",
+    "disk_used_bytes": "Disco usado",
+    "container_restart_count": "Reinícios"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Banco de dados",
+    "node": "Node"
+  },
+  "range": {
+    "15m": "Últimos 15 minutos",
+    "1h": "Última hora",
+    "6h": "Últimas 6 horas",
+    "24h": "Últimas 24 horas",
+    "7d": "Últimos 7 dias",
+    "30d": "Últimos 30 dias"
+  },
+  "refresh": {
+    "0": "Manual",
+    "15": "A cada 15 segundos",
+    "30": "A cada 30 segundos",
+    "60": "A cada minuto",
+    "300": "A cada 5 minutos"
+  },
+  "toolbar": {
+    "range": "Intervalo de tempo",
+    "refresh": "Atualização automática",
+    "refreshNow": "Atualizar",
+    "addWidget": "Adicionar widget",
+    "shared": "Compartilhado com todos",
+    "project": "Projeto",
+    "noProject": "Sem projeto",
+    "isDefault": "Padrão do projeto",
+    "save": "Salvar alterações",
+    "done": "Concluir edição"
+  },
+  "add": {
+    "title": "Adicionar um widget",
+    "description": "Escolha o que mostrar e de onde ele lê.",
+    "type": "Widget",
+    "kind": "Lê de",
+    "target": "Recurso",
+    "targetPlaceholder": "Escolha um recurso",
+    "metric": "Métrica",
+    "query": "Filtro de logs",
+    "queryPlaceholder": "Texto a buscar, opcional",
+    "submit": "Adicionar widget",
+    "linkTitle": "Título",
+    "linkTitlePlaceholder": "Runbook",
+    "linkUrl": "Endereço"
+  },
+  "template": {
+    "label": "Painéis iniciais",
+    "use": "Usar este painel inicial",
+    "pickApp": "App para {{name}}",
+    "app-health": {
+      "name": "Saúde do app",
+      "description": "CPU, memória, latência, erros, alertas, deploys e logs de um app."
+    },
+    "fleet-overview": {
+      "name": "Visão geral da frota",
+      "description": "Quantos apps, bancos de dados, nodes e domínios você executa."
+    },
+    "cost": {
+      "name": "Custo",
+      "description": "Gasto do mês até agora por tag ao lado do uso de recursos por trás dele."
+    }
+  },
+  "empty": {
+    "widgetsTitle": "Este painel está vazio",
+    "widgetsBody": "Ative Editar e adicione um widget para começar."
+  },
+  "toast": {
+    "saved": "Painel salvo",
+    "saveFailed": "Não foi possível salvar o painel",
+    "imported": "{{name}} importado",
+    "importFailed": "Não foi possível importar o painel",
+    "notJson": "Esse arquivo não é um JSON válido.",
+    "deleted": "Painel excluído",
+    "deleteFailed": "Não foi possível excluir o painel",
+    "created": "{{name}} criado",
+    "createFailed": "Não foi possível criar o painel"
+  },
+  "fleet": {
+    "loadFailed": "Não foi possível carregar estes dados.",
+    "health": {
+      "empty": "Nenhum app ainda.",
+      "barLabel": "{{running}} em execução, {{failing}} com falha, {{stopped}} parados",
+      "running": "Em execução",
+      "failing": "Com falha",
+      "stopped": "Parados",
+      "nodesOnline": "Nodes online"
+    },
+    "traffic": {
+      "notConfigured": "A telemetria não está configurada.",
+      "empty": "Nenhuma requisição na última hora.",
+      "requests": "Requisições, última hora",
+      "errors": "Erros 5xx",
+      "tooFew": "Poucas requisições",
+      "p95": "latência p95",
+      "spark": "Requisições por segundo em todos os apps"
+    },
+    "top": {
+      "sortBy": "Ordenar por",
+      "cpu": "CPU",
+      "memory": "Memória",
+      "requests": "Requisições",
+      "empty": "Nada para classificar ainda."
+    },
+    "deploys": {
+      "empty": "Nenhum deploy concluído ainda.",
+      "summary": "{{day}} em 24 horas, {{week}} em 7 dias ({{ok}} bem-sucedidos, {{failed}} com falha)",
+      "succeeded": "Bem-sucedidos",
+      "failed": "Com falha",
+      "sampled": "Com base nos {{count}} apps que mais precisam de atenção."
+    },
+    "capacity": {
+      "unavailable": "A capacidade não está disponível.",
+      "empty": "Nenhum node informa capacidade ainda.",
+      "cpu": "CPU",
+      "memory": "Memória",
+      "disk": "Disco"
+    },
+    "attention": {
+      "clear": "Tudo certo. Nada requer atenção.",
+      "critical": "Crítico",
+      "warning": "Aviso",
+      "info": "Notificação",
+      "viewAll": "Abrir status",
+      "more": "Mais {{count}} em Status"
+    }
+  }
+}

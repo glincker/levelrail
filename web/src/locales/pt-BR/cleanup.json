@@ -1,0 +1,200 @@
+{
+  "title": "Limpeza",
+  "description": "Controle por quanto tempo cada tipo de dado é mantido, veja o que uma limpeza removeria antes de executá-la e revise cada execução.",
+  "tabs": {
+    "label": "Seções da limpeza",
+    "overview": "Visão geral",
+    "disk": "Disco e Docker",
+    "history": "Histórico"
+  },
+  "loadError": "Não foi possível carregar os alvos da limpeza: {{message}}",
+  "retry": "Tentar novamente",
+  "readOnly": "Você pode ver as configurações de limpeza. Alterar a retenção, trocar os modos e executar uma limpeza exigem uma conta root.",
+  "empty": {
+    "title": "Nenhum alvo de limpeza ainda",
+    "body": "Este control plane não informou nenhum tipo de dado para limpar. Verifique novamente após a próxima atualização."
+  },
+  "categories": {
+    "auth": "Login e tokens",
+    "audit": "Auditoria",
+    "deploys": "Deploys",
+    "docker": "Docker",
+    "data": "Dados",
+    "observability": "Observabilidade",
+    "messaging": "Mensagens",
+    "other": "Outros"
+  },
+  "hero": {
+    "stored": "Dados armazenados",
+    "reclaimable": "Recuperável",
+    "storedHint": "Armazenado pelos tipos de dados que a limpeza gerencia",
+    "usageLabel": "Onde ficam os dados gerenciados pela limpeza",
+    "segmentLabel": "{{category}}: {{size}}, {{percent}}% do total",
+    "legendFilter": "Mostrar somente {{category}}",
+    "clearFilter": "Mostrar todas as categorias",
+    "lastRun": "Última execução",
+    "neverRun": "Nenhuma limpeza foi executada ainda",
+    "scheduler": "Agendador",
+    "schedulerOn": "A cada {{interval}}",
+    "schedulerOff": "O agendador está desativado",
+    "previewCount_one": "{{count}} tipo de dado está em modo de pré-visualização",
+    "previewCount_many": "{{count}} tipos de dados estão em modo de pré-visualização",
+    "previewCount_other": "{{count}} tipos de dados estão em modo de pré-visualização",
+    "previewNone": "Nada aguardando em modo de pré-visualização",
+    "reviewAction": "Revisar e ativar",
+    "reclaimableHint": "Linhas e tamanho que os tipos de dados ativados removeriam na retenção atual",
+    "calculate": "Calcular o recuperável",
+    "calculating": "Verificando {{done}} de {{total}}",
+    "calculateFailed": "Não foi possível verificar {{title}}: {{message}}",
+    "reclaimableNone": "Nada passou da janela de retenção"
+  },
+  "group": {
+    "count_one": "{{count}} tipo de dado",
+    "count_many": "{{count}} tipos de dados",
+    "count_other": "{{count}} tipos de dados"
+  },
+  "target": {
+    "usage_one": "{{rows}} linha, {{size}}",
+    "usage_many": "{{rows}} linhas, {{size}}",
+    "usage_other": "{{rows}} linhas, {{size}}",
+    "usageEmpty": "Nada armazenado",
+    "oldest": "mais antigo {{when}}",
+    "shareLabel": "{{title}} contém {{percent}}% dos dados de {{category}}",
+    "retention": "Manter por",
+    "floor": "Mínimo de {{days}} dias",
+    "floorTip": "A política de segurança mantém pelo menos {{days}} dias. Escolha um período maior, ou Nunca para manter tudo.",
+    "mode": "Modo",
+    "modes": {
+      "off": "Desativado",
+      "preview": "Pré-visualização",
+      "on": "Ativado"
+    },
+    "status": {
+      "off": "Desativado",
+      "preview": "Pré-visualização",
+      "on": "Ativado",
+      "running": "Em execução"
+    },
+    "previewBadge": "Modo de pré-visualização, nada é excluído ainda",
+    "lastRun": "Última execução {{when}}",
+    "lastRunDry": "Última execução {{when}} (simulação)",
+    "lastRunFailed": "A última execução {{when}} falhou",
+    "neverRun": "Nunca executado",
+    "nextRun": "Próxima {{when}}",
+    "noNextRun": "Não agendada",
+    "preview": "Pré-visualizar",
+    "previewing": "Verificando...",
+    "cleanNow": "Limpar agora",
+    "readThrough": "Gerenciado em Disco e Docker",
+    "readThroughAction": "Abrir disco e Docker",
+    "keepForever": "A retenção está definida como Nunca, então nada é removido.",
+    "destructive": "Exclui dados permanentemente",
+    "unknown": "-",
+    "lockedOption": "Abaixo do mínimo de {{days}} dias. Escolha um período maior."
+  },
+  "impact": {
+    "title": "O que seria removido",
+    "summary_one": "Removerá {{rows}} linha, cerca de {{size}}, com mais de {{days}} dias.",
+    "summary_many": "Removerá {{rows}} linhas, cerca de {{size}}, com mais de {{days}} dias.",
+    "summary_other": "Removerá {{rows}} linhas, cerca de {{size}}, com mais de {{days}} dias.",
+    "nothing": "Nada tem mais de {{days}} dias. Nada seria removido.",
+    "close": "Fechar",
+    "error": "Não foi possível pré-visualizar: {{message}}"
+  },
+  "run": {
+    "running": "Removendo dados antigos...",
+    "done_one": "{{rows}} linha removida, {{size}}. A exclusão é permanente.",
+    "done_many": "{{rows}} linhas removidas, {{size}}. A exclusão é permanente.",
+    "done_other": "{{rows}} linhas removidas, {{size}}. A exclusão é permanente.",
+    "nothing": "Nada a remover. Nenhuma linha passou da janela de retenção.",
+    "more": "Ainda restam linhas antigas, execute novamente para continuar.",
+    "failed": "A limpeza falhou: {{message}}",
+    "dismiss": "Dispensar"
+  },
+  "confirmRun": {
+    "title": "Limpar {{title}}?",
+    "body_one": "Isto remove permanentemente {{rows}} linha, cerca de {{size}}, com mais de {{days}} dias.",
+    "body_many": "Isto remove permanentemente {{rows}} linhas, cerca de {{size}}, com mais de {{days}} dias.",
+    "body_other": "Isto remove permanentemente {{rows}} linhas, cerca de {{size}}, com mais de {{days}} dias.",
+    "consequence": "As linhas removidas não podem ser restauradas. Nada mais é excluído.",
+    "action": "Limpar agora",
+    "cancel": "Cancelar"
+  },
+  "confirmMode": {
+    "title": "Ativar {{title}}?",
+    "body": "A partir da próxima execução agendada, as linhas com mais de {{days}} dias são excluídas de verdade. Até agora isto apenas registrava o que seria removido.",
+    "consequence": "As linhas excluídas não podem ser restauradas.",
+    "action": "Ativar",
+    "cancel": "Cancelar"
+  },
+  "confirmShorten": {
+    "title": "Manter {{title}} por menos tempo?",
+    "body": "As linhas mais antigas que o novo período serão removidas na próxima execução.",
+    "consequence": "Esta é uma alteração destrutiva em por quanto tempo os dados são mantidos.",
+    "action": "Reduzir retenção",
+    "cancel": "Cancelar"
+  },
+  "toast": {
+    "retentionSaved": "Retenção de {{title}} salva.",
+    "retentionError": "Não foi possível salvar a retenção de {{title}}: {{message}}",
+    "modeSaved": "{{title}} agora está em {{mode}}.",
+    "modeError": "Não foi possível alterar {{title}}: {{message}}"
+  },
+  "history": {
+    "title": "Histórico de execuções",
+    "filters": {
+      "target": "Tipo de dado",
+      "allTargets": "Todos os tipos de dados",
+      "since": "De",
+      "until": "Até",
+      "kind": "Tipo",
+      "status": "Status",
+      "allKinds": "Simulação e real",
+      "dry": "Simulações",
+      "real": "Execuções reais",
+      "allStatuses": "Qualquer status",
+      "ok": "Bem-sucedida",
+      "failed": "Falhou",
+      "reset": "Redefinir filtros"
+    },
+    "exportCsv": "Exportar CSV",
+    "exportJson": "Exportar JSON",
+    "exportLabel": "Exportar o histórico filtrado",
+    "loadError": "Não foi possível carregar o histórico de execuções: {{message}}",
+    "empty": {
+      "title": "Nenhuma execução corresponde",
+      "body": "As execuções de limpeza aparecem aqui, agendadas e manuais, simuladas e reais."
+    },
+    "emptyFiltered": "Nenhuma execução corresponde a estes filtros. Redefina-os para ver todas as execuções.",
+    "dryRun": "Simulação",
+    "realRun": "Removido",
+    "failed": "Falhou",
+    "outcomeDry_one": "Removeria {{rows}} linha, {{size}}",
+    "outcomeDry_many": "Removeria {{rows}} linhas, {{size}}",
+    "outcomeDry_other": "Removeria {{rows}} linhas, {{size}}",
+    "outcomeDryNone": "Nada seria removido",
+    "outcomeReal_one": "{{rows}} linha removida, {{size}}",
+    "outcomeReal_many": "{{rows}} linhas removidas, {{size}}",
+    "outcomeReal_other": "{{rows}} linhas removidas, {{size}}",
+    "outcomeRealNone": "Nada a remover",
+    "meta": "{{trigger}}, mantendo {{days}} dias",
+    "byActor": "por {{actor}}",
+    "trigger": {
+      "scheduled": "Agendada",
+      "manual": "Manual",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "Quando",
+      "target": "Tipo de dado",
+      "kind": "Tipo",
+      "result": "Resultado",
+      "trigger": "Gatilho",
+      "days": "Manter"
+    },
+    "timeline": "Linha do tempo das execuções",
+    "loadMore": "Carregar mais",
+    "loadingMore": "Carregando..."
+  }
+}
