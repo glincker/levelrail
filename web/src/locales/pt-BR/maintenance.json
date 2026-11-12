@@ -1,0 +1,171 @@
+{
+  "title": "Manutenção agendada",
+  "description": "Anuncie indisponibilidades planejadas no painel e na página de status pública e, se quiser, retenha os deploys automáticos durante elas.",
+  "notConfigured": "A manutenção agendada não está disponível neste control plane.",
+  "schedule": "Agendar manutenção",
+  "cancel": "Cancelar janela",
+  "until": "até",
+  "freezeBadge": "Deploys retidos",
+  "empty": {
+    "title": "Nenhuma manutenção planejada",
+    "description": "Agende uma janela antes de tirar algo do ar para que os usuários vejam com antecedência."
+  },
+  "state": {
+    "scheduled": "Agendada",
+    "active": "Em andamento",
+    "ended": "Encerrada"
+  },
+  "scope": {
+    "all": "Afeta tudo",
+    "project": "Afeta o projeto {{target}}",
+    "app": "Afeta o app {{target}}"
+  },
+  "scopeName": {
+    "all": "Tudo",
+    "project": "Um projeto",
+    "app": "Um app"
+  },
+  "banner": {
+    "active": "Manutenção em andamento: {{title}}, até {{end}}.",
+    "upcoming": "Manutenção planejada: {{title}}, de {{start}} até {{end}}.",
+    "freeze": "Os deploys automáticos ficam retidos durante a janela.",
+    "more": "Mais {{count}} janelas de manutenção estão planejadas."
+  },
+  "form": {
+    "title": "Agendar manutenção",
+    "description": "Os horários estão no fuso horário do seu navegador ({{zone}}).",
+    "name": "Título",
+    "namePlaceholder": "Atualização do armazenamento do banco de dados",
+    "message": "Mensagem (opcional)",
+    "start": "Começa",
+    "end": "Termina",
+    "scope": "Escopo",
+    "target": "Alvo",
+    "targetPlaceholder": {
+      "project": "ID do projeto",
+      "app": "Nome do app"
+    },
+    "lead": "Anunciar antes do início (minutos)",
+    "leadHint": "Enviado uma vez pelos seus canais de notificação. Use 0 para não anunciar.",
+    "freeze": "Reter deploys automáticos durante a janela",
+    "badRange": "O término deve ser depois do início.",
+    "cancel": "Cancelar",
+    "submit": "Agendar"
+  },
+  "domainBanner": {
+    "title": "O modo de manutenção está ativado para {{domain}}",
+    "titleNotEnforced": "A manutenção está salva para {{domain}}, mas não é aplicada",
+    "body": "Os visitantes veem a página de manutenção e nada mais: scripts, estilos e imagens não são servidos. O app continua rodando e um deploy não encerra a manutenção.",
+    "bodyNotEnforced": "Os visitantes ainda podem alcançar o app: não há prova de que o proxy na frente deste domínio envia o tráfego dele ao ingress embutido. Abra Gerenciar para ver os detalhes.",
+    "manage": "Gerenciar",
+    "end": "Encerrar manutenção",
+    "ending": "Encerrando...",
+    "ended": "Manutenção encerrada para {{domain}}",
+    "more_one": "Mais {{count}} domínio está em modo de manutenção.",
+    "more_many": "Mais {{count}} domínios estão em modo de manutenção.",
+    "more_other": "Mais {{count}} domínios estão em modo de manutenção.",
+    "elapsed": "Ativada há {{time}}.",
+    "endsAt": "Termina {{date}}.",
+    "autoOff": "Desativa sozinha em {{date}}.",
+    "noEnd": "Sem término automático: continua ativada até você encerrá-la.",
+    "long": "Isto está durando mais que o esperado."
+  },
+  "confirm": {
+    "title": "Colocar {{domain}} em manutenção?",
+    "description": "Os visitantes não alcançarão o app até você encerrar a manutenção. Verifique primeiro a página abaixo.",
+    "visitors": "Os visitantes recebem uma página de manutenção 503 com um cabeçalho Retry-After, em todas as URLs deste domínio.",
+    "assets": "Scripts, estilos, imagens e chamadas de API também não são servidos, então a página não consegue carregar nada do app.",
+    "running": "O container continua rodando e não é reiniciado.",
+    "deploys": "Um deploy durante a manutenção é concluído e a manutenção continua ativada até você encerrá-la.",
+    "alerts": "Os alertas de indisponibilidade, DNS, certificado e erro ou latência de requisições deste app ficam silenciados até a manutenção terminar. Os alertas de CPU, memória, disco, reinício e crash continuam disparando.",
+    "endsAt": "Ela termina automaticamente em {{date}}.",
+    "autoOff": "Ela se desativa sozinha após {{hours}} horas.",
+    "noEnd": "Ela não tem término automático. Defina um horário de término ou uma duração máxima para que não fique ativada para sempre.",
+    "confirm": "Ativar manutenção",
+    "pending": "Ativando..."
+  },
+  "preview": {
+    "title": "Pré-visualização da página que os visitantes veem",
+    "caption": "Pré-visualização: status {{status}}, Retry-After {{retry}} segundos",
+    "frameTitle": "Pré-visualização da página de manutenção",
+    "failed": "Não foi possível carregar a pré-visualização."
+  },
+  "appBanner": {
+    "title_one": "A manutenção está ativada para {{count}} domínio deste app",
+    "title_many": "A manutenção está ativada para {{count}} de {{total}} domínios deste app",
+    "title_other": "A manutenção está ativada para {{count}} de {{total}} domínios deste app",
+    "body": "Os visitantes recebem a página de manutenção nesses domínios. Os alertas de indisponibilidade, DNS, certificado e erro ou latência de requisições ficam silenciados, enquanto os de CPU, memória, disco, reinício e crash continuam disparando. Um deploy é concluído sem encerrar a manutenção.",
+    "end": "Encerrar em todos os domínios",
+    "ending": "Encerrando...",
+    "ended": "Manutenção encerrada em todos os domínios deste app"
+  },
+  "appToggle": {
+    "title": "Manutenção para todos os domínios",
+    "description": "Ative ou desative a manutenção em todos os domínios deste app de uma vez. Ela se aplica a todos ou a nenhum.",
+    "on": "Ativada em {{active}} de {{total}} domínios",
+    "off": "Desativada",
+    "enable": "Ativar em todos os domínios",
+    "enabling": "Ativando...",
+    "disable": "Encerrar em todos os domínios",
+    "disabling": "Encerrando...",
+    "saved": "A manutenção está ativada em todos os domínios deste app",
+    "failed": "Nada foi alterado. {{message}}",
+    "noDomains": "Adicione um domínio a este app antes de ativar a manutenção."
+  },
+  "deployNotice": {
+    "text": "Este app está em manutenção. O deploy será concluído e a manutenção continua ativada.",
+    "tooltip": "Este app está em manutenção. O deploy será concluído e a manutenção continua ativada."
+  },
+  "silence": {
+    "createdByMaintenance": "Criado pela manutenção (somente alertas de indisponibilidade, DNS, certificado e requisições)",
+    "endsWithMaintenance": "Termina quando a manutenção em {{domain}} terminar",
+    "matchApp": "app",
+    "matchRule": "regra",
+    "matchNode": "node",
+    "matchKind": "tipo",
+    "matchSeverity": "severidade",
+    "matchMetric": "métrica",
+    "newSilence": "Novo silenciamento",
+    "dialogDescription": "Os alertas correspondentes continuam sendo avaliados e aparecem no histórico como silenciados, mas não notificam. Todo filtro que você preencher deve corresponder.",
+    "apps": "Apps",
+    "appsPlaceholder": "web, worker",
+    "nodes": "Nodes",
+    "nodesPlaceholder": "edge-1",
+    "kinds": "Tipos de regra",
+    "kindsPlaceholder": "threshold, crashloop",
+    "severity": "Severidade",
+    "severityLevel": {
+      "info": "info",
+      "warning": "aviso",
+      "critical": "crítico"
+    },
+    "duration": "Duração",
+    "reason": "Motivo",
+    "reasonPlaceholder": "migração planejada do banco de dados",
+    "cancel": "Cancelar",
+    "creating": "Criando...",
+    "create": "Criar silenciamento",
+    "errorNoMatcher": "Escolha pelo menos um app, node, tipo ou severidade para corresponder.",
+    "errorDuration": "A duração deve ser algo como 30m, 4h ou 24h.",
+    "silencedFor": "Silenciado por {{duration}}.",
+    "ended": "Silenciamento encerrado.",
+    "endNow": "Encerrar agora",
+    "colStatus": "Status",
+    "colMatches": "Corresponde a",
+    "colUntil": "Até",
+    "colCreatedBy": "Criado por",
+    "status": {
+      "active": "ativo",
+      "pending": "pendente",
+      "expired": "expirado"
+    },
+    "showExpired": "Mostrar expirados",
+    "sectionLabel": "Silenciamentos",
+    "emptyTitle": "Nenhum silenciamento ativo",
+    "emptyDescription": "Silencie um alerta pela linha dele, ou crie um silenciamento aqui para uma mudança planejada."
+  },
+  "effects": {
+    "alertsSilenced": "Alertas de indisponibilidade, DNS, certificado e requisições silenciados",
+    "statusOngoing": "Página de status: em andamento"
+  }
+}
