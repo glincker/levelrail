@@ -1,0 +1,352 @@
+{
+  "deploy": {
+    "trigger": "モデルをデプロイ",
+    "title": "モデルをデプロイ",
+    "description": "GPUノード上で推論エンジンを実行し、APIキーで保護されたOpenAI互換のエンドポイントを公開します。",
+    "sections": {
+      "basics": "実行するもの",
+      "placement": "実行する場所",
+      "advanced": "詳細オプション",
+      "advancedHint": "GPU、コンテキスト長、常駐、スワップグループ、ドメインです。既定値は、ほとんどのモデルに適しています。"
+    },
+    "fields": {
+      "name": "名前",
+      "nameHint": "小文字、数字、ハイフンが使えます。エンドポイントのURLに使われます。",
+      "namePlaceholder": "chat",
+      "engine": "エンジン",
+      "model": "モデル",
+      "modelHint": "エンジンが取得できる参照です。候補から選ぶか、独自のものを貼り付けてください。",
+      "modelSuggestions": "このエンジンの候補",
+      "node": "ノード",
+      "localNode": "このホスト",
+      "gpus": "GPU",
+      "gpusHint": "エンジンが使えるGPUの数です。「all」にすると、エンジンに任せます。",
+      "gpusPlaceholder": "all",
+      "context": "コンテキスト長",
+      "contextHint": "1リクエストあたりの最大トークン数です。空欄にすると、エンジンの既定値を使います。",
+      "contextPlaceholder": "エンジンの既定値",
+      "quantization": "量子化",
+      "quantizationHint": "任意です。例: awq、gptq、fp8。",
+      "residency": "常駐",
+      "residencyAlways": "常に読み込む",
+      "residencyOnDemand": "オンデマンド",
+      "residencyHint": "オンデマンドでは、アイドル時にエンジンを停止し、最初のリクエストで起動します。",
+      "idleMinutes": "アイドル時間(分)",
+      "idleMinutesHint": "リクエストがないまま、エンジンが読み込まれた状態を保つ時間です。",
+      "idlePlaceholder": "プラットフォームの既定値",
+      "swapGroup": "スワップグループ",
+      "swapGroupHint": "同じGPU上で同じ名前を共有するモデルは、交代で動作します。1つを起動すると、VRAMを空けるために、常駐しているモデルが停止します。",
+      "swapGroupPlaceholder": "なし",
+      "domain": "ドメイン",
+      "domainHint": "独自のホスト名でエンドポイントを配信します。",
+      "domainPlaceholder": "llm.example.com",
+      "hfToken": "HuggingFaceトークン",
+      "hfTokenHint": "アクセス制限のあるモデルにのみ必要です。暗号化して保存され、二度と表示されません。"
+    },
+    "nodeOption": {
+      "freeVram": "{{total}}のうち{{free}}が空き",
+      "noGpu": "GPUは報告されていません",
+      "gpuCount_other": "GPU {{count}}基"
+    },
+    "summary": {
+      "ready": "{{name}}を作成します。{{node}}で、{{engine}}が{{model}}を提供します。",
+      "incomplete": "モデルに名前を付け、実行するものを選ぶと、作成される内容が表示されます。"
+    },
+    "errors": {
+      "name": "小文字、数字、ハイフンを使ってください。",
+      "model": "モデルの参照を選ぶか、入力してください。",
+      "gpus": "「all」または正の数を入力してください。",
+      "context": "正のトークン数を入力してください。",
+      "idle": "正の分数を入力してください。",
+      "swapGroup": "小文字、数字、ハイフンを使ってください。"
+    },
+    "actions": {
+      "cancel": "キャンセル",
+      "deploy": "デプロイ",
+      "deploying": "デプロイ中..."
+    },
+    "toast": {
+      "title": "「{{name}}」をデプロイしています。",
+      "description": "エンジンがモデルをダウンロードして読み込んでいます。"
+    }
+  },
+  "empty": {
+    "gpus": {
+      "title": "GPUノードからの報告はまだありません",
+      "description": "NVIDIAのGPUとドライバーを持つノードが、VRAMとともにここに表示されます。Ubuntuのノードに、NVIDIAドライバーとnvidia-container-toolkitをインストールすると、1分以内に表示されます。"
+    },
+    "models": {
+      "title": "デプロイされたモデルはまだありません",
+      "description": "GPUノードにOllama、vLLM、llama.cppをデプロイすると、専用のAPIキーを持つOpenAI互換のエンドポイントが得られます。"
+    },
+    "cache": {
+      "title": "キャッシュされたものはまだありません",
+      "description": "ダウンロードしたモデルの重みはここに保持され、再デプロイが速く始まります。モデルをデプロイして、蓄積してください。"
+    },
+    "sample": {
+      "modelName": "chat",
+      "engine": "Ollama",
+      "placement": "このホスト",
+      "status": "準備完了",
+      "gpuName": "NVIDIA GPU",
+      "vram": "24 GiBのVRAM",
+      "gpuLabel": "GPUノード",
+      "modelLabel": "モデル",
+      "cacheLabel": "キャッシュされた重み"
+    }
+  },
+  "cpu": {
+    "switch": {
+      "legend": "モデルを実行する場所",
+      "gpu": "GPUノード上",
+      "gpuHint": "NVIDIA GPU上のOllama、vLLM、llama.cppです。大きなモデルに最適です。",
+      "cpu": "CPUで実行",
+      "cpuHint": "このサーバーのCPUとRAMで動く小さなモデルで、厳格な上限があります。GPUは不要です。"
+    },
+    "deploy": {
+      "description": "このサーバーのCPU上で、CPUとメモリに厳格な上限を設けて小さなモデルを実行し、APIキーで保護されたOpenAI互換のエンドポイントを公開します。",
+      "pick": "モデルを選択",
+      "catalogNote": "{{date}}に検証済みの、厳選したリストです。速度とメモリは推定値です。デプロイすると、サーバーがHugging Faceから重みを直接ダウンロードします。",
+      "useCustom": "別のHugging Faceリポジトリを使う",
+      "customRepo": "リポジトリ",
+      "customRepoHint": "GGUFのリポジトリです。量子化のサフィックスを付けることもできます。",
+      "customFile": "GGUFファイル",
+      "customFileHint": "量子化のサフィックスで1つのファイルに絞り込める場合は、任意です。",
+      "unload": "アイドル時にアンロード",
+      "unloadHint": "しばらくリクエストがないとエンジンを停止し、メモリを解放します。次のリクエストで、再び起動します。",
+      "warnTitle": "このモデルはサーバーを共有します",
+      "warn": "このサーバーで、最大{{cpus}}個のCPUと{{memory}}のメモリ、およびおよそ{{disk}}のディスクを使います。ほかのアプリが優先されます。",
+      "diskUnknown": "数GB",
+      "submit": "CPUにデプロイ",
+      "toast": "Hugging Faceから重みをダウンロードしています。その後、モデルが読み込まれます。"
+    },
+    "license": {
+      "title": "ライセンスは未確認です",
+      "generic": "このリポジトリは厳選したリストにはなく、ライセンスも確認していません。ライセンスを遵守する責任は、あなたにあります。",
+      "ack": "ライセンスを読み、このモデルを使う責任を負うことに同意します。",
+      "required": "続けるには、ライセンスに同意してください。"
+    },
+    "tier": {
+      "light": "軽量",
+      "default": "推奨",
+      "plus": "プラス"
+    },
+    "verdict": {
+      "fits_comfortably": "余裕を持って収まります",
+      "tight": "ぎりぎりです",
+      "wont_fit": "収まりません",
+      "unknown": "不明"
+    },
+    "card": {
+      "size": "{{params}}Bパラメーター、{{quant}}",
+      "licenseTitle": "ライセンス(SPDX)",
+      "embedding": "埋め込み",
+      "resources": "ダウンロード{{download}}、メモリはおよそ{{ram}}が必要",
+      "estimate": "1秒あたり約{{range}}トークン(推定)",
+      "noEstimate": "速度は不明"
+    },
+    "limits": {
+      "cpu": "CPU上限: {{value}}",
+      "cpuHint": "厳格な上限です。ほかのアプリがCPUを必要とするときは、このモデルの優先度が下がります。",
+      "memory": "メモリ上限: {{value}}",
+      "memoryHint": "スワップなしの厳格な上限です。ほかのワークロードのために、少なくとも{{floor}}が常に空いた状態に保たれます。"
+    },
+    "fit": {
+      "speed": "想定される速度: 1秒あたり{{range}}トークン。これは推定値です。実際の数値は、ベンチマークで確認してください。",
+      "disk": "ダウンロードには、およそ{{size}}のディスクが必要です。",
+      "useSuggested": "使う"
+    },
+    "download": {
+      "label": "重みをダウンロード中",
+      "value": "{{total}}のうち{{done}}({{percent}}%)"
+    },
+    "benchmark": {
+      "title": "ベンチマーク",
+      "run": "ベンチマークを実行",
+      "running": "計測中...",
+      "done": "ベンチマークが完了しました。",
+      "failed": "ベンチマークに失敗しました。",
+      "hint": "短いプロンプトを数回実行し、制限時間で停止します。このモデルに割り当てたCPUを使い、自動で実行されることはありません。",
+      "notReady": "先にモデルを読み込んでください。ベンチマークが、停止中のモデルを起動することはありません。",
+      "measured": "計測した生成速度",
+      "estimated": "推定",
+      "noEstimate": "なし",
+      "prompt": "プロンプトの処理",
+      "ttft": "最初のトークンまでの時間",
+      "tps": "{{value}}トークン/秒",
+      "ms": "{{value}} ms",
+      "memory": "ピーク時のメモリ {{peak}}、上限{{limit}}。",
+      "truncated": "制限時間で停止しました。",
+      "onlyEstimate": "推定で1秒あたり{{range}}トークンです。まだ計測していません。",
+      "none": "まだ計測していません。"
+    },
+    "detail": {
+      "capsTitle": "リソースの上限",
+      "caps": "このモデルは、最大{{cpus}}個のCPUと{{memory}}のメモリを、スワップなし、低い優先度で使えます。サーバーのリソースが不足した場合は、アプリより先に、このモデルが停止されます。",
+      "idleExplain": "アイドル時のアンロード: オンデマンドの常駐では、アイドル時間が過ぎるとエンジンが停止し、メモリとCPUが解放されます。ダウンロードした重みはディスクに残るため、次のリクエストは、モデルの再読み込みを待つだけで済みます。"
+    }
+  },
+  "residencyCard": {
+    "title": "常駐",
+    "alwaysLoaded": "常に読み込む",
+    "onDemand": "オンデマンド",
+    "stateAsleep": "アイドル、エンジンは停止中",
+    "stateWaking": "起動中",
+    "stateLoaded": "読み込み済み",
+    "aboutResidency": "常駐について",
+    "aboutResidencyBody": "オンデマンドでは、アイドル時間が過ぎるとエンジンを停止してVRAMを解放し、最初のリクエストで起動します。このリクエストは、エンジンの読み込みを待ちます(APP_MODEL_WAKE_WAITまで。その後はRetry-After付きの503を返します)。Ollamaはモデルを永久に読み込んだままにするため、アンロードするにはコンテナを停止します。",
+    "mode": "モード",
+    "idleMinutes": "アイドル時間(分)",
+    "idlePlaceholder": "{{minutes}}(既定値)",
+    "save": "保存",
+    "saved": "常駐の設定を保存しました。",
+    "saveFailed": "常駐の設定を保存できませんでした。",
+    "wakeNow": "今すぐ起動",
+    "wakeFailed": "起動できませんでした。",
+    "sleepNow": "今すぐスリープ",
+    "sleepFailed": "スリープさせられませんでした。",
+    "notUsed": "アイドルになってから、使われていません。",
+    "swapGroup": "スワップグループ",
+    "aboutSwap": "スワップグループについて",
+    "aboutSwapBody": "同じノードまたはGPU上でこの名前を共有するモデルは、同時に常駐できません。1つを起動すると、まずグループ内で現在常駐しているモデルを停止して、VRAMを空けます。",
+    "groupName": "グループ名",
+    "groupNone": "なし",
+    "swapSaved": "スワップグループを保存しました。",
+    "swapSaveFailed": "スワップグループを保存できませんでした。",
+    "sharesGpu": "GPUを共有するもの:",
+    "lastUsedPrefix": "最終使用",
+    "stopsAfter": "{{minutes}}分間アイドルが続くと停止します。"
+  },
+  "endpoint": {
+    "state": {
+      "unknown": "未確認",
+      "online": "オンライン",
+      "slow": "低速",
+      "unreachable": "スリープ中、または到達不可",
+      "auth_failed": "認証情報が拒否されました",
+      "error": "エラー"
+    },
+    "stateWithLatency": "{{state}}、{{ms}} ms",
+    "recheck": "再確認",
+    "testing": "確認中",
+    "recheckFailed": "エンドポイントを再確認できませんでした。",
+    "testResult": "接続テストの結果",
+    "modelsFound_other": "{{count}}個のモデルが見つかりました",
+    "toast": {
+      "added": "エンドポイント{{name}}を登録しました。"
+    },
+    "add": {
+      "trigger": "エンドポイントを追加",
+      "title": "推論エンドポイントを追加",
+      "description": "Ollama、LM Studio、MacのMLXサーバーなど、自分で運用しているモデルサーバーを使います。リクエストは、スコープ付きのキー、制限、使用量の追跡を備えたゲートウェイを経由します。",
+      "testConnection": "接続をテスト",
+      "submit": "エンドポイントを登録",
+      "adding": "登録中",
+      "registerAnyway": "今すぐ登録することもできます。Levelrailは確認を続け、オンラインになると表示します。"
+    },
+    "fields": {
+      "url": "サーバーのアドレス",
+      "urlHint": "コントロールプレーンから到達できるアドレスです(例: WireGuardメッシュのアドレス)。",
+      "urlPlaceholder": "http://100.64.0.7:11434",
+      "apiType": "APIの種類",
+      "name": "名前",
+      "nameHint": "任意です。空欄の場合は、アドレスから決まります。",
+      "namePlaceholder": "mac-mini",
+      "credential": "APIキー",
+      "credentialHint": "任意です。暗号化して保存されます。",
+      "credentialPlaceholder": "サーバーにない場合は空欄のままにしてください"
+    },
+    "apiType": {
+      "ollama": {
+        "label": "Ollama",
+        "hint": "モデルは/api/tagsから一覧表示されます。"
+      },
+      "openai": {
+        "label": "OpenAI互換",
+        "hint": "LM Studio、MLX、vLLM、llama.cpp、またはクラウドAPIです。モデルは/v1/modelsから一覧表示されます。"
+      }
+    },
+    "errors": {
+      "url": "ユーザー名とパスワードを含まない、httpまたはhttpsのアドレスを入力してください。",
+      "name": "小文字、数字、ハイフンを使ってください。"
+    },
+    "health": {
+      "title": "ヘルス",
+      "upstream": "サーバーのアドレス",
+      "apiType": "APIの種類",
+      "lastChecked": "最終確認",
+      "privateOff": "このコントロールプレーンでは、内部の宛先がオフのため、パブリックなhttpsのサーバーにのみ到達できます。"
+    },
+    "models": {
+      "title": "サーバー上のモデル",
+      "none": "一覧表示されたモデルは、まだありません。"
+    },
+    "credential": {
+      "title": "APIキー",
+      "set": "キーが保存されており、このエンドポイントへのすべてのリクエストとともに送信されます。",
+      "notSet": "キーは保存されていません。リクエストは、認証情報なしで送信されます。",
+      "remove": "キーを削除",
+      "removed": "キーを削除しました。",
+      "saveFailed": "キーを更新できませんでした。"
+    },
+    "routing": {
+      "title": "フォールバック",
+      "description": "既定ではオフです。オンにすると、このエンドポイントが停止している間や、予算より遅い間は、リクエストが別のモデルに送られます。",
+      "fallback": "フォールバック先",
+      "off": "オフ",
+      "modelId": "フォールバック先のモデルID",
+      "modelIdPlaceholder": "フォールバック先のモデルと同じ",
+      "budget": "レイテンシの予算(秒)",
+      "budgetPlaceholder": "予算なし",
+      "save": "保存",
+      "saved": "フォールバックを保存しました。",
+      "saveFailed": "フォールバックを保存できませんでした。",
+      "hint": "予算は、最初の応答バイトまでの時間です。予算がない場合は、エラーとエンドポイントへの到達不能のみが、フォールバックのきっかけになります。",
+      "used_other": "これまでに{{count}}回使用されました。"
+    },
+    "fix": {
+      "saveAndCheck": "保存して確認",
+      "ollamaBind": "Ollamaは、既定ではlocalhostでのみ待ち受けます。サーバー上で、ネットワークアドレスにバインドしてください:",
+      "check_port": {
+        "title": "そのポートで応答するものがありません",
+        "body": "ポートと、サーバーが動作していることを確認してください。Ollamaは11434、LM Studioは1234を使います。対応するAPIの種類を選び、もう一度テストしてください。"
+      },
+      "check_network": {
+        "title": "サーバーが時間内に応答しませんでした",
+        "body": "マシンがスリープしているか、ネットワークから切断されているか、ファイアウォールがこのポートをブロックしている可能性があります。起動し、メッシュまたはLANの接続とファイアウォールを確認して、再確認してください。"
+      },
+      "check_host": {
+        "title": "ホスト名が解決されません",
+        "body": "綴りを確認するか、WireGuardメッシュまたはLAN上のIPアドレスを使って、もう一度テストしてください。"
+      },
+      "use_other_address": {
+        "title": "そのアドレスは、決して許可されません",
+        "body": "リンクローカルアドレスとクラウドのメタデータアドレスは、推論エンドポイントとして使えません。代わりに、そのマシンのメッシュまたはLANのアドレスを使ってください。"
+      },
+      "enable_internal": {
+        "title": "内部の宛先がオフです",
+        "body": "このアドレスはプライベートです。オペレーターが、コントロールプレーンで{{env}}により内部の宛先を許可し、再起動してから、再確認する必要があります。"
+      },
+      "set_credential": {
+        "title": "サーバーが認証情報を拒否しました",
+        "body": "サーバーのAPIキーを入力してください。暗号化して保存され、このエンドポイントにのみ送信されます。"
+      },
+      "check_api_type": {
+        "title": "サーバーが、このAPIの種類のようには応答しません",
+        "body": "もう一方のAPIの種類(OllamaまたはOpenAI互換)を選び、もう一度テストしてください。"
+      },
+      "use_http_or_trust": {
+        "title": "TLS証明書が信頼されていません",
+        "body": "信頼される認証局の証明書を使うか、メッシュ上のプライベートなhttpアドレスを使ってから、再確認してください。"
+      },
+      "pull_model": {
+        "title": "サーバーには、まだモデルがありません",
+        "body": "サーバーでモデルを取得または読み込んでから、再確認して一覧表示してください。"
+      },
+      "check_server": {
+        "title": "サーバーがエラーを報告しました",
+        "body": "サーバー自身のログを確認し、正常になってから、再確認してください。"
+      }
+    }
+  }
+}
