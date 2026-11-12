@@ -1,0 +1,83 @@
+{
+  "title": "Políticas de deploy",
+  "description": "Salvaguardas verificadas antes de cada deploy, nos escopos de organização, projeto e ambiente. O escopo mais específico prevalece em cada regra.",
+  "notConfigured": "As políticas de deploy não estão disponíveis neste control plane.",
+  "rootOnly": "Somente admins da instância podem alterar as políticas de deploy. Você ainda pode executar uma simulação.",
+  "scope": {
+    "label": "Escopo",
+    "org": "Organização",
+    "project": "Projeto",
+    "environment": "Ambiente",
+    "idLabel": "ID do projeto ou ambiente",
+    "idPlaceholder": "proj_123"
+  },
+  "mode": {
+    "off": "Desativada",
+    "warn": "Avisar",
+    "enforce": "Impor"
+  },
+  "modeLabel": "Modo de {{rule}}",
+  "valueLabel": "Valor de {{rule}}",
+  "rules": {
+    "allowed_registries": {
+      "title": "Registries de imagens permitidos",
+      "hint": "Hosts separados por vírgula, por exemplo ghcr.io, docker.io.",
+      "placeholder": "ghcr.io, docker.io"
+    },
+    "require_readiness_probe": {
+      "title": "Exigir uma sonda de prontidão",
+      "hint": "Os apps devem definir uma sonda de prontidão antes de fazer deploy."
+    },
+    "max_memory_mb": {
+      "title": "Teto de memória (MB)",
+      "hint": "Um app sem limite de memória excede o teto.",
+      "placeholder": "2048"
+    },
+    "max_cpu": {
+      "title": "Teto de CPU (núcleos)",
+      "hint": "Um app sem limite de CPU excede o teto.",
+      "placeholder": "2"
+    },
+    "forbid_privileged": {
+      "title": "Proibir containers privilegiados",
+      "hint": "Bloqueia apps que pedem modo privilegiado."
+    },
+    "forbid_host_mounts": {
+      "title": "Proibir bind mounts do host",
+      "hint": "Prefixos de caminho opcionais, separados por vírgula, que continuam permitidos.",
+      "placeholder": "/srv/data"
+    },
+    "required_labels": {
+      "title": "Rótulos obrigatórios",
+      "hint": "Chaves de rótulo separadas por vírgula que todo app deve definir.",
+      "placeholder": "team, cost-center"
+    },
+    "max_replicas": {
+      "title": "Teto de réplicas",
+      "hint": "O máximo de réplicas que um app pode executar.",
+      "placeholder": "5"
+    }
+  },
+  "save": "Salvar política",
+  "saved": "Política salva",
+  "clear": "Limpar escopo",
+  "cleared": "Política limpa",
+  "dryRun": "Simulação nos apps atuais",
+  "dryRunHint": "Pré-visualiza as regras acima sem salvá-las.",
+  "stored": {
+    "title": "Políticas salvas",
+    "empty": "Nenhuma política ainda. Adicione uma regra acima e salve, ou execute uma simulação primeiro para ver o que falharia.",
+    "edit": "Editar"
+  },
+  "result": {
+    "summary": "{{checked}} apps verificados, {{failing}} seriam bloqueados, {{warning}} com avisos.",
+    "clean": "Todos os apps passam nestas regras.",
+    "wouldFail": "Seriam bloqueados",
+    "warns": "Somente aviso",
+    "next": "Próxima ação"
+  },
+  "errors": {
+    "idRequired": "Informe o ID do projeto ou ambiente para este escopo.",
+    "numberRequired": "{{rule}} precisa de um número maior que zero."
+  }
+}
