@@ -1,0 +1,683 @@
+{
+  "table": {
+    "label": "Deploys",
+    "deploy": "Deploy",
+    "status": "Statut",
+    "app": "App",
+    "environment": "Environnement",
+    "commit": "Commit",
+    "branch": "Branche",
+    "started": "Démarré",
+    "by": "Par"
+  },
+  "autoRollback": {
+    "title": "Rollback automatique en cas de crashloop",
+    "infoTipLabel": "À propos du rollback automatique en cas de crashloop",
+    "helpLabel": "Guide du rollback automatique",
+    "enabledLabel": "Redeployer automatiquement la dernière image fonctionnelle",
+    "description": "Quand une alerte de crashloop se déclenche pour cette app, redeploie l'image réussie la plus récente qui est antérieure à celle en crashloop. Cela se produit au plus une fois par épisode. S'il n'existe pas d'image plus ancienne, l'alerte est tout ce que vous recevez.",
+    "switchAriaLabel": "Rollback automatique en cas de crashloop activé",
+    "toast": {
+      "enabled": "Rollback automatique en cas de crashloop activé.",
+      "disabled": "Rollback automatique en cas de crashloop désactivé.",
+      "errorTitle": "Impossible de mettre à jour le rollback automatique."
+    }
+  },
+  "predeploySnapshot": {
+    "title": "Snapshot de base de données avant deploy",
+    "infoTipLabel": "À propos des snapshots avant deploy",
+    "helpLabel": "Guide des snapshots avant deploy",
+    "modeAriaLabel": "Mode de snapshot",
+    "targetAriaLabel": "Cible de sauvegarde des snapshots",
+    "targetAuto": "Cible de sauvegarde par défaut",
+    "unavailable": "Les snapshots avant deploy ne sont pas disponibles sur ce plan de contrôle.",
+    "modes": {
+      "off": "Désactivé",
+      "on": "Activé",
+      "require": "Obligatoire"
+    },
+    "modeHints": {
+      "off": "Aucun snapshot n'est pris avant un deploy.",
+      "on": "Prend d'abord un snapshot des bases de données liées. Un snapshot échoué est enregistré et le deploy a quand même lieu.",
+      "require": "Prend d'abord un snapshot des bases de données liées. Un snapshot échoué bloque le deploy."
+    },
+    "toast": {
+      "saved": "Réglage du snapshot avant deploy enregistré.",
+      "errorTitle": "Impossible d'enregistrer le réglage du snapshot."
+    }
+  },
+  "rollbackWithData": {
+    "title": "Rollback avec les données",
+    "description": "Redeploie la version précédant ce deploy et restaure les bases de données à partir du snapshot pris juste avant.",
+    "snapshotsLabel": "Snapshots pris avant ce deploy",
+    "takenAt": "Pris",
+    "warning": "Chaque base de données liée est restaurée dans une nouvelle base de données et les liens de l'app sont basculés vers les copies. Les bases de données d'origine ne sont pas modifiées, mais les écritures faites depuis ce deploy y restent.",
+    "loading": "Recherche des snapshots...",
+    "reasonNoSnapshot": "Aucun snapshot exploitable n'a été pris avant ce deploy.",
+    "reasonProtected": "Cette app est dans un environnement protégé. Utilisez le rollback simple et restaurez les données à la main.",
+    "reasonLoadFailed": "Impossible de charger les snapshots de cette app.",
+    "cancel": "Annuler",
+    "confirm": "Rollback avec les données",
+    "working": "Rollback en cours...",
+    "started": "Rollback avec les données en cours.",
+    "menuLabel": "Rollback avec les données",
+    "menuHint": "Annuler ce deploy et restaurer son snapshot d'avant deploy"
+  },
+  "autoRollbackSloBurn": {
+    "title": "Rollback automatique en cas de consommation du SLO",
+    "infoTipLabel": "À propos du rollback automatique en cas de consommation du SLO",
+    "helpLabel": "Guide du rollback automatique",
+    "modeLabel": "Mode",
+    "modeAriaLabel": "Mode du rollback automatique en cas de consommation du SLO",
+    "defaultDescription": "Choisissez comment cette app réagit quand une alerte de taux de consommation du SLO se déclenche.",
+    "modes": {
+      "off": {
+        "label": "Désactivé",
+        "description": "Alerte seulement. N'agit jamais automatiquement."
+      },
+      "auto": {
+        "label": "Rollback automatique",
+        "description": "Revient immédiatement à l'image réussie la plus récente qui est antérieure à celle qui consomme le budget d'erreurs."
+      },
+      "dry_run": {
+        "label": "Simulation",
+        "description": "Consigne ce qui aurait été annulé par rollback, sans deployer."
+      },
+      "pause_for_human": {
+        "label": "Pause pour validation humaine",
+        "description": "Ouvre une approbation de deploy en attente pour le rollback au lieu de deployer directement. Un collègue l'approuve ou la rejette."
+      }
+    },
+    "toast": {
+      "modeSet": "Rollback automatique en cas de consommation du SLO défini sur : {{mode}}.",
+      "errorTitle": "Impossible de mettre à jour le rollback automatique en cas de consommation du SLO."
+    }
+  },
+  "badgeSettings": {
+    "title": "Badge de statut de deploy",
+    "infoTipLabel": "À propos du badge de statut de deploy",
+    "enabledLabel": "Badge public pour le README",
+    "description": "Sert un petit SVG public montrant le statut du dernier deploy de cette app et quand il a eu lieu. Aucune authentification n'est requise. Laissez désactivé si le statut des deploys ne doit pas être public.",
+    "switchAriaLabel": "Badge de statut de deploy activé",
+    "embedLabel": "Intégrer dans votre README",
+    "toast": {
+      "enabled": "Badge de statut de deploy activé.",
+      "disabled": "Badge de statut de deploy désactivé.",
+      "errorTitle": "Impossible de mettre à jour le badge de statut de deploy."
+    }
+  },
+  "releaseLine": {
+    "deployed": "deployé",
+    "from": "depuis",
+    "source": {
+      "webhook": "un git push",
+      "manual": "le tableau de bord",
+      "image": "un deploy d'image",
+      "compose": "un modèle ou un fichier Compose",
+      "promote": "une promotion",
+      "clone": "un clone",
+      "schedule": "une planification",
+      "auto_rollback": "un rollback automatique",
+      "git_push": "un git push vers le serveur",
+      "poll": "une interrogation, car un webhook a été manqué",
+      "upload": "un répertoire téléversé depuis la CLI",
+      "restart": "un redémarrage",
+      "start": "le démarrage d'une app arrêtée",
+      "stop": "l'arrêt de l'app",
+      "pr_comment": "un commentaire de pull request"
+    }
+  },
+  "imageAutoUpdate": {
+    "title": "Mettre à jour quand l'image change",
+    "infoTipLabel": "À propos de la mise à jour automatique des images",
+    "description": "Compare régulièrement le tag d'image de cette app à son registre et redeploie quand le tag pointe vers un nouveau digest. Les apps construites depuis une source, les apps arrêtées et les apps en gel de deploy sont ignorées. Un push de registre vers un environnement protégé crée une demande d'approbation de deploy à la place.",
+    "enabledLabel": "Redeployer automatiquement quand le tag bouge",
+    "switchAriaLabel": "Mise à jour automatique de l'image activée",
+    "checkNow": "Contrôler maintenant",
+    "checking": "Contrôle...",
+    "lastCheck": "Dernier contrôle ({{when}}) : {{result}}",
+    "neverChecked": "Pas encore contrôlé.",
+    "status": {
+      "updateAvailable": "Une image plus récente est disponible pour ce tag.",
+      "upToDate": "L'image est à jour.",
+      "updateNow": "Mettre à jour maintenant",
+      "archMismatch": "Cette image est construite pour {{image}} mais le node exécute {{node}}. Elle peut échouer au démarrage."
+    },
+    "toast": {
+      "enabled": "Mise à jour automatique de l'image activée.",
+      "disabled": "Mise à jour automatique de l'image désactivée.",
+      "errorTitle": "Impossible de mettre à jour la mise à jour automatique de l'image.",
+      "checkFailed": "Échec du contrôle de l'image."
+    },
+    "window": {
+      "label": "Mettre à jour uniquement pendant une fenêtre",
+      "switchAriaLabel": "Limiter les mises à jour à une fenêtre",
+      "presetsLabel": "Préréglages de fenêtre",
+      "presets": {
+        "nightly": "Chaque nuit 03:00",
+        "weekends": "Week-ends 03:00"
+      },
+      "cronLabel": "Début de la fenêtre (cron)",
+      "minutesLabel": "Minutes d'ouverture",
+      "save": "Enregistrer la fenêtre",
+      "saved": "Fenêtre de mise à jour enregistrée.",
+      "invalid": "Saisissez une planification cron et une durée de fenêtre d'au moins 1 minute.",
+      "waiting": "Une image plus récente attend la prochaine fenêtre de mise à jour."
+    },
+    "webhookHelp": "Webhook de push du registre : mettre à jour au push au lieu d'attendre le prochain intervalle.",
+    "webhookSet": "Un webhook de push du registre est défini. En créer un nouveau le remplace.",
+    "webhookCreate": "Créer l'URL du webhook",
+    "webhookRotate": "Remplacer l'URL du webhook",
+    "webhookUrlLabel": "URL du webhook du registre",
+    "webhookShownOnce": "Copiez-la maintenant. Elle n'est plus affichée ensuite. Collez-la comme webhook (POST) dans votre registre. L'URL elle-même est le secret.",
+    "signingSecretLabel": "Secret du webhook GitHub (affiché une seule fois)",
+    "providerHint": {
+      "dockerhub": "Docker Hub : Webhooks du dépôt, ajoutez l'URL. Docker Hub n'envoie pas de digest, donc le tag est d'abord résolu.",
+      "ghcr": "GitHub (ghcr.io) : Settings, Webhooks, type de contenu application/json, événement Packages, et le secret ci-dessus. Les livraisons non signées sont refusées.",
+      "protected": "Un push deploie le digest poussé pour l'image et le tag propres à cette app. Dans un environnement protégé, il crée une approbation à la place."
+    }
+  },
+  "canary": {
+    "title": "Release canary",
+    "infoTipLabel": "À propos des releases canary",
+    "description": "Exécute une nouvelle image à côté de la version actuelle et lui envoie une part des requêtes. Promouvez-la quand elle semble saine, ou abandonnez et tout le trafic reste sur la version actuelle. Un canary qui n'est pas prêt ne reçoit aucun trafic. Nécessite une app d'image à un seul réplica.",
+    "imageLabel": "Image canary",
+    "imagePlaceholder": "registry/app:next",
+    "weightLabel": "Trafic %",
+    "start": "Démarrer le canary",
+    "running": "Le canary {{image}} reçoit {{weight}} % des requêtes.",
+    "setWeight": "Définir la part",
+    "promote": "Promouvoir",
+    "promoteNow": "Promouvoir maintenant",
+    "abort": "Abandonner",
+    "stagesLabel": "Étapes % (facultatif)",
+    "stagesPlaceholder": "10,25,50,100",
+    "intervalLabel": "Par étape",
+    "maxErrorLabel": "Hausse max des erreurs (points)",
+    "maxP95Label": "Ratio p95 max",
+    "stageLabel": "Étape {{stage}} sur {{count}}",
+    "stageWeights": "{{stages}} %",
+    "compareLabel": "Canary par rapport à la version stable",
+    "canaryColumn": "Canary",
+    "stableColumn": "Stable",
+    "requests": "Requêtes de cette étape",
+    "errorRate": "Taux d'erreurs (5xx)",
+    "p95": "Latence p95",
+    "next": "{{reason}} ({{elapsed}} s sur {{interval}} s). Un rollback est effectué automatiquement si les erreurs ou la latence augmentent par rapport à la version stable.",
+    "breaching": "Dépassement : {{reason}}. Rollback en cours.",
+    "waitingForTraffic": "En attente que le canary reçoive du trafic avant de juger cette étape.",
+    "outcome": {
+      "promoted": "Le dernier canary a été promu",
+      "aborted": "Le dernier canary a été abandonné",
+      "rolled_back": "Le dernier canary a été annulé automatiquement par rollback"
+    },
+    "outcomeDetail": "{{image}} {{reason}}",
+    "toast": {
+      "started": "Canary démarré.",
+      "weightSet": "Part du trafic mise à jour.",
+      "promoted": "Canary promu, deploy en cours.",
+      "aborted": "Canary supprimé.",
+      "errorTitle": "Échec de l'action sur le canary"
+    }
+  },
+  "templateUpgrade": {
+    "badge": "Mise à jour du modèle disponible",
+    "blocked": "nécessite des étapes manuelles",
+    "apply": "Mettre à niveau",
+    "applying": "Démarrage",
+    "capabilities": "Accorde des capacités Linux supplémentaires : {{caps}}. L'application les accepte.",
+    "confirmTitle": "Mettre à niveau vers le modèle actuel ?",
+    "confirmBody": "Risque : {{risk}}. Une sauvegarde récente du volume est requise. La version est surveillée et annulée automatiquement par rollback si elle entre en crash loop ou échoue.",
+    "envCount_one": "{{count}} changement d'env",
+    "envCount_many": "{{count}} changements d'env",
+    "envCount_other": "{{count}} changements d'env",
+    "volumeCount_one": "{{count}} volume",
+    "volumeCount_many": "{{count}} volumes",
+    "volumeCount_other": "{{count}} volumes",
+    "status": {
+      "unchanged": "aucun changement",
+      "changed": "modifié",
+      "added": "nouveau service",
+      "removed": "supprimé"
+    },
+    "run": {
+      "watching": "Mise à niveau en cours, surveillance de la nouvelle version",
+      "succeeded": "Mise à niveau terminée et l'app est saine",
+      "rolled_back": "La mise à niveau a échoué et a été annulée par rollback",
+      "rollback_failed": "La mise à niveau a échoué et le rollback a été refusé",
+      "refused": "La mise à niveau a été refusée. Rien n'a changé."
+    },
+    "risk": {
+      "none": "Aucun changement",
+      "low": "Risque faible",
+      "medium": "Risque moyen",
+      "high": "Risque élevé"
+    }
+  },
+  "pendingChanges": {
+    "title": "Changements en attente d'un redémarrage",
+    "detail": "{{count}} pas encore appliqués",
+    "restart": "Redémarrer pour appliquer",
+    "redeploy": "Redeployer pour appliquer",
+    "applying": "Application",
+    "failed": "Impossible d'appliquer les changements"
+  },
+  "envCompare": {
+    "title": "Comparer l'env avec une autre app",
+    "pick": "Comparer avec",
+    "none": "Choisir une app",
+    "onlyIn": "Uniquement dans {{app}} :",
+    "differs": "Diffère :",
+    "secret": "(secret)",
+    "secretOneSide": "(secret d'un seul côté)",
+    "summary": "{{count}} clés identiques. Les valeurs des secrets ne sont jamais lues. Les secrets ne sont comparés que par clé.",
+    "tableLabel": "Différences d'environnement",
+    "colKey": "Clé",
+    "colStatus": "Statut",
+    "added": "Uniquement ici",
+    "removed": "Uniquement là-bas",
+    "changed": "Modifié",
+    "missing": "non défini",
+    "secretMasked": "Valeur secrète, masquée"
+  },
+  "appSleep": {
+    "title": "Veille en cas d'inactivité",
+    "infoTipLabel": "À propos des apps en veille",
+    "description": "Arrête cette app après un certain temps sans requêtes, pour qu'elle n'utilise ni mémoire ni CPU. La prochaine requête vers son domaine la démarre et affiche une courte page de réveil qui réessaie d'elle-même. Le premier visiteur attend le démarrage à froid.",
+    "enabledLabel": "Veille en cas d'inactivité",
+    "switchAriaLabel": "Veille en cas d'inactivité activée",
+    "minutesLabel": "Minutes personnalisées ({{min}} à {{max}})",
+    "save": "Enregistrer",
+    "asleep": "Cette app est en veille.",
+    "wakeNow": "Réveiller maintenant",
+    "toast": {
+      "enabled": "Veille en cas d'inactivité activée.",
+      "disabled": "Veille en cas d'inactivité désactivée.",
+      "updated": "Durée d'inactivité mise à jour.",
+      "errorTitle": "Échec du réglage de la veille",
+      "holdUpdated": "Mode fonction mis à jour.",
+      "portWakeUpdated": "Réveil par port mis à jour.",
+      "ignoreUpdated": "Chemins ignorés mis à jour."
+    },
+    "holdLabel": "Retenir les requêtes pendant le réveil (mode fonction)",
+    "holdHelp": "Une requête qui arrive pendant que l'app est en veille attend son démarrage puis est rejouée, au lieu d'afficher une page de réveil. Utilisez ceci pour les appelants d'API.",
+    "holdAriaLabel": "Retenir les requêtes pendant le réveil",
+    "badgeAsleep": "En veille",
+    "fleetTitle": "Apps en veille",
+    "fleetSummary": "{{sleeping}} apps en veille sur {{enabled}}",
+    "fleetEmpty": "Aucune app ne se met encore en veille en cas d'inactivité. Activez-la depuis l'onglet Deploys d'une app pour libérer sa mémoire quand personne ne la visite.",
+    "sleepNow": "Mettre en veille maintenant",
+    "sleepNowHelp": "Arrête l'app maintenant au lieu d'attendre la durée d'inactivité. La prochaine requête la démarre.",
+    "fleetEmptyShort": "Rien n'est encore en veille",
+    "fleetReclaimedLabel": "de mémoire non utilisée",
+    "fleetBrowseApps": "Choisir des apps",
+    "fleetAllAwake": "Chaque app avec la veille activée est active en ce moment.",
+    "fleetMore": "et {{count}} autres en veille",
+    "fleetNoLimits": "Ces apps n'ont pas de limite de mémoire, donc la mémoire qu'elles libèrent ne peut pas être estimée. Définissez une limite sur chaque app pour la voir ici.",
+    "status": {
+      "ready": "Prête à être activée",
+      "blocked": "Bloquée",
+      "awake": "Activée, éveillée",
+      "sleeping": "En veille maintenant",
+      "waking": "Réveil en cours"
+    },
+    "explain": {
+      "generic": "Quand personne n'utilise cette app pendant un moment, elle est arrêtée pour libérer de la mémoire et du CPU. Le prochain visiteur la redémarre et attend un démarrage à froid."
+    },
+    "wakeTiming": {
+      "none": "Aucun réveil mesuré pour l'instant, donc aucune estimation de la durée d'un réveil.",
+      "typical": "Se réveille généralement en environ {{typical}}.",
+      "typicalWithP95": "Se réveille généralement en environ {{typical}} (p95 {{p95}}).",
+      "noneShort": "Aucune donnée de réveil pour l'instant",
+      "short": "Se réveille en environ {{typical}}",
+      "shortWithP95": "Se réveille en environ {{typical}} (p95 {{p95}})"
+    },
+    "frees": "Libère environ {{size}} en veille",
+    "checklistLabel": "Éligibilité à la veille",
+    "blockedPrefix": "Bloque la veille : ",
+    "warnPrefix": "Avertissement : ",
+    "whatThisMeans": "Ce que cela signifie :",
+    "allClear": "Rien ne bloque la veille pour cette app.",
+    "turnOn": "Activer la veille en cas d'inactivité",
+    "turnOff": "Désactiver la veille en cas d'inactivité",
+    "turnOnHint": "Se met en veille après {{minutes}} minutes sans utilisation. Vous pourrez le modifier ensuite.",
+    "turnOnBlocked": "Corrigez d'abord ceci : {{titles}}",
+    "idleTitle": "Mise en veille après une inactivité de",
+    "presetMinutes_one": "{{count}} minute",
+    "presetMinutes_many": "{{count}} minutes",
+    "presetMinutes_other": "{{count}} minutes",
+    "activity": {
+      "lastRequest": "Dernière requête",
+      "lastNetwork": "Dernière activité réseau",
+      "connections": "Connexions ouvertes",
+      "sleepsIn": "Veille dans",
+      "notScheduled": "Non planifiée",
+      "none": "Aucune pour l'instant"
+    },
+    "countdown": {
+      "minutes_one": "{{count}} min",
+      "minutes_many": "{{count}} min",
+      "minutes_other": "{{count}} min",
+      "seconds_one": "{{count}} s",
+      "seconds_many": "{{count}} s",
+      "seconds_other": "{{count}} s"
+    },
+    "portWake": {
+      "title": "Réveil sur trafic vers les ports publiés",
+      "help": "Une connexion au port {{ports}} réveille l'app, donc elle peut se mettre en veille même avec un port d'hôte épinglé.",
+      "aria": "Réveil sur trafic vers les ports publiés"
+    },
+    "ignore": {
+      "title": "Chemins ignorés",
+      "help": "Les requêtes vers ces chemins ne maintiennent jamais l'app éveillée : contrôles de santé et moniteurs de disponibilité.",
+      "remove": "Retirer {{path}}",
+      "addLabel": "Chemin à ignorer",
+      "add": "Ajouter"
+    }
+  },
+  "releaseNotes": {
+    "title": "Commits et notes de version",
+    "digest": "Digest de l'image",
+    "digestSame": "Même digest d'image des deux côtés.",
+    "noCommits": "Aucun commit entre ces deux deploys.",
+    "commitsCount_one": "{{count}} commit entre ces deploys",
+    "commitsCount_many": "{{count}} commits entre ces deploys",
+    "commitsCount_other": "{{count}} commits entre ces deploys",
+    "generate": "Générer les notes de version",
+    "generating": "Génération...",
+    "copy": "Copier le Markdown",
+    "copied": "Notes de version copiées.",
+    "copyFailed": "Impossible de copier dans le presse-papiers.",
+    "loadFailed": "Impossible de générer les notes de version.",
+    "needsDeploy": "Choisissez deux deploys qui ont enregistré un commit git pour générer les notes de version."
+  },
+  "githubActions": {
+    "title": "Rapports GitHub Actions",
+    "infoTipLabel": "À propos des rapports GitHub Actions",
+    "description": "Quand l'action de deploy Levelrail s'exécute dans votre workflow, elle enregistre un deployment GitHub et un check run sur le commit, pour que le résultat apparaisse sur la pull request. Un rapport échoué ne fait jamais échouer le deploy.",
+    "environmentLabel": "Nom de l'environnement GitHub",
+    "deploymentsLabel": "Enregistrer les deployments GitHub",
+    "checksLabel": "Publier un check run",
+    "snippetHint": "Utilisez glincker/levelrail/integrations/github-action dans votre workflow, ou exécutez levelrail-cli apps github-actions get {{app}}.",
+    "save": "Enregistrer",
+    "toast": {
+      "saved": "Rapports GitHub Actions enregistrés.",
+      "errorTitle": "Impossible d'enregistrer les rapports GitHub Actions."
+    }
+  },
+  "ciDeploy": {
+    "title": "Deployer depuis la CI",
+    "infoTipLabel": "À propos du deploy depuis la CI",
+    "description": "Faites confiance à un pipeline et une ref, puis collez la configuration dans votre CI. Le job échange son identité (GitHub, GitLab ou CircleCI) contre un token de 15 minutes qui ne peut deployer que cette app, donc aucun secret de longue durée n'est stocké. Un commit avec [skip ci] ne deploie pas.",
+    "noTrusts": "Aucun pipeline n'est encore approuvé pour deployer cette app. Ajoutez-en un ci-dessous.",
+    "repositoryLabel": {
+      "github": "Dépôt GitHub",
+      "gitlab": "Chemin du projet GitLab",
+      "circleci": "ID du projet CircleCI"
+    },
+    "repositoryPlaceholder": {
+      "github": "owner/name",
+      "gitlab": "group/project",
+      "circleci": "Project Settings > Overview"
+    },
+    "refLabel": "Ref autorisée",
+    "environmentLabel": {
+      "github": "Environnement",
+      "gitlab": "Environnement",
+      "circleci": "ID du contexte"
+    },
+    "environmentPlaceholder": {
+      "github": "Tout environnement",
+      "gitlab": "Tout environnement protégé",
+      "circleci": "Tout contexte"
+    },
+    "trust": "Faire confiance",
+    "removeTrust": "Ne plus faire confiance à {{repository}}",
+    "workflowTitle": "Workflow généré",
+    "copy": "Copier le workflow",
+    "needsAddress": "Les tokens CI sont émis pour l'adresse du tableau de bord, et aucune n'est encore définie.",
+    "useThisAddress": "Utiliser {{origin}}",
+    "cliToggle": "Corriger via la CLI",
+    "toast": {
+      "trusted": "Dépôt approuvé.",
+      "trustError": "Impossible d'ajouter l'approbation.",
+      "removeError": "Impossible de retirer l'approbation.",
+      "addressError": "Impossible d'enregistrer l'adresse du tableau de bord.",
+      "copied": "Workflow copié.",
+      "copyFailed": "Impossible de copier dans le presse-papiers.",
+      "trustedLoose": "Approuvé, avec une règle plus large."
+    },
+    "providerLabel": "Fournisseur de CI",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI"
+    },
+    "orgIdLabel": "ID de l'organisation CircleCI",
+    "orgIdPlaceholder": "Organization Settings > Overview",
+    "issuerLabel": "Émetteur auto-géré",
+    "issuerPlaceholder": "https://gitlab.com",
+    "issuerNote": "Laissez l'émetteur vide pour gitlab.com. Seul un utilisateur root peut faire confiance à un émetteur GitLab auto-géré, car quiconque l'exploite peut créer des tokens.",
+    "issuerShown": "Émetteur {{issuer}}",
+    "protectedOnly": "Uniquement les branches et tags protégés",
+    "unprotectedWarning": "Cette approbation accepte les pipelines sur des branches et tags non protégés. Tout développeur qui peut pousser une ref correspondante peut deployer.",
+    "snippetTitle": {
+      "github": "Étapes du job",
+      "gitlab": "Job GitLab CI",
+      "circleci": "Étapes du job CircleCI"
+    },
+    "snippetNote": "Définissez LEVELRAIL_API_URL sur l'adresse du tableau de bord. Elle est publique, pas un secret."
+  },
+  "buildHooks": {
+    "title": "Hooks de build",
+    "infoTipLabel": "À propos des hooks de build",
+    "description": "Un hook de build est une URL secrète. Envoyez-lui un POST (depuis un CMS headless ou une tâche cron) pour construire et deployer la source git de cette app. Un corps JSON facultatif avec title et body parvient au build sous forme des arguments de build TRIGGER_TITLE et TRIGGER_BODY. Une liste d'autorisation facultative de CIDR sources refuse tout autre appelant avec 403, et rien n'est construit.",
+    "empty": "Aucun hook de build pour l'instant. Créez-en un pour déclencher des builds depuis l'extérieur.",
+    "defaultBranch": "branche de l'app",
+    "neverTriggered": "Jamais déclenché",
+    "lastTriggered": "Dernier déclenchement {{when}} ({{count}} au total). Résultat : {{result}}",
+    "nameLabel": "Nom du hook",
+    "namePlaceholder": "Par exemple : cms publish",
+    "branchLabel": "Branche (facultatif)",
+    "branchPlaceholder": "Par défaut, la branche de l'app",
+    "create": "Créer le hook",
+    "rotate": "Renouveler",
+    "revoke": "Révoquer",
+    "confirmRevoke": "Confirmer la révocation",
+    "copy": "Copier l'URL",
+    "urlLabel": "URL du hook de build",
+    "shownOnce": "URL de {{name}}. Copiez-la maintenant. Elle n'est plus affichée ensuite.",
+    "allowLabel": "Sources autorisées (facultatif)",
+    "allowPlaceholder": "CIDR ou adresses, séparés par des virgules",
+    "allowAny": "Toute source peut l'appeler.",
+    "allowList": "Seuls {{cidrs}} peuvent l'appeler.",
+    "lastUsed": "Dernier appel {{when}}.",
+    "editAllow": "Liste d'autorisation",
+    "saveAllow": "Enregistrer la liste d'autorisation",
+    "cancel": "Annuler",
+    "allowAnyToggle": "Autoriser toute source",
+    "lastRefusal": "Dernier appel refusé : {{reason}}",
+    "toast": {
+      "errorTitle": "Échec de la requête du hook de build",
+      "copied": "URL copiée.",
+      "copyFailed": "Impossible de copier dans le presse-papiers.",
+      "allowSaved": "Liste d'autorisation enregistrée."
+    }
+  },
+  "banner": {
+    "title": "Deploys",
+    "description": "Chaque version de vos apps, en direct pendant son build, avec rollback en un clic. Deployez une app et elle apparaît ici.",
+    "compactDescription": "Les versions de chaque app, avec rollback.",
+    "diagram": {
+      "image": "image",
+      "server": "serveur",
+      "rollback": "rollback"
+    }
+  },
+  "rolloutPolicy": {
+    "title": "Budget de mise à jour progressive",
+    "infoLabel": "À propos du budget de mise à jour progressive",
+    "infoBody": "Les valeurs sont un nombre ou un pourcentage, comme 1 ou 25 %. Laissez un champ vide pour utiliser la valeur par défaut du serveur.",
+    "hint": "Combien de réplicas peuvent être ajoutés ou indisponibles pendant le déploiement d'une nouvelle version. Même bloc que rollout dans app.yaml.",
+    "max_surge": "Surcharge max",
+    "max_unavailable": "Indisponibles max",
+    "min_available": "Disponibles min",
+    "default": "par défaut",
+    "save": "Enregistrer",
+    "reset": "Utiliser les valeurs par défaut",
+    "saved": "Politique de déploiement enregistrée.",
+    "resetDone": "Politique de déploiement rétablie par défaut.",
+    "saveFailed": "Impossible de mettre à jour la politique de déploiement.",
+    "placeholder": "p. ex. 25 % ou 1",
+    "format": "Un nombre (1) ou un pourcentage (25 %)",
+    "error": {
+      "format": "Utilisez un nombre entier ou un pourcentage, comme 1 ou 25 %.",
+      "percent": "Un pourcentage doit être compris entre 0 % et 100 %.",
+      "bothZero": "La surcharge max et les indisponibles max ne peuvent pas être tous deux à 0, sinon le déploiement ne pourrait jamais progresser."
+    }
+  },
+  "page": {
+    "title": "Deploys",
+    "live": "En direct",
+    "reconnecting": "Reconnexion",
+    "connecting": "Connexion",
+    "newCount": "{{count}} nouveaux",
+    "loadFailed": "Impossible de charger les deploys",
+    "retry": "Réessayer",
+    "noMatch": "Aucun deploy ne correspond",
+    "noMatchHint": "Essayez de retirer un filtre ou d'élargir votre recherche.",
+    "clearFilters": "Effacer les filtres",
+    "emptyTitle": "Aucun deploy pour l'instant",
+    "emptyDescription": "Les deploys apparaissent ici dès qu'une app est construite et publiée.",
+    "drawerFallbackTitle": "Deploy",
+    "drawerDescription": "Deploy {{id}} de {{app}}",
+    "drawerSearching": "Recherche de ce deploy",
+    "drawerNotFoundTitle": "Deploy introuvable",
+    "drawerNotFound": "Deploy introuvable. Il a peut-être été élagué par la rétention.",
+    "emptyAction": "Deployer une app"
+  },
+  "summary": {
+    "label": "Résumé des deploys",
+    "unavailableTip": "Le résumé n'a pas pu être chargé. La liste ci-dessous fonctionne toujours.",
+    "na": "n/d",
+    "inProgress": "En cours",
+    "inProgressTip": "Deploys en build en ce moment. {{queued}} en file.",
+    "failureRate": "Taux d'échec (24 h)",
+    "failureRateTip": "Deploys échoués en proportion des deploys terminés au cours des dernières 24 heures.",
+    "medianDuration": "Durée médiane",
+    "medianDurationTip": "Durée médiane des deploys terminés au cours des dernières 24 heures.",
+    "needsAttention": "Nécessite votre attention",
+    "needsAttentionTip": "Deploys suspendus, et images en ligne qui diffèrent de ce qui tourne. Sélectionnez pour afficher les deploys suspendus.",
+    "deploys14": "Deploys (14 jours)",
+    "deploys14Tip": "Deploys démarrés par jour sur les 14 derniers jours."
+  },
+  "filterBar": {
+    "searchPlaceholder": "Rechercher un commit, un sha ou une app",
+    "searchLabel": "Rechercher des deploys",
+    "activeFilters": "Filtres actifs",
+    "removeFilter": "Retirer le filtre {{text}}",
+    "clearAll": "Tout effacer"
+  },
+  "supersededPopover": {
+    "queue": "File d'attente",
+    "autoCancelLabel": "Annulation automatique des remplacés",
+    "switchLabel": "Annuler automatiquement les deploys remplacés pour {{app}}",
+    "updateFailed": "Impossible de mettre à jour le réglage.",
+    "openSettings": "Ouvrir les réglages de deploy",
+    "title": "Annulation automatique des deploys remplacés",
+    "description": "Un deploy plus récent en file d'une branche remplace les plus anciens en file. Les builds déjà en cours ne sont jamais annulés. Défini par app.",
+    "noApps": "Aucune app chargée pour l'instant.",
+    "appLabel": "App"
+  },
+  "deployList": {
+    "shortcuts": "Raccourcis",
+    "addFilter": "Ajouter un filtre",
+    "filterBy": "Filtrer par",
+    "findOrType": "Rechercher ou saisir {{what}}",
+    "valueLabel": "Valeur de {{what}}",
+    "enterToUse": "Appuyez sur Entrée pour utiliser cette valeur.",
+    "nothingLoaded": "Rien de chargé pour l'instant.",
+    "keys": {
+      "author": "Auteur",
+      "environment": "Environnement",
+      "status": "Statut",
+      "app": "App",
+      "branch": "Branche",
+      "trigger": "Déclencheur"
+    },
+    "status": {
+      "building": "En build",
+      "queued": "En file d'attente",
+      "ready": "Prêt",
+      "failed": "Échoué",
+      "canceled": "Annulé",
+      "held": "Suspendu",
+      "awaiting_approval": "En attente d'approbation",
+      "rolled_back": "Annulé par rollback",
+      "superseded": "Remplacé"
+    },
+    "trigger": {
+      "git push": "Git push",
+      "manual": "Manuel",
+      "rollback": "Rollback",
+      "api": "API",
+      "preview": "Preview",
+      "schedule": "Planification",
+      "pipeline": "Pipeline"
+    },
+    "shortcutLabels": {
+      "search": "Rechercher",
+      "addFilter": "Ajouter un filtre",
+      "nextPrev": "Deploy suivant ou précédent",
+      "open": "Ouvrir les détails",
+      "close": "Fermer les détails",
+      "redeploy": "Redeployer (demande confirmation)",
+      "rollback": "Rollback vers celui-ci (demande confirmation)",
+      "cancel": "Annuler un deploy en cours (demande confirmation)"
+    }
+  },
+  "ciTemplates": {
+    "title": "Fichier de pipeline pour votre CI",
+    "infoTipLabel": "À propos des fichiers de pipeline CI",
+    "description": "Choisissez votre CI pour obtenir un fichier de pipeline prêt à l'emploi pour cette app. GitHub, GitLab et CircleCI utilisent un token d'identité de courte durée, donc rien de longue durée n'est stocké. Jenkins et Buildkite utilisent un token de deployer qui ne peut que lire et deployer.",
+    "providerLabel": "Fournisseur de CI",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI",
+      "jenkins": "Jenkins",
+      "buildkite": "Buildkite"
+    },
+    "saveAs": "Enregistrez ceci sous {{target}} dans votre dépôt.",
+    "needsDomain": "Aucune URL de tableau de bord n'est encore définie. Définissez-en une dans Paramètres pour que votre CI puisse joindre ce plan de contrôle.",
+    "oidcNote": "Ajoutez d'abord un pipeline approuvé dans Deployer depuis la CI, ainsi aucun token n'est stocké dans votre CI.",
+    "token": {
+      "create": "Créer un token de deployer",
+      "label": "Token de deployer",
+      "shownOnce": "Copiez-le maintenant. Il n'est plus affiché ensuite.",
+      "errorTitle": "Impossible de créer le token.",
+      "helpScoped": "Ce fichier lit un token stocké. Le token est limité au projet de cette app et peut lire et deployer chaque app de ce projet, rien en dehors. Il peut seulement : {{abilities}}. Stockez-le comme secret dans votre CI.",
+      "helpInstallWide": "Ce fichier lit un token stocké. Cette app n'est dans aucun projet, donc le token peut deployer n'importe quelle app de ce serveur et peut seulement : {{abilities}}. Préférez un pipeline OIDC, ou placez d'abord l'app dans un projet.",
+      "helpUnavailable": "Ce fichier lit un token stocké. Ce serveur ne peut pas limiter un token au projet de l'app, donc le token peut deployer n'importe quelle app de ce serveur et peut seulement : {{abilities}}. Préférez un pipeline OIDC.",
+      "createInstallWide": "Créer un token à l'échelle de l'installation",
+      "helpProjectMissing": "Ce fichier lit un token stocké. L'app nomme un projet qui n'existe plus, donc le token ne peut pas être limité à un projet et peut deployer n'importe quelle app de ce serveur. Il peut seulement : {{abilities}}. Corrigez d'abord le projet de l'app, ou préférez un pipeline OIDC."
+    },
+    "apiUrl": "Définissez LEVELRAIL_API_URL sur {{url}} dans votre CI."
+  },
+  "approvalBanner": {
+    "approved": "Approuvé : {{app}} cible désormais {{image}}.",
+    "approveError": "Impossible d'approuver.",
+    "rejected": "Approbation de deploy rejetée.",
+    "rejectError": "Impossible de rejeter.",
+    "titleDeploy": "Deploy vers",
+    "titlePromote": "Promotion vers",
+    "awaiting": "est en attente d'approbation.",
+    "requestedBy": "Demandé par {{name}}. Cet environnement est protégé : un autre utilisateur, suffisamment privilégié, doit l'approuver avant son deploy.",
+    "reject": "Rejeter",
+    "approve": "Approuver",
+    "approving": "Approbation...",
+    "viewQueue": "Voir la file",
+    "progress": "{{received}} approbateurs distincts sur {{required}} jusqu'ici. Le deploy s'exécute quand le dernier approuve.",
+    "recorded": "Approbation enregistrée : {{received}} approbateurs distincts sur {{required}}."
+  }
+}
