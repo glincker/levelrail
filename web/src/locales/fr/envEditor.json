@@ -1,0 +1,217 @@
+{
+  "title": "Environnement",
+  "description": "Variables que votre app lit au démarrage. Les valeurs sensibles restent masquées partout ; en révéler une vous demande de confirmer votre identité et est enregistré dans le journal d'audit.",
+  "guide": "Guide des secrets",
+  "columns": {
+    "key": "Clé",
+    "value": "Valeur",
+    "type": "Type",
+    "scope": "Portée",
+    "actions": "Actions"
+  },
+  "types": {
+    "plain": "Simple",
+    "secret": "Secret",
+    "vault": "Vault"
+  },
+  "scope": {
+    "own": "Valeur propre",
+    "inherited": "Depuis {{tier}}",
+    "overrides": "Remplace {{tier}}",
+    "tiers": {
+      "organization": "l'organisation",
+      "project": "le projet",
+      "environment": "l'environnement"
+    }
+  },
+  "value": {
+    "masked": "Valeur masquée",
+    "secretStored": "Chiffrée, stockée",
+    "secretNew": "Nouvelle valeur",
+    "empty": "Vide",
+    "vaultPath": "Chemin Vault",
+    "vaultKey": "Champ",
+    "hidesIn": "Se masque dans {{seconds}} s",
+    "replacePlaceholder": "Nouvelle valeur",
+    "valuePlaceholder": "Valeur"
+  },
+  "sensitive": {
+    "badge": "Sensible",
+    "convertHint": "Ressemble à un identifiant stocké en texte clair"
+  },
+  "actions": {
+    "reveal": "Révéler",
+    "hide": "Masquer",
+    "copy": "Copier",
+    "copied": "Copié dans le presse-papiers",
+    "replace": "Remplacer",
+    "cancelReplace": "Conserver l'actuelle",
+    "remove": "Supprimer",
+    "undoRemove": "Annuler la suppression",
+    "override": "Remplacer la valeur",
+    "rowMenu": "Actions pour {{key}}",
+    "markSensitive": "Marquer comme sensible",
+    "markPlain": "Afficher la valeur aux lecteurs",
+    "useAutomatic": "Utiliser la détection automatique",
+    "convert": "Convertir en secret"
+  },
+  "toolbar": {
+    "add": "Ajouter une variable",
+    "bulk": "Modifier en .env",
+    "table": "Modifier en tableau",
+    "import": "Importer un fichier .env",
+    "export": "Exporter",
+    "exportMasked": "Exporter avec les valeurs masquées",
+    "exportFull": "Exporter toutes les valeurs (.env)",
+    "exportFullJson": "Exporter toutes les valeurs (JSON)",
+    "review": "Examiner les changements",
+    "discard": "Abandonner",
+    "protection": "Protection"
+  },
+  "add": {
+    "keyLabel": "Nom de la nouvelle variable",
+    "valueLabel": "Valeur de la nouvelle variable",
+    "typeLabel": "Type de variable",
+    "suggestSecret": "Ce nom semble sensible. Stockez-le comme Secret pour que la valeur soit chiffrée au repos.",
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "duplicate": "{{key}} existe déjà",
+    "invalidKey": "Utilisez des lettres, des chiffres et des tirets bas, sans commencer par un chiffre",
+    "secretsOff": "Les secrets nécessitent une clé maître sur le control plane"
+  },
+  "bulk": {
+    "label": "Variables en texte .env, une ligne CLÉ=valeur par ligne",
+    "hint": "Les valeurs masquées (••••••••) conservent ce qui est stocké. Supprimez une ligne pour retirer une variable. Les variables Vault se modifient dans le tableau.",
+    "apply": "Appliquer au tableau"
+  },
+  "review": {
+    "title": "Examiner les changements",
+    "description": "Rien n'est enregistré tant que vous ne confirmez pas. Les valeurs sensibles ne sont jamais affichées ici.",
+    "added": "Ajoutées",
+    "changed": "Modifiées",
+    "removed": "Supprimées",
+    "hiddenValue": "valeur masquée",
+    "none": "Aucun changement à enregistrer.",
+    "save": "Enregistrer les changements",
+    "saving": "Enregistrement...",
+    "back": "Retour à l'édition",
+    "scan": {
+      "title": "Ces valeurs ressemblent à des identifiants",
+      "description": "Les variables simples sont visibles par toute personne pouvant lire cette app. Stockez-les comme Secrets pour qu'elles restent chiffrées.",
+      "finding": "{{key}} : {{rule}}",
+      "makeSecret": "Stocker comme secrets"
+    }
+  },
+  "saved": "Environnement enregistré.",
+  "redeploy": {
+    "title": "Redéploiement nécessaire",
+    "description": "Le conteneur en cours d'exécution a encore les anciennes valeurs. Redémarrez l'app pour les appliquer.",
+    "restart": "Redémarrer maintenant",
+    "restarting": "Redémarrage de {{name}}."
+  },
+  "inherited": {
+    "title": "Variables héritées",
+    "description": "Définies sur l'organisation, le projet ou l'environnement. Remplacez-en une pour donner à cette app sa propre valeur."
+  },
+  "empty": {
+    "title": "Aucune variable pour l'instant",
+    "description": "Ajoutez une variable ou importez un fichier .env. Les valeurs qui ressemblent à des identifiants sont masquées automatiquement."
+  },
+  "stepUp": {
+    "title": "Confirmez que c'est vous",
+    "descriptionReveal": "Révéler {{key}} sur {{app}} est enregistré dans le journal d'audit. On ne vous le redemandera pas pendant {{minutes}} minutes.",
+    "descriptionExport": "Exporter toutes les valeurs de {{app}} est enregistré dans le journal d'audit.",
+    "descriptionManage": "Rendre des valeurs visibles ou révéler des secrets sur {{app}} nécessite une nouvelle confirmation.",
+    "password": "Mot de passe",
+    "code": "Code d'authentification",
+    "codeHint": "Votre compte utilise l'authentification à deux facteurs, saisissez donc aussi le code à 6 chiffres.",
+    "confirm": "Confirmer",
+    "confirming": "Vérification...",
+    "passkey": "Utiliser une passkey",
+    "or": "ou",
+    "invalid": "Ce mot de passe ou ce code est incorrect.",
+    "locked": "Trop de tentatives. Attendez quelques minutes et réessayez.",
+    "noMethods": "Ce compte n'a ni mot de passe ni passkey pour confirmer. Définissez d'abord un mot de passe dans les paramètres de votre compte."
+  },
+  "policy": {
+    "disabledTitle": "Les valeurs des secrets sont en écriture seule sur ce serveur",
+    "disabledBody": "Le serveur s'exécute avec APP_SECRET_REVEAL=disabled, personne ne peut donc relire une valeur stockée. Un administrateur peut le définir sur step_up pour autoriser les révélations confirmées.",
+    "allowTitle": "La révélation sans confirmation est activée",
+    "allowBody": "APP_SECRET_REVEAL=allow permet à toute personne ayant read:sensitive de voir les valeurs sans mot de passe. Utilisez step_up en dehors d'un laboratoire à admin unique.",
+    "writeOnlyTitle": "Les secrets sont en écriture seule pour cette app",
+    "writeOnlyBody": "Le propriétaire de l'app a verrouillé les révélations et les exports complets. Vous pouvez toujours remplacer les valeurs.",
+    "writeOnlyToggle": "Les secrets sont en écriture seule pour cette app",
+    "writeOnlyToggleHint": "Bloque toute révélation et tout export complet des valeurs de cette app. Le désactiver vous demande de confirmer votre identité.",
+    "invalidTitle": "La politique de révélation n'est pas reconnue",
+    "invalidBody": "APP_SECRET_REVEAL a une valeur inconnue, les révélations restent donc désactivées jusqu'à correction."
+  },
+  "convert": {
+    "title": "Convertir {{key}} en secret ?",
+    "description": "La valeur passe dans le stockage chiffré du serveur et est retirée des variables simples. Elle ne transite jamais par votre navigateur.",
+    "consequence": "L'app en cours d'exécution conserve l'ancienne variable jusqu'à ce que vous la redémarriez ou la redéployiez.",
+    "confirm": "Convertir",
+    "pending": "Conversion...",
+    "done": "{{key}} est maintenant un secret."
+  },
+  "errors": {
+    "revealDisabled": "La révélation est désactivée sur ce serveur.",
+    "writeOnly": "Les secrets de cette app sont en écriture seule.",
+    "importFailed": "Impossible de lire ce fichier."
+  },
+  "advanced": {
+    "title": "Aperçu, branche et comparaison d'environnements",
+    "description": "Valeurs utilisées uniquement par les déploiements d'aperçu et les builds par branche, ainsi qu'une comparaison avec d'autres environnements."
+  },
+  "bound": {
+    "title": "Ressources connectées",
+    "description": "Variables injectées au démarrage du conteneur à partir des liens de bases de données et des liaisons de buckets. En lecture seule ici ; modifiez-les sur la base de données ou le bucket.",
+    "key": "Clé",
+    "source": "Source",
+    "value": "Valeur",
+    "database": "Base de données {{name}} ({{field}})",
+    "bucket": "Bucket {{name}}",
+    "masked": "Masquée",
+    "loadFailed": "Impossible de charger les ressources connectées.",
+    "retry": "Réessayer"
+  },
+  "health": {
+    "title": "Santé des variables",
+    "description": "Problèmes trouvés dans les variables de cette app, et quelles variables ont été ajoutées, modifiées ou supprimées. Les valeurs ne sont jamais enregistrées.",
+    "recheck": "Revérifier",
+    "loading": "Vérification des variables...",
+    "clean": "Aucun problème trouvé.",
+    "loadFailed": "Impossible de vérifier les variables. Revérifiez pour réessayer.",
+    "fixed": "{{key}} corrigée",
+    "historyTitle": "Changements récents",
+    "historyEmpty": "Aucun changement enregistré pour l'instant. Les modifications à partir de maintenant apparaissent ici.",
+    "byActor": "par {{actor}}",
+    "kinds": {
+      "empty_value": "Valeur vide. Supprimez-la ou donnez-lui une valeur.",
+      "shadowed": "Un secret ou une liaison de base de données portant le même nom l'emporte, cette valeur simple n'est donc jamais utilisée.",
+      "case_duplicate": "Noms qui ne diffèrent que par la casse : {{detail}}. La plupart des programmes les traitent comme des variables différentes.",
+      "missing_secret": "Un secret requis n'a pas encore de valeur. Définissez-la dans la section des secrets.",
+      "dangling_database": "Liée à la base de données {{detail}}, qui n'existe plus."
+    },
+    "fixes": {
+      "remove_key": "Supprimer la variable",
+      "remove_database_ref": "Supprimer la liaison",
+      "set_secret": "Définir une valeur ci-dessus",
+      "rename": "Renommer l'une d'elles"
+    },
+    "actions": {
+      "added": "Ajoutée",
+      "changed": "Modifiée",
+      "removed": "Supprimée"
+    }
+  },
+  "buildTime": {
+    "badge": "Au build",
+    "tooltip": "Intégrée au build. La modifier nécessite un nouveau build.",
+    "noticeTitle": "Nouveau build nécessaire",
+    "noticeDescription": "{{keys}} est intégrée au build. Reconstruisez l'app pour appliquer le changement.",
+    "rebuild": "Reconstruire maintenant",
+    "started": "Reconstruction de \"{{name}}\" depuis les sources.",
+    "view": "Voir le build",
+    "noGitSource": "Aucune source git n'est connectée. Exécutez levelrail-cli deploy depuis le dossier de votre projet pour appliquer ce changement, ou reconstruisez l'image là où elle est construite, car la valeur est intégrée à l'image."
+  }
+}

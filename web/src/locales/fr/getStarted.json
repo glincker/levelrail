@@ -73,7 +73,7 @@
     "public_address": {
       "title": "Définir l'adresse du tableau de bord et activer HTTPS",
       "what": "Choisissez l'adresse web sur laquelle vous ouvrez ce tableau de bord. L'option gratuite est une adresse https construite à partir de l'IP de ce serveur, avec un vrai certificat et sans configuration DNS.",
-      "why": "Une fois HTTPS activé, la connexion en http simple cesse de fonctionner, faites-le donc tôt.",
+      "why": "Une fois HTTPS activé, la connexion en HTTP simple cesse de fonctionner, faites-le donc tôt.",
       "cta": "Activer HTTPS"
     },
     "git_provider": {
