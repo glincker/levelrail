@@ -1,0 +1,121 @@
+{
+  "title": "{{name}}: Canvas",
+  "description": "Fügen Sie Apps und Datenbanken hinzu und verbinden Sie sie miteinander. Jede Änderung ist ein Entwurf, den Sie als Plan prüfen, bevor etwas gespeichert wird.",
+  "beta": "Beta",
+  "link": "Canvas",
+  "loadError": "Dieses Projekt konnte nicht für den Canvas geladen werden. Prüfen Sie Ihre Verbindung und laden Sie die Seite neu.",
+  "asideLabel": "Entwurfsänderungen",
+  "iacOff": {
+    "title": "Platform as Code ist ausgeschaltet",
+    "description": "Canvas wandelt Ihren Entwurf mit der Platform-as-Code-API in einen Plan um, daher muss diese Funktion aktiv sein, bevor Sie prüfen oder anwenden können.",
+    "action": "Beta-Funktionen öffnen"
+  },
+  "empty": {
+    "title": "In diesem Projekt ist noch nichts",
+    "description": "Fügen Sie im Entwurfsbereich eine App oder Datenbank hinzu, um zu beginnen. Es wird nichts erstellt, bis Sie anwenden."
+  },
+  "draft": {
+    "title": "Entwurf",
+    "none": "Noch keine Änderungen. Fügen Sie eine App oder Datenbank hinzu oder verbinden Sie zwei Dinge, die bereits vorhanden sind.",
+    "count_one": "{{count}} ausstehende Änderung",
+    "count_other": "{{count}} ausstehende Änderungen",
+    "remove": "Aus Entwurf entfernen: {{label}}",
+    "review": "Änderungen prüfen",
+    "discard": "Entwurf verwerfen"
+  },
+  "add": {
+    "app": "App hinzufügen",
+    "database": "Datenbank hinzufügen"
+  },
+  "appForm": {
+    "title": "App hinzufügen",
+    "description": "Eine neue App, die ein vorgefertigtes Image ausführt. Sie wird diesem Projekt beim Anwenden hinzugefügt.",
+    "name": "Name",
+    "image": "Image",
+    "imageHint": "Zum Beispiel ghcr.io/acme/web:1.2.3",
+    "port": "Port",
+    "submit": "Zum Entwurf hinzufügen"
+  },
+  "databaseForm": {
+    "title": "Datenbank hinzufügen",
+    "description": "Eine verwaltete Datenbank in diesem Projekt. Sie wird beim Anwenden erstellt.",
+    "name": "Name",
+    "engine": "Engine",
+    "version": "Version (optional)",
+    "versionHint": "Leer lassen, um den Standard der Engine zu verwenden.",
+    "submit": "Zum Entwurf hinzufügen"
+  },
+  "connect": {
+    "title": "Eine App mit einer Datenbank verbinden",
+    "app": "App",
+    "database": "Datenbank",
+    "envVar": "Umgebungsvariable (optional)",
+    "envVarHint": "Leer lassen, dann wählt der Server eine aus.",
+    "submit": "Verbindung hinzufügen",
+    "choose": "Auswählen",
+    "needBoth": "Zum Verbinden benötigen Sie mindestens eine App und eine Datenbank auf dem Canvas."
+  },
+  "connections": {
+    "title": "Verbindungen",
+    "none": "Noch keine App ist mit einer Datenbank verbunden.",
+    "remove": "Verbindung von {{app}} zu {{database}} entfernen",
+    "more": "{{shown}} von {{total}} Verbindungen werden angezeigt."
+  },
+  "limits": {
+    "title": "Hier noch nicht bearbeitbar",
+    "body": "Volumes, Domains, Load Balancer und Abhängigkeiten. Ändern Sie diese in der App selbst."
+  },
+  "errors": {
+    "required": "Dieses Feld ist erforderlich.",
+    "format": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche, beginnend und endend mit einem Buchstaben oder einer Ziffer.",
+    "taken": "Auf dem Canvas existiert bereits etwas mit diesem Namen.",
+    "port": "Geben Sie einen Port zwischen 1 und 65535 ein.",
+    "envVar": "Verwenden Sie Buchstaben, Ziffern und Unterstriche, nicht mit einer Ziffer beginnend."
+  },
+  "ops": {
+    "addApp": "App {{name}} hinzufügen ({{image}})",
+    "addDatabase": "{{engine}}-Datenbank {{name}} hinzufügen",
+    "connect": "{{app}} mit {{database}} verbinden",
+    "disconnect": "{{app}} von {{database}} trennen"
+  },
+  "review": {
+    "title": "Änderungen prüfen",
+    "description": "Das würde das Anwenden bewirken. Bisher wurde nichts geändert.",
+    "planning": "Plan wird erstellt...",
+    "planError": {
+      "title": "Der Plan konnte nicht erstellt werden",
+      "retry": "Erneut versuchen",
+      "issuesNext": "Gehen Sie zurück, korrigieren oder entfernen Sie das oben genannte Element und prüfen Sie dann erneut.",
+      "generic": "Prüfen Sie, ob der Server erreichbar ist und Sie in dieses Projekt schreiben dürfen, und versuchen Sie es dann erneut."
+    },
+    "serverChanges": "Plan vom Server",
+    "steps": {
+      "title": "Verbindungsänderungen",
+      "note": "Diese laufen nach dem Anwenden des obigen Plans in dieser Reihenfolge. Der Server zeigt keine Vorschau dafür.",
+      "connect": "{{app}} mit {{database}} als {{envVar}} verbinden",
+      "connectAuto": "{{app}} mit {{database}} verbinden",
+      "disconnect": "{{app}} von {{database}} trennen ({{envVar}})",
+      "unsupported": "{{app}} erreicht {{database}} über seine app.yaml, nicht über eine Verbindung, daher kann Canvas sie nicht entfernen. Bearbeiten Sie stattdessen die app.yaml.",
+      "loading": "Aktuelle Verbindungen werden abgefragt..."
+    },
+    "nothing": "Nichts anzuwenden.",
+    "apply": "Anwenden",
+    "applying": "Wird angewendet...",
+    "back": "Zurück zum Bearbeiten",
+    "applied": {
+      "title": "Angewendet",
+      "failed": "Einige Änderungen wurden nicht angewendet",
+      "failedNext": "Nach dem fehlgeschlagenen Schritt wurde nichts mehr ausgeführt. Beheben Sie die unten genannte Ursache und prüfen Sie dann die verbleibenden Änderungen erneut.",
+      "done": "Fertig"
+    },
+    "stepStatus": {
+      "applied": "Angewendet",
+      "failed": "Fehlgeschlagen: {{error}}",
+      "skipped": "Übersprungen"
+    }
+  },
+  "toast": {
+    "applied": "Canvas-Änderungen angewendet.",
+    "failed": "Einige Canvas-Änderungen wurden nicht angewendet."
+  }
+}

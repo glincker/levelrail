@@ -1,0 +1,494 @@
+{
+  "health": {
+    "title": "Backup-Zustand",
+    "description": "Jede gesicherte Datenbank und jedes App-Volume, nach App gruppiert. Ein Backup zählt erst, wenn eine Wiederherstellung nachweislich funktioniert hat.",
+    "loadFailed": "Der Backup-Zustand konnte nicht geladen werden: {{error}}",
+    "empty": "Noch keine gesicherten Ressourcen. Planen oder starten Sie ein Backup auf der Seite einer Datenbank oder eines App-Volumes.",
+    "databasesGroup": "Datenbanken",
+    "appGroup": "App {{name}}",
+    "columns": {
+      "resource": "Ressource",
+      "state": "Status",
+      "lastBackup": "Letztes Backup",
+      "lastRestore": "Letzte verifizierte Wiederherstellung",
+      "size": "Größe",
+      "nextRun": "Nächster Lauf",
+      "actions": "Aktionen"
+    },
+    "state": {
+      "healthy": "Fehlerfrei",
+      "warning": "Erfordert Aufmerksamkeit",
+      "failing": "Fehlerhaft",
+      "unverified": "Nicht verifiziert",
+      "unprotected": "Kein Backup"
+    },
+    "never": "Nie verifiziert",
+    "none": "Noch keines",
+    "notScheduled": "Nicht geplant",
+    "encrypted": "Verschlüsselt",
+    "notEncrypted": "Nicht verschlüsselt",
+    "backups": "{{count}} Backups",
+    "restoreProven": "Wiederherstellung nachgewiesen {{when}}",
+    "drillFailed": "Letzte Übung fehlgeschlagen",
+    "runDrill": "Wiederherstellung nachweisen",
+    "drillStarted": "Wiederherstellungsübung gestartet",
+    "drillStartedDescription": "Sie stellt in eine temporäre Ressource wieder her, validiert sie und zerstört sie. Ergebnisse erscheinen im Verlauf der Übungen.",
+    "drillFailedToast": "Die Wiederherstellungsübung konnte nicht gestartet werden",
+    "restore": "Wiederherstellen",
+    "restoreDatabase": "Wiederherstellungsoptionen",
+    "policy": "Richtlinie"
+  },
+  "encryption": {
+    "on": "Neue Volume-Backups werden vor dem Hochladen auf diesem Server komprimiert und verschlüsselt. Öffentlicher Schlüssel: {{key}}",
+    "off": "Neue Volume-Backups werden komprimiert, aber nicht verschlüsselt. Jeder mit Zugriff auf den Bucket kann sie lesen.",
+    "keyHint": "Bewahren Sie eine Kopie der Schlüsseldatei (APP_BACKUP_ENCRYPTION_KEY_FILE, standardmäßig backup-encryption.key im Datenverzeichnis) außerhalb dieses Servers auf, sonst lassen sich verschlüsselte Backups nach einem Desaster nicht wiederherstellen.",
+    "column": "Verschlüsselung",
+    "badge": "Verschlüsselt"
+  },
+  "protection": {
+    "title": "Schutz der Buckets",
+    "check": "Buckets prüfen",
+    "checking": "Wird geprüft...",
+    "checkFailed": "Die Backup-Buckets konnten nicht geprüft werden",
+    "locked": "Object Lock ist aktiv",
+    "versioned": "Versionierung ist aktiv",
+    "open": "Jeder mit dem Schlüssel kann Backups löschen",
+    "probeError": "Dieser Bucket konnte nicht untersucht werden: {{error}}",
+    "target": "Ziel {{id}}"
+  },
+  "restoreWizard": {
+    "title": "{{app}}/{{volume}} wiederherstellen",
+    "description": "Wiederherstellungen landen immer in einem neuen Volume. Das bestehende Volume wird nie überschrieben.",
+    "stepBackup": "Backup wählen",
+    "stepDestination": "Ziel wählen",
+    "stepConfirm": "Bestätigen",
+    "backup": "Backup",
+    "noBackups": "Es gibt kein erfolgreiches Backup dieses Volumes, das sich wiederherstellen ließe.",
+    "destination": "Ziel",
+    "sameApp": "Ein neues Volume neben dem Original",
+    "otherApp": "Ein neues Volume für eine andere App",
+    "targetApp": "App-Name",
+    "targetAppHint": "Das Volume wird so benannt, dass das Deployment dieser App die wiederhergestellten Daten einbindet.",
+    "node": "Node",
+    "sameNode": "Derselbe Node wie die App",
+    "newName": "Volume-Name",
+    "newNameHint": "Leer lassen, um einen zu erzeugen.",
+    "summary": "Backup {{backup}} in ein neues Volume {{name}} auf {{node}} wiederherstellen.",
+    "generatedName": "einen erzeugten Namen",
+    "next": "Weiter",
+    "back": "Zurück",
+    "start": "Wiederherstellung starten",
+    "cancel": "Abbrechen",
+    "started": "Wiederherstellung in {{name}} läuft",
+    "startedDescription": "Verfolgen Sie den Fortschritt im Wiederherstellungsverlauf dieses Volumes.",
+    "failed": "Die Wiederherstellung konnte nicht gestartet werden"
+  },
+  "policy": {
+    "title": "Backup-Richtlinie für {{app}}/{{volume}}",
+    "description": "Aufbewahrungszahlen behalten das neueste Backup jedes der letzten N Tage, Wochen und Monate. Hooks laufen im App-Container.",
+    "daily": "Täglich behalten",
+    "weekly": "Wöchentlich behalten",
+    "monthly": "Monatlich behalten",
+    "retentionHint": "0 schaltet eine Stufe aus. Die Zahlen werden mit den eigenen Grenzen des Zeitplans für Letzte-behalten und Alter kombiniert.",
+    "preHook": "Befehl vor dem Backup",
+    "preHookHint": "Ein Exit-Code ungleich null lässt das Backup fehlschlagen, sodass ein inkonsistentes Volume nie archiviert wird.",
+    "hooksHidden": "Hook-Befehle sind verborgen, weil ihre Änderung die Berechtigung write:sensitive erfordert.",
+    "postHook": "Befehl nach dem Backup",
+    "pause": "Die App pausieren, während das Archiv gestreamt wird",
+    "pauseHint": "Friert jeden Prozess im Container ein, damit sich Dateien mitten im Archiv nicht ändern können. Die App ist bis zum Ende des Uploads nicht verfügbar.",
+    "save": "Richtlinie speichern",
+    "saved": "Backup-Richtlinie gespeichert",
+    "failed": "Die Backup-Richtlinie konnte nicht gespeichert werden",
+    "loadFailed": "Die Backup-Richtlinie konnte nicht geladen werden: {{error}}"
+  },
+  "drills": {
+    "title": "Wiederherstellungsübungen",
+    "description": "Geplante und manuelle Wiederherstellungen in temporäre Ressourcen. Eine fehlgeschlagene Übung löst den Alarm restore_drill_failed aus.",
+    "empty": "Es wurden noch keine Übungen ausgeführt. Übungen laufen standardmäßig einmal pro Woche automatisch.",
+    "loadFailed": "Übungen konnten nicht geladen werden: {{error}}",
+    "columns": {
+      "resource": "Ressource",
+      "trigger": "Auslöser",
+      "result": "Ergebnis",
+      "checks": "Prüfungen",
+      "took": "Dauer",
+      "started": "Gestartet"
+    },
+    "status": {
+      "running": "Läuft",
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen"
+    },
+    "trigger": {
+      "manual": "Manuell",
+      "scheduled": "Geplant"
+    },
+    "check": {
+      "object": "Objekt vorhanden",
+      "checksum": "Prüfsumme",
+      "restore": "Wiederhergestellt",
+      "content": "Inhalt"
+    },
+    "stage": "Fehlgeschlagen bei {{stage}}",
+    "files": "{{count}} Dateien",
+    "tables": "{{count}} Tabellen",
+    "shortDescription": "Wiederherstellungen in temporäre Ressourcen belegen, dass ein Backup funktioniert.",
+    "showAll": "Alle {{count}} anzeigen",
+    "showLess": "Weniger anzeigen"
+  },
+  "history": {
+    "title": "Alle Backup-Versuche",
+    "description": "Jeder Versuch über alle Datenbanken und App-Volumes, neueste zuerst."
+  },
+  "page": {
+    "title": "Backups",
+    "helpLabel": "Anleitung zu Backups und Speicher",
+    "description": "Was geschützt ist, was nicht, und ein Ort, um es zu beheben.",
+    "loadFailed": "Die Backup-Abdeckung konnte nicht geladen werden: {{error}}",
+    "loadFailedHint": "Prüfen Sie, ob der Server erreichbar ist, und versuchen Sie es dann erneut.",
+    "retry": "Erneut versuchen",
+    "noResourcesTitle": "Noch nichts zu sichern",
+    "noResourcesDescription": "Datenbanken und App-Volumes erscheinen hier, sobald Sie sie erstellen.",
+    "manageTargets": "Backup-Ziele verwalten"
+  },
+  "summary": {
+    "protected": "{{protected}} von {{total}} Ressourcen geschützt",
+    "headline": {
+      "empty": "Noch keine Datenbanken oder App-Volumes.",
+      "allVerified": "Jede Ressource ist gesichert, und eine Wiederherstellung wurde nachgewiesen.",
+      "someUnprotected_one": "{{count}} Ressource hat keinen Backup-Zeitplan.",
+      "someUnprotected_other": "{{count}} Ressourcen haben keinen Backup-Zeitplan.",
+      "failing": "Backups schlagen bei {{failing}} davon fehl. Beheben Sie diese zuerst.",
+      "unverified": "Gesichert, aber eine Wiederherstellung wurde noch nicht für jede Ressource nachgewiesen."
+    },
+    "protectEverything": "Alles schützen",
+    "lastVerified": "Letzte verifizierte Wiederherstellung",
+    "nextRun": "Nächster Lauf",
+    "storage": "Belegter Speicher"
+  },
+  "coverage": {
+    "state": {
+      "verified": "Geschützt und verifiziert",
+      "unverified": "Geschützt, nicht verifiziert",
+      "never_ran": "Geplant, nie gelaufen",
+      "failing": "Backups schlagen fehl",
+      "unprotected": "Nicht geschützt"
+    },
+    "lastBackup": "Letztes Backup",
+    "lastRestore": "Verifizierte Wiederherstellung",
+    "nextRun": "Nächster Lauf",
+    "size": "Größe"
+  },
+  "row": {
+    "kind": {
+      "database": "Datenbank",
+      "volume": "Volume"
+    },
+    "scratch": "Temporär",
+    "protect": "Schützen",
+    "protected": "{{name}} ist jetzt geplant",
+    "protectFailed": "{{name}} konnte nicht geschützt werden",
+    "backupNow": "Jetzt sichern",
+    "backupStarted": "Backup von {{name}} gestartet",
+    "backupFailed": "Ein Backup von {{name}} konnte nicht gestartet werden"
+  },
+  "target": {
+    "formLabel": "Ein Backup-Ziel verbinden",
+    "providerLabel": "Anbieter",
+    "connected": "Ziel \"{{name}}\" verbunden",
+    "connect": "Ziel verbinden",
+    "connecting": "Wird verbunden...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "Keine Egress-Gebühren"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "Günstiger Cold Storage"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "Pauschalpreis pro TB"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "Region und Schlüssel"
+      },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "S3-Interoperabilität, HMAC-Schlüssel"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "S3-kompatibler Speicher mit CDN"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "In der EU gehostet, günstig"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "Objektspeicher in der EU"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "S3-kompatibel, EU-Regionen"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "Globale Regionen"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "Ihr eigener S3-Server"
+      },
+      "local": {
+        "name": "Lokaler Datenträger",
+        "hint": "Gleicher Rechner, nicht sicher"
+      }
+    },
+    "localRootHint": "Gespeichert unter {{root}}. Geben Sie einen Ordner darin an.",
+    "localWarning": "Backups auf dem eigenen Datenträger dieses Rechners gehen mit dem Rechner verloren. Sie schützen vor einem fehlerhaften Deployment oder einer gelöschten Tabelle, nicht vor einem defekten Datenträger, Ransomware oder einem gelöschten Server. Nutzen Sie dies zum Ausprobieren und fügen Sie dann ein externes Ziel hinzu.",
+    "field": {
+      "name": "Name",
+      "bucket": "Bucket",
+      "region": "Region",
+      "endpoint": "Endpunkt",
+      "accessKeyId": "Access-Key-ID",
+      "secretAccessKey": "Secret Access Key"
+    },
+    "placeholder": {
+      "name": "z. B. offsite-backups"
+    },
+    "missing": "{{field}} ist erforderlich."
+  },
+  "protectAll": {
+    "title": "Alles schützen",
+    "description": "Planen Sie ein Backup für jede Ressource, die noch keines hat. Es ändert sich nichts, bis Sie anwenden.",
+    "destination": "Ziel",
+    "addDestination": "Ein weiteres Ziel hinzufügen",
+    "schedule": "Zeitplan und Aufbewahrung",
+    "choice": {
+      "daily": "Täglich um 03:00",
+      "sixHours": "Alle 6 Stunden",
+      "weekly": "Wöchentlich, sonntags 03:00"
+    },
+    "cron": "Cron-Zeitplan",
+    "retain": "Aufzubewahrende Backups",
+    "includeScratch_one": "Auch {{count}} temporäre Ressource schützen (Vorschauen und Canaries)",
+    "includeScratch_other": "Auch {{count}} temporäre Ressourcen schützen (Vorschauen und Canaries)",
+    "plan": "Was sich ändern wird",
+    "planning": "Der Plan wird erstellt...",
+    "nothingToDo": "Jede Ressource hat bereits einen Zeitplan.",
+    "kind": {
+      "database": "Datenbank",
+      "volume": "Volume"
+    },
+    "cancel": "Abbrechen",
+    "applying": "Wird angewendet...",
+    "apply_one": "{{count}} Ressource schützen",
+    "apply_other": "{{count}} Ressourcen schützen",
+    "done_one": "{{count}} Ressource geplant",
+    "done_other": "{{count}} Ressourcen geplant",
+    "someFailed_one": "{{count}} konnte nicht geplant werden.",
+    "someFailed_other": "{{count}} konnten nicht geplant werden."
+  },
+  "safety": {
+    "title": "Verschlüsselung und Bucket-Sicherheit",
+    "encrypted": "Verschlüsselt",
+    "notEncrypted": "Nicht verschlüsselt",
+    "copied": "Öffentlicher Schlüssel kopiert",
+    "copyFailed": "Der öffentliche Schlüssel konnte nicht kopiert werden",
+    "keyDetails": "Schlüsseldetails und Speicherung außerhalb des Servers",
+    "keyHint": "Bewahren Sie den privaten Schlüssel (APP_BACKUP_ENCRYPTION_KEY_FILE, standardmäßig backup-encryption.key im Datenverzeichnis) in einem Passwortmanager oder auf einem anderen Rechner auf. Ohne ihn lassen sich verschlüsselte Backups nach einem Desaster nicht wiederherstellen.",
+    "copyKey": "Öffentlichen Schlüssel kopieren",
+    "keyNotStored": "Sie haben nicht bestätigt, dass der private Schlüssel außerhalb dieses Servers gespeichert ist. Geht dieser Server verloren, gehen auch diese Backups verloren.",
+    "ack": "Ich habe ihn außerhalb dieses Servers gespeichert",
+    "ackFailed": "Die Bestätigung konnte nicht gespeichert werden",
+    "later": "Später erinnern"
+  },
+  "orphans": {
+    "title": "Verwaiste Daten",
+    "description": "Daten, die nach dem Löschen ihrer Datenbank oder App erhalten blieben. Das Löschen einer Datenbank entfernt ihre Daten nie von selbst, daher wird hier nichts entfernt, bis Sie es zurückfordern.",
+    "empty": "Keine verwaisten Daten. Jedes Volume gehört zu einer Datenbank oder App, die noch existiert.",
+    "loadFailed": "Verwaiste Daten konnten nicht aufgelistet werden: {{error}}",
+    "large": "Verwaiste Daten belegen {{size}}. Prüfen Sie sie und geben Sie frei, was Sie nicht mehr brauchen.",
+    "role": {
+      "data": "Daten-Volume",
+      "certificates": "Zertifikate",
+      "wal archive": "WAL-Archiv",
+      "volume": "Volume"
+    },
+    "kind": {
+      "database": "Datenbank",
+      "volume": "App-Volume",
+      "app": "App"
+    },
+    "sizeUnknown": "Größe unbekannt",
+    "age_one": "{{count}} Tag alt",
+    "age_other": "{{count}} Tage alt",
+    "noBackup": "Kein Backup",
+    "hasBackup_one": "{{count}} Backup",
+    "hasBackup_other": "{{count}} Backups",
+    "inspect": "Untersuchen",
+    "reclaim": "Freigeben",
+    "volume": "Volume",
+    "belongedTo": "Gehörte zu",
+    "created": "Erstellt",
+    "lastBackup": "Letztes Backup",
+    "noBackupDetail": "Es existiert kein Backup dieser Daten",
+    "confirmTitle": "Die Daten von \"{{name}}\" freigeben?",
+    "confirmDescription": "Das Volume wird von diesem Server gelöscht. Das lässt sich nicht rückgängig machen.",
+    "confirmNoBackup": "Es existiert kein Backup dieser Daten. Sie sind dann endgültig weg.",
+    "confirmHasBackup_one": "{{count}} Backup davon bleibt in Ihrem Ziel erhalten.",
+    "confirmHasBackup_other": "{{count}} Backups davon bleiben in Ihrem Ziel erhalten.",
+    "confirmAction": "Diese Daten löschen",
+    "reclaiming": "Wird gelöscht...",
+    "reclaimed": "{{size}} freigegeben"
+  },
+  "deleteData": {
+    "label": "Auch die Daten löschen",
+    "databaseHint": "Entfernt das Daten-Volume zusammen mit der Datenbank. Ohne dies bleibt das Volume erhalten und wird auf der Seite Backups unter Verwaiste Daten aufgeführt.",
+    "appHint": "Entfernt die Volumes der App zusammen mit der App. Ohne dies bleiben sie erhalten und werden auf der Seite Backups unter Verwaiste Daten aufgeführt.",
+    "warning": "Die Daten werden zerstört und lassen sich nicht wiederherstellen, sofern kein Backup existiert."
+  },
+  "firstRun": {
+    "title": "Backups einrichten",
+    "description": "Verbinden Sie einen sicheren Ort für Backups, und von dort aus lässt sich jede Datenbank und jedes App-Volume schützen.",
+    "descriptionWithResources_one": "{{count}} Ressource hat kein Backup. Verbinden Sie einen sicheren Ort dafür und schützen Sie sie dann in einem Schritt.",
+    "descriptionWithResources_other": "{{count}} Ressourcen haben keine Backups. Verbinden Sie einen sicheren Ort dafür und schützen Sie sie dann alle in einem Schritt.",
+    "step": {
+      "destination": {
+        "title": "Ein Ziel hinzufügen",
+        "hint": "Ein S3-kompatibler Bucket"
+      },
+      "schedule": {
+        "title": "Einen Zeitplan wählen",
+        "hint": "Täglich ist ein solider Standard"
+      },
+      "verify": {
+        "title": "Eine Wiederherstellung nachweisen",
+        "hint": "Ein Backup zählt, sobald es sich wiederherstellen lässt"
+      }
+    }
+  },
+  "activity": {
+    "title": "Letzte Aktivität",
+    "subtitle": "Jeder Versuch, neueste zuerst",
+    "empty": "Es ist noch kein Backup gelaufen.",
+    "loadFailed": "Ältere Backups konnten nicht geladen werden",
+    "deletedTarget": "Gelöschtes Ziel",
+    "kind": "Art",
+    "resource": "Ressource",
+    "status": "Status",
+    "target": "Ziel",
+    "size": "Größe",
+    "started": "Gestartet",
+    "verification": "Verifizierung",
+    "actions": "Aktionen",
+    "loading": "Wird geladen...",
+    "loadOlder": "Ältere Einträge laden"
+  },
+  "baseSchedule": {
+    "title": "Zeitplan für Basis-Backups",
+    "description": "Erstellen Sie Basis-Backups nach einem eigenen Cron, unabhängig vom Dump-Zeitplan. Leer lassen, um nach jedem geplanten Dump eines zu erstellen.",
+    "cronLabel": "Cron-Ausdruck",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "ID des Backup-Ziels",
+    "targetPlaceholder": "Standardmäßig das Backup-Ziel der Datenbank",
+    "save": "Zeitplan speichern",
+    "saving": "Wird gespeichert...",
+    "saved": "Zeitplan für Basis-Backups gespeichert."
+  },
+  "tables": {
+    "restores": "Wiederherstellungen",
+    "cloneDatabases": "Als neu wiederhergestellte Datenbanken",
+    "cloneVolumes": "Als neu wiederhergestellte Volumes",
+    "pipelineRuns": "Pipeline-Läufe",
+    "activity": "Backup-Aktivität",
+    "snapshots": "Backups",
+    "pitrBackups": "Basis-Backups",
+    "pitrRestores": "Point-in-Time-Wiederherstellungen"
+  },
+  "suggestion": {
+    "title": "Diese Datenbank sichern",
+    "description": "Ein Ziel ist verbunden, aber diese Datenbank hat keinen Zeitplan. Vorschlag: {{schedule}}, die letzten {{retain}} behalten.",
+    "apply": "Den Vorschlag verwenden",
+    "applied": "Backups geplant",
+    "failed": "Backups konnten nicht geplant werden"
+  },
+  "banner": {
+    "description": "Schützen Sie Datenbanken und Volumes mit geplanten Backups in Speicher, den Sie kontrollieren, und weisen Sie dann nach, dass sie sich wiederherstellen lassen.",
+    "diagram": {
+      "database": "Datenbank",
+      "storage": "Speicher",
+      "schedule": "Zeitplan"
+    }
+  },
+  "volumeFiles": {
+    "title": "Dateien",
+    "volume": "Volume",
+    "up": "Nach oben",
+    "upload": "Datei hochladen",
+    "loading": "Dateien werden geladen",
+    "empty": "Dieses Verzeichnis ist leer.",
+    "emptyHint": "Dateien, die die App in dieses Volume schreibt, erscheinen hier.",
+    "truncated": "Die Liste wurde gekürzt. Öffnen Sie ein Unterverzeichnis, um den Rest zu sehen.",
+    "download": "{{name}} herunterladen",
+    "delete": "{{name}} löschen",
+    "confirm": "Bestätigen"
+  },
+  "composeDb": {
+    "title": "Datenbank-Backups",
+    "description": "In dieser Compose-App erkannte Datenbankdienste.",
+    "loadFailed": "Datenbankdienste konnten nicht geladen werden: {{error}}",
+    "notScheduled": "Nicht geplant",
+    "scheduledSummary": "{{schedule}}, {{retention}}",
+    "paused": "Pausiert",
+    "target": "Ziel",
+    "targetPlaceholder": "Ein Ziel wählen",
+    "enabled": "Aktiviert",
+    "retain": "Letzte behalten",
+    "retainDays": "Höchstalter (Tage)",
+    "save": "Speichern",
+    "saving": "Wird gespeichert...",
+    "remove": "Entfernen",
+    "removing": "Wird entfernt...",
+    "backUpNow": "Jetzt sichern",
+    "starting": "Wird gestartet...",
+    "noTargets": "Noch keine Backup-Ziele.",
+    "connectTarget": "Einen Bucket in den Einstellungen verbinden",
+    "saved": "Backup-Zeitplan gespeichert.",
+    "saveFailed": "Der Backup-Zeitplan konnte nicht gespeichert werden.",
+    "removed": "Backup-Zeitplan entfernt.",
+    "removeFailed": "Der Backup-Zeitplan konnte nicht entfernt werden.",
+    "started": "Backup gestartet.",
+    "startFailed": "Das Backup konnte nicht gestartet werden.",
+    "removeTitle": "Backup-Zeitplan für {{service}} entfernen?",
+    "removeDescription": "Geplante Backups stoppen. Bestehende Backups bleiben erhalten.",
+    "runs": "Letzte Ausführungen",
+    "runsHide": "Ausführungen ausblenden",
+    "noRuns": "Noch keine Backups.",
+    "runsFailed": "Ausführungen konnten nicht geladen werden: {{error}}",
+    "status": {
+      "running": "Läuft",
+      "succeeded": "Erfolgreich",
+      "failed": "Fehlgeschlagen"
+    },
+    "restore": "Wiederherstellen",
+    "restoreNeedsRoot": "Nur ein Admin kann ein Datenbank-Backup wiederherstellen.",
+    "restoreTitle": "{{service}} aus diesem Backup wiederherstellen",
+    "restoreWarning": "Dies ersetzt die aktive Datenbank an Ort und Stelle. Zuerst wird ein Sicherheits-Dump der aktuellen Daten erstellt, der im Ausführungsverlauf erscheint.",
+    "restoreEngine": "Engine",
+    "restoreObject": "Backup-Objekt",
+    "restoreSize": "Größe",
+    "restoreLoading": "Das Backup wird geprüft...",
+    "restorePhraseLabel": "Geben Sie zur Bestätigung {{phrase}} ein",
+    "restoreConfirm": "Datenbank ersetzen",
+    "restoreStarting": "Wird gestartet...",
+    "restoreCancel": "Abbrechen",
+    "restoreClose": "Schließen",
+    "restoreAccepted": "Wiederherstellung gestartet. Sicherheits-Dump: {{id}}. Sie läuft im Hintergrund, prüfen Sie den Ausführungsverlauf und das Audit-Log auf das Ergebnis."
+  }
+}

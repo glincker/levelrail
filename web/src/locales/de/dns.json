@@ -1,0 +1,370 @@
+{
+  "common": {
+    "cancel": "Abbrechen"
+  },
+  "page": {
+    "title": "DNS",
+    "description": "Zonen, Einträge, Nameserver-Delegierung und Verbreitung bei Ihrem DNS-Anbieter.",
+    "help": "DNS-Anleitung",
+    "addZone": "Zone hinzufügen",
+    "provider": "Anbieter: {{provider}}",
+    "loadFailed": "DNS-Zonen konnten nicht geladen werden"
+  },
+  "empty": {
+    "title": "Einen DNS-Anbieter verbinden",
+    "body": "Verbinden Sie Cloudflare, Route53 oder Google Cloud DNS unter Domains, DNS-Anbieter und verwalten Sie dann Zonen und Einträge hier mit denselben Zugangsdaten.",
+    "action": "Domains öffnen",
+    "noZonesTitle": "Noch keine Zonen",
+    "noZonesBody": "Erstellen Sie eine Zone für eine Domain, die Ihnen gehört, und richten Sie dann Ihren Registrar auf ihre Nameserver.",
+    "noZonesAction": "Zone hinzufügen"
+  },
+  "zones": {
+    "col": {
+      "name": "Zone",
+      "status": "Status",
+      "records": "Einträge",
+      "nameServers": "Nameserver"
+    },
+    "private": "Privat",
+    "unknown": "unbekannt",
+    "notReported": "k. A."
+  },
+  "wizard": {
+    "title": "Eine Domain auf DNS bringen",
+    "titleFor": "Nameserver für {{zone}}",
+    "progress": "Schritte der Einrichtung",
+    "step": {
+      "domain": "Domain",
+      "nameservers": "Nameserver",
+      "import": "Einträge importieren",
+      "verify": "Verifizieren"
+    },
+    "lead": {
+      "domain": "Erstellen Sie eine Zone für eine Domain, die Ihnen bei einem beliebigen Registrar gehört.",
+      "nameservers": "Legen Sie bei Ihrem Registrar genau diese Nameserver fest und ersetzen Sie die aktuellen.",
+      "import": "Kopieren Sie die Einträge, die die Domain heute ausliefert, damit beim Wechsel der Nameserver nichts kaputtgeht.",
+      "verify": "Öffentliche Resolver werden gefragt, welche Nameserver die Domain gerade verwendet."
+    },
+    "domain": "Domain",
+    "domainHint": "Die registrierbare Domain, zum Beispiel example.com, keine Subdomain.",
+    "create": "Zone erstellen",
+    "creating": "Wird erstellt...",
+    "copyAll": "Alle kopieren",
+    "copied": "Kopiert",
+    "registrarHint": "Öffnen Sie bei Ihrem Registrar die Nameserver-Einstellungen der Domain, wählen Sie eigene Nameserver und fügen Sie diese ein. Entfernen Sie die alten: Eine Mischung antwortet uneinheitlich.",
+    "skipImport": "Import überspringen",
+    "next": "Weiter",
+    "propagationHint": "Registries veröffentlichen die Änderung meist innerhalb einer Stunde. Resolver können die alte Antwort bis zu zwei Tage halten.",
+    "openZone": "Zone öffnen"
+  },
+  "delegation": {
+    "state": {
+      "delegated": "Delegiert",
+      "partially_delegated": "Teilweise delegiert",
+      "delegated_elsewhere": "Anderswo delegiert",
+      "not_delegated": "Nicht delegiert"
+    },
+    "hint": {
+      "delegated": "Jeder befragte Resolver liefert die Nameserver dieser Zone zurück.",
+      "partially_delegated": "Einige Resolver liefern noch andere Nameserver zurück. Warten Sie, bis Caches ablaufen, oder entfernen Sie überzählige Server beim Registrar.",
+      "delegated_elsewhere": "Die Domain zeigt noch auf andere Nameserver. Aktualisieren Sie sie bei Ihrem Registrar.",
+      "not_delegated": "Kein Resolver hat Nameserver für diese Domain zurückgeliefert. Prüfen Sie, ob die Domain registriert ist und die Nameserver gesetzt sind."
+    },
+    "verdict": {
+      "match": "Stimmt überein",
+      "partial": "Gemischt",
+      "elsewhere": "Anderswo",
+      "none": "Keine Antwort"
+    },
+    "col": {
+      "resolver": "Resolver",
+      "verdict": "Urteil",
+      "answer": "Nameserver"
+    },
+    "system": "Dieser Server",
+    "noAnswer": "keine Antwort",
+    "elsewhere": "Zeigt noch auf: {{servers}}",
+    "recheck": "Erneut prüfen",
+    "checking": "Wird geprüft..."
+  },
+  "import": {
+    "title": "Import und Export",
+    "lead": "Holen Sie Einträge aus einer Zonendatei oder JSON in {{zone}}. Es ändert sich nichts, bis Sie den Plan anwenden.",
+    "tabImport": "Import",
+    "tabExport": "Export",
+    "file": "Datei",
+    "paste": "Oder einfügen",
+    "formatHint": "BIND-Zonendatei oder das JSON, das diese Seite exportiert. SOA und Apex-NS werden übersprungen.",
+    "replace": "Ersetzen: Eintragssätze löschen, die im Import fehlen",
+    "confirm": "Geben Sie zur Bestätigung des Ersetzens {{zone}} ein",
+    "preview": "Vorschau",
+    "apply": "Anwenden",
+    "appliedToast_one": "{{count}} Änderung angewendet",
+    "appliedToast_other": "{{count}} Änderungen angewendet",
+    "failedToast": "Import fehlgeschlagen",
+    "exportLead": "Laden Sie jeden Eintragssatz außer vom Anbieter verwalteten NS und SOA herunter.",
+    "exportBind": "Zonendatei",
+    "exportJson": "JSON",
+    "discoverHint": "Gängige Namen wurden bei den aktuellen Nameservern der Domain abgefragt. Entfernen Sie das Häkchen bei allem, was Sie nicht möchten.",
+    "extraNames": "Weitere abzufragende Namen",
+    "extraPlaceholder": "vpn, portal, _acme-challenge",
+    "rescan": "Abfragen",
+    "nothingFound": "Bei den aktuellen Nameservern wurden keine Einträge gefunden.",
+    "foundAt_one": "{{count}} Eintragssatz bei {{servers}} gefunden",
+    "foundAt_other": "{{count}} Eintragssätze bei {{servers}} gefunden",
+    "keep": "{{name}} {{type}} importieren",
+    "skip": "Überspringen",
+    "importSelected_one": "{{count}} Satz importieren",
+    "importSelected_other": "{{count}} Sätze importieren"
+  },
+  "plan": {
+    "summary": "{{create}} zu erstellen, {{update}} zu aktualisieren, {{delete}} zu löschen, {{unchanged}} unverändert",
+    "action": {
+      "create": "Erstellen",
+      "update": "Aktualisieren",
+      "delete": "Löschen",
+      "unchanged": "Gleich"
+    },
+    "blocked": "Konflikte blockieren diesen Plan. Beheben Sie sie und rufen Sie die Vorschau erneut auf."
+  },
+  "records": {
+    "search": "Nach Name oder Wert suchen",
+    "typeFilter": "Eintragstyp",
+    "allTypes": "Alle Typen",
+    "count_one": "{{count}} Eintragssatz",
+    "count_other": "{{count}} Eintragssätze",
+    "add": "Eintrag hinzufügen",
+    "clear": "Filter zurücksetzen",
+    "emptyTitle": "Noch keine Einträge",
+    "emptyBody": "Fügen Sie einen Eintrag hinzu, wenden Sie eine Vorlage an oder importieren Sie eine Zonendatei.",
+    "noMatch": "Keine passenden Einträge",
+    "noMatchBody": "Versuchen Sie einen anderen Namen, Wert oder Typ.",
+    "col": {
+      "name": "Name",
+      "type": "Typ",
+      "ttl": "TTL",
+      "values": "Werte",
+      "flags": "Routing"
+    },
+    "auto": "Automatisch",
+    "proxied": "Per Proxy",
+    "routed": "{{routing}} {{id}}",
+    "managed": "Verwaltet",
+    "alias": "Alias auf {{target}}",
+    "edit": "{{name}} {{type}} bearbeiten",
+    "delete": "{{name}} {{type}} löschen",
+    "deleteTitle": "{{name}} {{type}} löschen?",
+    "deleteLead_one": "Der Eintrag wird sofort beim Anbieter entfernt.",
+    "deleteLead_other": "Alle {{count}} Werte werden sofort beim Anbieter entfernt.",
+    "confirmDelete": "Löschen"
+  },
+  "record": {
+    "addTitle": "Eintrag hinzufügen",
+    "editTitle": "Eintrag bearbeiten",
+    "lead": "Änderungen werden beim Speichern beim Anbieter in {{zone}} geschrieben.",
+    "name": "Name",
+    "type": "Typ",
+    "ttl": "TTL",
+    "nameHint": "Relativ zu {{zone}}: @ für den Apex, * für einen Wildcard.",
+    "ttlAutoHint": "TTL 1 bedeutet automatisch.",
+    "values": "Werte",
+    "addValue": "Wert hinzufügen",
+    "removeValue": "Wert {{n}} entfernen",
+    "partLabel": "{{part}} {{n}}",
+    "part": {
+      "address": "Adresse",
+      "target": "Ziel",
+      "text": "Text",
+      "priority": "Priorität",
+      "weight": "Gewichtung",
+      "port": "Port",
+      "flags": "Flags",
+      "tag": "Tag",
+      "caaValue": "Wert"
+    },
+    "placeholder": {
+      "address": "203.0.113.10",
+      "target": "host.example.com",
+      "text": "",
+      "priority": "10",
+      "weight": "5",
+      "port": "443",
+      "flags": "0",
+      "tag": "",
+      "caaValue": "letsencrypt.org"
+    },
+    "proxied": "Über Cloudflare leiten",
+    "routing": "Routing-Richtlinie",
+    "routingPolicy": {
+      "simple": "Einfach",
+      "weighted": "Gewichtet",
+      "failover": "Failover",
+      "multivalue": "Mehrwert-Antwort"
+    },
+    "setIdentifier": "Set-Identifier",
+    "weight": "Gewichtung (0 bis 255)",
+    "failover": "Failover-Rolle",
+    "failoverPick": "Rolle wählen",
+    "primary": "Primär",
+    "secondary": "Sekundär",
+    "healthCheck": "Health-Check",
+    "noHealthCheck": "Keiner",
+    "save": "Speichern",
+    "saving": "Wird gespeichert...",
+    "savedToast": "{{name}} gespeichert",
+    "failedToast": "Der Eintrag konnte nicht gespeichert werden",
+    "warning": "Mit einer Warnung gespeichert"
+  },
+  "validation": {
+    "name": "Der Name ist kein gültiger DNS-Name. Ein Wildcard muss das äußerste linke Label sein.",
+    "noValues": "Fügen Sie mindestens einen Wert hinzu.",
+    "ipv4": "Ein A-Eintrag benötigt eine IPv4-Adresse.",
+    "ipv6": "Ein AAAA-Eintrag benötigt eine IPv6-Adresse.",
+    "host": "Das Ziel muss ein Hostname sein.",
+    "priority": "Die Priorität muss eine Zahl von 0 bis 65535 sein.",
+    "weight": "Die Gewichtung muss eine Zahl von 0 bis 65535 sein.",
+    "port": "Der Port muss eine Zahl von 0 bis 65535 sein.",
+    "caaTag": "Das CAA-Tag muss issue, issuewild oder iodef sein.",
+    "caaValue": "Der CAA-Wert ist erforderlich.",
+    "textTooLong": "TXT-Text ist auf 4000 Zeichen begrenzt.",
+    "cnameSingle": "Ein CNAME enthält genau ein Ziel.",
+    "apexNs": "Apex-NS-Einträge werden vom Anbieter verwaltet.",
+    "ttl": "Die TTL muss zwischen 30 und 604800 Sekunden liegen.",
+    "proxiedType": "Nur A-, AAAA- und CNAME-Einträge können per Proxy geleitet werden.",
+    "setIdentifier": "Geroutete Einträge benötigen einen Set-Identifier.",
+    "routingWeight": "Die Gewichtung muss zwischen 0 und 255 liegen.",
+    "failoverRole": "Wählen Sie primär oder sekundär."
+  },
+  "templates": {
+    "title": "Eine Vorlage anwenden",
+    "lead": "Gängige Konfigurationen als Eintragssätze. Vorhandene TXT-Werte beim selben Namen bleiben erhalten, außer einem zweiten SPF- oder DMARC-Eintrag.",
+    "pick": "Eine Vorlage wählen",
+    "failedToast": "Vorlage fehlgeschlagen"
+  },
+  "check": {
+    "name": "Eintragsname",
+    "type": "Eintragstyp",
+    "run": "Prüfen",
+    "checking": "Wird geprüft...",
+    "agree": "Antworten stimmen überein",
+    "differ": "Antworten weichen ab",
+    "zoneSays": "Zone: {{values}}",
+    "authoritative": "autoritativ",
+    "ttlLeft": "{{ttl}} s",
+    "noRecords": "keine Einträge",
+    "mismatch": "weicht von der Zone ab",
+    "col": {
+      "server": "Server",
+      "ttl": "Verbleibende TTL",
+      "answer": "Antwort"
+    }
+  },
+  "health": {
+    "lead": "Route53-Health-Checks entscheiden, welcher Failover- oder Mehrwert-Eintrag antwortet.",
+    "type": "Typ",
+    "target": "Host oder IP",
+    "port": "Port",
+    "path": "Pfad",
+    "create": "Health-Check hinzufügen",
+    "delete": "Health-Check {{id}} löschen",
+    "empty": "Noch keine Health-Checks.",
+    "failedToast": "Health-Check fehlgeschlagen"
+  },
+  "zone": {
+    "loadFailed": "Diese Zone konnte nicht geladen werden",
+    "nameservers": "Nameserver",
+    "templates": "Vorlagen",
+    "importExport": "Import und Export",
+    "delete": "Zone löschen",
+    "deleteTitle": "{{zone}} löschen?",
+    "deleteLead": "Die Zone und ihre Nameserver werden beim Anbieter entfernt. Die Domain wird nicht mehr aufgelöst, wenn sie noch hierher delegiert ist.",
+    "deleteHasRecords_one": "Die Zone hat über NS und SOA hinaus noch {{count}} Eintragssatz. Exportieren Sie sie zuerst, falls Sie ihn eventuell noch brauchen.",
+    "deleteHasRecords_other": "Die Zone hat über NS und SOA hinaus noch {{count}} Eintragssätze. Exportieren Sie sie zuerst, falls Sie sie eventuell noch brauchen.",
+    "typeName": "Geben Sie zur Bestätigung {{zone}} ein",
+    "force": "Auch die Einträge löschen",
+    "deletedToast": "{{zone}} gelöscht",
+    "deleteFailed": "Die Zone konnte nicht gelöscht werden",
+    "recordsByType": "Einträge nach Typ",
+    "total_one": "{{count}} Satz insgesamt",
+    "total_other": "{{count}} Sätze insgesamt",
+    "lastChanged": "Zuletzt geändert",
+    "by": "von {{who}} ({{action}})",
+    "noChanges": "Von hier aus wurde noch nichts geändert.",
+    "provider": "{{provider}}, {{status}}",
+    "tab": {
+      "records": "Einträge",
+      "delegation": "Delegierung",
+      "propagation": "Verbreitung",
+      "health": "Health-Checks"
+    }
+  },
+  "recordsControl": {
+    "recordType": "Eintragstyp",
+    "recordName": "Eintragsname",
+    "namePlaceholder": "@ oder Subdomain",
+    "recordValue": "Eintragswert",
+    "valuePlaceholder": "Wert",
+    "ttlSeconds": "TTL in Sekunden",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "editRecord": "Eintrag bearbeiten",
+    "deleteRecord": "Eintrag löschen",
+    "deleteTitle": "Diesen Eintrag löschen?",
+    "deleteBody": "{{type}} {{name}} mit Ziel {{value}} wird aus der Zone entfernt. Das lässt sich nicht rückgängig machen.",
+    "deleting": "Wird gelöscht...",
+    "delete": "Löschen",
+    "statusResolved": "Aufgelöst",
+    "statusPending": "Ausstehend",
+    "statusMismatch": "Abweichung",
+    "statusUnknown": "Nicht verifiziert",
+    "title": "DNS-Einträge",
+    "titleNoProvider": "DNS-Einträge: kein Anbieter",
+    "count_one": "{{count}} DNS-Eintrag",
+    "count_other": "{{count}} DNS-Einträge",
+    "titleForZone": "DNS-Einträge für {{zone}}",
+    "closeAdd": "Schließen",
+    "noProvider": "Für Einträge ist kein DNS-Anbieter konfiguriert. Aktivieren Sie oben Cloudflare DNS, Route53 DNS oder Google Cloud DNS, um die Einträge dieser Zone hier aufzulisten und zu bearbeiten.",
+    "noRecords": "Keine Einträge gefunden.",
+    "colType": "Typ",
+    "colName": "Name",
+    "colValue": "Wert",
+    "colTtl": "TTL",
+    "colStatus": "Status",
+    "addRecord": "Eintrag hinzufügen",
+    "connect": "{{provider}} verbinden",
+    "nsHint": "Ihre Zone nutzt die Nameserver von {{provider}}."
+  },
+  "banner": {
+    "description": "Verbinden Sie einen DNS-Anbieter, um hier Zonen und Einträge zu verwalten und zu sehen, wann Änderungen an Nameservern verbreitet sind.",
+    "diagram": {
+      "records": "Einträge",
+      "server": "Server"
+    }
+  },
+  "providerGuide": {
+    "title": "Den Eintrag bei {{provider}} hinzufügen",
+    "where": {
+      "cloudflare": "Öffnen Sie das Cloudflare-Dashboard, wählen Sie die Domain und dann DNS, Records, Add record.",
+      "route53": "Öffnen Sie Route 53, Hosted zones, wählen Sie die Zone und dann Create record.",
+      "digitalocean": "Öffnen Sie Networking, Domains, wählen Sie die Domain und fügen Sie dann einen A-Eintrag hinzu.",
+      "hetzner": "Öffnen Sie die Hetzner-DNS-Konsole, wählen Sie die Zone und fügen Sie dann einen Eintrag hinzu.",
+      "namecheap": "Öffnen Sie Domain List, Manage, Advanced DNS und dann Add New Record.",
+      "godaddy": "Öffnen Sie My Products, DNS neben der Domain und dann Add New Record.",
+      "porkbun": "Öffnen Sie Domain Management, DNS der Domain und fügen Sie dann einen Eintrag hinzu.",
+      "google": "Öffnen Sie Cloud DNS in Google Cloud, wählen Sie die Zone und dann Add standard.",
+      "azure": "Öffnen Sie die DNS-Zone im Azure-Portal und dann Record sets, Add.",
+      "ns1": "Öffnen Sie das NS1-Dashboard, wählen Sie die Zone und dann Add Record.",
+      "desec": "Öffnen Sie das deSEC-Dashboard, wählen Sie die Domain und fügen Sie dann einen Eintragssatz hinzu."
+    },
+    "record": "Fügen Sie einen A-Eintrag mit Host {{host}} und Wert {{value}} hinzu. Eine TTL von 300 Sekunden ist in Ordnung.",
+    "proxyOff": "Schalten Sie die orange Wolke (Proxy) für diesen Eintrag aus, bis das Zertifikat ausgestellt ist.",
+    "docs": "DNS-Dokumentation von {{provider}}"
+  },
+  "verification": {
+    "ok_one": "Token akzeptiert. {{count}} Zone ist sichtbar.",
+    "ok_other": "Token akzeptiert. {{count}} Zonen sind sichtbar.",
+    "failedTitle": "Das gespeicherte Token kann DNS noch nicht verwalten",
+    "missing": "Fehlende Berechtigungen:",
+    "fix": "Token korrigieren: Bearbeiten Sie es im Dashboard Ihres Anbieters, fügen Sie die oben genannten Berechtigungen hinzu, fügen Sie es dann hier ein und speichern Sie erneut."
+  }
+}

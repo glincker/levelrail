@@ -1,0 +1,131 @@
+{
+  "title": "Autoscaling",
+  "description": "Fügt Replikate hinzu und entfernt sie, wenn sich die Last ändert, zwischen einem von Ihnen festgelegten Minimum und Maximum. Hochskalieren geht schnell, Herunterskalieren langsam, und jede Entscheidung wird mit ihrem Grund festgehalten.",
+  "loading": "Autoscaling wird geladen",
+  "loadError": "Das Autoscaling dieser App konnte nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "empty": {
+    "title": "Autoscaling ist aus",
+    "body": "Die App behält die von Ihnen manuell gesetzte Anzahl an Replikaten. Aktivieren Sie Autoscaling, um der Last zwischen einem Minimum und einem Maximum zu folgen. Manuelle Änderungen der Replikate werden abgelehnt, solange es aktiv ist.",
+    "action": "Autoscaling einrichten"
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_percent": "Arbeitsspeicher",
+    "requests_per_replica": "Anfragen pro Replikat"
+  },
+  "reason": {
+    "Pending": "Wartet auf erste Prüfung",
+    "WithinTarget": "Im Zielbereich",
+    "ScaledUp": "Hochskaliert",
+    "ScaledDown": "Herunterskaliert",
+    "MetricsUnavailable": "Keine aktuellen Metriken",
+    "CooldownActive": "Abkühlphase",
+    "Stabilizing": "Herunterskalierung wird bestätigt",
+    "NoCapacity": "Keine Kapazität",
+    "SpendCapPaused": "Durch Ausgabenlimit gehalten",
+    "AtMaximum": "Am Maximum",
+    "AtMinimum": "Am Minimum",
+    "BoundsCorrected": "In den Bereich verschoben",
+    "Suspended": "App gestoppt",
+    "ScaleFailed": "Skalierung fehlgeschlagen",
+    "Flapping": "Flattern"
+  },
+  "blocked": {
+    "cooldown": "Abkühlphase",
+    "stabilization": "Stabilisierungsfenster",
+    "spend_cap": "Ausgabenlimit",
+    "no_capacity": "keine Kapazität",
+    "max_replicas": "maximale Replikate",
+    "min_replicas": "minimale Replikate",
+    "global_ceiling": "globale Obergrenze",
+    "step_limit": "Schrittlimit",
+    "no_metrics": "keine Metriken",
+    "suspended": "App gestoppt"
+  },
+  "next": {
+    "no_capacity": "Kein Node hat Platz für ein weiteres Replikat. Fügen Sie einen Node hinzu, schaffen Sie Kapazität oder senken Sie die CPU- und Arbeitsspeicheranforderung der App. Siehe die Karte Platzierung.",
+    "spend_cap": "Ein Ausgabenlimit greift, daher werden keine Replikate hinzugefügt. Erhöhen Sie das Budget oder warten Sie, bis der Monat zurückgesetzt wird.",
+    "no_metrics": "Die Metrik fehlt oder ist veraltet, daher wird die Anzahl der Replikate gehalten. Prüfen Sie, ob die App läuft und ihre Metriken fließen.",
+    "max_replicas": "Die Last verlangt mehr Replikate, als das Maximum erlaubt. Erhöhen Sie das Maximum, falls die App weiter wachsen soll.",
+    "global_ceiling": "Die globale Replikat-Obergrenze des Betreibers begrenzt diese App. Erhöhen Sie APP_AUTOSCALE_MAX_REPLICAS auf der Control Plane, um mehr zu erlauben.",
+    "flapping": "Die Anzahl wechselt ständig die Richtung. Vergrößern Sie die Toleranzen oder verlängern Sie die Abkühlphasen unter Erweitert."
+  },
+  "stats": {
+    "replicas": "Replikate",
+    "replicasValue": "{{current}} aktuell, {{desired}} gewünscht",
+    "range": "Bereich",
+    "rangeValue": "{{min}} bis {{max}}",
+    "band": "Hochskalieren oberhalb, herunterskalieren unterhalb",
+    "bandValue": "+{{up}} % und -{{down}} %",
+    "metricValue": "{{value}}{{unit}} von {{target}}{{unit}}",
+    "metricUnknown": "Unbekannt"
+  },
+  "actions": {
+    "edit": "Richtlinie bearbeiten",
+    "remove": "Richtlinie entfernen"
+  },
+  "form": {
+    "min": "Minimale Replikate",
+    "minHelp": "Nie weniger als dieser Wert.",
+    "max": "Maximale Replikate",
+    "maxHelp": "Nie mehr als dieser Wert. Begrenzt durch die globale Obergrenze des Betreibers.",
+    "metric": "Skalieren nach",
+    "metricCpu": "CPU",
+    "metricCpuHelp": "Durchschnittliche Nutzung in Prozent des CPU-Limits der App.",
+    "metricMemory": "Arbeitsspeicher",
+    "metricMemoryHelp": "Durchschnittliche Nutzung in Prozent des Arbeitsspeicher-Limits der App.",
+    "metricRequests": "Anfragen pro Replikat",
+    "metricRequestsHelp": "Anfragen pro Sekunde am Ingress, geteilt durch die Replikate.",
+    "target": "Ziel ({{unit}})",
+    "perSecond": " Anfr./s",
+    "targetHelp": "Der Wert, auf dem die Metrik gehalten werden soll. Replikate ändern sich nur, wenn er deutlich über- oder unterschritten wird.",
+    "advanced": "Erweitert",
+    "advancedHelp": "Lassen Sie ein Feld leer, um den Standardwert zu verwenden. Abkühlphasen und das Stabilisierungsfenster sind in Minuten angegeben.",
+    "upTolerance": "Hochskalieren, wenn das Ziel überschritten wird um (Prozent)",
+    "downTolerance": "Herunterskalieren, wenn das Ziel unterschritten wird um (Prozent)",
+    "upCooldown": "Wartezeit zwischen Hochskalierungen (Minuten)",
+    "downCooldown": "Wartezeit vor dem Herunterskalieren (Minuten)",
+    "stabilization": "Herunterskalierung bestätigen für (Minuten)",
+    "stepUp": "Höchstens auf einmal hinzugefügte Replikate",
+    "stepDown": "Höchstens auf einmal entfernte Replikate",
+    "save": "Richtlinie speichern",
+    "saving": "Wird gespeichert",
+    "cancel": "Abbrechen",
+    "error": {
+      "replicas": "Geben Sie ganze Replikatzahlen ein, wobei das Maximum mindestens dem Minimum entspricht.",
+      "target": "Geben Sie ein Ziel größer als null ein (bis 100 für CPU und Arbeitsspeicher).",
+      "advanced": "Prüfen Sie die erweiterten Felder: Verwenden Sie ganze Zahlen und Minuten von mindestens 1 Sekunde."
+    }
+  },
+  "remove": {
+    "title": "Diese Richtlinie entfernen?",
+    "description": "Die App skaliert nicht mehr von selbst.",
+    "consequences": {
+      "replicas": "Die Anzahl der Replikate bleibt, wie sie jetzt ist.",
+      "manual": "Sie können die Replikate wieder manuell festlegen.",
+      "history": "Der Verlauf der Entscheidungen bleibt erhalten."
+    },
+    "confirm": "Richtlinie entfernen",
+    "pending": "Wird entfernt"
+  },
+  "history": {
+    "title": "Letzte Entscheidungen",
+    "empty": "Noch keine Entscheidungen. Skalierungsänderungen und die Gründe für das Halten werden hier aufgelistet.",
+    "loadError": "Der Verlauf konnte nicht geladen werden.",
+    "replicas": "{{from}} auf {{to}}",
+    "blockedBy": "begrenzt durch {{by}}",
+    "kind": {
+      "scaled_up": "Hochskaliert",
+      "scaled_down": "Herunterskaliert",
+      "held": "Gehalten",
+      "failed": "Skalierung fehlgeschlagen",
+      "configured": "Richtlinie geändert",
+      "cleared": "Richtlinie entfernt"
+    }
+  },
+  "toast": {
+    "saved": "Autoscaling gespeichert",
+    "removed": "Autoscaling entfernt"
+  }
+}

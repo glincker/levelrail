@@ -1,0 +1,69 @@
+{
+  "title": "Dynamisches DNS",
+  "description": "Hält einen DNS-Eintrag auf diesen Server gerichtet, wenn sich dessen öffentliche IP ändert. Änderungen werden sofort wirksam.",
+  "status": {
+    "running": "Läuft",
+    "failing": "Fehlerhaft",
+    "off": "Aus",
+    "label": "Status des Updaters"
+  },
+  "source": {
+    "stored": "Gespeichert",
+    "default": "Standardwerte"
+  },
+  "enabled": "Aktiviert",
+  "provider": {
+    "label": "Anbieter",
+    "generic": "Generische URL",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "DuckDNS-Domains",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "Update-URL",
+    "labelDuckdns": "DuckDNS-Token",
+    "placeholder": "Einfügen, um zu setzen oder zu ersetzen",
+    "configured": "Konfiguriert ({{host}})",
+    "configuredNoHost": "Konfiguriert",
+    "notConfigured": "Nicht konfiguriert",
+    "clear": "Entfernen",
+    "cleared": "Zugangsdaten entfernt."
+  },
+  "advanced": {
+    "toggle": "Erweitert",
+    "interval": "Prüfen alle (s)",
+    "timeout": "Zeitlimit (s)",
+    "minGap": "Mindestabstand zwischen Updates (s)",
+    "reassert": "Erneut senden alle (s)",
+    "failAlertAfter": "Warnung nach Fehlern",
+    "quorum": "Probe-Quorum",
+    "probeUrls": "Probe-URLs (eine pro Zeile)",
+    "allowPrivate": "Private Adressen erlauben",
+    "summary": "Alle {{interval}} s, Zeitlimit {{timeout}} s, Quorum {{quorum}}, Warnung nach {{failAlertAfter}} Fehlern",
+    "allowInsecureHttp": "Unverschlüsseltes HTTP erlauben"
+  },
+  "last": {
+    "title": "Letzte Prüfung",
+    "never": "Noch keine Prüfung",
+    "ip": "IP {{ip}}",
+    "result": "Ergebnis: {{result}}",
+    "check": "geprüft {{when}}",
+    "change": "geändert {{when}}",
+    "failures": "{{count}} Fehler in Folge",
+    "alert": "Warnung aktiv"
+  },
+  "result": {
+    "ok": "ok",
+    "failing": "fehlerhaft",
+    "pending": "ausstehend",
+    "not running": "läuft nicht"
+  },
+  "save": "Speichern",
+  "saving": "Wird gespeichert...",
+  "saved": "Dynamisches DNS gespeichert.",
+  "error": {
+    "number": "Verwenden Sie ganze Zahlen ab 1."
+  }
+}

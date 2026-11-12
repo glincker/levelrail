@@ -1,0 +1,64 @@
+{
+  "title": "Fehler",
+  "subtitle": "Fehler, die Ihre App über ein beliebiges Sentry-SDK meldet, nach Issues gruppiert und dem Deployment zugeordnet, das sie verursacht hat.",
+  "setup": {
+    "title": "Fehler von dieser App senden",
+    "off": "Die Fehlerverfolgung ist aus. Aktivieren Sie sie, um eine DSN für Ihr Sentry-SDK zu erhalten.",
+    "on": "Die Fehlerverfolgung ist aktiv. Setzen Sie SENTRY_DSN auf die erhaltene DSN oder rotieren Sie sie für eine neue.",
+    "enable": "Fehlerverfolgung aktivieren",
+    "enabling": "Wird aktiviert...",
+    "rotate": "DSN rotieren",
+    "disable": "Deaktivieren",
+    "copy": "Kopieren",
+    "dsnOnce": "Diese DSN wird nur einmal angezeigt. Setzen Sie sie in der App und deployen Sie erneut. Nach einer Rotation funktioniert die alte DSN nicht mehr.",
+    "endpoint": "Endpunkt",
+    "enabledToast": "Die Fehlerverfolgung ist aktiv.",
+    "disabledToast": "Die Fehlerverfolgung ist aus. Das SDK der App erhält 401-Antworten.",
+    "failed": "Die Fehlerverfolgung konnte nicht geändert werden."
+  },
+  "filters": {
+    "status": "Status",
+    "all": "Alle",
+    "open": "Offen",
+    "resolved": "Behoben",
+    "ignored": "Ignoriert",
+    "window": "Zeitraum",
+    "last1": "Letzte Stunde",
+    "last24": "Letzte 24 Stunden",
+    "last168": "Letzte 7 Tage",
+    "last720": "Letzte 30 Tage"
+  },
+  "list": {
+    "empty": "In diesem Zeitraum gibt es keine Fehler. Sobald Ihr SDK einen meldet, erscheint er hier.",
+    "loadError": "Fehler konnten nicht geladen werden: {{message}}",
+    "count": "{{count}} Ereignisse",
+    "firstSeen": "Zuerst gesehen",
+    "lastSeen": "Zuletzt gesehen",
+    "regressed": "Regression",
+    "release": "Release {{release}}",
+    "deploy": "Deployment {{id}}",
+    "emptyTitle": "Keine Fehler",
+    "emptyOff": "Die Fehlerverfolgung ist für diese App aus, daher wird nichts erfasst. Aktivieren Sie sie, um eine DSN zu erhalten.",
+    "emptyAction": "Fehlerverfolgung einrichten"
+  },
+  "level": {
+    "fatal": "Fatal",
+    "error": "Fehler",
+    "warning": "Warnung",
+    "info": "Info",
+    "debug": "Debug"
+  },
+  "detail": {
+    "loading": "Issue wird geladen...",
+    "stack": "Stacktrace",
+    "noStack": "Dieses Ereignis enthielt keinen Stacktrace.",
+    "latest": "Neuestes Ereignis",
+    "samples": "{{count}} gespeicherte Ereignisse",
+    "environment": "Umgebung {{environment}}",
+    "resolve": "Beheben",
+    "ignore": "Ignorieren",
+    "reopen": "Wieder öffnen",
+    "updated": "Issue aktualisiert.",
+    "updateFailed": "Das Issue konnte nicht aktualisiert werden."
+  }
+}

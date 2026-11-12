@@ -1,0 +1,100 @@
+{
+  "table": {
+    "label": "Audit-Log",
+    "time": "Zeit",
+    "actor": "Akteur",
+    "agent": "Agent",
+    "client": "Client",
+    "ability": "Berechtigung",
+    "method": "Methode",
+    "path": "Pfad",
+    "status": "Status"
+  },
+  "page": {
+    "description": "Wer was geändert hat: jede Schreib-, Deploy- oder Root-Anfrage sowie automatische Zertifikatserneuerungen, neueste zuerst. Reine Leseanfragen werden hier nicht erfasst.",
+    "title": "Audit-Log",
+    "emptyTitle": "Keine Einträge gefunden",
+    "emptyFiltered": "Keine Einträge passen zu diesen Filtern.",
+    "emptyNone": "Noch keine auditierten Anfragen aufgezeichnet."
+  },
+  "labels": {
+    "certIssued": "Zertifikat ausgestellt",
+    "certRenewed": "Zertifikat erneuert",
+    "certRenewalRequested": "Zertifikatserneuerung angefordert",
+    "certUploaded": "Zertifikat hochgeladen",
+    "certRemoved": "Zertifikat entfernt",
+    "deviceLoginApproved": "CLI-Anmeldung genehmigt",
+    "deviceLoginDenied": "CLI-Anmeldung abgelehnt",
+    "deviceLoginExpired": "CLI-Anmeldung abgelaufen",
+    "deviceLoginDismissed": "Hinweis zur CLI-Anmeldung verworfen"
+  },
+  "integrity": {
+    "checking": "Integrität wird geprüft",
+    "intact": "Manipulationssicher: intakt",
+    "intactDetail": "{{checked}} Einträge und {{checkpoints}} signierte Checkpoints verifiziert.",
+    "failed": "Integritätsprüfung fehlgeschlagen",
+    "failedDetail_one": "{{count}} Problem gefunden. Das Audit-Log wurde möglicherweise bearbeitet oder gekürzt.",
+    "failedDetail_other": "{{count}} Probleme gefunden. Das Audit-Log wurde möglicherweise bearbeitet oder gekürzt.",
+    "unavailable": "Integritätsprüfung nicht verfügbar",
+    "recheck": "Erneut prüfen"
+  },
+  "filters": {
+    "deviceLogin": "Geräteanmeldung",
+    "clearPath": "Es wird eine Anmeldeanfrage angezeigt. Zurücksetzen",
+    "clientLabel": "Nach Client filtern",
+    "allClients": "Alle Clients",
+    "searchPlaceholder": "Akteur, Pfad, Methode, Adresse suchen",
+    "searchLabel": "Einträge des Audit-Logs durchsuchen",
+    "failedOnly": "Nur fehlgeschlagene",
+    "loading": "Wird geladen...",
+    "loadOlder": "Ältere Einträge laden",
+    "rangeLabel": "Nach Zeitraum filtern",
+    "anyTime": "Beliebige Zeit",
+    "range": {
+      "1h": "Letzte Stunde",
+      "24h": "Letzte 24 Stunden",
+      "7d": "Letzte 7 Tage",
+      "30d": "Letzte 30 Tage"
+    },
+    "methodLabel": "Nach Methode filtern",
+    "anyMethod": "Beliebige Methode",
+    "actorLabel": "Nach Akteur filtern",
+    "actorPlaceholder": "Name des Akteurs",
+    "exportCsv": "CSV exportieren (neueste {{count}} Zeilen)"
+  },
+  "anchor": {
+    "title": "Audit-Anker",
+    "off": "Aus",
+    "offHint": "Es wird keine externe Kopie des Kopfes der Audit-Kette exportiert.",
+    "offLink": "Anker-Webhook festlegen",
+    "exporting": "Wird exportiert",
+    "lastExported": "Zuletzt exportierte Sequenz {{seq}}",
+    "at": "um {{time}}",
+    "never": "Noch nichts exportiert",
+    "exported": "Exportiert",
+    "failed": "Fehlgeschlagen",
+    "dropped": "Verworfen",
+    "queued": "In Warteschlange",
+    "lastError": "Letzter Fehler",
+    "lastErrorAt": "um {{time}}"
+  },
+  "verify": {
+    "button": "Kette verifizieren",
+    "title": "Audit-Kette verifizieren",
+    "description": "Berechnet jedes Hash-Glied neu. Lassen Sie den Bereich leer, um das gesamte Log zu prüfen.",
+    "from": "Ab Eintrag",
+    "to": "Bis Eintrag",
+    "run": "Verifizieren",
+    "running": "Wird verifiziert",
+    "failedToRun": "Die Verifizierung konnte nicht ausgeführt werden.",
+    "okSummary_one": "{{count}} Zeile verifiziert, keine Brüche.",
+    "okSummary_other": "{{count}} Zeilen verifiziert, keine Brüche.",
+    "head": "Kettenkopf: Eintrag {{seq}}",
+    "firstBreak": "Erster Bruch bei Eintrag {{seq}}",
+    "failed": "Verifizierung der Kette fehlgeschlagen",
+    "problem": "Eintrag {{seq}}: {{reason}}",
+    "rangeEnd": "Der Bereich endet bei Eintrag {{seq}}",
+    "outside_one": "Dieser Bereich ist intakt, aber die gesamte Kette hat außerhalb davon {{count}} Problem. Verifizieren Sie ohne Bereich.",
+    "outside_other": "Dieser Bereich ist intakt, aber die gesamte Kette hat außerhalb davon {{count}} Probleme. Verifizieren Sie ohne Bereich."
+  }
+}

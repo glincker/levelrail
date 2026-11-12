@@ -1,0 +1,39 @@
+{
+  "title": "In einem Terminal ausführen",
+  "description": "Dieselben Speicherwerkzeuge auf der Kommandozeile. Erst die Vorschau, dann anwenden.",
+  "tabsLabel": "Befehlsgruppen",
+  "tabs": {
+    "usage": "Belegung ansehen",
+    "clean": "Sicher bereinigen",
+    "automate": "Automatisieren"
+  },
+  "server": "Die Befehle laufen gegen {{server}}. Melden Sie sich zuerst mit dem Verbindungsbefehl aus der CLI-Anleitung an.",
+  "role": {
+    "viewer": "Betrachter",
+    "admin": "Admin"
+  },
+  "yourRole": "Ihre Rolle: {{role}}",
+  "needsAdmin": "Erfordert Admin",
+  "needsSensitive": "Erfordert zusätzlich den Scope write:sensitive",
+  "dryRunFirst": "Zuerst ein Testlauf: In jeder Gruppe stehen Vorschauen vor dem Anwenden, und es wird nichts entfernt, bis Sie den Anwenden-Befehl ausführen.",
+  "whyNoSystemPrune": "system-prune ist absichtlich nicht aufgeführt: Es entfernt ungenutzte Volumes, die noch benötigte Daten enthalten können.",
+  "blockLabel": "Befehl: {{command}}",
+  "commands": {
+    "doctorDisk": "Datenträgerzustand und freier Speicher auf diesem Server",
+    "imagesList": "Images und was jedes einzelne kostet",
+    "janitorStatus": "Letzter Janitor-Lauf und aktive Richtlinie",
+    "buildsCache": "Größe des Build-Caches und was ein Prune freigeben würde",
+    "buildCacheShow": "Gemeinsamer Build-Cache über alle Apps",
+    "volumesOrphaned": "Volumes, die keine App mehr nutzt",
+    "containersOrphans": "Container, die von entfernten Apps übrig geblieben sind",
+    "janitorDryRun": "Vorschau, was der Janitor entfernen würde",
+    "janitorRun": "Janitor ausführen, nachdem Sie die Vorschau geprüft haben",
+    "imagesGcPreview": "Vorschau, welche alten Images entfernt würden",
+    "imagesGcApply": "Die in der Vorschau aufgelisteten Images entfernen",
+    "imagesPruneDry": "Vorschau nicht verwalteter Images, die keiner App gehören",
+    "buildsCacheApply": "Build-Cache nach der Vorschau bereinigen",
+    "volumesCleanup": "Nur die von Ihnen genannten verwaisten Volumes entfernen",
+    "containersReap": "Container entfernen, die von entfernten Apps übrig geblieben sind",
+    "janitorPolicy": "Automatische Bereinigung mit Build-Cache-Alter und Budget für freien Speicher aktivieren"
+  }
+}

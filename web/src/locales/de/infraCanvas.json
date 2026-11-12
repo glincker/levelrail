@@ -1,0 +1,59 @@
+{
+  "title": "{{name}}: Infrastruktur",
+  "description": "Ziehen, verschieben und zoomen Sie, um zu sehen, wie die Apps, Datenbanken, Domains, Load Balancer, Volumes und Nodes dieses Projekts verbunden sind. Positionen werden in diesem Browser gespeichert.",
+  "canvasLabel": "Infrastruktur-Canvas mit {{count}} Ressourcen. Fokussieren Sie eine Ressource und verschieben Sie sie mit den Pfeiltasten.",
+  "empty": {
+    "title": "Diesem Projekt ist noch nichts zugeordnet",
+    "description": "Weisen Sie diesem Projekt eine App oder Datenbank zu, um hier ihre Beziehungen zu sehen.",
+    "action": "Zurück zum Projekt"
+  },
+  "error": {
+    "title": "Der Infrastrukturgraph konnte nicht geladen werden"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Datenbank",
+    "volume": "Volume",
+    "domain": "Domain",
+    "load_balancer": "Load Balancer",
+    "node": "Node"
+  },
+  "edge": {
+    "database_binding": "Datenbankverbindung",
+    "depends_on": "Hängt ab von",
+    "volume_attachment": "Volume-Anbindung",
+    "egress_allow": "Egress-Freigaberegel",
+    "routing": "Routing",
+    "load_balances": "Verteilt Traffic auf",
+    "placed_on": "Läuft auf"
+  },
+  "status": {
+    "healthy": "Fehlerfrei",
+    "deploying": "Wird deployt",
+    "failed": "Fehlgeschlagen",
+    "idle": "Kein Status",
+    "draft": "Entwurf, noch nicht angewendet"
+  },
+  "toolbar": {
+    "label": "Canvas-Steuerung",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "fit": "An Ansicht anpassen",
+    "resetLayout": "Layout zurücksetzen",
+    "zoomLevel": "Zoom {{percent}} Prozent",
+    "hidden": "{{count}} Ressourcen liegen außerhalb des Bildes und werden erst gezeichnet, wenn Sie dorthin verschieben."
+  },
+  "panel": {
+    "label": "Details zu {{name}}",
+    "close": "Details schließen",
+    "connections": "Verbindungen",
+    "noConnections": "Mit dieser Ressource ist noch nichts verbunden.",
+    "actions": "Schnellaktionen",
+    "overview": "Übersicht öffnen",
+    "logs": "Logs anzeigen",
+    "deploys": "Deployments und Rollback",
+    "domains": "Domains verwalten",
+    "metrics": "Metriken anzeigen"
+  },
+  "legend": "Legende"
+}

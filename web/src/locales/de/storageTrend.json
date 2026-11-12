@@ -1,0 +1,35 @@
+{
+  "title": "Speicherbelegung im Zeitverlauf",
+  "range": {
+    "label": "Zeitraum",
+    "days": "{{count}} T"
+  },
+  "chart": {
+    "label": "Belegter Speicherplatz in den letzten {{days}} Tagen. Mit den Pfeiltasten lesen Sie jeden Tag einzeln."
+  },
+  "tooltip": {
+    "used": "Belegt",
+    "free": "Frei",
+    "images": "Images",
+    "containers": "Container",
+    "volumes": "Volumes",
+    "buildCache": "Build-Cache"
+  },
+  "forecast": {
+    "full_one": "Bei der aktuellen Rate in etwa {{count}} Tag voll",
+    "full_other": "Bei der aktuellen Rate in etwa {{count}} Tagen voll",
+    "needsDays": "Das Datum der Vollauslastung erscheint nach {{count}} Tagen an Daten.",
+    "flat": "Die Belegung ist konstant oder sinkt, daher gibt es kein Datum der Vollauslastung.",
+    "legend": "Prognose"
+  },
+  "legend": {
+    "used": "Belegt"
+  },
+  "states": {
+    "loading": "Speicherverlauf wird geladen",
+    "collecting": "Daten werden gesammelt, der erste Trend erscheint nach zwei Tagen.",
+    "unavailable": "Der Speicherverlauf wird auf diesem Server nicht gespeichert, daher gibt es keinen Trend.",
+    "error": "Der Speicherverlauf konnte nicht geladen werden.",
+    "retry": "Erneut versuchen"
+  }
+}

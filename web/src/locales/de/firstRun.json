@@ -1,0 +1,11 @@
+{
+  "more": {
+    "show": "Mehr",
+    "hide": "Weniger",
+    "label": "Mehr zum Einstieg"
+  },
+  "paths": {
+    "show": "Weitere Wege zum Deployen",
+    "hide": "Weitere Wege ausblenden"
+  }
+}

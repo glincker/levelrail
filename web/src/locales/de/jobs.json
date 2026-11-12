@@ -1,0 +1,230 @@
+{
+  "title": "Jobs",
+  "description": "Führen Sie einen Befehl nach Cron-Zeitplan aus, in einem neuen Container mit Umgebungsvariablen, Secrets, Volumes und Netzwerk dieser App oder in ihrem laufenden Container.",
+  "unnamed": "Unbenannter Job",
+  "specManaged": "app.yaml",
+  "specManagedHint": "In der app.yaml deklariert. Ändern Sie ihn dort, hier lässt sich nur der Schalter zum Aktivieren umlegen.",
+  "empty": {
+    "title": "Noch keine Jobs",
+    "description": "Führen Sie nach Zeitplan eine Migration aus, wärmen Sie einen Cache vor oder senden Sie einen Bericht. Jede Ausführung bleibt mit ihrer Ausgabe im Verlauf erhalten."
+  },
+  "columns": {
+    "job": "Job",
+    "schedule": "Zeitplan",
+    "mode": "Modus",
+    "lastRun": "Letzte Ausführung",
+    "nextRun": "Nächste Ausführung",
+    "enabled": "Aktiviert",
+    "actions": "Aktionen"
+  },
+  "mode": {
+    "fresh": "Neuer Container",
+    "exec": "Im laufenden Container",
+    "http": "HTTP-Aufruf an die App"
+  },
+  "concurrency": {
+    "allow": "Überschneidung erlauben",
+    "forbid": "Überspringen, falls noch aktiv",
+    "replace": "Abbrechen und ersetzen",
+    "queue": "Dahinter einreihen",
+    "queue-one": "Eine einreihen, den Rest überspringen"
+  },
+  "concurrencyHint": {
+    "allow": "Startet die neue Ausführung, auch wenn die vorherige noch nicht beendet ist.",
+    "forbid": "Überspringt diese Ausführung, wenn eine vorherige noch läuft, und hält sie als übersprungen fest.",
+    "replace": "Bricht die noch laufende vorherige Ausführung ab und startet dann diese.",
+    "queue": "Wartet, bis die vorherige Ausführung beendet ist, und läuft dann, sodass sich überschneidende Ausführungen nacheinander laufen.",
+    "queue-one": "Hält eine Ausführung zurück, bis die vorherige beendet ist. Weitere sich überschneidende Ausführungen werden übersprungen."
+  },
+  "preview": {
+    "title": "Nächste Ausführungen ({{zone}})",
+    "invalid": "Geben Sie einen gültigen Zeitplan und eine Zeitzone ein, um die nächsten Ausführungen anzuzeigen.",
+    "none": "Dieser Zeitplan läuft nie."
+  },
+  "status": {
+    "running": "Läuft",
+    "success": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "timeout": "Zeitüberschreitung",
+    "container_not_running": "Container läuft nicht",
+    "skipped_concurrency": "Übersprungen, vorherige Ausführung läuft noch",
+    "skipped_freeze": "Übersprungen, Deploy-Freeze aktiv",
+    "replaced": "Durch neuere Ausführung ersetzt",
+    "missed": "Geplanter Zeitpunkt verpasst",
+    "interrupted": "Durch Neustart unterbrochen"
+  },
+  "trigger": {
+    "schedule": "Zeitplan",
+    "manual": "Manuell",
+    "api": "API"
+  },
+  "neverRun": "Noch nie ausgeführt",
+  "failedInARow": "{{count}} fehlgeschlagen in Folge",
+  "missedInARow": "{{count}} verpasst in Folge",
+  "localNode": "lokal",
+  "run": {
+    "now": "Jetzt ausführen",
+    "starting": "Wird gestartet...",
+    "started": "Job gestartet.",
+    "startedWithId": "Job gestartet (Ausführung {{id}}).",
+    "running": "Läuft..."
+  },
+  "toggle": {
+    "label": "{{name}} aktivieren"
+  },
+  "dialog": {
+    "createTrigger": "Job erstellen",
+    "createTitle": "Job erstellen",
+    "editTitle": "Job bearbeiten",
+    "created": "Job erstellt.",
+    "updated": "Job aktualisiert.",
+    "saving": "Wird gespeichert...",
+    "creating": "Wird erstellt...",
+    "save": "Änderungen speichern",
+    "create": "Job erstellen",
+    "edit": "Bearbeiten",
+    "name": "Name",
+    "nameHint": "Optional. Kleinbuchstaben, Ziffern, Bindestriche und Unterstriche.",
+    "namePlaceholder": "z. B. nightly-migrate",
+    "nameInvalid": "Verwenden Sie Kleinbuchstaben, Ziffern, Bindestriche oder Unterstriche.",
+    "wholeNumber": "Muss eine ganze Zahl sein.",
+    "command": "Befehl",
+    "commandPlaceholder": "z. B. rm -rf /tmp/cache/*",
+    "commandHint": "Wird über eine Shell (sh -c) ausgeführt, daher braucht das Image eine Shell. Levelrail interpretiert ihn nie.",
+    "commandRequired": "Ein Befehl ist erforderlich",
+    "modeLabel": "Wo er läuft",
+    "modeHint": {
+      "fresh": "Ein neuer Container aus dem aktuellen Image der App, mit ihren Umgebungsvariablen, Secrets, Volumes und ihrem Netzwerk. Er wird entfernt, wenn die Ausführung endet.",
+      "exec": "Im laufenden Container der App. Schlägt fehl, wenn der Container nicht läuft.",
+      "http": "Ruft einen Pfad der App per HTTP auf. Eine ruhende App wird zuerst geweckt, und der Aufruf wartet darauf. Jede 2xx-Antwort gilt als Erfolg."
+    },
+    "http": {
+      "method": "Methode",
+      "path": "Pfad",
+      "pathPlaceholder": "z. B. /api/cron/digest",
+      "pathHint": "Ein Pfad dieser App, beginnend mit /. Der Aufruf geht direkt an die App, nicht über ihre öffentliche Domain.",
+      "pathInvalid": "Beginnen Sie mit einem einzelnen /.",
+      "body": "Body",
+      "bodyHint": "Optional. Wird als application/json gesendet.",
+      "background": "Hintergrund-Job",
+      "backgroundHint": "Die App kann sofort mit 202 antworten und weiterarbeiten. Die Control Plane wartet bis zum Hintergrund-Zeitlimit auf die Antwort und hält das Ergebnis fest, sodass niemand die Anfrage offen halten muss.",
+      "headers": "Header",
+      "headersHint": "Optional. Jede Zeile sendet einen Header, dessen Wert beim Ausführen des Jobs aus einem der Secrets der App gelesen wird, sodass das Secret nie im Job gespeichert wird.",
+      "headerName": "Header-Name",
+      "headerSecret": "Secret-Name",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "Präfix",
+      "headerAdd": "Header hinzufügen",
+      "headerRemove": "Header entfernen"
+    },
+    "timezone": "Zeitzone",
+    "timezoneHint": "IANA-Name wie Europe/Berlin. Der Zeitplan wird in dieser Zone gelesen, einschließlich Sommerzeitwechseln.",
+    "timezoneRequired": "Eine Zeitzone ist erforderlich",
+    "concurrencyLabel": "Wenn eine vorherige Ausführung noch läuft",
+    "enabled": "Aktiviert",
+    "advanced": "Zeitlimit, Wiederholungen und Limits",
+    "timeout": "Zeitlimit (Sekunden)",
+    "timeoutHint": "Pro Versuch. Leer verwendet den Standard der Control Plane.",
+    "retries": "Wiederholungen",
+    "retriesHint": "Zusätzliche Versuche nach einem Fehler, mit sich verdoppelnder Wartezeit.",
+    "backoff": "Wartezeit zwischen Wiederholungen (Sekunden)",
+    "catchUpLabel": "Nach einem Ausfall der Control Plane",
+    "catchUp": {
+      "skip": "Verpasste Ausführungen überspringen und als verpasst festhalten",
+      "run_once": "Einmal ausführen, wenn kürzlich eine Ausführung verpasst wurde"
+    },
+    "lookback": "Nachhol-Fenster (Sekunden)",
+    "memory": "Arbeitsspeicher-Limit (MiB)",
+    "memoryHint": "Nur für neue Container. Leer verwendet das eigene Limit der App.",
+    "cpu": "CPU-Limit (Millicores)",
+    "warnAfter": "Warnen nach (Sekunden)",
+    "warnAfterHint": "Löst den Alarm zu langer Laufzeit aus, sobald eine Ausführung diesen Wert überschreitet. 0 deaktiviert ihn."
+  },
+  "delete": {
+    "trigger": "Löschen",
+    "title": "Diesen Job löschen?",
+    "description": "Sein Zeitplan und der Ausführungsverlauf werden entfernt. Das lässt sich nicht rückgängig machen.",
+    "cancel": "Abbrechen",
+    "confirm": "Job löschen",
+    "deleted": "Job gelöscht."
+  },
+  "history": {
+    "title": "Ausführungsverlauf",
+    "description": "Die letzten Ausführungen aller Jobs dieser App, neueste zuerst.",
+    "filter": "Status",
+    "filterAll": "Alle Status",
+    "empty": "Noch keine Ausführungen. Starten Sie mit Jetzt ausführen eine.",
+    "emptyTitle": "Keine Ausführungen",
+    "emptyFiltered": "Keine Ausführungen mit diesem Status.",
+    "columns": {
+      "started": "Gestartet",
+      "job": "Job",
+      "status": "Status",
+      "trigger": "Auslöser",
+      "duration": "Dauer",
+      "exit": "Exit oder HTTP",
+      "attempts": "Versuche",
+      "node": "Node"
+    },
+    "trendLabel": "Dauer der letzten {{count}} abgeschlossenen Ausführungen",
+    "trendCaption": "Ausführungsdauer, von der ältesten zur neuesten, langsamste {{max}}",
+    "httpStatus": "HTTP {{code}}",
+    "viewLogs": "Logs",
+    "logsTitle": "Ausgabe der Ausführung",
+    "logsEmpty": "Diese Ausführung hat keine Ausgabe erzeugt.",
+    "logsLoading": "Ausgabe wird geladen...",
+    "logsRedacted": "Secrets sind in dieser Ausgabe geschwärzt.",
+    "alertsHint": "Lassen Sie sich mit Alarmen benachrichtigen, wenn ein Job fehlschlägt, Ausführungen verpasst oder zu lange läuft, über die Arten Job-Fehler, Verpasste Ausführung oder Zu lange Laufzeit.",
+    "outputWithheld": "Die Ausgabe wird zurückgehalten. Zum Anzeigen von Job-Ausgaben ist Lesezugriff auf sensible Daten erforderlich."
+  },
+  "historyKept": {
+    "label": "Aufbewahrter Verlauf (Ausführungen pro Job)",
+    "save": "Speichern",
+    "note": "Ältere Ausführungen werden automatisch entfernt.",
+    "invalid": "Geben Sie eine ganze Zahl von {{min}} bis {{max}} ein."
+  },
+  "nextRunNever": "Nie",
+  "nextRunNeverHint": "Dieser Zeitplan hat keine künftige Ausführung",
+  "accessRule": "Einmalige Ausführungen und geplante Jobs folgen den Zugriffsregeln für Konsolen-Exec: Zum Erstellen, Bearbeiten oder Ausführen eines Jobs benötigen Sie Root-Zugriff auf diese App und aktiviertes Exec.",
+  "guards": {
+    "title": "Leitplanken",
+    "description": "Begrenzen Sie Überschneidungen und die Laufzeit, lassen Sie sich bei Fehlern alarmieren und begrenzen Sie, wie viel Verlauf aufbewahrt wird. Diese werden von selbst gespeichert.",
+    "overlap": {
+      "allow": "Überschneidung erlauben",
+      "skip": "Überspringen, falls noch aktiv",
+      "queue-one": "Eine einreihen, den Rest überspringen",
+      "replace": "Abbrechen und ersetzen",
+      "queue": "Dahinter einreihen"
+    },
+    "overlapHint": {
+      "allow": "Startet die neue Ausführung, auch wenn die vorherige noch nicht beendet ist.",
+      "skip": "Überspringt diese Ausführung, wenn eine vorherige noch läuft, und hält sie als übersprungen fest.",
+      "queue-one": "Hält eine Ausführung zurück, bis die vorherige beendet ist. Weitere sich überschneidende Ausführungen werden übersprungen.",
+      "replace": "Bricht die noch laufende vorherige Ausführung ab und startet dann diese.",
+      "queue": "Wartet, bis die vorherige Ausführung beendet ist, und läuft dann, sodass sich überschneidende Ausführungen nacheinander laufen."
+    },
+    "timeoutSeconds": "Zeitlimit (Sekunden)",
+    "keepRuns": "Letzte Ausführungen behalten",
+    "keepDays": "Tage behalten",
+    "keepHint": "Leer verwendet den Standard der Control Plane.",
+    "defaultPlaceholder": "Standard",
+    "alertOnFailure": "Bei Fehler alarmieren",
+    "alertOnFailureHint": "Lässt eine Alarmregel für fehlschlagende Jobs dieser App Sie benachrichtigen, wenn dieser Job fehlschlägt.",
+    "save": "Leitplanken speichern",
+    "saved": "Leitplanken gespeichert",
+    "summary": {
+      "overlap": {
+        "skip": "Überspringt Überschneidungen",
+        "queue-one": "Reiht eine ein",
+        "replace": "Ersetzt bei Überschneidung",
+        "queue": "Reiht Überschneidungen ein"
+      },
+      "timeout": "Zeitlimit {{seconds}} s",
+      "alerts": "Alarmiert bei Fehler",
+      "keepRuns_one": "Behält {{count}} Ausführung",
+      "keepRuns_other": "Behält {{count}} Ausführungen",
+      "keepDays_one": "Behält {{count}} Tag",
+      "keepDays_other": "Behält {{count}} Tage"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "title": "Log-Pipeline",
+  "subtitle": "Regeln, die der Reihe nach auf die Logzeilen dieser App angewendet werden, bevor sie gespeichert werden: mehrzeilige Einträge zusammenführen, Secrets schwärzen, Felder extrahieren, Rauschen verwerfen.",
+  "rules": {
+    "title": "Regeln",
+    "empty": "Noch keine Regeln. Logs werden genau so gespeichert, wie die App sie schreibt. Fügen Sie eine Regel hinzu, um sie zu formen.",
+    "add": "Regel hinzufügen",
+    "remove": "Regel {{index}} entfernen",
+    "moveUp": "Regel {{index}} nach oben",
+    "moveDown": "Regel {{index}} nach unten",
+    "kind": "Art",
+    "pattern": "Muster (Regex)",
+    "replace": "Ersetzen durch",
+    "replacePlaceholder": "[REDACTED]",
+    "limit": "Höchstens {{max}} Regeln.",
+    "multilineOnce": "Es ist nur eine Multiline-Regel erlaubt."
+  },
+  "kinds": {
+    "multiline": "Multiline (Muster beginnt einen Eintrag)",
+    "redact": "Schwärzen (Treffer ersetzen)",
+    "parse": "Parsen (benannte Gruppen werden zu Feldern)",
+    "drop": "Verwerfen (passende Zeilen verwerfen)"
+  },
+  "preview": {
+    "title": "Vorschau",
+    "samples": "Beispiel-Logzeilen, eine pro Zeile",
+    "samplesPlaceholder": "2026-01-01 ERROR token=abc123 failed",
+    "empty": "Fügen Sie einige Beispielzeilen ein, um zu sehen, was die Pipeline speichern würde.",
+    "dropped": "Verworfen",
+    "unchanged": "Unverändert",
+    "loading": "Vorschau wird aktualisiert",
+    "error": "Vorschau fehlgeschlagen: {{message}}"
+  },
+  "actions": {
+    "save": "Pipeline speichern",
+    "clear": "Pipeline leeren",
+    "savedToast": "Log-Pipeline gespeichert",
+    "clearedToast": "Log-Pipeline geleert",
+    "failed": "Die Log-Pipeline konnte nicht aktualisiert werden"
+  },
+  "loadError": "Die Log-Pipeline konnte nicht geladen werden: {{message}}"
+}

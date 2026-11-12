@@ -1,0 +1,38 @@
+{
+  "tableLabel": "Weitergeleitete Ports",
+  "page": {
+    "title": "Streams",
+    "description": "Leitet einen Host-Port als reines TCP an einen Container-Port dieser App weiter. UDP, TLS-Terminierung und Zugriffslisten werden noch nicht unterstützt.",
+    "pendingNote": "Ein Stream, der zu einer laufenden App hinzugefügt wird, wird beim nächsten Neustart wirksam, der automatisch erfolgt."
+  },
+  "table": {
+    "hostPort": "Host-Port",
+    "containerPort": "Container-Port",
+    "protocol": "Protokoll",
+    "created": "Hinzugefügt",
+    "actions": "Aktionen"
+  },
+  "empty": {
+    "title": "Keine Streams konfiguriert",
+    "description": "Fügen Sie einen Stream hinzu, um einen Host-Port an einen Container-Port dieser App weiterzuleiten."
+  },
+  "add": {
+    "trigger": "Stream hinzufügen",
+    "hostPortLabel": "Host-Port",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "Container-Port",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "Protokoll",
+    "submit": "Stream hinzufügen",
+    "submitting": "Wird hinzugefügt..."
+  },
+  "remove": {
+    "trigger": "Entfernen",
+    "removing": "Wird entfernt..."
+  },
+  "toast": {
+    "created": "Stream auf Host-Port {{hostPort}} erstellt.",
+    "removed": "Stream entfernt.",
+    "errorTitle": "Dieser Stream konnte nicht gespeichert werden."
+  }
+}

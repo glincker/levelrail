@@ -1,0 +1,207 @@
+{
+  "status": {
+    "loading": "Status wird geladen",
+    "label": {
+      "live": "Live",
+      "going_live": "Geht live",
+      "propagating": "Wird verbreitet",
+      "waiting_for_dns": "Warten auf DNS",
+      "handled_by_proxy": "Von Ihrem Proxy verwaltet",
+      "needs_attention": "Erfordert Aufmerksamkeit",
+      "expiring_soon": "Läuft bald ab",
+      "paused": "Pausiert",
+      "not_set_up": "Nicht eingerichtet"
+    },
+    "reason": {
+      "runInProgress": "Levelrail richtet diese Domain gerade ein.",
+      "maintenance": "Der Wartungsmodus ist aktiv, Besucher sehen die Wartungsseite.",
+      "certExpired": "Das Zertifikat ist abgelaufen.",
+      "renewalStalled": "Das Zertifikat wird nicht erneuert.",
+      "acmeFailure": "Die Zertifizierungsstelle konnte kein Zertifikat ausstellen.",
+      "resolvesElsewhere": "Diese Domain zeigt auf einen anderen Server.",
+      "routeError": "Die Route für diese Domain konnte nicht geschrieben werden.",
+      "externalProxy": "Ihr eigener Proxy liefert diese Domain aus, daher prüft Levelrail ihr Zertifikat nicht.",
+      "routeMissing": "Noch keine Route leitet den Traffic dieser Domain an eine App.",
+      "unconfigured": "Für diese Domain ist noch nichts eingerichtet.",
+      "noCheck": "Diese Domain wurde noch nicht geprüft.",
+      "notResolving": "Fügen Sie den untenstehenden Eintrag bei Ihrem DNS-Anbieter hinzu. Diese Seite prüft von selbst erneut.",
+      "propagating": "Der Eintrag existiert. Einige Resolver haben ihn noch nicht gesehen, das kann bis zu einigen Stunden dauern.",
+      "gettingCertificate": "Ihr Zertifikat wird abgerufen.",
+      "certExpiring": "Das Zertifikat läuft bald ab und wird nicht ordnungsgemäß erneuert.",
+      "live": "Diese Domain erreicht Ihre App über HTTPS.",
+      "livePrivate": "Diese Domain erreicht Ihre App mit einem privaten Zertifikat."
+    },
+    "action": {
+      "open_site": "Website öffnen",
+      "view_progress": "Fortschritt anzeigen",
+      "check_again": "Erneut prüfen",
+      "show_record": "Eintrag anzeigen",
+      "show_proxy_setup": "Proxy-Einrichtung anzeigen",
+      "fix": "Beheben",
+      "renew": "Jetzt erneuern",
+      "turn_off": "Ausschalten",
+      "set_up": "Einrichten"
+    }
+  },
+  "age": {
+    "seconds": "{{count}} s",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} Std.",
+    "days": "{{count}} T"
+  },
+  "steps": {
+    "state": {
+      "todo": "Zu tun",
+      "active": "In Arbeit",
+      "done": "Erledigt",
+      "failed": "Fehlgeschlagen",
+      "skipped": "Übersprungen"
+    },
+    "position": "Schritt {{current}} von {{total}}, {{state}}"
+  },
+  "copy": {
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "copyLabel": "{{label}} kopieren",
+    "fallback": "Drücken Sie Strg+C, um den ausgewählten Text zu kopieren."
+  },
+  "help": {
+    "why": "Warum?",
+    "learnMore": "Mehr erfahren"
+  },
+  "confirm": {
+    "intro": "Dadurch wird:",
+    "cancel": "Abbrechen",
+    "typeToConfirm": "Geben Sie zur Bestätigung {{name}} ein",
+    "kind": {
+      "create": "Erstellen",
+      "update": "Aktualisieren",
+      "delete": "Entfernen"
+    }
+  },
+  "diff": {
+    "setting": "Einstellung",
+    "before": "Vorher",
+    "after": "Nachher",
+    "changed": "Geändert",
+    "showUnchanged_one": "{{count}} unveränderte anzeigen",
+    "showUnchanged_other": "{{count}} unveränderte anzeigen",
+    "hideUnchanged": "Unveränderte ausblenden",
+    "empty": "Es ändert sich nichts.",
+    "none": "keine"
+  },
+  "resolvers": {
+    "caption": "Was jeder Resolver geantwortet hat",
+    "resolver": "Resolver",
+    "answer": "Antwort",
+    "match": "Übereinstimmung",
+    "matches": "Stimmt überein",
+    "different": "Abweichend",
+    "noAnswer": "Keine Antwort",
+    "lastChecked": "Zuletzt geprüft vor {{age}}",
+    "checkedJustNow": "Gerade eben geprüft",
+    "recheck": "Erneut prüfen",
+    "checking": "Wird geprüft...",
+    "empty": "Noch kein Resolver hat geantwortet."
+  },
+  "cert": {
+    "label": "Zertifikat",
+    "none": "Wird automatisch ausgestellt, sobald DNS hierher zeigt.",
+    "issuing": "Ihr Zertifikat wird abgerufen.",
+    "healthy_one": "Let's Encrypt, läuft am {{date}} ab (in {{count}} Tag). Wird automatisch erneuert.",
+    "healthy_other": "Let's Encrypt, läuft am {{date}} ab (in {{count}} Tagen). Wird automatisch erneuert.",
+    "expiring_one": "Läuft am {{date}} ab (in {{count}} Tag) und wird nicht ordnungsgemäß erneuert.",
+    "expiring_other": "Läuft am {{date}} ab (in {{count}} Tagen) und wird nicht ordnungsgemäß erneuert.",
+    "expired": "Abgelaufen am {{date}}.",
+    "stalled": "Erneuerung hängt.",
+    "internal": "Privates Zertifikat, vertrauenswürdig, nachdem Sie HTTPS aktiviert haben.",
+    "custom_one": "Ihr eigenes Zertifikat, läuft am {{date}} ab (in {{count}} Tag).",
+    "custom_other": "Ihr eigenes Zertifikat, läuft am {{date}} ab (in {{count}} Tagen).",
+    "customExpired": "Ihr eigenes Zertifikat, abgelaufen am {{date}}.",
+    "renew": "Jetzt erneuern",
+    "useOwn": "Mein eigenes Zertifikat verwenden",
+    "replace": "Ersetzen",
+    "acme": {
+      "open_port_80": "Let's Encrypt konnte Port 80 auf diesem Server nicht erreichen. Öffnen Sie Port 80 auf diesem Server.",
+      "fix_dns": "Let's Encrypt konnte diese Domain nicht finden. Richten Sie ihr DNS auf diesen Server.",
+      "wait_rate_limit": "Let's Encrypt hat die Ausstellung für diese Domain pausiert. Wir versuchen es später erneut.",
+      "fix_caa": "Ein CAA-Eintrag blockiert Let's Encrypt. Fügen Sie einen CAA-Eintrag hinzu, der letsencrypt.org erlaubt.",
+      "other_proxy": "Ein anderer Proxy auf diesem Server hat die Zertifikatsprüfung beantwortet. Lassen Sie diesen Proxy TLS terminieren oder geben Sie diesem Server die Ports 80 und 443.",
+      "check_logs": "Let's Encrypt konnte kein Zertifikat ausstellen. Prüfen Sie die Ingress-Logs."
+    }
+  },
+  "progress": {
+    "title": "{{domain}} wird eingerichtet",
+    "done": "{{domain}} ist live",
+    "failed": "Die Einrichtung von {{domain}} wurde nicht abgeschlossen",
+    "elapsed": "Vergangen {{age}}",
+    "updated": "Aktualisiert vor {{age}}",
+    "undo": "Livegang rückgängig machen",
+    "openSite": "Website öffnen",
+    "openDoctor": "Doctor öffnen",
+    "retry": "Erneut versuchen",
+    "dismiss": "Verwerfen"
+  },
+  "empty": {
+    "domains": {
+      "title": "Fügen Sie Ihre erste Domain hinzu",
+      "description": "Richten Sie eine Domain auf eine App, und Levelrail richtet DNS, HTTPS und die Route ein.",
+      "action": "Domain hinzufügen"
+    },
+    "noApps": {
+      "title": "Deployen Sie zuerst eine App",
+      "description": "Eine Domain leitet Traffic an eine App."
+    },
+    "search": {
+      "title": "Keine Domains passen zu \"{{query}}\"",
+      "action": "Suche zurücksetzen"
+    },
+    "zones": {
+      "title": "Zone hinzufügen",
+      "description": "Mit Zonen kann Levelrail DNS-Einträge für Sie erstellen und korrigieren."
+    },
+    "soon": {
+      "title": "Kommt bald",
+      "description": "Diese Seite ist in Arbeit und erscheint in einem späteren Release."
+    }
+  },
+  "nav": {
+    "traffic": "Traffic",
+    "domains": "Domains",
+    "dns": "DNS",
+    "proxy": "Proxy",
+    "apps": "Apps",
+    "domainsAttention_one": "{{count}} Domain erfordert Aufmerksamkeit",
+    "domainsAttention_other": "{{count}} Domains erfordern Aufmerksamkeit",
+    "dnsAttention_one": "{{count}} Zone nicht delegiert",
+    "dnsAttention_other": "{{count}} Zonen nicht delegiert",
+    "proxyAttention_one": "{{count}} Route mit Fehlern",
+    "proxyAttention_other": "{{count}} Routen mit Fehlern"
+  },
+  "palette": {
+    "addDomain": "Domain hinzufügen",
+    "verify": "{{domain}} verifizieren",
+    "doctor": "Doctor für {{domain}} öffnen",
+    "dnsRecordsFor": "DNS-Einträge für {{domain}}",
+    "domainSettings": "Domain-Einstellungen",
+    "checked": "{{domain}} geprüft: {{result}}",
+    "checkResult": {
+      "connected": "DNS zeigt hierher",
+      "propagating": "wird verbreitet",
+      "not_resolving": "wartet auf DNS",
+      "resolves_elsewhere": "zeigt auf einen anderen Server",
+      "unconfigured": "nicht eingerichtet"
+    }
+  },
+  "tab": {
+    "headers": "Header",
+    "forwarding": "Weiterleitung",
+    "access": "Zugriff",
+    "cache": "Cache",
+    "ports": "Ports",
+    "redirects": "Weiterleitungen",
+    "activity": "Aktivität",
+    "settings": "Einstellungen",
+    "add": "Zone hinzufügen"
+  }
+}
