@@ -1,0 +1,59 @@
+{
+  "title": "{{client}} 想要读取此控制面",
+  "signedInAs": "以 {{user}} 身份在 {{host}} 上批准",
+  "instanceOnly": "在 {{host}} 上批准",
+  "redirectsTo": "你回应后,浏览器将返回到",
+  "access": {
+    "none": "你的账户不具备任何所请求的权限,因此无法授予任何内容。",
+    "read": "对你的资源的只读访问。密钥和敏感值保持隐藏。",
+    "sensitive": "只读访问,包括敏感值。",
+    "trimmed": "它请求的部分权限已被省略,因为你的账户不具备这些权限。"
+  },
+  "facts": {
+    "never": "它永远不能创建、更改、部署或删除任何内容。",
+    "permissions": "它以你的身份运行,权限不超过你自己的权限。",
+    "expiry": "访问有效期为 {{access}},除非你撤销,否则最多可续期 {{refresh}}。",
+    "revoke": "你可以随时在设置的 CLI 访问中移除该客户端。"
+  },
+  "approve": "批准",
+  "deny": "拒绝",
+  "working": "处理中",
+  "duration": {
+    "minutes_other": "{{count}} 分钟",
+    "hours_other": "{{count}} 小时",
+    "days_other": "{{count}} 天"
+  },
+  "errors": {
+    "missing": "此链接不包含授权请求。请从你的 AI 客户端重新发起连接。",
+    "featureOff": "连接 AI 客户端已关闭。请在设置的 Beta 功能中开启远程 MCP。",
+    "gone": "此请求已过期或已被回应。请从你的 AI 客户端重新发起连接。",
+    "unavailable": "此控制面不支持远程 MCP 登录。",
+    "load": "无法加载此请求。请检查网络连接后刷新。",
+    "decide": "无法记录你的回应。"
+  },
+  "clients": {
+    "title": "已连接的 AI 客户端",
+    "body": "可以通过远程 MCP 请求连接的预注册客户端。",
+    "add": "添加客户端",
+    "name": "名称",
+    "uris": "重定向 URI",
+    "urisPlaceholder": "https://client.example/callback",
+    "create": "创建",
+    "cancel": "取消",
+    "created": "客户端已创建",
+    "clientId": "客户端 ID:",
+    "empty": "没有预注册的客户端。",
+    "loadError": "无法加载 AI 客户端。",
+    "remove": "移除 {{name}}",
+    "confirmTitle": "移除 {{name}}?",
+    "confirmBody": "其访问令牌将立即失效。以后可以重新添加。",
+    "confirm": "移除客户端",
+    "dismiss": "关闭"
+  },
+  "scopes": {
+    "heading": "将授予的权限",
+    "read": "读取资源及其状态",
+    "sensitive": "读取敏感值,例如密钥内容"
+  },
+  "approveSensitive": "批准并授予敏感访问"
+}

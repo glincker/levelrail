@@ -1,0 +1,73 @@
+{
+  "tableLabel": "已发布端口",
+  "title": "已发布端口",
+  "description": "发布在服务器网络接口上的容器端口。Docker 会绕过 ufw 处理这些端口,因此看似已启用的防火墙并不能覆盖它们。",
+  "probe": "从外部检查",
+  "probing": "正在检查",
+  "probeNote": "检查失败会报告为无法确认,而不是已关闭:许多路由器会阻止服务器访问自己的公网地址。",
+  "emptyTitle": "你没有任何内容发布到互联网",
+  "emptyBody": "此服务器上没有容器在不受限制的情况下监听公网地址。",
+  "nodeUnreachable": "无法审计此节点:{{error}}",
+  "rulesUnreadable": "无法读取宿主机防火墙链:{{reason}}",
+  "columns": {
+    "severity": "严重程度",
+    "port": "端口",
+    "container": "容器",
+    "owner": "所属",
+    "bind": "监听地址",
+    "state": "状态"
+  },
+  "severity": {
+    "high": "高",
+    "medium": "中",
+    "low": "低",
+    "info": "信息"
+  },
+  "class": {
+    "loopback": "仅限此服务器",
+    "private": "私有网络",
+    "restricted": "受限",
+    "exposed": "已暴露",
+    "unknown": "未知"
+  },
+  "owner": {
+    "database": "数据库 {{name}}",
+    "app": "应用 {{name}}",
+    "unmanaged": "未托管"
+  },
+  "outside": {
+    "answers": "可从此主机之外访问",
+    "could_not_confirm": "无法从此主机确认"
+  },
+  "restrictedTo": "仅允许来自:{{sources}}",
+  "details": "详情",
+  "hideDetails": "隐藏详情",
+  "restrict": "仅允许这些来源",
+  "remove": "移除限制",
+  "removedToast": "限制已移除",
+  "appliedToast": "限制已应用",
+  "failedToast": "无法更改防火墙",
+  "dialog": {
+    "title": "限制端口 {{port}}",
+    "description": "只有你列出的来源可以连接。其他所有来源都会被丢弃,包括互联网。",
+    "sources": "允许的来源",
+    "sourcesHint": "每行一个 IP 或 CIDR,例如你的其他服务器",
+    "localContainers": "同时允许此服务器上的容器",
+    "preview": "预览规则",
+    "previewTitle": "具体规则",
+    "effect": "将被丢弃的内容",
+    "apply": "应用限制",
+    "cancel": "取消",
+    "confirm": "我明白这些流量将被丢弃",
+    "persistence": "持久化",
+    "lockoutTitle": "锁定风险",
+    "callerWarningTitle": "未检查你的地址",
+    "forceLockout": "我接受风险,仍要应用",
+    "autoRevert": "此规则以试用方式应用,除非你在下一步中保留,否则会自动回滚。",
+    "trialTitle": "限制已以试用方式应用",
+    "trialBody": "请确认你仍能访问所需内容。除非你保留,否则规则将在 {{time}} 回滚。",
+    "keep": "保留此规则",
+    "letRevert": "让它回滚",
+    "keptToast": "限制已保留"
+  }
+}
