@@ -1,0 +1,90 @@
+{
+  "title": "スプリットテスト",
+  "description": "このアプリの訪問者の一部を、ブランチデプロイまたは保持されたリリースに振り分けます。各訪問者はCookieによって同じバリアントに固定されます。このCookieはテスト実行中のみ設定されます。",
+  "nav": "スプリットテスト",
+  "loading": "スプリットテストを読み込み中",
+  "loadError": "スプリットテストを読み込めませんでした: {{message}}",
+  "unsupportedTitle": "このアプリではスプリットテストを利用できません",
+  "unsupportedHelp": "ドメインを持つコンテナアプリで利用できます。静的サイトにはまだ対応していません。",
+  "empty": {
+    "title": "実行中のスプリットテストはありません",
+    "body": "ブランチデプロイまたは保持されたリリースを選び、訪問者の割合を設定して、リクエスト数を比較してから勝者を昇格させます。"
+  },
+  "start": {
+    "title": "スプリットテストを開始",
+    "kind": "バリアントのソース",
+    "kindBranch": "ブランチデプロイ",
+    "kindRelease": "保持されたリリース",
+    "branch": "ブランチデプロイ",
+    "branchPlaceholder": "ブランチデプロイを選択",
+    "noBranches": "準備完了のブランチデプロイがありません。先にブランチデプロイを有効にし、ブランチをプッシュしてください。",
+    "release": "リリースデプロイ名",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "バリアントのラベル",
+    "weight": "訪問者の割合 (%)",
+    "cookieName": "Cookie名",
+    "cookieTtl": "Cookieの有効期間",
+    "cookieTtlHelp": "720hなどの形式です。空のままにするとサーバーのデフォルトを使用します。",
+    "submit": "テストを開始",
+    "success": "スプリットテストを開始しました",
+    "errorTitle": "スプリットテストを開始できませんでした"
+  },
+  "status": {
+    "running": "実行中",
+    "stopped": "停止済み",
+    "live": "ライブ",
+    "ready": "準備完了",
+    "unavailable": "利用不可"
+  },
+  "kind": {
+    "production": "本番",
+    "branch": "ブランチデプロイ",
+    "release": "リリース"
+  },
+  "table": {
+    "caption": "実行中のスプリットテストのバリアント",
+    "variant": "バリアント",
+    "status": "ステータス",
+    "weight": "重み",
+    "requests": "リクエスト",
+    "actions": "操作",
+    "weightFor": "{{label}}の訪問者の割合",
+    "productionKeeps": "本番は{{percent}}%を維持します",
+    "overshoot": "バリアントの合計が100%を超えています。重みを下げてください。",
+    "saveWeights": "重みを保存",
+    "weightsSaved": "重みを保存しました",
+    "copyQa": "QAリンクをコピー",
+    "qaCopied": "QAリンクをコピーしました",
+    "qaHelp": "QAリンクを開くと、お使いのブラウザでそのバリアントが固定されます。",
+    "promote": "昇格",
+    "unavailableHelp": "このバリアントには到達できないため、訪問者には本番が配信されます。"
+  },
+  "stats": {
+    "title": "1時間あたりのリクエスト数",
+    "hour": "時間",
+    "total": "テスト開始からのリクエスト数: {{count}}件",
+    "none": "まだリクエストはカウントされていません。"
+  },
+  "cookie": {
+    "summary": "Cookie {{name}}、有効期間は{{hours}}時間です。URLに ?{{param}}=<variant> を追加すると、バリアントを固定できます。"
+  },
+  "stop": {
+    "button": "テストを停止",
+    "title": "スプリットテストを停止しますか?",
+    "body": "すべての訪問者に再び本番が配信されます。リクエスト数は保持されます。",
+    "confirm": "テストを停止",
+    "success": "スプリットテストを停止しました"
+  },
+  "promote": {
+    "title": "{{label}}を昇格しますか?",
+    "body": "{{label}}が通常のデプロイ経路で本番デプロイになり、その後テストは終了します。",
+    "locked": "アプリの公開がロックされている間は拒否されます。",
+    "confirm": "勝者を昇格",
+    "success": "勝者を昇格しました"
+  },
+  "ended": {
+    "title": "前回のテスト",
+    "reason": "終了: {{reason}}"
+  },
+  "error": "スプリットテストの操作に失敗しました"
+}

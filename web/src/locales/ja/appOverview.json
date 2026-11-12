@@ -1,0 +1,29 @@
+{
+  "title": "概要",
+  "image": "イメージ",
+  "port": "ポート",
+  "memoryLimit": "メモリ上限",
+  "cpuLimit": "CPU上限",
+  "swapLimit": "スワップ上限",
+  "cpuPinning": "CPUピン留め",
+  "notSet": "未設定",
+  "deployStrategy": "デプロイ戦略",
+  "replicas": "レプリカ",
+  "node": "ノード",
+  "project": "プロジェクト",
+  "environment": "環境",
+  "noProject": "プロジェクトなし",
+  "noEnvironment": "環境なし",
+  "readinessProbe": "レディネスプローブ",
+  "livenessProbe": "ライブネスプローブ",
+  "path": "パス:",
+  "interval": "間隔:",
+  "timeout": "タイムアウト:",
+  "failureThreshold": "失敗のしきい値:",
+  "notConfigured": "未構成",
+  "strategy": {
+    "recreate": "再作成",
+    "blueGreen": "ブルーグリーン",
+    "rolling": "ローリング"
+  }
+}

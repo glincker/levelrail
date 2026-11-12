@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "page": {
+      "title": "変数",
+      "description": "共有変数の保管場所です。名前と数のみを表示し、値は表示されません。"
+    },
+    "open": "開く",
+    "count": {
+      "vars_other": "{{count}}件の変数",
+      "unknown": "集計中"
+    },
+    "org": {
+      "title": "組織",
+      "empty": {
+        "title": "組織がありません",
+        "description": "組織を作成すると、そのプロジェクト間で変数を共有できます。"
+      }
+    },
+    "project": {
+      "title": "プロジェクト",
+      "environments": "各プロジェクトのページには環境も一覧表示され、環境ごとに独自の変数を持てます。",
+      "empty": {
+        "title": "プロジェクトがありません",
+        "description": "プロジェクトを作成すると、そのアプリ間で変数を共有できます。"
+      }
+    },
+    "apps": {
+      "title": "アプリ",
+      "note": "1つのアプリの変数は、設定の環境で編集します。",
+      "open": "アプリを開く"
+    }
+  },
+  "sources": {
+    "page": {
+      "title": "ソース",
+      "description": "このインスタンスに接続されているGitプロバイダーです。"
+    },
+    "loading": "プロバイダーを読み込み中",
+    "error": "Gitプロバイダーを読み込めませんでした。",
+    "empty": {
+      "title": "Gitプロバイダーがありません",
+      "description": "設定でプロバイダーを接続すると、リポジトリからデプロイできます。"
+    },
+    "provider": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "bitbucket_server": "Bitbucket Server",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "azure_devops": "Azure DevOps"
+    },
+    "status": {
+      "notConnected": "未接続",
+      "ok": "接続済み",
+      "needs_reauthorize": "再認可が必要です",
+      "revoked": "取り消し済み",
+      "rate_limited": "レート制限中"
+    },
+    "accounts_other": "{{count}}件のアカウント",
+    "manage": "管理"
+  }
+}

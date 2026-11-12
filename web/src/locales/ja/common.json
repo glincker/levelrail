@@ -1,0 +1,1547 @@
+{
+  "deployNote": {
+    "queueLabel": "キューについて",
+    "queueBody": "1つのアプリのデプロイは1件ずつ実行されます。このデプロイは、先行するデプロイが完了またはキャンセルされると自動的に開始されます。"
+  },
+  "statusReasons": {
+    "about": "この理由の意味",
+    "next": "次のステップ:"
+  },
+  "nodeSelect": {
+    "auto": "自動 (負荷が最も低いノード)",
+    "autoHint": "自動にすると、対象となるノードのうち負荷が最も低いノードに配置します。ノードを選ぶと、そこに固定されます。"
+  },
+  "draft": {
+    "message": "{{time}}の未保存の下書きがあります。",
+    "continue": "続きから再開",
+    "startOver": "最初からやり直す",
+    "dismiss": "閉じる"
+  },
+  "deployHistory": {
+    "filters": {
+      "search": "メッセージ、コミット、作成者を検索",
+      "branch": "ブランチ",
+      "author": "作成者",
+      "status": "ステータス",
+      "all": "すべて ({{label}})",
+      "clear": "フィルターをクリア",
+      "noMatch": "これらのフィルターに一致するデプロイはありません",
+      "noMatchHint": "フィルターをクリアすると、すべてのデプロイが表示されます。"
+    },
+    "visit": "開く",
+    "visitLabel": "{{url}}を開く",
+    "promote": "本番に昇格",
+    "promoteHint": "このビルドをそのまま、ダイジェストで固定した公開リリースにします",
+    "promoted": "昇格を開始しました。",
+    "promotedPending": "昇格は承認待ちです。",
+    "promoteFailed": "昇格できませんでした。",
+    "deployNow": "今すぐデプロイ",
+    "latest": "最新のデプロイ",
+    "earlier": "以前のデプロイ",
+    "failedLog": "失敗したステージのログを表示",
+    "failedLogLabel": "{{title}}の失敗したステージのログを表示",
+    "watchLog": "監視",
+    "viewLogs": "ログ",
+    "settingsLink": "デプロイ設定",
+    "settingsLinkHint": "このアプリのビルド、実行、安全性、自動化のオプションを1か所にまとめています。",
+    "settingsLinkCta": "デプロイ設定を開く",
+    "rerunOf": "{{id}}の再試行",
+    "rerunOfLabel": "このデプロイが再実行した{{id}}のログを開く",
+    "current": "現在",
+    "rollbackBadge": "ロールバック",
+    "outcomeFailed": "配信されていません"
+  },
+  "actions": {
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "retry": "再試行",
+    "backToApps": "アプリ一覧に戻る",
+    "viewOverview": "概要を表示",
+    "viewApp": "アプリを表示",
+    "viewDatabase": "データベースを表示",
+    "closeToast": "通知を閉じる"
+  },
+  "deployApprovalStatus": {
+    "all": "すべて",
+    "pending": "保留中",
+    "approving": "適用中",
+    "approved": "承認済み",
+    "rejected": "却下",
+    "expired": "期限切れ"
+  },
+  "tableLabels": {
+    "appServices": "アプリサービス",
+    "bindMounts": "バインドマウント",
+    "modelKeys": "APIキー",
+    "agentTokens": "エージェントトークン",
+    "approvals": "デプロイ承認",
+    "registryCredentials": "レジストリ認証情報",
+    "networkShares": "ネットワーク共有",
+    "deployNotifyTargets": "デプロイ通知先",
+    "statusComponents": "ステータスページのコンポーネント",
+    "alertRules": "アラートルール",
+    "alertSilences": "アラートのサイレンス",
+    "maintenanceWindows": "メンテナンスウィンドウ",
+    "featureFlags": "フィーチャーフラグ"
+  },
+  "healthScore": {
+    "title": "ヘルスと準備状況",
+    "notFound": "「{{appName}}」が見つかりませんでした。削除されたか、サインイン中のインスタンスとは別のインスタンスに属している可能性があります。",
+    "loadFailed": "ヘルスと準備状況を読み込めませんでした。{{message}}",
+    "status": {
+      "pass": "準備完了",
+      "warn": "要確認",
+      "fail": "要対応"
+    },
+    "summary": "{{total}}件中{{pass}}件のチェックに合格",
+    "allClear": "すべてのチェックに合格しました。対応が必要な項目はありません。",
+    "needsAction": "要対応"
+  },
+  "logs": {
+    "previousContainerEnded": "前のコンテナインスタンスが終了しました",
+    "copyLineAria": "このログ行をコピー",
+    "copyLine": "行をコピー",
+    "copied": "コピーしました",
+    "lineCopied": "行をコピーしました"
+  },
+  "sessionLink": {
+    "signingIn": "サインインしています...",
+    "invalid": "このサインインリンクは無効か、期限が切れています。新しいリンクをリクエストしてください。",
+    "backToSignIn": "サインインに戻る"
+  },
+  "ssoAutoRedirect": {
+    "redirecting": "{{provider}}にリダイレクトしています...",
+    "cancel": "キャンセル",
+    "cancelled": "自動リダイレクトをキャンセルしました。",
+    "passwordInstead": "パスワードでサインインする"
+  },
+  "sessionEnded": {
+    "notice": "アップグレードや再起動などによりセッションが終了したため、サインアウトされました。続行するには、もう一度サインインしてください。APIトークンには影響しません。"
+  },
+  "loadMore": {
+    "showing": "{{total}}件中{{loaded}}件を表示中",
+    "button": "さらに読み込む"
+  },
+  "appsList": {
+    "quick": {
+      "open": "{{domain}}を開く",
+      "redeploy": "{{name}}を再デプロイ",
+      "logs": "{{name}}のログ"
+    },
+    "title": "アプリ",
+    "tableLabel": "アプリ",
+    "colName": "名前",
+    "colNode": "ノード",
+    "colTraffic": "トラフィック 1時間",
+    "colP95": "p95",
+    "colErrors": "エラー",
+    "colDeployed": "デプロイ日時",
+    "selectApp": "{{name}}を選択",
+    "count_other": "{{count}}件のアプリ",
+    "count_filtered_other": "{{total}}件中{{count}}件のアプリ",
+    "selectAll": "すべて選択",
+    "deselectAll": "すべて選択解除",
+    "newDatabase": "新規データベース",
+    "newApp": "新規アプリ",
+    "import": "インポート",
+    "connectGit": "Gitを接続",
+    "firstRun": {
+      "title": "最初のアプリをデプロイしましょう",
+      "subtitle": "出発点を選んでください。数分で、動作するアプリとリンクが手に入ります。",
+      "template": {
+        "title": "テンプレートから",
+        "body": "Postgres、n8n、Ghostなどをワンクリックでインストールできます。"
+      },
+      "git": {
+        "title": "Gitリポジトリから",
+        "body": "Dockerfileのあるリポジトリをビルドしてデプロイします。"
+      },
+      "image": {
+        "title": "コンテナイメージから",
+        "body": "レジストリにある任意のイメージを実行します。"
+      }
+    },
+    "emptyTitle": "アプリはまだありません",
+    "emptyBody": "Gitリポジトリまたはコンテナイメージからデプロイするか、他のプラットフォームからアプリをインポートします。",
+    "noMatchTitle": "一致するアプリがありません",
+    "noMatchBody": "現在のステータスと検索条件に合うアプリはありません。フィルターをクリアすると、全{{total}}件が表示されます。",
+    "clearFilters": "フィルターをクリア",
+    "errorBody": "アプリ一覧を読み込めませんでした。{{message}}",
+    "retry": "再試行",
+    "banner": {
+      "description": "Gitリンク、コンテナイメージ、テンプレートからデプロイし、ブラウザで開きます。",
+      "compactDescription": "このサーバーで動作しているすべてのものです。",
+      "diagram": {
+        "git": "Gitブランチ",
+        "app": "アプリ",
+        "browser": "ブラウザ"
+      }
+    }
+  },
+  "appAnalysis": {
+    "confidence": "確信度: {{level}}",
+    "causes": "推定される原因",
+    "hide": "レポートを隠す",
+    "loadFailed": "このレポートを読み込めませんでした。",
+    "loading": "レポートを読み込み中",
+    "recommendations": "推奨事項",
+    "status": {
+      "complete": "完了",
+      "insufficient_data": "データ不足"
+    },
+    "saving": "月額約${{amount}}を節約できます",
+    "timeline": "タイムライン",
+    "title": "分析",
+    "view": "レポートを表示",
+    "evidence": {
+      "title": "根拠",
+      "metric": "メトリクス",
+      "trend": "傾向",
+      "anomalies_other": "異常{{count}}件",
+      "sizingChange": "{{current}}から{{suggested}}へ",
+      "logLevel": "{{level}}: {{lines}}行、{{groups}}グループ",
+      "restarts_other": "再起動{{count}}回",
+      "dimension": {
+        "memory": "メモリ",
+        "cpu": "CPU"
+      },
+      "trends": {
+        "flat": "横ばい",
+        "none": "データなし",
+        "rising": "上昇",
+        "falling": "下降"
+      }
+    }
+  },
+  "appReleases": {
+    "title": "リリース",
+    "current": "現在"
+  },
+  "appResourceTree": {
+    "title": "リソース",
+    "groups": {
+      "databases": "データベース",
+      "deployment": "デプロイ",
+      "domains": "ドメイン",
+      "env": "環境変数キー",
+      "replicas": "レプリカ",
+      "volumes": "ボリューム"
+    }
+  },
+  "appSectionHelp": "このページのガイドを読む",
+  "appActions": {
+    "deploy": "デプロイ",
+    "restart": "再起動",
+    "restarting": "再起動中...",
+    "more": "その他の操作",
+    "redeploy": "現在のリリースを再デプロイ",
+    "redeploying": "再デプロイ中...",
+    "start": "開始",
+    "stop": "停止",
+    "promote": "昇格...",
+    "clone": "複製...",
+    "delete": "削除...",
+    "wake": "今すぐ起動"
+  },
+  "paletteAction": {
+    "restartTitle": "{{name}}を再起動しますか?",
+    "restartDescription": "実行中のコンテナが新しいコンテナに置き換えられます。",
+    "restartConsequence": "アプリが復帰するまでの間、リクエストが一時的に失敗する場合があります。",
+    "restartConfirm": "再起動",
+    "stopTitle": "{{name}}を停止しますか?",
+    "stopDescription": "再び開始するまで、アプリはトラフィックの配信を停止します。",
+    "stopConsequence": "設定、環境変数、ドメインは保持されます。",
+    "stopConfirm": "停止",
+    "rollbackTitle": "{{name}}をロールバックしますか?",
+    "rollbackDescription": "前のリリース({{image}})を再デプロイします。",
+    "rollbackConsequence": "前のリリースが正常になると、現在のリリースは配信を停止します。",
+    "rollbackConfirm": "ロールバック",
+    "rollbackNone": "{{name}}にはロールバック先の前のリリースがありません。",
+    "rollbackFailed": "ロールバックに失敗しました",
+    "rollbackStarted": "「{{name}}」をロールバックしています。",
+    "pending": "処理中...",
+    "alreadyStopped": "{{name}}はすでに停止しています。"
+  },
+  "unsavedGuard": {
+    "title": "未保存の変更を破棄しますか?",
+    "description": "保存されていない編集があります。今離れると失われます。",
+    "keep": "編集を続ける",
+    "discard": "破棄"
+  },
+  "confirmDialog": {
+    "cancel": "キャンセル",
+    "typePrompt": "確認のため {{value}} と入力してください"
+  },
+  "deleteApp": {
+    "trigger": "削除",
+    "title": "「{{name}}」を削除しますか?",
+    "description": "アプリのコンテナを停止して削除し、その後アプリ自体を削除します。ノードに到達できない場合でもアプリは削除され、クリーンアップは成功するまで再試行されます。この操作は元に戻せません。",
+    "cancel": "キャンセル",
+    "confirm": "{{name}}を削除",
+    "deleting": "削除中...",
+    "deleted": "アプリ「{{name}}」を削除しました。",
+    "pendingTitle": "アプリ「{{name}}」を削除しました。クリーンアップは保留中です。",
+    "pendingDescription": "コンテナはまだ削除されていません({{reason}})。クリーンアップは自動的に再試行されます。"
+  },
+  "cascadeDelete": {
+    "label": "中のすべても削除する",
+    "hint": "中にあるすべてのアプリとデータベース、およびそれらのコンテナを削除します。ボリュームは保持されます。削除できないものがあっても、他に失われるものはなく、再度実行できます。"
+  },
+  "loginHelp": {
+    "lockedOut": "ロックアウトされましたか? サーバー上で次を実行してください",
+    "emergencyDocs": "緊急アクセス"
+  },
+  "appTabs": {
+    "sections": "アプリのセクション",
+    "pages": "{{section}}のページ",
+    "showAll": "すべてのタブを表示 ({{count}}件が非表示)",
+    "showLess": "該当しないタブを隠す",
+    "groups": {
+      "deploy": "デプロイ",
+      "traffic": "トラフィック",
+      "config": "設定",
+      "observe": "監視"
+    },
+    "items": {
+      "containers": "コンテナ"
+    },
+    "more": "その他",
+    "overview": "概要"
+  },
+  "recommended": {
+    "title": "次のおすすめ",
+    "dismiss": "閉じる: {{title}}",
+    "more": "他{{count}}件",
+    "less": "表示を減らす",
+    "failed_deploy": {
+      "title": "直近のデプロイが失敗しました",
+      "button": "ビルドログを表示"
+    },
+    "add_domain": {
+      "title": "ドメインがまだありません",
+      "button": "ドメインを追加"
+    },
+    "enable_backups": {
+      "title": "バックアップのスケジュールがないデータベースがあります",
+      "button": "バックアップを有効にする"
+    },
+    "add_health_check": {
+      "title": "ヘルスチェックがありません",
+      "button": "ヘルスチェックを追加"
+    },
+    "enable_previews": {
+      "title": "プルリクエストのプレビューがオフです",
+      "button": "プレビューを有効にする"
+    }
+  },
+  "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "デプロイのセクション",
+        "deploys": "デプロイ",
+        "timeline": "タイムライン",
+        "builds": "ビルド"
+      },
+      "platform": {
+        "label": "プラットフォームのセクション",
+        "overview": "概要",
+        "https": "HTTPS",
+        "ingress": "イングレス",
+        "addresses": "アドレス",
+        "dnsProviders": "DNSプロバイダー"
+      },
+      "cost": {
+        "label": "使用量とコストのセクション",
+        "usage": "使用量",
+        "costs": "コストエクスプローラー"
+      }
+    },
+    "navTabs": {
+      "group": {
+        "apps": "アプリのセクション",
+        "pipelines": "パイプラインのセクション",
+        "databases": "データベースのセクション",
+        "storage": "ストレージのセクション",
+        "domains": "ドメインのセクション",
+        "traffic": "トラフィックのセクション",
+        "servers": "サーバーのセクション",
+        "registry": "レジストリのセクション",
+        "cost": "使用量とコストのセクション",
+        "alerts": "アラートのセクション",
+        "security": "セキュリティのセクション"
+      },
+      "tab": {
+        "apps": "アプリ",
+        "projects": "プロジェクト",
+        "templates": "テンプレート",
+        "tags": "タグ",
+        "variables": "変数",
+        "sources": "ソース",
+        "pipelines": "パイプライン",
+        "approvals": "承認",
+        "databases": "データベース",
+        "backups": "バックアップ",
+        "storage": "概要",
+        "assets": "アセット",
+        "networkShares": "ネットワーク共有",
+        "domains": "ドメイン",
+        "dns": "DNS",
+        "mail": "メール",
+        "proxy": "プロキシ",
+        "loadBalancers": "ロードバランサー",
+        "cdn": "CDN",
+        "firewall": "ファイアウォール",
+        "nodes": "サーバー",
+        "privateNetworks": "プライベートネットワーク",
+        "topology": "トポロジー",
+        "certificates": "証明書",
+        "channels": "チャンネル",
+        "status": "ステータス",
+        "alerts": "アラート",
+        "providers": "クラウドプロバイダー",
+        "images": "イメージ",
+        "registry": "レジストリ",
+        "credentials": "認証情報",
+        "usage": "使用量",
+        "costs": "コスト",
+        "advisor": "リソースアドバイザー",
+        "resources": "リソース",
+        "security": "セキュリティセンター",
+        "iam": "IAMポリシー",
+        "imageScanning": "イメージスキャン",
+        "bootstrapScripts": "ブートストラップスクリプト",
+        "keys": "キーとトークン",
+        "team": "チーム",
+        "auditLog": "監査ログ"
+      }
+    },
+    "pins": {
+      "group": "ピン留め",
+      "pin": "{{label}}をピン留め",
+      "limit": "ピン留めの上限({{max}}件)に達しました。先にどれかを解除してください。"
+    },
+    "customize": {
+      "open": "サイドバーをカスタマイズ"
+    },
+    "locked": {
+      "badge": "ベータ",
+      "description": "これはベータ機能で、現在オフになっています。開くとベータ機能のページに移動し、オンにできます。",
+      "paletteSubtitle": "ロックされたベータ機能です。ベータ機能で有効にしてください"
+    },
+    "skipToContent": "コンテンツへスキップ",
+    "topBar": "トップバー",
+    "toggleSidebar": "サイドバーを切り替え",
+    "search": {
+      "label": "検索またはコマンドを実行",
+      "placeholder": "検索または移動..."
+    },
+    "dashboardTitle": "ダッシュボード",
+    "status": {
+      "ok": "すべて正常",
+      "issues_other": "{{count}}件の問題",
+      "triggerLabel": "プラットフォームのステータス: {{label}}",
+      "title": "プラットフォームのステータス",
+      "healthy": "Docker、ディスク、ノード、証明書は問題ありません。",
+      "view": "表示",
+      "snooze": "スヌーズ",
+      "snoozeItem": "{{title}}をスヌーズ",
+      "snoozedCount": "{{count}}件をスヌーズ中",
+      "showAgain": "再表示",
+      "insecureTitle": "ダッシュボードがHTTPSではありません",
+      "insecureDetail": "セッションが暗号化されずに送信されます"
+    },
+    "snoozeFor": {
+      "1h": "1時間",
+      "1d": "1日",
+      "forever": "無期限"
+    },
+    "theme": {
+      "label": "テーマ: {{theme}}",
+      "menu": "テーマを選択",
+      "heading": "テーマ",
+      "light": "ライト",
+      "dark": "ダーク",
+      "oled": "OLEDブラック",
+      "system": "システム"
+    },
+    "help": {
+      "label": "ヘルプ",
+      "forPage": "このページのヘルプ",
+      "getStarted": "はじめに",
+      "docs": "ドキュメント",
+      "troubleshooting": "トラブルシューティング",
+      "systemStatus": "Doctor",
+      "report": "問題を報告",
+      "community": "コミュニティに質問",
+      "suggest": "機能を提案"
+    },
+    "account": {
+      "controlPlane": "コントロールプレーン",
+      "updateAvailable": "アップデートがあります: {{version}}",
+      "updateAvailableShort": "アップデートがあります",
+      "signOut": "サインアウト"
+    },
+    "breadcrumb": {
+      "label": "パンくずリスト",
+      "home": "ホーム"
+    },
+    "navGroup": {
+      "home": "ホーム",
+      "primary": "ホーム",
+      "build": "ビルド",
+      "data": "データ",
+      "traffic": "ネットワーク",
+      "infrastructure": "インフラストラクチャ",
+      "platform": "プラットフォーム",
+      "access": "セキュリティ",
+      "ai": "AI"
+    },
+    "nav": {
+      "dashboard": "ダッシュボード",
+      "status": "ステータス",
+      "apps": "アプリ",
+      "deployments": "デプロイ",
+      "projects": "プロジェクト",
+      "templates": "テンプレート",
+      "tags": "タグ",
+      "get-started": "はじめに",
+      "welcome": "初回セットアップ",
+      "migrate": "移行",
+      "databases": "データベース",
+      "backups": "バックアップ",
+      "domains": "ドメイン",
+      "dns": "DNS",
+      "proxy": "トラフィック",
+      "loadbalancers": "ロードバランサー",
+      "firewall": "ファイアウォール",
+      "private-networks": "プライベートネットワーク",
+      "nodes": "サーバー",
+      "network": "トポロジー",
+      "cdn": "CDNとキャッシュ",
+      "registry": "レジストリ",
+      "registry-credentials": "認証情報",
+      "network-shares": "ネットワーク共有",
+      "node-providers": "クラウドプロバイダー",
+      "iam-policies": "IAMポリシー",
+      "models": "AIモデル",
+      "pipelines": "パイプライン",
+      "approvals": "デプロイ承認",
+      "inbox": "受信トレイ",
+      "alerts": "アラート",
+      "assistant": "AIアシスタント",
+      "settings": "設定",
+      "help": "ヘルプ",
+      "functions": "関数",
+      "storage": "ストレージ",
+      "assets": "アセット",
+      "mail": "メール",
+      "resource-advisor": "リソースアドバイザー",
+      "usage": "使用量とコスト",
+      "resources": "リソース",
+      "security": "セキュリティ",
+      "console": "コンソール"
+    },
+    "quickNav": {
+      "label": "クイックナビゲーション (Lキーを長押し)"
+    },
+    "newApp": "新規アプリ",
+    "pageWidth": {
+      "compact": "コンパクト幅",
+      "comfortable": "標準幅",
+      "wide": "ワイド",
+      "full": "全幅",
+      "custom": "幅を指定"
+    },
+    "logoStatus": {
+      "healthy": "すべて正常です",
+      "update": "アップデートがあります",
+      "degraded": "低下: 対応が必要なチェックがあります",
+      "incident": "インシデント: ヘルスチェックが失敗しています",
+      "busy": "アップグレードまたは再起動を実行中です",
+      "unknown": "ステータス不明"
+    },
+    "accountMenu": {
+      "account": "アカウント設定",
+      "feedback": "フィードバック",
+      "theme": "テーマ",
+      "changelog": "変更履歴",
+      "help": "ヘルプ",
+      "docs": "ドキュメント",
+      "allNormal": "すべてのシステムが正常です",
+      "issues_other": "{{count}}件の問題に対応が必要です"
+    },
+    "banner": {
+      "dismiss": "閉じる",
+      "retryNow": "今すぐ再試行",
+      "offline": "コントロールプレーンに接続できません。ライブ更新は一時停止中です。",
+      "dockerDown": "Dockerに接続できません。デプロイと再起動は失敗します。",
+      "viewNode": "ノードを表示",
+      "diskFull": "ディスクがほぼ満杯です。",
+      "diskFullDetail": "ディスクがほぼ満杯です。{{detail}}。"
+    },
+    "notifications": {
+      "title": "通知",
+      "unread": "通知: 未読{{count}}件",
+      "allRead": "通知: すべて既読"
+    },
+    "whatsNew": {
+      "title": "新機能",
+      "unread": "新機能: 未読{{count}}件",
+      "allCaughtUp": "新機能: すべて確認済み",
+      "empty": "リリースノートはまだありません。",
+      "loading": "リリースノートを読み込み中...",
+      "error": "リリースノートを読み込めませんでした。",
+      "retry": "再試行",
+      "markSeen": "すべて既読にする",
+      "updateAvailable": "アップデートがあります: {{version}}",
+      "onLatest": "最新バージョンです",
+      "versionUnknown": "バージョンの状況は不明です",
+      "allChangesGrouped": "すべての変更",
+      "openFullNotes": "リリースノート全文を開く",
+      "update": "今すぐアップデート",
+      "releaseNotes": "リリースノート",
+      "highlights": "ハイライト",
+      "allChanges": "すべての変更 ({{count}})",
+      "toast": {
+        "title": "{{version}}にアップデートしました",
+        "body": "新機能を見る",
+        "open": "新機能を見る"
+      },
+      "groups": {
+        "apps": "アプリ",
+        "domains": "ドメイン",
+        "storage": "ストレージ",
+        "nextjs": "Next.js",
+        "other": "その他"
+      },
+      "cta": {
+        "domains": "ドメインを開く",
+        "storage": "ストレージを開く",
+        "apps": "アプリを開く",
+        "deployments": "デプロイを開く",
+        "settings": "設定を開く"
+      }
+    },
+    "navAttention": "{{count}}件に対応が必要です",
+    "headerMore": "その他のヘッダー操作",
+    "headerUtilities": "その他: 新機能、チャット、ヘルプ、テーマ",
+    "chat": "チャット"
+  },
+  "cliConsole": {
+    "title": "コンソール",
+    "description": "あなたとしてCLIを実行します。すべてのコマンドは監査されます。",
+    "navLabel": "コンソール",
+    "terminalLabel": "CLIコンソールのターミナル",
+    "pressEnter": "Enterキーを押して接続します。改めて確認が必要です。",
+    "connecting": "接続中...",
+    "connected": "{{server}}に接続しました。helpと入力するとコマンドの一覧が表示されます。",
+    "disconnected": "切断されました。Enterキーで再接続します",
+    "connectFailed": "接続できませんでした。Enterキーでもう一度お試しください",
+    "connectFailedWith": "接続できませんでした: {{message}}",
+    "reconnectHint": "Enterキーでもう一度お試しください",
+    "stepUpCancelled": "確認をキャンセルしました。",
+    "exitCode": "終了コード {{code}}",
+    "genericError": "問題が発生しました。もう一度お試しください。",
+    "unknownCommand": "不明なコマンド: {{name}}",
+    "helpIntro": "利用可能なコマンド (Tabで補完、help <command>でサブコマンドを表示):",
+    "helpLocal": "その他: help、clear。Ctrl+Cで実行中のコマンドをキャンセル、Ctrl+Lで画面をクリアします。",
+    "state": {
+      "idle": "未接続",
+      "connecting": "接続中",
+      "open": "接続済み",
+      "closed": "切断"
+    },
+    "quick": {
+      "title": "クイック操作",
+      "connectFirst": "クイック操作を表示するには、コンソールを接続してください。",
+      "groups": {
+        "overview": "概要",
+        "apps": "アプリ",
+        "platform": "プラットフォーム"
+      },
+      "params": {
+        "app": "アプリ",
+        "node": "ノード",
+        "image": "ロールバック先のイメージ"
+      },
+      "pick": "選択...",
+      "willRun": "実行内容",
+      "incomplete": "上のフィールドを入力してください",
+      "run": "実行",
+      "review": "確認",
+      "stop": "停止",
+      "selectedApp": "選択中のアプリ",
+      "clearSelected": "選択中のアプリをクリア",
+      "confirmTitle": "このコマンドを実行しますか?",
+      "actions": {
+        "status": {
+          "label": "ステータス"
+        },
+        "version": {
+          "label": "バージョン"
+        },
+        "appsList": {
+          "label": "アプリを一覧表示"
+        },
+        "deploysList": {
+          "label": "デプロイを一覧表示"
+        },
+        "nodesList": {
+          "label": "ノードを一覧表示"
+        },
+        "databasesList": {
+          "label": "データベースを一覧表示"
+        },
+        "appStatus": {
+          "label": "アプリのステータス"
+        },
+        "appLogs": {
+          "label": "アプリのログ"
+        },
+        "appDeploys": {
+          "label": "アプリのデプロイ"
+        },
+        "nodeGet": {
+          "label": "ノードの詳細"
+        },
+        "appRestart": {
+          "label": "アプリを再起動"
+        },
+        "appRedeploy": {
+          "label": "アプリを再デプロイ"
+        },
+        "appRollback": {
+          "label": "アプリをロールバック",
+          "consequence": "アプリは古いイメージに戻され、コンテナが置き換えられます。"
+        },
+        "systemRestart": {
+          "label": "プラットフォームを再起動",
+          "consequence": "コントロールプレーンが再起動し、復帰するまでダッシュボードは利用できません。"
+        }
+      }
+    },
+    "dock": {
+      "offTitle": "コンソールはオフです",
+      "offDescription": "CLIコンソールはベータ機能で、デフォルトではオフです。管理者は設定のベータ機能でオンにできます。"
+    }
+  },
+  "dock": {
+    "region": "アシスタントドック",
+    "regionSide": "アシスタントドックのサイドパネル",
+    "header": "ドックのヘッダー",
+    "moveHint": "矢印キーでドックを移動し、Shiftでより大きく移動、Homeで位置をリセットします。",
+    "toggle": "アシスタントドックを切り替え",
+    "toggleHint": "アシスタントドック (Ctrl+J、Ctrl+Shift+Mでレイアウトを変更)",
+    "launcher": "アシスタントドックを開く",
+    "launcherUnread": "アシスタントドックを開く (新しい返信あり)",
+    "unread": "新しい返信",
+    "close": "ドックを閉じる",
+    "minimize": "ランチャーに最小化",
+    "maximize": "ドックを最大化",
+    "restore": "ドックのサイズを元に戻す",
+    "menu": "ドックのレイアウトとオプション",
+    "tabsLabel": "ドックのタブ",
+    "resizeWidth": "ドックの幅を変更",
+    "resizeHeight": "ドックの高さを変更",
+    "sheetHandle": "下にドラッグして最小化",
+    "mode": {
+      "float": "フローティングウィンドウ",
+      "bottom": "下部パネル",
+      "side": "右サイドパネル"
+    },
+    "push": "ページの内容を押し出す",
+    "reset": "位置とサイズをリセット",
+    "tabs": {
+      "aiChat": "AIチャット",
+      "console": "コンソール"
+    },
+    "ai": {
+      "notConfiguredTitle": "AIプロバイダーが設定されていません",
+      "notConfiguredDescription": "設定でBYOKのAPIキーを追加すると、チャットを始められます。",
+      "configure": "AIアシスタントを設定",
+      "experimentalOffTitle": "AIチャットはオフです",
+      "experimentalOffDescription": "AIチャットはベータ機能で、デフォルトではオフです。管理者は設定のベータ機能でオンにできます。サーバーへのアクセスは不要です。",
+      "enableInSettings": "設定でオンにする"
+    }
+  },
+  "login": {
+    "signInTitle": "サインイン",
+    "signInHint": "続行するには認証情報を入力してください。",
+    "setupTitle": "管理者アカウントを設定",
+    "setupHint": "このインスタンスの最初のアカウントを作成します。登録できるのは最初のアカウントのみです。",
+    "signInTab": "サインイン",
+    "setupTab": "管理者アカウントを設定"
+  },
+  "localMode": {
+    "title": "これはローカルインスタンスです",
+    "body": "ここにあるものはすべてこのマシン上にあり、このマシンからのみアクセスできます。データディレクトリ:",
+    "resetUnavailable": "リセットは、インスタンスをdevコマンドで起動した場合に利用できます。",
+    "reset": "リセット",
+    "failed": "リセットを開始できませんでした。",
+    "dialog": {
+      "title": "このローカルインスタンスをリセットしますか?",
+      "description": "すべてのアプリ、データベースレコード、シークレット、設定が削除され、インスタンスは初期状態から始まります。",
+      "consequence1": "すでに作成されたコンテナは、削除するまで動き続けます。",
+      "consequence2": "新しい管理者パスワードが生成され、devコマンドを実行しているターミナルに表示されます。",
+      "confirm": "インスタンスをリセット",
+      "resetting": "リセット中...",
+      "cancel": "キャンセル"
+    }
+  },
+  "controlPlaneRestart": {
+    "action": "コントロールプレーンを再起動",
+    "title": "コントロールプレーンを再起動しますか?",
+    "description": "プロセスの再起動中、ダッシュボードとAPIは数秒間オフラインになります。実行中のアプリとデータベースは動き続けます。",
+    "consequence1": "進行中のデプロイとログストリームは中断され、その後再開します。",
+    "consequence2": "接続済みのノードは自動的に再接続します。",
+    "unsupported": "ここでは自動再起動を利用できません。プロセスを再起動するものがありません。",
+    "stopping": "再起動中: コントロールプレーンを停止しています...",
+    "waiting": "再起動中: コントロールプレーンの復帰を待っています...",
+    "back": "コントロールプレーンがオンラインに戻りました。",
+    "timeout": "2分経ってもコントロールプレーンが復帰しません。サーバー上のサービスを確認してください。",
+    "keepWaiting": "待ち続ける",
+    "dismiss": "閉じる"
+  },
+  "foundation": {
+    "signIn": {
+      "eyebrowSignIn": "サインイン",
+      "eyebrowSetup": "初回実行",
+      "titleSignIn": "サインイン",
+      "titleSetup": "管理者アカウントを設定",
+      "subtitleSignIn": "続行するには認証情報を入力してください。",
+      "subtitleSetup": "このインスタンスの最初のアカウントを作成します。登録できるのは最初のアカウントのみです。",
+      "tabSignIn": "サインイン",
+      "tabSetup": "管理者アカウントを設定",
+      "or": "または",
+      "continueWith": "{{provider}}で続行",
+      "sso": "SSO",
+      "errors": {
+        "generic": "サインインに失敗しました。もう一度お試しください。",
+        "provider_denied": "サインインがキャンセルされました。",
+        "invalid_state": "そのサインインリンクは期限切れか、すでに使用されています。もう一度お試しください。",
+        "exchange_failed": "プロバイダーでのサインインに失敗しました。もう一度お試しください。",
+        "userinfo_failed": "プロバイダーからアカウント情報を取得できませんでした。",
+        "domain_not_allowed": "サインインは特定のメールドメインに制限されており、お使いのアカウントは該当しません。",
+        "email_in_use": "このメールアドレスのアカウントはすでに存在します。パスワードでサインインし、設定からこのプロバイダーを接続してください。",
+        "already_linked": "そのIDはすでに別のユーザーに連携されています。",
+        "rate_limited": "サインインの試行回数が多すぎます。1分待ってからもう一度お試しください。",
+        "saml_unavailable": "シングルサインオンは現在利用できません。管理者にSAML接続の確認を依頼してください。",
+        "saml_invalid": "IDプロバイダーの応答を検証できませんでした。もう一度お試しいただくか、管理者にSAML設定の確認を依頼してください。",
+        "saml_replayed": "そのサインイン応答はすでに使用されています。サインインをやり直してください。",
+        "sso_not_provisioned": "お使いのアカウントはまだここで設定されていません。管理者に招待を依頼するか、アカウントの自動作成を有効にしてもらってください。",
+        "sso_no_role": "IDプロバイダーのグループには、ここへのアクセス権がありません。管理者に、いずれかのグループをロールに割り当てるよう依頼してください。",
+        "sso_no_email": "IDプロバイダーからメールアドレスが送信されなかったため、アカウントを照合できませんでした。",
+        "account_disabled": "このアカウントは無効です。管理者にアクセスの復元を依頼してください。",
+        "sso_root_not_linkable": "このメールアドレスは、シングルサインオンで連携できない管理者アカウントのものです。パスワードでサインインしてください。"
+      },
+      "ssoEmail": "勤務先のメールアドレス",
+      "ssoContinue": "SSOで続行",
+      "ssoCheck": "続行",
+      "ssoContinueWith": "SSO({{name}})で続行",
+      "ssoRouted": "お使いの組織は{{provider}}経由でサインインします。",
+      "ssoNoRoute": "そのメールアドレスにはシングルサインオンが設定されていません。パスワードまたは他の方法でサインインしてください。"
+    },
+    "banner": {
+      "dismiss": "閉じる"
+    },
+    "saveBar": {
+      "label": "未保存の変更",
+      "unsaved": "未保存の変更があります。",
+      "save": "変更を保存",
+      "saving": "保存中...",
+      "discard": "破棄"
+    },
+    "table": {
+      "actions": "操作",
+      "select": "選択",
+      "rowActions": "{{name}}の操作"
+    }
+  },
+  "confirmAction": {
+    "token": {
+      "trigger": "失効",
+      "title": "「{{name}}」を失効しますか?",
+      "consequence0": "このトークンを使用しているものは、直ちにアクセスできなくなります。",
+      "consequence1": "この操作は元に戻せません。",
+      "abilities": "権限: {{abilities}}",
+      "confirm": "トークンを失効",
+      "pending": "失効中...",
+      "success": "トークン「{{name}}」を失効しました。",
+      "devFixture": "開発用フィクスチャのトークンは、フィクスチャファイルから削除しない限り、次回の開発モード起動時に再投入されます。"
+    },
+    "alertRule": {
+      "trigger": "削除",
+      "title": "「{{name}}」を削除しますか?",
+      "confirm": "ルールを削除",
+      "pending": "削除中...",
+      "success": "アラートルール「{{name}}」を削除しました。",
+      "consequence0": "ルールの評価と通知は直ちに停止します。",
+      "consequence1": "この操作は元に戻せません。"
+    },
+    "backupTarget": {
+      "trigger": "削除",
+      "title": "「{{name}}」を削除しますか?",
+      "confirm": "削除",
+      "pending": "削除中...",
+      "success": "バックアップ先「{{name}}」を削除しました。",
+      "consequence0": "このバケットへの接続が削除されます。",
+      "consequence1": "すでにそこにバックアップされたものは削除されません。",
+      "consequence2": "この操作は元に戻せません。",
+      "error": "「{{name}}」を削除できませんでした。"
+    },
+    "networkShare": {
+      "trigger": "削除",
+      "title": "「{{name}}」を削除しますか?",
+      "confirm": "削除",
+      "pending": "削除中...",
+      "success": "ネットワーク共有「{{name}}」を削除しました。",
+      "consequence0": "この共有をまだマウントしているアプリのボリュームは、次回のデプロイで起動に失敗します。",
+      "consequence1": "この操作は元に戻せません。",
+      "error": "「{{name}}」を削除できませんでした。"
+    },
+    "registryCredential": {
+      "trigger": "削除",
+      "title": "「{{name}}」を削除しますか?",
+      "confirm": "削除",
+      "pending": "削除中...",
+      "success": "レジストリ認証情報「{{name}}」を削除しました。",
+      "consequence0": "この認証情報を参照しているサービスは、次回のデプロイでプライベートイメージをプルできなくなります。",
+      "consequence1": "この操作は元に戻せません。",
+      "error": "「{{name}}」を削除できませんでした。"
+    },
+    "model": {
+      "trigger": "削除",
+      "title": "「{{name}}」を削除しますか?",
+      "confirm": "削除",
+      "pending": "削除中...",
+      "success": "モデル「{{name}}」を削除しました。",
+      "consequence0": "エンジンのコンテナが削除され、APIキーは使えなくなります。",
+      "consequence1": "ダウンロード済みの重みは保持されるため、同じモデルを再度デプロイしても、2回ダウンロードされることはありません。"
+    },
+    "featureFlag": {
+      "trigger": "削除",
+      "title": "「{{name}}」を削除しますか?",
+      "confirm": "フラグを削除",
+      "pending": "削除中...",
+      "success": "フィーチャーフラグを削除しました。",
+      "consequence0": "フラグは直ちに解決されなくなります。",
+      "consequence1": "評価エンドポイントでこのフラグをまだ呼び出しているアプリには、404が返り始めます。",
+      "consequence2": "この操作は元に戻せません。"
+    }
+  },
+  "lockedOut": {
+    "link": "ロックアウトされましたか?",
+    "title": "サーバーから復旧する",
+    "description": "以下は、コントロールプレーンをホストしているマシン上で、データディレクトリを読み取れるユーザーとして実行します。メールや、他のサインイン済みブラウザは必要ありません。",
+    "copy": "コマンドをコピー",
+    "footer": "データディレクトリがデフォルトでない場合は、コマンドの前にAPP_DATA_DIRを指定してください。",
+    "routes": {
+      "password": {
+        "title": "管理者パスワードをリセット",
+        "body": "新しいパスワードを1度だけ表示し、そのアカウントをすべての場所からサインアウトして、ロックアウトを解除します。"
+      },
+      "token": {
+        "title": "短期間有効なルートトークンを取得",
+        "body": "ダッシュボードを使えないときに、CLIから設定を修正するためのものです。自動的に失効します。"
+      },
+      "approve": {
+        "title": "待機中のサインインを承認",
+        "body": "新しいブラウザの承認画面に表示されたリクエストIDと番号を使用してください。"
+      }
+    }
+  },
+  "pages": {
+    "title": "ページ",
+    "count_other": "{{count}}ページ",
+    "noDomain": "ドメインなし"
+  },
+  "gitAccess": {
+    "validate": "アクセスを検証",
+    "validating": "検証中...",
+    "recheck": "再確認",
+    "ok": "アクセスは正常です。",
+    "fix": "修正",
+    "checks": {
+      "repo_url": "リポジトリURL",
+      "credential": "認証情報",
+      "access": "リポジトリへのアクセス",
+      "connection": "接続",
+      "installation": "インストール",
+      "credentials": "アプリの認証情報"
+    }
+  },
+  "replicaNotice": {
+    "sameServer": "{{replicas}}個のレプリカはすべて同じサーバーで動作しています。レプリカを増やすとそのサーバー上で処理能力が増え負荷が分散されますが、サーバーが停止した場合にアプリを保護することはできません。",
+    "autoscaleOwned": "このアプリのレプリカ数はオートスケーラーが設定します。レプリカ数を手動で設定するには、オートスケールのポリシーを変更するか、削除してください。"
+  },
+  "templateDefaults": {
+    "strategyReason": "テンプレートによる設定: {{reason}}",
+    "recreateDowntime": "Recreateは新しいコンテナを起動する前に古いコンテナを停止するため、デプロイごとに短いダウンタイムが発生します。準備チェックに失敗したデプロイは、前のイメージにロールバックされます。",
+    "memoryNote": "この上限は、余裕を持たせるためにテンプレートの推奨メモリの2倍になっています。変更するには、ここで編集してください。"
+  },
+  "pageLoading": {
+    "label": "ページを読み込み中"
+  },
+  "deployRetry": {
+    "retry": "デプロイを再試行",
+    "more": "その他の再試行方法",
+    "rebuild": "ソースから再ビルド",
+    "rebuildNoCache": "キャッシュなしで再ビルド"
+  },
+  "deploySettings": {
+    "nav": {
+      "label": "デプロイ設定のセクション"
+    },
+    "flow": {
+      "title": "デプロイの仕組み",
+      "build": "ビルド",
+      "push": "プッシュ",
+      "rollout": "ロールアウト",
+      "healthCheck": "ヘルスチェック",
+      "buildHint": "ソースをイメージに変換します。",
+      "pushHint": "どのノードでも実行できるよう、イメージを保存します。",
+      "rolloutHint": "新しいレプリカを起動し、トラフィックを移します。",
+      "healthCheckHint": "新しいリリースが正常であることを確認してから、公開を続けます。"
+    },
+    "recommended": "空のままのフィールドにはプラットフォームのデフォルトが使われ、フィールド内にグレーで表示されます。",
+    "groups": {
+      "build": {
+        "title": "ビルド",
+        "description": "ソースがイメージになる方法です。フック、キャッシュ、スキャン対象を設定します。"
+      },
+      "run": {
+        "title": "実行",
+        "description": "新しいリリースの起動方法です。ポート、ロールアウト戦略、デプロイ前コマンドを設定します。"
+      },
+      "safety": {
+        "title": "安全性",
+        "description": "公開中のトラフィックを守る仕組みです。ヘルスチェック、ロールバック、カナリア、フリーズを設定します。"
+      },
+      "automation": {
+        "title": "自動化",
+        "description": "自動でデプロイする仕組みです。スケジュール、プレビュー、イメージ更新、CIを設定します。"
+      }
+    },
+    "cards": {
+      "buildHooks": "ビルドの特定のタイミング(ビルド手順の前後など)で、独自のコマンドを実行します。",
+      "buildCache": "変更のないレイヤーをビルド間で再利用し、繰り返しのビルドを速く完了させます。",
+      "supplyChain": "ビルドした各イメージを既知の脆弱性についてスキャンし、リスクのあるリリースをブロックできます。",
+      "secretScan": "出荷前に、ソース内に漏えいした認証情報がないか確認します。",
+      "port": "アプリがリッスンするポートを設定し、トラフィックが正しい宛先に届くようにします。",
+      "strategy": "新しいリリースが古いリリースを置き換える方法と、実行するレプリカ数を選びます。",
+      "hooks": "新しいリリースを起動する前に、データベースマイグレーションなどのコマンドを実行します。",
+      "safety": "古いリリースを退役させるまでに、新しいリリースが正常な状態を維持すべき時間を設定します。",
+      "watch": "公開後もリリースを監視し続け、劣化した場合はロールバックします。",
+      "autoRollback": "クラッシュループのアラートが発生したときに、最後に正常だったイメージを再デプロイします。",
+      "predeploySnapshot": "デプロイのたびに、リンクされたデータベースをバックアップし、ロールバック時にデータも復元できるようにします。",
+      "sloBurn": "デプロイ後にエラーバジェットの消費が速すぎる場合、自動的にロールバックします。",
+      "canary": "全員に配信する前に、新しいイメージへトラフィックの一部を送ります。",
+      "freeze": "祝日など、指定した期間中の自動デプロイをブロックします。",
+      "scheduled": "指定した後の時刻に実行されるデプロイをキューに入れます。",
+      "cancelSuperseded": "より新しいデプロイが来たときに、古いキュー内のデプロイをキャンセルします。",
+      "preview": "プルリクエストごとに、アプリの一時的なコピーをビルドします。",
+      "imageAutoUpdate": "タグに対応する新しいイメージが公開されると、自動的に再デプロイします。",
+      "badge": "READMEに埋め込める、デプロイのステータスバッジをライブ表示します。",
+      "githubActions": "GitHub Actionsのワークフローからこのアプリをデプロイできるようにします。",
+      "ciDeploy": "CIシステムに、このアプリをデプロイするためのトークンとコマンドを提供します。",
+      "rolloutPolicy": "ローリングリリースの展開中に、同時に増やせる、または利用不可にできるレプリカ数を制限します。"
+    },
+    "whatItDoes": "この設定の内容:"
+  },
+  "cardSkeleton": {
+    "loading": "読み込み中"
+  },
+  "cancelSuperseded": {
+    "title": "置き換えられたキュー内のデプロイを置換",
+    "infoLabel": "キュー内のデプロイの置換について",
+    "infoBody": "置換されるのは、キューで待機中のデプロイのみで、同じブランチのより新しいデプロイによってのみ置換されます。すでにビルドを開始したデプロイが自動的にキャンセルされることはありません。",
+    "enabled": "有効",
+    "enabledHint": "実行中のデプロイの後ろに、同じブランチのより新しいコミットがキューされると、そのブランチの古いキュー内のデプロイは、順番にビルドされる代わりに置き換え済みとしてマークされます。",
+    "on": "置き換えられたキュー内のデプロイは置換されます。",
+    "off": "キュー内のデプロイは保持されます。",
+    "saveFailed": "設定を更新できませんでした。"
+  },
+  "codeBlock": {
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copyFailed": "コピーに失敗しました",
+    "wrap": "折り返し",
+    "reveal": "表示",
+    "hide": "非表示",
+    "region": "コード",
+    "commandRegion": "コマンド"
+  },
+  "banners": {
+    "loadBalancers": {
+      "title": "ロードバランサー",
+      "description": "ヘルスチェックと円滑な切り替えにより、アプリのトラフィックをレプリカ間で分散します。",
+      "compactDescription": "トラフィックを分散するすべてのアプリと、ライブのアップストリームの状態です。",
+      "diagram": {
+        "browser": "ブラウザ",
+        "balancer": "バランサー",
+        "server": "サーバー"
+      }
+    },
+    "projects": {
+      "title": "プロジェクト",
+      "description": "アプリを、そのデータベースやキャッシュとまとめるための任意のラベルです。動作方法は何も変わりません。",
+      "compactDescription": "関連するアプリとデータベースをまとめるラベルです。",
+      "count_other": "{{count}}件のプロジェクト",
+      "diagram": {
+        "project": "プロジェクト",
+        "members": "アプリとデータベース"
+      }
+    }
+  },
+  "projectsPage": {
+    "list": {
+      "name": "名前",
+      "created": "作成日時"
+    },
+    "empty": {
+      "title": "プロジェクトはまだありません",
+      "description": "プロジェクトは、アプリをそのデータベースやキャッシュとまとめます。作成して整理を始めましょう。"
+    },
+    "error": {
+      "title": "プロジェクトを読み込めませんでした",
+      "description": "{{error}}",
+      "retry": "再試行"
+    }
+  },
+  "apiError": {
+    "recheckDocker": "Dockerを再確認",
+    "rechecking": "確認中...",
+    "fixing": "修正中...",
+    "fixFailed": "修正できませんでした。",
+    "requestId": "リクエストID: {{id}}",
+    "copyRequestId": "リクエストIDをコピー",
+    "copied": "コピーしました",
+    "generic": "サーバーでエラーが発生しました。もう一度お試しください。",
+    "toastTitle": "うまくいきませんでした",
+    "friendly": {
+      "generic": {
+        "action": "もう一度お試しください。失敗が続く場合は、リクエストIDをお知らせください。",
+        "title": "問題が発生しました"
+      },
+      "docker": {
+        "message": "このホストでDockerに接続できません。",
+        "action": "Dockerを起動してから、再確認してください。",
+        "title": "Dockerが動作していません"
+      },
+      "unauthorized": {
+        "message": "セッションが終了しました。",
+        "action": "続行するには、もう一度サインインしてください。",
+        "title": "サインアウトされています"
+      },
+      "forbidden": {
+        "message": "お使いのアカウントには、この操作を行う権限がありません。",
+        "action": "オーナーまたは管理者に、アクセス権の付与を依頼してください。",
+        "title": "許可されていません"
+      },
+      "conflict": {
+        "message": "すでに存在するものと競合しています。",
+        "action": "名前を変更するか、既存のものを削除してから再試行してください。",
+        "title": "すでに存在します"
+      },
+      "validation": {
+        "message": "無効な値が含まれています。",
+        "action": "フィールドを確認して、もう一度お試しください。",
+        "title": "内容を確認してください"
+      },
+      "rateLimited": {
+        "message": "短時間にリクエストが多すぎます。",
+        "action": "しばらく待ってから、もう一度お試しください。",
+        "title": "リクエストが多すぎます"
+      },
+      "diskFull": {
+        "message": "サーバーのディスク容量が不足しています。",
+        "action": "設定のクリーンアップで空き容量を確保してから、再試行してください。",
+        "title": "ディスク容量が不足しています"
+      },
+      "unreachable": {
+        "message": "コントロールプレーンが応答していません。",
+        "action": "数秒待ってから、再試行してください。",
+        "title": "サーバーが応答していません"
+      },
+      "network": {
+        "message": "サーバーに接続できません。",
+        "action": "接続を確認してから、再試行してください。",
+        "title": "サーバーに接続できません"
+      },
+      "missingAbility": {
+        "title": "権限が不足しています",
+        "message": "この操作には{{ability}}の権限が必要です。",
+        "action": "その権限を持つトークンまたはロールを使用するか、管理者に依頼してください。"
+      },
+      "timeout": {
+        "title": "リクエストがタイムアウトしました",
+        "message": "サーバーの応答に時間がかかりすぎました。",
+        "action": "しばらく待ってから、再試行してください。"
+      },
+      "notFound": {
+        "title": "見つかりません",
+        "message": "その項目はもう存在しません。",
+        "action": "ページを更新してください。名前が変更されたか、削除された可能性があります。"
+      },
+      "tooLarge": {
+        "title": "サイズが大きすぎます",
+        "message": "アップロードがサーバーの受け付ける上限を超えています。",
+        "action": "より小さいファイルを使用して、再試行してください。"
+      },
+      "serverError": {
+        "title": "サーバーエラー",
+        "message": "サーバーでエラーが発生しました。もう一度お試しください。",
+        "action": "しばらくしてからもう一度お試しください。失敗が続く場合は、リクエストIDをお知らせください。"
+      },
+      "needsConfirmation": {
+        "title": "確認が必要です",
+        "message": "この変更には、先にあなたの確認が必要です。",
+        "action": "警告を確認し、了承してから再試行してください。"
+      },
+      "domainTaken": {
+        "title": "ドメインはすでに使用されています",
+        "message": "このドメインは、すでに別のアプリが使用しています。",
+        "action": "別のドメインを選ぶか、もう一方のアプリから削除してください。"
+      },
+      "emailTaken": {
+        "title": "メールアドレスはすでに使用されています",
+        "message": "そのメールアドレスは別のアカウントのものです。",
+        "action": "別のメールアドレスを使用してください。"
+      },
+      "stepUp": {
+        "title": "本人確認をしてください",
+        "message": "この操作には、新たな本人確認が必要です。",
+        "action": "求められたらコードまたはパスキーを入力してから、再試行してください。"
+      },
+      "portConflict": {
+        "title": "ポートはすでに公開されています",
+        "message": "このポートは、すでに別のサービスが公開しています。",
+        "action": "空いているポートを選んでから、再試行してください。"
+      },
+      "emailNotConfigured": {
+        "title": "メールが設定されていません",
+        "message": "メールプロバイダーがまだ設定されていません。",
+        "action": "設定のメールでプロバイダーを追加してから、再試行してください。"
+      }
+    }
+  },
+  "notFound": {
+    "requested": "リクエスト: {{name}}",
+    "causes": "名前が変更されたか削除された可能性があります。または、ヘッダーのスイッチャーで選択中のものとは別のプロジェクトや環境に属しています。",
+    "didYouMean": "もしかして",
+    "resources": {
+      "app": {
+        "title": "アプリが見つかりません",
+        "list": "アプリ一覧に戻る",
+        "create": "新しいアプリをデプロイ"
+      },
+      "database": {
+        "title": "データベースが見つかりません",
+        "list": "データベース一覧に戻る"
+      },
+      "domain": {
+        "title": "ドメインが見つかりません",
+        "list": "ドメイン一覧に戻る"
+      },
+      "template": {
+        "title": "テンプレートが見つかりません",
+        "list": "テンプレート一覧に戻る"
+      },
+      "project": {
+        "title": "プロジェクトが見つかりません",
+        "list": "プロジェクト一覧に戻る"
+      },
+      "generic": {
+        "title": "ページが見つかりません",
+        "list": "ダッシュボードに戻る"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "問題が発生しました",
+      "body": "このページで予期しないエラーが発生しました。もう一度試すと解消することがよくあります。繰り返し発生する場合は、詳細をコピーして報告してください。",
+      "retry": "もう一度試す",
+      "home": "ダッシュボードに戻る"
+    },
+    "unreachable": {
+      "title": "コントロールプレーンに接続できません",
+      "body": "サーバーが応答しないか、エラーを返しました。アプリは動き続けます。コントロールプレーンが起動していることを確認してから、再試行してください。",
+      "retry": "再試行"
+    },
+    "details": "詳細",
+    "copy": "詳細をコピー",
+    "copied": "コピーしました",
+    "report": "問題を報告",
+    "requestId": "リクエストID: {{id}}",
+    "detailsHeader": "エラーレポート"
+  },
+  "secretInput": {
+    "show": "値を表示",
+    "hide": "値を隠す",
+    "existing": "設定済みです。現在の値を保持するには空のままにしてください。"
+  },
+  "lbTraffic": {
+    "title": "トラフィック",
+    "empty": "トラフィックデータはまだありません",
+    "emptyHint": "リクエストがイングレスを通過すると、レートが表示されます。",
+    "rps": "{{value}} リクエスト/秒",
+    "errors": "エラー {{value}}件",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "{{dial}}の直近{{minutes}}分間の毎秒リクエスト数"
+  },
+  "formErrorSummary": {
+    "title_other": "{{count}}個のフィールドに対応が必要です",
+    "name": "名前",
+    "engine": "エンジン",
+    "version": "バージョン",
+    "envKey": "変数名、{{row}}行目",
+    "envValue": "変数の値、{{row}}行目"
+  },
+  "appPower": {
+    "restartTitle": "{{name}}を再起動しますか?",
+    "restartDescription": "コンテナが新しいものに置き換えられるため、アプリは一時的に停止します。",
+    "restartConsequenceRequests": "復帰するまでの間、処理中のリクエストが失敗する場合があります。",
+    "restartConsequencePolicy": "終了した場合は、再起動ポリシーによって自動的に復帰します。",
+    "restartConfirm": "再起動",
+    "restartSkip": "再起動では今後確認しない",
+    "stopTitle": "{{name}}を停止しますか?",
+    "stopDescription": "再び開始するまで、アプリはトラフィックの配信を停止します。",
+    "stopConsequenceRequests": "処理中のリクエストは破棄されます。",
+    "stopConsequencePolicy": "再起動ポリシーでは復帰しません。設定、環境変数、ドメインは保持されます。",
+    "stopConfirm": "停止",
+    "pending": "処理中...",
+    "applying": "変更を適用しています。",
+    "restarting": "再起動中...",
+    "stillRestarting": "まだ再起動中です...",
+    "stopping": "停止中...",
+    "restarted": "「{{name}}」を再起動しました。",
+    "stopped": "「{{name}}」を停止しました。",
+    "restartFailed": "「{{name}}」が復帰しませんでした",
+    "stillRestartingToast": "「{{name}}」はまだ再起動中です",
+    "stillRestartingHint": "まだ正常と報告されていません。ログを確認してください。",
+    "stillStoppingToast": "「{{name}}」はまだ停止処理中です",
+    "viewLogs": "ログを表示",
+    "starting": "「{{name}}」を開始しています。"
+  },
+  "resourceLabels": {
+    "title": "ラベル",
+    "description": "グループ化やフィルタリングに使う、自由形式のキーと値のペアです。リソースの動作は変わりません。",
+    "empty": "ラベルはまだありません。",
+    "edit": "ラベルを編集",
+    "save": "ラベルを保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "saved": "ラベルを保存しました",
+    "keyPlaceholder": "キー",
+    "valuePlaceholder": "値",
+    "add": "ラベルを追加",
+    "remove": "ラベル{{key}}を削除",
+    "duplicate": "各キーは1回だけ使用できます。",
+    "incomplete": "キーと値の両方を入力するか、行を削除してください。",
+    "filterLabel": "ラベルで絞り込み",
+    "filterButton": "ラベル",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "filterInvalid": "そのセレクターを読み取れませんでした。"
+  },
+  "pinnedDigest": {
+    "tip": "承認すると、タグが移動しても、このイメージそのものがデプロイされます。",
+    "copy": "イメージのダイジェスト全体をコピー",
+    "copied": "イメージのダイジェストをコピーしました"
+  },
+  "visitors": {
+    "title": "訪問者",
+    "windowLabel": "期間",
+    "window": {
+      "1h": "1時間",
+      "24h": "24時間",
+      "7d": "7日",
+      "30d": "30日"
+    },
+    "requests": "リクエスト",
+    "visitorsLabel": "ユニーク訪問者",
+    "visitorsHint": "ユニーク訪問者数です。{{period}}ごとのプライバシーリセットの後に再カウントされます。累計のユニーク数ではありません。",
+    "trend": "選択した期間のリクエスト数",
+    "statusLabel": "クラス別のレスポンス",
+    "details": "上位のページとリファラー",
+    "topPaths": "上位のページ",
+    "topReferrers": "上位のリファラー",
+    "none": "記録なし",
+    "byDomain": "ドメイン別",
+    "domainRow": "リクエスト{{requests}}件、訪問者{{visitors}}人",
+    "partial": "データは{{when}}から始まり、この期間より後のため、数値が不完全な場合があります。",
+    "empty": "この期間にはまだリクエストがありません。",
+    "loadError": "訪問者数は現在利用できません。",
+    "retry": "再試行",
+    "viewTraffic": "トラフィックの詳細",
+    "section": "訪問者",
+    "domainLabel": "ドメイン",
+    "allDomains": "すべてのドメイン",
+    "statusSplit": "ステータスの内訳",
+    "pathHeader": "ページ",
+    "referrerHeader": "リファラー",
+    "countHeader": "リクエスト",
+    "topPathsCaption": "この期間の上位10ページ",
+    "topReferrersCaption": "この期間の上位10リファラー",
+    "unavailable": "訪問者数にはエッジのアクセスログが必要ですが、このインストールでは有効になっていません。",
+    "chartHeading": "リクエスト数の推移",
+    "exportCsv": "CSVをダウンロード",
+    "exportEmpty": "この期間にエクスポートできるものはありません。"
+  },
+  "overviewHero": {
+    "addressInfo": "このアドレスについて",
+    "addTag": "タグを追加...",
+    "addTagTitle": "タグを追加",
+    "tagName": "タグ名",
+    "tagAdd": "タグを追加",
+    "tagAdding": "追加中...",
+    "removeTag": "タグ{{name}}を削除",
+    "retryDeploy": "デプロイを再試行",
+    "deploy": "デプロイ",
+    "restart": "再起動",
+    "openApp": "アプリを開く",
+    "stickyLabel": "アプリのヘッダー"
+  },
+  "reportIssue": {
+    "title": "報告の前に確認してください",
+    "description": "GitHubで、入力済みの「{{template}}」フォームを開きます。そこで送信するまで、何も送信されません。",
+    "issueTitle": "タイトル",
+    "include": "{{field}}を含める",
+    "privacy": "ここに記載された内容のみが送信されます。トークン、Cookie、環境変数の値、メールアドレス、クエリ文字列は含まれません。",
+    "count": "{{used}}文字(上限{{max}}文字)",
+    "cancel": "キャンセル",
+    "open": "GitHubで開く",
+    "templates": {
+      "bug_report": "バグ報告",
+      "docs_problem": "ドキュメントの問題",
+      "migration_problem": "移行の問題",
+      "feature_request": "機能のリクエスト",
+      "template_request": "テンプレートのリクエスト"
+    },
+    "fields": {
+      "version": "ダッシュボードのバージョン",
+      "component": "コンポーネント",
+      "actual": "発生した内容",
+      "context": "環境",
+      "page": "ドキュメントのページ",
+      "problem": "誤っている点または不足している点",
+      "failed": "失敗した内容",
+      "config": "ソースの設定",
+      "solution": "提案する動作",
+      "service": "サービス名",
+      "upstream": "アップストリームのリンク",
+      "ports": "ポート"
+    }
+  },
+  "kit": {
+    "jumpTo": "移動先",
+    "onThisPage": "このページの内容",
+    "retry": "再試行"
+  },
+  "roleGate": {
+    "needsAdmin": "管理者権限が必要",
+    "needsOperator": "オペレーター権限が必要"
+  },
+  "overview": {
+    "connectGitSource": "Gitソースを接続"
+  },
+  "a11y": {
+    "routeNotFound": {
+      "title": "ページが見つかりません",
+      "body": "このアドレスに一致するページがありません。移動したか、リンクが古い可能性があります。",
+      "suggestions": "名前の似たページ",
+      "home": "ダッシュボードに戻る"
+    },
+    "tables": {
+      "alertHistory": "アラート履歴",
+      "appExposure": "公開ポート",
+      "appReplicas": "アプリのレプリカ",
+      "archiveFiles": "アーカイブファイル",
+      "dnsRecords": "DNSレコード",
+      "importEnv": "インポートした環境変数",
+      "investigationMetrics": "調査メトリクス",
+      "investigationEvents": "調査イベント",
+      "modelUsage": "モデルの使用量",
+      "pipelineInsights": "パイプラインのインサイト",
+      "pipelineSlowSteps": "最も遅いパイプラインのステップ",
+      "splitTests": "スプリットテストのバリアント",
+      "statusWebhooks": "ステータスページのWebhook",
+      "myAccess": "自分のアクセス権",
+      "agentConnect": "エージェント接続",
+      "aiUsage": "AIの使用量",
+      "appAnalysis": "アプリ分析",
+      "vitalsRoutes": "ルート別のWeb Vitals",
+      "cleanupHistory": "クリーンアップ履歴",
+      "engineStats": "データベースエンジンの統計",
+      "buildReport": "ビルドレポート",
+      "dnsDelegation": "DNS委任",
+      "dnsPropagation": "DNS伝播の結果",
+      "redirects": "リダイレクト",
+      "serverAddresses": "サーバーのアドレス",
+      "exposure": "公開状況",
+      "firewallPorts": "開放ポート",
+      "functionKv": "関数のキーバリューエントリ",
+      "mailQueue": "メールキュー",
+      "importPlan": "インポート計画",
+      "importPlanServices": "インポート計画のサービス",
+      "nodePatches": "ノードのパッチ",
+      "pluginPanel": "プラグインのデータ",
+      "plugins": "プラグイン",
+      "trustedKeys": "信頼済みの署名キー",
+      "findingChanges": "提案された変更",
+      "benchmarkCompare": "ベンチマークの比較",
+      "benchmarkResults": "ベンチマークの結果",
+      "benchmarkSteps": "ベンチマークのステップ",
+      "benchmarkSamples": "ベンチマークのサンプル",
+      "benchmarkRuns": "ベンチマークの実行",
+      "trafficDiff": "トラフィック変更のプレビュー",
+      "trafficTopPaths": "上位のパス",
+      "trafficBreakdown": "トラフィックの内訳",
+      "trafficErrors": "トラフィックのエラー",
+      "firewallRules": "ファイアウォールルール",
+      "mobileDevices": "モバイルデバイス"
+    }
+  },
+  "resourceNotes": {
+    "title": "説明とメモ",
+    "hint": "オーナー、目的、運用手順書へのリンクを記録します。Markdownに対応しています。",
+    "empty": "説明やメモはまだありません。",
+    "edit": "メモを編集",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "一覧に表示される1行の概要",
+    "notesLabel": "メモ",
+    "notesPlaceholder": "オーナー、目的、運用手順書へのリンク",
+    "preview": "プレビュー",
+    "write": "書く",
+    "noSecrets": "このリソースを閲覧できる全員が、そのメモを読めます。シークレットは絶対に書かないでください。",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "saved": "メモを保存しました"
+  },
+  "copyCommand": {
+    "trigger": "{{name}}をコマンドとしてコピー",
+    "title": "コマンドとしてコピー",
+    "cli": "{{action}}: CLIコマンド",
+    "api": "{{action}}: API呼び出し",
+    "copiedCli": "CLIコマンドをコピーしました",
+    "copiedApi": "API呼び出しをコピーしました。先にトークン変数を設定してください",
+    "actions": {
+      "app_restart": "再起動",
+      "app_stop": "停止",
+      "app_start": "開始",
+      "app_scale": "スケール",
+      "app_rollback": "ロールバック",
+      "deploy_rollback": "このデプロイにロールバック",
+      "database_start": "開始",
+      "database_stop": "停止",
+      "database_backup": "今すぐバックアップ",
+      "domain_check": "検証",
+      "domain_remove": "削除",
+      "cert_renew": "証明書を更新",
+      "job_run": "今すぐ実行",
+      "node_cordon": "コードン",
+      "node_uncordon": "アンコードン"
+    }
+  }
+}

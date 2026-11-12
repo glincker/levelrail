@@ -1,0 +1,96 @@
+{
+  "title": "ルーティングルール",
+  "description": "このサイトが公開されたときのリダイレクト、リライト、ヘッダーです。公開ディレクトリの_redirectsおよび_headersファイルと、app.yamlから読み込まれ、デプロイしたときにのみ変更されます。",
+  "loadFailed": "ルーティングルールを読み込めませんでした。",
+  "retry": "再試行",
+  "notStatic": {
+    "title": "このアプリは静的サイトではありません",
+    "description": "ルーティングルールは build.type: static でビルドされたアプリに適用されます。コンテナアプリは、ドメインページのトラフィック制御を使用します。"
+  },
+  "notPublished": {
+    "title": "ルーティングルールの導入前に公開されました",
+    "description": "_redirects、_headers、SPA、クリーンURL、404のオプションを有効にするには、このサイトを再度デプロイしてください。何も失われません。サイトは引き続き従来どおりファイルを提供します。"
+  },
+  "options": {
+    "title": "配信オプション",
+    "spa": "シングルページアプリのフォールバック",
+    "cleanUrls": "クリーンURL",
+    "trailingSlash": "末尾のスラッシュ",
+    "notFound": "404ページ",
+    "on": "オン",
+    "off": "オフ",
+    "slashOff": "リクエストのまま",
+    "slashAdd": "常に追加",
+    "slashRemove": "常に削除",
+    "defaultNotFound": "存在する場合は404.html"
+  },
+  "precedence": {
+    "title": "評価の順序",
+    "body": "まずルールが順に実行され、最初に一致したものが優先されます。リクエストされたパスにファイルが存在する場合、!で強制しない限りルールはスキップされます。その次にファイルが配信され、続いてシングルページアプリのフォールバック、最後に404ページの順です。"
+  },
+  "rules": {
+    "title": "リダイレクトとリライト",
+    "label": "リダイレクトとリライトのルール",
+    "from": "元",
+    "to": "先",
+    "status": "ステータス",
+    "source": "定義元",
+    "forced": "強制",
+    "kindRewrite": "リライト",
+    "kindRedirect": "リダイレクト",
+    "kindPage": "ページ",
+    "empty": {
+      "title": "リダイレクトやリライトのルールはありません",
+      "description": "公開ディレクトリに_redirectsファイルを追加するか、app.yamlにroutesリストを追加して、デプロイしてください。"
+    }
+  },
+  "headers": {
+    "title": "レスポンスヘッダー",
+    "label": "ヘッダールール",
+    "path": "パス",
+    "set": "設定",
+    "remove": "削除",
+    "source": "定義元",
+    "empty": {
+      "title": "ヘッダールールはありません",
+      "description": "公開ディレクトリに_headersファイルを追加するか、app.yamlにheadersリストを追加して、デプロイしてください。"
+    }
+  },
+  "problems": {
+    "title": "このデプロイの公開時に見つかった問題",
+    "description": "これらの行はスキップされ、適用されていません。リポジトリで修正して、再度デプロイしてください。",
+    "line": "{{line}}行目",
+    "none": "問題は見つかりませんでした。"
+  },
+  "test": {
+    "title": "URLをテスト",
+    "description": "現在のルールとファイルに対してリクエストを実行し、どれが応答するかを確認します。",
+    "pathLabel": "パス",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "クエリ文字列",
+    "queryPlaceholder": "id=42",
+    "run": "テスト",
+    "running": "テスト中",
+    "result": "結果",
+    "redirectTo": "{{target}}へリダイレクトします",
+    "serves": "{{file}}を配信します",
+    "plain": "ページなしのプレーンなレスポンス",
+    "matchedRule": "ルール: {{rule}}",
+    "noRule": "一致するルールはなく、ファイルとオプションが応答しました",
+    "trace": "ステップ",
+    "headersApplied": "追加されたヘッダー",
+    "invalidPath": "/で始まるパスを入力してください",
+    "failed": "テストを実行できませんでした。"
+  },
+  "lint": {
+    "title": "デプロイ前にルールを確認",
+    "description": "_redirectsまたは_headersファイルの内容を貼り付けて、解析結果を確認します。デプロイは行われません。",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "確認",
+    "running": "確認中",
+    "ok": "ルール{{rules}}件とヘッダーブロック{{headers}}件を問題なく解析しました。",
+    "withProblems": "ルール{{rules}}件とヘッダーブロック{{headers}}件を解析し、{{problems}}行をスキップしました。",
+    "failed": "確認を実行できませんでした。"
+  }
+}

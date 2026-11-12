@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "pinned": "ピン留め",
+    "recentlyViewed": "最近表示したページ",
+    "troubleshooting": "トラブルシューティング",
+    "allPages": "すべてのページ",
+    "docsSite": "ドキュメントサイト"
+  },
+  "pin": {
+    "label": "ページをピン留め",
+    "tooltip": "このページをお気に入りにピン留めします"
+  },
+  "unpin": {
+    "label": "ピン留めを解除",
+    "tooltip": "このページをお気に入りから外します"
+  },
+  "filter": {
+    "troubleshootingOnly": "トラブルシューティング"
+  },
+  "toolbar": {
+    "export": "エクスポート",
+    "copyMarkdown": "ページをMarkdownでコピー",
+    "viewSourceGitHub": "GitHubでソースを表示",
+    "openDocsSite": "ドキュメントサイトで開く",
+    "copied": "コピーしました"
+  },
+  "offlineNotice": {
+    "title": "オフラインコピー",
+    "description": "これはインターネットに接続できないときのために、サーバーに組み込まれているオフラインコピーです。このページの最新版はドキュメントサイトにあります。",
+    "dismiss": "閉じる"
+  },
+  "toc": {
+    "title": "このページの内容"
+  },
+  "code": {
+    "copy": "コピー",
+    "copied": "コピーしました"
+  }
+}

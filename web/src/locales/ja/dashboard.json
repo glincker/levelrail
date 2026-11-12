@@ -1,0 +1,314 @@
+{
+  "needsAttention": {
+    "askAi": "AIに質問",
+    "review": "確認",
+    "retryCopy": "コピーを再試行",
+    "openDatabase": "データベースを開く"
+  },
+  "fleet": {
+    "reserved": {
+      "title": "予約量と使用量",
+      "subtitle": "実行中の {{active}} 件のアプリとデータベース(レプリカを含む)に設定された上限です。停止中の {{suspended}} 件は含まれません。",
+      "cpu": "CPU",
+      "memory": "メモリ",
+      "cores_other": "コア",
+      "reserved": "予約済み",
+      "used": "現在の使用量",
+      "capacity": "容量",
+      "unknown": "未報告",
+      "cpuCapacityScope": "CPU容量はコントロールプレーンノードのコア数です。",
+      "capacityPartial": "{{total}} 台中 {{known}} 台のノードが容量を報告しています。",
+      "reservedBar": "{{resource}}の予約量",
+      "usedBar": "{{resource}}の使用量",
+      "verdict": {
+        "overCommitted": "{{amount}} オーバーコミットしています",
+        "idle": "予約済みですが未使用です",
+        "headroom": "十分な余裕があります",
+        "noLimits": "上限が設定されていません",
+        "unknownCapacity": "容量が完全には報告されていません"
+      },
+      "noLimit": {
+        "cpu_other": "{{count}} 個のコンテナにCPU上限がなく、集計に含まれていません。",
+        "memory_other": "{{count}} 個のコンテナにメモリ上限がなく、集計に含まれていません。"
+      },
+      "breakdown": "グループ別の予約量",
+      "groupBy": "グループ化",
+      "by": {
+        "project": "プロジェクト",
+        "environment": "環境"
+      },
+      "colReserved": "予約済み",
+      "colUsed": "使用中",
+      "pairHint": "CPUコア数 / メモリ。",
+      "unsetInGroup_other": "上限なし {{count}} 件",
+      "noProject": "プロジェクトなし",
+      "noEnvironment": "環境なし",
+      "topReservers": "予約量の多いリソース",
+      "noReservers": "上限が設定されているリソースはまだありません。",
+      "kind": {
+        "app": "アプリ",
+        "database": "データベース"
+      }
+    },
+    "storage": {
+      "title": "ストレージ",
+      "scope": "ボリュームのサイズはコントロールプレーンノードのものです。バックアップのサイズはすべてのノードを対象とします。",
+      "databaseVolumes": "データベースのボリューム",
+      "appVolumes": "アプリのボリューム",
+      "unknownSizes_other": "サイズ不明のボリューム {{count}} 件",
+      "backups": "保存済みバックアップ",
+      "backupCount_other": "バックアップ {{count}} 件",
+      "total": "合計",
+      "totalHint": "ボリュームとバックアップの合計です。",
+      "largestVolumes": "サイズの大きいボリューム",
+      "largestBackups": "サイズの大きいバックアップセット",
+      "noVolumes": "報告されたボリュームサイズはありません。",
+      "notReported": "サイズは未報告です。",
+      "noBackups": "成功したバックアップはまだありません。"
+    }
+  },
+  "status": {
+    "ok": "すべて正常です",
+    "incidents_other": "インシデント {{count}} 件"
+  },
+  "tiles": {
+    "appsRunning": "実行中のアプリ",
+    "requests": "リクエスト",
+    "errorRate": "エラー率",
+    "noTraffic": "トラフィックなし",
+    "deploys24h": "24時間のデプロイ",
+    "nodesOnline": "オンラインのノード",
+    "lastHour": "直近1時間、全アプリ。",
+    "addDomain": "ドメインを追加",
+    "deployApp": "アプリをデプロイ",
+    "idle": "アイドル"
+  },
+  "resources": {
+    "title": "リソース",
+    "controlPlane": "コントロールプレーン",
+    "cpu": "CPU",
+    "memory": "メモリ",
+    "disk": "ディスク",
+    "cpuOfCores": "{{cores}} コア中 {{percent}}%",
+    "cpuContainers": "コンテナ全体で {{percent}}%",
+    "noReadings": "このノードからのホストの測定値はまだありません。",
+    "memoryBreakdown": "メモリの内訳",
+    "segment": {
+      "levelrail": "{{brand}}",
+      "apps": "アプリ",
+      "databases": "データベース",
+      "other": "その他のコンテナ",
+      "system": "システム",
+      "free": "空き"
+    },
+    "segmentHelp": {
+      "levelrail": "コントロールプレーンとノードエージェント",
+      "apps": "デプロイ済みアプリのコンテナ",
+      "databases": "管理対象データベースのコンテナ",
+      "other": "このサーバー上で実行中ですが、{{brand}}では管理されていません",
+      "system": "カーネル、ページキャッシュ、その他のプロセス",
+      "free": "まだ利用可能なメモリ"
+    },
+    "notManaged": "{{brand}}の管理対象外",
+    "topConsumers": "消費量の多いもの",
+    "sortBy": "並べ替え",
+    "sort": {
+      "memory": "メモリ",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "アプリ",
+      "database": "データベース",
+      "other": "コンテナ"
+    },
+    "requestTrend": "{{name}} のリクエスト推移",
+    "viewAll_other": "{{count}} 件すべてを表示",
+    "showLess": "表示を減らす",
+    "databasesLine_other": "データベース {{count}} 件"
+  },
+  "recommendations": {
+    "line_other": "おすすめ {{count}} 件"
+  },
+  "usageDetails": {
+    "title": "使用状況の詳細"
+  },
+  "hero": {
+    "title": "ダッシュボード"
+  },
+  "banners": {
+    "httpsTitle": "このダッシュボードは暗号化されていないHTTPで提供されています",
+    "httpsDetail": "パスワードとセッションが暗号化されずに送信されます。DNSは不要で、ワンクリックでHTTPSを有効にできます。",
+    "httpsAction": "HTTPSを有効化",
+    "doctorTitle_other": "Doctorが {{count}} 件の問題を検出しました",
+    "doctorDetail": "それぞれに修正方法または次の手順があります。",
+    "doctorAction": "Doctorを開く",
+    "nodesTitle_other": "{{count}} 台のノードがオフラインです",
+    "nodesDetail": "オフラインのノード上のアプリは動作し続けますが、変更はできず、メッシュのイングレスも停止しています。",
+    "nodesAction": "ノードを表示"
+  },
+  "nextSteps": {
+    "title": "おすすめの次のステップ",
+    "seeAll": "ステータスページ",
+    "continue": "続ける",
+    "setupProgress": "セットアップ {{percent}}% 完了",
+    "quiet": "対応が必要なものはありません。{{total}} 件中 {{running}} 件のアプリが実行中で、直近24時間のデプロイは {{deploys}} 件です。",
+    "group": {
+      "copy_other": "{{count}} 件のデータベースでデータコピーに失敗しました",
+      "show_other": "{{count}} 件すべてを表示",
+      "hide": "隠す"
+    },
+    "review": "確認"
+  },
+  "deploys": {
+    "title": "最近のデプロイ",
+    "empty": "デプロイはまだありません。接続したリポジトリにpushすると、ここに表示されます。",
+    "emptyScoped": "このスコープのアプリのデプロイはまだありません。",
+    "status": {
+      "succeeded": "デプロイ済み",
+      "failed": "失敗",
+      "running": "デプロイ中",
+      "held": "保留中",
+      "awaiting_approval": "承認待ち",
+      "superseded": "置き換え済み",
+      "queued": "待機中",
+      "canceled": "キャンセル済み",
+      "pending": "ノードの復帰まで待機中"
+    }
+  },
+  "strip": {
+    "nodeOffline_other": "{{count}} 台のノードがオフラインです: {{names}}",
+    "nodeOfflineSince": "から",
+    "nodeOfflineView": "ノードを表示",
+    "ok_other": "全 {{count}} 件のアプリが正常です",
+    "issues_other": "対応が必要な項目が {{count}} 件あります",
+    "causes_other": "{{causes}} 件の根本原因による {{count}} 件の問題",
+    "details": "詳細",
+    "notices_other": "お知らせ {{count}} 件",
+    "showSnoozed_other": "スヌーズ中の {{count}} 件を表示"
+  },
+  "scope": {
+    "label": "{{name}} を表示中",
+    "clear": "スコープを解除してすべてのプロジェクトを表示",
+    "allProjects": "すべてのプロジェクト",
+    "instanceWide": "すべてのプロジェクト",
+    "instanceWideHint": "インスタンス全体の値です。選択したプロジェクトや環境では絞り込まれません。"
+  },
+  "apps": {
+    "title": "アプリ",
+    "search": "アプリを検索",
+    "none": "一致するアプリはありません。",
+    "emptyScopedTitle": "{{scope}} にはまだアプリがありません",
+    "emptyScopedBody": "ここでデプロイするとこのスコープに表示されます。すべてを表示するには、すべてのプロジェクトに切り替えてください。",
+    "emptyScopedClear": "すべてのプロジェクトを表示",
+    "viewAll": "{{count}} 件すべてを表示",
+    "view": {
+      "grid": "グリッド表示",
+      "list": "リスト表示"
+    }
+  },
+  "widgets": {
+    "attention": "要対応",
+    "apps": "アプリ",
+    "activity": "最近のデプロイ",
+    "fleet": "フリート",
+    "resources": "リソース",
+    "advisor": "リソースアドバイザー",
+    "alerts": "最近のアラート",
+    "usage": "使用状況の詳細"
+  },
+  "customize": {
+    "edit": "カスタマイズ",
+    "done": "完了",
+    "reset": "レイアウトをリセット",
+    "show": "{{name}} を表示",
+    "moveUp": "{{name}} を上へ移動",
+    "moveDown": "{{name}} を下へ移動",
+    "hide": "{{name}} を非表示"
+  },
+  "newApp": {
+    "label": "新規アプリ",
+    "more": "その他のデプロイ方法",
+    "items": {
+      "git": {
+        "title": "Gitリポジトリから",
+        "hint": "pushのたびにビルドしてデプロイします"
+      },
+      "image": {
+        "title": "Dockerイメージから",
+        "hint": "ビルド済みのイメージをプルします"
+      },
+      "template": {
+        "title": "テンプレートから",
+        "hint": "n8n、Uptime Kuma、MinIOなど"
+      },
+      "compose": {
+        "title": "Docker Composeから",
+        "hint": "ファイル内のすべてのサービスをデプロイします"
+      },
+      "database": {
+        "title": "データベース",
+        "hint": "Postgres、MySQL、Redisなど"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "{{name}} へのコピーを再試行",
+    "description": "前回のソースが入力されています。パスワードをもう一度入力してください。パスワードは保存されません。ソースが暗号化を必須とする場合、コピーは自動的にTLSで再試行されます。",
+    "loading": "前回の試行を読み込み中...",
+    "missing": "このデータベースには再試行できるコピーがありません。"
+  },
+  "snooze": {
+    "label": "1日スヌーズ",
+    "done_other": "{{count}} 件を1日スヌーズしました。",
+    "undo": "元に戻す"
+  },
+  "tabs": {
+    "label": "ダッシュボードのビュー",
+    "start": "スタート",
+    "metrics": "メトリクス",
+    "more": "その他のビュー",
+    "hiddenSuffix": "{{name}}(非表示)",
+    "addTitle": "新規ダッシュボード",
+    "addDescription": "既成のダッシュボードから始めるか、空のダッシュボードから始めます。",
+    "empty": "空のダッシュボード",
+    "metricsNote": "フリート全体の合計です。カスタマイズして自分用のコピーを作成できます。",
+    "customize": "カスタマイズ",
+    "emptyName": "無題のダッシュボード",
+    "metricsEmptyTitle": "メトリクスはまだありません",
+    "metricsEmptyBody": "最初のアプリが実行されるとメトリクスが表示されます。アプリをデプロイすると、CPU、メモリ、トラフィックがここに表示されます。",
+    "metricsEmptyAction": "最初のアプリをデプロイ"
+  },
+  "manage": {
+    "label": "管理",
+    "new": "新規ボード",
+    "starter": "スターターから新規作成",
+    "import": "JSONをインポート",
+    "importFile": "ダッシュボードのJSONファイル",
+    "edit": "ボードを編集",
+    "doneEditing": "編集を終了",
+    "rename": "名前を変更",
+    "renameTitle": "ボードの名前を変更",
+    "name": "名前",
+    "export": "JSONをエクスポート",
+    "delete": "削除",
+    "deleteTitle": "{{name}} を削除しますか?",
+    "deleteBody": "このボードは、閲覧できるすべてのユーザーから削除されます。エクスポート済みのJSONファイルには影響しません。",
+    "cancel": "キャンセル",
+    "save": "保存"
+  },
+  "updateStrip": {
+    "label": "アップデートがあります",
+    "to": "から",
+    "behind_other": "{{count}} リリース遅れ",
+    "security": "セキュリティ修正を含みます",
+    "whatsNew": "新機能",
+    "update": "アップデート",
+    "dismiss": "次のリリースまで {{version}} を非表示"
+  },
+  "restoreDue": {
+    "title": "リストアをテスト",
+    "body": "バックアップはありますが、リストアはまだテストされていません。一度もリストアしていないバックアップは、当てにできません。",
+    "action": "リストアをテスト",
+    "dismiss": "閉じる"
+  }
+}

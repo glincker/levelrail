@@ -1,0 +1,19 @@
+{
+  "title": "Web Vitals",
+  "collect": "収集",
+  "errorTitle": "Web Vitalsの更新に失敗しました",
+  "snippetHint": "このタグをサイトに追加してください。実際の訪問から LCP、INP、CLS、TTFB、FCP を送信します。Cookie も IP アドレスも使用しません。",
+  "copySnippet": "スニペットをコピー",
+  "copied": "コピーしました",
+  "createKey": "ビーコンキーを作成",
+  "rotateKey": "キーをローテーション",
+  "emptyDisabled": "収集をオンにしてスニペットを追加すると、実際の訪問者がこのアプリをどう体験しているかを確認できます。",
+  "emptyEnabled": "まだデータがありません。スニペットを設置したサイトにアクセスすると、結果がここに表示されます。",
+  "p75Label": "{{metric}} p75",
+  "route": "ルート",
+  "windowNote": "過去{{days}}日間のp75です。",
+  "routesTitle": "ルート別のWeb Vitals",
+  "viewAllRoutes": "すべてのルートを表示({{count}})",
+  "samples": "サンプル数",
+  "legend": "標準のCore Web Vitalsしきい値に基づき、緑は良好、黄は要改善、赤は不良です。"
+}

@@ -1,0 +1,116 @@
+{
+  "title": "デプロイタイムライン",
+  "subtitle": "すべてのアプリのデプロイを1つの時間軸で表示します。実行中のデプロイはリアルタイムで更新されます。",
+  "zoom": {
+    "label": "時間範囲",
+    "1h": "1時間",
+    "24h": "24時間",
+    "7d": "7日間"
+  },
+  "filters": {
+    "label": "フィルター",
+    "app": "アプリ",
+    "allApps": "すべてのアプリ",
+    "project": "プロジェクト",
+    "allProjects": "すべてのプロジェクト",
+    "node": "ノード",
+    "allNodes": "すべてのノード",
+    "status": "ステータス",
+    "allStatuses": "すべてのステータス",
+    "clear": "フィルターをクリア"
+  },
+  "status": {
+    "building": "ビルド中",
+    "queued": "待機中",
+    "ready": "準備完了",
+    "failed": "失敗",
+    "canceled": "キャンセル済み",
+    "held": "保留中",
+    "awaiting_approval": "承認待ち",
+    "rolled_back": "ロールバック済み",
+    "superseded": "置き換え済み"
+  },
+  "stream": {
+    "connecting": "接続中",
+    "live": "ライブ",
+    "reconnecting": "再接続中"
+  },
+  "legend": {
+    "label": "凡例",
+    "ready": "準備完了",
+    "building": "進行中",
+    "failed": "失敗",
+    "rolledBack": "ロールバック済み",
+    "canceled": "キャンセル済み",
+    "alert": "アラート発生",
+    "now": "現在"
+  },
+  "chart": {
+    "label": "選択した時間範囲のアプリ別デプロイ",
+    "laneLabel": "{{app}}、デプロイ{{count}}件",
+    "barLabel": "{{app}}、{{status}}、開始 {{when}}、{{duration}}。デプロイの詳細を開きます。",
+    "axisLabel": "時間軸",
+    "alertLabel": "アラート発生: {{rule}}、{{when}}",
+    "clusterLabel": "{{app}}で近接した{{count}}件のデプロイ。各デプロイを表示します。",
+    "clusterChip": "+{{count}}",
+    "collapse": "グループ化したデプロイを折りたたむ",
+    "now": "現在",
+    "latest": "最新のデプロイ: {{status}}",
+    "unknownProject": "プロジェクトなし"
+  },
+  "card": {
+    "title": "デプロイの詳細",
+    "commit": "コミット",
+    "noCommit": "コミットなし",
+    "actor": "実行者",
+    "unknownActor": "不明",
+    "duration": "所要時間",
+    "running": "実行中",
+    "strategy": "戦略",
+    "noStrategy": "記録なし",
+    "trigger": "トリガー",
+    "environment": "環境",
+    "rollbackOf": "{{id}}にロールバックします",
+    "open": "デプロイを開く"
+  },
+  "empty": {
+    "title": "この範囲にデプロイはありません",
+    "body": "これらのフィルターでは、過去{{range}}にデプロイはありませんでした。範囲を広げるか、フィルターをクリアしてください。",
+    "action": "7日間を表示",
+    "sampleLabel": "サンプルのタイムライン"
+  },
+  "error": {
+    "title": "デプロイタイムラインを読み込めませんでした",
+    "retry": "再試行"
+  },
+  "loading": "デプロイを読み込み中",
+  "more": {
+    "label": "以前のデプロイを読み込む",
+    "loading": "読み込み中",
+    "failed": "デプロイをさらに読み込めませんでした。もう一度お試しください。"
+  },
+  "count": "{{apps}}個のアプリにわたるデプロイ{{deploys}}件",
+  "banner": {
+    "description": "アプリごとのすべてのデプロイを、失敗やロールバックの印付きで時系列表示します。アプリをデプロイすると、そのレーンがここに表示されます。"
+  },
+  "appHistory": {
+    "title": "履歴",
+    "managedBy": "スタック{{stack}}で管理",
+    "kind": {
+      "deploy": "デプロイ",
+      "rollback": "ロールバック",
+      "restart": "再起動"
+    },
+    "status": {
+      "running": "実行中",
+      "succeeded": "成功",
+      "failed": "失敗",
+      "held": "保留中",
+      "awaiting_approval": "承認待ち",
+      "superseded": "置き換え済み",
+      "queued": "待機中",
+      "canceled": "キャンセル済み",
+      "pending": "保留"
+    }
+  }
+}
