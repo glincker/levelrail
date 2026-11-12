@@ -3,13 +3,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { appListQueryOptions } from '../../queries/apps'
 import type { PaletteItem } from '../commandPaletteData'
+import { shortcutLabel } from '@/lib/platform'
 import { Kbd } from '../commandPaletteEntries'
 import { pageText } from './usePreviewHasContent'
 
 export const PREVIEW_ID = 'command-palette-preview'
 const KEY_ENTER = 'Enter'
 const KEY_TAB = 'Tab'
-const KEY_ALT = 'Alt+'
 
 interface Props {
   item: PaletteItem | undefined
@@ -111,7 +111,7 @@ export function PalettePreview({ item, onRun, onSecondary }: Props) {
                 onClick={a.run}
               >
                 {a.label}
-                <Kbd>{`${KEY_ALT}${a.shortcut}`}</Kbd>
+                <Kbd>{shortcutLabel('alt', a.shortcut)}</Kbd>
               </Button>
             ))}
           </div>

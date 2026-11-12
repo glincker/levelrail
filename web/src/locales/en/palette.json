@@ -85,7 +85,8 @@
     "navigate": "navigate",
     "select": "select",
     "secondary": "alt action",
-    "close": "close"
+    "close": "close",
+    "groups": "groups"
   },
   "keyboardShortcuts": "Keyboard shortcuts",
   "keyboardShortcutsKeywords": "quick navigation hold l go to",

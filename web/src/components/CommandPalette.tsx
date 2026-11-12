@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   isRecentEligible,
   loadRecentKeys,
@@ -40,6 +41,7 @@ import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
 
 // Below this width the preview pane drops out and the list is the only column.
 const PREVIEW_QUERY = '(min-width: 768px)'
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
 // Command palette: Cmd+K (Mac) / Ctrl+K (elsewhere) opens it from anywhere
 // in the app shell. `open` can also be driven externally (__root.tsx's
@@ -230,6 +232,11 @@ export function CommandPalette({
     ps.text !== '' ||
     ps.chips.length > 0
   const layered = panelOpen
+  // Keep the panel mounted until its exit animation ends so it slides away instead of vanishing.
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY)
+  const [exited, setExited] = React.useState(true)
+  if (panelOpen && exited) setExited(false)
+  const panelVisible = panelOpen || (!exited && !reducedMotion)
 
   function dropLayer() {
     if (pending) setPending(null)
@@ -406,9 +413,9 @@ export function CommandPalette({
                   </button>
                 ) : null}
               </div>
-              {panelOpen ? null : <RecentBubbles bubbles={bubbles} />}
+              <RecentBubbles bubbles={bubbles} query={ps.text} />
             </div>
-            {panelOpen ? null : (
+            {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 opacity-0 transition-opacity duration-200 group-focus-within/pal:opacity-100 motion-reduce:transition-none">
                 <ModePills
                   active={parseMode(ps.text)?.kind ?? null}
@@ -435,17 +442,26 @@ export function CommandPalette({
                   </button>
                 ) : null}
               </div>
-            )}
+            }
           </div>
           <p role="status" aria-live="polite" className="sr-only">
             {panelOpen && !loading
               ? t('resultCount', { count: results.length })
               : ''}
           </p>
-          {panelOpen ? (
+          {panelVisible ? (
             <div
               data-slot="command-palette-panel"
-              className="banner-edge relative flex min-h-0 flex-col overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 palette-panel"
+              inert={!panelOpen}
+              onAnimationEnd={() => {
+                if (!panelOpen) setExited(true)
+              }}
+              className={cn(
+                'banner-edge relative flex min-h-0 flex-col overflow-hidden rounded-3xl motion-safe:duration-200 motion-safe:ease-out motion-safe:fill-mode-forwards palette-panel',
+                panelOpen
+                  ? 'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2'
+                  : 'motion-safe:animate-out motion-safe:fade-out-0 motion-safe:slide-out-to-top-2',
+              )}
             >
               {pending ? (
                 <div

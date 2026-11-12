@@ -23,13 +23,19 @@
   "clearInput": "Borrar búsqueda",
   "resultCount_one": "{{count}} resultado",
   "resultCount_other": "{{count}} resultados",
-  "bubbles": { "label": "Enlaces rápidos" },
-  "hints": { "label": "Modos de búsqueda", "clear": "Borrar historial" },
+  "bubbles": {
+    "label": "Enlaces rápidos"
+  },
+  "hints": {
+    "label": "Modos de búsqueda",
+    "clear": "Borrar historial"
+  },
   "footer": {
     "navigate": "navegar",
     "select": "elegir",
     "secondary": "acción alternativa",
-    "close": "cerrar"
+    "close": "cerrar",
+    "groups": "grupos"
   },
   "preview": {
     "logs": "Registros",
