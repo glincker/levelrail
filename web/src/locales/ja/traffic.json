@@ -1,0 +1,200 @@
+{
+  "status": {
+    "loading": "ステータスを読み込み中",
+    "label": {
+      "live": "公開中",
+      "going_live": "公開準備中",
+      "propagating": "反映中",
+      "waiting_for_dns": "DNS待ち",
+      "handled_by_proxy": "お使いのプロキシで処理",
+      "needs_attention": "要対応",
+      "expiring_soon": "まもなく期限切れ",
+      "paused": "一時停止中",
+      "not_set_up": "未設定"
+    },
+    "reason": {
+      "runInProgress": "Levelrailがこのドメインを設定しています。",
+      "maintenance": "メンテナンスモードがオンのため、訪問者にはメンテナンスページが表示されます。",
+      "certExpired": "証明書の有効期限が切れています。",
+      "renewalStalled": "証明書が更新されていません。",
+      "acmeFailure": "認証局が証明書を発行できませんでした。",
+      "resolvesElsewhere": "このドメインは、別のサーバーを指しています。",
+      "routeError": "このドメインのルートを書き込めませんでした。",
+      "externalProxy": "このドメインはお使いのプロキシが配信しているため、Levelrailは証明書を確認しません。",
+      "routeMissing": "このドメインへのトラフィックをアプリに送るルートが、まだありません。",
+      "unconfigured": "このドメインには、まだ何も設定されていません。",
+      "noCheck": "このドメインは、まだ確認されていません。",
+      "notResolving": "DNSプロバイダーで、以下のレコードを追加してください。このページは自動で再確認します。",
+      "propagating": "レコードは存在します。一部のリゾルバーにはまだ反映されておらず、最大で数時間かかることがあります。",
+      "gettingCertificate": "証明書を取得しています。",
+      "certExpiring": "証明書がまもなく期限切れになりますが、正常に更新されていません。",
+      "live": "このドメインは、HTTPSでアプリに到達します。",
+      "livePrivate": "このドメインは、プライベート証明書でアプリに到達します。"
+    },
+    "action": {
+      "open_site": "サイトを開く",
+      "view_progress": "進捗を見る",
+      "check_again": "再確認",
+      "show_record": "レコードを表示",
+      "show_proxy_setup": "プロキシの設定を表示",
+      "fix": "修正する",
+      "renew": "今すぐ更新",
+      "turn_off": "オフにする",
+      "set_up": "設定"
+    }
+  },
+  "age": {
+    "seconds": "{{count}}秒",
+    "minutes": "{{count}}分",
+    "hours": "{{count}}時間",
+    "days": "{{count}}日"
+  },
+  "steps": {
+    "state": {
+      "todo": "未着手",
+      "active": "進行中",
+      "done": "完了",
+      "failed": "失敗",
+      "skipped": "スキップ"
+    },
+    "position": "ステップ{{current}}/{{total}}、{{state}}"
+  },
+  "copy": {
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copyLabel": "{{label}}をコピー",
+    "fallback": "選択したテキストをコピーするには、Ctrl+Cを押してください。"
+  },
+  "help": {
+    "why": "なぜ?",
+    "learnMore": "詳細を見る"
+  },
+  "confirm": {
+    "intro": "この操作では次のことが行われます:",
+    "cancel": "キャンセル",
+    "typeToConfirm": "確認のため{{name}}と入力してください",
+    "kind": {
+      "create": "作成",
+      "update": "更新",
+      "delete": "削除"
+    }
+  },
+  "diff": {
+    "setting": "設定",
+    "before": "変更前",
+    "after": "変更後",
+    "changed": "変更あり",
+    "showUnchanged_other": "変更のない{{count}}件を表示",
+    "hideUnchanged": "変更のない項目を隠す",
+    "empty": "変更はありません。",
+    "none": "なし"
+  },
+  "resolvers": {
+    "caption": "各リゾルバーの応答",
+    "resolver": "リゾルバー",
+    "answer": "応答",
+    "match": "一致",
+    "matches": "一致",
+    "different": "不一致",
+    "noAnswer": "応答なし",
+    "lastChecked": "{{age}}前に確認",
+    "checkedJustNow": "たった今確認しました",
+    "recheck": "再確認",
+    "checking": "確認中...",
+    "empty": "応答したリゾルバーはまだありません。"
+  },
+  "cert": {
+    "label": "証明書",
+    "none": "DNSがここを指すと、自動で発行されます。",
+    "issuing": "証明書を取得しています。",
+    "healthy_other": "Let's Encrypt、有効期限 {{date}}(あと{{count}}日)。自動で更新されます。",
+    "expiring_other": "有効期限 {{date}}(あと{{count}}日)。正常に更新されていません。",
+    "expired": "{{date}}に期限切れになりました。",
+    "stalled": "更新が止まっています。",
+    "internal": "プライベート証明書です。HTTPSを有効にすると信頼されます。",
+    "custom_other": "独自の証明書、有効期限 {{date}}(あと{{count}}日)。",
+    "customExpired": "独自の証明書、{{date}}に期限切れになりました。",
+    "renew": "今すぐ更新",
+    "useOwn": "独自の証明書を使う",
+    "replace": "置き換え",
+    "acme": {
+      "open_port_80": "Let's Encryptが、このサーバーの80番ポートに到達できませんでした。このサーバーの80番ポートを開放してください。",
+      "fix_dns": "Let's Encryptがこのドメインを見つけられませんでした。DNSをこのサーバーに向けてください。",
+      "wait_rate_limit": "Let's Encryptが、このドメインの発行を一時停止しました。後でもう一度試します。",
+      "fix_caa": "CAAレコードがLet's Encryptをブロックしています。letsencrypt.orgを許可するCAAレコードを追加してください。",
+      "other_proxy": "このサーバー上の別のプロキシが、証明書チェックに応答しました。そのプロキシにTLSを終端させるか、このサーバーに80番と443番ポートを割り当ててください。",
+      "check_logs": "Let's Encryptが証明書を発行できませんでした。イングレスのログを確認してください。"
+    }
+  },
+  "progress": {
+    "title": "{{domain}}を設定中",
+    "done": "{{domain}}は公開中です",
+    "failed": "{{domain}}の設定が完了しませんでした",
+    "elapsed": "経過 {{age}}",
+    "updated": "{{age}}前に更新",
+    "undo": "公開を取り消す",
+    "openSite": "サイトを開く",
+    "openDoctor": "診断を開く",
+    "retry": "再試行",
+    "dismiss": "閉じる"
+  },
+  "empty": {
+    "domains": {
+      "title": "最初のドメインを追加",
+      "description": "ドメインをアプリに向けると、LevelrailがDNS、HTTPS、ルートを設定します。",
+      "action": "ドメインを追加"
+    },
+    "noApps": {
+      "title": "先にアプリをデプロイしてください",
+      "description": "ドメインは、トラフィックをアプリに送ります。"
+    },
+    "search": {
+      "title": "「{{query}}」に一致するドメインはありません",
+      "action": "検索をクリア"
+    },
+    "zones": {
+      "title": "ゾーンを追加",
+      "description": "ゾーンを追加すると、LevelrailがDNSレコードを作成、修正できます。"
+    },
+    "soon": {
+      "title": "近日公開",
+      "description": "このページは開発中で、今後のリリースで表示されます。"
+    }
+  },
+  "nav": {
+    "traffic": "トラフィック",
+    "domains": "ドメイン",
+    "dns": "DNS",
+    "proxy": "プロキシ",
+    "apps": "アプリ",
+    "domainsAttention_other": "対応が必要なドメイン{{count}}件",
+    "dnsAttention_other": "委任されていないゾーン{{count}}件",
+    "proxyAttention_other": "エラーのあるルート{{count}}件"
+  },
+  "palette": {
+    "addDomain": "ドメインを追加",
+    "verify": "{{domain}}を検証",
+    "doctor": "{{domain}}の診断を開く",
+    "dnsRecordsFor": "{{domain}}のDNSレコード",
+    "domainSettings": "ドメイン設定",
+    "checked": "{{domain}}を確認しました: {{result}}",
+    "checkResult": {
+      "connected": "DNSがここを指しています",
+      "propagating": "反映中",
+      "not_resolving": "DNS待ち",
+      "resolves_elsewhere": "別のサーバーを指しています",
+      "unconfigured": "未設定"
+    }
+  },
+  "tab": {
+    "headers": "ヘッダー",
+    "forwarding": "転送",
+    "access": "アクセス",
+    "cache": "キャッシュ",
+    "ports": "ポート",
+    "redirects": "リダイレクト",
+    "activity": "アクティビティ",
+    "settings": "設定",
+    "add": "ゾーンを追加"
+  }
+}
