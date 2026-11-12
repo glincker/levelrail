@@ -1,0 +1,47 @@
+{
+  "title": "Arquivos",
+  "description": "Arquivos de configuração inline gravados no container ao iniciar. Arquivos secretos nunca são exibidos novamente depois de salvos.",
+  "empty": "Ainda sem arquivos inline.",
+  "emptyHint": "Adicione um arquivo para montá-lo no app durante o deploy.",
+  "add": "Adicionar arquivo",
+  "edit": "Editar {{path}}",
+  "delete": "Excluir {{path}}",
+  "redacted": "Oculto",
+  "secretBadge": "Segredo",
+  "size": "{{count}} bytes",
+  "loadError": "Não foi possível carregar os arquivos.",
+  "dialog": {
+    "addTitle": "Adicionar arquivo",
+    "editTitle": "Editar arquivo",
+    "description": "Salvo como um único arquivo dentro do container do app.",
+    "path": "Caminho",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "Modo",
+    "modePlaceholder": "0644",
+    "content": "Conteúdo",
+    "contentRedactedHint": "Este arquivo é secreto. Digite um novo conteúdo para substituí-lo.",
+    "secret": "Arquivo secreto",
+    "secretHelp": "O conteúdo secreto nunca é exibido novamente depois que você salva.",
+    "restart": "Reiniciar agora para aplicar",
+    "cancel": "Cancelar",
+    "save": "Salvar arquivo",
+    "saving": "Salvando..."
+  },
+  "validation": {
+    "path": "O caminho deve ser absoluto.",
+    "mode": "O modo deve ser octal, como 0644."
+  },
+  "deleteDialog": {
+    "title": "Excluir arquivo?",
+    "description": "{{path}} será removido do app.",
+    "restart": "Reiniciar agora para aplicar",
+    "confirm": "Excluir",
+    "deleting": "Excluindo..."
+  },
+  "toast": {
+    "saved": "Arquivo salvo.",
+    "saveFailed": "Não foi possível salvar o arquivo.",
+    "deleted": "Arquivo excluído.",
+    "deleteFailed": "Não foi possível excluir o arquivo."
+  }
+}

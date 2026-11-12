@@ -1,0 +1,29 @@
+{
+  "title": "Preset de framework",
+  "description": "Escolha seu framework para preencher a porta, o health check e o armazenamento de que ele precisa.",
+  "detected": "Detectado a partir do seu repositório",
+  "detectedShort": "Detectado",
+  "loadFailed": "Não foi possível carregar os presets de framework.",
+  "port": "Porta",
+  "healthPath": "Caminho de health",
+  "buildType": "Build",
+  "outputMode": "Saída",
+  "static": "Site estático, servido diretamente pelo servidor web integrado",
+  "envHints": "Variáveis de ambiente a definir",
+  "required": "obrigatória",
+  "volumes": "Armazenamento persistente",
+  "mismatchTitle": "As configurações diferem do preset",
+  "mismatchBody": "Este formulário usa a porta {{port}} e o caminho de health {{health}}. Apps {{name}} normalmente usam a porta {{presetPort}} e {{presetHealth}}.",
+  "applyFix": "Usar configurações do preset",
+  "applied": "Configurações do preset aplicadas.",
+  "dockerfile": "Copiar Dockerfile ajustado",
+  "dockerfileCopied": "Dockerfile copiado para a área de transferência.",
+  "dockerfileFailed": "Não foi possível copiar o Dockerfile.",
+  "outputModes": {
+    "server": "Servidor Node ou de runtime",
+    "standalone": "Pacote de servidor standalone",
+    "static": "Arquivos estáticos",
+    "jar": "Jar executável",
+    "binary": "Binário único"
+  }
+}

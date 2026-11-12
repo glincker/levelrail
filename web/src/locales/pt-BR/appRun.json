@@ -1,0 +1,21 @@
+{
+  "title": "Executar em um container novo",
+  "description": "Inicia um novo container a partir da imagem deste app, com suas variáveis de ambiente e segredos, executa o comando uma vez e mostra a saída. O container em execução não é afetado.",
+  "service": "Serviço",
+  "command": "Comando",
+  "placeholder": "bin/migrate",
+  "hint": "Executado diretamente, sem shell. Coloque entre aspas um argumento com espaços. Para pipes ou redirecionamentos, use sh -c \"...\".",
+  "run": "Executar",
+  "running": "Executando...",
+  "exitCode": "Código de saída",
+  "state": "Estado",
+  "output": "Saída",
+  "empty": "(sem saída)",
+  "truncated": "A saída era maior do que o servidor guarda; apenas a parte final é mostrada.",
+  "accessRule": "Execuções avulsas e jobs agendados seguem as regras de acesso do exec no console: executar um comando exige acesso root neste app e exec ativado para ele.",
+  "timeout": "Tempo limite (s)",
+  "timeoutPlaceholder": "3600",
+  "cancel": "Cancelar",
+  "history": "Execuções recentes",
+  "outputWithheld": "A saída está oculta. Ver a saída de jobs exige acesso de leitura a dados sensíveis."
+}

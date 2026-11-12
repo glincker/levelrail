@@ -1,0 +1,36 @@
+{
+  "title": "Uso de disco ao longo do tempo",
+  "range": {
+    "label": "Período",
+    "days": "{{count}}d"
+  },
+  "chart": {
+    "label": "Espaço em disco usado nos últimos {{days}} dias. Use as setas do teclado para ler cada dia."
+  },
+  "tooltip": {
+    "used": "Usado",
+    "free": "Livre",
+    "images": "Imagens",
+    "containers": "Containers",
+    "volumes": "Volumes",
+    "buildCache": "Cache de build"
+  },
+  "forecast": {
+    "full_one": "Cheio em cerca de {{count}} dia no ritmo atual",
+    "full_many": "Cheio em cerca de {{count}} dias no ritmo atual",
+    "full_other": "Cheio em cerca de {{count}} dias no ritmo atual",
+    "needsDays": "A data de preenchimento aparece após {{count}} dias de dados.",
+    "flat": "O uso está estável ou diminuindo, então não há data de preenchimento.",
+    "legend": "Projetado"
+  },
+  "legend": {
+    "used": "Usado"
+  },
+  "states": {
+    "loading": "Carregando o histórico de disco",
+    "collecting": "Coletando dados, a primeira tendência aparece após dois dias.",
+    "unavailable": "O histórico de disco não é armazenado neste servidor, então não há tendência para mostrar.",
+    "error": "Não foi possível carregar o histórico de disco.",
+    "retry": "Tentar novamente"
+  }
+}

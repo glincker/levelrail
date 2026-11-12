@@ -1,0 +1,59 @@
+{
+  "title": "{{name}}: Infraestrutura",
+  "description": "Arraste, mova e dê zoom para ver como os apps, bancos de dados, domínios, load balancers, volumes e nodes deste projeto se conectam. As posições ficam guardadas neste navegador.",
+  "canvasLabel": "Canvas de infraestrutura com {{count}} recursos. Foque um recurso e use as setas do teclado para movê-lo.",
+  "empty": {
+    "title": "Nada arquivado neste projeto ainda",
+    "description": "Atribua um app ou banco de dados a este projeto para ver aqui como eles se relacionam.",
+    "action": "Voltar ao projeto"
+  },
+  "error": {
+    "title": "Não foi possível carregar o grafo de infraestrutura"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Banco de dados",
+    "volume": "Volume",
+    "domain": "Domínio",
+    "load_balancer": "Load balancer",
+    "node": "Node"
+  },
+  "edge": {
+    "database_binding": "Conexão com banco de dados",
+    "depends_on": "Depende de",
+    "volume_attachment": "Anexo de volume",
+    "egress_allow": "Regra de saída permitida",
+    "routing": "Roteamento",
+    "load_balances": "Distribui tráfego para",
+    "placed_on": "Executa em"
+  },
+  "status": {
+    "healthy": "Saudável",
+    "deploying": "Fazendo deploy",
+    "failed": "Falhou",
+    "idle": "Sem status",
+    "draft": "Rascunho, ainda não aplicado"
+  },
+  "toolbar": {
+    "label": "Controles do canvas",
+    "zoomIn": "Aumentar zoom",
+    "zoomOut": "Diminuir zoom",
+    "fit": "Ajustar à tela",
+    "resetLayout": "Redefinir layout",
+    "zoomLevel": "Zoom de {{percent}} por cento",
+    "hidden": "{{count}} recursos estão fora da tela e não são desenhados até você navegar até eles."
+  },
+  "panel": {
+    "label": "Detalhes de {{name}}",
+    "close": "Fechar detalhes",
+    "connections": "Conexões",
+    "noConnections": "Nada está conectado a este recurso ainda.",
+    "actions": "Ações rápidas",
+    "overview": "Abrir visão geral",
+    "logs": "Ver logs",
+    "deploys": "Deploys e rollback",
+    "domains": "Gerenciar domínios",
+    "metrics": "Ver métricas"
+  },
+  "legend": "Legenda"
+}
