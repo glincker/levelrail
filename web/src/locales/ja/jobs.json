@@ -1,0 +1,228 @@
+{
+  "title": "ジョブ",
+  "description": "cronスケジュールに従って、このアプリの環境変数、シークレット、ボリューム、ネットワークを引き継いだ新しいコンテナ内、または実行中のコンテナ内でコマンドを実行します。",
+  "unnamed": "名前のないジョブ",
+  "specManaged": "app.yaml",
+  "specManagedHint": "app.yamlで宣言されています。変更はそちらで行ってください。ここで切り替えられるのは、有効のスイッチのみです。",
+  "empty": {
+    "title": "ジョブはまだありません",
+    "description": "マイグレーションの実行、キャッシュのウォームアップ、レポートの送信を、スケジュールに従って行えます。各実行は、出力とともに履歴に保持されます。"
+  },
+  "columns": {
+    "job": "ジョブ",
+    "schedule": "スケジュール",
+    "mode": "モード",
+    "lastRun": "前回の実行",
+    "nextRun": "次回の実行",
+    "enabled": "有効",
+    "actions": "操作"
+  },
+  "mode": {
+    "fresh": "新しいコンテナ",
+    "exec": "実行中のコンテナ内",
+    "http": "アプリへのHTTP呼び出し"
+  },
+  "concurrency": {
+    "allow": "重複を許可",
+    "forbid": "実行中ならスキップ",
+    "replace": "キャンセルして置き換え",
+    "queue": "後ろに並べる",
+    "queue-one": "1件だけ並べ、残りはスキップ"
+  },
+  "concurrencyHint": {
+    "allow": "前回の実行が終わっていなくても、新しい実行を開始します。",
+    "forbid": "前回の実行がまだ進行中の場合は、この実行をスキップし、スキップとして記録します。",
+    "replace": "実行中の前回の実行をキャンセルしてから、この実行を開始します。",
+    "queue": "前回の実行が終わるのを待ってから実行するため、重複した実行は1つずつ順番に行われます。",
+    "queue-one": "前回の実行が終わるまで、1件の実行を保留します。それ以上の重複した実行はスキップされます。"
+  },
+  "preview": {
+    "title": "次回以降の実行({{zone}})",
+    "invalid": "次回以降の実行をプレビューするには、有効なスケジュールとタイムゾーンを入力してください。",
+    "none": "このスケジュールは、実行されることがありません。"
+  },
+  "status": {
+    "running": "実行中",
+    "success": "成功",
+    "failed": "失敗",
+    "timeout": "タイムアウト",
+    "container_not_running": "コンテナが動いていません",
+    "skipped_concurrency": "スキップ、前回の実行が継続中",
+    "skipped_freeze": "スキップ、デプロイフリーズ中",
+    "replaced": "新しい実行に置き換え",
+    "missed": "予定時刻に実行されませんでした",
+    "interrupted": "再起動により中断"
+  },
+  "trigger": {
+    "schedule": "スケジュール",
+    "manual": "手動",
+    "api": "API"
+  },
+  "neverRun": "未実行",
+  "failedInARow": "{{count}}回連続で失敗",
+  "missedInARow": "{{count}}回連続で未実行",
+  "localNode": "ローカル",
+  "run": {
+    "now": "今すぐ実行",
+    "starting": "開始中...",
+    "started": "ジョブを開始しました。",
+    "startedWithId": "ジョブを開始しました(実行{{id}})。",
+    "running": "実行中..."
+  },
+  "toggle": {
+    "label": "{{name}}を有効にする"
+  },
+  "dialog": {
+    "createTrigger": "ジョブを作成",
+    "createTitle": "ジョブを作成",
+    "editTitle": "ジョブを編集",
+    "created": "ジョブを作成しました。",
+    "updated": "ジョブを更新しました。",
+    "saving": "保存中...",
+    "creating": "作成中...",
+    "save": "変更を保存",
+    "create": "ジョブを作成",
+    "edit": "編集",
+    "name": "名前",
+    "nameHint": "任意です。小文字、数字、ハイフン、アンダースコアが使えます。",
+    "namePlaceholder": "例: nightly-migrate",
+    "nameInvalid": "小文字、数字、ハイフン、アンダースコアを使ってください。",
+    "wholeNumber": "整数で指定してください。",
+    "command": "コマンド",
+    "commandPlaceholder": "例: rm -rf /tmp/cache/*",
+    "commandHint": "シェル(sh -c)を介して実行されるため、イメージにシェルが必要です。Levelrailが内容を解釈することはありません。",
+    "commandRequired": "コマンドは必須です",
+    "modeLabel": "実行場所",
+    "modeHint": {
+      "fresh": "アプリの現在のイメージから、環境変数、シークレット、ボリューム、ネットワークを引き継いだ新しいコンテナを起動します。実行が終わると削除されます。",
+      "exec": "アプリの実行中のコンテナ内で実行します。コンテナが動いていない場合は失敗します。",
+      "http": "HTTPでアプリのパスを呼び出します。スリープ中のアプリは先に起こされ、呼び出しはそれを待ちます。2xxの応答はすべて成功とみなされます。"
+    },
+    "http": {
+      "method": "メソッド",
+      "path": "パス",
+      "pathPlaceholder": "例: /api/cron/digest",
+      "pathHint": "このアプリのパスで、/で始まります。呼び出しは公開ドメインを経由せず、アプリに直接届きます。",
+      "pathInvalid": "1つの/で始めてください。",
+      "body": "本文",
+      "bodyHint": "任意です。application/jsonとして送信されます。",
+      "background": "バックグラウンドジョブ",
+      "backgroundHint": "アプリは、すぐに202を返して作業を続けられます。コントロールプレーンは、バックグラウンドのタイムアウトまで応答を待って結果を記録するため、リクエストを開いたままにしておく必要はありません。",
+      "headers": "ヘッダー",
+      "headersHint": "任意です。各行は、ジョブの実行時にアプリのシークレットの1つから値を読み取ってヘッダーを送信するため、シークレットがジョブに保存されることはありません。",
+      "headerName": "ヘッダー名",
+      "headerSecret": "シークレット名",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "プレフィックス",
+      "headerAdd": "ヘッダーを追加",
+      "headerRemove": "ヘッダーを削除"
+    },
+    "timezone": "タイムゾーン",
+    "timezoneHint": "Europe/BerlinのようなIANA名です。スケジュールは、夏時間の変更も含めて、このタイムゾーンで解釈されます。",
+    "timezoneRequired": "タイムゾーンは必須です",
+    "concurrencyLabel": "前回の実行がまだ続いている場合",
+    "enabled": "有効",
+    "advanced": "タイムアウト、リトライ、上限",
+    "timeout": "タイムアウト(秒)",
+    "timeoutHint": "1回の試行あたりです。空欄にすると、コントロールプレーンの既定値を使います。",
+    "retries": "リトライ",
+    "retriesHint": "失敗後の追加の試行回数です。待ち時間は倍々に増えます。",
+    "backoff": "リトライのバックオフ(秒)",
+    "catchUpLabel": "コントロールプレーンの停止後",
+    "catchUp": {
+      "skip": "実行されなかった分をスキップし、未実行として記録",
+      "run_once": "最近実行されなかった分があれば、1回実行"
+    },
+    "lookback": "キャッチアップの期間(秒)",
+    "memory": "メモリ上限(MiB)",
+    "memoryHint": "新しいコンテナの場合のみです。空欄にすると、アプリ自身の上限を使います。",
+    "cpu": "CPU上限(ミリコア)",
+    "warnAfter": "警告までの時間(秒)",
+    "warnAfterHint": "実行がこれを超えると、実行時間超過のアラートを発生させます。0で無効になります。"
+  },
+  "delete": {
+    "trigger": "削除",
+    "title": "このジョブを削除しますか?",
+    "description": "スケジュールと実行履歴が削除されます。この操作は元に戻せません。",
+    "cancel": "キャンセル",
+    "confirm": "ジョブを削除",
+    "deleted": "ジョブを削除しました。"
+  },
+  "history": {
+    "title": "実行履歴",
+    "description": "このアプリのジョブ全体の直近の実行が、新しい順に表示されます。",
+    "filter": "ステータス",
+    "filterAll": "すべてのステータス",
+    "empty": "実行はまだありません。「今すぐ実行」で開始してください。",
+    "emptyTitle": "実行なし",
+    "emptyFiltered": "このステータスの実行はありません。",
+    "columns": {
+      "started": "開始",
+      "job": "ジョブ",
+      "status": "ステータス",
+      "trigger": "トリガー",
+      "duration": "所要時間",
+      "exit": "終了コードまたはHTTP",
+      "attempts": "試行回数",
+      "node": "ノード"
+    },
+    "trendLabel": "直近{{count}}件の完了した実行の所要時間",
+    "trendCaption": "実行の所要時間(古い順から新しい順)、最長{{max}}",
+    "httpStatus": "HTTP {{code}}",
+    "viewLogs": "ログ",
+    "logsTitle": "実行の出力",
+    "logsEmpty": "この実行では、出力がありませんでした。",
+    "logsLoading": "出力を読み込み中...",
+    "logsRedacted": "この出力では、シークレットがマスクされています。",
+    "alertsHint": "ジョブの失敗、未実行、実行時間超過の種類を使ったアラートで、ジョブが失敗したり、実行されなかったり、実行に時間がかかりすぎたりしたときに通知を受け取れます。",
+    "outputWithheld": "出力は非表示です。ジョブの出力を表示するには、機密情報の読み取り権限が必要です。"
+  },
+  "historyKept": {
+    "label": "保持する履歴(ジョブごとの実行数)",
+    "save": "保存",
+    "note": "古い実行は、自動で削除されます。",
+    "invalid": "{{min}}から{{max}}の整数を入力してください。"
+  },
+  "nextRunNever": "なし",
+  "nextRunNeverHint": "このスケジュールには、今後の実行がありません",
+  "accessRule": "単発の実行とスケジュールジョブは、コンソールexecのアクセスルールに従います。ジョブの作成、編集、実行には、このアプリのroot権限と、execの有効化が必要です。",
+  "guards": {
+    "title": "ガードレール",
+    "description": "重複の制限、実行時間の上限、失敗時のアラート、保持する履歴の上限を設定します。これらは自動で保存されます。",
+    "overlap": {
+      "allow": "重複を許可",
+      "skip": "実行中ならスキップ",
+      "queue-one": "1件だけ並べ、残りはスキップ",
+      "replace": "キャンセルして置き換え",
+      "queue": "後ろに並べる"
+    },
+    "overlapHint": {
+      "allow": "前回の実行が終わっていなくても、新しい実行を開始します。",
+      "skip": "前回の実行がまだ進行中の場合は、この実行をスキップし、スキップとして記録します。",
+      "queue-one": "前回の実行が終わるまで、1件の実行を保留します。それ以上の重複した実行はスキップされます。",
+      "replace": "実行中の前回の実行をキャンセルしてから、この実行を開始します。",
+      "queue": "前回の実行が終わるのを待ってから実行するため、重複した実行は1つずつ順番に行われます。"
+    },
+    "timeoutSeconds": "タイムアウト(秒)",
+    "keepRuns": "直近の実行を保持",
+    "keepDays": "保持日数",
+    "keepHint": "空欄にすると、コントロールプレーンの既定値を使います。",
+    "defaultPlaceholder": "既定値",
+    "alertOnFailure": "失敗時にアラート",
+    "alertOnFailureHint": "このアプリのジョブ失敗のアラートルールで、このジョブが失敗したときに通知を受け取れるようにします。",
+    "save": "ガードレールを保存",
+    "saved": "ガードレールを保存しました",
+    "summary": {
+      "overlap": {
+        "skip": "重複をスキップ",
+        "queue-one": "1件を並べる",
+        "replace": "重複を置き換え",
+        "queue": "重複を並べる"
+      },
+      "timeout": "タイムアウト {{seconds}}秒",
+      "alerts": "失敗時にアラート",
+      "keepRuns_other": "{{count}}件の実行を保持",
+      "keepDays_other": "{{count}}日間保持"
+    }
+  }
+}

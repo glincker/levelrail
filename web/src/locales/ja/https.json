@@ -1,0 +1,198 @@
+{
+  "card": {
+    "title": "無料のHTTPS、DNS設定不要",
+    "description": "本物のLet's Encrypt証明書で、このダッシュボードとアプリをHTTPSで配信します。レジストラでの設定は不要です。",
+    "compactHint": "オンにするまで、ブラウザーはあなたのアドレスを「保護されていない通信」と表示します。",
+    "setUp": "設定",
+    "noPublicIp": "このサーバーのパブリックIPアドレスが不明なため、DNS不要のホスト名を作成できません。コントロールプレーンでAPP_PUBLIC_HOSTにそのIPを設定して再起動するか、下で独自のドメインを使ってください。",
+    "httpSignInNote": "オンにした後は、httpsのアドレスからサインインしてください。",
+    "emailLabel": "証明書に関する通知用のメールアドレス",
+    "emailHelp": "普段確認する受信トレイであれば、どれでも構いません。証明書は無料で、自動で更新されます。Let's Encryptがメールを送るのは、期限が近づいているのに更新できなかった場合のみです。",
+    "stagingLabel": "最初にLet's Encryptのステージングでテスト",
+    "stagingHelp": "ステージングの証明書はブラウザーに信頼されませんが、ステージングには実質的なレート制限がありません。80番と443番ポートに到達できることの確認に使ってください。",
+    "enable": "HTTPSを有効にする",
+    "enabling": "証明書を要求中",
+    "retry": "再試行",
+    "recheck": "再確認",
+    "rechecking": "確認中",
+    "recheckHelp": "アドレスがまだこのサーバーに解決されない場合は、DNSまたはファイアウォールを管理している場所で修正してから、再確認してください。ここでほかに変更するものはありません。",
+    "pending": "{{domain}}の証明書を要求しています。通常は1分以内に完了します。",
+    "issued": "{{domain}}のHTTPSがオンになりました。",
+    "issuedDetail": "発行元: {{issuer}}、有効期限: {{date}}。更新は自動です。",
+    "stagingIssued": "これはステージングの証明書のため、ブラウザーに警告が表示されます。ステージングをオフにして再実行すると、信頼される証明書を取得できます。",
+    "openDashboard": "HTTPSでダッシュボードを開く",
+    "dashboardUrlSaved": "ダッシュボードのURLを{{url}}に設定しました。",
+    "dashboardUrlFailed": "ダッシュボードのURLを保存できませんでした。",
+    "failedTitle": "証明書を取得できませんでした",
+    "enableFailed": "HTTPSを有効にできませんでした。",
+    "preflightTitle": "80番または443番ポートが閉じている可能性があります",
+    "preflightBody": "このサーバーは、パブリックアドレスのポート{{ports}}で、自分自身に到達できませんでした。Let's Encryptは、インターネットから80番ポート(更新時は443番ポートも)に到達できる必要があります。クラウドのファイアウォールで開放するか、セットアップのファイアウォールの手順を実行してください。このチェックは、一部のルーターの内側では誤判定することがあるため、何かを変更する前に、証明書が発行されるのを待ってください。"
+  },
+  "hint": {
+    "unreachable": "Let's Encryptが、このサーバーの80番ポートに到達できませんでした。ファイアウォールとクラウドプロバイダーのセキュリティグループで、80番と443番ポートを開放してから、もう一度お試しください。",
+    "rate_limited": "Let's Encryptが、このホスト名にレート制限をかけています。再試行する前にしばらく待ち、デバッグ中はステージングを使ってください。",
+    "dns": "このホスト名が、このサーバーに解決されませんでした。検出されたパブリックIPが正しいか確認してください。",
+    "caa": "CAAのDNSレコードにより、このホスト名についてLet's Encryptが発行することが禁止されています。",
+    "unknown": "Let's Encryptがリクエストを拒否しました。完全な応答は、以下とコントロールプレーンのログにあります。"
+  },
+  "fallback": {
+    "title": "自動のアプリホスト名",
+    "description": "ドメインのないアプリには、自動TLS付きの無料のワイルドカードDNSサービスから、https://<app>.<dashed-ip>.<provider>が割り当てられます。そのため、デプロイしたばかりのアプリも、DNS設定なしで到達できます。",
+    "toggleLabel": "ドメインのないアプリに自動のホスト名を割り当てる",
+    "publicHost": "サーバーのアドレス: {{host}}({{source}})",
+    "noPublicHost": "パブリックアドレスが検出されませんでした。オンにするには、コントロールプレーンでAPP_PUBLIC_HOSTを設定してください。",
+    "saved": "自動のホスト名を更新しました。",
+    "saveFailed": "自動のホスト名を更新できませんでした。",
+    "source": {
+      "env": "APP_PUBLIC_HOSTから",
+      "detected": "検出",
+      "disabled": "検出は無効",
+      "none": "見つかりません"
+    }
+  },
+  "dnsProvider": {
+    "defaultLabel": "ワイルドカードDNSプロバイダー(すべてのアプリの既定)",
+    "appLabel": "このアプリのワイルドカードDNSプロバイダー",
+    "inherit": "既定値を使う({{provider}})",
+    "inheritNote": "このアプリは、設定のドメインで選択したプロバイダーに従います。",
+    "custom": "独自のベースドメイン",
+    "customNote": "独自のワイルドカードレコードを使うと、アプリ名が<app>.<独自のベースドメイン>になります。",
+    "baseLabel": "ベースドメイン",
+    "basePlaceholder": "apps.example.com",
+    "baseHint": "*.{{domain}}をAレコードでこのサーバーに向けてから、「名前解決をテスト」を実行してください。",
+    "betaHint": "無料の公開サービスです。テストには適していますが、本番のトラフィックには推奨しません。",
+    "save": "保存",
+    "saved": "ワイルドカードDNSプロバイダーを更新しました。",
+    "saveFailed": "ワイルドカードDNSプロバイダーを更新できませんでした。",
+    "test": "名前解決をテスト",
+    "testing": "テスト中...",
+    "status": {
+      "ok": "このサーバーに解決されます",
+      "wrong_ip": "別のアドレスに解決されます",
+      "not_resolving": "解決されません",
+      "unavailable": "テストできません"
+    },
+    "fixHeading": "対処:",
+    "fixSwitch": "{{provider}}に切り替える",
+    "fixCustom": "独自のドメインを使う",
+    "digToggle": "digで手動確認",
+    "confirmTitle": "自動のホスト名を変更しますか?",
+    "confirmBody": "このアプリは、{{host}}で到達できます。",
+    "confirmOldStops": "新しいホスト名がルーティングされると、古いホスト名はすぐに使えなくなります。",
+    "confirmNoDowntime": "ルートはその場で更新され、ダウンタイムはありません。古いホスト名を使っているブックマークやWebhookは、更新が必要です。",
+    "confirmAction": "ホスト名を変更"
+  },
+  "domain": {
+    "automatic": "自動"
+  },
+  "network": {
+    "off": "このサーバーでは、自動のホスト名がオフになっています。",
+    "offAction": "オンにする",
+    "noPublicHost": "このサーバーのパブリックIPが不明なため、自動のホスト名を作成できません。コントロールプレーンでAPP_PUBLIC_HOSTを設定してください。",
+    "publishedPorts": "公開ポート",
+    "portMapping": "{{host}} → {{container}}"
+  },
+  "wizard": {
+    "ownDomainTitle": "または独自のドメインを使う",
+    "sslipReady": "無料のホスト名で、HTTPSの準備ができました。このまま続けることも、独自のドメインを設定することもできます。"
+  },
+  "certTable": {
+    "internalBadge": "内部CA",
+    "internalHint": "このサーバー自身の短期間有効なCAによって署名され、自動で更新されます。HTTPSを有効にするまで、ブラウザーには警告が表示されます。",
+    "internalRenews": "自動で更新されます",
+    "acmeBadge": "Let's Encrypt",
+    "custom": "カスタム",
+    "proxyBadge": "お使いのプロキシ",
+    "proxyRenews": "お使いのプロキシが管理し、自動で更新されます。",
+    "proxyUnknown": "お使いのプロキシが管理しています。まだ確認できていません。プロキシのページでルートを確認してください。",
+    "proxyLink": "プロキシのページを開く",
+    "getTrusted": "信頼される証明書を取得",
+    "useOwn": "独自の証明書を使う"
+  },
+  "domainCert": {
+    "action": "本物の証明書を取得",
+    "title": "{{domain}}の本物の証明書を取得",
+    "intro": "{{domain}}がここを指していることと、Let's Encryptがこのサーバーに到達できることを確認し、信頼される証明書を要求します。それまでは、訪問者にブラウザーの警告が表示されます。",
+    "appliesToAll": "パブリック証明書はサーバーの設定です。オンにすると、このサーバー上のすべてのドメインに適用され、更新は自動で行われます。",
+    "checking": "DNS、80番ポート、CAAレコード、連絡先のメールアドレス、Let's Encryptの制限を確認中",
+    "checkFailed": "チェックを実行できませんでした。",
+    "recheck": "再確認",
+    "emailLabel": "証明書に関する通知用のメールアドレス",
+    "emailHelp": "既定では、管理者アカウントのメールアドレスです。Let's Encryptがメールを送るのは、証明書の期限が近づいているのに更新できなかった場合のみです。",
+    "stagingLabel": "最初にLet's Encryptのステージングで試す",
+    "stagingHelp": "ステージングには実質的な制限がありませんが、テスト用のCAで署名されます。ブラウザーはその結果を信頼しないため、その後でステージングなしで再実行してください。",
+    "stagingWarning": "ステージングの証明書は信頼されません。訪問者には、引き続き警告が表示されます。",
+    "ackPorts": "80番と443番ポートが開放されていることを理解しています(このサーバーは、自分自身に到達できない場合があります)",
+    "nextSafe": "次に安全に試せる時刻: {{date}}",
+    "next": "次のステップ: {{fix}}",
+    "submit": "本物の証明書を取得",
+    "requesting": "要求中",
+    "requestFailed": "証明書を要求できませんでした。",
+    "item": {
+      "issuable": "公開された名前",
+      "upstream_proxy": "TLSの所有者",
+      "dns": "DNSがここを指している",
+      "ports": "80番ポートに到達可能",
+      "caa": "CAAレコード",
+      "email": "連絡先のメールアドレス",
+      "rate_limit": "Let's Encryptの制限",
+      "staging": "ステージングCA",
+      "replaces_certificate": "有効な証明書"
+    },
+    "state": {
+      "pass": "合格",
+      "warn": "要確認",
+      "fail": "ブロック中",
+      "skipped": "スキップ"
+    },
+    "progress": {
+      "pendingTitle": "チャレンジ待ち",
+      "pendingBody": "Let's Encryptが、あなたが{{domain}}を管理していることを確認しています。通常は1分以内に完了します。",
+      "issuedTitle": "証明書を発行しました",
+      "failedTitle": "Let's Encryptが証明書を発行しませんでした",
+      "caSaid": "CAからの応答",
+      "issuer": "発行元",
+      "expires": "有効期限",
+      "renews": "更新の開始",
+      "tryAgain": "再試行",
+      "close": "閉じる",
+      "stagingIssued": "これはステージングの証明書のため、ブラウザーには引き続き警告が表示されます。ステージングなしで再実行すると、信頼される証明書を取得できます。"
+    },
+    "kind": {
+      "none": "証明書なし",
+      "internal": "内部証明書",
+      "staging": "ステージング",
+      "letsencrypt": "Let's Encrypt",
+      "custom": "アップロードした証明書",
+      "proxy": "プロキシの証明書",
+      "other": "公的CA"
+    },
+    "kindHint": {
+      "none": "このドメインには、まだ証明書が発行されていません。",
+      "internal": "このサーバー自身が署名しています。ブラウザーは信頼せず、警告を表示します。",
+      "staging": "Let's Encryptのテスト用CAが署名しています。ブラウザーは信頼しません。",
+      "letsencrypt": "Let's Encryptが署名し、自動で更新されます。",
+      "custom": "あなたがアップロードした証明書です。自動では更新されません。",
+      "proxy": "このサーバーの前段にあるプロキシが発行し、更新します。",
+      "other": "公的な認証局が署名しています。"
+    },
+    "badge": {
+      "days_other": "残り{{count}}日",
+      "expired": "期限切れ",
+      "renewed": "{{date}}に更新",
+      "renewalFailed": "前回の更新は{{date}}に失敗",
+      "retrying": "{{date}}に再試行"
+    }
+  },
+  "portEditor": {
+    "publishedPorts": "追加の公開ポート",
+    "publishedPortsPlaceholder": "51820:51820/udp, 53/udp",
+    "publishedPortsHint": "HOST:CONTAINER/udpまたは/tcpの形式で、カンマ区切りです。このサーバーでのみ公開されます。",
+    "errors": {
+      "syntax": "「{{entry}}」はポートではありません。HOST:CONTAINER/udpの形式で指定してください",
+      "protocol": "「{{entry}}」: プロトコルはtcpまたはudpにしてください",
+      "range": "「{{entry}}」: ポートは1から65535の間にしてください",
+      "duplicate": "「{{entry}}」が2回指定されています"
+    }
+  }
+}
