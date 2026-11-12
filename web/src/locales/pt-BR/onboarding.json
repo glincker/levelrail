@@ -28,6 +28,11 @@
       "label": "Concluir",
       "title": "Tudo configurado",
       "description": "Suas escolhas foram salvas. Dois bons lugares para ir em seguida."
+    },
+    "language": {
+      "description": "Escolha o idioma do painel. A página muda conforme você escolhe.",
+      "label": "Idioma",
+      "title": "Escolha seu idioma"
     }
   },
   "footer": {
@@ -80,5 +85,9 @@
   "errors": {
     "save": "Não foi possível salvar seu progresso. Tente novamente.",
     "transition": "Essa mudança não é permitida agora. Recarregue a página e tente novamente."
+  },
+  "language": {
+    "hint": "Pressione Enter para continuar. Você pode mudar isso a qualquer momento no cabeçalho ou em Configurações.",
+    "label": "Idioma"
   }
 }

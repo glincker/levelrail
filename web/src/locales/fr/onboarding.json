@@ -28,6 +28,11 @@
       "label": "Terminer",
       "title": "Votre configuration est terminée",
       "description": "Vos choix sont enregistrés. Deux bons endroits où aller ensuite."
+    },
+    "language": {
+      "description": "Choisissez la langue du tableau de bord. La page change au fur et à mesure de votre choix.",
+      "label": "Langue",
+      "title": "Choisissez votre langue"
     }
   },
   "footer": {
@@ -80,5 +85,9 @@
   "errors": {
     "save": "Impossible d'enregistrer votre progression. Réessayez.",
     "transition": "Ce déplacement n'est pas autorisé pour le moment. Rechargez la page et réessayez."
+  },
+  "language": {
+    "hint": "Appuyez sur Entrée pour continuer. Vous pouvez le modifier à tout moment depuis l'en-tête ou dans les paramètres.",
+    "label": "Langue"
   }
 }

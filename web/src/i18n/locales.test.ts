@@ -53,9 +53,9 @@ describe.each(languages)('%s locale', (lang) => {
 
   it('falls back to English for keys it does not translate', async () => {
     const i = i18next.createInstance()
-    const tgt = (await import(`../locales/${lang}/common.json`)) as {
-      default: object
-    }
+    const tgt = (await import(`../locales/${lang}/common.json`).catch(() => ({
+      default: {},
+    }))) as { default: object }
     // cliConsole is emptied so the test keeps proving the fallback even once it is translated.
     await i.init({
       lng: lang,

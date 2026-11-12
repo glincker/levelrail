@@ -1543,5 +1543,11 @@
       "node_cordon": "コードン",
       "node_uncordon": "アンコードン"
     }
+  },
+  "language": {
+    "browserDefault": "ブラウザの既定",
+    "change": "言語を変更、現在: {{language}}",
+    "label": "言語",
+    "saveFailed": "言語を保存できませんでした。"
   }
 }

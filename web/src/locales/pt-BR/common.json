@@ -1561,5 +1561,11 @@
       "node_cordon": "Isolar (cordon)",
       "node_uncordon": "Reativar (uncordon)"
     }
+  },
+  "language": {
+    "browserDefault": "Padrão do navegador",
+    "change": "Alterar idioma, atual: {{language}}",
+    "label": "Idioma",
+    "saveFailed": "Não foi possível salvar seu idioma."
   }
 }

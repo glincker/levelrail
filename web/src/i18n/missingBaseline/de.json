@@ -1,0 +1,31 @@
+{
+  "missing": [
+    "palette:clearInput",
+    "palette:create.domain",
+    "palette:create.keywords",
+    "palette:create.project",
+    "palette:goTo",
+    "palette:groups.Ask",
+    "palette:groups.Create",
+    "palette:groups.Languages",
+    "palette:hints.clear",
+    "palette:hints.label",
+    "palette:language.browser",
+    "palette:language.change",
+    "palette:language.current",
+    "palette:language.description",
+    "palette:language.keywords",
+    "palette:language.saveFailed",
+    "palette:language.switchTo",
+    "palette:language.title",
+    "palette:preview.deploys",
+    "palette:preview.image",
+    "palette:preview.logs",
+    "palette:preview.restart",
+    "palette:preview.status",
+    "palette:preview.url",
+    "palette:resultCount_one",
+    "palette:resultCount_other"
+  ],
+  "knownIssues": []
+}

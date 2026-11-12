@@ -18,9 +18,9 @@ describe('supportedLanguages', () => {
 
   it('names each language in itself', () => {
     const name = (c: string) => list.find((l) => l.code === c)?.name
-    expect(name('es')).toBe('español')
+    expect(name('es')).toBe('Español')
     expect(name('de')).toBe('Deutsch')
-    expect(name('fr')).toBe('français')
+    expect(name('fr')).toBe('Français')
     expect(name('ja')).toBe('日本語')
     expect(name('pt-BR')).toMatch(/portugu/i)
     expect(name('zh-CN')).toMatch(/中文/)

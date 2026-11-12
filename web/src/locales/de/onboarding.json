@@ -28,6 +28,11 @@
       "label": "Abschluss",
       "title": "Sie sind eingerichtet",
       "description": "Ihre Auswahl ist gespeichert. Zwei gute nächste Anlaufstellen."
+    },
+    "language": {
+      "description": "Wählen Sie die Sprache für das Dashboard. Die Seite ändert sich bei Ihrer Auswahl.",
+      "label": "Sprache",
+      "title": "Wählen Sie Ihre Sprache"
     }
   },
   "footer": {
@@ -80,5 +85,9 @@
   "errors": {
     "save": "Ihr Fortschritt konnte nicht gespeichert werden. Versuchen Sie es erneut.",
     "transition": "Dieser Schritt ist im Moment nicht erlaubt. Laden Sie die Seite neu und versuchen Sie es erneut."
+  },
+  "language": {
+    "hint": "Drücken Sie die Eingabetaste, um fortzufahren. Sie können dies jederzeit in der Kopfzeile oder in den Einstellungen ändern.",
+    "label": "Sprache"
   }
 }

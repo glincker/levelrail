@@ -1543,5 +1543,11 @@
       "node_cordon": "隔离调度",
       "node_uncordon": "恢复调度"
     }
+  },
+  "language": {
+    "browserDefault": "浏览器默认",
+    "change": "更改语言，当前：{{language}}",
+    "label": "语言",
+    "saveFailed": "无法保存您的语言设置。"
   }
 }
