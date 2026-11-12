@@ -4,6 +4,11 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { lazyBackend } from './lazyBackend'
 import { setActiveLocale, setTranslator } from '../lib/activeLocale'
 import './resources'
+import { SUPPORTED_LANGUAGES } from './supported'
+import { normalizeDetectedLanguage } from './detect'
+import { syncDocumentLanguage } from './direction'
+
+export { SUPPORTED_LANGUAGES }
 
 // New namespace: add here only. lazyBackend loads it on first useTranslation(ns) call.
 export const NAMESPACES = [
@@ -166,17 +171,6 @@ export const NAMESPACES = [
   'webVitals',
 ] as const
 
-// New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.
-export const SUPPORTED_LANGUAGES = [
-  'en',
-  'es',
-  'de',
-  'fr',
-  'pt-BR',
-  'ja',
-  'zh-CN',
-]
-
 void i18n
   .use(lazyBackend)
   .use(LanguageDetector)
@@ -184,6 +178,7 @@ void i18n
   .init({
     fallbackLng: 'en',
     supportedLngs: SUPPORTED_LANGUAGES,
+    detection: { convertDetectedLanguage: normalizeDetectedLanguage },
     nonExplicitSupportedLngs: true,
     ns: ['common'],
     defaultNS: 'common',
@@ -200,6 +195,7 @@ void i18n
 i18n.on('initialized', () => setActiveLocale(i18n.language))
 i18n.on('languageChanged', setActiveLocale)
 setActiveLocale(i18n.language)
+if (typeof document !== 'undefined') syncDocumentLanguage(i18n)
 setTranslator((key, defaultValue) => i18n.t(key, { defaultValue }))
 
 export default i18n
