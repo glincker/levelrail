@@ -1,0 +1,361 @@
+{
+  "title": "函数",
+  "description": "闲置时不产生任何费用的小型处理程序。函数在一段安静期后进入休眠，下一个请求会唤醒它并等待响应。",
+  "triggers": {
+    "title": "触发器",
+    "pick": "函数",
+    "error": "无法加载触发器：{{message}}",
+    "queue": "异步队列：{{queued}} 个等待中，{{running}} 个运行中，{{dead}} 个进入死信。",
+    "webhook": {
+      "title": "已签名的 Webhook",
+      "path": "Webhook 转发到的路径",
+      "enable": "启用 Webhook",
+      "disable": "关闭",
+      "rotate": "轮换密钥",
+      "on": "调用会排队并转发到 {{path}}。早于 {{seconds}} 秒的签名会被拒绝。",
+      "secretOnce": "签名密钥。仅显示一次，请立即复制。",
+      "signing": "发送 X-Signature-Timestamp（Unix 秒）和 X-Signature: sha256=HMAC-SHA256(secret, timestamp + 点号 + body)。"
+    },
+    "schedules": {
+      "title": "计划任务",
+      "none": "没有计划的 HTTP 任务调用此函数。",
+      "manage": "请在应用的“任务”标签页中管理计划任务"
+    },
+    "dead": {
+      "title": "死信",
+      "description": "重试次数用尽的异步调用。重试会把其中一个放回队列。",
+      "empty": "没有进入死信的调用。",
+      "error": "无法加载死信：{{message}}",
+      "detail": "已尝试 {{attempts}} / {{max}} 次，HTTP {{code}} {{error}}",
+      "retry": "重试",
+      "discard": "丢弃"
+    }
+  },
+  "window": {
+    "label": "统计时间范围",
+    "1h": "最近 1 小时",
+    "24h": "最近 24 小时",
+    "7d": "最近 7 天"
+  },
+  "list": {
+    "name": "函数",
+    "state": "状态",
+    "calls": "调用次数",
+    "p95": "p95 耗时",
+    "errors": "服务器错误",
+    "idle": "休眠时间",
+    "idleValue": "{{minutes}} 分钟",
+    "asleep": "休眠中",
+    "awake": "已唤醒",
+    "visit": "打开 URL",
+    "error": "无法加载函数：{{message}}",
+    "retry": "重试"
+  },
+  "empty": {
+    "title": "还没有函数",
+    "body": "在下方选择一个运行时，把处理程序推送到仓库并部署。它会获得一个按请求唤醒的在线 URL。"
+  },
+  "deploy": {
+    "open": "部署函数",
+    "title": "部署函数",
+    "description": "选择要运行的内容，指向代码，然后上线。每一步都有合理的默认值。",
+    "cancel": "取消",
+    "back": "返回",
+    "next": "继续",
+    "submit": "部署",
+    "submitting": "部署中",
+    "stepLabel": "第 {{current}} 步，共 {{total}} 步",
+    "steps": {
+      "template": "运行什么",
+      "source": "代码在哪里",
+      "details": "详情"
+    },
+    "started": "已开始构建 {{name}}。构建完成后会上线。",
+    "failed": "无法部署 {{name}}：{{message}}",
+    "template": {
+      "heading": "你想运行什么？",
+      "groupStarters": "入门处理程序",
+      "groupIdeas": "可作为起点的想法",
+      "groupOwn": "使用你自己的"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "用 Go 编写的小型 HTTP 处理程序，启动很快。"
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "十行代码的 Node.js 处理程序。"
+      },
+      "python": {
+        "title": "Python",
+        "body": "用 Python 编写的小型处理程序。"
+      },
+      "webhook": {
+        "title": "Webhook 接收器",
+        "body": "接收来自其他服务的事件并作出响应。"
+      },
+      "scheduled": {
+        "title": "定时任务运行器",
+        "body": "每当计划调用时运行一项任务。"
+      },
+      "form": {
+        "title": "表单转邮件",
+        "body": "把表单提交转成一封邮件。"
+      },
+      "shortener": {
+        "title": "短网址服务",
+        "body": "把短路径映射到长链接。"
+      },
+      "chatbot": {
+        "title": "聊天机器人",
+        "body": "回复聊天平台上的消息。"
+      },
+      "repo": {
+        "title": "使用我自己的仓库",
+        "body": "部署你已有的、存放在 git 中的处理程序。"
+      },
+      "image": {
+        "title": "使用容器镜像",
+        "body": "运行来自镜像仓库的预构建镜像。"
+      }
+    },
+    "source": {
+      "headingRepo": "代码在哪里？",
+      "headingImage": "使用哪个容器镜像？",
+      "starterTitle": "用作起点的示例代码",
+      "starterBody": "把这些文件复制到新仓库并推送。然后在下方选择该仓库。",
+      "utilityBody": "完整且经过测试的处理程序。把这些文件复制到新仓库并推送，然后在下方选择该仓库。",
+      "utilityEnv": "它读取的环境变量",
+      "utilityRequired": "必填",
+      "utilityKv": "使用键值存储：部署后，请打开该函数的“键值存储”标签页并启用它。",
+      "utilityCli": "或者在终端中",
+      "search": "搜索你的仓库",
+      "loading": "正在加载仓库",
+      "recent": "最近更新的在前",
+      "noRepos": "未找到仓库。请在“设置”中连接 Git 提供商，或改为粘贴 URL。",
+      "reposError": "无法加载仓库：{{message}}",
+      "pasteInstead": "改为粘贴 URL",
+      "pickInstead": "从我的仓库中选择",
+      "repoUrl": "仓库 URL",
+      "repoUrlPlaceholder": "https://github.com/you/hello",
+      "ref": "分支",
+      "refHint": "默认使用仓库的主分支。",
+      "directory": "处理程序目录",
+      "directoryHint": "如果处理程序位于仓库根目录，请留空。",
+      "detected": "检测到 {{framework}}。将由 Railpack 构建。",
+      "detecting": "正在检查仓库",
+      "image": "镜像",
+      "imagePlaceholder": "ghcr.io/you/hello:1.0",
+      "imageHint": "请包含 :1.0 这样的标签。不含标签时使用 latest 标签。",
+      "private": "私有"
+    },
+    "details": {
+      "name": "名称",
+      "nameHint": "小写字母、数字和连字符。它会成为 URL 的一部分。",
+      "nameChecking": "正在检查是否可用",
+      "nameFree": "{{name}} 可用。",
+      "idle": "休眠时间",
+      "idleOption": {
+        "5": "5 分钟",
+        "10": "10 分钟",
+        "60": "1 小时",
+        "1440": "1 天",
+        "custom": "自定义"
+      },
+      "customIdle": "分钟",
+      "idleHint": "安静的函数会休眠以节省资源。下一个请求会唤醒它，这会带来一个称为冷启动的短暂延迟。",
+      "route": "在某个路径上提供服务（可选）",
+      "routeHint": "同时在你的某个域名下响应，例如 example.com/hello。",
+      "routeDomain": "域名",
+      "routeNone": "不添加路径",
+      "routePath": "路径",
+      "previewFunction": "函数 URL",
+      "previewRoute": "路径 URL",
+      "previewPending": "构建完成时分配",
+      "advanced": "高级设置",
+      "port": "端口",
+      "portHint": "你的处理程序监听的端口。它会通过 PORT 变量接收该端口。"
+    },
+    "summary": {
+      "title": "准备好部署",
+      "buildRailpack": "使用 Railpack 构建",
+      "buildImage": "原样运行镜像",
+      "text": "这将{{build}}，空闲 {{sleep}}后休眠，并可通过 {{url}} 访问。",
+      "sleepMinutes": "{{count}} 分钟",
+      "sleepHour": "1 小时",
+      "sleepDay": "1 天",
+      "urlPending": "构建完成时分配的 URL"
+    },
+    "result": {
+      "title": "正在部署 {{name}}",
+      "building": "正在构建并启动你的函数。通常需要一两分钟。",
+      "live": "{{name}} 已上线。",
+      "failed": "构建失败。请打开该函数查看构建日志。",
+      "urlLabel": "函数 URL",
+      "waitingUrl": "URL 准备好后会立即显示在这里。",
+      "copy": "复制 URL",
+      "copied": "已复制",
+      "open": "打开函数",
+      "done": "关闭"
+    },
+    "validation": {
+      "repoRequired": "请选择仓库或粘贴其 URL。",
+      "repoInvalid": "请输入以 https:// 开头的完整 URL。",
+      "imageRequired": "请输入要运行的镜像。",
+      "imageInvalid": "镜像名称不能包含空格。",
+      "nameRequired": "请为函数命名。",
+      "nameInvalid": "请使用小写字母、数字和连字符，并以字母或数字开头和结尾。",
+      "nameTooLong": "名称请保持足够短，以便放入 URL。",
+      "nameTaken": "该名称已被另一个应用使用。请换一个。",
+      "portInvalid": "请输入 1 到 65535 之间的端口。",
+      "idleInvalid": "请输入整数分钟数，且不得小于允许的最小值。",
+      "domainRequired": "请为该路径选择域名。",
+      "pathInvalid": "请使用 /hello 这样的路径，可包含字母、数字、连字符或点号。"
+    },
+    "name": "名称",
+    "repo": "仓库 URL",
+    "ref": "分支、标签或提交",
+    "directory": "处理程序目录（可选）",
+    "directoryHint": "如果处理程序位于仓库根目录，请留空。",
+    "routeDomain": "同时在域名上提供服务",
+    "routePath": "路径前缀",
+    "routeHint": "可选。已绑定到某个应用的域名，加上 /hello 这样的路径，就会在 域名/hello 上提供此函数。前缀会在请求到达处理程序之前被去除。",
+    "port": "端口",
+    "idle": "空闲多少分钟后休眠"
+  },
+  "templates": {
+    "title": "入门处理程序",
+    "description": "每个入门示例都是约十行的完整处理程序。Railpack 无需 Dockerfile 即可构建它，它监听 PORT 变量。",
+    "copy": "复制",
+    "copied": "已复制",
+    "cliLabel": "或者在终端中",
+    "error": "无法加载入门处理程序：{{message}}"
+  },
+  "kv": {
+    "loading": "正在加载键",
+    "error": "无法加载键值存储：{{message}}",
+    "usage": "{{keys}} / {{maxKeys}} 个键，已使用 {{bytes}} / {{maxBytes}} 字节",
+    "disabled": "此函数的存储已关闭。启用后，函数会获得 KV_URL 和 KV_TOKEN，并带着它们重启。",
+    "enable": "启用存储",
+    "rotate": "轮换令牌",
+    "tokenIssued": "令牌已签发。函数将带着新的 KV_TOKEN 重启。",
+    "add": "添加键",
+    "empty": "还没有键。",
+    "prefixLabel": "按前缀筛选",
+    "keyLabel": "键",
+    "valueLabel": "值",
+    "ttlLabel": "过期时间（秒）",
+    "ttlPlaceholder": "永不",
+    "save": "保存键",
+    "saved": "键已保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteTitle": "删除 {{key}}？",
+    "deleteBody": "函数会立即失去该值。",
+    "loadFailed": "无法加载该值",
+    "binary": "（二进制）",
+    "never": "永不",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "键",
+      "value": "值",
+      "size": "大小",
+      "expires": "过期",
+      "actions": "操作"
+    }
+  },
+  "detail": {
+    "back": "所有函数",
+    "notFound": "未找到此函数。它可能已被删除，或已不再休眠。",
+    "seconds": "{{count}} 秒",
+    "tabs": {
+      "overview": "概览",
+      "settings": "设置",
+      "environment": "环境变量与密钥",
+      "versions": "版本",
+      "kv": "键值存储"
+    },
+    "overview": {
+      "title": "状态",
+      "image": "镜像",
+      "openApp": "作为应用打开"
+    },
+    "settings": {
+      "port": "端口",
+      "timeout": "请求超时（秒）",
+      "concurrency": "最大并发数",
+      "limitsTitle": "请求限制",
+      "limitsHelp": "在请求等待休眠的函数启动期间生效。0 表示使用服务器默认值。超过并发限制的请求会收到带 Retry-After 的 429。",
+      "timeoutHelp": "冷启动的最长等待时间，最多 {{max}} 秒。当前 {{effective}} 秒（0 表示自适应默认值）。",
+      "concurrencyHelp": "同时挂起的请求数，最多 {{max}}。当前 {{effective}}（0 表示无限制）。",
+      "save": "保存限制",
+      "saved": "限制已保存",
+      "saveFailed": "无法保存限制"
+    },
+    "versions": {
+      "title": "版本",
+      "help": "回滚到较早的部署，或将其固定：固定会回滚并锁定发布，使新的构建保持挂起，直到你解锁。",
+      "empty": "还没有部署。",
+      "live": "线上",
+      "rollback": "回滚",
+      "pin": "固定此版本",
+      "done": "已开始更改版本",
+      "failed": "更改版本失败"
+    }
+  },
+  "observe": {
+    "title": "调用与测试控制台",
+    "pick": "函数",
+    "tabCalls": "最近调用",
+    "tabTest": "测试控制台",
+    "time": "时间",
+    "request": "请求",
+    "status": "状态",
+    "duration": "耗时",
+    "cold": "冷启动",
+    "coldYes": "冷启动",
+    "coldNo": "热启动",
+    "sizes": "输入 / 输出",
+    "logs": "日志",
+    "openLogs": "日志",
+    "replay": "重放",
+    "replayed": "已重放，响应 {{status}}",
+    "replayFailed": "重放失败：{{message}}",
+    "loadError": "无法加载调用记录：{{message}}",
+    "emptyTitle": "尚无调用记录",
+    "emptyBody": "控制平面在内存中保留调用记录期间，它们会显示在这里。请从测试控制台发送一个。",
+    "tableLabel": "{{name}} 的最近调用",
+    "captureLabel": "保留测试调用的输入，以便重放",
+    "captureHint": "默认关闭。只会保留从测试控制台或 CLI 发送的调用，绝不保留其他流量。凭据请求头会被丢弃。"
+  },
+  "console": {
+    "method": "方法",
+    "path": "路径",
+    "headers": "请求头",
+    "headersPlaceholder": "Name: value，每行一个",
+    "body": "请求体",
+    "bodyPlaceholder": "JSON 或纯文本",
+    "send": "发送",
+    "sending": "发送中",
+    "wakeHint": "如果函数处于休眠状态，这里会先等待它唤醒。",
+    "failed": "调用失败：{{message}}",
+    "result": "响应",
+    "warm": "热启动",
+    "stored": "已保存输入以便重放",
+    "truncated": "请求体已在大小限制处被截断。"
+  },
+  "banner": {
+    "title": "函数",
+    "description": "闲置时不产生任何费用的小型处理程序。它们在一段安静期后休眠，并在下一个请求到来时唤醒。",
+    "diagram": {
+      "browser": "浏览器",
+      "request": "请求",
+      "function": "函数",
+      "response": "响应",
+      "coldStart": "冷启动约 1 秒",
+      "sleeps": "空闲时休眠"
+    }
+  }
+}
