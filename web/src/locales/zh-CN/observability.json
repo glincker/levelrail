@@ -1,0 +1,379 @@
+{
+  "chart": {
+    "noData": "此范围内没有数据。"
+  },
+  "compare": {
+    "toggle": "与上一时段比较",
+    "previousPeriod": "上一时段",
+    "previous5xx": "5xx,上一时段",
+    "previousP95": "p95,上一时段"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "内存",
+    "network": "网络 I/O",
+    "disk": "磁盘 I/O",
+    "build": "构建时长",
+    "requestRate": "请求速率",
+    "requestRateHint": "入口处每秒请求数",
+    "requests": "请求数",
+    "errorRate": "错误率",
+    "errorRateHint": "返回 4xx 和 5xx 的请求占比",
+    "latency": "延迟",
+    "latencyHint": "此范围内 p95 为 {{p95}} ms",
+    "memoryLimit": "限制 {{limit}},已使用 {{usage}}"
+  },
+  "series": {
+    "CPU": "CPU",
+    "usage": "用量",
+    "limit": "限制",
+    "received": "接收",
+    "sent": "发送",
+    "read": "读取",
+    "write": "写入",
+    "duration": "时长"
+  },
+  "markers": {
+    "deploy": "{{status}}部署:{{image}},开始于 {{time}}",
+    "restart": "{{time}} 发生 {{count}} 次容器重启"
+  },
+  "deployStatus": {
+    "succeeded": "成功",
+    "failed": "失败",
+    "running": "运行中",
+    "held": "已暂缓(冻结)",
+    "awaiting_approval": "等待批准",
+    "superseded": "已被取代",
+    "queued": "排队中",
+    "canceled": "已取消",
+    "pending": "排队至节点恢复"
+  },
+  "deployDetails": {
+    "title": "{{status}}部署",
+    "image": "镜像",
+    "commit": "提交",
+    "source": "触发方式",
+    "duration": "时长",
+    "error": "错误",
+    "openLogs": "打开部署日志"
+  },
+  "dashboard": {
+    "title": "指标",
+    "summary": "截至 {{time}}。此范围内有 {{deploys}} 次部署。虚线标示部署(绿色成功、红色失败、灰色运行中),琥珀色线标示容器重启。",
+    "restarts": "重启:此范围内 {{count}} 次。",
+    "hint": "选择图表以调查该时刻。选择标记以查看部署详情。"
+  },
+  "range": {
+    "from": "从",
+    "to": "到",
+    "apply": "应用范围"
+  },
+  "requests": {
+    "unavailable": "请求指标不可用:{{message}}",
+    "empty": "此范围内没有请求流量。应用通过其域名接收请求后,请求速率、错误率和延迟会显示在这里。"
+  },
+  "investigation": {
+    "title": "调查",
+    "heading": "正在调查 {{time}}",
+    "window": "窗口 {{from}} 至 {{to}},与其之前的窗口进行比较。",
+    "viewLogs": "查看此时的日志",
+    "clear": "清除选择",
+    "beforeAfter": "之前与期间",
+    "baseline": "之前",
+    "during": "期间",
+    "metric": {
+      "rate": "请求速率",
+      "p50": "p50 延迟",
+      "p95": "p95 延迟",
+      "p99": "p99 延迟",
+      "err4": "4xx 比例",
+      "err5": "5xx 比例"
+    },
+    "noTraffic": "此窗口内没有请求流量。",
+    "topRoutes": "热门路由",
+    "noRoutes": "此窗口内没有记录路由。",
+    "routesUnavailable": "此控制面不提供按路由的统计。",
+    "route": "路由",
+    "requests": "请求数",
+    "avg": "平均",
+    "statusCodes": "状态码",
+    "whatChanged": "发生了什么变化",
+    "noChanges": "此时间前后没有任何变化。",
+    "likelyCause": "可能的原因"
+  },
+  "logs": {
+    "serviceFilter": {
+      "label": "服务"
+    },
+    "container": "容器",
+    "allContainers": "所有容器",
+    "stream": "流",
+    "anyStream": "stdout 和 stderr",
+    "minLevel": "最低级别",
+    "anyLevel": "任意级别",
+    "jsonFields": "JSON 字段",
+    "fieldKey": "field.path",
+    "fieldOp": "运算符",
+    "fieldValue": "值",
+    "addFilter": "添加筛选",
+    "removeFilter": "移除筛选 {{filter}}",
+    "copyPermalink": "复制固定链接",
+    "copied": "已复制"
+  },
+  "live": {
+    "pause": "暂停实时跟踪",
+    "resume": "继续({{count}} 行新内容)"
+  },
+  "failure": {
+    "title": "故障上下文",
+    "crashloopTitle": "此应用正在崩溃循环",
+    "deployFailedTitle": "最近一次部署失败",
+    "crashloopSummary": "最近 {{minutes}} 分钟内重启了 {{count}} 次。这是容器写出的最后几行。",
+    "deploySummary": "{{image}} 的部署未完成。这是其输出的最后几行。",
+    "copy": "复制行",
+    "openDeployLogs": "打开部署日志",
+    "openLogs": "打开完整日志",
+    "noLines": "没有为此故障捕获到日志行。",
+    "lastLine": "最后一行:",
+    "showing": "显示 {{total}} 行中的最后 {{shown}} 行。",
+    "linesLabel": "失败容器的最后几行日志",
+    "expand": "显示详情",
+    "collapse": "隐藏详情"
+  },
+  "containerExit": {
+    "exitedAt": "容器于 {{time}} 以退出码 {{code}} 退出",
+    "exited": "容器以退出码 {{code}} 退出",
+    "oomAt": "容器于 {{time}} 因超出内存限制而被杀死",
+    "oom": "容器因超出内存限制而被杀死",
+    "deployTitle": "此版本为何停止",
+    "deploySummary": "容器 {{container}} 在能够提供服务之前就停止了。这是它打印的最后几行。",
+    "noLines": "容器在停止之前没有打印任何内容。",
+    "showing": "最后 {{count}} 行",
+    "linesLabel": "容器打印的最后几行",
+    "hint": "入口点需要子命令(例如 serve)的镜像,在没有给出子命令时会打印帮助并以 0 退出:请设置命令后重新部署。"
+  },
+  "liveLogs": {
+    "lineCount": "{{count}} 行(近期上下文,然后是实时)",
+    "lastOutput": "{{count}} 行:已停止容器的最后输出",
+    "waiting": "正在等待日志输出...",
+    "noContainer": "没有运行中的容器可产生日志:{{reason}}",
+    "viewDeploys": "显示最近一次部署日志"
+  },
+  "connection": {
+    "connecting": "正在连接...",
+    "open": "实时",
+    "error": "正在重新连接...",
+    "notRunning": "未运行",
+    "noContainer": "无容器"
+  },
+  "databaseRule": {
+    "kind": {
+      "database_disk_high": "数据库磁盘占用高",
+      "database_connections_high": "数据库连接数高",
+      "database_down": "数据库宕机",
+      "database_backup_stale": "数据库备份过期"
+    },
+    "database": "数据库",
+    "choose": "选择数据库",
+    "noDatabases": "暂无数据库。请先从数据库页面创建一个。",
+    "thresholdPercent": "告警阈值(百分比)",
+    "thresholdHours": "最近一次成功备份早于多少小时时告警",
+    "hint": {
+      "database_disk_high": "数据磁盘占用达到或超过此百分比时触发。留 0 则使用默认值(85)。",
+      "database_connections_high": "打开的连接数达到或超过上限的此百分比时触发。留 0 则使用默认值(80)。",
+      "database_down": "数据库不接受连接时触发。",
+      "database_backup_stale": "最新的成功备份早于此时间时触发。留 0 则使用默认值(26 小时)。"
+    },
+    "pickDatabase": "选择要监控哪个数据库",
+    "badPercent": "必须在 0 到 100 之间",
+    "badHours": "必须在 0 到 8760 之间"
+  },
+  "alertKinds": {
+    "whatToDo": "该怎么做",
+    "backup_failed": {
+      "label": "备份失败",
+      "description": "计划备份未完成时触发。",
+      "action": "打开失败的备份运行查看其错误,修复原因,然后运行一次备份确认成功。"
+    },
+    "deploy_failed": {
+      "label": "部署失败",
+      "description": "部署在新版本提供流量之前停止时触发。",
+      "action": "查看部署的日志了解其停止原因,修复后再次部署。"
+    },
+    "monitor_down": {
+      "label": "监控宕机",
+      "description": "可用性监控在确认检查之后仍处于宕机状态时触发,恢复后解除。",
+      "action": "打开监控的结果查看失败原因,然后修复目标或其网络路径。"
+    },
+    "oom_killed": {
+      "label": "OOM 被杀",
+      "description": "内核因内存耗尽而在重启窗口内反复杀死此应用的容器时触发。",
+      "action": "提高应用的内存限制或修复泄漏,然后重新部署并观察内存图表。"
+    },
+    "database_down": {
+      "label": "数据库宕机",
+      "description": "数据库不接受连接时触发。",
+      "action": "检查数据库的日志,如果它已停止则重启它。"
+    },
+    "database_backup_stale": {
+      "label": "数据库备份过期",
+      "description": "最新的成功备份早于你设置的上限时触发。",
+      "action": "检查数据库的备份计划和最近的备份运行,然后立即运行一次备份。"
+    },
+    "database_disk_high": {
+      "label": "数据库磁盘占用高",
+      "description": "数据库的数据磁盘达到或超过阈值时触发。",
+      "action": "在数据库空间耗尽之前,释放数据磁盘上的空间或扩容。"
+    },
+    "database_connections_high": {
+      "label": "数据库连接数高",
+      "description": "打开的连接数接近数据库上限时触发。",
+      "action": "在你的应用中查找空闲或泄漏的连接,或提高连接数上限。"
+    },
+    "node_disk_space": {
+      "label": "节点磁盘空间",
+      "description": "节点磁盘接近写满时触发。",
+      "action": "移除节点上未使用的镜像和旧日志,或将工作负载迁移到其他节点。"
+    },
+    "email_delivery_failing": {
+      "label": "邮件投递失败",
+      "description": "出站邮件持续发送失败时触发。",
+      "action": "检查邮件提供商的设置和最近的投递错误,然后发送一封测试邮件。"
+    },
+    "cleanup_failing": {
+      "label": "数据清理失败",
+      "description": "计划或手动的数据清理运行持续失败时触发。",
+      "action": "打开清理,查看失败运行的错误,然后重新运行该数据类型。"
+    },
+    "job_failing": {
+      "label": "作业失败",
+      "description": "对此应用上开启了失败时告警的失败作业,每个作业触发一次,并按作业限速。",
+      "action": "打开作业的运行历史查看失败运行的日志,修复原因,然后立即运行以确认。"
+    }
+  },
+  "budgetThreshold": {
+    "hint": "当任何项目或团队预算(用量与成本)达到警告水平、超出上限,或预测本月将超支时触发。只有在越过新的级别时才会再次通知。"
+  },
+  "alerts": {
+    "noChannelWarning": "未设置通知渠道,因此此规则会触发但不会通知任何人。请在上方选择一个渠道,或在设置 > 通知渠道中连接一个。"
+  },
+  "explorer": {
+    "title": "热门错误签名",
+    "subtitle": "将相似的错误行归为一组,忽略数字、ID 和时间戳。",
+    "occurrences_other": "{{count}} 次出现",
+    "firstSeen": "首次出现于 {{time}}",
+    "lastSeen": "最近出现于 {{time}}",
+    "newBadge": "新",
+    "sparkline": "所选范围内 {{count}} 次出现的趋势",
+    "viewLines": "查看行",
+    "alertOnThis": "对此告警",
+    "onlyNew_other": "仅新增({{count}})",
+    "noNew": "此范围内没有新的错误类型。",
+    "empty": "此范围内没有错误行。",
+    "emptyHint": "请扩大时间范围,或在下次部署后再来查看。",
+    "truncated": "仅读取了最新的 {{rows}} 行。请缩小范围以获得精确计数。",
+    "saved": "已保存",
+    "orderLabel": "结果排序",
+    "orderNewest": "最新",
+    "orderRelevance": "相关度",
+    "savedHeading": "已保存的查询",
+    "savedEmpty": "此应用暂无已保存的查询。",
+    "recent": "最近",
+    "saveName": "当前搜索的名称",
+    "saveCurrent": "保存当前搜索",
+    "saveNeedsFilter": "添加搜索、级别或字段筛选后才能保存。",
+    "shareWithTeam": "与所有能看到此应用的人共享",
+    "pinToApp": "固定到此应用",
+    "savedToast": "查询已保存。",
+    "deleteSaved": "删除已保存的查询 {{name}}",
+    "alertFromSearch": "对此告警",
+    "alertTitle": "创建日志告警",
+    "alertDescription": "当匹配的行在窗口内达到阈值时触发。每分钟根据已存储的日志检查一次。",
+    "alertAnyLine": "任何 {{level}} 及以上级别的行",
+    "alertDefaultName": "{{app}} 日志告警",
+    "alertName": "名称",
+    "alertMode": "告警类型",
+    "modeCount": "至少匹配",
+    "modeRate": "每分钟行数至少为",
+    "alertThreshold": "阈值",
+    "alertWindow": "窗口",
+    "inWindow": "在 {{window}} 内",
+    "cooldown": "冷却时间",
+    "channel": "通知渠道",
+    "channelNone": "无渠道",
+    "cancel": "取消",
+    "createAlert": "创建告警",
+    "alertCreated": "告警规则 \"{{name}}\" 已创建。",
+    "wrap": "自动换行",
+    "entryDetail": "日志行",
+    "copyLine": "复制行",
+    "closeDetail": "关闭详情",
+    "filterByField": "按 {{field}} 筛选",
+    "context": "上下文行",
+    "loading": "正在加载...",
+    "signatureFilter": "正在显示错误签名 {{id}} 的行。",
+    "clearSignature": "显示所有行",
+    "newErrorTypes_other": "自此次部署以来有 {{count}} 种新的错误类型",
+    "tabErrors": "错误",
+    "conditionPattern": "{{minutes}} 分钟内有 {{count}} 行或更多行匹配 {{what}}",
+    "conditionRate": "{{minutes}} 分钟内每分钟超过 {{rate}} 行为 {{level}} 或以上级别",
+    "searchPlaceholder": "搜索日志消息...",
+    "searchLabel": "搜索日志消息",
+    "clearSearch": "清除搜索",
+    "searchSyntax": "语法:\"精确短语\"、前缀*、a OR b、a NOT b、-词、( ) 分组。"
+  },
+  "slo": {
+    "title": "服务级别目标",
+    "availabilityObjective": "{{target}}% 的请求成功",
+    "latencyObjective": "{{target}}% 的请求在 {{ms}} ms 内完成",
+    "noTraffic": "无流量",
+    "noTrafficHint": "评估窗口内没有请求到达此应用,因此暂无可衡量的内容。",
+    "paging": "呼叫中",
+    "burning": "消耗中",
+    "healthy": "健康",
+    "firing": "触发中",
+    "budgetRemaining": "剩余错误预算",
+    "tierWindow": "{{name}}({{long}} 和 {{short}})",
+    "burnRate": "{{rate}} 倍消耗"
+  },
+  "appScrape": {
+    "title": "应用指标",
+    "subtitle": "从应用容器上自身的指标端点抓取的序列。",
+    "metric": "指标",
+    "pickMetric": "选择指标",
+    "range": "范围",
+    "hours_other": "最近 {{count}} 小时",
+    "empty": "尚未存储任何序列。第一次抓取会在下一个间隔运行。",
+    "port": "容器端口",
+    "path": "路径",
+    "save": "保存目标",
+    "lastError": "上次抓取失败:{{error}}",
+    "invalidPort": "请输入 1 到 65535 之间的端口。",
+    "invalidPath": "请使用类似 /metrics 的普通路径。"
+  },
+  "accessSearch": {
+    "formLabel": "请求筛选",
+    "status": "状态",
+    "anyStatus": "任意状态",
+    "method": "方法",
+    "anyMethod": "任意方法",
+    "path": "路径前缀",
+    "pathPlaceholder": "/api/",
+    "text": "路径包含",
+    "textPlaceholder": "路径中的文本",
+    "window": "时间窗口",
+    "search": "搜索",
+    "privacyNote": "最近的请求保存在边缘的内存中。查询字符串绝不会被记录,也不显示客户端 IP。",
+    "loading": "正在加载请求",
+    "empty": "没有请求匹配这些筛选条件。",
+    "colTime": "时间",
+    "colStatus": "状态",
+    "colMethod": "方法",
+    "colPath": "主机和路径",
+    "colDuration": "ms",
+    "truncated": "搜索在达到扫描上限时停止。请缩小筛选条件以获得完整结果。",
+    "newer": "较新",
+    "older": "较旧",
+    "tab": "请求"
+  }
+}
