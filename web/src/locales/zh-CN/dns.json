@@ -1,0 +1,361 @@
+{
+  "common": {
+    "cancel": "取消"
+  },
+  "page": {
+    "title": "DNS",
+    "description": "你的 DNS 提供商处的区域、记录、域名服务器委派和传播情况。",
+    "help": "DNS 指南",
+    "addZone": "添加区域",
+    "provider": "提供商：{{provider}}",
+    "loadFailed": "无法加载 DNS 区域"
+  },
+  "empty": {
+    "title": "连接 DNS 提供商",
+    "body": "在“域名，DNS 提供商”下连接 Cloudflare、Route53 或 Google Cloud DNS，然后即可使用同样的凭据在这里管理区域和记录。",
+    "action": "打开域名",
+    "noZonesTitle": "还没有区域",
+    "noZonesBody": "为你拥有的域名创建一个区域，然后让你的注册商指向它的域名服务器。",
+    "noZonesAction": "添加区域"
+  },
+  "zones": {
+    "col": {
+      "name": "区域",
+      "status": "状态",
+      "records": "记录",
+      "nameServers": "域名服务器"
+    },
+    "private": "私有",
+    "unknown": "未知",
+    "notReported": "不适用"
+  },
+  "wizard": {
+    "title": "将域名接入 DNS",
+    "titleFor": "{{zone}} 的域名服务器",
+    "progress": "接入步骤",
+    "step": {
+      "domain": "域名",
+      "nameservers": "域名服务器",
+      "import": "导入记录",
+      "verify": "验证"
+    },
+    "lead": {
+      "domain": "为你在任意注册商处拥有的域名创建区域。",
+      "nameservers": "请在你的注册商处，将域名服务器设置为恰好这些，并替换当前的。",
+      "import": "复制该域名目前提供的记录，这样在切换域名服务器时不会出现故障。",
+      "verify": "向公共解析器查询该域名目前使用哪些域名服务器。"
+    },
+    "domain": "域名",
+    "domainHint": "可注册的域名，例如 example.com，而不是子域名。",
+    "create": "创建区域",
+    "creating": "创建中...",
+    "copyAll": "全部复制",
+    "copied": "已复制",
+    "registrarHint": "请在你的注册商处，打开该域名的域名服务器设置，选择自定义域名服务器并粘贴这些。请移除旧的：混用会导致应答不一致。",
+    "skipImport": "跳过导入",
+    "next": "下一步",
+    "propagationHint": "注册局通常会在一小时内发布更改；解析器可能会保留旧的应答长达两天。",
+    "openZone": "打开区域"
+  },
+  "delegation": {
+    "state": {
+      "delegated": "已委派",
+      "partially_delegated": "部分委派",
+      "delegated_elsewhere": "委派到别处",
+      "not_delegated": "未委派"
+    },
+    "hint": {
+      "delegated": "所查询的每个解析器都返回此区域的域名服务器。",
+      "partially_delegated": "部分解析器仍返回其他域名服务器。请等待缓存过期，或在注册商处移除多余的服务器。",
+      "delegated_elsewhere": "该域名仍指向其他域名服务器。请在你的注册商处更新它们。",
+      "not_delegated": "没有解析器返回此域名的域名服务器。请检查该域名是否已注册，以及域名服务器是否已设置。"
+    },
+    "verdict": {
+      "match": "一致",
+      "partial": "混合",
+      "elsewhere": "在别处",
+      "none": "无应答"
+    },
+    "col": {
+      "resolver": "解析器",
+      "verdict": "结论",
+      "answer": "域名服务器"
+    },
+    "system": "此服务器",
+    "noAnswer": "无应答",
+    "elsewhere": "仍指向：{{servers}}",
+    "recheck": "重新检查",
+    "checking": "检查中..."
+  },
+  "import": {
+    "title": "导入与导出",
+    "lead": "从区域文件或 JSON 将记录导入 {{zone}}。在你应用计划之前不会有任何更改。",
+    "tabImport": "导入",
+    "tabExport": "导出",
+    "file": "文件",
+    "paste": "或粘贴",
+    "formatHint": "BIND 区域文件，或此页面导出的 JSON。SOA 和顶点 NS 会被跳过。",
+    "replace": "替换：删除导入内容中缺少的记录集",
+    "confirm": "输入 {{zone}} 以确认替换",
+    "preview": "预览",
+    "apply": "应用",
+    "appliedToast_other": "已应用 {{count}} 项更改",
+    "failedToast": "导入失败",
+    "exportLead": "下载除提供商托管的 NS 和 SOA 之外的所有记录集。",
+    "exportBind": "区域文件",
+    "exportJson": "JSON",
+    "discoverHint": "已在该域名当前的域名服务器上查找了常见名称。请取消勾选你不想要的内容。",
+    "extraNames": "要额外查找的名称",
+    "extraPlaceholder": "vpn, portal, _acme-challenge",
+    "rescan": "查找",
+    "nothingFound": "在当前的域名服务器上没有找到记录。",
+    "foundAt_other": "在 {{servers}} 找到 {{count}} 个记录集",
+    "keep": "导入 {{name}} {{type}}",
+    "skip": "跳过",
+    "importSelected_other": "导入 {{count}} 个记录集"
+  },
+  "plan": {
+    "summary": "创建 {{create}} 个，更新 {{update}} 个，删除 {{delete}} 个，未变 {{unchanged}} 个",
+    "action": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "unchanged": "相同"
+    },
+    "blocked": "冲突阻止了此计划。请修复后再次预览。"
+  },
+  "records": {
+    "search": "搜索名称或值",
+    "typeFilter": "记录类型",
+    "allTypes": "所有类型",
+    "count_other": "{{count}} 个记录集",
+    "add": "添加记录",
+    "clear": "清除筛选",
+    "emptyTitle": "还没有记录",
+    "emptyBody": "添加一条记录、应用模板，或导入区域文件。",
+    "noMatch": "没有匹配的记录",
+    "noMatchBody": "请尝试其他名称、值或类型。",
+    "col": {
+      "name": "名称",
+      "type": "类型",
+      "ttl": "TTL",
+      "values": "值",
+      "flags": "路由"
+    },
+    "auto": "自动",
+    "proxied": "已代理",
+    "routed": "{{routing}} {{id}}",
+    "managed": "托管",
+    "alias": "别名指向 {{target}}",
+    "edit": "编辑 {{name}} {{type}}",
+    "delete": "删除 {{name}} {{type}}",
+    "deleteTitle": "删除 {{name}} {{type}}？",
+    "deleteLead_other": "全部 {{count}} 个值会立即在提供商处被移除。",
+    "confirmDelete": "删除"
+  },
+  "record": {
+    "addTitle": "添加记录",
+    "editTitle": "编辑记录",
+    "lead": "保存时，更改会写入提供商处的 {{zone}}。",
+    "name": "名称",
+    "type": "类型",
+    "ttl": "TTL",
+    "nameHint": "相对于 {{zone}}：@ 表示顶点，* 表示通配符。",
+    "ttlAutoHint": "TTL 为 1 表示自动。",
+    "values": "值",
+    "addValue": "添加值",
+    "removeValue": "移除值 {{n}}",
+    "partLabel": "{{part}} {{n}}",
+    "part": {
+      "address": "地址",
+      "target": "目标",
+      "text": "文本",
+      "priority": "优先级",
+      "weight": "权重",
+      "port": "端口",
+      "flags": "标志",
+      "tag": "标签",
+      "caaValue": "值"
+    },
+    "placeholder": {
+      "address": "203.0.113.10",
+      "target": "host.example.com",
+      "text": "",
+      "priority": "10",
+      "weight": "5",
+      "port": "443",
+      "flags": "0",
+      "tag": "",
+      "caaValue": "letsencrypt.org"
+    },
+    "proxied": "通过 Cloudflare 代理",
+    "routing": "路由策略",
+    "routingPolicy": {
+      "simple": "简单",
+      "weighted": "加权",
+      "failover": "故障转移",
+      "multivalue": "多值应答"
+    },
+    "setIdentifier": "集合标识符",
+    "weight": "权重（0 到 255）",
+    "failover": "故障转移角色",
+    "failoverPick": "选择角色",
+    "primary": "主",
+    "secondary": "备",
+    "healthCheck": "健康检查",
+    "noHealthCheck": "无",
+    "save": "保存",
+    "saving": "保存中...",
+    "savedToast": "已保存 {{name}}",
+    "failedToast": "无法保存记录",
+    "warning": "已保存，但有警告"
+  },
+  "validation": {
+    "name": "该名称不是有效的 DNS 名称。通配符必须是最左边的标签。",
+    "noValues": "请至少添加一个值。",
+    "ipv4": "A 记录需要 IPv4 地址。",
+    "ipv6": "AAAA 记录需要 IPv6 地址。",
+    "host": "目标必须是主机名。",
+    "priority": "优先级必须是 0 到 65535 之间的数字。",
+    "weight": "权重必须是 0 到 65535 之间的数字。",
+    "port": "端口必须是 0 到 65535 之间的数字。",
+    "caaTag": "CAA 标签必须是 issue、issuewild 或 iodef。",
+    "caaValue": "CAA 值为必填项。",
+    "textTooLong": "TXT 文本限制为 4000 个字符。",
+    "cnameSingle": "CNAME 只能有一个目标。",
+    "apexNs": "顶点 NS 记录由提供商管理。",
+    "ttl": "TTL 必须介于 30 和 604800 秒之间。",
+    "proxiedType": "只有 A、AAAA 和 CNAME 记录可以被代理。",
+    "setIdentifier": "有路由的记录需要集合标识符。",
+    "routingWeight": "权重必须介于 0 和 255 之间。",
+    "failoverRole": "请选择主或备。"
+  },
+  "templates": {
+    "title": "应用模板",
+    "lead": "常见配置，以记录集的形式提供。同名下已有的 TXT 值会保留，但第二条 SPF 或 DMARC 记录除外。",
+    "pick": "选择模板",
+    "failedToast": "模板失败"
+  },
+  "check": {
+    "name": "记录名称",
+    "type": "记录类型",
+    "run": "检查",
+    "checking": "检查中...",
+    "agree": "应答一致",
+    "differ": "应答不一致",
+    "zoneSays": "区域：{{values}}",
+    "authoritative": "权威",
+    "ttlLeft": "{{ttl}} 秒",
+    "noRecords": "无记录",
+    "mismatch": "与区域不一致",
+    "col": {
+      "server": "服务器",
+      "ttl": "剩余 TTL",
+      "answer": "应答"
+    }
+  },
+  "health": {
+    "lead": "Route53 健康检查决定由哪条故障转移或多值记录应答。",
+    "type": "类型",
+    "target": "主机或 IP",
+    "port": "端口",
+    "path": "路径",
+    "create": "添加健康检查",
+    "delete": "删除健康检查 {{id}}",
+    "empty": "还没有健康检查。",
+    "failedToast": "健康检查失败"
+  },
+  "zone": {
+    "loadFailed": "无法加载此区域",
+    "nameservers": "域名服务器",
+    "templates": "模板",
+    "importExport": "导入与导出",
+    "delete": "删除区域",
+    "deleteTitle": "删除 {{zone}}？",
+    "deleteLead": "该区域及其域名服务器会在提供商处被移除。如果该域名仍委派到这里，它将停止解析。",
+    "deleteHasRecords_other": "该区域除 NS 和 SOA 之外，还有 {{count}} 个记录集。如果之后可能需要，请先导出。",
+    "typeName": "输入 {{zone}} 以确认",
+    "force": "同时删除这些记录",
+    "deletedToast": "已删除 {{zone}}",
+    "deleteFailed": "无法删除该区域",
+    "recordsByType": "按类型统计的记录",
+    "total_other": "共 {{count}} 个记录集",
+    "lastChanged": "最近更改",
+    "by": "由 {{who}}（{{action}}）",
+    "noChanges": "尚未从这里做出任何更改。",
+    "provider": "{{provider}}，{{status}}",
+    "tab": {
+      "records": "记录",
+      "delegation": "委派",
+      "propagation": "传播",
+      "health": "健康检查"
+    }
+  },
+  "recordsControl": {
+    "recordType": "记录类型",
+    "recordName": "记录名称",
+    "namePlaceholder": "@ 或子域名",
+    "recordValue": "记录值",
+    "valuePlaceholder": "值",
+    "ttlSeconds": "TTL 秒数",
+    "save": "保存",
+    "cancel": "取消",
+    "editRecord": "编辑记录",
+    "deleteRecord": "删除记录",
+    "deleteTitle": "删除此记录？",
+    "deleteBody": "指向 {{value}} 的 {{type}} {{name}} 将从该区域中移除。此操作无法撤销。",
+    "deleting": "删除中...",
+    "delete": "删除",
+    "statusResolved": "已解析",
+    "statusPending": "待处理",
+    "statusMismatch": "不一致",
+    "statusUnknown": "未验证",
+    "title": "DNS 记录",
+    "titleNoProvider": "DNS 记录：没有提供商",
+    "count_other": "{{count}} 条 DNS 记录",
+    "titleForZone": "{{zone}} 的 DNS 记录",
+    "closeAdd": "关闭",
+    "noProvider": "尚未为记录配置 DNS 提供商。请在上方启用 Cloudflare DNS、Route53 DNS 或 Google Cloud DNS，即可在这里列出并编辑此区域的记录。",
+    "noRecords": "未找到记录。",
+    "colType": "类型",
+    "colName": "名称",
+    "colValue": "值",
+    "colTtl": "TTL",
+    "colStatus": "状态",
+    "addRecord": "添加记录",
+    "connect": "连接 {{provider}}",
+    "nsHint": "你的区域使用 {{provider}} 的域名服务器。"
+  },
+  "banner": {
+    "description": "连接 DNS 提供商，即可在这里管理区域和记录，并查看域名服务器更改何时传播完成。",
+    "diagram": {
+      "records": "记录",
+      "server": "服务器"
+    }
+  },
+  "providerGuide": {
+    "title": "在 {{provider}} 添加记录",
+    "where": {
+      "cloudflare": "打开 Cloudflare 仪表盘，选择域名，然后依次进入 DNS、记录、添加记录。",
+      "route53": "打开 Route 53，进入托管区域，选择区域，然后点击创建记录。",
+      "digitalocean": "打开网络，进入域名，选择域名，然后添加一条 A 记录。",
+      "hetzner": "打开 Hetzner DNS 控制台，选择区域，然后添加记录。",
+      "namecheap": "打开域名列表，点击管理，进入高级 DNS，然后点击添加新记录。",
+      "godaddy": "打开我的产品，点击域名旁边的 DNS，然后点击添加新记录。",
+      "porkbun": "打开域名管理，进入该域名的 DNS，然后添加记录。",
+      "google": "在 Google Cloud 中打开 Cloud DNS，选择区域，然后点击添加标准记录。",
+      "azure": "在 Azure 门户中打开 DNS 区域，然后依次进入记录集、添加。",
+      "ns1": "打开 NS1 仪表盘，选择区域，然后点击添加记录。",
+      "desec": "打开 deSEC 仪表盘，选择域名，然后添加记录集。"
+    },
+    "record": "添加一条主机为 {{host}}、值为 {{value}} 的 A 记录。TTL 设为 300 秒即可。",
+    "proxyOff": "在证书签发之前，请为此记录关闭橙色云朵（代理）。",
+    "docs": "{{provider}} DNS 文档"
+  },
+  "verification": {
+    "ok_other": "令牌已接受。可见 {{count}} 个区域。",
+    "failedTitle": "已保存的令牌目前还无法管理 DNS",
+    "missing": "缺少的权限：",
+    "fix": "修复令牌：请在你的提供商仪表盘中编辑它，添加上述权限，然后在此粘贴并再次保存。"
+  }
+}
