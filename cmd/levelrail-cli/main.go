@@ -383,6 +383,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runIAM(prog, args[1:], stdout, stderr, lookupEnv)
 	case "secrets":
 		return runSecrets(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cloud":
+		return runCloud(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "import":

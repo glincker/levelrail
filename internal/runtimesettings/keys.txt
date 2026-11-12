@@ -80,6 +80,7 @@ cleanup.enabled
 cleanup.failing_floor
 cleanup.failing_window
 cleanup.interval
+cloud.connections_enabled
 compose.depends_on_timeout
 compose.repo_deploy_timeout
 compose.repo_file_max_bytes
