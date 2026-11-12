@@ -1,0 +1,95 @@
+{
+  "kind": {
+    "dev": "开发",
+    "test": "测试",
+    "uat": "UAT",
+    "production": "生产",
+    "preview": "预览",
+    "custom": "自定义"
+  },
+  "settings": {
+    "title": "环境",
+    "description": "适用于整个实例的应用和数据库环境。将某个环境标记为受保护后，任何进出该环境的变动都需要第二个人批准。",
+    "create": "创建环境",
+    "empty": {
+      "title": "还没有环境",
+      "description": "创建第一个环境，开始对应用和数据库分组。"
+    },
+    "columns": {
+      "name": "名称",
+      "kind": "类型",
+      "protected": "受保护",
+      "apps": "应用",
+      "databases": "数据库",
+      "actions": "操作"
+    },
+    "builtIn": "内置",
+    "scopeProject": "项目",
+    "protectedToggle": "受保护，{{name}}",
+    "protectedOn": "环境“{{name}}”现已受保护。",
+    "protectedOff": "环境“{{name}}”不再受保护。",
+    "updateFailed": "无法更新环境。",
+    "edit": "编辑",
+    "delete": "删除"
+  },
+  "form": {
+    "createTitle": "创建环境",
+    "editTitle": "编辑环境",
+    "description": "为它命名，并选择能描述其角色的类型。",
+    "name": "名称",
+    "namePlaceholder": "Staging EU",
+    "kind": "类型",
+    "protected": "受保护",
+    "protectedHint": "进出此环境的移动需要等待另一个人批准。",
+    "cancel": "取消",
+    "save": "保存",
+    "saving": "保存中",
+    "created": "环境“{{name}}”已创建。",
+    "updated": "环境“{{name}}”已更新。",
+    "failed": "无法保存环境。"
+  },
+  "delete": {
+    "title": "删除“{{name}}”",
+    "description": "此操作无法撤销。",
+    "inUse": "有 {{apps}} 个应用和 {{databases}} 个数据库标记了此环境。删除之前，请选择它们的去向。",
+    "moveTo": "移动到",
+    "moveToNone": "选择环境",
+    "cancel": "取消",
+    "confirm": "删除环境",
+    "deleting": "删除中",
+    "deleted": "环境“{{name}}”已删除。",
+    "failed": "无法删除环境。",
+    "reserved": "内置环境无法删除。",
+    "protectedBlock": "受保护的环境不能参与批量移动。请先取消保护，或逐个移动。"
+  },
+  "switcher": {
+    "label": "环境",
+    "all": "所有环境",
+    "aria": "按环境筛选仪表盘"
+  },
+  "move": {
+    "trigger": "更改",
+    "title": "将“{{name}}”移动到某个环境",
+    "description": "选择它所属的环境。",
+    "field": "环境",
+    "none": "无环境",
+    "current": "（当前）",
+    "protectedNotice": "此次移动涉及受保护的环境“{{environment}}”。它不会立即生效：而是成为待处理的审批，必须由另一个人批准。",
+    "confirmLabel": "我了解这需要审批",
+    "request": "请求移动",
+    "save": "保存",
+    "saving": "保存中",
+    "cancel": "取消",
+    "moved": "“{{name}}”已移动。",
+    "pending": "“{{name}}”的移动正在等待审批。",
+    "failed": "无法移动“{{name}}”。",
+    "frozen": "部署冻结正在生效。请在其结束后重试。"
+  },
+  "picker": {
+    "aria": "选择项目和环境",
+    "allProjects": "所有项目",
+    "projects": "项目",
+    "environments": "环境",
+    "allEnvironments": "所有环境"
+  }
+}

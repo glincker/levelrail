@@ -1,0 +1,104 @@
+{
+  "privateLink": "私有网络和规则",
+  "page": {
+    "title": "网络",
+    "description": "每个应用和数据库在哪里运行，以及它们如何相互访问。内部区域 {{zone}}。"
+  },
+  "summary": {
+    "nodes": "服务器",
+    "mesh": "Mesh",
+    "zone": "内部区域",
+    "resources": "应用和数据库",
+    "meshOff": "关闭",
+    "meshOn": "开启",
+    "meshRestart": "需要重启"
+  },
+  "group": {
+    "thisServer": "此服务器（控制平面）",
+    "unplaced": "未放置",
+    "unplacedHint": "这些资源被放置在此控制平面不认识的节点（{{ids}}）上。请把它们移到此服务器，或重新添加该节点。",
+    "moveHint": "打开应用或数据库，选择一个节点即可将其移到此服务器。",
+    "reAdd": "重新添加节点",
+    "empty": "这里还没有任何运行的内容。",
+    "cordoned": "已隔离",
+    "noMeshAddress": "尚未加入 mesh",
+    "viewNode": "节点详情"
+  },
+  "resource": {
+    "app": "应用",
+    "database": "数据库",
+    "copy": "复制内部地址",
+    "copied": "已复制",
+    "local": "本地",
+    "connectsTo": "连接到 {{database}}",
+    "noMeshAddress": "没有 mesh 地址",
+    "noMeshAddressHint": "此资源所在的节点没有 mesh 地址，因此其他节点无法访问它。"
+  },
+  "legend": {
+    "title": "如何阅读此页",
+    "server": "运行 Levelrail 的服务器。第一张卡片是控制平面本身。",
+    "internalName": "其他应用用来访问此资源的内部名称。可使用复制按钮将其复制到连接字符串中。",
+    "local": "本地表示资源位于此服务器上，可直接访问，无需 mesh。",
+    "mesh": "开启 mesh 后，其他服务器上的资源会获得 mesh 地址，同一个内部名称可在各服务器之间通用。"
+  },
+  "empty": {
+    "title": "还没有运行任何内容",
+    "description": "部署一个应用或创建一个数据库，它就会出现在这里，并按运行所在的服务器分组。",
+    "action": "前往应用"
+  },
+  "error": {
+    "load": "无法加载网络概览。"
+  },
+  "mesh": {
+    "title": "Mesh 网络",
+    "description": "服务器之间的私有 WireGuard 网络，让不同服务器上的应用和数据库可以通过内部名称相互访问。只有管理多台服务器时才需要它。",
+    "state": {
+      "off": "关闭",
+      "on": "开启",
+      "enabling": "需要重启",
+      "disabling": "需要重启以关闭",
+      "error": "无法启动"
+    },
+    "pinned": "由服务器上的 {{envVar}} 设置。请在那里取消设置，才能在此管理 mesh。",
+    "readiness": "就绪状态",
+    "check": {
+      "wireguard": "WireGuard 支持",
+      "udp_port": "UDP 端口可用",
+      "firewall": "防火墙",
+      "public_address": "控制平面公网地址",
+      "local_node": "此服务器作为节点"
+    },
+    "status": {
+      "pass": "就绪",
+      "warn": "请检查",
+      "fail": "已阻塞"
+    },
+    "fix": "修复：{{hint}}",
+    "enable": "启用 mesh",
+    "disable": "停用 mesh",
+    "enableTitle": "启用 mesh 网络？",
+    "enableDescription": "mesh 设置现在保存，并在控制平面重启时启动。",
+    "disableTitle": "停用 mesh 网络？",
+    "disableDescription": "mesh 将在下次控制平面重启时停止。",
+    "disableNodes": "另有 {{count}} 个节点已注册，并通过 mesh 访问此控制平面。停用会使它们断开连接。",
+    "restartRequired": "请重启控制平面以应用此更改。",
+    "restartCommand": "在服务器上运行：",
+    "saved": "Mesh 设置已保存",
+    "startError": "mesh 未能启动：{{error}}",
+    "blocked": "请先修复被阻塞的检查项，再启用 mesh。",
+    "rootOnly": "只有管理员可以更改此项。",
+    "otherNodes": "已注册的其他节点：{{count}}",
+    "enableConsequence1": "此服务器会打开一个 WireGuard 接口，并监听一个 UDP 端口（默认 51820）。",
+    "enableConsequence2": "其他节点上的 agent 通过 mesh 连接到此控制平面。",
+    "enableConsequence3": "应用和数据库会获得可跨服务器访问的内部地址。",
+    "disableConsequence1": "其他服务器上的应用和数据库将失去跨服务器的内部地址。",
+    "disableConsequence2": "此服务器上的所有内容仍可在本地继续工作。"
+  },
+  "banner": {
+    "diagram": {
+      "app": "应用",
+      "node": "节点",
+      "server": "服务器"
+    }
+  }
+}
