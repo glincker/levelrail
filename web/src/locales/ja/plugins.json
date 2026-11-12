@@ -1,0 +1,275 @@
+{
+  "title": "プラグイン",
+  "description": "ロックダウンされたコンテナ内で実行される、署名付きの拡張機能です。公開元を信頼し、許可する内容を承認するまで、サードパーティのものは読み込まれません。",
+  "install": "プラグインをインストール",
+  "tabs": {
+    "installed": "インストール済み",
+    "marketplace": "マーケットプレイス"
+  },
+  "marketplace": {
+    "search": "プラグインを検索",
+    "categories": "カテゴリ",
+    "allCategories": "すべて",
+    "verified": "検証済み",
+    "abilitiesSummary": "要求する権限: {{abilities}}",
+    "install": "インストール",
+    "update": "アップデート",
+    "uninstall": "アンインストール",
+    "updateAvailable": "{{version}} にアップデート",
+    "installedState": "{{version}} をインストール済み",
+    "needsNewer": "コントロールプレーン {{version}} 以降が必要です",
+    "showMore": "さらに {{count}} 件を表示",
+    "recheck": "再確認",
+    "rechecking": "確認中...",
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "installed": "{{name}} をインストールして有効にしました",
+    "updated": "{{name}} をアップデートしました",
+    "uninstalled": "{{name}} を削除しました",
+    "loadFailed": "マーケットプレイスを読み込めませんでした",
+    "empty": {
+      "title": "一致するプラグインはありません",
+      "description": "別の検索語やカテゴリを試すか、ソースを再確認してください。"
+    },
+    "noSources": {
+      "title": "マーケットプレイスのソースはまだありません",
+      "description": "下でインデックスのソースを追加してください。各ソースは、信頼するルートキーで署名されています。"
+    },
+    "problem": {
+      "fetch": "{{name}} に接続できませんでした",
+      "signature": "{{name}} のインデックスは署名の検証に失敗したため、無視されました",
+      "format": "{{name}} のインデックスは形式が不正なため、無視されました",
+      "replay": "{{name}} のインデックスは、すでに確認済みのものより古いため、無視されました",
+      "too_large": "{{name}} のインデックスは大きすぎるため、無視されました"
+    },
+    "sheet": {
+      "title": "{{name}} をインストール",
+      "updateTitle": "{{name}} をアップデート",
+      "description": "このインストールで行われる内容を正確に確認してください。コントロールプレーンは、変更を加える前にそのすべてをもう一度確認します。",
+      "failed": "このリスティングを検証できませんでした",
+      "source": "マーケットプレイスのソース",
+      "key": "公開元のキー",
+      "digest": "イメージのダイジェスト",
+      "abilities": "承認される権限",
+      "exactly": "ここに記載された権限のみが承認されます。それ以外は付与されず、プラグインはインストール後に有効になります。",
+      "trust": "{{name}} の公開元のキーを信頼する",
+      "trustHint": "このキーは、マーケットプレイスから追加されたものとして表示され、信頼リストに追加されます。いつでも削除できます。",
+      "install": "インストールして有効化",
+      "update": "アップデート",
+      "pending": "処理中..."
+    },
+    "sources": {
+      "title": "マーケットプレイスのソース",
+      "description": "各ソースは、署名付きのプラグインインデックスです。ソースのルートキーで署名されたリスティングのみが表示されます。",
+      "empty": "設定されたソースはありません。",
+      "status": {
+        "ok": "最新",
+        "stale": "最後の正常なコピーを表示中",
+        "error": "利用不可"
+      },
+      "rootKey": "ルートキー {{key}}",
+      "name": "名前",
+      "url": "インデックスのURL",
+      "rootKeyLabel": "ルート公開鍵(base64)",
+      "add": "ソースを追加",
+      "added": "ソースを追加しました",
+      "remove": "削除",
+      "removeTitle": "{{name}} を削除しますか?",
+      "removeDescription": "そのリスティングは表示されなくなります。すでにそこからインストールされたプラグインは引き続き動作します。"
+    }
+  },
+  "loadFailed": "プラグインを読み込めませんでした",
+  "loadFailedHint": "プラグインのランタイムには、到達可能なDockerデーモンが必要です。コントロールプレーンのログを確認してから、再読み込みしてください。",
+  "empty": {
+    "title": "インストール済みのプラグインはありません",
+    "description": "まず公開元のキーを信頼し、その公開元から入手したプラグインパッケージをインストールしてください。パッケージの形式については、プラグインのガイドを参照してください。",
+    "action": "最初のプラグインをインストール"
+  },
+  "columns": {
+    "name": "プラグイン",
+    "state": "ステータス",
+    "requested": "要求された権限",
+    "approved": "承認された権限",
+    "actions": "操作"
+  },
+  "publisher": "公開元: {{publisher}}",
+  "none": "なし",
+  "state": {
+    "installed": "承認が必要",
+    "enabled": "有効",
+    "disabled": "無効",
+    "removing": "削除中",
+    "running": "実行中",
+    "stopped": "実行されていません"
+  },
+  "lastError": "前回のエラー: {{message}}",
+  "actions": {
+    "review": "確認して承認",
+    "enable": "有効化",
+    "disable": "無効化",
+    "remove": "削除",
+    "enabled": "{{name}} を有効にしました",
+    "disabled": "{{name}} を無効にしました",
+    "removed": "{{name}} を削除しました",
+    "failed": "プラグインの操作に失敗しました",
+    "upgrade": "アップグレード",
+    "uninstall": "アンインストール",
+    "restarted": "{{name}} を再起動しました"
+  },
+  "abilities": {
+    "read": "配信されるアラートイベント(タイトル、テキスト、ステータス、リソース)を受け取ります。",
+    "readSensitive": "アラートに添付されるログの抜粋も受け取ります。シークレットが含まれる場合があります。"
+  },
+  "approve": {
+    "title": "{{name}} を承認",
+    "description": "{{publisher}} の {{name}} {{version}} が要求する内容を正確に確認してください。チェックを入れて承認するまで、何も付与されません。",
+    "requested": "要求された権限",
+    "network": "ネットワークアクセス",
+    "networkNone": "ネットワークなし。プラグインはコンテナの外部にあるものには一切アクセスできません。",
+    "networkHosts": "プラグインが必要と申告しているホスト: {{hosts}}。",
+    "networkNote": "これらのホストは、エグレスプロキシがオンの場合にのみ強制されます。それまでは、ホストを宣言したプラグインは一般的なネットワークアクセスを持ちます。",
+    "image": "イメージ",
+    "signedBy": "署名したキー",
+    "never": "シークレットがプラグインに保存されることはありません。チャンネルの認証情報は、配信のたびに送信されるだけです。",
+    "submit": "選択したものを承認",
+    "pending": "承認中",
+    "later": "後で決める",
+    "needsRead": "読み取り権限にチェックを入れてください。通知プラグインはこれがないと動作しません。",
+    "approved": "{{name}} を承認しました。有効にすると起動します。",
+    "failed": "プラグインを承認できませんでした"
+  },
+  "installDialog": {
+    "title": "プラグインをインストール",
+    "description": "公開元から提供されたマニフェストと署名を貼り付けてください。インストールでは、それらを検証してパッケージを記録します。承認や起動は行いません。",
+    "manifest": "マニフェスト(plugin.yaml)",
+    "manifestHint": "公開元が提供したとおりにファイルを貼り付けてください。編集すると署名が無効になります。",
+    "signature": "署名",
+    "keyId": "署名キー",
+    "noKeys": "信頼されたキーはまだありません。先に下で公開元のキーを追加してください。",
+    "pending": "検証中",
+    "cancel": "キャンセル",
+    "installed": "{{name}} をインストールしました。次に権限を確認してください。",
+    "failed": "インストールに失敗しました",
+    "upgradeTitle": "{{name}} をアップグレード",
+    "reviewDescription": "公開元、検証結果、実行できる内容を正確に確認してください。承認すると、記載された権限のみが付与されます。",
+    "source": "ソース",
+    "sourceManifest": "マニフェストを貼り付け",
+    "sourceUrl": "マニフェストのURL",
+    "url": "マニフェストのURL(https)",
+    "urlHint": "署名は、下に貼り付けない限り、同じURLに .sig を付けたものから読み取られます。",
+    "signatureHint": "署名のないパッケージの場合にのみ空欄にしてください。オペレーターが署名なしのプラグインを許可していない限り、拒否されます。",
+    "signatureHintUrl": "マニフェストの隣に .sig ファイルがある場合は任意です。",
+    "keyAuto": "信頼されたキーから検出",
+    "review": "確認",
+    "reviewing": "検証中",
+    "back": "戻る",
+    "approveInstall": "承認してインストール",
+    "installedApproved": "{{name}} をインストールして承認しました。有効にすると起動します。",
+    "wrongPlugin": "このマニフェストは {{name}} ではなく、別のプラグインのものです。"
+  },
+  "remove": {
+    "title": "{{name}} を削除しますか?",
+    "description": "プラグインは停止され、削除されます。このプラグインを使用している通知チャンネルは、別のチャンネルの種類を選択するまで配信を停止します。",
+    "confirm": "プラグインを削除"
+  },
+  "keys": {
+    "title": "信頼された公開元のキー",
+    "description": "このリストにあるキーで署名されたパッケージのみインストールできます。リストは空の状態から始まります。",
+    "emptyTitle": "信頼されたキーはありません",
+    "emptyDescription": "サードパーティのものはインストールできません。公開元のキーを本人に直接確認してから、追加してください。",
+    "name": "公開元の名前",
+    "publicKey": "公開鍵(base64)",
+    "add": "キーを信頼",
+    "adding": "追加中",
+    "added": "キーを信頼しました",
+    "addFailed": "キーを追加できませんでした",
+    "colName": "公開元",
+    "colKeyId": "キーID",
+    "colAdded": "追加日",
+    "remove": "信頼を解除",
+    "removeTitle": "{{name}} の信頼を解除しますか?",
+    "removeDescription": "このキーで署名されたプラグインは、次回のスーパーバイザーの巡回で停止します。インストールされたままになります。",
+    "removed": "キーを削除しました"
+  },
+  "fix": {
+    "restart": "修正: 再起動",
+    "trustKey": "修正: 署名キーを信頼",
+    "reinstall": "修正: 署名付きのパッケージを再インストール"
+  },
+  "verification": {
+    "verified": "署名を検証済み",
+    "unsigned": "署名なし",
+    "unsigned_refused": "署名なし、拒否",
+    "untrusted_key": "キーが信頼されていません",
+    "bad_signature": "署名が不正です",
+    "digest_mismatch": "ダイジェストが一致しません",
+    "unverified": "未検証"
+  },
+  "egress": {
+    "openTitle": "宣言されたホストは強制されていません",
+    "openBody": "送信先ホストを宣言したプラグインは、共通のネットワークを共有します。各プラグインを宣言したホストのみに制限するには、APP_PLUGIN_EGRESS_MODE=proxy を設定してください。",
+    "summary": {
+      "none": "拒否された接続はありません",
+      "last": "最終 {{when}}",
+      "help": "エグレスプロキシが最後に再起動してからの件数です。拒否されたホスト名は、ここではなくプロキシのログに記録されています。",
+      "reasons": {
+        "host_not_allowed": "ホストが宣言されていません",
+        "blocked_address": "ブロックされたアドレス",
+        "resolve_failed": "DNSの参照に失敗",
+        "dial_failed": "接続に失敗",
+        "too_many_tunnels": "接続数が多すぎます",
+        "rate_limited": "レート制限",
+        "bad_request": "不正な形式のリクエスト",
+        "unknown_caller": "不明な呼び出し元"
+      },
+      "count": "拒否された接続: {{count}}"
+    }
+  },
+  "review": {
+    "verification": "検証",
+    "digest": "イメージは {{digest}} に固定されています",
+    "signedBy": "{{key}} で署名",
+    "refused": "このパッケージはインストールできません",
+    "unsignedWarn": "署名のないパッケージは認証されていません。ご自身でビルドしたものである場合にのみインストールしてください。",
+    "abilities": "要求する権限",
+    "newAbility": "新規",
+    "removed": "要求されなくなりました: {{abilities}}",
+    "upgradeFrom": "バージョン {{version}} からのアップグレード",
+    "panels": "このページに、マニフェストからダッシュボードが描画する読み取り専用のパネルを {{count}} 件追加します。",
+    "reapproval": "以前より広いアクセス",
+    "reapprovalHint": "このバージョンは、インストール済みのバージョンにはなかった権限またはホストを要求しています。ここで承認すると、上に記載されたとおりの範囲が付与されます。"
+  },
+  "panels": {
+    "title": "プラグインのパネル",
+    "from": "{{publisher}} の {{name}}"
+  },
+  "panelHost": {
+    "loadFailed": "このパネルはデータを読み込めませんでした。",
+    "retry": "再試行",
+    "empty": "表示するものはありません。",
+    "showMore": "さらに {{count}} 件を表示",
+    "widgetUnavailable": "パネルのこの部分は利用できません",
+    "confirm": "確認",
+    "actionDone": "完了",
+    "actionFailed": "アクションが完了しませんでした",
+    "status": {
+      "ok": "OK",
+      "warning": "警告",
+      "error": "エラー",
+      "unknown": "不明"
+    }
+  },
+  "dns": {
+    "active": "DNSレコードを書き込みます",
+    "inactive": "DNSレコードには使用されていません。組み込みクライアントが書き込みます",
+    "use": "DNSレコードに使用",
+    "useBuiltIn": "組み込みクライアントを使用",
+    "test": "接続をテスト",
+    "testing": "テスト中...",
+    "testOk_other": "接続しました。プラグインは {{count}} 件のゾーンを参照できます",
+    "testFailed": "テストに失敗しました: {{message}}",
+    "pluginOn": "DNSレコードは {{name}} が書き込むようになりました",
+    "builtInOn": "DNSレコードは再び組み込みクライアントが書き込むようになりました",
+    "needsRunning": "テストやDNSレコードへの使用を行うには、プラグインを承認して有効にしてください。"
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "title": "レジリエンスレポート",
+  "description": "使い捨てのローカルコンテナに対して実行した、各障害シナリオの直近の測定結果です。測定された数値のみを表示します。",
+  "loadError": "レジリエンスレポートを読み込めませんでした。",
+  "retry": "再確認",
+  "status": {
+    "passed": "成功",
+    "failed": "失敗",
+    "skipped": "スキップ"
+  },
+  "scenario": {
+    "kill-container": "トラフィック中に配信中のコンテナを強制終了",
+    "daemon-unreachable": "デプロイ中にDocker APIに到達できない",
+    "control-plane-restart": "トラフィック中のコントロールプレーンの再起動",
+    "disk-pressure": "スクラッチボリュームが満杯",
+    "oom-during-readiness": "レディネス待機中のOOM強制終了",
+    "ingress-steady": "イングレスを通る、段階的に増加する定常負荷",
+    "deploy-latency": "イメージから配信開始までのデプロイレイテンシ",
+    "rollout-under-traffic": "トラフィック中の2レプリカのローリングデプロイ",
+    "ingress-concurrency": "固定の同時実行数でのイングレススループット",
+    "replica-failover": "トラフィック中に2つのレプリカのうち1つを強制終了"
+  },
+  "metrics": {
+    "recovery": "復旧",
+    "errors": "失敗したリクエスト",
+    "ranAt": "測定日時"
+  },
+  "notMeasured": "まだ測定されていません",
+  "empty": {
+    "title": "カオステストの結果はまだ記録されていません",
+    "body": "Dockerのあるマシンでシナリオを実行して記録すると、各結果がここに表示されます。"
+  },
+  "disk": {
+    "title": "ディスク容量ガード",
+    "description": "データディレクトリとDockerボリュームの空き容量です。クリティカルの下限を下回ると、ディスクが満杯になる前に、デプロイ、プル、バックアップが拒否されます。",
+    "loadError": "ディスクのステータスを読み込めませんでした。",
+    "refusing": "ボリュームがクリティカルの下限を下回っています。空き容量が確保されるまで、デプロイ、イメージのプル、バックアップは拒否されます。",
+    "freeAction": "今すぐ空き容量を確保",
+    "freeing": "クリーンアップ中",
+    "free": "{{total}} 中 {{free}} が空き",
+    "thresholds": "空きが {{low}} を下回ると警告し、{{critical}} を下回るとリスクのある操作を拒否します。変更するには APP_DISK_LOW_FREE_MB と APP_DISK_CRITICAL_FREE_MB を設定してください。",
+    "volume": {
+      "data": "コントロールプレーンのデータ",
+      "docker": "Dockerストレージ"
+    },
+    "level": {
+      "ok": "正常",
+      "low": "低",
+      "critical": "クリティカル",
+      "unknown": "不明"
+    },
+    "toast": {
+      "freed": "クリーンアップが完了し、{{size}} を回収しました",
+      "errorTitle": "空き容量を確保できませんでした"
+    }
+  },
+  "cli": {
+    "summary": "代わりにターミナルからシナリオを実行",
+    "note": "chaosliveタグ付きでビルドしたCLIと、ローカルのDockerデーモンが必要です。"
+  },
+  "benchmarks": {
+    "title": "ベンチマーク",
+    "description": "bench chaos run の結果ファイルです。実行を表示して比較できるよう、結果を生成したホストとビルドとともに保存されます。",
+    "refresh": "更新",
+    "loadError": "ベンチマーク結果を読み込めませんでした。",
+    "standingCaveat": {
+      "title": "本番環境の容量を示す数値ではありません",
+      "body": "これらの実行は、負荷生成ツールとコントロールプレーンを1台のマシンで測定したものです。ホストがLinuxサーバーでない限り、Linuxの本番環境の数値ではありません。数値を引用する前に、各実行の注意事項をお読みください。"
+    },
+    "caveatsTitle": "最初にお読みください",
+    "empty": {
+      "title": "保存されたベンチマークの実行はまだありません",
+      "body": "Dockerのあるマシンでシナリオを実行して結果ファイルをアップロードすると、各実行がここに表示されます。"
+    },
+    "history": {
+      "title": "実行履歴",
+      "keep": "最新の {{count}} 件の実行を保持します。",
+      "nonLinux": "一部の実行はLinux以外のホストのものです。",
+      "select": "比較用に選択",
+      "selectRun": "実行 {{id}} を比較用に選択",
+      "when": "測定日時",
+      "build": "ビルド",
+      "host": "ホスト",
+      "result": "結果",
+      "actions": "操作",
+      "view": "表示",
+      "compare": "選択したものを比較",
+      "passed_other": "{{count}} 件成功",
+      "failed_other": "{{count}} 件失敗",
+      "repeat_other": "各 {{count}} 回実行",
+      "deleteRun": "実行 {{id}} を削除"
+    },
+    "groups": {
+      "failover": "フェイルオーバーと復旧",
+      "deploy": "デプロイ",
+      "rollout": "ロールアウト",
+      "throughput": "スループット"
+    },
+    "host": {
+      "title": "ホストとビルド",
+      "platform": "プラットフォーム",
+      "kernel": "カーネル",
+      "cpu": "CPUとコア数",
+      "memory": "メモリ",
+      "docker": "Dockerエンジン",
+      "load": "ロードアベレージ",
+      "loadValue": "開始時 {{start}}、終了時 {{end}}",
+      "version": "バージョン",
+      "commit": "コミット",
+      "runs": "シナリオごとの実行回数",
+      "note": "備考",
+      "unknown": "不明"
+    },
+    "table": {
+      "scenario": "シナリオ",
+      "run": "実行",
+      "status": "ステータス",
+      "summary": "発生したこと",
+      "metric": "メトリクス",
+      "runN": "実行 {{n}}"
+    },
+    "limits": {
+      "title": "上限の表",
+      "question": "質問",
+      "status": "ステータス"
+    },
+    "method": "これらの数値の測定方法",
+    "chart": {
+      "aria": "{{title}}、同時実行数ごとの1秒あたりのリクエスト数: {{summary}}"
+    },
+    "compare": {
+      "title": "比較",
+      "base": "ベース",
+      "head": "ヘッド",
+      "runs_other": "{{count}} 回の実行",
+      "basis": "各値は、それぞれの側の実行の中央値です。{{noise}} パーセント未満の変化は同じとみなされます。",
+      "warningsTitle": "この比較を読む際の注意",
+      "statusTitle": "結果の変化",
+      "to": "から",
+      "delta": "変化",
+      "verdict": "判定",
+      "oneSided": "片側のみ",
+      "direction": {
+        "better": "改善",
+        "worse": "悪化",
+        "same": "同じ"
+      }
+    },
+    "confirmDelete": {
+      "title": "このベンチマークの実行を削除しますか?",
+      "body": "実行 {{id}} はすべてのユーザーから削除されます。アップロードした結果ファイルには影響しません。",
+      "confirm": "実行を削除"
+    },
+    "deleted": "実行を削除しました",
+    "deleteFailed": "実行を削除できませんでした"
+  }
+}

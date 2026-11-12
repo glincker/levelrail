@@ -1,0 +1,10 @@
+{
+  "title_other": "{{count}} 件のトークンに対応が必要です",
+  "expiring": "14日以内に期限切れ: {{count}} 件",
+  "longLivedRoot": "有効期限のないrootトークン: {{count}} 件",
+  "unusedIntro": "{{days}} 日以上使用されていません:",
+  "neverUsed": "未使用",
+  "lastUsed": "最終使用",
+  "revoke": "失効",
+  "revokeLabel": "{{name}} を失効"
+}

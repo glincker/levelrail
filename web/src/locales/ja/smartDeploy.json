@@ -1,0 +1,204 @@
+{
+  "title": "デプロイ",
+  "description": "このアプリの新しいバージョンをデプロイします。",
+  "git": {
+    "headTitle": "{{branch}} の最新コミットをデプロイ",
+    "deployHead": "最新のコミットをデプロイ",
+    "deployBranch": "{{branch}} の先頭をデプロイ",
+    "starting": "ビルドを開始中",
+    "loading": "コミットを読み込み中",
+    "useImage": "代わりにイメージをデプロイ",
+    "statusUpToDate": "最新です。{{sha}} が公開中です",
+    "statusAhead_other": "公開中のものより {{count}} コミット先行しています",
+    "statusAheadUnknown": "公開中のものより新しい、または別のブランチから公開されています",
+    "statusNeverDeployed": "このソースのデプロイはまだ記録されていません",
+    "recent": "最近のコミット",
+    "deploy": "デプロイ",
+    "deployCommit": "コミット {{sha}} をデプロイ",
+    "redeploy": "再デプロイ",
+    "branch": "ブランチ",
+    "branchOther": "接続されているブランチではありません。pushによるデプロイは引き続き {{branch}} に従います。",
+    "byAuthor": "{{author}}、{{age}}",
+    "noMessage": "コミットメッセージなし",
+    "refresh": "コミットを更新",
+    "noCommits": "このブランチにはまだコミットがありません。",
+    "degraded": "このホストはコミットの一覧を提供していないため、{{branch}} の先頭のみを表示しています。",
+    "loadFailed": "コミットを読み込めませんでした",
+    "retry": "再試行",
+    "connectedTo": "接続されているリポジトリ",
+    "buildWith": "ビルド方法",
+    "dockerfile": "Dockerfile {{path}}",
+    "contextDir": "{{dir}} から",
+    "buildTypes": {
+      "dockerfile": "Dockerfile",
+      "railpack": "自動検出(Railpack)",
+      "static": "静的サイト",
+      "image": "ビルド済みイメージ"
+    },
+    "status": {
+      "deployed": "公開中",
+      "failed": "失敗",
+      "running": "ビルド中",
+      "queued": "待機中",
+      "held": "保留中",
+      "succeeded": "ビルド済み",
+      "canceled": "キャンセル済み",
+      "superseded": "置き換え済み"
+    },
+    "shortcuts": {
+      "title": "ショートカット",
+      "redeployLast": "最後に成功したものを再デプロイ",
+      "redeployLastHint": "ビルドせずに {{image}} を再実行します。",
+      "rollbackTo": "1つ前にロールバック",
+      "rollbackToHint": "{{image}} に戻します。",
+      "rollbackTitle": "{{image}} にロールバックしますか?",
+      "rollbackDescription": "アプリは、直前に成功したイメージを再び実行します。",
+      "rollbackConsequence": "前のリリースが正常になると、現在のリリースはリクエストの処理を停止します。",
+      "rollbackConfirm": "ロールバック",
+      "rollbackPending": "ロールバック中"
+    },
+    "toast": {
+      "started": "デプロイを開始しました。",
+      "startedFor": "{{sha}} をビルド中です。",
+      "approval": "デプロイは承認待ちです。",
+      "failed": "デプロイを開始できませんでした。"
+    },
+    "viewLogs": "ビルドログを表示"
+  },
+  "suggestions": {
+    "title": "提案",
+    "dismiss": "提案を閉じる",
+    "head_failed_to_build": {
+      "title": "コミット {{sha}} のビルドに失敗しました",
+      "detail": "もう一度デプロイする前に、ビルドログを確認してください。",
+      "action": "ビルドログを開く"
+    },
+    "webhook_signature_failing": {
+      "title": "pushのWebhookが拒否されています",
+      "detail": "最後のWebhook配信の署名が無効だったため、pushがデプロイされていません。",
+      "action": "ソース設定を開く"
+    },
+    "fix_build_settings": {
+      "title": "ビルド設定を確認してください",
+      "detail": "モノレポのようです。または、前回のビルドがビルド構成で失敗しました。",
+      "action": "ビルド設定を開く"
+    },
+    "webhook_not_received": {
+      "title": "push時のデプロイをオンにする",
+      "detail": "このアプリにはまだWebhookの配信が届いていないため、pushでは自動的にデプロイされません。",
+      "action": "Webhookを設定"
+    },
+    "release_trigger_only": {
+      "title": "デプロイはリリース時のみ行われます",
+      "detail": "新しいコミットは自動的にデプロイされません。準備ができたら、この一覧から1つをデプロイしてください。",
+      "action": "ソース設定を開く"
+    },
+    "enable_previews": {
+      "title": "すべてのプルリクエストをプレビュー",
+      "detail": "プルリクエストのイベントが届いています。プレビューを有効にすると、それぞれに公開URLが割り当てられます。",
+      "action": "プレビューを有効化",
+      "done": "プレビュー環境を有効にしました。"
+    },
+    "add_health_check": {
+      "title": "ヘルスチェックを追加",
+      "detail": "ヘルスチェックがない場合、起動してもリクエストを処理しないコンテナも、正常とみなされます。",
+      "action": "ヘルス設定を開く"
+    },
+    "add_deploy_notifications": {
+      "title": "デプロイ完了時に通知を受け取る",
+      "detail": "このアプリのデプロイや失敗を通知する相手がいません。",
+      "action": "通知を設定"
+    }
+  },
+  "approval": {
+    "protected": "{{environment}} は保護された環境です。ここでのイメージの再デプロイとロールバックは、デプロイ権限を持つ別のユーザーの承認を待ちます。",
+    "ack": "内容を理解したうえで続行します。"
+  },
+  "image": {
+    "current": "現在のイメージ",
+    "imageLabel": "イメージ",
+    "placeholder": "registry.example.com/app:tag",
+    "suggestionsLabel": "最近のタグ",
+    "deploy": "イメージをデプロイ",
+    "deploying": "デプロイ中",
+    "advanced": "詳細設定",
+    "connectInstead": "代わりにgitリポジトリからデプロイ",
+    "required": "イメージの参照を入力してください。",
+    "toast": {
+      "started": "デプロイを開始しました。",
+      "approval": "デプロイは承認待ちです。"
+    }
+  },
+  "connect": {
+    "title": "このアプリのデプロイ元を選択",
+    "repoTitle": "リポジトリを接続",
+    "repoDescription": "pushのたびにビルドとデプロイができます。接続済みのプロバイダーからリポジトリを選ぶか、URLを貼り付けてください。",
+    "connect": "リポジトリを接続",
+    "connecting": "接続中",
+    "connected": "リポジトリを接続しました。",
+    "failed": "リポジトリを接続できませんでした。",
+    "orImage": "またはコンテナイメージをデプロイ",
+    "imageDescription": "ビルドとpushが済んでいるイメージを指定してください。"
+  },
+  "pending": {
+    "title": "公開中のデプロイ以降の変更",
+    "none": "公開中のデプロイとの差分はありません。",
+    "empty": "なし",
+    "loadFailed": "保留中の変更を読み込めませんでした。",
+    "env": {
+      "added": "環境変数を追加",
+      "removed": "環境変数を削除",
+      "changed": "環境変数を変更"
+    },
+    "field": {
+      "image": "イメージ",
+      "image_digest": "イメージダイジェスト",
+      "commit_sha": "コミット",
+      "port": "ポート",
+      "host_port": "ホストポート",
+      "bind_address": "ネットワークインターフェース",
+      "domains": "ドメイン",
+      "strategy": "デプロイ戦略",
+      "replicas": "レプリカ",
+      "volumes": "ボリューム",
+      "labels": "ラベル"
+    }
+  },
+  "schedule": {
+    "toggle": "あとでスケジュール",
+    "whenLabel": "デプロイ日時",
+    "zone": "時刻はお使いのタイムゾーンです: {{zone}}",
+    "required": "日付と時刻を選択してください。",
+    "invalid": "その日付と時刻は無効です。",
+    "past": "未来の時刻を選択してください。",
+    "submit": "デプロイをスケジュール",
+    "submitting": "スケジュール中",
+    "toast": {
+      "created": "デプロイをスケジュールしました。",
+      "failed": "デプロイをスケジュールできませんでした。",
+      "canceled": "スケジュールデプロイをキャンセルしました。",
+      "cancelFailed": "スケジュールデプロイをキャンセルできませんでした。"
+    },
+    "list": {
+      "title": "スケジュールデプロイ",
+      "description": "実行を待っている1回限りのデプロイです。他のデプロイと同様に、デプロイ凍結、ゲート、承認が適用されます。",
+      "empty": "スケジュールされたものはありません。",
+      "image": "イメージ {{image}}",
+      "ref": "{{ref}} の最新コミット",
+      "runsAt": "実行日時: {{when}}",
+      "cancel": "キャンセル",
+      "canceling": "キャンセル中",
+      "loadFailed": "スケジュールデプロイを読み込めませんでした。",
+      "status": {
+        "pending": "保留中",
+        "running": "開始中",
+        "fired": "開始済み",
+        "pending_approval": "承認待ち",
+        "skipped_freeze": "スキップ、デプロイ凍結",
+        "missed": "実行漏れ",
+        "canceled": "キャンセル済み",
+        "failed": "失敗"
+      }
+    }
+  }
+}

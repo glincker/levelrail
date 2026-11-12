@@ -1,0 +1,671 @@
+{
+  "table": {
+    "label": "デプロイメント",
+    "deploy": "デプロイメント",
+    "status": "ステータス",
+    "app": "アプリ",
+    "environment": "環境",
+    "commit": "コミット",
+    "branch": "ブランチ",
+    "started": "開始",
+    "by": "実行者"
+  },
+  "autoRollback": {
+    "title": "クラッシュループ時の自動ロールバック",
+    "infoTipLabel": "クラッシュループ時の自動ロールバックについて",
+    "helpLabel": "自動ロールバックのガイド",
+    "enabledLabel": "最後に正常だったイメージを自動的に再デプロイする",
+    "description": "このアプリでクラッシュループのアラートが発火すると、クラッシュループ中のイメージより前の、直近で成功したイメージを再デプロイします。これは1回の事象につき最大1回です。より古いイメージがない場合は、アラートのみが通知されます。",
+    "switchAriaLabel": "クラッシュループ時の自動ロールバックを有効化",
+    "toast": {
+      "enabled": "クラッシュループ時の自動ロールバックを有効にしました。",
+      "disabled": "クラッシュループ時の自動ロールバックを無効にしました。",
+      "errorTitle": "自動ロールバックを更新できませんでした。"
+    }
+  },
+  "predeploySnapshot": {
+    "title": "デプロイ前のデータベーススナップショット",
+    "infoTipLabel": "デプロイ前スナップショットについて",
+    "helpLabel": "デプロイ前スナップショットのガイド",
+    "modeAriaLabel": "スナップショットのモード",
+    "targetAriaLabel": "スナップショットのバックアップ先",
+    "targetAuto": "デフォルトのバックアップ先",
+    "unavailable": "このコントロールプレーンでは、デプロイ前スナップショットを利用できません。",
+    "modes": {
+      "off": "オフ",
+      "on": "オン",
+      "require": "必須"
+    },
+    "modeHints": {
+      "off": "デプロイ前にスナップショットを取得しません。",
+      "on": "先にリンクされたデータベースのスナップショットを取得します。スナップショットに失敗した場合は記録されますが、デプロイは続行されます。",
+      "require": "先にリンクされたデータベースのスナップショットを取得します。スナップショットに失敗すると、デプロイはブロックされます。"
+    },
+    "toast": {
+      "saved": "デプロイ前スナップショットの設定を保存しました。",
+      "errorTitle": "スナップショットの設定を保存できませんでした。"
+    }
+  },
+  "rollbackWithData": {
+    "title": "データも含めてロールバック",
+    "description": "このデプロイの前のリリースを再デプロイし、直前に取得したスナップショットからデータベースをリストアします。",
+    "snapshotsLabel": "このデプロイの前に取得したスナップショット",
+    "takenAt": "取得日時",
+    "warning": "リンクされた各データベースは新しいデータベースにリストアされ、アプリのリンクはそのコピーに切り替わります。元のデータベースは変更されませんが、このデプロイ以降に書き込まれたデータは元のデータベースに残ります。",
+    "loading": "スナップショットを検索しています...",
+    "reasonNoSnapshot": "このデプロイの前に取得された、利用可能なスナップショットはありません。",
+    "reasonProtected": "このアプリは保護された環境にあります。通常のロールバックを使用し、データは手動でリストアしてください。",
+    "reasonLoadFailed": "このアプリのスナップショットを読み込めませんでした。",
+    "cancel": "キャンセル",
+    "confirm": "データも含めてロールバック",
+    "working": "ロールバック中...",
+    "started": "データも含めてロールバックしています。",
+    "menuLabel": "データも含めてロールバック",
+    "menuHint": "このデプロイを取り消し、デプロイ前のスナップショットをリストアします"
+  },
+  "autoRollbackSloBurn": {
+    "title": "SLOバーン時の自動ロールバック",
+    "infoTipLabel": "SLOバーン時の自動ロールバックについて",
+    "helpLabel": "自動ロールバックのガイド",
+    "modeLabel": "モード",
+    "modeAriaLabel": "SLOバーン時の自動ロールバックのモード",
+    "defaultDescription": "SLOバーンレートのアラートが発火したときの、このアプリの動作を選択します。",
+    "modes": {
+      "off": {
+        "label": "オフ",
+        "description": "アラートのみ行います。自動では何も実行しません。"
+      },
+      "auto": {
+        "label": "自動ロールバック",
+        "description": "エラーバジェットを消費しているイメージより前の、直近で成功したイメージにすぐにロールバックします。"
+      },
+      "dry_run": {
+        "label": "ドライラン",
+        "description": "デプロイは行わず、ロールバックされる内容をログに記録します。"
+      },
+      "pause_for_human": {
+        "label": "人の判断を待つ",
+        "description": "直接デプロイせず、ロールバックのデプロイ承認を保留状態で作成します。チームメイトが承認または却下します。"
+      }
+    },
+    "toast": {
+      "modeSet": "SLOバーン時の自動ロールバックを次に設定しました: {{mode}}。",
+      "errorTitle": "SLOバーン時の自動ロールバックを更新できませんでした。"
+    }
+  },
+  "badgeSettings": {
+    "title": "デプロイステータスのバッジ",
+    "infoTipLabel": "デプロイステータスのバッジについて",
+    "enabledLabel": "公開READMEバッジ",
+    "description": "このアプリの最新のデプロイのステータスと日時を示す、小さな公開SVGを配信します。認証は不要です。デプロイのステータスを公開したくない場合は、オフのままにしてください。",
+    "switchAriaLabel": "デプロイステータスのバッジを有効化",
+    "embedLabel": "READMEに埋め込む",
+    "toast": {
+      "enabled": "デプロイステータスのバッジを有効にしました。",
+      "disabled": "デプロイステータスのバッジを無効にしました。",
+      "errorTitle": "デプロイステータスのバッジを更新できませんでした。"
+    }
+  },
+  "releaseLine": {
+    "deployed": "デプロイ:",
+    "from": "経路:",
+    "source": {
+      "webhook": "git push",
+      "manual": "ダッシュボード",
+      "image": "イメージのデプロイ",
+      "compose": "テンプレートまたはcomposeファイル",
+      "promote": "プロモーション",
+      "clone": "クローン",
+      "schedule": "スケジュール",
+      "auto_rollback": "自動ロールバック",
+      "git_push": "サーバーへのgit push",
+      "poll": "ポーリング(Webhookを受け取れなかったため)",
+      "upload": "CLIからアップロードされたディレクトリ",
+      "restart": "再起動",
+      "start": "停止中のアプリの起動",
+      "stop": "アプリの停止",
+      "pr_comment": "プルリクエストのコメント"
+    }
+  },
+  "imageAutoUpdate": {
+    "title": "イメージの変更時に更新",
+    "infoTipLabel": "イメージの自動更新について",
+    "description": "スケジュールに従って、このアプリのイメージタグをレジストリと照合し、タグが新しいダイジェストを指している場合に再デプロイします。ソースからビルドされたアプリ、停止中のアプリ、デプロイ凍結中のアプリはスキップされます。保護された環境へのレジストリpushでは、代わりにデプロイ承認が作成されます。",
+    "enabledLabel": "タグが移動したら自動的に再デプロイする",
+    "switchAriaLabel": "イメージの自動更新を有効化",
+    "checkNow": "今すぐ確認",
+    "checking": "確認中...",
+    "lastCheck": "前回の確認({{when}}): {{result}}",
+    "neverChecked": "まだ確認されていません。",
+    "status": {
+      "updateAvailable": "このタグには、より新しいイメージがあります。",
+      "upToDate": "イメージは最新です。",
+      "updateNow": "今すぐ更新",
+      "archMismatch": "このイメージは {{image}} 向けにビルドされていますが、ノードは {{node}} で動作しています。起動に失敗する可能性があります。"
+    },
+    "toast": {
+      "enabled": "イメージの自動更新を有効にしました。",
+      "disabled": "イメージの自動更新を無効にしました。",
+      "errorTitle": "イメージの自動更新を変更できませんでした。",
+      "checkFailed": "イメージの確認に失敗しました。"
+    },
+    "window": {
+      "label": "指定したウィンドウ内でのみ更新",
+      "switchAriaLabel": "更新をウィンドウ内に制限",
+      "presetsLabel": "ウィンドウのプリセット",
+      "presets": {
+        "nightly": "毎晩 03:00",
+        "weekends": "週末 03:00"
+      },
+      "cronLabel": "ウィンドウの開始(cron)",
+      "minutesLabel": "開放時間(分)",
+      "save": "ウィンドウを保存",
+      "saved": "更新ウィンドウを保存しました。",
+      "invalid": "cronスケジュールと、1分以上のウィンドウの長さを入力してください。",
+      "waiting": "より新しいイメージが、次の更新ウィンドウを待っています。"
+    },
+    "webhookHelp": "レジストリのpush Webhook: 次の間隔を待たず、pushされたときに更新します。",
+    "webhookSet": "レジストリのpush Webhookが設定されています。新しく作成すると置き換えられます。",
+    "webhookCreate": "WebhookのURLを作成",
+    "webhookRotate": "WebhookのURLを置き換え",
+    "webhookUrlLabel": "レジストリのWebhook URL",
+    "webhookShownOnce": "今すぐコピーしてください。再表示はされません。レジストリにWebhook(POST)として貼り付けてください。URL自体がシークレットです。",
+    "signingSecretLabel": "GitHubのWebhookシークレット(一度だけ表示)",
+    "providerHint": {
+      "dockerhub": "Docker Hub: リポジトリのWebhooksにURLを追加してください。Docker Hubはダイジェストを送信しないため、先にタグが解決されます。",
+      "ghcr": "GitHub (ghcr.io): Settings、Webhooksで、コンテンツタイプ application/json、イベント Packages、上記のシークレットを設定してください。署名のない配信は拒否されます。",
+      "protected": "pushすると、このアプリ自身のイメージとタグについて、pushされたダイジェストがデプロイされます。保護された環境では、代わりに承認が作成されます。"
+    }
+  },
+  "canary": {
+    "title": "カナリアリリース",
+    "infoTipLabel": "カナリアリリースについて",
+    "description": "現在のリリースと並行して新しいイメージを実行し、リクエストの一部を振り分けます。正常に見えたらプロモートし、中止すればすべてのトラフィックは現在のリリースに残ります。準備ができていないカナリアにはトラフィックが送られません。単一レプリカのイメージアプリが必要です。",
+    "imageLabel": "カナリアのイメージ",
+    "imagePlaceholder": "registry/app:next",
+    "weightLabel": "トラフィック %",
+    "start": "カナリアを開始",
+    "running": "カナリア {{image}} がリクエストの {{weight}}% を受信しています。",
+    "setWeight": "割合を設定",
+    "promote": "プロモート",
+    "promoteNow": "今すぐプロモート",
+    "abort": "中止",
+    "stagesLabel": "ステージ %(任意)",
+    "stagesPlaceholder": "10,25,50,100",
+    "intervalLabel": "ステージごと",
+    "maxErrorLabel": "エラー上昇の上限(ポイント)",
+    "maxP95Label": "p95比の上限",
+    "stageLabel": "ステージ {{stage}} / {{count}}",
+    "stageWeights": "{{stages}} %",
+    "compareLabel": "カナリアと安定版リリースの比較",
+    "canaryColumn": "カナリア",
+    "stableColumn": "安定版",
+    "requests": "このステージのリクエスト",
+    "errorRate": "エラー率(5xx)",
+    "p95": "p95レイテンシ",
+    "next": "{{reason}}({{interval}} 秒中 {{elapsed}} 秒)。安定版リリースと比べてエラーまたはレイテンシが上昇した場合、自動的にロールバックされます。",
+    "breaching": "違反: {{reason}}。ロールバックしています。",
+    "waitingForTraffic": "このステージを評価する前に、カナリアがトラフィックを受信するのを待っています。",
+    "outcome": {
+      "promoted": "前回のカナリアはプロモートされました",
+      "aborted": "前回のカナリアは中止されました",
+      "rolled_back": "前回のカナリアは自動的にロールバックされました"
+    },
+    "outcomeDetail": "{{image}} {{reason}}",
+    "toast": {
+      "started": "カナリアを開始しました。",
+      "weightSet": "トラフィックの割合を更新しました。",
+      "promoted": "カナリアをプロモートし、デプロイしています。",
+      "aborted": "カナリアを削除しました。",
+      "errorTitle": "カナリアの操作に失敗しました"
+    }
+  },
+  "templateUpgrade": {
+    "badge": "テンプレートの更新があります",
+    "blocked": "手動の手順が必要です",
+    "apply": "アップグレード",
+    "applying": "開始中",
+    "capabilities": "追加のLinux capabilityを付与します: {{caps}}。適用すると、これらを承諾したことになります。",
+    "confirmTitle": "現在のテンプレートにアップグレードしますか?",
+    "confirmBody": "リスク: {{risk}}。新しいボリュームのバックアップが必要です。リリースは監視され、クラッシュループまたは失敗した場合は自動的にロールバックされます。",
+    "envCount_other": "環境変数の変更 {{count}} 件",
+    "volumeCount_other": "ボリューム {{count}} 件",
+    "status": {
+      "unchanged": "変更なし",
+      "changed": "変更あり",
+      "added": "新しいサービス",
+      "removed": "削除済み"
+    },
+    "run": {
+      "watching": "アップグレード中、新しいリリースを監視しています",
+      "succeeded": "アップグレードが完了し、アプリは正常です",
+      "rolled_back": "アップグレードに失敗し、ロールバックされました",
+      "rollback_failed": "アップグレードに失敗し、ロールバックも拒否されました",
+      "refused": "アップグレードは拒否されました。何も変更されていません。"
+    },
+    "risk": {
+      "none": "変更なし",
+      "low": "低リスク",
+      "medium": "中リスク",
+      "high": "高リスク"
+    }
+  },
+  "pendingChanges": {
+    "title": "再起動待ちの変更",
+    "detail": "未適用 {{count}} 件",
+    "restart": "再起動して適用",
+    "redeploy": "再デプロイして適用",
+    "applying": "適用中",
+    "failed": "変更を適用できませんでした"
+  },
+  "envCompare": {
+    "title": "他のアプリと環境変数を比較",
+    "pick": "比較対象",
+    "none": "アプリを選択",
+    "onlyIn": "{{app}} のみ:",
+    "differs": "差異あり:",
+    "secret": "(シークレット)",
+    "secretOneSide": "(片側のみシークレット)",
+    "summary": "{{count}} 個のキーが同一です。シークレットの値は読み取られません。シークレットはキーのみで照合されます。",
+    "tableLabel": "環境変数の差異",
+    "colKey": "キー",
+    "colStatus": "ステータス",
+    "added": "こちらのみ",
+    "removed": "あちらのみ",
+    "changed": "変更あり",
+    "missing": "未設定",
+    "secretMasked": "シークレットの値(非表示)"
+  },
+  "appSleep": {
+    "title": "アイドル時にスリープ",
+    "infoTipLabel": "アプリのスリープについて",
+    "description": "一定時間リクエストがない場合にこのアプリを停止し、メモリとCPUを使わないようにします。ドメインへの次のリクエストでアプリが起動し、自動で再試行する短い起動中ページが表示されます。最初の訪問者はコールドスタートを待つことになります。",
+    "enabledLabel": "アイドル時にスリープ",
+    "switchAriaLabel": "アイドル時のスリープを有効化",
+    "minutesLabel": "カスタムの分数({{min}} から {{max}})",
+    "save": "保存",
+    "asleep": "このアプリはスリープ中です。",
+    "wakeNow": "今すぐ起こす",
+    "toast": {
+      "enabled": "アイドル時のスリープを有効にしました。",
+      "disabled": "アイドル時のスリープを無効にしました。",
+      "updated": "アイドル時間を更新しました。",
+      "errorTitle": "スリープの設定に失敗しました",
+      "holdUpdated": "ファンクションモードを更新しました。",
+      "portWakeUpdated": "ポートによる起動を更新しました。",
+      "ignoreUpdated": "無視するパスを更新しました。"
+    },
+    "holdLabel": "起動中はリクエストを保留(ファンクションモード)",
+    "holdHelp": "アプリのスリープ中に届いたリクエストは、起動中ページを表示する代わりに、起動を待ってから再送されます。APIの呼び出し元向けに使用してください。",
+    "holdAriaLabel": "起動中はリクエストを保留",
+    "badgeAsleep": "スリープ中",
+    "fleetTitle": "スリープ中のアプリ",
+    "fleetSummary": "{{enabled}} 件中 {{sleeping}} 件のアプリがスリープ中",
+    "fleetEmpty": "アイドル時にスリープするアプリはまだありません。アプリのデプロイタブでオンにすると、誰も訪問していない間のメモリを解放できます。",
+    "sleepNow": "今すぐスリープ",
+    "sleepNowHelp": "アイドル時間を待たずに、今すぐアプリを停止します。次のリクエストで起動します。",
+    "fleetEmptyShort": "スリープ中のものはまだありません",
+    "fleetReclaimedLabel": "使用されていないメモリ",
+    "fleetBrowseApps": "アプリを選択",
+    "fleetAllAwake": "スリープが有効なすべてのアプリが、現在起動しています。",
+    "fleetMore": "ほかに {{count}} 件がスリープ中",
+    "fleetNoLimits": "これらのアプリにはメモリ上限がないため、解放されるメモリを見積もれません。ここに表示するには、各アプリに上限を設定してください。",
+    "status": {
+      "ready": "オンにできます",
+      "blocked": "ブロック中",
+      "awake": "オン、起動中",
+      "sleeping": "スリープ中",
+      "waking": "起動中"
+    },
+    "explain": {
+      "generic": "このアプリがしばらく使われないと、メモリとCPUを解放するために停止されます。次の訪問者がアプリを再び起動し、コールドスタートを待つことになります。"
+    },
+    "wakeTiming": {
+      "none": "起動の計測がまだないため、起動にかかる時間は見積もれません。",
+      "typical": "通常は約 {{typical}} で起動します。",
+      "typicalWithP95": "通常は約 {{typical}} で起動します(p95 {{p95}})。",
+      "noneShort": "起動データはまだありません",
+      "short": "約 {{typical}} で起動",
+      "shortWithP95": "約 {{typical}} で起動(p95 {{p95}})"
+    },
+    "frees": "スリープ中は約 {{size}} を解放",
+    "checklistLabel": "スリープの適格性",
+    "blockedPrefix": "スリープをブロック: ",
+    "warnPrefix": "警告: ",
+    "whatThisMeans": "意味:",
+    "allClear": "このアプリのスリープを妨げるものはありません。",
+    "turnOn": "アイドル時のスリープをオンにする",
+    "turnOff": "アイドル時のスリープをオフにする",
+    "turnOnHint": "{{minutes}} 分間使われないとスリープします。後から変更できます。",
+    "turnOnBlocked": "先にこれを修正してください: {{titles}}",
+    "idleTitle": "アイドル後にスリープするまでの時間",
+    "presetMinutes_other": "{{count}} 分",
+    "activity": {
+      "lastRequest": "最後のリクエスト",
+      "lastNetwork": "最後のネットワークアクティビティ",
+      "connections": "開いている接続",
+      "sleepsIn": "スリープまで",
+      "notScheduled": "予定なし",
+      "none": "まだありません"
+    },
+    "countdown": {
+      "minutes_other": "{{count}} 分",
+      "seconds_other": "{{count}} 秒"
+    },
+    "portWake": {
+      "title": "公開ポートへのトラフィックで起動",
+      "help": "ポート {{ports}} への接続でアプリが起動するため、ホストポートを固定していてもスリープできます。",
+      "aria": "公開ポートへのトラフィックで起動"
+    },
+    "ignore": {
+      "title": "無視するパス",
+      "help": "これらのパスへのリクエストでは、アプリが起動したままになることはありません。ヘルスチェックや稼働監視モニターが該当します。",
+      "remove": "{{path}} を削除",
+      "addLabel": "無視するパス",
+      "add": "追加"
+    }
+  },
+  "releaseNotes": {
+    "title": "コミットとリリースノート",
+    "digest": "イメージダイジェスト",
+    "digestSame": "両側で同じイメージダイジェストです。",
+    "noCommits": "この2つのデプロイの間にコミットはありません。",
+    "commitsCount_other": "これらのデプロイの間に {{count}} 件のコミット",
+    "generate": "リリースノートを生成",
+    "generating": "生成中...",
+    "copy": "Markdownをコピー",
+    "copied": "リリースノートをコピーしました。",
+    "copyFailed": "クリップボードにコピーできませんでした。",
+    "loadFailed": "リリースノートを生成できませんでした。",
+    "needsDeploy": "リリースノートを生成するには、gitコミットが記録された2つのデプロイを選択してください。"
+  },
+  "githubActions": {
+    "title": "GitHub Actionsへの報告",
+    "infoTipLabel": "GitHub Actionsへの報告について",
+    "description": "ワークフローでLevelrailのデプロイアクションが実行されると、コミットにGitHubのデプロイメントとチェックランを記録し、結果がプルリクエストに表示されます。報告の失敗によってデプロイが失敗することはありません。",
+    "environmentLabel": "GitHub環境名",
+    "deploymentsLabel": "GitHubのデプロイメントを記録",
+    "checksLabel": "チェックランを投稿",
+    "snippetHint": "ワークフローで glincker/levelrail/integrations/github-action を使用するか、levelrail-cli apps github-actions get {{app}} を実行してください。",
+    "save": "保存",
+    "toast": {
+      "saved": "GitHub Actionsへの報告を保存しました。",
+      "errorTitle": "GitHub Actionsへの報告を保存できませんでした。"
+    }
+  },
+  "ciDeploy": {
+    "title": "CIからデプロイ",
+    "infoTipLabel": "CIからのデプロイについて",
+    "description": "パイプラインとrefを信頼したうえで、設定内容をCIに貼り付けます。ジョブは自身のID(GitHub、GitLab、CircleCI)を、このアプリのデプロイのみができる15分間のトークンと交換するため、長期間有効なシークレットは保存されません。[skip ci] を含むコミットはデプロイされません。",
+    "noTrusts": "このアプリのデプロイを信頼されているパイプラインはまだありません。下から追加してください。",
+    "repositoryLabel": {
+      "github": "GitHubリポジトリ",
+      "gitlab": "GitLabのプロジェクトパス",
+      "circleci": "CircleCIのプロジェクトID"
+    },
+    "repositoryPlaceholder": {
+      "github": "owner/name",
+      "gitlab": "group/project",
+      "circleci": "Project Settings > Overview"
+    },
+    "refLabel": "許可するref",
+    "environmentLabel": {
+      "github": "環境",
+      "gitlab": "環境",
+      "circleci": "コンテキストID"
+    },
+    "environmentPlaceholder": {
+      "github": "任意の環境",
+      "gitlab": "任意の保護された環境",
+      "circleci": "任意のコンテキスト"
+    },
+    "trust": "信頼",
+    "removeTrust": "{{repository}} の信頼を解除",
+    "workflowTitle": "生成されたワークフロー",
+    "copy": "ワークフローをコピー",
+    "needsAddress": "CIトークンはダッシュボードのアドレスに対して発行されますが、まだ設定されていません。",
+    "useThisAddress": "{{origin}} を使用",
+    "cliToggle": "CLIで修正",
+    "toast": {
+      "trusted": "リポジトリを信頼しました。",
+      "trustError": "信頼を追加できませんでした。",
+      "removeError": "信頼を解除できませんでした。",
+      "addressError": "ダッシュボードのアドレスを保存できませんでした。",
+      "copied": "ワークフローをコピーしました。",
+      "copyFailed": "クリップボードにコピーできませんでした。",
+      "trustedLoose": "緩いルールで信頼しました。"
+    },
+    "providerLabel": "CIプロバイダー",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI"
+    },
+    "orgIdLabel": "CircleCIの組織ID",
+    "orgIdPlaceholder": "Organization Settings > Overview",
+    "issuerLabel": "セルフマネージドの発行元",
+    "issuerPlaceholder": "https://gitlab.com",
+    "issuerNote": "gitlab.comの場合は、発行元を空のままにしてください。セルフマネージドのGitLab発行元を信頼できるのはrootユーザーのみです。運用者がトークンを発行できるためです。",
+    "issuerShown": "発行元 {{issuer}}",
+    "protectedOnly": "保護されたブランチとタグのみ",
+    "unprotectedWarning": "この信頼設定では、保護されていないブランチとタグ上のパイプラインも受け入れます。一致するrefをpushできる開発者なら誰でもデプロイできます。",
+    "snippetTitle": {
+      "github": "ジョブのステップ",
+      "gitlab": "GitLab CIのジョブ",
+      "circleci": "CircleCIのジョブのステップ"
+    },
+    "snippetNote": "LEVELRAIL_API_URL にダッシュボードのアドレスを設定してください。これは公開情報であり、シークレットではありません。"
+  },
+  "buildHooks": {
+    "title": "ビルドフック",
+    "infoTipLabel": "ビルドフックについて",
+    "description": "ビルドフックは秘密のURLです。ヘッドレスCMSやcronジョブからPOSTすると、このアプリのgitソースをビルドしてデプロイします。任意でtitleとbodyを含むJSONボディを送ると、ビルド引数 TRIGGER_TITLE と TRIGGER_BODY としてビルドに渡されます。任意の接続元CIDRの許可リストを設定すると、それ以外の呼び出し元は403で拒否され、何もビルドされません。",
+    "empty": "ビルドフックはまだありません。外部からビルドを起動するには、作成してください。",
+    "defaultBranch": "アプリのブランチ",
+    "neverTriggered": "未実行",
+    "lastTriggered": "最終実行 {{when}}(合計 {{count}} 回)。結果: {{result}}",
+    "nameLabel": "フック名",
+    "namePlaceholder": "例: cms publish",
+    "branchLabel": "ブランチ(任意)",
+    "branchPlaceholder": "デフォルトはアプリのブランチ",
+    "create": "フックを作成",
+    "rotate": "ローテーション",
+    "revoke": "失効",
+    "confirmRevoke": "失効を確認",
+    "copy": "URLをコピー",
+    "urlLabel": "ビルドフックのURL",
+    "shownOnce": "{{name}} のURLです。今すぐコピーしてください。再表示はされません。",
+    "allowLabel": "許可する接続元(任意)",
+    "allowPlaceholder": "CIDRまたはアドレスをカンマ区切りで入力",
+    "allowAny": "どの接続元からでも呼び出せます。",
+    "allowList": "{{cidrs}} からのみ呼び出せます。",
+    "lastUsed": "最終呼び出し {{when}}。",
+    "editAllow": "許可リスト",
+    "saveAllow": "許可リストを保存",
+    "cancel": "キャンセル",
+    "allowAnyToggle": "任意の接続元を許可",
+    "lastRefusal": "最後に拒否された呼び出し: {{reason}}",
+    "toast": {
+      "errorTitle": "ビルドフックのリクエストに失敗しました",
+      "copied": "URLをコピーしました。",
+      "copyFailed": "クリップボードにコピーできませんでした。",
+      "allowSaved": "許可リストを保存しました。"
+    }
+  },
+  "banner": {
+    "title": "デプロイメント",
+    "description": "すべてのアプリのリリースを、ビルド中もライブで確認でき、ワンクリックでロールバックできます。アプリをデプロイすると、ここに表示されます。",
+    "compactDescription": "すべてのアプリのリリースとロールバック。",
+    "diagram": {
+      "image": "イメージ",
+      "server": "サーバー",
+      "rollback": "ロールバック"
+    }
+  },
+  "rolloutPolicy": {
+    "title": "ローリングアップデートの予算",
+    "infoLabel": "ローリングアップデートの予算について",
+    "infoBody": "値は件数またはパーセンテージで、1 や 25% のように指定します。フィールドを空にすると、サーバーのデフォルトが使用されます。",
+    "hint": "新しいリリースの展開中に、追加または利用不可にできるレプリカの数です。app.yamlのrolloutと同じブロックです。",
+    "max_surge": "最大サージ",
+    "max_unavailable": "最大利用不可数",
+    "min_available": "最小利用可能数",
+    "default": "デフォルト",
+    "save": "保存",
+    "reset": "デフォルトを使用",
+    "saved": "ロールアウトポリシーを保存しました。",
+    "resetDone": "ロールアウトポリシーをデフォルトに戻しました。",
+    "saveFailed": "ロールアウトポリシーを更新できませんでした。",
+    "placeholder": "例: 25% または 1",
+    "format": "件数(1)またはパーセント(25%)",
+    "error": {
+      "format": "1 や 25% のように、整数またはパーセントで指定してください。",
+      "percent": "パーセントは0%から100%の間で指定してください。",
+      "bothZero": "最大サージと最大利用不可数を両方0にすることはできません。ロールアウトが進まなくなります。"
+    }
+  },
+  "page": {
+    "title": "デプロイメント",
+    "live": "ライブ",
+    "reconnecting": "再接続中",
+    "connecting": "接続中",
+    "newCount": "新規 {{count}} 件",
+    "loadFailed": "デプロイメントを読み込めませんでした",
+    "retry": "再試行",
+    "noMatch": "一致するデプロイメントはありません",
+    "noMatchHint": "フィルターを外すか、検索範囲を広げてみてください。",
+    "clearFilters": "フィルターをクリア",
+    "emptyTitle": "デプロイメントはまだありません",
+    "emptyDescription": "アプリがビルドされてリリースされると、すぐにここにデプロイが表示されます。",
+    "drawerFallbackTitle": "デプロイメント",
+    "drawerDescription": "{{app}} のデプロイメント {{id}}",
+    "drawerSearching": "このデプロイメントを検索しています",
+    "drawerNotFoundTitle": "デプロイメントが見つかりません",
+    "drawerNotFound": "デプロイメントが見つかりません。保持期間により削除された可能性があります。",
+    "emptyAction": "アプリをデプロイ"
+  },
+  "summary": {
+    "label": "デプロイメントの概要",
+    "unavailableTip": "概要を読み込めませんでした。下の一覧は引き続き利用できます。",
+    "na": "該当なし",
+    "inProgress": "進行中",
+    "inProgressTip": "現在ビルド中のデプロイです。待機中は {{queued}} 件。",
+    "failureRate": "失敗率(24時間)",
+    "failureRateTip": "直近24時間に完了したデプロイのうち、失敗したデプロイの割合です。",
+    "medianDuration": "所要時間の中央値",
+    "medianDurationTip": "直近24時間に完了したデプロイの所要時間の中央値です。",
+    "needsAttention": "要対応",
+    "needsAttentionTip": "保留中のデプロイと、実行中のものと異なるライブイメージです。選択すると保留中のデプロイを表示します。",
+    "deploys14": "デプロイ(14日間)",
+    "deploys14Tip": "直近14日間の、1日あたりに開始されたデプロイ数です。"
+  },
+  "filterBar": {
+    "searchPlaceholder": "コミット、SHA、アプリを検索",
+    "searchLabel": "デプロイメントを検索",
+    "activeFilters": "有効なフィルター",
+    "removeFilter": "フィルター {{text}} を削除",
+    "clearAll": "すべてクリア"
+  },
+  "supersededPopover": {
+    "queue": "キュー",
+    "autoCancelLabel": "置き換え済みを自動キャンセル",
+    "switchLabel": "{{app}} の置き換え済みデプロイを自動キャンセル",
+    "updateFailed": "設定を更新できませんでした。",
+    "openSettings": "デプロイ設定を開く",
+    "title": "置き換え済みデプロイの自動キャンセル",
+    "description": "ブランチのより新しい待機中のデプロイが、古い待機中のデプロイを置き換えます。すでに実行中のビルドはキャンセルされません。アプリごとに設定します。",
+    "noApps": "アプリはまだ読み込まれていません。",
+    "appLabel": "アプリ"
+  },
+  "deployList": {
+    "shortcuts": "ショートカット",
+    "addFilter": "フィルターを追加",
+    "filterBy": "絞り込み条件",
+    "findOrType": "{{what}} を検索または入力",
+    "valueLabel": "{{what}} の値",
+    "enterToUse": "Enterキーを押すと、この値を使用します。",
+    "nothingLoaded": "まだ何も読み込まれていません。",
+    "keys": {
+      "author": "作成者",
+      "environment": "環境",
+      "status": "ステータス",
+      "app": "アプリ",
+      "branch": "ブランチ",
+      "trigger": "トリガー"
+    },
+    "status": {
+      "building": "ビルド中",
+      "queued": "待機中",
+      "ready": "準備完了",
+      "failed": "失敗",
+      "canceled": "キャンセル済み",
+      "held": "保留中",
+      "awaiting_approval": "承認待ち",
+      "rolled_back": "ロールバック済み",
+      "superseded": "置き換え済み"
+    },
+    "trigger": {
+      "git push": "Git push",
+      "manual": "手動",
+      "rollback": "ロールバック",
+      "api": "API",
+      "preview": "プレビュー",
+      "schedule": "スケジュール",
+      "pipeline": "パイプライン"
+    },
+    "shortcutLabels": {
+      "search": "検索",
+      "addFilter": "フィルターを追加",
+      "nextPrev": "次または前のデプロイメント",
+      "open": "詳細を開く",
+      "close": "詳細を閉じる",
+      "redeploy": "再デプロイ(確認あり)",
+      "rollback": "そこへロールバック(確認あり)",
+      "cancel": "実行中のデプロイをキャンセル(確認あり)"
+    }
+  },
+  "ciTemplates": {
+    "title": "CI用のパイプラインファイル",
+    "infoTipLabel": "CIパイプラインファイルについて",
+    "description": "CIを選択すると、このアプリ用のパイプラインファイルがすぐに使えます。GitHub、GitLab、CircleCIは短期間有効なIDトークンを使用するため、長期間有効なものは保存されません。JenkinsとBuildkiteは、読み取りとデプロイのみができるデプロイヤートークンを使用します。",
+    "providerLabel": "CIプロバイダー",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI",
+      "jenkins": "Jenkins",
+      "buildkite": "Buildkite"
+    },
+    "saveAs": "これをリポジトリの {{target}} として保存してください。",
+    "needsDomain": "ダッシュボードのURLがまだ設定されていません。CIがこのコントロールプレーンに到達できるよう、設定で指定してください。",
+    "oidcNote": "先にCIからデプロイで信頼するパイプラインを追加してください。そうすれば、CIにトークンを保存する必要はありません。",
+    "token": {
+      "create": "デプロイヤートークンを作成",
+      "label": "デプロイヤートークン",
+      "shownOnce": "今すぐコピーしてください。再表示はされません。",
+      "errorTitle": "トークンを作成できませんでした。",
+      "helpScoped": "このファイルは保存されたトークンを読み取ります。このトークンはこのアプリのプロジェクトに限定され、そのプロジェクト内のすべてのアプリを読み取りおよびデプロイできますが、プロジェクト外には及びません。実行できる操作: {{abilities}}。CIにシークレットとして保存してください。",
+      "helpInstallWide": "このファイルは保存されたトークンを読み取ります。このアプリはどのプロジェクトにも属していないため、トークンはこのサーバー上のすべてのアプリをデプロイでき、実行できる操作は次のみです: {{abilities}}。OIDCパイプラインを使用するか、先にアプリをプロジェクトに移動することをおすすめします。",
+      "helpUnavailable": "このファイルは保存されたトークンを読み取ります。このサーバーではトークンをアプリのプロジェクトに限定できないため、トークンはこのサーバー上のすべてのアプリをデプロイでき、実行できる操作は次のみです: {{abilities}}。OIDCパイプラインの使用をおすすめします。",
+      "createInstallWide": "インストール全体のトークンを作成",
+      "helpProjectMissing": "このファイルは保存されたトークンを読み取ります。アプリが指定しているプロジェクトはすでに存在しないため、トークンをプロジェクトに限定できず、このサーバー上のすべてのアプリをデプロイできます。実行できる操作は次のみです: {{abilities}}。先にアプリのプロジェクトを修正するか、OIDCパイプラインの使用をおすすめします。"
+    },
+    "apiUrl": "CIで LEVELRAIL_API_URL を {{url}} に設定してください。"
+  },
+  "approvalBanner": {
+    "approved": "承認しました: {{app}} は {{image}} を対象にするようになりました。",
+    "approveError": "承認できませんでした。",
+    "rejected": "デプロイの承認を却下しました。",
+    "rejectError": "却下できませんでした。",
+    "titleDeploy": "デプロイ先:",
+    "titlePromote": "プロモーション先:",
+    "awaiting": "は承認待ちです。",
+    "requestedBy": "{{name}} がリクエストしました。この環境は保護されています。デプロイするには、別の、十分な権限を持つユーザーが承認する必要があります。",
+    "reject": "却下",
+    "approve": "承認",
+    "approving": "承認中...",
+    "viewQueue": "キューを表示",
+    "progress": "これまでに {{required}} 人中 {{received}} 人の異なる承認者が承認しました。最後の承認者が承認するとデプロイが実行されます。",
+    "recorded": "承認を記録しました: {{required}} 人中 {{received}} 人の異なる承認者。"
+  }
+}

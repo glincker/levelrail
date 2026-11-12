@@ -1,0 +1,244 @@
+{
+  "title": "スタック",
+  "description": "宣言的なリソースセットです。差分の確認、固定、ロールバックができるリビジョン履歴を持ちます。",
+  "empty": {
+    "title": "スタックはまだありません",
+    "description": "CLIからマニフェストをスタックに適用すると、リビジョンとともにここに表示されます。"
+  },
+  "loadFailed": "スタックを読み込めませんでした。",
+  "columns": {
+    "scope": "スコープ",
+    "name": "スタック",
+    "project": "プロジェクト",
+    "revision": "最新",
+    "status": "ステータス",
+    "flags": "フラグ",
+    "created": "作成日時"
+  },
+  "status": {
+    "pending_approval": "承認待ち",
+    "applying": "適用中",
+    "applied": "適用済み",
+    "partial": "一部適用",
+    "failed": "失敗",
+    "superseded": "置き換え済み",
+    "rejected": "却下",
+    "none": "リビジョンなし"
+  },
+  "scope": {
+    "project": "プロジェクト",
+    "install": "インストール",
+    "projectTip": "1つのプロジェクトに属します",
+    "installTip": "インストール全体にまたがります"
+  },
+  "flags": {
+    "locked": "ロック中",
+    "lockedTip": "{{holder}} がリビジョン {{revision}} で保持しています",
+    "pinned": "r{{revision}} に固定",
+    "driftLock": "ドリフトでロック",
+    "driftWarn": "ドリフトで警告",
+    "approval": "承認が必要",
+    "prune": "削除を許可"
+  },
+  "detail": {
+    "back": "すべてのスタック",
+    "revisionShort": "r{{number}}",
+    "inProject": "プロジェクト {{project}}",
+    "createdBy": "作成者: {{name}}",
+    "lockedBanner": "{{holder}} がリビジョン {{revision}} のために {{until}} までロックしています。",
+    "pinnedBanner": "リビジョン {{revision}} に固定されています。固定を解除するまで、新しい適用は拒否されます。",
+    "resources": "管理対象リソース {{count}} 件",
+    "loadFailed": "このスタックを読み込めませんでした。"
+  },
+  "actions": {
+    "pin": "固定",
+    "unpin": "固定を解除",
+    "unlock": "ロックを解除",
+    "delete": "削除",
+    "rollback": "ロールバック",
+    "view": "表示",
+    "diff": "差分",
+    "viewRev": "リビジョン {{number}} を表示",
+    "diffRev": "リビジョン {{number}} の差分",
+    "rollbackRev": "リビジョン {{number}} にロールバック",
+    "pinRev": "リビジョン {{number}} を固定",
+    "unpinRev": "リビジョン {{number}} の固定を解除",
+    "pinned": "リビジョン {{revision}} に固定しました",
+    "unpinned": "スタックの固定を解除しました",
+    "unlocked": "スタックのロックを解除しました",
+    "failed": "操作に失敗しました",
+    "approveRev": "リビジョン {{number}} を承認",
+    "rejectRev": "リビジョン {{number}} を却下"
+  },
+  "history": {
+    "title": "リビジョン",
+    "empty": "リビジョンはまだありません。",
+    "columns": {
+      "number": "Rev",
+      "status": "ステータス",
+      "actor": "実行者",
+      "source": "ソース",
+      "when": "日時"
+    },
+    "rollbackOf": "r{{number}} のロールバック",
+    "pinnedMark": "固定",
+    "ariaLabel": "スタックのリビジョン"
+  },
+  "revision": {
+    "title": "リビジョン {{number}}",
+    "files": "レンダリング済みファイル",
+    "noFiles": "このリビジョンに保存されたファイルはありません。",
+    "plan": "プラン",
+    "result": "結果",
+    "noPlan": "プランは記録されていません。",
+    "noResult": "結果はまだありません。",
+    "resultCounts": "適用 {{applied}} 件、失敗 {{failed}} 件、スキップ {{skipped}} 件",
+    "resultFailedItem": "{{kind}} {{name}}: {{reason}}",
+    "resultNoReason": "理由は示されていません",
+    "summary": "作成 {{create}} 件、更新 {{update}} 件、削除 {{delete}} 件、変更なし {{noop}} 件、エラー {{error}} 件",
+    "hash": "プランハッシュ {{hash}}",
+    "close": "閉じる",
+    "git": "コミット {{sha}}",
+    "ciRun": "CIの実行",
+    "loadFailed": "このリビジョンを読み込めませんでした。"
+  },
+  "diff": {
+    "title": "変更内容",
+    "against": "r{{number}} を次と比較",
+    "live": "稼働中の状態",
+    "revisionOption": "リビジョン {{number}}",
+    "empty": "差分はありません。",
+    "loadFailed": "差分を計算できませんでした。",
+    "action": {
+      "create": "作成",
+      "update": "更新",
+      "delete": "削除",
+      "noop": "変更なし",
+      "error": "エラー",
+      "added": "追加",
+      "removed": "削除済み",
+      "changed": "変更"
+    },
+    "was": "変更前",
+    "now": "変更後"
+  },
+  "rollback": {
+    "title": "リビジョン {{number}} にロールバックしますか?",
+    "description": "リビジョン {{number}} のファイルを、新しいリビジョンとして {{name}} に適用します。",
+    "secretsNote": "シークレットはロールバックされません。現在のシークレットの値はそのまま維持されます。",
+    "dataNote": "データはロールバックされません。データベースとボリュームは現在の内容を維持します。",
+    "confirm": "ロールバック",
+    "pending": "ロールバック中",
+    "done": "リビジョン {{number}} にロールバックしました",
+    "doneStatus": "新しいリビジョン {{number}} は {{status}} で完了しました",
+    "failed": "ロールバックに失敗しました",
+    "pendingApproval": "リビジョン {{number}} は承認待ちです。まだ何もロールバックされていません。"
+  },
+  "delete": {
+    "title": "スタック {{name}} を削除しますか?",
+    "description": "スタックが管理するリソースをどうするか選択してください。",
+    "forget": "スタックを削除して管理を解除",
+    "forgetHint": "スタックとその履歴を削除します。リソースは管理対象外のまま実行され続けます。",
+    "destroy": "リソースを破棄",
+    "destroyHint": "スタックが管理するアプリとデータベースを削除し、その後スタックを削除します。",
+    "confirm": "スタックを削除",
+    "pending": "削除中",
+    "done": "スタック {{name}} を削除しました",
+    "failed": "削除に失敗しました"
+  },
+  "settings": {
+    "title": "スタック設定",
+    "allowPrune": "削除を許可",
+    "allowPruneHint": "適用時に、マニフェストから外れたリソースの削除を許可します。",
+    "requireApproval": "承認を必須にする",
+    "requireApprovalHint": "適用は、担当者が承認するまで待機します。",
+    "driftPolicy": "ドリフトポリシー",
+    "driftWarn": "警告",
+    "driftLock": "ロック",
+    "driftHint": "ロックは、稼働中の状態がスタックと異なる間、適用を停止します。",
+    "rootOnly": "変更できるのは管理者のみです。",
+    "saved": "スタック設定を保存しました",
+    "failed": "設定を保存できませんでした"
+  },
+  "badge": {
+    "managedBy": "スタック {{name}} が管理",
+    "short": "スタック {{name}}"
+  },
+  "appPanel": {
+    "title": "スタックによる管理",
+    "revision": "リビジョン {{number}}",
+    "lock": "ロックモード",
+    "hint": "gitで編集してください。ここでの変更は、上書きまたはブロックされる場合があります。",
+    "docs": "スタックのドキュメント"
+  },
+  "managedNotice": {
+    "warn": "スタック {{name}} が管理しています。手動での変更は、元に戻されるか、ドリフトとして報告される場合があります。",
+    "lock": "スタック {{name}} が管理しており、リソースをロックしています。手動での変更は、拒否されるか元に戻される場合があります。"
+  },
+  "drift": {
+    "badge": "ドリフト({{count}})",
+    "title": "ドリフト: {{count}} 件のリソースがスタックと異なります",
+    "revision": "r{{number}} と比較",
+    "checkedAt": "確認日時: {{when}}",
+    "noValues": "フィールドのパスのみ表示されます。値は保存されません。",
+    "action": {
+      "changed": "変更",
+      "missing": "欠落",
+      "owner_changed": "オーナーが変更されました"
+    }
+  },
+  "approval": {
+    "expires": "有効期限: {{when}}",
+    "approveTitle": "リビジョン {{number}} を承認しますか?",
+    "approveDescription": "保存されたプランを {{name}} に適用します。別の管理者がリクエストしました。",
+    "approveDescriptionOwn": "このリビジョンはあなたがリクエストしたため、{{name}} への適用は別の管理者が承認する必要があります。",
+    "secretsNote": "シークレットは保存されません。マニフェストが必要とするものを、今すぐ指定してください。一度だけ送信され、保持されません。",
+    "secretName": "シークレット名",
+    "secretValue": "シークレットの値",
+    "addSecret": "シークレットを追加",
+    "removeSecret": "シークレットを削除",
+    "approve": "承認",
+    "approving": "承認中",
+    "approved": "リビジョン {{number}} を承認しました",
+    "approvedStatus": "{{status}} で完了しました",
+    "stale": "確認後にプランが変更されました。もう一度承認をリクエストしてください。",
+    "expired": "この承認リクエストは期限切れです。もう一度承認をリクエストしてください。",
+    "rejectTitle": "リビジョン {{number}} を却下しますか?",
+    "rejectDescription": "{{name}} には何も適用されず、リクエストは終了します。",
+    "reason": "理由(任意)",
+    "reject": "却下",
+    "rejecting": "却下中",
+    "rejected": "リビジョン {{number}} を却下しました"
+  },
+  "templates": {
+    "title": "スタックテンプレート",
+    "description": "よく使うスタックのスターターバンドルです。変数を入力し、ファイルをプレビューして、コマンドをコピーします。",
+    "loadFailed": "スタックテンプレートを読み込めませんでした。",
+    "empty": {
+      "title": "スタックテンプレートはありません",
+      "description": "このビルドにはスターターバンドルがありません。"
+    },
+    "open": "テンプレート {{name}} を開く",
+    "secretCount_other": "シークレット {{count}} 件",
+    "drawerDescription": "テンプレートを読み込み中。",
+    "var": {
+      "name": "名前",
+      "domain": "ドメイン",
+      "image": "イメージ"
+    },
+    "issues": "レンダリング済みファイルに問題があります",
+    "files": "レンダリング済みファイル",
+    "copyAll": "すべてコピー",
+    "copied": "コピーしました",
+    "downloadAll": "すべてダウンロード",
+    "secrets": {
+      "title": "指定が必要なシークレット",
+      "hint": "名前のみです。適用する前に、それぞれを環境変数としてエクスポートしてください。",
+      "none": "このバンドルにシークレットは不要です。"
+    },
+    "cli": {
+      "title": "CLIから適用",
+      "hint": "ファイルを新しいフォルダーに書き出し、スタックとして適用します。ダッシュボードからの適用はまだ利用できません。"
+    }
+  }
+}
