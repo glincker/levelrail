@@ -12,3 +12,11 @@ paths = [
   '''_test\.go$''',
   '''^test/fixtures/''',
 ]
+
+[[allowlists]]
+description = "Example SSH key header used as input placeholder text in translated migration forms, not a key"
+condition = "AND"
+targetRules = ["private-key"]
+paths = ['''^web/src/locales/[^/]+/migration\.json$''']
+regexTarget = "match"
+regexes = ['''^-----BEGIN OPENSSH PRIVATE KEY-----",[\s\S]*"keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----$''']
