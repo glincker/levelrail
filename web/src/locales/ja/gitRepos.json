@@ -1,0 +1,104 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "リポジトリを検索...",
+      "empty": "リポジトリが見つかりません。",
+      "noMatch": "「{{search}}」に一致するリポジトリはありません。",
+      "loadFailed": "リポジトリを一覧表示できませんでした。"
+    },
+    "projects": {
+      "searchPlaceholder": "プロジェクトを検索...",
+      "empty": "プロジェクトが見つかりません。",
+      "noMatch": "「{{search}}」に一致するプロジェクトはありません。",
+      "loadFailed": "プロジェクトを一覧表示できませんでした。"
+    },
+    "refresh": "更新",
+    "refreshing": "更新中",
+    "refreshHint": "保存済みの一覧を使わず、プロバイダーからリポジトリを再取得します。",
+    "filters": {
+      "label": "フィルター",
+      "allOwners": "すべてのオーナー",
+      "hideArchived": "アーカイブ済みを隠す",
+      "hideForks": "フォークを隠す",
+      "allAccounts": "すべてのアカウント"
+    },
+    "status": {
+      "showing": "{{total}}件中{{shown}}件を表示しています。",
+      "searchToNarrow": "検索するかオーナーを選んで、一覧を絞り込んでください。",
+      "loadedOf": "合計{{loaded}}件を読み込みました。",
+      "updated": "{{time}}に更新しました。",
+      "stale": "保存済みの一覧です。バックグラウンドで更新しています。",
+      "truncated": "このアカウントには、ここに表示している{{cap}}件を超えるリポジトリがあります。検索の対象は最初の{{cap}}件のみです。それ以降のリポジトリを使うには、リポジトリのURLを貼り付けてください。",
+      "rateLimited": "プロバイダーがこのコントロールプレーンにレート制限をかけているため、保存済みの一覧を表示しています。{{time}}以降に再確認します。",
+      "rateLimitedEmpty": "プロバイダーがこのコントロールプレーンにレート制限をかけており、保存済みの一覧もまだありません。{{time}}以降にもう一度お試しください。",
+      "rateLimitedNoTime": "プロバイダーがこのコントロールプレーンにレート制限をかけています。1分ほど待ってからもう一度お試しください。"
+    },
+    "loadMore": "さらに表示",
+    "loadingMore": "読み込み中",
+    "accountError": "{{account}}を一覧表示できませんでした: {{error}}",
+    "badges": {
+      "archived": "アーカイブ済み",
+      "fork": "フォーク",
+      "private": "プライベートリポジトリ",
+      "running": "{{name}}として稼働中"
+    },
+    "retry": "再試行",
+    "account": "アカウント: {{name}}"
+  },
+  "connection": {
+    "label": "接続の状態",
+    "healthy": "正常",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server",
+      "azure_devops": "Azure DevOps"
+    },
+    "needs_reauthorize": {
+      "title": "{{provider}}の再接続が必要です",
+      "body": "認可が取り消された、期限切れになった、または受け付けられなくなったため、再接続するまでリポジトリを一覧表示したりクローンしたりできません。"
+    },
+    "revoked": {
+      "title": "{{provider}}の接続が削除されました",
+      "body": "プロバイダー側で、インストールまたは認可が存在しなくなりました。再び使うには再接続してください。"
+    },
+    "rate_limited": {
+      "title": "{{provider}}がこのコントロールプレーンにレート制限をかけています",
+      "body": "保存済みの一覧は引き続き表示されます。{{time}}以降に再確認します。"
+    },
+    "reconnect": "{{provider}}を再接続",
+    "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "このコントロールプレーンのWebhookアドレスはプライベートまたはローカルのため、GitHub、GitLabなどのGitホストから呼び出せません。プッシュは届きません。",
+      "no_public_url": "このコントロールプレーンにはまだパブリックアドレスがないため、Gitホストが呼び出すWebhookアドレスがありません。プッシュは届きません。"
+    },
+    "urlFixHint": "下でWebhook用のパブリックURLを設定してから、Webhookをもう一度登録してください。",
+    "registration": {
+      "registered": "プロバイダーにWebhookを登録しました。",
+      "failed": "プロバイダーにWebhookを登録できませんでした: {{error}}",
+      "registerAgain": "再登録",
+      "registering": "登録中",
+      "done": "Webhookを登録しました。",
+      "failedToast": "Webhookを登録できませんでした。"
+    },
+    "poll": {
+      "last": "最終確認 {{time}}。",
+      "never": "まだ確認していません。",
+      "lastWebhook": "最後のWebhook {{time}}。",
+      "noWebhook": "Webhookはまだ届いていません。",
+      "error": "前回の確認に失敗しました: {{error}}",
+      "disabled": "取りこぼしたプッシュのポーリングはオフです。"
+    },
+    "connection": {
+      "needs_reconnect": "このリポジトリを選んだアカウントの接続が切断されました。ソースは残りますが、同じホストのアカウントを再び接続するまで、WebhookとプレビューはこのソースL使えません。",
+      "needs_reauthorize": "このソースのWebhookとプレビューが動作するには、アカウント{{label}}の再接続が必要です。",
+      "revoked": "アカウント{{label}}はプロバイダー側で削除されました。このソースを再び使うには、再接続してください。",
+      "reconnect": "{{provider}}を再接続"
+    }
+  }
+}
