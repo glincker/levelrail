@@ -1,0 +1,97 @@
+{
+  "title": "Fonctions bêta",
+  "description": "Toutes les fonctions encore en cours de validation. Activez-en une ici ; si elle est câblée au démarrage, redémarrez depuis la même carte pour l'appliquer.",
+  "groups": {
+    "beta": "Bêta",
+    "experimental": "Expérimental"
+  },
+  "banner": {
+    "title": "{{name}} est une fonction bêta",
+    "body": "Activez-la pour continuer.",
+    "bodyRestart": "Activez-la, puis redémarrez pour l'appliquer.",
+    "ready": "{{name}} est activé.",
+    "takeMeThere": "M'y emmener",
+    "unknown": "Cette fonction est inconnue de ce serveur."
+  },
+  "state": {
+    "on": "Activée",
+    "off": "Désactivée",
+    "onByEnv": "Activée par le réglage du serveur",
+    "onBySetting": "Activée depuis Paramètres"
+  },
+  "toggle": {
+    "label": "Activer {{name}}",
+    "on": "{{name}} activé",
+    "off": "{{name}} désactivé",
+    "error": "Impossible de modifier {{name}} : {{message}}",
+    "lockedByEnv": "Activée par le réglage du serveur, donc elle ne peut pas être désactivée ici."
+  },
+  "env": {
+    "copy": "Copier",
+    "copied": "Copié",
+    "line": "Ligne de réglage",
+    "systemd": "systemd",
+    "docker": "Docker"
+  },
+  "docs": "Lire la documentation",
+  "error": "Impossible de charger les fonctions bêta : {{message}}",
+  "readOnly": "Seul un administrateur peut activer ou désactiver les fonctions bêta.",
+  "restart": {
+    "needed": "Enregistré. Redémarrez pour appliquer ce changement. Les deploys et flux de logs en cours sont interrompus puis reprennent ensuite.",
+    "now": "Redémarrer maintenant",
+    "unsupported": "Cette installation ne peut pas se redémarrer elle-même car aucun superviseur de processus n'a été détecté. Redémarrez le plan de contrôle, puis revérifiez.",
+    "recheck": "Revérifier",
+    "manual": "Redémarrer plutôt depuis le serveur",
+    "askAdmin": "Enregistré. Un administrateur doit redémarrer le plan de contrôle pour l'appliquer."
+  },
+  "options": {
+    "open": "Utiliser plutôt la CLI ou la config du serveur",
+    "title": "Activer {{name}} autrement",
+    "description": "L'interrupteur de la carte fait la même chose. Utilisez ces options si vous préférez la ligne de commande ou gérez le serveur par configuration.",
+    "cli": "CLI",
+    "cliLine": "Commande CLI",
+    "cliRestartLine": "Commande CLI avec redémarrage",
+    "server": "Config du serveur",
+    "reload": "Recharger systemd",
+    "restartUnit": "Redémarrer l'unité",
+    "recreate": "Recréer le container",
+    "restartNote": "Cette fonction est câblée au démarrage du serveur, donc un redémarrage l'applique."
+  },
+  "profile": {
+    "title": "Profil du serveur",
+    "description": "Détermine quelles parties facultatives du serveur démarrent. Passer d'un profil à l'autre ne supprime jamais de données. La plupart sont câblées au démarrage, donc un redémarrage applique le changement.",
+    "names": {
+      "minimal": "Minimal",
+      "standard": "Standard",
+      "suite": "Suite"
+    },
+    "summary": {
+      "minimal": "Un serveur aussi léger que possible. Rien ne tourne que vous n'ayez demandé.",
+      "standard": "L'installation par défaut. Tout ce dont une petite équipe a besoin.",
+      "suite": "Standard plus le mesh, les plugins et toutes les fonctions expérimentales."
+    },
+    "facts": {
+      "meshOn": "Mesh activé",
+      "meshOff": "Mesh désactivé",
+      "pluginsOn": "Plugins activés",
+      "pluginsOff": "Plugins désactivés",
+      "experimentalOn": "Toutes les fonctions expérimentales activées",
+      "experimentalOff": "Fonctions expérimentales désactivées",
+      "retention": "Métriques et logs conservés {{days}} jours",
+      "loopbackAgent": "Écouteur de l'agent sur loopback jusqu'à l'enrôlement d'un node",
+      "lazyLoops": "Les boucles de sauvegarde démarrent quand une sauvegarde est planifiée",
+      "recommendations": "Sauvegarde et renouvellement des clés affichés comme recommandations, pas comme éléments du score",
+      "sbom": "SBOM de build activés"
+    },
+    "current": "Actuel",
+    "use": "Utiliser ce profil",
+    "confirm": "Confirmer et appliquer",
+    "saved": "Profil {{name}} enregistré",
+    "error": "Impossible de modifier le profil : {{message}}",
+    "recommended": "Cette machine a peu de mémoire. Le profil {{name}} est le plus léger.",
+    "pinned": "Défini par le serveur",
+    "pinnedHelp": "{{env}} est défini sur le serveur, donc il détermine le profil. Retirez-le là-bas pour choisir depuis cette page.",
+    "neverDeletes": "Descendre de profil arrête des boucles et masque des routes mais ne supprime jamais de lignes. Les changements qui laisseraient des nodes enrôlés ou des plugins activés orphelins sont refusés.",
+    "readOnly": "Seul un administrateur peut modifier le profil du serveur."
+  }
+}

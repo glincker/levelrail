@@ -1,0 +1,131 @@
+{
+  "title": "Où joindre cette app",
+  "description": "La meilleure adresse à ouvrir en premier, puis les autres moyens d'accès.",
+  "actions": {
+    "copy": "Copier {{what}}",
+    "copied": "Copié",
+    "open": "Ouvrir {{what}}",
+    "test": "Tester",
+    "testing": "Test en cours",
+    "allowNetwork": "Autoriser l'accès réseau",
+    "change": "Modifier le port ou l'exposition",
+    "openApp": "Ouvrir l'app",
+    "copyUrl": "Copier l'adresse",
+    "recheck": "Contrôler à nouveau",
+    "showDetails": "Afficher les détails",
+    "hideDetails": "Masquer les détails",
+    "openOnNetwork": "Ouvrir sur ce réseau (IP et port)",
+    "addDomain": "Ajouter un domaine"
+  },
+  "allow": {
+    "title": "Autoriser l'accès réseau ?",
+    "description": "Le port est publié sur toutes les interfaces et ouvert dans le pare-feu de l'hôte, donc d'autres appareils peuvent joindre cette app en HTTP simple.",
+    "confirm": "Autoriser l'accès réseau",
+    "pending": "Application en cours",
+    "none": "Rien ne changerait.",
+    "change": "{{what}} : {{from}} vers {{to}}",
+    "plain_http": "HTTP simple : le trafic n'est pas chiffré et les protections de connexion configurées sur le domaine ne s'appliquent pas à ce port.",
+    "recreates": "Le container est recréé avec les nouveaux réglages.",
+    "done": "Accès réseau autorisé",
+    "doneDescription": "La réconciliation s'exécute en arrière-plan."
+  },
+  "errors": {
+    "load": "Impossible de charger les adresses de l'app.",
+    "retry": "Réessayer"
+  },
+  "empty": "Aucune adresse pour l'instant. Deployez l'app pour en obtenir une.",
+  "badges": {
+    "attention": "{{count}} nécessitent votre attention",
+    "port": "port {{port}}",
+    "deployed": "Deployé",
+    "nodeOffline": "Node hôte hors ligne depuis",
+    "previousHeld": "Version précédente conservée, supprimée",
+    "previousHeldTitle": "Version précédente, conservée jusqu'à {{time}}. Elle reste pour qu'un rollback soit instantané."
+  },
+  "setup": {
+    "title": "Configuration recommandée",
+    "progress": "{{done}} sur {{total}} terminés",
+    "hide": "Masquer pour cette app",
+    "show": "Afficher la configuration recommandée"
+  },
+  "traffic": {
+    "hint": "Aucun trafic pour l'instant. Les graphiques apparaissent à l'arrivée de la première requête."
+  },
+  "hero": {
+    "title": "Ouvrez votre app",
+    "stopped": "L'app ne tourne pas, donc cette adresse ne répondra pas avant son démarrage.",
+    "fixTitle": "Cette adresse ne répond pas encore depuis l'extérieur. Choisissez un moyen d'accès :",
+    "fixHint": "Ouvrir sur ce réseau donne une IP et un port qui fonctionnent sur votre réseau local sans domaine. Un domaine rend l'app joignable depuis internet."
+  },
+  "status": {
+    "live": "En ligne",
+    "down": "Ne répond pas",
+    "unchecked": "Non contrôlé",
+    "checking": "Contrôle en cours",
+    "stopped": "Ne tourne pas"
+  },
+  "security": {
+    "secure": "Sécurisé",
+    "selfSigned": "Certificat auto-signé : le navigateur affichera un avertissement",
+    "plain": "Non chiffré"
+  },
+  "scope": {
+    "internet": "Toute personne sur internet",
+    "network": "Même réseau ou VPN",
+    "server": "Ce serveur uniquement",
+    "apps": "Autres apps de ce serveur"
+  },
+  "dot": {
+    "ok": "Répond",
+    "down": "Ne répond pas",
+    "unknown": "Pas encore contrôlé"
+  },
+  "others": {
+    "title": "Autres moyens d'accès"
+  },
+  "advanced": {
+    "title": "Avancé : adresses pour les autres apps et ce serveur",
+    "hint": "Utile seulement pour relier des apps entre elles ou travailler sur le serveur lui-même.",
+    "noPublic": "Ce serveur n'a pas d'adresse publique, donc l'adresse du réseau privé est le moyen d'accès.",
+    "autoDown": "L'adresse de test gratuite n'a pas répondu depuis ce serveur. Elle nécessite un DNS public et les ports 80 et 443 ouverts, donc l'adresse ci-dessus est celle à utiliser."
+  },
+  "id": {
+    "domain": "Domaine",
+    "public": "Adresse publique",
+    "private": "Réseau privé",
+    "loopback": "Ce serveur",
+    "internal": "Autres apps",
+    "container": "Port du container",
+    "host": "Port de l'hôte"
+  },
+  "note": {
+    "container": "Le port sur lequel l'app écoute à l'intérieur de son container.",
+    "host": "Le port publié sur ce serveur pour le port du container.",
+    "hostStopped": "L'app ne tourne pas, donc aucun port d'hôte n'est publié.",
+    "hostNone": "Aucun port d'hôte n'est encore publié. Redeployez pour en publier un.",
+    "local": "Ne fonctionne que si vous êtes connecté sur ce serveur.",
+    "localNone": "Disponible une fois l'app en marche.",
+    "private": "Ne fonctionne que depuis le même réseau ou via un VPN.",
+    "privateLocalhost": "Non joignable depuis le réseau : le port est lié à localhost.",
+    "privateRemote": "Cette app tourne sur un autre node. Ouvrez ce node pour voir ses adresses réseau.",
+    "public": "HTTP simple, toute personne connaissant l'adresse peut l'atteindre.",
+    "domain": "Servi via le proxy avec TLS.",
+    "domainAuto": "Adresse automatique. Ajoutez votre propre domaine pour un certificat de confiance.",
+    "internal": "Les autres apps de ce serveur se connectent avec ce nom et ce port, par exemple http://{{address}}."
+  },
+  "test": {
+    "ok": "A répondu en {{ms}} ms",
+    "failed": "L'app n'a pas répondu à cette adresse. Elle est peut-être encore en cours de démarrage.",
+    "reason": {
+      "default": "L'app n'a pas répondu à cette adresse. Elle est peut-être encore en cours de démarrage.",
+      "container_not_running": "L'app ne tourne pas actuellement.",
+      "container_not_listening": "L'app n'a pas répondu à cette adresse. Elle est peut-être encore en cours de démarrage.",
+      "firewall_closed": "Cette adresse est bloquée, probablement par un pare-feu sur le serveur ou chez l'hébergeur.",
+      "unreachable_from_host": "Le proxy ne répond pas encore à cette adresse.",
+      "tls_not_issued": "Le certificat n'est pas encore de confiance, donc les navigateurs afficheront un avertissement.",
+      "proxy_route_missing": "Le proxy n'a pas encore de route pour cette adresse.",
+      "upstream_failing": "Le proxy a atteint le serveur mais l'app derrière ne répond pas.",
+      "app_error": "L'app a répondu par une erreur."
+    }
+  }
+}

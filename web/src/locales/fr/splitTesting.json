@@ -1,0 +1,90 @@
+{
+  "title": "Test A/B",
+  "description": "Envoyez une part des visiteurs de cette app vers un deploy de branche ou une version conservée. Chaque visiteur garde la même variante grâce à un cookie, qui n'est défini que pendant un test.",
+  "nav": "Test A/B",
+  "loading": "Chargement du test A/B",
+  "loadError": "Impossible de charger le test A/B : {{message}}",
+  "unsupportedTitle": "Le test A/B n'est pas disponible pour cette app",
+  "unsupportedHelp": "Il fonctionne pour les apps en container avec un domaine. Les sites statiques ne sont pas encore pris en charge.",
+  "empty": {
+    "title": "Aucun test A/B en cours",
+    "body": "Choisissez un deploy de branche ou une version conservée, donnez-lui une part des visiteurs et comparez le nombre de requêtes avant de promouvoir le gagnant."
+  },
+  "start": {
+    "title": "Démarrer un test A/B",
+    "kind": "Source de la variante",
+    "kindBranch": "Deploy de branche",
+    "kindRelease": "Version conservée",
+    "branch": "Deploy de branche",
+    "branchPlaceholder": "Choisir un deploy de branche",
+    "noBranches": "Aucun deploy de branche prêt. Activez d'abord les deploys de branche et poussez une branche.",
+    "release": "Nom du deploy de version",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "Libellé de la variante",
+    "weight": "Part des visiteurs (%)",
+    "cookieName": "Nom du cookie",
+    "cookieTtl": "Durée de vie du cookie",
+    "cookieTtlHelp": "Par exemple 720h. Laissez vide pour utiliser la valeur par défaut du serveur.",
+    "submit": "Démarrer le test",
+    "success": "Test A/B démarré",
+    "errorTitle": "Impossible de démarrer le test A/B"
+  },
+  "status": {
+    "running": "En cours",
+    "stopped": "Arrêté",
+    "live": "En ligne",
+    "ready": "Prêt",
+    "unavailable": "Indisponible"
+  },
+  "kind": {
+    "production": "Production",
+    "branch": "Deploy de branche",
+    "release": "Version"
+  },
+  "table": {
+    "caption": "Variantes du test A/B en cours",
+    "variant": "Variante",
+    "status": "Statut",
+    "weight": "Poids",
+    "requests": "Requêtes",
+    "actions": "Actions",
+    "weightFor": "Part des visiteurs pour {{label}}",
+    "productionKeeps": "La production garde {{percent}} %",
+    "overshoot": "Les variantes dépassent 100 %, réduisez un poids.",
+    "saveWeights": "Enregistrer les poids",
+    "weightsSaved": "Poids enregistrés",
+    "copyQa": "Copier le lien QA",
+    "qaCopied": "Lien QA copié",
+    "qaHelp": "Ouvrir le lien QA impose cette variante à votre navigateur et la conserve.",
+    "promote": "Promouvoir",
+    "unavailableHelp": "Cette variante n'est pas joignable, donc ses visiteurs reçoivent la production."
+  },
+  "stats": {
+    "title": "Requêtes par heure",
+    "hour": "Heure",
+    "total": "{{count}} requêtes depuis le début du test",
+    "none": "Aucune requête comptée pour l'instant."
+  },
+  "cookie": {
+    "summary": "Cookie {{name}}, dure {{hours}} heures. Ajoutez ?{{param}}=<variante> à une URL pour imposer une variante."
+  },
+  "stop": {
+    "button": "Arrêter le test",
+    "title": "Arrêter le test A/B ?",
+    "body": "Chaque visiteur reçoit à nouveau la production. Les compteurs de requêtes sont conservés.",
+    "confirm": "Arrêter le test",
+    "success": "Test A/B arrêté"
+  },
+  "promote": {
+    "title": "Promouvoir {{label}} ?",
+    "body": "{{label}} devient le deploy de production par le chemin de deploy normal, puis le test prend fin.",
+    "locked": "Refusé tant que la publication est verrouillée pour l'app.",
+    "confirm": "Promouvoir le gagnant",
+    "success": "Gagnant promu"
+  },
+  "ended": {
+    "title": "Dernier test",
+    "reason": "Terminé : {{reason}}"
+  },
+  "error": "Échec de l'action du test A/B"
+}

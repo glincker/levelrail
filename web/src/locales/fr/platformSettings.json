@@ -1,0 +1,150 @@
+{
+  "breadcrumb": {
+    "settings": "Paramètres",
+    "platform": "Plateforme",
+    "label": "Fil d'Ariane"
+  },
+  "overview": {
+    "title": "Plateforme",
+    "description": "Où ce serveur est joignable et comment il obtient ses certificats. Chaque tuile ouvre sa propre page.",
+    "tilesLabel": "État de la plateforme",
+    "open": "Ouvrir",
+    "loading": "Contrôle en cours",
+    "https": {
+      "title": "HTTPS",
+      "off": "HTTPS non activé",
+      "offLine": "Le tableau de bord et vos apps sont servis sans certificat de confiance.",
+      "on": "HTTPS activé",
+      "onLine": "Service de {{domain}} en HTTPS.",
+      "enable": "Activer HTTPS"
+    },
+    "ingress": {
+      "title": "Ingress",
+      "healthy": "Ingress sain",
+      "healthyLine": "Les ports 80 et 443 répondent sur {{host}}.",
+      "healthyNoHost": "Les ports 80 et 443 répondent.",
+      "attention": "L'ingress nécessite votre attention",
+      "attentionLine": "Ouvrez la page pour voir quel port ou quelle adresse pose problème."
+    },
+    "addresses": {
+      "title": "Adresses",
+      "set": "Adresse du tableau de bord définie",
+      "setLine": "{{url}}",
+      "unset": "Aucune adresse de tableau de bord",
+      "unsetLine": "Définissez l'adresse publique que les gens utilisent pour joindre ce tableau de bord."
+    },
+    "dns": {
+      "title": "Fournisseurs DNS",
+      "connected": "DNS : {{providers}} connecté",
+      "connectedLine": "Les enregistrements et les certificats DNS-01 peuvent être gérés pour vous.",
+      "none": "Aucun fournisseur DNS connecté",
+      "noneLine": "Connectez-en un pour émettre des certificats wildcard et créer des enregistrements."
+    },
+    "search": {
+      "label": "Rechercher dans les paramètres",
+      "placeholder": "Rechercher dans les paramètres de la plateforme",
+      "hint": "Appuyez sur / pour rechercher",
+      "results": "Résultats des paramètres de la plateforme",
+      "empty": "Aucun paramètre de plateforme ne correspond à \"{{query}}\".",
+      "count_one": "{{count}} paramètre",
+      "count_many": "{{count}} paramètres",
+      "count_other": "{{count}} paramètres",
+      "go": "Ouvrir {{title}} sur la page {{page}}"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "Activez un certificat de confiance pour le tableau de bord et voyez l'état du certificat de chaque domaine."
+    },
+    "ingress": {
+      "title": "Ingress",
+      "description": "Comment le trafic atteint ce serveur : le proxy, ses ports, et un guide pour fonctionner derrière votre propre reverse proxy."
+    },
+    "addresses": {
+      "title": "Adresses",
+      "description": "L'adresse du tableau de bord, le domaine de base des apps, les noms d'hôte de repli automatiques et l'automatisation DNS."
+    },
+    "dnsProviders": {
+      "title": "Fournisseurs DNS",
+      "description": "Connectez un fournisseur DNS pour que les certificats et les enregistrements soient gérés pour vous."
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "Ingress",
+    "addresses": "Adresses",
+    "dns-providers": "Fournisseurs DNS"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "Activer HTTPS",
+      "description": "Émettre un certificat de confiance et servir le tableau de bord en HTTPS."
+    },
+    "certificates": {
+      "title": "Résumé des certificats",
+      "description": "Expiration et émetteur de chaque certificat, avec un lien vers le centre de certificats."
+    },
+    "ingressSettings": {
+      "title": "Paramètres de l'ingress",
+      "description": "Domaine principal, e-mail ACME et HSTS."
+    },
+    "dns01": {
+      "title": "Challenge DNS pour chaque hôte",
+      "description": "Utiliser le challenge DNS-01 pour tous les certificats, pour les serveurs derrière un CGNAT ou dont le port 80 est fermé."
+    },
+    "ddns": {
+      "title": "DNS dynamique",
+      "description": "Garder un nom DNS pointé vers l'IP publique de ce serveur."
+    },
+    "ingressEdge": {
+      "title": "Edge de l'ingress",
+      "description": "Le proxy intégré et les ports sur lesquels il écoute."
+    },
+    "connectivity": {
+      "title": "Connectivité de l'ingress",
+      "description": "Si les ports 80 et 443 répondent sur l'adresse de ce serveur."
+    },
+    "reverseProxy": {
+      "title": "Guide du reverse proxy",
+      "description": "Exécuter cette plateforme derrière votre propre reverse proxy."
+    },
+    "dashboardUrl": {
+      "title": "Adresse du tableau de bord",
+      "description": "L'URL publique utilisée dans les liens, les e-mails et les webhooks."
+    },
+    "appsBaseDomain": {
+      "title": "Domaine de base des apps",
+      "description": "Le domaine sur lequel les nouvelles apps reçoivent un sous-domaine."
+    },
+    "fallbackDomains": {
+      "title": "Domaines de repli",
+      "description": "Noms d'hôte automatiques pour les apps qui n'ont pas encore de domaine."
+    },
+    "domainAutomation": {
+      "title": "Automatisation des domaines",
+      "description": "Créer automatiquement les enregistrements DNS des nouveaux domaines."
+    },
+    "cloudflareDns": {
+      "title": "DNS Cloudflare",
+      "description": "Token d'API pour les enregistrements DNS et les certificats DNS-01."
+    },
+    "route53Dns": {
+      "title": "DNS Route 53",
+      "description": "Identifiants AWS pour les enregistrements des zones hébergées."
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "Compte de service pour les zones Cloud DNS."
+    }
+  },
+  "strip": {
+    "label": "État de la plateforme",
+    "httpsOff": "HTTPS non activé",
+    "httpsOn": "HTTPS activé",
+    "enable": "Activer HTTPS",
+    "address": "Adresse du tableau de bord",
+    "addressUnset": "Non définie",
+    "manage": "Paramètres de la plateforme"
+  }
+}
