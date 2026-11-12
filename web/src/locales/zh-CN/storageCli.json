@@ -1,0 +1,39 @@
+{
+  "title": "在终端中运行",
+  "description": "在命令行中使用相同的存储工具。先预览，再应用。",
+  "tabsLabel": "命令分组",
+  "tabs": {
+    "usage": "查看用量",
+    "clean": "安全清理",
+    "automate": "自动化"
+  },
+  "server": "命令将针对 {{server}} 运行。请先使用 CLI 指南中的 connect 命令登录。",
+  "role": {
+    "viewer": "查看者",
+    "admin": "管理员"
+  },
+  "yourRole": "你的角色：{{role}}",
+  "needsAdmin": "需要管理员权限",
+  "needsSensitive": "还需要 write:sensitive 范围",
+  "dryRunFirst": "先试运行：每个分组中，预览都排在应用步骤之前，在你运行应用命令之前不会删除任何内容。",
+  "whyNoSystemPrune": "有意不列出 system-prune：它会删除未使用的卷，而这些卷可能保存着你仍然需要的数据。",
+  "blockLabel": "命令：{{command}}",
+  "commands": {
+    "doctorDisk": "此服务器的磁盘健康状况和可用空间",
+    "imagesList": "镜像及各自占用的空间",
+    "janitorStatus": "上次 janitor 运行情况和当前生效的策略",
+    "buildsCache": "构建缓存大小，以及清理后可释放的空间",
+    "buildCacheShow": "所有应用共享的构建缓存",
+    "volumesOrphaned": "不再被任何应用使用的卷",
+    "containersOrphans": "已移除应用遗留的容器",
+    "janitorDryRun": "预览 janitor 将会删除的内容",
+    "janitorRun": "确认预览后运行 janitor",
+    "imagesGcPreview": "预览哪些旧镜像会被删除",
+    "imagesGcApply": "删除预览中列出的镜像",
+    "imagesPruneDry": "预览不属于任何应用的非托管镜像",
+    "buildsCacheApply": "预览后清理构建缓存",
+    "volumesCleanup": "仅删除你指定的孤立卷",
+    "containersReap": "删除已移除应用遗留的容器",
+    "janitorPolicy": "按构建缓存保留时长和可用空间预算开启自动清理"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "label": "构建缓存：",
+  "summary": "{{size}}，使用于 {{used}}",
+  "empty": "暂无缓存，首次构建会填充缓存",
+  "neverUsed": "从未",
+  "clear": "清除缓存",
+  "clearing": "清除中",
+  "cleared": "构建缓存已清除，释放 {{size}}",
+  "confirmTitle": "清除此应用的构建缓存？",
+  "confirmBody": "下一次构建将冷启动，耗时更长，之后会重新填充缓存。其他应用和共享缓存不受影响。"
+}

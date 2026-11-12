@@ -1,0 +1,29 @@
+{
+  "title": "框架预设",
+  "description": "选择你的框架，自动填入它所需的端口、健康检查和存储。",
+  "detected": "已从你的仓库检测到",
+  "detectedShort": "已检测到",
+  "loadFailed": "无法加载框架预设。",
+  "port": "端口",
+  "healthPath": "健康检查路径",
+  "buildType": "构建",
+  "outputMode": "输出",
+  "static": "静态站点，由内置 Web 服务器直接提供",
+  "envHints": "需要设置的环境变量",
+  "required": "必填",
+  "volumes": "持久化存储",
+  "mismatchTitle": "设置与预设不一致",
+  "mismatchBody": "此表单使用端口 {{port}} 和健康检查路径 {{health}}。{{name}} 应用通常使用端口 {{presetPort}} 和 {{presetHealth}}。",
+  "applyFix": "使用预设设置",
+  "applied": "已应用预设设置。",
+  "dockerfile": "复制优化后的 Dockerfile",
+  "dockerfileCopied": "Dockerfile 已复制到剪贴板。",
+  "dockerfileFailed": "无法复制 Dockerfile。",
+  "outputModes": {
+    "server": "Node 或运行时服务器",
+    "standalone": "独立服务器包",
+    "static": "静态文件",
+    "jar": "可执行 jar",
+    "binary": "单个二进制文件"
+  }
+}

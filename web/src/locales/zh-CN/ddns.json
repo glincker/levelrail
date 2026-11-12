@@ -1,0 +1,69 @@
+{
+  "title": "动态 DNS",
+  "description": "当此服务器的公网 IP 变化时，让 DNS 记录始终指向它。更改立即生效。",
+  "status": {
+    "running": "运行中",
+    "failing": "失败中",
+    "off": "已关闭",
+    "label": "更新器状态"
+  },
+  "source": {
+    "stored": "已保存",
+    "default": "使用默认值"
+  },
+  "enabled": "已启用",
+  "provider": {
+    "label": "提供商",
+    "generic": "通用 URL",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "DuckDNS 域名",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "更新 URL",
+    "labelDuckdns": "DuckDNS 令牌",
+    "placeholder": "粘贴以设置或替换",
+    "configured": "已配置（{{host}}）",
+    "configuredNoHost": "已配置",
+    "notConfigured": "未配置",
+    "clear": "清除",
+    "cleared": "凭据已清除。"
+  },
+  "advanced": {
+    "toggle": "高级",
+    "interval": "检查间隔（秒）",
+    "timeout": "超时（秒）",
+    "minGap": "两次更新的最小间隔（秒）",
+    "reassert": "重新发送间隔（秒）",
+    "failAlertAfter": "失败多少次后告警",
+    "quorum": "探测法定数",
+    "probeUrls": "探测 URL（每行一个）",
+    "allowPrivate": "允许私有地址",
+    "summary": "每 {{interval}} 秒，超时 {{timeout}} 秒，法定数 {{quorum}}，失败 {{failAlertAfter}} 次后告警",
+    "allowInsecureHttp": "允许明文 HTTP"
+  },
+  "last": {
+    "title": "上次检查",
+    "never": "尚未检查",
+    "ip": "IP {{ip}}",
+    "result": "结果：{{result}}",
+    "check": "检查于 {{when}}",
+    "change": "更改于 {{when}}",
+    "failures": "连续失败 {{count}} 次",
+    "alert": "告警中"
+  },
+  "result": {
+    "ok": "正常",
+    "failing": "失败",
+    "pending": "等待中",
+    "not running": "未运行"
+  },
+  "save": "保存",
+  "saving": "保存中...",
+  "saved": "动态 DNS 已保存。",
+  "error": {
+    "number": "请使用大于等于 1 的整数。"
+  }
+}

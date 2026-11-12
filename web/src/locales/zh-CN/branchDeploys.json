@@ -1,0 +1,46 @@
+{
+  "title": "分支部署",
+  "description": "为分支提供独立且稳定的 URL，每次推送都会重新构建。分支被删除或闲置后会自动移除。",
+  "settings": {
+    "mode": "哪些分支会获得部署",
+    "modeOff": "无（关闭）",
+    "modeAll": "每个分支",
+    "modePatterns": "仅列出的分支",
+    "patterns": "分支与模式",
+    "patternsHint": "每行一个。可使用确切名称，或 feature/* 这样的模式（星号匹配任意字符）。",
+    "patternsPlaceholder": "staging\nfeature/*",
+    "productionNote": "生产分支（{{branch}}）不会在这里列出：它作为应用本身部署。",
+    "idleNote": "超过 {{hours}} 小时没有推送的分支部署会被移除。",
+    "save": "保存",
+    "saving": "保存中",
+    "saved": "分支部署设置已保存。",
+    "saveError": "无法保存设置。"
+  },
+  "list": {
+    "title": "运行中的分支部署",
+    "emptyTitle": "还没有分支部署",
+    "emptyOff": "请先在上方开启分支部署，然后向匹配的分支推送。",
+    "emptyOn": "向匹配的分支推送后，其部署会显示在这里。",
+    "noUrl": "没有 URL（请设置应用基础域名或主域名）",
+    "expires": "若没有新的推送则移除：",
+    "open": "打开",
+    "openLabel": "打开 {{branch}} 部署",
+    "delete": "删除",
+    "deleteLabel": "删除 {{branch}} 部署",
+    "loadError": "无法加载分支部署。"
+  },
+  "status": {
+    "deploying": "部署中",
+    "active": "活跃",
+    "failed": "失败"
+  },
+  "deleteDialog": {
+    "title": "删除 {{branch}} 部署？",
+    "description": "其 URL 将失效。下次向该分支推送时会再次部署。",
+    "consequence": "该部署、它的容器及其 DNS 记录都将被删除。",
+    "confirm": "删除部署",
+    "pending": "删除中",
+    "success": "分支部署已删除。",
+    "error": "无法删除分支部署。"
+  }
+}

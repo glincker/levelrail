@@ -1,0 +1,63 @@
+{
+  "title": "事件 Webhook",
+  "description": "每当有变化发生时，向你自己的端点发送一个已签名的 HTTPS 请求。投递会排队、重试并记录，绝不会拖慢部署。",
+  "add": "添加 Webhook",
+  "loadError": "无法加载事件 Webhook：{{message}}",
+  "notConfigured": "此控制平面不提供事件 Webhook。",
+  "empty": {
+    "title": "没有事件 Webhook",
+    "description": "添加一个 HTTPS 端点，在应用部署、用户变更或设置更新时收到通知。"
+  },
+  "form": {
+    "title": "添加事件 Webhook",
+    "description": "请求使用密钥签名，该密钥会在你保存后显示一次。",
+    "name": "名称",
+    "namePlaceholder": "siem",
+    "url": "端点 URL",
+    "urlPlaceholder": "https://hooks.example.com/events",
+    "events": "事件类型",
+    "eventsPlaceholder": "apps.*, users.create",
+    "eventsHint": "以逗号分隔的类型或系列，例如 apps.*。留空则接收所有事件。",
+    "cancel": "取消",
+    "submit": "添加 Webhook",
+    "submitting": "添加中",
+    "done": "完成"
+  },
+  "card": {
+    "allEvents": "所有事件",
+    "paused": "已暂停",
+    "deadBadge": "{{count}} 个进入死信",
+    "delivered": "已投递",
+    "pending": "待处理",
+    "dead": "死信",
+    "lastStatus": "最近 HTTP 状态",
+    "enabled": "已启用",
+    "log": "投递日志",
+    "test": "发送测试",
+    "testing": "发送中",
+    "testOk": "{{name}} 已接受测试事件",
+    "testFailed": "{{name}} 测试失败：{{message}}",
+    "rotate": "新密钥",
+    "secretOnce": "签名密钥，仅显示一次。请立即保存，之后无法再次读取。",
+    "delete": "删除",
+    "deleteTitle": "删除 {{name}}？",
+    "deleteDescription": "其投递日志和签名密钥将被删除。事件会立即停止发送。",
+    "deleteConfirm": "删除 Webhook",
+    "deleting": "删除中"
+  },
+  "deliveries": {
+    "loading": "正在加载投递记录",
+    "loadError": "无法加载投递记录：{{message}}",
+    "empty": "还没有投递记录。发送一个测试，或等待下一个事件。",
+    "summary": "{{attempts}} 次尝试，HTTP {{status}}，{{when}}",
+    "noStatus": "无",
+    "replay": "重放",
+    "replayed": "投递已排队，将再次尝试",
+    "replayFailed": "无法重放：{{message}}",
+    "state": {
+      "pending": "待处理",
+      "delivered": "已投递",
+      "dead": "死信"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "viewLabel": "列表分组方式",
+  "view": { "type": "按类型", "app": "按应用" },
+  "search": "按名称或 ID 搜索",
+  "searchLabel": "搜索项目",
+  "clearFilter": "显示所有类别",
+  "filterActive": "仅显示{{category}}",
+  "category": {
+    "appData": "应用数据",
+    "images": "镜像",
+    "buildCache": "构建缓存",
+    "containersLogs": "容器与日志",
+    "other": "其他"
+  },
+  "kind": {
+    "image": "镜像",
+    "volume": "卷",
+    "container": "已停止的容器",
+    "buildCache": "构建缓存"
+  },
+  "kindOne": {
+    "image": "镜像",
+    "volume": "卷",
+    "container": "容器",
+    "buildCache": "构建缓存"
+  },
+  "cols": {
+    "name": "名称",
+    "size": "大小",
+    "app": "所属应用",
+    "type": "类型",
+    "reason": "原因"
+  },
+  "sortBy": "按{{column}}排序",
+  "noApp": "无应用",
+  "sizeUnknown": "未统计",
+  "group": {
+    "total": "共 {{size}}",
+    "count_other": "{{count}} 个{{kind}}",
+    "lastDeployed": "上次部署"
+  },
+  "reason": {
+    "none": "无",
+    "orphaned": "孤立：没有应用拥有此卷",
+    "inUse": "使用中",
+    "inUseBy": "被 {{app}} 使用",
+    "unused": "未使用",
+    "stopped": "已停止的容器",
+    "databaseProtected": "存放数据库，绝不删除",
+    "buildCache": "下次构建时重新生成"
+  },
+  "protected": "受保护",
+  "loading": "正在读取磁盘上的内容",
+  "error": "无法读取存储清单。",
+  "retry": "重试",
+  "empty": "这里没有可显示的内容。",
+  "emptyFiltered": "没有匹配的项目。",
+  "unsupportedTitle": "暂不支持此节点",
+  "unsupportedFallback": "Levelrail 暂时无法列出此节点上的项目。这里不会有任何改动。"
+}
