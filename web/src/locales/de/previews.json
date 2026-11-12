@@ -1,0 +1,146 @@
+{
+  "title": "Vorschauen",
+  "extend": {
+    "button": "Verlängern",
+    "label": "Vorschau für Pull Request {{number}} verlängern",
+    "hours": "Um {{hours}} Stunden verlängern",
+    "success": "Die Vorschau für PR #{{number}} läuft jetzt ab: {{when}}.",
+    "error": "Die Vorschau konnte nicht verlängert werden."
+  },
+  "row": {
+    "extended": "Verlängert",
+    "logs": "Build-Logs",
+    "logsLabel": "Die Logs der Vorschau für Pull Request {{number}} öffnen",
+    "gateOn": "Basic Auth an",
+    "gateOff": "Öffentlich",
+    "gateNeedsPassword": "Schranke braucht ein Passwort",
+    "gateTipLabel": "Zur Vorschau-Schranke",
+    "gateTip": "Ob diese Vorschau hinter Basic Auth liegt. Ändern Sie die App-weite Einstellung unter Lebenszyklus, Ressourcen und Freigabe."
+  },
+  "approve": {
+    "button": "Vorschau genehmigen",
+    "title": "Vorschau für PR #{{number}} genehmigen?",
+    "fromRepo": "Dieser Pull Request stammt aus {{repo}}, nicht aus dem eigenen Repository dieser App.",
+    "anotherRepo": "einem anderen Repository",
+    "warning": "Die Genehmigung führt den Code des Forks auf Ihrem Server aus. Lesen Sie zuerst die Änderungen. Nur dieser Commit wird deployt; ein neuer Push aus dem Fork wartet erneut auf Genehmigung.",
+    "shareSecrets": "Auch die Umgebungsvariablen und Secrets dieser App bereitstellen",
+    "shareSecretsHint": "Standardmäßig aus. Aktivieren Sie dies nur, wenn Sie dem Autor vertrauen: Der Code kann jeden Wert lesen und versenden.",
+    "cancel": "Abbrechen",
+    "confirm": "Genehmigen und deployen",
+    "deploying": "Die Vorschau für PR #{{number}} wird deployt.",
+    "error": "Die Vorschau konnte nicht genehmigt werden."
+  },
+  "lifecycle": {
+    "title": "Lebenszyklus, Ressourcen und Freigabe",
+    "description": "Wie viele Vorschauen eine App behält, wie groß sie sind, auf welche Daten sie zugreifen können und wer sie sehen kann.",
+    "unavailable": "Vorschau-Einstellungen sind auf dieser Control Plane nicht verfügbar.",
+    "loading": "Vorschau-Einstellungen werden geladen",
+    "save": "Einstellungen speichern",
+    "saved": "Vorschau-Einstellungen gespeichert.",
+    "saveError": "Die Vorschau-Einstellungen konnten nicht gespeichert werden.",
+    "maxPreviews": "Maximal aktive Vorschauen für diese App",
+    "maxPreviewsHint": "0 verwendet die Plattformobergrenze ({{cap}}).",
+    "memory": "Speicher pro Vorschau",
+    "memoryHint": "Plattformstandard ist {{value}}. Eine Vorschau erhält nie mehr, als die App selbst hat.",
+    "cpu": "CPU pro Vorschau",
+    "cpuHint": "Plattformstandard ist {{value}}. 0 verwendet ihn.",
+    "idle": "Ruhezustand nach Leerlaufminuten",
+    "idleHint": "0 verwendet den Plattformstandard ({{value}} Minuten). Eine ruhende Vorschau wacht bei der nächsten Anfrage auf.",
+    "database": {
+      "label": "Datenbank",
+      "hint": "Eine Vorschau verbindet sich nie mit Produktionsdaten, es sei denn, Sie wählen Geteilt.",
+      "none": "Keine: Es gelangen keine Datenbank-Zugangsdaten in die Vorschau",
+      "shared": "Geteilt: die Produktionsdatenbank verwenden (riskant)",
+      "fresh": "Neu: eine leere Datenbank derselben Engine",
+      "seed": "Seed: eine Kopie des neuesten Backups einer benannten Datenbank",
+      "seedName": "Seed-Datenbank",
+      "seedHint": "Leer verwendet die der App zugeordnete Datenbank.",
+      "sharedWarning": "Jede Vorschau, auch nicht geprüfte Branches, kann Produktionsdaten lesen und ändern."
+    },
+    "exposure": {
+      "heading": "Wer Vorschauen sehen kann",
+      "forkSecrets": "Fork-Vorschauen die Umgebung und Secrets der App geben",
+      "forkSecretsHint": "Standardmäßig aus. Eine Fork-Vorschau erhält überhaupt keine Umgebungsvariablen.",
+      "forkSecretsWarning": "Jeder, der einen Pull Request aus einem Fork öffnen kann, kann Code ausführen, der diese Werte liest.",
+      "indexing": "Suchmaschinen erlauben, Vorschau-URLs zu indexieren",
+      "indexingHint": "Standardmäßig aus: Vorschauen senden X-Robots-Tag noindex und liefern eine robots.txt aus, die alles verbietet.",
+      "gate": "Basic Auth für Vorschauen verlangen",
+      "gateHint": "Ein Benutzername und Passwort für jede Vorschau dieser App.",
+      "gateUsername": "Benutzername",
+      "gatePassword": "Passwort",
+      "gatePasswordSet": "Ein Passwort ist gesetzt. Leer lassen, um es zu behalten.",
+      "gateNeedsPassword": "Legen Sie einen Benutzernamen und ein Passwort fest, um die Schranke zu aktivieren."
+    }
+  },
+  "prEnv": {
+    "button": "Env-Überschreibungen",
+    "help": "Legen Sie Werte nur für die Vorschau dieses Pull Requests fest. Sie haben Vorrang vor der eigenen Umgebung der App und gelten beim nächsten Deploy (pushen Sie einen Commit). Sie werden mit der Vorschau entfernt.",
+    "empty": "Keine Überschreibungen für diesen Pull Request.",
+    "emptyHint": "Hier festgelegte Überschreibungen gelten nur für die Vorschau dieses Pull Requests.",
+    "hidden": "verborgen",
+    "remove": "Überschreibung {{key}} entfernen",
+    "key": "Umgebungsvariable",
+    "value": "Wert",
+    "secret": "Verschlüsselt speichern (Secret). Er wird nie wieder angezeigt, auch nicht im Pull-Request-Kommentar.",
+    "save": "Speichern",
+    "saving": "Speichern...",
+    "saved": "Überschreibung für PR #{{number}} gespeichert. Sie gilt beim nächsten Deploy."
+  },
+  "prCommands": {
+    "title": "Pull-Request-Befehle",
+    "description": "Erlauben Sie Personen mit Schreibzugriff auf das Repository, /levelrail redeploy, rollback, status und preview redeploy aus einem Pull-Request-Kommentar auszuführen. Freezes, Genehmigungen und Deploy-Richtlinien gelten weiterhin. Fügen Sie dem Repository-Webhook das Ereignis Issue comments hinzu.",
+    "enabledLabel": "Kommentarbefehle für Pull Requests aktiviert",
+    "forksTitle": "Befehle bei Pull Requests aus Forks erlauben",
+    "forksDescription": "Aus, sofern Sie es nicht aktivieren. Ein Pull Request aus einem Fork kann von jedem stammen.",
+    "forksLabel": "Kommentarbefehle bei Pull Requests aus Forks aktiviert",
+    "toast": {
+      "enabled": "Kommentarbefehle für Pull Requests aktiviert.",
+      "disabled": "Kommentarbefehle für Pull Requests deaktiviert.",
+      "forksEnabled": "Befehle bei Pull Requests aus Forks aktiviert.",
+      "forksDisabled": "Befehle bei Pull Requests aus Forks deaktiviert.",
+      "errorTitle": "Die Kommentarbefehle für Pull Requests konnten nicht aktualisiert werden."
+    }
+  },
+  "ttl": {
+    "label": "Lebensdauer der Vorschau (Stunden)",
+    "save": "Speichern",
+    "note": "Gilt für jede App. 0 behält den Startstandard. Eine Überschreibung pro App hat weiterhin Vorrang.",
+    "invalid": "Geben Sie eine ganze Zahl von 0 bis {{max}} ein."
+  },
+  "migrate": {
+    "command": "Migrationsbefehl",
+    "commandPlaceholder": "npm run migrate",
+    "commandHint": "Läuft einmal vor dem Start jeder Vorschau. Leer entfernt ihn. Funktioniert vorerst nur, wenn die Datenbankstrategie der Vorschau Keine ist.",
+    "strategyBlocked": "Nicht verfügbar, solange die Datenbankstrategie der Vorschau {{strategy}} ist. Setzen Sie sie auf Keine, um einen Migrationsbefehl zu verwenden.",
+    "timeout": "Migrations-Timeout (Sekunden)",
+    "timeoutDefault": "0 verwendet den Standard von {{seconds}} Sekunden.",
+    "imageTag": "Vorlage für Image-Tags",
+    "imageTagHint": "Verwenden Sie mindestens einen von {{placeholders}}. Leer entfernt sie.",
+    "imageTagInvalid": "Fügen Sie mindestens einen Platzhalter hinzu, damit jeder Pull Request seinen eigenen Tag erhält.",
+    "imageTagExample": "Für PR #{{number}}: {{tag}}",
+    "save": "Speichern",
+    "saved": "Vorschau-Einstellungen gespeichert.",
+    "error": "Die Vorschau-Einstellungen konnten nicht aktualisiert werden."
+  },
+  "pushOnlyProvider": "Dieses Repository stammt von Azure DevOps, das nur bei Push deployt. Pull-Request-Vorschauen sind nicht verfügbar.",
+  "previewMode": {
+    "groupLabel": "Modus der Deploy-Vorschau",
+    "default": "{{label}} (Standard)",
+    "about": "Zu {{label}}-Vorschauen",
+    "off": {
+      "label": "Aus",
+      "summary": "Es wird keine Vorschau erstellt.",
+      "cost": "Nach einem Deploy läuft nichts und nichts wird gespeichert."
+    },
+    "metadata": {
+      "label": "Metadaten",
+      "summary": "Kein Browser. Kostet praktisch nichts.",
+      "cost": "Sendet nach jedem Deploy eine kleine Anfrage an die App und liest ihren Titel und das Social-Image (og:image). Kein Browser, kein Container und kein Download eines Browser-Images. Es lädt pro Deploy möglicherweise ein Social-Image von bis zu 2 MB herunter. Ohne Social-Image ist die Vorschau eine Textkarte. Seiten, die eine Anmeldung brauchen, werden übersprungen."
+    },
+    "screenshot": {
+      "label": "Screenshot",
+      "summary": "Führt pro Deploy etwa 10 s lang einen Browser aus.",
+      "cost": "Führt nach jedem Deploy etwa 10 Sekunden lang einen Browser-Container aus und zeigt die echte Seite. Das Browser-Image ist etwa 143 MB groß, wird einmal heruntergeladen und wieder entfernt, wenn es ungenutzt bleibt."
+    }
+  }
+}
