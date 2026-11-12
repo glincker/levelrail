@@ -1,0 +1,188 @@
+{
+  "title": "Formulare",
+  "description": "Sammeln Sie Einsendungen aus den HTML-Formularen Ihrer statischen Website. Jedes Formular erhält einen öffentlichen Endpunkt zum Senden.",
+  "loading": "Formulare werden geladen",
+  "loadError": "Formulare konnten nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "new": "Neues Formular",
+  "create": {
+    "title": "Neues Formular",
+    "description": "Wählen Sie einen kurzen Namen. Er wird Teil der Endpunktadresse und lässt sich später nicht ändern.",
+    "name": "Formularname",
+    "namePlaceholder": "contact",
+    "submit": "Formular erstellen",
+    "submitting": "Wird erstellt"
+  },
+  "empty": {
+    "title": "Noch keine Formulare",
+    "description": "Erstellen Sie ein Formular, gestalten Sie seine Felder, fügen Sie das Snippet in Ihre Website ein, und Einsendungen landen hier.",
+    "cta": "Erstes Formular erstellen"
+  },
+  "endpoint": "Endpunkt",
+  "snippet": "HTML-Snippet",
+  "copy": "Kopieren",
+  "copied": "Kopiert",
+  "copyFailed": "Kopieren nicht möglich",
+  "counts": "{{total}} Einsendungen, {{spam}} Spam",
+  "settings": {
+    "title": "Einstellungen",
+    "redirect": "Weiterleitung nach dem Absenden",
+    "redirectHint": "Browser werden nach dem Senden hierhin geleitet. Leer lassen, um eine einfache Dankeseite anzuzeigen.",
+    "honeypot": "Spam-Falle-Feld",
+    "honeypotHint": "Ein verstecktes Feld, das echte Besucher leer lassen. Einsendungen, die es ausfüllen, werden als Spam behalten und benachrichtigen Sie nie.",
+    "channels": "Bei neuen Einsendungen benachrichtigen",
+    "noChannels": "Es sind noch keine Benachrichtigungskanäle eingerichtet. Fügen Sie unter Alarme einen hinzu, um über neue Einsendungen informiert zu werden.",
+    "save": "Einstellungen speichern",
+    "saving": "Wird gespeichert",
+    "saved": "Formulareinstellungen gespeichert."
+  },
+  "delete": {
+    "button": "Formular löschen",
+    "title": "Dieses Formular löschen?",
+    "description": "Der Endpunkt nimmt sofort keine Einsendungen mehr an.",
+    "consequence": "Alle gespeicherten Einsendungen dieses Formulars werden gelöscht und lassen sich nicht wiederherstellen.",
+    "confirm": "Formular löschen",
+    "pending": "Wird gelöscht"
+  },
+  "retention": "Einsendungen werden nach {{days}} Tagen gelöscht. Es wird nur ein gesalzener Hash der Absenderadresse gespeichert, nie die Adresse selbst.",
+  "inbox": {
+    "title": "Posteingang",
+    "search": "Einsendungen durchsuchen",
+    "filterAll": "Alle",
+    "filterInbox": "Kein Spam",
+    "filterSpam": "Spam",
+    "export": "CSV exportieren",
+    "loading": "Einsendungen werden geladen",
+    "loadError": "Einsendungen konnten nicht geladen werden.",
+    "emptyTitle": "Noch keine Einsendungen",
+    "emptyDescription": "Senden Sie etwas an den obigen Endpunkt oder schicken Sie einen Test von Ihrer Website, dann erscheint es hier.",
+    "noMatchTitle": "Nichts passt",
+    "noMatchDescription": "Versuchen Sie eine andere Suche oder einen anderen Filter.",
+    "spamBadge": "Spam",
+    "markSpam": "Als Spam markieren",
+    "markNotSpam": "Kein Spam",
+    "remove": "Löschen",
+    "removeConfirm": "Diese Einsendung löschen?",
+    "actionFailed": "Diese Änderung wurde nicht gespeichert.",
+    "loadMore": "Mehr laden",
+    "reason": {
+      "honeypot": "Hat die Spam-Falle ausgefüllt",
+      "too_many_links": "Zu viele Links",
+      "empty": "Keine Felder",
+      "manual": "Von Ihnen markiert"
+    },
+    "testBadge": "Test"
+  },
+  "betaHint": "Beta: Die Formularerfassung funktioniert, aber Designer und Limits ändern sich noch.",
+  "intro": "Statische Websites können keinen Servercode ausführen. Formulare geben Ihrer Website einen öffentlichen Endpunkt, der Einsendungen speichert.",
+  "howItWorks": "So funktioniert es",
+  "hero": {
+    "alt": "Ein Besucher füllt ein Formular auf Ihrer Website aus und klickt auf Senden. Die Einsendung wandert zu Ihrem Levelrail-Endpunkt, erscheint im Posteingang und löst eine Benachrichtigung aus.",
+    "caption": "Gestalten Sie ein Formular, fügen Sie es in Ihre statische Website ein und lesen Sie die Einsendungen hier.",
+    "site": "Ihre Website",
+    "endpoint": "Endpunkt",
+    "inbox": "Posteingang",
+    "notice": "Neue Einsendung"
+  },
+  "steps": {
+    "design": {
+      "title": "Formular gestalten",
+      "body": "Wählen Sie Felder, Beschriftungen und die Erfolgsmeldung."
+    },
+    "embed": {
+      "title": "Snippet in Ihre Website einfügen",
+      "body": "Kopieren Sie das HTML oder JavaScript in Ihre Seite."
+    },
+    "read": {
+      "title": "Einsendungen hier lesen",
+      "body": "Lassen Sie sich benachrichtigen, wenn jemand eine sendet."
+    }
+  },
+  "notStatic": {
+    "title": "Formulare sind für statische Websites",
+    "description": "Diese App führt eigenen Servercode aus und kann Formularübermittlungen daher selbst verarbeiten. Formulare sammeln Einsendungen für Apps, die als statische Website deployt werden.",
+    "back": "Zurück zur App"
+  },
+  "sections": {
+    "design": {
+      "title": "Gestaltung",
+      "help": "Wählen Sie die Felder, die Besucher ausfüllen, und was sie nach dem Senden sehen."
+    },
+    "embed": {
+      "title": "Einbetten",
+      "help": "Kopieren Sie dies in Ihre statische Website. Es folgt Ihrer Gestaltung, während Sie bearbeiten."
+    },
+    "submissions": {
+      "title": "Einsendungen",
+      "help": "Alles, was Besucher senden, landet hier. Exportieren Sie es jederzeit als CSV."
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "help": "Wohin Besucher danach gelangen, Spam-Schutz und wer benachrichtigt wird."
+    }
+  },
+  "designer": {
+    "label": "Beschriftung",
+    "name": "Feldname",
+    "type": "Typ",
+    "types": {
+      "text": "Text",
+      "email": "E-Mail",
+      "textarea": "Langer Text",
+      "select": "Dropdown",
+      "checkbox": "Kontrollkästchen",
+      "number": "Zahl",
+      "url": "Webadresse",
+      "hidden": "Versteckt"
+    },
+    "placeholder": "Platzhalter",
+    "minLength": "Mindestlänge",
+    "maxLength": "Höchstlänge",
+    "options": "Optionen",
+    "optionsHint": "Eine Option pro Zeile.",
+    "default": "Wert",
+    "required": "Pflichtfeld",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "remove": "Feld entfernen",
+    "addField": "Feld hinzufügen",
+    "customize": "Felder anpassen",
+    "usingDefault": "Dieses Formular verwendet die Standardfelder: Name, E-Mail und Nachricht. Passen Sie sie an, um Ihr eigenes zu gestalten.",
+    "success": "Erfolgsmeldung",
+    "successDefault": "Danke, Ihre Einsendung ist eingegangen.",
+    "successLabel": "Nach dem Senden",
+    "origins": "Erlaubte Websites (optional)",
+    "originsHint": "Eine Adresse pro Zeile, wie https://example.com. Browser auf anderen Websites werden abgewiesen. Leer erlaubt jede Website.",
+    "preview": "Live-Vorschau",
+    "send": "Senden",
+    "save": "Gestaltung speichern",
+    "saving": "Wird gespeichert",
+    "saved": "Formulargestaltung gespeichert.",
+    "reset": "Zurück zu den Standardfeldern"
+  },
+  "embed": {
+    "noPublicUrl": {
+      "title": "Es ist keine öffentliche URL festgelegt",
+      "body": "Es ist keine öffentliche URL festgelegt, daher funktioniert dieser Endpunkt nur von diesem Rechner aus. Besucher Ihrer Live-Website können ihn nicht erreichen.",
+      "fix": "Öffentliche URL festlegen"
+    },
+    "variants": {
+      "html": "HTML",
+      "fetch": "JavaScript",
+      "minimal": "Minimal"
+    },
+    "variantHint": {
+      "html": "HTML-Snippet",
+      "fetch": "HTML mit einem Fetch-Skript (bleibt auf der Seite)",
+      "minimal": "Minimales Markup (keine Beschriftungen, eigenes Styling mitbringen)"
+    }
+  },
+  "test": {
+    "button": "Testeinsendung senden",
+    "sending": "Wird gesendet",
+    "sent": "Testeinsendung {{id}} gespeichert",
+    "ok": "Sie ist im Posteingang unten als Test markiert.",
+    "flagged": "Sie wurde als Spam markiert.",
+    "failed": "Der Test konnte nicht gesendet werden."
+  }
+}
