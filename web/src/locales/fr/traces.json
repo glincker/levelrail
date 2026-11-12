@@ -1,0 +1,52 @@
+{
+  "title": "Traces",
+  "subtitle": "Spans que votre app envoie via OpenTelemetry, stockés sur ce node pendant la période de rétention des logs.",
+  "setup": {
+    "title": "Envoyer des traces depuis cette app",
+    "off": "Le traçage est désactivé. Activez-le pour obtenir une clé d'ingestion et les variables d'environnement pour votre SDK OpenTelemetry.",
+    "on": "Le traçage est activé. Pointez l'exportateur OTLP/HTTP de votre SDK vers ce control plane.",
+    "enable": "Activer le traçage",
+    "enabling": "Activation...",
+    "rotate": "Renouveler la clé",
+    "disable": "Désactiver",
+    "copy": "Copier",
+    "copied": "Copié",
+    "keyOnce": "Cette clé n'est affichée qu'une fois. Définissez ces valeurs sur l'app et redéployez. Renouveler la clé invalide l'ancienne.",
+    "env": "Environnement",
+    "endpoint": "Point de terminaison",
+    "protocolNote": "Utilisez OTLP sur HTTP, en protobuf ou en JSON. gRPC n'est pas accepté ici.",
+    "enabledToast": "Le traçage est activé.",
+    "disabledToast": "Le traçage est désactivé. L'exportateur de l'app recevra des réponses 401.",
+    "failed": "Impossible de modifier le traçage."
+  },
+  "filters": {
+    "window": "Période",
+    "last15": "15 dernières minutes",
+    "last60": "Dernière heure",
+    "last360": "6 dernières heures",
+    "last1440": "24 dernières heures",
+    "errorsOnly": "Erreurs uniquement",
+    "minMs": "Plus lent que (ms)"
+  },
+  "list": {
+    "empty": "Aucune trace dans cette période pour l'instant. Envoyez une requête via l'app, ou élargissez la période.",
+    "loadError": "Impossible de charger les traces : {{message}}",
+    "root": "Requête",
+    "started": "Début",
+    "duration": "Durée",
+    "spans": "Spans",
+    "errors": "Erreurs",
+    "emptyTitle": "Aucune trace pour l'instant",
+    "emptyOff": "Le traçage est désactivé pour cette app, rien n'est donc collecté. Activez-le pour obtenir une clé d'ingestion.",
+    "emptyAction": "Configurer le traçage"
+  },
+  "detail": {
+    "title": "Trace {{id}}",
+    "loading": "Chargement de la trace...",
+    "close": "Fermer",
+    "ofTotal": "sur {{total}}",
+    "error": "Erreur",
+    "attributes": "Attributs",
+    "none": "Aucun attribut."
+  }
+}

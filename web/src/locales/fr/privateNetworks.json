@@ -1,0 +1,78 @@
+{
+  "page": {
+    "title": "Réseaux privés",
+    "description": "Regroupez les apps dans des réseaux privés nommés et décidez quelles apps peuvent communiquer entre elles. Les apps de réseaux différents ne peuvent pas se joindre tant qu'une règle ne l'autorise pas.",
+    "back": "Vue d'ensemble du réseau",
+    "apply": "Réappliquer maintenant",
+    "applied": "Réseaux et règles réappliqués.",
+    "notApplied": "Enregistré, mais l'application n'a pas abouti. Réappliquez pour réessayer."
+  },
+  "map": {
+    "title": "Qui peut parler à qui",
+    "description": "Les lignes vertes sont des chemins autorisés, les lignes rouges en pointillés sont bloquées, les lignes ambre diffèrent de ce qui s'exécute sur Docker.",
+    "graphLabel": "Carte des apps et des chemins entre elles",
+    "empty": "Aucune app à cartographier pour l'instant",
+    "emptyHint": "Créez une app, puis ajoutez-la à un réseau privé pour voir ses chemins ici.",
+    "legendAllowed": "Autorisé",
+    "legendBlocked": "Bloqué",
+    "legendDrift": "À réappliquer"
+  },
+  "paths": {
+    "title": "Chemins",
+    "none": "Chaque chemin entre vos apps est autorisé ou hors périmètre.",
+    "pair": "{{a}} et {{b}}",
+    "allowedVia": "Autorisé par le réseau {{name}}",
+    "allowedRule": "Autorisé par une règle",
+    "blocked": "Bloqué, réseaux différents",
+    "drift": "La politique et Docker ne concordent pas",
+    "crossNode": "Entre nodes, appliqué via le DNS du mesh",
+    "fixAllow": "Autoriser",
+    "fixReapply": "Réappliquer",
+    "allowed": "Règle d'autorisation créée pour {{a}} et {{b}}."
+  },
+  "networks": {
+    "title": "Réseaux",
+    "empty": "Aucun réseau privé pour l'instant",
+    "emptyHint": "Créez-en un et ajoutez-y les apps qui doivent le partager.",
+    "defaultDeny": "Refus par défaut",
+    "defaultDenyHelp": "Les membres ne peuvent pas se joindre tant qu'une règle n'autorise pas une paire.",
+    "members": "Membres",
+    "noMembers": "Aucun membre",
+    "create": "Créer le réseau",
+    "name": "Nom",
+    "namePlaceholder": "backend",
+    "nameHelp": "Lettres minuscules, chiffres et tirets.",
+    "apps": "Apps de ce réseau",
+    "noApps": "Aucune app n'existe pour l'instant.",
+    "created": "Réseau {{name}} créé.",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer le réseau {{name}} ?",
+    "deleteBody": "Ses membres perdent l'accès les uns aux autres, sauf si une règle l'autorise.",
+    "deleted": "Réseau supprimé.",
+    "saveMembers": "Enregistrer les membres"
+  },
+  "rules": {
+    "title": "Règles d'autorisation",
+    "description": "Une règle permet à deux apps de se joindre au-delà des frontières de réseau.",
+    "empty": "Aucune règle pour l'instant",
+    "from": "App",
+    "to": "Peut joindre",
+    "note": "Note",
+    "notePlaceholder": "Pourquoi ce chemin est nécessaire",
+    "add": "Ajouter une règle",
+    "remove": "Retirer",
+    "removed": "Règle retirée.",
+    "pickApp": "Sélectionner une app"
+  },
+  "errors": {
+    "load": "Impossible de charger les réseaux privés.",
+    "unavailable": "Les réseaux privés ne sont pas disponibles sur ce control plane."
+  },
+  "banner": {
+    "description": "Regroupez les apps dans des réseaux privés et décidez quelles apps peuvent communiquer entre elles. Créez le premier réseau ci-dessous.",
+    "diagram": {
+      "apps": "Apps",
+      "mesh": "Mesh privé"
+    }
+  }
+}

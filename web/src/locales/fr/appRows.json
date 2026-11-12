@@ -1,0 +1,60 @@
+{
+  "failing": {
+    "fallback": "Nécessite votre attention, ouvrez l'app pour en voir la raison.",
+    "fix": "Voir les déploiements",
+    "fixLabel": "Voir les déploiements de {{name}}"
+  },
+  "logs": {
+    "noContainer": "Aucun conteneur n'est en cours d'exécution pour cette app, il n'y a donc rien à diffuser.",
+    "deploy": "La déployer"
+  },
+  "bulkBar": {
+    "region": "Actions groupées",
+    "selected": "{{count}} sélectionnées",
+    "clear": "Effacer la sélection",
+    "more": "Plus d'actions",
+    "review": "Vérifier",
+    "readOnly": "Votre compte est en lecture seule, les actions groupées sont donc désactivées.",
+    "reviewTitle": "{{action}} : {{count}} apps",
+    "reviewDescription": "Chaque app est vérifiée par rapport à vos permissions. Les apps sur lesquelles vous n'avez pas le droit d'agir sont listées comme refusées et laissées intactes.",
+    "resultsTitle": "{{action}} : résultats",
+    "resultsLabel": "Résultats par app",
+    "summary": "{{ok}} terminées, {{failed}} non appliquées",
+    "typeCount": "Saisissez {{count}} pour confirmer",
+    "checking": "Vérification des cibles",
+    "working": "Traitement en cours",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "confirm": "{{action}} : {{count}}",
+    "warning": {
+      "stop": "Cela arrête {{count}} apps jusqu'à ce que vous les redémarriez.",
+      "delete": "Cela supprime définitivement {{count}} apps. Chaque suppression est enregistrée dans le journal d'audit."
+    },
+    "action": {
+      "restart": "Redémarrer",
+      "redeploy": "Redéployer",
+      "stop": "Arrêter",
+      "start": "Démarrer",
+      "add-tag": "Ajouter un tag",
+      "remove-tag": "Retirer un tag",
+      "set-environment": "Définir l'environnement",
+      "move-to-project": "Déplacer vers un projet",
+      "delete": "Supprimer"
+    },
+    "value": {
+      "add-tag": "Tag (clé ou clé:valeur)",
+      "remove-tag": "Tag à retirer",
+      "set-environment": "Nom ou ID de l'environnement",
+      "move-to-project": "ID du projet"
+    },
+    "status": {
+      "ok": "Terminé",
+      "would_apply": "Sera appliqué",
+      "denied": "Refusé",
+      "not_found": "Introuvable",
+      "skipped": "Ignoré",
+      "error": "Échec"
+    }
+  },
+  "description": "Description : {{text}}"
+}

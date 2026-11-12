@@ -1,0 +1,39 @@
+{
+  "title": "Exécuter dans un terminal",
+  "description": "Les mêmes outils de stockage en ligne de commande. Prévisualisez d'abord, puis appliquez.",
+  "tabsLabel": "Groupes de commandes",
+  "tabs": {
+    "usage": "Voir l'utilisation",
+    "clean": "Nettoyer en sécurité",
+    "automate": "Automatiser"
+  },
+  "server": "Les commandes s'exécutent sur {{server}}. Connectez-vous d'abord avec la commande connect du guide de la CLI.",
+  "role": {
+    "viewer": "Lecteur",
+    "admin": "Admin"
+  },
+  "yourRole": "Votre rôle : {{role}}",
+  "needsAdmin": "Nécessite le rôle admin",
+  "needsSensitive": "Nécessite aussi le scope write:sensitive",
+  "dryRunFirst": "Simulation d'abord : les aperçus précèdent l'étape d'application dans chaque groupe, et rien n'est supprimé tant que vous n'exécutez pas la commande d'application.",
+  "whyNoSystemPrune": "system-prune n'est pas listé volontairement : il supprime les volumes inutilisés, qui peuvent contenir des données dont vous avez encore besoin.",
+  "blockLabel": "Commande : {{command}}",
+  "commands": {
+    "doctorDisk": "Santé du disque et espace libre sur ce serveur",
+    "imagesList": "Les images et ce que chacune coûte",
+    "janitorStatus": "Dernière exécution du janitor et politique active",
+    "buildsCache": "Taille du cache de build et ce qu'un nettoyage libérerait",
+    "buildCacheShow": "Cache de build partagé entre toutes les apps",
+    "volumesOrphaned": "Volumes qu'aucune app n'utilise plus",
+    "containersOrphans": "Conteneurs laissés par des apps supprimées",
+    "janitorDryRun": "Prévisualiser ce que le janitor supprimerait",
+    "janitorRun": "Exécuter le janitor après avoir vérifié l'aperçu",
+    "imagesGcPreview": "Prévisualiser les anciennes images qui seraient supprimées",
+    "imagesGcApply": "Supprimer les images listées dans l'aperçu",
+    "imagesPruneDry": "Prévisualiser les images non gérées qu'aucune app ne possède",
+    "buildsCacheApply": "Nettoyer le cache de build après l'aperçu",
+    "volumesCleanup": "Supprimer uniquement les volumes orphelins que vous nommez",
+    "containersReap": "Supprimer les conteneurs laissés par des apps supprimées",
+    "janitorPolicy": "Activer le nettoyage automatique avec un âge de cache de build et un budget d'espace libre"
+  }
+}

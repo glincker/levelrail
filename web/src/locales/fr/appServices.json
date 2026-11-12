@@ -1,0 +1,16 @@
+{
+  "replicas": "Réplicas",
+  "decrease": "Réduire les réplicas de {{name}}",
+  "increase": "Augmenter les réplicas de {{name}}",
+  "apply": "Appliquer",
+  "applying": "Application en cours",
+  "restart": "Redémarrer {{name}}",
+  "restartTitle": "Redémarrer {{name}} ?",
+  "restartBody": "Cela recrée les conteneurs de ce service. Les autres services continuent de fonctionner.",
+  "restartConfirm": "Redémarrer",
+  "restarting": "Redémarrage en cours",
+  "readOnly": "Vous avez besoin de la permission de déploiement pour modifier un service",
+  "actions": "Actions",
+  "scaleFailed": "Impossible de mettre ce service à l'échelle.",
+  "restartFailed": "Impossible de redémarrer ce service."
+}

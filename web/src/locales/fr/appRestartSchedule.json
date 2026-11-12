@@ -1,0 +1,20 @@
+{
+  "title": "Redémarrage planifié",
+  "description": "Redémarrez l'app selon un calendrier pour limiter les fuites de mémoire lentes. Il utilise le redémarrage normal, donc les règles de déploiement progressif et d'interruption s'appliquent. Les redémarrages sont espacés d'au moins {{min}}.",
+  "none": "Aucun calendrier de redémarrage.",
+  "current": "Redémarre selon {{schedule}} ({{zone}}). Prochain à {{next}}.",
+  "last": {
+    "started": "Dernière exécution {{at}} : démarrée.",
+    "succeeded": "Dernière exécution {{at}} : redémarré.",
+    "skipped": "Dernière exécution {{at}} : ignorée, {{reason}}.",
+    "failed": "Dernière exécution {{at}} : échec, nouvelle tentative après un délai d'attente."
+  },
+  "scheduleLabel": "Cron ou @every",
+  "timezoneLabel": "Fuseau horaire",
+  "save": "Enregistrer le calendrier",
+  "saved": "Calendrier de redémarrage enregistré",
+  "cleared": "Calendrier de redémarrage supprimé",
+  "failed": "Échec de la modification du calendrier de redémarrage",
+  "clear": "Supprimer le calendrier",
+  "hint": "Par exemple 0 3 * * * ou @every 24h. Les apps arrêtées, les environnements protégés, les gels et les déploiements en cours sont ignorés, jamais forcés."
+}

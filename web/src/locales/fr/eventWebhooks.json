@@ -1,0 +1,63 @@
+{
+  "title": "Webhooks d'événements",
+  "description": "Envoyez une requête HTTPS signée vers votre propre point de terminaison chaque fois que quelque chose change. La livraison est mise en file, retentée et journalisée, et ne ralentit jamais un déploiement.",
+  "add": "Ajouter un webhook",
+  "loadError": "Impossible de charger les webhooks d'événements : {{message}}",
+  "notConfigured": "Les webhooks d'événements ne sont pas disponibles sur ce control plane.",
+  "empty": {
+    "title": "Aucun webhook d'événements",
+    "description": "Ajoutez un point de terminaison HTTPS pour être notifié lorsque des apps sont déployées, que des utilisateurs changent ou que des paramètres sont mis à jour."
+  },
+  "form": {
+    "title": "Ajouter un webhook d'événements",
+    "description": "Les requêtes sont signées avec un secret affiché une seule fois après l'enregistrement.",
+    "name": "Nom",
+    "namePlaceholder": "siem",
+    "url": "URL du point de terminaison",
+    "urlPlaceholder": "https://hooks.example.com/events",
+    "events": "Types d'événements",
+    "eventsPlaceholder": "apps.*, users.create",
+    "eventsHint": "Types ou familles séparés par des virgules, comme apps.*. Laissez vide pour recevoir tous les événements.",
+    "cancel": "Annuler",
+    "submit": "Ajouter le webhook",
+    "submitting": "Ajout",
+    "done": "Terminé"
+  },
+  "card": {
+    "allEvents": "Tous les événements",
+    "paused": "En pause",
+    "deadBadge": "{{count}} en file morte",
+    "delivered": "Livrés",
+    "pending": "En attente",
+    "dead": "En file morte",
+    "lastStatus": "Dernier statut HTTP",
+    "enabled": "Activé",
+    "log": "Journal de livraison",
+    "test": "Envoyer un test",
+    "testing": "Envoi",
+    "testOk": "{{name}} a accepté l'événement de test",
+    "testFailed": "{{name}} a échoué au test : {{message}}",
+    "rotate": "Nouveau secret",
+    "secretOnce": "Secret de signature, affiché une seule fois. Conservez-le maintenant, il ne pourra plus être relu.",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteDescription": "Son journal de livraison et son secret de signature sont supprimés. L'envoi des événements s'arrête immédiatement.",
+    "deleteConfirm": "Supprimer le webhook",
+    "deleting": "Suppression"
+  },
+  "deliveries": {
+    "loading": "Chargement des livraisons",
+    "loadError": "Impossible de charger les livraisons : {{message}}",
+    "empty": "Aucune livraison pour l'instant. Envoyez un test ou attendez le prochain événement.",
+    "summary": "{{attempts}} tentatives, HTTP {{status}}, {{when}}",
+    "noStatus": "aucun",
+    "replay": "Rejouer",
+    "replayed": "Livraison mise en file pour une nouvelle tentative",
+    "replayFailed": "Impossible de rejouer : {{message}}",
+    "state": {
+      "pending": "En attente",
+      "delivered": "Livré",
+      "dead": "En file morte"
+    }
+  }
+}
