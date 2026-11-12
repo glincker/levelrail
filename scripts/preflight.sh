@@ -21,6 +21,7 @@ RULES=(
 	'(\.go$|^go\.mod$|^go\.sum$)|execgate'
 	'^internal/runtimesettings/|runtimesettings'
 	'^web/src/(locales|i18n)/|locales'
+	'^web/src/(locales|i18n)/|localecheck'
 	'^docs/|docs'
 )
 # Guards that run on every invocation.
@@ -41,6 +42,7 @@ guard_cmd() {
 	runtimesettings) echo "go test ./internal/runtimesettings" ;;
 	locales) echo "if [ -d web/node_modules ]; then cd web && node_modules/.bin/vitest run src/i18n/localeParity.test.ts src/i18n/locales.test.ts; else echo 'hint: web/node_modules missing, run scripts/dev-bootstrap.sh to check locale parity'; exit 3; fi" ;;
 	docs) echo "bash scripts/docs-check.sh --links-only" ;;
+	localecheck) echo "scripts/check-locales.sh" ;;
 	dashes) echo "scripts/check-dashes.sh" ;;
 	*) echo "echo unknown guard $1; exit 2" ;;
 	esac
