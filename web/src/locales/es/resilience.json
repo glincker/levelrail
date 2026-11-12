@@ -1,0 +1,161 @@
+{
+  "title": "Informe de resiliencia",
+  "description": "El último resultado medido de cada escenario de fallo, ejecutado contra contenedores locales desechables. Solo se muestran números medidos.",
+  "loadError": "No se pudo cargar el informe de resiliencia.",
+  "retry": "Volver a comprobar",
+  "status": {
+    "passed": "Superado",
+    "failed": "Fallido",
+    "skipped": "Omitido"
+  },
+  "scenario": {
+    "kill-container": "Matar el contenedor que sirve bajo tráfico",
+    "daemon-unreachable": "API de Docker inaccesible durante un despliegue",
+    "control-plane-restart": "Reinicio del plano de control bajo tráfico",
+    "disk-pressure": "Volumen temporal lleno",
+    "oom-during-readiness": "Terminación por falta de memoria durante la espera de disponibilidad",
+    "ingress-steady": "Carga constante creciente a través del ingress",
+    "deploy-latency": "Latencia de despliegue desde la imagen hasta servir",
+    "rollout-under-traffic": "Despliegue rolling de dos réplicas bajo tráfico",
+    "ingress-concurrency": "Rendimiento del ingress con concurrencia fija",
+    "replica-failover": "Matar una de dos réplicas bajo tráfico"
+  },
+  "metrics": {
+    "recovery": "Recuperación",
+    "errors": "Peticiones fallidas",
+    "ranAt": "Medido"
+  },
+  "notMeasured": "Aún sin medir",
+  "empty": {
+    "title": "Aún no hay resultados de chaos registrados",
+    "body": "Ejecuta los escenarios en una máquina con Docker y regístralos, y cada resultado aparecerá aquí."
+  },
+  "disk": {
+    "title": "Protección de espacio en disco",
+    "description": "Espacio libre en el directorio de datos y en el volumen de Docker. Por debajo del mínimo crítico, los despliegues, las descargas y las copias de seguridad se rechazan antes de que puedan llenar el disco.",
+    "loadError": "No se pudo cargar el estado del disco.",
+    "refusing": "Un volumen está por debajo del mínimo crítico. Los despliegues, las descargas de imágenes y las copias de seguridad se rechazan hasta que se libere espacio.",
+    "freeAction": "Liberar espacio ahora",
+    "freeing": "Limpiando",
+    "free": "{{free}} libres de {{total}}",
+    "thresholds": "Avisa por debajo de {{low}} libres y rechaza las operaciones arriesgadas por debajo de {{critical}}. Define APP_DISK_LOW_FREE_MB y APP_DISK_CRITICAL_FREE_MB para cambiarlo.",
+    "volume": {
+      "data": "Datos del plano de control",
+      "docker": "Almacenamiento de Docker"
+    },
+    "level": {
+      "ok": "Saludable",
+      "low": "Bajo",
+      "critical": "Crítico",
+      "unknown": "Desconocido"
+    },
+    "toast": {
+      "freed": "Limpieza terminada, se recuperaron {{size}}",
+      "errorTitle": "No se pudo liberar espacio"
+    }
+  },
+  "cli": {
+    "summary": "Ejecuta los escenarios desde un terminal",
+    "note": "Necesita una CLI compilada con la etiqueta chaoslive y un daemon de Docker local."
+  },
+  "benchmarks": {
+    "title": "Benchmarks",
+    "description": "Archivos de resultados de bench chaos run, conservados junto con el host y la compilación que los produjo para poder mostrar y comparar las ejecuciones.",
+    "refresh": "Actualizar",
+    "loadError": "No se pudieron cargar los resultados de los benchmarks.",
+    "standingCaveat": {
+      "title": "No son cifras de capacidad de producción",
+      "body": "Estas ejecuciones miden un generador de carga y el plano de control en una sola máquina. Salvo que el host sea un servidor Linux, NO son cifras de producción en Linux. Lee las advertencias de cada ejecución antes de citar una cifra."
+    },
+    "caveatsTitle": "Lee esto primero",
+    "empty": {
+      "title": "Aún no hay ejecuciones de benchmark guardadas",
+      "body": "Ejecuta los escenarios en una máquina con Docker y sube el archivo de resultados, y cada ejecución aparecerá aquí."
+    },
+    "history": {
+      "title": "Historial de ejecuciones",
+      "keep": "Conserva las {{count}} ejecuciones más recientes.",
+      "nonLinux": "Algunas ejecuciones son de hosts que no son Linux.",
+      "select": "Seleccionar para comparar",
+      "selectRun": "Seleccionar la ejecución {{id}} para comparar",
+      "when": "Medido",
+      "build": "Compilación",
+      "host": "Host",
+      "result": "Resultado",
+      "actions": "Acciones",
+      "view": "Ver",
+      "compare": "Comparar la selección",
+      "passed_one": "{{count}} superada",
+      "passed_other": "{{count}} superadas",
+      "failed_one": "{{count}} fallida",
+      "failed_other": "{{count}} fallidas",
+      "repeat_one": "{{count}} ejecución cada uno",
+      "repeat_other": "{{count}} ejecuciones cada uno",
+      "deleteRun": "Eliminar la ejecución {{id}}"
+    },
+    "groups": {
+      "failover": "Conmutación por error y recuperación",
+      "deploy": "Despliegue",
+      "rollout": "Rollout",
+      "throughput": "Rendimiento"
+    },
+    "host": {
+      "title": "Host y compilación",
+      "platform": "Plataforma",
+      "kernel": "Kernel",
+      "cpu": "CPU y núcleos",
+      "memory": "Memoria",
+      "docker": "Motor de Docker",
+      "load": "Carga media",
+      "loadValue": "{{start}} al inicio, {{end}} al final",
+      "version": "Versión",
+      "commit": "Commit",
+      "runs": "Ejecuciones por escenario",
+      "note": "Nota",
+      "unknown": "desconocido"
+    },
+    "table": {
+      "scenario": "Escenario",
+      "run": "Ejecución",
+      "status": "Estado",
+      "summary": "Qué ocurrió",
+      "metric": "Métrica",
+      "runN": "Ejecución {{n}}"
+    },
+    "limits": {
+      "title": "Tabla de límites",
+      "question": "Pregunta",
+      "status": "Estado"
+    },
+    "method": "Cómo se tomaron estas cifras",
+    "chart": {
+      "aria": "{{title}}, peticiones por segundo según la concurrencia: {{summary}}"
+    },
+    "compare": {
+      "title": "Comparar",
+      "base": "Base",
+      "head": "Nueva",
+      "runs_one": "{{count}} ejecución",
+      "runs_other": "{{count}} ejecuciones",
+      "basis": "Cada valor es la mediana de las ejecuciones de ese lado. Un cambio inferior al {{noise}} por ciento se lee como igual.",
+      "warningsTitle": "Ten cuidado al leer esta comparación",
+      "statusTitle": "Cambios de resultado",
+      "to": "a",
+      "delta": "Cambio",
+      "verdict": "Veredicto",
+      "oneSided": "solo un lado",
+      "direction": {
+        "better": "Mejor",
+        "worse": "Peor",
+        "same": "Igual"
+      }
+    },
+    "confirmDelete": {
+      "title": "¿Eliminar esta ejecución de benchmark?",
+      "body": "La ejecución {{id}} se elimina para todos. El archivo de resultados que subiste no se ve afectado.",
+      "confirm": "Eliminar ejecución"
+    },
+    "deleted": "Ejecución eliminada",
+    "deleteFailed": "No se pudo eliminar la ejecución"
+  }
+}
