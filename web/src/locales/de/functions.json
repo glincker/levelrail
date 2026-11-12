@@ -1,0 +1,361 @@
+{
+  "title": "Funktionen",
+  "description": "Kleine Handler, die im Leerlauf nichts kosten. Eine Funktion schläft nach einer ruhigen Phase ein, und die nächste Anfrage weckt sie und wartet auf die Antwort.",
+  "triggers": {
+    "title": "Auslöser",
+    "pick": "Funktion",
+    "error": "Auslöser konnten nicht geladen werden: {{message}}",
+    "queue": "Asynchrone Warteschlange: {{queued}} wartend, {{running}} laufend, {{dead}} in Dead Letter.",
+    "webhook": {
+      "title": "Signierter Webhook",
+      "path": "Pfad, an den der Webhook weiterleitet",
+      "enable": "Webhook aktivieren",
+      "disable": "Ausschalten",
+      "rotate": "Secret rotieren",
+      "on": "Aufrufe werden eingereiht und an {{path}} weitergeleitet. Signaturen, die älter als {{seconds}} Sekunden sind, werden abgelehnt.",
+      "secretOnce": "Signatur-Secret. Es wird einmal angezeigt, kopieren Sie es jetzt.",
+      "signing": "Senden Sie X-Signature-Timestamp (Unix-Sekunden) und X-Signature: sha256=HMAC-SHA256(secret, timestamp + Punkt + body)."
+    },
+    "schedules": {
+      "title": "Zeitpläne",
+      "none": "Keine geplanten HTTP-Jobs rufen diese Funktion auf.",
+      "manage": "Zeitpläne verwalten Sie auf dem Tab Jobs der App"
+    },
+    "dead": {
+      "title": "Dead Letters",
+      "description": "Asynchrone Aufrufe, deren Wiederholungen aufgebraucht sind. Wiederholen stellt einen wieder in die Warteschlange.",
+      "empty": "Keine Aufrufe in Dead Letter.",
+      "error": "Dead Letters konnten nicht geladen werden: {{message}}",
+      "detail": "{{attempts}} von {{max}} Versuchen, HTTP {{code}} {{error}}",
+      "retry": "Wiederholen",
+      "discard": "Verwerfen"
+    }
+  },
+  "window": {
+    "label": "Statistikzeitraum",
+    "1h": "Letzte Stunde",
+    "24h": "Letzte 24 Stunden",
+    "7d": "Letzte 7 Tage"
+  },
+  "list": {
+    "name": "Funktion",
+    "state": "Status",
+    "calls": "Aufrufe",
+    "p95": "p95-Dauer",
+    "errors": "Serverfehler",
+    "idle": "Schläft nach",
+    "idleValue": "{{minutes}} min",
+    "asleep": "Schläft",
+    "awake": "Wach",
+    "visit": "URL öffnen",
+    "error": "Funktionen konnten nicht geladen werden: {{message}}",
+    "retry": "Erneut versuchen"
+  },
+  "empty": {
+    "title": "Noch keine Funktionen",
+    "body": "Wählen Sie unten eine Laufzeit, pushen Sie den Handler in ein Repository und deployen Sie ihn. Er erhält eine Live-URL, die bei Anfragen aufwacht."
+  },
+  "deploy": {
+    "open": "Funktion deployen",
+    "title": "Eine Funktion deployen",
+    "description": "Wählen Sie, was ausgeführt wird, verweisen Sie auf den Code und gehen Sie live. Jeder Schritt hat einen sinnvollen Standard.",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "submit": "Deployen",
+    "submitting": "Wird deployt",
+    "stepLabel": "Schritt {{current}} von {{total}}",
+    "steps": {
+      "template": "Was ausgeführt wird",
+      "source": "Wo der Code liegt",
+      "details": "Details"
+    },
+    "started": "Build für {{name}} gestartet. Es geht live, wenn der Build abgeschlossen ist.",
+    "failed": "{{name}} konnte nicht deployt werden: {{message}}",
+    "template": {
+      "heading": "Was möchten Sie ausführen?",
+      "groupStarters": "Starter-Handler",
+      "groupIdeas": "Ideen zum Einstieg",
+      "groupOwn": "Eigenes mitbringen"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "Ein winziger HTTP-Handler in Go, schnell gestartet."
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "Ein Handler mit zehn Zeilen in Node.js."
+      },
+      "python": {
+        "title": "Python",
+        "body": "Ein kleiner Handler in Python."
+      },
+      "webhook": {
+        "title": "Webhook-Empfänger",
+        "body": "Ereignisse anderer Dienste annehmen und darauf reagieren."
+      },
+      "scheduled": {
+        "title": "Runner für geplante Jobs",
+        "body": "Eine Aufgabe ausführen, wann immer ein Zeitplan sie aufruft."
+      },
+      "form": {
+        "title": "Formular zu E-Mail",
+        "body": "Eine Formularübermittlung in eine E-Mail umwandeln."
+      },
+      "shortener": {
+        "title": "URL-Kürzer",
+        "body": "Kurze Pfade auf lange Links abbilden."
+      },
+      "chatbot": {
+        "title": "Chatbot",
+        "body": "Nachrichten von Chat-Plattformen beantworten."
+      },
+      "repo": {
+        "title": "Mein eigenes Repository verwenden",
+        "body": "Einen Handler deployen, den Sie bereits in Git haben."
+      },
+      "image": {
+        "title": "Ein Container-Image verwenden",
+        "body": "Ein vorgefertigtes Image aus einer Registry ausführen."
+      }
+    },
+    "source": {
+      "headingRepo": "Wo liegt der Code?",
+      "headingImage": "Welches Container-Image?",
+      "starterTitle": "Starter-Code für den Anfang",
+      "starterBody": "Kopieren Sie diese Dateien in ein neues Repository und pushen Sie es. Wählen Sie dieses Repository dann unten aus.",
+      "utilityBody": "Ein vollständiger, getesteter Handler. Kopieren Sie die Dateien in ein neues Repository und pushen Sie es, wählen Sie dieses Repository dann unten aus.",
+      "utilityEnv": "Umgebungsvariablen, die er liest",
+      "utilityRequired": "erforderlich",
+      "utilityKv": "Nutzt den Key-Value-Speicher: Öffnen Sie nach dem Deployment den Tab Key-Value-Speicher der Funktion und aktivieren Sie ihn.",
+      "utilityCli": "Oder aus einem Terminal",
+      "search": "Ihre Repositorys durchsuchen",
+      "loading": "Repositorys werden geladen",
+      "recent": "Zuletzt aktualisierte zuerst",
+      "noRepos": "Keine Repositorys gefunden. Verbinden Sie in den Einstellungen einen Git-Anbieter oder fügen Sie stattdessen eine URL ein.",
+      "reposError": "Repositorys konnten nicht geladen werden: {{message}}",
+      "pasteInstead": "Stattdessen eine URL einfügen",
+      "pickInstead": "Aus meinen Repositorys wählen",
+      "repoUrl": "Repository-URL",
+      "repoUrlPlaceholder": "https://github.com/you/hello",
+      "ref": "Branch",
+      "refHint": "Standardmäßig der Haupt-Branch des Repositorys.",
+      "directory": "Handler-Verzeichnis",
+      "directoryHint": "Leer lassen, wenn der Handler im Stamm des Repositorys liegt.",
+      "detected": "{{framework}} erkannt. Railpack baut es.",
+      "detecting": "Das Repository wird geprüft",
+      "image": "Image",
+      "imagePlaceholder": "ghcr.io/you/hello:1.0",
+      "imageHint": "Geben Sie einen Tag wie :1.0 an. Ohne wird der Tag latest verwendet.",
+      "private": "Privat"
+    },
+    "details": {
+      "name": "Name",
+      "nameHint": "Kleinbuchstaben, Ziffern und Bindestriche. Er wird Teil der URL.",
+      "nameChecking": "Verfügbarkeit wird geprüft",
+      "nameFree": "{{name}} ist verfügbar.",
+      "idle": "Einschlafen nach",
+      "idleOption": {
+        "5": "5 Minuten",
+        "10": "10 Minuten",
+        "60": "1 Stunde",
+        "1440": "1 Tag",
+        "custom": "Benutzerdefiniert"
+      },
+      "customIdle": "Minuten",
+      "idleHint": "Eine ruhige Funktion schläft, um Ressourcen zu sparen. Die nächste Anfrage weckt sie, was eine kurze Verzögerung namens Kaltstart verursacht.",
+      "route": "Unter einem Pfad ausliefern (optional)",
+      "routeHint": "Antwortet zusätzlich unter einer Ihrer Domains, zum Beispiel example.com/hello.",
+      "routeDomain": "Domain",
+      "routeNone": "Keinen Pfad hinzufügen",
+      "routePath": "Pfad",
+      "previewFunction": "Funktions-URL",
+      "previewRoute": "Pfad-URL",
+      "previewPending": "Wird zugewiesen, wenn der Build abgeschlossen ist",
+      "advanced": "Erweiterte Einstellungen",
+      "port": "Port",
+      "portHint": "Der Port, auf dem Ihr Handler lauscht. Er erhält ihn als Variable PORT."
+    },
+    "summary": {
+      "title": "Bereit zum Deployen",
+      "buildRailpack": "mit Railpack bauen",
+      "buildImage": "das Image unverändert ausführen",
+      "text": "Dies wird {{build}}, nach {{sleep}} einschlafen und unter {{url}} erreichbar sein.",
+      "sleepMinutes": "{{count}} Minuten",
+      "sleepHour": "1 Stunde",
+      "sleepDay": "1 Tag",
+      "urlPending": "einer URL, die zugewiesen wird, wenn der Build abgeschlossen ist"
+    },
+    "result": {
+      "title": "{{name}} wird deployt",
+      "building": "Ihre Funktion wird gebaut und gestartet. Das dauert meist ein bis zwei Minuten.",
+      "live": "{{name}} ist live.",
+      "failed": "Der Build ist fehlgeschlagen. Öffnen Sie die Funktion, um das Build-Log zu lesen.",
+      "urlLabel": "Funktions-URL",
+      "waitingUrl": "Die URL erscheint hier, sobald sie bereit ist.",
+      "copy": "URL kopieren",
+      "copied": "Kopiert",
+      "open": "Funktion öffnen",
+      "done": "Schließen"
+    },
+    "validation": {
+      "repoRequired": "Wählen Sie ein Repository oder fügen Sie seine URL ein.",
+      "repoInvalid": "Geben Sie eine vollständige URL ein, die mit https:// beginnt.",
+      "imageRequired": "Geben Sie das auszuführende Image ein.",
+      "imageInvalid": "Image-Namen dürfen keine Leerzeichen enthalten.",
+      "nameRequired": "Geben Sie der Funktion einen Namen.",
+      "nameInvalid": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche, beginnend und endend mit einem Buchstaben oder einer Ziffer.",
+      "nameTooLong": "Halten Sie den Namen kurz genug, damit er in eine URL passt.",
+      "nameTaken": "Dieser Name wird bereits von einer anderen App verwendet. Wählen Sie einen anderen.",
+      "portInvalid": "Geben Sie einen Port zwischen 1 und 65535 ein.",
+      "idleInvalid": "Geben Sie eine ganze Zahl von Minuten ein, mindestens das erlaubte Minimum.",
+      "domainRequired": "Wählen Sie eine Domain für den Pfad.",
+      "pathInvalid": "Verwenden Sie einen Pfad wie /hello mit Buchstaben, Ziffern, Bindestrichen oder Punkten."
+    },
+    "name": "Name",
+    "repo": "Repository-URL",
+    "ref": "Branch, Tag oder Commit",
+    "directory": "Handler-Verzeichnis (optional)",
+    "directoryHint": "Leer lassen, wenn der Handler im Stamm des Repositorys liegt.",
+    "routeDomain": "Zusätzlich auf Domain ausliefern",
+    "routePath": "Pfadpräfix",
+    "routeHint": "Optional. Eine bereits an eine App gebundene Domain plus ein Pfad wie /hello liefert diese Funktion unter domain/hello aus. Das Präfix wird entfernt, bevor die Anfrage den Handler erreicht.",
+    "port": "Port",
+    "idle": "Einschlafen nach Leerlaufminuten"
+  },
+  "templates": {
+    "title": "Starter-Handler",
+    "description": "Jeder Starter ist ein vollständiger Handler mit etwa zehn Zeilen. Railpack baut ihn ohne Dockerfile, und er lauscht auf die Variable PORT.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "cliLabel": "Oder aus dem Terminal",
+    "error": "Starter-Handler konnten nicht geladen werden: {{message}}"
+  },
+  "kv": {
+    "loading": "Schlüssel werden geladen",
+    "error": "Der Key-Value-Speicher konnte nicht geladen werden: {{message}}",
+    "usage": "{{keys}} von {{maxKeys}} Schlüsseln, {{bytes}} von {{maxBytes}} Bytes belegt",
+    "disabled": "Der Speicher ist für diese Funktion aus. Aktivieren Sie ihn, um der Funktion KV_URL und KV_TOKEN zu geben. Sie startet damit neu.",
+    "enable": "Speicher aktivieren",
+    "rotate": "Token rotieren",
+    "tokenIssued": "Token ausgestellt. Die Funktion startet mit dem neuen KV_TOKEN neu.",
+    "add": "Schlüssel hinzufügen",
+    "empty": "Noch keine Schlüssel.",
+    "prefixLabel": "Nach Präfix filtern",
+    "keyLabel": "Schlüssel",
+    "valueLabel": "Wert",
+    "ttlLabel": "Läuft ab nach (Sekunden)",
+    "ttlPlaceholder": "Nie",
+    "save": "Schlüssel speichern",
+    "saved": "Schlüssel gespeichert",
+    "cancel": "Abbrechen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "deleteTitle": "{{key}} löschen?",
+    "deleteBody": "Die Funktion verliert diesen Wert sofort.",
+    "loadFailed": "Der Wert konnte nicht geladen werden",
+    "binary": "(binär)",
+    "never": "Nie",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "Schlüssel",
+      "value": "Wert",
+      "size": "Größe",
+      "expires": "Läuft ab",
+      "actions": "Aktionen"
+    }
+  },
+  "detail": {
+    "back": "Alle Funktionen",
+    "notFound": "Diese Funktion wurde nicht gefunden. Sie wurde möglicherweise gelöscht oder hat aufgehört zu schlafen.",
+    "seconds": "{{count}} s",
+    "tabs": {
+      "overview": "Übersicht",
+      "settings": "Einstellungen",
+      "environment": "Umgebung und Secrets",
+      "versions": "Versionen",
+      "kv": "Key-Value-Speicher"
+    },
+    "overview": {
+      "title": "Status",
+      "image": "Image",
+      "openApp": "Als App öffnen"
+    },
+    "settings": {
+      "port": "Port",
+      "timeout": "Anfrage-Zeitlimit (Sekunden)",
+      "concurrency": "Maximale Gleichzeitigkeit",
+      "limitsTitle": "Anfragelimits",
+      "limitsHelp": "Gelten, während eine Anfrage darauf wartet, dass eine schlafende Funktion startet. 0 verwendet den Serverstandard. Eine Anfrage über dem Gleichzeitigkeitslimit erhält 429 mit Retry-After.",
+      "timeoutHelp": "Längste Wartezeit für einen Kaltstart, höchstens {{max}} s. Jetzt {{effective}} s (0 bedeutet den adaptiven Standard).",
+      "concurrencyHelp": "Gleichzeitig gehaltene Anfragen, höchstens {{max}}. Jetzt {{effective}} (0 bedeutet kein Limit).",
+      "save": "Limits speichern",
+      "saved": "Limits gespeichert",
+      "saveFailed": "Limits konnten nicht gespeichert werden"
+    },
+    "versions": {
+      "title": "Versionen",
+      "help": "Rollen Sie auf ein früheres Deployment zurück oder fixieren Sie es: Das Fixieren rollt zurück und sperrt die Veröffentlichung, sodass neue Builds zurückgehalten werden, bis Sie sie entsperren.",
+      "empty": "Noch keine Deployments.",
+      "live": "Live",
+      "rollback": "Zurückrollen",
+      "pin": "Diese Version fixieren",
+      "done": "Versionswechsel gestartet",
+      "failed": "Versionswechsel fehlgeschlagen"
+    }
+  },
+  "observe": {
+    "title": "Aufrufe und Testkonsole",
+    "pick": "Funktion",
+    "tabCalls": "Letzte Aufrufe",
+    "tabTest": "Testkonsole",
+    "time": "Zeit",
+    "request": "Anfrage",
+    "status": "Status",
+    "duration": "Dauer",
+    "cold": "Kaltstart",
+    "coldYes": "Kaltstart",
+    "coldNo": "Warm",
+    "sizes": "Ein / Aus",
+    "logs": "Logs",
+    "openLogs": "Logs",
+    "replay": "Wiederholen",
+    "replayed": "Wiederholt, Antwort {{status}}",
+    "replayFailed": "Wiederholung fehlgeschlagen: {{message}}",
+    "loadError": "Aufrufe konnten nicht geladen werden: {{message}}",
+    "emptyTitle": "Noch keine Aufrufe aufgezeichnet",
+    "emptyBody": "Aufrufe erscheinen hier, solange die Control Plane sie im Arbeitsspeicher hält. Senden Sie einen aus der Testkonsole.",
+    "tableLabel": "Letzte Aufrufe von {{name}}",
+    "captureLabel": "Die Eingabe von Testaufrufen behalten, damit sie wiederholt werden können",
+    "captureHint": "Standardmäßig aus. Nur Aufrufe aus der Testkonsole oder der CLI werden behalten, nie anderer Traffic. Header mit Zugangsdaten werden verworfen."
+  },
+  "console": {
+    "method": "Methode",
+    "path": "Pfad",
+    "headers": "Header",
+    "headersPlaceholder": "Name: Wert, einer pro Zeile",
+    "body": "Body",
+    "bodyPlaceholder": "JSON oder reiner Text",
+    "send": "Senden",
+    "sending": "Wird gesendet",
+    "wakeHint": "Wenn die Funktion schläft, wartet dies zuerst auf ihr Aufwachen.",
+    "failed": "Der Aufruf ist fehlgeschlagen: {{message}}",
+    "result": "Antwort",
+    "warm": "Warm",
+    "stored": "Eingabe zur Wiederholung gespeichert",
+    "truncated": "Der Body wurde an der Größengrenze abgeschnitten."
+  },
+  "banner": {
+    "title": "Funktionen",
+    "description": "Kleine Handler, die im Leerlauf nichts kosten. Sie schlafen nach einer ruhigen Phase ein und wachen bei der nächsten Anfrage auf.",
+    "diagram": {
+      "browser": "Browser",
+      "request": "Anfrage",
+      "function": "Funktion",
+      "response": "Antwort",
+      "coldStart": "Kaltstart etwa 1 s",
+      "sleeps": "schläft im Leerlauf"
+    }
+  }
+}
