@@ -1,0 +1,25 @@
+id: dbgate
+name: DbGate
+description: "A web database client for SQL and NoSQL databases with a generated login and a data volume. Sign in as admin with the generated password, then add connections to other services here."
+icon: database
+category: Database Tools
+documentation_url: https://docs.dbgate.io/
+source_repo: https://github.com/dbgate/dbgate
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/dbgate/dbgate/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Sign in as admin with the generated password from the app secrets, then add a connection to a database in this project.
+domains:
+  - service: dbgate
+    port: 3000
+    description: Public address of the web page.
+healthcheck:
+  service: dbgate
+  port: 3000
+  path: /

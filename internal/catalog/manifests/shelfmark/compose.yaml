@@ -1,0 +1,17 @@
+services:
+  shelfmark:
+    image: ghcr.io/calibrain/shelfmark:v1.6.2
+    ports: ["8084"]
+    environment:
+      TZ: ${TZ}
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      - config:/config
+      - books:/books
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8084 || wget -q -O /dev/null http://127.0.0.1:8084"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

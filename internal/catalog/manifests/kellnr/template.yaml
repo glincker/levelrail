@@ -1,0 +1,31 @@
+id: kellnr
+name: Kellnr
+description: Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume.
+icon: package
+category: Developer Tools
+documentation_url: https://kellnr.io/documentation
+source_repo: https://github.com/kellnr/kellnr
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/kellnr/kellnr/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Sign in as admin with the password admin and change it at once, because it is public knowledge. Set the hostname setting to the address you serve it on.
+first_boot_seconds: 600
+env:
+  - key: KELLNR_HOSTNAME
+    label: Hostname
+    description: Host name clients use to reach this registry.
+    default: localhost
+domains:
+  - service: kellnr
+    port: 8000
+    description: Public address of the registry and its UI.
+healthcheck:
+  service: kellnr
+  port: 8000
+  path: /

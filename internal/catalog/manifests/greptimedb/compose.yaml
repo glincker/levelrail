@@ -1,0 +1,19 @@
+services:
+  greptimedb:
+    image: greptime/greptimedb:v1.3.0
+    command:
+      - standalone
+      - start
+      - --http-addr=0.0.0.0:4000
+      - --rpc-bind-addr=0.0.0.0:4001
+      - --mysql-addr=0.0.0.0:4002
+      - --postgres-addr=0.0.0.0:4003
+    ports: ["4000"]
+    volumes:
+      - data:/greptimedb_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s

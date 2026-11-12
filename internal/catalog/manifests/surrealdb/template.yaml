@@ -1,0 +1,25 @@
+id: surrealdb
+name: SurrealDB
+description: "A multi-model database for documents, graphs and relations with a SQL-like query language, using the RocksDB engine on a named volume. The root password is generated at install. Source available under the BSL."
+icon: database
+category: Database Tools
+documentation_url: https://surrealdb.com/docs
+source_repo: https://github.com/surrealdb/surrealdb
+license: LicenseRef-BUSL-1.1
+license_class: source-available
+license_url: https://github.com/surrealdb/surrealdb/blob/main/LICENSE
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Read the generated root password from the app secrets, then connect over HTTP or WebSocket on port 8000 as user root.
+domains:
+  - service: surrealdb
+    port: 8000
+    description: Public address of the web page.
+healthcheck:
+  service: surrealdb
+  port: 8000
+  path: /health

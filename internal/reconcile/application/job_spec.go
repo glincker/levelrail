@@ -46,6 +46,8 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 	if err != nil {
 		return JobSpec{}, fmt.Errorf("container spec: %w", err)
 	}
+	// A user-chosen command must never run with a service's template grants.
+	spec.CapAdd = nil
 	spec.Ports = nil
 	spec.GPU = nil
 	spec.Labels = nil

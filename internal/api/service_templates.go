@@ -176,7 +176,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			RequiresGPU:            tpl.RequiresGPU,
 			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
 			Manifest:               publicManifest(tpl.Manifest),
-			Requirements:           catalog.ComputeRequirements(tpl.Compose),
+			Requirements:           catalog.ComputeRequirementsFor(tpl.Compose, tpl.Manifest),
 			templateFacts:          factsFor(tpl.ID),
 		}, true, nil
 	}

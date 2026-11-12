@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -164,9 +165,29 @@ type DatabaseEnvRef struct {
 // Resolved fresh from a live Vault read by the application controller
 // immediately before container creation, the same "declaration only,
 // resolved later" split DatabaseEnvRef already makes.
+//
+// Conn and Version are set for a secret:// reference to a named connection;
+// an empty Conn is the legacy single-Vault form. Never a value.
 type VaultEnvRef struct {
-	Path string `json:"path"`
-	Key  string `json:"key"`
+	Path    string `json:"path"`
+	Key     string `json:"key"`
+	Conn    string `json:"conn,omitempty"`
+	Version int    `json:"version,omitempty"`
+	// Unvetted marks a reference written by the deploy pipeline, which has no actor to check
+	// against a connection's allow lists. Only gated API writes leave it false.
+	Unvetted bool `json:"unvetted,omitempty"`
+}
+
+// SecretRef returns the connection reference text, or "" for a legacy ref.
+func (r VaultEnvRef) SecretRef() string {
+	if r.Conn == "" {
+		return ""
+	}
+	s := "secret://" + r.Conn + "/" + r.Path + "#" + r.Key
+	if r.Version > 0 {
+		s += "?version=" + strconv.Itoa(r.Version)
+	}
+	return s
 }
 
 // SecretEnvRef is one env var's { secret: true } declaration

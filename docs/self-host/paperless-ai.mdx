@@ -1,0 +1,65 @@
+---
+title: "Self-host Paperless-AI with Docker"
+sidebarTitle: "Paperless-AI"
+description: "Adds automatic tagging, titles and document chat to a Paperless-ngx server using your choice of AI provider. MIT licensed. A setup wizard collects the Paperless address and token."
+"og:url": "https://docs.levelrail.com/self-host/paperless-ai"
+---
+
+Adds automatic tagging, titles and document chat to a Paperless-ngx server using your choice of AI provider. MIT licensed. A setup wizard collects the Paperless address and token.
+
+This page describes the Levelrail template for Paperless-AI (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/clusterzx/paperless-ai.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `paperless-ai` | `clusterzx/paperless-ai:4.0.0` | 3000 | `data -&#62; /app/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `paperless-ai` | `PAPERLESS_AI_PORT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`paperless-ai`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Paperless-AI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Paperless-AI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy paperless-ai --name my-paperless-ai
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [Agentgateway](/self-host/agentgateway)
+- [AnythingLLM](/self-host/anythingllm)
+- [Bifrost](/self-host/bifrost)
+- [Big-AGI](/self-host/big-agi)
+- [ComfyUI](/self-host/comfyui)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -145,25 +145,30 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 448 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 574 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
 | `2fauth` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `ackee` | yes | linux/amd64, linux/arm64 |
+| `activemq` | not checked | - |
 | `activepieces` | yes | linux/amd64, linux/arm64 |
 | `actual-budget` | yes | linux/amd64, linux/arm64 |
 | `actualbudget` | yes | linux/amd64, linux/arm64 |
 | `adguard-home` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `adminer` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `affine` | yes | linux/amd64, linux/arm64 |
+| `agentgateway` | not checked | - |
 | `alertmanager` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `ampache` | not checked | - |
 | `answer` | yes | linux/amd64, linux/arm64 |
+| `anubis` | not checked | - |
 | `anythingllm` | yes | linux/amd64, linux/arm64 |
 | `appflowy` | yes | linux/amd64, linux/arm64 |
 | `apprise-api` | yes | linux/amd64, linux/arm64 |
 | `appsmith` | yes | linux/amd64, linux/arm64 |
 | `appwrite` | yes | linux/amd64, linux/arm64 |
+| `arangodb` | not checked | - |
 | `archivebox` | yes | linux/amd64, linux/arm64 |
 | `athens` | not checked | - |
 | `audiobookshelf` | yes | linux/amd64, linux/arm64 |
@@ -176,7 +181,10 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `bazarr` | yes | linux/amd64, linux/arm64 |
 | `bentopdf` | yes | linux/amd64, linux/arm64 |
 | `beszel` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `bifrost` | not checked | - |
+| `big-agi` | not checked | - |
 | `blackbox-exporter` | not checked | - |
+| `blocky` | not checked | - |
 | `bookstack` | yes | linux/amd64, linux/arm64 |
 | `browserless` | yes | linux/amd64, linux/arm64 |
 | `budge` | yes | linux/amd64, linux/arm64 |
@@ -184,8 +192,11 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `bugsink` | yes | linux/amd64, linux/arm64 |
 | `bytebase` | yes | linux/amd64, linux/arm64 |
 | `bytestash` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `caddy` | not checked | - |
 | `calcom` | amd64 only | linux/amd64 |
+| `calibre` | not checked | - |
 | `calibre-web` | yes | linux/amd64, linux/arm64 |
+| `calibre-web-automated` | not checked | - |
 | `campfire` | yes | linux/amd64, linux/arm64 |
 | `cap-captcha` | yes | linux/amd64, linux/arm64 |
 | `cassandra` | not checked | - |
@@ -194,6 +205,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `chatwoot` | yes | linux/amd64, linux/arm64 |
 | `checkmate` | yes | linux/amd64, linux/arm64 |
 | `chibisafe` | yes | linux/amd64, linux/arm64 |
+| `chisel` | not checked | - |
 | `chroma` | yes | linux/amd64, linux/arm64 |
 | `chronograf` | not checked | - |
 | `cleanuparr` | yes | linux/amd64, linux/arm64 |
@@ -202,20 +214,28 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `cloudflare-ddns` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `cloudreve` | yes | linux/amd64, linux/arm64 |
 | `cockpit-cms` | yes | linux/amd64, linux/arm64 |
+| `cockroachdb` | not checked | - |
 | `code-server` | yes | linux/amd64, linux/arm64 |
+| `coder` | not checked | - |
 | `comfyui` | amd64 only | linux/amd64 |
 | `commafeed` | not checked | - |
 | `consul` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `convertx` | yes | linux/amd64, linux/arm64 |
 | `convertx-app` | yes | linux/amd64, linux/arm64 |
 | `copyparty` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `coredns` | not checked | - |
 | `couchdb` | yes | linux/amd64, linux/arm64, linux/s390x |
 | `crawl4ai` | yes | linux/amd64, linux/arm64 |
+| `crowdsec` | not checked | - |
 | `cryptgeon` | yes | linux/amd64, linux/arm64 |
 | `cyberchef` | amd64 only | linux/amd64 |
+| `dashdot` | not checked | - |
 | `dashy` | yes | linux/amd64, linux/arm64 |
 | `databasus` | yes | linux/amd64, linux/arm64 |
+| `dbgate` | not checked | - |
+| `ddns-updater` | not checked | - |
 | `deluge` | yes | linux/amd64, linux/arm64 |
+| `dex` | not checked | - |
 | `directus` | yes | linux/amd64, linux/arm64 |
 | `diun` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `docker-registry` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
@@ -226,21 +246,30 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `docuseal` | yes | linux/amd64, linux/arm64 |
 | `dokuwiki` | yes | linux/amd64, linux/arm64 |
 | `dolibarr` | yes | linux/amd64, linux/arm64 |
+| `domoticz` | not checked | - |
 | `drawio` | yes | linux/amd64, linux/arm64 |
 | `drupal` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
+| `dufs` | not checked | - |
 | `duplicati` | yes | linux/amd64, linux/arm64 |
 | `easyappointments` | yes | linux/amd64, linux/arm64 |
+| `ejabberd` | not checked | - |
 | `elasticsearch` | yes | linux/amd64, linux/arm64 |
 | `elasticsearch-kibana` | yes | linux/amd64, linux/arm64 |
 | `element-web` | yes | linux/amd64, linux/arm64 |
 | `emby` | yes | linux/amd64, linux/arm64 |
 | `embystat` | yes | linux/amd64, linux/arm64 |
+| `emqx` | not checked | - |
+| `envoy` | not checked | - |
+| `esphome` | not checked | - |
 | `espocrm` | yes | linux/amd64, linux/arm64 |
 | `etcd` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `etherpad` | yes | linux/amd64, linux/arm64 |
+| `evcc` | not checked | - |
 | `excalidraw` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `factorio` | yes | linux/amd64, linux/arm64 |
+| `falkordb` | not checked | - |
 | `fastapi-postgres-starter` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
+| `fenrus` | not checked | - |
 | `ferretdb` | not checked | - |
 | `fider` | yes | linux/amd64, linux/arm64 |
 | `filebrowser` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -252,8 +281,10 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `flaresolverr` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `flatnotes` | yes | linux/amd64, linux/arm64 |
 | `flipt` | yes | linux/amd64, linux/arm64 |
+| `flood` | not checked | - |
 | `flowise` | yes | linux/amd64, linux/arm64 |
 | `flowise-postgres` | yes | linux/amd64, linux/arm64 |
+| `fluent-bit` | not checked | - |
 | `focalboard` | amd64 only | linux/amd64 |
 | `forgejo` | yes | linux/amd64, linux/arm64 |
 | `forgejo-postgres` | yes | linux/amd64, linux/arm64 |
@@ -263,6 +294,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `gatus` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `ghost` | yes | linux/amd64, linux/arm64 |
 | `ghostfolio` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `gitbucket` | not checked | - |
 | `gitea` | yes | linux/amd64, linux/arm64 |
 | `gitea-postgres` | yes | linux/amd64, linux/arm64 |
 | `gitlab` | amd64 only | linux/amd64 |
@@ -272,8 +304,11 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `glances` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `glitchtip` | yes | linux/amd64, linux/arm64 |
 | `glpi` | yes | linux/amd64, linux/arm64 |
+| `go2rtc` | not checked | - |
 | `goatcounter` | yes | linux/amd64, linux/arm64 |
+| `gocd` | not checked | - |
 | `gogs` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `gonic` | not checked | - |
 | `gotenberg` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `gotify` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/riscv64 |
 | `grafana` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -281,15 +316,19 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `grafana-postgres` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `gramps-web` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `grav` | not checked | - |
+| `greptimedb` | not checked | - |
 | `grimmory` | yes | linux/amd64, linux/arm64 |
 | `grist` | yes | linux/amd64, linux/arm64 |
 | `grocy` | yes | linux/amd64, linux/arm64 |
+| `haproxy` | not checked | - |
 | `hasura` | yes | linux/amd64, linux/arm64 |
 | `headscale` | yes | linux/amd64, linux/arm64 |
 | `healthchecks` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `hedgedoc` | yes | linux/amd64, linux/arm64 |
 | `heimdall` | yes | linux/amd64, linux/arm64 |
+| `hertzbeat` | not checked | - |
 | `heyform` | yes | linux/amd64, linux/arm64 |
+| `hollama` | not checked | - |
 | `homarr` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `home-assistant` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `homebox` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -301,6 +340,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `imgcompress` | yes | linux/amd64, linux/arm64 |
 | `imgproxy` | yes | linux/amd64, linux/arm64 |
 | `immich` | yes | linux/amd64, linux/arm64 |
+| `inbucket` | not checked | - |
 | `infisical` | yes | linux/amd64, linux/arm64 |
 | `influxdb` | yes | linux/amd64, linux/arm64 |
 | `inngest` | yes | linux/amd64, linux/arm64 |
@@ -319,16 +359,23 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `jupyter-gpu` | amd64 only | linux/amd64 |
 | `jupyter-notebook` | yes | linux/amd64, linux/arm64 |
 | `jupyter-notebook-python` | yes | linux/amd64, linux/arm64 |
+| `jupyterhub` | not checked | - |
 | `kafka` | not checked | - |
 | `kanboard` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kapowarr` | not checked | - |
 | `karakeep` | yes | linux/amd64, linux/arm64 |
+| `karma` | not checked | - |
 | `kavita` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kellnr` | not checked | - |
 | `keycloak` | yes | linux/amd64, linux/arm64 |
 | `keycloak-postgres` | yes | linux/amd64, linux/arm64 |
 | `kimai` | yes | linux/amd64, linux/arm64 |
+| `kitchenowl` | not checked | - |
 | `kokoro-fastapi` | yes | linux/amd64, linux/arm64 |
 | `komga` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kong` | not checked | - |
 | `kopia` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `krakend` | not checked | - |
 | `kroki` | not checked | - |
 | `kutt` | yes | linux/amd64, linux/arm64 |
 | `label-studio` | yes | linux/amd64, linux/arm64 |
@@ -340,14 +387,19 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `libreoffice` | yes | linux/amd64, linux/arm64 |
 | `librespeed` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `libretranslate` | yes | linux/amd64, linux/arm64 |
+| `libsql` | not checked | - |
 | `lidarr` | yes | linux/amd64, linux/arm64 |
+| `lightrag` | not checked | - |
 | `limesurvey` | yes | linux/amd64, linux/arm64 |
 | `linkace` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `linkding` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `linkding-plus` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `linkstack` | not checked | - |
 | `linkwarden` | yes | linux/amd64, linux/arm64 |
 | `listmonk` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `litellm` | yes | linux/amd64, linux/arm64 |
+| `livebook` | not checked | - |
+| `livekit` | not checked | - |
 | `llama-cpp` | yes | linux/amd64, linux/arm64, linux/s390x |
 | `lldap` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `lobe-chat` | yes | linux/amd64, linux/arm64 |
@@ -357,20 +409,26 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `lowcoder` | yes | linux/amd64, linux/arm64 |
 | `lubelogger` | yes | linux/amd64, linux/arm64 |
 | `lychee` | yes | linux/amd64, linux/arm64 |
+| `lyrion` | not checked | - |
 | `mafl` | not checked | - |
 | `mage-ai` | yes | linux/amd64, linux/arm64 |
 | `mail-mox` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `mailcatcher` | not checked | - |
 | `maildev` | not checked | - |
 | `mailhog` | amd64 only | linux/amd64 |
 | `mailpit` | yes | linux/386, linux/amd64, linux/arm64 |
 | `maintainerr` | yes | linux/amd64, linux/arm64 |
+| `manyfold` | not checked | - |
 | `mariadb` | not checked | - |
+| `mariadb-adminer` | not checked | - |
 | `marimo` | yes | linux/amd64, linux/arm64 |
 | `matomo` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `matrix-synapse` | yes | linux/amd64, linux/arm64 |
 | `matrix-synapse-postgres` | yes | linux/amd64, linux/arm64 |
+| `matterbridge` | not checked | - |
 | `mattermost` | amd64 only | linux/amd64 |
 | `mazanoke` | not checked | - |
+| `mcp-inspector` | not checked | - |
 | `mealie` | yes | linux/amd64, linux/arm64 |
 | `mediawiki` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `meilisearch` | yes | linux/amd64, linux/arm64 |
@@ -378,9 +436,12 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `memos` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `meshcentral` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `metabase` | amd64 only | linux/amd64 |
+| `metabase-postgres` | not checked | - |
 | `metamcp` | yes | linux/amd64, linux/arm64 |
 | `metube` | yes | linux/amd64, linux/arm64 |
 | `milvus` | yes | linux/amd64, linux/arm64 |
+| `mimir` | not checked | - |
+| `mindsdb` | not checked | - |
 | `minecraft` | yes | linux/amd64, linux/arm64 |
 | `minecraft-bedrock` | yes | linux/amd64, linux/arm64 |
 | `miniflux` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -392,32 +453,43 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `monica` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `moodle` | yes | linux/amd64, linux/arm64 |
 | `mosquitto` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `mstream` | not checked | - |
 | `multi-scrobbler` | yes | linux/amd64, linux/arm64 |
 | `mylar3` | yes | linux/amd64, linux/arm64 |
 | `mysql` | not checked | - |
+| `mysql-phpmyadmin` | not checked | - |
 | `n8n` | yes | linux/amd64, linux/arm64 |
 | `n8n-ai-starter` | yes | linux/amd64, linux/arm64 |
+| `n8n-mcp` | not checked | - |
 | `n8n-postgres` | yes | linux/amd64, linux/arm64 |
 | `nats` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `navidrome` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `neo4j` | yes | linux/amd64, linux/arm64 |
+| `netbootxyz` | not checked | - |
 | `netbox` | yes | linux/amd64, linux/arm64 |
 | `netdata` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `new-api` | yes | linux/amd64, linux/arm64 |
 | `nextcloud` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/mips64le, linux/ppc64le, linux/s390x |
+| `nextcloud-postgres` | not checked | - |
 | `nextjs-postgres-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nexus` | yes | linux/amd64, linux/arm64 |
 | `nginx` | not checked | - |
 | `nginx-multi-backend-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nginx-proxy-manager` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `nginx-ui` | not checked | - |
 | `nocobase` | yes | linux/amd64, linux/arm64 |
 | `nocodb` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `node-exporter` | not checked | - |
 | `node-postgres-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `node-red` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nodebb` | yes | linux/amd64, linux/arm64 |
+| `notifiarr` | not checked | - |
+| `nsq` | not checked | - |
 | `ntfy` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `nzbget` | not checked | - |
+| `oauth2-proxy` | not checked | - |
 | `obsidian-livesync` | yes | linux/amd64, linux/arm64 |
+| `ocis` | not checked | - |
 | `odoo` | yes | linux/amd64, linux/arm64, linux/ppc64le |
 | `ollama` | yes | linux/amd64, linux/arm64 |
 | `ollama-deepseek` | yes | linux/amd64, linux/arm64 |
@@ -432,13 +504,17 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `onetimesecret` | yes | linux/amd64, linux/arm64 |
 | `open-notebook` | yes | linux/amd64, linux/arm64 |
 | `open-webui` | yes | linux/amd64, linux/arm64 |
+| `openbao` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `openclaw` | yes | linux/amd64, linux/arm64 |
 | `opengist` | yes | linux/amd64, linux/arm64 |
+| `openhab` | not checked | - |
 | `openobserve` | yes | linux/amd64, linux/arm64 |
+| `openresty` | not checked | - |
 | `opensearch` | not checked | - |
 | `openspeedtest` | not checked | - |
 | `orangehrm` | amd64 only | linux/amd64 |
 | `organizr` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `orientdb` | not checked | - |
 | `osticket` | not checked | - |
 | `otel-lgtm` | not checked | - |
 | `outline` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
@@ -447,6 +523,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `owncloud` | yes | linux/amd64, linux/arm64 |
 | `pairdrop` | yes | linux/amd64, linux/arm64 |
 | `palworld` | yes | linux/amd64, linux/arm64 |
+| `paperless-ai` | not checked | - |
 | `paperless-ngx` | yes | linux/amd64, linux/arm64 |
 | `passbolt` | yes | linux/amd64, linux/arm64 |
 | `paymenter` | yes | linux/amd64, linux/arm64 |
@@ -457,8 +534,10 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `pgweb` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `photoprism` | yes | linux/amd64, linux/arm64 |
 | `photoview` | yes | linux/amd64, linux/arm64 |
+| `phpipam` | not checked | - |
 | `phpmyadmin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `pi-hole` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `picoshare` | not checked | - |
 | `pigallery2` | not checked | - |
 | `pinchflat` | amd64 only | linux/amd64 |
 | `pingvin-share` | yes | linux/amd64, linux/arm64 |
@@ -472,13 +551,16 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `pocketbase` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `portainer` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, windows/amd64 |
 | `postgres` | not checked | - |
+| `postgres-pgweb` | not checked | - |
 | `postiz` | yes | linux/amd64, linux/arm64 |
 | `prefect` | yes | linux/amd64, linux/arm64 |
 | `privatebin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `prometheus` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `promptfoo` | not checked | - |
 | `prowlarr` | yes | linux/amd64, linux/arm64 |
 | `proxyscotch` | yes | linux/amd64, linux/arm64 |
 | `pushgateway` | not checked | - |
+| `pyroscope` | not checked | - |
 | `qbittorrent` | yes | linux/amd64, linux/arm64 |
 | `qdrant` | yes | linux/amd64, linux/arm64 |
 | `questdb` | not checked | - |
@@ -486,9 +568,12 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `radarr` | yes | linux/amd64, linux/arm64 |
 | `radicale` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `rallly` | yes | linux/amd64, linux/arm64 |
+| `raneto` | not checked | - |
+| `rclone` | not checked | - |
 | `reactive-resume` | yes | linux/amd64, linux/arm64 |
 | `readeck` | yes | linux/amd64, linux/arm64 |
 | `redash` | not checked | - |
+| `redis` | not checked | - |
 | `redis-cache-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `redis-commander` | not checked | - |
 | `redis-insight` | yes | linux/amd64, linux/arm64 |
@@ -497,6 +582,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `redmine` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `registry` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `remark42` | not checked | - |
+| `rethinkdb` | not checked | - |
 | `rocketchat` | yes | linux/amd64, linux/arm64 |
 | `romm` | yes | linux/amd64, linux/arm64 |
 | `roundcube` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
@@ -506,6 +592,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `rustfs` | yes | linux/amd64, linux/arm64 |
 | `ryot` | yes | linux/amd64, linux/arm64 |
 | `sabnzbd` | yes | linux/amd64, linux/arm64 |
+| `scylladb` | not checked | - |
 | `seafile` | yes | linux/amd64, linux/arm64 |
 | `searxng` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `seaweedfs` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
@@ -513,76 +600,111 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `semaphore` | yes | linux/amd64, linux/arm64 |
 | `sftpgo` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `shaarli` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `shelfmark` | not checked | - |
 | `shiori` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `shlink` | yes | linux/amd64, linux/arm64 |
+| `sillytavern` | not checked | - |
 | `silverbullet` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `siyuan` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `slash` | yes | linux/amd64, linux/arm64 |
+| `slskd` | not checked | - |
 | `smokeping` | yes | linux/amd64, linux/arm64 |
+| `smtp4dev` | not checked | - |
 | `snapdrop` | not checked | - |
+| `snappymail` | not checked | - |
 | `snipe-it` | yes | linux/amd64, linux/arm64 |
 | `soketi` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `solr` | not checked | - |
 | `sonarqube` | yes | linux/amd64, linux/arm64 |
 | `sonarr` | yes | linux/amd64, linux/arm64 |
+| `sonic` | not checked | - |
 | `sparkyfitness` | yes | linux/amd64, linux/arm64 |
 | `speaches` | yes | linux/amd64, linux/arm64 |
 | `speedtest-tracker` | yes | linux/amd64, linux/arm64 |
 | `spliit` | yes | linux/amd64, linux/arm64 |
 | `spoolman` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `sqlpad` | not checked | - |
 | `stable-diffusion-webui` | amd64 only | linux/amd64 |
 | `stalwart` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `stash` | not checked | - |
 | `static-site-api-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
+| `statping-ng` | not checked | - |
 | `statusnook` | yes | linux/amd64, linux/arm64 |
+| `step-ca` | not checked | - |
 | `stirling-pdf` | yes | linux/amd64, linux/arm64 |
 | `strapi` | yes | linux/amd64, linux/arm64 |
+| `stump` | not checked | - |
 | `superset` | yes | linux/amd64, linux/arm64 |
 | `supertokens` | yes | linux/amd64, linux/arm64 |
 | `sure` | yes | linux/amd64, linux/arm64 |
+| `surrealdb` | not checked | - |
+| `svix` | not checked | - |
 | `swagger-ui` | not checked | - |
 | `syncthing` | yes | linux/amd64, linux/arm64 |
+| `syncthing-discovery` | not checked | - |
+| `syncthing-relay` | not checked | - |
 | `tandoor-recipes` | yes | linux/amd64, linux/arm64 |
+| `tasmoadmin` | not checked | - |
 | `tautulli` | yes | linux/amd64, linux/arm64 |
 | `tdarr` | yes | linux/amd64, linux/arm64 |
 | `teable` | yes | linux/amd64, linux/arm64 |
 | `technitium-dns` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `telegraf` | not checked | - |
+| `tempo` | not checked | - |
 | `temporal` | yes | linux/amd64, linux/arm64 |
 | `termix` | yes | linux/amd64, linux/arm64 |
 | `terraria` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `text-embeddings-inference` | amd64 only | linux/amd64 |
 | `text-generation-inference` | amd64 only | linux/amd64 |
 | `thelounge` | not checked | - |
+| `thingsboard` | not checked | - |
 | `tianji` | yes | linux/amd64, linux/arm64 |
+| `tidb` | not checked | - |
+| `tika` | not checked | - |
 | `timescaledb` | not checked | - |
 | `tinyauth` | yes | linux/amd64, linux/arm64 |
 | `tolgee` | yes | linux/amd64, linux/arm64 |
 | `traccar` | yes | linux/amd64, linux/arm64 |
+| `traefik` | not checked | - |
+| `traggo` | not checked | - |
 | `trailbase` | yes | linux/amd64, linux/arm64 |
 | `transmission` | yes | linux/amd64, linux/arm64 |
 | `trilium` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `triliumnext` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `ttyd` | not checked | - |
+| `tubesync` | not checked | - |
 | `twenty` | yes | linux/amd64, linux/arm64 |
 | `typesense` | yes | linux/amd64, linux/arm64 |
+| `ubooquity` | not checked | - |
 | `umami` | yes | linux/amd64, linux/arm64 |
 | `unleash-postgres` | yes | linux/amd64, linux/arm64 |
+| `unpoller` | not checked | - |
 | `unstructured` | yes | linux/amd64, linux/arm64 |
+| `upsnap` | not checked | - |
 | `uptime-kuma` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `uptime-kuma-mariadb` | yes | linux/amd64, linux/arm64 |
 | `valkey` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
-| `vault` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `vault` | yes | linux/386, linux/amd64, linux/arm64 |
 | `vaultwarden` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `vector` | not checked | - |
 | `verdaccio` | yes | linux/amd64, linux/arm64 |
+| `vernemq` | not checked | - |
 | `vert` | yes | linux/amd64, linux/arm64 |
+| `victorialogs` | not checked | - |
 | `victoriametrics` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `vikunja` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `vllm` | yes | linux/amd64, linux/arm64 |
+| `voidauth` | not checked | - |
 | `vvveb` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `wakapi` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `wallabag` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `wallabag-postgres` | not checked | - |
 | `wallos` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `weaviate` | yes | linux/amd64, linux/arm64 |
 | `web-check` | yes | linux/amd64, linux/arm64 |
+| `webdav` | not checked | - |
 | `weblate` | yes | linux/amd64, linux/arm64 |
+| `webtop` | not checked | - |
 | `wekan` | yes | linux/amd64, linux/arm64 |
 | `whoogle` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `wikijs` | yes | linux/amd64, linux/arm64 |
@@ -592,11 +714,15 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 40 not checked** of 4
 | `woodpecker` | yes | freebsd/amd64, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64 |
 | `wordpress` | yes | linux/amd64, linux/arm64 |
 | `worker-redis-queue-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
+| `wyoming-openwakeword` | not checked | - |
+| `wyoming-piper` | not checked | - |
 | `yamtrack` | yes | linux/amd64, linux/arm64 |
 | `yourls` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `zabbix` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `zipkin` | not checked | - |
 | `zipline` | yes | linux/amd64, linux/arm64 |
+| `zot` | not checked | - |
+| `zwave-js-ui` | not checked | - |
 {/* END GENERATED ARM64 TABLE */}
 
 ## Upgrade paths, top 20

@@ -106,3 +106,12 @@ func TestPipeline_Deploy_VaultEnv_CheckerErrorPropagates(t *testing.T) {
 		t.Errorf("builder.Build called %d times, want 0", builder.calls)
 	}
 }
+
+// The deploy path has no actor to check allow lists, so it marks connection references unvetted.
+func TestVaultEnvRefsMarkSecretRefsUnvetted(t *testing.T) {
+	ev := spec.EnvVar{SecretRef: &spec.SecretRef{Text: "secret://prod/apps/web#api"}}
+	out, err := vaultEnvRefs(map[string]spec.EnvVar{"API": ev})
+	if err != nil || !out["API"].Unvetted || out["API"].Conn != "prod" {
+		t.Fatalf("refs = %+v, %v", out, err)
+	}
+}

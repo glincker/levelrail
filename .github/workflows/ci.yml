@@ -770,6 +770,8 @@ jobs:
       - name: Build (vite build && tsc -b)
         if: env.WEB == 'full'
         working-directory: web
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run build
 
       # docs/ only feeds the /help manifest, so a docs-only change needs the

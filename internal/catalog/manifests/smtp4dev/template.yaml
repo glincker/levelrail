@@ -1,0 +1,25 @@
+id: smtp4dev
+name: smtp4dev
+description: Fake SMTP server that catches outgoing mail in a web inbox, for testing apps without sending real email.
+icon: envelope
+category: Developer Tools
+documentation_url: https://github.com/rnwood/smtp4dev/wiki
+source_repo: https://github.com/rnwood/smtp4dev
+license: BSD-3-Clause
+license_class: permissive
+license_url: https://github.com/rnwood/smtp4dev/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Point your app at port 25 of this container and open the address to read what it sent. It has no login, so keep it private.
+domains:
+  - service: smtp4dev
+    port: 80
+    description: Public address of the web inbox. Keep it private.
+healthcheck:
+  service: smtp4dev
+  port: 80
+  path: /

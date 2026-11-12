@@ -230,7 +230,12 @@
     "summaryAuto": "una dirección automática",
     "deploy": "Desplegar",
     "deploying": "Desplegando...",
-    "success": "{{app}} desplegada"
+    "success": "{{app}} desplegada",
+    "file": {
+      "secret": "Archivo secreto",
+      "mount": "Montado en {{service}} en {{path}}",
+      "mode": "Modo {{mode}}"
+    }
   },
   "card": {
     "ramRecommended": "~{{size}} de RAM recomendados",
@@ -343,6 +348,10 @@
       "anyLicense": "Cualquier licencia",
       "arch": "Arquitectura",
       "anyArch": "Cualquier arquitectura"
+    },
+    "preview": {
+      "badge": "Vista previa",
+      "hint": "Aún sin probar en una ejecución real del motor. Se instala igual; avisa si algo falla."
     }
   },
   "importTemplate": {
@@ -366,5 +375,17 @@
     "nameRequired": "El nombre es obligatorio.",
     "composeRequired": "Se requiere un archivo compose.",
     "variablesInvalid": "Las variables deben ser nombres en MAYÚSCULAS."
+  },
+  "capabilities": {
+    "title": "Acceso declarado",
+    "tier": {
+      "review": "Revisión",
+      "elevated": "Elevado",
+      "privileged": "Privilegiado"
+    },
+    "class": {
+      "cap_add": "Añade capacidades de Linux a un contenedor.",
+      "net_admin": "Puede cambiar la configuración de red dentro del contenedor."
+    }
   }
 }

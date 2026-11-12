@@ -27,8 +27,21 @@ var secretRefEnv = map[string]any{
 	"required":             []any{"secretRef"},
 	"additionalProperties": false,
 	"properties": map[string]any{
-		"secretRef": map[string]any{"type": "string", "minLength": 1},
-		"existing":  map[string]any{"type": "boolean", "description": "The secret is already in the store; apply checks it exists and never writes or deletes it."},
+		"secretRef": map[string]any{"oneOf": []any{
+			map[string]any{"type": "string", "minLength": 1},
+			map[string]any{
+				"type": "object", "required": []any{"path", "key"}, "additionalProperties": false,
+				"description": "A value in a named secret connection, read at container create.",
+				"properties": map[string]any{
+					"connection": map[string]any{"type": "string", "minLength": 1},
+					"conn":       map[string]any{"type": "string", "minLength": 1},
+					"path":       map[string]any{"type": "string", "minLength": 1},
+					"key":        map[string]any{"type": "string", "minLength": 1},
+					"version":    map[string]any{"type": "integer", "minimum": 1},
+				},
+			},
+		}},
+		"existing": map[string]any{"type": "boolean", "description": "The secret is already in the store; apply checks it exists and never writes or deletes it."},
 	},
 }
 

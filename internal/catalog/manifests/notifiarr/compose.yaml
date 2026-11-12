@@ -1,0 +1,13 @@
+services:
+  notifiarr:
+    image: ghcr.io/notifiarr/notifiarr:v0.10.0
+    ports: ["5454"]
+    command: ["--config", "/etc/notifiarr/notifiarr.conf"]
+    volumes:
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:5454/ 2>&1 | grep -q HTTP/"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 15s

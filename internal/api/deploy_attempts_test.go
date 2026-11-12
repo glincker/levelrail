@@ -333,7 +333,10 @@ func TestHandleDeployLogStream_LiveTail(t *testing.T) {
 	// and return, closing the connection from the server's side too.
 	reqCancel()
 	select {
-	case <-readErrCh:
+	case err := <-readErrCh:
+		if err != nil {
+			t.Logf("read ended: %v", err)
+		}
 		// The background reader's blocked Read finally unblocked with an
 		// error once the connection was torn down, as expected.
 	case <-time.After(2 * time.Second):

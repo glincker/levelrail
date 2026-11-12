@@ -1,0 +1,25 @@
+id: tika
+name: Apache Tika Server
+description: Detects and extracts text and metadata from over a thousand file types over a simple HTTP API. Single container, no storage.
+icon: file-text
+category: Developer Tools
+documentation_url: https://tika.apache.org/
+source_repo: https://github.com/apache/tika
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/apache/tika/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Send a file with PUT to /tika for plain text or /meta for metadata. The server has no login, so keep it private.
+domains:
+  - service: tika
+    port: 9998
+    description: Public address of the Tika API. Keep it private.
+healthcheck:
+  service: tika
+  port: 9998
+  path: /tika

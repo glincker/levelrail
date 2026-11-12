@@ -1,0 +1,74 @@
+---
+title: "Self-host Anubis with Docker"
+sidebarTitle: "Anubis"
+description: "A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you."
+"og:url": "https://docs.levelrail.com/self-host/anubis"
+---
+
+A reverse proxy that makes clients pass a small proof of work before reaching your site, which blocks most scraper bots. Sits in front of one upstream you choose. The signing key is generated for you.
+
+This page describes the Levelrail template for Anubis (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://anubis.techaro.lol/.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `anubis` | `ghcr.io/techarohq/anubis:v1.28.2` | 8923 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `anubis` | `BIND` | Preset in the template |
+| `anubis` | `DIFFICULTY` | Preset in the template |
+| `anubis` | `ED25519_PRIVATE_KEY_HEX` | Generated at deploy |
+| `anubis` | `METRICS_BIND` | Preset in the template |
+| `anubis` | `TARGET` | You must provide |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- You must provide one or more secrets before it can deploy (`anubis`): TARGET.
+- Passwords and keys are generated at deploy time (`anubis`): ED25519_PRIVATE_KEY_HEX.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
+
+## Deploy Anubis with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Anubis. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates get anubis --output json | jq -r .compose > anubis.compose.yaml
+# edit anubis.compose.yaml to set the variables you must provide
+levelrail-cli apps deploy-compose my-anubis --file anubis.compose.yaml
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Authelia](/self-host/authelia)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [CrowdSec Local API](/self-host/crowdsec)
+
+All templates are listed in the [self-host gallery](/self-host).

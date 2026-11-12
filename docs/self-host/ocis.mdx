@@ -1,0 +1,71 @@
+---
+title: "Self-host ownCloud Infinite Scale with Docker"
+sidebarTitle: "ownCloud Infinite Scale"
+description: "File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start."
+"og:url": "https://docs.levelrail.com/self-host/ocis"
+---
+
+File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.
+
+This page describes the Levelrail template for ownCloud Infinite Scale (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://doc.owncloud.com/ocis/next/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ocis` | `owncloud/ocis:8.2.3` | 9200 | `config -&#62; /etc/ocis`<br />`data -&#62; /var/lib/ocis` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `ocis` | `IDM_ADMIN_PASSWORD` | Generated at deploy |
+| `ocis` | `OCIS_INSECURE` | Preset in the template |
+| `ocis` | `OCIS_URL` | Preset in the template |
+| `ocis` | `PROXY_HTTP_ADDR` | Preset in the template |
+| `ocis` | `PROXY_TLS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`ocis`): IDM_ADMIN_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`ocis`).
+- Stores data in named volumes (`ocis`): config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ownCloud Infinite Scale with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ownCloud Infinite Scale. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ocis --name my-ocis
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Dufs](/self-host/dufs)
+- [Duplicati](/self-host/duplicati)
+
+All templates are listed in the [self-host gallery](/self-host).

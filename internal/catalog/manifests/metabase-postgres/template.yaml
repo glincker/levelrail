@@ -1,0 +1,32 @@
+id: metabase-postgres
+name: Metabase with Postgres
+description: Metabase business intelligence with its own application data kept in a bundled Postgres database instead of the built in file, so dashboards and questions survive upgrades and scale past a single user. Create the admin on first open.
+icon: chart-bar
+category: Analytics
+documentation_url: https://www.metabase.com/docs/latest/installation-and-operation/configuring-application-database
+source_repo: https://github.com/metabase/metabase
+license: AGPL-3.0-or-later
+license_class: network-copyleft
+license_url: https://github.com/metabase/metabase/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1610612736
+first_run:
+  - Open the page, create the admin account, then connect the databases you want to explore.
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: metabase
+    port: 3000
+    description: Public address of Metabase.
+healthcheck:
+  service: metabase
+  port: 3000
+  path: /api/health

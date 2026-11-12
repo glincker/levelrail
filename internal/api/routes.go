@@ -64,6 +64,8 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerCustomDashboardRoutes(mux)
 	rt.registerChaosRoutes(mux)
 	rt.registerSecretProviderRoutes(mux)
+	rt.registerSecretConnectionRoutes(mux)
+	rt.registerCloudConnectionRoutes(mux)
 	rt.registerArchiveRoutes(mux)
 	rt.registerSpendCapRoutes(mux)
 	rt.registerAppAbuseRoutes(mux)

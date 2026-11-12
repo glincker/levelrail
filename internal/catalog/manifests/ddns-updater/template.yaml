@@ -1,0 +1,38 @@
+id: ddns-updater
+name: DDNS Updater
+description: Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there.
+icon: globe
+category: Networking
+documentation_url: https://github.com/qdm12/ddns-updater
+source_repo: https://github.com/qdm12/ddns-updater
+license: MIT
+license_class: permissive
+license_url: https://github.com/qdm12/ddns-updater/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 33554432
+first_run:
+  - The starter config has no providers. Edit the config.json setting, add one entry per record using the provider guides in the project docs, and reinstall or update to apply it.
+env:
+  - key: DDNS_CONFIG
+    type: file
+    service: ddns-updater
+    path: /updater/config.json
+    mode: "0444"
+    label: config.json
+    description: Provider settings, mounted read-only. Credentials go here, so treat the file as secret.
+    secret: true
+    default: |
+      {
+        "settings": []
+      }
+domains:
+  - service: ddns-updater
+    port: 8000
+    description: Public address of the status page. Keep it private, it lists your records.
+healthcheck:
+  service: ddns-updater
+  port: 8000
+  path: /

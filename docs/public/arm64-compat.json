@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-11-02T03:14:45Z",
+  "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 448,
-    "images": 492,
-    "arm64_yes": 393,
+    "templates": 574,
+    "images": 617,
+    "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 40,
-    "image_arm64_yes": 434,
+    "arm64_unknown": 165,
+    "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 43
+    "image_arm64_unknown": 167
   },
   "templates": [
     {
@@ -59,6 +59,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "activemq",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "apache/activemq-classic:6.1.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -239,6 +253,20 @@
       ]
     },
     {
+      "id": "agentgateway",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/agentgateway/agentgateway:v1.7.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "alertmanager",
       "amd64": "yes",
       "arm64": "yes",
@@ -260,6 +288,33 @@
       ]
     },
     {
+      "id": "ampache",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ampache/ampache:8.4.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.8.9",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
       "id": "answer",
       "amd64": "yes",
       "arm64": "yes",
@@ -274,6 +329,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:53:56Z"
+        }
+      ]
+    },
+    {
+      "id": "anubis",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/techarohq/anubis:v1.28.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -463,6 +532,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "arangodb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "arangodb:3.12.13",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -705,12 +788,54 @@
       ]
     },
     {
+      "id": "bifrost",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "maximhq/bifrost:v2.5.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "big-agi",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/enricoros/big-agi:v2.1.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "blackbox-exporter",
       "amd64": "unknown",
       "arm64": "unknown",
       "images": [
         {
           "ref": "prom/blackbox-exporter:v0.29.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "blocky",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/0xerr0r/blocky:v0.36.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -929,6 +1054,20 @@
       ]
     },
     {
+      "id": "caddy",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "caddy:2.8.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "calcom",
       "amd64": "yes",
       "arm64": "no",
@@ -962,6 +1101,20 @@
       ]
     },
     {
+      "id": "calibre",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lscr.io/linuxserver/calibre:9.18.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "calibre-web",
       "amd64": "yes",
       "arm64": "yes",
@@ -976,6 +1129,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "calibre-web-automated",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "crocodilestick/calibre-web-automated:v4.0.8",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1218,6 +1385,20 @@
       ]
     },
     {
+      "id": "chisel",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "jpillora/chisel:1.12.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "chroma",
       "amd64": "yes",
       "arm64": "yes",
@@ -1395,6 +1576,20 @@
       ]
     },
     {
+      "id": "cockroachdb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "cockroachdb/cockroach:v24.3.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "code-server",
       "amd64": "yes",
       "arm64": "yes",
@@ -1409,6 +1604,27 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T00:10:24Z"
+        }
+      ]
+    },
+    {
+      "id": "coder",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/coder/coder:v2.39.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1522,6 +1738,20 @@
       ]
     },
     {
+      "id": "coredns",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "coredns/coredns:1.15.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "couchdb",
       "amd64": "yes",
       "arm64": "yes",
@@ -1555,6 +1785,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "crowdsec",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "crowdsecurity/crowdsec:v1.8.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1610,6 +1854,20 @@
       ]
     },
     {
+      "id": "dashdot",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mauricenino/dashdot:6.3.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "dashy",
       "amd64": "yes",
       "arm64": "yes",
@@ -1646,6 +1904,34 @@
       ]
     },
     {
+      "id": "dbgate",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "dbgate/dbgate:7.3.4-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "ddns-updater",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/qdm12/ddns-updater:v2.10.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "deluge",
       "amd64": "yes",
       "arm64": "yes",
@@ -1660,6 +1946,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T23:23:03Z"
+        }
+      ]
+    },
+    {
+      "id": "dex",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/dexidp/dex:v2.46.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1964,6 +2264,20 @@
       ]
     },
     {
+      "id": "domoticz",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "drawio",
       "amd64": "yes",
       "arm64": "yes",
@@ -2021,6 +2335,20 @@
       ]
     },
     {
+      "id": "dufs",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "sigoden/dufs:v0.47.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "duplicati",
       "amd64": "yes",
       "arm64": "yes",
@@ -2064,6 +2392,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "ejabberd",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/processone/ejabberd:26.09@sha256:ec5cf7bc85627fd9bde47309a34600d6c16895e9808807ec9ff57426f2508115",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -2169,6 +2511,48 @@
       ]
     },
     {
+      "id": "emqx",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "emqx/emqx:6.3.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "envoy",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "envoyproxy/envoy:v1.40.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "esphome",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "esphome/esphome:2026.10.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "espocrm",
       "amd64": "yes",
       "arm64": "yes",
@@ -2240,6 +2624,20 @@
       ]
     },
     {
+      "id": "evcc",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "evcc/evcc:0.319.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "excalidraw",
       "amd64": "yes",
       "arm64": "yes",
@@ -2273,6 +2671,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "falkordb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "falkordb/falkordb:6.0.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -2312,6 +2724,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T00:10:24Z"
+        }
+      ]
+    },
+    {
+      "id": "fenrus",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "revenz/fenrus:26.10@sha256:7728749bb98c3b0862c853ebf9f741d7e43fddcd84a1ddb8ac73d03ae9741f99",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -2566,6 +2992,20 @@
       ]
     },
     {
+      "id": "flood",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "jesec/flood:4.16.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "flowise",
       "amd64": "yes",
       "arm64": "yes",
@@ -2641,6 +3081,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "fluent-bit",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "fluent/fluent-bit:5.2.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -2923,6 +3377,20 @@
       ]
     },
     {
+      "id": "gitbucket",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "gitbucket/gitbucket:4.38.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "gitea",
       "amd64": "yes",
       "arm64": "yes",
@@ -3159,6 +3627,20 @@
       ]
     },
     {
+      "id": "go2rtc",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "alexxit/go2rtc:1.9.15",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "goatcounter",
       "amd64": "yes",
       "arm64": "yes",
@@ -3173,6 +3655,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:53:56Z"
+        }
+      ]
+    },
+    {
+      "id": "gocd",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "gocd/gocd-server:v26.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -3192,6 +3688,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "gonic",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "sentriz/gonic:v0.23.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -3354,6 +3864,20 @@
       ]
     },
     {
+      "id": "greptimedb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "greptime/greptimedb:v1.3.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "grimmory",
       "amd64": "yes",
       "arm64": "yes",
@@ -3449,6 +3973,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "haproxy",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "haproxy:3.0.5-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -3592,6 +4130,20 @@
       ]
     },
     {
+      "id": "hertzbeat",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "apache/hertzbeat:1.7.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "heyform",
       "amd64": "yes",
       "arm64": "yes",
@@ -3634,6 +4186,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "hollama",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/fmaclen/hollama:0.37.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -3888,6 +4454,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "inbucket",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "inbucket/inbucket:3.2.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4375,6 +4955,20 @@
       ]
     },
     {
+      "id": "jupyterhub",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "quay.io/jupyterhub/jupyterhub:5.4.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kafka",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -4408,6 +5002,20 @@
       ]
     },
     {
+      "id": "kapowarr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mrcas/kapowarr:v1.3.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "karakeep",
       "amd64": "yes",
       "arm64": "yes",
@@ -4437,6 +5045,20 @@
       ]
     },
     {
+      "id": "karma",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/prymitive/karma:v0.134@sha256:479c7bfad3c176b9c35c5a48c2ad8fa72d748f204314daff748fb51488f043da",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kavita",
       "amd64": "yes",
       "arm64": "yes",
@@ -4452,6 +5074,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "kellnr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/kellnr/kellnr:7.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4537,6 +5173,20 @@
       ]
     },
     {
+      "id": "kitchenowl",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "tombursch/kitchenowl:v0.8.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kokoro-fastapi",
       "amd64": "yes",
       "arm64": "yes",
@@ -4574,6 +5224,20 @@
       ]
     },
     {
+      "id": "kong",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "kong:3.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kopia",
       "amd64": "yes",
       "arm64": "yes",
@@ -4589,6 +5253,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "krakend",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "krakend:3.0.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4952,6 +5630,20 @@
       ]
     },
     {
+      "id": "libsql",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/tursodatabase/libsql-server:v0.24.32",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "lidarr",
       "amd64": "yes",
       "arm64": "yes",
@@ -4966,6 +5658,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "lightrag",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/hkuds/lightrag:v1.5.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -5071,6 +5777,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "linkstack",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linkstackorg/linkstack:v4.8.8",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -5185,6 +5905,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "livebook",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/livebook-dev/livebook:0.19.10",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "livekit",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "livekit/livekit-server:v1.13.11",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -5370,6 +6118,20 @@
       ]
     },
     {
+      "id": "lyrion",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lmscommunity/lyrionmusicserver:9.1.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "mafl",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -5420,6 +6182,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "mailcatcher",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "sj26/mailcatcher:v0.10.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -5492,6 +6268,34 @@
       ]
     },
     {
+      "id": "manyfold",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/manyfold3d/manyfold:0.154.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7.4.7-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "mariadb",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -5502,6 +6306,33 @@
           "amd64": "unknown",
           "arm64": "unknown",
           "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "mariadb-adminer",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "adminer:5.5.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.8.9",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
     },
@@ -5612,6 +6443,20 @@
       ]
     },
     {
+      "id": "matterbridge",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "42wim/matterbridge:1.26.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "mattermost",
       "amd64": "yes",
       "arm64": "no",
@@ -5651,6 +6496,20 @@
       "images": [
         {
           "ref": "ghcr.io/civilblur/mazanoke:v1.1.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "mcp-inspector",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/modelcontextprotocol/inspector:2.14.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -5810,6 +6669,27 @@
       ]
     },
     {
+      "id": "metabase-postgres",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "metabase/metabase:v0.65.4.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "metamcp",
       "amd64": "yes",
       "arm64": "yes",
@@ -5876,6 +6756,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "mimir",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "grafana/mimir:3.2.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "mindsdb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mindsdb/mindsdb:v26.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6134,6 +7042,20 @@
       ]
     },
     {
+      "id": "mstream",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lscr.io/linuxserver/mstream:6.33.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "multi-scrobbler",
       "amd64": "yes",
       "arm64": "yes",
@@ -6176,6 +7098,27 @@
       "images": [
         {
           "ref": "mysql:8.4.13",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "mysql-phpmyadmin",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mysql:8.4.13",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "phpmyadmin:5.2.3",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -6254,6 +7197,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "n8n-mcp",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/czlonkowski/n8n-mcp:2.102.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6347,6 +7304,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "netbootxyz",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "netbootxyz/netbootxyz:0.7.6-nbxyz27",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6493,6 +7464,34 @@
       ]
     },
     {
+      "id": "nextcloud-postgres",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nextcloud:33.0.10-apache",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7.4.7-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "nextjs-postgres-starter",
       "amd64": "yes",
       "arm64": "yes",
@@ -6612,6 +7611,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "nginx-ui",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "uozi/nginx-ui:v3.0.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6772,6 +7785,34 @@
       ]
     },
     {
+      "id": "notifiarr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/notifiarr/notifiarr:v0.10.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "nsq",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nsqio/nsq:v1.3.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "ntfy",
       "amd64": "yes",
       "arm64": "yes",
@@ -6791,6 +7832,34 @@
       ]
     },
     {
+      "id": "nzbget",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nzbgetcom/nzbget:v26.3@sha256:f451d98066cbc0c108146420a61a60f7638de50e067738951461e0105eeaa56d",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "oauth2-proxy",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "quay.io/oauth2-proxy/oauth2-proxy:v7.15.6",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "obsidian-livesync",
       "amd64": "yes",
       "arm64": "yes",
@@ -6805,6 +7874,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "ocis",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "owncloud/ocis:8.2.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7127,6 +8210,28 @@
       ]
     },
     {
+      "id": "openbao",
+      "amd64": "yes",
+      "arm64": "yes",
+      "images": [
+        {
+          "ref": "ghcr.io/openbao/openbao:2.7.2",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-11T22:14:40Z"
+        }
+      ]
+    },
+    {
       "id": "openclaw",
       "amd64": "yes",
       "arm64": "yes",
@@ -7163,6 +8268,20 @@
       ]
     },
     {
+      "id": "openhab",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "openhab/openhab:5.2.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "openobserve",
       "amd64": "yes",
       "arm64": "yes",
@@ -7177,6 +8296,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "openresty",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "openresty/openresty:1.27.1.2-13-alpine-fat",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7254,6 +8387,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "orientdb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "orientdb:3.2.58",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7470,6 +8617,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "paperless-ai",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "clusterzx/paperless-ai:4.0.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7779,6 +8940,33 @@
       ]
     },
     {
+      "id": "phpipam",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mariadb:11.8.9",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        },
+        {
+          "ref": "phpipam/phpipam-www:v1.9.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "phpmyadmin",
       "amd64": "yes",
       "arm64": "yes",
@@ -7818,6 +9006,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "picoshare",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mtlynch/picoshare:v1.5.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -8199,6 +9401,32 @@
       ]
     },
     {
+      "id": "postgres-pgweb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "sosedoff/pgweb:0.17.0",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
       "id": "postiz",
       "amd64": "yes",
       "arm64": "yes",
@@ -8326,6 +9554,20 @@
       ]
     },
     {
+      "id": "promptfoo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/promptfoo/promptfoo:0.125.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "prowlarr",
       "amd64": "yes",
       "arm64": "yes",
@@ -8368,6 +9610,20 @@
       "images": [
         {
           "ref": "prom/pushgateway:v1.11.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "pyroscope",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "grafana/pyroscope:1.10.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -8520,6 +9776,34 @@
       ]
     },
     {
+      "id": "raneto",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lscr.io/linuxserver/raneto:0.18.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "rclone",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rclone/rclone:1.76.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "reactive-resume",
       "amd64": "yes",
       "arm64": "yes",
@@ -8592,6 +9876,20 @@
         },
         {
           "ref": "redis:7.4.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "redis:7.2.7-alpine",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -8778,6 +10076,20 @@
       "images": [
         {
           "ref": "umputun/remark42:v1.18.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "rethinkdb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rethinkdb:2.4.4-bookworm-slim",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -8994,6 +10306,20 @@
       ]
     },
     {
+      "id": "scylladb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "scylladb/scylla:2026.3.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "seafile",
       "amd64": "yes",
       "arm64": "yes",
@@ -9171,6 +10497,20 @@
       ]
     },
     {
+      "id": "shelfmark",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/calibrain/shelfmark:v1.6.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "shiori",
       "amd64": "yes",
       "arm64": "yes",
@@ -9204,6 +10544,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "sillytavern",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/sillytavern/sillytavern:1.19.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9264,6 +10618,20 @@
       ]
     },
     {
+      "id": "slskd",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "slskd/slskd:0.26.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "smokeping",
       "amd64": "yes",
       "arm64": "yes",
@@ -9282,12 +10650,40 @@
       ]
     },
     {
+      "id": "smtp4dev",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rnwood/smtp4dev:3.16.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "snapdrop",
       "amd64": "unknown",
       "arm64": "unknown",
       "images": [
         {
           "ref": "lscr.io/linuxserver/snapdrop:latest",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "snappymail",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "djmaze/snappymail:v3.0.1.1",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -9408,6 +10804,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "sonic",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "valeriansaliou/sonic:v1.10.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9546,6 +10956,20 @@
       ]
     },
     {
+      "id": "sqlpad",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "sqlpad/sqlpad:7.5.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "stable-diffusion-webui",
       "amd64": "yes",
       "arm64": "no",
@@ -9578,6 +11002,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "stash",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "stashapp/stash:v0.32.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9618,6 +11056,20 @@
       ]
     },
     {
+      "id": "statping-ng",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "adamboutcher/statping-ng:v0.90.78",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "statusnook",
       "amd64": "yes",
       "arm64": "yes",
@@ -9632,6 +11084,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "step-ca",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "smallstep/step-ca:0.30.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9684,6 +11150,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "stump",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "aaronleopold/stump:0.1.12",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9787,6 +11267,48 @@
       ]
     },
     {
+      "id": "surrealdb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "surrealdb/surrealdb:v2.1.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "svix",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7.4.7-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "svix/svix-server:v1.105.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "swagger-ui",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -9815,6 +11337,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "syncthing-discovery",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "syncthing/discosrv:2.1.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "syncthing-relay",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "syncthing/relaysrv:2.1.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9849,6 +11399,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "tasmoadmin",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/tasmoadmin/tasmoadmin:v5.0.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9965,6 +11529,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "telegraf",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "telegraf:1.40.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "tempo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "grafana/tempo:2.8.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10112,6 +11704,20 @@
       ]
     },
     {
+      "id": "thingsboard",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "thingsboard/tb-postgres:4.2.1.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "tianji",
       "amd64": "yes",
       "arm64": "yes",
@@ -10142,6 +11748,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "tidb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "pingcap/tidb:v7.5.8",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "tika",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "apache/tika:4.2.0-1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10246,6 +11880,34 @@
       ]
     },
     {
+      "id": "traefik",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "traefik:v3.2.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "traggo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "traggo/server:0.8.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "trailbase",
       "amd64": "yes",
       "arm64": "yes",
@@ -10320,6 +11982,34 @@
       ]
     },
     {
+      "id": "ttyd",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "tsl0922/ttyd:1.7.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "tubesync",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/meeb/tubesync:v0.19.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "twenty",
       "amd64": "yes",
       "arm64": "yes",
@@ -10384,6 +12074,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "ubooquity",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lscr.io/linuxserver/ubooquity:3.1.0-ls98",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10456,6 +12160,20 @@
       ]
     },
     {
+      "id": "unpoller",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/unpoller/unpoller:v5.9.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "unstructured",
       "amd64": "yes",
       "arm64": "yes",
@@ -10470,6 +12188,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "upsnap",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/seriousm4x/upsnap:5.7.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10550,17 +12282,16 @@
       "arm64": "yes",
       "images": [
         {
-          "ref": "hashicorp/vault:1.18",
+          "ref": "hashicorp/vault:2.1.2",
           "platforms": [
             "linux/386",
             "linux/amd64",
-            "linux/arm",
             "linux/arm64"
           ],
           "amd64": "yes",
           "arm64": "yes",
           "source": "manifest",
-          "checked_at": "2026-10-31T23:54:42Z"
+          "checked_at": "2026-11-11T22:14:40Z"
         }
       ]
     },
@@ -10584,6 +12315,20 @@
       ]
     },
     {
+      "id": "vector",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "timberio/vector:0.61.0-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "verdaccio",
       "amd64": "yes",
       "arm64": "yes",
@@ -10602,6 +12347,20 @@
       ]
     },
     {
+      "id": "vernemq",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "vernemq/vernemq:2.2.1-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "vert",
       "amd64": "yes",
       "arm64": "yes",
@@ -10616,6 +12375,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "victorialogs",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "victoriametrics/victoria-logs:v1.53.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10695,6 +12468,27 @@
       ]
     },
     {
+      "id": "voidauth",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "voidauth/voidauth:1.19.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "vvveb",
       "amd64": "yes",
       "arm64": "yes",
@@ -10769,6 +12563,27 @@
       ]
     },
     {
+      "id": "wallabag-postgres",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "wallabag/wallabag:2.6.15",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "wallos",
       "amd64": "yes",
       "arm64": "yes",
@@ -10824,6 +12639,20 @@
       ]
     },
     {
+      "id": "webdav",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "hacdias/webdav:v5.17.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "weblate",
       "amd64": "yes",
       "arm64": "yes",
@@ -10870,6 +12699,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "webtop",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "lscr.io/linuxserver/webtop:0c46c80a-ls325",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -11138,6 +12981,34 @@
       ]
     },
     {
+      "id": "wyoming-openwakeword",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rhasspy/wyoming-openwakeword:2.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "wyoming-piper",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rhasspy/wyoming-piper:2.5.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "yamtrack",
       "amd64": "yes",
       "arm64": "yes",
@@ -11303,6 +13174,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "zot",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/project-zot/zot:v2.1.23",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "zwave-js-ui",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "zwavejs/zwave-js-ui:11.26.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     }

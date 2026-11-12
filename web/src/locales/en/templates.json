@@ -230,7 +230,12 @@
     "summaryAuto": "an automatic address",
     "deploy": "Deploy",
     "deploying": "Deploying...",
-    "success": "Deployed {{app}}"
+    "success": "Deployed {{app}}",
+    "file": {
+      "secret": "Secret file",
+      "mount": "Mounted in {{service}} at {{path}}",
+      "mode": "Mode {{mode}}"
+    }
   },
   "card": {
     "ramRecommended": "~{{size}} RAM recommended",
@@ -343,6 +348,10 @@
       "anyLicense": "Any license",
       "arch": "Architecture",
       "anyArch": "Any architecture"
+    },
+    "preview": {
+      "badge": "Preview",
+      "hint": "Not tested on a real engine run yet. It still installs; please report issues."
     }
   },
   "importTemplate": {
@@ -366,5 +375,17 @@
     "nameRequired": "Name is required.",
     "composeRequired": "A compose file is required.",
     "variablesInvalid": "Variables must be UPPER_CASE names."
+  },
+  "capabilities": {
+    "title": "Declared access",
+    "tier": {
+      "review": "Review",
+      "elevated": "Elevated",
+      "privileged": "Privileged"
+    },
+    "class": {
+      "cap_add": "Adds Linux capabilities to one container.",
+      "net_admin": "Can change network settings inside the container."
+    }
   }
 }

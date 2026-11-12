@@ -1,0 +1,16 @@
+services:
+  dufs:
+    image: sigoden/dufs:v0.47.0
+    ports: ["5000"]
+    environment:
+      DUFS_SERVE_PATH: /data
+      DUFS_AUTH: admin:$SERVICE_PASSWORD_DUFS@/:rw
+      DUFS_ALLOW_ALL: "true"
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/__dufs__/health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 10s

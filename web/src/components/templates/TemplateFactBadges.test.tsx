@@ -31,6 +31,13 @@ async function renderBadges(node: ReactNode) {
 }
 
 describe('TemplateFactBadges', () => {
+  it('flags a preview template with its hint', async () => {
+    await renderBadges(<TemplateFactBadges facts={{ preview: true }} />)
+    expect(screen.getByText('Preview').getAttribute('title')).toBe(
+      templates.facts.preview.hint,
+    )
+  })
+
   it('renders nothing for an unknown license and no other facts', async () => {
     const { container } = await renderBadges(<TemplateFactBadges facts={{}} />)
     expect(container.textContent).toBe('')

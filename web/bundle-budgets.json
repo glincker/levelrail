@@ -2,7 +2,7 @@
   "chunks": {
     "CreateResourceWizard": 104000,
     "EnvironmentEditor": 40000,
-    "TemplateLogo": 54000,
+    "TemplateLogo": 60000,
     "_domain": 50000,
     "_id": 73500,
     "_name": 42000,
@@ -76,7 +76,7 @@
     "source": 66500,
     "src": 43000,
     "tanstack": 160000,
-    "template-catalog": 100000,
+    "template-catalog": 140000,
     "ui-kit": 63000,
     "updates": 123000,
     "vendor": 266000

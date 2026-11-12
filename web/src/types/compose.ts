@@ -98,6 +98,10 @@ export interface TemplateEnvPrompt {
   length?: number
   required?: boolean
   secret?: boolean
+  type?: 'file'
+  service?: string
+  path?: string
+  mode?: string
 }
 
 export interface TemplateDomainPrompt {

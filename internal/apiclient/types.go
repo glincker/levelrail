@@ -58,6 +58,8 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// RequireRefWarnings lists literal secrets held in an environment that requires references; names only.
+	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
 	// TemplateID is the catalog template the app was deployed from, empty otherwise.
 	TemplateID string `json:"template_id,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or
@@ -212,6 +214,9 @@ type TagAppResource struct {
 type AppVaultEnvRef struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+	// Conn and Version name a secret connection reference; empty Conn is the legacy Vault form.
+	Conn    string `json:"conn,omitempty"`
+	Version int    `json:"version,omitempty"`
 }
 
 // setAppPreviewEnvOverrideRequest mirrors internal/api's own
@@ -1798,6 +1803,7 @@ type TemplateFacts struct {
 	Status       string                `json:"status,omitempty"`
 	StatusReason string                `json:"status_reason,omitempty"`
 	ReplacedBy   string                `json:"replaced_by,omitempty"`
+	Preview      bool                  `json:"preview,omitempty"`
 }
 
 // TemplateLicense is the stated license and its class.

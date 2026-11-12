@@ -1,0 +1,12 @@
+services:
+  ejabberd:
+    image: ghcr.io/processone/ejabberd:26.09@sha256:ec5cf7bc85627fd9bde47309a34600d6c16895e9808807ec9ff57426f2508115
+    ports: ["5280", "5222"]
+    volumes:
+      - database:/opt/ejabberd/database
+    healthcheck:
+      test: ["CMD", "ejabberdctl", "status"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

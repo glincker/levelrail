@@ -109,6 +109,8 @@ type dynamicSourceDeps struct {
 	deployWindows func(context.Context) deploysafety.Windows
 	// restartPolicy reads the live container restart policy setting.
 	restartPolicy func(context.Context) string
+	// elevatedCaps reads the live elevated template capability setting.
+	elevatedCaps func(context.Context) bool
 	// dependsOnTimeout reads the live compose depends_on wait limit.
 	dependsOnTimeout func(context.Context) time.Duration
 }
@@ -292,7 +294,8 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithDatabaseAttachments(deps.db),
 		application.WithDatabaseScope(deps.db),
 		application.WithVaultSettings(deps.db),
-		application.WithVaultResolver(vault.NewResolver()),
+		application.WithSecretSources(currentSecretSources),
+		application.WithVaultResolver(vault.NewResolverWith(vault.TunablesFrom(deps.settingsService()))),
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(sharedEnvResolver),
 		application.WithOrganizationEnv(sharedEnvResolver),
@@ -330,6 +333,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	}
 	if deps.restartPolicy != nil {
 		appOpts = append(appOpts, application.WithRestartPolicy(deps.restartPolicy))
+	}
+	if deps.elevatedCaps != nil {
+		appOpts = append(appOpts, application.WithElevatedCaps(deps.elevatedCaps))
 	}
 	if deps.dependsOnTimeout != nil {
 		appOpts = append(appOpts, application.WithDependsOnTimeout(deps.dependsOnTimeout))

@@ -68,14 +68,30 @@ var automationBatchTemplates = []Template{
       PORT: "3000"
       FLOWISE_USERNAME: $SERVICE_USER_FLOWISE
       FLOWISE_PASSWORD: $SERVICE_PASSWORD_FLOWISE
-      DATABASE_PATH: /root/.flowise
-      APIKEY_PATH: /root/.flowise
-      SECRETKEY_PATH: /root/.flowise
-      LOG_PATH: /root/.flowise/logs
-      BLOB_STORAGE_PATH: /root/.flowise/storage
+      DATABASE_PATH: /home/node/.flowise
+      APIKEY_PATH: /home/node/.flowise
+      SECRETKEY_PATH: /home/node/.flowise
+      LOG_PATH: /home/node/.flowise/logs
+      BLOB_STORAGE_PATH: /home/node/.flowise/storage
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: recordmanager
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: flowise_records
+      DATABASE_USER: flowise
+      DATABASE_PASSWORD: $SERVICE_PASSWORD_RECORDMANAGER
+      JWT_AUTH_TOKEN_SECRET: $SERVICE_HEX_32_JWTAUTH
+      JWT_REFRESH_TOKEN_SECRET: $SERVICE_HEX_32_JWTREFRESH
+      EXPRESS_SESSION_SECRET: $SERVICE_HEX_32_SESSION
+      TOKEN_HASH_SECRET: $SERVICE_HEX_32_TOKENHASH
     volumes:
-      - flowise_pg_data:/root/.flowise
-    depends_on: [recordmanager, cache, qdrant]
+      - flowise_pg_data:/home/node/.flowise
+    depends_on:
+      recordmanager:
+        condition: service_healthy
+      cache:
+        condition: service_started
+      qdrant:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/v1/ping || exit 1"]
       interval: 10s
@@ -325,7 +341,7 @@ var automationBatchTemplates = []Template{
       start_period: 60s
 `,
 	},
-	{ //nolint:gosec // DB_PASSWORD/DB_ROOT_PASSWD below are compose magic-var tokens, not real credentials
+	{ //nolint:gosec // SEAFILE_MYSQL_DB_PASSWORD/INIT_SEAFILE_MYSQL_ROOT_PASSWORD below are compose magic-var tokens, not real credentials
 		ID:                     "seafile",
 		Name:                   "Seafile",
 		Slogan:                 "Self-hosted file sync and share with real file-level versioning and client-side encryption options.",
@@ -337,12 +353,18 @@ var automationBatchTemplates = []Template{
     image: seafileltd/seafile-mc:13.0.28
     ports: ["8080:80"]
     environment:
-      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-localhost:8080}
-      DB_HOST: mariadb
-      DB_PORT: "3306"
-      DB_ROOT_PASSWD: $SERVICE_PASSWORD_MYSQLROOT
-      DB_USER: $SERVICE_USER_MYSQL
-      DB_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-127.0.0.1}
+      SEAFILE_MYSQL_DB_HOST: mariadb
+      SEAFILE_MYSQL_DB_PORT: "3306"
+      INIT_SEAFILE_MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+      SEAFILE_MYSQL_DB_USER: $SERVICE_USER_MYSQL
+      SEAFILE_MYSQL_DB_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
+      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
+      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: seahub_db
+      CACHE_PROVIDER: memcached
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: "11211"
       TIME_ZONE: UTC
       INIT_SEAFILE_ADMIN_EMAIL: admin@example.com
       INIT_SEAFILE_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
@@ -374,11 +396,6 @@ var automationBatchTemplates = []Template{
   memcached:
     image: memcached:latest
     entrypoint: ["memcached", "-m", "256"]
-    healthcheck:
-      test: ["CMD-SHELL", "echo version | nc -w 1 127.0.0.1 11211 || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
 `,
 	},
 	{

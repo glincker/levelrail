@@ -121,7 +121,9 @@ func TestEngine_Run_ReactsToEventsAndTicks(t *testing.T) {
 	// ticks land before the deadline.
 	events <- docker.Event{Action: docker.EventDie, ContainerName: "whatever"}
 
-	<-done
+	if err := <-done; err != nil {
+		t.Logf("run returned: %v", err)
+	}
 
 	if got := c.calls.Load(); got < 3 {
 		t.Errorf("got %d reconciles (initial + event + at least one tick), want >= 3", got)
@@ -154,7 +156,9 @@ func TestEngine_Run_NudgeTriggersImmediateReconcile(t *testing.T) {
 	time.Sleep(20 * time.Millisecond) // let the nudge-triggered pass land
 
 	cancel()
-	<-done
+	if err := <-done; err != nil {
+		t.Logf("run returned: %v", err)
+	}
 
 	if got := c.calls.Load(); got <= before {
 		t.Errorf("reconcile count after Nudge = %d, want more than %d (the pre-nudge count)", got, before)

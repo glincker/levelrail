@@ -1,0 +1,26 @@
+id: wyoming-openwakeword
+name: Wyoming openWakeWord
+description: Local wake word detection over the Wyoming protocol for Home Assistant voice assistants, preloaded with the ok nabu model.
+icon: microphone
+category: AI
+documentation_url: https://github.com/rhasspy/wyoming-openwakeword#readme
+source_repo: https://github.com/rhasspy/wyoming-openwakeword
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/rhasspy/wyoming-openwakeword/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Add the Wyoming integration in Home Assistant and point it at port 10400.
+domains:
+  - service: wyoming-openwakeword
+    port: 10400
+    description: Wyoming endpoint. Keep it private.
+healthcheck:
+  service: wyoming-openwakeword
+  port: 10400
+  kind: tcp
+  reason: speaks the Wyoming protocol, not HTTP

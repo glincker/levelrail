@@ -1,0 +1,49 @@
+id: jupyterhub
+name: JupyterHub
+description: Multi user server that manages and proxies notebook servers. The install form carries jupyterhub_config.py as an editable file with a generated shared password, so it starts with a working login.
+icon: notebook
+category: Developer Tools
+documentation_url: https://jupyterhub.readthedocs.io/
+source_repo: https://github.com/jupyterhub/jupyterhub
+license: BSD-3-Clause
+license_class: permissive
+license_url: https://github.com/jupyterhub/jupyterhub/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Sign in as admin with the generated password shown in the deployment variables, then edit the config file setting to change the authenticator and spawner.
+env:
+  - key: JUPYTERHUB_PASSWORD
+    label: Shared password
+    description: Password every user signs in with while the dummy authenticator is active.
+    generate: password
+    length: 24
+    secret: true
+  - key: JUPYTERHUB_CONFIG
+    type: file
+    service: jupyterhub
+    path: /srv/jupyterhub/jupyterhub_config.py
+    mode: "0444"
+    label: jupyterhub_config.py
+    description: The full JupyterHub configuration, mounted read-only.
+    secret: true
+    default: |
+      c = get_config()
+      c.JupyterHub.bind_url = "http://0.0.0.0:8000"
+      c.JupyterHub.cookie_secret_file = "/srv/jupyterhub/state/cookie_secret"
+      c.JupyterHub.db_url = "sqlite:////srv/jupyterhub/state/jupyterhub.sqlite"
+      c.JupyterHub.authenticator_class = "dummy"
+      c.DummyAuthenticator.password = "${JUPYTERHUB_PASSWORD}"
+      c.Authenticator.admin_users = {"admin"}
+      c.JupyterHub.spawner_class = "simple"
+domains:
+  - service: jupyterhub
+    port: 8000
+    description: Public address of the hub.
+healthcheck:
+  service: jupyterhub
+  port: 8000
+  path: /hub/health

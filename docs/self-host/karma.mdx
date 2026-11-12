@@ -1,0 +1,63 @@
+---
+title: "Self-host Karma with Docker"
+sidebarTitle: "Karma"
+description: "Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view."
+"og:url": "https://docs.levelrail.com/self-host/karma"
+---
+
+Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view.
+
+This page describes the Levelrail template for Karma (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/prymitive/karma#readme.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `karma` | `ghcr.io/prymitive/karma:v0.134@sha256:479c7bfad3c176b9c35c5a48c2ad8fa72d748f204314daff748fb51488f043da` | 8080 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `karma` | `ALERTMANAGER_URI` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`karma`).
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Karma with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Karma. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy karma --name my-karma
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Blackbox Exporter](/self-host/blackbox-exporter)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+
+All templates are listed in the [self-host gallery](/self-host).

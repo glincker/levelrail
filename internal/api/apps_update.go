@@ -48,6 +48,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	mergeOmittedAppFields(&req, *existing, sent)
 
+	if !rt.vetSecretRefs(w, r, name, existing.EnvironmentID, existing.VaultEnv, &req) {
+		return
+	}
 	if err := validateAppUpdate(req, *existing); err != nil {
 		writeAppInvalid(w, err)
 		return
@@ -77,6 +80,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if !rt.mergeEnvPlaceholders(w, &req, existing) {
 		return
 	}
+	if !rt.enforceSecretPolicy(r.Context(), w, existing.EnvironmentID, literalSecretKeys(req.Env, existing.Env, rt.envOverrides(r.Context(), name))) {
+		return
+	}
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
 	appID := existing.AppID
@@ -104,7 +110,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {
-		desired.EnvDirty = existing.EnvDirty || !maps.Equal(existing.Env, req.Env)
+		desired.EnvDirty = existing.EnvDirty || !maps.Equal(existing.Env, req.Env) || !maps.Equal(existing.VaultEnv, desired.VaultEnv)
 	}
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
@@ -148,6 +154,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		req.EnvDirty = saved.EnvDirty
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
+	rt.attachSecretPolicy(r.Context(), &req, desired)
 	keys := buildTimeEnvChanges(existing.Env, desired.Env)
 	rt.changes.Publish(changeApps, name)
 	writeJSON(w, http.StatusOK, appUpdateResponse{appResource: req, RebuildRequired: len(keys) > 0, RebuildKeys: keys})

@@ -1,0 +1,66 @@
+---
+title: "Self-host Kellnr with Docker"
+sidebarTitle: "Kellnr"
+description: "Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume."
+"og:url": "https://docs.levelrail.com/self-host/kellnr"
+---
+
+Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume.
+
+This page describes the Levelrail template for Kellnr (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://kellnr.io/documentation.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `kellnr` | `ghcr.io/kellnr/kellnr:7.1.0` | 8000 | `kdata -&#62; /opt/kdata` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `kellnr` | `KELLNR_ORIGIN__HOSTNAME` | Preset in the template |
+| `kellnr` | `KELLNR_REGISTRY__DATA_DIR` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`kellnr`).
+- Stores data in named volumes (`kellnr`): kdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Kellnr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kellnr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kellnr --name my-kellnr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

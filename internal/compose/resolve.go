@@ -94,6 +94,15 @@ func resolveMagicVars(
 			changed = true
 		}
 
+		fileUnresolved, ferr := resolveFileMagicVars(svcKey, &svc, generated, generate)
+		if ferr != nil {
+			return nil, nil, ferr
+		}
+		if len(svc.Files) > 0 {
+			changed = true
+		}
+		unresolved = append(unresolved, fileUnresolved...)
+
 		if len(svc.Environment) == 0 {
 			if changed {
 				f.Services[svcKey] = svc

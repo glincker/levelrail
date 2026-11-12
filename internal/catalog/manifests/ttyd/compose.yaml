@@ -1,0 +1,18 @@
+services:
+  ttyd:
+    image: tsl0922/ttyd:1.7.7
+    ports: ["7681"]
+    command: ["sh", "-c", "exec ttyd -W -p 7681 -c admin:$TTYD_PASSWORD bash"]
+    environment:
+      TTYD_PASSWORD: ${TTYD_PASSWORD}
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      expect_status: 401
+      port: 7681
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

@@ -1,0 +1,16 @@
+services:
+  openbao:
+    image: ghcr.io/openbao/openbao:2.7.2
+    command: ["server"]
+    ports: ["8200"]
+    environment:
+      BAO_ADDR: http://127.0.0.1:8200
+      BAO_LOCAL_CONFIG: '{"ui":true,"disable_mlock":true,"api_addr":"http://127.0.0.1:8200","cluster_addr":"http://127.0.0.1:8201","storage":{"raft":{"path":"/openbao/file","node_id":"openbao-1"}},"listener":{"tcp":{"address":"0.0.0.0:8200","tls_disable":true}}}'
+    volumes:
+      - openbao_data:/openbao/file
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null 'http://127.0.0.1:8200/v1/sys/health?standbyok=true&uninitcode=200&sealedcode=200'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s

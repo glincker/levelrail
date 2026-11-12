@@ -293,6 +293,9 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	for _, n := range f.SecretEnv {
 		env[n] = map[string]string{"secretRef": n}
 	}
+	for k, ref := range f.SecretRefs {
+		env[k] = ref
+	}
 	for k, ref := range f.Connections {
 		db, field := splitConnRef(ref)
 		env[k] = map[string]map[string]string{"from": {"database": db, "field": field}}

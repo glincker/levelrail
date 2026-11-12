@@ -1,0 +1,55 @@
+id: zot
+name: Zot Registry
+description: OCI native container image registry with a web UI, search and optional sync. The install form carries config.json as an editable file and images are stored on a volume.
+icon: package
+category: Developer Tools
+documentation_url: https://zotregistry.dev/latest/
+source_repo: https://github.com/project-zot/zot
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/project-zot/zot/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Push an image with docker push to this address, then open the address to browse it. The starter config has no login, so keep it private or add authentication in the config file.
+env:
+  - key: ZOT_CONFIG
+    type: file
+    service: zot
+    path: /etc/zot/config.json
+    mode: "0444"
+    label: config.json
+    description: The full zot configuration, mounted read-only.
+    default: |
+      {
+        "distSpecVersion": "1.1.0",
+        "storage": {
+          "rootDirectory": "/var/lib/registry"
+        },
+        "http": {
+          "address": "0.0.0.0",
+          "port": "5000"
+        },
+        "log": {
+          "level": "info"
+        },
+        "extensions": {
+          "search": {
+            "enable": true
+          },
+          "ui": {
+            "enable": true
+          }
+        }
+      }
+domains:
+  - service: zot
+    port: 5000
+    description: Public address of the registry and its UI.
+healthcheck:
+  service: zot
+  port: 5000
+  path: /v2/

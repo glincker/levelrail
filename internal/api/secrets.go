@@ -51,7 +51,7 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
-	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	app, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -67,6 +67,9 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Value == "" {
 		writeError(w, http.StatusBadRequest, "value is required")
+		return
+	}
+	if !rt.enforceSecretPolicy(r.Context(), w, app.EnvironmentID, []string{key}) {
 		return
 	}
 	if !rt.allowProviderRefs(w, r, req.Value) {

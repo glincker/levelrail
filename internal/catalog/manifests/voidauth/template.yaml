@@ -1,0 +1,38 @@
+id: voidauth
+name: VoidAuth
+description: A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.
+icon: shield
+category: Security
+documentation_url: https://voidauth.app/
+source_repo: https://github.com/voidauth/voidauth
+license: AGPL-3.0-or-later
+license_class: network-copyleft
+license_url: https://github.com/voidauth/voidauth/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 402653184
+first_run:
+  - Read the first admin invitation link from the voidauth container log, open it and set the admin password.
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+  - key: STORAGE_KEY
+    label: Storage key
+    description: Encrypts secrets stored in the database. Changing it makes stored secrets unreadable.
+    generate: password
+    length: 48
+    secret: true
+domains:
+  - service: voidauth
+    port: 3000
+    description: Public address of VoidAuth, also its OIDC issuer URL. It must be served over HTTPS for sign-in to work.
+healthcheck:
+  service: voidauth
+  port: 3000
+  path: /

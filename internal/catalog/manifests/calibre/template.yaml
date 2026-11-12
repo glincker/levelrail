@@ -1,0 +1,29 @@
+id: calibre
+name: Calibre
+description: The Calibre e-book manager in a browser desktop session, for organising, converting and reading your library.
+icon: book
+category: Media
+documentation_url: https://manual.calibre-ebook.com/
+source_repo: https://github.com/kovidgoyal/calibre
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/kovidgoyal/calibre/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the address, create your library on first launch and import books from the file dialog.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: calibre
+    port: 8080
+    description: Public address of Calibre.
+healthcheck:
+  service: calibre
+  port: 8080
+  path: /

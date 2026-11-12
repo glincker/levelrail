@@ -26,6 +26,8 @@ type templateFacts struct {
 	Status       string `json:"status,omitempty"`
 	StatusReason string `json:"status_reason,omitempty"`
 	ReplacedBy   string `json:"replaced_by,omitempty"`
+	// Preview marks a catalog entry with no real-engine pass yet; it stays installable.
+	Preview bool `json:"preview,omitempty"`
 }
 
 func factsFor(id string) templateFacts {
@@ -42,6 +44,7 @@ func factsFor(id string) templateFacts {
 		Status:       m.Status,
 		StatusReason: m.StatusReason,
 		ReplacedBy:   m.ReplacedBy,
+		Preview:      catalog.IsPreview(id),
 	}
 }
 

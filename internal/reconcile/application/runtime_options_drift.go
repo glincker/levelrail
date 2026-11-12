@@ -3,6 +3,7 @@ package application
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -12,6 +13,10 @@ const reasonRuntimeOptionsDriftRecreate = "RuntimeOptionsDriftRecreateFailed"
 
 func desiredRuntimeOptionsHash(desired *store.DesiredService) string {
 	k := desired.Runtime.IdentityKey()
+	// Granted caps join the identity so a grant or its revocation recreates the container.
+	if len(desired.GrantedCaps) > 0 {
+		k += "|caps:" + strings.Join(desired.GrantedCaps, ",")
+	}
 	if k == "" {
 		return ""
 	}

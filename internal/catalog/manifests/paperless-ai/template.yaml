@@ -1,0 +1,24 @@
+id: paperless-ai
+name: Paperless-AI
+description: Adds automatic tagging, titles and document chat to a Paperless-ngx server using your choice of AI provider. MIT licensed. A setup wizard collects the Paperless address and token.
+icon: file-text
+category: AI
+documentation_url: https://github.com/clusterzx/paperless-ai
+source_repo: https://github.com/clusterzx/paperless-ai
+license: MIT
+license_class: permissive
+license_url: https://github.com/clusterzx/paperless-ai/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Run the setup wizard with the address and API token of your Paperless-ngx server.
+domains:
+  - service: paperless-ai
+    port: 3000
+    description: Public address of Paperless-AI.
+healthcheck:
+  service: paperless-ai
+  port: 3000
+  path: /

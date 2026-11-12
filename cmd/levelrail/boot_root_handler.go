@@ -436,6 +436,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		builder.SetPortAdmitter(rt)
 	}
 	wireBindMountSettings(rt)
+	if secretsManager != nil {
+		liveSecretConns.Store(wireSecretConnections(rt, db, secretsManager, logger))
+	}
 	// Push builds share the API's post build cache quota hook.
 	if wh, ok := webhookHandler.(interface{ SetAfterBuildFinish(func(string)) }); ok {
 		wh.SetAfterBuildFinish(rt.AfterBuildFinish)

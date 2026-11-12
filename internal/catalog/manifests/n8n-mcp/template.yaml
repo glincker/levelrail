@@ -1,0 +1,24 @@
+id: n8n-mcp
+name: n8n MCP
+description: A Model Context Protocol server that gives AI assistants searchable n8n node documentation. MIT licensed. The bearer token is generated for you.
+icon: plug
+category: AI
+documentation_url: https://github.com/czlonkowski/n8n-mcp
+source_repo: https://github.com/czlonkowski/n8n-mcp
+license: MIT
+license_class: permissive
+license_url: https://github.com/czlonkowski/n8n-mcp/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Point your MCP client at the public address with the generated token as the bearer token.
+domains:
+  - service: n8n-mcp
+    port: 3000
+    description: Public address of n8n MCP.
+healthcheck:
+  service: n8n-mcp
+  port: 3000
+  path: /

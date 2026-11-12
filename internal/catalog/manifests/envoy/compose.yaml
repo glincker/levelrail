@@ -1,0 +1,15 @@
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.40.2
+    ports: ["10000", "9901"]
+    command: ["-c", "/etc/envoy/envoy.yaml"]
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 10000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

@@ -1,0 +1,32 @@
+id: ampache
+name: Ampache
+description: A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes.
+icon: music-notes
+category: Media
+documentation_url: https://ampache.org/
+source_repo: https://github.com/ampache/ampache
+license: AGPL-3.0-or-later
+license_class: network-copyleft
+license_url: https://github.com/ampache/ampache/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Open the page and run the installer with database host db, database ampache, user root and the generated root password, then create the admin.
+env:
+  - key: MYSQL_ROOT_PASSWORD
+    label: Database root password
+    description: Root password for the bundled MariaDB server, entered in the Ampache installer. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: ampache
+    port: 80
+    description: Public address of Ampache.
+healthcheck:
+  service: ampache
+  port: 80
+  path: /

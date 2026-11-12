@@ -1,0 +1,24 @@
+id: mindsdb
+name: MindsDB
+description: A query layer that connects data sources and AI models so you can ask questions in SQL. MIT licensed. Includes the web editor and the HTTP API.
+icon: database
+category: AI
+documentation_url: https://github.com/mindsdb/mindsdb
+source_repo: https://github.com/mindsdb/mindsdb
+license: MIT
+license_class: permissive
+license_url: https://github.com/mindsdb/mindsdb/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 2147483648
+first_run:
+  - Open the editor, connect a data source and create a model with SQL.
+domains:
+  - service: mindsdb
+    port: 47334
+    description: Public address of MindsDB.
+healthcheck:
+  service: mindsdb
+  port: 47334
+  path: /

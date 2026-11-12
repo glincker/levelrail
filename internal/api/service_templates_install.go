@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -67,14 +68,38 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: install template: check name failed", err, slog.String("name", name))
 		return
 	}
+	if err := tpl.Manifest.CheckFileInputs(req.Env, rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyTemplatesFileInputMaxBytes)); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	body, err := tpl.Manifest.Render(catalog.InstallInput{Env: req.Env, Domains: req.Domains}, false)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: req.Env})
+	grants, ok := rt.resolveTemplateCapabilities(w, r, tpl.Manifest)
 	if !ok {
 		return
 	}
+	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants)})
+	if !ok {
+		return
+	}
+	if !rt.auditCapabilityGrants(r, name, tpl.Manifest, grants) {
+		w.Header().Set("X-Audit-Incomplete", "true")
+	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// interpEnvWithoutFiles drops file bodies from the install env so a config file
+// is never kept as an app env var.
+func interpEnvWithoutFiles(m *catalog.Manifest, env map[string]string) map[string]string {
+	out := make(map[string]string, len(env))
+	for k, v := range env {
+		out[k] = v
+	}
+	for _, k := range m.FileInputKeys() {
+		delete(out, k)
+	}
+	return out
 }

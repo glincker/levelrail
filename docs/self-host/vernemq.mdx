@@ -1,0 +1,69 @@
+---
+title: "Self-host VerneMQ with Docker"
+sidebarTitle: "VerneMQ"
+description: "A scalable MQTT broker with a status page and a data volume, with one generated admin user and anonymous access off. MQTT on 1883 stays private."
+"og:url": "https://docs.levelrail.com/self-host/vernemq"
+---
+
+A scalable MQTT broker with a status page and a data volume, with one generated admin user and anonymous access off. MQTT on 1883 stays private.
+
+This page describes the Levelrail template for VerneMQ (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.vernemq.com/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `vernemq` | `vernemq/vernemq:2.2.1-alpine` | 8888, 1883 | `vernemq_data -&#62; /vernemq/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `vernemq` | `DOCKER_VERNEMQ_ACCEPT_EULA` | Preset in the template |
+| `vernemq` | `DOCKER_VERNEMQ_ALLOW_ANONYMOUS` | Preset in the template |
+| `vernemq` | `DOCKER_VERNEMQ_USER_admin` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`vernemq`): DOCKER_VERNEMQ_USER_admin.
+- Stores data in named volumes (`vernemq`): vernemq_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy VerneMQ with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select VerneMQ. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy vernemq --name my-vernemq
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,63 @@
+---
+title: "Self-host UpSnap with Docker"
+sidebarTitle: "UpSnap"
+description: "Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports."
+"og:url": "https://docs.levelrail.com/self-host/upsnap"
+---
+
+Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.
+
+This page describes the Levelrail template for UpSnap (Networking). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/seriousm4x/UpSnap/wiki.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `upsnap` | `ghcr.io/seriousm4x/upsnap:5.7.3` | 8090 | `data -&#62; /app/pb_data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`upsnap`).
+- Stores data in named volumes (`upsnap`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy UpSnap with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select UpSnap. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy upsnap --name my-upsnap
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Networking templates
+
+- [Blocky](/self-host/blocky)
+- [CoreDNS](/self-host/coredns)
+- [DDNS Updater](/self-host/ddns-updater)
+- [Syncthing Discovery Server](/self-host/syncthing-discovery)
+- [Syncthing Relay Server](/self-host/syncthing-relay)
+
+All templates are listed in the [self-host gallery](/self-host).

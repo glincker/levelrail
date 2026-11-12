@@ -1,0 +1,67 @@
+---
+title: "Self-host ArangoDB with Docker"
+sidebarTitle: "ArangoDB"
+description: "A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line."
+"og:url": "https://docs.levelrail.com/self-host/arangodb"
+---
+
+A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line.
+
+This page describes the Levelrail template for ArangoDB (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.arangodb.com/3.12/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `arangodb` | `arangodb:3.12.13` | 8529 | `arango_data -&#62; /var/lib/arangodb3` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `arangodb` | `ARANGO_ROOT_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`arangodb`): ARANGO_ROOT_PASSWORD.
+- Stores data in named volumes (`arangodb`): arango_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ArangoDB with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ArangoDB. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy arangodb --name my-arangodb
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Apache Cassandra](/self-host/cassandra)
+- [Chroma](/self-host/chroma)
+
+All templates are listed in the [self-host gallery](/self-host).

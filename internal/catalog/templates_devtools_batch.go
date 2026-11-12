@@ -410,30 +410,27 @@ var devtoolsBatchTemplates = []Template{
 	{
 		ID:                     "vault",
 		Name:                   "Vault",
-		Slogan:                 "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.",
+		Slogan:                 "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it.",
 		Category:               "Security",
 		DocumentationURL:       "https://developer.hashicorp.com/vault/docs/deploy/run-container",
 		RecommendedMemoryBytes: 268435456, // 256Mi
-		// disable_mlock avoids needing the IPC_LOCK capability, which this
-		// platform's compose subset has no field for anyway. The
-		// healthcheck uses the vault CLI's own status check rather than
-		// an HTTP probe: Vault's real /v1/sys/health semantics need query
-		// parameters (standbyok, uninitcode) store.ServiceProbe has no
-		// field for, and a freshly deployed Vault starts sealed by design
-		// until an operator runs `vault operator init` and `unseal`, so
-		// "not ready yet" here is Vault behaving correctly, not a probe bug.
+		// disable_mlock is required for integrated storage and avoids the
+		// IPC_LOCK capability this compose subset has no field for. The
+		// healthcheck passes for an uninitialized or sealed Vault (the
+		// query overrides the 501 and 503 answers) so a first deploy is
+		// not judged failed before the operator has run init.
 		Compose: `services:
   vault:
-    image: hashicorp/vault:1.18
+    image: hashicorp/vault:2.1.2
     command: ["server"]
-    ports: ["8200:8200"]
+    ports: ["8200"]
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_LOCAL_CONFIG: '{"ui":true,"disable_mlock":true,"storage":{"file":{"path":"/vault/file"}},"listener":{"tcp":{"address":"0.0.0.0:8200","tls_disable":true}}}'
+      VAULT_LOCAL_CONFIG: '{"ui":true,"disable_mlock":true,"api_addr":"http://127.0.0.1:8200","cluster_addr":"http://127.0.0.1:8201","storage":{"raft":{"path":"/vault/file","node_id":"vault-1"}},"listener":{"tcp":{"address":"0.0.0.0:8200","tls_disable":true}}}'
     volumes:
       - vault_data:/vault/file
     healthcheck:
-      test: ["CMD", "vault", "status"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null 'http://127.0.0.1:8200/v1/sys/health?standbyok=true&uninitcode=200&sealedcode=200'"]
       interval: 10s
       timeout: 5s
       retries: 12

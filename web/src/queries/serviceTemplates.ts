@@ -74,6 +74,8 @@ export interface TemplateFacts {
   status?: 'active' | 'deprecated' | 'yanked'
   status_reason?: string
   replaced_by?: string
+  // No real-engine pass recorded yet; still installable.
+  preview?: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
@@ -101,11 +103,20 @@ export interface TemplateProtection {
   label: string
 }
 
+export interface TemplateCapability {
+  class: string
+  tier: 'review' | 'elevated' | 'privileged'
+  service: string
+  reason: string
+  caps?: string[]
+}
+
 // Mirrors internal/catalog's Requirements.
 export interface TemplateRequirements {
   level: RequirementsLevel
   findings: TemplateFinding[]
   protections: TemplateProtection[]
+  capabilities?: TemplateCapability[]
 }
 
 export async function fetchServiceTemplates(): Promise<

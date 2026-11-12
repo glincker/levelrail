@@ -15,7 +15,7 @@ Recommended memory: about 1024 MiB.
 
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
-| `flowise` | `flowiseai/flowise:3.1.4` | 3000 | `flowise_data -&#62; /root/.flowise` |
+| `flowise` | `flowiseai/flowise:3.1.4` | 3000 | `flowise_data -&#62; /home/node/.flowise` |
 
 ## Environment variables
 
@@ -24,11 +24,16 @@ Recommended memory: about 1024 MiB.
 | `flowise` | `APIKEY_PATH` | Preset in the template |
 | `flowise` | `BLOB_STORAGE_PATH` | Preset in the template |
 | `flowise` | `DATABASE_PATH` | Preset in the template |
+| `flowise` | `EXPIRE_AUTH_TOKENS_ON_RESTART` | Preset in the template |
+| `flowise` | `EXPRESS_SESSION_SECRET` | Generated at deploy |
 | `flowise` | `FLOWISE_PASSWORD` | Generated at deploy |
 | `flowise` | `FLOWISE_USERNAME` | Preset in the template |
+| `flowise` | `JWT_AUTH_TOKEN_SECRET` | Generated at deploy |
+| `flowise` | `JWT_REFRESH_TOKEN_SECRET` | Generated at deploy |
 | `flowise` | `LOG_PATH` | Preset in the template |
 | `flowise` | `PORT` | Preset in the template |
 | `flowise` | `SECRETKEY_PATH` | Preset in the template |
+| `flowise` | `TOKEN_HASH_SECRET` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -39,7 +44,7 @@ Level: **Standard**.
 What this template needs:
 
 - Publishes ports directly on the host (`flowise`): 3000:3000.
-- Passwords and keys are generated at deploy time (`flowise`): FLOWISE_PASSWORD.
+- Passwords and keys are generated at deploy time (`flowise`): EXPRESS_SESSION_SECRET, FLOWISE_PASSWORD, JWT_AUTH_TOKEN_SECRET, JWT_REFRESH_TOKEN_SECRET, TOKEN_HASH_SECRET.
 - Stores data in named volumes (`flowise`): flowise_data.
 
 What Levelrail adds around it:
@@ -66,10 +71,10 @@ See the [service template catalog](/templates-and-registry) for how templates wo
 
 ## More AI templates
 
+- [Agentgateway](/self-host/agentgateway)
 - [AnythingLLM](/self-host/anythingllm)
+- [Bifrost](/self-host/bifrost)
+- [Big-AGI](/self-host/big-agi)
 - [ComfyUI](/self-host/comfyui)
-- [Crawl4AI](/self-host/crawl4ai)
-- [Docling Serve](/self-host/docling-serve)
-- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
 
 All templates are listed in the [self-host gallery](/self-host).

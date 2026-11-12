@@ -122,6 +122,7 @@ func (rt *Router) handlePutSecretProvider(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	rt.syncSecretConnections(r.Context())
 	res := toSecretProviderResource(saved, st.HasToken(r.Context(), saved.Name))
 	res.ClientID = identityClientID(r, st, saved)
 	writeJSON(w, http.StatusOK, res)
@@ -153,6 +154,7 @@ func (rt *Router) handleDeleteSecretProvider(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: remove secret provider failed", err)
 		return
 	}
+	rt.syncSecretConnections(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }
 

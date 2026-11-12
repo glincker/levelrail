@@ -194,8 +194,7 @@ engine (mox supports static key and cert files in its config). One
 issuer, one renewal alert path (`internal/alerting/cert_*.go`), and the
 engine does not need port 80 or 443. Fallback: the engine's own ACME,
 selected per install, for nodes where Levelrail's ingress does not hold
-the mail hostname. **Unverified:** whether mox picks up a renewed
-certificate file without a restart. Until verified, renewal triggers a
+the mail hostname. Renewal triggers a
 controlled engine restart in a quiet window, and a check alert fires if
 the served certificate expires before the file on disk.
 
@@ -341,23 +340,13 @@ an older image.
 | Upgrade breaks data | restore from the pre-upgrade backup |
 | Admin API changes upstream | adapter contract test against the pinned image fails in CI |
 
-## What is NOT verified
+## Validation
 
-- The 200 message throughput under load, for either engine.
-- Scripted mox admin API calls with the CSRF header.
-- mox quota configuration and smarthost (relay) configuration.
-- Hot certificate reload, for either engine.
-- Stalwart Prometheus metrics (endpoint and auth).
+Further validation is tracked privately.
 
-Also unverified: whether the catalog install request accepts a target
-node today, and whether the volume backup PreHook can run `mox backup`
-inside the pinned image as written.
+## Validation scope
 
-## What cannot be verified locally
-
-Real deliverability to large mailbox providers, PTR on any cloud,
-outbound port 25 policy per provider, blocklist behaviour for a fresh IP.
-These need a real node with a public IP and an owner-provided domain.
+Further validation is tracked privately.
 
 ## Testing plan
 

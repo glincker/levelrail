@@ -1,0 +1,29 @@
+id: ubooquity
+name: Ubooquity
+description: A home server for comics and ebooks with a reader in the browser and OPDS support, packaged by the community maintainers. GPL-3.0 licensed. Set an admin password on first visit.
+icon: book
+category: Media
+documentation_url: https://github.com/linuxserver/docker-ubooquity
+source_repo: https://github.com/linuxserver/docker-ubooquity
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/linuxserver/docker-ubooquity/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 402653184
+first_run:
+  - Open the admin page on the next port, set a password, then point the library at the books and comics volumes.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: ubooquity
+    port: 2202
+    description: Public address of Ubooquity.
+healthcheck:
+  service: ubooquity
+  port: 2202
+  path: /

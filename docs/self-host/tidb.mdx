@@ -1,0 +1,62 @@
+---
+title: "Self-host TiDB with Docker"
+sidebarTitle: "TiDB"
+description: "A MySQL compatible distributed SQL database, run here as a single node on local storage for development and testing. Apache-2.0 licensed. The root user has no password, so keep it private."
+"og:url": "https://docs.levelrail.com/self-host/tidb"
+---
+
+A MySQL compatible distributed SQL database, run here as a single node on local storage for development and testing. Apache-2.0 licensed. The root user has no password, so keep it private.
+
+This page describes the Levelrail template for TiDB (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/pingcap/tidb.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `tidb` | `pingcap/tidb:v7.5.8` | 4000, 10080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy TiDB with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select TiDB. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy tidb --name my-tidb
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [ArangoDB](/self-host/arangodb)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Apache Cassandra](/self-host/cassandra)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,66 @@
+---
+title: "Self-host CrowdSec Local API with Docker"
+sidebarTitle: "CrowdSec Local API"
+description: "Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off."
+"og:url": "https://docs.levelrail.com/self-host/crowdsec"
+---
+
+Collaborative security engine run here as the local API that other agents and bouncers register with. The log reading agent and the online API are switched off.
+
+This page describes the Levelrail template for CrowdSec Local API (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.crowdsec.net/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `crowdsec` | `crowdsecurity/crowdsec:v1.8.2` | 8080 | `config -&#62; /etc/crowdsec`<br />`data -&#62; /var/lib/crowdsec/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `crowdsec` | `DISABLE_AGENT` | Preset in the template |
+| `crowdsec` | `DISABLE_ONLINE_API` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`crowdsec`).
+- Stores data in named volumes (`crowdsec`): config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy CrowdSec Local API with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select CrowdSec Local API. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy crowdsec --name my-crowdsec
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Anubis](/self-host/anubis)
+- [Authelia](/self-host/authelia)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+
+All templates are listed in the [self-host gallery](/self-host).

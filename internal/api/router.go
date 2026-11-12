@@ -77,6 +77,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/archive"
 	"github.com/GLINCKER/levelrail/internal/certflow"
+	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
@@ -745,6 +746,9 @@ type Router struct {
 	dnsNS                        dnsNameserverState                                         // lazy delegation checker, registrar lookup and demo zones (dns_zones_delegation.go)
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
+	secretConns                  SecretConnectionService                                    // nil until boot wires it: reads return an empty list, writes 501
+	cloudConnRows                cloudconn.Rows                                             // nil when the store lacks cloud connections: routes return 501
+	cloudProviders               cloudconn.Registry                                         // nil means the built-in not-implemented providers
 	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above
 	vaultSecrets                 VaultSecrets                                               // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
 	registryCatalog              RegistryCatalogClient                                      // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
@@ -956,6 +960,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	}
 	rt := &Router{
 		predeploySnapshots:          predeployStoreOf(s),
+		cloudConnRows:               cloudConnStoreOf(s),
 		logger:                      logger,
 		cancels:                     deploy.NewCancelRegistry(),
 		startingDeploys:             map[string]int{},

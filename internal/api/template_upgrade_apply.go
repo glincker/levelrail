@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -39,6 +40,7 @@ const (
 	codeUpgradeBlocked      = "upgrade_blocked"
 	codeUpgradeUpToDate     = "upgrade_up_to_date"
 	codeUpgradeRiskAck      = "upgrade_risk_unacknowledged"
+	codeUpgradeCapsAck      = "upgrade_capabilities_unacknowledged"
 	codeUpgradeBackup       = "upgrade_backup_required"
 	codeUpgradeInProgress   = "upgrade_in_progress"
 	codeUpgradeUserServices = "upgrade_user_services"
@@ -114,15 +116,20 @@ func (t *templateUpgradeRuns) get(app string) (templateUpgradeRun, bool) {
 }
 
 type templateUpgradeRequest struct {
+	// AcceptRisk acknowledges the plan's risk only.
 	AcceptRisk bool `json:"accept_risk"`
+	// AcceptCapabilities must equal the capabilities the upgrade adds, as "service:CAP".
+	AcceptCapabilities []string `json:"accept_capabilities,omitempty"`
 }
 
 type templateUpgradeRefusal struct {
-	Error   string                    `json:"error"`
-	Code    string                    `json:"code"`
-	Volumes []string                  `json:"volumes,omitempty"`
-	Plan    *templateupgrade.Plan     `json:"plan,omitempty"`
-	Blocks  []templateupgrade.Blocker `json:"blockers,omitempty"`
+	Error   string   `json:"error"`
+	Code    string   `json:"code"`
+	Volumes []string `json:"volumes,omitempty"`
+	// Capabilities lists the "service:CAP" an upgrade would add, when they were not accepted.
+	Capabilities []string                  `json:"capabilities,omitempty"`
+	Plan         *templateupgrade.Plan     `json:"plan,omitempty"`
+	Blocks       []templateupgrade.Blocker `json:"blockers,omitempty"`
 }
 
 // handleApplyTemplateUpgrade handles POST /api/v1/apps/{name}/template-upgrade:
@@ -173,13 +180,31 @@ func (rt *Router) handleApplyTemplateUpgrade(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: template upgrade: merge failed", err, slog.String("app", appID))
 		return
 	}
+	grants, ok := rt.templateCapGrants(w, r, st.latest.TemplateID)
+	if !ok {
+		return
+	}
+	accepted := normalizeAcceptedCaps(req.AcceptCapabilities)
+	var added []string
+	capGate := func(want []string) bool {
+		if slices.Equal(want, accepted) {
+			return true
+		}
+		msg := "the upgrade adds capabilities and needs accept_capabilities to list exactly them"
+		if len(want) == 0 {
+			msg = "accept_capabilities lists capabilities the upgrade does not add"
+		}
+		writeJSON(w, http.StatusConflict, templateUpgradeRefusal{Error: msg, Code: codeUpgradeCapsAck, Capabilities: want, Plan: &plan})
+		return false
+	}
 	run := templateUpgradeRun{AppID: appID, State: upgradeStateWatching, FromRevision: st.latest.Revision, StartedAt: time.Now().UTC().Format(time.RFC3339)}
 	if !rt.templateUpgrades.start(run) {
 		writeJSON(w, http.StatusConflict, templateUpgradeRefusal{Error: "an upgrade of this app is already running", Code: codeUpgradeInProgress})
 		return
 	}
 	resp, ok := rt.lockedComposeDeploy(w, r, appID, []byte(merged), composeDeployOpts{
-		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceTemplate, templateID: st.latest.TemplateID,
+		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceTemplate, templateID: st.latest.TemplateID, capGrants: grants,
+		capGate: capGate, addedCaps: &added,
 	})
 	if !ok {
 		rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {
@@ -187,6 +212,7 @@ func (rt *Router) handleApplyTemplateUpgrade(w http.ResponseWriter, r *http.Requ
 		})
 		return
 	}
+	rt.auditAddedCapabilities(r, appID, st.latest.TemplateID, "template_upgrade", added)
 	rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) { cur.ToRevision = resp.Revision })
 	bg := r.Clone(context.WithoutCancel(r.Context()))
 	go rt.watchTemplateUpgrade(bg, st, cfg)
@@ -259,9 +285,18 @@ func (rt *Router) watchTemplateUpgrade(r *http.Request, st templateUpgradeState,
 	}
 	rt.logger.Warn("api: template upgrade failed, rolling back", slog.String("app", appID), slog.String("reason", reason))
 	rb := &captureWriter{header: http.Header{}}
-	resp, ok := rt.lockedComposeDeploy(rb, r, appID, []byte(st.latest.Compose), composeDeployOpts{
-		profiles: st.latest.Profiles, source: store.ComposeRevisionSourceRollback, templateID: st.latest.TemplateID,
-	})
+	grants, ok := rt.rollbackCapGrants(rb, r, appID, st.latest.TemplateID)
+	var resp composeDeployResponse
+	var rolledAdded []string
+	if ok {
+		resp, ok = rt.lockedComposeDeploy(rb, r, appID, []byte(st.latest.Compose), composeDeployOpts{
+			profiles: st.latest.Profiles, source: store.ComposeRevisionSourceRollback, templateID: st.latest.TemplateID,
+			capGrants: grants, dropUngrantedCaps: st.latest.TemplateID != "", addedCaps: &rolledAdded,
+		})
+	}
+	if ok {
+		rt.auditAddedCapabilities(r, appID, st.latest.TemplateID, "template_upgrade_auto_rollback", rolledAdded)
+	}
 	rt.templateUpgrades.update(appID, func(cur *templateUpgradeRun) {
 		cur.FinishedAt = time.Now().UTC().Format(time.RFC3339)
 		if ok {

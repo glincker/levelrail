@@ -1,0 +1,32 @@
+id: livebook
+name: Livebook
+description: Interactive and collaborative code notebooks for Elixir with a built in package manager and visualizations. A generated password protects the editor.
+icon: notebook
+category: Developer Tools
+documentation_url: https://livebook.dev/
+source_repo: https://github.com/livebook-dev/livebook
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/livebook-dev/livebook/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in with the generated password shown in the deployment variables. Notebooks run code in this container, so keep the address private.
+env:
+  - key: LIVEBOOK_PASSWORD
+    label: Password
+    description: Password for the Livebook editor.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: livebook
+    port: 8080
+    description: Public address of the notebook editor. Keep it private.
+healthcheck:
+  service: livebook
+  port: 8080
+  path: /public/health

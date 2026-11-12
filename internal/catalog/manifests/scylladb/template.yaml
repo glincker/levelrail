@@ -1,0 +1,25 @@
+id: scylladb
+name: ScyllaDB
+description: "A wide column database compatible with Cassandra, running as one node in developer mode with a data volume. It has no web page, so connect over the project network at scylladb:9042."
+icon: database
+category: Database Tools
+documentation_url: https://opensource.docs.scylladb.com/stable/
+source_repo: https://github.com/scylladb/scylladb
+license: LicenseRef-ScyllaDB-Source-Available-1.0
+license_class: source-available
+license_url: https://github.com/scylladb/scylladb
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Connect a Cassandra or CQL client at scylladb:9042 from a service in this project. Developer mode skips host tuning checks.
+domains:
+  - service: scylladb
+    port: 9042
+    description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: scylladb
+  port: 9042
+  kind: tcp

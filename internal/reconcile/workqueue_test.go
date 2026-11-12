@@ -293,7 +293,10 @@ func TestKeyedPool_ShutdownDrainsWithoutLeaks(t *testing.T) {
 	waitFor(t, time.Second, "app started", func() bool { return slow.calls.Load() == 1 })
 	cancel()
 	select {
-	case <-done:
+	case err := <-done:
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatalf("Run returned %v", err)
+		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run did not return after the drain limit")
 	}

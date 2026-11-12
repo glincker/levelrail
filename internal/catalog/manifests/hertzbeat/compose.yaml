@@ -1,0 +1,12 @@
+services:
+  hertzbeat:
+    image: apache/hertzbeat:1.7.3
+    ports: ["1157"]
+    volumes:
+      - hertzbeat_data:/opt/hertzbeat/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:1157/ > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 60s

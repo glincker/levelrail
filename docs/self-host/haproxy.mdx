@@ -1,0 +1,62 @@
+---
+title: "Self-host HAProxy with Docker"
+sidebarTitle: "HAProxy"
+description: "High-performance TCP and HTTP load balancer on the official image. The install form carries haproxy.cfg as an editable file, so it starts with a working config instead of exiting on a missing one."
+"og:url": "https://docs.levelrail.com/self-host/haproxy"
+---
+
+High-performance TCP and HTTP load balancer on the official image. The install form carries haproxy.cfg as an editable file, so it starts with a working config instead of exiting on a missing one.
+
+This page describes the Levelrail template for HAProxy (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.haproxy.org/.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `haproxy` | `haproxy:3.0.5-alpine` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy HAProxy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select HAProxy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy haproxy --name my-haproxy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+
+All templates are listed in the [self-host gallery](/self-host).

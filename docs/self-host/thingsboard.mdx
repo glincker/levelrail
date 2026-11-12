@@ -1,0 +1,65 @@
+---
+title: "Self-host ThingsBoard with Docker"
+sidebarTitle: "ThingsBoard"
+description: "An IoT platform to collect, store and visualise device data, in one container with its own PostgreSQL."
+"og:url": "https://docs.levelrail.com/self-host/thingsboard"
+---
+
+An IoT platform to collect, store and visualise device data, in one container with its own PostgreSQL.
+
+This page describes the Levelrail template for ThingsBoard (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://thingsboard.io/docs/.
+
+Recommended memory: about 4096 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `thingsboard` | `thingsboard/tb-postgres:4.2.1.1` | 8080, 1883 | `data -&#62; /data`<br />`logs -&#62; /var/log/thingsboard` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `thingsboard` | `TB_QUEUE_TYPE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`thingsboard`): data, logs.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ThingsBoard with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ThingsBoard. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy thingsboard --name my-thingsboard
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Domoticz](/self-host/domoticz)
+
+All templates are listed in the [self-host gallery](/self-host).

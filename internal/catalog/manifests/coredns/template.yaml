@@ -1,0 +1,45 @@
+id: coredns
+name: CoreDNS
+description: Plugin based DNS server on the official image. The install form carries the Corefile as an editable file, so it starts as a caching forwarder with health and readiness endpoints.
+icon: globe
+category: Networking
+documentation_url: https://coredns.io/manual/toc/
+source_repo: https://github.com/coredns/coredns
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/coredns/coredns/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Point a client at the DNS port to resolve through the cache, then edit the Corefile setting to add zones, rewrites or other plugins.
+env:
+  - key: COREDNS_UPSTREAM
+    label: Upstream resolvers
+    description: Space separated resolvers the forwarder asks.
+    default: 1.1.1.1 9.9.9.9
+  - key: COREDNS_COREFILE
+    type: file
+    service: coredns
+    path: /etc/coredns/Corefile
+    mode: "0444"
+    label: Corefile
+    description: The full CoreDNS configuration, mounted read-only.
+    default: |
+      .:1053 {
+          errors
+          health :8080
+          ready :8181
+          cache 30
+          forward . ${COREDNS_UPSTREAM}
+      }
+domains:
+  - service: coredns
+    port: 8080
+    description: Public address of the health endpoint.
+healthcheck:
+  service: coredns
+  port: 8080
+  path: /health

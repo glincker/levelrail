@@ -150,3 +150,77 @@ func TestApplyProfiles_DependencyOnDroppedService(t *testing.T) {
 		t.Fatalf("ApplyProfiles() error = %v, want a dependency error", err)
 	}
 }
+
+func TestValidate_CapGrants(t *testing.T) {
+	tests := []struct {
+		name    string
+		capAdd  string
+		grants  map[string][]string
+		wantErr bool
+	}{
+		{"no grant", "[CHOWN]", nil, true},
+		{"review granted", "[CHOWN, cap_setuid]", map[string][]string{"app": {"CHOWN", "SETUID"}}, false},
+		{"net_admin granted", "[NET_ADMIN]", map[string][]string{"app": {"NET_ADMIN"}}, false},
+		{"grant on other service", "[CHOWN]", map[string][]string{"other": {"CHOWN"}}, true},
+		{"sys_admin never, even if passed", "[SYS_ADMIN]", map[string][]string{"app": {"SYS_ADMIN"}}, true},
+		{"partial grant", "[CHOWN, FOWNER]", map[string][]string{"app": {"CHOWN"}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := Parse([]byte("services:\n  app:\n    image: nginx:alpine\n    cap_add: " + tt.capAdd + "\n"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.CapGrants = tt.grants
+			if err := f.Validate(); (err != nil) != tt.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestToDesiredServices_GrantedCapsOnlyOnGrantedService(t *testing.T) {
+	f, err := Parse([]byte("services:\n  web:\n    image: nginx:1.27.0\n    cap_add: [chown, CAP_NET_ADMIN]\n  db:\n    image: postgres:16.2\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.CapGrants = map[string][]string{"web": {"CHOWN", "NET_ADMIN"}}
+	got, _, err := ToDesiredServices("app", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices: %v", err)
+	}
+	for _, d := range got {
+		want := []string(nil)
+		if d.Name == "app-web" {
+			want = []string{"CHOWN", "NET_ADMIN"}
+		}
+		if !slices.Equal(d.GrantedCaps, want) {
+			t.Errorf("%s GrantedCaps = %v, want %v", d.Name, d.GrantedCaps, want)
+		}
+	}
+	f.CapGrants = map[string][]string{"web": {"CHOWN"}}
+	if _, _, err := ToDesiredServices("app", f); err == nil {
+		t.Fatal("a cap_add outside the grant must be rejected, not applied")
+	}
+	f.CapGrants = map[string][]string{"web": {"CHOWN", "NET_ADMIN", "SYS_ADMIN"}}
+	f.Services["web"] = Service{Image: "nginx:1.27.0", HostAccess: HostAccess{CapAdd: []string{"SYS_ADMIN"}}}
+	if _, _, err := ToDesiredServices("app", f); err == nil {
+		t.Fatal("a cap outside the grantable tiers must be rejected even when granted")
+	}
+}
+
+func TestToDesiredServices_DropUngrantedCapsOnRollback(t *testing.T) {
+	f, err := Parse([]byte("services:\n  web:\n    image: nginx:1.27.0\n    cap_add: [CHOWN, NET_ADMIN]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.CapGrants, f.DropUngrantedCaps = map[string][]string{"web": {"CHOWN"}}, true
+	got, _, err := ToDesiredServices("app", f)
+	if err != nil || len(got) != 1 || !slices.Equal(got[0].GrantedCaps, []string{"CHOWN"}) {
+		t.Fatalf("got %v, %v; want only CHOWN kept", got, err)
+	}
+	f.Services["web"] = Service{Image: "nginx:1.27.0", HostAccess: HostAccess{CapAdd: []string{"SYS_ADMIN"}}}
+	if _, _, err := ToDesiredServices("app", f); err == nil {
+		t.Fatal("an unknown cap must still be rejected when dropping is on")
+	}
+}

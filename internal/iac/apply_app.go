@@ -168,11 +168,15 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 	if err != nil {
 		return err
 	}
+	refsChanged, err := x.syncSecretRefs(ctx, r.Name, want.SecretRefs, live, prune)
+	if err != nil {
+		return err
+	}
 	volsChanged, err := x.syncVolumes(ctx, r.Name, want.Volumes, live, prune)
 	if err != nil {
 		return err
 	}
-	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged || volsChanged || filesChanged) {
+	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged || refsChanged || volsChanged || filesChanged) {
 		return x.do(ctx, http.MethodPost, app+"/restart", nil, nil)
 	}
 	return nil

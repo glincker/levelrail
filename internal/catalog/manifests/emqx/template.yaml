@@ -1,0 +1,32 @@
+id: emqx
+name: EMQX
+description: A scalable MQTT broker for IoT and smart home devices with a web dashboard.
+icon: broadcast
+category: Infrastructure
+documentation_url: https://docs.emqx.com/en/emqx/latest/
+source_repo: https://github.com/emqx/emqx
+license: BUSL-1.1
+license_class: source-available
+license_url: https://github.com/emqx/emqx/blob/HEAD/LICENSE
+hosted_use: restricted
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Sign in as admin with the generated password. Devices reach the broker at emqx:1883 inside the project network.
+env:
+  - key: ADMIN_PASSWORD
+    label: Dashboard password
+    description: Password for the admin user of the dashboard.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: emqx
+    port: 18083
+    description: Public address of EMQX.
+healthcheck:
+  service: emqx
+  port: 18083
+  path: /

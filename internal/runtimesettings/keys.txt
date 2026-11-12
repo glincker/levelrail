@@ -80,6 +80,7 @@ cleanup.enabled
 cleanup.failing_floor
 cleanup.failing_window
 cleanup.interval
+cloud.connections_enabled
 compose.depends_on_timeout
 compose.repo_deploy_timeout
 compose.repo_file_max_bytes
@@ -293,6 +294,15 @@ secrets.provider_cache_ttl_seconds
 secrets.provider_max_response_kib
 secrets.provider_max_rps
 secrets.provider_timeout_seconds
+secrets.ref_max_conn_bytes
+secrets.ref_max_key_bytes
+secrets.ref_max_path_bytes
+secrets.ref_max_path_depth
+secrets.ref_max_ref_bytes
+secrets.require_ref_environments
+secrets.require_ref_mode
+secrets.vault_cache_ttl_seconds
+secrets.vault_token_renew_percent
 security.audit_sensitive_reads
 security.bind_allowed_roots
 security.bind_block_credential_dirs
@@ -334,6 +344,9 @@ telemetry.logs_retention
 telemetry.metrics_retention
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
+templates.capability_net_admin_enabled
+templates.file_input_max_bytes
+templates.first_boot_max_seconds
 templates.import_max_bytes
 templates.import_timeout
 tokens.default_ttl_days
@@ -343,6 +356,7 @@ tokens.unused_alert_days
 ui.outbound_utm
 updates.offered_channels
 upgrade.verify_backup
+vault.allow_private_address
 views.filter_max_keys
 views.filter_value_max_bytes
 views.max_per_user

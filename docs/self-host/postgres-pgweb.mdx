@@ -1,0 +1,69 @@
+---
+title: "Self-host PostgreSQL with pgweb with Docker"
+sidebarTitle: "PostgreSQL with pgweb"
+description: "A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private."
+"og:url": "https://docs.levelrail.com/self-host/postgres-pgweb"
+---
+
+A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private.
+
+This page describes the Levelrail template for PostgreSQL with pgweb (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/sosedoff/pgweb/wiki.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:17.11-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `pgweb` | `sosedoff/pgweb:0.17.0` | 8081 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `pgweb` | `PGWEB_DATABASE_URL` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `pgweb`): PGWEB_DATABASE_URL, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`): pgdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy PostgreSQL with pgweb with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select PostgreSQL with pgweb. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy postgres-pgweb --name my-postgres-pgweb
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [ArangoDB](/self-host/arangodb)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Apache Cassandra](/self-host/cassandra)
+
+All templates are listed in the [self-host gallery](/self-host).

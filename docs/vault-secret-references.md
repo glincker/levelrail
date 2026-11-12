@@ -92,6 +92,7 @@ An unresolved reference fails the deploy. The container is never started with th
 | `approle login` | Wrong role ID or secret ID, or the role is not allowed to log in. | Check the role and secret ID in Vault. |
 | `read secret "PATH"` | Vault refused the read: bad token, missing policy, wrong mount or namespace, or Vault unreachable. | Check the token policy allows read on the path, then `--mount-path` and `--namespace`. |
 | `secret "PATH" not found` | Nothing exists at that path. | Check the path has no mount prefix and no `data/`. |
+| `vault address is link-local, metadata or private` | The Vault address resolves to a loopback or private address and an admin turned `vault.allow_private_address` off (it is on by default). Link-local and metadata addresses are always refused. | For a Vault or OpenBao on the same host or LAN, run `levelrail-cli settings runtime set vault.allow_private_address true`. Connections saved earlier keep working on private addresses after an upgrade unless the setting was turned off. |
 | `has no field "KEY"` | The secret exists but not that field. | Check the field name in Vault. |
 | `is not a string` | The field holds a number, object or list. | Store the value as a string. |
 
@@ -166,3 +167,51 @@ The form is `op://PROVIDER/[VAULT/]ITEM/FIELD`. Without a vault, the provider's 
 `--base-url` is required and its address may be private, because the Connect server is yours. Link-local addresses are always refused and a redirect to another host is refused. The same rules, fail closed behavior and runtime settings as above apply. Each read makes up to three requests (vault, item, item detail) and is cached for the cache time.
 
 Not verified against a real Connect server yet: the tests use a local fake of the Connect API.
+
+## Named connection references
+
+An env var can also point at a value in a named secret connection with one reference form:
+
+```text
+secret://<connection>/<path>#<key>
+secret://<connection>/<path>#<key>?version=3
+```
+
+In app.yaml and stack files the same reference is an object, so it needs no quoting:
+
+```yaml
+env:
+  DATABASE_URL: secret://prod-vault/apps/web#database_url
+  API_KEY: { secret: { conn: prod-vault, path: apps/web, key: api_key } }
+```
+
+`{ secret: true }` still means a value in the built in encrypted store, and `{ vault: { path, key } }` still reads the single Vault connection. Both keep working unchanged. `secret://vault/<path>#<key>` names the same Vault connection.
+
+Rules:
+
+- Levelrail stores the reference text only. The value is read just before the container is created and is never saved in the database, revisions, logs, events or API responses.
+- If a reference cannot be read (denied, missing, or the connection is down), the deploy is blocked. The error names the reference, never the value.
+- Setting or changing a reference needs the root ability, unless the connection delegates it (see below). An audit entry records the reference text, and a refused write is audited too.
+
+From the CLI:
+
+```bash
+levelrail-cli env set web --secret API_KEY=secret://prod-vault/apps/web#api_key
+```
+
+The value of `--secret` must be a `secret://` reference. A literal value is refused so it never lands in shell history. In stack files (see [Platform as code](/platform-as-code)) the same string or the `secret` object works in `env`, and `secretRef: { connection, path, key }` is accepted too. The plan shows the reference text.
+
+## Letting non-root users set references
+
+A connection can carry two allow lists. With both set, a user with the write ability may point an app at it, but only when the app's environment is in `allowed_envs` and the path is inside an `allowed_prefixes` entry. Prefixes match whole path segments, so `team-a` allows `team-a/db` but not `team-ab/db`, and traversal segments are never accepted. An app without an environment is not allowed. Root can always set references.
+
+```bash
+levelrail-cli secrets connection update team --allow-prefix team-a --allow-env production
+levelrail-cli secrets connection update team --clear-allow-lists
+```
+
+The lists also apply when the reference is read: a connection with either list set serves only those environments and paths, and a deploy outside them is blocked. A connection with no lists is unrestricted.
+
+## Requiring references in production
+
+Two runtime settings make an environment refuse pasted secrets. `secrets.require_ref_environments` lists environment names; `secrets.require_ref_mode` is `off` (default), `warn` or `enforce`. In `warn` mode, literal secret values are accepted and listed in `apps get` and in deploy results. In `enforce` mode, a new or changed literal secret is refused with an error that names the variable and the rule, never the value. Values already stored are not deleted and stay listed as warnings.

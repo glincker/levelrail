@@ -1,0 +1,24 @@
+id: dashdot
+name: Dashdot
+description: A clean dashboard that shows CPU, memory, network and storage use of the host it runs on.
+icon: gauge
+category: Monitoring
+documentation_url: https://getdashdot.com/
+source_repo: https://github.com/MauriceNino/dashdot
+license: MIT
+license_class: permissive
+license_url: https://github.com/MauriceNino/dashdot/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Without host mounts it reports what the container can see. Mount host paths for full disk stats.
+domains:
+  - service: dashdot
+    port: 3001
+    description: Public address of Dashdot.
+healthcheck:
+  service: dashdot
+  port: 3001
+  path: /

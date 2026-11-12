@@ -2,12 +2,15 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -132,7 +135,10 @@ func TestLive_RemoteBuildDispatch(t *testing.T) {
 
 	cancelSession()
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil && !errors.Is(err, context.Canceled) && status.Code(err) != codes.Canceled {
+			t.Errorf("RunSession returned %v after cancellation", err)
+		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("timed out waiting for RunSession to return after cancellation")
 	}

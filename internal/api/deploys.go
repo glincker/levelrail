@@ -231,6 +231,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		}
 		rt.recordPendingAttempt(r.Context(), updated, req.Image, store.DeployAttemptSourceImage)
 		res := toAppResource(updated)
+		rt.attachSecretPolicy(r.Context(), &res, updated)
 		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
 		return
 	}
@@ -269,6 +270,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		rt.recordOperatorRollback(r.Context(), name)
 	}
 	res := toAppResource(updated)
+	rt.attachSecretPolicy(r.Context(), &res, updated)
 	trigger := cdn.TriggerDeploy
 	if rollbackTo != "" {
 		trigger = cdn.TriggerRollback
@@ -532,6 +534,10 @@ func (rt *Router) setDesiredImage(ctx context.Context, existing store.DesiredSer
 	updated := existing
 	updated.Image = image
 	updated.EnvDirty = false
+	// Template grants belong to the template's own image; another image must not inherit them.
+	if !docker.ImageIdentityMatches(existing.Image, image) {
+		updated.GrantedCaps = nil
+	}
 	if err := rt.apps.SaveDesiredService(ctx, updated); err != nil {
 		return store.DesiredService{}, err
 	}

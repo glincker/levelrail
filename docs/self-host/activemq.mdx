@@ -1,0 +1,63 @@
+---
+title: "Self-host ActiveMQ Classic with Docker"
+sidebarTitle: "ActiveMQ Classic"
+description: "A message broker with JMS, AMQP and MQTT support and a web console, with a data volume. The console login is admin with the password admin, so change it right after the first sign in."
+"og:url": "https://docs.levelrail.com/self-host/activemq"
+---
+
+A message broker with JMS, AMQP and MQTT support and a web console, with a data volume. The console login is admin with the password admin, so change it right after the first sign in.
+
+This page describes the Levelrail template for ActiveMQ Classic (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://activemq.apache.org/components/classic/documentation.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `activemq` | `apache/activemq-classic:6.1.4` | 8161, 61616 | `activemq_data -&#62; /opt/apache-activemq/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`activemq`): activemq_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ActiveMQ Classic with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ActiveMQ Classic. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy activemq --name my-activemq
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+
+All templates are listed in the [self-host gallery](/self-host).

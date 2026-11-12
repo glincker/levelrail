@@ -1,0 +1,27 @@
+id: syncthing-discovery
+name: Syncthing Discovery Server
+description: Private global discovery server that lets your Syncthing devices find each other without the public one. Plain HTTP mode, meant to sit behind your own TLS proxy.
+icon: magnifying-glass
+category: Networking
+documentation_url: https://docs.syncthing.net/users/stdiscosrv.html
+source_repo: https://github.com/syncthing/syncthing
+license: MPL-2.0
+license_class: copyleft
+license_url: https://github.com/syncthing/syncthing/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Put a TLS proxy in front of the address, then add it to each device under the global discovery servers setting.
+first_boot_seconds: 600
+domains:
+  - service: syncthing-discovery
+    port: 8443
+    description: Public address of the discovery server.
+healthcheck:
+  service: syncthing-discovery
+  port: 8443
+  kind: tcp
+  reason: the discovery API answers only to Syncthing clients

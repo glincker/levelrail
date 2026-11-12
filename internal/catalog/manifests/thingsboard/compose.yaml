@@ -1,0 +1,15 @@
+services:
+  thingsboard:
+    image: thingsboard/tb-postgres:4.2.1.1
+    ports: ["8080", "1883"]
+    environment:
+      TB_QUEUE_TYPE: "in-memory"
+    volumes:
+      - data:/data
+      - logs:/var/log/thingsboard
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 300s

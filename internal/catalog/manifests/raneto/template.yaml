@@ -1,0 +1,29 @@
+id: raneto
+name: Raneto
+description: A flat file knowledge base that renders a folder of Markdown files as a searchable wiki, packaged by the community maintainers. MIT licensed. Edit pages from the file volume or the built-in editor.
+icon: book
+category: Productivity
+documentation_url: https://github.com/ryanlelek/Raneto
+source_repo: https://github.com/ryanlelek/Raneto
+license: MIT
+license_class: permissive
+license_url: https://github.com/ryanlelek/Raneto/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 201326592
+first_run:
+  - Open the site, then edit the Markdown under the config volume to add pages.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: raneto
+    port: 3000
+    description: Public address of Raneto.
+healthcheck:
+  service: raneto
+  port: 3000
+  path: /

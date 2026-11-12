@@ -472,6 +472,7 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	applyNextCache(&desired, req, prevDesired)
 	p.applyNextCacheCA(ctx, req, &desired)
 	markGeneratedEnv(&desired, req)
+	p.keepVettedRefs(ctx, &desired)
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 
@@ -537,6 +538,7 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	resolution.apply(&desired)
+	p.keepVettedRefs(ctx, &desired)
 	p.applyStoredNextCache(ctx, req, &desired)
 	held, err := p.saveDesired(ctx, req, desired)
 	if err != nil {

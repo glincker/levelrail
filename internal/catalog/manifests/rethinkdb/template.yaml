@@ -1,0 +1,25 @@
+id: rethinkdb
+name: RethinkDB
+description: "A document database with live query feeds and a web admin console, on the official image with a data volume. The console has no login, so restrict access before exposing it. Client driver port 28015 stays private."
+icon: database
+category: Database Tools
+documentation_url: https://rethinkdb.com/docs
+source_repo: https://github.com/rethinkdb/rethinkdb
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/rethinkdb/rethinkdb/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Open the console to manage tables, and point drivers from this project at rethinkdb:28015.
+domains:
+  - service: rethinkdb
+    port: 8080
+    description: Public address of the web page.
+healthcheck:
+  service: rethinkdb
+  port: 8080
+  path: /

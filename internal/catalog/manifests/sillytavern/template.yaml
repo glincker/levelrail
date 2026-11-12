@@ -1,0 +1,24 @@
+id: sillytavern
+name: SillyTavern
+description: A local chat front end for language models with characters, lorem books and extensions, bringing your own model API. AGPL-3.0 licensed. Sign in with the admin user and the generated password.
+icon: chat
+category: AI
+documentation_url: https://github.com/SillyTavern/SillyTavern
+source_repo: https://github.com/SillyTavern/SillyTavern
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/SillyTavern/SillyTavern/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Sign in with user admin and the generated password, then add your model API key under API Connections.
+domains:
+  - service: sillytavern
+    port: 8000
+    description: Public address of SillyTavern.
+healthcheck:
+  service: sillytavern
+  port: 8000
+  path: /

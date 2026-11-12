@@ -76,6 +76,17 @@ type Requirements struct {
 	Level       RequirementsLevel `json:"level"`
 	Findings    []Finding         `json:"findings"`
 	Protections []Protection      `json:"protections"`
+	// Capabilities lists what the manifest declared, so the card shows each with its reason.
+	Capabilities []CapabilityGrant `json:"capabilities,omitempty"`
+}
+
+// ComputeRequirementsFor is ComputeRequirements plus the manifest's declared capabilities.
+func ComputeRequirementsFor(composeBody string, m *Manifest) Requirements {
+	r := ComputeRequirements(composeBody)
+	if m != nil {
+		r.Capabilities = m.DeclaredCapabilities()
+	}
+	return r
 }
 
 var protectionLabels = map[string]string{

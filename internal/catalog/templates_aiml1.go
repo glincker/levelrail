@@ -315,7 +315,8 @@ var aiml1Templates = []Template{
       - langfuse_redis_data:/data
   minio:
     image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
-    command: ["sh", "-c", "mkdir -p /data/langfuse && minio server /data"]
+    # The image entrypoint takes a minio subcommand, so a shell needs entrypoint.
+    entrypoint: ["sh", "-c", "mkdir -p /data/langfuse && exec minio server /data"]
     environment:
       MINIO_ROOT_USER: langfuse
       MINIO_ROOT_PASSWORD: $SERVICE_PASSWORD_MINIO
@@ -338,13 +339,19 @@ var aiml1Templates = []Template{
       PORT: "3000"
       FLOWISE_USERNAME: admin
       FLOWISE_PASSWORD: $SERVICE_PASSWORD_ADMIN
-      DATABASE_PATH: /root/.flowise
-      APIKEY_PATH: /root/.flowise
-      SECRETKEY_PATH: /root/.flowise
-      LOG_PATH: /root/.flowise/logs
-      BLOB_STORAGE_PATH: /root/.flowise/storage
+      DATABASE_PATH: /home/node/.flowise
+      APIKEY_PATH: /home/node/.flowise
+      SECRETKEY_PATH: /home/node/.flowise
+      LOG_PATH: /home/node/.flowise/logs
+      BLOB_STORAGE_PATH: /home/node/.flowise/storage
+      JWT_AUTH_TOKEN_SECRET: $SERVICE_HEX_32_JWTAUTH
+      JWT_REFRESH_TOKEN_SECRET: $SERVICE_HEX_32_JWTREFRESH
+      EXPRESS_SESSION_SECRET: $SERVICE_HEX_32_SESSION
+      TOKEN_HASH_SECRET: $SERVICE_HEX_32_TOKENHASH
+      # 3.1.4's sqlite session store crashes at boot (connect-sqlite3 gets a string db), so use the in-memory store.
+      EXPIRE_AUTH_TOKENS_ON_RESTART: "true"
     volumes:
-      - flowise_data:/root/.flowise
+      - flowise_data:/home/node/.flowise
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/v1/ping || wget -q -O /dev/null http://127.0.0.1:3000/api/v1/ping || exit 1"]
       interval: 30s

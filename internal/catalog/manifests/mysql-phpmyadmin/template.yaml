@@ -1,0 +1,32 @@
+id: mysql-phpmyadmin
+name: MySQL with phpMyAdmin
+description: A MySQL 8.4 server paired with the phpMyAdmin web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to phpMyAdmin as root with the generated root password.
+icon: database
+category: Database Tools
+documentation_url: https://docs.phpmyadmin.net/en/latest/setup.html#docker
+source_repo: https://github.com/phpmyadmin/phpmyadmin
+license: GPL-2.0-or-later
+license_class: copyleft
+license_url: https://github.com/phpmyadmin/phpmyadmin/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 805306368
+first_run:
+  - Open the page and sign in as root with the generated root password from the app secrets.
+env:
+  - key: MYSQL_ROOT_PASSWORD
+    label: MySQL root password
+    description: Root password for the bundled MySQL server. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: phpmyadmin
+    port: 80
+    description: Public address of the phpMyAdmin console. Keep it private, it can reach the whole database.
+healthcheck:
+  service: phpmyadmin
+  port: 80
+  path: /

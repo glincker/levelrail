@@ -45,6 +45,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/secretrotation"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -121,6 +122,21 @@ type VaultSettingsStore interface {
 // values.
 type VaultResolver interface {
 	Resolve(ctx context.Context, cfg store.VaultSettings, credential, path, key string) (string, error)
+}
+
+// SecretSources resolves secret://conn/path#key references through named
+// connections. Kept free of the resolver package to keep its fan-in small.
+type SecretSources interface {
+	ResolveRef(ctx context.Context, conn, path, key string, version int) (string, error)
+}
+
+// SecretRefGuard is an optional SecretSources capability: it vets a reference against the
+// connection's allow lists for the service's environment before any read. An error blocks the container.
+type SecretRefGuard interface {
+	CheckRef(ctx context.Context, envID, conn, path string) error
+	// CheckUnvettedRef is the stricter check for a reference no gated write vetted: only a
+	// connection that delegates this environment and path may serve it.
+	CheckUnvettedRef(ctx context.Context, envID, conn, path string) error
 }
 
 // ProjectEnvStore is the narrow surface this controller needs to
@@ -250,6 +266,7 @@ type Controller struct {
 	databaseScope          DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
 	databases              DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 	vaultSettings          VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
+	secretSources          func() SecretSources    // late bound: the connection service is built after the controllers' options
 	vaultResolver          VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
 	hookRuns               HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
 	traceStore             TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
@@ -275,6 +292,7 @@ type Controller struct {
 	previousReleaseHold time.Duration                                 // 0 removes the previous release at cutover
 	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
+	elevatedCaps        func(context.Context) bool                    // nil fails closed: no elevated capability is applied, see WithElevatedCaps
 	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
@@ -424,6 +442,13 @@ func WithVaultSettings(s VaultSettingsStore) Option {
 // establishes.
 func WithVaultResolver(r VaultResolver) Option {
 	return func(ctrl *Controller) { ctrl.vaultResolver = r }
+}
+
+// WithSecretSources enables resolving secret:// env references. The func is
+// read at resolve time so boot order does not matter; nil or a nil result
+// means not configured and a declared reference then fails closed.
+func WithSecretSources(f func() SecretSources) Option {
+	return func(ctrl *Controller) { ctrl.secretSources = f }
 }
 
 // WithProjectEnv enables resolving store.DesiredService.ProjectID's
@@ -637,7 +662,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
-	desired = c.withIncarnation(ctx, desired)
+	desired = c.withPolicyCaps(ctx, c.withIncarnation(ctx, desired))
 
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
 	// own doc comment): converge to zero containers and return early,
@@ -1056,6 +1081,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		if err := c.createAndStart(ctx, target, desired, released); err != nil {
 			reason, err := c.createFailure(err)
 			c.traceAbort(ctx, desired, target, reason, err)
+			// Without this a blocked create leaves the optimistic "succeeded" attempt in place.
+			c.recordRolloutFailure(ctx, desired, err)
+			c.markGateFailure(ctx, desired, reason)
 			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
@@ -1688,9 +1716,9 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	}
 
 	if len(desired.VaultEnv) > 0 {
-		vaultEnvVars, err := c.resolveVaultEnv(ctx, desired.VaultEnv)
+		vaultEnvVars, err := c.resolveVaultEnv(ctx, desired.EnvironmentID, desired.VaultEnv)
 		if err != nil {
-			return nil, fmt.Errorf("resolve vault env: %w", err)
+			return nil, &secretResolveError{err: fmt.Errorf("resolve vault env: %w", err)}
 		}
 		for k, v := range vaultEnvVars {
 			env[k] = v
@@ -1797,7 +1825,81 @@ func (c *Controller) resolveIntegrationField(ctx context.Context, namespace stri
 // isn't enabled, or a read fails for any reason, e.g. unreachable: a
 // container must never start with a Vault-sourced variable silently
 // missing its value.
-func (c *Controller) resolveVaultEnv(ctx context.Context, vaultEnv map[string]store.VaultEnvRef) (map[string]string, error) {
+func (c *Controller) resolveVaultEnv(ctx context.Context, envID string, all map[string]store.VaultEnvRef) (map[string]string, error) {
+	vaultEnv := make(map[string]store.VaultEnvRef, len(all))
+	refEnv := make(map[string]store.VaultEnvRef)
+	for k, ref := range all {
+		if ref.Conn != "" {
+			refEnv[k] = ref
+		} else {
+			vaultEnv[k] = ref
+		}
+	}
+	out, err := c.resolveSecretRefEnv(ctx, envID, refEnv)
+	if err != nil {
+		return nil, err
+	}
+	if len(vaultEnv) == 0 {
+		return out, nil
+	}
+	legacy, err := c.resolveLegacyVaultEnv(ctx, vaultEnv)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range legacy {
+		out[k] = v
+	}
+	return out, nil
+}
+
+// resolveSecretRefEnv reads each secret:// reference through the connection
+// resolver at create time. Any failure blocks the container: the error names
+// the reference, never the value, and the value is registered for masking.
+func (c *Controller) resolveSecretRefEnv(ctx context.Context, envID string, refs map[string]store.VaultEnvRef) (map[string]string, error) {
+	out := make(map[string]string, len(refs))
+	if len(refs) == 0 {
+		return out, nil
+	}
+	var src SecretSources
+	if c.secretSources != nil {
+		src = c.secretSources()
+	}
+	if src == nil {
+		return nil, fmt.Errorf("service declares %d secret reference(s) but no secret connections are configured on this control plane", len(refs))
+	}
+	keys := make([]string, 0, len(refs))
+	for k := range refs {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	for _, envVar := range keys {
+		r := refs[envVar]
+		g, guarded := src.(SecretRefGuard)
+		if guarded {
+			if err := g.CheckRef(ctx, envID, r.Conn, r.Path); err != nil {
+				return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
+			}
+		}
+		if r.Unvetted {
+			if !guarded {
+				return nil, fmt.Errorf("env var %q (secret reference %s): reference was not set through the API and cannot be vetted", envVar, r.SecretRef())
+			}
+			if err := g.CheckUnvettedRef(ctx, envID, r.Conn, r.Path); err != nil {
+				return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
+			}
+		}
+		val, err := src.ResolveRef(ctx, r.Conn, r.Path, r.Key, r.Version)
+		if err != nil {
+			return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
+		}
+		secretmask.Add(val)
+		out[envVar] = val
+	}
+	return out, nil
+}
+
+// resolveLegacyVaultEnv is the original single-Vault path for { vault: ... }.
+func (c *Controller) resolveLegacyVaultEnv(ctx context.Context, vaultEnv map[string]store.VaultEnvRef) (map[string]string, error) {
 	if c.vaultSettings == nil || c.vaultResolver == nil || c.secretResolver == nil {
 		return nil, fmt.Errorf("service declares %d vault-backed env var(s) but vault is not configured on this control plane", len(vaultEnv))
 	}
@@ -2876,6 +2978,8 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		return spec, fmt.Errorf("stored runtime options no longer pass validation, edit them in the app spec: %w", err)
 	}
 	applyRuntimeOptions(&spec, desired.Runtime)
+	// The hardening profile drops ALL and adds this record back, so only approved grants reach the container.
+	spec.CapAdd = append([]string(nil), desired.GrantedCaps...)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

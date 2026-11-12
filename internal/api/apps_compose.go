@@ -120,6 +120,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
 	}
+	file.CapGrants, file.DropUngrantedCaps = opts.capGrants, opts.dropUngrantedCaps
 	skipped, err := file.ApplyProfiles(opts.profiles)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -188,6 +189,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
 		services[i].IsTrial = isTrial
 		services[i].TemplateID = opts.templateID
+	}
+	rt.applyFirstBootTimeout(r.Context(), opts.templateID, services)
+	if !rt.reviewCapabilityChange(w, name, previousServices, services, opts) {
+		return composeDeployResponse{}, false
 	}
 
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)

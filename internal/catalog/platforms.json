@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-02T03:14:45Z",
+  "scanned_at": "2026-11-11T22:14:40Z",
   "images": [
     {
       "image": "1dev/server",
@@ -1499,6 +1499,19 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/openbao/openbao",
+      "tag": "2.7.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-11-11T22:14:40Z"
+    },
+    {
       "image": "ghcr.io/openclaw/openclaw",
       "tag": "2026.10.5",
       "platforms": [
@@ -1925,14 +1938,13 @@
     },
     {
       "image": "hashicorp/vault",
-      "tag": "1.18",
+      "tag": "2.1.2",
       "platforms": [
         "linux/386",
         "linux/amd64",
-        "linux/arm",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-11T22:14:40Z"
     },
     {
       "image": "hasura/graphql-engine",
@@ -5610,6 +5622,14 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "openbao": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
     "openclaw": [
       "linux/amd64",
       "linux/arm64"
@@ -6159,7 +6179,6 @@
     "vault": [
       "linux/386",
       "linux/amd64",
-      "linux/arm",
       "linux/arm64"
     ],
     "vaultwarden": [

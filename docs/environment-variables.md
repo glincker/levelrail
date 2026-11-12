@@ -86,6 +86,15 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
 | `APP_SECRET_PROVIDER_MAX_RPS` | [`secrets.provider_max_rps`](/runtime-settings#security) | `20` |
 | `APP_SECRET_PROVIDER_TIMEOUT_SECONDS` | [`secrets.provider_timeout_seconds`](/runtime-settings#security) | `10` |
+| `APP_SECRETREF_MAX_CONN` | [`secrets.ref_max_conn_bytes`](/runtime-settings#security) | `63` |
+| `APP_SECRETREF_MAX_KEY` | [`secrets.ref_max_key_bytes`](/runtime-settings#security) | `128` |
+| `APP_SECRETREF_MAX_PATH` | [`secrets.ref_max_path_bytes`](/runtime-settings#security) | `512` |
+| `APP_SECRETREF_MAX_SEGMENTS` | [`secrets.ref_max_path_depth`](/runtime-settings#security) | `16` |
+| `APP_SECRETREF_MAX_REF` | [`secrets.ref_max_ref_bytes`](/runtime-settings#security) | `1024` |
+| `APP_SECRETS_REQUIRE_REF_ENVIRONMENTS` | [`secrets.require_ref_environments`](/runtime-settings#security) | empty |
+| `APP_SECRETS_REQUIRE_REF_MODE` | [`secrets.require_ref_mode`](/runtime-settings#security) | `off` |
+| `APP_VAULT_CACHE_TTL_SECONDS` | [`secrets.vault_cache_ttl_seconds`](/runtime-settings#security) | `30` |
+| `APP_VAULT_TOKEN_RENEW_PERCENT` | [`secrets.vault_token_renew_percent`](/runtime-settings#security) | `80` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
 | `APP_BIND_BLOCK_CREDENTIAL_DIRS` | [`security.bind_block_credential_dirs`](/runtime-settings#security) | `true` |
@@ -96,7 +105,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_PRUNE_MAX_PERCENT` | [`stacks.prune_max_percent`](/runtime-settings#security) | `50` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
+| `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
+| `APP_VAULT_ALLOW_PRIVATE_ADDRESS` | [`vault.allow_private_address`](/runtime-settings#security) | `true` |
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
@@ -272,6 +283,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
 | `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
+| `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |
+| `APP_TEMPLATE_FIRST_BOOT_MAX_SECONDS` | [`templates.first_boot_max_seconds`](/runtime-settings#deploys) | `900` |
 | `APP_SAVED_VIEW_FILTER_MAX_KEYS` | [`views.filter_max_keys`](/runtime-settings#deploys) | `12` |
 | `APP_SAVED_VIEW_FILTER_VALUE_MAX_BYTES` | [`views.filter_value_max_bytes`](/runtime-settings#deploys) | `512` |
 | `APP_SAVED_VIEW_MAX_PER_USER` | [`views.max_per_user`](/runtime-settings#deploys) | `100` |
@@ -414,6 +427,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `LEVELRAIL_SPOOL_MAX_AGE_SECONDS` | [`spool.max_age_seconds`](/runtime-settings#data-retention) | `0` |
 | `LEVELRAIL_SPOOL_QUOTA_BYTES` | [`spool.quota_bytes`](/runtime-settings#data-retention) | `0` |
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
+| `APP_CLOUD_CONNECTIONS_ENABLED` | [`cloud.connections_enabled`](/runtime-settings#experimental) | `false` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |

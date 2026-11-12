@@ -1,0 +1,65 @@
+---
+title: "Self-host evcc with Docker"
+sidebarTitle: "evcc"
+description: "A smart charging controller that charges your electric car from solar surplus and cheap tariffs."
+"og:url": "https://docs.levelrail.com/self-host/evcc"
+---
+
+A smart charging controller that charges your electric car from solar surplus and cheap tariffs.
+
+This page describes the Levelrail template for evcc (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.evcc.io/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `evcc` | `evcc/evcc:0.319.0` | 7070 | `data -&#62; /root/.evcc` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `evcc` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`evcc`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy evcc with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select evcc. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy evcc --name my-evcc
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Domoticz](/self-host/domoticz)
+
+All templates are listed in the [self-host gallery](/self-host).

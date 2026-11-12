@@ -564,6 +564,10 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		// the full { path, key } reference, not just a name, so there is
 		// no fidelity loss to call out here.
 		for k, ref := range svc.VaultEnv {
+			if ref.Conn != "" {
+				out.Env[k] = spec.EnvVar{SecretRef: &spec.SecretRef{Conn: ref.Conn, Path: ref.Path, Key: ref.Key, Version: ref.Version}}
+				continue
+			}
 			out.Env[k] = spec.EnvVar{Vault: &spec.VaultRef{Path: ref.Path, Key: ref.Key}}
 		}
 	}

@@ -1,0 +1,63 @@
+---
+title: "Self-host CockroachDB with Docker"
+sidebarTitle: "CockroachDB"
+description: "A distributed SQL database that speaks the Postgres wire protocol, run as one insecure node for development and small workloads. The SQL port is private, the admin console is the web page. Source available license."
+"og:url": "https://docs.levelrail.com/self-host/cockroachdb"
+---
+
+A distributed SQL database that speaks the Postgres wire protocol, run as one insecure node for development and small workloads. The SQL port is private, the admin console is the web page. Source available license.
+
+This page describes the Levelrail template for CockroachDB (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.cockroachlabs.com/docs/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `cockroachdb` | `cockroachdb/cockroach:v24.3.1` | 8080, 26257 | `cockroach_data -&#62; /cockroach/cockroach-data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`cockroachdb`): cockroach_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy CockroachDB with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select CockroachDB. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy cockroachdb --name my-cockroachdb
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [ArangoDB](/self-host/arangodb)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Apache Cassandra](/self-host/cassandra)
+
+All templates are listed in the [self-host gallery](/self-host).

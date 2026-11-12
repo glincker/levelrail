@@ -1,0 +1,27 @@
+id: openbao
+name: OpenBao
+description: "OpenBao, the open source secrets manager forked from Vault, with integrated Raft storage. It is reachable only from services in this project at openbao:8200 over plain HTTP and is not published on the host."
+icon: lock
+category: Security
+documentation_url: https://openbao.org/docs/
+source_repo: https://github.com/openbao/openbao
+license: MPL-2.0
+license_class: copyleft
+license_url: https://github.com/openbao/openbao/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - OpenBao starts uninitialized and sealed. Open the app console and run bao operator init, then bao operator unseal with the printed keys. Keep the unseal keys and root token offline.
+  - Plain HTTP is for the internal network only. Attach a domain with HTTPS before anything outside this project talks to it.
+domains:
+  - service: openbao
+    port: 8200
+    description: Public address of the OpenBao UI and API. Attach it only with HTTPS.
+healthcheck:
+  service: openbao
+  port: 8200
+  kind: tcp
+  reason: An uninitialized or sealed OpenBao answers its health path with 501 or 503 by design, so only the listener is checked.

@@ -1,0 +1,63 @@
+---
+title: "Self-host FalkorDB with Docker"
+sidebarTitle: "FalkorDB"
+description: "Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. Source available under the SSPL-1.0, which is not an open source license, so check it before offering it as a hosted service."
+"og:url": "https://docs.levelrail.com/self-host/falkordb"
+---
+
+Low latency graph database that speaks the Redis protocol and the Cypher query language, with a bundled browser UI. Source available under the SSPL-1.0, which is not an open source license, so check it before offering it as a hosted service.
+
+This page describes the Levelrail template for FalkorDB (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.falkordb.com/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `falkordb` | `falkordb/falkordb:6.0.4` | 3000, 6379 | `data -&#62; /var/lib/falkordb/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`falkordb`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy FalkorDB with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select FalkorDB. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy falkordb --name my-falkordb
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [ArangoDB](/self-host/arangodb)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Apache Cassandra](/self-host/cassandra)
+
+All templates are listed in the [self-host gallery](/self-host).

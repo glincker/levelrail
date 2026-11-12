@@ -169,3 +169,17 @@ func TestGrantsLifecycle(t *testing.T) {
 		t.Fatal("unnamed create must not be granted")
 	}
 }
+
+func TestReviewTierCapsInsideHardeningProfile(t *testing.T) {
+	p := testPolicy(t)
+	for _, c := range ReviewTierCaps {
+		if vs := p.checkCaps([]string{c}, docker.CreateDeclaration{}); len(vs) != 0 {
+			t.Errorf("review cap %s denied without a declaration: %v", c, vs)
+		}
+	}
+	for _, c := range GrantableCaps {
+		if vs := p.checkCaps([]string{c}, docker.CreateDeclaration{}); len(vs) == 0 {
+			t.Errorf("elevated cap %s allowed without a declaration", c)
+		}
+	}
+}

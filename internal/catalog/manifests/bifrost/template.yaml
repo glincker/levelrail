@@ -1,0 +1,25 @@
+id: bifrost
+name: Bifrost
+description: Fast open source LLM gateway that routes requests to many providers behind one OpenAI compatible API, with a web UI for keys and routing rules.
+icon: plugs-connected
+category: AI
+documentation_url: https://docs.getbifrost.ai/
+source_repo: https://github.com/maximhq/bifrost
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/maximhq/bifrost/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the address, add provider keys in the web UI, then point your OpenAI compatible clients at it. Keep it private or add a login in front.
+domains:
+  - service: bifrost
+    port: 8080
+    description: Public address of the gateway and its UI. Keep it private.
+healthcheck:
+  service: bifrost
+  port: 8080
+  path: /health

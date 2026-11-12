@@ -396,7 +396,10 @@ func TestServer_NotifyShutdown_SendsGoAway(t *testing.T) {
 	stream.recvErr = errors.New("connection reset")
 	close(stream.recv)
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil {
+			t.Logf("session ended: %v", err)
+		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for Session() to return")
 	}
@@ -449,7 +452,10 @@ func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 	close(stream.recv)
 
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil {
+			t.Logf("session ended: %v", err)
+		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for Session() to return")
 	}
@@ -501,7 +507,10 @@ func TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance(t *testing.T) {
 	stream.recvErr = errors.New("connection reset")
 	close(stream.recv)
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil {
+			t.Logf("session ended: %v", err)
+		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for Session() to return")
 	}

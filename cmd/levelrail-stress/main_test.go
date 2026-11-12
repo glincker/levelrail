@@ -14,7 +14,7 @@ func TestSmallProfileEndToEnd(t *testing.T) {
 	}
 	report := filepath.Join(t.TempDir(), "report.json")
 	var out, errb bytes.Buffer
-	code := realMain([]string{"-profile", "../../stress/profiles/small.yaml", "-repo", "../..", "-duration", "20s", "-report", report}, &out, &errb)
+	code := realMain([]string{"-profile", "../../test/stress/profiles/small.yaml", "-repo", "../..", "-duration", "20s", "-report", report}, &out, &errb)
 	t.Log(out.String())
 	if code != 0 {
 		t.Fatalf("exit %d: %s", code, errb.String())

@@ -165,7 +165,7 @@ func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, re
 	}
 
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE desired_services SET vault_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		UPDATE desired_services SET vault_env = ?, env_dirty = 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
 	`, string(updated), name); err != nil {
 		return fmt.Errorf("store: set vault env var for service %q: %w", name, err)
 	}

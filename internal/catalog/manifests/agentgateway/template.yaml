@@ -1,0 +1,42 @@
+id: agentgateway
+name: Agentgateway
+description: Proxy built for agent traffic that routes MCP, A2A and LLM requests. The install form carries config.yaml as an editable file, so it starts with a listener that answers on port 3000.
+icon: shuffle
+category: AI
+documentation_url: https://agentgateway.dev/docs/
+source_repo: https://github.com/agentgateway/agentgateway
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/agentgateway/agentgateway/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Open the address to see the starter response, then edit the config file setting to add your MCP servers, LLM backends and policies.
+env:
+  - key: AGENTGATEWAY_CONFIG
+    type: file
+    service: agentgateway
+    path: /etc/agentgateway/config.yaml
+    mode: "0444"
+    label: config.yaml
+    description: The full Agentgateway configuration, mounted read-only.
+    default: |
+      binds:
+        - port: 3000
+          listeners:
+            - routes:
+                - policies:
+                    directResponse:
+                      status: 200
+                      body: agentgateway is up
+domains:
+  - service: agentgateway
+    port: 3000
+    description: Public address of the gateway listener.
+healthcheck:
+  service: agentgateway
+  port: 3000
+  path: /

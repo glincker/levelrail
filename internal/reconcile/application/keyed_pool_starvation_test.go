@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"sync/atomic"
@@ -55,7 +56,10 @@ func TestKeyedPool_NeverReadyAppDoesNotStarveHealthyApps(t *testing.T) {
 			defer func() {
 				cancel()
 				select {
-				case <-done:
+				case err := <-done:
+					if err != nil && !errors.Is(err, context.Canceled) {
+						t.Errorf("Run returned %v", err)
+					}
 				case <-time.After(5 * time.Second):
 					t.Error("Run did not return after cancel")
 				}
@@ -138,7 +142,9 @@ func TestKeyedPool_RequeuedNeverReadyAppsHoldNoWorker(t *testing.T) {
 			go func() { done <- e.Run(ctx, nil, time.Hour) }()
 			defer func() {
 				cancel()
-				<-done
+				if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+					t.Errorf("Run returned %v", err)
+				}
 			}()
 
 			converged := func(name string) bool {

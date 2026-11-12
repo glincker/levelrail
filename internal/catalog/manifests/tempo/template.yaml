@@ -1,0 +1,51 @@
+id: tempo
+name: Grafana Tempo
+description: Distributed tracing backend that stores traces on local disk and accepts OTLP over gRPC and HTTP. The install form carries tempo.yaml as an editable file.
+icon: tree-structure
+category: Monitoring
+documentation_url: https://grafana.com/docs/tempo/latest/
+source_repo: https://github.com/grafana/tempo
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/grafana/tempo/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Send OTLP traces to port 4317 (gRPC) or 4318 (HTTP) and add this address as a Tempo data source in Grafana.
+env:
+  - key: TEMPO_CONFIG
+    type: file
+    service: tempo
+    path: /etc/tempo.yaml
+    mode: "0444"
+    label: tempo.yaml
+    description: The full Tempo configuration, mounted read-only.
+    default: |
+      server:
+        http_listen_port: 3200
+      distributor:
+        receivers:
+          otlp:
+            protocols:
+              grpc:
+                endpoint: 0.0.0.0:4317
+              http:
+                endpoint: 0.0.0.0:4318
+      storage:
+        trace:
+          backend: local
+          wal:
+            path: /var/tempo/wal
+          local:
+            path: /var/tempo/blocks
+domains:
+  - service: tempo
+    port: 3200
+    description: Public address of the Tempo query API.
+healthcheck:
+  service: tempo
+  port: 3200
+  path: /ready

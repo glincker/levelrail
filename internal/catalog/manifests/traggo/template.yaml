@@ -1,0 +1,32 @@
+id: traggo
+name: Traggo
+description: Self-hosted time tracking with tags instead of projects, a timeline and dashboards. Runs a single container with data on a volume.
+icon: timer
+category: Productivity
+documentation_url: https://traggo.net/
+source_repo: https://github.com/traggo/server
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/traggo/server/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Sign in as admin with the generated password shown in the deployment variables, then create tags and start a timer.
+env:
+  - key: TRAGGO_PASSWORD
+    label: Admin password
+    description: Password for the admin user.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: traggo
+    port: 3030
+    description: Public address of the time tracker.
+healthcheck:
+  service: traggo
+  port: 3030
+  path: /

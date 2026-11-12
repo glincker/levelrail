@@ -42,7 +42,7 @@ func StaticBuildEnvPrefixes() []string {
 func staticBuildArgs(env map[string]spec.EnvVar, args map[string]string, prefixes []string) map[string]string {
 	out := make(map[string]string, len(args)+len(env))
 	for k, v := range env {
-		if v.Value == "" || v.Secret || v.From != "" || v.Vault != nil || !staticBuildEnvName.MatchString(k) {
+		if v.Value == "" || v.Secret || v.From != "" || v.Vault != nil || v.SecretRef != nil || !staticBuildEnvName.MatchString(k) {
 			continue
 		}
 		for _, p := range prefixes {

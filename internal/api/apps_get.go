@@ -33,6 +33,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
+	rt.attachSecretPolicy(r.Context(), &resource, *svc)
 	pendingImage := ""
 	if serving, ok := rt.lastServingImage(r.Context(), *svc); ok {
 		pendingImage, resource.Image = resource.Image, serving

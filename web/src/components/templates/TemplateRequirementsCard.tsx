@@ -18,6 +18,7 @@ import type {
   TemplateFinding,
   TemplateRequirements,
 } from '../../queries/serviceTemplates'
+import { TemplateCapabilitiesRow } from './TemplateCapabilitiesRow'
 import { SectionTitle } from '@/components/ui/typography'
 
 const LEVEL_VARIANT = {
@@ -75,6 +76,8 @@ export function TemplateRequirementsCard({
             </AlertDescription>
           </Alert>
         ) : null}
+
+        <TemplateCapabilitiesRow capabilities={requirements.capabilities} />
 
         {attention.length > 0 ? (
           <ul className="space-y-1.5 text-sm">

@@ -1,0 +1,67 @@
+---
+title: "Self-host Ubooquity with Docker"
+sidebarTitle: "Ubooquity"
+description: "A home server for comics and ebooks with a reader in the browser and OPDS support, packaged by the community maintainers. GPL-3.0 licensed. Set an admin password on first visit."
+"og:url": "https://docs.levelrail.com/self-host/ubooquity"
+---
+
+A home server for comics and ebooks with a reader in the browser and OPDS support, packaged by the community maintainers. GPL-3.0 licensed. Set an admin password on first visit.
+
+This page describes the Levelrail template for Ubooquity (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/linuxserver/docker-ubooquity.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ubooquity` | `lscr.io/linuxserver/ubooquity:3.1.0-ls98` | 2202, 2203 | `config -&#62; /config`<br />`books -&#62; /books`<br />`comics -&#62; /comics`<br />`files -&#62; /files` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `ubooquity` | `PGID` | Preset in the template |
+| `ubooquity` | `PUID` | Preset in the template |
+| `ubooquity` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`ubooquity`): books, comics, config, files.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Ubooquity with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Ubooquity. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ubooquity --name my-ubooquity
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,32 @@
+id: coder
+name: Coder
+description: A self-hosted platform for cloud development environments, backed by Postgres. This runs the Coder server only, with no Docker socket, so add workspace templates that use remote infrastructure. Create the first admin on first open.
+icon: code
+category: Developer Tools
+documentation_url: https://coder.com/docs
+source_repo: https://github.com/coder/coder
+license: AGPL-3.0-or-later
+license_class: network-copyleft
+license_url: https://github.com/coder/coder/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 805306368
+first_run:
+  - Open the page and create the first admin user.
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: coder
+    port: 7080
+    description: Public address of Coder. Set it as the access URL for workspaces.
+healthcheck:
+  service: coder
+  port: 7080
+  path: /healthz

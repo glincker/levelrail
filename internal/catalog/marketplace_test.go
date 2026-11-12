@@ -72,3 +72,72 @@ func TestEmbeddedManifestsMeetSubmissionRules(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHealthcheckFlexibility(t *testing.T) {
+	good := strings.Replace(testCompose, "nginx:alpine", "acme/demo:1.2.3", 1)
+	base := strings.Replace(submissionManifest, "healthcheck:\n  service: web\n  port: 80\n  path: /\n", "", 1)
+	cases := []struct{ name, hc, want string }{
+		{"tcp with reason", "healthcheck:\n  service: web\n  port: 80\n  kind: tcp\n  reason: scratch image, no shell or HTTP surface\n", ""},
+		{"tcp without reason stays valid", "healthcheck:\n  service: web\n  port: 80\n  kind: tcp\n", ""},
+		{"404 with reason", "healthcheck:\n  service: web\n  port: 80\n  path: /\n  expect: 404\n  reason: answers 404 until a route exists\n", ""},
+		{"404 without reason", "healthcheck:\n  service: web\n  port: 80\n  path: /\n  expect: 404\n", "must be 401 or 403"},
+		{"500 with reason", "healthcheck:\n  service: web\n  port: 80\n  path: /\n  expect: 500\n  reason: still broken\n", "must be 401 or 403"},
+		{"403 stays", "healthcheck:\n  service: web\n  port: 80\n  path: /\n  expect: 403\n", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := submissionErr(base+tc.hc, good)
+			if tc.want == "" && err != nil || tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestDigestPinnedShortTag(t *testing.T) {
+	digest := "@sha256:" + strings.Repeat("a", 64)
+	good := strings.Replace(testCompose, "nginx:alpine", "acme/demo:1.2.3", 1)
+	cases := []struct{ name, tag, want string }{
+		{"short tag with digest", "1.2" + digest, ""},
+		{"short tag without digest", "1.2", "not a full version"},
+		{"latest with digest", "latest" + digest, "exact version tag"},
+		{"bare major with digest", "16" + digest, "bare major"},
+		{"short tag with malformed digest", "1.2@sha256:abc", "exact version tag"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := submissionErr(submissionManifest, strings.Replace(good, "1.2.3", tc.tag, 1))
+			if tc.want == "" && err != nil || tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestFirstBootSeconds(t *testing.T) {
+	good := strings.Replace(testCompose, "nginx:alpine", "acme/demo:1.2.3", 1)
+	cases := []struct {
+		name    string
+		seconds string
+		want    string
+	}{
+		{"within ceiling", "first_boot_seconds: 600\n", ""},
+		{"above ceiling", "first_boot_seconds: 99999\n", "above the allowed maximum"},
+		{"negative", "first_boot_seconds: -1\n", "must not be negative"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := submissionErr(submissionManifest+tc.seconds, good)
+			if tc.want == "" && err != nil || tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+	m := Manifest{FirstBootSeconds: 600}
+	if got := m.FirstBootWait(300); got != 300 {
+		t.Errorf("FirstBootWait(300) = %d, want 300", got)
+	}
+	if got := (Manifest{}).FirstBootWait(300); got != 0 {
+		t.Errorf("unset FirstBootWait = %d, want 0", got)
+	}
+}

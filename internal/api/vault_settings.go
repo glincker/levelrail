@@ -158,6 +158,7 @@ func (rt *Router) handleUpdateVaultSettings(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: update vault settings failed", err)
 		return
 	}
+	rt.syncSecretConnections(r.Context())
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
 }
 
@@ -190,5 +191,6 @@ func (rt *Router) handleDisconnectVault(w http.ResponseWriter, r *http.Request) 
 		rt.logger.Warn("api: clear vault rotation state failed", slog.String("error", err.Error()))
 	}
 	settings.CredentialRotatedAt, settings.PreviousExpiresAt = time.Time{}, time.Time{}
+	rt.syncSecretConnections(r.Context())
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
 }

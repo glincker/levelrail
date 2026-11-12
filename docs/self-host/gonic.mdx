@@ -1,0 +1,69 @@
+---
+title: "Self-host gonic with Docker"
+sidebarTitle: "gonic"
+description: "A lightweight music server that speaks the Subsonic API, with a small web admin."
+"og:url": "https://docs.levelrail.com/self-host/gonic"
+---
+
+A lightweight music server that speaks the Subsonic API, with a small web admin.
+
+This page describes the Levelrail template for gonic (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/sentriz/gonic.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `gonic` | `sentriz/gonic:v0.23.0` | 4747 | `data -&#62; /data`<br />`music -&#62; /music`<br />`podcasts -&#62; /podcasts`<br />`cache -&#62; /cache`<br />`playlists -&#62; /playlists` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `gonic` | `GONIC_CACHE_PATH` | Preset in the template |
+| `gonic` | `GONIC_MUSIC_PATH` | Preset in the template |
+| `gonic` | `GONIC_PLAYLISTS_PATH` | Preset in the template |
+| `gonic` | `GONIC_PODCAST_PATH` | Preset in the template |
+| `gonic` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`gonic`): cache, data, music, playlists, podcasts.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy gonic with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select gonic. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gonic --name my-gonic
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+
+All templates are listed in the [self-host gallery](/self-host).

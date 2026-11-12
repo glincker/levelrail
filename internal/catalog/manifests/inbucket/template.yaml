@@ -1,0 +1,25 @@
+id: inbucket
+name: Inbucket
+description: Disposable mail server that catches mail for any address and shows it in a web inbox, for testing apps without sending real email.
+icon: envelope
+category: Developer Tools
+documentation_url: https://www.inbucket.org/
+source_repo: https://github.com/inbucket/inbucket
+license: MIT
+license_class: permissive
+license_url: https://github.com/inbucket/inbucket/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Point your app at port 2500 and open the address to read what it sent. It has no login, so keep it private.
+domains:
+  - service: inbucket
+    port: 9000
+    description: Public address of the web inbox. Keep it private.
+healthcheck:
+  service: inbucket
+  port: 9000
+  path: /

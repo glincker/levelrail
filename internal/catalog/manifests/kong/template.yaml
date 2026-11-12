@@ -1,0 +1,27 @@
+id: kong
+name: Kong Gateway
+description: "An API gateway in database-less mode on the open source image. Load routes with the admin API at kong:8001 from inside this project. With no routes the proxy answers 404, which is the healthy state."
+icon: plug
+category: Infrastructure
+documentation_url: https://docs.konghq.com/gateway/latest/
+source_repo: https://github.com/Kong/kong
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/Kong/kong/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Post a declarative config to kong:8001/config from a service in this project, then send traffic to the public address.
+domains:
+  - service: kong
+    port: 8000
+    description: Public address of the Kong proxy.
+healthcheck:
+  service: kong
+  port: 8000
+  path: /
+  expect: 404
+  reason: the proxy answers 404 until a route is configured, which still proves Kong is serving

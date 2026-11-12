@@ -1,0 +1,63 @@
+---
+title: "Self-host ejabberd with Docker"
+sidebarTitle: "ejabberd"
+description: "Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume."
+"og:url": "https://docs.levelrail.com/self-host/ejabberd"
+---
+
+Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.
+
+This page describes the Levelrail template for ejabberd (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.ejabberd.im/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ejabberd` | `ghcr.io/processone/ejabberd:26.09@sha256:ec5cf7bc85627fd9bde47309a34600d6c16895e9808807ec9ff57426f2508115` | 5280, 5222 | `database -&#62; /opt/ejabberd/database` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`ejabberd`): database.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ejabberd with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ejabberd. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ejabberd --name my-ejabberd
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [Element Web](/self-host/element-web)
+
+All templates are listed in the [self-host gallery](/self-host).

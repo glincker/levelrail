@@ -1,0 +1,65 @@
+---
+title: "Self-host Domoticz with Docker"
+sidebarTitle: "Domoticz"
+description: "A home automation system with a web UI that links sensors, switches and many device protocols."
+"og:url": "https://docs.levelrail.com/self-host/domoticz"
+---
+
+A home automation system with a web UI that links sensors, switches and many device protocols.
+
+This page describes the Levelrail template for Domoticz (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.domoticz.com/wiki/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `domoticz` | `domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a` | 8080 | `userdata -&#62; /opt/domoticz/userdata` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `domoticz` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`domoticz`): userdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Domoticz with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Domoticz. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy domoticz --name my-domoticz
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+
+All templates are listed in the [self-host gallery](/self-host).

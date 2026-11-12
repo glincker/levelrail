@@ -1,0 +1,38 @@
+id: svix
+name: Svix
+description: A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret.
+icon: webhook
+category: Developer Tools
+documentation_url: https://docs.svix.com/
+source_repo: https://github.com/svix/svix-webhooks
+license: MIT
+license_class: permissive
+license_url: https://github.com/svix/svix-webhooks/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 402653184
+first_run:
+  - Create an API token with the svix-server jwt generate command inside the container, then call the API at the published port.
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+  - key: JWT_SECRET
+    label: JWT secret
+    description: Signs the API tokens. Changing it invalidates every issued token.
+    generate: hex
+    length: 64
+    secret: true
+domains:
+  - service: svix
+    port: 8071
+    description: Public address of the Svix HTTP API. Every call needs a bearer token.
+healthcheck:
+  service: svix
+  port: 8071
+  path: /api/v1/health/

@@ -1,0 +1,42 @@
+id: phpipam
+name: phpIPAM
+description: An open source IP address management app for tracking subnets, addresses, VLANs and devices, backed by MariaDB. Finish the database install from the first page with the generated root password.
+icon: network
+category: Infrastructure
+documentation_url: https://phpipam.net/documents/
+source_repo: https://github.com/phpipam/phpipam
+license: GPL-3.0-or-later
+license_class: copyleft
+license_url: https://github.com/phpipam/phpipam/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Open the page, choose automatic database installation, enter root and the generated database root password, then set the admin password.
+env:
+  - key: MYSQL_ROOT_PASSWORD
+    label: Database root password
+    description: Root password for the bundled MariaDB server, used by the installer on first run. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+  - key: IPAM_DATABASE_PASS
+    label: Database app password
+    description: Password of the phpipam database user that the installer creates.
+    generate: password
+    length: 32
+    secret: true
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for scans and the interface.
+    default: Etc/UTC
+domains:
+  - service: phpipam
+    port: 80
+    description: Public address of phpIPAM.
+healthcheck:
+  service: phpipam
+  port: 80
+  path: /

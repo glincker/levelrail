@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -96,6 +97,13 @@ func (rt *Router) handleSetAppEgressPolicy(w http.ResponseWriter, r *http.Reques
 		allow[i] = store.ServiceEgressAllow{Host: a.Host, Port: a.Port}
 	}
 	policy := &store.ServiceEgressPolicy{Mode: req.Mode, Allow: allow}
+	// The sidecar shares the app's network namespace, so NET_ADMIN or NET_RAW could remove the rules.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if elevated := elevatedCapsOf(svc.GrantedCaps); len(elevated) > 0 {
+			writeError(w, http.StatusConflict, "this app holds "+strings.Join(elevated, " and ")+", which could remove an egress policy; drop the capability first")
+			return
+		}
+	}
 
 	if err := rt.apps.UpdateServiceEgressPolicy(r.Context(), name, policy); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

@@ -4,6 +4,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -211,7 +214,10 @@ func TestLive_EnrollAndSession(t *testing.T) {
 	// Cleanly end the session and confirm the server side notices.
 	sessionCancel()
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil && !errors.Is(err, context.Canceled) && status.Code(err) != codes.Canceled {
+			t.Errorf("RunSession returned %v after cancellation", err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for RunSession to return after cancellation")
 	}

@@ -1,0 +1,61 @@
+---
+title: "Self-host Envoy Proxy with Docker"
+sidebarTitle: "Envoy Proxy"
+description: "Cloud native edge and service proxy on the official image. The install form carries envoy.yaml as an editable file, so it starts with a working listener instead of exiting on a missing config."
+"og:url": "https://docs.levelrail.com/self-host/envoy"
+---
+
+Cloud native edge and service proxy on the official image. The install form carries envoy.yaml as an editable file, so it starts with a working listener instead of exiting on a missing config.
+
+This page describes the Levelrail template for Envoy Proxy (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.envoyproxy.io/docs/envoy/latest/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `envoy` | `envoyproxy/envoy:v1.40.2` | 10000, 9901 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`envoy`).
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Envoy Proxy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Envoy Proxy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy envoy --name my-envoy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Caddy](/self-host/caddy)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+
+All templates are listed in the [self-host gallery](/self-host).

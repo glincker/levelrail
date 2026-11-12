@@ -1,0 +1,63 @@
+---
+title: "Self-host Caddy with Docker"
+sidebarTitle: "Caddy"
+description: "A fast web server with automatic HTTPS and a simple config file, on the official image serving its default page. Mount your own Caddyfile or site files to host real sites."
+"og:url": "https://docs.levelrail.com/self-host/caddy"
+---
+
+A fast web server with automatic HTTPS and a simple config file, on the official image serving its default page. Mount your own Caddyfile or site files to host real sites.
+
+This page describes the Levelrail template for Caddy (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://caddyserver.com/docs/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `caddy` | `caddy:2.8.4` | 80 | `caddy_data -&#62; /data`<br />`caddy_config -&#62; /config` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`caddy`): caddy_config, caddy_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Caddy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Caddy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy caddy --name my-caddy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [ActiveMQ Classic](/self-host/activemq)
+- [AdGuard Home](/self-host/adguard-home)
+- [Chisel](/self-host/chisel)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+
+All templates are listed in the [self-host gallery](/self-host).

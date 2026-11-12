@@ -53,6 +53,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if !rt.vetSecretRefs(w, r, req.Name, req.EnvironmentID, nil, &req) {
+		return
+	}
+	if !rt.enforceSecretPolicy(r.Context(), w, req.EnvironmentID, createLiteralSecretKeys(req)) {
+		return
+	}
 	autoDomain := rt.attachAppsBaseDomain(r.Context(), &req)
 	if len(req.Secrets) > 0 && rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
@@ -125,7 +131,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if len(req.VaultEnv) > 0 {
 		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
 		for k, v := range req.VaultEnv {
-			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
+			desired.VaultEnv[k] = v.store()
 		}
 	}
 	// Before admission: a registry round trip must not hold the port lock.
@@ -252,6 +258,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		req.DNS = rt.dnsForAutoDomain(r.Context(), r, req.Name, autoDomain)
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
+	rt.attachSecretPolicy(r.Context(), &req, desired)
 	rt.changes.Publish(changeApps, req.Name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)

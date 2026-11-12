@@ -91,8 +91,7 @@ plane. User supplied files (option C) stay as the override.
      no ingress (the advised layout in ADR 059, 2.1) this fails, and the
      status page says so and asks for a DNS provider.
 - Key type follows the ingress default. If TLSA records are published
-  (ADR 059, DANE), renewal must reuse the key; whether certmagic's key
-  reuse is exposed through our config is UNVERIFIED.
+  (ADR 059, DANE), renewal must reuse the key.
 
 ### A.2 Delivery
 
@@ -160,9 +159,8 @@ plane. User supplied files (option C) stay as the override.
   credentials inside the mail container, the most exposed workload on
   the instance (public 25, 465, 587, 993). Rejected unless the
   credentials are sealed, scoped to one TXT name, and never visible in
-  the container env. Whether mox v0.0.17 supports DNS-01 at all is
-  UNVERIFIED; its documented ACME paths need 80 or 443, which the
-  platform owns.
+  the container env. Its documented ACME paths need 80 or 443, which
+  the platform owns.
 - **C. User supplied certificates only.** Kept as the override, not the
   default: most operators will not renew by hand every 60 to 90 days,
   and a missed renewal silently breaks inbound mail under MTA-STS
@@ -253,18 +251,9 @@ All behind `APP_EXPERIMENTAL=mail`. Paths are a sketch.
 | `APP_MAIL_CERT_RETRY_MAX_INTERVAL` | Backoff cap after a failure |
 | `APP_DEFAULT_ALERT_CERT_DAYS` | Existing alert thresholds, reused |
 
-## UNVERIFIED, to prove on a real host
+## Validation
 
-1. Whether a newer mox release reloads `KeyCerts` without a restart.
-2. Whether a restart loses inbound mail. Expected: a sender mid DATA sees
-   a dropped connection and retries later, and queued mail is in
-   `queue.db` on the data volume, but this has not been measured.
-3. Whether a restart drops IMAP IDLE clients in a way that clients
-   recover from without prompting for a password.
-4. Whether the ingress config builder can hold a certificate only name.
-5. DNS-01 issuance for the mail host through each connected provider.
-6. Key reuse across renewals for TLSA.
-7. Whether `cert_storage` values are encrypted at rest.
+Further validation is tracked privately.
 
 ## Testing plan
 

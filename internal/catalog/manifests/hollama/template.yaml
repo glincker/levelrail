@@ -1,0 +1,24 @@
+id: hollama
+name: Hollama
+description: A minimal web chat client for Ollama and OpenAI compatible servers. MIT licensed. Add the address of your model server in settings.
+icon: chat
+category: AI
+documentation_url: https://github.com/fmaclen/hollama
+source_repo: https://github.com/fmaclen/hollama
+license: MIT
+license_class: permissive
+license_url: https://github.com/fmaclen/hollama/blob/HEAD/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Open Settings and set the address of your Ollama or OpenAI compatible server.
+domains:
+  - service: hollama
+    port: 4173
+    description: Public address of Hollama.
+healthcheck:
+  service: hollama
+  port: 4173
+  path: /

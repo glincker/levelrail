@@ -1,0 +1,66 @@
+---
+title: "Self-host libSQL Server with Docker"
+sidebarTitle: "libSQL Server"
+description: "Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume."
+"og:url": "https://docs.levelrail.com/self-host/libsql"
+---
+
+Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume.
+
+This page describes the Levelrail template for libSQL Server (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/tursodatabase/libsql/tree/main/libsql-server.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `libsql` | `ghcr.io/tursodatabase/libsql-server:v0.24.32` | 8080 | `data -&#62; /var/lib/sqld` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `libsql` | `SQLD_HTTP_LISTEN_ADDR` | Preset in the template |
+| `libsql` | `SQLD_NODE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`libsql`).
+- Stores data in named volumes (`libsql`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy libSQL Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select libSQL Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy libsql --name my-libsql
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [ArangoDB](/self-host/arangodb)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Apache Cassandra](/self-host/cassandra)
+
+All templates are listed in the [self-host gallery](/self-host).

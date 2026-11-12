@@ -454,6 +454,9 @@ func (s *bootState) startReconciler() {
 		restartPolicy: func(c context.Context) string {
 			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyContainersRestartPolicy)
 		},
+		elevatedCaps: func(c context.Context) bool {
+			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyTemplatesCapNetAdmin)
+		},
 		dependsOnTimeout: func(c context.Context) time.Duration {
 			return s.apiRouter.RuntimeSettings().Duration(c, runtimesettings.KeyComposeDependsOnTimeout)
 		},

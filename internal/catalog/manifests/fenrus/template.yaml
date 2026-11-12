@@ -1,0 +1,25 @@
+id: fenrus
+name: Fenrus
+description: Self-hosted dashboard that groups your apps as tiles with live status widgets, themes and per user pages.
+icon: squares-four
+category: Dashboard
+documentation_url: https://github.com/revenz/Fenrus#readme
+source_repo: https://github.com/revenz/Fenrus
+license: MIT
+license_class: permissive
+license_url: https://github.com/revenz/Fenrus/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the address, create your account on first visit, then add groups and app tiles.
+domains:
+  - service: fenrus
+    port: 3000
+    description: Public address of the dashboard.
+healthcheck:
+  service: fenrus
+  port: 3000
+  path: /

@@ -1,0 +1,71 @@
+---
+title: "Self-host NZBGet with Docker"
+sidebarTitle: "NZBGet"
+description: "A fast, light Usenet downloader with a web interface and scripting support."
+"og:url": "https://docs.levelrail.com/self-host/nzbget"
+---
+
+A fast, light Usenet downloader with a web interface and scripting support.
+
+This page describes the Levelrail template for NZBGet (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://nzbget.com/documentation/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `nzbget` | `nzbgetcom/nzbget:v26.3@sha256:f451d98066cbc0c108146420a61a60f7638de50e067738951461e0105eeaa56d` | 6789 | `config -&#62; /config`<br />`downloads -&#62; /downloads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `nzbget` | `NZBGET_PASS` | Generated at deploy |
+| `nzbget` | `NZBGET_USER` | Preset in the template |
+| `nzbget` | `PGID` | Preset in the template |
+| `nzbget` | `PUID` | Preset in the template |
+| `nzbget` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`nzbget`): NZBGET_PASS.
+- Stores data in named volumes (`nzbget`): config, downloads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy NZBGet with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select NZBGet. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy nzbget --name my-nzbget
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+
+All templates are listed in the [self-host gallery](/self-host).

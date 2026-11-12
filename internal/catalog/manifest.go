@@ -45,9 +45,13 @@ type Manifest struct {
 	Env                    []EnvPrompt          `yaml:"env" json:"env,omitempty"`
 	Domains                []DomainPrompt       `yaml:"domains" json:"domains,omitempty"`
 	Healthcheck            *ManifestHealthcheck `yaml:"healthcheck" json:"healthcheck,omitempty"`
+	// FirstBootSeconds is how long a slow first start may take before the install is judged failed. It is capped by the first_boot_max_seconds runtime setting.
+	FirstBootSeconds int `yaml:"first_boot_seconds" json:"first_boot_seconds,omitempty"`
 	// ConsoleCommand is the argv "apps console" runs in the container. It must read any secret from the container env, never carry one.
 	ConsoleCommand []string `yaml:"console_command" json:"console_command,omitempty"`
-	Compose        string   `yaml:"-" json:"-"`
+	// Capabilities declares every elevated compose key the template uses, each with a reason.
+	Capabilities []ManifestCapability `yaml:"capabilities" json:"capabilities,omitempty"`
+	Compose      string               `yaml:"-" json:"-"`
 }
 
 // EnvPrompt is one ${KEY} placeholder the installer asks for.
@@ -60,6 +64,11 @@ type EnvPrompt struct {
 	Length      int    `yaml:"length" json:"length,omitempty"`
 	Required    bool   `yaml:"required" json:"required,omitempty"`
 	Secret      bool   `yaml:"secret" json:"secret,omitempty"`
+	// Type "file" makes the prompt a config file mounted into Service at Path; Default is its body. Empty means a plain env value.
+	Type    string `yaml:"type" json:"type,omitempty"`
+	Service string `yaml:"service" json:"service,omitempty"`
+	Path    string `yaml:"path" json:"path,omitempty"`
+	Mode    string `yaml:"mode" json:"mode,omitempty"`
 }
 
 // DomainPrompt is a service the installer offers to put behind a domain.
@@ -78,6 +87,8 @@ type ManifestHealthcheck struct {
 	Expect int `yaml:"expect" json:"expect,omitempty"`
 	// Kind is http (default) or tcp for services with no HTTP surface.
 	Kind string `yaml:"kind" json:"kind,omitempty"`
+	// Reason says why the default check cannot be used (no shell, answers 404 with no routes). A 4xx Expect other than 401 or 403 needs it; a tcp kind should carry one.
+	Reason string `yaml:"reason" json:"reason,omitempty"`
 }
 
 // ManifestListing says who stands behind the entry.
@@ -115,6 +126,9 @@ func (m Manifest) Render(in InstallInput, allowMissing bool) (string, error) {
 		return "", fmt.Errorf("template %s: parse compose: %w", m.ID, err)
 	}
 	substitute(&doc, values)
+	if err := m.addFiles(&doc, in.Env, values, allowMissing); err != nil {
+		return "", err
+	}
 	if err := m.addDomains(&doc, in.Domains); err != nil {
 		return "", err
 	}
@@ -129,6 +143,9 @@ func (m Manifest) promptValues(supplied map[string]string, allowMissing bool) (m
 	values := make(map[string]string, len(m.Env))
 	var missing []string
 	for _, p := range m.Env {
+		if p.isFile() {
+			continue
+		}
 		v := supplied[p.Key]
 		switch {
 		case v != "":
@@ -173,18 +190,22 @@ func (m Manifest) hasPrompt(key string) bool {
 
 func substitute(n *yaml.Node, values map[string]string) {
 	if n.Kind == yaml.ScalarNode {
-		n.Value = placeholderPattern.ReplaceAllStringFunc(n.Value, func(tok string) string {
-			key := placeholderPattern.FindStringSubmatch(tok)[1]
-			if v, ok := values[key]; ok {
-				return v
-			}
-			return tok
-		})
+		n.Value = expandPlaceholders(n.Value, values)
 		return
 	}
 	for _, c := range n.Content {
 		substitute(c, values)
 	}
+}
+
+func expandPlaceholders(s string, values map[string]string) string {
+	return placeholderPattern.ReplaceAllStringFunc(s, func(tok string) string {
+		key := placeholderPattern.FindStringSubmatch(tok)[1]
+		if v, ok := values[key]; ok {
+			return v
+		}
+		return tok
+	})
 }
 
 func (m Manifest) addDomains(doc *yaml.Node, domains map[string]string) error {
@@ -232,4 +253,16 @@ func (m Manifest) Template() (Template, error) {
 		ID: m.ID, Name: m.Name, Slogan: m.Description, Description: m.Description, Category: m.Category, DocumentationURL: m.DocumentationURL,
 		Compose: body, RecommendedMemoryBytes: m.RecommendedMemoryBytes, Manifest: &mm,
 	}, nil
+}
+
+// FirstBootWait is the first-boot allowance in seconds: the manifest value
+// lowered to ceiling, or 0 when the manifest declares none.
+func (m Manifest) FirstBootWait(ceiling int) int {
+	if m.FirstBootSeconds <= 0 {
+		return 0
+	}
+	if ceiling > 0 && m.FirstBootSeconds > ceiling {
+		return ceiling
+	}
+	return m.FirstBootSeconds
 }
