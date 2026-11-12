@@ -1,0 +1,232 @@
+{
+  "title": "镜像",
+  "subtitle": "节点上的每个容器镜像:大小、来自哪些应用和部署,以及哪些可以安全移除。",
+  "node": {
+    "label": "节点",
+    "local": "此服务器"
+  },
+  "tiles": {
+    "count": "镜像",
+    "size": "磁盘占用",
+    "reclaimable": "可释放",
+    "protected": "保留",
+    "review": "查看并清理",
+    "countSplit": "平台镜像 {{platform}} 个,其他 {{other}} 个",
+    "freeableSplit": "平台镜像 {{platform}},其他镜像 {{other}}",
+    "keptSplit": "{{used}} 被容器使用中"
+  },
+  "columns": {
+    "image": "镜像",
+    "size": "大小",
+    "apps": "使用方",
+    "status": "状态",
+    "created": "构建时间",
+    "actions": "操作"
+  },
+  "untagged": "无标签",
+  "status": {
+    "removable": "可移除",
+    "kept": "保留:{{reason}}"
+  },
+  "roles": {
+    "live": "线上",
+    "rollback_target": "回滚目标",
+    "recent": "最近部署",
+    "history": "较早部署"
+  },
+  "sources": {
+    "webhook": "Git 推送",
+    "manual": "手动部署",
+    "image": "镜像部署",
+    "compose": "Compose",
+    "promote": "已提升",
+    "auto_rollback": "自动回滚",
+    "git_push": "Git 推送远程",
+    "clone": "克隆",
+    "schedule": "计划",
+    "pr_comment": "PR 评论",
+    "other": "部署"
+  },
+  "cleanup": {
+    "button": "释放 {{size}}",
+    "nothing": "没有可移除的内容",
+    "title": "移除未使用的镜像",
+    "description": "这些镜像不是线上版本、不是回滚目标、不属于任何应用最新的 {{keep}} 次部署,且没有容器使用它们。",
+    "consequences": "线上镜像、回滚目标和最近的部署永远不会被移除。已移除的镜像在应用需要时会被重新拉取或重新构建。",
+    "confirm": "移除镜像",
+    "pending": "正在移除...",
+    "done": "已移除 {{count}} 个镜像,释放了 {{size}}。",
+    "partial": "{{count}} 个镜像无法移除。",
+    "failed": "清理失败",
+    "preview": "正在预览清理..."
+  },
+  "detail": {
+    "close": "关闭",
+    "lineage": "来源谱系",
+    "lineageEmpty": "此平台没有任何部署使用过这个镜像。",
+    "layers": "层",
+    "layersEmpty": "此镜像的层大小不可用。",
+    "digest": "摘要",
+    "localBuild": "在此服务器上构建,没有仓库摘要",
+    "promotedFrom": "已提升到 {{app}}",
+    "verify": "验证签名",
+    "verifying": "正在验证...",
+    "layerSize": "{{size}}({{percent}}%)"
+  },
+  "verify": {
+    "verified": "签名已验证",
+    "unsigned": "未找到签名",
+    "failed": "签名检查失败",
+    "not_configured": "未配置签名密钥",
+    "no_registry_digest": "本地构建,无需验证",
+    "fix": "请在控制面设置中指定公钥文件,然后重新检查。"
+  },
+  "dockerDegraded": {
+    "message": "Docker 没有响应。部署和容器已暂停。",
+    "recheck": "重新检查",
+    "rechecking": "正在检查...",
+    "details": "Docker 健康状况",
+    "dismiss": "在 Docker 恢复之前不再显示"
+  },
+  "dockerHealth": {
+    "title": "Docker 引擎",
+    "recheck": "重新检查",
+    "freeSpace": "可用空间",
+    "summary": "{{platform}} 上的 Docker {{version}}。{{total}} 中有 {{reclaimable}} 可回收。",
+    "status": {
+      "ok": "正常",
+      "warn": "需要处理",
+      "fail": "失败",
+      "unknown": "未知"
+    }
+  },
+  "lint": {
+    "title": "Dockerfile 检查",
+    "help": "粘贴 Dockerfile,检查 root 用户、浮动的基础镜像标签、缺失的健康检查和单阶段构建。",
+    "inputLabel": "Dockerfile 内容",
+    "placeholder": "FROM node:22-alpine",
+    "check": "检查",
+    "applyFix": "应用安全修复",
+    "clean": "没有发现问题。",
+    "line": "第 {{line}} 行:",
+    "severity": {
+      "warn": "警告",
+      "info": "提示"
+    },
+    "toast": {
+      "failed": "无法检查 Dockerfile。",
+      "fixed": "已将修复应用到上方文本。"
+    }
+  },
+  "policy": {
+    "title": "签名策略",
+    "validate": "验证",
+    "validating": "正在验证...",
+    "refLabel": "要测试的镜像引用",
+    "refPlaceholder": "可选:repo@sha256:... 用于验证某个镜像",
+    "error": "无法验证签名策略。",
+    "valid": "签名策略工作正常。",
+    "invalid": "签名策略需要处理。",
+    "fingerprint": "密钥 {{value}}。",
+    "sample": {
+      "verified": "示例镜像已由你的密钥签名。",
+      "unsigned": "示例镜像没有签名。",
+      "failed": "示例镜像验证失败。",
+      "not_configured": "未配置公钥。",
+      "no_registry_digest": "示例没有可验证的仓库摘要。"
+    },
+    "issues": {
+      "key_unreadable": "无法读取公钥文件,因此签名检查已关闭。请修正密钥路径并重启。",
+      "enforce_without_key": "已请求强制执行,但没有可用的密钥,因此不会强制任何内容。请设置有效的公钥文件。",
+      "key_without_enforcement": "已加载密钥,但强制执行已关闭,因此未签名的镜像仍可被提升。",
+      "sample_failed": "示例镜像未能通过你的密钥验证。"
+    }
+  },
+  "signatures": {
+    "enforce": "提升需要有效的镜像签名。",
+    "off": "签名检查按需运行。"
+  },
+  "empty": {
+    "title": "此节点上没有镜像",
+    "description": "首次部署或构建后,镜像会显示在这里。"
+  },
+  "error": {
+    "title": "无法加载镜像",
+    "retry": "重新检查",
+    "unsupported": "此节点尚未报告其镜像。"
+  },
+  "banner": {
+    "description": "首次部署或构建后,镜像会显示在这里,包括大小、使用它们的应用,以及是否可以安全移除。",
+    "diagram": {
+      "layers": "层",
+      "node": "节点"
+    }
+  },
+  "rootOnly": "只有 root 账户可以移除镜像。你仍可以浏览和筛选它们。",
+  "badge": {
+    "other": "其他",
+    "inUse": "使用中"
+  },
+  "filters": {
+    "label": "筛选镜像",
+    "all": "全部",
+    "platform": "平台",
+    "other": "其他",
+    "unused": "未使用",
+    "in_use": "使用中",
+    "search": "按名称或 ID 搜索",
+    "sort": "排序",
+    "sortSize": "最大的在前",
+    "sortAge": "最新的在前",
+    "empty": "没有镜像匹配此视图。",
+    "reset": "显示所有镜像"
+  },
+  "row": {
+    "notRemovable": "此镜像无法移除",
+    "select": "选择 {{name}}",
+    "selectAll": "选择所有可移除的镜像",
+    "remove": "移除",
+    "removeNamed": "移除 {{name}}"
+  },
+  "bar": {
+    "label": "已选择的镜像",
+    "summary_other": "已选择 {{count}} 个,将释放 {{size}}",
+    "clear": "清除",
+    "remove": "移除所选"
+  },
+  "remove": {
+    "title": "移除镜像",
+    "description": "请查看将被移除的内容。在你确认之前不会删除任何内容。",
+    "includeUnmanaged": "同时移除没有容器使用的其他镜像",
+    "previewing": "正在检查可移除的内容...",
+    "nothing": "这里没有可移除的内容。",
+    "listLabel": "要移除的镜像",
+    "total_other": "{{count}} 个镜像,将释放 {{size}}",
+    "warning": "已移除的镜像会在应用需要时被重新下载或重新构建。",
+    "confirm_other": "移除 {{count}} 个镜像",
+    "removing": "正在移除...",
+    "cancel": "取消",
+    "done": "完成",
+    "resultRemoved_other": "已移除 {{count}} 个镜像,释放了 {{size}}。",
+    "resultFailed_other": "{{count}} 个镜像无法移除:",
+    "announce_other": "已移除 {{count}} 个镜像。"
+  },
+  "retention": {
+    "title": "镜像保留",
+    "description": "此应用为回滚保留多少个最近的部署镜像。清理会在下次运行时移除较旧的镜像。",
+    "keepLabel": "保留的镜像数",
+    "hint": "0 表示遵循全局设置,否则需不小于 {{min}}。",
+    "preview": "预览移除",
+    "save": "保存",
+    "saved": "镜像保留设置已保存",
+    "saveFailed": "无法保存镜像保留设置",
+    "protected": "此应用位于受保护的环境 {{env}} 中,因此至少保留 {{global}} 个镜像。",
+    "wouldRemove_other": "下次清理将移除 {{count}} 个镜像,释放 {{size}}。",
+    "alwaysKept": "正在运行的镜像、回滚固定的镜像、上一个成功的版本、与其他应用共享的镜像,以及排队或暂缓中的部署所需的镜像始终保留。",
+    "source": {
+      "app": "保留最新的 {{count}} 个部署镜像(在此应用上设置)。",
+      "app_default": "保留最新的 {{count}} 个部署镜像(应用的默认值)。",
+      "global": "保留最新的 {{count}} 个部署镜像(全局设置,{{global}})。"
+    }
+  }
+}

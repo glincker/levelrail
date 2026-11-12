@@ -1,0 +1,19 @@
+{
+  "title": "Web Vitals",
+  "collect": "Erfassen",
+  "errorTitle": "Aktualisierung der Web Vitals fehlgeschlagen",
+  "snippetHint": "Fügen Sie dieses Tag Ihrer Website hinzu. Es sendet LCP, INP, CLS, TTFB und FCP aus echten Besuchen, ohne Cookies und ohne IP-Adressen.",
+  "copySnippet": "Snippet kopieren",
+  "copied": "Kopiert",
+  "createKey": "Beacon-Schlüssel erstellen",
+  "rotateKey": "Schlüssel rotieren",
+  "emptyDisabled": "Aktivieren Sie die Erfassung und fügen Sie das Snippet hinzu, um zu sehen, wie echte Besucher diese App erleben.",
+  "emptyEnabled": "Noch keine Daten. Besuchen Sie Ihre Website mit installiertem Snippet, dann erscheinen die Ergebnisse hier.",
+  "p75Label": "{{metric}} p75",
+  "route": "Route",
+  "windowNote": "p75 der letzten {{days}} Tage.",
+  "routesTitle": "Web Vitals nach Route",
+  "viewAllRoutes": "Alle Routen anzeigen ({{count}})",
+  "samples": "Stichproben",
+  "legend": "Grün ist gut, Gelb verbesserungsbedürftig, Rot schlecht, nach den Standard-Schwellenwerten der Core Web Vitals."
+}

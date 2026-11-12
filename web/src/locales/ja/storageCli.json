@@ -1,0 +1,39 @@
+{
+  "title": "ターミナルで実行",
+  "description": "同じストレージ操作をコマンドラインから行えます。先にプレビューし、その後に適用します。",
+  "tabsLabel": "コマンドグループ",
+  "tabs": {
+    "usage": "使用状況を見る",
+    "clean": "安全に整理",
+    "automate": "自動化"
+  },
+  "server": "コマンドは{{server}}に対して実行されます。先にCLIガイドの接続コマンドでサインインしてください。",
+  "role": {
+    "viewer": "閲覧者",
+    "admin": "管理者"
+  },
+  "yourRole": "あなたのロール: {{role}}",
+  "needsAdmin": "管理者権限が必要",
+  "needsSensitive": "write:sensitiveスコープも必要",
+  "dryRunFirst": "まずドライラン: どのグループでも、適用の手順の前にプレビューがあります。適用コマンドを実行するまで、何も削除されません。",
+  "whyNoSystemPrune": "system-pruneは意図的に掲載していません。まだ必要なデータを含むかもしれない、未使用のボリュームも削除してしまうためです。",
+  "blockLabel": "コマンド: {{command}}",
+  "commands": {
+    "doctorDisk": "このサーバーのディスクの状態と空き容量",
+    "imagesList": "イメージと、それぞれの容量",
+    "janitorStatus": "前回のジャニター実行と、有効なポリシー",
+    "buildsCache": "ビルドキャッシュのサイズと、削除で解放できる量",
+    "buildCacheShow": "すべてのアプリで共有するビルドキャッシュ",
+    "volumesOrphaned": "どのアプリも使わなくなったボリューム",
+    "containersOrphans": "削除済みアプリが残したコンテナ",
+    "janitorDryRun": "ジャニターが削除する対象をプレビュー",
+    "janitorRun": "プレビューを確認した後にジャニターを実行",
+    "imagesGcPreview": "削除される古いイメージをプレビュー",
+    "imagesGcApply": "プレビューで表示したイメージを削除",
+    "imagesPruneDry": "どのアプリにも属さない管理外イメージをプレビュー",
+    "buildsCacheApply": "プレビューの後にビルドキャッシュを削除",
+    "volumesCleanup": "指定した孤立ボリュームだけを削除",
+    "containersReap": "削除済みアプリが残したコンテナを削除",
+    "janitorPolicy": "ビルドキャッシュの保持期間と空き容量の目安を設定して、自動クリーンアップを有効にする"
+  }
+}

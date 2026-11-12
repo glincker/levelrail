@@ -7,11 +7,9 @@ import { SettingRow } from '@/components/ui/setting-row'
 import { SettingsSection } from '@/components/ui/settings-section'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LandingSelect } from '../account/LandingSelect'
-import {
-  useLanguageOptions,
-  useZoneOptions,
-} from '../account/preferenceOptions'
+import { useZoneOptions } from '../account/preferenceOptions'
 import { ThemeChoice, type ThemeValue } from '../account/ThemeChoice'
+import { LanguageSelect } from '../language/LanguageSelect'
 import { useAutoSavePreferences } from '../account/useAutoSavePreferences'
 import { ChoiceGroup, type Choice } from '../settings/ChoiceGroup'
 import { AppearanceLinkCard } from '../settings/AppearanceLinkCard'
@@ -33,7 +31,6 @@ function PreferenceRows({ saved }: { saved: Preferences }) {
   const languageId = useId()
   const landingId = useId()
   const zoneOptions = useZoneOptions(now)
-  const languageOptions = useLanguageOptions()
 
   const densityOptions: Choice<Density>[] = (
     ['compact', 'comfortable'] as const
@@ -81,13 +78,11 @@ function PreferenceRows({ saved }: { saved: Preferences }) {
       <SettingRow
         title={<label htmlFor={languageId}>{ta('preferences.language')}</label>}
       >
-        <SearchSelect
+        <LanguageSelect
           id={languageId}
-          options={languageOptions}
+          allowDefault
           value={draft.language}
-          onValueChange={(v) => patch({ language: v })}
-          searchPlaceholder={ta('preferences.languageSearch')}
-          emptyMessage={ta('preferences.languageEmpty')}
+          onChange={(v) => patch({ language: v })}
         />
       </SettingRow>
       <SettingRow

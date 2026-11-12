@@ -1,0 +1,437 @@
+{
+  "page": {
+    "title": "安全中心",
+    "description": "你的安全评分、应优先修复的内容,以及所有可以访问此控制面的会话和设备。",
+    "tabs": {
+      "checklist": "检查清单",
+      "sessions": "会话与设备",
+      "policy": "策略",
+      "rotations": "密钥轮换",
+      "compliance": "合规",
+      "exposure": "暴露面",
+      "advisories": "安全公告"
+    },
+    "loadError": "无法加载安全中心。",
+    "retry": "重试"
+  },
+  "score": {
+    "label": "安全评分",
+    "grade": "{{grade}} 级",
+    "generated": "检查于 {{time}}",
+    "failing": "严重 {{critical}},高 {{high}},中 {{medium}},低 {{low}}",
+    "passing": "{{count}} 项检查通过",
+    "unknown": "{{count}} 项无法检查",
+    "recommended": "{{count}} 项推荐步骤在你部署应用之前不会影响评分",
+    "summaryOnly": "只有管理员能看到完整清单。请让管理员审查此评分背后的各项。"
+  },
+  "severity": {
+    "critical": "严重",
+    "high": "高",
+    "medium": "中",
+    "low": "低"
+  },
+  "status": {
+    "pass": "通过",
+    "fail": "需要处理",
+    "recommended": "推荐",
+    "unknown": "未知"
+  },
+  "supplyGate": {
+    "blockOnHigh": {
+      "label": "高危或严重时阻止",
+      "summary": "暂缓存在严重发现的发布。",
+      "detail": "存在高危或严重漏洞的发布不会上线。上一个版本继续提供服务,部署会记录原因。如果扫描器本身失败,则允许该发布。"
+    }
+  },
+  "reach": {
+    "title": "互联网能访问什么",
+    "description": "每个应用和数据库的所有域名和已发布端口,并为不该开放的内容提供修复。修复使用与应用、防火墙和数据库页面相同的控制。",
+    "recheck": "重新检查",
+    "rechecking": "正在检查",
+    "recheckError": "无法重新检查。",
+    "loadError": "无法加载暴露面报告。",
+    "rulesUnreadable": "无法读取某个节点的防火墙规则,因此受限制的端口可能显示为开放。",
+    "clean": "没有可访问的风险内容。{{count}} 个已发布端口受防火墙规则限制。",
+    "subjects": "应用和数据库",
+    "private": "无法从外部访问",
+    "fixed": "已修复。报告已重新检查。",
+    "stillFailing": "更改已应用,但发现项仍然存在。",
+    "applyError": "无法应用修复。",
+    "severity": {
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "info": "信息"
+    },
+    "type": {
+      "app": "应用",
+      "database": "数据库"
+    },
+    "kinds": {
+      "app_direct_port": {
+        "title": "{{name}} 在 {{port}} 上开放",
+        "why": "直接端口会绕过 TLS、登录门禁和防护盾。通过代理提供服务会关闭该端口。",
+        "fix": "通过代理提供服务"
+      },
+      "app_no_shield": {
+        "title": "{{name}} 在 {{domain}} 上没有防护盾",
+        "why": "没有速率限制时,单个客户端就可能占满应用的全部容量。",
+        "fix": "应用推荐的防护盾"
+      },
+      "database_public": {
+        "title": "数据库 {{name}} 在 {{port}} 上对互联网开放",
+        "why": "任何发现该端口的人都可以尝试登录。请将其限制为已知地址,或设为私有。",
+        "fix": "查看访问权限"
+      },
+      "port_exposed": {
+        "title": "{{container}} 在 {{port}} 上开放",
+        "why": "Docker 会绕过主机防火墙发布端口,因此任何人都可以访问这个端口。",
+        "fix": "在防火墙中限制"
+      },
+      "docker_api": {
+        "title": "Docker API 在 {{port}} 上开放",
+        "why": "任何能访问它的人都能控制服务器上的每个容器。",
+        "fix": "在防火墙中限制"
+      }
+    },
+    "confirm": {
+      "title": "关闭直接端口?",
+      "description": "应用会使用相同镜像重建,之后只能通过代理访问。任何使用直接地址的内容都将停止工作。",
+      "confirm": "关闭端口",
+      "pending": "正在应用"
+    }
+  },
+  "checklist": {
+    "platform": "平台",
+    "account": "你的账户",
+    "empty": "暂无可检查的内容。",
+    "count": "{{count}} 个受影响",
+    "showPassing": "显示通过的检查",
+    "hidePassing": "隐藏通过的检查",
+    "fix": "修复",
+    "open": "打开",
+    "cli": "通过 CLI",
+    "applied": "更改已应用。",
+    "applyError": "无法应用更改。"
+  },
+  "items": {
+    "admin_without_mfa": {
+      "title": "没有双因素或通行密钥的管理员",
+      "pass": "每位管理员都有双因素或通行密钥",
+      "why": "仅一个泄露的管理员密码就能完全控制每个应用和密钥。"
+    },
+    "account_flagged": {
+      "title": "被标记需要新密码的账户",
+      "pass": "没有账户被标记需要重置密码",
+      "why": "有人报告说这些账户有并非本人的登录。"
+    },
+    "recovery_codes_missing": {
+      "title": "没有剩余恢复码的账户",
+      "pass": "每个启用双因素的账户都有恢复码",
+      "why": "丢失验证器应用会使这些账户被锁在外面,无法重新进入。"
+    },
+    "no_admin_passkey": {
+      "title": "没有管理员拥有通行密钥",
+      "pass": "管理员共有 {{count}} 个通行密钥",
+      "why": "与密码和验证码不同,通行密钥无法被钓鱼或重复使用。"
+    },
+    "token_root": {
+      "title": "持有 root 的 API 令牌",
+      "pass": "没有 API 令牌持有 root",
+      "why": "root 令牌可以执行管理员能做的任何事,包括铸造更多令牌。"
+    },
+    "token_no_expiry": {
+      "title": "永不过期的 API 令牌",
+      "pass": "每个 API 令牌都有过期时间",
+      "why": "没有过期时间的令牌会在没人记得它存在之后很久仍然有效。"
+    },
+    "token_signin_approve": {
+      "title": "可以批准登录的 API 令牌",
+      "pass": "没有 API 令牌可以批准登录",
+      "why": "此类令牌可以展示登录验证码,并为其所有者批准新的浏览器。"
+    },
+    "token_unused": {
+      "title": "长期未使用的 API 令牌",
+      "pass": "没有长期未使用的 API 令牌",
+      "why": "未使用的令牌纯属风险:撤销不再需要的令牌。"
+    },
+    "sessions_old": {
+      "title": "仍处于登录状态的旧会话",
+      "pass": "没有旧会话",
+      "why": "遗忘浏览器上的长期会话是一个容易被利用的入口。"
+    },
+    "secret_reveal_allow": {
+      "title": "密钥值可在不确认的情况下被显示",
+      "pass": "显示密钥值需要密码或通行密钥确认",
+      "why": "当 APP_SECRET_REVEAL=allow 时,任何拥有 read:sensitive 的人或被盗会话都可以读取每个密钥值。请将其设为 step_up。"
+    },
+    "new_device_approval_off": {
+      "title": "新浏览器批准已关闭",
+      "pass": "新浏览器批准已开启",
+      "why": "没有它,被盗的密码可以从任何地方登录,而无需二次检查。"
+    },
+    "approval_password_only": {
+      "title": "只有密码登录需要新浏览器批准",
+      "pass": "每种登录方式都需要新浏览器批准",
+      "why": "目前,来自新浏览器的通行密钥和 OAuth 登录会跳过批准步骤。"
+    },
+    "code_login_admins": {
+      "title": "管理员可以使用验证码登录",
+      "pass": "管理员无法使用验证码登录",
+      "why": "发送到已开启会话或邮箱的验证码是进入管理员账户较弱的途径。"
+    },
+    "public_exposure": {
+      "title": "对互联网开放的容器端口",
+      "pass": "没有不受限制的公开端口",
+      "why": "Docker 会绕过主机防火墙发布端口,因此任何人都可以访问这些端口。"
+    },
+    "docker_api_exposed": {
+      "title": "Docker API 可从互联网访问",
+      "pass": "Docker API 未暴露",
+      "why": "未经认证的 Docker API 访问等同于完全控制服务器。"
+    },
+    "offbox_backup_off": {
+      "title": "控制面异地备份已关闭",
+      "pass": "加密的异地备份已开启",
+      "why": "丢失这台机器将丢失所有应用定义、密钥和证书。"
+    },
+    "offsite_backup_unencrypted": {
+      "title": "未加密的备份目的地",
+      "pass": "每个备份目的地都已加密",
+      "why": "未加密存储的副本可以被任何进入该存储的人读取。请在备份目的地设置中开启加密,然后运行新的备份。"
+    },
+    "audit_anchor_off": {
+      "title": "未配置异地审计日志锚点",
+      "pass": "异地审计日志锚点已开启",
+      "why": "如果没有这台机器之外的审计链头副本,拥有此处 root 权限的人可以改写历史并重新签名而不被察觉。"
+    },
+    "master_key_rotation": {
+      "title": "主密钥缺失或轮换已逾期",
+      "pass": "主密钥最近已轮换",
+      "why": "轮换主密钥可以限制旧的泄露副本所能解密的内容。"
+    },
+    "secrets_old": {
+      "title": "超过 {{detail}} 的密钥",
+      "pass": "没有过期的密钥",
+      "why": "旧密钥在使用过程中更有可能已在某处泄露。"
+    },
+    "tls_not_public": {
+      "title": "没有公开受信任证书的域名",
+      "pass": "每个域名都有公共证书",
+      "why": "浏览器会对这些域名发出警告,这会训练人们忽略警告直接点击通过。"
+    },
+    "hsts_off": {
+      "title": "已有真实证书但 HSTS 处于关闭状态",
+      "pass": "HSTS 已开启或暂时不需要",
+      "why": "没有 HSTS,通过明文 HTTP 的首次访问可能被拦截并降级。"
+    },
+    "domains_unshielded": {
+      "title": "没有防护盾的域名",
+      "pass": "每个已路由的域名都有防护盾",
+      "why": "防护盾会限制每位访客的请求数并拒绝恶意机器人,使一个嘈杂的客户端无法拖垮其他人。"
+    },
+    "saml_open_domains": {
+      "title": "接受任意邮箱域名的 SAML 连接",
+      "pass": "每个已启用的 SAML 连接都将登录限制在你的域名内",
+      "why": "没有允许的域名列表时,你的身份提供商声明的任何地址都可能匹配到这里的账户。请在连接设置中添加你的域名。"
+    },
+    "microsoft_no_tenant": {
+      "title": "Microsoft 登录未绑定到单个租户",
+      "pass": "Microsoft 登录已关闭或已绑定到你的租户",
+      "why": "在共享租户上,任何目录都可以声明一个邮箱地址,因此不会据此创建新账户。请在 Microsoft 提供商设置中设置你的租户 ID。"
+    },
+    "agents_outdated": {
+      "title": "节点 Agent 低于最低版本",
+      "pass": "每个节点 Agent 都是最新的",
+      "why": "旧的 Agent 缺少控制面已经预期的安全修复。"
+    },
+    "login_anomalies": {
+      "title": "大量登录失败",
+      "pass": "没有大量登录失败",
+      "why": "短时间内大量错误密码通常意味着有人在猜测。"
+    },
+    "own_mfa": {
+      "title": "你的账户没有双因素或通行密钥",
+      "pass": "你的账户有双因素或通行密钥",
+      "why": "仅凭你的密码就足以以你的身份登录。"
+    },
+    "own_recovery_codes": {
+      "title": "你没有剩余的恢复码",
+      "pass": "你有恢复码",
+      "why": "没有它们,丢失验证器会使你被锁在外面。"
+    },
+    "own_account_flagged": {
+      "title": "你的账户需要新密码",
+      "pass": "你的账户未被标记",
+      "why": "有人报告说你的账户有一次并非本人的登录。"
+    },
+    "agent_token_unnamed": {
+      "title": "可以更改内容的 API 令牌没有 Agent 名称",
+      "pass": "每个写入或部署令牌都已标注或审阅",
+      "why": "没有 Agent 名称的令牌不受 AI 控制管辖,因此持有它的 AI 工具在行动时不受模式或环境限制。"
+    },
+    "ai_control_admin": {
+      "title": "AI 控制处于管理员模式",
+      "pass": "AI 控制低于管理员模式",
+      "why": "管理员模式允许 Agent 更改设置和访问权限,而不仅仅是应用。运维模式涵盖日常部署。"
+    },
+    "agent_tokens_production": {
+      "title": "Agent 令牌可以更改生产环境",
+      "pass": "没有 Agent 令牌可以更改生产环境",
+      "why": "当 AI 控制高于观察模式时,可以写入或部署的 Agent 令牌仍可访问生产防护未涵盖的路由,例如 apply 和环境。"
+    },
+    "prod_env_unprotected": {
+      "title": "没有保护的生产环境",
+      "pass": "每个生产环境都受到保护",
+      "why": "受保护的环境会在部署、回滚和提升到达它之前要求批准。"
+    },
+    "prod_apps_unguarded": {
+      "title": "没有强制执行部署策略的生产应用",
+      "pass": "每个生产应用都有强制执行的部署策略",
+      "why": "警告模式的规则只会报告。没有强制模式的规则,就没有任何内容能阻止对生产应用的高风险部署。"
+    },
+    "audit_sink_none": {
+      "title": "审计日志没有发送到任何地方",
+      "pass": "审计日志已转发到外部目的地",
+      "why": "此机器之外的审计流会保留 Agent 和部署操作的记录,即使此主机丢失也一样。"
+    }
+  },
+  "actions": {
+    "set_policy": "应用推荐的策略",
+    "disable_code_login_admins": "关闭管理员的验证码登录",
+    "review_sessions": "查看会话",
+    "enable_hsts": "启用 HSTS"
+  },
+  "hsts": {
+    "title": "开启 HSTS",
+    "description": "在开启之前,我们会检查每个公共域名是否提供公开受信任的证书。",
+    "probing": "正在检查证书...",
+    "probeError": "无法运行证书检查。",
+    "trusted": "受信任的证书",
+    "notTrusted": "自签名、内部,或无法通过 HTTPS 访问",
+    "noDomains": "尚未配置公共域名。",
+    "blocked": "在每个域名都通过之前,HSTS 保持关闭。使用自签名证书时,浏览器会拒绝该站点且无法绕过警告。",
+    "warning": "HSTS 涵盖子域名,浏览器会记住它 180 天,因此对于已经见过它的访客无法撤销。",
+    "recheck": "重新检查",
+    "confirm": "开启 HSTS",
+    "enabled": "HSTS 已开启",
+    "enableError": "无法开启 HSTS"
+  },
+  "sessions": {
+    "tableLabel": "活跃会话",
+    "title": "活跃会话",
+    "description": "已登录此账户的浏览器。位置是该地址所属的网络,而不是某个地点。",
+    "viewing": "正在查看的账户",
+    "self": "你的账户",
+    "browser": "浏览器",
+    "network": "网络",
+    "created": "登录时间",
+    "lastSeen": "最近活跃",
+    "current": "此浏览器",
+    "revoke": "登出",
+    "revokeAria": "登出会话 {{id}}",
+    "revoked": "会话已登出。",
+    "revokeError": "无法登出该会话。",
+    "revokeOthers": "登出所有其他会话",
+    "revokeOthersAdmin": "登出此账户的所有会话",
+    "revokeOthersDone": "已登出 {{count}} 个会话。受信任的浏览器和等待中的登录也已重置。",
+    "empty": "没有活跃会话。",
+    "devicesTitle": "受信任的浏览器",
+    "devicesDescription": "跳过新浏览器批准的浏览器。请移除你不认识的任何浏览器。",
+    "devicesEmpty": "没有受信任的浏览器。",
+    "deviceRemove": "移除",
+    "deviceRemoved": "浏览器已移除。",
+    "tokensTitle": "API 令牌",
+    "tokensDescription": "此账户拥有的令牌,以及每个令牌上次使用的时间。",
+    "tokensEmpty": "没有 API 令牌。",
+    "neverUsed": "从未使用",
+    "usedAgo": "{{time}} 使用",
+    "manageTokens": "管理令牌",
+    "confirmTitle": "登出其他会话?",
+    "confirmBody": "已登录此账户的所有其他浏览器都会被登出,受信任的浏览器和等待中的登录也会被重置。",
+    "confirm": "将它们登出",
+    "cancel": "取消"
+  },
+  "policy": {
+    "title": "安全策略",
+    "description": "关于登录批准和 API 令牌卫生的平台规则。更改立即生效。",
+    "adminOnly": "只有管理员可以更改安全策略。",
+    "source": {
+      "saved": "在此保存",
+      "env": "来自环境变量",
+      "default": "默认"
+    },
+    "approvalScope": "新浏览器批准适用于",
+    "scopePasswordOnly": "仅密码登录",
+    "scopeAllMethods": "所有登录方式(密码、通行密钥、OAuth)",
+    "approvalOff": "此服务器上已关闭新浏览器批准,因此在重新开启之前,此设置没有效果。",
+    "maxLifetime": "API 令牌最长有效期(天,0 表示无限制)",
+    "warnUnused": "标记未使用多少天的令牌(天,0 表示停止)",
+    "disableUnused": "禁用未使用多少天的令牌(天,0 表示停止)",
+    "disableHint": "令牌会先收到通知,若 {{days}} 天后仍未被使用,则会被禁用。",
+    "save": "保存策略",
+    "saved": "安全策略已保存。",
+    "saveError": "无法保存安全策略。"
+  },
+  "account": {
+    "title": "对我的账户要求新浏览器批准",
+    "description": "要求你某个已登录的会话批准任何新浏览器,无论它使用何种登录方式。",
+    "on": "你账户上的每种登录方式都需要批准。",
+    "off": "你的账户遵循平台策略。",
+    "saveError": "无法更改此设置。",
+    "flagged": "有人报告你的账户有一次并非本人的登录。请立即更改密码;这会清除此警告。"
+  },
+  "alertPage": {
+    "title": "这次登录不是你吗?",
+    "description": "确认后将登出该浏览器,忘记你受信任的浏览器,并标记你的账户需要新密码。",
+    "confirm": "不是我,将其登出",
+    "working": "正在登出...",
+    "done": "完成。该浏览器已登出,你的账户已被标记。请立即登录并更改密码。",
+    "doneNoSession": "完成。该会话已结束。你的账户已被标记:请立即登录并更改密码。",
+    "signIn": "前往登录",
+    "missing": "此链接缺少令牌。请重新打开邮件中的链接。",
+    "error": "此链接无效、已被使用或已过期。"
+  },
+  "advisories": {
+    "title": "已知安全公告",
+    "off": "未配置安全公告源。在服务器上设置 APP_ADVISORY_FEED 即可开启。",
+    "unsigned": "未签名",
+    "verified": "已签名,已验证",
+    "invalid": "签名无效",
+    "feed": "{{count}} 条公告,{{signature}}",
+    "none": "没有运行中的镜像匹配已知的安全公告。",
+    "summary_other": "{{count}} 个运行中的镜像匹配已知的安全公告",
+    "fixedIn": "已在 {{version}} 中修复",
+    "reference": "参考",
+    "loadError": "无法加载安全公告。"
+  },
+  "imageScanning": {
+    "page": {
+      "title": "镜像扫描",
+      "description": "整个实例的默认扫描策略。"
+    },
+    "scan": {
+      "label": "扫描镜像中的已知漏洞"
+    },
+    "gate": {
+      "label": "部署门禁",
+      "options": {
+        "off": "关闭",
+        "warn": "仅警告",
+        "block_on_critical": "严重时阻止",
+        "block_on_high": "高危或严重时阻止"
+      },
+      "needsScan": "开启扫描后才能使用关闭以外的门禁。"
+    },
+    "save": {
+      "action": "保存策略",
+      "pending": "正在保存",
+      "done": "策略已保存。"
+    },
+    "inherit": "没有自己策略的应用会继承此策略。",
+    "serverOff": "此控制面已关闭漏洞扫描,因此该策略暂时没有效果。",
+    "rootOnly": "只有 root 账户可以更改此策略。",
+    "loading": "正在加载策略",
+    "error": "无法加载扫描策略。"
+  }
+}

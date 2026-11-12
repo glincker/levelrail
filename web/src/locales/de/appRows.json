@@ -1,0 +1,60 @@
+{
+  "failing": {
+    "fallback": "Erfordert Aufmerksamkeit, öffnen Sie die App, um den Grund zu sehen.",
+    "fix": "Deployments anzeigen",
+    "fixLabel": "Deployments von {{name}} anzeigen"
+  },
+  "logs": {
+    "noContainer": "Für diese App läuft kein Container, daher gibt es nichts zu streamen.",
+    "deploy": "Jetzt deployen"
+  },
+  "bulkBar": {
+    "region": "Sammelaktionen",
+    "selected": "{{count}} ausgewählt",
+    "clear": "Auswahl aufheben",
+    "more": "Weitere Aktionen",
+    "review": "Prüfen",
+    "readOnly": "Ihr Konto ist schreibgeschützt, daher sind Sammelaktionen deaktiviert.",
+    "reviewTitle": "{{action}}: {{count}} Apps",
+    "reviewDescription": "Jede App wird anhand Ihrer Berechtigungen geprüft. Apps, auf die Sie nicht zugreifen dürfen, werden als abgelehnt aufgeführt und nicht verändert.",
+    "resultsTitle": "{{action}}: Ergebnisse",
+    "resultsLabel": "Ergebnisse je App",
+    "summary": "{{ok}} erledigt, {{failed}} nicht angewendet",
+    "typeCount": "Geben Sie zur Bestätigung {{count}} ein",
+    "checking": "Ziele werden geprüft",
+    "working": "In Arbeit",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "confirm": "{{action}}: {{count}}",
+    "warning": {
+      "stop": "Dadurch werden {{count}} Apps gestoppt, bis Sie sie wieder starten.",
+      "delete": "Dadurch werden {{count}} Apps endgültig gelöscht. Jedes Löschen wird im Audit-Log protokolliert."
+    },
+    "action": {
+      "restart": "Neu starten",
+      "redeploy": "Erneut deployen",
+      "stop": "Stoppen",
+      "start": "Starten",
+      "add-tag": "Tag hinzufügen",
+      "remove-tag": "Tag entfernen",
+      "set-environment": "Umgebung festlegen",
+      "move-to-project": "In Projekt verschieben",
+      "delete": "Löschen"
+    },
+    "value": {
+      "add-tag": "Tag (Schlüssel oder Schlüssel:Wert)",
+      "remove-tag": "Zu entfernendes Tag",
+      "set-environment": "Name oder ID der Umgebung",
+      "move-to-project": "Projekt-ID"
+    },
+    "status": {
+      "ok": "Erledigt",
+      "would_apply": "Wird angewendet",
+      "denied": "Abgelehnt",
+      "not_found": "Nicht gefunden",
+      "skipped": "Übersprungen",
+      "error": "Fehlgeschlagen"
+    }
+  },
+  "description": "Beschreibung: {{text}}"
+}

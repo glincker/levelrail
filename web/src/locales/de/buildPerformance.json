@@ -1,0 +1,92 @@
+{
+  "trend": {
+    "title": "Build-Leistung",
+    "loadError": "Build-Statistiken konnten nicht geladen werden.",
+    "empty": "Noch keine Builds aufgezeichnet. Statistiken erscheinen nach dem nächsten Build.",
+    "p50": "Median-Build",
+    "p95": "Langsamste 5 % (p95)",
+    "cacheHit": "Cache-Treffer",
+    "failures": "Fehlgeschlagen oder Zeitüberschreitung",
+    "none": "k. A.",
+    "chartLabel_one": "Dauer des letzten Builds",
+    "chartLabel_other": "Dauer der letzten {{count}} Builds, älteste zuerst",
+    "footnote_one": "Basierend auf dem letzten Build. Zeiten zählen nur erfolgreiche Builds.",
+    "footnote_other": "Basierend auf den letzten {{count}} Builds. Zeiten zählen nur erfolgreiche Builds.",
+    "skewed_one": "1 Build hatte eine negative Dauer (Zeitabweichung) und wird bei den Zeiten nicht berücksichtigt.",
+    "skewed_other": "{{count}} Builds hatten eine negative Dauer (Zeitabweichung) und werden bei den Zeiten nicht berücksichtigt."
+  },
+  "speed": {
+    "title": "Builds beschleunigen",
+    "saved": "Der Cache hat etwa {{saved}} über {{count}} Builds eingespart (Build ohne Cache {{cold}}, Build mit Cache {{warm}}).",
+    "none": "Keine Beschleunigungen vorzuschlagen.",
+    "loadError": "Vorschläge zur Build-Beschleunigung konnten nicht geladen werden.",
+    "fixing": "Wird angewendet...",
+    "fixed": "Build-Cache aktiviert.",
+    "fixError": "Die Korrektur konnte nicht angewendet werden",
+    "fix": {
+      "auto": "Cache aktivieren",
+      "guided": "Cache einrichten"
+    },
+    "findings": {
+      "cache_disabled": {
+        "title": "Der Remote-Build-Cache ist ausgeschaltet",
+        "body": "Ein Cache-Ziel ist konfiguriert, aber deaktiviert, daher beginnt jeder Build von vorn."
+      },
+      "cache_unconfigured": {
+        "title": "Es ist kein Remote-Build-Cache konfiguriert",
+        "body": "Die meisten Build-Schritte laufen jedes Mal erneut. Wählen Sie ein Speicherziel, damit Schritte über Builds und Nodes hinweg wiederverwendet werden."
+      },
+      "low_cache_hit": {
+        "title": "Nur wenige Build-Schritte werden wiederverwendet",
+        "body": "Stellen Sie selten geänderte Schritte im Dockerfile nach vorn (Lockfile kopieren und Abhängigkeiten installieren, bevor Sie den Quellcode kopieren) und fügen Sie eine .dockerignore für node_modules, .git und Build-Ausgaben hinzu, damit unabhängige Dateien keine Layer ungültig machen."
+      },
+      "slower_recently": {
+        "title": "Builds wurden zuletzt langsamer",
+        "body": "Der aktuelle Median-Build ist mindestens 30 % langsamer als der frühere. Vergleichen Sie die letzten Deployments auf neue Abhängigkeiten, einen größeren Build-Kontext oder einen Cache, der nicht mehr trifft."
+      }
+    }
+  },
+  "settings": {
+    "title": "Build-Leistung",
+    "description": "Begrenzen Sie, wie lange ein Build laufen darf, wie viel CPU und Arbeitsspeicher er nutzen darf und wie viele Builds gleichzeitig laufen. Zusätzliche Builds warten in einer Warteschlange.",
+    "loadError": "Build-Limits konnten nicht geladen werden.",
+    "timeoutLabel": "Build-Zeitlimit (Minuten)",
+    "timeoutHelp": "Ein Build, der länger läuft, wird gestoppt und als Zeitüberschreitung markiert. 0 bedeutet kein Limit.",
+    "concurrentLabel": "Gleichzeitige Builds",
+    "concurrentHelp": "Builds über dieser Zahl warten auf einen freien Platz. 0 bedeutet kein Limit.",
+    "defaultsNote": "Die Standardwerte stammen aus APP_BUILD_TIMEOUT, APP_BUILD_MAX_CONCURRENT, APP_BUILD_MEMORY_MB und APP_BUILD_CPU_MILLIS: {{timeout}} Minuten, {{concurrent}} Builds, {{memory}} MB, {{cpu}} Kerne.",
+    "overridden": "Überschrieben",
+    "save": "Limits speichern",
+    "reset": "Standardwerte verwenden",
+    "saved": "Build-Limits gespeichert.",
+    "resetDone": "Build-Limits auf die Standardwerte zurückgesetzt.",
+    "rootOnly": "Nur ein Root-Konto kann Build-Limits ändern.",
+    "memoryLabel": "Build-Arbeitsspeicher (MB)",
+    "memoryHelp": "Ein Build, der mehr verbraucht, wird beendet und als über seinem Arbeitsspeicher-Limit markiert. 0 bedeutet kein Limit.",
+    "cpuLabel": "Build-CPU (Kerne)",
+    "cpuHelp": "Begrenzt die CPU, die ein Build nutzen kann, zum Beispiel 1.5. 0 bedeutet kein Limit."
+  },
+  "limits": {
+    "title": "Build-Limits",
+    "description": "Limits nur für diese App. Nicht gesetzte Werte folgen den Standardwerten der Control Plane.",
+    "loadError": "Build-Limits konnten nicht geladen werden.",
+    "timeoutLabel": "Zeitlimit (Minuten)",
+    "memoryLabel": "Arbeitsspeicher (MB)",
+    "cpuLabel": "CPU (Kerne)",
+    "unlimited": "Kein Limit",
+    "globalNote": "Standardwerte der Control Plane: {{timeout}} Minuten, {{memory}} MB, {{cpu}} Kerne. 0 bedeutet kein Limit.",
+    "overridden": "Überschrieben",
+    "save": "Limits speichern",
+    "saved": "Build-Limits gespeichert.",
+    "reset": "Standardwerte verwenden",
+    "resetDone": "Build-Limits auf die Standardwerte zurückgesetzt.",
+    "rootOnly": "Nur ein Root-Konto kann Build-Limits ändern.",
+    "hit": {
+      "memory_limit": "Der letzte Build wurde beendet, weil er mehr als {{value}} MB verbraucht hat.",
+      "timeout": "Der letzte Build wurde nach {{value}} Minuten gestoppt."
+    },
+    "raiseMemory": "Arbeitsspeicher auf {{value}} MB erhöhen",
+    "raiseTimeout": "Zeitlimit auf {{value}} Minuten erhöhen",
+    "raised": "Limit erhöht. Wiederholen Sie das Deployment."
+  }
+}

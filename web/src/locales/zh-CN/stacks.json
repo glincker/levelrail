@@ -1,0 +1,244 @@
+{
+  "title": "栈",
+  "description": "声明式的资源集合,带有可比较差异、可固定和可回滚的修订历史。",
+  "empty": {
+    "title": "暂无栈",
+    "description": "通过 CLI 将清单应用到栈后,它及其修订会显示在这里。"
+  },
+  "loadFailed": "无法加载栈。",
+  "columns": {
+    "scope": "范围",
+    "name": "栈",
+    "project": "项目",
+    "revision": "最新",
+    "status": "状态",
+    "flags": "标记",
+    "created": "创建时间"
+  },
+  "status": {
+    "pending_approval": "等待批准",
+    "applying": "应用中",
+    "applied": "已应用",
+    "partial": "部分完成",
+    "failed": "失败",
+    "superseded": "已被取代",
+    "rejected": "已拒绝",
+    "none": "无修订"
+  },
+  "scope": {
+    "project": "项目",
+    "install": "安装",
+    "projectTip": "属于单个项目",
+    "installTip": "跨整个安装"
+  },
+  "flags": {
+    "locked": "已锁定",
+    "lockedTip": "由 {{holder}} 在修订 {{revision}} 上持有",
+    "pinned": "已固定到 r{{revision}}",
+    "driftLock": "漂移锁定",
+    "driftWarn": "漂移警告",
+    "approval": "需要批准",
+    "prune": "允许清理"
+  },
+  "detail": {
+    "back": "所有栈",
+    "revisionShort": "r{{number}}",
+    "inProject": "项目 {{project}}",
+    "createdBy": "由 {{name}} 创建",
+    "lockedBanner": "{{holder}} 为修订 {{revision}} 锁定,直到 {{until}}。",
+    "pinnedBanner": "已固定到修订 {{revision}}。在取消固定之前,新的应用会被拒绝。",
+    "resources": "{{count}} 个受管资源",
+    "loadFailed": "无法加载此栈。"
+  },
+  "actions": {
+    "pin": "固定",
+    "unpin": "取消固定",
+    "unlock": "解锁",
+    "delete": "删除",
+    "rollback": "回滚",
+    "view": "查看",
+    "diff": "差异",
+    "viewRev": "查看修订 {{number}}",
+    "diffRev": "比较修订 {{number}} 的差异",
+    "rollbackRev": "回滚到修订 {{number}}",
+    "pinRev": "固定修订 {{number}}",
+    "unpinRev": "取消固定修订 {{number}}",
+    "pinned": "已固定到修订 {{revision}}",
+    "unpinned": "栈已取消固定",
+    "unlocked": "栈已解锁",
+    "failed": "操作失败",
+    "approveRev": "批准修订 {{number}}",
+    "rejectRev": "拒绝修订 {{number}}"
+  },
+  "history": {
+    "title": "修订",
+    "empty": "暂无修订。",
+    "columns": {
+      "number": "修订",
+      "status": "状态",
+      "actor": "操作者",
+      "source": "来源",
+      "when": "时间"
+    },
+    "rollbackOf": "回滚自 r{{number}}",
+    "pinnedMark": "已固定",
+    "ariaLabel": "栈修订"
+  },
+  "revision": {
+    "title": "修订 {{number}}",
+    "files": "渲染后的文件",
+    "noFiles": "此修订没有存储任何文件。",
+    "plan": "计划",
+    "result": "结果",
+    "noPlan": "没有记录计划。",
+    "noResult": "暂无结果。",
+    "resultCounts": "已应用 {{applied}},失败 {{failed}},已跳过 {{skipped}}",
+    "resultFailedItem": "{{kind}} {{name}}:{{reason}}",
+    "resultNoReason": "未给出原因",
+    "summary": "创建 {{create}},更新 {{update}},删除 {{delete}},未变 {{noop}},错误 {{error}}",
+    "hash": "计划哈希 {{hash}}",
+    "close": "关闭",
+    "git": "提交 {{sha}}",
+    "ciRun": "CI 运行",
+    "loadFailed": "无法加载此修订。"
+  },
+  "diff": {
+    "title": "变更",
+    "against": "将 r{{number}} 与以下对象比较",
+    "live": "线上状态",
+    "revisionOption": "修订 {{number}}",
+    "empty": "没有差异。",
+    "loadFailed": "无法计算差异。",
+    "action": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "noop": "未变",
+      "error": "错误",
+      "added": "已添加",
+      "removed": "已移除",
+      "changed": "已更改"
+    },
+    "was": "原来",
+    "now": "现在"
+  },
+  "rollback": {
+    "title": "回滚到修订 {{number}}?",
+    "description": "这会将修订 {{number}} 的文件作为新修订应用到 {{name}}。",
+    "secretsNote": "密钥不会被回滚。当前的密钥值保持不变。",
+    "dataNote": "数据不会被回滚。数据库和卷保持其当前内容。",
+    "confirm": "回滚",
+    "pending": "正在回滚",
+    "done": "已回滚到修订 {{number}}",
+    "doneStatus": "新修订 {{number}} 以 {{status}} 结束",
+    "failed": "回滚失败",
+    "pendingApproval": "修订 {{number}} 正在等待批准。尚未回滚任何内容。"
+  },
+  "delete": {
+    "title": "删除栈 {{name}}?",
+    "description": "选择如何处理此栈所管理的资源。",
+    "forget": "忘记此栈",
+    "forgetHint": "移除栈及其历史。资源继续运行,但不再受管。",
+    "destroy": "销毁资源",
+    "destroyHint": "删除栈所管理的应用和数据库,然后删除栈。",
+    "confirm": "删除栈",
+    "pending": "正在删除",
+    "done": "栈 {{name}} 已删除",
+    "failed": "删除失败"
+  },
+  "settings": {
+    "title": "栈设置",
+    "allowPrune": "允许清理",
+    "allowPruneHint": "允许一次应用删除已从清单中移除的资源。",
+    "requireApproval": "需要批准",
+    "requireApprovalHint": "应用操作需等待有人批准。",
+    "driftPolicy": "漂移策略",
+    "driftWarn": "警告",
+    "driftLock": "锁定",
+    "driftHint": "当线上状态与栈不一致时,锁定会阻止应用。",
+    "rootOnly": "只有管理员可以更改这些设置。",
+    "saved": "栈设置已保存",
+    "failed": "无法保存设置"
+  },
+  "badge": {
+    "managedBy": "由栈 {{name}} 管理",
+    "short": "栈 {{name}}"
+  },
+  "appPanel": {
+    "title": "由栈管理",
+    "revision": "修订 {{number}}",
+    "lock": "锁定模式",
+    "hint": "请在 Git 中编辑。在此处所做的更改可能会被覆盖或阻止。",
+    "docs": "栈文档"
+  },
+  "managedNotice": {
+    "warn": "由栈 {{name}} 管理。手动更改可能会被还原,或被报告为漂移。",
+    "lock": "由栈 {{name}} 管理,该栈会锁定其资源。手动更改可能会被拒绝或还原。"
+  },
+  "drift": {
+    "badge": "已漂移({{count}})",
+    "title": "漂移:{{count}} 个资源与栈不一致",
+    "revision": "对比 r{{number}}",
+    "checkedAt": "检查于 {{when}}",
+    "noValues": "只显示字段路径。值从不存储。",
+    "action": {
+      "changed": "已更改",
+      "missing": "缺失",
+      "owner_changed": "所有者已更改"
+    }
+  },
+  "approval": {
+    "expires": "{{when}} 过期",
+    "approveTitle": "批准修订 {{number}}?",
+    "approveDescription": "这会将已存储的计划应用到 {{name}}。由另一位管理员请求。",
+    "approveDescriptionOwn": "此修订由你请求,因此需要另一位管理员为 {{name}} 批准。",
+    "secretsNote": "密钥从不存储。请现在提供清单所需的任何密钥。它们只会发送一次,不会保留。",
+    "secretName": "密钥名称",
+    "secretValue": "密钥值",
+    "addSecret": "添加密钥",
+    "removeSecret": "移除密钥",
+    "approve": "批准",
+    "approving": "正在批准",
+    "approved": "修订 {{number}} 已批准",
+    "approvedStatus": "以 {{status}} 结束",
+    "stale": "计划在审阅后发生了变化。请重新请求批准。",
+    "expired": "此批准请求已过期。请重新请求批准。",
+    "rejectTitle": "拒绝修订 {{number}}?",
+    "rejectDescription": "不会向 {{name}} 应用任何内容,请求将被关闭。",
+    "reason": "原因(可选)",
+    "reject": "拒绝",
+    "rejecting": "正在拒绝",
+    "rejected": "修订 {{number}} 已拒绝"
+  },
+  "templates": {
+    "title": "栈模板",
+    "description": "常见栈的入门套件。填写变量,预览文件并复制命令。",
+    "loadFailed": "无法加载栈模板。",
+    "empty": {
+      "title": "没有栈模板",
+      "description": "此版本没有入门套件。"
+    },
+    "open": "打开模板 {{name}}",
+    "secretCount_other": "{{count}} 个密钥",
+    "drawerDescription": "正在加载模板。",
+    "var": {
+      "name": "名称",
+      "domain": "域名",
+      "image": "镜像"
+    },
+    "issues": "渲染后的文件有问题",
+    "files": "渲染后的文件",
+    "copyAll": "全部复制",
+    "copied": "已复制",
+    "downloadAll": "全部下载",
+    "secrets": {
+      "title": "你必须提供的密钥",
+      "hint": "只显示名称。应用之前请将每一个导出为环境变量。",
+      "none": "此套件不需要任何密钥。"
+    },
+    "cli": {
+      "title": "通过 CLI 应用",
+      "hint": "将文件写入新文件夹,然后将其作为栈应用。暂不支持从仪表盘应用。"
+    }
+  }
+}

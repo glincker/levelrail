@@ -1,0 +1,50 @@
+{
+  "title": "Containers",
+  "count_one": "{{count}} réplica",
+  "count_many": "{{count}} réplicas",
+  "count_other": "{{count}} réplicas",
+  "loading": "Carregando containers",
+  "forbidden": "Você não tem permissão para inspecionar os containers deste app.",
+  "error": "Não foi possível carregar os containers: {{message}}",
+  "empty": {
+    "title": "Nenhum container em execução",
+    "description": "O app está parado ou em repouso. Status atual: {{status}}."
+  },
+  "unavailable": "Indisponível",
+  "unavailableTip": "O agent não informa este campo para nodes remotos.",
+  "none": "Nenhum",
+  "copyId": "Copiar id do container",
+  "copied": "Copiado",
+  "restarts_one": "{{count}} reinício",
+  "restarts_many": "{{count}} reinícios",
+  "restarts_other": "{{count}} reinícios",
+  "uptime": "No ar há {{duration}}",
+  "node": "Node",
+  "fields": {
+    "image": "Imagem",
+    "digest": "Digest",
+    "ports": "Portas",
+    "networks": "Redes",
+    "mounts": "Montagens",
+    "limits": "Limites",
+    "cpu": "CPU",
+    "memory": "Memória",
+    "health": "Saúde"
+  },
+  "state": {
+    "running": "Em execução",
+    "stopped": "Parado",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "Saudável",
+    "unhealthy": "Não saudável",
+    "starting": "Iniciando",
+    "none": "Sem verificação",
+    "streak": "{{count}} falhando em sequência"
+  },
+  "readOnly": "ro",
+  "limitsValue": "{{cpu}} CPU, {{memory}}",
+  "noLimit": "Sem limite",
+  "usage": "{{used}} de {{limit}}"
+}

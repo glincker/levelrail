@@ -1,0 +1,133 @@
+{
+  "title": "用量与成本",
+  "description": "资金和容量的去向,按每个应用和数据库的实际使用情况拆分。这是按你自己的价格计算的成本展示,不是账单。",
+  "period": {
+    "label": "时间段",
+    "mtd": "本月至今",
+    "30d": "最近 30 天",
+    "last_month": "上月"
+  },
+  "summary": {
+    "total": "预估总计",
+    "change": "较上一时段 {{value}}",
+    "noChange": "没有可比较的上一时段",
+    "forecast": "月底预测",
+    "forecastHint": "基于最近几个完整日的支出。",
+    "unallocated": "未分配",
+    "unallocatedHint": "无人使用的空闲容量。它在这里单独显示,而不是隐藏在应用成本中。",
+    "allocated": "已分配给应用"
+  },
+  "chart": {
+    "label": "按项目统计的每日成本",
+    "other": "其他项目",
+    "unallocated": "未分配",
+    "unassigned": "无项目"
+  },
+  "dimension": {
+    "label": "拆分维度",
+    "project": "项目",
+    "environment": "环境",
+    "team": "团队",
+    "resource": "应用或数据库",
+    "tag": "标签"
+  },
+  "table": {
+    "label": "成本排名",
+    "name": "名称",
+    "cost": "预估成本",
+    "previous": "上一时段",
+    "change": "变化",
+    "trend": "趋势",
+    "unassigned": "未分配",
+    "untagged": "无标签",
+    "tagNote": "带有多个标签的资源会在每个标签下各计一次,因此标签合计可能超过报告总计。",
+    "empty": "此时段暂无可显示的内容。"
+  },
+  "movers": {
+    "title": "变化最大的项",
+    "up": "{{name}} 增加了 {{amount}}",
+    "down": "{{name}} 减少了 {{amount}}",
+    "none": "自上一时段以来没有资源的成本发生变化。"
+  },
+  "export": {
+    "csv": "导出 CSV",
+    "json": "导出 JSON"
+  },
+  "empty": {
+    "notConfiguredTitle": "设置价格以查看成本",
+    "notConfiguredDescription": "用量已在记录中。输入一台服务器的花费,或每 vCPU 小时和每 GiB 小时的价格,每个应用就会得到成本。",
+    "notConfiguredAskAdmin": "请让实例管理员设置价格。用量已在记录中。",
+    "noTelemetryTitle": "用量数据不可用",
+    "noTelemetryDescription": "成本需要指标采集器。开启可观测性即可记录每个应用的 CPU 和内存。",
+    "configure": "设置价格"
+  },
+  "unpriced": "{{nodes}} 尚无价格,因此运行在其上的应用不计成本。",
+  "error": "无法加载用量:{{message}}",
+  "settings": {
+    "open": "价格",
+    "title": "价格与分摊",
+    "description": "成本是把你自己的价格应用到实测用量上得出的。每一天在记录时定价,因此更改价格不会改写历史,除非你要求对本月至今重新定价。",
+    "mode": "定价方式",
+    "modeNode": "拆分每台服务器的月账单",
+    "modeNodeHint": "输入每台服务器每月的花费。账单按各应用使用服务器的比例分摊。",
+    "modeUnit": "按用量单位定价",
+    "modeUnitHint": "输入每 vCPU 小时和每 GiB 小时的价格。适用于没有单一账单可拆分的情况。",
+    "currency": "货币",
+    "nodes": "服务器账单",
+    "nodeMonthly": "月价格",
+    "nodeVcpus": "vCPU",
+    "nodeMemory": "内存(GiB)",
+    "detected": "检测到:{{vcpus}} 个 vCPU,{{memory}} GiB",
+    "cpuHour": "每 vCPU 小时",
+    "memHour": "每 GiB 内存小时",
+    "storage": "每 GiB 卷存储每月",
+    "egress": "每 GiB 出站流量",
+    "preset": "从典型服务器开始",
+    "presetHint": "常见 VPS 规格的示例价格。请改成你实际支付的价格。",
+    "idle": "分摊到应用的空闲容量比例",
+    "idleHintNode": "0 会将所有空闲容量显示为未分配。100 会按用量将其分摊给应用,使报告合计等于整张账单。",
+    "idleHintUnit": "作为余量开销加到每个应用的成本之上。",
+    "basis": "用量度量方式",
+    "basisAvg": "平均值",
+    "basisP50": "典型值(p50)",
+    "weight": "服务器账单中归于 CPU 的部分",
+    "weightHint": "其余部分归于内存。",
+    "reprice": "同时对本月至今重新定价",
+    "repriceHint": "用这些价格重新计算本月已记录的天数。",
+    "save": "保存价格",
+    "saving": "正在保存",
+    "saved": "价格已保存",
+    "error": "无法保存价格:{{message}}",
+    "cancel": "取消"
+  },
+  "budgets": {
+    "title": "预算",
+    "description": "项目或团队的月度上限。当预算达到警告水平、超出,或预测将超支时,会通过你的通知渠道发送告警。",
+    "empty": "暂无预算。",
+    "add": "添加预算",
+    "scope": "适用于",
+    "scopeProject": "项目",
+    "scopeTeam": "团队",
+    "target": "具体对象",
+    "monthly": "月度预算",
+    "warn": "警告阈值(%)",
+    "save": "保存预算",
+    "remove": "移除预算 {{name}}",
+    "spent": "{{budget}} 中已用 {{spent}}",
+    "forecast": "预测 {{amount}}",
+    "state": {
+      "ok": "正常",
+      "warn": "接近上限",
+      "over": "已超预算",
+      "forecast": "预测将超支"
+    },
+    "alertHint": "创建 budget_threshold 告警规则,让这些告警到达你的渠道。",
+    "error": "无法更新预算:{{message}}"
+  },
+  "chip": {
+    "label": "本月成本",
+    "value": "目前 {{amount}}",
+    "forecast": "月底约 {{amount}}",
+    "open": "打开用量与成本"
+  }
+}

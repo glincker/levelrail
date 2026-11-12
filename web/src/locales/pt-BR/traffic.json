@@ -1,0 +1,214 @@
+{
+  "status": {
+    "loading": "Carregando status",
+    "label": {
+      "live": "No ar",
+      "going_live": "Entrando no ar",
+      "propagating": "Propagando",
+      "waiting_for_dns": "Aguardando DNS",
+      "handled_by_proxy": "Tratado pelo seu proxy",
+      "needs_attention": "Precisa de atenção",
+      "expiring_soon": "Expirando em breve",
+      "paused": "Pausado",
+      "not_set_up": "Não configurado"
+    },
+    "reason": {
+      "runInProgress": "O Levelrail está configurando este domínio agora.",
+      "maintenance": "O modo de manutenção está ativado, os visitantes veem a página de manutenção.",
+      "certExpired": "O certificado expirou.",
+      "renewalStalled": "O certificado não está sendo renovado.",
+      "acmeFailure": "A autoridade certificadora não conseguiu emitir um certificado.",
+      "resolvesElsewhere": "Este domínio aponta para outro servidor.",
+      "routeError": "Não foi possível gravar a rota deste domínio.",
+      "externalProxy": "Seu próprio proxy serve este domínio, então o Levelrail não verifica o certificado dele.",
+      "routeMissing": "Nenhuma rota envia o tráfego deste domínio para um app ainda.",
+      "unconfigured": "Nada foi configurado para este domínio ainda.",
+      "noCheck": "Este domínio ainda não foi verificado.",
+      "notResolving": "Adicione o registro abaixo no seu provedor de DNS. Esta página verifica novamente sozinha.",
+      "propagating": "O registro existe. Alguns resolvedores ainda não o viram, o que pode levar até algumas horas.",
+      "gettingCertificate": "Obtendo seu certificado.",
+      "certExpiring": "O certificado expira em breve e não está sendo renovado de forma saudável.",
+      "live": "Este domínio chega ao seu app por HTTPS.",
+      "livePrivate": "Este domínio chega ao seu app com um certificado privado."
+    },
+    "action": {
+      "open_site": "Abrir site",
+      "view_progress": "Ver progresso",
+      "check_again": "Verificar novamente",
+      "show_record": "Mostrar registro",
+      "show_proxy_setup": "Mostrar configuração do proxy",
+      "fix": "Corrigir",
+      "renew": "Renovar agora",
+      "turn_off": "Desativar",
+      "set_up": "Configurar"
+    }
+  },
+  "age": {
+    "seconds": "{{count}} s",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} h",
+    "days": "{{count}} d"
+  },
+  "steps": {
+    "state": {
+      "todo": "A fazer",
+      "active": "Em andamento",
+      "done": "Concluída",
+      "failed": "Falhou",
+      "skipped": "Ignorada"
+    },
+    "position": "Etapa {{current}} de {{total}}, {{state}}"
+  },
+  "copy": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyLabel": "Copiar {{label}}",
+    "fallback": "Pressione Ctrl+C para copiar o texto selecionado."
+  },
+  "help": {
+    "why": "Por quê?",
+    "learnMore": "Saiba mais"
+  },
+  "confirm": {
+    "intro": "Isto vai:",
+    "cancel": "Cancelar",
+    "typeToConfirm": "Digite {{name}} para confirmar",
+    "kind": {
+      "create": "Criar",
+      "update": "Atualizar",
+      "delete": "Remover"
+    }
+  },
+  "diff": {
+    "setting": "Configuração",
+    "before": "Antes",
+    "after": "Depois",
+    "changed": "Alterado",
+    "showUnchanged_one": "Mostrar {{count}} sem alteração",
+    "showUnchanged_many": "Mostrar {{count}} sem alteração",
+    "showUnchanged_other": "Mostrar {{count}} sem alteração",
+    "hideUnchanged": "Ocultar sem alteração",
+    "empty": "Nada muda.",
+    "none": "nenhum"
+  },
+  "resolvers": {
+    "caption": "O que cada resolvedor respondeu",
+    "resolver": "Resolvedor",
+    "answer": "Resposta",
+    "match": "Confere",
+    "matches": "Confere",
+    "different": "Diferente",
+    "noAnswer": "Sem resposta",
+    "lastChecked": "Última verificação há {{age}}",
+    "checkedJustNow": "Verificado agora mesmo",
+    "recheck": "Verificar novamente",
+    "checking": "Verificando...",
+    "empty": "Nenhum resolvedor respondeu ainda."
+  },
+  "cert": {
+    "label": "Certificado",
+    "none": "Emitido automaticamente quando o DNS apontar para cá.",
+    "issuing": "Obtendo seu certificado.",
+    "healthy_one": "Let's Encrypt, expira em {{date}} (em {{count}} dia). Renova sozinho.",
+    "healthy_many": "Let's Encrypt, expira em {{date}} (em {{count}} dias). Renova sozinho.",
+    "healthy_other": "Let's Encrypt, expira em {{date}} (em {{count}} dias). Renova sozinho.",
+    "expiring_one": "Expira em {{date}} (em {{count}} dia) e não está sendo renovado de forma saudável.",
+    "expiring_many": "Expira em {{date}} (em {{count}} dias) e não está sendo renovado de forma saudável.",
+    "expiring_other": "Expira em {{date}} (em {{count}} dias) e não está sendo renovado de forma saudável.",
+    "expired": "Expirou em {{date}}.",
+    "stalled": "Renovação travada.",
+    "internal": "Certificado privado, confiável depois que você ativar o HTTPS.",
+    "custom_one": "Seu próprio certificado, expira em {{date}} (em {{count}} dia).",
+    "custom_many": "Seu próprio certificado, expira em {{date}} (em {{count}} dias).",
+    "custom_other": "Seu próprio certificado, expira em {{date}} (em {{count}} dias).",
+    "customExpired": "Seu próprio certificado, expirou em {{date}}.",
+    "renew": "Renovar agora",
+    "useOwn": "Usar meu próprio certificado",
+    "replace": "Substituir",
+    "acme": {
+      "open_port_80": "O Let's Encrypt não conseguiu alcançar a porta 80 neste servidor. Abra a porta 80 neste servidor.",
+      "fix_dns": "O Let's Encrypt não encontrou este domínio. Aponte o DNS dele para este servidor.",
+      "wait_rate_limit": "O Let's Encrypt pausou a emissão para este domínio. Tentamos de novo mais tarde.",
+      "fix_caa": "Um registro CAA bloqueia o Let's Encrypt. Adicione um registro CAA que permita letsencrypt.org.",
+      "other_proxy": "Outro proxy neste servidor respondeu à verificação do certificado. Deixe esse proxy terminar o TLS ou dê a este servidor as portas 80 e 443.",
+      "check_logs": "O Let's Encrypt não conseguiu emitir um certificado. Verifique os logs do ingress."
+    }
+  },
+  "progress": {
+    "title": "Configurando {{domain}}",
+    "done": "{{domain}} está no ar",
+    "failed": "A configuração de {{domain}} não foi concluída",
+    "elapsed": "Decorrido {{age}}",
+    "updated": "Atualizado há {{age}}",
+    "undo": "Desfazer entrada no ar",
+    "openSite": "Abrir site",
+    "openDoctor": "Abrir doctor",
+    "retry": "Tentar novamente",
+    "dismiss": "Dispensar"
+  },
+  "empty": {
+    "domains": {
+      "title": "Adicione seu primeiro domínio",
+      "description": "Aponte um domínio para um app e o Levelrail configura o DNS, o HTTPS e a rota.",
+      "action": "Adicionar domínio"
+    },
+    "noApps": {
+      "title": "Faça deploy de um app primeiro",
+      "description": "Um domínio envia tráfego para um app."
+    },
+    "search": {
+      "title": "Nenhum domínio corresponde a \"{{query}}\"",
+      "action": "Limpar pesquisa"
+    },
+    "zones": {
+      "title": "Adicionar uma zona",
+      "description": "As zonas permitem que o Levelrail crie e corrija registros DNS para você."
+    },
+    "soon": {
+      "title": "Chegando em breve",
+      "description": "Esta página está sendo construída e aparecerá em uma versão futura."
+    }
+  },
+  "nav": {
+    "traffic": "Tráfego",
+    "domains": "Domínios",
+    "dns": "DNS",
+    "proxy": "Proxy",
+    "apps": "Apps",
+    "domainsAttention_one": "{{count}} domínio precisa de atenção",
+    "domainsAttention_many": "{{count}} domínios precisam de atenção",
+    "domainsAttention_other": "{{count}} domínios precisam de atenção",
+    "dnsAttention_one": "{{count}} zona não delegada",
+    "dnsAttention_many": "{{count}} zonas não delegadas",
+    "dnsAttention_other": "{{count}} zonas não delegadas",
+    "proxyAttention_one": "{{count}} rota com erros",
+    "proxyAttention_many": "{{count}} rotas com erros",
+    "proxyAttention_other": "{{count}} rotas com erros"
+  },
+  "palette": {
+    "addDomain": "Adicionar domínio",
+    "verify": "Verificar {{domain}}",
+    "doctor": "Abrir doctor para {{domain}}",
+    "dnsRecordsFor": "Registros DNS de {{domain}}",
+    "domainSettings": "Configurações de domínios",
+    "checked": "{{domain}} verificado: {{result}}",
+    "checkResult": {
+      "connected": "O DNS aponta para cá",
+      "propagating": "propagando",
+      "not_resolving": "aguardando DNS",
+      "resolves_elsewhere": "aponta para outro servidor",
+      "unconfigured": "não configurado"
+    }
+  },
+  "tab": {
+    "headers": "Cabeçalhos",
+    "forwarding": "Encaminhamento",
+    "access": "Acesso",
+    "cache": "Cache",
+    "ports": "Portas",
+    "redirects": "Redirecionamentos",
+    "activity": "Atividade",
+    "settings": "Configurações",
+    "add": "Adicionar zona"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "定时重启",
+  "description": "按计划重启应用，以抑制缓慢的内存泄漏。它使用常规重启，因此滚动更新和中断规则同样适用。两次重启至少间隔 {{min}}。",
+  "none": "没有重启计划。",
+  "current": "重启时间：{{schedule}}（{{zone}}）。下次：{{next}}。",
+  "last": {
+    "started": "上次运行 {{at}}：已开始。",
+    "succeeded": "上次运行 {{at}}：已重启。",
+    "skipped": "上次运行 {{at}}：已跳过，{{reason}}。",
+    "failed": "上次运行 {{at}}：失败，将在退避后重试。"
+  },
+  "scheduleLabel": "Cron 或 @every",
+  "timezoneLabel": "时区",
+  "save": "保存计划",
+  "saved": "重启计划已保存",
+  "cleared": "重启计划已清除",
+  "failed": "重启计划更改失败",
+  "clear": "清除计划",
+  "hint": "例如 0 3 * * * 或 @every 24h。已停止的应用、受保护的环境、冻结期和正在运行的部署会被跳过，绝不强制执行。"
+}

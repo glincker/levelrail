@@ -1,0 +1,326 @@
+{
+  "page": {
+    "title": "アクセスポリシー",
+    "description": "アプリ、データベース、環境に限定した許可(Allow)と拒否(Deny)のルールです。Denyは常に優先されます。Allowでは、トークンのグローバルな権限より狭いアクセスを付与できます。",
+    "createPolicy": "ポリシーを作成",
+    "tabs": {
+      "policies": "ポリシー",
+      "access": "アクセス権を持つユーザー",
+      "simulator": "シミュレーター",
+      "analyzer": "アナライザー"
+    },
+    "loadError": "ポリシーを読み込めませんでした",
+    "retry": "再試行"
+  },
+  "risk": {
+    "read": "読み取り",
+    "write": "変更を伴う",
+    "sensitive": "機密",
+    "root": "ルート"
+  },
+  "group": {
+    "view": "表示",
+    "change": "変更",
+    "deploy": "デプロイ",
+    "admin": "管理"
+  },
+  "list": {
+    "empty": {
+      "title": "ポリシーはまだありません",
+      "description": "テンプレートから始めるか、ルールを1つずつ作成してください。ポリシーをアタッチするまで、誰にも変更は生じません。"
+    },
+    "table": {
+      "name": "ポリシー",
+      "rules": "ルール",
+      "appliesTo": "適用先",
+      "updated": "更新日時",
+      "actions": "操作"
+    },
+    "notAttached": "未アタッチ",
+    "open": "開く",
+    "edit": "編集",
+    "attach": "アタッチ",
+    "delete": "削除",
+    "allow": "Allow {{count}} 件",
+    "deny": "Deny {{count}} 件",
+    "rules_other": "{{count}} 件のルール",
+    "appliesToCount_other": "{{count}} 件のプリンシパル"
+  },
+  "builder": {
+    "createTitle": "ポリシーを作成",
+    "editTitle": "{{name}} を編集",
+    "description": "どのリソースに対して何を許可または拒否するかを選択します。右側のJSONは自動生成され、これが保存されます。",
+    "name": "名前",
+    "namePlaceholder": "例: deployer-staging",
+    "nameRequired": "名前は必須です",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "このポリシーの用途",
+    "statement": "ルール {{n}}",
+    "addStatement": "ルールを追加",
+    "removeStatement": "ルール {{n}} を削除",
+    "effect": {
+      "label": "効果",
+      "allow": "Allow",
+      "deny": "Deny",
+      "allowHint": "以下のリソースに対して、これらの権限を付与します。",
+      "denyHint": "以下のリソースに対して、これらの権限をブロックします。権限を持つトークンであってもブロックされます。"
+    },
+    "actions": {
+      "label": "権限",
+      "search": "権限を検索",
+      "all": "すべての権限",
+      "allHint": "ルート権限を含む、現在および将来のあらゆる権限に一致します。",
+      "required": "権限を1つ以上選択してください",
+      "noMatch": "その検索に一致する権限はありません。",
+      "selected": "{{count}} 件を選択中"
+    },
+    "resources": {
+      "label": "リソース",
+      "required": "リソースを1つ以上選択してください",
+      "add": "リソースを追加",
+      "kind": "種類",
+      "value": "1つ選択",
+      "search": "検索",
+      "noOptions": "この種類のものはまだ存在しません。",
+      "remove": "{{resource}} を削除",
+      "kinds": {
+        "all": "すべて",
+        "project": "プロジェクト",
+        "environment": "環境",
+        "environment_kind": "環境の種類",
+        "app": "特定のアプリ",
+        "database": "特定のデータベース",
+        "static_site": "特定の静的サイト",
+        "pattern": "名前パターン"
+      },
+      "patternPlaceholder": "app:web-*",
+      "patternHint": "末尾に * を付けるとプレフィックスに一致します。例: app:web-*",
+      "projectNote": "保存時に、プロジェクトの {{count}} 個の環境に展開されます。",
+      "matchNone": "現在は何にも一致しません",
+      "matchAll": "すべて",
+      "matchChecking": "確認中",
+      "matchApps_other": "アプリ {{count}} 件",
+      "matchDatabases_other": "データベース {{count}} 件",
+      "matchStaticSites_other": "静的サイト {{count}} 件"
+    },
+    "conditions": {
+      "title": "条件",
+      "description": "評価エンジンにはまだ条件エンジンがないため、ルールは無条件で適用されます。上のリソースで環境を指定して範囲を絞ってください。",
+      "planned": "まだ適用されません",
+      "sourceIp": "接続元のIPまたはCIDR",
+      "timeWindow": "時間帯とタイムゾーン",
+      "mfa": "MFAまたはセッションの経過時間"
+    },
+    "json": {
+      "title": "ドキュメント",
+      "advanced": "JSONを編集",
+      "advancedHint": "ここで編集すると、ガイド付きのルールが置き換えられます。フィールドのエラーはパスを指します。",
+      "invalid": "有効なポリシードキュメントではありません: {{reason}}",
+      "apply": "このJSONを使用",
+      "reset": "ガイド付きに戻す"
+    },
+    "issues": {
+      "title": "問題",
+      "ok": "ドキュメントは有効です",
+      "checking": "確認中"
+    },
+    "template": {
+      "title": "テンプレートから始める",
+      "pick": "テンプレート",
+      "none": "空のポリシー",
+      "use": "ルールを入力",
+      "param": {
+        "environment": "環境",
+        "app": "アプリ",
+        "database": "データベース",
+        "project": "プロジェクト"
+      },
+      "failed": "テンプレートを展開できませんでした"
+    },
+    "attach": {
+      "title": "保存時にアタッチ",
+      "description": "任意です。このポリシーをすぐに適用するユーザーを選択します。",
+      "none": "まだ誰もいません"
+    },
+    "save": "ポリシーを保存",
+    "saving": "保存中",
+    "saved": "ポリシー {{name}} を保存しました",
+    "cancel": "キャンセル"
+  },
+  "impact": {
+    "title": "この変更の影響",
+    "checking": "影響を算出中",
+    "none": "まだ影響を受ける人はいません。",
+    "noChange": "{{name}}: 実効アクセスに変更はありません。",
+    "recentlyUsed": "過去7日間に使用されました",
+    "guardBlocked": "ブロックされました: プラットフォームを管理できるルートのプリンシパルがいなくなってしまいます。",
+    "showResources": "リソースを表示",
+    "tooManyHidden": "ほか",
+    "gains_other": "{{name}} は {{count}} 件のリソースで {{ability}} を取得します",
+    "loses_other": "{{name}} は {{count}} 件のリソースで {{ability}} を失います"
+  },
+  "versions": {
+    "title": "履歴",
+    "empty": "保存されたバージョンはまだありません。",
+    "version": "バージョン {{n}}",
+    "by": "{{actor}} による",
+    "unknownActor": "不明",
+    "added": "追加",
+    "removed": "削除",
+    "noChange": "ルールの変更なし",
+    "initial": "最初に保存されたバージョン"
+  },
+  "detail": {
+    "title": "ポリシーの詳細",
+    "rules": "ルール",
+    "appliesTo": "適用先",
+    "nobody": "誰にもアタッチされていません。アタッチするまで効果はありません。",
+    "findings": "このポリシーの検出事項",
+    "noFindings": "このポリシーに検出事項はありません。",
+    "detach": "デタッチ",
+    "close": "閉じる"
+  },
+  "access": {
+    "search": "ユーザーとトークンを検索",
+    "filter": {
+      "all": "全員",
+      "user": "ユーザー",
+      "token": "トークン"
+    },
+    "empty": {
+      "title": "一致するユーザーやトークンはありません",
+      "description": "検索をクリアするか、フィルターを切り替えてください。"
+    },
+    "user": "ユーザー",
+    "token": "トークン",
+    "inactive": "失効済みまたは期限切れ",
+    "pickOne": {
+      "title": "ユーザーまたはトークンを選択",
+      "description": "実行できることと、それを決めるポリシーを確認します。"
+    },
+    "attachedPolicies": "アタッチ済みのポリシー",
+    "noPolicies": "アタッチされたポリシーはありません。自身の権限のみが適用されます。",
+    "attach": "ポリシーをアタッチ",
+    "bulkAttach": "選択したトークンにアタッチ",
+    "selectedCount": "{{count}} 件を選択中",
+    "selectAllTokens": "表示中のすべてのトークンを選択",
+    "clearSelection": "クリア",
+    "flatAbilities": "権限",
+    "lastUsed": "最終使用: {{when}}",
+    "neverUsed": "未使用",
+    "policiesCount_other": "{{count}} 件のポリシー"
+  },
+  "attachDialog": {
+    "attachTitle": "ポリシーをアタッチ",
+    "detachTitle": "ポリシーをデタッチ",
+    "description": "変更内容を確認してから、確定してください。変更は監査ログに書き込まれます。",
+    "policy": "ポリシー",
+    "policyPick": "ポリシーを選択",
+    "principals": "対象",
+    "noPrincipals": "ユーザーまたはトークンを1つ以上選択してください",
+    "confirmAttach": "アタッチ",
+    "confirmDetach": "デタッチ",
+    "working": "処理中",
+    "failed": "一部の変更に失敗しました: {{message}}",
+    "attached_other": "{{name}} を {{count}} 件のプリンシパルにアタッチしました",
+    "detached_other": "{{name}} を {{count}} 件のプリンシパルからデタッチしました"
+  },
+  "effective": {
+    "title": "{{name}} は何ができますか?",
+    "ability": "権限",
+    "scope": "許可されている対象",
+    "viaPolicy": "ポリシーによって付与",
+    "deniedByPolicy": "ポリシーによってブロック",
+    "all": "全 {{total}} 件のリソース",
+    "some": "{{total}} 件中 {{allowed}} 件",
+    "none": "なし",
+    "noResources": "アプリやデータベースはまだありません",
+    "restricted": "このプリンシパルには、付与された環境のみが表示されます。",
+    "apps": "アプリ",
+    "databases": "データベース"
+  },
+  "simulator": {
+    "title": "このプリンシパルはこれを実行できますか?",
+    "description": "すべてのリクエストを保護するものと同じ評価エンジンを実行します。何も変更されません。",
+    "principal": "プリンシパル",
+    "principalPick": "ユーザーまたはトークンを選択",
+    "action": "権限",
+    "resource": "リソース",
+    "resourcePick": "アプリまたはデータベースを選択",
+    "resourceCustom": "またはリソースを入力",
+    "run": "確認",
+    "running": "確認中",
+    "allowed": "許可",
+    "denied": "拒否",
+    "summary": "{{name}} は {{resource}} で {{action}} を{{verdict}}",
+    "verdictAllow": "実行できます",
+    "verdictDeny": "実行できません",
+    "decidedBy": {
+      "explicit_deny": "アタッチされたポリシーの明示的なDenyによって決まりました。",
+      "base_ability": "プリンシパル自身の権限によって付与されており、Denyには一致しませんでした。",
+      "explicit_allow": "アタッチされたポリシーのAllowによって付与されています。",
+      "no_grant": "付与するものがありません。一致する権限もAllowステートメントもありません。",
+      "hidden": "このリソースは、このプリンシパルが参照できる環境の外にあるため、見つからないと応答します。",
+      "inactive_principal": "このトークンは失効済みまたは期限切れのため、すべてのリクエストが拒否されます。"
+    },
+    "decidingStatement": "決定したステートメント",
+    "matched": "一致したすべてのステートメント",
+    "noneMatched": "アタッチされたどのポリシーにも、一致するステートメントはありませんでした。",
+    "policy": "ポリシー {{name}}、ルール {{n}}",
+    "environments": "参照できる環境のスコープ: {{list}}",
+    "failed": "確認を実行できませんでした",
+    "needsInput": "先にプリンシパルとリソースを選択してください。",
+    "showEffective": "このプリンシパルは何ができますか?"
+  },
+  "analyzer": {
+    "title": "ポリシーアナライザー",
+    "description": "すべてのポリシー、アタッチメント、トークンに対する静的チェックです。各検出事項には、何を変更すべきかが示されます。",
+    "score": "100点満点中 {{score}} 点",
+    "scoreLabel": "アクセス衛生スコア",
+    "clean": {
+      "title": "検出事項はありません",
+      "description": "ポリシーに対応が必要なものはありません。"
+    },
+    "severity": {
+      "critical": "重大",
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "info": "メモ"
+    },
+    "all": "すべて",
+    "fix": "修正",
+    "openPolicy": "ポリシーを開く",
+    "openPrincipal": "アクセスを確認",
+    "rerun": "再実行",
+    "count": "{{count}} 件の検出事項"
+  },
+  "suggestions": {
+    "title": "最小権限",
+    "description": "トークンを、過去 {{days}} 日間に監査ログで使用が確認された内容と比較します。",
+    "empty": "すべてのトークンが、使用している権限のみを保持しています。",
+    "granted": "付与済み",
+    "suggested": "推奨",
+    "unused": "未使用",
+    "status": {
+      "ok": "使用中",
+      "narrow": "絞り込み可能",
+      "idle": "アイドル"
+    },
+    "revoke": "トークンを失効",
+    "revoked": "トークン {{name}} を失効しました",
+    "confirmTitle": "{{name}} を失効しますか?",
+    "confirmDescription": "このトークンを使用しているものはすべて動作しなくなります。この操作は元に戻せません。",
+    "pending": "失効中",
+    "note": "通常の読み取りリクエストは監査されないため、読み取りが未使用と判定されることはありません。"
+  },
+  "delete": {
+    "title": "{{name}} を削除しますか?",
+    "description": "アタッチされているすべてのユーザーが、このルールを失います。この操作は元に戻せません。",
+    "confirm": "ポリシーを削除",
+    "deleted": "ポリシー {{name}} を削除しました"
+  },
+  "errors": {
+    "generic": "リクエストに失敗しました。もう一度お試しください。"
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "common": {
+    "cancel": "Abbrechen"
+  },
+  "grid": {
+    "label": "Dashboard-Widgets",
+    "controls": "Steuerelemente für {{title}}",
+    "moveEarlier": "{{title}} nach vorn verschieben",
+    "moveLater": "{{title}} nach hinten verschieben",
+    "size": "{{title}} auf Größe {{size}} setzen",
+    "remove": "{{title}} entfernen"
+  },
+  "widget": {
+    "type": {
+      "metric_chart": "Metrikdiagramm",
+      "request_percentiles": "Anfragelatenz",
+      "error_rate": "Fehlerrate",
+      "log_tail": "Log-Ende",
+      "deploy_timeline": "Deploy-Zeitachse",
+      "resource_counts": "Ressourcenzahlen",
+      "cost": "Kosten nach Tag",
+      "alert_status": "Alarmstatus",
+      "node_capacity": "Node-Kapazität",
+      "link": "Link",
+      "fleet_health": "Flottenzustand",
+      "fleet_traffic": "Flotten-Traffic",
+      "top_apps": "Top-Apps",
+      "deploy_activity": "Deploy-Aktivität",
+      "fleet_capacity": "Flottenkapazität",
+      "attention": "Erfordert Aufmerksamkeit"
+    },
+    "noTraffic": "Keine Anfragen im letzten Zeitfenster.",
+    "p95": "p95-Latenz",
+    "reqPerSec": "Anfragen pro Sekunde",
+    "errorShare": "Anteil von 4xx und 5xx an den Anfragen",
+    "noLogs": "Keine Log-Zeilen in diesem Zeitraum.",
+    "noDeploys": "Keine aktuellen Deploys.",
+    "count": {
+      "app": "Apps",
+      "database": "Datenbanken",
+      "node": "Nodes",
+      "domain": "Domains"
+    },
+    "noCost": "Noch keine Kostendaten. Legen Sie unter Nutzung und Kosten Preise fest, um die Ausgaben nach Tag zu sehen.",
+    "scopedCost": "Ausgaben in diesem Monat im gewählten Bereich",
+    "untagged": "Ohne Tag",
+    "rulesEnabled": "Alarmregeln aktiviert",
+    "noRules": "Diese App hat noch keine Alarmregeln.",
+    "unknown": "Unbekannt",
+    "capacity": {
+      "disk": "Festplatte belegt",
+      "memory": "Speicher belegt"
+    }
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_usage_bytes": "Speicher",
+    "network_rx_bytes": "Netzwerk ein",
+    "network_tx_bytes": "Netzwerk aus",
+    "disk_read_bytes": "Festplatte gelesen",
+    "disk_write_bytes": "Festplatte geschrieben",
+    "disk_used_bytes": "Festplatte belegt",
+    "container_restart_count": "Neustarts"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Datenbank",
+    "node": "Node"
+  },
+  "range": {
+    "15m": "Letzte 15 Minuten",
+    "1h": "Letzte Stunde",
+    "6h": "Letzte 6 Stunden",
+    "24h": "Letzte 24 Stunden",
+    "7d": "Letzte 7 Tage",
+    "30d": "Letzte 30 Tage"
+  },
+  "refresh": {
+    "0": "Manuell",
+    "15": "Alle 15 Sekunden",
+    "30": "Alle 30 Sekunden",
+    "60": "Jede Minute",
+    "300": "Alle 5 Minuten"
+  },
+  "toolbar": {
+    "range": "Zeitraum",
+    "refresh": "Automatisch aktualisieren",
+    "refreshNow": "Aktualisieren",
+    "addWidget": "Widget hinzufügen",
+    "shared": "Mit allen geteilt",
+    "project": "Projekt",
+    "noProject": "Kein Projekt",
+    "isDefault": "Standard für das Projekt",
+    "save": "Änderungen speichern",
+    "done": "Bearbeitung beenden"
+  },
+  "add": {
+    "title": "Widget hinzufügen",
+    "description": "Wählen Sie, was angezeigt wird und woraus es liest.",
+    "type": "Widget",
+    "kind": "Liest aus",
+    "target": "Ressource",
+    "targetPlaceholder": "Ressource wählen",
+    "metric": "Metrik",
+    "query": "Log-Filter",
+    "queryPlaceholder": "Suchtext, optional",
+    "submit": "Widget hinzufügen",
+    "linkTitle": "Titel",
+    "linkTitlePlaceholder": "Runbook",
+    "linkUrl": "Adresse"
+  },
+  "template": {
+    "label": "Start-Dashboards",
+    "use": "Diese Vorlage verwenden",
+    "pickApp": "App für {{name}}",
+    "app-health": {
+      "name": "App-Zustand",
+      "description": "CPU, Speicher, Latenz, Fehler, Alarme, Deploys und Logs für eine App."
+    },
+    "fleet-overview": {
+      "name": "Flottenübersicht",
+      "description": "Wie viele Apps, Datenbanken, Nodes und Domains Sie betreiben."
+    },
+    "cost": {
+      "name": "Kosten",
+      "description": "Ausgaben im Monat bis heute nach Tag, neben der dahinterstehenden Ressourcennutzung."
+    }
+  },
+  "empty": {
+    "widgetsTitle": "Dieses Dashboard ist leer",
+    "widgetsBody": "Schalten Sie Bearbeiten ein und fügen Sie ein Widget hinzu, um zu beginnen."
+  },
+  "toast": {
+    "saved": "Dashboard gespeichert",
+    "saveFailed": "Das Dashboard konnte nicht gespeichert werden",
+    "imported": "{{name}} importiert",
+    "importFailed": "Das Dashboard konnte nicht importiert werden",
+    "notJson": "Diese Datei ist kein gültiges JSON.",
+    "deleted": "Dashboard gelöscht",
+    "deleteFailed": "Das Dashboard konnte nicht gelöscht werden",
+    "created": "{{name}} erstellt",
+    "createFailed": "Das Dashboard konnte nicht erstellt werden"
+  },
+  "fleet": {
+    "loadFailed": "Diese Daten konnten nicht geladen werden.",
+    "health": {
+      "empty": "Noch keine Apps.",
+      "barLabel": "{{running}} laufen, {{failing}} fehlerhaft, {{stopped}} gestoppt",
+      "running": "Läuft",
+      "failing": "Fehlerhaft",
+      "stopped": "Gestoppt",
+      "nodesOnline": "Nodes online"
+    },
+    "traffic": {
+      "notConfigured": "Telemetrie ist nicht konfiguriert.",
+      "empty": "Keine Anfragen in der letzten Stunde.",
+      "requests": "Anfragen, letzte Stunde",
+      "errors": "5xx-Fehler",
+      "tooFew": "Zu wenige Anfragen",
+      "p95": "p95-Latenz",
+      "spark": "Anfragen pro Sekunde über alle Apps"
+    },
+    "top": {
+      "sortBy": "Sortieren nach",
+      "cpu": "CPU",
+      "memory": "Speicher",
+      "requests": "Anfragen",
+      "empty": "Noch nichts zu ranken."
+    },
+    "deploys": {
+      "empty": "Noch keine abgeschlossenen Deploys.",
+      "summary": "{{day}} in 24 Stunden, {{week}} in 7 Tagen ({{ok}} erfolgreich, {{failed}} fehlgeschlagen)",
+      "succeeded": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "sampled": "Basiert auf den {{count}} Apps, die am dringendsten einen Blick brauchen."
+    },
+    "capacity": {
+      "unavailable": "Die Kapazität ist nicht verfügbar.",
+      "empty": "Noch kein Node meldet Kapazität.",
+      "cpu": "CPU",
+      "memory": "Speicher",
+      "disk": "Festplatte"
+    },
+    "attention": {
+      "clear": "Alles in Ordnung. Nichts erfordert Aufmerksamkeit.",
+      "critical": "Kritisch",
+      "warning": "Warnung",
+      "info": "Hinweis",
+      "viewAll": "Status öffnen",
+      "more": "{{count}} weitere unter Status"
+    }
+  }
+}

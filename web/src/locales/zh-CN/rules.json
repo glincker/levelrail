@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "条件",
+    "if": "如果",
+    "and": "并且",
+    "then": "则",
+    "fieldLabel": "条件 {{n}} 字段",
+    "nameLabel": "条件 {{n}} 名称",
+    "operatorLabel": "条件 {{n}} 运算符",
+    "valueLabel": "条件 {{n}} 值",
+    "removeCondition": "移除条件 {{n}}",
+    "addCondition": "AND",
+    "maxConditions": "每条规则最多 {{count}} 个条件。",
+    "actionLabel": "动作",
+    "selectAction": "选择动作",
+    "ruleName": "名称",
+    "description": "描述（可选）",
+    "cancel": "取消",
+    "viewCode": "查看代码",
+    "hideCode": "隐藏代码",
+    "copy": "复制",
+    "copied": "已复制",
+    "codeLabel": "规则存储形式",
+    "codeHelp": "这正是保存的内容。只读。"
+  }
+}

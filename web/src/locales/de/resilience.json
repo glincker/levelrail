@@ -1,0 +1,161 @@
+{
+  "title": "Resilienzbericht",
+  "description": "Das zuletzt gemessene Ergebnis jedes Fehlerszenarios, ausgeführt gegen wegwerfbare lokale Container. Es werden nur gemessene Zahlen angezeigt.",
+  "loadError": "Der Resilienzbericht konnte nicht geladen werden.",
+  "retry": "Erneut prüfen",
+  "status": {
+    "passed": "Bestanden",
+    "failed": "Fehlgeschlagen",
+    "skipped": "Übersprungen"
+  },
+  "scenario": {
+    "kill-container": "Den ausliefernden Container unter Last beenden",
+    "daemon-unreachable": "Docker-API während eines Deploys nicht erreichbar",
+    "control-plane-restart": "Neustart der Control Plane unter Last",
+    "disk-pressure": "Scratch-Volume gefüllt",
+    "oom-during-readiness": "OOM-Kill während der Readiness-Wartezeit",
+    "ingress-steady": "Steigende gleichmäßige Last durch den Ingress",
+    "deploy-latency": "Deploy-Latenz vom Image bis zur Auslieferung",
+    "rollout-under-traffic": "Rolling-Deploy von zwei Replikaten unter Last",
+    "ingress-concurrency": "Ingress-Durchsatz bei fester Parallelität",
+    "replica-failover": "Eines von zwei Replikaten unter Last beenden"
+  },
+  "metrics": {
+    "recovery": "Wiederherstellung",
+    "errors": "Fehlgeschlagene Anfragen",
+    "ranAt": "Gemessen"
+  },
+  "notMeasured": "Noch nicht gemessen",
+  "empty": {
+    "title": "Noch keine Chaos-Ergebnisse aufgezeichnet",
+    "body": "Führen Sie die Szenarien auf einem Rechner mit Docker aus und zeichnen Sie sie auf, dann erscheint jedes Ergebnis hier."
+  },
+  "disk": {
+    "title": "Festplattenplatz-Wächter",
+    "description": "Freier Platz im Datenverzeichnis und im Docker-Volume. Unterhalb der kritischen Untergrenze werden Deploys, Pulls und Backups abgelehnt, bevor sie die Festplatte füllen können.",
+    "loadError": "Der Festplattenstatus konnte nicht geladen werden.",
+    "refusing": "Ein Volume liegt unter der kritischen Untergrenze. Deploys, Image-Pulls und Backups werden abgelehnt, bis Platz frei wird.",
+    "freeAction": "Jetzt Platz freigeben",
+    "freeing": "Wird bereinigt",
+    "free": "{{free}} frei von {{total}}",
+    "thresholds": "Warnt unter {{low}} frei, lehnt riskante Vorgänge unter {{critical}} ab. Setzen Sie APP_DISK_LOW_FREE_MB und APP_DISK_CRITICAL_FREE_MB, um dies zu ändern.",
+    "volume": {
+      "data": "Daten der Control Plane",
+      "docker": "Docker-Speicher"
+    },
+    "level": {
+      "ok": "In Ordnung",
+      "low": "Niedrig",
+      "critical": "Kritisch",
+      "unknown": "Unbekannt"
+    },
+    "toast": {
+      "freed": "Bereinigung abgeschlossen, {{size}} freigegeben",
+      "errorTitle": "Platz konnte nicht freigegeben werden"
+    }
+  },
+  "cli": {
+    "summary": "Die Szenarien stattdessen im Terminal ausführen",
+    "note": "Benötigt eine CLI, die mit dem Tag chaoslive gebaut wurde, und einen lokalen Docker-Daemon."
+  },
+  "benchmarks": {
+    "title": "Benchmarks",
+    "description": "Ergebnisdateien von bench chaos run, zusammen mit dem Host und dem Build aufbewahrt, die sie erzeugt haben, damit Läufe gezeigt und verglichen werden können.",
+    "refresh": "Aktualisieren",
+    "loadError": "Benchmark-Ergebnisse konnten nicht geladen werden.",
+    "standingCaveat": {
+      "title": "Keine Kapazitätszahlen für die Produktion",
+      "body": "Diese Läufe messen einen Lastgenerator und die Control Plane auf einem Rechner. Sofern der Host kein Linux-Server ist, sind es KEINE Linux-Produktionszahlen. Lesen Sie die Einschränkungen jedes Laufs, bevor Sie eine Zahl zitieren."
+    },
+    "caveatsTitle": "Zuerst lesen",
+    "empty": {
+      "title": "Noch keine Benchmark-Läufe gespeichert",
+      "body": "Führen Sie die Szenarien auf einem Rechner mit Docker aus und laden Sie die Ergebnisdatei hoch, dann erscheint jeder Lauf hier."
+    },
+    "history": {
+      "title": "Lauf-Verlauf",
+      "keep": "Behält die neuesten {{count}} Läufe.",
+      "nonLinux": "Einige Läufe stammen von Nicht-Linux-Hosts.",
+      "select": "Zum Vergleich auswählen",
+      "selectRun": "Lauf {{id}} zum Vergleich auswählen",
+      "when": "Gemessen",
+      "build": "Build",
+      "host": "Host",
+      "result": "Ergebnis",
+      "actions": "Aktionen",
+      "view": "Ansehen",
+      "compare": "Auswahl vergleichen",
+      "passed_one": "{{count}} bestanden",
+      "passed_other": "{{count}} bestanden",
+      "failed_one": "{{count}} fehlgeschlagen",
+      "failed_other": "{{count}} fehlgeschlagen",
+      "repeat_one": "{{count}} Lauf je Szenario",
+      "repeat_other": "{{count}} Läufe je Szenario",
+      "deleteRun": "Lauf {{id}} löschen"
+    },
+    "groups": {
+      "failover": "Failover und Wiederherstellung",
+      "deploy": "Deploy",
+      "rollout": "Rollout",
+      "throughput": "Durchsatz"
+    },
+    "host": {
+      "title": "Host und Build",
+      "platform": "Plattform",
+      "kernel": "Kernel",
+      "cpu": "CPU und Kerne",
+      "memory": "Speicher",
+      "docker": "Docker-Engine",
+      "load": "Durchschnittslast",
+      "loadValue": "{{start}} am Anfang, {{end}} am Ende",
+      "version": "Version",
+      "commit": "Commit",
+      "runs": "Läufe pro Szenario",
+      "note": "Hinweis",
+      "unknown": "unbekannt"
+    },
+    "table": {
+      "scenario": "Szenario",
+      "run": "Lauf",
+      "status": "Status",
+      "summary": "Was geschah",
+      "metric": "Metrik",
+      "runN": "Lauf {{n}}"
+    },
+    "limits": {
+      "title": "Limits-Tabelle",
+      "question": "Frage",
+      "status": "Status"
+    },
+    "method": "Wie diese Zahlen erhoben wurden",
+    "chart": {
+      "aria": "{{title}}, Anfragen pro Sekunde nach Parallelität: {{summary}}"
+    },
+    "compare": {
+      "title": "Vergleichen",
+      "base": "Basis",
+      "head": "Head",
+      "runs_one": "{{count}} Lauf",
+      "runs_other": "{{count}} Läufe",
+      "basis": "Jeder Wert ist der Median über die Läufe dieser Seite. Eine Änderung unter {{noise}} Prozent gilt als gleich.",
+      "warningsTitle": "Lesen Sie diesen Vergleich mit Vorsicht",
+      "statusTitle": "Ergebnisänderungen",
+      "to": "auf",
+      "delta": "Änderung",
+      "verdict": "Urteil",
+      "oneSided": "nur eine Seite",
+      "direction": {
+        "better": "Besser",
+        "worse": "Schlechter",
+        "same": "Gleich"
+      }
+    },
+    "confirmDelete": {
+      "title": "Diesen Benchmark-Lauf löschen?",
+      "body": "Lauf {{id}} wird für alle entfernt. Die von Ihnen hochgeladene Ergebnisdatei ist davon nicht betroffen.",
+      "confirm": "Lauf löschen"
+    },
+    "deleted": "Lauf gelöscht",
+    "deleteFailed": "Der Lauf konnte nicht gelöscht werden"
+  }
+}

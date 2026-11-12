@@ -1,0 +1,138 @@
+{
+  "title": "デプロイタイムライン",
+  "subtitle": "1回のデプロイで起きたことを、順番にすべて表示します。",
+  "pageTitle": "デプロイ {{id}}",
+  "app": "アプリ",
+  "back": "すべてのデプロイ",
+  "open": "タイムライン",
+  "verdict": {
+    "running": "進行中",
+    "watching": "監視中",
+    "succeeded": "成功",
+    "failed": "失敗",
+    "rolled_back": "ロールバック済み",
+    "canceled": "キャンセル済み",
+    "queued": "待機中"
+  },
+  "connection": {
+    "connecting": "接続中",
+    "live": "ライブ",
+    "ended": "リプレイ",
+    "error": "再接続中"
+  },
+  "frozenNote": "このデプロイが完了した時点で保存されたリプレイです。",
+  "list": {
+    "label": "デプロイイベント(古い順)",
+    "loading": "デプロイタイムラインを読み込み中",
+    "emptyTitle": "イベントはまだありません",
+    "emptyBody": "デプロイが進むと、ここにイベントが表示されます。"
+  },
+  "announce": "{{title}}: {{status}}",
+  "status": {
+    "running": "実行中",
+    "ok": "完了",
+    "failed": "失敗",
+    "warning": "警告",
+    "info": "情報"
+  },
+  "kind": {
+    "trigger": "トリガー",
+    "build": "ビルド",
+    "log": "ビルド出力",
+    "image_push": "イメージのpush",
+    "hook": "フック",
+    "step": "ステップ",
+    "readiness": "レディネス",
+    "cutover": "切り替え",
+    "watch": "デプロイ後の監視",
+    "rollback": "ロールバック",
+    "outcome": "結果",
+    "traffic_impact": "トラフィックへの影響"
+  },
+  "codes": {
+    "trigger_git_push": "Git pushを受信しました",
+    "trigger_webhook": "Webhookを受信しました",
+    "trigger_manual": "デプロイを手動で開始しました",
+    "trigger_image": "イメージのデプロイがリクエストされました",
+    "trigger_compose": "Composeのデプロイがリクエストされました",
+    "trigger_promote": "プロモートがリクエストされました",
+    "trigger_auto_rollback": "自動ロールバックを開始しました",
+    "trigger_restart": "再起動がリクエストされました",
+    "trigger_queued": "別のデプロイの後ろで待機中",
+    "build_detecting": "ビルド方法を検出中",
+    "build_building": "ビルド",
+    "build_failed": "ビルドに失敗しました",
+    "push": "イメージのpush",
+    "readiness_probe": "レディネスプローブ",
+    "watch_crashloop": "デプロイ後にクラッシュループが発生",
+    "watch_oom": "デプロイ後にメモリ不足でコンテナが強制終了",
+    "watch_exited": "デプロイ後にコンテナが終了",
+    "watch_error_rate": "デプロイ後に5xxの割合が上昇",
+    "watch_latency": "デプロイ後にレイテンシが悪化",
+    "watch_stopped": "オペレーターが監視を停止しました",
+    "watch_cleared": "デプロイ後の監視が完了しました",
+    "rollback_auto": "自動ロールバック",
+    "rollback_no_target": "ロールバック先がありません",
+    "outcome_succeeded": "デプロイが完了しました",
+    "outcome_failed": "デプロイに失敗しました",
+    "outcome_rolled_back": "デプロイをロールバックしました",
+    "outcome_canceled": "デプロイをキャンセルしました",
+    "traffic_impact": "切り替え前後のトラフィックへの影響"
+  },
+  "trigger": {
+    "rerun": "{{id}} の再実行"
+  },
+  "logs": {
+    "summary_other": "ビルド出力、{{count}} 行",
+    "region": "ビルド出力の行",
+    "dropped": "リプレイを小さく保つため、それより前の {{count}} 行は省略されました。"
+  },
+  "impact": {
+    "title": "切り替え前後のトラフィック",
+    "before": "前",
+    "after": "後",
+    "rate": "1秒あたりのリクエスト数",
+    "errors": "5xxの割合",
+    "p95": "p95レイテンシ",
+    "noTraffic": "このウィンドウにトラフィックはありません",
+    "open": "切り替え後のウィンドウはまだ開いているため、これらの数値は変わる可能性があります。",
+    "window": "ウィンドウは、切り替えの前後それぞれ {{window}} です。"
+  },
+  "phases": {
+    "title": "フェーズごとの時間",
+    "label": "各フェーズの所要時間",
+    "trigger": "トリガー",
+    "build": "ビルド",
+    "push": "push",
+    "hooks": "フック",
+    "deploy": "デプロイ",
+    "readiness": "レディネス",
+    "cutover": "切り替え",
+    "watch": "監視",
+    "outcome": "結果"
+  },
+  "compare": {
+    "label": "比較対象",
+    "none": "比較しない",
+    "hint": "このアプリの別のデプロイを選ぶと、両方のタイムラインを並べて表示します。",
+    "loading": "比較を読み込み中",
+    "errorTitle": "比較を読み込めませんでした",
+    "title": "並べて表示",
+    "deployA": "このデプロイ",
+    "deployB": "比較対象のデプロイ",
+    "phase": "フェーズ",
+    "delta": "差",
+    "faster": "{{value}} 速い",
+    "slower": "{{value}} 遅い",
+    "same": "同じ",
+    "missing": "未到達",
+    "onlyHere": "このデプロイのみ",
+    "onlyThere": "比較対象のデプロイのみ",
+    "noDifferences": "どちらのデプロイも、同じシグナルを生成しました。",
+    "columnLabel": "デプロイ {{id}} のイベント"
+  },
+  "error": {
+    "title": "このデプロイを読み込めませんでした",
+    "notFound": "このデプロイは存在しないか、そのアプリを読み取る権限がありません。"
+  }
+}

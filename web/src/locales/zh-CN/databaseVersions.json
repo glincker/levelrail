@@ -1,0 +1,39 @@
+{
+  "listLabel": "可用版本",
+  "toggle": "显示可用版本",
+  "group": {
+    "recommended": "推荐",
+    "stable": "稳定版",
+    "lts": "长期支持",
+    "prerelease": "预发布",
+    "eol": "已终止支持"
+  },
+  "badge": {
+    "stable": "稳定版",
+    "lts": "LTS",
+    "rc": "RC",
+    "beta": "Beta",
+    "eolSoon": "即将 EOL",
+    "eol": "EOL"
+  },
+  "eolOn": "已于 {{date}} 终止",
+  "eolSoonOn": "将于 {{date}} 终止",
+  "showPrerelease": "显示预发布版本",
+  "sourceLabel": "来源：",
+  "origin": {
+    "live": "实时数据，检查于 {{when}}",
+    "published": "已发布目录，更新于 {{when}}",
+    "direct": "由镜像仓库构建，更新于 {{when}}",
+    "embedded": "内置目录，更新于 {{when}}"
+  },
+  "unknownAge": "时间未知",
+  "freshness": {
+    "aging": "目录有些旧了，请立即检查",
+    "stale": "此目录已过期。请检查新版本。"
+  },
+  "check": "检查新版本",
+  "checking": "检查中...",
+  "checkedJustNow": "刚刚检查过。",
+  "checkFailed": "无法检查新版本：{{error}} 仍显示之前的列表。",
+  "checkDone": "版本列表已更新。"
+}

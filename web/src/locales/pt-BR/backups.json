@@ -1,0 +1,503 @@
+{
+  "health": {
+    "title": "Saúde dos backups",
+    "description": "Todos os bancos de dados e volumes de apps com backup, agrupados por app. Um backup só conta depois que uma restauração dele for comprovada.",
+    "loadFailed": "Não foi possível carregar a saúde dos backups: {{error}}",
+    "empty": "Nenhum recurso com backup ainda. Agende ou dispare um backup na página do banco de dados ou do volume do app.",
+    "databasesGroup": "Bancos de dados",
+    "appGroup": "App {{name}}",
+    "columns": {
+      "resource": "Recurso",
+      "state": "Estado",
+      "lastBackup": "Último backup",
+      "lastRestore": "Última restauração verificada",
+      "size": "Tamanho",
+      "nextRun": "Próxima execução",
+      "actions": "Ações"
+    },
+    "state": {
+      "healthy": "Saudável",
+      "warning": "Precisa de atenção",
+      "failing": "Falhando",
+      "unverified": "Não verificado",
+      "unprotected": "Sem backup"
+    },
+    "never": "Nunca verificado",
+    "none": "Nenhum ainda",
+    "notScheduled": "Não agendado",
+    "encrypted": "Criptografado",
+    "notEncrypted": "Não criptografado",
+    "backups": "{{count}} backups",
+    "restoreProven": "Restauração comprovada {{when}}",
+    "drillFailed": "O último teste falhou",
+    "runDrill": "Comprovar restauração",
+    "drillStarted": "Teste de restauração iniciado",
+    "drillStartedDescription": "Ele restaura em um recurso temporário, valida e o destrói. Os resultados aparecem no histórico de testes.",
+    "drillFailedToast": "Não foi possível iniciar o teste de restauração",
+    "restore": "Restaurar",
+    "restoreDatabase": "Opções de restauração",
+    "policy": "Política"
+  },
+  "encryption": {
+    "on": "Novos backups de volume são compactados e criptografados neste servidor antes do envio. Chave pública: {{key}}",
+    "off": "Novos backups de volume são compactados, mas não criptografados. Qualquer pessoa com acesso ao bucket pode lê-los.",
+    "keyHint": "Guarde uma cópia do arquivo de chave (APP_BACKUP_ENCRYPTION_KEY_FILE, por padrão backup-encryption.key no diretório de dados) fora deste servidor, ou os backups criptografados não poderão ser restaurados após um desastre.",
+    "column": "Criptografia",
+    "badge": "Criptografado"
+  },
+  "protection": {
+    "title": "Proteção do bucket",
+    "check": "Verificar buckets",
+    "checking": "Verificando...",
+    "checkFailed": "Não foi possível sondar os buckets de backup",
+    "locked": "Object lock ativado",
+    "versioned": "Versionamento ativado",
+    "open": "Qualquer pessoa com a chave pode excluir backups",
+    "probeError": "Não foi possível inspecionar este bucket: {{error}}",
+    "target": "Destino {{id}}"
+  },
+  "restoreWizard": {
+    "title": "Restaurar {{app}}/{{volume}}",
+    "description": "As restaurações sempre vão para um novo volume. O volume existente nunca é sobrescrito.",
+    "stepBackup": "Escolha um backup",
+    "stepDestination": "Escolha o local",
+    "stepConfirm": "Confirmar",
+    "backup": "Backup",
+    "noBackups": "Não há nenhum backup bem-sucedido deste volume para restaurar.",
+    "destination": "Destino",
+    "sameApp": "Um novo volume ao lado do original",
+    "otherApp": "Um novo volume para outro app",
+    "targetApp": "Nome do app",
+    "targetAppHint": "O volume recebe um nome que faz o deploy deste app montar os dados restaurados.",
+    "node": "Node",
+    "sameNode": "Mesmo node do app",
+    "newName": "Nome do volume",
+    "newNameHint": "Deixe vazio para gerar um.",
+    "summary": "Restaurar o backup {{backup}} em um novo volume {{name}} no node {{node}}.",
+    "generatedName": "um nome gerado",
+    "next": "Avançar",
+    "back": "Voltar",
+    "start": "Iniciar restauração",
+    "cancel": "Cancelar",
+    "started": "Restaurando em {{name}}",
+    "startedDescription": "Acompanhe o progresso no histórico de restaurações deste volume.",
+    "failed": "Não foi possível iniciar a restauração"
+  },
+  "policy": {
+    "title": "Política de backup de {{app}}/{{volume}}",
+    "description": "As contagens de retenção mantêm o backup mais recente de cada um dos últimos N dias, semanas e meses. Os hooks rodam dentro do container do app.",
+    "daily": "Manter diários",
+    "weekly": "Manter semanais",
+    "monthly": "Manter mensais",
+    "retentionHint": "0 desativa uma faixa. As contagens se combinam com os limites de manter os últimos e de idade do próprio agendamento.",
+    "preHook": "Comando antes do backup",
+    "preHookHint": "Uma saída diferente de zero faz o backup falhar, para que um volume inconsistente nunca seja arquivado.",
+    "hooksHidden": "Os comandos dos hooks estão ocultos porque alterá-los exige a permissão write:sensitive.",
+    "postHook": "Comando depois do backup",
+    "pause": "Pausar o app enquanto o arquivo é transmitido",
+    "pauseHint": "Congela todos os processos no container para que os arquivos não mudem durante o arquivamento. O app fica indisponível até o envio terminar.",
+    "save": "Salvar política",
+    "saved": "Política de backup salva",
+    "failed": "Não foi possível salvar a política de backup",
+    "loadFailed": "Não foi possível carregar a política de backup: {{error}}"
+  },
+  "drills": {
+    "title": "Testes de restauração",
+    "description": "Restaurações agendadas e manuais em recursos temporários. Um teste com falha dispara o alerta restore_drill_failed.",
+    "empty": "Nenhum teste foi executado ainda. Por padrão, os testes rodam automaticamente uma vez por semana.",
+    "loadFailed": "Não foi possível carregar os testes: {{error}}",
+    "columns": {
+      "resource": "Recurso",
+      "trigger": "Origem",
+      "result": "Resultado",
+      "checks": "Verificações",
+      "took": "Duração",
+      "started": "Início"
+    },
+    "status": {
+      "running": "Em execução",
+      "passed": "Aprovado",
+      "failed": "Falhou"
+    },
+    "trigger": {
+      "manual": "Manual",
+      "scheduled": "Agendado"
+    },
+    "check": {
+      "object": "Objeto presente",
+      "checksum": "Checksum",
+      "restore": "Restaurado",
+      "content": "Conteúdo"
+    },
+    "stage": "Falhou em {{stage}}",
+    "files": "{{count}} arquivos",
+    "tables": "{{count}} tabelas",
+    "shortDescription": "Restaurações em recursos temporários comprovam que um backup funciona.",
+    "showAll": "Mostrar todos ({{count}})",
+    "showLess": "Mostrar menos"
+  },
+  "history": {
+    "title": "Todas as tentativas de backup",
+    "description": "Todas as tentativas de todos os bancos de dados e volumes de apps, das mais recentes às mais antigas."
+  },
+  "page": {
+    "title": "Backups",
+    "helpLabel": "Guia de backups e armazenamento",
+    "description": "O que está protegido, o que não está e um só lugar para corrigir.",
+    "loadFailed": "Não foi possível carregar a cobertura de backups: {{error}}",
+    "loadFailedHint": "Verifique se o servidor está acessível e tente novamente.",
+    "retry": "Tentar novamente",
+    "noResourcesTitle": "Nada para fazer backup ainda",
+    "noResourcesDescription": "Bancos de dados e volumes de apps aparecem aqui assim que você os cria.",
+    "manageTargets": "Gerenciar destinos de backup"
+  },
+  "summary": {
+    "protected": "{{protected}} de {{total}} recursos protegidos",
+    "headline": {
+      "empty": "Nenhum banco de dados ou volume de app ainda.",
+      "allVerified": "Todos os recursos têm backup e uma restauração foi comprovada.",
+      "someUnprotected_one": "{{count}} recurso não tem agendamento de backup.",
+      "someUnprotected_many": "{{count}} recursos não têm agendamento de backup.",
+      "someUnprotected_other": "{{count}} recursos não têm agendamento de backup.",
+      "failing": "Os backups estão falhando em {{failing}} deles. Corrija esses primeiro.",
+      "unverified": "Há backup, mas ainda não foi comprovada uma restauração de todos os recursos."
+    },
+    "protectEverything": "Proteger tudo",
+    "lastVerified": "Última restauração verificada",
+    "nextRun": "Próxima execução",
+    "storage": "Armazenamento usado"
+  },
+  "coverage": {
+    "state": {
+      "verified": "Protegido e verificado",
+      "unverified": "Protegido, não verificado",
+      "never_ran": "Agendado, nunca executado",
+      "failing": "Backups falhando",
+      "unprotected": "Não protegido"
+    },
+    "lastBackup": "Último backup",
+    "lastRestore": "Restauração verificada",
+    "nextRun": "Próxima execução",
+    "size": "Tamanho"
+  },
+  "row": {
+    "kind": {
+      "database": "Banco de dados",
+      "volume": "Volume"
+    },
+    "scratch": "Temporário",
+    "protect": "Proteger",
+    "protected": "{{name}} agora está agendado",
+    "protectFailed": "Não foi possível proteger {{name}}",
+    "backupNow": "Fazer backup agora",
+    "backupStarted": "Backup de {{name}} iniciado",
+    "backupFailed": "Não foi possível iniciar um backup de {{name}}"
+  },
+  "target": {
+    "formLabel": "Conectar um destino de backup",
+    "providerLabel": "Provedor",
+    "connected": "Destino \"{{name}}\" conectado",
+    "connect": "Conectar destino",
+    "connecting": "Conectando...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "Sem taxas de saída"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "Armazenamento frio barato"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "Preço fixo por TB"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "Região e chaves"
+      },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "Interoperabilidade S3, chaves HMAC"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "Armazenamento compatível com S3 com CDN"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "Hospedado na UE, baixo custo"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "Armazenamento de objetos na UE"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "Compatível com S3, regiões da UE"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "Regiões globais"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "Seu próprio servidor S3"
+      },
+      "local": {
+        "name": "Disco local",
+        "hint": "Mesma máquina, não é seguro"
+      }
+    },
+    "localRootHint": "Armazenado em {{root}}. Informe uma pasta dentro dele.",
+    "localWarning": "Backups armazenados no próprio disco desta máquina se perdem junto com ela. Eles protegem contra um deploy ruim ou uma tabela excluída, não contra um disco morto, ransomware ou um servidor excluído. Use para experimentar e depois adicione um destino externo.",
+    "field": {
+      "name": "Nome",
+      "bucket": "Bucket",
+      "region": "Região",
+      "endpoint": "Endpoint",
+      "accessKeyId": "ID da chave de acesso",
+      "secretAccessKey": "Chave de acesso secreta"
+    },
+    "placeholder": {
+      "name": "ex.: backups-externos"
+    },
+    "missing": "{{field}} é obrigatório."
+  },
+  "protectAll": {
+    "title": "Proteger tudo",
+    "description": "Agende um backup para cada recurso que não tem nenhum. Nada muda até você aplicar.",
+    "destination": "Destino",
+    "addDestination": "Adicionar outro destino",
+    "schedule": "Agendamento e retenção",
+    "choice": {
+      "daily": "Diariamente às 03:00",
+      "sixHours": "A cada 6 horas",
+      "weekly": "Semanalmente, domingo às 03:00"
+    },
+    "cron": "Agendamento cron",
+    "retain": "Backups a manter",
+    "includeScratch_one": "Proteger também {{count}} recurso temporário (previews e canários)",
+    "includeScratch_many": "Proteger também {{count}} recursos temporários (previews e canários)",
+    "includeScratch_other": "Proteger também {{count}} recursos temporários (previews e canários)",
+    "plan": "O que vai mudar",
+    "planning": "Calculando o plano...",
+    "nothingToDo": "Todos os recursos já têm um agendamento.",
+    "kind": {
+      "database": "Banco de dados",
+      "volume": "Volume"
+    },
+    "cancel": "Cancelar",
+    "applying": "Aplicando...",
+    "apply_one": "Proteger {{count}} recurso",
+    "apply_many": "Proteger {{count}} recursos",
+    "apply_other": "Proteger {{count}} recursos",
+    "done_one": "{{count}} recurso agendado",
+    "done_many": "{{count}} recursos agendados",
+    "done_other": "{{count}} recursos agendados",
+    "someFailed_one": "{{count}} não pôde ser agendado.",
+    "someFailed_many": "{{count}} não puderam ser agendados.",
+    "someFailed_other": "{{count}} não puderam ser agendados."
+  },
+  "safety": {
+    "title": "Criptografia e segurança do bucket",
+    "encrypted": "Criptografado",
+    "notEncrypted": "Não criptografado",
+    "copied": "Chave pública copiada",
+    "copyFailed": "Não foi possível copiar a chave pública",
+    "keyDetails": "Detalhes da chave e armazenamento externo",
+    "keyHint": "Guarde a chave privada (APP_BACKUP_ENCRYPTION_KEY_FILE, por padrão backup-encryption.key no diretório de dados) em um gerenciador de senhas ou em outra máquina. Sem ela, os backups criptografados não podem ser restaurados após um desastre.",
+    "copyKey": "Copiar chave pública",
+    "keyNotStored": "Você não confirmou que a chave privada está guardada fora deste servidor. Se este servidor for perdido, estes backups também serão.",
+    "ack": "Guardei fora deste servidor",
+    "ackFailed": "Não foi possível salvar a confirmação",
+    "later": "Lembrar mais tarde"
+  },
+  "orphans": {
+    "title": "Dados órfãos",
+    "description": "Dados mantidos depois que o banco de dados ou o app foi excluído. Excluir um banco de dados nunca remove seus dados por conta própria, então nada aqui é removido até você recuperar o espaço.",
+    "empty": "Nenhum dado órfão. Todos os volumes pertencem a um banco de dados ou app que ainda existe.",
+    "loadFailed": "Não foi possível listar os dados órfãos: {{error}}",
+    "large": "Os dados órfãos usam {{size}}. Revise e recupere o que você não precisa mais.",
+    "role": {
+      "data": "Volume de dados",
+      "certificates": "Certificados",
+      "wal archive": "Arquivo WAL",
+      "volume": "Volume"
+    },
+    "kind": {
+      "database": "Banco de dados",
+      "volume": "Volume de app",
+      "app": "App"
+    },
+    "sizeUnknown": "tamanho desconhecido",
+    "age_one": "{{count}} dia de idade",
+    "age_many": "{{count}} dias de idade",
+    "age_other": "{{count}} dias de idade",
+    "noBackup": "Sem backup",
+    "hasBackup_one": "{{count}} backup",
+    "hasBackup_many": "{{count}} backups",
+    "hasBackup_other": "{{count}} backups",
+    "inspect": "Inspecionar",
+    "reclaim": "Recuperar espaço",
+    "volume": "Volume",
+    "belongedTo": "Pertencia a",
+    "created": "Criado",
+    "lastBackup": "Último backup",
+    "noBackupDetail": "Não existe backup destes dados",
+    "confirmTitle": "Recuperar os dados de \"{{name}}\"?",
+    "confirmDescription": "O volume é excluído deste servidor. Isso não pode ser desfeito.",
+    "confirmNoBackup": "Não existe backup destes dados. Eles serão perdidos para sempre.",
+    "confirmHasBackup_one": "{{count}} backup deles permanece no seu destino.",
+    "confirmHasBackup_many": "{{count}} backups deles permanecem no seu destino.",
+    "confirmHasBackup_other": "{{count}} backups deles permanecem no seu destino.",
+    "confirmAction": "Excluir estes dados",
+    "reclaiming": "Excluindo...",
+    "reclaimed": "{{size}} recuperados"
+  },
+  "deleteData": {
+    "label": "Excluir também os dados",
+    "databaseHint": "Remove o volume de dados junto com o banco de dados. Sem isso, o volume é mantido e listado em Dados órfãos na página Backups.",
+    "appHint": "Remove os volumes do app junto com o app. Sem isso, eles são mantidos e listados em Dados órfãos na página Backups.",
+    "warning": "Os dados são destruídos e não podem ser recuperados, a menos que exista um backup."
+  },
+  "firstRun": {
+    "title": "Configurar backups",
+    "description": "Conecte um lugar seguro para guardar os backups, e todos os bancos de dados e volumes de apps poderão ser protegidos a partir dele.",
+    "descriptionWithResources_one": "{{count}} recurso não tem backup. Conecte um lugar seguro para guardá-lo e depois proteja-o em um passo.",
+    "descriptionWithResources_many": "{{count}} recursos não têm backup. Conecte um lugar seguro para guardá-los e depois proteja todos em um passo.",
+    "descriptionWithResources_other": "{{count}} recursos não têm backup. Conecte um lugar seguro para guardá-los e depois proteja todos em um passo.",
+    "step": {
+      "destination": {
+        "title": "Adicione um destino",
+        "hint": "Um bucket compatível com S3"
+      },
+      "schedule": {
+        "title": "Escolha um agendamento",
+        "hint": "Diário é um bom padrão"
+      },
+      "verify": {
+        "title": "Comprove uma restauração",
+        "hint": "Um backup só conta quando é restaurado"
+      }
+    }
+  },
+  "activity": {
+    "title": "Atividade recente",
+    "subtitle": "Todas as tentativas, das mais recentes às mais antigas",
+    "empty": "Nenhum backup foi executado ainda.",
+    "loadFailed": "Não foi possível carregar backups mais antigos",
+    "deletedTarget": "Destino excluído",
+    "kind": "Tipo",
+    "resource": "Recurso",
+    "status": "Status",
+    "target": "Destino",
+    "size": "Tamanho",
+    "started": "Início",
+    "verification": "Verificação",
+    "actions": "Ações",
+    "loading": "Carregando...",
+    "loadOlder": "Carregar entradas mais antigas"
+  },
+  "baseSchedule": {
+    "title": "Agendamento de backup base",
+    "description": "Faça backups base com o próprio cron, independente do agendamento de dump. Deixe vazio para fazer um após cada dump agendado.",
+    "cronLabel": "Expressão cron",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "ID do destino de backup",
+    "targetPlaceholder": "Usa o destino de backup do banco de dados por padrão",
+    "save": "Salvar agendamento",
+    "saving": "Salvando...",
+    "saved": "Agendamento de backup base salvo."
+  },
+  "tables": {
+    "restores": "Restaurações",
+    "cloneDatabases": "Bancos de dados restaurados como novos",
+    "cloneVolumes": "Volumes restaurados como novos",
+    "pipelineRuns": "Execuções do pipeline",
+    "activity": "Atividade de backup",
+    "snapshots": "Backups",
+    "pitrBackups": "Backups base",
+    "pitrRestores": "Restaurações point-in-time"
+  },
+  "suggestion": {
+    "title": "Faça backup deste banco de dados",
+    "description": "Um destino está conectado, mas este banco de dados não tem agendamento. Sugestão: {{schedule}}, mantendo os últimos {{retain}}.",
+    "apply": "Usar a sugestão",
+    "applied": "Backups agendados",
+    "failed": "Não foi possível agendar os backups"
+  },
+  "banner": {
+    "description": "Proteja bancos de dados e volumes com backups agendados em um armazenamento sob seu controle e depois comprove que eles restauram.",
+    "diagram": {
+      "database": "banco de dados",
+      "storage": "armazenamento",
+      "schedule": "agendamento"
+    }
+  },
+  "volumeFiles": {
+    "title": "Arquivos",
+    "volume": "Volume",
+    "up": "Subir",
+    "upload": "Enviar arquivo",
+    "loading": "Carregando arquivos",
+    "empty": "Este diretório está vazio.",
+    "emptyHint": "Os arquivos que o app grava neste volume aparecem aqui.",
+    "truncated": "Listagem truncada. Abra um subdiretório para ver o restante.",
+    "download": "Baixar {{name}}",
+    "delete": "Excluir {{name}}",
+    "confirm": "Confirmar"
+  },
+  "composeDb": {
+    "title": "Backups de banco de dados",
+    "description": "Serviços de banco de dados detectados neste app compose.",
+    "loadFailed": "Não foi possível carregar os serviços de banco de dados: {{error}}",
+    "notScheduled": "Não agendado",
+    "scheduledSummary": "{{schedule}}, {{retention}}",
+    "paused": "Pausado",
+    "target": "Destino",
+    "targetPlaceholder": "Escolha um destino",
+    "enabled": "Ativado",
+    "retain": "Manter últimos",
+    "retainDays": "Idade máxima (dias)",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "remove": "Remover",
+    "removing": "Removendo...",
+    "backUpNow": "Fazer backup agora",
+    "starting": "Iniciando...",
+    "noTargets": "Nenhum destino de backup ainda.",
+    "connectTarget": "Conecte um bucket em Configurações",
+    "saved": "Agendamento de backup salvo.",
+    "saveFailed": "Não foi possível salvar o agendamento de backup.",
+    "removed": "Agendamento de backup removido.",
+    "removeFailed": "Não foi possível remover o agendamento de backup.",
+    "started": "Backup iniciado.",
+    "startFailed": "Não foi possível iniciar o backup.",
+    "removeTitle": "Remover o agendamento de backup de {{service}}?",
+    "removeDescription": "Os backups agendados param. Os backups existentes são mantidos.",
+    "runs": "Execuções recentes",
+    "runsHide": "Ocultar execuções",
+    "noRuns": "Nenhum backup ainda.",
+    "runsFailed": "Não foi possível carregar as execuções: {{error}}",
+    "status": {
+      "running": "Em execução",
+      "succeeded": "Concluído",
+      "failed": "Falhou"
+    },
+    "restore": "Restaurar",
+    "restoreNeedsRoot": "Somente um administrador pode restaurar um backup de banco de dados.",
+    "restoreTitle": "Restaurar {{service}} a partir deste backup",
+    "restoreWarning": "Isso substitui o banco de dados em produção no local. Um dump de segurança dos dados atuais é feito antes e aparece no histórico de execuções.",
+    "restoreEngine": "Engine",
+    "restoreObject": "Objeto de backup",
+    "restoreSize": "Tamanho",
+    "restoreLoading": "Verificando o backup...",
+    "restorePhraseLabel": "Digite {{phrase}} para confirmar",
+    "restoreConfirm": "Substituir banco de dados",
+    "restoreStarting": "Iniciando...",
+    "restoreCancel": "Cancelar",
+    "restoreClose": "Fechar",
+    "restoreAccepted": "Restauração iniciada. Dump de segurança: {{id}}. Ela roda em segundo plano, então confira o histórico de execuções e o log de auditoria para ver o resultado."
+  }
+}

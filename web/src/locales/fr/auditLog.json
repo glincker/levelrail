@@ -1,0 +1,103 @@
+{
+  "table": {
+    "label": "Journal d'audit",
+    "time": "Heure",
+    "actor": "Acteur",
+    "agent": "Agent",
+    "client": "Client",
+    "ability": "Permission",
+    "method": "Méthode",
+    "path": "Chemin",
+    "status": "Statut"
+  },
+  "page": {
+    "description": "Qui a modifié quoi : chaque écriture, déploiement ou requête de niveau root, ainsi que les renouvellements automatiques de certificats, du plus récent au plus ancien. Les requêtes en lecture seule ne sont pas enregistrées ici.",
+    "title": "Journal d'audit",
+    "emptyTitle": "Aucune entrée trouvée",
+    "emptyFiltered": "Aucune entrée ne correspond à ces filtres.",
+    "emptyNone": "Aucune requête auditée n'a encore été enregistrée."
+  },
+  "labels": {
+    "certIssued": "Certificat émis",
+    "certRenewed": "Certificat renouvelé",
+    "certRenewalRequested": "Renouvellement de certificat demandé",
+    "certUploaded": "Certificat importé",
+    "certRemoved": "Certificat supprimé",
+    "deviceLoginApproved": "Connexion CLI approuvée",
+    "deviceLoginDenied": "Connexion CLI refusée",
+    "deviceLoginExpired": "Connexion CLI expirée",
+    "deviceLoginDismissed": "Avis de connexion CLI ignoré"
+  },
+  "integrity": {
+    "checking": "Vérification de l'intégrité",
+    "intact": "Inviolable : intact",
+    "intactDetail": "{{checked}} entrées et {{checkpoints}} points de contrôle signés vérifiés.",
+    "failed": "Échec de la vérification d'intégrité",
+    "failedDetail_one": "{{count}} problème trouvé. Le journal d'audit a peut-être été modifié ou tronqué.",
+    "failedDetail_other": "{{count}} problèmes trouvés. Le journal d'audit a peut-être été modifié ou tronqué.",
+    "failedDetail_many": "{{count}} problèmes trouvés. Le journal d'audit a peut-être été modifié ou tronqué.",
+    "unavailable": "Vérification d'intégrité indisponible",
+    "recheck": "Revérifier"
+  },
+  "filters": {
+    "deviceLogin": "Connexion d'appareil",
+    "clearPath": "Affichage d'une seule demande de connexion. Effacer",
+    "clientLabel": "Filtrer par client",
+    "allClients": "Tous les clients",
+    "searchPlaceholder": "Rechercher acteur, chemin, méthode, adresse",
+    "searchLabel": "Rechercher dans les entrées du journal d'audit",
+    "failedOnly": "Échecs uniquement",
+    "loading": "Chargement...",
+    "loadOlder": "Charger les entrées plus anciennes",
+    "rangeLabel": "Filtrer par période",
+    "anyTime": "Toute période",
+    "range": {
+      "1h": "Dernière heure",
+      "24h": "24 dernières heures",
+      "7d": "7 derniers jours",
+      "30d": "30 derniers jours"
+    },
+    "methodLabel": "Filtrer par méthode",
+    "anyMethod": "Toute méthode",
+    "actorLabel": "Filtrer par acteur",
+    "actorPlaceholder": "Nom de l'acteur",
+    "exportCsv": "Exporter en CSV ({{count}} dernières lignes)"
+  },
+  "anchor": {
+    "title": "Ancre d'audit",
+    "off": "Désactivée",
+    "offHint": "Aucune copie hors serveur de la tête de la chaîne d'audit n'est exportée.",
+    "offLink": "Définir le webhook d'ancrage",
+    "exporting": "Exportation",
+    "lastExported": "Dernière séquence exportée {{seq}}",
+    "at": "à {{time}}",
+    "never": "Rien d'exporté pour l'instant",
+    "exported": "Exporté",
+    "failed": "Échec",
+    "dropped": "Abandonné",
+    "queued": "En file",
+    "lastError": "Dernière erreur",
+    "lastErrorAt": "à {{time}}"
+  },
+  "verify": {
+    "button": "Vérifier la chaîne",
+    "title": "Vérifier la chaîne d'audit",
+    "description": "Recalcule chaque lien de hachage. Laissez la plage vide pour vérifier tout le journal.",
+    "from": "De l'entrée",
+    "to": "À l'entrée",
+    "run": "Vérifier",
+    "running": "Vérification",
+    "failedToRun": "La vérification n'a pas pu s'exécuter.",
+    "okSummary_one": "{{count}} ligne vérifiée, aucune rupture.",
+    "okSummary_other": "{{count}} lignes vérifiées, aucune rupture.",
+    "okSummary_many": "{{count}} lignes vérifiées, aucune rupture.",
+    "head": "Tête de la chaîne : entrée {{seq}}",
+    "firstBreak": "Première rupture à l'entrée {{seq}}",
+    "failed": "Échec de la vérification de la chaîne",
+    "problem": "Entrée {{seq}} : {{reason}}",
+    "rangeEnd": "La plage se termine à l'entrée {{seq}}",
+    "outside_one": "Cette plage est intacte, mais la chaîne entière présente {{count}} problème en dehors. Vérifiez sans plage.",
+    "outside_other": "Cette plage est intacte, mais la chaîne entière présente {{count}} problèmes en dehors. Vérifiez sans plage.",
+    "outside_many": "Cette plage est intacte, mais la chaîne entière présente {{count}} problèmes en dehors. Vérifiez sans plage."
+  }
+}

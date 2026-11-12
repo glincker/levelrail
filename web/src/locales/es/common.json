@@ -1552,5 +1552,11 @@
       "node_cordon": "Acordonar",
       "node_uncordon": "Quitar acordonamiento"
     }
+  },
+  "language": {
+    "label": "Idioma",
+    "change": "Cambiar idioma, actual: {{language}}",
+    "browserDefault": "Predeterminado del navegador",
+    "saveFailed": "No se pudo guardar tu idioma."
   }
 }

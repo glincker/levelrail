@@ -1,0 +1,167 @@
+{
+  "title": "Explorateur de coûts",
+  "description": "Voyez où partent les dépenses au fil du temps, ce qu'elles devraient atteindre ce mois-ci et quels budgets sont menacés. Les chiffres utilisent vos propres prix.",
+  "error": "Impossible de charger les coûts : {{message}}",
+  "groupBy": {
+    "label": "Grouper par",
+    "app": "App",
+    "project": "Projet",
+    "tag": "Tag",
+    "node": "Node",
+    "kind": "Type de ressource"
+  },
+  "granularity": {
+    "label": "Granularité",
+    "daily": "Quotidienne",
+    "monthly": "Mensuelle"
+  },
+  "period": {
+    "label": "Période",
+    "mtd": "Depuis le début du mois",
+    "30d": "30 derniers jours",
+    "last_month": "Mois dernier"
+  },
+  "months": {
+    "label": "Mois",
+    "count_one": "{{count}} mois",
+    "count_other": "{{count}} mois",
+    "count_many": "{{count}} mois"
+  },
+  "summary": {
+    "change": "{{value}} par rapport à la période précédente",
+    "noChange": "Pas de période précédente à comparer"
+  },
+  "series": {
+    "other": "Autres",
+    "unassigned": "Non affecté",
+    "untagged": "Sans tag"
+  },
+  "kind": {
+    "app": "Apps",
+    "database": "Bases de données"
+  },
+  "chart": {
+    "label": "Coût dans le temps"
+  },
+  "table": {
+    "label": "Classement des coûts",
+    "name": "Nom",
+    "cost": "Coût",
+    "previous": "Précédent",
+    "change": "Variation"
+  },
+  "forecast": {
+    "title": "Prévision de fin de mois",
+    "range": "Probablement entre {{low}} et {{high}}",
+    "hint": "Projeté à partir des derniers jours complets. La fourchette s'élargit quand les dépenses quotidiennes sont irrégulières.",
+    "chart": "Dépenses cumulées ce mois-ci avec la fourchette projetée",
+    "bandName": "Fourchette",
+    "actual": "Dépensé jusqu'ici",
+    "projected": "Projeté",
+    "confidence": {
+      "low": "Confiance faible",
+      "medium": "Confiance moyenne",
+      "high": "Confiance élevée"
+    }
+  },
+  "movers": {
+    "title": "Plus fortes variations",
+    "description": "Les hausses les plus importantes par rapport à la période précédente.",
+    "none": "Rien n'a augmenté par rapport à la période précédente.",
+    "up": "{{name}} augmente de {{amount}} ({{pct}})"
+  },
+  "empty": {
+    "noData": "Pas encore de données de coût pour cette période.",
+    "noTelemetryTitle": "Pas encore de données d'utilisation",
+    "noTelemetryDescription": "Le coût est calculé à partir de l'utilisation mesurée. Il apparaît dès que les métriques sont collectées.",
+    "notConfiguredTitle": "Définissez d'abord vos prix",
+    "notConfiguredDescription": "Les coûts sont nuls tant que vous n'indiquez pas à Levelrail ce que coûtent vos serveurs ou vos unités.",
+    "configure": "Définir les prix"
+  },
+  "budgets": {
+    "title": "Budgets",
+    "description": "Limites mensuelles pour un projet, un tag ou une app. Chacune alerte une fois par seuil et peut mettre en pause ou limiter les apps concernées à 100 %.",
+    "empty": "Aucun budget pour l'instant. Ajoutez-en un ci-dessous pour être alerté avant que les dépenses ne dérapent.",
+    "addTitle": "Ajouter un budget",
+    "name": "Nom",
+    "scope": "S'applique à",
+    "scopes": {
+      "project": "Projet",
+      "tag": "Tag",
+      "app": "App"
+    },
+    "target": {
+      "project": "Projet",
+      "tag": "Nom du tag",
+      "app": "App"
+    },
+    "monthly": "Montant mensuel",
+    "thresholds": "Alerter à (pourcent)",
+    "action": "À 100 %",
+    "actions": {
+      "none": "Alerte uniquement",
+      "throttle": "Limiter le trafic",
+      "pause": "Mettre les apps en pause"
+    },
+    "actionHint": "La limitation et la pause sont levées quand vous augmentez le budget ou que le mois change. Rien n'est jamais supprimé.",
+    "create": "Créer le budget",
+    "created": "Budget créé",
+    "error": "Impossible d'enregistrer le budget : {{message}}",
+    "remove": "Supprimer le budget {{name}}",
+    "spent": "{{spent}} sur {{budget}}",
+    "forecast": "prévision {{mid}} ({{low}} à {{high}})",
+    "thresholdsLine": "Alertes à {{levels}} pour cent. Plus haut niveau atteint : {{reached}}",
+    "none": "aucun",
+    "state": {
+      "ok": "Dans les temps",
+      "warn": "Avertissement",
+      "over": "Budget dépassé",
+      "forecast": "Prévision de dépassement"
+    },
+    "enforced": {
+      "pause": "Apps en pause",
+      "throttle": "Trafic limité"
+    },
+    "deleteTitle": "Supprimer le budget {{name}} ?",
+    "deleteDescription": "Toute pause ou limitation qu'il a appliquée est levée. L'historique des dépenses n'est pas affecté.",
+    "delete": "Supprimer le budget",
+    "alertHint": "Les alertes passent par votre règle d'alerte de seuil de budget. Ajoutez-en une dans Alertes si vous voulez des avis par e-mail, Slack ou webhook."
+  },
+  "fix": {
+    "label": "Corriger ce budget",
+    "raise": "Augmenter le budget à {{amount}}",
+    "raised": "Budget augmenté à {{amount}}",
+    "pause": "Mettre {{app}} en pause",
+    "pauseTitle": "Mettre {{app}} en pause ?",
+    "pauseDescription": "L'app cesse de répondre jusqu'à ce que vous la redémarriez. Ses données sont conservées.",
+    "pauseConfirm": "Mettre l'app en pause",
+    "pausing": "Mise en pause",
+    "rightSize": "Redimensionner les apps"
+  },
+  "appCaps": {
+    "title": "Plafonds par app",
+    "description": "Plafonds mensuels de sortie réseau et de coût définis sur chaque app, avec ce qui est appliqué actuellement.",
+    "loadError": "Impossible de charger les plafonds des apps : {{message}}",
+    "empty": "Aucune app n'a encore de plafond. Ouvrez une app et définissez un plafond mensuel sur sa carte de budget.",
+    "app": "App",
+    "usage": "{{pct}} % du plafond",
+    "ceiling": "Plafond de coût",
+    "ceilingLabel": "Plafond de coût pour {{app}}",
+    "egressLabel": "Plafond de sortie réseau en Gio pour {{app}}",
+    "egressPlaceholder": "Gio",
+    "set": "Définir",
+    "saved": "Plafond mis à jour pour {{app}}",
+    "saveFailed": "Impossible de mettre à jour le plafond : {{message}}",
+    "enforced": {
+      "none": "Dans le plafond",
+      "throttle": "Limité",
+      "pause": "En pause"
+    },
+    "blocked": "Déploiements bloqués",
+    "overridden": "Dérogation active",
+    "preview": "Simulation",
+    "override": "Déroger",
+    "edit": "Ouvrir l'app",
+    "forecast": "Dépassement prévu"
+  }
+}

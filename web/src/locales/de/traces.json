@@ -1,0 +1,52 @@
+{
+  "title": "Traces",
+  "subtitle": "Spans, die Ihre App über OpenTelemetry sendet, werden für den Aufbewahrungszeitraum der Logs auf diesem Node gespeichert.",
+  "setup": {
+    "title": "Traces von dieser App senden",
+    "off": "Tracing ist aus. Aktivieren Sie es, um einen Ingest-Schlüssel und die Umgebungsvariablen für Ihr OpenTelemetry-SDK zu erhalten.",
+    "on": "Tracing ist aktiv. Richten Sie den OTLP/HTTP-Exporter Ihres SDK auf diese Control Plane.",
+    "enable": "Tracing aktivieren",
+    "enabling": "Wird aktiviert...",
+    "rotate": "Schlüssel rotieren",
+    "disable": "Deaktivieren",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "keyOnce": "Dieser Schlüssel wird nur einmal angezeigt. Setzen Sie die Werte in der App und deployen Sie erneut. Nach einer Rotation funktioniert der alte Schlüssel nicht mehr.",
+    "env": "Umgebung",
+    "endpoint": "Endpunkt",
+    "protocolNote": "Verwenden Sie OTLP über HTTP, Protobuf oder JSON. gRPC wird hier nicht akzeptiert.",
+    "enabledToast": "Tracing ist aktiv.",
+    "disabledToast": "Tracing ist aus. Der Exporter der App erhält 401-Antworten.",
+    "failed": "Tracing konnte nicht geändert werden."
+  },
+  "filters": {
+    "window": "Zeitraum",
+    "last15": "Letzte 15 Minuten",
+    "last60": "Letzte Stunde",
+    "last360": "Letzte 6 Stunden",
+    "last1440": "Letzte 24 Stunden",
+    "errorsOnly": "Nur Fehler",
+    "minMs": "Langsamer als (ms)"
+  },
+  "list": {
+    "empty": "In diesem Zeitraum gibt es noch keine Traces. Senden Sie eine Anfrage durch die App oder erweitern Sie den Zeitraum.",
+    "loadError": "Traces konnten nicht geladen werden: {{message}}",
+    "root": "Anfrage",
+    "started": "Gestartet",
+    "duration": "Dauer",
+    "spans": "Spans",
+    "errors": "Fehler",
+    "emptyTitle": "Noch keine Traces",
+    "emptyOff": "Tracing ist für diese App aus, daher wird nichts erfasst. Aktivieren Sie es, um einen Ingest-Schlüssel zu erhalten.",
+    "emptyAction": "Tracing einrichten"
+  },
+  "detail": {
+    "title": "Trace {{id}}",
+    "loading": "Trace wird geladen...",
+    "close": "Schließen",
+    "ofTotal": "von {{total}}",
+    "error": "Fehler",
+    "attributes": "Attribute",
+    "none": "Keine Attribute."
+  }
+}

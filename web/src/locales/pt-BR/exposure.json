@@ -1,0 +1,73 @@
+{
+  "tableLabel": "Portas publicadas",
+  "title": "Portas publicadas",
+  "description": "Portas de containers publicadas nas interfaces de rede de um servidor. O Docker ignora o ufw nessas portas, então um firewall que parece ativo não as cobre.",
+  "probe": "Verificar de fora",
+  "probing": "Verificando",
+  "probeNote": "Uma verificação com falha é relatada como não foi possível confirmar, nunca como fechada: muitos roteadores impedem que um servidor acesse o próprio endereço público.",
+  "emptyTitle": "Nada seu está publicado na internet",
+  "emptyBody": "Nenhum container neste servidor escuta em um endereço público sem restrição.",
+  "nodeUnreachable": "Não foi possível auditar este node: {{error}}",
+  "rulesUnreadable": "Não foi possível ler a cadeia de firewall do host: {{reason}}",
+  "columns": {
+    "severity": "Severidade",
+    "port": "Porta",
+    "container": "Container",
+    "owner": "Proprietário",
+    "bind": "Escuta em",
+    "state": "Estado"
+  },
+  "severity": {
+    "high": "Alta",
+    "medium": "Média",
+    "low": "Baixa",
+    "info": "Info"
+  },
+  "class": {
+    "loopback": "Somente este servidor",
+    "private": "Rede privada",
+    "restricted": "Restrita",
+    "exposed": "Exposta",
+    "unknown": "Desconhecida"
+  },
+  "owner": {
+    "database": "Banco de dados {{name}}",
+    "app": "App {{name}}",
+    "unmanaged": "Não gerenciado"
+  },
+  "outside": {
+    "answers": "Respondeu de fora deste host",
+    "could_not_confirm": "Não foi possível confirmar a partir deste host"
+  },
+  "restrictedTo": "Permitida apenas a partir de: {{sources}}",
+  "details": "Detalhes",
+  "hideDetails": "Ocultar detalhes",
+  "restrict": "Permitir somente estas origens",
+  "remove": "Remover restrição",
+  "removedToast": "Restrição removida",
+  "appliedToast": "Restrição aplicada",
+  "failedToast": "Não foi possível alterar o firewall",
+  "dialog": {
+    "title": "Restringir a porta {{port}}",
+    "description": "Somente as origens listadas podem se conectar. Todos os outros são descartados, inclusive a internet.",
+    "sources": "Origens permitidas",
+    "sourcesHint": "Um IP ou CIDR por linha, por exemplo seus outros servidores",
+    "localContainers": "Permitir também containers neste servidor",
+    "preview": "Pré-visualizar regras",
+    "previewTitle": "Regras exatas",
+    "effect": "O que será descartado",
+    "apply": "Aplicar restrição",
+    "cancel": "Cancelar",
+    "confirm": "Entendo que este tráfego será descartado",
+    "persistence": "Persistência",
+    "lockoutTitle": "Risco de bloqueio",
+    "callerWarningTitle": "Seu endereço não foi verificado",
+    "forceLockout": "Aceito o risco e quero aplicar mesmo assim",
+    "autoRevert": "Esta regra é aplicada em teste e é revertida sozinha, a menos que você a mantenha na próxima etapa.",
+    "trialTitle": "Restrição aplicada em teste",
+    "trialBody": "Verifique se você ainda alcança o que precisa. A regra é revertida às {{time}}, a menos que você a mantenha.",
+    "keep": "Manter esta regra",
+    "letRevert": "Deixar reverter",
+    "keptToast": "Restrição mantida"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "replicas": "Replikate",
+  "decrease": "Replikate für {{name}} verringern",
+  "increase": "Replikate für {{name}} erhöhen",
+  "apply": "Anwenden",
+  "applying": "Wird angewendet",
+  "restart": "{{name}} neu starten",
+  "restartTitle": "{{name}} neu starten?",
+  "restartBody": "Dadurch werden die Container dieses Dienstes neu erstellt. Andere Dienste laufen weiter.",
+  "restartConfirm": "Neu starten",
+  "restarting": "Wird neu gestartet",
+  "readOnly": "Zum Ändern eines Dienstes benötigen Sie die Deploy-Berechtigung",
+  "actions": "Aktionen",
+  "scaleFailed": "Dieser Dienst konnte nicht skaliert werden.",
+  "restartFailed": "Dieser Dienst konnte nicht neu gestartet werden."
+}

@@ -1,0 +1,38 @@
+{
+  "tableLabel": "Portas encaminhadas",
+  "page": {
+    "title": "Streams",
+    "description": "Encaminhe uma porta do host para uma das portas de container deste app, como TCP puro. UDP, terminação TLS e listas de acesso ainda não são suportados.",
+    "pendingNote": "Um stream adicionado a um app em execução entra em vigor no próximo reinício, que acontece automaticamente."
+  },
+  "table": {
+    "hostPort": "Porta do host",
+    "containerPort": "Porta do container",
+    "protocol": "Protocolo",
+    "created": "Adicionado",
+    "actions": "Ações"
+  },
+  "empty": {
+    "title": "Nenhum stream configurado",
+    "description": "Adicione um stream para encaminhar uma porta do host para uma das portas de container deste app."
+  },
+  "add": {
+    "trigger": "Adicionar stream",
+    "hostPortLabel": "Porta do host",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "Porta do container",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "Protocolo",
+    "submit": "Adicionar stream",
+    "submitting": "Adicionando..."
+  },
+  "remove": {
+    "trigger": "Remover",
+    "removing": "Removendo..."
+  },
+  "toast": {
+    "created": "Stream na porta do host {{hostPort}} criado.",
+    "removed": "Stream removido.",
+    "errorTitle": "Não foi possível salvar este stream."
+  }
+}

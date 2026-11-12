@@ -1,0 +1,145 @@
+{
+  "title": "Mises à niveau",
+  "description": "Gardez cette base de données à jour. Chaque mise à niveau commence par une sauvegarde et peut être annulée par un rollback.",
+  "loadFailed": "Impossible de charger les informations de mise à niveau : {{error}}",
+  "unavailableTitle": "Les mises à niveau ne sont pas disponibles",
+  "current": {
+    "title": "Version actuelle",
+    "engine": "Moteur",
+    "version": "Version",
+    "line": "Branche de versions {{line}}",
+    "floating": "Cette base de données suit un tag flottant, la version exacte peut donc changer au prochain redémarrage.",
+    "notComparable": "Cette version n'a pas pu être comparée au catalogue, aucune cible de mise à niveau n'est donc proposée.",
+    "advisories": "Avis de sécurité connus affectant cette version",
+    "catalogUpdated": "Catalogue mis à jour {{date}}",
+    "blockersTitle": "Les mises à niveau sont bloquées",
+    "manualReason": "Mise à niveau manuelle requise"
+  },
+  "support": {
+    "supported": "Pris en charge",
+    "eol_soon": "Fin de vie prochaine ({{date}})",
+    "eol_soonNoDate": "Fin de vie prochaine",
+    "eol": "Fin de vie",
+    "unknown": "Support inconnu"
+  },
+  "targets": {
+    "tableLabel": "Cibles de mise à niveau",
+    "title": "Versions disponibles",
+    "description": "Les mises à niveau de correctif et mineures peuvent être lancées d'ici. Les mises à niveau majeures changent le format sur disque et sont protégées.",
+    "emptyTitle": "Aucune mise à niveau disponible",
+    "empty": "Vous êtes sur la version la plus récente connue du catalogue.",
+    "columns": {
+      "version": "Version",
+      "kind": "Type",
+      "details": "Détails",
+      "actions": "Actions"
+    },
+    "kind": {
+      "patch": "Correctif",
+      "minor": "Mineure",
+      "major": "Majeure"
+    },
+    "security": "Correctif de sécurité",
+    "automatic": "Automatique",
+    "eol": "Fin de vie {{date}}",
+    "upgradeNow": "Mettre à niveau maintenant",
+    "majorHint": "Les mises à niveau majeures passent par le parcours protégé de mise à niveau majeure, pas par ce bouton."
+  },
+  "dialog": {
+    "title": "Mettre {{name}} à niveau vers {{version}}",
+    "description": "Une sauvegarde est effectuée d'abord. La base de données redémarre et est brièvement indisponible.",
+    "confirmLabel": "Saisissez {{name}} pour confirmer",
+    "cancel": "Annuler",
+    "confirm": "Mettre à niveau",
+    "starting": "Démarrage",
+    "toast": "Mise à niveau vers {{version}} démarrée",
+    "failedToast": "Impossible de démarrer la mise à niveau"
+  },
+  "policy": {
+    "title": "Mises à niveau automatiques",
+    "description": "Choisissez ce qui est appliqué automatiquement, et quand.",
+    "inheritedNote": "Cette base de données utilise la politique par défaut de la plateforme.",
+    "override": "Remplacer pour cette base de données",
+    "useDefault": "Utiliser la valeur par défaut de la plateforme",
+    "autoUpgrade": "Appliquer automatiquement",
+    "auto": {
+      "off": "Désactivé, mise à niveau manuelle",
+      "patch": "Versions de correctif uniquement",
+      "minor": "Versions de correctif et mineures"
+    },
+    "window": "Fenêtre de maintenance",
+    "preset": {
+      "daily": "Tous les jours à 03:00",
+      "sundays": "Les dimanches à 03:00",
+      "custom": "Cron personnalisé"
+    },
+    "cron": "Expression cron",
+    "duration": "Durée de la fenêtre (heures)",
+    "timezone": "Fuseau horaire",
+    "backupBefore": "Sauvegarder avant la mise à niveau",
+    "backupBeforeHint": "Toujours activé. Une mise à niveau ne démarre jamais sans une sauvegarde récente.",
+    "verifyAfter": "Vérifier après la mise à niveau",
+    "verifyAfterHint": "Restaure la sauvegarde dans un conteneur temporaire et vérifie qu'elle s'ouvre.",
+    "revertOnFailure": "Rollback en cas d'échec",
+    "revertOnFailureHint": "Revient automatiquement à la version précédente si la mise à niveau échoue.",
+    "notify": "Notifier ces canaux",
+    "noChannels": "Aucun canal de notification n'existe pour l'instant.",
+    "nextWindow": "Prochaine fenêtre",
+    "windowOpen": "Une fenêtre de maintenance est ouverte actuellement",
+    "nextTarget": "Prochaine mise à niveau automatique",
+    "noNextTarget": "Aucune mise à niveau automatique n'est en attente.",
+    "save": "Enregistrer la politique",
+    "saving": "Enregistrement",
+    "saved": "Politique de mise à niveau enregistrée",
+    "failedToast": "Impossible d'enregistrer la politique"
+  },
+  "history": {
+    "title": "Historique des mises à niveau",
+    "emptyTitle": "Aucun historique de mise à niveau",
+    "empty": "Aucune mise à niveau n'a encore été exécutée pour cette base de données.",
+    "active": "Mise à niveau en cours",
+    "from": "{{from}} vers {{to}}",
+    "backup": "Sauvegarde {{id}}",
+    "started": "Démarrée {{date}}",
+    "finished": "Terminée {{date}}",
+    "source": {
+      "auto": "Automatique",
+      "manual": "Manuelle"
+    },
+    "state": {
+      "pending": "En attente",
+      "backing_up": "Sauvegarde en cours",
+      "upgrading": "Mise à niveau en cours",
+      "verifying": "Vérification en cours",
+      "succeeded": "Réussie",
+      "reverted": "Rollback effectué",
+      "failed": "Échec"
+    },
+    "revert": {
+      "image": "Rollback effectué via l'image",
+      "volume_snapshot": "Rollback effectué depuis un snapshot de volume",
+      "backup_restore": "Rollback effectué depuis une restauration de sauvegarde"
+    },
+    "reason": "Raison : {{reason}}"
+  },
+  "steps": {
+    "backup": {
+      "title": "Sauvegarder d'abord",
+      "body": "Une sauvegarde récente est effectuée pour que vous puissiez toujours revenir à ces données exactes.",
+      "skipped": "Ignorée par la politique. Activez la sauvegarde avant mise à niveau dans la carte de politique par sécurité."
+    },
+    "change": {
+      "title": "Changer la version",
+      "body": "La base de données redémarre sur la nouvelle version. Attendez-vous à une courte interruption pendant son démarrage.",
+      "skipped": ""
+    },
+    "verify": {
+      "title": "Vérifier",
+      "body": "La mise à niveau est vérifiée en restaurant la sauvegarde et en sondant la nouvelle version.",
+      "skipped": "Ignorée par la politique. Rien ne confirme que la nouvelle version fonctionne tant que vous ne vérifiez pas."
+    },
+    "majorWarning": "Il s'agit d'un saut de version majeure. Les fichiers de données changent de format et il n'existe aucun retour en arrière sur place. Effectuez et testez une sauvegarde, et vérifiez que votre application prend en charge la nouvelle version avant de continuer.",
+    "rollbackAuto": "Rollback : si la mise à niveau échoue, la version précédente est restaurée automatiquement. Aucun rollback manuel en un clic n'est proposé, restaurez donc la sauvegarde de l'étape 1 si vous devez revenir en arrière plus tard.",
+    "rollbackManual": "Rollback : le retour automatique est désactivé et il n'existe aucun rollback manuel en un clic. En cas de problème, restaurez la sauvegarde de l'étape 1. Activez le rollback en cas d'échec dans la carte de politique pour disposer d'un chemin automatique."
+  }
+}

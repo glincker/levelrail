@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "タグ",
+    "description": "アプリをグループ化して絞り込むために付けるラベルです。"
+  },
+  "create": {
+    "label": "新規タグ",
+    "placeholder": "env:prod",
+    "submit": "タグを作成",
+    "pending": "作成中"
+  },
+  "table": {
+    "label": "タグ",
+    "name": "名前",
+    "apps": "アプリ",
+    "resources": "リソース",
+    "created": "作成日",
+    "actions": "操作"
+  },
+  "row": {
+    "showApps": "タグ {{name}} が付いたアプリを表示",
+    "hideApps": "タグ {{name}} が付いたアプリを隠す"
+  },
+  "rename": {
+    "action": "{{name}} の名前を変更",
+    "label": "{{name}} の新しい名前",
+    "save": "保存",
+    "cancel": "キャンセル"
+  },
+  "delete": {
+    "action": "{{name}} を削除",
+    "title": "タグ {{name}} を削除しますか?",
+    "description": "このタグは、使用しているすべてのアプリから削除されます。",
+    "consequence": "アプリは引き続き実行されます。ラベルが外れるだけです。",
+    "confirm": "タグを削除",
+    "pending": "削除中"
+  },
+  "apps": {
+    "loading": "アプリを読み込み中",
+    "empty": "このタグを使用しているアプリはまだありません。",
+    "error": "このタグのアプリを読み込めませんでした。",
+    "list": "タグ {{name}} が付いたアプリ"
+  },
+  "empty": {
+    "title": "タグはまだありません",
+    "description": "上でタグを作成するか、アプリの概要から追加して、アプリのグループ化を始めましょう。"
+  },
+  "error": "タグを読み込めませんでした。"
+}

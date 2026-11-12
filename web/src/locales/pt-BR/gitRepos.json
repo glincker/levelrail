@@ -1,0 +1,104 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "Buscar repositórios...",
+      "empty": "Nenhum repositório encontrado.",
+      "noMatch": "Nenhum repositório corresponde a \"{{search}}\".",
+      "loadFailed": "Não foi possível listar os repositórios."
+    },
+    "projects": {
+      "searchPlaceholder": "Buscar projetos...",
+      "empty": "Nenhum projeto encontrado.",
+      "noMatch": "Nenhum projeto corresponde a \"{{search}}\".",
+      "loadFailed": "Não foi possível listar os projetos."
+    },
+    "refresh": "Atualizar",
+    "refreshing": "Atualizando",
+    "refreshHint": "Lista os repositórios novamente a partir do provedor em vez de usar a lista salva.",
+    "filters": {
+      "label": "Filtros",
+      "allOwners": "Todos os proprietários",
+      "hideArchived": "Ocultar arquivados",
+      "hideForks": "Ocultar forks",
+      "allAccounts": "Todas as contas"
+    },
+    "status": {
+      "showing": "Mostrando {{shown}} de {{total}}.",
+      "searchToNarrow": "Busque ou escolha um proprietário para restringir a lista.",
+      "loadedOf": "{{loaded}} carregados no total.",
+      "updated": "Atualizado {{time}}.",
+      "stale": "Lista salva, atualizando em segundo plano.",
+      "truncated": "Esta conta tem mais do que os {{cap}} repositórios listados aqui. A busca cobre apenas os primeiros {{cap}}; cole a URL de um repositório para usar um que esteja além disso.",
+      "rateLimited": "O provedor está limitando a taxa deste control plane, então esta é a lista salva. Nova verificação depois de {{time}}.",
+      "rateLimitedEmpty": "O provedor está limitando a taxa deste control plane e ainda não há lista salva. Tente novamente depois de {{time}}.",
+      "rateLimitedNoTime": "O provedor está limitando a taxa deste control plane. Tente novamente em um minuto."
+    },
+    "loadMore": "Mostrar mais",
+    "loadingMore": "Carregando",
+    "accountError": "Não foi possível listar {{account}}: {{error}}",
+    "badges": {
+      "archived": "Arquivado",
+      "fork": "Fork",
+      "private": "Repositório privado",
+      "running": "Rodando como {{name}}"
+    },
+    "retry": "Tentar novamente",
+    "account": "Conta: {{name}}"
+  },
+  "connection": {
+    "label": "Saúde da conexão",
+    "healthy": "Saudável",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server",
+      "azure_devops": "Azure DevOps"
+    },
+    "needs_reauthorize": {
+      "title": "{{provider}} precisa ser reconectado",
+      "body": "A autorização foi revogada, expirou ou não é mais aceita, então os repositórios não podem ser listados nem clonados até você reconectar."
+    },
+    "revoked": {
+      "title": "A conexão com {{provider}} foi removida",
+      "body": "A instalação ou autorização não existe mais no provedor. Reconecte para usá-la novamente."
+    },
+    "rate_limited": {
+      "title": "{{provider}} está limitando a taxa deste control plane",
+      "body": "As listas salvas continuam sendo exibidas. Uma nova verificação ocorrerá depois de {{time}}."
+    },
+    "reconnect": "Reconectar {{provider}}",
+    "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "O endereço de webhook deste control plane é privado ou local, então GitHub, GitLab e outros hosts git não conseguem chamá-lo. Os pushes não chegarão.",
+      "no_public_url": "Este control plane ainda não tem endereço público, então os hosts git não têm um endereço de webhook para chamar. Os pushes não chegarão."
+    },
+    "urlFixHint": "Defina uma URL pública para webhooks abaixo e registre o webhook novamente.",
+    "registration": {
+      "registered": "Webhook registrado no provedor.",
+      "failed": "O webhook não foi registrado no provedor: {{error}}",
+      "registerAgain": "Registrar novamente",
+      "registering": "Registrando",
+      "done": "Webhook registrado.",
+      "failedToast": "Não foi possível registrar o webhook."
+    },
+    "poll": {
+      "last": "Última verificação {{time}}.",
+      "never": "Ainda não verificado.",
+      "lastWebhook": "Último webhook {{time}}.",
+      "noWebhook": "Nenhum webhook chegou ainda.",
+      "error": "A última verificação falhou: {{error}}",
+      "disabled": "A verificação periódica de pushes perdidos está desativada."
+    },
+    "connection": {
+      "needs_reconnect": "A conta da qual este repositório foi escolhido foi desconectada. A origem permanece, mas os webhooks e previews não podem usá-la até você conectar novamente uma conta no mesmo host.",
+      "needs_reauthorize": "A conta {{label}} precisa ser reconectada antes que os webhooks e previews desta origem funcionem.",
+      "revoked": "A conta {{label}} foi removida no provedor. Reconecte-a para usar esta origem novamente.",
+      "reconnect": "Reconectar {{provider}}"
+    }
+  }
+}

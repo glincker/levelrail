@@ -1,0 +1,27 @@
+{
+  "doNotTranslate": [
+    "Levelrail", "Docker", "Caddy", "WireGuard", "SQLite", "Postgres", "PostgreSQL", "Git", "GitHub", "GitLab",
+    "TLS", "mTLS", "DNS", "SSH", "API", "CLI", "MCP", "OAuth", "SSO", "SAML", "gRPC", "YAML", "JSON",
+    "HTTP", "HTTPS", "CPU", "RAM", "S3", "CDN", "UTM", "Dockerfile", "Compose"
+  ],
+  "keepEnglishOrLoan": {
+    "note": "Established devops terms. Keep the English word, or the loan form the local developer community uses, and stay consistent across every namespace.",
+    "terms": ["deploy", "rollback", "node", "mesh", "agent", "reconciler", "cron", "token", "build", "log", "cluster", "container", "image", "volume"]
+  },
+  "style": {
+    "de": "Formal address (Sie). Sentence case for buttons.",
+    "fr": "Formal address (vous). Sentence case.",
+    "pt-BR": "Brazilian Portuguese, neutral informal (voce form, pronoun dropped where natural). Sentence case.",
+    "ja": "Polite form (desu/masu). No spaces between Japanese words. Keep Latin product terms as written.",
+    "zh-CN": "Simplified Chinese, concise, no spaces between Chinese characters. Keep Latin product terms as written.",
+    "es": "Keep consistent with the existing Spanish files: formal usted, sentence case."
+  },
+  "rules": [
+    "Keep every {{placeholder}} and every numbered or named tag exactly as in English, including names and count.",
+    "Never use an em dash or an en dash. Use a comma, period, colon or parentheses.",
+    "Translate values only. Do not add, remove or rename keys. Keep key order identical to en.",
+    "Destructive actions (delete, remove, revoke, wipe) must stay as unambiguous and as strong as the English.",
+    "Labels stay short: roughly no more than 1.5 times the English length for buttons, tabs and column headers.",
+    "Plural keys: ja and zh-CN need only _other. fr and pt-BR need _one, _many and _other (copy _other into _many). de and es need _one and _other."
+  ]
+}

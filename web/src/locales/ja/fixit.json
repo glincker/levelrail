@@ -1,0 +1,112 @@
+{
+  "explain": {
+    "toggle": "説明",
+    "loading": "説明を読み込み中...",
+    "why": "重要な理由",
+    "next": "次のステップ",
+    "fix": "型付きの修正"
+  },
+  "risk": {
+    "safe": "安全",
+    "restarts": "サービスを再起動します",
+    "exposes": "アクセスを開放します"
+  },
+  "kind": {
+    "auto": "ワンクリック",
+    "guided": "サーバーでの操作が必要",
+    "manual": "手動の手順"
+  },
+  "reversible": "元に戻せます",
+  "irreversible": "元に戻せません",
+  "willChange": "変更される内容",
+  "cli": {
+    "summary": "CLIで修正",
+    "hint": "ターミナルのほうがよいですか?サーバーでこれを実行してから、再確認を使ってください。"
+  },
+  "learnMore": "詳細を見る",
+  "copy": "コピー",
+  "copied": "コピーしました",
+  "apply": "今すぐ修正",
+  "applying": "適用中...",
+  "recheck": "再確認",
+  "rechecking": "確認中...",
+  "confirmTitle": "この修正を適用しますか?",
+  "confirmBody": "{{title}}。先に、一覧の変更内容を確認してください。",
+  "paramLabel": "パブリックアドレス",
+  "paramPlaceholder": "IPアドレスまたはホスト名",
+  "triedAt": "{{at}}に試行しましたが、{{why}}のため、まだブロックされています",
+  "rateLimited": "直近1時間に何度も適用されました。再試行まで待機しています。",
+  "outcome": {
+    "fixed": "修正しました。チェックに合格しました。",
+    "still_failing": "まだ失敗しています: {{detail}}",
+    "cannot_fix_here": "ここからは修正できません: {{detail}}",
+    "skipped": "対応は不要です: {{detail}}"
+  },
+  "settingsHealth": {
+    "title": "設定の健全性",
+    "loading": "このインスタンスを確認中...",
+    "summary": "{{total}}件のチェックのうち{{failing}}件で対応が必要です",
+    "allGood": "対応が必要なものはありません。"
+  },
+  "blockers_other": "ブロック要因{{count}}件、{{dependent}}件が依存しています",
+  "showDependent": "依存するチェックを表示",
+  "hideDependent": "依存するチェックを隠す",
+  "stuck": {
+    "title": "なぜ動いていないのですか?",
+    "healthy": "準備完了です。説明するものはありません。",
+    "notReadyFor": "{{duration}}のあいだ準備ができていません",
+    "notReadyYet": "準備ができていません",
+    "timeline": "状態のタイムライン",
+    "noCauses": "一致する既知の原因はまだありません。ログを開いてから、再確認してください。",
+    "confidenceHigh": "可能性の高い原因",
+    "confidenceMedium": "考えられる原因",
+    "evidence": "根拠",
+    "recheck": "再確認",
+    "retryDeploy": "デプロイを再試行",
+    "retrying": "再試行中...",
+    "retryFailed": "再試行に失敗しました: {{message}}",
+    "retryStarted": "デプロイを開始しました。",
+    "fixApplied": "修正を適用しました。",
+    "fixFailed": "修正に失敗しました: {{message}}",
+    "loadFailed": "診断を読み込めませんでした。",
+    "show": "詳細を表示",
+    "hide": "詳細を隠す"
+  },
+  "runtime": {
+    "engine": "エンジン",
+    "support": "サポート",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "不明なエンジン"
+    },
+    "level": {
+      "supported": "サポート対象",
+      "best-effort": "ベストエフォート",
+      "unverified": "未検証"
+    }
+  },
+  "diagnosis": {
+    "title": "動作しない理由",
+    "crashloop": "このアプリはクラッシュを繰り返しています",
+    "deployFailed": "最新のデプロイに失敗しました",
+    "noCause": "一致する既知の原因はまだありません。ログ行を確認してから、再確認してください。",
+    "openLogs": "ログを開く",
+    "openDeployLogs": "ビルドログを見る",
+    "copy": "行をコピー",
+    "copied": "コピーしました",
+    "lastLine": "最後の行:",
+    "sectionLog": "失敗のログ",
+    "sectionTimeline": "状態のタイムライン",
+    "sectionOthers": "ほかに考えられる原因({{count}})",
+    "showing": "{{total}}行のうち、末尾の{{shown}}行を表示しています。",
+    "linesLabel": "失敗したコンテナの直近のログ行",
+    "noLines": "この失敗について、ログ行は取得されませんでした。",
+    "openFullLogs": "すべてのログを開く",
+    "crashSummary": "直近{{minutes}}分間に{{count}}回再起動しました。"
+  }
+}

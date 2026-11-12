@@ -1,0 +1,116 @@
+{
+  "title": "Línea de tiempo de despliegues",
+  "subtitle": "Todos los despliegues de tus apps en un mismo eje de tiempo. Los despliegues en curso se actualizan en vivo.",
+  "zoom": {
+    "label": "Rango de tiempo",
+    "1h": "1 hora",
+    "24h": "24 horas",
+    "7d": "7 días"
+  },
+  "filters": {
+    "label": "Filtros",
+    "app": "App",
+    "allApps": "Todas las apps",
+    "project": "Proyecto",
+    "allProjects": "Todos los proyectos",
+    "node": "Nodo",
+    "allNodes": "Todos los nodos",
+    "status": "Estado",
+    "allStatuses": "Todos los estados",
+    "clear": "Borrar los filtros"
+  },
+  "status": {
+    "building": "Compilando",
+    "queued": "En cola",
+    "ready": "Listo",
+    "failed": "Fallido",
+    "canceled": "Cancelado",
+    "held": "Retenido",
+    "awaiting_approval": "Esperando aprobación",
+    "rolled_back": "Revertido",
+    "superseded": "Reemplazado"
+  },
+  "stream": {
+    "connecting": "Conectando",
+    "live": "En vivo",
+    "reconnecting": "Reconectando"
+  },
+  "legend": {
+    "label": "Leyenda",
+    "ready": "Listo",
+    "building": "En curso",
+    "failed": "Fallido",
+    "rolledBack": "Revertido",
+    "canceled": "Cancelado",
+    "alert": "Alerta disparada",
+    "now": "Ahora"
+  },
+  "chart": {
+    "label": "Despliegues por app en el rango de tiempo seleccionado",
+    "laneLabel": "{{app}}, {{count}} despliegues",
+    "barLabel": "{{app}}, {{status}}, iniciado {{when}}, {{duration}}. Abrir los detalles del despliegue.",
+    "axisLabel": "Eje de tiempo",
+    "alertLabel": "Alerta disparada: {{rule}}, {{when}}",
+    "clusterLabel": "{{count}} despliegues muy próximos en {{app}}. Mostrar cada despliegue.",
+    "clusterChip": "+{{count}}",
+    "collapse": "Contraer los despliegues agrupados",
+    "now": "Ahora",
+    "latest": "Último despliegue: {{status}}",
+    "unknownProject": "Sin proyecto"
+  },
+  "card": {
+    "title": "Detalles del despliegue",
+    "commit": "Commit",
+    "noCommit": "Sin commit",
+    "actor": "Autor",
+    "unknownActor": "Desconocido",
+    "duration": "Duración",
+    "running": "En ejecución",
+    "strategy": "Estrategia",
+    "noStrategy": "Sin registrar",
+    "trigger": "Disparador",
+    "environment": "Entorno",
+    "rollbackOf": "Vuelve a {{id}}",
+    "open": "Abrir el despliegue"
+  },
+  "empty": {
+    "title": "No hay despliegues en este rango",
+    "body": "No se desplegó nada en los últimos {{range}} con estos filtros. Prueba un rango más largo o borra los filtros.",
+    "action": "Mostrar 7 días",
+    "sampleLabel": "Línea de tiempo de ejemplo"
+  },
+  "error": {
+    "title": "No se pudo cargar la línea de tiempo de despliegues",
+    "retry": "Reintentar"
+  },
+  "loading": "Cargando despliegues",
+  "more": {
+    "label": "Cargar despliegues anteriores",
+    "loading": "Cargando",
+    "failed": "No se pudieron cargar más despliegues. Inténtalo de nuevo."
+  },
+  "count": "{{deploys}} despliegues en {{apps}} apps",
+  "banner": {
+    "description": "Una línea de tiempo de cada despliegue por app, con los fallos y los rollbacks marcados. Despliega una app y su carril aparecerá aquí."
+  },
+  "appHistory": {
+    "title": "Historial",
+    "managedBy": "Gestionado por el stack {{stack}}",
+    "kind": {
+      "deploy": "Despliegue",
+      "rollback": "Rollback",
+      "restart": "Reinicio"
+    },
+    "status": {
+      "running": "En ejecución",
+      "succeeded": "Correcto",
+      "failed": "Fallido",
+      "held": "Retenido",
+      "awaiting_approval": "Esperando aprobación",
+      "superseded": "Reemplazado",
+      "queued": "En cola",
+      "canceled": "Cancelado",
+      "pending": "Pendiente"
+    }
+  }
+}

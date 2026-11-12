@@ -1,0 +1,184 @@
+{
+  "title": "クリーンアップ",
+  "description": "各種データの保持期間を制御し、実行前にクリーンアップで削除される内容を確認し、すべての実行を確認します。",
+  "tabs": {
+    "label": "クリーンアップのセクション",
+    "overview": "概要",
+    "disk": "ディスクとDocker",
+    "history": "履歴"
+  },
+  "loadError": "クリーンアップの対象を読み込めませんでした: {{message}}",
+  "retry": "再試行",
+  "readOnly": "クリーンアップの設定は表示できます。保持期間の変更、モードの切り替え、クリーンアップの実行には、rootアカウントが必要です。",
+  "empty": {
+    "title": "クリーンアップの対象はまだありません",
+    "body": "このコントロールプレーンは、クリーンアップ対象のデータ種別を報告しませんでした。次回のアップグレード後にもう一度確認してください。"
+  },
+  "categories": {
+    "auth": "サインインとトークン",
+    "audit": "監査",
+    "deploys": "デプロイ",
+    "docker": "Docker",
+    "data": "データ",
+    "observability": "オブザーバビリティ",
+    "messaging": "メッセージング",
+    "other": "その他"
+  },
+  "hero": {
+    "stored": "保存されているデータ",
+    "reclaimable": "解放可能",
+    "storedHint": "クリーンアップが管理するデータ種別が保存しているデータ",
+    "usageLabel": "クリーンアップが管理するデータの保存場所",
+    "segmentLabel": "{{category}}: {{size}}、全体の {{percent}}%",
+    "legendFilter": "{{category}} のみ表示",
+    "clearFilter": "すべてのカテゴリを表示",
+    "lastRun": "前回の実行",
+    "neverRun": "クリーンアップはまだ実行されていません",
+    "scheduler": "スケジューラー",
+    "schedulerOn": "{{interval}} ごと",
+    "schedulerOff": "スケジューラーはオフです",
+    "previewCount_other": "{{count}} 件のデータ種別がプレビューモードです",
+    "previewNone": "プレビューモードで待機しているものはありません",
+    "reviewAction": "確認して有効化",
+    "reclaimableHint": "有効なデータ種別が、現在の保持期間で削除する行数とサイズ",
+    "calculate": "解放可能量を計算",
+    "calculating": "{{total}} 件中 {{done}} 件を確認中",
+    "calculateFailed": "{{title}} を確認できませんでした: {{message}}",
+    "reclaimableNone": "保持期間を過ぎているものはありません"
+  },
+  "group": {
+    "count_other": "データ種別 {{count}} 件"
+  },
+  "target": {
+    "usage_other": "{{rows}} 行、{{size}}",
+    "usageEmpty": "保存されているものはありません",
+    "oldest": "最も古いもの: {{when}}",
+    "shareLabel": "{{title}} は {{category}} のデータの {{percent}}% を占めています",
+    "retention": "保持期間",
+    "floor": "最小 {{days}} 日",
+    "floorTip": "セキュリティポリシーにより、最低 {{days}} 日間は保持されます。より長い期間を選択するか、「削除しない」を選択してすべてを保持してください。",
+    "mode": "モード",
+    "modes": {
+      "off": "オフ",
+      "preview": "プレビュー",
+      "on": "オン"
+    },
+    "status": {
+      "off": "オフ",
+      "preview": "プレビュー",
+      "on": "オン",
+      "running": "実行中"
+    },
+    "previewBadge": "プレビューモードのため、まだ何も削除されません",
+    "lastRun": "前回の実行: {{when}}",
+    "lastRunDry": "前回の実行: {{when}}(ドライラン)",
+    "lastRunFailed": "前回の実行 {{when}} は失敗しました",
+    "neverRun": "未実行",
+    "nextRun": "次回: {{when}}",
+    "noNextRun": "スケジュールされていません",
+    "preview": "プレビュー",
+    "previewing": "確認中...",
+    "cleanNow": "今すぐクリーンアップ",
+    "readThrough": "ディスクとDockerで管理",
+    "readThroughAction": "ディスクとDockerを開く",
+    "keepForever": "保持期間が「削除しない」に設定されているため、何も削除されません。",
+    "destructive": "データを完全に削除します",
+    "unknown": "-",
+    "lockedOption": "最小の {{days}} 日を下回っています。より長い期間を選択してください。"
+  },
+  "impact": {
+    "title": "削除される内容",
+    "summary_other": "{{days}} 日より古い {{rows}} 行、約 {{size}} を削除します。",
+    "nothing": "{{days}} 日より古いものはありません。何も削除されません。",
+    "close": "閉じる",
+    "error": "プレビューできませんでした: {{message}}"
+  },
+  "run": {
+    "running": "古いデータを削除中...",
+    "done_other": "{{rows}} 行、{{size}} を削除しました。削除は元に戻せません。",
+    "nothing": "削除するものはありません。保持期間を過ぎた行はありませんでした。",
+    "more": "古い行がまだ残っています。続けるにはもう一度実行してください。",
+    "failed": "クリーンアップに失敗しました: {{message}}",
+    "dismiss": "閉じる"
+  },
+  "confirmRun": {
+    "title": "{{title}} をクリーンアップしますか?",
+    "body_other": "{{days}} 日より古い {{rows}} 行、約 {{size}} を完全に削除します。",
+    "consequence": "削除された行は復元できません。他のものは削除されません。",
+    "action": "今すぐクリーンアップ",
+    "cancel": "キャンセル"
+  },
+  "confirmMode": {
+    "title": "{{title}} をオンにしますか?",
+    "body": "次回のスケジュール実行から、{{days}} 日より古い行が実際に削除されます。これまでは、削除される内容を記録するだけでした。",
+    "consequence": "削除された行は復元できません。",
+    "action": "オンにする",
+    "cancel": "キャンセル"
+  },
+  "confirmShorten": {
+    "title": "{{title}} の保持期間を短くしますか?",
+    "body": "新しい期間より古い行は、次回の実行で削除されます。",
+    "consequence": "これは、データの保持期間に対する破壊的な変更です。",
+    "action": "保持期間を短縮",
+    "cancel": "キャンセル"
+  },
+  "toast": {
+    "retentionSaved": "{{title}} の保持期間を保存しました。",
+    "retentionError": "{{title}} の保持期間を保存できませんでした: {{message}}",
+    "modeSaved": "{{title}} は {{mode}} になりました。",
+    "modeError": "{{title}} を変更できませんでした: {{message}}"
+  },
+  "history": {
+    "title": "実行履歴",
+    "filters": {
+      "target": "データ種別",
+      "allTargets": "すべてのデータ種別",
+      "since": "開始",
+      "until": "終了",
+      "kind": "種類",
+      "status": "ステータス",
+      "allKinds": "ドライランと実行",
+      "dry": "ドライラン",
+      "real": "実際の実行",
+      "allStatuses": "すべてのステータス",
+      "ok": "成功",
+      "failed": "失敗",
+      "reset": "フィルターをリセット"
+    },
+    "exportCsv": "CSVをエクスポート",
+    "exportJson": "JSONをエクスポート",
+    "exportLabel": "絞り込んだ履歴をエクスポート",
+    "loadError": "実行履歴を読み込めませんでした: {{message}}",
+    "empty": {
+      "title": "一致する実行はありません",
+      "body": "スケジュール実行、手動実行、ドライラン、実際の実行を問わず、クリーンアップの実行がここに表示されます。"
+    },
+    "emptyFiltered": "これらのフィルターに一致する実行はありません。リセットするとすべての実行が表示されます。",
+    "dryRun": "ドライラン",
+    "realRun": "削除済み",
+    "failed": "失敗",
+    "outcomeDry_other": "{{rows}} 行、{{size}} が削除される見込みです",
+    "outcomeDryNone": "削除されるものはありません",
+    "outcomeReal_other": "{{rows}} 行、{{size}} を削除しました",
+    "outcomeRealNone": "削除するものはありません",
+    "meta": "{{trigger}}、{{days}} 日間保持",
+    "byActor": "実行者: {{actor}}",
+    "trigger": {
+      "scheduled": "スケジュール",
+      "manual": "手動",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "日時",
+      "target": "データ種別",
+      "kind": "種類",
+      "result": "結果",
+      "trigger": "トリガー",
+      "days": "保持"
+    },
+    "timeline": "実行タイムライン",
+    "loadMore": "さらに読み込む",
+    "loadingMore": "読み込み中..."
+  }
+}

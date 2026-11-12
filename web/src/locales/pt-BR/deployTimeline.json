@@ -1,0 +1,116 @@
+{
+  "title": "Linha do tempo de deploys",
+  "subtitle": "Todos os deploys dos seus apps em um único eixo de tempo. Os deploys em andamento são atualizados ao vivo.",
+  "zoom": {
+    "label": "Intervalo de tempo",
+    "1h": "1 hora",
+    "24h": "24 horas",
+    "7d": "7 dias"
+  },
+  "filters": {
+    "label": "Filtros",
+    "app": "App",
+    "allApps": "Todos os apps",
+    "project": "Projeto",
+    "allProjects": "Todos os projetos",
+    "node": "Node",
+    "allNodes": "Todos os nodes",
+    "status": "Status",
+    "allStatuses": "Todos os status",
+    "clear": "Limpar filtros"
+  },
+  "status": {
+    "building": "Em build",
+    "queued": "Na fila",
+    "ready": "Pronto",
+    "failed": "Falhou",
+    "canceled": "Cancelado",
+    "held": "Retido",
+    "awaiting_approval": "Aguardando aprovação",
+    "rolled_back": "Rollback feito",
+    "superseded": "Substituído"
+  },
+  "stream": {
+    "connecting": "Conectando",
+    "live": "Ao vivo",
+    "reconnecting": "Reconectando"
+  },
+  "legend": {
+    "label": "Legenda",
+    "ready": "Pronto",
+    "building": "Em andamento",
+    "failed": "Falhou",
+    "rolledBack": "Rollback feito",
+    "canceled": "Cancelado",
+    "alert": "Alerta disparado",
+    "now": "Agora"
+  },
+  "chart": {
+    "label": "Deploys por app no intervalo de tempo selecionado",
+    "laneLabel": "{{app}}, {{count}} deploys",
+    "barLabel": "{{app}}, {{status}}, iniciado {{when}}, {{duration}}. Abrir detalhes do deploy.",
+    "axisLabel": "Eixo de tempo",
+    "alertLabel": "Alerta disparado: {{rule}}, {{when}}",
+    "clusterLabel": "{{count}} deploys próximos em {{app}}. Mostrar cada deploy.",
+    "clusterChip": "+{{count}}",
+    "collapse": "Recolher deploys agrupados",
+    "now": "Agora",
+    "latest": "Último deploy: {{status}}",
+    "unknownProject": "Sem projeto"
+  },
+  "card": {
+    "title": "Detalhes do deploy",
+    "commit": "Commit",
+    "noCommit": "Sem commit",
+    "actor": "Autor",
+    "unknownActor": "Desconhecido",
+    "duration": "Duração",
+    "running": "Em execução",
+    "strategy": "Estratégia",
+    "noStrategy": "Não registrada",
+    "trigger": "Gatilho",
+    "environment": "Ambiente",
+    "rollbackOf": "Faz rollback para {{id}}",
+    "open": "Abrir deploy"
+  },
+  "empty": {
+    "title": "Nenhum deploy neste intervalo",
+    "body": "Nada foi implantado nos últimos {{range}} com estes filtros. Tente um intervalo maior ou limpe os filtros.",
+    "action": "Mostrar 7 dias",
+    "sampleLabel": "Linha do tempo de exemplo"
+  },
+  "error": {
+    "title": "Não foi possível carregar a linha do tempo de deploys",
+    "retry": "Tentar novamente"
+  },
+  "loading": "Carregando deploys",
+  "more": {
+    "label": "Carregar deploys anteriores",
+    "loading": "Carregando",
+    "failed": "Não foi possível carregar mais deploys. Tente novamente."
+  },
+  "count": "{{deploys}} deploys em {{apps}} apps",
+  "banner": {
+    "description": "Uma linha do tempo de cada deploy por app, com falhas e rollbacks marcados. Faça o deploy de um app e a faixa dele aparece aqui."
+  },
+  "appHistory": {
+    "title": "Histórico",
+    "managedBy": "Gerenciado pela stack {{stack}}",
+    "kind": {
+      "deploy": "Deploy",
+      "rollback": "Rollback",
+      "restart": "Reinício"
+    },
+    "status": {
+      "running": "Em execução",
+      "succeeded": "Bem-sucedido",
+      "failed": "Falhou",
+      "held": "Retido",
+      "awaiting_approval": "Aguardando aprovação",
+      "superseded": "Substituído",
+      "queued": "Na fila",
+      "canceled": "Cancelado",
+      "pending": "Pendente"
+    }
+  }
+}

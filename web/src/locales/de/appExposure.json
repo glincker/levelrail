@@ -1,0 +1,100 @@
+{
+  "title": "Ports und Erreichbarkeit",
+  "description": "Ändern Sie den Port, auf dem diese App lauscht, und legen Sie fest, wie sie erreichbar ist. Viele Apps können denselben Container-Port nutzen: Jede erhält ihren eigenen Host-Port.",
+  "containerPort": "Container-Port",
+  "containerPortHelp": "Der Port, auf dem die App in ihrem Container lauscht.",
+  "mode": {
+    "label": "Erreichbarkeit",
+    "proxied": "Über den Proxy",
+    "proxiedHelp": "Erreichbar über ihre Domain oder den automatischen Hostnamen auf den Ports 80 und 443. Andere Apps erreichen sie über den Namen. Es wird kein Host-Port geöffnet.",
+    "direct": "Direkte IP und Port",
+    "directHelp": "Zusätzlich auf einem Host-Port veröffentlicht und in der Host-Firewall geöffnet, sodass Sie die App unter der Serveradresse prüfen können. Das ist reines HTTP und umgeht TLS und Zugangssperren."
+  },
+  "hostPort": "Host-Port",
+  "hostPortHelp": "Leer lassen, um automatisch einen freien Port zwischen {{lo}} und {{hi}} zu wählen.",
+  "preview": "Änderungen anzeigen",
+  "previewing": "Wird geprüft",
+  "apply": "Anwenden",
+  "applying": "Wird angewendet",
+  "revert": "Zurück zu nur Proxy",
+  "reset": "Verwerfen",
+  "nothingToChange": "Es würde sich nichts ändern.",
+  "willChange": "Dies ändert sich",
+  "recreates": "Der Container wird mit den neuen Einstellungen neu erstellt. Das Image wird nicht neu gebaut oder erneut geladen.",
+  "remoteNode": "Diese App läuft auf einem anderen Node. Direkte Host-Ports sind nur für Apps auf dem eigenen Node der Control Plane verfügbar.",
+  "plainHttpWarning": "Reines HTTP: Der Traffic ist nicht verschlüsselt, und für die Domain konfigurierte Basic-Auth- oder Anmeldesperren gelten auf diesem Port nicht.",
+  "applied": "Erreichbarkeit aktualisiert",
+  "appliedDescription": "Der Abgleich läuft im Hintergrund.",
+  "change": {
+    "container_port": "Container-Port",
+    "host_port": "Host-Port",
+    "bind_address": "Bind-Adresse",
+    "firewall": "Firewall-Regel"
+  },
+  "values": {
+    "automatic": "automatisch",
+    "open": "offen",
+    "closed": "geschlossen"
+  },
+  "urls": {
+    "title": "Wo sie antwortet",
+    "domain": "Domain",
+    "fallback": "Automatischer Hostname",
+    "direct": "Direkte IP und Port",
+    "none": "Noch keine öffentliche URL. Fügen Sie eine Domain hinzu, aktivieren Sie automatische Hostnamen oder nutzen Sie direkte IP und Port.",
+    "noneTitle": "Keine öffentliche URL",
+    "internal": "Andere Apps auf diesem Server erreichen sie über ihren App-Namen auf Port {{port}}."
+  },
+  "check": {
+    "button": "Von hier testen",
+    "running": "Wird getestet",
+    "scope": "Vom Host der Control Plane aus geprüft. Das kann nicht belegen, dass der Port für das gesamte Internet offen ist.",
+    "ok": "Erreichbar",
+    "status": "HTTP {{status}} in {{ms}} ms",
+    "failures": {
+      "container_not_running": "Der Container läuft nicht, daher gibt es nichts zu erreichen. Starten Sie die App oder deployen Sie sie erneut.",
+      "container_not_listening": "Der Container läuft, aber auf seinem veröffentlichten Port antwortet nichts. Die App lauscht möglicherweise nicht auf dem oben genannten Container-Port oder startet noch.",
+      "firewall_closed": "Die Serveradresse antwortet auf diesem Port nicht. Die Host-Firewall oder die Sicherheitsgruppe Ihres Cloud-Anbieters ist wahrscheinlich geschlossen.",
+      "unreachable_from_host": "Der Ingress hat von diesem Server aus nicht geantwortet. Prüfen Sie, ob die Ports 80 und 443 bedient werden.",
+      "tls_not_issued": "Das Zertifikat wird noch nicht als vertrauenswürdig eingestuft. Der Ingress liefert ein temporäres Zertifikat aus und versucht die öffentliche CA im Erneuerungszyklus erneut.",
+      "proxy_route_missing": "Der Proxy hat geantwortet, hat aber keine Route für diesen Hostnamen. Prüfen Sie, ob die Domain dieser App zugeordnet ist.",
+      "upstream_failing": "Der Proxy hat eine Route, aber die App dahinter antwortet nicht.",
+      "app_error": "Die App hat mit einem Serverfehler geantwortet.",
+      "request_failed": "Die Anfrage wurde nicht abgeschlossen."
+    },
+    "fixFirewall": "Firewall-Einstellungen öffnen",
+    "fixCertificates": "Domains und Zertifikate öffnen"
+  },
+  "inUse": {
+    "title": "Belegte Host-Ports auf diesem Node",
+    "port": "Port",
+    "heldBy": "Belegt von",
+    "empty": "Keine Host-Ports sind von Apps oder der Control Plane fixiert oder veröffentlicht.",
+    "emptyTitle": "Keine fixierten Host-Ports",
+    "control": "Control Plane: {{name}}",
+    "app": "App {{name}}",
+    "stream": "Stream von {{name}}"
+  },
+  "errors": {
+    "load": "Die Einstellungen zur Erreichbarkeit konnten nicht geladen werden.",
+    "invalidPort": "Geben Sie eine ganze Zahl von 1 bis 65535 ein."
+  },
+  "tunnel": {
+    "title": "Einen privaten Port erreichen",
+    "description": "Öffnet einen lokalen Port, der zu dieser App tunnelt, ohne sie zu veröffentlichen. Erfordert die CLI, angemeldet mit einem Operator-Token.",
+    "portLabel": "Container-Port {{port}}",
+    "copy": "Tunnelbefehl für Port {{port}} kopieren",
+    "copied": "Kopiert"
+  },
+  "game": {
+    "title": "Gameserver",
+    "online": "Online",
+    "offline": "Offline",
+    "players": "{{online}}/{{max}} Spieler",
+    "latency": "{{ms}} ms",
+    "copy": "Beitrittsadresse kopieren",
+    "copied": "Kopiert",
+    "notExposed": "Noch nicht öffentlich: Veröffentlichen Sie den Port, um eine Beitrittsadresse zu erhalten.",
+    "noPublicHost": "Beitritt über Port {{port}} an der öffentlichen Adresse dieses Servers."
+  }
+}

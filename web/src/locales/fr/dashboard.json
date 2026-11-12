@@ -1,0 +1,358 @@
+{
+  "needsAttention": {
+    "askAi": "Demander à l'IA",
+    "review": "Examiner",
+    "retryCopy": "Relancer la copie",
+    "openDatabase": "Ouvrir la base de données"
+  },
+  "fleet": {
+    "reserved": {
+      "title": "Réservé par rapport à utilisé",
+      "subtitle": "Limites configurées de {{active}} apps et bases de données en marche, réplicas compris. {{suspended}} arrêtées sont exclues.",
+      "cpu": "CPU",
+      "memory": "Mémoire",
+      "cores_one": "cœur",
+      "cores_many": "cœurs",
+      "cores_other": "cœurs",
+      "reserved": "Réservé",
+      "used": "Utilisé maintenant",
+      "capacity": "Capacité",
+      "unknown": "Non communiqué",
+      "cpuCapacityScope": "La capacité CPU correspond aux cœurs du node du plan de contrôle.",
+      "capacityPartial": "Capacité communiquée par {{known}} nodes sur {{total}}.",
+      "reservedBar": "{{resource}} réservé",
+      "usedBar": "{{resource}} utilisé",
+      "verdict": {
+        "overCommitted": "Surengagé de {{amount}}",
+        "idle": "Réservé mais inactif",
+        "headroom": "Marge saine",
+        "noLimits": "Aucune limite définie",
+        "unknownCapacity": "Capacité non entièrement communiquée"
+      },
+      "noLimit": {
+        "cpu_one": "{{count}} container n'a pas de limite de CPU et n'est pas compté.",
+        "cpu_many": "{{count}} containers n'ont pas de limite de CPU et ne sont pas comptés.",
+        "cpu_other": "{{count}} containers n'ont pas de limite de CPU et ne sont pas comptés.",
+        "memory_one": "{{count}} container n'a pas de limite de mémoire et n'est pas compté.",
+        "memory_many": "{{count}} containers n'ont pas de limite de mémoire et ne sont pas comptés.",
+        "memory_other": "{{count}} containers n'ont pas de limite de mémoire et ne sont pas comptés."
+      },
+      "breakdown": "Réservé par groupe",
+      "groupBy": "Grouper par",
+      "by": {
+        "project": "Projet",
+        "environment": "Environnement"
+      },
+      "colReserved": "Réservé",
+      "colUsed": "Utilisé",
+      "pairHint": "Cœurs CPU / mémoire.",
+      "unsetInGroup_one": "{{count}} sans limite",
+      "unsetInGroup_many": "{{count}} sans limites",
+      "unsetInGroup_other": "{{count}} sans limites",
+      "noProject": "Aucun projet",
+      "noEnvironment": "Aucun environnement",
+      "topReservers": "Ressources les plus réservées",
+      "noReservers": "Aucune ressource n'a encore de limite définie.",
+      "kind": {
+        "app": "App",
+        "database": "Base de données"
+      }
+    },
+    "storage": {
+      "title": "Stockage",
+      "scope": "Les tailles de volumes concernent le node du plan de contrôle. Les tailles de sauvegardes concernent tous les nodes.",
+      "databaseVolumes": "Volumes de bases de données",
+      "appVolumes": "Volumes d'apps",
+      "unknownSizes_one": "{{count}} taille de volume inconnue",
+      "unknownSizes_many": "{{count}} tailles de volumes inconnues",
+      "unknownSizes_other": "{{count}} tailles de volumes inconnues",
+      "backups": "Sauvegardes stockées",
+      "backupCount_one": "{{count}} sauvegarde",
+      "backupCount_many": "{{count}} sauvegardes",
+      "backupCount_other": "{{count}} sauvegardes",
+      "total": "Total",
+      "totalHint": "Volumes plus sauvegardes.",
+      "largestVolumes": "Plus gros volumes",
+      "largestBackups": "Plus gros ensembles de sauvegardes",
+      "noVolumes": "Aucune taille de volume communiquée.",
+      "notReported": "Taille non communiquée.",
+      "noBackups": "Aucune sauvegarde réussie pour l'instant."
+    }
+  },
+  "status": {
+    "ok": "Tous les systèmes sont normaux",
+    "incidents_one": "{{count}} incident",
+    "incidents_many": "{{count}} incidents",
+    "incidents_other": "{{count}} incidents"
+  },
+  "tiles": {
+    "appsRunning": "Apps en marche",
+    "requests": "Requêtes",
+    "errorRate": "Taux d'erreurs",
+    "noTraffic": "Aucun trafic",
+    "deploys24h": "Deploys 24 h",
+    "nodesOnline": "Nodes en ligne",
+    "lastHour": "Dernière heure, toutes les apps.",
+    "addDomain": "Ajouter un domaine",
+    "deployApp": "Deployer une app",
+    "idle": "Inactif"
+  },
+  "resources": {
+    "title": "Ressources",
+    "controlPlane": "Plan de contrôle",
+    "cpu": "CPU",
+    "memory": "Mémoire",
+    "disk": "Disque",
+    "cpuOfCores": "{{percent}} % de {{cores}} cœurs",
+    "cpuContainers": "{{percent}} % sur l'ensemble des containers",
+    "noReadings": "Aucune mesure de l'hôte pour ce node pour l'instant.",
+    "memoryBreakdown": "Répartition de la mémoire",
+    "segment": {
+      "levelrail": "{{brand}}",
+      "apps": "Apps",
+      "databases": "Bases de données",
+      "other": "Autres containers",
+      "system": "Système",
+      "free": "Libre"
+    },
+    "segmentHelp": {
+      "levelrail": "Le plan de contrôle et l'agent du node",
+      "apps": "Containers de vos apps deployées",
+      "databases": "Containers de vos bases de données gérées",
+      "other": "Tournent sur ce serveur mais ne sont pas gérés par {{brand}}",
+      "system": "Noyau, cache de pages et autres processus",
+      "free": "Mémoire encore disponible"
+    },
+    "notManaged": "Non géré par {{brand}}",
+    "topConsumers": "Plus gros consommateurs",
+    "sortBy": "Trier par",
+    "sort": {
+      "memory": "Mémoire",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "App",
+      "database": "Base de données",
+      "other": "Container"
+    },
+    "requestTrend": "Tendance des requêtes de {{name}}",
+    "viewAll_one": "Voir {{count}}",
+    "viewAll_many": "Voir les {{count}}",
+    "viewAll_other": "Voir les {{count}}",
+    "showLess": "Afficher moins",
+    "databasesLine_one": "{{count}} base de données",
+    "databasesLine_many": "{{count}} bases de données",
+    "databasesLine_other": "{{count}} bases de données"
+  },
+  "recommendations": {
+    "line_one": "{{count}} recommandation",
+    "line_many": "{{count}} recommandations",
+    "line_other": "{{count}} recommandations"
+  },
+  "usageDetails": {
+    "title": "Détails d'usage"
+  },
+  "hero": {
+    "title": "Tableau de bord"
+  },
+  "banners": {
+    "httpsTitle": "Ce tableau de bord est en HTTP simple",
+    "httpsDetail": "Les mots de passe et les sessions circulent non chiffrés. Activez HTTPS en un clic, sans DNS.",
+    "httpsAction": "Activer HTTPS",
+    "doctorTitle_one": "Doctor a trouvé {{count}} problème",
+    "doctorTitle_many": "Doctor a trouvé {{count}} problèmes",
+    "doctorTitle_other": "Doctor a trouvé {{count}} problèmes",
+    "doctorDetail": "Chacun a une solution ou une prochaine étape.",
+    "doctorAction": "Ouvrir Doctor",
+    "nodesTitle_one": "{{count}} node est hors ligne",
+    "nodesTitle_many": "{{count}} nodes sont hors ligne",
+    "nodesTitle_other": "{{count}} nodes sont hors ligne",
+    "nodesDetail": "Les apps d'un node hors ligne continuent de tourner mais ne peuvent pas être modifiées, et leur ingress mesh est arrêté.",
+    "nodesAction": "Voir les nodes"
+  },
+  "nextSteps": {
+    "title": "Prochaines étapes recommandées",
+    "seeAll": "Page de statut",
+    "continue": "Continuer",
+    "setupProgress": "Configuration prête à {{percent}} %",
+    "quiet": "Rien ne vous attend. {{running}} apps sur {{total}} en marche, {{deploys}} deploys au cours des dernières 24 heures.",
+    "group": {
+      "copy_one": "Échec de la copie de données sur {{count}} base de données",
+      "copy_many": "Échec de la copie de données sur {{count}} bases de données",
+      "copy_other": "Échec de la copie de données sur {{count}} bases de données",
+      "show_one": "Afficher {{count}}",
+      "show_many": "Afficher les {{count}}",
+      "show_other": "Afficher les {{count}}",
+      "hide": "Masquer"
+    },
+    "review": "Examiner"
+  },
+  "deploys": {
+    "title": "Deploys récents",
+    "empty": "Aucun deploy pour l'instant. Poussez vers un dépôt connecté et ils apparaissent ici.",
+    "emptyScoped": "Aucun deploy pour l'instant pour les apps de cette portée.",
+    "status": {
+      "succeeded": "Deployé",
+      "failed": "Échoué",
+      "running": "Deploy en cours",
+      "held": "Suspendu",
+      "awaiting_approval": "En attente d'approbation",
+      "superseded": "Remplacé",
+      "queued": "En file d'attente",
+      "canceled": "Annulé",
+      "pending": "En file jusqu'au retour du node"
+    }
+  },
+  "strip": {
+    "nodeOffline_one": "Le node {{names}} est hors ligne",
+    "nodeOffline_many": "{{count}} nodes hors ligne : {{names}}",
+    "nodeOffline_other": "{{count}} nodes hors ligne : {{names}}",
+    "nodeOfflineSince": "depuis",
+    "nodeOfflineView": "Voir le node",
+    "ok_one": "Les {{count}} apps sont saines",
+    "ok_many": "Les {{count}} apps sont saines",
+    "ok_other": "Les {{count}} apps sont saines",
+    "issues_one": "{{count}} élément nécessite votre attention",
+    "issues_many": "{{count}} éléments nécessitent votre attention",
+    "issues_other": "{{count}} éléments nécessitent votre attention",
+    "causes_one": "{{count}} problème pour {{causes}} cause",
+    "causes_many": "{{count}} problèmes pour {{causes}} causes racines",
+    "causes_other": "{{count}} problèmes pour {{causes}} causes racines",
+    "details": "Détails",
+    "notices_one": "{{count}} avis",
+    "notices_many": "{{count}} avis",
+    "notices_other": "{{count}} avis",
+    "showSnoozed_one": "Afficher {{count}} reporté",
+    "showSnoozed_many": "Afficher {{count}} reportés",
+    "showSnoozed_other": "Afficher {{count}} reportés"
+  },
+  "scope": {
+    "label": "Affichage de {{name}}",
+    "clear": "Effacer la portée, afficher tous les projets",
+    "allProjects": "Tous les projets",
+    "instanceWide": "Tous les projets",
+    "instanceWideHint": "À l'échelle de l'instance. Non filtré par le projet ou l'environnement choisi."
+  },
+  "apps": {
+    "title": "Apps",
+    "search": "Rechercher des apps",
+    "none": "Aucune app ne correspond.",
+    "emptyScopedTitle": "Aucune app dans {{scope}} pour l'instant",
+    "emptyScopedBody": "Deployez-en une ici et elle apparaît dans cette portée, ou passez à tous les projets pour tout voir.",
+    "emptyScopedClear": "Afficher tous les projets",
+    "viewAll": "Voir les {{count}}",
+    "view": {
+      "grid": "Vue en grille",
+      "list": "Vue en liste"
+    }
+  },
+  "widgets": {
+    "attention": "Vous êtes attendu",
+    "apps": "Apps",
+    "activity": "Deploys récents",
+    "fleet": "Flotte",
+    "resources": "Ressources",
+    "advisor": "Conseiller de ressources",
+    "alerts": "Alertes récentes",
+    "usage": "Détails d'usage"
+  },
+  "customize": {
+    "edit": "Personnaliser",
+    "done": "Terminé",
+    "reset": "Rétablir la disposition",
+    "show": "Afficher {{name}}",
+    "moveUp": "Monter {{name}}",
+    "moveDown": "Descendre {{name}}",
+    "hide": "Masquer {{name}}"
+  },
+  "newApp": {
+    "label": "Nouvelle app",
+    "more": "Autres façons de deployer",
+    "items": {
+      "git": {
+        "title": "Depuis un dépôt Git",
+        "hint": "Build et deploy à chaque push"
+      },
+      "image": {
+        "title": "Depuis une image Docker",
+        "hint": "Récupérer une image préconstruite"
+      },
+      "template": {
+        "title": "Depuis un modèle",
+        "hint": "n8n, Uptime Kuma, MinIO et plus"
+      },
+      "compose": {
+        "title": "Depuis Docker Compose",
+        "hint": "Deployer chaque service d'un fichier"
+      },
+      "database": {
+        "title": "Une base de données",
+        "hint": "Postgres, MySQL, Redis et plus"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "Relancer la copie vers {{name}}",
+    "description": "La source précédente est préremplie. Saisissez à nouveau le mot de passe. Il n'est jamais stocké. Si la source exige le chiffrement, la copie réessaie automatiquement avec TLS.",
+    "loading": "Chargement de la tentative précédente...",
+    "missing": "Cette base de données n'a aucune copie à relancer."
+  },
+  "snooze": {
+    "label": "Reporter d'un jour",
+    "done_one": "Reporté d'un jour.",
+    "done_many": "{{count}} éléments reportés d'un jour.",
+    "done_other": "{{count}} éléments reportés d'un jour.",
+    "undo": "Annuler"
+  },
+  "tabs": {
+    "label": "Vues du tableau de bord",
+    "start": "Démarrer",
+    "metrics": "Métriques",
+    "more": "Autres vues",
+    "hiddenSuffix": "{{name}} (masqué)",
+    "addTitle": "Nouveau tableau de bord",
+    "addDescription": "Partez d'un tableau de bord prêt à l'emploi, ou commencez avec un tableau vide.",
+    "empty": "Tableau de bord vide",
+    "metricsNote": "Totaux de toute la flotte. Personnalisez-le pour en faire votre propre copie.",
+    "customize": "Personnaliser",
+    "emptyName": "Tableau de bord sans titre",
+    "metricsEmptyTitle": "Aucune métrique pour l'instant",
+    "metricsEmptyBody": "Les métriques apparaissent une fois votre première app en marche. Deployez-en une pour voir ici le CPU, la mémoire et le trafic.",
+    "metricsEmptyAction": "Deployer votre première app"
+  },
+  "manage": {
+    "label": "Gérer",
+    "new": "Nouveau tableau",
+    "starter": "Nouveau depuis un modèle de départ",
+    "import": "Importer un JSON",
+    "importFile": "Fichier JSON du tableau de bord",
+    "edit": "Modifier le tableau",
+    "doneEditing": "Arrêter la modification",
+    "rename": "Renommer",
+    "renameTitle": "Renommer le tableau",
+    "name": "Nom",
+    "export": "Exporter en JSON",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteBody": "Le tableau est supprimé pour toutes les personnes qui peuvent le voir. Les fichiers JSON exportés ne sont pas affectés.",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "updateStrip": {
+    "label": "Mise à jour disponible",
+    "to": "vers",
+    "behind_one": "{{count}} version de retard",
+    "behind_many": "{{count}} versions de retard",
+    "behind_other": "{{count}} versions de retard",
+    "security": "Inclut un correctif de sécurité",
+    "whatsNew": "Nouveautés",
+    "update": "Mettre à jour",
+    "dismiss": "Masquer {{version}} jusqu'à la prochaine version"
+  },
+  "restoreDue": {
+    "title": "Tester une restauration",
+    "body": "Vous avez une sauvegarde, mais aucune restauration n'a encore été testée. Une sauvegarde jamais restaurée est un pari.",
+    "action": "Tester une restauration",
+    "dismiss": "Ignorer"
+  }
+}

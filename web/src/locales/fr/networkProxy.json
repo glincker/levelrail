@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Trafic",
+    "description": "Chaque domaine routé par l'ingress intégré de ce plan de contrôle, le node qui le sert réellement et s'il est joignable."
+  },
+  "table": {
+    "label": "Domaines routés",
+    "domain": "Domaine",
+    "app": "App",
+    "node": "Node",
+    "reachable": "Joignable",
+    "port": "Port",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "Joignable",
+    "no": "Injoignable"
+  },
+  "unreachableBanner_one": "1 domaine est injoignable : son app s'exécute sur un autre node et l'ingress de ce plan de contrôle n'a aucun chemin WireGuard mesh utilisable vers lui. Vérifiez l'état du mesh sur la page Réseau.",
+  "unreachableBanner_many": "{{count}} domaines sont injoignables : leurs apps s'exécutent sur d'autres nodes et l'ingress de ce plan de contrôle n'a aucun chemin WireGuard mesh utilisable vers eux. Vérifiez l'état du mesh sur la page Réseau.",
+  "unreachableBanner_other": "{{count}} domaines sont injoignables : leurs apps s'exécutent sur d'autres nodes et l'ingress de ce plan de contrôle n'a aucun chemin WireGuard mesh utilisable vers eux. Vérifiez l'état du mesh sur la page Réseau.",
+  "fix": {
+    "explanation": "Le chemin WireGuard mesh vers le node de cette app n'est pas utilisable, donc l'ingress intégré ne peut pas l'atteindre. Réparez le mesh, ou ramenez l'app sur ce node.",
+    "moveHere": "Déplacer vers ce node"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "Personnalisé"
+  },
+  "empty": {
+    "title": "Aucun domaine routé pour l'instant",
+    "description": "Connectez un domaine depuis l'onglet Domaines d'une app pour voir ici son chemin de trafic."
+  },
+  "automaticDomain": {
+    "badge": "Automatique",
+    "betaHint": "Adresse de test gratuite fournie par un service DNS wildcard public. Ne fonctionne que tant que ce service est résolu sur votre réseau. Ajoutez votre propre domaine pour la production.",
+    "hint": "Attribuée par Levelrail à partir de l'IP de ce serveur pour que l'app fonctionne sans configuration DNS. Ajoutez votre propre domaine ci-dessous pour la remplacer.",
+    "open": "Ouvrir",
+    "tlsNote": "Cette URL automatique utilise un certificat auto-signé tant que HTTPS n'est pas activé sous Domaines. Le http simple reçoit une redirection 308 vers celle-ci."
+  },
+  "banner": {
+    "description": "Les domaines routés par ce plan de contrôle apparaîtront ici, avec le node qui sert chacun d'eux et son état de joignabilité."
+  }
+}

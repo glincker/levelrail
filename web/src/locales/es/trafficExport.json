@@ -1,0 +1,111 @@
+{
+  "title": "Exportación de tráfico",
+  "description": "Envía un registro por cada petición terminada a PostHog, a un colector de OpenTelemetry o a tu propio endpoint. La entrega se pone en cola fuera de la ruta de la petición y nunca ralentiza ni hace fallar una petición.",
+  "card": {
+    "title": "Destinos de exportación",
+    "description": "Los registros no llevan la identidad del visitante salvo que lo actives en cada destino."
+  },
+  "add": "Añadir destino",
+  "loadError": "No se pudo cargar la exportación de tráfico: {{message}}",
+  "notConfigured": "La exportación de tráfico necesita una clave maestra para guardar las credenciales de los destinos.",
+  "empty": {
+    "title": "No hay destinos de exportación",
+    "description": "Añade un destino para enviar los registros de peticiones a tu herramienta de analítica."
+  },
+  "kinds": {
+    "posthog": "PostHog",
+    "otlp": "OpenTelemetry",
+    "webhook": "Webhook"
+  },
+  "state": {
+    "active": "Activo",
+    "idle": "Sin entregar",
+    "disabled": "En pausa",
+    "invalid": "Requiere atención",
+    "failing": "Con fallos"
+  },
+  "errorKinds": {
+    "auth": "Credenciales rechazadas",
+    "rejected": "Petición rechazada",
+    "rate_limited": "Límite de peticiones",
+    "server": "Error del destino",
+    "blocked_target": "Dirección no permitida",
+    "timeout": "Tiempo agotado",
+    "network": "Inaccesible",
+    "config": "Ajustes no válidos",
+    "other": "Falló la entrega"
+  },
+  "row": {
+    "lastSuccess": "Última entrega {{when}}",
+    "never": "Aún no hay entregas",
+    "queued": "{{count}} en cola",
+    "dropped": "{{count}} descartados",
+    "failed": "{{count}} fallidos",
+    "identity": "Campos de identidad activados",
+    "noIdentity": "Sin identidad del visitante",
+    "target": "Envía a {{host}}",
+    "enabled": "Activado",
+    "test": "Enviar prueba",
+    "testing": "Enviando",
+    "testOk": "{{name}} aceptó el registro de prueba",
+    "testFailed": "{{name}} no aceptó el registro de prueba: {{reason}}",
+    "edit": "Editar",
+    "remove": "Quitar"
+  },
+  "remove": {
+    "title": "¿Quitar {{name}}?",
+    "description": "Se eliminan sus credenciales guardadas y se descartan los registros en cola.",
+    "confirm": "Quitar destino"
+  },
+  "sheet": {
+    "addTitle": "Añadir destino de exportación",
+    "editTitle": "Editar {{name}}",
+    "description": "Las credenciales se guardan cifradas y no se vuelven a mostrar.",
+    "name": "Nombre",
+    "namePlaceholder": "Analítica de producto",
+    "kind": "Tipo de destino",
+    "host": "Región o URL de PostHog",
+    "hostPlaceholder": "us, eu o https://posthog.example.com",
+    "token": "Token del proyecto",
+    "tokenStored": "Hay un token guardado. Déjalo en blanco para conservarlo.",
+    "url": "URL del endpoint",
+    "urlPlaceholder": "https://collector.example.com",
+    "urlStored": "Hay una URL guardada. Déjala en blanco para conservarla.",
+    "authHeader": "Valor de la cabecera Authorization",
+    "authHeaderHint": "Opcional, por ejemplo Bearer seguido de un token. Déjalo en blanco para conservar el valor guardado.",
+    "fieldsTitle": "Campos opcionales",
+    "fieldsHint": "Cada registro ya incluye el método, la ruta, el estado, los tiempos y el id de la petición. No se envía nada de lo de abajo salvo que lo marques.",
+    "ipTruncate": "Truncar la IP del cliente",
+    "ipTruncateHint": "Pone a cero el último octeto de una dirección IPv4 o los últimos 80 bits de una dirección IPv6.",
+    "sample": "Parte de las trazas exportadas",
+    "sampleHint": "Un número de 0 a 1. 1 exporta todas las peticiones.",
+    "enabled": "Entregar a este destino",
+    "save": "Guardar el destino",
+    "saving": "Guardando",
+    "cancel": "Cancelar",
+    "saveFailed": "No se pudo guardar: {{message}}"
+  },
+  "fields": {
+    "referrer_host": {
+      "label": "Host de referencia",
+      "hint": "El sitio del que procede la petición, solo el host."
+    },
+    "client_ip": {
+      "label": "Dirección IP del cliente",
+      "hint": "Son datos personales en muchos lugares."
+    },
+    "user_agent": {
+      "label": "User agent",
+      "hint": "Cadena del navegador y del dispositivo."
+    },
+    "visitor_id": {
+      "label": "Id de visitante anónimo",
+      "hint": "Un hash de la IP y el user agent que rota a diario. Sigue contando como identificador."
+    }
+  },
+  "disclaimer": {
+    "title": "Este destino recibirá la identidad del visitante",
+    "body": "La IP del cliente, el user agent o el id de visitante pueden identificar a una persona. Actívalos solo si tu aviso de privacidad cubre compartir estos datos con el destino y tienes una base legal. Las cookies, las cabeceras de autenticación, las cadenas de consulta y los cuerpos de las peticiones nunca se exportan."
+  },
+  "privacy": "Por defecto no se exporta ninguna IP de cliente, user agent ni id de visitante. Las cookies, las cabeceras de autenticación, las cadenas de consulta y los cuerpos de las peticiones nunca se exportan."
+}

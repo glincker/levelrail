@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "label": "邮件分区",
+    "delivery": "投递",
+    "templates": "模板",
+    "audiences": "受众",
+    "messages": "消息"
+  },
+  "common": {
+    "loadError": "无法加载此页面。",
+    "retry": "重试",
+    "cancel": "取消",
+    "close": "关闭",
+    "delete": "删除",
+    "saving": "正在保存",
+    "people": "{{count}} 人"
+  },
+  "templates": {
+    "eyebrow": "邮件",
+    "title": "邮件模板",
+    "description": "平台发送的每封邮件,统一使用带品牌的版式。可以编辑措辞,用示例数据预览,并随时恢复为默认。",
+    "kind": {
+      "system": "账户与安全",
+      "announcement": "公告"
+    },
+    "customized": "已自定义",
+    "builtIn": "内置",
+    "edit": "编辑",
+    "listHeading": "模板",
+    "layout": {
+      "title": "共享版式",
+      "description": "每封邮件外层的框架:可选的页眉图片和页脚行,例如你的邮寄地址。",
+      "headerImage": "页眉图片地址",
+      "headerImageHelp": "显示在品牌名称上方的 https 图片。留空则只显示品牌名称。",
+      "footer": "页脚文本",
+      "footerHelp": "显示在每封邮件下方。{{examples}} 等全局令牌在此处可用。",
+      "save": "保存版式",
+      "saved": "版式已保存。"
+    },
+    "editor": {
+      "back": "所有模板",
+      "subject": "主题",
+      "preheader": "预览文本",
+      "preheaderHelp": "某些收件箱会显示在主题旁边的预览行。",
+      "body": "正文",
+      "bodyHelp": "空行开始新段落。用 # 表示标题,- 表示列表,> 表示提示框,**粗体**,[标签](地址) 表示链接,!button 标签|地址 表示按钮。",
+      "save": "保存模板",
+      "saved": "模板已保存。",
+      "reset": "恢复默认",
+      "resetTitle": "重置此模板?",
+      "resetDescription": "将恢复内置的措辞。你的修改仍保留在版本历史中。",
+      "resetDone": "模板已重置。",
+      "sendTest": "向我发送测试邮件",
+      "testSent": "测试邮件已发送到 {{email}}。",
+      "noProviderTitle": "尚未设置邮件提供商",
+      "noProviderBody": "请先设置提供商,然后再发送测试。",
+      "fixProvider": "打开邮件设置"
+    },
+    "tokens": {
+      "title": "令牌",
+      "description": "选择一个令牌,将其插入到光标处。保存时会拒绝未知令牌。",
+      "scope": {
+        "global": "任何位置",
+        "recipient": "关于收件人",
+        "event": "针对这封邮件"
+      },
+      "insert": "插入 {{name}}"
+    },
+    "preview": {
+      "title": "预览",
+      "desktop": "桌面",
+      "mobile": "移动",
+      "light": "浅色",
+      "dark": "深色",
+      "frameTitle": "邮件预览",
+      "plain": "纯文本版本",
+      "error": "预览需要有效的模板:{{message}}",
+      "deviceLabel": "预览设备",
+      "schemeLabel": "预览配色方案"
+    },
+    "history": {
+      "title": "版本历史",
+      "description": "最近保存的 10 个版本。",
+      "empty": "暂无已保存的版本。第一次保存会创建一个。",
+      "restore": "恢复",
+      "restored": "版本已恢复。",
+      "version": "版本 {{version}}",
+      "by": "由 {{who}}"
+    }
+  },
+  "audiences": {
+    "eyebrow": "邮件",
+    "title": "受众",
+    "description": "保存好的收件人群组。规则按角色、团队、项目、登录域名或不活跃情况选择用户,你也可以手动添加额外地址。",
+    "create": "新建受众",
+    "edit": "编辑",
+    "empty": {
+      "title": "暂无受众",
+      "description": "创建一个群组,例如所有管理员或 90 天未活跃的所有人,然后向其发送消息。"
+    },
+    "columns": {
+      "name": "受众",
+      "recipients": "收件人",
+      "suppressed": "已退订"
+    },
+    "dialog": {
+      "createTitle": "新建受众",
+      "editTitle": "编辑受众",
+      "name": "名称",
+      "description": "描述",
+      "rules": "包含哪些人",
+      "everyone": "所有用户",
+      "roles": "角色",
+      "teams": "团队",
+      "projects": "项目(其团队)",
+      "domains": "登录邮箱域名",
+      "domainsHelp": "每行一个,例如 example.com。",
+      "inactive": "未登录天数",
+      "inactiveHelp": "缩小选择范围;在没有选择其他条件时,则选中所有这么久未活跃的人。",
+      "extra": "额外地址",
+      "extraHelp": "每行一个。即使不是用户也会被加入。",
+      "exclude": "始终排除",
+      "excludeHelp": "每行一个地址。",
+      "save": "保存受众",
+      "saved": "受众已保存。",
+      "live": "{{deliverable}} 人将收到,{{suppressed}} 人已退订。",
+      "liveSample": "前 {{count}} 位收件人",
+      "noneChosen": "请至少选择一条规则,才能看到包含哪些人。"
+    },
+    "role": {
+      "owner": "所有者",
+      "admin": "管理员",
+      "operator": "操作员",
+      "viewer": "查看者"
+    },
+    "deleteTitle": "删除此受众?",
+    "deleteDescription": "过去的消息会保留其历史。这只会移除已保存的规则。",
+    "deleted": "受众已删除。",
+    "suppressions": {
+      "title": "退订列表",
+      "description": "此处的人会被公告跳过。安全和账户邮件始终会送达。",
+      "empty": "没有人退订。",
+      "add": "添加地址",
+      "addPlaceholder": "name@example.com",
+      "remove": "移除",
+      "reasonAdmin": "由管理员添加",
+      "reasonUnsub": "已从某条消息退订",
+      "added": "地址已添加到退订列表。"
+    }
+  },
+  "messages": {
+    "eyebrow": "邮件",
+    "title": "消息",
+    "description": "向某个受众或选定的人写信。消息使用已保存的版式发出,带有一键退订链接,并有速率限制,每次发送都会记录在历史中。",
+    "compose": "新建消息",
+    "noProvider": {
+      "title": "尚未设置邮件",
+      "body": "消息需要邮件提供商。请先设置一个,发送测试,然后再回来。",
+      "fix": "打开邮件设置"
+    },
+    "composer": {
+      "title": "新建消息",
+      "template": "基于",
+      "subject": "主题",
+      "body": "消息",
+      "bodyHelp": "{{example}} 等令牌会按人填充。",
+      "audience": "受众",
+      "audiencePlaceholder": "选择受众",
+      "noAudience": "无受众",
+      "extra": "额外收件人",
+      "extraHelp": "每行一个地址,可选。",
+      "when": "时间",
+      "now": "立即发送",
+      "later": "定时发送",
+      "review": "审阅并发送",
+      "sendTest": "向我发送测试邮件",
+      "preview": "预览",
+      "tokens": "插入令牌"
+    },
+    "confirm": {
+      "title": "发送此消息?",
+      "summary": "这将向 {{deliverable}} 人发送邮件,{{suppressed}} 人已被屏蔽。",
+      "capLeft": "今日额度还剩 {{count}} 位收件人。",
+      "schedule": "将于 {{time}} 开始。",
+      "send": "发送消息",
+      "schedule_action": "定时发送消息",
+      "none": "没有人会收到此消息。"
+    },
+    "sent": "消息已加入队列。",
+    "history": {
+      "title": "历史",
+      "empty": {
+        "title": "暂无消息",
+        "description": "已发送和已安排的消息会连同投递数量显示在这里。"
+      },
+      "columns": {
+        "subject": "主题",
+        "status": "状态",
+        "progress": "已投递",
+        "when": "创建时间"
+      },
+      "progress": "共 {{total}} 人:已发送 {{sent}},失败 {{failed}},已跳过 {{suppressed}}",
+      "details": "详情",
+      "cancel": "取消发送",
+      "cancelTitle": "停止此消息?",
+      "cancelDescription": "尚未送达的人将不会收到它。",
+      "cancelled": "消息已取消。",
+      "recipients": "收件人",
+      "recipientStatus": {
+        "pending": "等待中",
+        "sent": "已发送",
+        "failed": "失败",
+        "suppressed": "已退订",
+        "cancelled": "已取消"
+      }
+    },
+    "status": {
+      "scheduled": "已安排",
+      "sending": "发送中",
+      "completed": "已完成",
+      "cancelled": "已取消",
+      "failed": "失败"
+    }
+  }
+}

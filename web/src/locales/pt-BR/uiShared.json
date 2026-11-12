@@ -1,0 +1,85 @@
+{
+  "saveStatus": {
+    "saving": "Salvando",
+    "saved": "Salvo",
+    "error": "Não foi possível salvar"
+  },
+  "breadcrumb": {
+    "label": "Trilha de navegação"
+  },
+  "pagination": {
+    "label": "Paginação",
+    "status": "Página {{page}} de {{count}}",
+    "previous": "Página anterior",
+    "next": "Próxima página"
+  },
+  "stepper": {
+    "decrease": "Diminuir",
+    "increase": "Aumentar"
+  },
+  "chip": {
+    "remove": "Remover {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "Intervalo de tempo",
+    "refresh": "Atualizar"
+  },
+  "logToolbar": {
+    "level": "Nível de log",
+    "levels": {
+      "all": "Todos",
+      "errors": "Erros",
+      "warnings": "Avisos",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "filterPlaceholder": "Filtrar linhas",
+    "filterLabel": "Filtrar linhas de log",
+    "jumpToError": "Ir para o primeiro erro",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copiedAnnounce": "Copiado para a área de transferência",
+    "download": "Baixar",
+    "shownOf": "{{shown}} de {{total}} linhas"
+  },
+  "filterChips": {
+    "group": "Filtros ativos",
+    "clearAll": "Limpar todos os filtros",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "emptyTitle": "Nada corresponde a estes filtros",
+    "emptyBody": "Todos os {{total}} itens ainda estão aqui. Remova um filtro ou limpe todos.",
+    "status": "Status: {{value}}",
+    "search": "Busca: {{value}}",
+    "tag": "Tag: {{value}}",
+    "environment": "Ambiente: {{value}}",
+    "engine": "Mecanismo: {{value}}",
+    "labels": "Rótulos: {{value}}"
+  },
+  "listKeys": {
+    "title": "Atalhos de teclado",
+    "down": "próxima linha",
+    "up": "linha anterior",
+    "select": "selecionar linha",
+    "open": "abrir linha",
+    "filter": "focar o filtro",
+    "hint": "mostrar ou ocultar isto",
+    "close": "Ocultar atalhos de teclado"
+  },
+  "guidedEmpty": {
+    "viaCli": "Ou faça pela CLI",
+    "cliLabel": "Comando da CLI"
+  },
+  "savedViews": {
+    "button": "Visualizações",
+    "label": "Visualizações salvas",
+    "empty": "Nenhuma visualização salva ainda.",
+    "apply": "Aplicar a visualização {{name}}",
+    "delete": "Excluir a visualização {{name}}",
+    "deleted": "Visualização excluída",
+    "saved": "Visualização {{name}} salva",
+    "namePlaceholder": "Salvar os filtros atuais como",
+    "shareTeam": "Compartilhar com minha equipe",
+    "teamBadge": "Equipe",
+    "save": "Salvar visualização"
+  }
+}

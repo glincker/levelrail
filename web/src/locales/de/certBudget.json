@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "title": "Zertifikatsbudget",
+    "usage": "{{issued}} von {{warn}} Zertifikaten in den letzten {{days}} Tagen",
+    "meterLabel": "In den letzten {{days}} Tagen ausgestellte Zertifikate",
+    "status": {
+      "ok": "Im Budget",
+      "near": "Nahe am Limit",
+      "over": "Über dem Limit"
+    },
+    "body": {
+      "ok": "Bis zur Warnschwelle ist noch viel Spielraum.",
+      "near": "Automatische Adressen verbrauchen das gemeinsame Let's-Encrypt-Budget. Behalten Sie es im Blick, bevor Sie viele neue Apps deployen.",
+      "over": "Automatische Adressen verbrauchen das gemeinsame Let's-Encrypt-Budget. Rate-Limiting kann jetzt erste Deploys fehlschlagen lassen, bis das Zeitfenster weiterrückt."
+    },
+    "threshold": "Warnen bei",
+    "thresholdHelp": "Gilt sofort. Warnt nur, nichts wird blockiert.",
+    "save": "Speichern",
+    "saving": "Speichern",
+    "saved": "Gespeichert",
+    "saveFailed": "Speichern nicht möglich",
+    "invalid": "Geben Sie eine ganze Zahl von mindestens 1 ein.",
+    "doctor": "Systemprüfung öffnen",
+    "loadError": "Das Zertifikatsbudget konnte nicht geladen werden.",
+    "retry": "Erneut versuchen"
+  },
+  "autoHost": {
+    "title": "Apps mit automatischer Adresse",
+    "help": "Beim Ausschalten werden die automatische Adresse und ihr Zertifikat für diese App entfernt. Eigene Domains sind nicht betroffen.",
+    "search": "Apps suchen",
+    "empty": "Noch keine Apps. Eine neue App erhält standardmäßig eine automatische Adresse.",
+    "noMatch": "Keine App entspricht Ihrer Suche.",
+    "name": "App",
+    "address": "Adresse",
+    "on": "An",
+    "off": "Aus",
+    "toggle": "Automatische Adresse für {{name}}",
+    "loadError": "Apps konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "showing": "{{shown}} von {{total}} angezeigt",
+    "more": "Mehr anzeigen"
+  }
+}

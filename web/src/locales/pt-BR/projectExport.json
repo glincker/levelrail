@@ -1,0 +1,24 @@
+{
+  "trigger": "Exportar",
+  "title": "Exportar projeto",
+  "description": "Leve este projeto com você. Você recebe arquivos simples que rodam apenas com Docker.",
+  "includes": "Você recebe um docker-compose.yml, um .env.example com marcadores, uma lista de volumes e um README.",
+  "gaps": "Não são levados: a porta fixa do host, hooks, labels, probes, logins de registry e alguns limites de recursos. O README lista o que se aplica a este projeto.",
+  "secrets": {
+    "title": "Incluir valores dos segredos",
+    "description": "Adiciona um arquivo .env com segredos reais. Desativado por padrão.",
+    "warning": "O arquivo conterá segredos reais em texto simples. Guarde-o em local privado e exclua-o quando terminar. Esta ação é registrada no log de auditoria."
+  },
+  "download": "Baixar",
+  "downloading": "Preparando...",
+  "done": "Exportação baixada.",
+  "cancel": "Fechar",
+  "stepUp": "Exportar os valores dos segredos de {{app}} exige uma nova confirmação.",
+  "cli": {
+    "summary": "Usar a CLI",
+    "hint": "Grava os mesmos arquivos em uma pasta."
+  },
+  "errors": {
+    "stepUpExhausted": "A confirmação não liberou a exportação. Tente novamente."
+  }
+}

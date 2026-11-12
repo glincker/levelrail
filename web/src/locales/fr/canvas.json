@@ -1,0 +1,122 @@
+{
+  "title": "{{name}} : Canevas",
+  "description": "Ajoutez des apps et des bases de données et reliez-les entre elles. Chaque changement est un brouillon que vous examinez sous forme de plan avant que quoi que ce soit ne soit enregistré.",
+  "beta": "Bêta",
+  "link": "Canevas",
+  "loadError": "Impossible de charger ce projet pour le canevas. Vérifiez votre connexion et rechargez.",
+  "asideLabel": "Changements du brouillon",
+  "iacOff": {
+    "title": "La plateforme en tant que code est désactivée",
+    "description": "Le canevas transforme votre brouillon en plan avec l'API de plateforme en tant que code, cette fonctionnalité doit donc être activée avant de pouvoir examiner ou appliquer.",
+    "action": "Ouvrir les fonctionnalités bêta"
+  },
+  "empty": {
+    "title": "Rien dans ce projet pour l'instant",
+    "description": "Ajoutez une app ou une base de données depuis le panneau de brouillon pour commencer. Rien n'est créé tant que vous n'appliquez pas."
+  },
+  "draft": {
+    "title": "Brouillon",
+    "none": "Aucun changement pour l'instant. Ajoutez une app ou une base de données, ou reliez deux éléments déjà présents.",
+    "count_one": "{{count}} changement en attente",
+    "count_other": "{{count}} changements en attente",
+    "count_many": "{{count}} changements en attente",
+    "remove": "Retirer du brouillon : {{label}}",
+    "review": "Examiner les changements",
+    "discard": "Abandonner le brouillon"
+  },
+  "add": {
+    "app": "Ajouter une app",
+    "database": "Ajouter une base de données"
+  },
+  "appForm": {
+    "title": "Ajouter une app",
+    "description": "Une nouvelle app qui exécute une image prédéfinie. Elle rejoint ce projet lorsque vous appliquez.",
+    "name": "Nom",
+    "image": "Image",
+    "imageHint": "Par exemple ghcr.io/acme/web:1.2.3",
+    "port": "Port",
+    "submit": "Ajouter au brouillon"
+  },
+  "databaseForm": {
+    "title": "Ajouter une base de données",
+    "description": "Une base de données gérée dans ce projet. Elle est créée lorsque vous appliquez.",
+    "name": "Nom",
+    "engine": "Moteur",
+    "version": "Version (facultatif)",
+    "versionHint": "Laissez vide pour utiliser la version par défaut du moteur.",
+    "submit": "Ajouter au brouillon"
+  },
+  "connect": {
+    "title": "Relier une app à une base de données",
+    "app": "App",
+    "database": "Base de données",
+    "envVar": "Variable d'environnement (facultatif)",
+    "envVarHint": "Laissez vide et le serveur en choisira une.",
+    "submit": "Ajouter la connexion",
+    "choose": "Choisir",
+    "needBoth": "Il faut au moins une app et une base de données sur le canevas pour les relier."
+  },
+  "connections": {
+    "title": "Connexions",
+    "none": "Aucune app n'est encore reliée à une base de données.",
+    "remove": "Supprimer la connexion de {{app}} à {{database}}",
+    "more": "{{shown}} connexions affichées sur {{total}}."
+  },
+  "limits": {
+    "title": "Pas encore modifiable ici",
+    "body": "Volumes, domaines, load balancers et dépendances. Modifiez-les depuis l'app elle-même."
+  },
+  "errors": {
+    "required": "Ce champ est obligatoire.",
+    "format": "Utilisez des lettres minuscules, des chiffres et des tirets, en commençant et en terminant par une lettre ou un chiffre.",
+    "taken": "Un élément portant ce nom existe déjà sur le canevas.",
+    "port": "Saisissez un port entre 1 et 65535.",
+    "envVar": "Utilisez des lettres, des chiffres et des tirets bas, sans commencer par un chiffre."
+  },
+  "ops": {
+    "addApp": "Ajouter l'app {{name}} ({{image}})",
+    "addDatabase": "Ajouter la base de données {{engine}} {{name}}",
+    "connect": "Relier {{app}} à {{database}}",
+    "disconnect": "Déconnecter {{app}} de {{database}}"
+  },
+  "review": {
+    "title": "Examiner les changements",
+    "description": "Voici ce que l'application ferait. Rien n'a encore été modifié.",
+    "planning": "Construction du plan...",
+    "planError": {
+      "title": "Le plan n'a pas pu être construit",
+      "retry": "Réessayer",
+      "issuesNext": "Revenez en arrière, corrigez ou supprimez l'élément nommé ci-dessus, puis examinez à nouveau.",
+      "generic": "Vérifiez que le serveur est joignable et que vous pouvez écrire dans ce projet, puis réessayez."
+    },
+    "serverChanges": "Plan du serveur",
+    "steps": {
+      "title": "Changements de connexion",
+      "note": "Ceux-ci s'exécutent après l'application du plan ci-dessus, dans cet ordre. Le serveur ne les prévisualise pas.",
+      "connect": "Relier {{app}} à {{database}} en tant que {{envVar}}",
+      "connectAuto": "Relier {{app}} à {{database}}",
+      "disconnect": "Déconnecter {{app}} de {{database}} ({{envVar}})",
+      "unsupported": "{{app}} joint {{database}} via son app.yaml, et non via une connexion, le canevas ne peut donc pas la supprimer. Modifiez app.yaml à la place.",
+      "loading": "Recherche des connexions actuelles..."
+    },
+    "nothing": "Rien à appliquer.",
+    "apply": "Appliquer",
+    "applying": "Application...",
+    "back": "Retour à l'édition",
+    "applied": {
+      "title": "Appliqué",
+      "failed": "Certains changements n'ont pas été appliqués",
+      "failedNext": "Rien après l'étape en échec n'a été exécuté. Corrigez la cause indiquée ci-dessous, puis examinez à nouveau les changements restants.",
+      "done": "Terminé"
+    },
+    "stepStatus": {
+      "applied": "Appliqué",
+      "failed": "Échec : {{error}}",
+      "skipped": "Ignoré"
+    }
+  },
+  "toast": {
+    "applied": "Changements du canevas appliqués.",
+    "failed": "Certains changements du canevas n'ont pas été appliqués."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "trigger": "导出",
+  "title": "导出项目",
+  "description": "把此项目带走。你会得到仅用 Docker 即可运行的普通文件。",
+  "includes": "你会得到 docker-compose.yml、带占位符的 .env.example、卷列表和 README。",
+  "gaps": "不会带走：固定的主机端口、钩子、标签、探针、镜像仓库登录信息以及部分资源限制。README 会列出适用于此项目的内容。",
+  "secrets": {
+    "title": "包含密钥值",
+    "description": "添加包含真实密钥的 .env 文件。默认关闭。",
+    "warning": "压缩包将以明文保存有效密钥。请存放在私密位置，用完后删除。此操作会记录在审计日志中。"
+  },
+  "download": "下载",
+  "downloading": "准备中...",
+  "done": "导出已下载。",
+  "cancel": "关闭",
+  "stepUp": "导出 {{app}} 的密钥值需要重新确认。",
+  "cli": {
+    "summary": "使用 CLI",
+    "hint": "将相同的文件写入一个文件夹。"
+  },
+  "errors": {
+    "stepUpExhausted": "确认未能解锁导出。请重试。"
+  }
+}

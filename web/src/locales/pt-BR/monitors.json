@@ -1,0 +1,152 @@
+{
+  "title": "Monitores de uptime",
+  "add": "Adicionar monitor",
+  "cancel": "Cancelar",
+  "empty": "Ainda não há monitores. Adicione um para vigiar uma URL, uma porta TCP, um job cron ou um certificado.",
+  "loadError": "Não foi possível carregar os monitores: {{message}}",
+  "columns": {
+    "name": "Nome",
+    "target": "Alvo",
+    "state": "Estado",
+    "lastCheck": "Última verificação",
+    "uptime": "Uptime (24h)"
+  },
+  "state": {
+    "up": "No ar",
+    "suspect": "Suspeito",
+    "down": "Fora do ar",
+    "recovering": "Recuperando",
+    "degraded": "Degradado",
+    "paused": "Pausado",
+    "unknown": "Sem dados"
+  },
+  "notAvailable": "n/d",
+  "never": "nunca",
+  "form": {
+    "kind": "Tipo",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "heartbeat": "Heartbeat de cron",
+    "tls": "Certificado TLS",
+    "grace": "Tolerância (s)",
+    "graceHint": "Espera extra após o intervalo antes de o job contar como atrasado. Em branco usa o padrão do servidor.",
+    "warnDays": "Aviso (dias)",
+    "critDays": "Crítico (dias)",
+    "daysHint": "Degradado abaixo dos dias de aviso, fora do ar abaixo dos dias críticos. Em branco usa o padrão do servidor.",
+    "serverDefault": "padrão",
+    "pingTitle": "Adicione isto ao seu job",
+    "pingHint": "Exibido uma vez. Acrescente /start antes do job e /fail em caso de erro. Gire-o pela linha ou pela CLI se vazar.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "done": "Concluir",
+    "url": "URL",
+    "host": "Host",
+    "port": "Porta",
+    "name": "Nome",
+    "interval": "A cada (s)",
+    "timeout": "Timeout (ms)",
+    "statusLink": "Abrir incidentes na página de status",
+    "statusLinkHint": "Abre um incidente no componente de status vinculado enquanto este monitor estiver fora do ar e o resolve após a recuperação. Desativado por padrão.",
+    "save": "Criar",
+    "saving": "Criando...",
+    "created": "Monitor {{name}} criado",
+    "error": "Não foi possível criar o monitor: {{message}}",
+    "urlPlaceholder": "https://example.com/health"
+  },
+  "delete": {
+    "action": "Excluir {{name}}",
+    "title": "Excluir o monitor {{name}}?",
+    "description": "Seus resultados e agregações são excluídos junto com ele.",
+    "confirm": "Excluir",
+    "pending": "Excluindo...",
+    "done": "Monitor {{name}} excluído"
+  },
+  "pause": {
+    "action": "Pausar {{name}}"
+  },
+  "resume": {
+    "action": "Retomar {{name}}"
+  },
+  "rotate": {
+    "action": "Girar o token de {{name}}",
+    "title": "Girar a URL de ping de {{name}}?",
+    "description": "A URL antiga para de funcionar imediatamente. A nova é exibida uma vez, então atualize seu job logo em seguida.",
+    "confirm": "Girar",
+    "pending": "Girando..."
+  },
+  "incidents": {
+    "title": "Incidentes",
+    "empty": "Nenhum incidente. Quedas confirmadas de monitores e alertas promovidos aparecem aqui.",
+    "loadError": "Não foi possível carregar os incidentes: {{message}}",
+    "refresh": "Atualizar",
+    "published": "Público",
+    "detailHint": "Linha do tempo interna e rascunho público",
+    "timeline": "Linha do tempo interna",
+    "ack": "Reconhecer",
+    "resolve": "Resolver",
+    "state": {
+      "triggered": "Disparado",
+      "acknowledged": "Reconhecido",
+      "resolved": "Resolvido"
+    },
+    "status": {
+      "investigating": "Investigando",
+      "identified": "Identificado",
+      "monitoring": "Monitorando",
+      "resolved": "Resolvido"
+    },
+    "note": {
+      "label": "Adicionar uma nota (interna)",
+      "add": "Adicionar nota"
+    },
+    "draft": {
+      "title": "Rascunho de atualização pública",
+      "name": "Título",
+      "status": "Status",
+      "body": "Mensagem",
+      "save": "Salvar rascunho",
+      "saved": "Rascunho salvo",
+      "prefillBody": "Estamos investigando: {{title}}. Afetado: {{monitor}}.",
+      "unknownMonitor": "serviço"
+    },
+    "publish": {
+      "action": "Publicar",
+      "confirmTitle": "Publicar na página de status pública?",
+      "confirmBody": "Isto se torna público imediatamente e não pode ser despublicado. Confira o texto abaixo.",
+      "confirm": "Publicar publicamente",
+      "pending": "Publicando...",
+      "done": "Incidente publicado",
+      "already": "Publicado. Faça novas atualizações públicas pelas configurações da página de status.",
+      "stale": "Este incidente mudou desde que você o carregou. Atualize e revise o rascunho novamente.",
+      "changed": "O rascunho mudou enquanto você publicava. Nada foi publicado; revise-o novamente."
+    },
+    "postmortem": {
+      "title": "Postmortem",
+      "none": "Ainda não há postmortem. Ao criar o rascunho, a janela de impacto e os alertas deste incidente são preenchidos.",
+      "start": "Criar rascunho de postmortem",
+      "refresh": "Atualizar janela e alertas",
+      "save": "Salvar",
+      "publish": "Publicar postmortem",
+      "pending": "Publicando...",
+      "confirmTitle": "Publicar este postmortem?",
+      "confirmBody": "Publicar bloqueia o postmortem. Ninguém poderá editá-lo depois.",
+      "window": "Impacto de {{start}} a {{end}}",
+      "ongoing": "não registrado",
+      "alerts": "Alertas",
+      "noAlerts": "Nenhum alerta foi registrado para este incidente.",
+      "itemsHint": "Um item de ação por linha",
+      "publishedBy": "Publicado em {{at}} por {{by}}",
+      "state": {
+        "draft": "Rascunho",
+        "published": "Publicado"
+      },
+      "fields": {
+        "summary": "Resumo",
+        "impact": "Impacto",
+        "root_cause": "Causa raiz",
+        "resolution": "Resolução",
+        "action_items": "Itens de ação"
+      }
+    }
+  }
+}

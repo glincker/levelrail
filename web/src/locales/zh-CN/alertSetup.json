@@ -1,0 +1,93 @@
+{
+  "template": {
+    "label": "告警模板",
+    "profile": "应用类型",
+    "web": "Web 应用",
+    "worker": "Worker",
+    "database": "数据库",
+    "webHint": "崩溃循环、5xx 比例、响应缓慢、CPU 以及 99.9% 可用性 SLO。",
+    "workerHint": "崩溃循环和 CPU。",
+    "databaseHint": "崩溃循环和 CPU。",
+    "apply": "添加推荐规则",
+    "applying": "正在添加...",
+    "created": "已添加 {{count}} 条告警规则",
+    "createdSkipped": "已添加 {{count}} 条告警规则,{{skipped}} 条已存在",
+    "allExist": "所有推荐规则均已存在",
+    "failed": "无法添加推荐规则",
+    "noChannel": "尚未连接通知渠道,因此在你关联渠道之前,这些规则只会显示在告警历史中。"
+  },
+  "quiet": {
+    "title": "静默时段",
+    "description": "在每日的某个时段内暂存警告和信息级告警,并在该时段结束时,如果仍在触发,再发送。严重告警始终会通知。",
+    "enabled": "暂存非严重告警",
+    "start": "从",
+    "end": "到",
+    "timezone": "时区",
+    "save": "保存静默时段",
+    "saving": "正在保存...",
+    "saved": "静默时段已保存",
+    "clear": "移除",
+    "cleared": "静默时段已移除",
+    "loadError": "无法加载静默时段。",
+    "saveError": "无法保存静默时段"
+  },
+  "rules": {
+    "notConfigured": "未配置",
+    "generic": "通用",
+    "colName": "名称",
+    "disabled": "已禁用",
+    "colState": "状态",
+    "stateFiring": "触发中",
+    "statePending": "待定",
+    "stateOk": "正常",
+    "countFiring": "{{count}} 个触发中",
+    "countPending": "{{count}} 个待定",
+    "countOk": "{{count}} 个正常",
+    "silenced": "已静默",
+    "silencedTip": "通知已被静默",
+    "viewLogs": "查看日志",
+    "colKind": "类型",
+    "colCondition": "条件",
+    "colLastEvaluated": "上次评估",
+    "never": "从未",
+    "colLastValue": "最近值",
+    "colNotify": "通知",
+    "title": "告警规则",
+    "description": "针对此应用的指标、重启、任务、域名和备份计划的阈值、崩溃循环、证书过期、计划任务失败、域名健康和缺失备份规则。在触发或恢复转换时通过 webhook、Slack 或 Discord 通知。",
+    "emptyTitle": "暂无告警规则",
+    "emptyDescription": "当指标越过阈值或容器开始崩溃循环时,通过 webhook、Slack 或 Discord 第一时间收到通知。"
+  },
+  "slo": {
+    "title": "跟踪 {{target}}% 可用性 SLO",
+    "detail": "此应用正在提供流量,但没有 SLO 告警。{{target}}% 的目标会在 30 天错误预算快速消耗时呼叫你,在消耗缓慢时创建工单级告警。",
+    "noChannel": "尚未连接通知渠道,因此在你关联渠道之前,该规则只会显示在告警历史中。",
+    "create": "创建 SLO 规则",
+    "ruleName": "{{target}}% 可用性 SLO",
+    "created": "SLO 告警规则已创建。",
+    "createFailed": "无法创建 SLO 规则。"
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "域名流量下降",
+        "help": "当窗口内的请求数低于昨天同一窗口的某个比例时触发。在昨天没有足够流量可供比较之前保持静默。"
+      },
+      "parked_domain_cert_expiry": {
+        "label": "停放域名证书过期",
+        "help": "当停放域名的证书剩余天数少于限制时触发。覆盖平台上的所有停放域名。"
+      }
+    },
+    "scopeLabel": "域名",
+    "scopeApp": "应用:{{app}}",
+    "scopeAll": "此应用的所有域名",
+    "scopeHelp": "监控此应用的所有域名,或仅监控其中一个。",
+    "windowLabel": "窗口",
+    "windowHelp": "与昨天同一时段进行比较的时段长度。0 到 24 小时。",
+    "percentLabel": "低于昨天的百分比",
+    "percentHelp": "当流量低于昨天的此百分比时触发。50 表示一半。",
+    "minRequestsLabel": "昨天的最少请求数",
+    "minRequestsHelp": "当昨天的请求数少于此值时跳过检查,这样低流量域名不会产生告警。",
+    "daysLabel": "剩余天数",
+    "daysHelp": "当停放域名的证书剩余天数少于此值时触发。"
+  }
+}

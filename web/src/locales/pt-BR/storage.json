@@ -1,0 +1,62 @@
+{
+  "title": "Armazenamento",
+  "subtitle": "O que o Docker mantém em disco para seus apps e o que pode ser liberado com segurança.",
+  "node": {
+    "label": "Node",
+    "local": "Este servidor",
+    "partial": "Até agora, só as imagens foram medidas neste node.",
+    "unsupportedTitle": "Este node ainda não é suportado",
+    "unsupported": "O Levelrail ainda não consegue ler o armazenamento deste node. Nada aqui é alterado.",
+    "retry": "Verificar novamente"
+  },
+  "engine": {
+    "title": "Engine e assinaturas"
+  },
+  "verdict": {
+    "space": "{{free}} livres de {{total}}.",
+    "health": {
+      "healthy": "Saudável",
+      "low": "Pouco espaço",
+      "critical": "Crítico"
+    },
+    "safe": "{{size}} podem ser removidos com segurança.",
+    "nothingSafe": "Nada precisa ser removido.",
+    "forecast_one": "Cheio em cerca de {{count}} dia no ritmo atual.",
+    "forecast_many": "Cheio em cerca de {{count}} dias no ritmo atual.",
+    "forecast_other": "Cheio em cerca de {{count}} dias no ritmo atual."
+  },
+  "disk": {
+    "label": "Uso do disco",
+    "legend": "Filtrar por categoria",
+    "unmeasured": "Não medido",
+    "segmentLabel": "{{name}}, {{size}}",
+    "filterLabel": "Filtro: {{name}}",
+    "categories": {
+      "appData": "Dados de apps",
+      "images": "Imagens",
+      "buildCache": "Cache de build",
+      "containersLogs": "Containers e logs",
+      "other": "Outros",
+      "free": "Livre"
+    },
+    "meaning": {
+      "appData": "Volumes e bancos de dados que pertencem aos seus apps. Nunca são removidos automaticamente.",
+      "images": "Imagens Docker dos seus deploys. As antigas e não usadas podem ser removidas.",
+      "buildCache": "Camadas mantidas para acelerar os builds. Pode limpar com segurança, o próximo build só fica mais lento.",
+      "containersLogs": "Containers parados e seus arquivos de log.",
+      "other": "Todo o resto do disco, fora do Levelrail."
+    },
+    "tip": {
+      "sizeShare": "{{size}}, {{share}} do disco",
+      "reclaimable": "{{size}} podem ser removidos com segurança",
+      "nothingToFree": "Nada a remover"
+    }
+  },
+  "actions": {
+    "terminal": "Executar em um terminal",
+    "review": "Revisar limpeza"
+  },
+  "errors": {
+    "status": "Não foi possível ler o uso do disco agora."
+  }
+}

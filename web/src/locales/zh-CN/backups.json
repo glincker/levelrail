@@ -1,0 +1,485 @@
+{
+  "health": {
+    "title": "备份健康状况",
+    "description": "所有已备份的数据库和应用卷，按应用分组。只有经证明可以成功恢复的备份才算数。",
+    "loadFailed": "无法加载备份健康状况：{{error}}",
+    "empty": "还没有已备份的资源。请在某个数据库或应用卷自己的页面中设置计划或触发备份。",
+    "databasesGroup": "数据库",
+    "appGroup": "应用 {{name}}",
+    "columns": {
+      "resource": "资源",
+      "state": "状态",
+      "lastBackup": "上次备份",
+      "lastRestore": "上次验证的恢复",
+      "size": "大小",
+      "nextRun": "下次运行",
+      "actions": "操作"
+    },
+    "state": {
+      "healthy": "健康",
+      "warning": "需要关注",
+      "failing": "失败中",
+      "unverified": "未验证",
+      "unprotected": "无备份"
+    },
+    "never": "从未验证",
+    "none": "暂无",
+    "notScheduled": "未设置计划",
+    "encrypted": "已加密",
+    "notEncrypted": "未加密",
+    "backups": "{{count}} 个备份",
+    "restoreProven": "{{when}}已验证恢复",
+    "drillFailed": "上次演练失败",
+    "runDrill": "验证恢复",
+    "drillStarted": "恢复演练已开始",
+    "drillStartedDescription": "它会恢复到一个临时资源中，进行校验后销毁。结果会显示在演练历史中。",
+    "drillFailedToast": "无法开始恢复演练",
+    "restore": "恢复",
+    "restoreDatabase": "恢复选项",
+    "policy": "策略"
+  },
+  "encryption": {
+    "on": "新的卷备份会在上传之前先在此服务器上压缩并加密。公钥：{{key}}",
+    "off": "新的卷备份会被压缩但不会加密。任何有存储桶访问权限的人都可以读取它们。",
+    "keyHint": "请在此服务器之外保存一份密钥文件的副本（APP_BACKUP_ENCRYPTION_KEY_FILE，默认为数据目录中的 backup-encryption.key），否则灾难发生后将无法恢复加密备份。",
+    "column": "加密",
+    "badge": "已加密"
+  },
+  "protection": {
+    "title": "存储桶保护",
+    "check": "检查存储桶",
+    "checking": "检查中...",
+    "checkFailed": "无法探测备份存储桶",
+    "locked": "对象锁定已开启",
+    "versioned": "版本控制已开启",
+    "open": "任何拥有该密钥的人都可以删除备份",
+    "probeError": "无法检查此存储桶：{{error}}",
+    "target": "目标 {{id}}"
+  },
+  "restoreWizard": {
+    "title": "恢复 {{app}}/{{volume}}",
+    "description": "恢复始终写入一个新卷。现有的卷绝不会被覆盖。",
+    "stepBackup": "选择备份",
+    "stepDestination": "选择位置",
+    "stepConfirm": "确认",
+    "backup": "备份",
+    "noBackups": "此卷没有可恢复的成功备份。",
+    "destination": "目标位置",
+    "sameApp": "在原卷旁边创建一个新卷",
+    "otherApp": "为另一个应用创建一个新卷",
+    "targetApp": "应用名称",
+    "targetAppHint": "卷的命名方式使得部署此应用时会挂载已恢复的数据。",
+    "node": "节点",
+    "sameNode": "与应用在同一节点",
+    "newName": "卷名称",
+    "newNameHint": "留空则自动生成。",
+    "summary": "将备份 {{backup}} 恢复到 {{node}} 上的新卷 {{name}}。",
+    "generatedName": "一个自动生成的名称",
+    "next": "下一步",
+    "back": "返回",
+    "start": "开始恢复",
+    "cancel": "取消",
+    "started": "正在恢复到 {{name}}",
+    "startedDescription": "请在此卷的恢复历史中查看进度。",
+    "failed": "无法开始恢复"
+  },
+  "policy": {
+    "title": "{{app}}/{{volume}} 的备份策略",
+    "description": "保留数量会保留最近 N 天、N 周和 N 个月中每个周期的最新备份。钩子在应用容器内运行。",
+    "daily": "保留每日备份",
+    "weekly": "保留每周备份",
+    "monthly": "保留每月备份",
+    "retentionHint": "0 表示关闭该档位。数量会与计划自身的保留最近 N 个和保留时长限制叠加。",
+    "preHook": "备份前命令",
+    "preHookHint": "非零退出码会使备份失败，因此不一致的卷绝不会被归档。",
+    "hooksHidden": "钩子命令已隐藏，因为更改它们需要 write:sensitive 权限。",
+    "postHook": "备份后命令",
+    "pause": "在归档流式传输期间暂停应用",
+    "pauseHint": "冻结容器中的所有进程，使文件在归档过程中不会发生变化。在上传完成之前，应用不可用。",
+    "save": "保存策略",
+    "saved": "备份策略已保存",
+    "failed": "无法保存备份策略",
+    "loadFailed": "无法加载备份策略：{{error}}"
+  },
+  "drills": {
+    "title": "恢复演练",
+    "description": "恢复到临时资源的计划演练和手动演练。演练失败会触发 restore_drill_failed 告警。",
+    "empty": "还没有运行过演练。默认情况下，演练每周自动运行一次。",
+    "loadFailed": "无法加载演练：{{error}}",
+    "columns": {
+      "resource": "资源",
+      "trigger": "触发方式",
+      "result": "结果",
+      "checks": "检查项",
+      "took": "耗时",
+      "started": "开始时间"
+    },
+    "status": {
+      "running": "运行中",
+      "passed": "通过",
+      "failed": "失败"
+    },
+    "trigger": {
+      "manual": "手动",
+      "scheduled": "计划"
+    },
+    "check": {
+      "object": "对象存在",
+      "checksum": "校验和",
+      "restore": "已恢复",
+      "content": "内容"
+    },
+    "stage": "失败于{{stage}}",
+    "files": "{{count}} 个文件",
+    "tables": "{{count}} 张表",
+    "shortDescription": "恢复到临时资源可证明备份确实可用。",
+    "showAll": "显示全部 {{count}} 项",
+    "showLess": "显示更少"
+  },
+  "history": {
+    "title": "所有备份尝试",
+    "description": "所有数据库和应用卷的每一次尝试，最新的在前。"
+  },
+  "page": {
+    "title": "备份",
+    "helpLabel": "备份与存储指南",
+    "description": "哪些受到保护，哪些没有，以及一个修复它的地方。",
+    "loadFailed": "无法加载备份覆盖情况：{{error}}",
+    "loadFailedHint": "请检查服务器是否可达，然后重试。",
+    "retry": "重试",
+    "noResourcesTitle": "还没有需要备份的内容",
+    "noResourcesDescription": "数据库和应用卷在你创建后会立即显示在这里。",
+    "manageTargets": "管理备份目标"
+  },
+  "summary": {
+    "protected": "{{total}} 个资源中有 {{protected}} 个受到保护",
+    "headline": {
+      "empty": "还没有数据库或应用卷。",
+      "allVerified": "每个资源都已备份，并且已验证可以恢复。",
+      "someUnprotected_other": "有 {{count}} 个资源没有备份计划。",
+      "failing": "其中有 {{failing}} 个的备份正在失败。请先修复这些。",
+      "unverified": "已备份，但尚未对每个资源验证恢复。"
+    },
+    "protectEverything": "保护所有资源",
+    "lastVerified": "上次验证的恢复",
+    "nextRun": "下次运行",
+    "storage": "已用存储"
+  },
+  "coverage": {
+    "state": {
+      "verified": "已保护且已验证",
+      "unverified": "已保护，未验证",
+      "never_ran": "已设置计划，从未运行",
+      "failing": "备份失败",
+      "unprotected": "未受保护"
+    },
+    "lastBackup": "上次备份",
+    "lastRestore": "已验证的恢复",
+    "nextRun": "下次运行",
+    "size": "大小"
+  },
+  "row": {
+    "kind": {
+      "database": "数据库",
+      "volume": "卷"
+    },
+    "scratch": "临时",
+    "protect": "保护",
+    "protected": "{{name}} 已设置计划",
+    "protectFailed": "无法保护 {{name}}",
+    "backupNow": "立即备份",
+    "backupStarted": "已开始备份 {{name}}",
+    "backupFailed": "无法开始备份 {{name}}"
+  },
+  "target": {
+    "formLabel": "连接备份目标位置",
+    "providerLabel": "提供商",
+    "connected": "目标位置“{{name}}”已连接",
+    "connect": "连接目标位置",
+    "connecting": "连接中...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "无出站流量费用"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "廉价的冷存储"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "按 TB 统一定价"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "区域和密钥"
+      },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "S3 互操作，HMAC 密钥"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "带 CDN 的 S3 兼容存储"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "托管于欧盟，低成本"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "欧盟对象存储"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "S3 兼容，欧盟区域"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "全球区域"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "你自己的 S3 服务器"
+      },
+      "local": {
+        "name": "本地磁盘",
+        "hint": "同一台机器，不安全"
+      }
+    },
+    "localRootHint": "存放在 {{root}} 之下。请输入其中的一个文件夹。",
+    "localWarning": "存放在这台机器自身磁盘上的备份会随机器一起丢失。它们能防范错误的部署或被删除的表，但无法防范磁盘损坏、勒索软件或被删除的服务器。请仅用于试用，之后再添加异地目标位置。",
+    "field": {
+      "name": "名称",
+      "bucket": "存储桶",
+      "region": "区域",
+      "endpoint": "端点",
+      "accessKeyId": "访问密钥 ID",
+      "secretAccessKey": "秘密访问密钥"
+    },
+    "placeholder": {
+      "name": "例如 offsite-backups"
+    },
+    "missing": "{{field}}为必填项。"
+  },
+  "protectAll": {
+    "title": "保护所有资源",
+    "description": "为每个没有备份的资源设置备份计划。在你应用之前不会有任何更改。",
+    "destination": "目标位置",
+    "addDestination": "添加另一个目标位置",
+    "schedule": "计划与保留",
+    "choice": {
+      "daily": "每天 03:00",
+      "sixHours": "每 6 小时",
+      "weekly": "每周，周日 03:00"
+    },
+    "cron": "Cron 计划",
+    "retain": "保留的备份数",
+    "includeScratch_other": "同时保护 {{count}} 个临时资源（预览和金丝雀）",
+    "plan": "将发生的更改",
+    "planning": "正在生成计划...",
+    "nothingToDo": "每个资源都已有计划。",
+    "kind": {
+      "database": "数据库",
+      "volume": "卷"
+    },
+    "cancel": "取消",
+    "applying": "应用中...",
+    "apply_other": "保护 {{count}} 个资源",
+    "done_other": "已为 {{count}} 个资源设置计划",
+    "someFailed_other": "有 {{count}} 个无法设置计划。"
+  },
+  "safety": {
+    "title": "加密与存储桶安全",
+    "encrypted": "已加密",
+    "notEncrypted": "未加密",
+    "copied": "公钥已复制",
+    "copyFailed": "无法复制公钥",
+    "keyDetails": "密钥详情与异地保存",
+    "keyHint": "请将私钥（APP_BACKUP_ENCRYPTION_KEY_FILE，默认为数据目录中的 backup-encryption.key）保存在密码管理器或另一台机器上。没有它，灾难发生后将无法恢复加密备份。",
+    "copyKey": "复制公钥",
+    "keyNotStored": "你尚未确认私钥已保存在此服务器之外。如果此服务器丢失，这些备份也会一并丢失。",
+    "ack": "我已将其保存在此服务器之外",
+    "ackFailed": "无法保存确认",
+    "later": "稍后提醒我"
+  },
+  "orphans": {
+    "title": "孤立数据",
+    "description": "在其数据库或应用被删除后仍保留的数据。删除数据库绝不会自动删除其数据，因此在你回收之前，这里的任何内容都不会被移除。",
+    "empty": "没有孤立数据。每个卷都属于仍然存在的数据库或应用。",
+    "loadFailed": "无法列出孤立数据：{{error}}",
+    "large": "孤立数据占用了 {{size}}。请检查它们，并回收你不再需要的部分。",
+    "role": {
+      "data": "数据卷",
+      "certificates": "证书",
+      "wal archive": "WAL 归档",
+      "volume": "卷"
+    },
+    "kind": {
+      "database": "数据库",
+      "volume": "应用卷",
+      "app": "应用"
+    },
+    "sizeUnknown": "大小未知",
+    "age_other": "已有 {{count}} 天",
+    "noBackup": "无备份",
+    "hasBackup_other": "{{count}} 个备份",
+    "inspect": "查看",
+    "reclaim": "回收",
+    "volume": "卷",
+    "belongedTo": "原属于",
+    "created": "创建时间",
+    "lastBackup": "上次备份",
+    "noBackupDetail": "不存在此数据的备份",
+    "confirmTitle": "回收“{{name}}”的数据？",
+    "confirmDescription": "该卷将从此服务器删除。此操作无法撤销。",
+    "confirmNoBackup": "不存在此数据的备份。它将永久丢失。",
+    "confirmHasBackup_other": "它的 {{count}} 个备份会保留在你的目标位置。",
+    "confirmAction": "删除此数据",
+    "reclaiming": "删除中...",
+    "reclaimed": "已回收 {{size}}"
+  },
+  "deleteData": {
+    "label": "同时删除数据",
+    "databaseHint": "会连同数据库一起删除数据卷。如果不勾选，该卷会被保留，并列在“备份”页面的“孤立数据”下。",
+    "appHint": "会连同应用一起删除应用的卷。如果不勾选，它们会被保留，并列在“备份”页面的“孤立数据”下。",
+    "warning": "数据会被销毁，除非存在备份，否则无法恢复。"
+  },
+  "firstRun": {
+    "title": "设置备份",
+    "description": "连接一个安全的地方来保存备份，之后每个数据库和应用卷都可以从那里受到保护。",
+    "descriptionWithResources_other": "有 {{count}} 个资源没有备份。请连接一个安全的地方来保存它们，然后一步保护全部。",
+    "step": {
+      "destination": {
+        "title": "添加目标位置",
+        "hint": "兼容 S3 的存储桶"
+      },
+      "schedule": {
+        "title": "选择计划",
+        "hint": "每日备份是合理的默认选择"
+      },
+      "verify": {
+        "title": "验证恢复",
+        "hint": "能恢复的备份才算数"
+      }
+    }
+  },
+  "activity": {
+    "title": "最近活动",
+    "subtitle": "每一次尝试，最新的在前",
+    "empty": "还没有运行过任何备份。",
+    "loadFailed": "无法加载更早的备份",
+    "deletedTarget": "已删除的目标",
+    "kind": "类型",
+    "resource": "资源",
+    "status": "状态",
+    "target": "目标",
+    "size": "大小",
+    "started": "开始时间",
+    "verification": "验证",
+    "actions": "操作",
+    "loading": "加载中...",
+    "loadOlder": "加载更早的条目"
+  },
+  "baseSchedule": {
+    "title": "基础备份计划",
+    "description": "按独立的 cron 进行基础备份，与转储计划无关。留空则在每次计划的转储之后进行一次。",
+    "cronLabel": "Cron 表达式",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "备份目标 ID",
+    "targetPlaceholder": "默认使用数据库备份目标",
+    "save": "保存计划",
+    "saving": "保存中...",
+    "saved": "基础备份计划已保存。"
+  },
+  "tables": {
+    "restores": "恢复",
+    "cloneDatabases": "作为新数据库恢复",
+    "cloneVolumes": "作为新卷恢复",
+    "pipelineRuns": "流水线运行",
+    "activity": "备份活动",
+    "snapshots": "备份",
+    "pitrBackups": "基础备份",
+    "pitrRestores": "时间点恢复"
+  },
+  "suggestion": {
+    "title": "为此数据库备份",
+    "description": "已连接目标位置，但此数据库没有计划。建议：{{schedule}}，保留最近 {{retain}} 个。",
+    "apply": "使用建议",
+    "applied": "已设置备份计划",
+    "failed": "无法设置备份计划"
+  },
+  "banner": {
+    "description": "通过定期备份到你控制的存储来保护数据库和卷，然后验证它们可以恢复。",
+    "diagram": {
+      "database": "数据库",
+      "storage": "存储",
+      "schedule": "计划"
+    }
+  },
+  "volumeFiles": {
+    "title": "文件",
+    "volume": "卷",
+    "up": "上一级",
+    "upload": "上传文件",
+    "loading": "正在加载文件",
+    "empty": "此目录为空。",
+    "emptyHint": "应用写入此卷的文件会显示在这里。",
+    "truncated": "列表已被截断。请打开子目录查看其余内容。",
+    "download": "下载 {{name}}",
+    "delete": "删除 {{name}}",
+    "confirm": "确认"
+  },
+  "composeDb": {
+    "title": "数据库备份",
+    "description": "在此 compose 应用中检测到的数据库服务。",
+    "loadFailed": "无法加载数据库服务：{{error}}",
+    "notScheduled": "未设置计划",
+    "scheduledSummary": "{{schedule}}，{{retention}}",
+    "paused": "已暂停",
+    "target": "目标",
+    "targetPlaceholder": "选择目标",
+    "enabled": "已启用",
+    "retain": "保留最近",
+    "retainDays": "最长保留（天）",
+    "save": "保存",
+    "saving": "保存中...",
+    "remove": "移除",
+    "removing": "移除中...",
+    "backUpNow": "立即备份",
+    "starting": "启动中...",
+    "noTargets": "还没有备份目标。",
+    "connectTarget": "在“设置”中连接存储桶",
+    "saved": "备份计划已保存。",
+    "saveFailed": "无法保存备份计划。",
+    "removed": "备份计划已移除。",
+    "removeFailed": "无法移除备份计划。",
+    "started": "备份已开始。",
+    "startFailed": "无法开始备份。",
+    "removeTitle": "移除 {{service}} 的备份计划？",
+    "removeDescription": "计划备份将停止。现有的备份会保留。",
+    "runs": "最近的运行",
+    "runsHide": "隐藏运行记录",
+    "noRuns": "还没有备份。",
+    "runsFailed": "无法加载运行记录：{{error}}",
+    "status": {
+      "running": "运行中",
+      "succeeded": "成功",
+      "failed": "失败"
+    },
+    "restore": "恢复",
+    "restoreNeedsRoot": "只有管理员可以恢复数据库备份。",
+    "restoreTitle": "从此备份恢复 {{service}}",
+    "restoreWarning": "这会原地替换线上数据库。会先对当前数据做一次安全转储，并显示在运行历史中。",
+    "restoreEngine": "引擎",
+    "restoreObject": "备份对象",
+    "restoreSize": "大小",
+    "restoreLoading": "正在检查备份...",
+    "restorePhraseLabel": "输入 {{phrase}} 以确认",
+    "restoreConfirm": "替换数据库",
+    "restoreStarting": "启动中...",
+    "restoreCancel": "取消",
+    "restoreClose": "关闭",
+    "restoreAccepted": "恢复已开始。安全转储：{{id}}。它在后台运行，请在运行历史和审计日志中查看结果。"
+  }
+}

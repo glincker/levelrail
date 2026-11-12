@@ -11,6 +11,13 @@ export function useAutoSavePreferences(saved: Preferences) {
   const { setTheme } = useTheme()
   const [draft, setDraft] = useState<Preferences>(saved)
 
+  // Another control (header, login) may change the language; follow it.
+  const [seenLanguage, setSeenLanguage] = useState(saved.language)
+  if (seenLanguage !== saved.language) {
+    setSeenLanguage(saved.language)
+    setDraft((d) => ({ ...d, language: saved.language }))
+  }
+
   // The theme is applied before the round trip so the page does not lag the click.
   const apply = (next: Preferences) => {
     setDraft(next)

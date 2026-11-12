@@ -1,0 +1,192 @@
+{
+  "title": "Tráfego",
+  "subtitle": "Taxa, erros e duração das requisições servidas pelo ingress, sem alterações no app.",
+  "windowLabel": "Janela de tempo",
+  "windows": {
+    "5m": "5 minutos",
+    "1h": "1 hora",
+    "24h": "24 horas",
+    "7d": "7 dias"
+  },
+  "audience": {
+    "referrers": {
+      "title": "Principais referenciadores",
+      "hint": "Apenas os hosts de origem. Caminhos e query strings nunca são armazenados. Direto significa sem cabeçalho Referer.",
+      "label": "Referenciador",
+      "empty": "Nenhum dado de referenciador nesta janela ainda."
+    },
+    "countries": {
+      "title": "Principais países",
+      "hint": "País aproximado a partir de um cabeçalho de CDN ou de um banco de dados GeoIP, nunca armazenado por cliente.",
+      "label": "País",
+      "empty": "Nenhum dado de país. Configure um banco de dados GeoIP ou um cabeçalho de país confiável no ingress para ver de onde vem o tráfego."
+    },
+    "requests": "Requisições",
+    "share": "Participação"
+  },
+  "markers": {
+    "hint": "Linhas verticais marcam deploys. Selecione uma para ver o que mudou."
+  },
+  "kpi": {
+    "rate": "Requisições por segundo",
+    "requests": "{{count}} requisições na janela",
+    "error5xx": "Erros de servidor (5xx)",
+    "error4xx": "Erros de cliente (4xx)",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "latência p99",
+    "upstreamErrors": "{{count}} falhas de upstream"
+  },
+  "slo": {
+    "title": "Orçamento de erros",
+    "objective": "{{objective}} meta {{target}}%",
+    "burn": "Taxa de consumo",
+    "burnHint": "1,0x gasta o orçamento exatamente ao longo do período do SLO",
+    "remaining": "Orçamento restante",
+    "none": "Nenhum SLO está definido para este app. Adicione um alerta de consumo de SLO para ver o orçamento de erros aqui.",
+    "noneAction": "Configurar um alerta de SLO"
+  },
+  "replicas": {
+    "title": "Réplicas",
+    "hint": "Medido por endereço de upstream no ingress.",
+    "upstream": "Réplica",
+    "requests": "Requisições",
+    "rate": "Req/s",
+    "error5xx": "5xx",
+    "error4xx": "4xx",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99",
+    "empty": "Nenhum dado por réplica ainda. Ele aparece quando as requisições chegam a um container pelo ingress."
+  },
+  "routes": {
+    "title": "Rotas mais lentas",
+    "topTitle": "Principais caminhos",
+    "topEmpty": "Nenhuma requisição nesta janela.",
+    "hint": "Páginas e rotas de API mais lentas. Arquivos estáticos ficam de fora.",
+    "route": "Rota",
+    "requests": "Requisições",
+    "avg": "Duração média",
+    "error5xx": "5xx",
+    "empty": "Nenhuma rota tem tráfego suficiente nesta janela para entrar no ranking.",
+    "kindTabs": "Tipo de rota",
+    "kind": {
+      "page": "Páginas",
+      "api": "API",
+      "asset": "Assets"
+    },
+    "topTitleByKind": {
+      "page": "Principais páginas",
+      "api": "Principais rotas de API",
+      "asset": "Principais assets"
+    },
+    "kindHint": {
+      "page": "Páginas que as pessoas visitam. Ids e query strings nunca são armazenados.",
+      "api": "Chamadas de API, agrupadas por rota. Ids e query strings nunca são armazenados.",
+      "asset": "Arquivos estáticos como scripts, estilos e imagens. Contados à parte para não esconderem suas páginas."
+    }
+  },
+  "samples": {
+    "title": "Requisições lentas e com falha",
+    "hint": "Uma amostra de requisições que falharam ou foram lentas, mantida no node que as atendeu.",
+    "empty": "Nenhuma requisição lenta ou com falha foi amostrada nesta janela.",
+    "requestId": "Id da requisição"
+  },
+  "empty": {
+    "title": "Nenhum tráfego nesta janela",
+    "description": "As requisições aparecem aqui quando o app está sendo servido por um domínio. Tente uma janela maior ou verifique se um domínio aponta para este app.",
+    "action": "Verificar domínios"
+  },
+  "error": {
+    "title": "O tráfego está indisponível",
+    "description": "{{message}}",
+    "retry": "Tentar novamente"
+  },
+  "charts": {
+    "title": "Gráficos ao vivo"
+  },
+  "shield": {
+    "title": "Proteção contra bots e abuso",
+    "action": "Ajustar proteções",
+    "blocked_one": "{{count}} requisição recusada",
+    "blocked_many": "{{count}} requisições recusadas",
+    "blocked_other": "{{count}} requisições recusadas",
+    "none": "Nada foi recusado nesta janela. Adicione limites por cliente e uma lista de bloqueio de bots na página do domínio para impedir que scrapers consumam sua banda.",
+    "reasons": {
+      "rate_limit": "Limite de taxa",
+      "concurrency": "Requisições abertas demais",
+      "bad_bot": "Bot malicioso",
+      "body_too_large": "Corpo grande demais"
+    }
+  },
+  "spikes": {
+    "title": "Picos de erros",
+    "hint": "Trechos em que a proporção de erros de servidor se destacou do restante da janela, associados ao deploy iniciado pouco antes.",
+    "none": "Nenhum pico de erros nesta janela.",
+    "peak": "{{rate}} de erros de servidor no pico",
+    "detail": "{{errors}} de {{requests}} requisições falharam. Típico para esta janela: {{baseline}}.",
+    "afterDeploy": "Após o deploy {{image}} ({{time}})",
+    "noDeploy": "Nenhum deploy recente"
+  },
+  "abuse": {
+    "title": "Defesa contra abuso",
+    "subtitle": "Limite a velocidade com que um cliente pode acessar este app e recuse endereços e agentes sabidamente maliciosos. Comece em somente log para ver o que seria bloqueado.",
+    "loadError": "Não foi possível carregar a defesa contra abuso: {{message}}",
+    "modeLabel": "Modo",
+    "modes": {
+      "off": "Desativado",
+      "log_only": "Somente log",
+      "enforce": "Aplicar"
+    },
+    "modeHints": {
+      "off": "Nada é verificado.",
+      "log_only": "Conta o que seria bloqueado e não bloqueia nada.",
+      "enforce": "Recusa as requisições correspondentes. Limites de taxa respondem 429 com Retry-After."
+    },
+    "rateLabel": "Requisições por cliente",
+    "rps": "Por segundo",
+    "burst": "Rajada",
+    "suggestionFromPeak": "Sugerido a partir do seu pico de {{peak}} requisições por segundo: {{rps}} por cliente, rajada {{burst}}.",
+    "suggestionDefault": "Nenhum tráfego recente para dimensionar. Início sugerido: {{rps}} por cliente, rajada {{burst}}.",
+    "useSuggestion": "Usar sugestão",
+    "denyCidrs": "Bloquear endereços",
+    "denyCidrsPlaceholder": "203.0.113.0/24",
+    "denyAgents": "Bloquear user agents",
+    "denyAgentsPlaceholder": "python-requests",
+    "requireUa": "Recusar requisições sem User-Agent",
+    "invalidNumber": "Taxa e rajada devem ser números.",
+    "previewNeedsRule": "Adicione uma taxa ou uma lista de bloqueio para pré-visualizar o efeito.",
+    "previewEmpty": "Ainda não há requisições recentes guardadas para reproduzir, então não há nada para pré-visualizar.",
+    "previewResult": "Teria bloqueado {{blocked}} de {{total}} requisições recentes ({{percent}}%)",
+    "previewWindow": "nos últimos {{minutes}} min",
+    "topClients": "Clientes mais afetados: {{clients}}",
+    "enforceNeedsPreview": "Aplicar fica disponível depois que a prévia acima for carregada.",
+    "reasons": {
+      "rate_limit": "Limite de taxa",
+      "deny_cidr": "Endereço bloqueado",
+      "deny_user_agent": "User agent bloqueado",
+      "missing_user_agent": "Sem User-Agent"
+    },
+    "counters": "Permitidas {{allowed}}, seriam bloqueadas {{wouldBlock}}, bloqueadas {{blocked}} nesta janela.",
+    "failOpen_one": "{{count}} requisição foi atendida sem verificação porque a defesa falhou.",
+    "failOpen_many": "{{count}} requisições foram atendidas sem verificação porque a defesa falhou.",
+    "failOpen_other": "{{count}} requisições foram atendidas sem verificação porque a defesa falhou.",
+    "status": {
+      "Off": "Desativado",
+      "LogOnly": "Somente contagem",
+      "Enforcing": "Aplicando",
+      "Pending": "Aplicando",
+      "NoRoutes": "Nada a proteger",
+      "ClientIPHidden": "Endereços de clientes ocultos",
+      "InvalidPolicy": "Política inválida"
+    },
+    "statusHint": {
+      "NoRoutes": "O app não tem nenhuma rota com proxy no momento (parado, em repouso ou um site estático), então a política não tem a quê se aplicar.",
+      "ClientIPHidden": "Um proxy na frente oculta os endereços dos visitantes, então todos os visitantes dividiriam um único limite. Defina os proxies confiáveis nas configurações do ingress."
+    },
+    "save": "Salvar",
+    "saveLogOnly": "Começar em somente log",
+    "startEnforcing": "Começar a aplicar",
+    "saved": "Defesa contra abuso salva ({{mode}})."
+  }
+}

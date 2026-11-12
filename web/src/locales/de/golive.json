@@ -1,0 +1,68 @@
+{
+  "title": "Live gehen",
+  "pageTitle": "Live gehen: {{name}}",
+  "intro": "Eine Checkliste von Ihrer laufenden App bis zu HTTPS auf Ihrer Domain. Jeder Schritt zeigt, was gefunden wurde, und das eine, was als Nächstes zu tun ist.",
+  "domainLabel": "Domain",
+  "noDomain": "Noch keine Domain. Die ersten Schritte funktionieren auch ohne.",
+  "loading": "Ihre Einrichtung wird geprüft",
+  "loadFailed": "Die Checkliste konnte nicht geladen werden: {{message}}",
+  "retry": "Erneut versuchen",
+  "recheck": "Erneut prüfen",
+  "liveBanner": "Live: {{url}}",
+  "openSite": "{{url}} öffnen",
+  "state": {
+    "not_live": "Nicht live",
+    "waiting_dns": "Warten auf DNS",
+    "waiting_certificate": "Warten auf Zertifikat",
+    "live": "Live",
+    "needs_attention": "Erfordert Aufmerksamkeit"
+  },
+  "status": {
+    "ok": "Erledigt",
+    "warn": "Warnung",
+    "fail": "Handlung nötig",
+    "pending": "Wartet",
+    "unknown": "Unbekannt"
+  },
+  "announce": "{{title}}: {{status}}",
+  "nextCheck": "Nächste Prüfung {{time}}",
+  "copy": "Kopieren",
+  "copied": "Kopiert",
+  "copyValue": "{{label}} kopieren",
+  "blocked": "Noch nicht verfügbar: {{reason}}",
+  "actionFailed": "Die Aktion ist fehlgeschlagen: {{message}}",
+  "scope": {
+    "control_plane_host": "Von diesem Server aus geprüft. Das kann nicht belegen, dass das weitere Internet ihn erreicht. Ein Let's-Encrypt-Zertifikat ist dieser Beleg, denn Let's Encrypt hat die Domain von außen validiert."
+  },
+  "records": "Anzulegende Einträge",
+  "provider": {
+    "title": "Firewall-Schritte für {{name}}",
+    "ports": "Diese eingehenden Ports öffnen",
+    "docs": "Anleitung für {{name}} öffnen",
+    "portRule": "{{port}}/{{protocol}} von {{source}}"
+  },
+  "fix": {
+    "title": "Ports 80 und 443 öffnen?",
+    "description": "Dadurch wird die Host-Firewall geändert. Es werden nur diese Ports geöffnet, keine andere Regel wird angetastet, und eine deaktivierte Firewall bleibt deaktiviert.",
+    "willRun": "Wird ausgeführt: {{command}}",
+    "undo": "Rückgängig machen mit: {{command}}",
+    "notPersistent": "Die Regel geht beim Neustart verloren, sofern Sie Ihre Firewall-Regeln nicht speichern.",
+    "confirm": "Ports öffnen",
+    "pending": "Wird geöffnet",
+    "refused": "Nicht automatisch möglich: {{reason}}"
+  },
+  "timeline": {
+    "title": "Aktivität",
+    "empty": "Bisher ist nichts passiert.",
+    "scheduled": "Geplant"
+  },
+  "badge": {
+    "link": "Checkliste zum Livegang für {{domain}} öffnen"
+  },
+  "cta": {
+    "title": "Ihre App läuft: Machen Sie sie auf Ihrer Domain live",
+    "body": "Richten Sie eine Domain darauf und erhalten Sie ein automatisches Zertifikat, mit Live-Status bei jedem Schritt.",
+    "button": "Live gehen"
+  },
+  "diagnoseLink": "Checkliste zum Livegang öffnen"
+}

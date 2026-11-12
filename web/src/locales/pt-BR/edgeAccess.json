@@ -1,0 +1,16 @@
+{
+  "title": "Requisições",
+  "subtitle": "As requisições mais recentes que passaram pelo edge para este app, da mais nova para a mais antiga. Ficam em memória, então uma reinicialização as apaga.",
+  "filters": {
+    "minMs": "Mais lentas que (ms)",
+    "path": "Caminho começa com",
+    "errorsOnly": "Somente erros do servidor"
+  },
+  "list": {
+    "empty": "Nenhuma requisição correspondente ainda. Envie tráfego para um dos domínios deste app e elas aparecem aqui em segundos.",
+    "loadError": "Não foi possível carregar as requisições: {{message}}",
+    "upstream": "Erro de upstream",
+    "emptyTitle": "Nenhuma requisição ainda",
+    "emptyAction": "Verificar domínios"
+  }
+}

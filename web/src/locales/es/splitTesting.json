@@ -1,0 +1,90 @@
+{
+  "title": "Pruebas A/B",
+  "description": "Envía una parte de los visitantes de esta app a un despliegue de rama o a una versión retenida. Cada visitante mantiene la misma variante mediante una cookie, que solo se define mientras se ejecuta una prueba.",
+  "nav": "Pruebas A/B",
+  "loading": "Cargando la prueba A/B",
+  "loadError": "No se pudo cargar la prueba A/B: {{message}}",
+  "unsupportedTitle": "Las pruebas A/B no están disponibles para esta app",
+  "unsupportedHelp": "Funcionan con apps de contenedor que tengan un dominio. Los sitios estáticos aún no se admiten.",
+  "empty": {
+    "title": "No hay ninguna prueba A/B en curso",
+    "body": "Elige un despliegue de rama o una versión retenida, asígnale una parte de los visitantes y compara el número de peticiones antes de promover a la ganadora."
+  },
+  "start": {
+    "title": "Iniciar una prueba A/B",
+    "kind": "Origen de la variante",
+    "kindBranch": "Despliegue de rama",
+    "kindRelease": "Versión retenida",
+    "branch": "Despliegue de rama",
+    "branchPlaceholder": "Elige un despliegue de rama",
+    "noBranches": "No hay despliegues de ramas listos. Activa los despliegues de ramas y haz push a una rama primero.",
+    "release": "Nombre del despliegue de la versión",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "Etiqueta de la variante",
+    "weight": "Parte de los visitantes (%)",
+    "cookieName": "Nombre de la cookie",
+    "cookieTtl": "Duración de la cookie",
+    "cookieTtlHelp": "Por ejemplo 720h. Déjalo vacío para usar el valor por defecto del servidor.",
+    "submit": "Iniciar la prueba",
+    "success": "Prueba A/B iniciada",
+    "errorTitle": "No se pudo iniciar la prueba A/B"
+  },
+  "status": {
+    "running": "En curso",
+    "stopped": "Detenida",
+    "live": "En vivo",
+    "ready": "Lista",
+    "unavailable": "No disponible"
+  },
+  "kind": {
+    "production": "Producción",
+    "branch": "Despliegue de rama",
+    "release": "Versión"
+  },
+  "table": {
+    "caption": "Variantes de la prueba A/B en curso",
+    "variant": "Variante",
+    "status": "Estado",
+    "weight": "Peso",
+    "requests": "Peticiones",
+    "actions": "Acciones",
+    "weightFor": "Parte de los visitantes para {{label}}",
+    "productionKeeps": "Producción conserva el {{percent}} %",
+    "overshoot": "Las variantes superan el 100 %, reduce un peso.",
+    "saveWeights": "Guardar los pesos",
+    "weightsSaved": "Pesos guardados",
+    "copyQa": "Copiar el enlace de QA",
+    "qaCopied": "Enlace de QA copiado",
+    "qaHelp": "Al abrir el enlace de QA se fuerza esa variante en tu navegador y se mantiene.",
+    "promote": "Promover",
+    "unavailableHelp": "Esta variante no es accesible, así que sus visitantes reciben producción."
+  },
+  "stats": {
+    "title": "Peticiones por hora",
+    "hour": "Hora",
+    "total": "{{count}} peticiones desde que empezó la prueba",
+    "none": "Aún no se ha contado ninguna petición."
+  },
+  "cookie": {
+    "summary": "Cookie {{name}}, dura {{hours}} horas. Añade ?{{param}}=<variant> a una URL para forzar una variante."
+  },
+  "stop": {
+    "button": "Detener la prueba",
+    "title": "¿Detener la prueba A/B?",
+    "body": "Todos los visitantes vuelven a recibir producción. Se conservan los recuentos de peticiones.",
+    "confirm": "Detener la prueba",
+    "success": "Prueba A/B detenida"
+  },
+  "promote": {
+    "title": "¿Promover {{label}}?",
+    "body": "{{label}} pasa a ser el despliegue de producción por la vía normal de despliegue y luego termina la prueba.",
+    "locked": "Se rechaza mientras la publicación esté bloqueada para la app.",
+    "confirm": "Promover a la ganadora",
+    "success": "Ganadora promovida"
+  },
+  "ended": {
+    "title": "Última prueba",
+    "reason": "Terminada: {{reason}}"
+  },
+  "error": "Falló la acción de la prueba A/B"
+}

@@ -1,0 +1,63 @@
+{
+  "title": "Webhooks de eventos",
+  "description": "Envía una petición HTTPS firmada a tu propio endpoint cada vez que algo cambia. La entrega se pone en cola, se reintenta y se registra, y nunca ralentiza un despliegue.",
+  "add": "Añadir webhook",
+  "loadError": "No se pudieron cargar los webhooks de eventos: {{message}}",
+  "notConfigured": "Los webhooks de eventos no están disponibles en este plano de control.",
+  "empty": {
+    "title": "No hay webhooks de eventos",
+    "description": "Añade un endpoint HTTPS para recibir avisos cuando se desplieguen apps, cambien los usuarios o se actualicen los ajustes."
+  },
+  "form": {
+    "title": "Añadir webhook de eventos",
+    "description": "Las peticiones se firman con un secreto que se muestra una sola vez al guardar.",
+    "name": "Nombre",
+    "namePlaceholder": "siem",
+    "url": "URL del endpoint",
+    "urlPlaceholder": "https://hooks.example.com/events",
+    "events": "Tipos de evento",
+    "eventsPlaceholder": "apps.*, users.create",
+    "eventsHint": "Tipos o familias separados por comas, como apps.*. Déjalo vacío para recibir todos los eventos.",
+    "cancel": "Cancelar",
+    "submit": "Añadir webhook",
+    "submitting": "Añadiendo",
+    "done": "Listo"
+  },
+  "card": {
+    "allEvents": "Todos los eventos",
+    "paused": "En pausa",
+    "deadBadge": "{{count}} en cola de errores",
+    "delivered": "Entregados",
+    "pending": "Pendientes",
+    "dead": "En cola de errores",
+    "lastStatus": "Último estado HTTP",
+    "enabled": "Activado",
+    "log": "Registro de entregas",
+    "test": "Enviar prueba",
+    "testing": "Enviando",
+    "testOk": "{{name}} aceptó el evento de prueba",
+    "testFailed": "{{name}} falló la prueba: {{message}}",
+    "rotate": "Nuevo secreto",
+    "secretOnce": "Secreto de firma, se muestra una sola vez. Guárdalo ahora, no se podrá volver a leer.",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteDescription": "Se eliminan su registro de entregas y su secreto de firma. Los eventos dejan de enviarse de inmediato.",
+    "deleteConfirm": "Eliminar webhook",
+    "deleting": "Eliminando"
+  },
+  "deliveries": {
+    "loading": "Cargando entregas",
+    "loadError": "No se pudieron cargar las entregas: {{message}}",
+    "empty": "Aún no hay entregas. Envía una prueba o espera al próximo evento.",
+    "summary": "{{attempts}} intentos, HTTP {{status}}, {{when}}",
+    "noStatus": "ninguno",
+    "replay": "Reenviar",
+    "replayed": "Entrega puesta en cola para otro intento",
+    "replayFailed": "No se pudo reenviar: {{message}}",
+    "state": {
+      "pending": "Pendiente",
+      "delivered": "Entregada",
+      "dead": "En cola de errores"
+    }
+  }
+}

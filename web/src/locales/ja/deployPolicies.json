@@ -1,0 +1,83 @@
+{
+  "title": "デプロイポリシー",
+  "description": "すべてのデプロイの前に、組織、プロジェクト、環境のスコープで確認されるガードレールです。ルールごとに、最も具体的なスコープが優先されます。",
+  "notConfigured": "このコントロールプレーンではデプロイポリシーを利用できません。",
+  "rootOnly": "デプロイポリシーを変更できるのはインスタンス管理者のみです。ドライランは引き続き実行できます。",
+  "scope": {
+    "label": "スコープ",
+    "org": "組織",
+    "project": "プロジェクト",
+    "environment": "環境",
+    "idLabel": "プロジェクトまたは環境のID",
+    "idPlaceholder": "proj_123"
+  },
+  "mode": {
+    "off": "オフ",
+    "warn": "警告",
+    "enforce": "強制"
+  },
+  "modeLabel": "{{rule}} のモード",
+  "valueLabel": "{{rule}} の値",
+  "rules": {
+    "allowed_registries": {
+      "title": "許可するイメージレジストリ",
+      "hint": "カンマ区切りのホストを指定します。例: ghcr.io, docker.io。",
+      "placeholder": "ghcr.io, docker.io"
+    },
+    "require_readiness_probe": {
+      "title": "レディネスプローブを必須にする",
+      "hint": "アプリはデプロイ前にレディネスプローブを定義する必要があります。"
+    },
+    "max_memory_mb": {
+      "title": "メモリ上限(MB)",
+      "hint": "メモリ上限のないアプリは上限を超えているものとみなされます。",
+      "placeholder": "2048"
+    },
+    "max_cpu": {
+      "title": "CPU上限(コア)",
+      "hint": "CPU上限のないアプリは上限を超えているものとみなされます。",
+      "placeholder": "2"
+    },
+    "forbid_privileged": {
+      "title": "特権コンテナを禁止",
+      "hint": "特権モードを要求するアプリをブロックします。"
+    },
+    "forbid_host_mounts": {
+      "title": "ホストのバインドマウントを禁止",
+      "hint": "許可したままにするパスのプレフィックスを、任意でカンマ区切りで指定します。",
+      "placeholder": "/srv/data"
+    },
+    "required_labels": {
+      "title": "必須ラベル",
+      "hint": "すべてのアプリが設定する必要があるラベルのキーを、カンマ区切りで指定します。",
+      "placeholder": "team, cost-center"
+    },
+    "max_replicas": {
+      "title": "レプリカ数の上限",
+      "hint": "1つのアプリが実行できるレプリカの最大数です。",
+      "placeholder": "5"
+    }
+  },
+  "save": "ポリシーを保存",
+  "saved": "ポリシーを保存しました",
+  "clear": "スコープをクリア",
+  "cleared": "ポリシーをクリアしました",
+  "dryRun": "現在のアプリに対してドライラン",
+  "dryRunHint": "上記のルールを保存せずにプレビューします。",
+  "stored": {
+    "title": "保存済みのポリシー",
+    "empty": "ポリシーはまだありません。上でルールを追加して保存するか、先にドライランを実行して、失敗する内容を確認してください。",
+    "edit": "編集"
+  },
+  "result": {
+    "summary": "{{checked}} 件のアプリを確認しました。{{failing}} 件がブロックされ、{{warning}} 件に警告があります。",
+    "clean": "すべてのアプリがこれらのルールに適合しています。",
+    "wouldFail": "ブロックされます",
+    "warns": "警告のみ",
+    "next": "次のアクション"
+  },
+  "errors": {
+    "idRequired": "このスコープのプロジェクトまたは環境のIDを入力してください。",
+    "numberRequired": "{{rule}} には0より大きい数値が必要です。"
+  }
+}

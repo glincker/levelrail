@@ -1,0 +1,175 @@
+{
+  "title": "Orçamento",
+  "description": "Limite o egress e o custo mensais deste app. Você recebe alertas conforme o uso sobe, e o app pode ser limitado ou pausado quando o limite é atingido. Os contadores são zerados no dia 1 de cada mês (UTC).",
+  "loading": "Carregando orçamento",
+  "loadError": "Não foi possível carregar o orçamento deste app.",
+  "retry": "Tentar novamente",
+  "empty": {
+    "title": "Nenhum orçamento definido",
+    "body": "Sem um orçamento, tráfego intenso pode elevar o egress e o custo sem aviso. Defina um limite para receber alertas em 50, 80 e 100 por cento.",
+    "action": "Definir um orçamento"
+  },
+  "status": {
+    "resets": "Zera {{date}}",
+    "month": "Mês {{period}}"
+  },
+  "reason": {
+    "WithinBudget": "Dentro do orçamento",
+    "ThresholdReached": "Nível de alerta atingido",
+    "LimitReachedAlertOnly": "Limite atingido, somente alerta",
+    "Throttled": "Limitado",
+    "Paused": "Pausado",
+    "EnforcementPending": "Aplicando",
+    "DeploysBlocked": "Novos deploys bloqueados"
+  },
+  "usage": {
+    "egress": "Egress",
+    "cost": "Custo",
+    "ofLimit": "{{used}} de {{limit}}",
+    "costOfLimit": "{{used}} de {{limit}}",
+    "notPriced": "Nenhum preço está configurado, então o custo aparece como zero e seu teto não pode disparar. Defina os preços na página Uso e custo."
+  },
+  "summary": {
+    "alerts": "Alertas em {{levels}}",
+    "action": {
+      "none": "Em 100 por cento: somente alerta, o app continua atendendo",
+      "throttle": "Em 100 por cento: cada cliente é limitado a {{rps}} requisições por segundo",
+      "pause": "Em 100 por cento: o app é pausado com uma resposta de manutenção"
+    },
+    "guard": {
+      "alert": "Os deploys nunca são bloqueados por este orçamento",
+      "block_deploys": "Em 100 por cento: novos deploys são recusados até o próximo mês, um limite maior ou uma liberação root"
+    }
+  },
+  "actions": {
+    "edit": "Editar orçamento",
+    "remove": "Remover orçamento",
+    "preview": "Pré-visualizar uma pausa"
+  },
+  "form": {
+    "egress": "Limite mensal de egress (GiB)",
+    "egressHelp": "Bytes de resposta HTTP servidos pelo ingress. Deixe vazio para não ter limite de egress.",
+    "cost": "Teto mensal de custo",
+    "costHelp": "Usa os preços da página Uso e custo. Deixe vazio para não ter teto de custo.",
+    "thresholds": "Níveis de alerta (percentual)",
+    "thresholdsHelp": "Separados por vírgula, de 1 a 100. Padrão 50, 80, 100.",
+    "action": "Quando o limite é atingido",
+    "actionNone": "Somente alerta",
+    "actionNoneHelp": "O app continua atendendo.",
+    "actionThrottle": "Limitar",
+    "actionThrottleHelp": "Limita cada cliente a um número de requisições por segundo. Isso desacelera quem faz muitas chamadas, mas não é um limite de banda.",
+    "actionPause": "Pausar",
+    "actionPauseHelp": "Serve uma resposta de manutenção até o próximo mês ou até você aumentar o limite.",
+    "rps": "Requisições por segundo por cliente",
+    "save": "Salvar orçamento",
+    "saving": "Salvando",
+    "cancel": "Cancelar",
+    "needLimit": "Defina um limite de egress, um teto de custo, ou ambos.",
+    "badNumber": "Informe um número maior ou igual a zero.",
+    "badThresholds": "Use percentuais inteiros de 1 a 100, separados por vírgulas."
+  },
+  "remove": {
+    "title": "Remover este orçamento?",
+    "description": "O app deixa de ser limitado ou alertado.",
+    "consequences": {
+      "lift": "Qualquer limitação ou pausa em vigor é suspensa.",
+      "history": "O histórico do que aconteceu é mantido."
+    },
+    "confirm": "Remover orçamento",
+    "pending": "Removendo"
+  },
+  "history": {
+    "title": "Histórico",
+    "empty": "Nada aconteceu ainda. Alertas, limitações, pausas e zeramentos mensais são listados aqui.",
+    "loadError": "Não foi possível carregar o histórico.",
+    "kind": {
+      "threshold": "Nível de alerta atingido",
+      "enforced": "Ação aplicada",
+      "released": "Ação suspensa",
+      "rollover": "Zeramento do mês",
+      "configured": "Orçamento alterado",
+      "cleared": "Orçamento removido"
+    }
+  },
+  "toast": {
+    "saved": "Orçamento salvo",
+    "removed": "Orçamento removido",
+    "errorTitle": "A requisição do orçamento falhou",
+    "overridden": "Deploys permitidos por um curto período"
+  },
+  "forecast": {
+    "projected": "Projetado {{value}} até o fim do mês",
+    "overLimit": "(acima do limite)"
+  },
+  "guard": {
+    "legend": "Deploys no limite",
+    "alert": {
+      "label": "Continuar fazendo deploy",
+      "help": "Atingir o limite apenas alerta e aplica a ação acima."
+    },
+    "block_deploys": {
+      "label": "Bloquear novos deploys",
+      "help": "Recusa novos deploys em 100 por cento. A release em execução continua atendendo. Um usuário root pode liberar."
+    },
+    "blocked": "Novos deploys deste app são recusados até o próximo mês, até o limite ser aumentado ou até um usuário root permiti-los.",
+    "overridden": "Deploys permitidos até {{time}} por uma liberação: {{reason}}",
+    "override": "Permitir deploys"
+  },
+  "override": {
+    "title": "Permitir deploys por um curto período?",
+    "description": "Uma liberação root deixa novos deploys passarem enquanto o limite continua atingido. Ela expira sozinha.",
+    "audited": "Seu nome e o motivo são registrados no histórico do orçamento.",
+    "expires": "A liberação termina após uma janela curta, e então a proteção volta a valer.",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Por que este deploy não pode esperar",
+    "confirm": "Permitir deploys",
+    "pending": "Permitindo"
+  },
+  "preview": {
+    "title": "O que uma pausa faria",
+    "description": "Uma pré-visualização de parar todos os apps no escopo até o fim do mês. Nada é alterado.",
+    "noApps": "Nenhum app no escopo.",
+    "replicas_one": "{{count}} réplica",
+    "replicas_many": "{{count}} réplicas",
+    "replicas_other": "{{count}} réplicas",
+    "saves": "economiza cerca de {{value}}",
+    "total": "{{replicas}} réplicas seriam paradas, economizando cerca de {{value}} nos {{days}} dias restantes.",
+    "noChanges": "Uma pausa real ainda não está disponível. Esta pré-visualização não altera nada.",
+    "close": "Fechar"
+  },
+  "alertRule": {
+    "name": "Alertas de limite de gasto",
+    "create": "Me alertar",
+    "creating": "Criando",
+    "created": "Regra de alerta criada. Anexe um canal de notificação para recebê-la."
+  },
+  "project": {
+    "title": "Gasto",
+    "description": "Um limite mensal de custo para cada app deste projeto, com uma projeção e uma proteção de deploy opcional.",
+    "empty": {
+      "title": "Nenhum limite de gasto neste projeto",
+      "body": "Defina um valor mensal para receber alertas conforme o projeto gasta e, se quiser, bloquear novos deploys no limite.",
+      "action": "Definir um limite de gasto"
+    },
+    "form": {
+      "amount": "Valor mensal ({{currency}})",
+      "save": "Salvar limite de gasto",
+      "saving": "Salvando",
+      "cancel": "Cancelar",
+      "badAmount": "Informe um valor maior que zero."
+    },
+    "summary": "{{spent}} de {{limit}} neste mês",
+    "level": {
+      "over": "Acima do limite",
+      "warn": "Nível de alerta atingido",
+      "forecast": "Indo acima",
+      "ok": "Dentro do orçamento"
+    },
+    "edit": "Editar",
+    "remove": "Remover",
+    "saved": "Limite de gasto salvo",
+    "removed": "Limite de gasto removido",
+    "loadError": "Não foi possível carregar o limite de gasto do projeto.",
+    "resets": "Zera {{date}}"
+  }
+}

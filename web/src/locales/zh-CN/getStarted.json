@@ -1,0 +1,259 @@
+{
+  "page": {
+    "title": "快速入门",
+    "subtitle": "从全新安装到第一个已上线、已备份且受监控的应用，最快的路径。",
+    "loadError": "无法加载设置指南：{{message}}",
+    "retry": "重试",
+    "rootOnly": "只有管理员可以更改设置指南。你仍然可以按照下面的步骤操作。"
+  },
+  "summary": {
+    "ready": "已为生产环境做好 {{percent}}% 的准备",
+    "steps": "已完成 {{done}} / {{total}} 步",
+    "nextUp": "下一步",
+    "allDoneTitle": "一切就绪",
+    "allDoneBody": "每一步都已完成或跳过。重置指南即可回顾你的选择。",
+    "serverAddress": "此服务器的地址：{{address}}",
+    "essentialTitle": "发布你的第一个应用",
+    "essentialHelp": "通过 git 链接或模板创建应用，然后在浏览器中打开它。"
+  },
+  "actions": {
+    "skip": "跳过",
+    "undo": "撤销",
+    "markDone": "标为完成",
+    "hide": "暂时隐藏",
+    "show": "显示指南",
+    "reset": "重置",
+    "resetConfirmTitle": "重置设置指南？",
+    "resetConfirmBody": "这会清除所有已跳过和手动完成的步骤，并再次显示指南。你的配置不会改变。",
+    "hidden": "指南已隐藏。你可以在此页面将其恢复。",
+    "saveError": "无法更新指南：{{message}}"
+  },
+  "meta": {
+    "minutes": "约 {{count}} 分钟",
+    "optional": "可选",
+    "progress": "{{done}} / {{total}}",
+    "blocked": "请先完成“{{step}}”"
+  },
+  "state": {
+    "todo": "待办",
+    "in_progress": "进行中",
+    "done": "完成",
+    "skipped": "已跳过",
+    "not_applicable": "无需处理"
+  },
+  "reason": {
+    "tls_terminated_upstream": "你的代理会终止 TLS，因此这里不管理证书。",
+    "proxy_mode": "通过你的反向代理提供服务。",
+    "unavailable": "目前无法检查。",
+    "http_only": "仪表盘 URL 使用明文 http。请改为 https。",
+    "no_alert_rule": "你有渠道但没有告警规则。请创建一条规则，让渠道得以使用。",
+    "certificates_pending": "正在等待证书签发。",
+    "acme_disabled": "自动证书已关闭。",
+    "marked_done": "已由运维人员标为完成。"
+  },
+  "steps": {
+    "secure_admin": {
+      "title": "保护管理员账户",
+      "what": "为控制所有部署的账户添加第二重登录验证：验证器应用的代码（双重验证）或通行密钥（指纹、面容或设备 PIN）。",
+      "why": "仅凭被盗的密码不应足以访问你的服务器。",
+      "cta": "打开安全设置"
+    },
+    "sign_in_recovery": {
+      "title": "设置找回登录的方式",
+      "what": "连接邮箱，或通过你已信任的设备批准新的登录，这样在丢失密码时仍能重新登录。",
+      "why": "如果你丢失了密码或通行密钥，这就是你重新登录的方式。",
+      "cta": "打开安全设置"
+    },
+    "security_review": {
+      "title": "查看你的安全默认值",
+      "what": "查看默认开启的保护措施，例如 Webhook 重放防护和敏感读取审计。对不适合你环境的项目进行更改。",
+      "why": "默认值对大多数安装来说是安全的。快速查看一遍可确保没有任何项目被意外关闭。",
+      "cta": "查看默认值"
+    },
+    "public_address": {
+      "title": "设置仪表盘地址并开启 HTTPS",
+      "what": "选择你用来打开此仪表盘的网址。免费选项是基于此服务器 IP 生成的 https 地址，带有真实证书，无需设置 DNS。",
+      "why": "开启 HTTPS 之后，通过明文 HTTP 登录将不再可用，因此请尽早完成。",
+      "cta": "启用 HTTPS"
+    },
+    "git_provider": {
+      "title": "连接 git 来源或部署镜像",
+      "what": "关联 GitHub、GitLab、Bitbucket 或 Gitea，使推送即可部署你的应用。如果你部署的是现成的容器镜像，可跳过此步。",
+      "why": "关联仓库可以获得自动部署，以及与提交挂钩的部署历史。",
+      "cta": "连接 git"
+    },
+    "first_app": {
+      "title": "部署你的第一个应用",
+      "titleLive": "你的第一个应用正在运行",
+      "what": "通过仓库、容器镜像或模板创建应用。平台会构建它、启动它，并为它提供一个 https 地址。",
+      "why": "它证明了构建、部署和回滚的流程可以在此服务器上正常运行。",
+      "cta": "创建应用"
+    },
+    "app_domain": {
+      "title": "让应用使用你的域名",
+      "what": "将你自己的主机名绑定到应用，并把它的 DNS 记录（你在域名注册商处的条目）指向此服务器。",
+      "why": "人们通过名称而不是 IP 地址和端口访问应用。",
+      "cta": "添加域名"
+    },
+    "dns": {
+      "title": "连接 DNS 提供商或代理",
+      "what": "让平台通过 Cloudflare 或 Route 53 为你编辑 DNS 记录，或者让它运行在你已有的反向代理之后。",
+      "why": "不再需要手动复制记录和证书。",
+      "cta": "连接 DNS"
+    },
+    "tls": {
+      "title": "检查应用的 HTTPS 证书",
+      "what": "确认每个域名提供的证书都受浏览器信任，并且会自行续期（TLS 是 https 背后的加密）。",
+      "why": "证书无效时浏览器会发出警告，而静默的续期失败会导致应用宕机。",
+      "cta": "查看证书"
+    },
+    "backup_target": {
+      "title": "添加备份目标",
+      "what": "将备份发送到不在此服务器上的存储。任何兼容 S3 的服务都可以，例如 AWS S3、Backblaze B2 或 Cloudflare R2。",
+      "why": "与数据同在一块磁盘上的备份，无法在磁盘损坏时幸存。",
+      "cta": "添加目标"
+    },
+    "first_backup": {
+      "title": "进行第一次备份",
+      "what": "保存平台自身数据库的副本，其中包含每个应用的定义，以便你可以恢复它。",
+      "why": "如果该数据库丢失，所有应用的定义也会一并丢失。",
+      "cta": "创建备份"
+    },
+    "verified_restore": {
+      "title": "验证恢复",
+      "what": "对某个备份运行验证，以证明它可以被恢复。",
+      "why": "未经测试的备份只是一种希望，而不是真正的备份。",
+      "cta": "验证备份"
+    },
+    "notifications": {
+      "title": "添加通知渠道和告警规则",
+      "what": "将告警发送到邮件、Slack、Discord、Telegram 或 Webhook，然后创建使用该渠道的告警规则。",
+      "why": "你会比用户更早得知崩溃循环或即将过期的证书。",
+      "cta": "添加渠道"
+    },
+    "teammate": {
+      "title": "邀请队友",
+      "what": "让第二个人拥有访问权限，使平台不依赖于单个登录。",
+      "why": "你不在时，其他人可以顶上。单人使用时可跳过此步。",
+      "cta": "邀请某人"
+    },
+    "upgrades": {
+      "title": "选择升级策略",
+      "what": "决定平台如何自我更新：在时间窗口内自动更新，或仅在你指示时更新。",
+      "why": "安全修复会送达给你，而不会在白天中途出现意外重启。",
+      "cta": "选择策略"
+    }
+  },
+  "chip": {
+    "label": "设置完成度 {{percent}}%",
+    "firstApp": "第一个应用：{{done}} / {{total}}",
+    "cta": "继续设置",
+    "open": "打开设置指南"
+  },
+  "wizard": {
+    "continue": "在“快速入门”指南中查看上生产环境前还剩哪些步骤"
+  },
+  "nav": {
+    "label": "快速入门"
+  },
+  "hint": {
+    "line": "设置的一部分：{{step}}。",
+    "cta": "打开指南"
+  },
+  "sample": {
+    "cta": "部署示例应用",
+    "creating": "部署中...",
+    "created": "示例应用已创建。稍后即可上线。",
+    "exists": "此服务器上已存在示例应用。",
+    "error": "无法部署示例应用：{{message}}",
+    "open": "打开示例应用"
+  },
+  "first": {
+    "title": "部署你的第一个应用",
+    "titleLive": "你的第一个应用正在运行",
+    "primary": "选择部署方式",
+    "subtitle": "选择一条路径。每条路径的终点都是一个运行中的应用和一个可以打开的链接。",
+    "sample": {
+      "title": "示例应用",
+      "description": "一键完成。运行 {{image}}，只有几兆，并在 {{path}} 上带有健康检查。",
+      "cta": "部署示例应用",
+      "creating": "创建中...",
+      "retry": "重试"
+    },
+    "template": {
+      "title": "从模板",
+      "description": "从目录中选择现成的服务。",
+      "cta": "浏览模板"
+    },
+    "repo": {
+      "title": "你自己的仓库",
+      "description": "从仓库构建。应用名称取自仓库，构建方式会被自动检测。",
+      "cta": "部署仓库"
+    },
+    "more": {
+      "import": "从其他平台迁移？导入它",
+      "git": "连接 GitHub，每次推送都部署"
+    },
+    "url": {
+      "preview": "未设置域名时，应用会获得类似 {{url}} 的地址。"
+    },
+    "status": {
+      "liveDetail": "{{name}} 已通过健康检查并正在提供服务。",
+      "noAddress": "它还没有公网地址。请在应用的“域名”标签页添加域名，以便从互联网访问。",
+      "failed": "{{name}} 不健康",
+      "diagnosing": "诊断中...",
+      "deploying": "正在部署 {{name}}",
+      "deployingDetail": "{{status}}。正在拉取镜像、启动容器并等待健康检查。",
+      "expectedWait": "在证书签发期间，这最多可能需要两分钟。",
+      "slow": "这比平时花的时间更长。在网络较差时，大型镜像会很慢。日志会显示正在发生什么。",
+      "certNote": "在 HTTPS 开启之前，你的浏览器可能会对证书发出警告。",
+      "retry": "重试部署",
+      "openApp": "打开应用",
+      "viewLogs": "查看日志",
+      "goLive": "添加域名",
+      "done": "前往仪表盘"
+    }
+  },
+  "more": {
+    "title": "为生产环境做好准备",
+    "help": "这些措施可让服务器对真实用户更安全。它们都不会阻碍你的首次部署。"
+  },
+  "strip": {
+    "title": "让你的第一个应用上线",
+    "live": "你的应用已上线",
+    "open": "打开",
+    "addDomain": "添加域名",
+    "continue": "继续",
+    "deploy": "部署示例应用",
+    "deploying": "部署中...",
+    "review": "查看",
+    "gitUrl": "或者部署 Git URL",
+    "viewApp": "查看应用",
+    "steps": {
+      "server": {
+        "title": "检查服务器",
+        "todo": "检查中...",
+        "done": "所有检查均通过",
+        "attention": "需要关注",
+        "failed": "有检查失败",
+        "working": "检查中..."
+      },
+      "domain": {
+        "title": "地址",
+        "todo": "使用生成的地址",
+        "done": "域名已设置",
+        "working": "正在签发证书",
+        "failed": "证书失败",
+        "attention": "需要关注"
+      },
+      "deploy": {
+        "title": "部署",
+        "todo": "示例应用或 Git URL",
+        "working": "正在启动应用",
+        "done": "运行中",
+        "failed": "部署失败",
+        "attention": "需要关注"
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "title": "Plan de nettoyage",
+  "description": "Examinez ce que Levelrail supprimerait, puis appliquez uniquement ce que vous choisissez.",
+  "tabs": {
+    "label": "Sections du nettoyage",
+    "plan": "Plan",
+    "history": "Historique"
+  },
+  "stages": {
+    "containers": "Containers",
+    "images": "Images",
+    "build_cache": "Cache de build",
+    "volumes": "Volumes",
+    "deploy_attempts": "Tentatives de deploy",
+    "api_tokens": "Tokens d'API"
+  },
+  "wholeStage": "Nettoyés ensemble, toute cette étape ou rien.",
+  "selectStage": "Tout sélectionner dans {{stage}}",
+  "selectRow": "Sélectionner {{name}}",
+  "locked": {
+    "database": "Les données des bases de données ne sont jamais supprimées automatiquement.",
+    "kept": "Conservé pour l'instant.",
+    "label": "Verrouillé"
+  },
+  "stageNote": "Non exécuté : {{reason}}",
+  "loading": "Recherche de ce qui peut être supprimé",
+  "empty": "Rien à supprimer.",
+  "error": "Impossible de charger le plan de nettoyage.",
+  "retry": "Réessayer",
+  "selected": "{{size}} sélectionnés dans {{count}} éléments",
+  "none": "Rien de sélectionné",
+  "preview": "Aperçu",
+  "previewing": "Aperçu en cours",
+  "apply": "Appliquer",
+  "applying": "Application",
+  "confirm": {
+    "line": "Supprimer {{size}} dans {{count}} éléments maintenant ? Les données supprimées ne peuvent pas être restaurées.",
+    "yes": "Oui, supprimer",
+    "cancel": "Annuler"
+  },
+  "result": {
+    "previewed": "Aperçu : {{size}} seraient récupérés.",
+    "applied": "Terminé : {{size}} récupérés.",
+    "ignoredTitle": "Non touchés",
+    "ignoredRow": "{{name}} ({{stage}}) : {{reason}}",
+    "failed": "L'exécution a signalé une erreur : {{error}}"
+  },
+  "history": {
+    "loading": "Chargement des exécutions passées",
+    "empty": "Aucune exécution de nettoyage pour l'instant.",
+    "error": "Impossible de charger l'historique de nettoyage.",
+    "time": "Heure",
+    "by": "Lancé par",
+    "reclaimed": "Récupéré",
+    "mode": "Mode",
+    "dryRun": "Simulation",
+    "applied": "Appliqué",
+    "trigger": {
+      "scheduled": "Planifié",
+      "manual": "Manuel",
+      "disk_fix": "Correction du disque"
+    },
+    "kind": {
+      "user": "utilisateur",
+      "api_token": "token d'API",
+      "schedule": "planification"
+    }
+  }
+}

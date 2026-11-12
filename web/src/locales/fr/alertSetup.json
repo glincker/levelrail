@@ -1,0 +1,93 @@
+{
+  "template": {
+    "label": "Modèle d'alerte",
+    "profile": "Type d'app",
+    "web": "App web",
+    "worker": "Worker",
+    "database": "Base de données",
+    "webHint": "Crash loop, taux de 5xx, réponses lentes, CPU et un SLO de disponibilité de 99,9 %.",
+    "workerHint": "Crash loop et CPU.",
+    "databaseHint": "Crash loop et CPU.",
+    "apply": "Ajouter les règles recommandées",
+    "applying": "Ajout...",
+    "created": "{{count}} règles d'alerte ajoutées",
+    "createdSkipped": "{{count}} règles d'alerte ajoutées, {{skipped}} existaient déjà",
+    "allExist": "Toutes les règles recommandées existent déjà",
+    "failed": "Impossible d'ajouter les règles recommandées",
+    "noChannel": "Aucun canal de notification n'est connecté, donc ces règles n'apparaissent que dans l'historique des alertes tant que vous n'en associez pas un."
+  },
+  "quiet": {
+    "title": "Heures calmes",
+    "description": "Suspend les alertes d'avertissement et d'info pendant une plage quotidienne et les envoie à sa fin si elles se déclenchent encore. Les alertes critiques notifient toujours.",
+    "enabled": "Suspendre les alertes non critiques",
+    "start": "De",
+    "end": "Jusqu'à",
+    "timezone": "Fuseau horaire",
+    "save": "Enregistrer les heures calmes",
+    "saving": "Enregistrement...",
+    "saved": "Heures calmes enregistrées",
+    "clear": "Supprimer",
+    "cleared": "Heures calmes supprimées",
+    "loadError": "Impossible de charger les heures calmes.",
+    "saveError": "Impossible d'enregistrer les heures calmes"
+  },
+  "rules": {
+    "notConfigured": "Non configuré",
+    "generic": "générique",
+    "colName": "Nom",
+    "disabled": "Désactivée",
+    "colState": "État",
+    "stateFiring": "Déclenchée",
+    "statePending": "En attente",
+    "stateOk": "OK",
+    "countFiring": "{{count}} déclenchées",
+    "countPending": "{{count}} en attente",
+    "countOk": "{{count}} ok",
+    "silenced": "En sourdine",
+    "silencedTip": "Les notifications sont en sourdine",
+    "viewLogs": "Voir les logs",
+    "colKind": "Type",
+    "colCondition": "Condition",
+    "colLastEvaluated": "Dernière évaluation",
+    "never": "Jamais",
+    "colLastValue": "Dernière valeur",
+    "colNotify": "Notifier",
+    "title": "Règles d'alerte",
+    "description": "Règles de seuil, de crashloop, d'expiration de certificat, d'échec de tâche planifiée, de santé de domaine et de sauvegarde manquante, portant sur les métriques, redémarrages, jobs, domaines et planifications de sauvegarde de cette app. Notifie par webhook, Slack ou Discord lors d'une transition déclenchée/résolue.",
+    "emptyTitle": "Aucune règle d'alerte pour l'instant",
+    "emptyDescription": "Soyez notifié dès qu'une métrique franchit un seuil ou qu'un container entre en crashloop, par webhook, Slack ou Discord."
+  },
+  "slo": {
+    "title": "Suivre un SLO de disponibilité de {{target}} %",
+    "detail": "Cette app sert du trafic et n'a pas d'alerte SLO. Un objectif de {{target}} % vous alerte d'urgence quand le budget d'erreurs sur 30 jours se consume vite et ouvre une alerte de niveau ticket quand il se consume lentement.",
+    "noChannel": "Aucun canal de notification n'est encore connecté, donc la règle n'apparaîtra que dans l'historique des alertes tant que vous n'en associez pas un.",
+    "create": "Créer la règle SLO",
+    "ruleName": "SLO de disponibilité de {{target}} %",
+    "created": "Règle d'alerte SLO créée.",
+    "createFailed": "Impossible de créer la règle SLO."
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "Chute du trafic d'un domaine",
+        "help": "Se déclenche quand les requêtes de la fenêtre passent sous une part de la même fenêtre d'hier. Reste silencieuse tant qu'il n'y a pas assez de trafic hier pour comparer."
+      },
+      "parked_domain_cert_expiry": {
+        "label": "Expiration du certificat d'un domaine parqué",
+        "help": "Se déclenche quand un domaine parqué a moins de jours de certificat restants que la limite. Couvre tous les domaines parqués de la plateforme."
+      }
+    },
+    "scopeLabel": "Domaine",
+    "scopeApp": "App : {{app}}",
+    "scopeAll": "Tous les domaines de cette app",
+    "scopeHelp": "Surveiller chaque domaine de cette app, ou un seul.",
+    "windowLabel": "Fenêtre",
+    "windowHelp": "Durée de la période à comparer avec la même période d'hier. De 0 à 24 h.",
+    "percentLabel": "Chute sous un pourcentage d'hier",
+    "percentHelp": "Se déclenche quand le trafic est sous ce pourcentage d'hier. 50 signifie la moitié.",
+    "minRequestsLabel": "Nombre minimal de requêtes hier",
+    "minRequestsHelp": "Ignore le contrôle quand hier a eu moins de requêtes que cette valeur, pour que les domaines calmes ne déclenchent pas d'alerte.",
+    "daysLabel": "Jours restants",
+    "daysHelp": "Se déclenche quand le certificat d'un domaine parqué a moins de jours restants que cette valeur."
+  }
+}

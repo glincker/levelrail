@@ -1,0 +1,28 @@
+{
+  "label": "Pages associées",
+  "heading": "Associé",
+  "links": {
+    "account": "Compte",
+    "alertRules": "Règles d'alerte",
+    "backups": "Sauvegardes",
+    "certificates": "Certificats",
+    "cliAccess": "Accès CLI",
+    "dataExport": "Export de données",
+    "dns": "DNS",
+    "domains": "Domaines",
+    "drReport": "Rapport de reprise",
+    "environments": "Environnements",
+    "eventWebhooks": "Webhooks d'événements",
+    "firewall": "Pare-feu",
+    "mobileDevices": "Appareils mobiles",
+    "network": "Réseau",
+    "notificationChannels": "Canaux de notification",
+    "platformHttps": "HTTPS de la plateforme",
+    "privateNetworks": "Réseaux privés",
+    "security": "Sécurité",
+    "sessionPolicy": "Politique de session",
+    "tokens": "Tokens d'API",
+    "traffic": "Trafic",
+    "vault": "Coffre-fort"
+  }
+}

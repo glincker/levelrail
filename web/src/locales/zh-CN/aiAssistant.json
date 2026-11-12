@@ -1,0 +1,13 @@
+{
+  "toolCall": {
+    "noArguments": "无参数。",
+    "rejected": "已拒绝",
+    "checked": "已检查",
+    "approved": "已批准",
+    "confirmationRequired": "需要确认",
+    "approve": "批准",
+    "reject": "拒绝",
+    "actingAs": "正在以 {{user}} 身份操作",
+    "actingAsWithAbility": "正在以 {{user}} 身份操作,权限:{{abilities}}"
+  }
+}

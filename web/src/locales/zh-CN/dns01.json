@@ -1,0 +1,10 @@
+{
+  "label": "对所有主机使用 DNS 质询",
+  "helper": "适用于处于 CGNAT 之后或 80 端口关闭的服务器。需要已连接的 DNS 提供商。",
+  "noProvider": "尚未连接 DNS 提供商。",
+  "connectProvider": "去连接",
+  "enableFailed": "无法启用 DNS 质询",
+  "disableFailed": "无法停用 DNS 质询",
+  "saved": "已对所有主机开启 DNS 质询",
+  "savedOff": "已对所有主机关闭 DNS 质询"
+}

@@ -1,0 +1,246 @@
+{
+  "title": "Stacks",
+  "description": "Conjuntos declarativos de recursos com um histórico de revisões que você pode comparar, fixar e reverter.",
+  "empty": {
+    "title": "Nenhuma stack ainda",
+    "description": "Aplique um manifesto a uma stack pela CLI e ela aparece aqui com suas revisões."
+  },
+  "loadFailed": "Não foi possível carregar as stacks.",
+  "columns": {
+    "scope": "Escopo",
+    "name": "Stack",
+    "project": "Projeto",
+    "revision": "Mais recente",
+    "status": "Status",
+    "flags": "Flags",
+    "created": "Criada em"
+  },
+  "status": {
+    "pending_approval": "Aguardando aprovação",
+    "applying": "Aplicando",
+    "applied": "Aplicada",
+    "partial": "Parcial",
+    "failed": "Falhou",
+    "superseded": "Substituída",
+    "rejected": "Rejeitada",
+    "none": "Sem revisões"
+  },
+  "scope": {
+    "project": "Projeto",
+    "install": "Instalação",
+    "projectTip": "Pertence a um projeto",
+    "installTip": "Abrange toda a instalação"
+  },
+  "flags": {
+    "locked": "Bloqueada",
+    "lockedTip": "Retida por {{holder}} na revisão {{revision}}",
+    "pinned": "Fixada em r{{revision}}",
+    "driftLock": "Drift bloqueia",
+    "driftWarn": "Drift avisa",
+    "approval": "Requer aprovação",
+    "prune": "Prune permitido"
+  },
+  "detail": {
+    "back": "Todas as stacks",
+    "revisionShort": "r{{number}}",
+    "inProject": "Projeto {{project}}",
+    "createdBy": "Criada por {{name}}",
+    "lockedBanner": "Bloqueada por {{holder}} para a revisão {{revision}} até {{until}}.",
+    "pinnedBanner": "Fixada na revisão {{revision}}. Novas aplicações são recusadas até você desafixá-la.",
+    "resources": "{{count}} recursos gerenciados",
+    "loadFailed": "Não foi possível carregar esta stack."
+  },
+  "actions": {
+    "pin": "Fixar",
+    "unpin": "Desafixar",
+    "unlock": "Desbloquear",
+    "delete": "Excluir",
+    "rollback": "Fazer rollback",
+    "view": "Ver",
+    "diff": "Diff",
+    "viewRev": "Ver a revisão {{number}}",
+    "diffRev": "Diff da revisão {{number}}",
+    "rollbackRev": "Fazer rollback para a revisão {{number}}",
+    "pinRev": "Fixar a revisão {{number}}",
+    "unpinRev": "Desafixar a revisão {{number}}",
+    "pinned": "Fixada na revisão {{revision}}",
+    "unpinned": "Stack desafixada",
+    "unlocked": "Stack desbloqueada",
+    "failed": "A ação falhou",
+    "approveRev": "Aprovar a revisão {{number}}",
+    "rejectRev": "Rejeitar a revisão {{number}}"
+  },
+  "history": {
+    "title": "Revisões",
+    "empty": "Nenhuma revisão ainda.",
+    "columns": {
+      "number": "Rev",
+      "status": "Status",
+      "actor": "Por",
+      "source": "Origem",
+      "when": "Quando"
+    },
+    "rollbackOf": "Rollback de r{{number}}",
+    "pinnedMark": "Fixada",
+    "ariaLabel": "Revisões da stack"
+  },
+  "revision": {
+    "title": "Revisão {{number}}",
+    "files": "Arquivos renderizados",
+    "noFiles": "Nenhum arquivo armazenado para esta revisão.",
+    "plan": "Plano",
+    "result": "Resultado",
+    "noPlan": "Nenhum plano foi registrado.",
+    "noResult": "Nenhum resultado ainda.",
+    "resultCounts": "{{applied}} aplicados, {{failed}} com falha, {{skipped}} ignorados",
+    "resultFailedItem": "{{kind}} {{name}}: {{reason}}",
+    "resultNoReason": "nenhum motivo informado",
+    "summary": "{{create}} criar, {{update}} atualizar, {{delete}} excluir, {{noop}} sem alteração, {{error}} erros",
+    "hash": "Hash do plano {{hash}}",
+    "close": "Fechar",
+    "git": "Commit {{sha}}",
+    "ciRun": "Execução de CI",
+    "loadFailed": "Não foi possível carregar esta revisão."
+  },
+  "diff": {
+    "title": "Alterações",
+    "against": "Comparar r{{number}} com",
+    "live": "Estado ao vivo",
+    "revisionOption": "Revisão {{number}}",
+    "empty": "Nenhuma diferença.",
+    "loadFailed": "Não foi possível calcular o diff.",
+    "action": {
+      "create": "Criar",
+      "update": "Atualizar",
+      "delete": "Excluir",
+      "noop": "Sem alteração",
+      "error": "Erro",
+      "added": "Adicionado",
+      "removed": "Removido",
+      "changed": "Alterado"
+    },
+    "was": "era",
+    "now": "agora"
+  },
+  "rollback": {
+    "title": "Fazer rollback para a revisão {{number}}?",
+    "description": "Isto aplica os arquivos da revisão {{number}} a {{name}} como uma nova revisão.",
+    "secretsNote": "Os segredos não sofrem rollback. Os valores atuais dos segredos permanecem como estão.",
+    "dataNote": "Os dados não sofrem rollback. Bancos de dados e volumes mantêm o conteúdo atual.",
+    "confirm": "Fazer rollback",
+    "pending": "Fazendo rollback",
+    "done": "Rollback feito para a revisão {{number}}",
+    "doneStatus": "A nova revisão {{number}} terminou como {{status}}",
+    "failed": "O rollback falhou",
+    "pendingApproval": "A revisão {{number}} está aguardando aprovação. Nada sofreu rollback ainda."
+  },
+  "delete": {
+    "title": "Excluir a stack {{name}}?",
+    "description": "Escolha o que acontece com os recursos que a stack gerencia.",
+    "forget": "Esquecer a stack",
+    "forgetHint": "Remove a stack e o histórico dela. Os recursos continuam rodando sem gerenciamento.",
+    "destroy": "Destruir recursos",
+    "destroyHint": "Exclui os apps e bancos de dados que a stack gerencia e depois a stack.",
+    "confirm": "Excluir stack",
+    "pending": "Excluindo",
+    "done": "Stack {{name}} excluída",
+    "failed": "A exclusão falhou"
+  },
+  "settings": {
+    "title": "Configurações da stack",
+    "allowPrune": "Permitir prune",
+    "allowPruneHint": "Permite que uma aplicação exclua recursos que saíram do manifesto.",
+    "requireApproval": "Exigir aprovação",
+    "requireApprovalHint": "As aplicações aguardam uma pessoa aprová-las.",
+    "driftPolicy": "Política de drift",
+    "driftWarn": "Avisar",
+    "driftLock": "Bloquear",
+    "driftHint": "Bloquear impede as aplicações enquanto o estado ao vivo difere da stack.",
+    "rootOnly": "Somente um admin pode alterar isto.",
+    "saved": "Configurações da stack salvas",
+    "failed": "Não foi possível salvar as configurações"
+  },
+  "badge": {
+    "managedBy": "Gerenciado pela stack {{name}}",
+    "short": "Stack {{name}}"
+  },
+  "appPanel": {
+    "title": "Gerenciado por stack",
+    "revision": "Revisão {{number}}",
+    "lock": "Modo de bloqueio",
+    "hint": "Edite isto no Git. As alterações feitas aqui podem ser sobrescritas ou bloqueadas.",
+    "docs": "Documentação de stacks"
+  },
+  "managedNotice": {
+    "warn": "Gerenciado pela stack {{name}}. Alterações manuais podem ser revertidas ou relatadas como drift.",
+    "lock": "Gerenciado pela stack {{name}}, que bloqueia os recursos dela. Alterações manuais podem ser recusadas ou revertidas."
+  },
+  "drift": {
+    "badge": "Com drift ({{count}})",
+    "title": "Drift: {{count}} recursos diferem da stack",
+    "revision": "vs r{{number}}",
+    "checkedAt": "Verificado {{when}}",
+    "noValues": "Somente os caminhos dos campos são exibidos. Os valores nunca são armazenados.",
+    "action": {
+      "changed": "Alterado",
+      "missing": "Ausente",
+      "owner_changed": "Proprietário alterado"
+    }
+  },
+  "approval": {
+    "expires": "Expira {{when}}",
+    "approveTitle": "Aprovar a revisão {{number}}?",
+    "approveDescription": "Isto aplica o plano armazenado a {{name}}. Outro admin o solicitou.",
+    "approveDescriptionOwn": "Você solicitou esta revisão, então outro admin precisa aprová-la para {{name}}.",
+    "secretsNote": "Os segredos nunca são armazenados. Informe agora os que o manifesto precisar. Eles são enviados uma vez e não são guardados.",
+    "secretName": "Nome do segredo",
+    "secretValue": "Valor do segredo",
+    "addSecret": "Adicionar segredo",
+    "removeSecret": "Remover segredo",
+    "approve": "Aprovar",
+    "approving": "Aprovando",
+    "approved": "Revisão {{number}} aprovada",
+    "approvedStatus": "Terminou como {{status}}",
+    "stale": "O plano mudou depois de ser revisado. Solicite a aprovação novamente.",
+    "expired": "Esta solicitação de aprovação expirou. Solicite a aprovação novamente.",
+    "rejectTitle": "Rejeitar a revisão {{number}}?",
+    "rejectDescription": "Nada é aplicado a {{name}} e a solicitação é encerrada.",
+    "reason": "Motivo (opcional)",
+    "reject": "Rejeitar",
+    "rejecting": "Rejeitando",
+    "rejected": "Revisão {{number}} rejeitada"
+  },
+  "templates": {
+    "title": "Templates de stack",
+    "description": "Pacotes iniciais para stacks comuns. Preencha as variáveis, pré-visualize os arquivos e copie os comandos.",
+    "loadFailed": "Não foi possível carregar os templates de stack.",
+    "empty": {
+      "title": "Nenhum template de stack",
+      "description": "Este build não tem pacotes iniciais."
+    },
+    "open": "Abrir o template {{name}}",
+    "secretCount_one": "{{count}} segredo",
+    "secretCount_many": "{{count}} segredos",
+    "secretCount_other": "{{count}} segredos",
+    "drawerDescription": "Carregando o template.",
+    "var": {
+      "name": "Nome",
+      "domain": "Domínio",
+      "image": "Imagem"
+    },
+    "issues": "Os arquivos renderizados têm problemas",
+    "files": "Arquivos renderizados",
+    "copyAll": "Copiar tudo",
+    "copied": "Copiado",
+    "downloadAll": "Baixar tudo",
+    "secrets": {
+      "title": "Segredos que você deve fornecer",
+      "hint": "Somente os nomes. Exporte cada um como uma variável de ambiente antes de aplicar.",
+      "none": "Este pacote não precisa de segredos."
+    },
+    "cli": {
+      "title": "Aplicar pela CLI",
+      "hint": "Grava os arquivos em uma nova pasta e depois os aplica como uma stack. Aplicar pelo painel ainda não está disponível."
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "title": "Upgrades",
+  "description": "Halten Sie diese Datenbank auf dem neuesten Patch-Stand. Jedes Upgrade legt zuerst ein Backup an und lässt sich zurückrollen.",
+  "loadFailed": "Upgrade-Informationen konnten nicht geladen werden: {{error}}",
+  "unavailableTitle": "Upgrades sind nicht verfügbar",
+  "current": {
+    "title": "Aktuelle Version",
+    "engine": "Engine",
+    "version": "Version",
+    "line": "Release-Linie {{line}}",
+    "floating": "Diese Datenbank folgt einem Floating-Tag, daher kann sich die genaue Version beim nächsten Neustart ändern.",
+    "notComparable": "Diese Version ließ sich nicht mit dem Katalog vergleichen, daher werden keine Upgrade-Ziele angeboten.",
+    "advisories": "Bekannte Sicherheitshinweise zu dieser Version",
+    "catalogUpdated": "Katalog aktualisiert {{date}}",
+    "blockersTitle": "Upgrades sind blockiert",
+    "manualReason": "Manuelles Upgrade erforderlich"
+  },
+  "support": {
+    "supported": "Unterstützt",
+    "eol_soon": "Support endet bald ({{date}})",
+    "eol_soonNoDate": "Support endet bald",
+    "eol": "Support beendet",
+    "unknown": "Support unbekannt"
+  },
+  "targets": {
+    "tableLabel": "Upgrade-Ziele",
+    "title": "Verfügbare Versionen",
+    "description": "Patch- und Minor-Upgrades lassen sich von hier ausführen. Major-Upgrades ändern das Format auf dem Datenträger und sind abgesichert.",
+    "emptyTitle": "Keine Upgrades verfügbar",
+    "empty": "Sie nutzen die neueste Version, die der Katalog kennt.",
+    "columns": {
+      "version": "Version",
+      "kind": "Typ",
+      "details": "Details",
+      "actions": "Aktionen"
+    },
+    "kind": {
+      "patch": "Patch",
+      "minor": "Minor",
+      "major": "Major"
+    },
+    "security": "Sicherheitskorrektur",
+    "automatic": "Automatisch",
+    "eol": "Support beendet {{date}}",
+    "upgradeNow": "Jetzt upgraden",
+    "majorHint": "Major-Upgrades erfordern den abgesicherten Ablauf für Major-Upgrades, nicht diese Schaltfläche."
+  },
+  "dialog": {
+    "title": "{{name}} auf {{version}} upgraden",
+    "description": "Zuerst wird ein Backup angelegt. Die Datenbank startet neu und ist kurzzeitig nicht verfügbar.",
+    "confirmLabel": "Geben Sie zur Bestätigung {{name}} ein",
+    "cancel": "Abbrechen",
+    "confirm": "Upgraden",
+    "starting": "Wird gestartet",
+    "toast": "Upgrade auf {{version}} gestartet",
+    "failedToast": "Das Upgrade konnte nicht gestartet werden"
+  },
+  "policy": {
+    "title": "Automatische Upgrades",
+    "description": "Legen Sie fest, was von selbst angewendet wird und wann.",
+    "inheritedNote": "Diese Datenbank verwendet die Standardrichtlinie der Plattform.",
+    "override": "Für diese Datenbank überschreiben",
+    "useDefault": "Plattformstandard verwenden",
+    "autoUpgrade": "Automatisch anwenden",
+    "auto": {
+      "off": "Aus, manuell upgraden",
+      "patch": "Nur Patch-Releases",
+      "minor": "Patch- und Minor-Releases"
+    },
+    "window": "Wartungsfenster",
+    "preset": {
+      "daily": "Täglich um 03:00",
+      "sundays": "Sonntags um 03:00",
+      "custom": "Eigener Cron"
+    },
+    "cron": "Cron-Ausdruck",
+    "duration": "Länge des Fensters (Stunden)",
+    "timezone": "Zeitzone",
+    "backupBefore": "Vor dem Upgrade sichern",
+    "backupBeforeHint": "Immer an. Ein Upgrade startet nie ohne frisches Backup.",
+    "verifyAfter": "Nach dem Upgrade verifizieren",
+    "verifyAfterHint": "Stellt das Backup in einem temporären Container wieder her und prüft, ob es sich öffnen lässt.",
+    "revertOnFailure": "Bei Fehler zurückrollen",
+    "revertOnFailureHint": "Kehrt automatisch zur vorherigen Version zurück, wenn das Upgrade fehlschlägt.",
+    "notify": "Diese Kanäle benachrichtigen",
+    "noChannels": "Es gibt noch keine Benachrichtigungskanäle.",
+    "nextWindow": "Nächstes Fenster",
+    "windowOpen": "Ein Wartungsfenster ist gerade offen",
+    "nextTarget": "Nächstes automatisches Upgrade",
+    "noNextTarget": "Es ist nichts für ein automatisches Upgrade vorgemerkt.",
+    "save": "Richtlinie speichern",
+    "saving": "Wird gespeichert",
+    "saved": "Upgrade-Richtlinie gespeichert",
+    "failedToast": "Die Richtlinie konnte nicht gespeichert werden"
+  },
+  "history": {
+    "title": "Upgrade-Verlauf",
+    "emptyTitle": "Kein Upgrade-Verlauf",
+    "empty": "Für diese Datenbank wurden noch keine Upgrades ausgeführt.",
+    "active": "Upgrade läuft",
+    "from": "{{from}} auf {{to}}",
+    "backup": "Backup {{id}}",
+    "started": "Gestartet {{date}}",
+    "finished": "Beendet {{date}}",
+    "source": {
+      "auto": "Automatisch",
+      "manual": "Manuell"
+    },
+    "state": {
+      "pending": "Ausstehend",
+      "backing_up": "Wird gesichert",
+      "upgrading": "Wird upgegradet",
+      "verifying": "Wird verifiziert",
+      "succeeded": "Erfolgreich",
+      "reverted": "Zurückgerollt",
+      "failed": "Fehlgeschlagen"
+    },
+    "revert": {
+      "image": "Per Image zurückgerollt",
+      "volume_snapshot": "Aus Volume-Snapshot zurückgerollt",
+      "backup_restore": "Per Backup-Wiederherstellung zurückgerollt"
+    },
+    "reason": "Grund: {{reason}}"
+  },
+  "steps": {
+    "backup": {
+      "title": "Zuerst sichern",
+      "body": "Ein frisches Backup wird angelegt, damit Sie jederzeit zu genau diesen Daten zurückkehren können.",
+      "skipped": "Per Richtlinie übersprungen. Aktivieren Sie in der Richtlinienkarte die Sicherung vor dem Upgrade, um auf der sicheren Seite zu sein."
+    },
+    "change": {
+      "title": "Version ändern",
+      "body": "Die Datenbank startet mit der neuen Version neu. Rechnen Sie mit einem kurzen Ausfall, bis sie läuft.",
+      "skipped": ""
+    },
+    "verify": {
+      "title": "Verifizieren",
+      "body": "Das Upgrade wird geprüft, indem das Backup wiederhergestellt und die neue Version getestet wird.",
+      "skipped": "Per Richtlinie übersprungen. Nichts bestätigt, dass die neue Version funktioniert, bis Sie es prüfen."
+    },
+    "majorWarning": "Dies ist ein Sprung auf eine neue Hauptversion. Die Datendateien ändern ihr Format, und es gibt keinen Weg zurück an Ort und Stelle. Legen Sie ein Backup an und testen Sie es, und prüfen Sie, ob Ihre Anwendung die neue Version unterstützt, bevor Sie fortfahren.",
+    "rollbackAuto": "Rollback: Schlägt das Upgrade fehl, wird die vorherige Version automatisch wiederhergestellt. Ein manueller Ein-Klick-Rollback wird nicht angeboten, stellen Sie daher bei einer späteren Rückkehr das Backup aus Schritt 1 wieder her.",
+    "rollbackManual": "Rollback: Die automatische Rücknahme ist aus, und es gibt keinen manuellen Ein-Klick-Rollback. Geht etwas schief, stellen Sie das Backup aus Schritt 1 wieder her. Aktivieren Sie in der Richtlinienkarte das Zurückrollen bei Fehler für einen automatischen Weg."
+  }
+}

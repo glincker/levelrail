@@ -1,0 +1,16 @@
+{
+  "replicas": "レプリカ",
+  "decrease": "{{name}}のレプリカを減らす",
+  "increase": "{{name}}のレプリカを増やす",
+  "apply": "適用",
+  "applying": "適用中",
+  "restart": "{{name}}を再起動",
+  "restartTitle": "{{name}}を再起動しますか?",
+  "restartBody": "このサービスのコンテナを再作成します。ほかのサービスは動き続けます。",
+  "restartConfirm": "再起動",
+  "restarting": "再起動中",
+  "readOnly": "サービスを変更するにはデプロイ権限が必要です",
+  "actions": "操作",
+  "scaleFailed": "このサービスをスケールできませんでした。",
+  "restartFailed": "このサービスを再起動できませんでした。"
+}

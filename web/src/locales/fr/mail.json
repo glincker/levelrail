@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "label": "Sections e-mail",
+    "delivery": "Livraison",
+    "templates": "Modèles",
+    "audiences": "Audiences",
+    "messages": "Messages"
+  },
+  "common": {
+    "loadError": "Impossible de charger cette page.",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "delete": "Supprimer",
+    "saving": "Enregistrement",
+    "people": "{{count}} personnes"
+  },
+  "templates": {
+    "eyebrow": "E-mail",
+    "title": "Modèles d'e-mail",
+    "description": "Chaque e-mail envoyé par la plateforme, dans une mise en page de marque unique. Modifiez le texte, prévisualisez-le avec des données d'exemple et rétablissez la valeur par défaut à tout moment.",
+    "kind": {
+      "system": "Compte et sécurité",
+      "announcement": "Annonce"
+    },
+    "customized": "Personnalisé",
+    "builtIn": "Intégré",
+    "edit": "Modifier",
+    "listHeading": "Modèles",
+    "layout": {
+      "title": "Mise en page partagée",
+      "description": "Le cadre de chaque e-mail : une image d'en-tête facultative et une ligne de pied de page comme votre adresse postale.",
+      "headerImage": "Adresse de l'image d'en-tête",
+      "headerImageHelp": "Une image https affichée au-dessus du nom de la marque. Laissez vide pour n'afficher que le nom de la marque.",
+      "footer": "Texte du pied de page",
+      "footerHelp": "Affiché sous chaque e-mail. Les tokens globaux comme {{examples}} fonctionnent ici.",
+      "save": "Enregistrer la mise en page",
+      "saved": "Mise en page enregistrée."
+    },
+    "editor": {
+      "back": "Tous les modèles",
+      "subject": "Objet",
+      "preheader": "Pré-en-tête",
+      "preheaderHelp": "La ligne d'aperçu que certaines boîtes de réception affichent à côté de l'objet.",
+      "body": "Corps",
+      "bodyHelp": "Les lignes vides commencent un nouveau paragraphe. Utilisez # pour un titre, - pour une liste, > pour un encadré, **gras**, [libellé](adresse) pour les liens et !button Libellé|adresse pour un bouton.",
+      "save": "Enregistrer le modèle",
+      "saved": "Modèle enregistré.",
+      "reset": "Rétablir par défaut",
+      "resetTitle": "Rétablir ce modèle ?",
+      "resetDescription": "Le texte intégré revient. Vos modifications restent dans l'historique des versions.",
+      "resetDone": "Modèle rétabli.",
+      "sendTest": "M'envoyer un test",
+      "testSent": "Test envoyé à {{email}}.",
+      "noProviderTitle": "Aucun fournisseur d'e-mail n'est configuré",
+      "noProviderBody": "Configurez d'abord un fournisseur, puis envoyez un test.",
+      "fixProvider": "Ouvrir les paramètres e-mail"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "description": "Sélectionnez un token pour l'insérer au curseur. Les tokens inconnus sont rejetés à l'enregistrement.",
+      "scope": {
+        "global": "Partout",
+        "recipient": "À propos du destinataire",
+        "event": "Pour cet e-mail"
+      },
+      "insert": "Insérer {{name}}"
+    },
+    "preview": {
+      "title": "Aperçu",
+      "desktop": "Bureau",
+      "mobile": "Mobile",
+      "light": "Clair",
+      "dark": "Sombre",
+      "frameTitle": "Aperçu de l'e-mail",
+      "plain": "Version texte brut",
+      "error": "L'aperçu nécessite un modèle valide : {{message}}",
+      "deviceLabel": "Appareil d'aperçu",
+      "schemeLabel": "Thème de couleurs de l'aperçu"
+    },
+    "history": {
+      "title": "Historique des versions",
+      "description": "Les 10 dernières versions enregistrées.",
+      "empty": "Aucune version enregistrée pour l'instant. Le premier enregistrement en crée une.",
+      "restore": "Restaurer",
+      "restored": "Version restaurée.",
+      "version": "Version {{version}}",
+      "by": "par {{who}}"
+    }
+  },
+  "audiences": {
+    "eyebrow": "E-mail",
+    "title": "Audiences",
+    "description": "Groupes enregistrés de personnes à qui écrire. Les règles choisissent les utilisateurs par rôle, équipe, projet, domaine de connexion ou inactivité, et vous pouvez ajouter des adresses supplémentaires à la main.",
+    "create": "Nouvelle audience",
+    "edit": "Modifier",
+    "empty": {
+      "title": "Aucune audience pour l'instant",
+      "description": "Créez un groupe comme tous les admins ou toutes les personnes inactives depuis 90 jours, puis envoyez-lui un message."
+    },
+    "columns": {
+      "name": "Audience",
+      "recipients": "Destinataires",
+      "suppressed": "Désinscrits"
+    },
+    "dialog": {
+      "createTitle": "Nouvelle audience",
+      "editTitle": "Modifier l'audience",
+      "name": "Nom",
+      "description": "Description",
+      "rules": "Qui est inclus",
+      "everyone": "Tous les utilisateurs",
+      "roles": "Rôles",
+      "teams": "Équipes",
+      "projects": "Projets (leur équipe)",
+      "domains": "Domaines d'e-mail de connexion",
+      "domainsHelp": "Un par ligne, par exemple example.com.",
+      "inactive": "Non connecté depuis (jours)",
+      "inactiveHelp": "Restreint la sélection, ou sélectionne toutes les personnes inactives depuis cette durée quand rien d'autre n'est choisi.",
+      "extra": "Adresses supplémentaires",
+      "extraHelp": "Une par ligne. Ajoutées même si ce ne sont pas des utilisateurs.",
+      "exclude": "Ne jamais inclure",
+      "excludeHelp": "Une adresse par ligne.",
+      "save": "Enregistrer l'audience",
+      "saved": "Audience enregistrée.",
+      "live": "{{deliverable}} la recevront, {{suppressed}} sont désinscrits.",
+      "liveSample": "Les {{count}} premiers destinataires",
+      "noneChosen": "Choisissez au moins une règle pour voir qui est inclus."
+    },
+    "role": {
+      "owner": "Propriétaire",
+      "admin": "Admin",
+      "operator": "Opérateur",
+      "viewer": "Lecteur"
+    },
+    "deleteTitle": "Supprimer cette audience ?",
+    "deleteDescription": "Les messages passés gardent leur historique. Cela ne supprime que les règles enregistrées.",
+    "deleted": "Audience supprimée.",
+    "suppressions": {
+      "title": "Liste de désinscription",
+      "description": "Les personnes listées ici sont ignorées par les annonces. Les e-mails de sécurité et de compte arrivent toujours.",
+      "empty": "Personne ne s'est désinscrit.",
+      "add": "Ajouter une adresse",
+      "addPlaceholder": "nom@example.com",
+      "remove": "Retirer",
+      "reasonAdmin": "Ajoutée par un administrateur",
+      "reasonUnsub": "Désinscrit à partir d'un message",
+      "added": "Adresse ajoutée à la liste de désinscription."
+    }
+  },
+  "messages": {
+    "eyebrow": "E-mail",
+    "title": "Messages",
+    "description": "Écrivez à une audience ou à des personnes choisies. Les messages partent dans la mise en page enregistrée avec un lien de désinscription en un clic, avec limitation de débit, et chaque envoi figure dans l'historique.",
+    "compose": "Nouveau message",
+    "noProvider": {
+      "title": "L'e-mail n'est pas configuré",
+      "body": "Les messages nécessitent un fournisseur d'e-mail. Configurez-en un, envoyez un test, puis revenez.",
+      "fix": "Ouvrir les paramètres e-mail"
+    },
+    "composer": {
+      "title": "Nouveau message",
+      "template": "Partir de",
+      "subject": "Objet",
+      "body": "Message",
+      "bodyHelp": "Les tokens comme {{example}} sont renseignés pour chaque personne.",
+      "audience": "Audience",
+      "audiencePlaceholder": "Choisir une audience",
+      "noAudience": "Aucune audience",
+      "extra": "Destinataires supplémentaires",
+      "extraHelp": "Une adresse par ligne, facultatif.",
+      "when": "Quand",
+      "now": "Envoyer maintenant",
+      "later": "Planifier",
+      "review": "Vérifier et envoyer",
+      "sendTest": "M'envoyer un test",
+      "preview": "Aperçu",
+      "tokens": "Insérer un token"
+    },
+    "confirm": {
+      "title": "Envoyer ce message ?",
+      "summary": "Cela enverra un e-mail à {{deliverable}} personnes, {{suppressed}} sont exclues.",
+      "capLeft": "{{count}} destinataires restants dans la limite du jour.",
+      "schedule": "L'envoi commencera à {{time}}.",
+      "send": "Envoyer le message",
+      "schedule_action": "Planifier le message",
+      "none": "Personne ne recevrait ce message."
+    },
+    "sent": "Message mis en file d'attente.",
+    "history": {
+      "title": "Historique",
+      "empty": {
+        "title": "Aucun message pour l'instant",
+        "description": "Les messages envoyés et planifiés apparaissent ici avec le nombre de livraisons."
+      },
+      "columns": {
+        "subject": "Objet",
+        "status": "Statut",
+        "progress": "Livré",
+        "when": "Créé"
+      },
+      "progress": "{{sent}} envoyés, {{failed}} échoués, {{suppressed}} ignorés sur {{total}}",
+      "details": "Détails",
+      "cancel": "Annuler l'envoi",
+      "cancelTitle": "Arrêter ce message ?",
+      "cancelDescription": "Les personnes qui n'ont pas encore été jointes ne le recevront pas.",
+      "cancelled": "Message annulé.",
+      "recipients": "Destinataires",
+      "recipientStatus": {
+        "pending": "En attente",
+        "sent": "Envoyé",
+        "failed": "Échoué",
+        "suppressed": "Désinscrit",
+        "cancelled": "Annulé"
+      }
+    },
+    "status": {
+      "scheduled": "Planifié",
+      "sending": "Envoi en cours",
+      "completed": "Terminé",
+      "cancelled": "Annulé",
+      "failed": "Échoué"
+    }
+  }
+}

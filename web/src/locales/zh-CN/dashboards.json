@@ -1,0 +1,193 @@
+{
+  "common": {
+    "cancel": "取消"
+  },
+  "grid": {
+    "label": "仪表盘小组件",
+    "controls": "{{title}} 的控件",
+    "moveEarlier": "将 {{title}} 前移",
+    "moveLater": "将 {{title}} 后移",
+    "size": "将 {{title}} 设为 {{size}} 大小",
+    "remove": "移除 {{title}}"
+  },
+  "widget": {
+    "type": {
+      "metric_chart": "指标图表",
+      "request_percentiles": "请求延迟",
+      "error_rate": "错误率",
+      "log_tail": "日志尾部",
+      "deploy_timeline": "部署时间线",
+      "resource_counts": "资源数量",
+      "cost": "按标签统计的成本",
+      "alert_status": "告警状态",
+      "node_capacity": "节点容量",
+      "link": "链接",
+      "fleet_health": "集群健康",
+      "fleet_traffic": "集群流量",
+      "top_apps": "热门应用",
+      "deploy_activity": "部署活动",
+      "fleet_capacity": "集群容量",
+      "attention": "需要处理"
+    },
+    "noTraffic": "上一个窗口内没有请求。",
+    "p95": "p95 延迟",
+    "reqPerSec": "每秒请求数",
+    "errorShare": "4xx 和 5xx 占请求的比例",
+    "noLogs": "此范围内没有日志行。",
+    "noDeploys": "最近没有部署。",
+    "count": {
+      "app": "应用",
+      "database": "数据库",
+      "node": "节点",
+      "domain": "域名"
+    },
+    "noCost": "暂无成本数据。请在用量与成本中设置价格,以查看按标签统计的支出。",
+    "scopedCost": "所选范围内本月的支出",
+    "untagged": "无标签",
+    "rulesEnabled": "条告警规则已启用",
+    "noRules": "此应用尚无告警规则。",
+    "unknown": "未知",
+    "capacity": {
+      "disk": "磁盘已用",
+      "memory": "内存已用"
+    }
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_usage_bytes": "内存",
+    "network_rx_bytes": "网络入站",
+    "network_tx_bytes": "网络出站",
+    "disk_read_bytes": "磁盘读取",
+    "disk_write_bytes": "磁盘写入",
+    "disk_used_bytes": "磁盘已用",
+    "container_restart_count": "重启次数"
+  },
+  "kind": {
+    "app": "应用",
+    "database": "数据库",
+    "node": "节点"
+  },
+  "range": {
+    "15m": "最近 15 分钟",
+    "1h": "最近 1 小时",
+    "6h": "最近 6 小时",
+    "24h": "最近 24 小时",
+    "7d": "最近 7 天",
+    "30d": "最近 30 天"
+  },
+  "refresh": {
+    "0": "手动",
+    "15": "每 15 秒",
+    "30": "每 30 秒",
+    "60": "每分钟",
+    "300": "每 5 分钟"
+  },
+  "toolbar": {
+    "range": "时间范围",
+    "refresh": "自动刷新",
+    "refreshNow": "刷新",
+    "addWidget": "添加小组件",
+    "shared": "与所有人共享",
+    "project": "项目",
+    "noProject": "无项目",
+    "isDefault": "项目默认",
+    "save": "保存更改",
+    "done": "完成编辑"
+  },
+  "add": {
+    "title": "添加小组件",
+    "description": "选择要显示的内容及其数据来源。",
+    "type": "小组件",
+    "kind": "数据来源",
+    "target": "资源",
+    "targetPlaceholder": "选择资源",
+    "metric": "指标",
+    "query": "日志筛选",
+    "queryPlaceholder": "要搜索的文本,可选",
+    "submit": "添加小组件",
+    "linkTitle": "标题",
+    "linkTitlePlaceholder": "运维手册",
+    "linkUrl": "地址"
+  },
+  "template": {
+    "label": "入门仪表盘",
+    "use": "使用此入门模板",
+    "pickApp": "{{name}} 的应用",
+    "app-health": {
+      "name": "应用健康",
+      "description": "单个应用的 CPU、内存、延迟、错误、告警、部署和日志。"
+    },
+    "fleet-overview": {
+      "name": "集群概览",
+      "description": "你运行的应用、数据库、节点和域名数量。"
+    },
+    "cost": {
+      "name": "成本",
+      "description": "按标签统计的本月至今支出,以及其背后的资源用量。"
+    }
+  },
+  "empty": {
+    "widgetsTitle": "此仪表盘是空的",
+    "widgetsBody": "开启编辑并添加小组件即可开始。"
+  },
+  "toast": {
+    "saved": "仪表盘已保存",
+    "saveFailed": "无法保存仪表盘",
+    "imported": "已导入 {{name}}",
+    "importFailed": "无法导入仪表盘",
+    "notJson": "该文件不是有效的 JSON。",
+    "deleted": "仪表盘已删除",
+    "deleteFailed": "无法删除仪表盘",
+    "created": "已创建 {{name}}",
+    "createFailed": "无法创建仪表盘"
+  },
+  "fleet": {
+    "loadFailed": "无法加载此数据。",
+    "health": {
+      "empty": "暂无应用。",
+      "barLabel": "{{running}} 个运行中,{{failing}} 个失败,{{stopped}} 个已停止",
+      "running": "运行中",
+      "failing": "失败",
+      "stopped": "已停止",
+      "nodesOnline": "在线节点"
+    },
+    "traffic": {
+      "notConfigured": "未配置遥测。",
+      "empty": "最近一小时内没有请求。",
+      "requests": "请求数,最近一小时",
+      "errors": "5xx 错误",
+      "tooFew": "请求太少",
+      "p95": "p95 延迟",
+      "spark": "所有应用每秒请求数"
+    },
+    "top": {
+      "sortBy": "排序依据",
+      "cpu": "CPU",
+      "memory": "内存",
+      "requests": "请求数",
+      "empty": "暂无可排名的内容。"
+    },
+    "deploys": {
+      "empty": "尚无已完成的部署。",
+      "summary": "24 小时内 {{day}} 次,7 天内 {{week}} 次(成功 {{ok}} 次,失败 {{failed}} 次)",
+      "succeeded": "成功",
+      "failed": "失败",
+      "sampled": "基于最需要关注的 {{count}} 个应用。"
+    },
+    "capacity": {
+      "unavailable": "容量不可用。",
+      "empty": "尚无节点报告容量。",
+      "cpu": "CPU",
+      "memory": "内存",
+      "disk": "磁盘"
+    },
+    "attention": {
+      "clear": "一切正常。没有需要处理的内容。",
+      "critical": "严重",
+      "warning": "警告",
+      "info": "提示",
+      "viewAll": "打开状态",
+      "more": "状态页还有 {{count}} 项"
+    }
+  }
+}

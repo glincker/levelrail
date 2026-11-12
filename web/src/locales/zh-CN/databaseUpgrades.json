@@ -1,0 +1,145 @@
+{
+  "title": "升级",
+  "description": "让此数据库保持补丁最新。每次升级都会先做备份，并且可以回滚。",
+  "loadFailed": "无法加载升级信息：{{error}}",
+  "unavailableTitle": "无法升级",
+  "current": {
+    "title": "当前版本",
+    "engine": "引擎",
+    "version": "版本",
+    "line": "发布线 {{line}}",
+    "floating": "此数据库使用浮动标签，因此下次重启时确切版本可能会改变。",
+    "notComparable": "无法将此版本与目录进行比较，因此不提供升级目标。",
+    "advisories": "影响此版本的已知安全公告",
+    "catalogUpdated": "目录更新于 {{date}}",
+    "blockersTitle": "升级已被阻止",
+    "manualReason": "需要手动升级"
+  },
+  "support": {
+    "supported": "受支持",
+    "eol_soon": "即将终止支持（{{date}}）",
+    "eol_soonNoDate": "即将终止支持",
+    "eol": "已终止支持",
+    "unknown": "支持状态未知"
+  },
+  "targets": {
+    "tableLabel": "升级目标",
+    "title": "可用版本",
+    "description": "补丁和小版本升级可以在这里运行。大版本升级会改变磁盘上的格式，受到保护。",
+    "emptyTitle": "没有可用的升级",
+    "empty": "你已经在使用目录所知的最新版本。",
+    "columns": {
+      "version": "版本",
+      "kind": "类型",
+      "details": "详情",
+      "actions": "操作"
+    },
+    "kind": {
+      "patch": "补丁",
+      "minor": "小版本",
+      "major": "大版本"
+    },
+    "security": "安全修复",
+    "automatic": "自动",
+    "eol": "终止支持于 {{date}}",
+    "upgradeNow": "立即升级",
+    "majorHint": "大版本升级需要使用受保护的大版本升级流程，而不是此按钮。"
+  },
+  "dialog": {
+    "title": "将 {{name}} 升级到 {{version}}",
+    "description": "会先进行备份。数据库会重启，并短暂不可用。",
+    "confirmLabel": "输入 {{name}} 以确认",
+    "cancel": "取消",
+    "confirm": "升级",
+    "starting": "启动中",
+    "toast": "已开始升级到 {{version}}",
+    "failedToast": "无法开始升级"
+  },
+  "policy": {
+    "title": "自动升级",
+    "description": "选择自动应用什么，以及何时应用。",
+    "inheritedNote": "此数据库使用平台默认策略。",
+    "override": "为此数据库覆盖",
+    "useDefault": "使用平台默认值",
+    "autoUpgrade": "自动应用",
+    "auto": {
+      "off": "关闭，手动升级",
+      "patch": "仅补丁版本",
+      "minor": "补丁和小版本"
+    },
+    "window": "维护窗口",
+    "preset": {
+      "daily": "每天 03:00",
+      "sundays": "每周日 03:00",
+      "custom": "自定义 cron"
+    },
+    "cron": "Cron 表达式",
+    "duration": "窗口时长（小时）",
+    "timezone": "时区",
+    "backupBefore": "升级前备份",
+    "backupBeforeHint": "始终开启。没有最新备份时，升级绝不会开始。",
+    "verifyAfter": "升级后验证",
+    "verifyAfterHint": "将备份恢复到临时容器，并检查它能否打开。",
+    "revertOnFailure": "失败时回滚",
+    "revertOnFailureHint": "如果升级失败，自动返回到之前的版本。",
+    "notify": "通知这些渠道",
+    "noChannels": "还没有通知渠道。",
+    "nextWindow": "下一个窗口",
+    "windowOpen": "维护窗口现已开启",
+    "nextTarget": "下一次自动升级",
+    "noNextTarget": "没有排队等待自动升级的内容。",
+    "save": "保存策略",
+    "saving": "保存中",
+    "saved": "升级策略已保存",
+    "failedToast": "无法保存策略"
+  },
+  "history": {
+    "title": "升级历史",
+    "emptyTitle": "没有升级历史",
+    "empty": "此数据库尚未运行过任何升级。",
+    "active": "升级进行中",
+    "from": "{{from}} 到 {{to}}",
+    "backup": "备份 {{id}}",
+    "started": "开始于 {{date}}",
+    "finished": "完成于 {{date}}",
+    "source": {
+      "auto": "自动",
+      "manual": "手动"
+    },
+    "state": {
+      "pending": "待处理",
+      "backing_up": "备份中",
+      "upgrading": "升级中",
+      "verifying": "验证中",
+      "succeeded": "成功",
+      "reverted": "已回滚",
+      "failed": "失败"
+    },
+    "revert": {
+      "image": "通过镜像回滚",
+      "volume_snapshot": "通过卷快照回滚",
+      "backup_restore": "通过备份恢复回滚"
+    },
+    "reason": "原因：{{reason}}"
+  },
+  "steps": {
+    "backup": {
+      "title": "先备份",
+      "body": "会先做一次最新备份，让你始终可以回到这份确切的数据。",
+      "skipped": "已被策略跳过。为安全起见，请在策略卡片中开启升级前备份。"
+    },
+    "change": {
+      "title": "更改版本",
+      "body": "数据库将在新版本上重启。启动期间会有短暂中断。",
+      "skipped": ""
+    },
+    "verify": {
+      "title": "验证",
+      "body": "通过恢复备份并探测新版本来检查此次升级。",
+      "skipped": "已被策略跳过。在你自行检查之前，没有任何内容能确认新版本可以正常工作。"
+    },
+    "majorWarning": "这是大版本跳跃。数据文件会改变格式，并且无法原地回退。请在继续之前做好备份并测试，同时确认你的应用支持新版本。",
+    "rollbackAuto": "回滚：如果升级失败，会自动恢复到之前的版本。不提供手动一键回滚，因此如果之后需要回退，请从第 1 步的备份中恢复。",
+    "rollbackManual": "回滚：自动回退已关闭，也没有手动一键回滚。如果出现问题，请恢复第 1 步的备份。如需自动回退路径，请在策略卡片中开启失败时回滚。"
+  }
+}

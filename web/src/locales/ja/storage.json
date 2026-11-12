@@ -1,0 +1,60 @@
+{
+  "title": "ストレージ",
+  "subtitle": "Dockerがアプリ用にディスク上で保持しているものと、安全に解放できる量です。",
+  "node": {
+    "label": "ノード",
+    "local": "このサーバー",
+    "partial": "このノードでは、今のところイメージのサイズのみ測定しています。",
+    "unsupportedTitle": "このノードにはまだ対応していません",
+    "unsupported": "Levelrailはまだこのノードからストレージを読み取れません。ここでは何も変更されません。",
+    "retry": "再確認"
+  },
+  "engine": {
+    "title": "エンジンと署名"
+  },
+  "verdict": {
+    "space": "{{total}}中{{free}}が空きです。",
+    "health": {
+      "healthy": "正常",
+      "low": "空き容量が少ない",
+      "critical": "危険"
+    },
+    "safe": "{{size}}を安全に削除できます。",
+    "nothingSafe": "削除が必要なものはありません。",
+    "forecast_other": "現在のペースでは約{{count}}日で満杯になります。"
+  },
+  "disk": {
+    "label": "ディスク使用量",
+    "legend": "カテゴリで絞り込み",
+    "unmeasured": "未測定",
+    "segmentLabel": "{{name}}、{{size}}",
+    "filterLabel": "フィルター: {{name}}",
+    "categories": {
+      "appData": "アプリデータ",
+      "images": "イメージ",
+      "buildCache": "ビルドキャッシュ",
+      "containersLogs": "コンテナとログ",
+      "other": "その他",
+      "free": "空き"
+    },
+    "meaning": {
+      "appData": "アプリに属するボリュームとデータベースです。自動では削除されません。",
+      "images": "デプロイ用のDockerイメージです。古いものや未使用のものは削除できます。",
+      "buildCache": "ビルドを速くするために残してあるレイヤーです。消しても安全で、次のビルドが遅くなるだけです。",
+      "containersLogs": "停止したコンテナと、そのログファイルです。",
+      "other": "Levelrail以外でディスクを使っているすべてのものです。"
+    },
+    "tip": {
+      "sizeShare": "{{size}}、ディスクの{{share}}",
+      "reclaimable": "{{size}}を安全に削除できます",
+      "nothingToFree": "削除するものはありません"
+    }
+  },
+  "actions": {
+    "terminal": "ターミナルで実行",
+    "review": "クリーンアップを確認"
+  },
+  "errors": {
+    "status": "現在、ディスク使用量を読み取れません。"
+  }
+}

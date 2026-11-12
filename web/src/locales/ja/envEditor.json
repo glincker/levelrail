@@ -1,0 +1,217 @@
+{
+  "title": "環境変数",
+  "description": "アプリが起動時に読み取る変数です。機密性の高い値はどこでもマスクされます。値を表示するには本人確認が必要で、監査ログに記録されます。",
+  "guide": "シークレットのガイド",
+  "columns": {
+    "key": "キー",
+    "value": "値",
+    "type": "種類",
+    "scope": "スコープ",
+    "actions": "操作"
+  },
+  "types": {
+    "plain": "プレーン",
+    "secret": "シークレット",
+    "vault": "Vault"
+  },
+  "scope": {
+    "own": "独自の値",
+    "inherited": "{{tier}}から継承",
+    "overrides": "{{tier}}を上書き",
+    "tiers": {
+      "organization": "組織",
+      "project": "プロジェクト",
+      "environment": "環境"
+    }
+  },
+  "value": {
+    "masked": "非表示の値",
+    "secretStored": "暗号化して保存済み",
+    "secretNew": "新しい値",
+    "empty": "空",
+    "vaultPath": "Vaultのパス",
+    "vaultKey": "フィールド",
+    "hidesIn": "{{seconds}}秒後に非表示",
+    "replacePlaceholder": "新しい値",
+    "valuePlaceholder": "値"
+  },
+  "sensitive": {
+    "badge": "機密",
+    "convertHint": "認証情報がプレーンテキストで保存されているようです"
+  },
+  "actions": {
+    "reveal": "表示",
+    "hide": "隠す",
+    "copy": "コピー",
+    "copied": "クリップボードにコピーしました",
+    "replace": "置き換え",
+    "cancelReplace": "現在の値を維持",
+    "remove": "削除",
+    "undoRemove": "削除を取り消し",
+    "override": "上書き",
+    "rowMenu": "{{key}}の操作",
+    "markSensitive": "機密としてマークする",
+    "markPlain": "閲覧者に値を表示する",
+    "useAutomatic": "自動検出を使う",
+    "convert": "シークレットに変換"
+  },
+  "toolbar": {
+    "add": "変数を追加",
+    "bulk": ".env形式で編集",
+    "table": "テーブルで編集",
+    "import": ".envファイルをインポート",
+    "export": "エクスポート",
+    "exportMasked": "値をマスクしてエクスポート",
+    "exportFull": "すべての値をエクスポート(.env)",
+    "exportFullJson": "すべての値をエクスポート(JSON)",
+    "review": "変更を確認",
+    "discard": "破棄",
+    "protection": "保護"
+  },
+  "add": {
+    "keyLabel": "新しい変数の名前",
+    "valueLabel": "新しい変数の値",
+    "typeLabel": "変数の種類",
+    "suggestSecret": "この名前は機密性が高そうです。シークレットとして保存すると、値が保存時に暗号化されます。",
+    "add": "追加",
+    "cancel": "キャンセル",
+    "duplicate": "{{key}}はすでに存在します",
+    "invalidKey": "英字、数字、アンダースコアを使い、数字で始めないでください",
+    "secretsOff": "シークレットを使うには、コントロールプレーンにマスターキーが必要です"
+  },
+  "bulk": {
+    "label": ".envテキスト形式の変数(1行に1件、KEY=value)",
+    "hint": "マスクされた値(••••••••)は、保存済みの値を維持します。行を削除すると、その変数を削除します。Vaultの変数は、テーブルで編集してください。",
+    "apply": "テーブルに反映"
+  },
+  "review": {
+    "title": "変更を確認",
+    "description": "確認するまで何も保存されません。機密性の高い値は、ここには表示されません。",
+    "added": "追加",
+    "changed": "変更",
+    "removed": "削除",
+    "hiddenValue": "値は非表示",
+    "none": "保存する変更はありません。",
+    "save": "変更を保存",
+    "saving": "保存中...",
+    "back": "編集に戻る",
+    "scan": {
+      "title": "これらの値は認証情報のようです",
+      "description": "プレーンな変数は、このアプリを閲覧できる全員に見えます。シークレットとして保存し、暗号化された状態を保ってください。",
+      "finding": "{{key}}: {{rule}}",
+      "makeSecret": "シークレットとして保存"
+    }
+  },
+  "saved": "環境変数を保存しました。",
+  "redeploy": {
+    "title": "再デプロイが必要です",
+    "description": "実行中のコンテナは、まだ古い値を使っています。適用するには、アプリを再起動してください。",
+    "restart": "今すぐ再起動",
+    "restarting": "{{name}}を再起動しています。"
+  },
+  "inherited": {
+    "title": "継承された変数",
+    "description": "組織、プロジェクト、環境に設定された変数です。上書きすると、このアプリ専用の値を設定できます。"
+  },
+  "empty": {
+    "title": "変数はまだありません",
+    "description": "変数を追加するか、.envファイルをインポートしてください。認証情報のような値は、自動的にマスクされます。"
+  },
+  "stepUp": {
+    "title": "本人確認",
+    "descriptionReveal": "{{app}}の{{key}}を表示すると、監査ログに記録されます。{{minutes}}分間は、再度確認を求められません。",
+    "descriptionExport": "{{app}}のすべての値をエクスポートすると、監査ログに記録されます。",
+    "descriptionManage": "{{app}}で値を表示可能にしたり、シークレットを表示したりするには、あらためて確認が必要です。",
+    "password": "パスワード",
+    "code": "認証アプリのコード",
+    "codeHint": "アカウントで2要素認証を使っているため、6桁のコードも入力してください。",
+    "confirm": "確認",
+    "confirming": "確認中...",
+    "passkey": "パスキーを使う",
+    "or": "または",
+    "invalid": "パスワードまたはコードが正しくありません。",
+    "locked": "試行回数が多すぎます。数分待ってから、もう一度お試しください。",
+    "noMethods": "このアカウントには、確認に使えるパスワードもパスキーもありません。先にアカウント設定でパスワードを設定してください。"
+  },
+  "policy": {
+    "disabledTitle": "このサーバーでは、シークレットの値は書き込み専用です",
+    "disabledBody": "サーバーはAPP_SECRET_REVEAL=disabledで動作しているため、保存された値を読み戻すことはできません。管理者がstep_upに設定すると、確認を伴う表示が許可されます。",
+    "allowTitle": "確認なしでの表示がオンです",
+    "allowBody": "APP_SECRET_REVEAL=allowでは、read:sensitiveを持つ人が、パスワードなしで値を見られます。管理者1人だけの検証環境以外では、step_upを使ってください。",
+    "writeOnlyTitle": "このアプリのシークレットは書き込み専用です",
+    "writeOnlyBody": "アプリのオーナーが、表示と全件エクスポートをロックしました。値の置き換えは引き続き可能です。",
+    "writeOnlyToggle": "このアプリのシークレットは書き込み専用",
+    "writeOnlyToggleHint": "このアプリの値の表示と全件エクスポートをすべてブロックします。オフにするには、本人確認が必要です。",
+    "invalidTitle": "表示ポリシーが認識されません",
+    "invalidBody": "APP_SECRET_REVEALに不明な値が設定されているため、修正されるまで表示はオフのままです。"
+  },
+  "convert": {
+    "title": "{{key}}をシークレットに変換しますか?",
+    "description": "値はサーバー上の暗号化ストレージに移動され、プレーンな変数から削除されます。ブラウザーを経由することはありません。",
+    "consequence": "実行中のアプリは、再起動または再デプロイするまで、古い変数を使い続けます。",
+    "confirm": "変換",
+    "pending": "変換中...",
+    "done": "{{key}}をシークレットにしました。"
+  },
+  "errors": {
+    "revealDisabled": "このサーバーでは、値の表示がオフになっています。",
+    "writeOnly": "このアプリのシークレットは書き込み専用です。",
+    "importFailed": "そのファイルを読み取れませんでした。"
+  },
+  "advanced": {
+    "title": "プレビュー、ブランチ、環境の比較",
+    "description": "プレビューデプロイとブランチごとのビルドでのみ使われる値と、ほかの環境との比較です。"
+  },
+  "bound": {
+    "title": "接続されたリソース",
+    "description": "データベースのリンクとバケットのバインドから、コンテナの起動時に注入される変数です。ここでは読み取り専用です。変更はデータベースまたはバケットで行ってください。",
+    "key": "キー",
+    "source": "ソース",
+    "value": "値",
+    "database": "データベース {{name}}({{field}})",
+    "bucket": "バケット {{name}}",
+    "masked": "マスク済み",
+    "loadFailed": "接続されたリソースを読み込めませんでした。",
+    "retry": "再試行"
+  },
+  "health": {
+    "title": "変数の健全性",
+    "description": "このアプリの変数で見つかった問題と、追加、変更、削除された変数です。値が記録されることはありません。",
+    "recheck": "再確認",
+    "loading": "変数を確認中...",
+    "clean": "問題は見つかりませんでした。",
+    "loadFailed": "変数を確認できませんでした。再確認して、もう一度お試しください。",
+    "fixed": "{{key}}を修正しました",
+    "historyTitle": "最近の変更",
+    "historyEmpty": "変更はまだ記録されていません。今後の編集がここに表示されます。",
+    "byActor": "{{actor}}による",
+    "kinds": {
+      "empty_value": "値が空です。削除するか、値を設定してください。",
+      "shadowed": "同じ名前のシークレットまたはデータベースのバインドが優先されるため、このプレーンな値は使われません。",
+      "case_duplicate": "大文字と小文字だけが異なる名前があります: {{detail}}。多くのプログラムは、これらを別の変数として扱います。",
+      "missing_secret": "必須のシークレットに、まだ値がありません。シークレットのセクションで設定してください。",
+      "dangling_database": "データベース{{detail}}にバインドされていますが、そのデータベースはもう存在しません。"
+    },
+    "fixes": {
+      "remove_key": "変数を削除",
+      "remove_database_ref": "バインドを削除",
+      "set_secret": "上で値を設定",
+      "rename": "どちらかの名前を変更"
+    },
+    "actions": {
+      "added": "追加",
+      "changed": "変更",
+      "removed": "削除"
+    }
+  },
+  "buildTime": {
+    "badge": "ビルド時",
+    "tooltip": "ビルドに組み込まれます。変更するには再ビルドが必要です。",
+    "noticeTitle": "再ビルドが必要です",
+    "noticeDescription": "{{keys}}はビルドに組み込まれています。変更を適用するには、アプリを再ビルドしてください。",
+    "rebuild": "今すぐ再ビルド",
+    "started": "「{{name}}」をソースから再ビルドしています。",
+    "view": "ビルドを見る",
+    "noGitSource": "Gitソースが接続されていません。この変更を適用するには、プロジェクトフォルダーからlevelrail-cli deployを実行するか、イメージをビルドしている場所で再ビルドしてください。値はイメージに組み込まれているためです。"
+  }
+}

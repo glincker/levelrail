@@ -1,0 +1,173 @@
+{
+  "title": "Configuration DNS",
+  "back": "Retour",
+  "continue": "Continuer",
+  "loading": "Chargement",
+  "copied": "Copié",
+  "progress": "Étape {{current}} sur {{total}}",
+  "step": {
+    "pick": "Choisir un domaine",
+    "detect": "Recherche de votre hébergeur DNS",
+    "review": "Vérifier les enregistrements",
+    "verify": "Contrôler les enregistrements"
+  },
+  "connectAction": "Connecter {{provider}}",
+  "openIn": "Ouvrir dans {{provider}}",
+  "foundValue": "Trouvé : {{value}}",
+  "expectedValue": "Attendu : {{value}}",
+  "keepMine": "Garder le mien",
+  "replace": "Remplacer",
+  "group": {
+    "receive": "Recevoir du courrier",
+    "trust": "Confiance",
+    "optional": "Facultatif",
+    "records": "Enregistrements"
+  },
+  "status": {
+    "live": "Actif",
+    "waiting": "En attente",
+    "willAdd": "Sera ajouté",
+    "different": "Différent",
+    "conflict": "Conflit",
+    "unknown": "Inconnu",
+    "found": "Trouvé"
+  },
+  "pick": {
+    "listLabel": "Domaines de ce système",
+    "source": {
+      "install": "Installation mail",
+      "mail": "Domaine mail",
+      "app": "App",
+      "zone": "Zone DNS"
+    },
+    "addAnother": "Ajouter un autre domaine",
+    "addLabel": "Domaine",
+    "placeholder": "example.com",
+    "use": "Utiliser",
+    "invalid": "Saisissez un domaine comme example.com.",
+    "apexOffer": "Utiliser {{apex}} pour les adresses et {{host}} comme serveur",
+    "loadFailed": "Impossible de charger vos domaines."
+  },
+  "detect": {
+    "detecting": "Détection de l'hébergeur DNS",
+    "connected": "Le DNS est hébergé chez {{provider}}. Connecté.",
+    "notConnected": "Le DNS est hébergé chez {{provider}}. Non connecté.",
+    "unknown": "Nous n'avons pas pu détecter votre hébergeur DNS. Vous pouvez copier les enregistrements à la place.",
+    "failed": "La détection a échoué. Vous pouvez tout de même copier les enregistrements.",
+    "domainConnect": "Approbation en un clic disponible chez {{host}}",
+    "without": "Continuer sans connecter",
+    "demo": "Données de démonstration : demo.example est une fausse zone, donc aucun vrai hébergeur DNS ne peut être trouvé. Saisissez un vrai domaine ci-dessous pour essayer la détection (recherches en lecture seule). Pour désactiver le mode démo, redémarrez avec LOCAL_MAIL_DEMO=0.",
+    "tryLabel": "Essayer un autre domaine",
+    "tryAction": "Détecter"
+  },
+  "connect": {
+    "permissions": "Créez un token avec Zone DNS Edit sur cette zone et Zone Read. Rien d'autre n'est nécessaire.",
+    "tokenLabel": "Token d'API {{provider}}",
+    "save": "Enregistrer le token",
+    "saving": "Enregistrement",
+    "failed": "Le token n'a pas été accepté. Vérifiez ses permissions et réessayez.",
+    "useSettings": "Ajoutez les identifiants {{provider}} dans les paramètres, ou copiez plutôt les enregistrements."
+  },
+  "review": {
+    "host": "Hôte mail",
+    "ip": "IPv4 du serveur",
+    "ipPlaceholder": "203.0.113.7",
+    "edit": "Modifier l'hôte mail et le serveur",
+    "done": "Terminé",
+    "otherProvider": "Vous utilisez un autre fournisseur de messagerie ?",
+    "presetLabel": "Fournisseur de messagerie",
+    "selfHosted": "Ce serveur",
+    "planFailed": "Impossible de lire les enregistrements. {{message}}",
+    "empty": "Rien à ajouter pour ce domaine.",
+    "blocked": "Un enregistrement de cette zone masquerait l'hôte mail. Corrigez-le d'abord.",
+    "add_one": "Ajouter {{count}} enregistrement",
+    "add_many": "Ajouter {{count}} enregistrements",
+    "add_other": "Ajouter {{count}} enregistrements",
+    "addDiff_one": "Ajouter {{count}}, vérifier {{diff}} différents",
+    "addDiff_many": "Ajouter {{count}}, vérifier {{diff}} différents",
+    "addDiff_other": "Ajouter {{count}}, vérifier {{diff}} différents",
+    "applying": "Ajout des enregistrements",
+    "copy": "Copier les enregistrements",
+    "check": "Contrôler les enregistrements",
+    "nothingDeleted": "Rien n'est supprimé.",
+    "confirmReplace_one": "Cela écrase {{count}} enregistrement existant. Confirmez pour continuer.",
+    "confirmReplace_many": "Cela écrase {{count}} enregistrements existants. Confirmez pour continuer.",
+    "confirmReplace_other": "Cela écrase {{count}} enregistrements existants. Confirmez pour continuer.",
+    "confirmButton_one": "Oui, remplacer {{count}} et ajouter",
+    "confirmButton_many": "Oui, remplacer {{count}} et ajouter",
+    "confirmButton_other": "Oui, remplacer {{count}} et ajouter",
+    "applyFailed": "Les enregistrements n'ont pas été ajoutés.",
+    "recordsTitle": "Enregistrement DNS à créer"
+  },
+  "manual": {
+    "whereKnown": "Collez-les dans le tableau de bord DNS de {{provider}}.",
+    "whereUnknown": "Collez-les là où le DNS de votre domaine est géré.",
+    "dashboard": "Tableau de bord DNS",
+    "copyAll": "Tout copier",
+    "copyTable": "Copier sous forme de tableau",
+    "copyValue": "Copier la valeur de {{name}}",
+    "ttl": "TTL {{ttl}}",
+    "priority": "priorité {{priority}}"
+  },
+  "verify": {
+    "undelegated": "Les serveurs de noms du domaine ne pointent pas encore vers cette zone, donc ces enregistrements ne seront pas résolus. {{reason}}",
+    "summary": "{{added}} ajoutés, {{same}} déjà présents.",
+    "liveCount": "{{live}} actifs sur {{total}}",
+    "progress": "Enregistrements actifs",
+    "checkedAgo": "contrôlé il y a {{seconds}} s",
+    "checkNow": "Contrôler maintenant",
+    "checking": "Contrôle en cours",
+    "waiting": "En attente du DNS, généralement moins de 5 minutes.",
+    "stillWaiting": "Toujours en attente ? Contrôlez à nouveau plus tard.",
+    "allLive": "Tous les enregistrements sont actifs.",
+    "ptr": "Le DNS inverse (PTR) se définit chez votre hébergeur. En attente.",
+    "checkAgain": "Contrôler à nouveau"
+  },
+  "toast": {
+    "applied_one": "{{count}} enregistrement ajouté",
+    "applied_many": "{{count}} enregistrements ajoutés",
+    "applied_other": "{{count}} enregistrements ajoutés"
+  },
+  "summary": {
+    "label": "Résumé des enregistrements",
+    "toAdd_one": "{{count}} enregistrement à ajouter",
+    "toAdd_many": "{{count}} enregistrements à ajouter",
+    "toAdd_other": "{{count}} enregistrements à ajouter",
+    "zone": "Fichier de zone",
+    "table": "Tableau",
+    "json": "JSON"
+  },
+  "mode": {
+    "label": "Méthode d'ajout",
+    "auto": "Ajouter automatiquement",
+    "myself": "Ajouter moi-même"
+  },
+  "banner": {
+    "hosted": "Le DNS est hébergé chez {{provider}}",
+    "unknown": "Hébergeur DNS non détecté",
+    "connected": "Connecté",
+    "notConnected": "Non connecté"
+  },
+  "table": {
+    "label": "Enregistrements DNS",
+    "status": "Statut",
+    "type": "Type",
+    "name": "Nom",
+    "value": "Valeur",
+    "ttl": "TTL",
+    "expand": "Afficher la valeur complète",
+    "collapse": "Masquer la valeur complète",
+    "existing": "Enregistrement existant"
+  },
+  "options": {
+    "label": "Façons d'ajouter ces enregistrements",
+    "approve": "Approuver chez {{host}} (sans token)",
+    "approving": "Ouverture",
+    "approveHint": "Ouvre votre hébergeur DNS dans un nouvel onglet. Vous approuvez là-bas, rien n'est stocké.",
+    "connectToken": "Connecter {{host}} avec un token",
+    "tokenHint": "Un token active aussi les contrôles en direct et la liste d'enregistrements gérée.",
+    "tokenCerts": "Il permet aussi au certificat de l'hôte mail de se renouveler automatiquement.",
+    "failed": "Impossible de démarrer l'approbation. Essayez plutôt de vous connecter avec un token.",
+    "connectLink": "Connecter"
+  }
+}

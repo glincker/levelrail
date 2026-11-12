@@ -1,0 +1,59 @@
+{
+  "title": "{{name}}：基础设施",
+  "description": "拖动、平移和缩放，查看此项目的应用、数据库、域名、负载均衡器、卷和节点之间的连接。位置会保存在此浏览器中。",
+  "canvasLabel": "包含 {{count}} 个资源的基础设施画布。聚焦某个资源后，可用方向键移动它。",
+  "empty": {
+    "title": "此项目下还没有任何内容",
+    "description": "将应用或数据库分配到此项目，即可在这里查看它们的关系。",
+    "action": "返回项目"
+  },
+  "error": {
+    "title": "无法加载基础设施图"
+  },
+  "kind": {
+    "app": "应用",
+    "database": "数据库",
+    "volume": "卷",
+    "domain": "域名",
+    "load_balancer": "负载均衡器",
+    "node": "节点"
+  },
+  "edge": {
+    "database_binding": "数据库连接",
+    "depends_on": "依赖于",
+    "volume_attachment": "卷挂载",
+    "egress_allow": "出站放行规则",
+    "routing": "路由",
+    "load_balances": "将流量均衡到",
+    "placed_on": "运行于"
+  },
+  "status": {
+    "healthy": "健康",
+    "deploying": "部署中",
+    "failed": "失败",
+    "idle": "无状态",
+    "draft": "草稿，尚未应用"
+  },
+  "toolbar": {
+    "label": "画布控制",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "fit": "适应视图",
+    "resetLayout": "重置布局",
+    "zoomLevel": "缩放 {{percent}}%",
+    "hidden": "有 {{count}} 个资源在屏幕之外，平移到它们之前不会绘制。"
+  },
+  "panel": {
+    "label": "{{name}} 的详情",
+    "close": "关闭详情",
+    "connections": "连接",
+    "noConnections": "此资源尚未连接任何内容。",
+    "actions": "快捷操作",
+    "overview": "打开概览",
+    "logs": "查看日志",
+    "deploys": "部署与回滚",
+    "domains": "管理域名",
+    "metrics": "查看指标"
+  },
+  "legend": "图例"
+}

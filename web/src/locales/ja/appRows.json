@@ -1,0 +1,60 @@
+{
+  "failing": {
+    "fallback": "対応が必要です。アプリを開いて原因を確認してください。",
+    "fix": "デプロイを見る",
+    "fixLabel": "{{name}}のデプロイを見る"
+  },
+  "logs": {
+    "noContainer": "このアプリには実行中のコンテナがないため、ストリームするものがありません。",
+    "deploy": "デプロイする"
+  },
+  "bulkBar": {
+    "region": "一括操作",
+    "selected": "{{count}}件選択中",
+    "clear": "選択を解除",
+    "more": "その他の操作",
+    "review": "確認",
+    "readOnly": "アカウントが読み取り専用のため、一括操作は使えません。",
+    "reviewTitle": "{{count}}件のアプリを{{action}}",
+    "reviewDescription": "各アプリは、あなたの権限に照らして確認されます。操作する権限がないアプリは拒否として表示され、そのまま残ります。",
+    "resultsTitle": "{{action}}: 結果",
+    "resultsLabel": "アプリごとの結果",
+    "summary": "{{ok}}件完了、{{failed}}件は未適用",
+    "typeCount": "確認のため{{count}}と入力してください",
+    "checking": "対象を確認中",
+    "working": "処理中",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "confirm": "{{count}}件を{{action}}",
+    "warning": {
+      "stop": "{{count}}件のアプリを、再び起動するまで停止します。",
+      "delete": "{{count}}件のアプリを完全に削除します。削除はそれぞれ監査ログに記録されます。"
+    },
+    "action": {
+      "restart": "再起動",
+      "redeploy": "再デプロイ",
+      "stop": "停止",
+      "start": "起動",
+      "add-tag": "タグを追加",
+      "remove-tag": "タグを削除",
+      "set-environment": "環境を設定",
+      "move-to-project": "プロジェクトへ移動",
+      "delete": "削除"
+    },
+    "value": {
+      "add-tag": "タグ(keyまたはkey:value)",
+      "remove-tag": "削除するタグ",
+      "set-environment": "環境名またはID",
+      "move-to-project": "プロジェクトID"
+    },
+    "status": {
+      "ok": "完了",
+      "would_apply": "適用予定",
+      "denied": "拒否",
+      "not_found": "見つかりません",
+      "skipped": "スキップ",
+      "error": "失敗"
+    }
+  },
+  "description": "説明: {{text}}"
+}

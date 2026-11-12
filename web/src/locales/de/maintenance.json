@@ -1,0 +1,169 @@
+{
+  "title": "Geplante Wartung",
+  "description": "Kündigen Sie geplante Ausfallzeiten im Dashboard und auf der öffentlichen Statusseite an und halten Sie währenddessen optional automatische Deploys zurück.",
+  "notConfigured": "Geplante Wartung ist auf dieser Control Plane nicht verfügbar.",
+  "schedule": "Wartung planen",
+  "cancel": "Zeitfenster abbrechen",
+  "until": "bis",
+  "freezeBadge": "Deploys zurückgehalten",
+  "empty": {
+    "title": "Keine Wartung geplant",
+    "description": "Planen Sie ein Zeitfenster, bevor Sie etwas offline nehmen, damit Benutzer es vorher sehen."
+  },
+  "state": {
+    "scheduled": "Geplant",
+    "active": "In Arbeit",
+    "ended": "Beendet"
+  },
+  "scope": {
+    "all": "Betrifft alles",
+    "project": "Betrifft Projekt {{target}}",
+    "app": "Betrifft App {{target}}"
+  },
+  "scopeName": {
+    "all": "Alles",
+    "project": "Ein Projekt",
+    "app": "Eine App"
+  },
+  "banner": {
+    "active": "Wartung läuft: {{title}}, bis {{end}}.",
+    "upcoming": "Geplante Wartung: {{title}}, {{start}} bis {{end}}.",
+    "freeze": "Automatische Deploys werden während des Zeitfensters zurückgehalten.",
+    "more": "{{count}} weitere Wartungsfenster sind geplant."
+  },
+  "form": {
+    "title": "Wartung planen",
+    "description": "Zeiten gelten in der Zeitzone Ihres Browsers ({{zone}}).",
+    "name": "Titel",
+    "namePlaceholder": "Upgrade des Datenbankspeichers",
+    "message": "Nachricht (optional)",
+    "start": "Beginn",
+    "end": "Ende",
+    "scope": "Geltungsbereich",
+    "target": "Ziel",
+    "targetPlaceholder": {
+      "project": "Projekt-ID",
+      "app": "App-Name"
+    },
+    "lead": "Vor Beginn ankündigen (Minuten)",
+    "leadHint": "Wird einmal über Ihre Benachrichtigungskanäle gesendet. Verwenden Sie 0 für keine Ankündigung.",
+    "freeze": "Automatische Deploys während des Zeitfensters zurückhalten",
+    "badRange": "Das Ende muss nach dem Beginn liegen.",
+    "cancel": "Abbrechen",
+    "submit": "Planen"
+  },
+  "domainBanner": {
+    "title": "Der Wartungsmodus ist für {{domain}} aktiv",
+    "titleNotEnforced": "Die Wartung ist für {{domain}} gespeichert, wird aber nicht durchgesetzt",
+    "body": "Besucher sehen nur die Wartungsseite und sonst nichts: Skripte, Stile und Bilder werden nicht ausgeliefert. Die App läuft weiter und ein Deploy beendet die Wartung nicht.",
+    "bodyNotEnforced": "Besucher erreichen die App möglicherweise weiterhin: Es ist nicht belegt, dass der Proxy vor dieser Domain seinen Traffic an den eingebauten Ingress sendet. Öffnen Sie Verwalten für Details.",
+    "manage": "Verwalten",
+    "end": "Wartung beenden",
+    "ending": "Wird beendet...",
+    "ended": "Wartung für {{domain}} beendet",
+    "more_one": "{{count}} weitere Domain ist im Wartungsmodus.",
+    "more_other": "{{count}} weitere Domains sind im Wartungsmodus.",
+    "elapsed": "Seit {{time}} aktiv.",
+    "endsAt": "Endet {{date}}.",
+    "autoOff": "Schaltet sich am {{date}} von selbst aus.",
+    "noEnd": "Kein automatisches Ende: Sie bleibt aktiv, bis Sie sie beenden.",
+    "long": "Das dauert länger als erwartet."
+  },
+  "confirm": {
+    "title": "{{domain}} in Wartung versetzen?",
+    "description": "Besucher erreichen die App nicht, bis Sie die Wartung beenden. Prüfen Sie zuerst die Seite unten.",
+    "visitors": "Besucher erhalten auf jeder URL dieser Domain eine 503-Wartungsseite mit einem Retry-After-Header.",
+    "assets": "Skripte, Stile, Bilder und API-Aufrufe werden ebenfalls nicht ausgeliefert, daher kann die Seite nichts aus der App laden.",
+    "running": "Der Container läuft weiter und wird nicht neu gestartet.",
+    "deploys": "Ein Deploy während der Wartung wird abgeschlossen und die Wartung bleibt aktiv, bis Sie sie beenden.",
+    "alerts": "Alarme zu Ausfall, DNS, Zertifikat sowie Anfragefehlern oder Latenz für diese App sind stummgeschaltet, bis die Wartung endet. Alarme zu CPU, Speicher, Festplatte, Neustarts und Abstürzen lösen weiterhin aus.",
+    "endsAt": "Sie endet automatisch am {{date}}.",
+    "autoOff": "Sie schaltet sich nach {{hours}} Stunden von selbst aus.",
+    "noEnd": "Sie hat kein automatisches Ende. Legen Sie eine Endzeit oder eine maximale Dauer fest, damit sie nicht aktiv bleibt.",
+    "confirm": "Wartung einschalten",
+    "pending": "Wird eingeschaltet..."
+  },
+  "preview": {
+    "title": "Vorschau der Seite, die Besucher sehen",
+    "caption": "Vorschau: Status {{status}}, Retry-After {{retry}} Sekunden",
+    "frameTitle": "Vorschau der Wartungsseite",
+    "failed": "Die Vorschau konnte nicht geladen werden."
+  },
+  "appBanner": {
+    "title_one": "Die Wartung ist für {{count}} Domain dieser App aktiv",
+    "title_other": "Die Wartung ist für {{count}} von {{total}} Domains dieser App aktiv",
+    "body": "Besucher erhalten auf diesen Domains die Wartungsseite. Alarme zu Ausfall, DNS, Zertifikat sowie Anfragefehlern oder Latenz sind stummgeschaltet, während Alarme zu CPU, Speicher, Festplatte, Neustarts und Abstürzen weiterhin auslösen. Ein Deploy wird abgeschlossen, ohne die Wartung zu beenden.",
+    "end": "Für alle Domains beenden",
+    "ending": "Wird beendet...",
+    "ended": "Wartung für jede Domain dieser App beendet"
+  },
+  "appToggle": {
+    "title": "Wartung für alle Domains",
+    "description": "Schalten Sie die Wartung für jede Domain dieser App auf einmal ein oder aus. Sie gilt für alle oder für keine.",
+    "on": "An für {{active}} von {{total}} Domains",
+    "off": "Aus",
+    "enable": "Für alle Domains aktivieren",
+    "enabling": "Wird aktiviert...",
+    "disable": "Für alle Domains beenden",
+    "disabling": "Wird beendet...",
+    "saved": "Die Wartung ist für jede Domain dieser App aktiv",
+    "failed": "Es wurde nichts geändert. {{message}}",
+    "noDomains": "Fügen Sie dieser App eine Domain hinzu, bevor Sie die Wartung einschalten."
+  },
+  "deployNotice": {
+    "text": "Diese App ist in Wartung. Der Deploy wird abgeschlossen und die Wartung bleibt aktiv.",
+    "tooltip": "Diese App ist in Wartung. Der Deploy wird abgeschlossen und die Wartung bleibt aktiv."
+  },
+  "silence": {
+    "createdByMaintenance": "Durch Wartung erstellt (nur Alarme zu Ausfall, DNS, Zertifikat und Anfragen)",
+    "endsWithMaintenance": "Endet, wenn die Wartung auf {{domain}} endet",
+    "matchApp": "App",
+    "matchRule": "Regel",
+    "matchNode": "Node",
+    "matchKind": "Art",
+    "matchSeverity": "Schweregrad",
+    "matchMetric": "Metrik",
+    "newSilence": "Neue Stummschaltung",
+    "dialogDescription": "Passende Alarme werden weiter ausgewertet und erscheinen im Verlauf als stummgeschaltet, benachrichtigen aber nicht. Jeder Filter, den Sie ausfüllen, muss passen.",
+    "apps": "Apps",
+    "appsPlaceholder": "web, worker",
+    "nodes": "Nodes",
+    "nodesPlaceholder": "edge-1",
+    "kinds": "Regelarten",
+    "kindsPlaceholder": "threshold, crashloop",
+    "severity": "Schweregrad",
+    "severityLevel": {
+      "info": "Info",
+      "warning": "Warnung",
+      "critical": "kritisch"
+    },
+    "duration": "Dauer",
+    "reason": "Grund",
+    "reasonPlaceholder": "geplante Datenbankmigration",
+    "cancel": "Abbrechen",
+    "creating": "Wird erstellt...",
+    "create": "Stummschaltung erstellen",
+    "errorNoMatcher": "Wählen Sie mindestens eine App, einen Node, eine Art oder einen Schweregrad zum Abgleichen.",
+    "errorDuration": "Die Dauer muss wie 30m, 4h oder 24h aussehen.",
+    "silencedFor": "Stummgeschaltet für {{duration}}.",
+    "ended": "Stummschaltung beendet.",
+    "endNow": "Jetzt beenden",
+    "colStatus": "Status",
+    "colMatches": "Treffer",
+    "colUntil": "Bis",
+    "colCreatedBy": "Erstellt von",
+    "status": {
+      "active": "aktiv",
+      "pending": "ausstehend",
+      "expired": "abgelaufen"
+    },
+    "showExpired": "Abgelaufene anzeigen",
+    "sectionLabel": "Stummschaltungen",
+    "emptyTitle": "Keine aktiven Stummschaltungen",
+    "emptyDescription": "Schalten Sie einen Alarm in seiner Zeile stumm oder erstellen Sie hier eine Stummschaltung für eine geplante Änderung."
+  },
+  "effects": {
+    "alertsSilenced": "Alarme zu Ausfall, DNS, Zertifikat und Anfragen stummgeschaltet",
+    "statusOngoing": "Statusseite: laufend"
+  }
+}

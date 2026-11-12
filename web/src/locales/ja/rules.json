@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "条件",
+    "if": "もし",
+    "and": "かつ",
+    "then": "その場合",
+    "fieldLabel": "条件{{n}}のフィールド",
+    "nameLabel": "条件{{n}}の名前",
+    "operatorLabel": "条件{{n}}の演算子",
+    "valueLabel": "条件{{n}}の値",
+    "removeCondition": "条件{{n}}を削除",
+    "addCondition": "AND",
+    "maxConditions": "1つのルールに設定できる条件は最大{{count}}件です。",
+    "actionLabel": "アクション",
+    "selectAction": "アクションを選択",
+    "ruleName": "名前",
+    "description": "説明(任意)",
+    "cancel": "キャンセル",
+    "viewCode": "コードを表示",
+    "hideCode": "コードを隠す",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "codeLabel": "保存されるルール",
+    "codeHelp": "保存される内容そのものです。読み取り専用です。"
+  }
+}

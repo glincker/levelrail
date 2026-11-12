@@ -1,0 +1,60 @@
+{
+  "title": "存储",
+  "subtitle": "Docker 为你的应用保存在磁盘上的内容，以及哪些可以安全释放。",
+  "node": {
+    "label": "节点",
+    "local": "此服务器",
+    "partial": "目前仅统计了此节点上镜像的大小。",
+    "unsupportedTitle": "暂不支持此节点",
+    "unsupported": "Levelrail 暂时无法读取此节点的存储。这里不会有任何改动。",
+    "retry": "重新检查"
+  },
+  "engine": {
+    "title": "引擎与签名"
+  },
+  "verdict": {
+    "space": "共 {{total}}，可用 {{free}}。",
+    "health": {
+      "healthy": "健康",
+      "low": "空间不足",
+      "critical": "严重不足"
+    },
+    "safe": "可安全删除 {{size}}。",
+    "nothingSafe": "无需删除任何内容。",
+    "forecast_other": "按当前速度约 {{count}} 天后写满。"
+  },
+  "disk": {
+    "label": "磁盘用量",
+    "legend": "按类别筛选",
+    "unmeasured": "未统计",
+    "segmentLabel": "{{name}}，{{size}}",
+    "filterLabel": "筛选：{{name}}",
+    "categories": {
+      "appData": "应用数据",
+      "images": "镜像",
+      "buildCache": "构建缓存",
+      "containersLogs": "容器与日志",
+      "other": "其他",
+      "free": "可用"
+    },
+    "meaning": {
+      "appData": "属于你的应用的卷和数据库。绝不会自动删除。",
+      "images": "用于你的部署的 Docker 镜像。旧的和未使用的可以删除。",
+      "buildCache": "为加快构建而保留的层。可以安全清除，下次构建只是会更慢。",
+      "containersLogs": "已停止的容器及其日志文件。",
+      "other": "磁盘上 Levelrail 之外的其他所有内容。"
+    },
+    "tip": {
+      "sizeShare": "{{size}}，占磁盘的 {{share}}",
+      "reclaimable": "可安全删除 {{size}}",
+      "nothingToFree": "没有可删除的内容"
+    }
+  },
+  "actions": {
+    "terminal": "在终端中运行",
+    "review": "查看清理项"
+  },
+  "errors": {
+    "status": "暂时无法读取磁盘用量。"
+  }
+}

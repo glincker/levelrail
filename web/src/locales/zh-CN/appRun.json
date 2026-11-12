@@ -1,0 +1,21 @@
+{
+  "title": "在全新容器中运行",
+  "description": "使用此应用的镜像、环境变量和密钥启动一个新容器，运行一次命令并显示其输出。线上容器不受影响。",
+  "service": "服务",
+  "command": "命令",
+  "placeholder": "bin/migrate",
+  "hint": "直接运行，不经过 shell。含空格的参数请加引号。需要管道或重定向时，请使用 sh -c \"...\"。",
+  "run": "运行",
+  "running": "运行中...",
+  "exitCode": "退出码",
+  "state": "状态",
+  "output": "输出",
+  "empty": "（无输出）",
+  "truncated": "输出超出服务器保留的长度，仅显示最后一部分。",
+  "accessRule": "一次性运行和定时任务遵循控制台 exec 的访问规则：运行命令需要此应用的 root 权限，并且已为其启用 exec。",
+  "timeout": "超时（秒）",
+  "timeoutPlaceholder": "3600",
+  "cancel": "取消",
+  "history": "最近运行",
+  "outputWithheld": "输出已隐藏。查看任务输出需要敏感信息读取权限。"
+}

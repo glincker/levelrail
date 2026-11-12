@@ -1,0 +1,16 @@
+{
+  "title": "Requêtes",
+  "subtitle": "Les requêtes les plus récentes passées par l'edge pour cette app, les plus récentes en premier. Conservées en mémoire, un redémarrage les efface.",
+  "filters": {
+    "minMs": "Plus lent que (ms)",
+    "path": "Le chemin commence par",
+    "errorsOnly": "Erreurs serveur uniquement"
+  },
+  "list": {
+    "empty": "Aucune requête correspondante pour l'instant. Envoyez du trafic vers l'un des domaines de cette app et elles apparaissent ici en quelques secondes.",
+    "loadError": "Impossible de charger les requêtes : {{message}}",
+    "upstream": "Erreur en amont",
+    "emptyTitle": "Aucune requête pour l'instant",
+    "emptyAction": "Vérifier les domaines"
+  }
+}

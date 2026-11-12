@@ -1,0 +1,29 @@
+{
+  "title": "概览",
+  "image": "镜像",
+  "port": "端口",
+  "memoryLimit": "内存限制",
+  "cpuLimit": "CPU 限制",
+  "swapLimit": "Swap 限制",
+  "cpuPinning": "CPU 绑核",
+  "notSet": "未设置",
+  "deployStrategy": "部署策略",
+  "replicas": "副本数",
+  "node": "节点",
+  "project": "项目",
+  "environment": "环境",
+  "noProject": "无项目",
+  "noEnvironment": "无环境",
+  "readinessProbe": "就绪探针",
+  "livenessProbe": "存活探针",
+  "path": "路径:",
+  "interval": "间隔:",
+  "timeout": "超时:",
+  "failureThreshold": "失败阈值:",
+  "notConfigured": "未配置",
+  "strategy": {
+    "recreate": "重建",
+    "blueGreen": "蓝绿",
+    "rolling": "滚动"
+  }
+}

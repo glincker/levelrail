@@ -1,0 +1,279 @@
+{
+  "connect": {
+    "title": "Gitソースを接続",
+    "intro": "アプリを作り直さずに、リポジトリを接続します。プロバイダーのリポジトリを選ぶか、公開URLを貼り付け、ビルドを確認してから、リンクするか、すぐにデプロイします。",
+    "planTitle": "変更される内容",
+    "planLoading": "このアプリとリポジトリを確認中...",
+    "current": {
+      "image": "このアプリは現在、イメージから動作しています。",
+      "upload": "このアプリは現在、アップロードされたファイルから配信されています。",
+      "none": "このアプリは、まだデプロイされていません。",
+      "git": "このアプリにはすでにリポジトリがあります。リンクすると置き換えられます。"
+    },
+    "keepsImage": "最初のビルドが成功するまで{{image}}が配信を続け、ロールバック用にデプロイ履歴に残ります。",
+    "keepsNothingRunning": "まだ何も動いていないため、最初のビルドでアプリが起動します。",
+    "keptEnv_other": "環境変数{{count}}件を維持",
+    "keptSecrets_other": "シークレット{{count}}件を維持",
+    "keptDomains_other": "ドメイン{{count}}件を維持",
+    "keptVolumes_other": "ボリューム{{count}}件を維持",
+    "warning": {
+      "group_member": "このアプリはグループの一部です。リポジトリからビルドされるのは、このサービスのみです。",
+      "replaces_git_source": "現在のリポジトリとそのWebhookシークレットが置き換えられます。",
+      "uploads_stop": "以降のCLIからのアップロードも引き続き動作しますが、次のプッシュでビルドに置き換えられます。",
+      "never_deployed": "最初のビルドが成功するまで、フォールバックできる稼働中のバージョンがありません。",
+      "protected_environment": "このアプリは保護されています。デプロイは承認を経るため、今すぐデプロイせず、ブランチにプッシュしてください。"
+    },
+    "detectError": {
+      "not_found": "リポジトリまたはブランチが見つかりません。URLとブランチを確認するか、プライベートリポジトリの場合はトークンを追加してください。",
+      "access_denied": "プロバイダーがアクセスを拒否しました。デプロイトークンを追加するか、このリポジトリにアプリをインストールしてください。",
+      "unreadable": "リポジトリを読み取れませんでした。ビルドを手動で選ぶことはできます。",
+      "ssh_not_detectable": "SSHのURLは、接続する前には読み取れません。デプロイキーで接続してから、ビルド設定で検出を実行するか、ビルドを手動で選んでください。",
+      "unsupported_host": "このホストは、接続する前には読み取れません。ビルドを手動で選ぶか、先に接続してから、ビルド設定で検出を実行してください。"
+    },
+    "buildType": {
+      "railpack": "自動検出",
+      "dockerfile": "Dockerfile",
+      "static": "静的サイト"
+    },
+    "suggested": "推奨のビルド: {{where}}の{{build}}",
+    "useSuggestion": "この設定を使う",
+    "pickRepoToDetect": "ビルドを検出するリポジトリを選んでください。",
+    "deployHint": "最新のコミットを今すぐデプロイするか、リンクしたままにして、次のプッシュでデプロイします。",
+    "deployNow": "今すぐデプロイ",
+    "deployStarted": "{{branch}}からビルドを開始しました。",
+    "deployFailed": "デプロイを開始できませんでした。",
+    "deployRunning": "ビルド中です。ビルドが成功するまで、現在のバージョンが配信を続けます。",
+    "viewDeploy": "デプロイを見る"
+  },
+  "card": {
+    "title": "Gitソース",
+    "loading": "読み込み中...",
+    "pickRepoFirst": "先にリポジトリを選ぶか、URLを貼り付けてください。",
+    "updated": "Gitソースを更新しました。",
+    "saveFailed": "Gitソースを保存できませんでした。",
+    "disconnected": "Gitソースの接続を解除しました。",
+    "disconnectFailed": "Gitソースの接続を解除できませんでした。",
+    "needService": "サービスを1つ以上追加するか、単一サービスに戻してください。",
+    "rowsMissingName_other": "{{rows}}行目にサービス名がありません。"
+  },
+  "triggers": {
+    "push": {
+      "label": "プッシュのたび",
+      "description": "対象ブランチへのプッシュのたびに、デプロイします。"
+    },
+    "release": {
+      "label": "タグとリリース",
+      "description": "タグのプッシュ、または(GitHubのみ)公開されたリリースでのみ、デプロイします。ブランチへのプッシュではデプロイされません。"
+    }
+  },
+  "buildPacks": {
+    "railpack": "自動検出(Railpack)",
+    "dockerfile": "Dockerfile",
+    "static": "静的サイト"
+  },
+  "connected": {
+    "repository": "リポジトリ",
+    "branch": "ブランチ",
+    "deployTrigger": "デプロイのトリガー",
+    "deployToken": "デプロイトークン",
+    "tokenConfigured": "設定済み",
+    "tokenNotSet": "未設定(公開リポジトリ)",
+    "alsoDeploys": "あわせてデプロイ",
+    "servicesFanout": "サービスのファンアウト",
+    "webhookUrl": "Webhook URL",
+    "webhookNote": "Webhookシークレットは、接続時に1度だけ表示されました。新しいシークレットを発行するには、下でローテーションしてください。リポジトリやブランチも変更する場合は、接続を解除して再接続します。",
+    "edit": "編集",
+    "disconnect": "接続を解除"
+  },
+  "justConnected": {
+    "autoRegistered": "Gitソースを接続しました。プッシュ用のWebhookが自動で登録されたため、手動での設定は不要です。",
+    "secretOnce": "このWebhookシークレットは、二度と表示されません。今すぐ、両方の値をリポジトリのWebhook設定に貼り付けてください。",
+    "webhookUrl": "Webhook URL",
+    "webhookSecret": "Webhookシークレット",
+    "secretHint": "上のURLを指すGitHubの「Push」Webhookのシークレットとして設定してください。コンテンツタイプはapplication/jsonです。",
+    "done": "完了"
+  },
+  "copy": {
+    "copy": "コピー",
+    "copied": "コピーしました"
+  },
+  "edit": {
+    "connectedTo": "現在、{{repo}} @ {{branch}}に接続されています。向き先を変えるには、下で別のリポジトリを選んでください。ビルド設定のみを更新する場合は、そのままにしてください。",
+    "connectIntro": "リポジトリを接続すると、対象ブランチへのプッシュで、このアプリが自動でデプロイされます。",
+    "deployTrigger": "デプロイのトリガー",
+    "fanoutMode": "複数サービスのファンアウト",
+    "fanoutAdditional": "追加のサービス",
+    "fanoutServices": "サービスのマップ",
+    "connect": "接続",
+    "save": "保存",
+    "cancel": "キャンセル"
+  },
+  "buildPack": {
+    "label": "ビルドパック",
+    "autoDetect": "自動検出",
+    "dockerfile": "Dockerfile",
+    "static": "静的サイト",
+    "autoDetectDescription": "推奨です。Levelrailがリポジトリからフレームワークを検出して自動でビルドするため、Dockerfileは不要です。",
+    "dockerfilePath": "Dockerfileのパス(任意)",
+    "staticDescription": "コンテナなしで、組み込みのCaddyイングレスが直接配信します。"
+  },
+  "services": {
+    "additionalLabel": "追加のサービス(任意)",
+    "additionalDescription": "同じプッシュから、これらの兄弟サービスも再ビルドします。複数のサービスを持つモノレポ向けです。それぞれに、すでに存在するサービス名と、ビルドの設定が必要です。行を1つでも入力して保存すると、プロバイダーのリポジトリを選んだ場合でも、常に直接のGitソース接続を使います。自動のWebhook登録は、まだモノレポのファンアウトに対応していないためです。",
+    "mapLabel": "サービス(app.yaml形式)",
+    "mapDescription": "プッシュのたびに、{{appName}}という1つのアプリの下で、手動での複数サービスデプロイと同じPOST .../deploy-specのファンアウトにより、サービスごとに独立したビルドとデプロイが行われます。上の単一サービスのビルドを置き換え、各サービスのキーは、{{appName}}-[key]という名前の、それぞれ独立した実際のサービスになります。",
+    "add": "サービスを追加",
+    "removeAdditional": "追加のサービスを削除",
+    "remove": "サービスを削除",
+    "duplicate": "このサービス名は、すでに別の行で使われています。",
+    "checking": "アプリ仕様のスキーマと照合中...",
+    "serviceName": "サービス名",
+    "buildType": "ビルドの種類",
+    "buildPath": "ビルドのパス",
+    "port": "ポート"
+  },
+  "network": {
+    "networking": "ネットワーク",
+    "port": "ポート",
+    "portPlaceholder": "例: 3000",
+    "portHint": "アプリがコンテナ内で待ち受けるポートです。一般的なNext.jsアプリなら3000です。",
+    "domain": "ドメイン(任意)",
+    "domainDescription": "DNSレコードがここを指すと、ルーティングされます。TLS証明書は自動で発行されます。後からアプリのドメインタブで追加することもできます。",
+    "healthCheck": "ヘルスチェック",
+    "healthEnable": "ヘルスチェックを有効にする",
+    "healthPath": "パス",
+    "healthHint": "新しいコンテナにトラフィックを切り替える前と、その後にクラッシュを検知するために確認します。Railpackで検出されたアプリで、このパスを配信しないものは、オフにしてください。"
+  },
+  "sshKey": {
+    "title": "SSHデプロイキー",
+    "loading": "読み込み中...",
+    "none": "キーはまだありません",
+    "fingerprint": "フィンガープリント {{fingerprint}}",
+    "publicKey": "公開鍵",
+    "hint": "これを、リポジトリのホストに、読み取り専用のデプロイキーとして追加してください。",
+    "hostPinned": "固定されたホストキー {{fingerprint}}",
+    "hostKeyChoice": "ホストキーを固定する方法",
+    "mode": {
+      "paste": "ホストキーを貼り付け",
+      "tofu": "初回使用時に信頼"
+    },
+    "hostKeyLabel": "ホストキー",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "最初に応答したものを信頼します。その後に表示されるフィンガープリントを確認してください。",
+    "generate": "キーを生成",
+    "saved": "SSHデプロイキーを保存しました。",
+    "removed": "SSHデプロイキーを削除しました。",
+    "rotate": "ローテーション",
+    "rotateTitle": "SSHデプロイキーをローテーションしますか?",
+    "rotateBody": "新しいキーが現在のキーを置き換えます。リポジトリのホストに新しい公開鍵を追加しないと、取得に失敗します。",
+    "rotateConfirm": "キーをローテーション",
+    "remove": "削除",
+    "removeTitle": "SSHデプロイキーを削除しますか?",
+    "removeBody": "新しいキーを生成するまで、SSH経由の取得は失敗します。",
+    "removeConfirm": "キーを削除",
+    "cancel": "キャンセル"
+  },
+  "dialog": {
+    "open": "Gitソースを接続",
+    "title": "Gitソースを接続",
+    "step": {
+      "source": "ステップ1/3: 接続済みのプロバイダーを選ぶか、リポジトリのURLを貼り付けて、ブランチを選びます。",
+      "review": "ステップ2/3: 検出されたビルドと、アプリが維持する内容を確認します。",
+      "finish": "ステップ3/3: このリポジトリからの最初のデプロイです。"
+    },
+    "next": "次へ",
+    "back": "戻る",
+    "done": "完了",
+    "linkOnly": "リンクのみ",
+    "linked": "リポジトリをリンクしました。ブランチにプッシュするか、準備ができたらデプロイしてください。",
+    "reading": "リポジトリを読み取り中",
+    "pickService": "このリポジトリは、どのサービスをビルドしますか?",
+    "effect": {
+      "unchanged": "現在のイメージを維持",
+      "keeps_own_source": "独自のGitソースを維持",
+      "built_with_this_source": "このリポジトリからも再ビルド"
+    },
+    "detected": "検出されたビルド: {{build}}",
+    "detectError": {
+      "not_found": "リポジトリまたはブランチが見つかりません。",
+      "access_denied": "このリポジトリにアクセスできません。接続済みのプロバイダーから選んでください。",
+      "unreadable": "リポジトリを読み取れませんでした。ビルドを手動で選ぶことはできます。",
+      "ssh_not_detectable": "SSHのURLは、接続後に読み取られます。",
+      "unsupported_host": "このホストは、接続する前には読み取れません。"
+    },
+    "kept": "維持: 環境変数とシークレット{{env}}件、ドメイン{{domains}}件、ボリューム{{volumes}}件。",
+    "protected": "このアプリは保護された環境にあります。リンクのみ行い、ブランチにプッシュして、承認を経てデプロイされるようにしてください。",
+    "failingStep": "失敗したステップ: {{step}}",
+    "status": {
+      "queued": "待機中",
+      "building": "ビルド中",
+      "ready": "稼働中",
+      "failed": "失敗",
+      "canceled": "キャンセル済み",
+      "held": "保留中",
+      "awaiting_approval": "承認待ち",
+      "rolled_back": "ロールバック済み",
+      "superseded": "新しいものに置き換え済み"
+    },
+    "connectionNeedsRead": "選択した接続では、プライベートリポジトリを読み取る権限がないため、接続を使わずにリポジトリを読み取りました。"
+  },
+  "inline": {
+    "title": "Dockerfileからデプロイ",
+    "hint": "Gitリポジトリは不要です。Dockerfileを貼り付けるか、お使いのマシンから読み込んでください。",
+    "loadFile": "ファイルから読み込む",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "コンテキストファイルを追加",
+    "filePath": "コンテキストファイル{{n}}のパス",
+    "fileContent": "コンテキストファイル{{n}}の内容",
+    "pathPlaceholder": "path/in/context.txt",
+    "removeFile": "コンテキストファイル{{n}}を削除",
+    "deploy": "デプロイ",
+    "started": "ビルドを開始しました。",
+    "failed": "ビルドを開始できませんでした",
+    "deployId": "デプロイ{{id}}を開始しました。"
+  },
+  "triggerPatterns": {
+    "title": "デプロイのトリガーパターン",
+    "tagHelp": "リリースモードでは、現在すべてのタグのプッシュをデプロイします。一致するタグのみをデプロイするには、タグのパターンを一覧にしてください(リリース系列にv*など)。",
+    "branchHelp": "プッシュモードでは、現在{{branch}}へのプッシュをデプロイします。代わりに、このリポジトリの一致するブランチをデプロイするには、ブランチのパターンを一覧にしてください(mainとrelease/*など)。",
+    "tagLabel": "デプロイするタグ",
+    "branchLabel": "デプロイするブランチ",
+    "syntax": "1行に1つのパターン、またはカンマ区切りで指定します。*は1つのパスセグメント内にとどまり、**は/をまたぎ、?は1文字を表します。!で始まるパターンは除外を表し、常に優先されます。既定値を使うには、空欄のままにしてください。スキップされたプッシュは、Webhookの配信履歴に理由が表示されます。",
+    "save": "パターンを保存",
+    "saving": "保存中...",
+    "saved": "トリガーパターンを保存しました。",
+    "failed": "トリガーパターンを保存できませんでした。"
+  },
+  "fetchExtras": {
+    "title": "サブモジュールとLFS",
+    "note": "各ビルドの前に、Gitサブモジュール(httpsのみ)とLFSオブジェクトを取得します。認証情報は、リポジトリのホストにのみ送られます。",
+    "submodules": "サブモジュールを取得",
+    "lfs": "LFSオブジェクトを取得",
+    "saved": "ソース取得の設定を保存しました。",
+    "failed": "ソース取得の設定を保存できませんでした"
+  },
+  "buildSettings": {
+    "title": "ビルド設定",
+    "description": "以降のすべてのビルドで使われる、保存済みのオプションです。保存してもデプロイは開始されません。",
+    "builder": "ビルダー",
+    "dockerfile": "Dockerfileのパス",
+    "target": "ターゲットステージ",
+    "provider": "Railpackプロバイダー",
+    "providerAuto": "自動で検出",
+    "noCache": "Dockerfileのビルドで、レイヤーキャッシュをスキップ",
+    "needsGit": "ビルダーやDockerfileのパスを変更するには、Gitソースを接続してください。",
+    "save": "ビルド設定を保存",
+    "saving": "保存中...",
+    "saved": "ビルド設定を保存しました",
+    "failed": "ビルド設定を保存できませんでした",
+    "errors": {
+      "tooLong": "この値は長すぎます。",
+      "targetCharset": "英字、数字、ドット、アンダースコア、ハイフンを使い、先頭は英字または数字にしてください。",
+      "pathRelative": "リポジトリ内のパスを使い、..や先頭のスラッシュは使わないでください。",
+      "provider": "対応しているプロバイダーを選んでください。"
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
+  }
+}

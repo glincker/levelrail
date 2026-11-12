@@ -1,0 +1,69 @@
+{
+  "title": "Plano de limpeza",
+  "description": "Revise o que o Levelrail removeria e depois aplique apenas o que você escolher.",
+  "tabs": {
+    "label": "Seções da limpeza",
+    "plan": "Plano",
+    "history": "Histórico"
+  },
+  "stages": {
+    "containers": "Containers",
+    "images": "Imagens",
+    "build_cache": "Cache de build",
+    "volumes": "Volumes",
+    "deploy_attempts": "Tentativas de deploy",
+    "api_tokens": "Tokens de API"
+  },
+  "wholeStage": "Limpos em conjunto, tudo desta etapa ou nada.",
+  "selectStage": "Selecionar todos de {{stage}}",
+  "selectRow": "Selecionar {{name}}",
+  "locked": {
+    "database": "Os dados de banco de dados nunca são removidos automaticamente.",
+    "kept": "Mantido por enquanto.",
+    "label": "Bloqueado"
+  },
+  "stageNote": "Não executado: {{reason}}",
+  "loading": "Verificando o que pode ser removido",
+  "empty": "Nada precisa ser removido.",
+  "error": "Não foi possível carregar o plano de limpeza.",
+  "retry": "Tentar novamente",
+  "selected": "{{size}} selecionados em {{count}} itens",
+  "none": "Nada selecionado",
+  "preview": "Pré-visualizar",
+  "previewing": "Pré-visualizando",
+  "apply": "Aplicar",
+  "applying": "Aplicando",
+  "confirm": {
+    "line": "Remover {{size}} em {{count}} itens agora? Dados excluídos não podem ser restaurados.",
+    "yes": "Sim, excluir",
+    "cancel": "Cancelar"
+  },
+  "result": {
+    "previewed": "Pré-visualização: {{size}} seriam recuperados.",
+    "applied": "Concluído: {{size}} recuperados.",
+    "ignoredTitle": "Não alterados",
+    "ignoredRow": "{{name}} ({{stage}}): {{reason}}",
+    "failed": "A execução relatou um erro: {{error}}"
+  },
+  "history": {
+    "loading": "Carregando execuções anteriores",
+    "empty": "Nenhuma limpeza executada ainda.",
+    "error": "Não foi possível carregar o histórico de limpeza.",
+    "time": "Hora",
+    "by": "Iniciada por",
+    "reclaimed": "Recuperado",
+    "mode": "Modo",
+    "dryRun": "Simulação",
+    "applied": "Aplicada",
+    "trigger": {
+      "scheduled": "Agendada",
+      "manual": "Manual",
+      "disk_fix": "Correção de disco"
+    },
+    "kind": {
+      "user": "usuário",
+      "api_token": "token de API",
+      "schedule": "agendamento"
+    }
+  }
+}

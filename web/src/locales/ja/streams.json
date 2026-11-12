@@ -1,0 +1,38 @@
+{
+  "tableLabel": "転送ポート",
+  "page": {
+    "title": "ストリーム",
+    "description": "ホストのポートを、このアプリのコンテナのポートへ生のTCPとして転送します。UDP、TLS終端、アクセスリストにはまだ対応していません。",
+    "pendingNote": "実行中のアプリに追加したストリームは、次回の再起動で有効になります。再起動は自動で行われます。"
+  },
+  "table": {
+    "hostPort": "ホストポート",
+    "containerPort": "コンテナポート",
+    "protocol": "プロトコル",
+    "created": "追加日時",
+    "actions": "操作"
+  },
+  "empty": {
+    "title": "ストリームは設定されていません",
+    "description": "ストリームを追加すると、ホストのポートをこのアプリのコンテナのポートへ転送できます。"
+  },
+  "add": {
+    "trigger": "ストリームを追加",
+    "hostPortLabel": "ホストポート",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "コンテナポート",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "プロトコル",
+    "submit": "ストリームを追加",
+    "submitting": "追加中..."
+  },
+  "remove": {
+    "trigger": "削除",
+    "removing": "削除中..."
+  },
+  "toast": {
+    "created": "ホストポート{{hostPort}}のストリームを作成しました。",
+    "removed": "ストリームを削除しました。",
+    "errorTitle": "このストリームを保存できませんでした。"
+  }
+}

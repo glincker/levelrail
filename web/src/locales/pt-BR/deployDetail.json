@@ -1,0 +1,358 @@
+{
+  "receipt": {
+    "button": "Recibo (JSON)",
+    "hint": "Baixe o recibo de deploy sem assinatura: commit, digest da imagem, solicitante, aprovador e linha do tempo dos portões"
+  },
+  "tabs": {
+    "build": "Build",
+    "image": "Imagem",
+    "rollout": "Rollout",
+    "supply": "Cadeia de suprimentos"
+  },
+  "state": {
+    "title": "Status do deploy",
+    "now": "Agora",
+    "next": {
+      "queued": "Ele inicia automaticamente quando o deploy à frente terminar.",
+      "held": "Libere-o pelo histórico de deploys, ou espere a janela de congelamento terminar.",
+      "building": "Quando o build for bem-sucedido, o novo container inicia e precisa passar na verificação de saúde antes de receber tráfego.",
+      "buildingStatic": "Quando o build for bem-sucedido, a saída é publicada diretamente. Nenhum container é iniciado.",
+      "failed": "Abra a aba Build para ler a etapa que falhou, corrija e faça o deploy novamente.",
+      "rolloutFailed": "A versão anterior continua atendendo. Verifique os logs do container e o caminho de saúde, depois faça o redeploy ou o rollback.",
+      "rollingOut": "Quando a verificação de saúde passar, o tráfego é transferido e o container antigo é removido.",
+      "staticPublished": "Nada mais a esperar. Visite o site para confirmar que os novos arquivos estão sendo servidos."
+    },
+    "label": {
+      "queued": "Na fila",
+      "held": "Retido",
+      "awaitingApproval": "Aguardando aprovação",
+      "canceled": "Cancelado",
+      "superseded": "Substituído",
+      "failed": "O build falhou",
+      "building": "Em build",
+      "rolloutFailed": "O rollout falhou",
+      "published": "Publicado",
+      "live": "No ar",
+      "rollingOut": "Em rollout",
+      "buildDone": "Build concluído"
+    },
+    "headline": {
+      "queued": "Este deploy está na fila atrás de outro.",
+      "queuedWhy": "Este deploy está na fila: {{reason}}.",
+      "held": "Este deploy está retido. {{reason}}",
+      "awaitingApproval": "Este deploy está aguardando aprovação. Aprove-o no painel para executá-lo.",
+      "canceled": "Este deploy foi cancelado antes de alterar qualquer coisa.",
+      "superseded": "Um deploy mais novo substituiu este antes de ele ser aplicado.",
+      "failed": "O build falhou, então nada foi implantado.",
+      "failedWhy": "O build falhou: {{error}}",
+      "building": "Em build há {{elapsed}}.",
+      "rolloutFailed": "O build terminou, mas o rollout falhou.",
+      "rolloutFailedWhy": "O build terminou, mas o rollout falhou: {{reason}}",
+      "staticPublished": "Site estático: publicado diretamente pelo ingress, sem container para verificação de saúde.",
+      "live": "Este deploy está atendendo tráfego.",
+      "rollingOut": "Build concluído. Aguardando o novo container passar na primeira verificação de saúde, {{elapsed}} até agora.",
+      "rollingOutNoImage": "Build concluído. O rollout está aguardando porque ainda não existe uma imagem de container para este app, {{elapsed}} até agora.",
+      "untracked": "O build terminou. Os resultados do rollout só são acompanhados para o deploy mais recente.",
+      "untrackedImage": "Uma imagem pré-construída foi implantada. Os resultados do rollout só são acompanhados para o deploy mais recente."
+    },
+    "mismatch": {
+      "buildOkRolloutPending": "O build terminou, mas o rollout não foi concluído. O status do build e o status do rollout são acompanhados separadamente, então ambos são verdadeiros ao mesmo tempo.",
+      "buildOkRolloutFailed": "O build foi bem-sucedido, mas o novo container não ficou saudável, então a versão anterior continua atendendo.",
+      "staticChip": "O status do app diz \"{{chip}}\" porque informa a prontidão do container. Um site estático não tem container, então esse indicador não bloqueia este deploy."
+    },
+    "stuck": {
+      "title": "Isto está demorando mais que o esperado",
+      "noImage": "O rollout está em execução há mais de {{limit}} e nenhuma imagem foi construída para este app. O build não produziu nada executável, então não há o que iniciar.",
+      "health": "O rollout está em execução há mais de {{limit}}. O novo container provavelmente não está respondendo à verificação de saúde, ou fica reiniciando."
+    },
+    "action": {
+      "containerLogs": "Ver logs do container",
+      "healthPath": "Verificar o caminho de saúde",
+      "network": "Abrir a aba Rede",
+      "rollback": "Fazer rollback pelo histórico",
+      "redeploy": "Verificar a origem e refazer o deploy",
+      "buildTab": "Abrir a aba Build"
+    }
+  },
+  "live": {
+    "live": "Ao vivo",
+    "lastEvent": "último evento há {{ago}}",
+    "noEvents": "nenhum evento ainda",
+    "reconnecting": "Reconectando",
+    "reconnectIn": "nova tentativa em {{seconds}}s",
+    "retryNow": "Tentar agora",
+    "polling": "Stream ao vivo indisponível. Atualizando a cada 3s.",
+    "closed": "Deploy concluído. Stream ao vivo encerrado.",
+    "connecting": "Conectando"
+  },
+  "build": {
+    "source": "Origem",
+    "repo": "Repositório",
+    "branch": "Branch",
+    "commit": "Commit",
+    "builder": "Construtor",
+    "framework": "Framework detectado",
+    "image": "Imagem",
+    "steps": "Etapas do build ({{count}})",
+    "traceSteps": "Trace do pipeline ({{count}})",
+    "download": "Baixar",
+    "builderValue": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Railpack",
+      "static": "Arquivos estáticos"
+    },
+    "empty": {
+      "noStepTitle": "Este deploy não teve etapa de build",
+      "noStepBody": "Uma imagem pré-construída foi implantada como está, então não há saída de build. O trace do pipeline (digest, pull, início, verificações de saúde, cutover) aparece aqui quando o deploy começar.",
+      "notCapturedTitle": "A saída do build não foi capturada",
+      "notCapturedBody": "O build não registrou nenhuma linha de log. O deploy em si foi concluído, então a aba Rollout mostra o que aconteceu depois.",
+      "waitingTitle": "Aguardando a saída do build",
+      "waitingBody": "As linhas aparecem aqui assim que o construtor começar a gravá-las."
+    },
+    "detected": "Detectado: {{value}}",
+    "detectedBuilder": "Substitua-o nas configurações de build."
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "Resolver tag para digest",
+      "registry_auth": "Verificação de autenticação do registry",
+      "image_pull": "Pull da imagem",
+      "image_pull_layer": "Camada",
+      "image_inspect": "Inspeção da imagem",
+      "config_validate": "Validação da configuração",
+      "ensure_network": "Garantir a rede",
+      "ensure_volume": "Garantir o volume",
+      "container_create": "Criar container",
+      "container_start": "Iniciar container",
+      "docker_event": "Evento do Docker",
+      "readiness_probe": "Sonda de prontidão",
+      "readiness_gate": "Portão de prontidão",
+      "stability_gate": "Portão de estabilidade",
+      "cutover": "Cutover",
+      "drain_old": "Drenar o container antigo",
+      "retain_image": "Reter a imagem para rollback",
+      "compose_parse": "Interpretar o arquivo Compose",
+      "compose_plan": "Plano do Compose",
+      "compose_service": "Serviço do Compose",
+      "depends_on": "Ordem de dependências",
+      "deploy_summary": "Resultado do deploy"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "Imagem",
+      "prepare": "Preparação",
+      "container": "Container",
+      "readiness": "Prontidão",
+      "cutover": "Cutover",
+      "summary": "Resultado"
+    },
+    "attempts_one": "tentado {{count}} vez",
+    "attempts_many": "tentado {{count}} vezes",
+    "attempts_other": "tentado {{count}} vezes",
+    "pullProgress": "Progresso do pull da imagem",
+    "folded": {
+      "image_pull_layer_one": "{{count}} camada",
+      "image_pull_layer_many": "{{count}} camadas",
+      "image_pull_layer_other": "{{count}} camadas",
+      "readiness_probe_one": "{{count}} tentativa de sonda",
+      "readiness_probe_many": "{{count}} tentativas de sonda",
+      "readiness_probe_other": "{{count}} tentativas de sonda",
+      "docker_event_one": "{{count}} evento do daemon",
+      "docker_event_many": "{{count}} eventos do daemon",
+      "docker_event_other": "{{count}} eventos do daemon"
+    }
+  },
+  "rollout": {
+    "title": "Linha do tempo do rollout",
+    "counts": {
+      "title": "Progresso da atualização gradual",
+      "wave": "Onda {{wave}} de {{waves}}",
+      "ready": "Prontas",
+      "updated": "Atualizadas",
+      "unavailable": "Indisponíveis",
+      "surge": "Surge",
+      "policy": "Surge máximo {{surge}}, indisponíveis máximo {{unavailable}}, disponíveis mínimo {{min}}"
+    },
+    "stageStatus": {
+      "pending": "Pendente",
+      "running": "Em execução",
+      "done": "Concluída",
+      "failed": "Falhou",
+      "skipped": "Ignorada",
+      "unknown": "Não acompanhada"
+    },
+    "stage": {
+      "build": "Build",
+      "publish": "Publicação",
+      "health-check": "Verificação de saúde",
+      "cutover": "Cutover",
+      "cleanup": "Limpeza"
+    },
+    "reason": {
+      "pendingHealth": "Inicia quando o build produzir uma imagem.",
+      "runningHealth": "Aguardando o novo container passar na sonda de prontidão antes de receber tráfego.",
+      "runningNoImage": "Não é possível iniciar: ainda não existe uma imagem de container para este app.",
+      "pendingCutover": "Inicia depois que a verificação de saúde passar.",
+      "pendingCleanup": "Inicia depois que o tráfego passar para o novo container.",
+      "doneBuild": "Build concluído.",
+      "donePublish": "Arquivos publicados diretamente pelo ingress.",
+      "skippedBuild": "Nenhuma etapa de build foi executada neste deploy.",
+      "stuck": "Em execução há mais de {{limit}}."
+    },
+    "staticNote": "Site estático: publicado diretamente pelo ingress, sem container para verificação de saúde.",
+    "started": "Iniciado {{at}}",
+    "finished": "Concluído {{at}}",
+    "duration": "Levou {{duration}}",
+    "runningFor": "Em execução há {{duration}}",
+    "details": "Detalhes",
+    "technical": "Detalhes técnicos",
+    "gate": "Portão de prontidão e observação",
+    "probes": "Tentativas da sonda de saúde",
+    "conditionLine": "{{reason}} ({{status}}): {{message}}",
+    "noConditions": "O reconciler ainda não informou nenhum status para este app."
+  },
+  "page": {
+    "notInHistory": "Esta tentativa de deploy não está no histórico atual deste app.",
+    "currentChip": "Atual"
+  },
+  "drawer": {
+    "whatWentWrong": "O que deu errado",
+    "failedAtStep": "Falhou na etapa: {{step}}",
+    "noErrorRecorded": "O deploy falhou. Nenhum erro foi registrado.",
+    "lastLogLines": "Últimas linhas do log",
+    "tailFailed": "Não foi possível carregar o final do log.",
+    "viewFullLogs": "Ver logs completos",
+    "live": "Ao vivo",
+    "timing": "Tempo",
+    "started": "Iniciado",
+    "finished": "Concluído",
+    "duration": "Duração",
+    "notFinished": "Não concluído",
+    "source": "Origem",
+    "trigger": "Gatilho",
+    "rollbackTo": "Rollback para",
+    "branch": "Branch",
+    "commit": "Commit",
+    "message": "Mensagem",
+    "author": "Autor",
+    "pullRequest": "Pull request",
+    "app": "App",
+    "image": "Imagem",
+    "domains": "Domínios",
+    "loadingDomains": "Carregando domínios",
+    "noDomains": "Nenhum domínio configurado.",
+    "preview": "Preview",
+    "supplyChain": "Cadeia de suprimentos"
+  },
+  "stream": {
+    "title": "O stream de logs ao vivo caiu",
+    "bodyNoRetry": "Podem faltar linhas até ele reconectar.",
+    "nextAttempt": "Próxima tentativa {{when}}.",
+    "retryIn": "em {{seconds}}s",
+    "retryNow": "Tentar agora",
+    "switchToPolling": "Mudar para polling",
+    "download": "Baixar o log completo"
+  },
+  "fix": {
+    "title": "Corrigir e refazer o deploy",
+    "hint": "Abra a configuração que mais provavelmente causou isto, altere-a e depois refaça o deploy.",
+    "link": {
+      "environment": "Editar variáveis de ambiente",
+      "source": "Verificar as configurações de build",
+      "deploySettings": "Verificar as configurações de deploy",
+      "resources": "Ajustar recursos"
+    },
+    "docs": "Ler a documentação deste erro"
+  },
+  "fixReturn": {
+    "body": "Você estava corrigindo um deploy com falha ({{target}}). Refaça o deploy para aplicar suas alterações.",
+    "redeploy": "Refazer o deploy agora",
+    "back": "Voltar ao deploy com falha",
+    "dismiss": "Dispensar",
+    "region": "Refazer o deploy com suas alterações",
+    "started": "Refazendo o deploy com suas alterações."
+  },
+  "rebuild": {
+    "started": "Rebuild iniciado.",
+    "startedNoCache": "Rebuild sem cache iniciado."
+  },
+  "report": {
+    "copy": "Copiar como relatório",
+    "copied": "Relatório copiado",
+    "failed": "Não foi possível copiar o relatório",
+    "stage": "Etapa que falhou"
+  },
+  "cache": {
+    "summary": "Cache: {{cached}} de {{total}} etapas reutilizadas",
+    "unknown": "Cache: desconhecido"
+  },
+  "rollback": {
+    "note": "Restaura a imagem {{image}}. Variáveis de ambiente, volumes e migrações não são revertidos."
+  },
+  "phases": {
+    "label": "Fases do build",
+    "all": "Todas",
+    "install": "Instalação",
+    "build": "Build",
+    "push": "Push",
+    "other": "Outras",
+    "chip": "{{phase}} ({{count}})",
+    "showSteps": "Mostrar etapas",
+    "hideSteps": "Ocultar etapas",
+    "stepsLabel": "Etapas do build",
+    "cached": "Em cache",
+    "jump": "Ir para a primeira linha de {{label}}",
+    "total": "{{phase}}: {{time}}",
+    "noTiming": "sem tempo",
+    "truncated": "As fases foram detectadas apenas nas primeiras {{count}} linhas."
+  },
+  "chain": {
+    "position": "Tentativa {{position}} desta cadeia"
+  },
+  "deployPhases": {
+    "label": "Progresso do deploy",
+    "phase": {
+      "upload": "Upload",
+      "install": "Instalação",
+      "build": "Build",
+      "export_image": "Exportar imagem",
+      "health_check": "Verificação de saúde",
+      "cutover": "Cutover"
+    },
+    "status": {
+      "pending": "Aguardando",
+      "running": "Em andamento",
+      "done": "Concluída",
+      "failed": "Falhou",
+      "skipped": "Ignorada"
+    },
+    "eta": "Normalmente leva cerca de {{typical}} min, faltam {{left}} min",
+    "etaOver": "Normalmente leva cerca de {{typical}} min, este está demorando mais",
+    "stillWorking": "Ainda trabalhando. Nenhuma linha nova de log por um tempo, o que é normal durante etapas longas.",
+    "stillWorkingExport": "Ainda trabalhando. Exportar a imagem pode ficar em silêncio por vários minutos, isso é normal."
+  },
+  "buildReport": {
+    "title": "Relatório do build",
+    "shared": "Primeiro carregamento compartilhado",
+    "route": "Rota",
+    "kind": "Tipo",
+    "size": "Tamanho",
+    "firstLoad": "Primeiro carregamento",
+    "noRoutes": "Nenhuma rota encontrada na saída do build.",
+    "warnings": "Atenção",
+    "notStored": "Os logs do build não são armazenados, então não há relatório para este deploy.",
+    "kinds": {
+      "static": "Estático",
+      "isr": "ISR",
+      "dynamic": "Dinâmico",
+      "unknown": "Desconhecido"
+    }
+  },
+  "failureCard": {
+    "title": "O que deu errado",
+    "stage": "Etapa que falhou",
+    "error": "Erro",
+    "showLess": "Mostrar menos",
+    "showMore": "Mostrar mais"
+  }
+}

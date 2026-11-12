@@ -1,0 +1,111 @@
+{
+  "title": "Export du trafic",
+  "description": "Envoyez un enregistrement par requête terminée vers PostHog, un collecteur OpenTelemetry ou votre propre endpoint. La livraison est mise en file hors du chemin de la requête et ne ralentit ni ne fait jamais échouer une requête.",
+  "card": {
+    "title": "Destinations d'export",
+    "description": "Les enregistrements ne portent aucune identité de visiteur sauf si vous l'activez par destination."
+  },
+  "add": "Ajouter une destination",
+  "loadError": "Impossible de charger l'export du trafic : {{message}}",
+  "notConfigured": "L'export du trafic nécessite une clé maîtresse pour stocker les identifiants des destinations.",
+  "empty": {
+    "title": "Aucune destination d'export",
+    "description": "Ajoutez une destination pour diffuser les enregistrements de requêtes vers votre outil d'analytique."
+  },
+  "kinds": {
+    "posthog": "PostHog",
+    "otlp": "OpenTelemetry",
+    "webhook": "Webhook"
+  },
+  "state": {
+    "active": "Active",
+    "idle": "Ne livre pas",
+    "disabled": "En pause",
+    "invalid": "Nécessite votre attention",
+    "failing": "En échec"
+  },
+  "errorKinds": {
+    "auth": "Identifiants rejetés",
+    "rejected": "Requête rejetée",
+    "rate_limited": "Limite de débit atteinte",
+    "server": "Erreur de la destination",
+    "blocked_target": "Adresse non autorisée",
+    "timeout": "Délai dépassé",
+    "network": "Injoignable",
+    "config": "Réglages invalides",
+    "other": "Échec de la livraison"
+  },
+  "row": {
+    "lastSuccess": "Dernière livraison {{when}}",
+    "never": "Aucune livraison pour l'instant",
+    "queued": "{{count}} en file",
+    "dropped": "{{count}} abandonnés",
+    "failed": "{{count}} échoués",
+    "identity": "Champs d'identité activés",
+    "noIdentity": "Aucune identité de visiteur",
+    "target": "Envoie vers {{host}}",
+    "enabled": "Activée",
+    "test": "Envoyer un test",
+    "testing": "Envoi",
+    "testOk": "{{name}} a accepté l'enregistrement de test",
+    "testFailed": "{{name}} n'a pas accepté l'enregistrement de test : {{reason}}",
+    "edit": "Modifier",
+    "remove": "Retirer"
+  },
+  "remove": {
+    "title": "Retirer {{name}} ?",
+    "description": "Ses identifiants stockés sont supprimés et les enregistrements en file sont abandonnés.",
+    "confirm": "Retirer la destination"
+  },
+  "sheet": {
+    "addTitle": "Ajouter une destination d'export",
+    "editTitle": "Modifier {{name}}",
+    "description": "Les identifiants sont stockés chiffrés et ne sont plus jamais affichés.",
+    "name": "Nom",
+    "namePlaceholder": "Analytique produit",
+    "kind": "Type de destination",
+    "host": "Région ou URL PostHog",
+    "hostPlaceholder": "us, eu ou https://posthog.example.com",
+    "token": "Token du projet",
+    "tokenStored": "Un token est stocké. Laissez vide pour le conserver.",
+    "url": "URL de l'endpoint",
+    "urlPlaceholder": "https://collector.example.com",
+    "urlStored": "Une URL est stockée. Laissez vide pour la conserver.",
+    "authHeader": "Valeur de l'en-tête Authorization",
+    "authHeaderHint": "Facultatif, par exemple Bearer suivi d'un token. Laissez vide pour conserver la valeur stockée.",
+    "fieldsTitle": "Champs facultatifs",
+    "fieldsHint": "Chaque enregistrement contient déjà la méthode, le chemin, le statut, les durées et l'ID de requête. Rien de ce qui suit n'est envoyé sauf si vous le cochez.",
+    "ipTruncate": "Tronquer l'IP du client",
+    "ipTruncateHint": "Met à zéro le dernier octet d'une adresse IPv4 ou les 80 derniers bits d'une adresse IPv6.",
+    "sample": "Part des traces exportées",
+    "sampleHint": "Un nombre de 0 à 1. 1 exporte chaque requête.",
+    "enabled": "Livrer vers cette destination",
+    "save": "Enregistrer la destination",
+    "saving": "Enregistrement",
+    "cancel": "Annuler",
+    "saveFailed": "Impossible d'enregistrer : {{message}}"
+  },
+  "fields": {
+    "referrer_host": {
+      "label": "Hôte référent",
+      "hint": "Le site d'où provient la requête, hôte uniquement."
+    },
+    "client_ip": {
+      "label": "Adresse IP du client",
+      "hint": "Donnée personnelle dans de nombreux pays."
+    },
+    "user_agent": {
+      "label": "User agent",
+      "hint": "Chaîne du navigateur et de l'appareil."
+    },
+    "visitor_id": {
+      "label": "ID de visiteur anonyme",
+      "hint": "Un hash quotidiennement renouvelé de l'IP et du user agent. Compte tout de même comme un identifiant."
+    }
+  },
+  "disclaimer": {
+    "title": "Cette destination recevra l'identité des visiteurs",
+    "body": "L'IP du client, le user agent ou l'ID de visiteur peuvent identifier une personne. Ne les activez que si votre politique de confidentialité couvre le partage de ces données avec la destination et que vous disposez d'une base légale. Les cookies, en-têtes d'authentification, chaînes de requête et corps de requête ne sont jamais exportés."
+  },
+  "privacy": "Par défaut, aucune IP de client, aucun user agent ni ID de visiteur n'est exporté. Les cookies, en-têtes d'authentification, chaînes de requête et corps de requête ne sont jamais exportés."
+}

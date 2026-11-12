@@ -1,0 +1,65 @@
+{
+  "title": "{{client}} souhaite lire ce plan de contrôle",
+  "signedInAs": "Approbation en tant que {{user}} sur {{host}}",
+  "instanceOnly": "Approbation sur {{host}}",
+  "redirectsTo": "Après votre réponse, votre navigateur retourne vers",
+  "access": {
+    "none": "Votre compte ne détient aucun des accès demandés, donc rien ne peut être accordé.",
+    "read": "Accès en lecture seule à vos ressources. Les secrets et valeurs sensibles restent masqués.",
+    "sensitive": "Accès en lecture seule, y compris aux valeurs sensibles.",
+    "trimmed": "Une partie de ce qui a été demandé est exclue car votre compte ne la détient pas."
+  },
+  "facts": {
+    "never": "Il ne peut jamais rien créer, modifier, deployer ni supprimer.",
+    "permissions": "Il s'exécute en tant que vous, sans plus que vos propres permissions.",
+    "expiry": "L'accès dure {{access}} et se renouvelle jusqu'à {{refresh}} sauf si vous le révoquez.",
+    "revoke": "Vous pouvez retirer le client à tout moment depuis Paramètres, Accès CLI."
+  },
+  "approve": "Approuver",
+  "deny": "Refuser",
+  "working": "En cours",
+  "duration": {
+    "minutes_one": "{{count}} minute",
+    "minutes_many": "{{count}} minutes",
+    "minutes_other": "{{count}} minutes",
+    "hours_one": "{{count}} heure",
+    "hours_many": "{{count}} heures",
+    "hours_other": "{{count}} heures",
+    "days_one": "{{count}} jour",
+    "days_many": "{{count}} jours",
+    "days_other": "{{count}} jours"
+  },
+  "errors": {
+    "missing": "Ce lien ne contient aucune demande d'autorisation. Relancez la connexion depuis votre client IA.",
+    "featureOff": "La connexion de clients IA est désactivée. Activez le MCP distant dans Paramètres, Fonctions bêta.",
+    "gone": "Cette demande a expiré ou a déjà reçu une réponse. Relancez la connexion depuis votre client IA.",
+    "unavailable": "La connexion MCP distante n'est pas disponible sur ce plan de contrôle.",
+    "load": "Impossible de charger cette demande. Vérifiez votre connexion et rechargez.",
+    "decide": "Impossible d'enregistrer votre réponse."
+  },
+  "clients": {
+    "title": "Clients IA connectés",
+    "body": "Clients préenregistrés autorisés à demander une connexion via le MCP distant.",
+    "add": "Ajouter un client",
+    "name": "Nom",
+    "uris": "URI de redirection",
+    "urisPlaceholder": "https://client.example/callback",
+    "create": "Créer",
+    "cancel": "Annuler",
+    "created": "Client créé",
+    "clientId": "ID du client :",
+    "empty": "Aucun client préenregistré.",
+    "loadError": "Impossible de charger les clients IA.",
+    "remove": "Retirer {{name}}",
+    "confirmTitle": "Retirer {{name}} ?",
+    "confirmBody": "Ses tokens d'accès cessent immédiatement de fonctionner. Il pourra être rajouté plus tard.",
+    "confirm": "Retirer le client",
+    "dismiss": "Fermer"
+  },
+  "scopes": {
+    "heading": "Accès accordé",
+    "read": "Lire les ressources et leur état",
+    "sensitive": "Lire les valeurs sensibles, comme le contenu des secrets"
+  },
+  "approveSensitive": "Approuver avec accès sensible"
+}

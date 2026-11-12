@@ -1,0 +1,21 @@
+{
+  "title": "Exécuter dans un conteneur neuf",
+  "description": "Démarre un nouveau conteneur à partir de l'image de cette app, avec ses variables d'environnement et ses secrets, exécute la commande une fois et affiche sa sortie. Le conteneur en production n'est pas touché.",
+  "service": "Service",
+  "command": "Commande",
+  "placeholder": "bin/migrate",
+  "hint": "Exécutée directement, sans shell. Mettez entre guillemets un argument contenant des espaces. Pour des pipes ou des redirections, utilisez sh -c \"...\".",
+  "run": "Exécuter",
+  "running": "Exécution...",
+  "exitCode": "Code de sortie",
+  "state": "État",
+  "output": "Sortie",
+  "empty": "(aucune sortie)",
+  "truncated": "La sortie dépassait ce que le serveur conserve ; seule la dernière partie est affichée.",
+  "accessRule": "Les exécutions ponctuelles et les jobs planifiés suivent les règles d'accès exec de la console : exécuter une commande nécessite un accès root sur cette app et exec activé pour elle.",
+  "timeout": "Délai d'expiration (s)",
+  "timeoutPlaceholder": "3600",
+  "cancel": "Annuler",
+  "history": "Exécutions récentes",
+  "outputWithheld": "La sortie est masquée. Consulter la sortie d'un job nécessite un accès en lecture aux données sensibles."
+}

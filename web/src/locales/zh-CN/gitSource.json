@@ -1,0 +1,279 @@
+{
+  "connect": {
+    "title": "连接 Git 来源",
+    "intro": "无需重新创建应用，即可为其关联仓库。选择提供商的仓库或粘贴公开 URL，检查构建，然后关联它或立即部署。",
+    "planTitle": "将发生的更改",
+    "planLoading": "正在检查此应用和仓库...",
+    "current": {
+      "image": "此应用目前从镜像运行。",
+      "upload": "此应用目前由上传的文件提供服务。",
+      "none": "此应用尚未部署。",
+      "git": "此应用已经有仓库；关联新仓库会将其替换。"
+    },
+    "keepsImage": "在首次构建成功之前，{{image}} 会继续提供服务，并保留在部署历史中以便回滚。",
+    "keepsNothingRunning": "目前没有运行任何内容，首次构建会启动应用。",
+    "keptEnv_other": "保留 {{count}} 个环境变量",
+    "keptSecrets_other": "保留 {{count}} 个密钥",
+    "keptDomains_other": "保留 {{count}} 个域名",
+    "keptVolumes_other": "保留 {{count}} 个卷",
+    "warning": {
+      "group_member": "此应用属于一个应用组：只有此服务会从仓库构建。",
+      "replaces_git_source": "当前仓库及其 Webhook 密钥将被替换。",
+      "uploads_stop": "之后通过 CLI 上传仍然可用，但下一次推送会用构建替换它们。",
+      "never_deployed": "在首次构建成功之前，没有可回退的运行版本。",
+      "protected_environment": "此应用受保护：部署需经过审批，因此请向分支推送，而不是立即部署。"
+    },
+    "detectError": {
+      "not_found": "未找到仓库或分支。请检查 URL 和分支，或为私有仓库添加令牌。",
+      "access_denied": "提供商拒绝了访问。请添加部署令牌，或在此仓库上安装该应用。",
+      "unreadable": "无法读取该仓库。你仍然可以手动选择构建方式。",
+      "ssh_not_detectable": "在连接之前无法读取 SSH URL。请使用部署密钥连接，然后在构建设置中运行检测，或手动选择构建方式。",
+      "unsupported_host": "在连接之前无法读取此主机。请手动选择构建方式，或先连接再在构建设置中运行检测。"
+    },
+    "buildType": {
+      "railpack": "自动检测",
+      "dockerfile": "Dockerfile",
+      "static": "静态站点"
+    },
+    "suggested": "建议的构建：{{where}} 中的 {{build}}",
+    "useSuggestion": "使用这些设置",
+    "pickRepoToDetect": "请选择仓库以检测构建方式。",
+    "deployHint": "立即部署最新的提交，或保持关联并在下次推送时部署。",
+    "deployNow": "立即部署",
+    "deployStarted": "已从 {{branch}} 开始构建。",
+    "deployFailed": "无法开始部署。",
+    "deployRunning": "构建中。在构建成功之前，当前版本继续提供服务。",
+    "viewDeploy": "查看部署"
+  },
+  "card": {
+    "title": "Git 来源",
+    "loading": "加载中...",
+    "pickRepoFirst": "请先选择仓库或粘贴 URL。",
+    "updated": "Git 来源已更新。",
+    "saveFailed": "无法保存 git 来源。",
+    "disconnected": "Git 来源已断开连接。",
+    "disconnectFailed": "无法断开 git 来源。",
+    "needService": "请至少添加一个服务，或切换回单服务。",
+    "rowsMissingName_other": "第 {{rows}} 行缺少服务名称。"
+  },
+  "triggers": {
+    "push": {
+      "label": "每次推送",
+      "description": "每次推送到目标分支时部署。"
+    },
+    "release": {
+      "label": "标签与发布",
+      "description": "仅在推送标签，或（仅限 GitHub）发布版本时部署。推送分支绝不会部署。"
+    }
+  },
+  "buildPacks": {
+    "railpack": "自动检测（Railpack）",
+    "dockerfile": "Dockerfile",
+    "static": "静态站点"
+  },
+  "connected": {
+    "repository": "仓库",
+    "branch": "分支",
+    "deployTrigger": "部署触发方式",
+    "deployToken": "部署令牌",
+    "tokenConfigured": "已配置",
+    "tokenNotSet": "未设置（公开仓库）",
+    "alsoDeploys": "同时部署",
+    "servicesFanout": "服务扇出",
+    "webhookUrl": "Webhook URL",
+    "webhookNote": "Webhook 密钥只在连接时显示过一次。请在下方轮换以生成新的密钥，或断开后重新连接，同时也可更改仓库或分支。",
+    "edit": "编辑",
+    "disconnect": "断开连接"
+  },
+  "justConnected": {
+    "autoRegistered": "Git 来源已连接。已自动注册推送 Webhook，无需手动设置。",
+    "secretOnce": "此 Webhook 密钥不会再次显示。请立即将两个值粘贴到仓库的 Webhook 设置中。",
+    "webhookUrl": "Webhook URL",
+    "webhookSecret": "Webhook 密钥",
+    "secretHint": "请将其设置为指向上方 URL 的 GitHub“Push”Webhook 的密钥，内容类型为 application/json。",
+    "done": "完成"
+  },
+  "copy": {
+    "copy": "复制",
+    "copied": "已复制"
+  },
+  "edit": {
+    "connectedTo": "当前已连接到 {{repo}} @ {{branch}}。在下方选择其他仓库可重新指向，或保持不变，仅更新构建设置。",
+    "connectIntro": "连接仓库，使推送到其目标分支时自动部署此应用。",
+    "deployTrigger": "部署触发方式",
+    "fanoutMode": "多服务扇出",
+    "fanoutAdditional": "附加服务",
+    "fanoutServices": "服务映射",
+    "connect": "连接",
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "buildPack": {
+    "label": "构建包",
+    "autoDetect": "自动检测",
+    "dockerfile": "Dockerfile",
+    "static": "静态站点",
+    "autoDetectDescription": "推荐。Levelrail 会从仓库中检测你的框架并自动构建，无需 Dockerfile。",
+    "dockerfilePath": "Dockerfile 路径（可选）",
+    "staticDescription": "由内置的 Caddy 入口直接提供服务，无需容器。"
+  },
+  "services": {
+    "additionalLabel": "附加服务（可选）",
+    "additionalDescription": "在同一次推送中同时重新构建这些同级服务，适用于包含多个服务的 monorepo。每个服务都需要其已存在的服务名称和构建配置。只要填写了任何一行，保存时就始终使用直连的 git 来源连接，即使是所选的提供商仓库，因为自动 Webhook 注册尚不支持 monorepo 扇出。",
+    "mapLabel": "服务（app.yaml 风格）",
+    "mapDescription": "每次推送都会针对每个服务扇出为独立的构建和部署，与手动多服务部署使用的 POST .../deploy-spec 扇出相同，归属于名为 {{appName}} 的同一个应用。它会取代上面的单服务构建；每个服务键都会成为名为 {{appName}}-[key] 的真实服务。",
+    "add": "添加服务",
+    "removeAdditional": "移除附加服务",
+    "remove": "移除服务",
+    "duplicate": "另一行已使用此服务名称。",
+    "checking": "正在对照应用规范 schema 检查...",
+    "serviceName": "服务名称",
+    "buildType": "构建类型",
+    "buildPath": "构建路径",
+    "port": "端口"
+  },
+  "network": {
+    "networking": "网络",
+    "port": "端口",
+    "portPlaceholder": "例如 3000",
+    "portHint": "你的应用在其容器内监听的端口，例如典型 Next.js 应用使用 3000。",
+    "domain": "域名（可选）",
+    "domainDescription": "其 DNS 记录指向这里后即开始路由。TLS 证书会自动签发，也可以稍后在应用的“域名”标签页中添加。",
+    "healthCheck": "健康检查",
+    "healthEnable": "启用健康检查",
+    "healthPath": "路径",
+    "healthHint": "在将流量切换到新容器之前检查，并在之后用于检测容器是否崩溃。由 Railpack 检测到、但不提供此路径的应用应将其关闭。"
+  },
+  "sshKey": {
+    "title": "SSH 部署密钥",
+    "loading": "加载中...",
+    "none": "还没有密钥",
+    "fingerprint": "指纹 {{fingerprint}}",
+    "publicKey": "公钥",
+    "hint": "请将其作为只读部署密钥添加到仓库主机上。",
+    "hostPinned": "已固定的主机密钥 {{fingerprint}}",
+    "hostKeyChoice": "如何固定主机密钥",
+    "mode": {
+      "paste": "粘贴主机密钥",
+      "tofu": "首次使用时信任"
+    },
+    "hostKeyLabel": "主机密钥",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "会信任最先响应的任何对象。请核对之后显示的指纹。",
+    "generate": "生成密钥",
+    "saved": "SSH 部署密钥已保存。",
+    "removed": "SSH 部署密钥已移除。",
+    "rotate": "轮换",
+    "rotateTitle": "轮换 SSH 部署密钥？",
+    "rotateBody": "新密钥会替换当前密钥。请在仓库主机上添加新的公钥，否则拉取将会失败。",
+    "rotateConfirm": "轮换密钥",
+    "remove": "移除",
+    "removeTitle": "移除 SSH 部署密钥？",
+    "removeBody": "在生成新密钥之前，通过 SSH 的拉取将会失败。",
+    "removeConfirm": "移除密钥",
+    "cancel": "取消"
+  },
+  "dialog": {
+    "open": "连接 Git 来源",
+    "title": "连接 Git 来源",
+    "step": {
+      "source": "第 1 步，共 3 步：选择已连接的提供商或粘贴仓库 URL，然后选择分支。",
+      "review": "第 2 步，共 3 步：查看检测到的构建方式，以及应用会保留什么。",
+      "finish": "第 3 步，共 3 步：来自此仓库的首次部署。"
+    },
+    "next": "下一步",
+    "back": "返回",
+    "done": "完成",
+    "linkOnly": "仅关联",
+    "linked": "仓库已关联。准备好后，请向分支推送或部署。",
+    "reading": "正在读取仓库",
+    "pickService": "此仓库构建哪个服务？",
+    "effect": {
+      "unchanged": "保留其当前镜像",
+      "keeps_own_source": "保留其自己的 Git 来源",
+      "built_with_this_source": "同时也从此仓库重新构建"
+    },
+    "detected": "检测到的构建：{{build}}",
+    "detectError": {
+      "not_found": "未找到仓库或分支。",
+      "access_denied": "无权访问此仓库。请从已连接的提供商中选择它。",
+      "unreadable": "无法读取该仓库。你仍然可以手动选择构建方式。",
+      "ssh_not_detectable": "SSH URL 在连接之后才会被读取。",
+      "unsupported_host": "在连接之前无法读取此主机。"
+    },
+    "kept": "已保留：{{env}} 个环境变量和密钥，{{domains}} 个域名，{{volumes}} 个卷。",
+    "protected": "此应用位于受保护的环境中。请仅关联，然后向分支推送，使部署经过审批。",
+    "failingStep": "失败于：{{step}}",
+    "status": {
+      "queued": "排队中",
+      "building": "构建中",
+      "ready": "已上线",
+      "failed": "失败",
+      "canceled": "已取消",
+      "held": "已挂起",
+      "awaiting_approval": "等待审批",
+      "rolled_back": "已回滚",
+      "superseded": "已被取代"
+    },
+    "connectionNeedsRead": "你的访问权限无法使用所选连接读取私有仓库，因此该仓库是在不使用它的情况下读取的。"
+  },
+  "inline": {
+    "title": "从 Dockerfile 部署",
+    "hint": "不需要 git 仓库。粘贴 Dockerfile，或从你的机器加载一个。",
+    "loadFile": "从文件加载",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "添加上下文文件",
+    "filePath": "上下文文件 {{n}} 的路径",
+    "fileContent": "上下文文件 {{n}} 的内容",
+    "pathPlaceholder": "path/in/context.txt",
+    "removeFile": "移除上下文文件 {{n}}",
+    "deploy": "部署",
+    "started": "构建已开始。",
+    "failed": "无法开始构建",
+    "deployId": "部署 {{id}} 已开始。"
+  },
+  "triggerPatterns": {
+    "title": "部署触发模式",
+    "tagHelp": "发布模式目前会为每次推送标签部署。列出标签模式可仅部署匹配的标签，例如用 v* 表示发布序列。",
+    "branchHelp": "推送模式目前会部署对 {{branch}} 的推送。列出分支模式，可改为部署此仓库中匹配的分支，例如 main 和 release/*。",
+    "tagLabel": "触发部署的标签",
+    "branchLabel": "触发部署的分支",
+    "syntax": "每行一个模式，或用逗号分隔。* 限定在一个路径段内，** 可跨越 /，? 表示一个字符。以 ! 开头的模式表示排除，且始终优先。留空则保持默认。被跳过的推送会在 Webhook 投递中显示原因。",
+    "save": "保存模式",
+    "saving": "保存中...",
+    "saved": "触发模式已保存。",
+    "failed": "无法保存触发模式。"
+  },
+  "fetchExtras": {
+    "title": "子模块与 LFS",
+    "note": "在每次构建之前拉取 git 子模块（仅限 https）和 LFS 对象。凭据只会发送到仓库主机。",
+    "submodules": "拉取子模块",
+    "lfs": "拉取 LFS 对象",
+    "saved": "来源拉取设置已保存。",
+    "failed": "无法保存来源拉取设置"
+  },
+  "buildSettings": {
+    "title": "构建设置",
+    "description": "之后每次构建都会使用的已保存选项。保存不会开始部署。",
+    "builder": "构建器",
+    "dockerfile": "Dockerfile 路径",
+    "target": "目标阶段",
+    "provider": "Railpack 提供方",
+    "providerAuto": "自动检测",
+    "noCache": "Dockerfile 构建时跳过层缓存",
+    "needsGit": "请连接 git 来源，以更改构建器或 Dockerfile 路径。",
+    "save": "保存构建设置",
+    "saving": "保存中...",
+    "saved": "构建设置已保存",
+    "failed": "无法保存构建设置",
+    "errors": {
+      "tooLong": "此值过长。",
+      "targetCharset": "请使用字母、数字、点、下划线或连字符，并以字母或数字开头。",
+      "pathRelative": "请使用仓库内的路径，不含 .. 或开头的斜杠。",
+      "provider": "请选择受支持的提供方。"
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "Personnaliser la barre latérale",
+  "description": "Réorganisez, affichez ou masquez des groupes et des pages. Les pages masquées restent accessibles via la recherche.",
+  "groups": "Groupes de la barre latérale",
+  "itemsIn": "Pages dans {{label}}",
+  "moveUp": "Monter {{label}}",
+  "moveDown": "Descendre {{label}}",
+  "show": "Afficher {{label}}",
+  "moved": "{{label}} déplacé en position {{position}} sur {{total}}",
+  "currentPage": "Page actuelle",
+  "currentGroup": "Contient la page actuelle",
+  "reset": "Rétablir par défaut",
+  "resetDone": "Barre latérale rétablie par défaut",
+  "done": "Terminé",
+  "recent": {
+    "group": "Récents",
+    "app": "App",
+    "database": "Base de données"
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "deploy": {
+    "trigger": "Desplegar un modelo",
+    "title": "Desplegar un modelo",
+    "description": "Ejecuta un motor de inferencia en un nodo con GPU y expone un endpoint compatible con OpenAI protegido por una clave de API.",
+    "sections": {
+      "basics": "Qué ejecutar",
+      "placement": "Dónde ejecutarlo",
+      "advanced": "Opciones avanzadas",
+      "advancedHint": "GPUs, longitud de contexto, residencia, grupo de intercambio y dominio. Los valores por defecto sirven para la mayoría de los modelos."
+    },
+    "fields": {
+      "name": "Nombre",
+      "nameHint": "Letras minúsculas, dígitos y guiones. Se usa en la URL del endpoint.",
+      "namePlaceholder": "chat",
+      "engine": "Motor",
+      "model": "Modelo",
+      "modelHint": "Una referencia que el motor pueda descargar. Elige una sugerencia o pega la tuya.",
+      "modelSuggestions": "Sugerencias para este motor",
+      "node": "Nodo",
+      "localNode": "Este host",
+      "gpus": "GPUs",
+      "gpusHint": "Cuántas GPUs puede usar el motor. \"all\" lo deja a criterio del motor.",
+      "gpusPlaceholder": "all",
+      "context": "Longitud de contexto",
+      "contextHint": "Máximo de tokens por petición. Déjalo vacío para usar el valor por defecto del motor.",
+      "contextPlaceholder": "valor por defecto del motor",
+      "quantization": "Cuantización",
+      "quantizationHint": "Opcional. Por ejemplo awq, gptq o fp8.",
+      "residency": "Residencia",
+      "residencyAlways": "Siempre cargado",
+      "residencyOnDemand": "Bajo demanda",
+      "residencyHint": "Bajo demanda detiene el motor cuando está inactivo y lo arranca con la primera petición.",
+      "idleMinutes": "Minutos de inactividad",
+      "idleMinutesHint": "Cuánto tiempo permanece cargado el motor sin peticiones.",
+      "idlePlaceholder": "valor por defecto de la plataforma",
+      "swapGroup": "Grupo de intercambio",
+      "swapGroupHint": "Los modelos que comparten un nombre en la misma GPU se turnan: despertar uno detiene al residente para liberar VRAM.",
+      "swapGroupPlaceholder": "ninguno",
+      "domain": "Dominio",
+      "domainHint": "Sirve el endpoint en tu propio nombre de host.",
+      "domainPlaceholder": "llm.example.com",
+      "hfToken": "Token de HuggingFace",
+      "hfTokenHint": "Solo hace falta para modelos restringidos. Se guarda cifrado y no se vuelve a mostrar."
+    },
+    "nodeOption": {
+      "freeVram": "{{free}} libres de {{total}}",
+      "noGpu": "No se informa de ninguna GPU",
+      "gpuCount_one": "{{count}} GPU",
+      "gpuCount_other": "{{count}} GPUs"
+    },
+    "summary": {
+      "ready": "Crea {{name}}: {{engine}} sirviendo {{model}} en {{node}}.",
+      "incomplete": "Pon nombre al modelo y elige qué ejecutar para ver qué se creará."
+    },
+    "errors": {
+      "name": "Usa letras minúsculas, dígitos o guiones.",
+      "model": "Elige o introduce una referencia de modelo.",
+      "gpus": "Introduce \"all\" o un número positivo.",
+      "context": "Introduce un número positivo de tokens.",
+      "idle": "Introduce un número positivo de minutos.",
+      "swapGroup": "Usa letras minúsculas, dígitos o guiones."
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "deploy": "Desplegar",
+      "deploying": "Desplegando..."
+    },
+    "toast": {
+      "title": "Desplegando \"{{name}}\".",
+      "description": "El motor está descargando y cargando el modelo."
+    }
+  },
+  "empty": {
+    "gpus": {
+      "title": "Ningún nodo con GPU se ha reportado aún",
+      "description": "Los nodos con una GPU NVIDIA y su controlador aparecen aquí con su VRAM. Instala el controlador de NVIDIA y nvidia-container-toolkit en un nodo Ubuntu y aparecerá en un minuto."
+    },
+    "models": {
+      "title": "Aún no hay modelos desplegados",
+      "description": "Despliega Ollama, vLLM o llama.cpp en un nodo con GPU y obtén un endpoint compatible con OpenAI con su propia clave de API."
+    },
+    "cache": {
+      "title": "Aún no hay nada en caché",
+      "description": "Los pesos de modelo descargados se guardan aquí para que un redespliegue arranque rápido. Despliega un modelo para llenarla."
+    },
+    "sample": {
+      "modelName": "chat",
+      "engine": "Ollama",
+      "placement": "Este host",
+      "status": "Listo",
+      "gpuName": "GPU NVIDIA",
+      "vram": "24 GiB de VRAM",
+      "gpuLabel": "Nodo con GPU",
+      "modelLabel": "Modelo",
+      "cacheLabel": "Pesos en caché"
+    }
+  },
+  "cpu": {
+    "switch": {
+      "legend": "Dónde ejecutar el modelo",
+      "gpu": "En un nodo con GPU",
+      "gpuHint": "Ollama, vLLM o llama.cpp en una GPU NVIDIA. Lo mejor para modelos grandes.",
+      "cpu": "Ejecutar en CPU",
+      "cpuHint": "Un modelo pequeño en la CPU y la RAM de este servidor, con límites estrictos. No hace falta GPU."
+    },
+    "deploy": {
+      "description": "Ejecuta un modelo pequeño en la CPU de este servidor con límites estrictos de CPU y memoria, y un endpoint compatible con OpenAI protegido por una clave de API.",
+      "pick": "Elige un modelo",
+      "catalogNote": "Lista seleccionada verificada el {{date}}. Las velocidades y la memoria son estimaciones. Tu servidor descarga los pesos directamente de Hugging Face cuando despliegas.",
+      "useCustom": "Usar otro repositorio de Hugging Face",
+      "customRepo": "Repositorio",
+      "customRepoHint": "Un repositorio GGUF, opcionalmente con un sufijo de cuantización.",
+      "customFile": "Archivo GGUF",
+      "customFileHint": "Opcional cuando el sufijo de cuantización elige exactamente un archivo.",
+      "unload": "Descargar al estar inactivo",
+      "unloadHint": "Detiene el motor tras un tiempo sin peticiones y libera su memoria. La siguiente petición lo vuelve a arrancar.",
+      "warnTitle": "Este modelo comparte tu servidor",
+      "warn": "Esto usa hasta {{cpus}} CPUs y {{memory}} de memoria de este servidor y unos {{disk}} de disco. Las demás apps conservan la prioridad.",
+      "diskUnknown": "algunos GB",
+      "submit": "Desplegar en CPU",
+      "toast": "Los pesos se están descargando de Hugging Face y luego se carga el modelo."
+    },
+    "license": {
+      "title": "Licencia sin revisar",
+      "generic": "Este repositorio no está en la lista seleccionada y su licencia no se revisó. Eres responsable de cumplirla.",
+      "ack": "He leído la licencia y acepto la responsabilidad de usar este modelo.",
+      "required": "Confirma la licencia para continuar."
+    },
+    "tier": {
+      "light": "Ligero",
+      "default": "Recomendado",
+      "plus": "Plus"
+    },
+    "verdict": {
+      "fits_comfortably": "Cabe con holgura",
+      "tight": "Justo",
+      "wont_fit": "No cabe",
+      "unknown": "Desconocido"
+    },
+    "card": {
+      "size": "{{params}}B de parámetros, {{quant}}",
+      "licenseTitle": "Licencia (SPDX)",
+      "embedding": "Embeddings",
+      "resources": "{{download}} de descarga, necesita unos {{ram}} de memoria",
+      "estimate": "Unos {{range}} tokens por segundo (estimación)",
+      "noEstimate": "Velocidad desconocida"
+    },
+    "limits": {
+      "cpu": "Límite de CPU: {{value}}",
+      "cpuHint": "Un tope estricto. El modelo recibe baja prioridad cuando otras apps necesitan la CPU.",
+      "memory": "Límite de memoria: {{value}}",
+      "memoryHint": "Un tope estricto sin swap. Siempre quedan libres al menos {{floor}} para otras cargas."
+    },
+    "fit": {
+      "speed": "Velocidad esperada: {{range}} tokens por segundo. Es una estimación, ejecuta el benchmark para obtener la cifra real.",
+      "disk": "La descarga necesita unos {{size}} de disco.",
+      "useSuggested": "Usarlo"
+    },
+    "download": {
+      "label": "Descargando los pesos",
+      "value": "{{done}} de {{total}} ({{percent}}%)"
+    },
+    "benchmark": {
+      "title": "Benchmark",
+      "run": "Ejecutar el benchmark",
+      "running": "Midiendo...",
+      "done": "Benchmark terminado.",
+      "failed": "El benchmark falló.",
+      "hint": "Ejecuta unos pocos prompts cortos y se detiene al llegar a un límite de tiempo. Usa la CPU que diste a este modelo y nunca se ejecuta solo.",
+      "notReady": "Carga primero el modelo. Un benchmark nunca arranca un modelo detenido.",
+      "measured": "Generación medida",
+      "estimated": "Estimación",
+      "noEstimate": "ninguna",
+      "prompt": "Procesamiento del prompt",
+      "ttft": "Tiempo hasta el primer token",
+      "tps": "{{value}} tokens/s",
+      "ms": "{{value}} ms",
+      "memory": "Memoria máxima {{peak}} de {{limit}}.",
+      "truncated": "Se detuvo al llegar al límite de tiempo.",
+      "onlyEstimate": "Se estiman {{range}} tokens por segundo. Aún sin medir.",
+      "none": "Aún sin medir."
+    },
+    "detail": {
+      "capsTitle": "Límites de recursos",
+      "caps": "Este modelo puede usar hasta {{cpus}} CPUs y {{memory}} de memoria, sin swap y con baja prioridad. Si el servidor se queda corto, este modelo se detiene antes que tus apps.",
+      "idleExplain": "Descarga por inactividad: con la residencia bajo demanda, el motor se detiene tras el tiempo de inactividad y libera su memoria y CPU. Los pesos descargados se quedan en disco, así que la siguiente petición solo espera a que el modelo se cargue de nuevo."
+    }
+  },
+  "residencyCard": {
+    "title": "Residencia",
+    "alwaysLoaded": "Siempre cargado",
+    "onDemand": "Bajo demanda",
+    "stateAsleep": "Inactivo, motor detenido",
+    "stateWaking": "Despertando",
+    "stateLoaded": "Cargado",
+    "aboutResidency": "Sobre la residencia",
+    "aboutResidencyBody": "Bajo demanda detiene el motor tras el tiempo de inactividad, liberando su VRAM, y lo arranca con la primera petición, que espera mientras el motor se carga (hasta APP_MODEL_WAKE_WAIT, luego un 503 con Retry-After). Ollama mantiene los modelos cargados para siempre, así que se detiene el contenedor para descargarlo.",
+    "mode": "Modo",
+    "idleMinutes": "Minutos de inactividad",
+    "idlePlaceholder": "{{minutes}} (por defecto)",
+    "save": "Guardar",
+    "saved": "Residencia guardada.",
+    "saveFailed": "No se pudo guardar la residencia.",
+    "wakeNow": "Despertar ahora",
+    "wakeFailed": "No se pudo despertar.",
+    "sleepNow": "Suspender ahora",
+    "sleepFailed": "No se pudo suspender.",
+    "notUsed": "No se ha usado desde que quedó inactivo.",
+    "swapGroup": "Grupo de intercambio",
+    "aboutSwap": "Sobre los grupos de intercambio",
+    "aboutSwapBody": "Los modelos que comparten este nombre en el mismo nodo/GPU no pueden estar residentes a la vez. Despertar uno detiene primero al modelo residente actual del grupo para liberar VRAM.",
+    "groupName": "Nombre del grupo",
+    "groupNone": "ninguno",
+    "swapSaved": "Grupo de intercambio guardado.",
+    "swapSaveFailed": "No se pudo guardar el grupo de intercambio.",
+    "sharesGpu": "Comparte GPU con:",
+    "lastUsedPrefix": "Último uso",
+    "stopsAfter": "Se detiene tras {{minutes}} minutos de inactividad."
+  },
+  "endpoint": {
+    "state": {
+      "unknown": "Sin comprobar",
+      "online": "En línea",
+      "slow": "Lento",
+      "unreachable": "Suspendido o inaccesible",
+      "auth_failed": "Credencial rechazada",
+      "error": "Error"
+    },
+    "stateWithLatency": "{{state}}, {{ms}} ms",
+    "recheck": "Volver a comprobar",
+    "testing": "Comprobando",
+    "recheckFailed": "No se pudo volver a comprobar el endpoint.",
+    "testResult": "Resultado de la prueba de conexión",
+    "modelsFound_one": "{{count}} modelo encontrado",
+    "modelsFound_other": "{{count}} modelos encontrados",
+    "toast": {
+      "added": "Endpoint {{name}} registrado."
+    },
+    "add": {
+      "trigger": "Añadir endpoint",
+      "title": "Añadir un endpoint de inferencia",
+      "description": "Usa un servidor de modelos que ejecutes tú, como Ollama, LM Studio o un servidor MLX en un Mac. Las peticiones pasan por el gateway con claves con alcance, límites y seguimiento de uso.",
+      "testConnection": "Probar la conexión",
+      "submit": "Registrar el endpoint",
+      "adding": "Registrando",
+      "registerAnyway": "Aún puedes registrarlo ahora. Levelrail sigue comprobándolo y muestra cuándo se pone en línea."
+    },
+    "fields": {
+      "url": "Dirección del servidor",
+      "urlHint": "Accesible desde el plano de control, por ejemplo una dirección de la malla de WireGuard.",
+      "urlPlaceholder": "http://100.64.0.7:11434",
+      "apiType": "Tipo de API",
+      "name": "Nombre",
+      "nameHint": "Opcional. Se toma de la dirección si está vacío.",
+      "namePlaceholder": "mac-mini",
+      "credential": "Clave de API",
+      "credentialHint": "Opcional. Se guarda cifrada.",
+      "credentialPlaceholder": "Déjalo vacío si el servidor no tiene ninguna"
+    },
+    "apiType": {
+      "ollama": {
+        "label": "Ollama",
+        "hint": "Los modelos se listan desde /api/tags."
+      },
+      "openai": {
+        "label": "Compatible con OpenAI",
+        "hint": "LM Studio, MLX, vLLM, llama.cpp o una API en la nube. Los modelos se listan desde /v1/models."
+      }
+    },
+    "errors": {
+      "url": "Introduce una dirección http o https sin nombre de usuario ni contraseña.",
+      "name": "Usa letras minúsculas, dígitos o guiones."
+    },
+    "health": {
+      "title": "Salud",
+      "upstream": "Dirección del servidor",
+      "apiType": "Tipo de API",
+      "lastChecked": "Última comprobación",
+      "privateOff": "Los destinos internos están desactivados en este plano de control, así que solo se puede acceder a servidores https públicos."
+    },
+    "models": {
+      "title": "Modelos del servidor",
+      "none": "Aún no hay modelos listados."
+    },
+    "credential": {
+      "title": "Clave de API",
+      "set": "Hay una clave guardada y se envía con cada petición a este endpoint.",
+      "notSet": "No hay ninguna clave guardada. Las peticiones se envían sin credenciales.",
+      "remove": "Quitar la clave",
+      "removed": "Clave quitada.",
+      "saveFailed": "No se pudo actualizar la clave."
+    },
+    "routing": {
+      "title": "Alternativa",
+      "description": "Desactivada por defecto. Si se activa, las peticiones van a otro modelo mientras este endpoint esté caído o sea más lento que el presupuesto.",
+      "fallback": "Recurrir a",
+      "off": "Desactivada",
+      "modelId": "Id del modelo alternativo",
+      "modelIdPlaceholder": "El mismo que el modelo alternativo",
+      "budget": "Presupuesto de latencia (s)",
+      "budgetPlaceholder": "Sin presupuesto",
+      "save": "Guardar",
+      "saved": "Alternativa guardada.",
+      "saveFailed": "No se pudo guardar la alternativa.",
+      "hint": "El presupuesto es el tiempo hasta los primeros bytes de respuesta. Sin presupuesto, solo los errores y un endpoint inaccesible activan la alternativa.",
+      "used_one": "Usada una vez hasta ahora.",
+      "used_other": "Usada {{count}} veces hasta ahora."
+    },
+    "fix": {
+      "saveAndCheck": "Guardar y comprobar",
+      "ollamaBind": "Ollama solo escucha en localhost por defecto. En el servidor, enlázalo a la dirección de red:",
+      "check_port": {
+        "title": "Nada respondió en ese puerto",
+        "body": "Revisa el puerto y que el servidor esté en ejecución. Ollama usa 11434 y LM Studio 1234. Elige el tipo de API correspondiente y prueba de nuevo."
+      },
+      "check_network": {
+        "title": "El servidor no respondió a tiempo",
+        "body": "La máquina puede estar suspendida o fuera de la red, o un firewall puede bloquear este puerto. Despiértala, revisa la conexión de la malla o de la LAN y el firewall, y vuelve a comprobar."
+      },
+      "check_host": {
+        "title": "El nombre de host no se resuelve",
+        "body": "Revisa la ortografía, o usa la dirección IP de tu malla de WireGuard o de tu LAN, y prueba de nuevo."
+      },
+      "use_other_address": {
+        "title": "Esa dirección nunca está permitida",
+        "body": "Las direcciones link-local y de metadatos de la nube no se pueden usar como endpoint de inferencia. Usa en su lugar la dirección de malla o de LAN de la máquina."
+      },
+      "enable_internal": {
+        "title": "Los destinos internos están desactivados",
+        "body": "Esta dirección es privada. Un operador debe permitir los destinos internos en el plano de control con {{env}}, reiniciarlo y volver a comprobar."
+      },
+      "set_credential": {
+        "title": "El servidor rechazó la credencial",
+        "body": "Introduce la clave de API del servidor. Se guarda cifrada y solo se envía a este endpoint."
+      },
+      "check_api_type": {
+        "title": "El servidor no responde como este tipo de API",
+        "body": "Elige el otro tipo de API (Ollama o compatible con OpenAI) y prueba de nuevo."
+      },
+      "use_http_or_trust": {
+        "title": "El certificado TLS no es de confianza",
+        "body": "Usa un certificado de una autoridad de confianza, o una dirección http privada en tu malla, y vuelve a comprobar."
+      },
+      "pull_model": {
+        "title": "El servidor aún no tiene modelos",
+        "body": "Descarga o carga un modelo en el servidor y vuelve a comprobar para listarlo."
+      },
+      "check_server": {
+        "title": "El servidor informó de un error",
+        "body": "Mira el log del propio servidor y vuelve a comprobar cuando esté saludable."
+      }
+    }
+  }
+}

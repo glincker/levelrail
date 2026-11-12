@@ -1,0 +1,90 @@
+{
+  "title": "Split-Tests",
+  "description": "Leiten Sie einen Anteil der Besucher dieser App auf einen Branch-Deploy oder ein aufbewahrtes Release. Jeder Besucher behält über ein Cookie dieselbe Variante, das nur gesetzt wird, solange ein Test läuft.",
+  "nav": "Split-Tests",
+  "loading": "Split-Test wird geladen",
+  "loadError": "Der Split-Test konnte nicht geladen werden: {{message}}",
+  "unsupportedTitle": "Split-Tests sind für diese App nicht verfügbar",
+  "unsupportedHelp": "Sie funktionieren für Container-Apps mit einer Domain. Statische Websites werden noch nicht unterstützt.",
+  "empty": {
+    "title": "Es läuft kein Split-Test",
+    "body": "Wählen Sie einen Branch-Deploy oder ein aufbewahrtes Release, geben Sie ihm einen Besucheranteil und vergleichen Sie die Anfragezahlen, bevor Sie den Gewinner übernehmen."
+  },
+  "start": {
+    "title": "Split-Test starten",
+    "kind": "Variantenquelle",
+    "kindBranch": "Branch-Deploy",
+    "kindRelease": "Aufbewahrtes Release",
+    "branch": "Branch-Deploy",
+    "branchPlaceholder": "Branch-Deploy wählen",
+    "noBranches": "Keine bereiten Branch-Deploys. Aktivieren Sie zuerst Branch-Deploys und pushen Sie einen Branch.",
+    "release": "Name des Release-Deploys",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "Variantenbezeichnung",
+    "weight": "Anteil der Besucher (%)",
+    "cookieName": "Cookie-Name",
+    "cookieTtl": "Cookie-Lebensdauer",
+    "cookieTtlHelp": "Etwa 720h. Leer lassen, um den Serverstandard zu verwenden.",
+    "submit": "Test starten",
+    "success": "Split-Test gestartet",
+    "errorTitle": "Der Split-Test konnte nicht gestartet werden"
+  },
+  "status": {
+    "running": "Läuft",
+    "stopped": "Gestoppt",
+    "live": "Live",
+    "ready": "Bereit",
+    "unavailable": "Nicht verfügbar"
+  },
+  "kind": {
+    "production": "Produktion",
+    "branch": "Branch-Deploy",
+    "release": "Release"
+  },
+  "table": {
+    "caption": "Varianten des laufenden Split-Tests",
+    "variant": "Variante",
+    "status": "Status",
+    "weight": "Gewicht",
+    "requests": "Anfragen",
+    "actions": "Aktionen",
+    "weightFor": "Besucheranteil für {{label}}",
+    "productionKeeps": "Produktion behält {{percent}}%",
+    "overshoot": "Die Varianten beanspruchen mehr als 100%, verringern Sie ein Gewicht.",
+    "saveWeights": "Gewichte speichern",
+    "weightsSaved": "Gewichte gespeichert",
+    "copyQa": "QA-Link kopieren",
+    "qaCopied": "QA-Link kopiert",
+    "qaHelp": "Das Öffnen des QA-Links erzwingt diese Variante für Ihren Browser und behält sie bei.",
+    "promote": "Übernehmen",
+    "unavailableHelp": "Diese Variante ist nicht erreichbar, daher erhalten ihre Besucher die Produktion."
+  },
+  "stats": {
+    "title": "Anfragen pro Stunde",
+    "hour": "Stunde",
+    "total": "{{count}} Anfragen seit Teststart",
+    "none": "Noch keine Anfragen gezählt."
+  },
+  "cookie": {
+    "summary": "Cookie {{name}}, gilt {{hours}} Stunden. Hängen Sie ?{{param}}=<variant> an eine URL, um eine Variante zu erzwingen."
+  },
+  "stop": {
+    "button": "Test stoppen",
+    "title": "Split-Test stoppen?",
+    "body": "Jeder Besucher erhält wieder die Produktion. Die Anfragezahlen bleiben erhalten.",
+    "confirm": "Test stoppen",
+    "success": "Split-Test gestoppt"
+  },
+  "promote": {
+    "title": "{{label}} übernehmen?",
+    "body": "{{label}} wird über den normalen Deploy-Pfad zum Produktions-Deploy, danach endet der Test.",
+    "locked": "Das wird abgelehnt, solange das Veröffentlichen für die App gesperrt ist.",
+    "confirm": "Gewinner übernehmen",
+    "success": "Gewinner übernommen"
+  },
+  "ended": {
+    "title": "Letzter Test",
+    "reason": "Beendet: {{reason}}"
+  },
+  "error": "Aktion für den Split-Test fehlgeschlagen"
+}

@@ -1,0 +1,301 @@
+{
+  "page": {
+    "eyebrow": "Sécurité",
+    "title": "Authentification unique (SSO)",
+    "description": "Permettez aux utilisateurs de se connecter via votre fournisseur d'identité avec SAML 2.0, associez des groupes d'annuaire à des rôles et décidez si les mots de passe locaux fonctionnent encore.",
+    "connectedCount_one": "{{count}} connexion activée",
+    "connectedCount_many": "{{count}} connexions activées",
+    "connectedCount_other": "{{count}} connexions activées",
+    "addConnection": "Ajouter une connexion SAML",
+    "setupBanner": {
+      "title": "Terminez d'abord la configuration",
+      "masterKey": "SAML a besoin de la clé maîtresse du plan de contrôle pour conserver sa clé de signature. Configurez la clé maîtresse, puis revenez.",
+      "baseUrl": "SAML a besoin d'une URL de tableau de bord en https, car les fournisseurs d'identité y envoient les réponses de connexion. Définissez-en une sous Paramètres, Général."
+    }
+  },
+  "list": {
+    "title": "Connexions SAML",
+    "description": "Chaque connexion fait confiance à un fournisseur d'identité. Les connexions activées affichent un bouton sur la page de connexion.",
+    "emptyTitle": "Aucune connexion SAML pour l'instant",
+    "emptyBody": "Ajoutez-en une pour Okta, Entra ID, Keycloak ou tout fournisseur d'identité SAML 2.0.",
+    "configure": "Configurer",
+    "state": {
+      "enabled": "Activée",
+      "disabled": "Désactivée",
+      "incomplete": "Détails de l'IdP requis"
+    },
+    "jit": "Crée des comptes",
+    "certExpires": "Le certificat expire {{date}}"
+  },
+  "form": {
+    "newTitle": "Nouvelle connexion SAML",
+    "editTitle": "Configurer {{name}}",
+    "sheetDescription": "Donnez ces valeurs de fournisseur de service à votre fournisseur d'identité, puis importez ses métadonnées.",
+    "name": "Nom affiché",
+    "nameHelp": "Affiché sur le bouton de connexion, par exemple le nom de l'entreprise ou de l'IdP.",
+    "enabled": "Afficher sur la page de connexion",
+    "sp": {
+      "title": "Détails du fournisseur de service",
+      "description": "Copiez-les dans l'app SAML que vous créez chez votre fournisseur d'identité.",
+      "entityId": "ID d'entité (audience)",
+      "acsUrl": "URL du service consommateur d'assertions",
+      "metadataUrl": "URL des métadonnées",
+      "saveFirst": "Enregistrez la connexion pour obtenir ses URL.",
+      "copy": "Copier {{label}}"
+    },
+    "import": {
+      "title": "Importer les métadonnées de l'IdP",
+      "description": "Collez l'URL des métadonnées ou le XML de votre fournisseur d'identité. Cela renseigne l'ID d'entité, l'URL de connexion et le certificat de signature, en prenant le plus récent valide aujourd'hui quand les métadonnées en listent plusieurs.",
+      "url": "URL des métadonnées",
+      "xml": "XML des métadonnées",
+      "button": "Importer les métadonnées",
+      "done": "Métadonnées importées. Vérifiez puis activez la connexion."
+    },
+    "idp": {
+      "title": "Fournisseur d'identité",
+      "description": "Renseignés par l'import, ou saisissez-les à la main. Les réponses doivent être signées par ce certificat.",
+      "entityId": "ID d'entité de l'IdP (émetteur)",
+      "ssoUrl": "URL de connexion de l'IdP",
+      "certificates": "Certificat de signature (PEM)",
+      "certificatesHelp": "Un seul certificat. Quand le fournisseur d'identité renouvelle sa clé, collez ou importez le nouveau certificat au moment du changement."
+    },
+    "access": {
+      "title": "Comptes et rôles",
+      "description": "Décidez qui peut se connecter et quel rôle il reçoit.",
+      "jit": "Créer des comptes à la première connexion",
+      "jitHelp": "Désactivé : seules les personnes ayant déjà un compte ici peuvent se connecter.",
+      "syncRoles": "Appliquer le rôle associé à chaque connexion",
+      "syncRolesHelp": "Les changements de groupe chez le fournisseur d'identité prennent effet à la connexion suivante. Les personnes sans groupe associé reçoivent le rôle par défaut, ou sont refusées s'il n'y en a pas.",
+      "defaultRole": "Rôle par défaut",
+      "defaultRoleNone": "Aucun : refuser les personnes sans groupe associé",
+      "domains": "Domaines d'e-mail autorisés",
+      "domainsHelp": "Obligatoire. Séparés par des virgules, par exemple example.com. Seuls ces domaines peuvent se connecter, ce qui évite que des comptes extérieurs correspondent aux vôtres."
+    },
+    "attributes": {
+      "title": "Noms d'attributs",
+      "description": "Laissez vide pour utiliser les noms courants d'Okta, Entra ID et Keycloak.",
+      "email": "Attribut e-mail",
+      "name": "Attribut du nom affiché",
+      "groups": "Attribut des groupes"
+    },
+    "save": "Enregistrer la connexion",
+    "saved": "Connexion enregistrée",
+    "delete": "Supprimer la connexion",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteBody": "Les personnes liées via cette connexion conservent leur compte mais ne peuvent plus se connecter avec elle.",
+    "deleted": "Connexion supprimée"
+  },
+  "mappings": {
+    "title": "Associations groupe vers rôle",
+    "description": "Quand quelqu'un se connecte, ou qu'un groupe d'annuaire change, le groupe correspondant de plus haute priorité décide de son rôle. Les noms de groupe sont comparés sans tenir compte de la casse.",
+    "group": "Nom du groupe",
+    "role": "Rôle",
+    "priority": "Priorité",
+    "add": "Ajouter une association",
+    "remove": "Supprimer l'association pour {{group}}",
+    "empty": "Aucune association. Tout le monde reçoit le rôle par défaut de la connexion.",
+    "save": "Enregistrer les associations",
+    "saved": "Associations enregistrées"
+  },
+  "enforce": {
+    "title": "Exiger l'authentification unique",
+    "description": "Refuse la connexion par mot de passe, passkey et code e-mail pour tout le monde sauf les utilisateurs root.",
+    "label": "Exiger le SSO pour les utilisateurs non root",
+    "breakGlass": "Les utilisateurs root gardent leur mot de passe comme accès d'urgence, et recover-admin sur l'hôte le réinitialise toujours. Consultez la documentation sur l'accès d'urgence.",
+    "on": "L'authentification unique est désormais exigée",
+    "off": "La connexion locale est de nouveau autorisée"
+  },
+  "spCert": {
+    "title": "Certificat du fournisseur de service",
+    "description": "Généré à la première utilisation. Certains fournisseurs d'identité le demandent pour vérifier les requêtes signées ou chiffrer les assertions.",
+    "none": "Indisponible tant que la clé maîtresse du plan de contrôle n'est pas configurée."
+  },
+  "scim": {
+    "title": "Synchronisation d'annuaire (SCIM)",
+    "description": "Laissez votre fournisseur d'identité créer, mettre à jour et désactiver des comptes et des groupes. Désactiver quelqu'un là-bas met fin immédiatement à ses sessions ici.",
+    "baseUrl": "URL de base SCIM",
+    "defaultRole": "Rôle des nouveaux utilisateurs d'annuaire",
+    "defaultRoleHelp": "Utilisé quand aucune association de groupe ne correspond. Avec des associations de groupe, les changements de groupe d'annuaire mettent les rôles à jour immédiatement.",
+    "roleSaved": "Rôle par défaut de l'annuaire enregistré",
+    "tokens": "Tokens",
+    "tokenName": "Nom du token",
+    "tokenNamePlaceholder": "okta-provisioning",
+    "create": "Créer un token",
+    "empty": "Aucun token SCIM pour l'instant. Créez-en un et collez-le dans votre fournisseur d'identité.",
+    "rotate": "Renouveler",
+    "revoke": "Révoquer",
+    "revoked": "Révoqué",
+    "neverUsed": "Jamais utilisé",
+    "lastUsed": "Dernière utilisation {{date}}",
+    "revokeTitle": "Révoquer {{name}} ?",
+    "revokeBody": "Le provisionnement avec ce token s'arrête immédiatement.",
+    "revokedToast": "Token révoqué",
+    "shownOnceTitle": "Copiez le token maintenant",
+    "shownOnceBody": "Il n'est affiché qu'une fois et n'est stocké que sous forme de hash. Collez-le dans les paramètres SCIM de votre fournisseur d'identité.",
+    "done": "Terminé"
+  },
+  "policy": {
+    "eyebrow": "Sécurité",
+    "title": "Politique de session",
+    "description": "Règles par équipe auxquelles chaque requête est confrontée : délai d'inactivité, âge maximal de session, réseaux autorisés et connexion à deux facteurs obligatoire. Les personnes de plusieurs équipes reçoivent la combinaison la plus stricte.",
+    "yourAddress": "Votre adresse : {{address}}",
+    "recoveryTitle": "Verrouillé ?",
+    "recoveryBody": "Sur l'hôte, exécutez levelrail access-policy-reset --yes pour supprimer toutes les politiques de session, puis reconnectez-vous. Enregistrer une politique qui bloquerait votre propre adresse est refusé.",
+    "noPolicy": "Aucune politique",
+    "edit": "Modifier la politique",
+    "idle": "Délai d'inactivité",
+    "idleHelp": "Termine les sessions inutilisées pendant cette durée, par exemple 30m. Minimum 5m. Vide désactive.",
+    "maxAge": "Âge maximal de session",
+    "maxAgeHelp": "Termine les sessions plus anciennes que cette durée, par exemple 12h. Minimum 15m. Vide désactive.",
+    "maxSessions": "Sessions simultanées par personne",
+    "maxSessionsHelp": "Nombre maximal de sessions complètes qu'une personne peut détenir en même temps, tous navigateurs et appareils confondus. 0 désactive le plafond.",
+    "onLimit": "Quand le plafond est atteint",
+    "onLimitEvict": "Déconnecter la plus ancienne session",
+    "onLimitReject": "Refuser la nouvelle connexion",
+    "onLimitHelp": "Vérifié à la première requête après la connexion ou l'étape à deux facteurs, puis toutes les 30 secondes. Les sessions au-delà du plafond se terminent avec un message clair.",
+    "allowlist": "Réseaux autorisés",
+    "allowlistHelp": "Une adresse IP ou un CIDR par ligne. S'applique aux sessions et aux tokens d'API. Vide autorise toute adresse.",
+    "requireMfa": "Exiger la connexion à deux facteurs",
+    "requireMfaHelp": "Les personnes sans application d'authentification ni passkey ne peuvent qu'en enrôler une jusque-là. Les connexions SAML comptent, car le fournisseur d'identité gère la MFA.",
+    "save": "Enregistrer la politique",
+    "saved": "Politique de session enregistrée",
+    "clear": "Supprimer la politique",
+    "cleared": "Politique de session supprimée",
+    "sheetTitle": "Politique de session pour {{team}}",
+    "summaryIdle": "inactivité {{value}}",
+    "summaryMaxAge": "max {{value}}",
+    "summaryMfa": "MFA requise",
+    "summarySessionsEvict_one": "{{count}} session, la plus ancienne se termine",
+    "summarySessionsEvict_many": "{{count}} sessions, les plus anciennes se terminent",
+    "summarySessionsEvict_other": "{{count}} sessions, les plus anciennes se terminent",
+    "summarySessionsReject_one": "{{count}} session, puis refus",
+    "summarySessionsReject_many": "{{count}} sessions, puis refus",
+    "summarySessionsReject_other": "{{count}} sessions, puis refus",
+    "summaryAllow_one": "{{count}} réseau",
+    "summaryAllow_many": "{{count}} réseaux",
+    "summaryAllow_other": "{{count}} réseaux"
+  },
+  "oidc": {
+    "title": "Connexion OAuth et OIDC",
+    "description": "Les mêmes contrôles que SAML pour les fournisseurs activés sous Paramètres, Connexion OAuth : quels groupes donnent quel rôle, si une première connexion crée un compte et quels domaines d'e-mail peuvent se connecter.",
+    "emptyTitle": "Aucun fournisseur OAuth ou OIDC pour l'instant",
+    "emptyBody": "Activez un fournisseur sous Paramètres, Connexion OAuth. Il apparaît ici avec sa politique de connexion.",
+    "syncBadge": "Synchronise les rôles",
+    "state": {
+      "enabled": "Activé",
+      "off": "Désactivé"
+    },
+    "form": {
+      "title": "Politique de connexion pour {{name}}",
+      "sheetDescription": "Les associations groupe vers rôle sont partagées avec SAML et la synchronisation d'annuaire : modifiez-les dans la carte des associations de cette page.",
+      "access": {
+        "title": "Accès",
+        "description": "Moindre privilège par défaut : les inconnus sont refusés, et personne n'obtient plus que le rôle choisi ici."
+      },
+      "jit": "Créer un compte à la première connexion",
+      "jitHelp": "Désactivé : une personne sans compte ici est refusée sauf si vous l'avez invitée d'abord. Activé : la première connexion crée un compte avec le rôle associé, ou le rôle par défaut.",
+      "syncRoles": "Réappliquer le rôle associé à chaque connexion",
+      "syncRolesHelp": "Désactivé : un rôle n'est défini qu'à la création du compte. Activé : il suit les groupes à chaque connexion, et les rétrogradations sont écrites dans le journal d'audit. Les utilisateurs root ne sont jamais modifiés.",
+      "defaultRole": "Rôle par défaut",
+      "defaultRoleHelp": "Pour les personnes auxquelles aucune association ne correspond. Un rôle qui détient root n'est jamais proposé : une revendication de connexion ne peut pas l'accorder.",
+      "domains": "Domaines d'e-mail autorisés",
+      "domainsHelp": "Séparés par des virgules, par exemple example.com. Seuls ces domaines peuvent se connecter, et la page de connexion les envoie vers ce fournisseur. Vide autorise tout domaine et désactive le routage.",
+      "groups": {
+        "title": "Groupes",
+        "description": "Où ce fournisseur indique dans quels groupes se trouve une personne.",
+        "unsupported": "Ce fournisseur n'envoie aucun token d'ID vérifié d'où lire les groupes, donc tout le monde reçoit le rôle par défaut. Utilisez le fournisseur OpenID Connect générique avec votre fournisseur d'identité pour associer des groupes."
+      },
+      "groupsClaim": "Revendication des groupes",
+      "groupsClaimHelp": "La revendication du token d'ID qui liste les noms de groupes, par exemple groups, roles ou realm_access.roles. Seul le token d'ID signé est lu.",
+      "save": "Enregistrer la politique",
+      "saved": "Politique de connexion enregistrée"
+    },
+    "test": {
+      "button": "Tester la connexion",
+      "hint": "Une connexion de test vous connecte chez le fournisseur et montre ce que ferait une connexion. Elle ne crée aucun compte, rôle ni session. Enregistrez d'abord vos modifications.",
+      "allowed": "Cette connexion serait autorisée",
+      "refused": "Cette connexion serait refusée",
+      "groups": "Groupes",
+      "noGroups": "aucun",
+      "role": "Rôle",
+      "source": {
+        "mapping": "depuis une association de groupe",
+        "default": "le rôle par défaut"
+      },
+      "account": "Compte",
+      "accountState": {
+        "linked": "déjà lié",
+        "existing_by_email": "compte existant trouvé par e-mail",
+        "new_account": "un nouveau compte serait créé",
+        "not_provisioned": "aucun, et la création de compte est désactivée"
+      },
+      "issue": {
+        "no_groups_claim": "Le token d'ID n'a pas de revendication \"{{claim}}\", donc tout le monde reçoit le rôle par défaut. Ajoutez une revendication de groupes au token d'ID chez votre fournisseur d'identité.",
+        "wrong_claim_name": "Le token d'ID n'a pas de revendication \"{{claim}}\", mais il contient une liste appelée \"{{value}}\".",
+        "email_unverified": "Le fournisseur n'a pas marqué cet e-mail comme vérifié, donc la connexion est refusée. Vérifiez l'adresse chez le fournisseur.",
+        "domain_not_allowed": "Ce domaine d'e-mail ne figure pas dans la liste autorisée.",
+        "not_provisioned": "Aucun compte n'existe pour cette personne et la création de compte est désactivée.",
+        "role_grants_root": "Le rôle que recevrait cette connexion détient root, ou n'existe plus. Une revendication ne peut jamais accorder root.",
+        "no_email": "Le fournisseur n'a envoyé aucune adresse e-mail."
+      },
+      "fix": {
+        "set_groups_claim": "Utiliser {{value}} comme revendication des groupes",
+        "add_domain": "Autoriser {{value}}",
+        "enable_jit": "Activer la création de compte"
+      },
+      "fixManual": "Corriger chez le fournisseur d'identité",
+      "fixed": "Politique mise à jour. Relancez le test.",
+      "failedTitle": "La connexion de test ne s'est pas terminée",
+      "failedBody": "Le fournisseur ou la redirection a échoué (code {{code}}). Vérifiez l'ID client, le secret client et l'URL de redirection, puis réessayez.",
+      "nothingCreated": "Rien n'a été créé : aucun compte, rôle ni session."
+    }
+  },
+  "saml": {
+    "test": {
+      "button": "Tester la connexion",
+      "hint": "Ouvre la vraie connexion chez votre fournisseur d'identité et montre ce qu'il a envoyé et ce que ferait une connexion. Elle ne crée aucun compte, rôle ni session. Enregistrez d'abord vos modifications.",
+      "allowed": "Cette connexion serait autorisée",
+      "refused": "Cette connexion serait refusée",
+      "email": "E-mail",
+      "none": "aucun",
+      "fixed": "Connexion mise à jour. Relancez le test.",
+      "fixManual": "Corriger chez le fournisseur d'identité",
+      "failureCode": "Code : {{code}}",
+      "issue": {
+        "no_groups_claim": "La réponse ne contient pas d'attribut \"{{attribute}}\", donc tout le monde reçoit le rôle par défaut. Ajoutez une déclaration d'attribut de groupe chez votre fournisseur d'identité et définissez son nom comme attribut des groupes.",
+        "domain_not_allowed": "Ce domaine d'e-mail n'est pas revendiqué par la connexion.",
+        "not_provisioned": "Aucun compte n'existe pour cette personne et la création de compte est désactivée.",
+        "role_grants_root": "Le rôle que recevrait cette connexion détient root, ou n'existe plus. Une revendication ne peut jamais accorder root.",
+        "no_email": "La réponse ne contenait aucune adresse e-mail. Vérifiez le nom de l'attribut e-mail et le format du NameID.",
+        "wrong_claim_name": "La réponse ne contient pas d'attribut \"{{attribute}}\". Comparez le nom de l'attribut des groupes avec ce que le fournisseur d'identité envoie.",
+        "email_unverified": "Le fournisseur d'identité ne s'est pas porté garant de cette adresse e-mail."
+      },
+      "failure": {
+        "clock_skew": {
+          "title": "Décalage d'horloge",
+          "step": "L'assertion était hors de sa fenêtre de validité. Vérifiez que les horloges de ce serveur et du fournisseur d'identité concordent à trois minutes près (NTP), puis réessayez."
+        },
+        "audience_mismatch": {
+          "title": "Audience incorrecte",
+          "step": "Le fournisseur d'identité s'est adressé à un autre fournisseur de service. Définissez son audience (ID d'entité) sur {{entityId}} et son URL ACS sur {{acs}}."
+        },
+        "signature_invalid": {
+          "title": "Signature invalide",
+          "step": "L'assertion n'est pas signée par le certificat enregistré. Importez à nouveau les métadonnées du fournisseur d'identité et assurez-vous qu'il signe l'assertion, pas seulement la réponse."
+        },
+        "request_mismatch": {
+          "title": "La réponse ne correspond pas à la requête",
+          "step": "La réponse correspondait à une autre requête ou destination. Relancez le test depuis cette page et vérifiez l'URL ACS {{acs}} chez le fournisseur d'identité."
+        },
+        "response_invalid": {
+          "title": "Réponse refusée",
+          "step": "La réponse n'a pas pu être vérifiée. Consultez les logs du fournisseur d'identité, puis importez à nouveau ses métadonnées."
+        },
+        "saml_unavailable": {
+          "title": "La connexion n'est pas disponible",
+          "step": "SAML a besoin d'une URL de tableau de bord en https et de la clé maîtresse du plan de contrôle. Corrigez les deux sous Paramètres, Général, puis réessayez."
+        }
+      }
+    }
+  }
+}

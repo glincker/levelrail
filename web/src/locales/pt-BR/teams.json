@@ -1,0 +1,139 @@
+{
+  "page": {
+    "title": "Equipes",
+    "description": "Quem pode ver e alterar quais projetos. Cada equipe é dona de seus projetos, ambientes, apps e bancos de dados.",
+    "create": "Nova equipe",
+    "createTitle": "Criar uma equipe",
+    "createName": "Nome da equipe",
+    "createSubmit": "Criar equipe",
+    "created": "Equipe criada",
+    "empty": "Você ainda não está em nenhuma equipe. Peça um link de convite a um administrador da equipe.",
+    "pick": "Equipe",
+    "defaultTeam": "Padrão",
+    "defaultHint": "A equipe padrão é a própria instância. Os administradores da instância gerenciam seus membros na página Usuários e aqui.",
+    "eyebrow": "Acesso",
+    "help": "Guia de equipes e papéis",
+    "count_one": "{{count}} equipe",
+    "count_many": "{{count}} equipes",
+    "count_other": "{{count}} equipes",
+    "banner": {
+      "title": "Todos estão na equipe padrão",
+      "body": "Crie uma equipe para dar a um grupo seus próprios projetos, ambientes, apps e bancos de dados, com seus próprios proprietários e membros."
+    }
+  },
+  "roles": {
+    "owner": "Proprietário",
+    "admin": "Administrador",
+    "developer": "Desenvolvedor",
+    "viewer": "Leitor",
+    "ownerHint": "Tudo, incluindo excluir a equipe e transferir a propriedade.",
+    "adminHint": "Faz deploy em qualquer lugar, inclusive em ambientes protegidos, e gerencia membros.",
+    "developerHint": "Faz deploy, edita variáveis de ambiente e lê logs, exceto em ambientes protegidos.",
+    "viewerHint": "Lê apps, bancos de dados e logs. Não altera nada.",
+    "yourRole": "Seu papel: {{role}}"
+  },
+  "members": {
+    "tableLabel": "Membros da equipe",
+    "title": "Membros",
+    "email": "E-mail",
+    "name": "Nome",
+    "role": "Papel",
+    "actions": "Ações",
+    "remove": "Remover",
+    "removed": "Membro removido",
+    "roleChanged": "Papel atualizado",
+    "leave": "Sair da equipe",
+    "left": "Você saiu da equipe",
+    "transfer": "Tornar proprietário",
+    "transferred": "Propriedade transferida. Agora você é administrador.",
+    "roleLabel": "Papel de {{email}}"
+  },
+  "invites": {
+    "tableLabel": "Convites da equipe",
+    "statusHeader": "Status",
+    "title": "Convites",
+    "create": "Convidar",
+    "email": "E-mail (opcional)",
+    "emailHint": "Deixe vazio para um link de uso único que qualquer pessoa com ele pode resgatar.",
+    "role": "Papel",
+    "expires": "Expira em horas (opcional)",
+    "submit": "Criar convite",
+    "created": "Convite criado. Copie o link agora, ele não será exibido novamente.",
+    "copy": "Copiar link",
+    "copied": "Link copiado",
+    "revoke": "Revogar",
+    "revoked": "Convite revogado",
+    "link": "Convite por link",
+    "empty": "Ainda não há convites.",
+    "status": {
+      "pending": "Pendente",
+      "accepted": "Aceito",
+      "revoked": "Revogado",
+      "expired": "Expirado"
+    }
+  },
+  "events": {
+    "title": "Trilha de auditoria da equipe",
+    "empty": "Nenhuma alteração de membros registrada ainda."
+  },
+  "switcher": {
+    "aria": "Equipe e projeto",
+    "allTeams": "Todas as equipes",
+    "allProjects": "Todos os projetos",
+    "team": "Equipe",
+    "project": "Projeto"
+  },
+  "forbidden": {
+    "title": "Você não tem acesso aqui",
+    "body": "Seu papel atual na equipe não permite isto, ou isto pertence a outra equipe.",
+    "switch": "Trocar de equipe",
+    "teams": "Abrir equipes",
+    "home": "Voltar ao painel"
+  },
+  "accept": {
+    "title": "Entrar em uma equipe",
+    "description": "Você foi convidado a entrar em uma equipe.",
+    "summary": "Entrar em {{team}} como {{role}}",
+    "signedInHint": "Você está conectado, então o convite entra na sua conta atual.",
+    "newAccountHint": "Ainda não tem conta? Crie uma aqui. Ela pertence somente a esta equipe.",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome de exibição (opcional)",
+    "submit": "Entrar na equipe",
+    "joined": "Você entrou na equipe",
+    "invalid": "Este convite é inválido, expirou, foi revogado ou já foi usado. Peça um novo ao administrador da equipe.",
+    "missing": "Este link não tem token de convite."
+  },
+  "quota": {
+    "title": "Cotas",
+    "teamHint": "Limites para tudo que está sob esta equipe. Uma alteração que ultrapassaria um limite é recusada, com o limite e o uso atual.",
+    "projectHint": "Limites para tudo que está sob este projeto, além de quaisquer limites da equipe.",
+    "resources": {
+      "apps": "Apps",
+      "databases": "Bancos de dados",
+      "memory": "Memória reservada (MB)",
+      "cpu": "CPU reservada (núcleos)",
+      "previews": "Ambientes de preview"
+    },
+    "fields": {
+      "apps": "Máx. de apps",
+      "databases": "Máx. de bancos de dados",
+      "memory": "Memória máx. (MB)",
+      "cpu": "CPU máx. (núcleos)",
+      "previews": "Máx. de previews"
+    },
+    "usage": "{{used}} de {{limit}}",
+    "usageUnlimited": "{{used}} em uso, sem limite",
+    "full": "No limite",
+    "nearLimit": "Perto do limite",
+    "editHint": "0 significa ilimitado. Os recursos existentes nunca são parados quando um limite é reduzido.",
+    "save": "Salvar limites",
+    "clear": "Remover todos os limites",
+    "saved": "Cota salva",
+    "cleared": "Limites da cota removidos",
+    "readOnly": "Somente administradores e proprietários da equipe podem alterar estes limites."
+  },
+  "errors": {
+    "generic": "A requisição falhou: {{message}}"
+  }
+}

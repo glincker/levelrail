@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Tráfego",
+    "description": "Cada domínio roteado pelo ingress embutido deste control plane, qual node o atende de fato e se ele está acessível."
+  },
+  "table": {
+    "label": "Domínios roteados",
+    "domain": "Domínio",
+    "app": "App",
+    "node": "Node",
+    "reachable": "Acessível",
+    "port": "Porta",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "Acessível",
+    "no": "Inacessível"
+  },
+  "unreachableBanner_one": "1 domínio está inacessível: o app dele roda em outro node e o ingress deste control plane não tem um caminho utilizável pela malha WireGuard até ele. Verifique o status da malha na página Rede.",
+  "unreachableBanner_many": "{{count}} domínios estão inacessíveis: os apps deles rodam em outros nodes e o ingress deste control plane não tem um caminho utilizável pela malha WireGuard até eles. Verifique o status da malha na página Rede.",
+  "unreachableBanner_other": "{{count}} domínios estão inacessíveis: os apps deles rodam em outros nodes e o ingress deste control plane não tem um caminho utilizável pela malha WireGuard até eles. Verifique o status da malha na página Rede.",
+  "fix": {
+    "explanation": "O caminho pela malha WireGuard até o node deste app não está utilizável, então o ingress embutido não consegue alcançá-lo. Corrija a malha ou mova o app de volta para este node.",
+    "moveHere": "Mover para este node"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "Personalizado"
+  },
+  "empty": {
+    "title": "Nenhum domínio roteado ainda",
+    "description": "Conecte um domínio na aba Domínios de um app para ver aqui o caminho do tráfego."
+  },
+  "automaticDomain": {
+    "badge": "Automático",
+    "betaHint": "Endereço de teste gratuito de um serviço público de DNS curinga. Funciona apenas enquanto esse serviço resolver na sua rede. Adicione seu próprio domínio para produção.",
+    "hint": "Atribuído pelo Levelrail a partir do IP deste servidor para que o app funcione sem configurar DNS. Adicione seu próprio domínio abaixo para substituí-lo.",
+    "open": "Abrir",
+    "tlsNote": "Esta URL automática usa um certificado autoassinado até que o HTTPS seja ativado em Domínios. HTTP simples recebe um redirecionamento 308 para ela."
+  },
+  "banner": {
+    "description": "Os domínios roteados por este control plane aparecerão aqui, com o node que atende cada um e se ele está acessível."
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "title": "Container",
+  "count_one": "{{count}} Replikat",
+  "count_other": "{{count}} Replikate",
+  "loading": "Container werden geladen",
+  "forbidden": "Sie haben keine Berechtigung, die Container dieser App einzusehen.",
+  "error": "Container konnten nicht geladen werden: {{message}}",
+  "empty": {
+    "title": "Keine Container aktiv",
+    "description": "Die App ist gestoppt oder im Ruhemodus. Aktueller Status: {{status}}."
+  },
+  "unavailable": "Nicht verfügbar",
+  "unavailableTip": "Der Agent meldet dieses Feld für entfernte Nodes nicht.",
+  "none": "Keine",
+  "copyId": "Container-ID kopieren",
+  "copied": "Kopiert",
+  "restarts_one": "{{count}} Neustart",
+  "restarts_other": "{{count}} Neustarts",
+  "uptime": "Läuft seit {{duration}}",
+  "node": "Node",
+  "fields": {
+    "image": "Image",
+    "digest": "Digest",
+    "ports": "Ports",
+    "networks": "Netzwerke",
+    "mounts": "Mounts",
+    "limits": "Limits",
+    "cpu": "CPU",
+    "memory": "Arbeitsspeicher",
+    "health": "Zustand"
+  },
+  "state": {
+    "running": "Läuft",
+    "stopped": "Gestoppt",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "Fehlerfrei",
+    "unhealthy": "Fehlerhaft",
+    "starting": "Startet",
+    "none": "Keine Prüfung",
+    "streak": "{{count}} Fehler in Folge"
+  },
+  "readOnly": "ro",
+  "limitsValue": "{{cpu}} CPU, {{memory}}",
+  "noLimit": "Kein Limit",
+  "usage": "{{used}} von {{limit}}"
+}

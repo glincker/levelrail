@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "label": "メールのセクション",
+    "delivery": "配信",
+    "templates": "テンプレート",
+    "audiences": "オーディエンス",
+    "messages": "メッセージ"
+  },
+  "common": {
+    "loadError": "このページを読み込めませんでした。",
+    "retry": "もう一度試す",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "delete": "削除",
+    "saving": "保存中",
+    "people": "{{count}}人"
+  },
+  "templates": {
+    "eyebrow": "メール",
+    "title": "メールテンプレート",
+    "description": "プラットフォームが送信するすべてのメールを、ブランドを反映した共通のレイアウトで管理します。文面を編集し、サンプルデータでプレビューして、いつでも既定に戻せます。",
+    "kind": {
+      "system": "アカウントとセキュリティ",
+      "announcement": "お知らせ"
+    },
+    "customized": "カスタマイズ済み",
+    "builtIn": "組み込み",
+    "edit": "編集",
+    "listHeading": "テンプレート",
+    "layout": {
+      "title": "共通レイアウト",
+      "description": "すべてのメールを囲む枠です。任意のヘッダー画像と、郵送先住所などのフッター行を設定できます。",
+      "headerImage": "ヘッダー画像のアドレス",
+      "headerImageHelp": "ブランド名の上に表示されるhttpsの画像です。空の場合はブランド名のみ表示されます。",
+      "footer": "フッターのテキスト",
+      "footerHelp": "すべてのメールの下部に表示されます。{{examples}}などのグローバルトークンが使用できます。",
+      "save": "レイアウトを保存",
+      "saved": "レイアウトを保存しました。"
+    },
+    "editor": {
+      "back": "すべてのテンプレート",
+      "subject": "件名",
+      "preheader": "プリヘッダー",
+      "preheaderHelp": "受信トレイによっては件名の横に表示されるプレビュー行です。",
+      "body": "本文",
+      "bodyHelp": "空行で新しい段落になります。見出しは#、リストは-、コールアウトは>、太字は**太字**、リンクは[ラベル](アドレス)、ボタンは!button ラベル|アドレスを使います。",
+      "save": "テンプレートを保存",
+      "saved": "テンプレートを保存しました。",
+      "reset": "既定に戻す",
+      "resetTitle": "このテンプレートをリセットしますか?",
+      "resetDescription": "組み込みの文面に戻ります。編集内容はバージョン履歴に残ります。",
+      "resetDone": "テンプレートをリセットしました。",
+      "sendTest": "自分にテストを送信",
+      "testSent": "{{email}}にテストを送信しました。",
+      "noProviderTitle": "メールプロバイダーが設定されていません",
+      "noProviderBody": "先にプロバイダーを設定してから、テストを送信してください。",
+      "fixProvider": "メール設定を開く"
+    },
+    "tokens": {
+      "title": "トークン",
+      "description": "トークンを選択すると、カーソル位置に挿入されます。不明なトークンは、保存時に拒否されます。",
+      "scope": {
+        "global": "すべての場所",
+        "recipient": "受信者について",
+        "event": "このメール用"
+      },
+      "insert": "{{name}}を挿入"
+    },
+    "preview": {
+      "title": "プレビュー",
+      "desktop": "デスクトップ",
+      "mobile": "モバイル",
+      "light": "ライト",
+      "dark": "ダーク",
+      "frameTitle": "メールのプレビュー",
+      "plain": "プレーンテキスト版",
+      "error": "プレビューには有効なテンプレートが必要です: {{message}}",
+      "deviceLabel": "プレビューのデバイス",
+      "schemeLabel": "プレビューの配色"
+    },
+    "history": {
+      "title": "バージョン履歴",
+      "description": "直近10件の保存済みバージョンです。",
+      "empty": "保存済みのバージョンはまだありません。最初の保存で作成されます。",
+      "restore": "復元",
+      "restored": "バージョンを復元しました。",
+      "version": "バージョン{{version}}",
+      "by": "{{who}}による"
+    }
+  },
+  "audiences": {
+    "eyebrow": "メール",
+    "title": "オーディエンス",
+    "description": "メールを送る相手を保存したグループです。ルールでロール、チーム、プロジェクト、サインイン用ドメイン、非アクティブ期間によってユーザーを選べ、追加のアドレスも手動で加えられます。",
+    "create": "新しいオーディエンス",
+    "edit": "編集",
+    "empty": {
+      "title": "オーディエンスはまだありません",
+      "description": "全管理者や90日間非アクティブの全員などのグループを作成し、メッセージを送信できます。"
+    },
+    "columns": {
+      "name": "オーディエンス",
+      "recipients": "受信者",
+      "suppressed": "配信停止"
+    },
+    "dialog": {
+      "createTitle": "新しいオーディエンス",
+      "editTitle": "オーディエンスを編集",
+      "name": "名前",
+      "description": "説明",
+      "rules": "含める対象",
+      "everyone": "すべてのユーザー",
+      "roles": "ロール",
+      "teams": "チーム",
+      "projects": "プロジェクト (所属チーム)",
+      "domains": "サインイン用メールのドメイン",
+      "domainsHelp": "1行に1つ、例: example.com",
+      "inactive": "サインインしていない期間 (日)",
+      "inactiveHelp": "選択を絞り込みます。他に何も選ばれていない場合は、その期間非アクティブなすべての人が対象になります。",
+      "extra": "追加のアドレス",
+      "extraHelp": "1行に1つ。ユーザーでなくても追加されます。",
+      "exclude": "常に除外",
+      "excludeHelp": "1行に1アドレス。",
+      "save": "オーディエンスを保存",
+      "saved": "オーディエンスを保存しました。",
+      "live": "{{deliverable}}人が受信し、{{suppressed}}人が配信停止しています。",
+      "liveSample": "最初の{{count}}人の受信者",
+      "noneChosen": "含まれる対象を表示するには、ルールを1つ以上選んでください。"
+    },
+    "role": {
+      "owner": "オーナー",
+      "admin": "管理者",
+      "operator": "オペレーター",
+      "viewer": "閲覧者"
+    },
+    "deleteTitle": "このオーディエンスを削除しますか?",
+    "deleteDescription": "過去のメッセージの履歴は残ります。削除されるのは保存済みのルールだけです。",
+    "deleted": "オーディエンスを削除しました。",
+    "suppressions": {
+      "title": "配信停止リスト",
+      "description": "ここにいる人には、お知らせは送信されません。セキュリティとアカウントのメールは常に届きます。",
+      "empty": "配信停止した人はいません。",
+      "add": "アドレスを追加",
+      "addPlaceholder": "name@example.com",
+      "remove": "削除",
+      "reasonAdmin": "管理者が追加",
+      "reasonUnsub": "メッセージから配信解除",
+      "added": "アドレスを配信停止リストに追加しました。"
+    }
+  },
+  "messages": {
+    "eyebrow": "メール",
+    "title": "メッセージ",
+    "description": "オーディエンスまたは選んだ相手にメールを送ります。メッセージは保存済みのレイアウトで、ワンクリックの配信解除リンク付きで、レート制限のもとで送信され、すべての送信が履歴に残ります。",
+    "compose": "新しいメッセージ",
+    "noProvider": {
+      "title": "メールが設定されていません",
+      "body": "メッセージの送信にはメールプロバイダーが必要です。設定してテストを送信してから、戻ってきてください。",
+      "fix": "メール設定を開く"
+    },
+    "composer": {
+      "title": "新しいメッセージ",
+      "template": "ベースにするもの",
+      "subject": "件名",
+      "body": "メッセージ",
+      "bodyHelp": "{{example}}などのトークンは、受信者ごとに値が入ります。",
+      "audience": "オーディエンス",
+      "audiencePlaceholder": "オーディエンスを選択",
+      "noAudience": "オーディエンスなし",
+      "extra": "追加の受信者",
+      "extraHelp": "1行に1アドレス、任意。",
+      "when": "送信タイミング",
+      "now": "今すぐ送信",
+      "later": "スケジュール",
+      "review": "確認して送信",
+      "sendTest": "自分にテストを送信",
+      "preview": "プレビュー",
+      "tokens": "トークンを挿入"
+    },
+    "confirm": {
+      "title": "このメッセージを送信しますか?",
+      "summary": "{{deliverable}}人にメールが送信されます。{{suppressed}}人は配信停止中です。",
+      "capLeft": "本日の上限の残りは{{count}}人です。",
+      "schedule": "{{time}}に開始されます。",
+      "send": "メッセージを送信",
+      "schedule_action": "メッセージをスケジュール",
+      "none": "このメッセージを受信する人はいません。"
+    },
+    "sent": "メッセージをキューに追加しました。",
+    "history": {
+      "title": "履歴",
+      "empty": {
+        "title": "メッセージはまだありません",
+        "description": "送信済みとスケジュール済みのメッセージが、配信数とともにここに表示されます。"
+      },
+      "columns": {
+        "subject": "件名",
+        "status": "ステータス",
+        "progress": "配信済み",
+        "when": "作成日時"
+      },
+      "progress": "{{total}}件中、送信{{sent}}件、失敗{{failed}}件、スキップ{{suppressed}}件",
+      "details": "詳細",
+      "cancel": "送信をキャンセル",
+      "cancelTitle": "このメッセージを停止しますか?",
+      "cancelDescription": "まだ届いていない人には送信されません。",
+      "cancelled": "メッセージをキャンセルしました。",
+      "recipients": "受信者",
+      "recipientStatus": {
+        "pending": "待機中",
+        "sent": "送信済み",
+        "failed": "失敗",
+        "suppressed": "配信停止",
+        "cancelled": "キャンセル済み"
+      }
+    },
+    "status": {
+      "scheduled": "スケジュール済み",
+      "sending": "送信中",
+      "completed": "完了",
+      "cancelled": "キャンセル済み",
+      "failed": "失敗"
+    }
+  }
+}

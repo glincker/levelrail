@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "pinned": "已固定",
+    "recentlyViewed": "最近查看",
+    "troubleshooting": "故障排查",
+    "allPages": "全部页面",
+    "docsSite": "文档站点"
+  },
+  "pin": {
+    "label": "固定页面",
+    "tooltip": "将此页面固定到收藏"
+  },
+  "unpin": {
+    "label": "取消固定",
+    "tooltip": "从收藏中移除此页面"
+  },
+  "filter": {
+    "troubleshootingOnly": "故障排查"
+  },
+  "toolbar": {
+    "export": "导出",
+    "copyMarkdown": "以 Markdown 复制页面",
+    "viewSourceGitHub": "在 GitHub 上查看源码",
+    "openDocsSite": "在文档站点打开",
+    "copied": "已复制"
+  },
+  "offlineNotice": {
+    "title": "离线副本",
+    "description": "这是内置于你服务器的离线副本,在无法访问互联网时使用。此页面的最新版本在文档站点上。",
+    "dismiss": "关闭"
+  },
+  "toc": {
+    "title": "本页内容"
+  },
+  "code": {
+    "copy": "复制",
+    "copied": "已复制"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "explain": {
+    "toggle": "Expliquer",
+    "loading": "Chargement de l'explication...",
+    "why": "Pourquoi c'est important",
+    "next": "Étape suivante",
+    "fix": "Correction typée"
+  },
+  "risk": {
+    "safe": "Sans risque",
+    "restarts": "Redémarre un service",
+    "exposes": "Ouvre l'accès"
+  },
+  "kind": {
+    "auto": "Un clic",
+    "guided": "Nécessite une étape sur le serveur",
+    "manual": "Étape manuelle"
+  },
+  "reversible": "Peut être annulé",
+  "irreversible": "Ne peut pas être annulé",
+  "willChange": "Ce qui va changer",
+  "cli": {
+    "summary": "Corriger via la CLI",
+    "hint": "Vous préférez un terminal ? Exécutez ceci sur le serveur, puis utilisez Revérifier."
+  },
+  "learnMore": "En savoir plus",
+  "copy": "Copier",
+  "copied": "Copié",
+  "apply": "Corriger maintenant",
+  "applying": "Application...",
+  "recheck": "Revérifier",
+  "rechecking": "Vérification...",
+  "confirmTitle": "Appliquer cette correction ?",
+  "confirmBody": "{{title}}. Examinez d'abord les changements listés.",
+  "paramLabel": "Adresse publique",
+  "paramPlaceholder": "Adresse IP ou nom d'hôte",
+  "triedAt": "Essayé à {{at}}, toujours bloqué car {{why}}",
+  "rateLimited": "Appliqué plusieurs fois au cours de la dernière heure. Attente avant de réessayer.",
+  "outcome": {
+    "fixed": "Corrigé. La vérification est maintenant réussie.",
+    "still_failing": "Échoue toujours : {{detail}}",
+    "cannot_fix_here": "Ne peut pas être corrigé d'ici : {{detail}}",
+    "skipped": "Rien à faire : {{detail}}"
+  },
+  "settingsHealth": {
+    "title": "Santé des paramètres",
+    "loading": "Vérification de cette instance...",
+    "summary": "{{failing}} vérifications sur {{total}} nécessitent votre attention",
+    "allGood": "Rien ne nécessite votre attention."
+  },
+  "blockers_one": "{{count}} blocage, {{dependent}} en dépendent",
+  "blockers_other": "{{count}} blocages, {{dependent}} en dépendent",
+  "blockers_many": "{{count}} blocages, {{dependent}} en dépendent",
+  "showDependent": "Afficher les vérifications dépendantes",
+  "hideDependent": "Masquer les vérifications dépendantes",
+  "stuck": {
+    "title": "Pourquoi ne s'exécute-t-il pas ?",
+    "healthy": "Prêt, rien à expliquer.",
+    "notReadyFor": "Pas prêt depuis {{duration}}",
+    "notReadyYet": "Pas prêt",
+    "timeline": "Chronologie des conditions",
+    "noCauses": "Aucune cause connue ne correspond pour l'instant. Ouvrez les logs, puis Revérifier.",
+    "confidenceHigh": "Cause probable",
+    "confidenceMedium": "Cause possible",
+    "evidence": "Éléments de preuve",
+    "recheck": "Revérifier",
+    "retryDeploy": "Relancer le déploiement",
+    "retrying": "Nouvelle tentative...",
+    "retryFailed": "Échec de la nouvelle tentative : {{message}}",
+    "retryStarted": "Déploiement démarré.",
+    "fixApplied": "Correction appliquée.",
+    "fixFailed": "Échec de la correction : {{message}}",
+    "loadFailed": "Impossible de charger le diagnostic.",
+    "show": "Afficher les détails",
+    "hide": "Masquer les détails"
+  },
+  "runtime": {
+    "engine": "Moteur",
+    "support": "Prise en charge",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "Moteur inconnu"
+    },
+    "level": {
+      "supported": "Pris en charge",
+      "best-effort": "Au mieux",
+      "unverified": "Non vérifié"
+    }
+  },
+  "diagnosis": {
+    "title": "Pourquoi cela ne fonctionne pas",
+    "crashloop": "Cette app plante en boucle",
+    "deployFailed": "Le dernier déploiement a échoué",
+    "noCause": "Aucune cause connue ne correspond pour l'instant. Consultez les lignes de log, puis Revérifier.",
+    "openLogs": "Ouvrir les logs",
+    "openDeployLogs": "Voir le log de build",
+    "copy": "Copier les lignes",
+    "copied": "Copié",
+    "lastLine": "Dernière ligne :",
+    "sectionLog": "Log de l'échec",
+    "sectionTimeline": "Chronologie des conditions",
+    "sectionOthers": "Autres causes possibles ({{count}})",
+    "showing": "Affichage des {{shown}} dernières lignes sur {{total}}.",
+    "linesLabel": "Dernières lignes de log du conteneur en échec",
+    "noLines": "Aucune ligne de log n'a été capturée pour cet échec.",
+    "openFullLogs": "Ouvrir les logs complets",
+    "crashSummary": "{{count}} redémarrages au cours des {{minutes}} dernières minutes."
+  }
+}

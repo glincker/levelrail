@@ -1,0 +1,60 @@
+{
+  "failing": {
+    "fallback": "需要处理，请打开应用查看原因。",
+    "fix": "查看部署",
+    "fixLabel": "查看 {{name}} 的部署"
+  },
+  "logs": {
+    "noContainer": "此应用没有运行中的容器，因此没有可流式查看的内容。",
+    "deploy": "去部署"
+  },
+  "bulkBar": {
+    "region": "批量操作",
+    "selected": "已选择 {{count}} 项",
+    "clear": "清除选择",
+    "more": "更多操作",
+    "review": "查看",
+    "readOnly": "你的账户为只读，因此批量操作已关闭。",
+    "reviewTitle": "{{action}} {{count}} 个应用",
+    "reviewDescription": "每个应用都会根据你的权限检查。你无权操作的应用会列为已拒绝，不会被改动。",
+    "resultsTitle": "{{action}}：结果",
+    "resultsLabel": "各应用结果",
+    "summary": "{{ok}} 个完成，{{failed}} 个未应用",
+    "typeCount": "输入 {{count}} 以确认",
+    "checking": "正在检查目标",
+    "working": "处理中",
+    "cancel": "取消",
+    "close": "关闭",
+    "confirm": "{{action}} {{count}} 个",
+    "warning": {
+      "stop": "这会停止 {{count}} 个应用，直到你再次启动它们。",
+      "delete": "这会永久删除 {{count}} 个应用。每次删除都会记录在审计日志中。"
+    },
+    "action": {
+      "restart": "重启",
+      "redeploy": "重新部署",
+      "stop": "停止",
+      "start": "启动",
+      "add-tag": "添加标签",
+      "remove-tag": "移除标签",
+      "set-environment": "设置环境",
+      "move-to-project": "移动到项目",
+      "delete": "删除"
+    },
+    "value": {
+      "add-tag": "标签（key 或 key:value）",
+      "remove-tag": "要移除的标签",
+      "set-environment": "环境名称或 ID",
+      "move-to-project": "项目 ID"
+    },
+    "status": {
+      "ok": "完成",
+      "would_apply": "将应用",
+      "denied": "已拒绝",
+      "not_found": "未找到",
+      "skipped": "已跳过",
+      "error": "失败"
+    }
+  },
+  "description": "描述：{{text}}"
+}

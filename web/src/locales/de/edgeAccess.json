@@ -1,0 +1,16 @@
+{
+  "title": "Anfragen",
+  "subtitle": "Die neuesten Anfragen über den Edge für diese App, die neuesten zuerst. Sie werden im Arbeitsspeicher gehalten und bei einem Neustart gelöscht.",
+  "filters": {
+    "minMs": "Langsamer als (ms)",
+    "path": "Pfad beginnt mit",
+    "errorsOnly": "Nur Serverfehler"
+  },
+  "list": {
+    "empty": "Noch keine passenden Anfragen. Senden Sie Traffic an eine der Domains dieser App, dann erscheinen sie hier innerhalb von Sekunden.",
+    "loadError": "Anfragen konnten nicht geladen werden: {{message}}",
+    "upstream": "Upstream-Fehler",
+    "emptyTitle": "Noch keine Anfragen",
+    "emptyAction": "Domains prüfen"
+  }
+}

@@ -10,7 +10,6 @@ import {
 } from '@thesvg/ui-react'
 import type { SearchSelectOption } from '@/components/ui/search-select'
 import { browserTimezone, supportedTimezones } from '../../lib/userPreferences'
-import { supportedLanguages } from '../../lib/languages'
 import { buildZoneOptions } from '../../lib/timezoneOptions'
 
 export const DEFAULT = ''
@@ -54,14 +53,6 @@ export function landingFor(
   return path in LANDING ? LANDING[path as keyof typeof LANDING] : LANDING['']
 }
 
-function englishLanguageName(code: string): string {
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code
-  } catch {
-    return code
-  }
-}
-
 /** useZoneOptions lists the browser default first, then every supported zone with its current offset. */
 export function useZoneOptions(now: Date): SearchSelectOption[] {
   const { t } = useTranslation('account')
@@ -74,25 +65,5 @@ export function useZoneOptions(now: Date): SearchSelectOption[] {
       ...buildZoneOptions(supportedTimezones(), now),
     ],
     [now, t],
-  )
-}
-
-/** useLanguageOptions lists "follow the browser" first, then each language with its English name. */
-export function useLanguageOptions(): SearchSelectOption[] {
-  const { t, i18n } = useTranslation('account')
-  return useMemo(
-    () => [
-      { value: DEFAULT, label: t('preferences.languageDefault') },
-      ...supportedLanguages(i18n).map((l) => {
-        const english = englishLanguageName(l.code)
-        return {
-          value: l.code,
-          label: l.name,
-          trailing: english === l.name ? undefined : english,
-          keywords: `${english} ${l.code}`,
-        }
-      }),
-    ],
-    [i18n, t],
   )
 }

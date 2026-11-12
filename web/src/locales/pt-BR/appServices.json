@@ -1,0 +1,16 @@
+{
+  "replicas": "Réplicas",
+  "decrease": "Diminuir réplicas de {{name}}",
+  "increase": "Aumentar réplicas de {{name}}",
+  "apply": "Aplicar",
+  "applying": "Aplicando",
+  "restart": "Reiniciar {{name}}",
+  "restartTitle": "Reiniciar {{name}}?",
+  "restartBody": "Isso recria os containers deste serviço. Os outros serviços continuam em execução.",
+  "restartConfirm": "Reiniciar",
+  "restarting": "Reiniciando",
+  "readOnly": "Você precisa da permissão de deploy para alterar um serviço",
+  "actions": "Ações",
+  "scaleFailed": "Não foi possível escalar este serviço.",
+  "restartFailed": "Não foi possível reiniciar este serviço."
+}

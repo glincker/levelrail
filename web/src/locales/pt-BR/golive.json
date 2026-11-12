@@ -1,0 +1,68 @@
+{
+  "title": "Colocar no ar",
+  "pageTitle": "Colocar no ar: {{name}}",
+  "intro": "Uma única checklist do seu app em execução até https no seu domínio. Cada etapa mostra o que foi encontrado e a única coisa a fazer em seguida.",
+  "domainLabel": "Domínio",
+  "noDomain": "Ainda não há domínio. As primeiras etapas funcionam sem um.",
+  "loading": "Verificando sua configuração",
+  "loadFailed": "Não foi possível carregar a checklist: {{message}}",
+  "retry": "Tentar novamente",
+  "recheck": "Verificar de novo",
+  "liveBanner": "No ar: {{url}}",
+  "openSite": "Abrir {{url}}",
+  "state": {
+    "not_live": "Fora do ar",
+    "waiting_dns": "Aguardando o DNS",
+    "waiting_certificate": "Aguardando o certificado",
+    "live": "No ar",
+    "needs_attention": "Precisa de atenção"
+  },
+  "status": {
+    "ok": "Concluído",
+    "warn": "Aviso",
+    "fail": "Precisa de ação",
+    "pending": "Aguardando",
+    "unknown": "Desconhecido"
+  },
+  "announce": "{{title}}: {{status}}",
+  "nextCheck": "Próxima verificação {{time}}",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "copyValue": "Copiar {{label}}",
+  "blocked": "Ainda não disponível: {{reason}}",
+  "actionFailed": "A ação falhou: {{message}}",
+  "scope": {
+    "control_plane_host": "Verificado a partir deste servidor. Isso não prova que o restante da internet consegue alcançá-lo. Um certificado Let's Encrypt é essa prova, porque o Let's Encrypt validou o domínio de fora."
+  },
+  "records": "Registros a criar",
+  "provider": {
+    "title": "Etapas de firewall do {{name}}",
+    "ports": "Abra estas portas de entrada",
+    "docs": "Abrir o guia do {{name}}",
+    "portRule": "{{port}}/{{protocol}} de {{source}}"
+  },
+  "fix": {
+    "title": "Abrir as portas 80 e 443?",
+    "description": "Isto altera o firewall do host. Somente estas portas são abertas, nenhuma outra regra é tocada e um firewall desativado continua desativado.",
+    "willRun": "Vai executar: {{command}}",
+    "undo": "Desfaça com: {{command}}",
+    "notPersistent": "A regra é perdida na reinicialização, a menos que você salve as regras do firewall.",
+    "confirm": "Abrir portas",
+    "pending": "Abrindo",
+    "refused": "Não é automático: {{reason}}"
+  },
+  "timeline": {
+    "title": "Atividade",
+    "empty": "Nada aconteceu ainda.",
+    "scheduled": "Agendado"
+  },
+  "badge": {
+    "link": "Abrir a checklist de colocar no ar para {{domain}}"
+  },
+  "cta": {
+    "title": "Seu app está rodando: coloque-o no ar no seu domínio",
+    "body": "Aponte um domínio para ele e obtenha um certificado automático, com status ao vivo em cada etapa.",
+    "button": "Colocar no ar"
+  },
+  "diagnoseLink": "Abrir a checklist de colocar no ar"
+}

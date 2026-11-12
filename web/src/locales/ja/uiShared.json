@@ -1,0 +1,85 @@
+{
+  "saveStatus": {
+    "saving": "保存中",
+    "saved": "保存しました",
+    "error": "保存できませんでした"
+  },
+  "breadcrumb": {
+    "label": "パンくずリスト"
+  },
+  "pagination": {
+    "label": "ページネーション",
+    "status": "{{count}} ページ中 {{page}} ページ目",
+    "previous": "前のページ",
+    "next": "次のページ"
+  },
+  "stepper": {
+    "decrease": "減らす",
+    "increase": "増やす"
+  },
+  "chip": {
+    "remove": "{{label}} を削除"
+  },
+  "timeRangeControls": {
+    "label": "時間範囲",
+    "refresh": "更新"
+  },
+  "logToolbar": {
+    "level": "ログレベル",
+    "levels": {
+      "all": "すべて",
+      "errors": "エラー",
+      "warnings": "警告",
+      "info": "情報",
+      "debug": "デバッグ"
+    },
+    "filterPlaceholder": "行を絞り込み",
+    "filterLabel": "ログの行を絞り込み",
+    "jumpToError": "最初のエラーへ移動",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copiedAnnounce": "クリップボードにコピーしました",
+    "download": "ダウンロード",
+    "shownOf": "{{total}} 行中 {{shown}} 行"
+  },
+  "filterChips": {
+    "group": "有効なフィルター",
+    "clearAll": "すべてのフィルターをクリア",
+    "showing": "{{total}} 件中 {{shown}} 件を表示",
+    "emptyTitle": "これらのフィルターに一致するものはありません",
+    "emptyBody": "全 {{total}} 件はそのまま残っています。フィルターを外すか、すべてクリアしてください。",
+    "status": "ステータス: {{value}}",
+    "search": "検索: {{value}}",
+    "tag": "タグ: {{value}}",
+    "environment": "環境: {{value}}",
+    "engine": "エンジン: {{value}}",
+    "labels": "ラベル: {{value}}"
+  },
+  "listKeys": {
+    "title": "キーボードショートカット",
+    "down": "次の行",
+    "up": "前の行",
+    "select": "行を選択",
+    "open": "行を開く",
+    "filter": "フィルターにフォーカス",
+    "hint": "これを表示または非表示",
+    "close": "キーボードショートカットを隠す"
+  },
+  "guidedEmpty": {
+    "viaCli": "またはCLIから実行",
+    "cliLabel": "CLIコマンド"
+  },
+  "savedViews": {
+    "button": "ビュー",
+    "label": "保存済みのビュー",
+    "empty": "保存済みのビューはまだありません。",
+    "apply": "ビュー {{name}} を適用",
+    "delete": "ビュー {{name}} を削除",
+    "deleted": "ビューを削除しました",
+    "saved": "ビュー {{name}} を保存しました",
+    "namePlaceholder": "現在のフィルターを次の名前で保存",
+    "shareTeam": "自分のチームと共有",
+    "teamBadge": "チーム",
+    "save": "ビューを保存"
+  }
+}

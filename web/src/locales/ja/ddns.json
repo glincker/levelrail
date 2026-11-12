@@ -1,0 +1,69 @@
+{
+  "title": "ダイナミックDNS",
+  "description": "パブリックIPが変わったときに、DNSレコードがこのサーバーを指し続けるようにします。変更はすぐに適用されます。",
+  "status": {
+    "running": "実行中",
+    "failing": "失敗中",
+    "off": "オフ",
+    "label": "アップデーターの状態"
+  },
+  "source": {
+    "stored": "保存済み",
+    "default": "既定値を使用中"
+  },
+  "enabled": "有効",
+  "provider": {
+    "label": "プロバイダー",
+    "generic": "汎用URL",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "DuckDNSのドメイン",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "更新URL",
+    "labelDuckdns": "DuckDNSトークン",
+    "placeholder": "貼り付けて設定または置換",
+    "configured": "設定済み({{host}})",
+    "configuredNoHost": "設定済み",
+    "notConfigured": "未設定",
+    "clear": "削除",
+    "cleared": "認証情報を削除しました。"
+  },
+  "advanced": {
+    "toggle": "詳細設定",
+    "interval": "確認間隔(秒)",
+    "timeout": "タイムアウト(秒)",
+    "minGap": "更新の最小間隔(秒)",
+    "reassert": "再送間隔(秒)",
+    "failAlertAfter": "失敗が続いたらアラート",
+    "quorum": "プローブのクォーラム",
+    "probeUrls": "プローブURL(1行に1件)",
+    "allowPrivate": "プライベートアドレスを許可",
+    "summary": "{{interval}}秒ごと、タイムアウト{{timeout}}秒、クォーラム{{quorum}}、{{failAlertAfter}}回失敗でアラート",
+    "allowInsecureHttp": "平文のHTTPを許可"
+  },
+  "last": {
+    "title": "前回の確認",
+    "never": "まだ確認していません",
+    "ip": "IP {{ip}}",
+    "result": "結果: {{result}}",
+    "check": "{{when}}に確認",
+    "change": "{{when}}に変更",
+    "failures": "{{count}}回連続で失敗",
+    "alert": "アラート発生中"
+  },
+  "result": {
+    "ok": "正常",
+    "failing": "失敗中",
+    "pending": "保留中",
+    "not running": "停止中"
+  },
+  "save": "保存",
+  "saving": "保存中...",
+  "saved": "ダイナミックDNSを保存しました。",
+  "error": {
+    "number": "1以上の整数を指定してください。"
+  }
+}

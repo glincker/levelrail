@@ -1,0 +1,188 @@
+{
+  "title": "Formulaires",
+  "description": "Recueillez les envois des formulaires HTML de votre site statique. Chaque formulaire dispose d'un point de terminaison public vers lequel poster.",
+  "loading": "Chargement des formulaires",
+  "loadError": "Impossible de charger les formulaires.",
+  "retry": "Réessayer",
+  "new": "Nouveau formulaire",
+  "create": {
+    "title": "Nouveau formulaire",
+    "description": "Choisissez un nom court. Il fait partie de l'adresse du point de terminaison et ne pourra plus être modifié.",
+    "name": "Nom du formulaire",
+    "namePlaceholder": "contact",
+    "submit": "Créer le formulaire",
+    "submitting": "Création"
+  },
+  "empty": {
+    "title": "Aucun formulaire pour l'instant",
+    "description": "Créez un formulaire, concevez ses champs, collez l'extrait dans votre site, et les envois arrivent ici.",
+    "cta": "Créer votre premier formulaire"
+  },
+  "endpoint": "Point de terminaison",
+  "snippet": "Extrait HTML",
+  "copy": "Copier",
+  "copied": "Copié",
+  "copyFailed": "Impossible de copier",
+  "counts": "{{total}} envois, {{spam}} spam",
+  "settings": {
+    "title": "Paramètres",
+    "redirect": "Redirection après l'envoi",
+    "redirectHint": "Les navigateurs sont envoyés ici après un post. Laissez vide pour afficher une simple page de remerciement.",
+    "honeypot": "Champ piège à spam",
+    "honeypotHint": "Un champ caché que les vrais visiteurs laissent vide. Les posts qui le remplissent sont conservés comme spam et ne vous notifient jamais.",
+    "channels": "Notifier lors des nouveaux envois",
+    "noChannels": "Aucun canal de notification n'est encore configuré. Ajoutez-en un dans Alertes pour être informé des nouveaux envois.",
+    "save": "Enregistrer les paramètres",
+    "saving": "Enregistrement",
+    "saved": "Paramètres du formulaire enregistrés."
+  },
+  "delete": {
+    "button": "Supprimer le formulaire",
+    "title": "Supprimer ce formulaire ?",
+    "description": "Le point de terminaison cesse immédiatement d'accepter des posts.",
+    "consequence": "Tous les envois stockés pour ce formulaire sont supprimés et ne peuvent pas être récupérés.",
+    "confirm": "Supprimer le formulaire",
+    "pending": "Suppression"
+  },
+  "retention": "Les envois sont supprimés après {{days}} jours. Seul un hachage salé de l'adresse de l'expéditeur est stocké, jamais l'adresse.",
+  "inbox": {
+    "title": "Boîte de réception",
+    "search": "Rechercher dans les envois",
+    "filterAll": "Tous",
+    "filterInbox": "Hors spam",
+    "filterSpam": "Spam",
+    "export": "Exporter en CSV",
+    "loading": "Chargement des envois",
+    "loadError": "Impossible de charger les envois.",
+    "emptyTitle": "Aucun envoi pour l'instant",
+    "emptyDescription": "Postez vers le point de terminaison ci-dessus, ou envoyez un test depuis votre site, et il apparaîtra ici.",
+    "noMatchTitle": "Rien ne correspond",
+    "noMatchDescription": "Essayez une autre recherche ou un autre filtre.",
+    "spamBadge": "Spam",
+    "markSpam": "Marquer comme spam",
+    "markNotSpam": "Pas du spam",
+    "remove": "Supprimer",
+    "removeConfirm": "Supprimer cet envoi ?",
+    "actionFailed": "Cette modification n'a pas été enregistrée.",
+    "loadMore": "Charger plus",
+    "reason": {
+      "honeypot": "A rempli le piège à spam",
+      "too_many_links": "Trop de liens",
+      "empty": "Aucun champ",
+      "manual": "Marqué par vous"
+    },
+    "testBadge": "Test"
+  },
+  "betaHint": "Bêta : la capture de formulaires fonctionne, mais son éditeur et ses limites évoluent encore.",
+  "intro": "Les sites statiques ne peuvent pas exécuter de code serveur. Formulaires donne à votre site un point de terminaison public qui stocke les envois.",
+  "howItWorks": "Comment ça marche",
+  "hero": {
+    "alt": "Un visiteur remplit un formulaire sur votre site et appuie sur Envoyer. L'envoi voyage vers votre point de terminaison Levelrail, apparaît dans la boîte de réception et déclenche une notification.",
+    "caption": "Concevez un formulaire, collez-le dans votre site statique et lisez les envois ici.",
+    "site": "Votre site",
+    "endpoint": "Point de terminaison",
+    "inbox": "Boîte de réception",
+    "notice": "Nouvel envoi"
+  },
+  "steps": {
+    "design": {
+      "title": "Concevez votre formulaire",
+      "body": "Choisissez les champs, les libellés et le message de succès."
+    },
+    "embed": {
+      "title": "Collez l'extrait dans votre site",
+      "body": "Copiez le HTML ou le JavaScript dans votre page."
+    },
+    "read": {
+      "title": "Lisez les envois ici",
+      "body": "Soyez notifié quand quelqu'un en envoie un."
+    }
+  },
+  "notStatic": {
+    "title": "Les formulaires sont pour les sites statiques",
+    "description": "Cette app exécute son propre code serveur, elle peut donc gérer elle-même les posts de formulaires. Formulaires recueille les envois des apps déployées comme site statique.",
+    "back": "Retour à l'app"
+  },
+  "sections": {
+    "design": {
+      "title": "Conception",
+      "help": "Choisissez les champs que les visiteurs remplissent et ce qu'ils voient après l'envoi."
+    },
+    "embed": {
+      "title": "Intégration",
+      "help": "Copiez ceci dans votre site statique. Il suit votre conception au fil de vos modifications."
+    },
+    "submissions": {
+      "title": "Envois",
+      "help": "Tout ce que les visiteurs envoient arrive ici. Exportez-le en CSV à tout moment."
+    },
+    "settings": {
+      "title": "Paramètres",
+      "help": "Où vont les visiteurs ensuite, la protection anti-spam et qui est notifié."
+    }
+  },
+  "designer": {
+    "label": "Libellé",
+    "name": "Nom du champ",
+    "type": "Type",
+    "types": {
+      "text": "Texte",
+      "email": "E-mail",
+      "textarea": "Texte long",
+      "select": "Liste déroulante",
+      "checkbox": "Case à cocher",
+      "number": "Nombre",
+      "url": "Adresse web",
+      "hidden": "Masqué"
+    },
+    "placeholder": "Texte indicatif",
+    "minLength": "Longueur min.",
+    "maxLength": "Longueur max.",
+    "options": "Options",
+    "optionsHint": "Une option par ligne.",
+    "default": "Valeur",
+    "required": "Obligatoire",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "remove": "Supprimer le champ",
+    "addField": "Ajouter un champ",
+    "customize": "Personnaliser les champs",
+    "usingDefault": "Ce formulaire utilise les champs par défaut : nom, e-mail et message. Personnalisez-les pour concevoir les vôtres.",
+    "success": "Message de succès",
+    "successDefault": "Merci, votre envoi a bien été reçu.",
+    "successLabel": "Après l'envoi",
+    "origins": "Sites autorisés (facultatif)",
+    "originsHint": "Une adresse par ligne, comme https://example.com. Les navigateurs d'autres sites sont refusés. Vide autorise n'importe quel site.",
+    "preview": "Aperçu en direct",
+    "send": "Envoyer",
+    "save": "Enregistrer la conception",
+    "saving": "Enregistrement",
+    "saved": "Conception du formulaire enregistrée.",
+    "reset": "Retour aux champs par défaut"
+  },
+  "embed": {
+    "noPublicUrl": {
+      "title": "Aucune URL publique n'est définie",
+      "body": "Aucune URL publique n'est définie, ce point de terminaison ne fonctionne que depuis cette machine. Les visiteurs de votre site en ligne ne peuvent pas l'atteindre.",
+      "fix": "Définir l'URL publique"
+    },
+    "variants": {
+      "html": "HTML",
+      "fetch": "JavaScript",
+      "minimal": "Minimal"
+    },
+    "variantHint": {
+      "html": "Extrait HTML",
+      "fetch": "HTML avec un script fetch (reste sur la page)",
+      "minimal": "Balisage minimal (sans libellés, apportez votre propre style)"
+    }
+  },
+  "test": {
+    "button": "Envoyer un envoi de test",
+    "sending": "Envoi",
+    "sent": "Envoi de test {{id}} stocké",
+    "ok": "Il est marqué comme test dans la boîte de réception ci-dessous.",
+    "flagged": "Il a été signalé comme spam.",
+    "failed": "Impossible d'envoyer le test."
+  }
+}

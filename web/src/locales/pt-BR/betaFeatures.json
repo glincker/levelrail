@@ -1,0 +1,97 @@
+{
+  "title": "Recursos beta",
+  "description": "Todo recurso que ainda está sendo validado. Ative um aqui; se ele é ligado na inicialização, reinicie pelo mesmo card para aplicá-lo.",
+  "groups": {
+    "beta": "Beta",
+    "experimental": "Experimental"
+  },
+  "banner": {
+    "title": "{{name}} é um recurso beta",
+    "body": "Ative-o para continuar.",
+    "bodyRestart": "Ative-o e depois reinicie para aplicá-lo.",
+    "ready": "{{name}} está ativado.",
+    "takeMeThere": "Me leve até lá",
+    "unknown": "Esse recurso não é conhecido por este servidor."
+  },
+  "state": {
+    "on": "Ativado",
+    "off": "Desativado",
+    "onByEnv": "Ativado pela configuração do servidor",
+    "onBySetting": "Ativado em Configurações"
+  },
+  "toggle": {
+    "label": "Ativar {{name}}",
+    "on": "{{name}} ativado",
+    "off": "{{name}} desativado",
+    "error": "Não foi possível alterar {{name}}: {{message}}",
+    "lockedByEnv": "Ativado pela configuração do servidor, então não pode ser desativado aqui."
+  },
+  "env": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "line": "Linha de configuração",
+    "systemd": "systemd",
+    "docker": "Docker"
+  },
+  "docs": "Ler a documentação",
+  "error": "Não foi possível carregar os recursos beta: {{message}}",
+  "readOnly": "Somente um administrador pode alternar os recursos beta.",
+  "restart": {
+    "needed": "Salvo. Reinicie para aplicar esta alteração. Deploys e streams de logs em andamento são interrompidos e retomados depois.",
+    "now": "Reiniciar agora",
+    "unsupported": "Esta instalação não consegue se reiniciar sozinha porque nenhum supervisor de processos foi detectado. Reinicie o control plane e depois verifique novamente.",
+    "recheck": "Verificar novamente",
+    "manual": "Reiniciar pelo servidor",
+    "askAdmin": "Salvo. Um administrador precisa reiniciar o control plane para aplicá-lo."
+  },
+  "options": {
+    "open": "Usar a CLI ou a configuração do servidor",
+    "title": "Ativar {{name}} de outra forma",
+    "description": "O interruptor do card faz a mesma coisa. Use estas opções se preferir a linha de comando ou gerenciar o servidor por configuração.",
+    "cli": "CLI",
+    "cliLine": "Comando da CLI",
+    "cliRestartLine": "Comando da CLI com reinício",
+    "server": "Configuração do servidor",
+    "reload": "Recarregar o systemd",
+    "restartUnit": "Reiniciar a unit",
+    "recreate": "Recriar o container",
+    "restartNote": "Este recurso é ligado quando o servidor inicia, então um reinício o aplica."
+  },
+  "profile": {
+    "title": "Perfil do servidor",
+    "description": "Define quais partes opcionais do servidor iniciam. Mudar entre perfis nunca exclui dados. A maior parte é ligada na inicialização, então um reinício aplica a mudança.",
+    "names": {
+      "minimal": "Mínimo",
+      "standard": "Padrão",
+      "suite": "Suite"
+    },
+    "summary": {
+      "minimal": "Um servidor o mais leve possível. Nada roda sem que você peça.",
+      "standard": "A instalação padrão. Tudo o que uma equipe pequena precisa.",
+      "suite": "Padrão mais a malha, os plugins e todos os recursos experimentais."
+    },
+    "facts": {
+      "meshOn": "Malha ativada",
+      "meshOff": "Malha desativada",
+      "pluginsOn": "Plugins ativados",
+      "pluginsOff": "Plugins desativados",
+      "experimentalOn": "Todos os recursos experimentais ativados",
+      "experimentalOff": "Recursos experimentais desativados",
+      "retention": "Métricas e logs mantidos por {{days}} dias",
+      "loopbackAgent": "Listener do agent em loopback até um node se registrar",
+      "lazyLoops": "Os loops de backup iniciam quando um backup é agendado",
+      "recommendations": "Backup e rotação de chaves exibidos como recomendações, não como itens da pontuação",
+      "sbom": "SBOMs de build ativados"
+    },
+    "current": "Atual",
+    "use": "Usar este perfil",
+    "confirm": "Confirmar e aplicar",
+    "saved": "Perfil {{name}} salvo",
+    "error": "Não foi possível alterar o perfil: {{message}}",
+    "recommended": "Esta máquina tem pouca memória. O perfil {{name}} é o mais leve.",
+    "pinned": "Definido pelo servidor",
+    "pinnedHelp": "{{env}} está definido no servidor, então ele decide o perfil. Remova-o lá para escolher nesta página.",
+    "neverDeletes": "Descer de perfil para loops e oculta rotas, mas nunca exclui registros. Mudanças que deixariam nodes registrados ou plugins ativados órfãos são recusadas.",
+    "readOnly": "Somente um administrador pode alterar o perfil do servidor."
+  }
+}

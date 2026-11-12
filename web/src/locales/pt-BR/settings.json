@@ -1,0 +1,3967 @@
+{
+  "email": {
+    "title": "E-mail",
+    "description": "O backend pelo qual as notificações de alerta e os e-mails de redefinição de senha são enviados. Desativado por padrão; um control plane iniciado com variáveis de ambiente APP_SMTP_* continua funcionando até que isto seja salvo.",
+    "helpLabel": "Ajuda sobre notificações por e-mail",
+    "backendLabel": "Backend",
+    "backendNotConfigured": "Não configurado",
+    "smtp": {
+      "label": "SMTP",
+      "presetsLabel": "Preenchimento rápido para um provedor conhecido",
+      "host": "Host",
+      "port": "Porta",
+      "username": "Nome de usuário",
+      "from": "Endereço do remetente",
+      "password": "Senha",
+      "passwordSet": "Já existe uma senha configurada. Deixe em branco para mantê-la.",
+      "passwordUnset": "Nenhuma senha definida ainda."
+    },
+    "ses": {
+      "label": "AWS SES",
+      "region": "Região",
+      "accessKeyId": "ID da chave de acesso",
+      "from": "Endereço do remetente",
+      "secretAccessKey": "Chave de acesso secreta",
+      "secretSet": "Já existe uma chave secreta configurada. Deixe em branco para mantê-la.",
+      "secretUnset": "Nenhuma chave secreta definida ainda."
+    },
+    "resend": {
+      "label": "Resend",
+      "from": "Endereço do remetente",
+      "apiKey": "Chave de API",
+      "apiKeySet": "Já existe uma chave de API configurada. Deixe em branco para mantê-la.",
+      "apiKeyUnset": "Nenhuma chave de API definida ainda."
+    },
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "saveSuccess": "Configurações de e-mail salvas.",
+    "test": {
+      "title": "Enviar um e-mail de teste",
+      "description": "Envia um e-mail real pelo backend salvo acima, o mesmo caminho usado pelas notificações de alerta e pelas redefinições de senha.",
+      "placeholder": "voce@seudominio.com",
+      "send": "Enviar e-mail de teste",
+      "sending": "Enviando...",
+      "success": "E-mail de teste enviado para {{to}}."
+    },
+    "comingSoon": "Mais opções de notificação chegarão aqui: modelos de e-mail personalizados, limite de taxa de envio e controles de frequência por alerta.",
+    "channelsCta": "Procurando notificações do Slack, Discord ou webhook?",
+    "channelsLink": "Canais de notificação",
+    "wizard": {
+      "intro": "Redefinições de senha e e-mails de alerta saem por um servidor SMTP. Informe o seu, salve e envie um teste para uma caixa de entrada real antes de continuar.",
+      "configured": "Backend salvo: {{backend}}.",
+      "others": "Prefere usar AWS SES ou Resend?",
+      "othersLink": "Abrir as configurações completas de e-mail."
+    }
+  },
+  "orphans": {
+    "title": "Recursos órfãos",
+    "description": "Containers, volumes e certificados que nenhum app ou banco de dados reivindica. Eles são removidos automaticamente depois que permanecem órfãos além do período de carência. Volumes de dados de bancos de dados nunca são removidos.",
+    "empty": "Nada sobrando. Todo container e volume pertence a um app ou banco de dados ativo.",
+    "emptyTitle": "Nenhum recurso órfão",
+    "localNode": "este node",
+    "kind": {
+      "container": "Container",
+      "volume": "Volume",
+      "certificate": "Certificado"
+    },
+    "reason": {
+      "service_deleted": "App excluído",
+      "database_deleted": "Banco de dados excluído",
+      "misplaced": "App movido para outro node",
+      "stale_generation": "Versão antiga de um app ativo",
+      "unmanaged": "Não criado aqui",
+      "foreign_instance": "De outro control plane",
+      "unrecognized_name": "Nome não reconhecido",
+      "unreferenced_volume": "Não referenciado mais",
+      "unserved_certificate": "Não servido mais"
+    },
+    "status": {
+      "kept": "Mantido",
+      "due": "Vencido",
+      "grace": "Em período de carência"
+    },
+    "more_one": "E mais {{count}} não exibido.",
+    "more_many": "E mais {{count}} não exibidos.",
+    "more_other": "E mais {{count}} não exibidos.",
+    "dryRun": "Simulação",
+    "reapNow_one": "Remover {{count}} vencido agora",
+    "reapNow_many": "Remover {{count}} vencidos agora",
+    "reapNow_other": "Remover {{count}} vencidos agora",
+    "toast": {
+      "dryRun_one": "Simulação: {{count}} recurso seria removido.",
+      "dryRun_many": "Simulação: {{count}} recursos seriam removidos.",
+      "dryRun_other": "Simulação: {{count}} recursos seriam removidos.",
+      "reaped_one": "{{count}} recurso órfão removido.",
+      "reaped_many": "{{count}} recursos órfãos removidos.",
+      "reaped_other": "{{count}} recursos órfãos removidos."
+    }
+  },
+  "authEngine": {
+    "title": "Mecanismo de login",
+    "description": "Login, sessões, tokens de API, dois fatores e passkeys rodam na biblioteca de autenticação {{version}}.",
+    "available": "Disponível",
+    "unavailable": "Indisponível",
+    "totp": "Dois fatores (TOTP)",
+    "passkeys": "Passkeys",
+    "oauth": "Login com OAuth"
+  },
+  "iamTemplates": {
+    "trigger": "Adicionar de um modelo",
+    "title": "Adicionar uma política a partir de um modelo",
+    "description": "Escolha uma política pronta. Você pode anexá-la a um usuário ou token agora, ou depois pela lista de políticas.",
+    "loading": "Carregando modelos.",
+    "loadError": "Não foi possível carregar os modelos de política.",
+    "templateLabel": "Modelo",
+    "paramLabel": "{{name}}",
+    "paramPlaceholder": "ex.: env_dev",
+    "effectTitle": "O que esta política faz",
+    "effectLine": "{{effect}} {{actions}} em {{resources}}",
+    "allow": "Permitir",
+    "deny": "Negar",
+    "previewTitle": "Documento da política",
+    "attachTitle": "Anexar a",
+    "attachNone": "Nada por enquanto",
+    "attachUser": "Um usuário",
+    "attachToken": "Um token",
+    "attachIdLabel": "ID do usuário ou token",
+    "attachIdRequired": "Informe o ID ao qual anexar, ou escolha Nada por enquanto.",
+    "paramRequired": "{{name}} é obrigatório.",
+    "apply": "Criar política",
+    "applying": "Criando.",
+    "cancel": "Cancelar",
+    "toastCreated": "Política \"{{name}}\" criada.",
+    "toastCreatedAttached": "Política \"{{name}}\" criada e anexada."
+  },
+  "aiControl": {
+    "title": "Controle de IA",
+    "description": "Decida o que os agents e o assistente integrado podem fazer nesta instância. O servidor aplica isto em toda requisição, seja qual for a permissão do token.",
+    "navDescription": "Desative o acesso de agents, deixe somente leitura ou ative, e limite a ambientes escolhidos.",
+    "modeLabel": "Acesso de agents",
+    "modes": {
+      "off": {
+        "label": "Desativado",
+        "description": "Toda requisição de agent é recusada. Pessoas não são afetadas."
+      },
+      "observe": {
+        "label": "Observar",
+        "description": "Agents podem ler apps, logs e métricas, mas não segredos, e não alteram nada."
+      },
+      "operate": {
+        "label": "Operar",
+        "description": "Agents podem ler, gravar e fazer deploy nos ambientes abaixo. Não podem usar root nem alterar segredos, backups ou configurações da instância."
+      },
+      "admin": {
+        "label": "Admin",
+        "description": "Agents podem usar qualquer permissão que seu token tenha nos ambientes abaixo. Uma pessoa ainda precisa aprovar deploys protegidos."
+      }
+    },
+    "adminUnavailable": "O modo Admin exige que o recurso experimental ai-control esteja ativado no servidor.",
+    "envKindsLabel": "Ambientes em que agents podem atuar",
+    "envKindsDescription": "Vale para operar e admin. Apps sem ambiente contam como personalizado.",
+    "kinds": {
+      "dev": "Dev",
+      "test": "Teste",
+      "uat": "UAT",
+      "production": "Produção",
+      "preview": "Preview",
+      "custom": "Personalizado"
+    },
+    "save": "Salvar alterações",
+    "saving": "Salvando...",
+    "saved": "Controle de IA salvo.",
+    "pause": "Pausar todos os agents",
+    "paused": "Todos os agents pausados.",
+    "agentTokens": "Tokens de agent",
+    "agentTokensCount_one": "Existe {{count}} token de agent.",
+    "agentTokensCount_many": "Existem {{count}} tokens de agent.",
+    "agentTokensCount_other": "Existem {{count}} tokens de agent.",
+    "updatedBy": "Última alteração por {{name}}.",
+    "viewAudit": "Ver a atividade de agents no log de auditoria",
+    "revoke": {
+      "button": "Revogar todos os tokens de agent",
+      "title": "Revogar todos os tokens de agent?",
+      "description": "Todo token com rótulo de agent para de funcionar imediatamente. Isto não pode ser desfeito. O assistente integrado continua funcionando.",
+      "cancel": "Cancelar",
+      "confirm": "Revogar tokens",
+      "revoking": "Revogando...",
+      "done_one": "{{count}} token de agent revogado.",
+      "done_many": "{{count}} tokens de agent revogados.",
+      "done_other": "{{count}} tokens de agent revogados."
+    },
+    "loadFailed": "Não foi possível carregar as configurações de controle de IA."
+  },
+  "tables": {
+    "users": "Usuários",
+    "invites": "Convites pendentes",
+    "organizations": "Organizações",
+    "backupTargets": "Destinos de backup",
+    "storageDestinations": "Destinos de armazenamento",
+    "notificationChannels": "Canais de notificação",
+    "alertHistory": "Entradas do histórico de alertas"
+  },
+  "tokens": {
+    "tableLabel": "Tokens de API",
+    "lastIp": "Último IP",
+    "server": "Servidor",
+    "emptyTitle": "Nenhum token ainda",
+    "emptyBody": "Crie uma credencial com escopo e revogável para a CLI, CI ou uma integração MCP.",
+    "name": "Nome",
+    "agent": "Agent",
+    "abilities": "Permissões",
+    "created": "Criado",
+    "lastUsed": "Último uso",
+    "expires": "Expira",
+    "status": "Status",
+    "actions": "Ações",
+    "none": "Nenhuma",
+    "never": "Nunca",
+    "active": "Ativo",
+    "activeNow": "Ativo agora",
+    "revoked": "Revogado",
+    "create": {
+      "title": "Criar token",
+      "description": "Uma credencial com escopo e revogável para a CLI, CI ou uma integração MCP.",
+      "submit": "Criar token",
+      "submitting": "Criando...",
+      "name": "Nome",
+      "namePlaceholder": "ex.: ci-deploy",
+      "nameRequired": "O nome é obrigatório",
+      "expiration": "Expiração",
+      "never": "Nunca",
+      "days_one": "{{count}} dia",
+      "days_many": "{{count}} dias",
+      "days_other": "{{count}} dias",
+      "agent": "Nome do agent (opcional)",
+      "agentPlaceholder": "ex.: Claude Code",
+      "agentTooLong": "No máximo 64 caracteres",
+      "agentTipLabel": "Sobre nomes de agent",
+      "agentTip": "Marque o token como emitido para um agent de IA, por exemplo \"Claude Code\". O nome aparece aqui e em toda entrada do log de auditoria feita pelo token, para você distinguir alterações de agents das humanas.",
+      "abilityRequired": "Selecione pelo menos uma permissão",
+      "rootExclusive": "Root não pode ser combinado com outras permissões",
+      "signInApprove": "Aprovar meus logins",
+      "signInApproveHint": "Permite que este token mostre seus códigos de login e aprove novos navegadores pela CLI. Root não inclui isto e um login de dispositivo nunca o concede. Ele deve expirar em até 30 dias e é revogado quando você altera ou redefine sua senha ou encerra suas outras sessões.",
+      "signInApproveExpiry": "Um token que aprova logins deve expirar em até 30 dias",
+      "signInApproveAgent": "Um token que aprova logins não pode ser emitido para um agent",
+      "secretsReveal": "Revelar valores de segredos",
+      "secretsRevealHint": "Permite que este token leia o valor de um segredo, mas somente quando o servidor permite revelar por token (APP_SECRET_REVEAL_TOKENS=on) e a requisição traz sua senha. Toda revelação é auditada. Root não inclui isto.",
+      "secretsRevealNeedsSensitive": "Revelar segredos também exige read:sensitive",
+      "allowChanges": "Permitir alterações",
+      "readOnlyNote": "Somente leitura: este token pode ver apps, deploys e logs, mas não pode alterar nada.",
+      "allowChangesOn": "Este token pode alterar a configuração. Escolha exatamente o quê abaixo.",
+      "allowChangesWarning": "Um token que pode alterar coisas pode ser usado indevidamente por quem o possuir, inclusive um assistente de IA enganado por texto em logs ou valores de env. Conceda somente o que a integração precisa."
+    },
+    "devFixtureBadge": "Fixture de dev, somente local",
+    "devFixtureRootWarning": "Acesso total com um segredo publicamente conhecido. Nunca exponha este servidor a uma rede.",
+    "devFixtureGroup": "Tokens de fixture de dev",
+    "devFixtureGroupCount_one": "{{count}} token",
+    "devFixtureGroupCount_many": "{{count}} tokens",
+    "devFixtureGroupCount_other": "{{count}} tokens",
+    "devFixtureGroupBody": "Criados para testes locais, com segredos públicos. Nunca criados em builds de release. Pode ignorar com segurança.",
+    "rotate": "Rotacionar",
+    "rotateLabel": "Rotacionar {{name}}",
+    "access": {
+      "read_only": "Somente leitura",
+      "can_change": "Pode alterar"
+    }
+  },
+  "hostFirewall": {
+    "title": "Firewall do host",
+    "description": "Ativa ou desativa o firewall ufw deste servidor. Ao ativar, ele primeiro permite SSH, as portas do control plane e HTTP/3, para você não se bloquear.",
+    "statusOn": "Ativo",
+    "statusOff": "Inativo",
+    "defaultIncoming": "Padrão para tráfego de entrada: {{policy}}",
+    "required": "Portas mantidas abertas",
+    "turnOn": "Ativar firewall",
+    "turnOff": "Desativar firewall",
+    "confirmOnTitle": "Ativar o firewall?",
+    "confirmOnBody": "Estes comandos serão executados neste servidor, em ordem. O SSH é permitido antes de o firewall ser ativado.",
+    "confirmOffTitle": "Desativar o firewall?",
+    "confirmOffBody": "Todas as portas deste servidor voltarão a ficar acessíveis. Isto executa:",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "enabledToast": "O firewall está ativo",
+    "disabledToast": "O firewall está inativo",
+    "failedToast": "Não foi possível alterar o firewall",
+    "missingHelp": "Instale o ufw neste servidor para gerenciar o firewall daqui, ou use o firewall do seu provedor de nuvem.",
+    "sshNote": "O SSH está em outra porta? Defina APP_FIREWALL_SSH_PORTS no control plane antes de ativar.",
+    "published": "Portas publicadas",
+    "allowed": "Permitida",
+    "notAllowed": "Não permitida",
+    "localOnly": "Somente local",
+    "notFiltered": "Sem filtro",
+    "notChecked": "Não verificada",
+    "statusUnmanaged": "{{backend}} (somente leitura)",
+    "statusNone": "Sem firewall",
+    "guidance": "Comandos para você revisar e executar neste servidor. O Levelrail não os executa.",
+    "unmanagedHelp": "O Levelrail gerencia apenas o ufw, então não alterará este firewall. As portas abaixo são as que suas regras precisam permitir.",
+    "noneHelp": "Nenhuma ferramenta de firewall legível por este processo foi encontrada, então toda porta publicada fica acessível, a menos que seu provedor de nuvem filtre. Instale o ufw aqui para gerenciá-lo por esta página."
+  },
+  "setupNext": {
+    "heading": "Próximos passos",
+    "email": {
+      "title": "Configurar o envio de e-mail",
+      "description": "Redefinições de senha e e-mails de alerta precisam de um servidor SMTP. Escolha seu provedor e envie um teste."
+    },
+    "alerts": {
+      "title": "Configurar alertas",
+      "description": "Receba uma mensagem no Slack, Discord, e-mail ou webhook quando um deploy falhar."
+    },
+    "backups": {
+      "title": "Adicionar um destino de backup",
+      "description": "Aponte os backups de bancos de dados e volumes para um armazenamento compatível com S3."
+    },
+    "team": {
+      "title": "Convidar sua equipe",
+      "description": "Dê aos colegas contas próprias em vez de compartilhar a sua."
+    }
+  },
+  "databaseUpgrades": {
+    "title": "Upgrades de banco de dados",
+    "description": "A política de upgrade padrão para todo banco de dados que não define a sua.",
+    "loadFailed": "Não foi possível carregar a política de upgrade da plataforma: {{error}}",
+    "formTitle": "Política padrão da plataforma",
+    "formDescription": "Os bancos de dados herdam isto até que você o substitua na aba Upgrades de cada um. Somente o proprietário da plataforma pode alterá-lo."
+  },
+  "githubApp": {
+    "manageAccess": "Gerenciar acesso a repositórios",
+    "manageAccessHint": "Faltando um repositório? Escolha quais repositórios este app pode ver no GitHub e depois volte.",
+    "personal": "Conta pessoal",
+    "organization": "Organização",
+    "connected": "conectado",
+    "owner": {
+      "legend": "Quem é o dono do App no GitHub",
+      "personal": "Minha conta pessoal",
+      "organization": "Uma organização",
+      "orgLogin": "Login da organização",
+      "orgPlaceholder": "acme-inc",
+      "orgHelp": "A organização da qual você quer fazer deploy. Você precisa de permissão para criar GitHub Apps nela.",
+      "orgInvalid": "Use o login da organização: letras, números e hífens, até 39 caracteres.",
+      "allowOthers": "Permitir que outras contas e organizações o instalem",
+      "publicHelp": "Qualquer conta ou organização do GitHub pode instalar este App. Escolha isto quando você faz deploy de várias organizações.",
+      "privatePersonalHelp": "Privado: o App só pode ser instalado na sua conta pessoal. Escolha uma organização acima, ou permita outras contas, para fazer deploy de uma organização.",
+      "privateOrgHelp": "Privado: o App só pode ser instalado nesta organização. Permita que outras contas também o instalem na sua conta pessoal ou em outras organizações."
+    },
+    "preview": {
+      "title": "Revise antes de conectar ao GitHub",
+      "description": "A própria página de confirmação do GitHub só permite renomear o App; todo o resto abaixo é fixado antes de seu navegador sair desta página.",
+      "loadError": "Não foi possível carregar uma prévia.",
+      "instance": "Instância do GitHub",
+      "instanceHelp": "Deixe em branco para github.com. Instâncias próprias do GitHub Enterprise Server também funcionam, ex.: https://github.example.com.",
+      "appName": "Nome do App",
+      "appNameHelp": "O único campo que o próprio GitHub também permite alterar na página de confirmação dele.",
+      "homepage": "Página inicial",
+      "callback": "Callback",
+      "setup": "Configuração",
+      "webhook": "Webhook",
+      "webhookInactive": "declarado, ainda não ativo",
+      "permissions": "Permissões solicitadas",
+      "continue": "Continuar para o GitHub"
+    },
+    "notInstalled": "O App foi criado, mas ainda não foi instalado em uma conta ou organização. Conclua a instalação no GitHub para escolher repositórios. Um App privado só pode ser instalado na conta ou organização que é dona dele."
+  },
+  "dockerGuard": {
+    "title": "Guarda da API do Docker",
+    "description": "Toda requisição ao Docker feita por este control plane passa por uma lista de permissões que bloqueia containers privilegiados, namespaces do host e montagens protegidas do host.",
+    "modeLabel": "Modo da guarda",
+    "modes": {
+      "enforce": {
+        "label": "Aplicar",
+        "description": "Rejeita requisições que uma regra nega antes de chegarem ao Docker."
+      },
+      "audit": {
+        "label": "Auditar",
+        "description": "Permite tudo e registra o que o modo Aplicar negaria."
+      },
+      "off": {
+        "label": "Desativado",
+        "description": "Sem guarda. Entra em vigor após reiniciar."
+      }
+    },
+    "notConfigured": "Este control plane foi iniciado sem a guarda.",
+    "restartRequired": "O modo salvo difere do que está em execução. Reinicie o control plane para aplicá-lo.",
+    "readyToEnforce": "O modo Auditar não viu nenhuma negação potencial nos últimos {{days}} dias; jobs que rodam com menos frequência não foram vistos. Aplicar provavelmente é seguro.",
+    "pinned": "O modo é definido por APP_DOCKER_GUARD no servidor. Remova essa variável para alterar o modo aqui.",
+    "windowTitle": "Requisições sinalizadas, últimos {{days}} dias",
+    "windowEmpty": "Nada sinalizado.",
+    "windowUnknown": "Desconhecido: o log de auditoria não pôde ser lido, então nada se pode dizer sobre o que a guarda viu.",
+    "ruleCounts": "{{wouldDeny}} seriam negadas, {{denied}} negadas",
+    "save": "Salvar modo",
+    "saving": "Salvando...",
+    "saved": "Modo da guarda do Docker salvo",
+    "viewAudit": "Ver no log de auditoria"
+  },
+  "githubAppOrg": {
+    "addOrg": "Adicionar organização",
+    "addOrgHelp": "O GitHub mostra as contas em que você pode instalar. Escolha a organização. Se você não for proprietário, o GitHub envia a solicitação aos proprietários.",
+    "privateTitle": "Este GitHub App é privado, então o GitHub só o permite na conta que é dona dele.",
+    "privateBody": "Para adicionar uma organização, abra as configurações avançadas do App, escolha Make public (Any account), depois volte e clique em Adicionar organização. Ou registre um novo App pertencente à organização.",
+    "makePublic": "Tornar o App público no GitHub",
+    "noSlug": "Esta conexão foi registrada antes de o Levelrail poder lembrar o link de instalação do App. Reconecte o App acima (ou use a configuração manual) para habilitar Adicionar organização aqui."
+  },
+  "nav": {
+    "areas": {
+      "general": {
+        "title": "Workspace",
+        "description": "Perfil, organizações, ambientes e configuração."
+      },
+      "access": {
+        "title": "Pessoas e acesso",
+        "description": "Quem pode fazer login e o que pode fazer."
+      },
+      "security": {
+        "title": "Segurança",
+        "description": "Cofre de segredos, firewall do host e postura."
+      },
+      "developer": {
+        "title": "Desenvolvedor",
+        "description": "Acesso por CLI e API."
+      },
+      "ai": {
+        "title": "IA e agents",
+        "description": "Conexões de agents, controle de IA e o assistente."
+      },
+      "domains": {
+        "title": "Domínios e TLS",
+        "description": "Ingress da plataforma e certificados."
+      },
+      "backups": {
+        "title": "Backups e armazenamento",
+        "description": "Onde backups e artefatos são guardados."
+      },
+      "notifications": {
+        "title": "Notificações",
+        "description": "Canais de alerta, e-mail e a página de status."
+      },
+      "integrations": {
+        "title": "Git e registries",
+        "description": "Apps de provedores Git e registries de containers."
+      },
+      "beta": {
+        "title": "Recursos beta",
+        "description": "Recursos que funcionam, mas ainda estão sendo ajustados."
+      },
+      "updates": {
+        "title": "Atualizações",
+        "description": "Versão atual e releases disponíveis."
+      },
+      "advanced": {
+        "title": "Sistema",
+        "description": "Provedores, containers, observabilidade e controles de baixo nível."
+      }
+    },
+    "items": {
+      "account": {
+        "title": "Conta",
+        "description": "Perfil e senha."
+      },
+      "iam-policies": {
+        "title": "Políticas IAM",
+        "description": "Acesso Permitir/Negar com escopo de recurso, aplicado sobre as permissões do próprio token."
+      },
+      "security": {
+        "title": "Segurança",
+        "description": "Sessões e proteção de login."
+      },
+      "security-runtime": {
+        "title": "Segurança e runtime",
+        "description": "Proteção contra replay de webhooks, limites de bind mount e outras proteções, ativas por padrão."
+      },
+      "security-center": {
+        "title": "Central de segurança",
+        "description": "Pontuação de segurança, todas as sessões e dispositivos, e política de tokens."
+      },
+      "tokens": {
+        "title": "Tokens de API",
+        "description": "Credenciais com escopo e revogáveis para a CLI, CI e MCP."
+      },
+      "mobile-devices": {
+        "title": "Dispositivos móveis",
+        "description": "Pareie um celular com um QR code e revogue celulares pareados."
+      },
+      "plugins": {
+        "title": "Plugins",
+        "description": "Instale plugins assinados, aprove o que eles podem fazer e confie em chaves de publicadores."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "Conecte um agent de IA via MCP e gerencie seus tokens."
+      },
+      "ai-control": {
+        "title": "Controle de IA",
+        "description": "Desative o acesso de agents, deixe somente leitura ou ative, e limite a ambientes escolhidos."
+      },
+      "cli-access": {
+        "title": "Acesso da CLI",
+        "description": "Aprove ou negue logins iniciados com levelrail-cli auth login."
+      },
+      "api-explorer": {
+        "title": "Explorador de API",
+        "description": "Navegue e teste endpoints reais sem sair do painel."
+      },
+      "users": {
+        "title": "Usuários",
+        "description": "Todos com acesso a esta plataforma."
+      },
+      "teams": {
+        "title": "Equipes",
+        "description": "Membros, funções e convites de cada equipe."
+      },
+      "roles": {
+        "title": "Funções",
+        "description": "Conjuntos de permissões nomeados, incluindo a função de convidado."
+      },
+      "oauth": {
+        "title": "Login com OAuth",
+        "description": "Permita que as pessoas façam login com Google ou GitHub."
+      },
+      "sso": {
+        "title": "Login único (SSO)",
+        "description": "Provedores de identidade SAML, sincronização de diretório e funções por grupo."
+      },
+      "session-policy": {
+        "title": "Política de sessão",
+        "description": "Tempo ocioso, duração da sessão, redes permitidas e MFA obrigatório por equipe."
+      },
+      "organizations": {
+        "title": "Organizações",
+        "description": "Agrupe projetos relacionados em uma organização."
+      },
+      "environments": {
+        "title": "Ambientes",
+        "description": "Ambientes dev, teste, UAT e produção, e quais são protegidos."
+      },
+      "stacks": {
+        "title": "Stacks",
+        "description": "Conjuntos de recursos com histórico de revisões, rollback e fixação."
+      },
+      "stack-templates": {
+        "title": "Modelos de stack",
+        "description": "Pacotes iniciais de stack para renderizar, visualizar e copiar."
+      },
+      "github-app": {
+        "title": "GitHub App",
+        "description": "Acesso a repositórios privados para deploys baseados em git."
+      },
+      "gitlab-app": {
+        "title": "GitLab App",
+        "description": "Acesso a projetos do gitlab.com ou auto-hospedado para deploys baseados em git."
+      },
+      "bitbucket-app": {
+        "title": "Bitbucket App",
+        "description": "Acesso a repositórios do Bitbucket Cloud para deploys baseados em git."
+      },
+      "gitea-app": {
+        "title": "Gitea App",
+        "description": "Acesso a repositórios de um Gitea auto-hospedado para deploys baseados em git."
+      },
+      "forgejo-app": {
+        "title": "Forgejo App",
+        "description": "Acesso a repositórios de um Forgejo auto-hospedado para deploys baseados em git."
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server",
+        "description": "Acesso a repositórios do Bitbucket Server e Data Center com um token de acesso pessoal."
+      },
+      "notification-channels": {
+        "title": "Canais de notificação",
+        "description": "Alertas por Slack, Discord, Telegram, webhook e e-mail."
+      },
+      "deploy-policies": {
+        "title": "Políticas de deploy",
+        "description": "Proteções verificadas antes de todo deploy: registries, probes, limites, montagens, rótulos."
+      },
+      "build-performance": {
+        "title": "Desempenho de build",
+        "description": "Timeout de build e quantos builds rodam ao mesmo tempo."
+      },
+      "maintenance": {
+        "title": "Manutenção agendada",
+        "description": "Planeje indisponibilidades, mostre no painel e na página de status, e segure deploys."
+      },
+      "status-page": {
+        "title": "Página de status",
+        "description": "Página pública opcional com status de componentes, uptime e incidentes."
+      },
+      "backup-targets": {
+        "title": "Destinos de backup",
+        "description": "Buckets compatíveis com S3 para backups de bancos de dados gerenciados."
+      },
+      "storage": {
+        "title": "Destinos de armazenamento",
+        "description": "Buckets AWS S3, R2, B2, MinIO e Wasabi para arquivos de log e backups."
+      },
+      "registry-credentials": {
+        "title": "Credenciais de registry",
+        "description": "Baixe imagens privadas com build.type: image."
+      },
+      "node-providers": {
+        "title": "Provedores de nodes na nuvem",
+        "description": "Tokens da Hetzner e DigitalOcean para provisionamento automático de nodes."
+      },
+      "registry": {
+        "title": "Registry de containers",
+        "description": "Registry de imagens integrado para cache de build em vários nodes."
+      },
+      "email": {
+        "title": "E-mail",
+        "description": "SMTP de saída para alertas e redefinições de senha."
+      },
+      "email-templates": {
+        "title": "Modelos de e-mail",
+        "description": "Edite todo e-mail que a plataforma envia, com prévia ao vivo."
+      },
+      "email-audiences": {
+        "title": "Públicos de e-mail",
+        "description": "Grupos salvos de pessoas para escrever, com opt-outs."
+      },
+      "email-messages": {
+        "title": "Mensagens de e-mail",
+        "description": "Escreva para um público e veja o histórico de entregas."
+      },
+      "cloudflare-tunnel": {
+        "title": "Cloudflare Tunnel",
+        "description": "Exponha este control plane sem abrir uma porta de entrada."
+      },
+      "vault": {
+        "title": "Vault",
+        "description": "Resolva segredos de apps ao vivo a partir de uma instância externa do HashiCorp Vault."
+      },
+      "data-export": {
+        "title": "Exportação de dados",
+        "description": "Envie logs, eventos de auditoria e métricas para Loki, syslog, um webhook, um bucket ou um coletor OTLP."
+      },
+      "event-webhooks": {
+        "title": "Webhooks de eventos",
+        "description": "Callbacks HTTPS assinados para eventos da plataforma, com novas tentativas e log de entregas."
+      },
+      "traffic-export": {
+        "title": "Exportação de tráfego",
+        "description": "Transmita registros de requisições para PostHog, OpenTelemetry ou um webhook, sem identidade do visitante por padrão."
+      },
+      "observability": {
+        "title": "Observabilidade",
+        "description": "Informações de conexão de leitura remota e um link para o seu próprio Grafana."
+      },
+      "ai-assistant": {
+        "title": "Assistente de IA",
+        "description": "Traga sua própria chave de API de LLM para o assistente de chat da plataforma."
+      },
+      "import-platform": {
+        "title": "Importar de outra plataforma",
+        "description": "Traga apps do Coolify, Dokploy ou CapRover."
+      },
+      "general": {
+        "title": "Geral",
+        "description": "Status e configuração do sistema."
+      },
+      "control-plane-backup": {
+        "title": "Backup do control plane",
+        "description": "Snapshots, backups fora da máquina, custódia de chaves e simulações de restauração desta instância."
+      },
+      "dr-report": {
+        "title": "Relatório de recuperação",
+        "description": "Planeje e execute a recuperação do servidor inteiro e depois revise o que foi restaurado."
+      },
+      "control-plane-health": {
+        "title": "Saúde do control plane",
+        "description": "Goroutines, latência do banco de dados, atraso de reconcile e carga de streams, com correções."
+      },
+      "system-status": {
+        "title": "Doctor",
+        "description": "Verificações de saúde com correções: Docker, disco, portas, certificados, backups, nodes."
+      },
+      "firewall": {
+        "title": "Firewall",
+        "description": "Regras de permitir ou negar por porta, protocolo e origem, reconciliadas neste node."
+      },
+      "containers": {
+        "title": "Containers",
+        "description": "Todo container neste node, gerenciado ou não por esta plataforma."
+      },
+      "cleanup": {
+        "title": "Limpeza",
+        "description": "Retenção, previews e histórico de execuções dos dados armazenados, além de limpeza de disco e Docker."
+      },
+      "platform": {
+        "title": "Plataforma",
+        "description": "Status de HTTPS, ingress, endereços e provedores de DNS, com busca em todas as configurações da plataforma."
+      },
+      "domains": {
+        "title": "Domínios",
+        "description": "Ingress da plataforma: domínio do painel e certificados ACME."
+      },
+      "certificates": {
+        "title": "Certificados TLS",
+        "description": "O certificado de cada domínio em um só lugar: expiração, emissor, renovar agora, envio de certificado personalizado e o orçamento de emissão."
+      },
+      "infrastructure": {
+        "title": "Infraestrutura como código",
+        "description": "Planeje e aplique arquivos de recursos YAML e exporte o estado ao vivo."
+      },
+      "database-upgrades": {
+        "title": "Upgrades de banco de dados",
+        "description": "Política de upgrade padrão e janela de manutenção."
+      },
+      "updates": {
+        "title": "Atualizações",
+        "description": "Versão atual e releases disponíveis."
+      },
+      "beta-features": {
+        "title": "Recursos beta",
+        "description": "Ative recursos que funcionam, mas ainda estão sendo ajustados."
+      },
+      "audit-log": {
+        "title": "Log de auditoria",
+        "description": "Quem alterou o quê, em todas as sessões e tokens de API."
+      },
+      "git-connections": {
+        "title": "Conexões Git",
+        "description": "Todas as contas GitHub, GitLab, Bitbucket, Gitea e Forgejo em um só lugar."
+      },
+      "benchmarks": {
+        "title": "Benchmarks",
+        "description": "Execuções de benchmark armazenadas com host, build, limites e uma visão de comparação."
+      },
+      "appearance": {
+        "title": "Aparência",
+        "description": "Tema, cor de destaque, fonte, largura e densidade."
+      },
+      "azure-devops-app": {
+        "title": "Azure DevOps",
+        "description": "Acesso a repositórios do Azure DevOps com um token de acesso pessoal."
+      }
+    },
+    "search": "Buscar configurações",
+    "back": "Voltar",
+    "pins": {
+      "group": "Fixados",
+      "pin": "Fixar {{label}}",
+      "unpin": "Desafixar {{label}}",
+      "limit": "Limite de fixados atingido ({{max}}). Desafixe um primeiro."
+    },
+    "expandAll": "Expandir todos os grupos",
+    "collapseAll": "Recolher todos os grupos",
+    "oneAtATime": "Abrir um grupo por vez",
+    "groupCount": "{{count}} páginas",
+    "noMatchTitle": "Nenhuma configuração corresponde a \"{{query}}\"",
+    "noMatchDescription": "Tente outra palavra ou limpe a busca para ver todas as áreas.",
+    "searchLoading": "Buscando configurações",
+    "searchFailedTitle": "A busca não pôde terminar",
+    "searchFailedDescription": "Mostrando as correspondências encontradas no menu. Tente a busca completa novamente.",
+    "retry": "Tentar novamente",
+    "title": "Configurações",
+    "description": "Configuração de conta, equipe e plataforma.",
+    "jumpTo": "Ir para uma área"
+  },
+  "mobileDevices": {
+    "title": "Dispositivos móveis",
+    "description": "Celulares pareados com este servidor. Cada um guarda seu próprio token com expiração, que pode ler o status e reiniciar, fazer deploy ou rollback de apps. Ele nunca pode agir como root, revelar segredos ou aprovar logins.",
+    "pair": "Parear um dispositivo",
+    "pairFailed": "Não foi possível criar um código de pareamento",
+    "pairingTitle": "Código de pareamento",
+    "pairingHint": "Digite este código no app móvel ou abra o link no celular. Ele funciona uma vez e expira às {{time}}.",
+    "codeLabel": "Código",
+    "linkLabel": "Link de pareamento",
+    "serverLabel": "Endereço do servidor",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "done": "Concluído",
+    "emptyTitle": "Nenhum celular pareado",
+    "emptyDescription": "Pareie um dispositivo para ver o status e reiniciar, fazer deploy ou rollback de apps pelo celular.",
+    "colName": "Nome",
+    "colPlatform": "Plataforma",
+    "colCreated": "Pareado",
+    "colLastSeen": "Visto por último",
+    "colExpires": "Expira",
+    "never": "Nunca",
+    "expired": "Expirado",
+    "revoke": "Revogar",
+    "revokeTitle": "Revogar {{name}}?",
+    "revokeDescription": "O celular perde o acesso na hora e precisa ser pareado novamente.",
+    "revoked": "{{name}} revogado"
+  },
+  "oauthPage": {
+    "eyebrow": "Login",
+    "title": "Login com OAuth",
+    "description": "Permita que as pessoas façam login com Google, GitHub, Microsoft ou um provedor de identidade próprio em vez de uma senha. O que cada pessoa pode fazer é definido pela função na equipe e por políticas IAM.",
+    "connectedCount_one": "{{count}} provedor conectado",
+    "connectedCount_many": "{{count}} provedores conectados",
+    "connectedCount_other": "{{count}} provedores conectados",
+    "rail": {
+      "label": "Resumo do login",
+      "summary": "Provedores",
+      "connected": "Conectados",
+      "connectedOf": "{{connected}} de {{total}}",
+      "callbacks": "URLs de callback",
+      "copyFor": "Copiar a URL de callback de {{provider}}",
+      "docs": "Documentação",
+      "docsLink": "Guia de identidade e acesso"
+    },
+    "banner": {
+      "title": "Registre antes a URL de callback em cada provedor",
+      "body": "Todo provedor pede uma URL de redirecionamento (callback) ao criar seu app OAuth. Copie exatamente a URL mostrada na linha dele, incluindo o esquema, ou o login falha com erro de redirecionamento incompatível."
+    },
+    "providers": {
+      "google": "Google",
+      "github": "GitHub",
+      "microsoft": "Microsoft",
+      "oidc": "OIDC / SSO",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "discord": "Discord",
+      "slack": "Slack",
+      "linkedin": "LinkedIn",
+      "twitch": "Twitch",
+      "facebook": "Facebook",
+      "linear": "Linear",
+      "vercel": "Vercel",
+      "huggingface": "Hugging Face",
+      "figma": "Figma",
+      "salesforce": "Salesforce",
+      "codeberg": "Codeberg",
+      "cognito": "Amazon Cognito",
+      "dropbox": "Dropbox",
+      "kakao": "Kakao",
+      "patreon": "Patreon"
+    },
+    "state": {
+      "connected": "Conectado",
+      "disabled": "Desativado",
+      "unconfigured": "Não configurado"
+    },
+    "enable": "Permitir login",
+    "saved": "Configurações de {{provider}} salvas.",
+    "callbackCopied": "URL de callback copiada.",
+    "callbackCopyFailed": "Não foi possível copiar. Selecione a URL e copie manualmente.",
+    "callbackLabel": "URL de callback",
+    "copyCallback": "Copiar URL de callback",
+    "copyCallbackFor": "Copiar URL de callback de {{provider}}",
+    "configure": "Configurar",
+    "sheet": {
+      "title": "Configurar {{provider}}",
+      "description": "Credenciais e quem pode fazer login com este provedor."
+    },
+    "clientId": "ID do cliente",
+    "credentials": {
+      "title": "Credenciais",
+      "description": "Crie um app OAuth em {{provider}} e cole aqui o ID do cliente e o segredo."
+    },
+    "restrict": {
+      "title": "Quem pode entrar",
+      "description": "Somente novos logins deste domínio de e-mail têm uma conta criada automaticamente. Deixe em branco para permitir qualquer e-mail.",
+      "label": "Restringir ao domínio de e-mail (opcional)"
+    },
+    "issuerUrl": {
+      "label": "URL do emissor",
+      "hint": "O emissor OIDC do seu provedor de identidade, o endereço de onde /.well-known/openid-configuration é servido."
+    },
+    "instanceUrl": {
+      "label": "URL da instância (opcional)",
+      "hint": "Deixe em branco para gitlab.com. Para um GitLab auto-hospedado, informe o endereço https dele.",
+      "invalid": "A URL da instância deve começar com https://"
+    },
+    "tenantId": {
+      "label": "ID do diretório (tenant)",
+      "hint": "Obrigatório para que novas contas sejam criadas pelo login da Microsoft. Sem ele, somente identidades já vinculadas podem fazer login.",
+      "invalid": "O ID do tenant deve ser um GUID"
+    },
+    "userPoolId": {
+      "label": "ID do user pool",
+      "hint": "Encontrado na visão geral do user pool do Cognito, por exemplo us-east-1_AbC123. A região é lida dele.",
+      "invalid": "O ID do user pool deve ter o formato us-east-1_AbC123"
+    },
+    "displayName": {
+      "label": "Nome de exibição (opcional)",
+      "hint": "Exibido no botão de login como \"Continuar com ...\". O padrão é \"SSO\"."
+    },
+    "clientSecret": {
+      "label": "Segredo do cliente",
+      "unchanged": "Inalterado",
+      "stored": "Já existe um segredo armazenado. Deixe em branco para mantê-lo.",
+      "neverShown": "Nunca é exibido novamente depois de salvo."
+    },
+    "errors": {
+      "clientId": "O ID do cliente é obrigatório para ativar este provedor",
+      "clientSecret": "O segredo do cliente é obrigatório na primeira vez que este provedor é ativado",
+      "issuerUrl": "A URL do emissor é obrigatória para ativar o OIDC"
+    }
+  },
+  "gitProviders": {
+    "eyebrow": "Provedor Git",
+    "github": {
+      "title": "GitHub App",
+      "description": "Conecte um GitHub App para acesso a repositórios privados e navegação por instalação ao criar um app a partir do git.",
+      "banner": "Depois que o App for instalado, seus repositórios ficam disponíveis para escolha ao criar um app."
+    },
+    "gitlab": {
+      "title": "GitLab App",
+      "description": "Conecte uma aplicação OAuth do GitLab, gitlab.com ou auto-hospedado, para navegar por projetos e fazer deploys acionados por webhook.",
+      "banner": "Depois que a aplicação for autorizada, seus projetos ficam disponíveis para escolha ao criar um app."
+    },
+    "gitea": {
+      "title": "Gitea App",
+      "description": "Conecte uma aplicação OAuth2 de um Gitea auto-hospedado para navegar por repositórios e fazer deploys acionados por webhook.",
+      "banner": "Depois que a aplicação for autorizada, seus repositórios ficam disponíveis para escolha ao criar um app."
+    },
+    "bitbucket": {
+      "title": "Bitbucket App",
+      "description": "Conecte um consumer OAuth do Bitbucket Cloud para navegar por repositórios e fazer deploys acionados por webhook.",
+      "banner": "Depois que o consumer for autorizado, seus repositórios ficam disponíveis para escolha ao criar um app."
+    },
+    "rail": {
+      "label": "Resumo da conexão",
+      "connection": "Conexão",
+      "status": "Status",
+      "connected": "Conectado",
+      "notConnected": "Não conectado",
+      "account": "Conta",
+      "accounts": "Contas conectadas",
+      "instance": "Instância",
+      "accessTitle": "O que ele pode acessar",
+      "docs": "Documentação",
+      "docsLink": "Guia de integrações Git",
+      "access": {
+        "github": [
+          "Repositórios em que o App está instalado",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ],
+        "gitlab": [
+          "Projetos que sua conta autorizada pode ler",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ],
+        "gitea": [
+          "Repositórios que sua conta autorizada pode ler",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ],
+        "bitbucket": [
+          "Repositórios que sua conta autorizada pode ler",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ],
+        "forgejo": [
+          "Repositórios que sua conta autorizada pode ler",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ],
+        "bitbucket_server": [
+          "Repositórios que o dono do token pode ler",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ],
+        "azure_devops": [
+          "Repositórios que o dono do token pode ler",
+          "Branches e commits para deploys",
+          "Entrega de webhooks para eventos de push"
+        ]
+      }
+    },
+    "forgejo": {
+      "title": "Forgejo App",
+      "description": "Conecte uma aplicação OAuth2 do Forgejo, Codeberg ou auto-hospedado, para navegar por repositórios e fazer deploys acionados por webhook.",
+      "banner": "Depois que a aplicação for autorizada, seus repositórios ficam disponíveis para escolha ao criar um app."
+    },
+    "bitbucket_server": {
+      "title": "Bitbucket Server",
+      "description": "Conecte o Bitbucket Server ou Data Center com um token de acesso pessoal para navegar por repositórios e fazer deploys acionados por webhook.",
+      "banner": "Depois que o token for verificado, seus repositórios ficam disponíveis para escolha ao criar um app."
+    },
+    "azure_devops": {
+      "title": "Azure DevOps",
+      "description": "Conecte uma organização do Azure DevOps com um token de acesso pessoal para navegar por repositórios e fazer deploys acionados por push. Os repositórios aparecem como PROJECT/repo.",
+      "banner": "Os deploys rodam no push. Previews de pull request e status de commit não estão disponíveis para o Azure DevOps."
+    }
+  },
+  "securityPage": {
+    "session": {
+      "title": "Sessão atual",
+      "description": "A conta e a sessão com as quais este navegador está logado.",
+      "account": "Logado como",
+      "accountHelp": "A conta à qual toda ação aqui é atribuída.",
+      "until": "Logado até",
+      "untilHelp": "Depois deste horário, será pedido que você faça login novamente."
+    },
+    "rail": {
+      "label": "Resumo da proteção de login",
+      "protection": "Proteção de login",
+      "twoFactor": "Autenticação em dois fatores",
+      "on": "Ativada",
+      "off": "Desativada",
+      "passkeys": "Passkeys registradas",
+      "signedIn": "Logado como",
+      "until": "A sessão expira",
+      "jump": "Nesta página",
+      "sessionsLink": "Sessões",
+      "twoFactorLink": "Autenticação em dois fatores",
+      "passkeysLink": "Passkeys"
+    },
+    "eyebrow": "Conta",
+    "title": "Segurança",
+    "description": "Sessões, autenticação em dois fatores, passkeys e proteção de login desta conta.",
+    "help": "Guia de segurança",
+    "status": {
+      "protected": "Segundo fator ativo",
+      "open": "Somente senha"
+    },
+    "banner": {
+      "title": "O login depende apenas de uma senha",
+      "body": "Ative a autenticação em dois fatores ou registre uma passkey para que uma senha vazada não abra este painel sozinha."
+    },
+    "account": {
+      "title": "Seus métodos de login",
+      "description": "Autenticação em dois fatores, passkeys, sua senha e sessões ativas ficam na sua página de Conta.",
+      "open": "Abrir Conta"
+    },
+    "loginProtection": {
+      "title": "Proteção de login",
+      "body": "Tentativas de login com falha têm limite de taxa por endereço IP e nome de usuário, e cada falha adicional faz a próxima tentativa permitida esperar mais que a anterior. Algumas senhas digitadas errado nunca vão bloquear você, mas tentativas automatizadas repetidas ficam mais lentas a cada vez."
+    }
+  },
+  "controlPlaneHealth": {
+    "title": "Saúde do control plane",
+    "description": "Saturação ao vivo desta instância: processo, banco de dados, loop de reconcile e streams abertos.",
+    "status": {
+      "ok": "Saudável",
+      "warn": "Degradado",
+      "crit": "Saturado"
+    },
+    "severity": {
+      "warn": "Aviso",
+      "crit": "Crítico"
+    },
+    "allClear": "Todas as medições estão abaixo do limite.",
+    "reading": "Agora {{value}}, limite {{limit}}.",
+    "fixApplied": "Correção aplicada",
+    "fixFailed": "A correção falhou",
+    "fixViaCli": "Corrigir via CLI",
+    "slowQueries": "Consultas lentas: {{count}} acima de {{ms}} ms",
+    "noSlowQueries": "Nenhuma consulta lenta registrada desde o início.",
+    "fixes": {
+      "wal_checkpoint": "Fazer checkpoint agora",
+      "db_optimize": "Atualizar estatísticas de consultas",
+      "reset_slow_log": "Limpar log de lentas",
+      "telemetry_prune": "Podar e compactar métricas",
+      "reset_reconcile_guard": "Redefinir proteção e retomar",
+      "integrity_check": "Executar uma verificação completa",
+      "integrity_restore": "Restaurar o snapshot verificado mais recente"
+    },
+    "integrity": {
+      "title": "Integridade do banco de dados",
+      "ok": "Íntegro",
+      "damaged": "Danificado",
+      "notYet": "Nenhuma verificação foi executada desde que este processo iniciou. A primeira roda em breve.",
+      "last": "Última verificação {{when}} ({{mode}}).",
+      "mode": {
+        "quick": "rápida",
+        "full": "completa"
+      },
+      "checkQuick": "Verificação rápida agora",
+      "checkFull": "Verificação completa agora",
+      "checkOk": "O banco de dados passou na verificação",
+      "checkBad": "O banco de dados falhou na verificação",
+      "snapshots": "Snapshots que você pode restaurar",
+      "noSnapshots": "Ainda não existem snapshots. Crie um na página de backups.",
+      "verified": "Verificado",
+      "unverified": "Ainda não verificado",
+      "restore": "Restaurar",
+      "pending": "O snapshot {{name}} substitui o banco de dados na próxima inicialização.",
+      "restartNow": "Reiniciar agora",
+      "cancelRestore": "Cancelar",
+      "staged": "Restauração preparada. Reinicie o control plane para aplicá-la.",
+      "confirmTitle": "Restaurar {{name}}?",
+      "confirmDescription": "O snapshot é verificado novamente antes de ser preparado e aplicado durante a próxima inicialização, antes de o banco de dados abrir.",
+      "consequenceKept": "O arquivo atual do banco de dados é mantido ao lado, não excluído.",
+      "consequenceRestart": "Alterações feitas depois que o snapshot foi tirado não estão nele."
+    },
+    "guard": {
+      "title": "Proteção de reconcile",
+      "summary": "{{deferred}} passagens adiadas, {{recent}} limitadas nos últimos 5 minutos, {{open}} circuit breakers abertos.",
+      "none": "Nenhum controller disparou um circuit breaker ou atingiu um limite de taxa.",
+      "counts": "{{trips}} disparos, {{panics}} panics, {{throttled}} limitados",
+      "state": {
+        "closed": "Fechado",
+        "open": "Pausado",
+        "half_open": "Em teste"
+      }
+    },
+    "metrics": {
+      "goroutines": "Goroutines",
+      "heap": "Heap em uso",
+      "dbLatency": "Banco de dados p95",
+      "dbLatencyHint": "p50 {{p50}} ms, p99 {{p99}} ms",
+      "dbQueue": "Gravações que esperaram",
+      "dbQueueHint": "{{ms}} ms esperando no total",
+      "readQueue": "Leituras que esperaram",
+      "readQueueHint": "{{ms}} ms esperando no total, {{inUse}} de {{size}} conexões ocupadas",
+      "readPoolDisabled": "Pool de leitura desativado, as leituras usam o writer",
+      "wal": "Write ahead log",
+      "walHint": "Arquivo do banco de dados {{size}} MiB",
+      "reconcile": "Última passagem de reconcile",
+      "reconcileHint": "{{n}} controllers, p95 {{p95}} ms",
+      "reconcileQueue": "Fila de reconcile",
+      "reconcileQueueValue": "{{inFlight}} de {{workers}} workers ocupados",
+      "reconcileQueueHint": "{{depth}} aguardando, mais antigo {{wait}} s",
+      "eventLag": "Desde a última passagem de reconcile",
+      "streams": "Streams ao vivo",
+      "rss": "Memória em uso (RSS)",
+      "rssHint": "Limite suave {{limit}} MiB",
+      "rssNoLimit": "Nenhum limite suave definido",
+      "threads": "Threads do SO",
+      "cpu": "CPU desde a última verificação",
+      "telemetry": "Banco de dados de métricas"
+    },
+    "loops": {
+      "title": "Loops em segundo plano",
+      "empty": "Nenhum loop em segundo plano reportou ainda.",
+      "row": "a cada {{every}} s, {{runs}} execuções, última {{ms}} ms, custo {{cost}} % de um core"
+    },
+    "findings": {
+      "reconcile_breakers": {
+        "title": "Um controller continua falhando e foi pausado",
+        "hint": "O circuit breaker tenta de novo com um atraso crescente. Corrija a causa mostrada abaixo e depois redefina a proteção para tentar agora."
+      },
+      "reconcile_storm": {
+        "title": "Uma rajada de eventos atingiu o limite de taxa",
+        "hint": "As passagens foram mescladas para o host continuar responsivo. Redefinir a proteção reabastece o orçamento."
+      },
+      "db_integrity": {
+        "title": "O banco de dados do control plane está danificado",
+        "hint": "Restaure o snapshot verificado mais recente. Ele é aplicado na próxima inicialização e o arquivo danificado é mantido."
+      },
+      "rss": {
+        "title": "Uso alto de memória",
+        "hint": "O processo está usando muita RAM. Reduza APP_GOMEMLIMIT_PERCENT ou revise os loops abaixo."
+      },
+      "threads": {
+        "title": "Muitas threads do SO",
+        "hint": "Normalmente chamadas de disco ou rede bloqueadas. Reinicie o control plane se continuar subindo."
+      },
+      "telemetry_size": {
+        "title": "O banco de dados de métricas está grande",
+        "hint": "A poda aplica a retenção e o limite de tamanho e depois devolve o espaço livre ao disco."
+      },
+      "goroutines": {
+        "title": "Muitas goroutines",
+        "hint": "Normalmente streams abertos ou jobs travados. Reinicie o control plane se continuar subindo."
+      },
+      "heap": {
+        "title": "Uso alto de memória",
+        "hint": "Verifique se há saídas de log ou de build muito grandes mantidas em memória."
+      },
+      "db_latency": {
+        "title": "Consultas lentas ao banco de dados",
+        "hint": "Atualizar as estatísticas de consultas costuma restaurar bons planos."
+      },
+      "db_queue": {
+        "title": "Gravações em fila",
+        "hint": "O único writer do SQLite está ocupado. Veja a lista de consultas lentas abaixo."
+      },
+      "wal_size": {
+        "title": "O write ahead log está grande",
+        "hint": "Um checkpoint o incorpora de volta ao arquivo do banco de dados."
+      },
+      "slow_queries": {
+        "title": "Muitas consultas lentas",
+        "hint": "Revise a lista abaixo e depois zere o contador quando tratado."
+      },
+      "reconcile_pass": {
+        "title": "A passagem de reconcile está lenta",
+        "hint": "Um controller está demorando. O mais lento aparece nas métricas."
+      },
+      "event_lag": {
+        "title": "O loop de reconcile está atrasado",
+        "hint": "Nenhuma passagem terminou recentemente. Reinicie o control plane se isso persistir."
+      },
+      "streams": {
+        "title": "Streams ao vivo perto do limite",
+        "hint": "Novos streams de log e de eventos são recusados no limite. Aumente APP_MAX_LIVE_STREAMS se o host tiver folga."
+      }
+    },
+    "banner": {
+      "description": "Saturação ao vivo desta instância, com uma correção em um clique para cada achado.",
+      "diagram": {
+        "database": "banco de dados",
+        "disk": "disco",
+        "certificates": "certificados"
+      }
+    },
+    "recheck": "Verificar novamente",
+    "rechecking": "Verificando",
+    "errorTitle": "Não foi possível ler a saúde do control plane",
+    "retry": "Tentar novamente",
+    "findingsTitle": "Precisa de atenção",
+    "findingsCount_one": "{{count}} achado",
+    "findingsCount_many": "{{count}} achados",
+    "findingsCount_other": "{{count}} achados",
+    "metricsTitle": "Runtime e banco de dados",
+    "readingChip": "Agora {{value}} / limite {{limit}}",
+    "footprint": {
+      "title": "Consumo",
+      "status": {
+        "within_tolerance": "Dentro da tolerância",
+        "over_tolerance": "Acima da tolerância",
+        "tolerance_unset": "Tolerâncias não definidas",
+        "no_baseline": "Sem linha de base"
+      },
+      "basis": "Processo do control plane em {{platform}} contra a linha de base ociosa registrada ({{apps}} apps, {{liveApps}} apps agora).",
+      "noBaseline": "Não existe linha de base ociosa registrada para {{platform}}, então apenas a leitura ao vivo é mostrada.",
+      "metric": {
+        "rss": "Memória residente",
+        "cpu": "CPU",
+        "goroutines": "Goroutines",
+        "open_fds": "Descritores de arquivo abertos"
+      },
+      "vs": "(linha de base {{baseline}}, limite {{limit}})",
+      "meterLabel": "{{metric}} em relação ao limite",
+      "footnote": "A CPU é a média dos últimos {{seconds}} s. A memória é mantida no pico da linha de base. Os limites vêm das configurações IDLE_TOL_*. O agent do node não é medido aqui."
+    },
+    "statementTiming": {
+      "title": "Tempo das instruções",
+      "on": "Gravando",
+      "off": "Desativado",
+      "basis": "Instruções com {{threshold}} ms ou mais são mantidas, até {{size}} instruções distintas. Somente texto, nunca valores.",
+      "offHint": "Ative a configuração de tempo de instruções do banco de dados para registrar instruções lentas e enviar um cabeçalho Server-Timing aos admins.",
+      "empty": "Nenhuma instrução cruzou o limite ainda.",
+      "loadError": "Não foi possível carregar as instruções lentas.",
+      "row": "Pior {{max}} ms, última {{last}} ms, vista {{count}} vezes"
+    }
+  },
+  "generalPage": {
+    "rail": {
+      "label": "Resumo da instância",
+      "instance": "Instância",
+      "url": "URL da instância",
+      "version": "Versão",
+      "health": "Saúde",
+      "docker": "Daemon do Docker",
+      "connected": "Conectado",
+      "disconnected": "Não conectado",
+      "secrets": "Segredos",
+      "configured": "Configurado",
+      "notConfigured": "Não configurado",
+      "docs": "Documentação"
+    },
+    "eyebrow": "Plataforma",
+    "title": "Geral",
+    "description": "No que esta instância está rodando, quanto disco ainda resta e quais recursos principais estão configurados.",
+    "help": "Guia de solução de problemas",
+    "density": {
+      "title": "Densidade da interface",
+      "description": "Compacta cabe mais na tela. Confortável adiciona espaçamento. Armazenado somente neste navegador.",
+      "compact": "Compacta",
+      "comfortable": "Confortável"
+    },
+    "status": {
+      "healthy": "Saudável",
+      "attention": "Precisa de atenção"
+    },
+    "banner": {
+      "docker": "O Docker não está acessível",
+      "dockerBody": "O control plane não consegue falar com o engine do Docker, então nada pode receber deploy nem ser reconciliado até ele voltar.",
+      "secrets": "A criptografia de segredos não está configurada",
+      "secretsBody": "Segredos de ambiente não podem ser armazenados até que uma chave mestra seja definida para esta instância."
+    },
+    "width": {
+      "title": "Largura da página",
+      "description": "Quão largo fica o conteúdo da página em telas grandes. Telas abaixo de 1024px não são afetadas. Armazenado somente neste navegador.",
+      "comfortable": "Confortável",
+      "comfortableHint": "Coluna centralizada com margens laterais generosas",
+      "wide": "Larga",
+      "wideHint": "Melhor uso de telas grandes",
+      "full": "Largura total",
+      "fullHint": "De ponta a ponta",
+      "compact": "Compacta",
+      "compactHint": "Coluna estreita para leitura",
+      "custom": "Largura exata",
+      "customHint": "Escolha uma largura em pixels"
+    },
+    "appearanceLink": {
+      "title": "Aparência",
+      "description": "Tema, fonte, largura da página e densidade agora ficam em um só lugar.",
+      "open": "Abrir aparência"
+    }
+  },
+  "emailPage": {
+    "eyebrow": "Notificações",
+    "title": "E-mail",
+    "description": "Os provedores que enviam notificações de alerta, convites e links de redefinição de senha.",
+    "help": "Guia de notificações por e-mail",
+    "status": {
+      "none": "Não configurado"
+    }
+  },
+  "emailDelivery": {
+    "title": "Entrega de e-mail",
+    "validation": {
+      "fromRequired": "O endereço do remetente é obrigatório",
+      "hostRequired": "O host é obrigatório",
+      "portRequired": "A porta é obrigatória",
+      "regionRequired": "Escolha uma região da AWS",
+      "accessKeyRequired": "O ID da chave de acesso é obrigatório",
+      "smtpUsernameRequired": "O nome de usuário SMTP é obrigatório",
+      "domainRequired": "O domínio de envio é obrigatório",
+      "emailInvalid": "Informe um endereço de e-mail válido"
+    },
+    "secretSet": "Já configurado. Deixe em branco para mantê-lo.",
+    "secretUnset": "Ainda não definido.",
+    "username": "Nome de usuário",
+    "password": "Senha",
+    "apiKey": "Chave de API",
+    "providers": {
+      "smtp": "SMTP",
+      "ses": "AWS SES (API)",
+      "ses_smtp": "AWS SES (SMTP)",
+      "resend": "Resend",
+      "postmark": "Postmark",
+      "sendgrid": "SendGrid",
+      "mailgun": "Mailgun"
+    },
+    "sender": {
+      "title": "Remetente",
+      "description": "De quem o e-mail vem. Todo provedor usa estes dados.",
+      "fromName": "Nome do remetente",
+      "fromAddress": "Endereço do remetente",
+      "replyTo": "Endereço de resposta",
+      "envelopeFrom": "Remetente do envelope",
+      "envelopeHelp": "Para onde vão os bounces. Deixe em branco para usar o endereço do remetente.",
+      "optional": "Opcional."
+    },
+    "provider": {
+      "title": "Provedor",
+      "description": "Como o e-mail é entregue. Escolha um e preencha seus detalhes."
+    },
+    "smtp": {
+      "presets": "Preenchimento rápido para um relay conhecido",
+      "host": "Host",
+      "hostPlaceholder": "smtp.example.com",
+      "port": "Porta"
+    },
+    "ses": {
+      "region": "Região",
+      "regionHelp": "A região da AWS onde a identidade do remetente está verificada.",
+      "regionPlaceholder": "Escolha uma região",
+      "accessKeyId": "ID da chave de acesso",
+      "secretAccessKey": "Chave de acesso secreta"
+    },
+    "sesSmtp": {
+      "credentialsTitle": "As credenciais SMTP do SES não são suas chaves IAM",
+      "credentialsBody": "Crie credenciais SMTP no console do SES (configurações de SMTP) e informe aqui esse nome de usuário e senha. Chaves de acesso IAM serão rejeitadas.",
+      "derivedHost": "Conecta-se a email-smtp.{{region}}.amazonaws.com.",
+      "port587": "587 (STARTTLS)",
+      "port465": "465 (TLS)"
+    },
+    "mailgun": {
+      "domain": "Domínio de envio",
+      "domainPlaceholder": "mg.example.com",
+      "region": "Região",
+      "us": "Estados Unidos",
+      "eu": "Europa"
+    },
+    "postmark": {
+      "token": "Token do servidor"
+    },
+    "limits": {
+      "title": "Limites de entrega",
+      "description": "Limites que protegem a conta do seu provedor de um loop descontrolado. Envios acima do limite falham rápido e aparecem no log.",
+      "perMinute": "Envios por minuto",
+      "perDay": "Envios por dia",
+      "zeroHelp": "0 usa o padrão do servidor, que é ilimitado se não for definido."
+    },
+    "security": {
+      "title": "Segurança",
+      "description": "Como a conexão com o servidor de e-mail é protegida.",
+      "tlsMode": "Modo TLS",
+      "modes": {
+        "auto": "Automático (STARTTLS quando oferecido)",
+        "starttls": "Exigir STARTTLS",
+        "tls": "TLS desde o início (porta 465)",
+        "none": "Sem criptografia"
+      },
+      "verify": "Verificar o certificado do servidor",
+      "verifyOff": "As verificações de certificado estão desativadas. Qualquer pessoa entre este servidor e o servidor de e-mail poderia ler ou alterar seus e-mails. Faça isso apenas em uma rede privada confiável.",
+      "apiNote": "Este provedor é acessado por HTTPS com um certificado verificado. Não há nada para configurar aqui."
+    },
+    "status": {
+      "configured": "Configurado",
+      "fromEnv": "SMTP do ambiente do servidor",
+      "openLog": "Log de entregas",
+      "lastSuccess": "Último envio bem-sucedido",
+      "lastFailure": "Última falha",
+      "never": "Nunca",
+      "sent24h": "Enviados em 24 horas",
+      "failed24h": "Com falha em 24 horas"
+    },
+    "test": {
+      "title": "Enviar um e-mail de teste",
+      "description": "Envia uma mensagem real pelo provedor salvo, o mesmo caminho usado por alertas e redefinições de senha. Deixe o endereço em branco para enviar a você mesmo.",
+      "placeholder": "Seu próprio endereço",
+      "send": "Enviar e-mail de teste",
+      "sending": "Enviando...",
+      "success": "E-mail de teste enviado para {{to}}.",
+      "response": "Provedor: {{provider}}. ID da mensagem: {{id}}.",
+      "noId": "nenhum retornado",
+      "fix": "Correção:"
+    },
+    "failure": {
+      "auth_failed": {
+        "title": "O provedor rejeitou as credenciais",
+        "fix": "Informe novamente a senha ou a chave de API e salve de novo. Confira se o nome de usuário pertence à mesma conta.",
+        "fixSesSmtp": "As credenciais SMTP do SES são geradas no console do SES e não são as mesmas que as chaves de acesso IAM. Crie credenciais SMTP lá e cole aqui o nome de usuário e a senha."
+      },
+      "sender_not_verified": {
+        "title": "O endereço do remetente não está verificado",
+        "fix": "Verifique o endereço do remetente ou o domínio inteiro no console do provedor e envie o teste novamente."
+      },
+      "region_mismatch": {
+        "title": "Remetente verificado em outra região",
+        "fix": "Escolha a região onde a identidade do remetente está verificada, ou verifique-a na região selecionada."
+      },
+      "port_blocked": {
+        "title": "Não foi possível alcançar o servidor de e-mail",
+        "fix": "Confira o host e a porta. Muitas nuvens bloqueiam a porta 25, então tente 587 ou 465 e verifique qualquer firewall na frente deste servidor."
+      },
+      "tls_error": {
+        "title": "A conexão segura falhou",
+        "fix": "Combine o modo TLS com a porta (STARTTLS na 587, TLS na 465). Para um servidor privado com certificado próprio, desative a verificação de certificado em Segurança."
+      },
+      "rate_limited": {
+        "title": "O envio está com limite de taxa",
+        "fix": "O provedor ou o limite de envios definido aqui está limitando. Espere um minuto e tente novamente, ou aumente o limite em Limites de entrega."
+      },
+      "not_configured": {
+        "title": "Nenhum provedor configurado",
+        "fix": "Escolha um provedor, preencha seus detalhes e salve antes de enviar um teste."
+      },
+      "other": {
+        "title": "O envio falhou",
+        "fix": "Leia a resposta do provedor abaixo. Se não estiver clara, verifique o painel do provedor para ver a mensagem rejeitada."
+      }
+    },
+    "domain": {
+      "title": "Verificação do domínio do remetente",
+      "description": "Consulta SPF, DKIM e DMARC do domínio do endereço do remetente, para que o e-mail caia na caixa de entrada e não no spam.",
+      "run": "Verificar domínio",
+      "recheck": "Verificar de novo",
+      "checking": "Verificando...",
+      "checked": "Registros encontrados para {{domain}}.",
+      "pass": "Aprovado",
+      "warn": "Precisa de atenção",
+      "types": {
+        "spf": "SPF",
+        "dkim": "DKIM",
+        "dmarc": "DMARC"
+      },
+      "codes": {
+        "spf_ok": "Um registro SPF está publicado.",
+        "spf_missing": "Sem registro SPF. Publique um registro TXT começando com v=spf1 que autorize seu provedor.",
+        "spf_multiple": "Existe mais de um registro SPF. Una-os em um só, os destinatários rejeitam duplicatas.",
+        "spf_permissive": "O SPF termina em +all, que autoriza qualquer remetente. Use ~all ou -all.",
+        "spf_no_include": "O SPF não inclui {{include}}. Adicione include:{{include}}, a menos que seu provedor use o próprio domínio de return-path.",
+        "dkim_found": "Uma chave DKIM está publicada.",
+        "dkim_not_found": "Nenhuma chave DKIM encontrada nos seletores comuns. Adicione os registros DKIM que seu provedor mostra na página de verificação de domínio.",
+        "dmarc_ok": "Uma política DMARC que coloca em quarentena ou rejeita está publicada.",
+        "dmarc_monitor_only": "O DMARC está em modo de monitoramento (p=none). Passe para quarantine ou reject quando SPF e DKIM passarem.",
+        "dmarc_missing": "Sem registro DMARC. Publique um registro TXT em _dmarc com v=DMARC1; p=none para começar a monitorar."
+      },
+      "providerHints": {
+        "ses": "SES: verifique o domínio em Verified identities e publique os três registros CNAME de DKIM que ele fornece.",
+        "ses_smtp": "SES: verifique o domínio em Verified identities e publique os três registros CNAME de DKIM que ele fornece.",
+        "resend": "Resend: adicione o domínio em Domains e publique os registros SPF e DKIM listados, depois espere aparecer Verified.",
+        "postmark": "Postmark: adicione o domínio em Sender Signatures e publique os registros DKIM e Return-Path listados.",
+        "sendgrid": "SendGrid: execute Domain Authentication e publique os registros CNAME gerados.",
+        "mailgun": "Mailgun: adicione o domínio de envio e publique os registros SPF, DKIM e de rastreamento da página de DNS dele."
+      }
+    },
+    "log": {
+      "title": "Log de entrega de e-mails",
+      "description": "Toda tentativa de envio de e-mail com seu resultado. Os destinatários são abreviados, a menos que o servidor esteja configurado para manter os endereços completos.",
+      "back": "Configurações de e-mail",
+      "searchPlaceholder": "Buscar destinatário, ID da mensagem ou erro",
+      "allStatuses": "Todos os status",
+      "allProviders": "Todos os provedores",
+      "columns": {
+        "time": "Hora",
+        "status": "Status",
+        "to": "Para",
+        "provider": "Provedor",
+        "kind": "Tipo"
+      },
+      "statuses": {
+        "sent": "Enviado",
+        "failed": "Falhou",
+        "bounced": "Devolvido"
+      },
+      "noKind": "Geral",
+      "emptyTitle": "Nenhuma entrega ainda",
+      "emptyBody": "Os envios aparecem aqui conforme alertas, redefinições de senha e e-mails de teste saem. Envie um e-mail de teste pela página de configurações para ver a primeira linha.",
+      "retry": "Tentar novamente",
+      "detailTitle": "Detalhe da entrega",
+      "attempts": "Tentativas",
+      "messageId": "ID da mensagem do provedor",
+      "failureKind": "Por que falhou",
+      "error": "Resposta do provedor"
+    },
+    "reveal": {
+      "show": "Revelar",
+      "hide": "Ocultar",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "autoHide": "Oculta sozinho após 30 segundos. Toda revelação é registrada no log de auditoria.",
+      "stepUp": "Confirme que é você com sua senha e o código do autenticador para revelar esta credencial.",
+      "needsTwoFactor": "Revelar uma credencial exige autenticação em dois fatores. Configure-a antes na segurança da conta.",
+      "failed": "Não foi possível revelar a credencial."
+    }
+  },
+  "channelsPage": {
+    "eyebrow": "Notificações",
+    "title": "Canais de notificação",
+    "description": "Conecte Slack, Discord, Telegram, um webhook genérico ou e-mail uma vez e depois anexe-o às notificações de deploy de qualquer app.",
+    "help": "Guia de notificações",
+    "enabledCount_one": "{{count}} canal ativado",
+    "enabledCount_many": "{{count}} canais ativados",
+    "enabledCount_other": "{{count}} canais ativados",
+    "empty": {
+      "title": "Nenhum canal de notificação conectado",
+      "body": "Conecte Slack, Discord, Telegram, um webhook genérico ou e-mail uma vez aqui e depois anexe-o a qualquer app, sem digitar a URL de novo."
+    },
+    "banner": {
+      "none": "Ninguém saberá de um deploy com falha",
+      "noneBody": "Nenhum canal de notificação está conectado, então resultados de deploy e alertas só aparecem no painel. Conecte um para recebê-los onde você já está.",
+      "allOff": "Todos os canais estão desativados",
+      "allOffBody_one": "Seu {{count}} canal conectado está desligado, então nada está sendo entregue. Ative-o na janela de edição dele.",
+      "allOffBody_many": "Seus {{count}} canais conectados estão desligados, então nada está sendo entregue. Ative um na janela de edição dele.",
+      "allOffBody_other": "Seus {{count}} canais conectados estão desligados, então nada está sendo entregue. Ative um na janela de edição dele."
+    },
+    "table": {
+      "label": "Canais de notificação",
+      "name": "Nome",
+      "type": "Tipo",
+      "destination": "Destino",
+      "status": "Status",
+      "connected": "Conectado",
+      "enabled": "Ativado",
+      "disabled": "Desativado",
+      "test": "Testar",
+      "sending": "Enviando...",
+      "testOk": "Notificação de teste enviada.",
+      "testFailed": "A notificação de teste falhou."
+    }
+  },
+  "registryPage": {
+    "eyebrow": "Builds",
+    "title": "Credenciais de registry",
+    "description": "Nomes de usuário e senhas para baixar imagens privadas com build.type: image, referenciados pelo nome no app.yaml.",
+    "help": "Guia de registry",
+    "count_one": "{{count}} credencial",
+    "count_many": "{{count}} credenciais",
+    "count_other": "{{count}} credenciais",
+    "empty": {
+      "title": "Nenhuma credencial de registry",
+      "body": "Adicione um nome de usuário e uma senha (ou token de acesso) para baixar imagens privadas de um registry de containers, referenciados pelo nome no campo build.registryCredential do app.yaml."
+    },
+    "banner": {
+      "expired_one": "{{count}} credencial de registry expirou",
+      "expired_many": "{{count}} credenciais de registry expiraram",
+      "expired_other": "{{count}} credenciais de registry expiraram",
+      "expiredBody": "Downloads de imagens privadas com uma credencial expirada falharão no próximo deploy. Substitua-a antes disso.",
+      "expiring_one": "{{count}} credencial de registry expira em breve",
+      "expiring_many": "{{count}} credenciais de registry expiram em breve",
+      "expiring_other": "{{count}} credenciais de registry expiram em breve",
+      "expiringBody": "Rotacione-a no registry e atualize aqui antes da data mostrada na tabela."
+    },
+    "table": {
+      "label": "Credenciais de registry",
+      "name": "Nome",
+      "host": "Host do registry",
+      "username": "Nome de usuário",
+      "added": "Adicionada",
+      "expiryHeader": "Expiração",
+      "noExpiry": "Sem expiração definida",
+      "expiry": {
+        "healthy": "Saudável",
+        "expiring_soon": "Expira em breve",
+        "expired": "Expirada"
+      },
+      "expiredOn": "Expirou em {{date}}",
+      "expiresOn": "Expira em {{date}}",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "testOk": "\"{{name}}\" autenticou com sucesso.",
+      "testFailed": "\"{{name}}\" falhou ao autenticar.",
+      "usedBy": "Usada por",
+      "unused": "Nada ainda",
+      "usedByMany_one": "{{count}} serviço",
+      "usedByMany_many": "{{count}} serviços",
+      "usedByMany_other": "{{count}} serviços"
+    },
+    "cloud": {
+      "title": "Registries na nuvem que se renovam sozinhos",
+      "description": "Conecte ECR, Artifact Registry ou ACR usando a conta de nuvem que você já adicionou. Os logins são gerados e renovados automaticamente antes de expirar.",
+      "nameLabel": "Nome da credencial",
+      "regionLabel": "Região",
+      "hostLabel": "Host do registry",
+      "hostPlaceholder": "myregistry.azurecr.io",
+      "test": "Testar",
+      "connect": "Conectar",
+      "testOk": "O login funciona para {{host}}, expira {{when}}.",
+      "refreshNow": "Renovar agora",
+      "refreshHealthy": "Renovando",
+      "refreshFailing": "Renovação falhando",
+      "expires": "Expira {{when}}",
+      "lastRefresh": "Última renovação {{when}}",
+      "nextRefresh": "Próxima renovação {{when}}",
+      "ecr": {
+        "title": "Conectar ECR",
+        "body": "Usa sua conexão com a AWS. O host do registry é preenchido a partir da sua conta."
+      },
+      "artifact_registry": {
+        "title": "Conectar Artifact Registry",
+        "body": "Usa sua conta de serviço do Google Cloud. O host padrão é <region>-docker.pkg.dev."
+      },
+      "acr": {
+        "title": "Conectar ACR",
+        "body": "Usa sua conexão com o Azure. Informe o host do registry, por exemplo myregistry.azurecr.io."
+      }
+    }
+  },
+  "backupCopies": {
+    "title": "Segundo destino",
+    "description": "Copie cada novo backup para outro destino depois que ele chegar ao principal. Somente backups concluídos depois que você ativar isto são copiados.",
+    "destination": "Copiar backups para",
+    "choose": "Escolha um destino",
+    "enable": "Ativar cópias",
+    "update": "Alterar destino",
+    "toggle": "Copiar backups para o segundo destino",
+    "on": "Copiando para {{name}}",
+    "saved": "Configurações de cópia de backup salvas",
+    "saveFailed": "Não foi possível salvar as configurações de cópia de backup",
+    "manifest": "Manifesto",
+    "manifestTip": "Checksum verificado, arquivo de manifesto gravado ao lado da cópia",
+    "empty": "Nenhum backup foi enfileirado para cópia ainda.",
+    "status": {
+      "pending": "Aguardando",
+      "copying": "Copiando",
+      "succeeded": "Copiado",
+      "failed": "Falhou, tentando de novo"
+    },
+    "table": {
+      "label": "Cópias de backup",
+      "resource": "Recurso",
+      "status": "Status",
+      "lag": "Atraso",
+      "finished": "Backup concluído",
+      "error": "Último erro"
+    }
+  },
+  "backupTargetLocal": {
+    "path": "Diretório",
+    "placeholder": "nightly",
+    "hint": "Relativo à raiz permitida (APP_BACKUP_LOCAL_ROOT no control plane, padrão APP_DATA_DIR/backups). O servidor rejeita caminhos fora dela. Os backups ficam neste servidor, então não protegem você se ele for perdido. Use um destino fora do servidor para dados reais."
+  },
+  "backupTargetsPage": {
+    "rail": {
+      "label": "Resumo dos destinos de backup",
+      "targets": "Destinos",
+      "count": "Destinos conectados",
+      "providers": "Provedores",
+      "provider": {
+        "aws": "AWS S3",
+        "r2": "Cloudflare R2",
+        "custom": "Compatível com S3",
+        "local": "Diretório local"
+      },
+      "status": "Status dos backups",
+      "statusBody": "Execuções, cobertura e simulações de restauração ficam na página de Backups.",
+      "statusLink": "Abrir Backups",
+      "docs": "Documentação"
+    },
+    "eyebrow": "Armazenamento",
+    "title": "Destinos de backup",
+    "description": "Buckets compatíveis com S3 conectados como destinos de backup de bancos de dados gerenciados. AWS S3, Cloudflare R2 ou qualquer outro endpoint compatível com S3.",
+    "help": "Guia de backups",
+    "count_one": "{{count}} destino",
+    "count_many": "{{count}} destinos",
+    "count_other": "{{count}} destinos",
+    "empty": {
+      "title": "Nenhum destino de backup conectado",
+      "body": "Conecte um bucket compatível com S3 (AWS S3, Cloudflare R2 ou qualquer outro endpoint compatível com S3) para usar como destino de backup de bancos de dados gerenciados."
+    },
+    "banner": {
+      "title": "Nenhum destino de backup configurado",
+      "body": "Os bancos de dados gerenciados não têm para onde enviar backups até que você conecte um bucket compatível com S3. Adicione um antes de precisar de uma restauração."
+    },
+    "table": {
+      "label": "Destinos de backup",
+      "name": "Nome",
+      "provider": "Provedor",
+      "bucket": "Bucket",
+      "region": "Região / endpoint",
+      "connected": "Conectado",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "testOk": "\"{{name}}\" conectou com sucesso.",
+      "testFailed": "\"{{name}}\" falhou ao conectar.",
+      "encryption": "Criptografia de dumps"
+    },
+    "encryption": {
+      "on": "Criptografado",
+      "off": "Não criptografado",
+      "enable": "Ativar criptografia",
+      "title": "Criptografar os dumps de banco de dados enviados para \"{{name}}\"?",
+      "consequenceNew": "Novos dumps de banco de dados para este destino são criptografados com age antes do envio, então o bucket nunca vê texto puro.",
+      "consequenceOld": "Os dumps já armazenados lá permanecem exatamente como estão (os não criptografados continuam sendo restaurados normalmente).",
+      "consequenceKey": "Aviso de perda de chave: se a chave de criptografia de backup (backup-encryption.key no diretório de dados) for perdida, os backups criptografados não poderão ser restaurados. Guarde uma cópia fora deste servidor.",
+      "confirm": "Ativar criptografia",
+      "pending": "Ativando...",
+      "enabled": "Os dumps de banco de dados para \"{{name}}\" agora estão criptografados."
+    }
+  },
+  "certificatesPage": {
+    "eyebrow": "Ingress",
+    "title": "Certificados TLS",
+    "description": "O certificado de cada domínio, automático ou personalizado, com expiração e uma ação de renovar. Use Renovar agora para forçar uma nova emissão imediata em vez de esperar a próxima verificação agendada.",
+    "help": "Guia de domínios e ingress",
+    "count_one": "{{count}} domínio",
+    "count_many": "{{count}} domínios",
+    "count_other": "{{count}} domínios",
+    "empty": {
+      "title": "Nenhum domínio configurado ainda",
+      "body": "Adicione um domínio a um app para ver o certificado dele aqui, automático ou personalizado."
+    },
+    "banner": {
+      "expired_one": "{{count}} certificado expirou",
+      "expired_many": "{{count}} certificados expiraram",
+      "expired_other": "{{count}} certificados expiraram",
+      "expiredBody": "Os visitantes desses domínios veem um aviso do navegador. Use Renovar agora na linha, ou confira se o domínio ainda aponta para este servidor.",
+      "expiring_one": "{{count}} certificado expira em breve",
+      "expiring_many": "{{count}} certificados expiram em breve",
+      "expiring_other": "{{count}} certificados expiram em breve",
+      "expiringBody": "Certificados automáticos se renovam sozinhos. Se um permanecer neste estado, force uma renovação na linha dele."
+    },
+    "table": {
+      "noApp": "Nenhum app",
+      "notIssued": "Ainda não emitido",
+      "orphaned": "Certificado restante de um domínio que não está mais configurado em nenhum app"
+    }
+  },
+  "tokensPage": {
+    "eyebrow": "Acesso",
+    "title": "Tokens de API",
+    "description": "Credenciais com escopo e revogáveis para integrações de CLI, CI e MCP. O login por sessão apenas gera tokens: um token nunca pode gerar ou revogar outro token por conta própria.",
+    "help": "Referência da API",
+    "docsLink": "Ver documentação da API",
+    "activeCount_one": "{{count}} token ativo",
+    "activeCount_many": "{{count}} tokens ativos",
+    "activeCount_other": "{{count}} tokens ativos",
+    "expiring": {
+      "title_one": "{{count}} token expira em até 14 dias",
+      "title_many": "{{count}} tokens expiram em até 14 dias",
+      "title_other": "{{count}} tokens expiram em até 14 dias",
+      "body": "Crie um substituto com o mesmo acesso, mude sua integração para ele e depois revogue o antigo."
+    },
+    "banner": {
+      "title_one": "{{count}} token root nunca expira",
+      "title_many": "{{count}} tokens root nunca expiram",
+      "title_other": "{{count}} tokens root nunca expiram",
+      "body": "Um token root vazado pode alterar qualquer coisa nesta instância. Revogue-o e gere um mais restrito, com expiração."
+    },
+    "revoked": {
+      "title": "Tokens revogados",
+      "autoDelete": "Excluir tokens revogados após",
+      "schedule": "A remoção roda com a limpeza agendada, que deve estar ativada e fora do modo de prévia.",
+      "janitorLink": "Configurações de limpeza",
+      "cleanNow": "Limpar agora",
+      "empty": "Nenhum token revogado. Os tokens que você revogar aparecem aqui até serem removidos.",
+      "revokedAt": "Revogado",
+      "confirmTitle": "Remover tokens revogados?",
+      "confirmBody_one": "{{count}} token revogado será removido definitivamente.",
+      "confirmBody_many": "{{count}} tokens revogados serão removidos definitivamente.",
+      "confirmBody_other": "{{count}} tokens revogados serão removidos definitivamente.",
+      "confirmConsequence": "Tokens ativos não são afetados. O histórico de auditoria mantém os nomes de quem os usou.",
+      "confirmAction": "Remover tokens revogados",
+      "cleaned_one": "{{count}} token revogado removido.",
+      "cleaned_many": "{{count}} tokens revogados removidos.",
+      "cleaned_other": "{{count}} tokens revogados removidos."
+    },
+    "attention": {
+      "title_one": "1 token precisa de atenção",
+      "title_many": "{{count}} problemas de token precisam de atenção",
+      "title_other": "{{count}} problemas de token precisam de atenção"
+    }
+  },
+  "usersPage": {
+    "eyebrow": "Acesso",
+    "title": "Usuários",
+    "description": "Todos com acesso a esta plataforma e o que cada conta pode fazer.",
+    "help": "Guia de equipes e funções",
+    "count_one": "{{count}} usuário",
+    "count_many": "{{count}} usuários",
+    "count_other": "{{count}} usuários",
+    "pendingInvites": "Convites pendentes",
+    "empty": {
+      "title": "Nenhum usuário encontrado",
+      "body": "Convide um colega ou crie um usuário pelas ações acima."
+    },
+    "banner": {
+      "title_one": "{{count}} convite aguarda ser aceito",
+      "title_many": "{{count}} convites aguardam ser aceitos",
+      "title_other": "{{count}} convites aguardam ser aceitos",
+      "body": "Quem foi convidado não tem acesso até abrir o link. Copie-o de novo na lista de convites pendentes abaixo se ele se perdeu."
+    },
+    "table": {
+      "label": "Usuários",
+      "email": "E-mail",
+      "displayName": "Nome de exibição",
+      "signsInWith": "Faz login com",
+      "role": "Função",
+      "abilities": "Permissões",
+      "lastLogin": "Último login",
+      "never": "Nunca",
+      "password": "senha",
+      "noMethod": "nenhum",
+      "firstUser": "Primeiro usuário",
+      "you": "Você",
+      "custom": "Personalizada",
+      "editAbilities": "Editar permissões",
+      "selfEditHint": "Você não pode editar suas próprias permissões",
+      "disabled": "Desativado",
+      "mustChangePassword": "Troca de senha obrigatória"
+    },
+    "passwordChange": {
+      "require": "Exigir troca de senha",
+      "clear": "Remover exigência de senha",
+      "requireTitle": "Exigir que {{email}} troque a senha?",
+      "requireBody": "As sessões dessa pessoa terminam agora. Todo login é recusado até que ela defina uma nova senha com Esqueci a senha na página de login.",
+      "clearTitle": "Remover a exigência de senha para {{email}}?",
+      "clearBody": "Essa pessoa poderá fazer login com a senha atual novamente.",
+      "cancel": "Cancelar",
+      "confirmRequire": "Exigir troca",
+      "confirmClear": "Remover exigência",
+      "saving": "Salvando...",
+      "required": "{{email}} precisa trocar a senha.",
+      "cleared": "{{email}} pode fazer login com a senha atual."
+    }
+  },
+  "cliAccessPage": {
+    "eyebrow": "Acesso",
+    "title": "Acesso da CLI",
+    "description": "Controle esta instância pelo seu próprio computador, como aws ou gh, sem usar SSH.",
+    "help": "Referência da CLI",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "server": {
+      "title": "Este servidor",
+      "body": "A CLI fixa esta identidade no login e se recusa a enviar um token a qualquer outro servidor. Compare a impressão digital com o que a CLI mostra.",
+      "name": "Nome",
+      "id": "Instância",
+      "fingerprint": "Impressão digital",
+      "movedTitle": "Esta instância foi restaurada em um novo host",
+      "movedBody": "A identidade dela mudou, então tokens de CLI emitidos antes da mudança são recusados. Se esta é a mesma instância (uma restauração ou migração feita por você), confirme para aceitar esses tokens novamente. Se você não a moveu, deixe como está e faça login na CLI de novo.",
+      "confirmLabel": "Digite \"{{phrase}}\" para confirmar",
+      "confirmAction": "Confirmar mesma instância",
+      "confirmed": "Identidade da instância restaurada. Os tokens de CLI voltam a funcionar."
+    },
+    "tokens": {
+      "title": "Tokens de CLI",
+      "body": "Cada login da CLI é um token vinculado a este servidor. Revogue um para cortar o acesso dessa máquina."
+    },
+    "waitingCount_one": "{{count}} login aguardando",
+    "waitingCount_many": "{{count}} logins aguardando",
+    "waitingCount_other": "{{count}} logins aguardando",
+    "rail": {
+      "label": "Resumo da CLI",
+      "status": "Status",
+      "pending": "Logins aguardando",
+      "apiUrl": "URL da API",
+      "ci": "CI e scripts",
+      "docs": "Documentação"
+    },
+    "ciHint": "Rodando de um CI ou script em vez de uma pessoa no teclado? Use um token de API, nada para aprovar manualmente.",
+    "ciLink": "Criar um token de API",
+    "banner": {
+      "title_one": "{{count}} login da CLI aguarda aprovação",
+      "title_many": "{{count}} logins da CLI aguardam aprovação",
+      "title_other": "{{count}} logins da CLI aguardam aprovação",
+      "body": "Aprove abaixo somente se foi você quem iniciou. Se o IP solicitante parecer errado, negue."
+    },
+    "steps": {
+      "install": {
+        "title": "Instale a CLI no seu computador",
+        "body": "Não no servidor. É um pequeno binário cliente para o seu notebook ou runner de CI, separado da instalação do control plane.",
+        "note": "Não precisa de root, instala em ~/.local/bin. Somente macOS e Linux por enquanto; no Windows, execute isto a partir do WSL."
+      },
+      "point": {
+        "title": "Aponte para este servidor",
+        "body": "Defina isto uma vez por shell ou no perfil do seu shell. Todo comando fala com esse endereço e, caso contrário, usa localhost por padrão."
+      },
+      "login": {
+        "title": "Faça login",
+        "body": "Abre um código aqui para aprovar, o mesmo fluxo que gh auth login e aws sso login usam: sem chave SSH, sem porta do servidor para abrir. A aprovação exige uma sessão logada no painel, então herda o 2FA ou a passkey dessa sessão."
+      }
+    },
+    "setup": {
+      "toggle": "Configurar a CLI em uma nova máquina",
+      "hint": "Já tem a CLI? Inicie o login de dispositivo por ela e aprove o código acima. Estes passos são só para uma máquina nova."
+    }
+  },
+  "accountPage": {
+    "title": "Conta",
+    "description": "Seu perfil, segurança de login, sessões e o que você pode gerenciar.",
+    "profile": {
+      "title": "Perfil",
+      "description": "Seus próprios dados. O que você pode gerenciar está listado em Meu acesso abaixo.",
+      "email": "E-mail",
+      "emailVerified": "Verificado",
+      "emailUnverified": "Não verificado",
+      "displayName": "Nome de exibição",
+      "hasPassword": "Esta conta faz login com senha.",
+      "noPassword": "Esta conta não tem senha definida, apenas login com OAuth.",
+      "edit": "Editar nome de exibição",
+      "save": "Salvar",
+      "cancel": "Cancelar",
+      "saved": "Nome de exibição atualizado",
+      "saving": "Salvando...",
+      "counter": "{{used}} de {{max}} caracteres",
+      "saveError": "Não foi possível salvar seu nome de exibição. Verifique sua conexão e tente novamente."
+    },
+    "loading": "Carregando...",
+    "loadError": "Não foi possível carregar esta seção.",
+    "sessions": {
+      "title": "Sessões ativas e dispositivos confiáveis",
+      "description": "Onde você está logado agora. Encerrar uma sessão desloga aquele navegador.",
+      "current": "Esta sessão",
+      "lastSeen": "visto por último",
+      "revoke": "Sair",
+      "revoked": "Sessão encerrada",
+      "revokeOthers": "Sair de todas as outras sessões",
+      "revokedOthers_one": "{{count}} outra sessão encerrada",
+      "revokedOthers_many": "{{count}} outras sessões encerradas",
+      "revokedOthers_other": "{{count}} outras sessões encerradas",
+      "devices": "Dispositivos confiáveis",
+      "devicesEmpty": "Nenhum dispositivo confiável.",
+      "deviceRemove": "Remover",
+      "deviceRemoved": "Dispositivo confiável removido",
+      "canApprove": "Pode aprovar logins",
+      "signedInAt": "Login feito",
+      "networks_one": "{{count}} rede",
+      "networks_many": "{{count}} redes",
+      "networks_other": "{{count}} redes",
+      "tone": {
+        "live": "Ativo agora",
+        "recent": "Ativo na última hora",
+        "idle": "Ocioso"
+      },
+      "revoking": "Saindo...",
+      "revokeLabel": "Sair de {{device}} ({{ip}})",
+      "revokeConfirmTitle": "Sair de {{device}}?",
+      "revokeConsequence": "Esse navegador é deslogado imediatamente.",
+      "revokeApproverConsequence": "Ele pode aprovar novos logins no momento, então você perderá esse aprovador.",
+      "revokeReloginConsequence": "Quem o usa precisará fazer login novamente.",
+      "revokeOthersConfirmTitle": "Sair de todas as outras sessões?",
+      "revokeOthersConsequence": "Todos os outros navegadores e dispositivos são deslogados imediatamente.",
+      "revokeOthersKeep": "Este navegador continua logado.",
+      "empty": "Nenhuma sessão ativa",
+      "emptyBody": "As sessões aparecem aqui depois que você faz login por um navegador.",
+      "deviceRemoving": "Removendo...",
+      "deviceRemoveLabel": "Remover dispositivo confiável {{device}}",
+      "deviceConfirmTitle": "Remover dispositivo confiável {{device}}?",
+      "deviceConsequence": "Esse dispositivo precisará ser aprovado novamente no próximo login."
+    },
+    "providers": {
+      "title": "Provedores de login vinculados",
+      "description": "Vincule um provedor de identidade para fazer login com ele. Vincular exige esta sessão ativa.",
+      "none": "Nenhum provedor de login está ativado nesta instância.",
+      "linked": "Vinculado",
+      "link": "Vincular",
+      "configure": "Configurar provedores"
+    },
+    "tokens": {
+      "title": "Meus tokens de API",
+      "description": "Tokens que você criou para a CLI, CI ou agents.",
+      "manage": "Todos os tokens e histórico",
+      "emptyTitle": "Nenhum token de API ativo",
+      "emptyBody": "Crie um token para a CLI, CI ou um agent. O segredo é mostrado uma única vez."
+    },
+    "access": {
+      "title": "Meu acesso",
+      "description": "O que esta conta pode e não pode gerenciar, e qual permissão falta quando não pode.",
+      "tier": "Nível de acesso",
+      "tiers": {
+        "admin": "Administrador",
+        "operator": "Operador",
+        "developer": "Desenvolvedor",
+        "viewer": "Visualizador"
+      },
+      "teams": "Equipes",
+      "noTeams": "Não é membro de nenhuma equipe.",
+      "policies": "Políticas IAM anexadas",
+      "noPolicies": "Nenhuma política anexada.",
+      "missing": "Permissão ausente: {{ability}}",
+      "areas": {
+        "view": "Ver apps, serviços e logs",
+        "deploy": "Fazer deploy e rollback",
+        "configure": "Alterar a configuração de apps e serviços",
+        "secrets_read": "Revelar segredos e valores sensíveis",
+        "sensitive_write": "Alterar configurações sensíveis",
+        "users_and_access": "Gerenciar usuários, funções e políticas",
+        "platform_settings": "Alterar configurações de toda a plataforma"
+      },
+      "colArea": "Capacidade",
+      "colStatus": "Status",
+      "colAction": "Ação",
+      "allowed": "Permitido",
+      "request": "Solicitar acesso",
+      "requestLabel": "Solicitar acesso para: {{area}}"
+    },
+    "retry": "Tentar novamente",
+    "password": {
+      "titleChange": "Alterar senha",
+      "titleSet": "Definir uma senha",
+      "descChange": "Alterar sua senha desloga todas as outras sessões ativas desta conta. Este navegador continua logado.",
+      "descSet": "Esta conta atualmente faz login apenas por OAuth. Definir uma senha adiciona uma segunda forma de fazer login.",
+      "current": "Senha atual",
+      "currentRequired": "A senha atual é obrigatória",
+      "new": "Nova senha",
+      "confirm": "Confirmar nova senha",
+      "tooShort": "A nova senha deve ter pelo menos {{min}} caracteres",
+      "mismatch": "As senhas não coincidem",
+      "minHint": "Pelo menos {{min}} caracteres.",
+      "changed": "Senha alterada",
+      "changedBody": "Suas outras sessões foram deslogadas. Esta continua logada.",
+      "saving": "Salvando...",
+      "submitChange": "Alterar senha",
+      "submitSet": "Definir senha",
+      "strength": {
+        "label": "Força da senha",
+        "level0": "Vazia",
+        "level1": "Fraca",
+        "level2": "Razoável",
+        "level3": "Boa",
+        "level4": "Forte"
+      },
+      "rules": {
+        "length": "Pelo menos {{min}} caracteres",
+        "mixedCase": "Maiúsculas e minúsculas",
+        "digit": "Um número",
+        "symbol": "Um símbolo",
+        "met": "(atendido)",
+        "unmet": "(não atendido)"
+      }
+    },
+    "twoFactor": {
+      "title": "Autenticação em dois fatores",
+      "description": "Exija um código de um app autenticador além da senha ao fazer login.",
+      "enabled_one": "Ativada. {{count}} código de recuperação restante.",
+      "enabled_many": "Ativada. {{count}} códigos de recuperação restantes.",
+      "enabled_other": "Ativada. {{count}} códigos de recuperação restantes.",
+      "disabledHint": "Não ativada. Adicione uma segunda etapa para que uma senha roubada sozinha não consiga fazer login.",
+      "enable": "Ativar autenticação em dois fatores",
+      "setupTitle": "Configurar autenticação em dois fatores",
+      "setupBody": "Adicione isto a um app autenticador (1Password, Google Authenticator, Authy) e informe o código de 6 dígitos que ele mostra para confirmar.",
+      "qrFallback": "Não consegue escanear? Digite esta chave",
+      "qrLabel": "QR code para seu app autenticador",
+      "qrLoading": "Carregando QR code",
+      "setupKey": "Chave de configuração",
+      "setupLink": "Ou use este link",
+      "codeLabel": "Código do seu app autenticador",
+      "codePlaceholder": "123456",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "cancel": "Cancelar",
+      "verify": "Verificar e ativar",
+      "verifying": "Verificando...",
+      "enabledTitle": "Autenticação em dois fatores ativada",
+      "recoveryBody": "Guarde estes códigos de recuperação em um lugar seguro. Cada um pode ser usado uma vez para fazer login se você perder o acesso ao app autenticador. Eles não serão mostrados novamente.",
+      "saved": "Guardei estes códigos",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "copyAll": "Copiar tudo",
+      "regenerate": "Gerar novos códigos de recuperação",
+      "regenerateBody": "Todos os códigos de recuperação existentes param de funcionar no momento em que novos são gerados. Informe um código atual do seu app autenticador para confirmar.",
+      "regenerateAction": "Gerar novos",
+      "regenerating": "Gerando...",
+      "regeneratedTitle": "Novos códigos de recuperação gerados",
+      "regeneratedBody": "Guarde-os em um lugar seguro. Os códigos antigos não funcionam mais e estes não serão mostrados novamente.",
+      "done": "Concluído",
+      "disable": "Desativar autenticação em dois fatores",
+      "disableTitle": "Desativar a autenticação em dois fatores?",
+      "disableBody": "Depois disso, o login exigirá apenas a senha. Informe um código atual para confirmar.",
+      "recoveryCodeLabel": "Código de recuperação",
+      "authCodeLabel": "Código do autenticador",
+      "useAuthCode": "Usar código do autenticador",
+      "useRecoveryCode": "Usar um código de recuperação",
+      "disableAction": "Desativar",
+      "disabling": "Desativando..."
+    }
+  },
+  "apiExplorerPage": {
+    "title": "Explorador de API",
+    "description": "Navegue e teste todas as rotas HTTP registradas nesta instância, usando sua sessão atual. As requisições disparam de verdade, como chamar o endpoint com curl.",
+    "filterPlaceholder": "Filtrar por caminho, método, permissão ou descrição",
+    "filterLabel": "Filtrar rotas",
+    "summary": "{{count}} rotas, {{examples}} com um exemplo prático ({{percent}}%). Uma rota sem descrição significa apenas que o registro dela ainda não tem um comentário de documentação acima, não que ela não seja suportada.",
+    "routeCount_one": "{{count}} rota",
+    "routeCount_many": "{{count}} rotas",
+    "routeCount_other": "{{count}} rotas",
+    "noMatch": "Nenhuma rota corresponde a \"{{filter}}\"."
+  },
+  "importPlatformPage": {
+    "title": "Importar de outra plataforma",
+    "description": "Traga apps e bancos de dados do Coolify, Dokploy ou CapRover. Bancos de dados e volumes começam vazios, e rodar de novo pula o que já foi importado.",
+    "checklistLink": "Abrir a checklist de migração"
+  },
+  "builtInRegistryPage": {
+    "title": "Registry de containers",
+    "description": "O registry de imagens integrado: um backend de cache de build e distribuição para deployments com vários nodes, sem precisar de um registry externo. Ele é servido por TLS pelo ingress embutido e impõe o próprio login mesmo se a porta publicada for acessada diretamente.",
+    "banner": {
+      "description": "Ative o registry de imagens integrado para compartilhar builds entre nodes sem se cadastrar em um registry externo.",
+      "diagram": {
+        "push": "Push",
+        "pull": "Pull",
+        "registry": "Registry"
+      }
+    }
+  },
+  "vaultPage": {
+    "title": "Vault",
+    "description": "Resolva o valor de uma variável de ambiente do app.yaml ao vivo a partir de uma instância externa do HashiCorp Vault, como alternativa ao armazenamento de segredos com criptografia de envelope desta plataforma."
+  },
+  "aiAssistantPage": {
+    "title": "Assistente de IA",
+    "description": "Traga sua própria chave de API de LLM para conversar com um assistente que lê logs, métricas e o histórico de deploys, e sempre pausa para sua aprovação antes de qualquer alteração.",
+    "configured": "Configurado",
+    "notConfigured": "Não configurado",
+    "reassurance": "Sua chave nunca sai deste servidor e nunca é mostrada novamente.",
+    "rootOnly": "Somente a conta root pode conectar provedores, alterar chaves ou escolher modelos. Você ainda pode ver o que está conectado.",
+    "loadError": "Não foi possível carregar os provedores de IA.",
+    "retry": "Tentar novamente",
+    "header": {
+      "ready": "Pronto",
+      "attention": "Precisa de atenção"
+    },
+    "pill": {
+      "not_connected": "Não conectado",
+      "connected": "Conectado",
+      "invalid_key": "Chave inválida",
+      "unreachable": "Inacessível",
+      "quota_exhausted": "Sem créditos"
+    },
+    "groups": {
+      "hosted": "Provedores hospedados",
+      "selfHosted": "Auto-hospedados"
+    },
+    "card": {
+      "open": "Abrir configurações de {{name}}",
+      "active": "Ativo",
+      "manage": "Gerenciar",
+      "connect": "Adicione uma chave para conectar"
+    },
+    "model": {
+      "loading": "Carregando modelos...",
+      "context": "Contexto de {{size}}"
+    },
+    "fallback": {
+      "title": "Ordem de fallback",
+      "hint": "Se o modelo ativo atingir um limite de taxa ou sofrer uma queda, o próximo desta lista assume. Uma chave inválida nunca aciona o fallback.",
+      "empty": "Nenhum modelo de fallback ainda. Abra um provedor conectado e escolha Adicionar como fallback.",
+      "moveUp": "Mover {{name}} para cima",
+      "moveDown": "Mover {{name}} para baixo",
+      "remove": "Remover {{name}} do fallback"
+    },
+    "usage": {
+      "title": "Uso, últimos 30 dias",
+      "emptyTitle": "Nenhum uso ainda",
+      "emptyBody": "As contagens de tokens aparecem aqui depois que o assistente responder a primeira pergunta.",
+      "unavailable": "O uso ainda não está disponível nesta versão do servidor.",
+      "ofBudget": "{{used}} de {{budget}} tokens neste mês ({{pct}}%)",
+      "total": "{{used}} tokens",
+      "last30": "Últimos 30 dias",
+      "sparkline": "Tokens por dia nos últimos 30 dias",
+      "model": "Modelo",
+      "tokens": "Tokens",
+      "requests": "Requisições",
+      "errors": "Erros"
+    },
+    "test": {
+      "ok": "A conexão funciona",
+      "untested": "Ainda não testado",
+      "invalid_key": "O provedor rejeitou esta chave",
+      "unreachable": "Não foi possível alcançar o provedor",
+      "quota_exhausted": "A conta está sem créditos",
+      "latency": "{{ms}} ms"
+    },
+    "drawer": {
+      "description": "Sua chave é criptografada neste servidor e usada apenas para chamar este provedor.",
+      "apiKey": "Chave de API",
+      "keyPlaceholder": "Cole sua chave de API",
+      "keySavedPlaceholder": "Salva. Cole uma nova chave para substituí-la",
+      "keyKept": "Uma chave está salva e oculta. Deixe em branco para mantê-la.",
+      "keyNever": "Armazenada criptografada. Nunca mostrada novamente depois de salva.",
+      "showKey": "Mostrar chave",
+      "hideKey": "Ocultar chave",
+      "getKey": "Obter uma chave",
+      "baseUrl": "URL base",
+      "baseUrlNote": "Endereços privados e locais são permitidos para endpoints auto-hospedados. As alterações são registradas no log de auditoria.",
+      "baseUrlInvalid": "Informe uma URL http ou https completa.",
+      "model": "Modelo",
+      "modelHelp": "Escolha da lista ou digite qualquer ID de modelo.",
+      "modelFree": "Digite o ID do modelo a usar.",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "save": "Salvar",
+      "saving": "Salvando...",
+      "savedShort": "Salvo",
+      "saved": "{{name}} salvo.",
+      "disconnect": "Desconectar",
+      "disconnected": "{{name}} desconectado.",
+      "disconnectTitle": "Desconectar {{name}}?",
+      "disconnectBody": "A chave salva é excluída deste servidor. Se este provedor estiver ativo, o assistente para de responder até você escolher outro.",
+      "useModel": "Usar este modelo",
+      "addFallback": "Adicionar como fallback",
+      "nowActive": "{{name}} agora é o provedor ativo."
+    }
+  },
+  "observabilityPage": {
+    "title": "Observabilidade",
+    "description": "Conecte o seu próprio Grafana às métricas deste control plane."
+  },
+  "nodeProvidersPage": {
+    "title": "Provedores de nodes na nuvem",
+    "description": "Tokens de API para criar servidores automaticamente pela página Nodes. Usados apenas para criar e inspecionar VMs, a operação do dia a dia nunca usa SSH.",
+    "banner": {
+      "description": "Conecte um provedor de nuvem com um token de API para criar servidores pela página Nodes. A operação do dia a dia nunca usa SSH.",
+      "diagram": {
+        "cloud": "Nuvem",
+        "node": "Node"
+      }
+    }
+  },
+  "containersPage": {
+    "title": "Containers",
+    "description": "Todo container neste node, seja ou não gerenciado por esta plataforma.",
+    "notAvailable": "Indisponível",
+    "listFailed": "Não foi possível listar os containers",
+    "emptyTitle": "Nenhum container",
+    "emptyDescription": "Nada está rodando no daemon do Docker deste node agora."
+  },
+  "networkSharesPage": {
+    "title": "Compartilhamentos de rede",
+    "description": "Exports NFS e CIFS/SMB, montados como volumes do Docker usando a passagem de rede do driver local do próprio Docker. Anexe um como origem de volume ao configurar os volumes de um app.",
+    "banner": {
+      "description": "Monte o armazenamento de um NAS ou servidor de arquivos como um volume do Docker que seus apps possam usar.",
+      "whatFor": "Um compartilhamento permite que um app leia e grave arquivos que ficam em outra máquina, como mídia em um NAS ou backups em um servidor de arquivos. Adicione um e depois anexe-o pelos volumes de um app.",
+      "diagram": {
+        "app": "App",
+        "nfs": "NFS",
+        "smb": "SMB / CIFS",
+        "volume": "Montado como um volume do Docker"
+      }
+    },
+    "dialog": {
+      "open": "Adicionar compartilhamento de rede",
+      "title": "Adicionar compartilhamento de rede",
+      "description": "Conecte o armazenamento de um NAS ou servidor de arquivos para que apps possam montá-lo como um volume do Docker.",
+      "protocol": "Protocolo",
+      "nfs": {
+        "title": "NFS",
+        "body": "Linux e NAS, sem senha"
+      },
+      "smb": {
+        "title": "SMB / CIFS",
+        "body": "Windows, macOS e muitos NAS, exige um nome de usuário"
+      },
+      "host": "Host",
+      "hostPlaceholder": "nas.lan ou 192.168.1.50",
+      "hostHint": "O hostname ou endereço IP do servidor (IPv4 ou IPv6).",
+      "path": {
+        "nfs": "Caminho do export",
+        "smb": "Nome do compartilhamento"
+      },
+      "pathPlaceholder": {
+        "nfs": "/export/media",
+        "smb": "media"
+      },
+      "pathHint": {
+        "nfs": "A pasta que o servidor exporta, começando com uma barra.",
+        "smb": "O nome da pasta compartilhada no servidor, sem barras."
+      },
+      "name": "Nome",
+      "namePlaceholder": "media-nas",
+      "nameHint": "Usado como nome do volume. Letras minúsculas, números e hífens.",
+      "nameFree": "Este nome está disponível.",
+      "username": "Nome de usuário",
+      "password": "Senha",
+      "passwordHint": "Armazenada criptografada. Nunca é mostrada novamente.",
+      "showPassword": "Mostrar senha",
+      "hidePassword": "Ocultar senha",
+      "advanced": "Avançado",
+      "options": "Opções de montagem",
+      "optionsOptional": "opcional",
+      "optionsHint": "Opções separadas por vírgula passadas direto ao driver local do Docker. Escolha uma comum ou digite as suas.",
+      "optionsPlaceholder": "ro,nfsvers=4",
+      "chips": {
+        "label": "Opções comuns",
+        "ro": "Somente leitura",
+        "nfsvers4": "NFSv4",
+        "nfsvers3": "NFSv3",
+        "soft": "Montagem soft",
+        "ids": "Definir uid e gid",
+        "smbvers": "SMB 3.0"
+      },
+      "summary": "Monta {{remote}} {{mode}} como volume do Docker {{name}}",
+      "summaryEmpty": "Preencha o servidor e o caminho para ver o que será montado.",
+      "readOnly": "somente leitura",
+      "readWrite": "leitura e escrita",
+      "cancel": "Cancelar",
+      "submit": "Adicionar compartilhamento de rede",
+      "submitting": "Adicionando...",
+      "added": "Compartilhamento de rede \"{{name}}\" adicionado.",
+      "errors": {
+        "nameRequired": "Dê um nome ao compartilhamento.",
+        "nameFormat": "Use letras minúsculas, números e hífens, começando e terminando com uma letra ou número.",
+        "nameTaken": "Já existe um compartilhamento com este nome.",
+        "hostRequired": "Informe o hostname ou endereço IP do servidor.",
+        "hostFormat": "Este não é um hostname ou endereço IP válido.",
+        "pathRequired": "Informe o caminho no servidor.",
+        "nfsPathFormat": "Um caminho de export NFS começa com uma barra, por exemplo /export/media.",
+        "smbPathFormat": "Informe apenas o nome do compartilhamento, sem barras nem espaços.",
+        "usernameRequired": "Compartilhamentos SMB exigem um nome de usuário.",
+        "passwordRequired": "Compartilhamentos SMB exigem uma senha."
+      }
+    }
+  },
+  "organizationsPage": {
+    "title": "Organizações",
+    "description": "Agrupe projetos relacionados em uma organização. Coloque um projeto em uma pela página de detalhes do próprio projeto."
+  },
+  "organizationHome": {
+    "loadFailed": "Não foi possível carregar este bloco.",
+    "copySlug": "Copiar slug",
+    "copied": "Copiado",
+    "noSlug": "Nenhum slug definido",
+    "members": "Membros",
+    "viewMembers": "Ver membros",
+    "projects": "Projetos",
+    "viewProjects": "Ver projetos",
+    "environments": "Ambientes",
+    "pendingInvites": "Convites pendentes",
+    "viewInvites": "Gerenciar convites",
+    "workloads": "Apps e bancos de dados",
+    "apps": "apps",
+    "databases": "bancos de dados",
+    "failing_one": "{{count}} app com falha",
+    "failing_many": "{{count}} apps com falha",
+    "failing_other": "{{count}} apps com falha",
+    "activity": "Atividade recente",
+    "showMore": "Mostrar mais",
+    "actions": {
+      "org_updated": "Perfil atualizado",
+      "org_avatar_updated": "Avatar alterado",
+      "org_avatar_removed": "Avatar removido",
+      "org_slug_changed": "Slug alterado"
+    },
+    "profile": {
+      "title": "Perfil",
+      "readOnly": "Somente administradores da organização podem editar o perfil.",
+      "name": "Nome",
+      "slug": "Slug",
+      "slugPlaceholder": "minha-organizacao",
+      "slugHint": "3 a 40 letras minúsculas, dígitos e hífens simples.",
+      "slugDefault": "A organização padrão não pode ter um slug.",
+      "slugLength": "Use de {{min}} a {{max}} caracteres.",
+      "slugChars": "Use letras minúsculas, dígitos e hífens simples, que não fiquem nas pontas.",
+      "slugTaken": "Este slug já está em uso.",
+      "description": "Descrição",
+      "save": "Salvar alterações",
+      "saving": "Salvando...",
+      "saved": "Salvo"
+    },
+    "avatar": {
+      "input": "Arquivo do avatar da organização",
+      "upload": "Enviar avatar",
+      "remove": "Remover avatar",
+      "hint": "PNG ou JPEG, até {{max}} KB.",
+      "badType": "Somente imagens PNG ou JPEG são aceitas.",
+      "tooLarge": "A imagem é maior que {{max}} KB.",
+      "uploading": "Enviando avatar",
+      "removeTitle": "Remover o avatar?",
+      "removeBody": "A organização volta a exibir as iniciais."
+    }
+  },
+  "agentsPage": {
+    "title": "Agents",
+    "description": "Conecte um agent de IA a esta instância por MCP e gerencie os tokens que ele usa."
+  },
+  "firewallPage": {
+    "title": "Firewall",
+    "description": "Regras declarativas de firewall do host, reconciliadas no firewall (ufw) deste node."
+  },
+  "gitConnection": {
+    "fields": {
+      "status": "Conexão",
+      "statusHelp": "Se este control plane pode usar o App agora.",
+      "instance": "URL da instância",
+      "instanceHelp": "O servidor com o qual esta conexão se comunica."
+    },
+    "notConnected": "Não conectado",
+    "primaryDomain": {
+      "title": "Defina primeiro um domínio principal",
+      "body": "Os provedores Git redirecionam de volta para o domínio principal desta instância nos callbacks OAuth e nas URLs de manifesto.",
+      "domainLink": "Abrir configurações de domínio",
+      "label": "Domínio principal",
+      "placeholder": "deploy.example.com",
+      "helper": "Salvo nas configurações de ingress. As opções de ACME e e-mail ficam nas configurações de domínio.",
+      "save": "Salvar",
+      "saving": "Salvando...",
+      "saved": "Domínio principal definido.",
+      "saveFailed": "Não foi possível definir o domínio principal."
+    },
+    "githubCallback": {
+      "title": "Endereço de callback",
+      "body": "A configuração automática registra um callback em {{url}}. O GitHub redireciona para lá durante toda a vida do App, então esta instância deve estar acessível publicamente nesse endereço antes de você continuar.",
+      "change": "Altere nas configurações de domínio",
+      "docs": "Documentação do fluxo de manifesto",
+      "manualHint": "Sem endereço público? Use a configuração manual."
+    }
+  },
+  "nodeProviders": {
+    "names": {
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "custom": "Data center personalizado"
+    },
+    "methods": {
+      "api_token": {
+        "title": "Token de API",
+        "description": "Um único bearer token do console do provedor."
+      },
+      "access_key": {
+        "title": "Chave de acesso",
+        "description": "Um ID e segredo de chave de acesso IAM de longa duração."
+      },
+      "assume_role": {
+        "title": "Assumir uma role",
+        "description": "Assuma uma role IAM por ARN, de modo que a identidade base precise apenas de sts:AssumeRole."
+      },
+      "ambient": {
+        "title": "Identidade do control plane",
+        "description": "Use a identidade com a qual este control plane já roda, como um instance profile do EC2."
+      },
+      "workload_identity_federation": {
+        "title": "Federação de identidade de workload",
+        "description": "Troque um arquivo de token federado por um token de curta duração, sem armazenar segredo de cliente."
+      },
+      "service_account_json": {
+        "title": "JSON de conta de serviço",
+        "description": "Uma chave de service principal ou de conta de serviço como documento JSON."
+      },
+      "manual": {
+        "title": "Manual",
+        "description": "Sem API de nuvem: bare metal, on-prem ou qualquer VM que se registra por um join token."
+      }
+    },
+    "permissions": {
+      "hetzner": "Um token de API de projeto com acesso Read & Write. A Hetzner não tem escopos mais finos, então use um projeto dedicado.",
+      "digitalocean": "Um token de acesso pessoal com escopo de leitura e escrita, ou um escopo personalizado limitado a criar, ler e excluir droplet e ssh_key.",
+      "aws": "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:DescribeImages, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags e as ações de security group e VPC usadas para criar o grupo do node.",
+      "awsRole": "Com uma role, a identidade base precisa apenas de sts:AssumeRole no ARN dessa role. Coloque as ações acima na role.",
+      "azure": "Reader na assinatura, mais Virtual Machine Contributor e Network Contributor no resource group de destino.",
+      "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get e compute.instances.delete no projeto.",
+      "custom": "Nenhuma credencial é armazenada. O node se conecta a este control plane com um join token de uso único."
+    },
+    "permissionsTitle": "Privilégio mínimo",
+    "methodLegend": "Método de conexão",
+    "credentialJson": "Credencial (JSON)",
+    "roleArnRequired": "ARN da role",
+    "storedPlaceholder": "Armazenado. Cole um novo valor para substituí-lo.",
+    "dcName": "Nome do data center",
+    "dcLocation": "Localização (opcional)",
+    "dcNotes": "Notas (opcional)",
+    "saveManual": "Salvar data center",
+    "testAndConnect": "Testar e conectar",
+    "testConnection": "Testar conexão",
+    "testing": "Testando...",
+    "testStored": "Testar conexão armazenada",
+    "testFailed": "O teste falhou",
+    "disconnect": "Desconectar",
+    "confirmDisconnect": "Confirmar desconexão",
+    "disconnected": "{{provider}} desconectado.",
+    "connectedBy": "Conectado por {{name}}",
+    "lastTested": "testado por último",
+    "addNode": "Adicionar um node",
+    "addNodeTitle": "Adicionar um node a {{provider}}",
+    "addNodeDescription": "Execute o comando de instalação na máquina. Ela se conecta a este control plane, então nenhuma porta de entrada é necessária.",
+    "firewallGuidance": "Permita TCP de saída para a porta do agent deste control plane (9443 por padrão) e HTTPS de saída para baixar imagens. Nenhuma regra de entrada é necessária para o agent.",
+    "hints": {
+      "custom": "Bare metal, on-prem ou qualquer VM sem API de nuvem.",
+      "hetzner": "Token de API de projeto com acesso de leitura e escrita.",
+      "digitalocean": "Token de acesso pessoal com escopo de leitura e escrita.",
+      "aws": "Chave de acesso, ou a própria identidade AWS deste control plane.",
+      "azure": "JSON de service principal, ou federação de identidade de workload.",
+      "gcp": "JSON da chave de conta de serviço."
+    },
+    "connected": "Conectado",
+    "notConnected": "Não conectado",
+    "connect": "Conectar",
+    "update": "Atualizar",
+    "configureFor": "Configurar {{provider}}",
+    "sheetTitle": "Credenciais de {{provider}}",
+    "sheetDescription": "Usadas apenas para criar e inspecionar servidores pela página Nodes. A operação do dia a dia nunca toca sua conta de nuvem.",
+    "apiToken": "Token de API",
+    "azureCredential": "Service principal (JSON)",
+    "gcpCredential": "Chave de conta de serviço (JSON)",
+    "accessKeyId": "ID da chave de acesso",
+    "secretAccessKey": "Chave de acesso secreta",
+    "sessionToken": "Token de sessão (opcional)",
+    "region": "Região (opcional)",
+    "roleArn": "ARN da role (opcional)",
+    "roleArnHelp": "Quando definido, é assumido via STS antes do uso: a credencial acima então só precisa de sts:AssumeRole nesta role, não de permissões diretas do EC2.",
+    "useAmbient": "Usar a própria identidade AWS deste control plane (variáveis de ambiente, configuração compartilhada ou um instance profile do EC2) em vez de uma chave armazenada",
+    "storedReplace": "Já existe uma credencial armazenada. Cole uma nova para substituí-la.",
+    "neverEchoed": "Nunca mostrada novamente depois de salva.",
+    "azureFederation": "Prefere federação de identidade de workload a um segredo de cliente de longa duração? Use uma chave \"federated_token_file\", veja",
+    "azureFederationLink": "Federação de identidade de workload do Azure",
+    "saved": "Credencial de {{provider}} salva.",
+    "saving": "Salvando...",
+    "save": "Salvar",
+    "empty": "Nenhum provedor de nuvem está configurado neste control plane.",
+    "addNodeDialog": {
+      "cloud": "Criar um servidor em um provedor de nuvem",
+      "own": "Usar uma máquina que você já tem",
+      "connectFirst": "Conecte {{provider}} para criar servidores lá.",
+      "sshTitle": "Conectar por SSH",
+      "sshHint": "Uma VPS, servidor doméstico ou Raspberry Pi. Nós instalamos o agent para você.",
+      "manualTitle": "Registrar com um join token",
+      "manualHint": "Execute um comando na máquina você mesmo. Nada de entrada é aberto."
+    }
+  },
+  "builtInRegistry": {
+    "title": "Sem registry externo? Rode o seu",
+    "titleActive": "Registry integrado",
+    "body": "O Levelrail pode rodar um registry privado neste servidor. Builds e nodes remotos enviam e baixam imagens por ele, sem conta externa.",
+    "activeBody": "Servindo imagens em {{host}}. Os apps podem baixar dele sem uma credencial aqui.",
+    "setUp": "Configurar registry integrado",
+    "manage": "Gerenciar"
+  },
+  "registryVendors": {
+    "heading": "Conectar um registry",
+    "subheading": "Escolha um fornecedor para preencher o host e ver quais escopos de token a credencial precisa.",
+    "connect": "Conectar",
+    "connectFor": "Conectar {{vendor}}",
+    "dialogTitle": "Conectar {{vendor}}",
+    "dialogDescription": "A senha é criptografada em repouso e nunca mostrada novamente.",
+    "name": "Nome",
+    "nameHelp": "Referenciado pelo nome em build.registryCredential do app.yaml.",
+    "host": "Host do registry",
+    "username": "Nome de usuário",
+    "password": "Senha ou token",
+    "neverShown": "Nunca mostrada novamente depois de salva.",
+    "expires": "Expira (opcional)",
+    "shortLived": "Este fornecedor emite tokens que duram cerca de {{hours}} horas. Emita de novo e atualize a credencial antes da data mostrada, a renovação automática não foi implementada.",
+    "scopesTitle": "Escopos necessários",
+    "test": "Testar conexão",
+    "testing": "Testando...",
+    "save": "Salvar credencial",
+    "saving": "Salvando...",
+    "saved": "Credencial de registry \"{{name}}\" adicionada.",
+    "auth": {
+      "dockerhub": "Use seu nome de usuário do Docker Hub com um token de acesso pessoal, não a senha da sua conta.",
+      "ghcr": "Use seu nome de usuário do GitHub com um token de acesso pessoal (classic).",
+      "gitlab": "Use um deploy token ou um token de acesso pessoal como senha.",
+      "ecr": "O nome de usuário é sempre AWS. A senha é a saída de aws ecr get-login-password, válida por 12 horas.",
+      "gar": "O nome de usuário é _json_key e a senha é o JSON da chave da conta de serviço.",
+      "acr": "Use um token com escopo de repositório ou um service principal: o nome de usuário é o nome do token ou o ID do app, a senha é o segredo dele.",
+      "harbor": "Use uma robot account: o nome de usuário tem o formato robot$name e a senha é o segredo dela.",
+      "quay": "Use uma robot account: o nome de usuário é org+robotname e a senha é o token dela.",
+      "jfrog": "O nome de usuário é o seu usuário e a senha é um identity token, não a senha da sua conta.",
+      "nexus": "Use o nome de usuário e a senha de um usuário com acesso ao repositório Docker.",
+      "generic": "Qualquer registry que fale a Docker Registry HTTP API v2 com autenticação básica."
+    },
+    "scopes": {
+      "dockerhub": "Acesso somente leitura basta para baixar. Escolha Read & Write apenas se os builds fizerem push.",
+      "ghcr": "read:packages para baixar, write:packages para enviar. Em uma organização com SSO obrigatório, autorize o token para SSO.",
+      "gitlab": "read_registry para baixar, write_registry para enviar. Um deploy token tem escopo de um projeto ou grupo.",
+      "ecr": "ecr:GetAuthorizationToken, ecr:BatchGetImage, ecr:GetDownloadUrlForLayer e ecr:BatchCheckLayerAvailability, de uma chave ou de uma role.",
+      "gar": "roles/artifactregistry.reader para baixar, roles/artifactregistry.writer para enviar.",
+      "acr": "A role AcrPull (ou um token com content/read) para baixar, AcrPush para enviar.",
+      "harbor": "Permissão de pull no projeto onde as imagens estão.",
+      "quay": "Permissão de leitura no repositório.",
+      "jfrog": "Permissão de leitura no repositório Docker.",
+      "nexus": "nx-repository-view-docker-*-read para baixar.",
+      "generic": "Acesso de pull aos repositórios dos quais você faz deploy."
+    }
+  },
+  "packageRegistries": {
+    "heading": "Registries de pacotes para builds",
+    "subheading": "Registries privados de npm, PyPI, Maven, NuGet, Cargo, Go e RubyGems, montados nos builds de Dockerfile como segredos.",
+    "add": "Adicionar registry de pacotes",
+    "empty": "Nenhum registry de pacotes ainda. Adicione um para que os builds possam instalar pacotes privados.",
+    "dialogTitle": "Adicionar um registry de pacotes",
+    "dialogDescription": "O token é criptografado e montado nos builds como um segredo do BuildKit.",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Proxy Go",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "Todos os builds",
+      "project": "Um projeto",
+      "app": "Um app"
+    },
+    "name": "Nome",
+    "url": "URL do registry",
+    "urlHelp": "Sem credenciais na URL. Use os campos de nome de usuário e token.",
+    "username": "Nome de usuário (opcional)",
+    "usernameHelp": "Deixe vazio para um registry com bearer token.",
+    "secret": "Token ou senha",
+    "secretHelp": "Nunca mostrado novamente depois de salvo, nunca colocado em um build arg, camada de imagem ou log de build.",
+    "patterns": "Padrões GOPRIVATE",
+    "scope": "Aplica-se a",
+    "scopeRef": "ID do projeto ou nome do app",
+    "scopeRefPlaceholder": "ID do projeto ou nome do app",
+    "buildNote": "Referencie a configuração gerada no seu Dockerfile com RUN --mount=type=secret,id=<secret id>, por exemplo id=npmrc com target=/root/.npmrc. Builds em um node de build remoto ainda não a recebem.",
+    "save": "Salvar registry",
+    "saving": "Salvando...",
+    "saved": "Registry de pacotes \"{{name}}\" adicionado.",
+    "test": "Testar",
+    "remove": "Remover {{name}}",
+    "mountAs": "ID do segredo {{id}}"
+  },
+  "storagePage": {
+    "gcsHmacHint": "Use uma chave HMAC, não o JSON de uma conta de serviço. No Google Cloud, abra Cloud Storage, Settings, Interoperability e crie uma chave para uma conta de serviço que possa gravar no bucket.",
+    "title": "Destinos de armazenamento",
+    "description": "Armazenamento de objetos compatível com S3 para arquivos de log e backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, Google Cloud Storage ou qualquer endpoint personalizado.",
+    "notConfiguredTitle": "O armazenamento não está configurado neste servidor",
+    "notConfiguredBody": "Defina APP_MASTER_KEY e reinicie o control plane para que as credenciais de bucket possam ser criptografadas.",
+    "loadErrorTitle": "Não foi possível carregar os destinos de armazenamento",
+    "retry": "Tentar novamente",
+    "logArchiveTitle": "Arquivo de logs de todos os apps",
+    "logArchiveBody": "Envia logs locais do node para um destino em um agendamento. Apps com política própria (aba Logs, Arquivo do app) são mantidos separados.",
+    "buildCacheTitle": "Cache de build de todos os apps"
+  },
+  "doctorPage": {
+    "title": "Doctor",
+    "description": "Uma única verificação de saúde deste servidor: Docker, disco, portas, certificados, backups, nodes e mais. O comando doctor da CLI executa as mesmas verificações.",
+    "guide": "Guia do Doctor",
+    "rerun": "Executar verificações de novo",
+    "filterLabel": "Filtrar verificações por status",
+    "filter": {
+      "all": "Todas",
+      "fail": "Com falha",
+      "warn": "Avisos"
+    },
+    "lastChecked": "Última verificação {{time}}",
+    "checking": "Verificando...",
+    "copyDiagnostics": "Copiar diagnóstico",
+    "copyDone": "Diagnóstico copiado",
+    "copyFailed": "Não foi possível copiar para a área de transferência",
+    "noMatches": "Nenhuma verificação corresponde a este filtro.",
+    "allPassedTitle": "Todas as verificações passaram",
+    "allPassedBody": "Nada precisa de atenção agora.",
+    "failedTitle_one": "{{count}} verificação falhou",
+    "failedTitle_many": "{{count}} verificações falharam",
+    "failedTitle_other": "{{count}} verificações falharam",
+    "warnTitle_one": "{{count}} verificação merece um olhar",
+    "warnTitle_many": "{{count}} verificações merecem um olhar",
+    "warnTitle_other": "{{count}} verificações merecem um olhar",
+    "reviewBelow": "Cada problema abaixo tem uma correção ou um próximo passo, e um botão Verificar de novo.",
+    "progress": "{{done}} de {{total}} verificações concluídas",
+    "streamErrorTitle": "O stream de verificações foi interrompido",
+    "streamErrorBody": "Os resultados até agora são mostrados. Use Executar verificações de novo para recomeçar.",
+    "counts": {
+      "fail_one": "{{count}} com falha",
+      "fail_many": "{{count}} com falha",
+      "fail_other": "{{count}} com falha",
+      "warn_one": "{{count}} aviso",
+      "warn_many": "{{count}} avisos",
+      "warn_other": "{{count}} avisos",
+      "ok": "{{count}} aprovadas",
+      "unknown": "{{count}} não verificadas"
+    },
+    "fixAll_one": "Corrigir {{count}} problema seguro",
+    "fixAll_many": "Corrigir todos os {{count}} problemas seguros",
+    "fixAll_other": "Corrigir todos os {{count}} problemas seguros",
+    "fixAllTitle_one": "Aplicar {{count}} correção segura?",
+    "fixAllTitle_many": "Aplicar {{count}} correções seguras?",
+    "fixAllTitle_other": "Aplicar {{count}} correções seguras?",
+    "fixAllBody": "Apenas correções de um clique que são seguras estão incluídas. Qualquer coisa que reinicie um serviço ou abra acesso continua sendo um passo separado e deliberado. Estas são as alterações:",
+    "fixAllConfirm": "Aplicar correções",
+    "fixAllPending": "Aplicando...",
+    "fixAllCli": "Prefere um terminal? Execute isto no servidor, ele mostra o mesmo plano e pergunta antes.",
+    "ingressTitle": "O ingress é um ponto único de falha",
+    "ingressBody": "O roteamento HTTPS por domínio roda embutido no processo deste control plane. Se ele cair ou reiniciar, o roteamento fica fora do ar até voltar, mesmo que os containers já em execução continuem atendendo tráfego em suas próprias portas o tempo todo.",
+    "survivesCrash": "O que sobrevive a uma queda do control plane",
+    "groups": {
+      "runtime": {
+        "title": "Runtime de containers",
+        "description": "Acessibilidade do Docker, versão, privilégios e dados remanescentes."
+      },
+      "host": {
+        "title": "Este servidor",
+        "description": "Disco, inodes, memória, CPU e o banco de dados."
+      },
+      "network": {
+        "title": "Rede e acessibilidade",
+        "description": "Portas, firewall, DNS, certificados e se a internet consegue alcançar esta máquina."
+      },
+      "security": {
+        "title": "Segurança",
+        "description": "Rotação de segredos, tokens e verificações de assinatura de releases."
+      },
+      "backups": {
+        "title": "Backups",
+        "description": "Snapshots do control plane, agendamentos de bancos de dados e simulações de restauração."
+      },
+      "nodes": {
+        "title": "Nodes e mesh",
+        "description": "Conectividade de agents, versões de agents e a mesh WireGuard."
+      },
+      "hardware": {
+        "title": "Hardware",
+        "description": "GPUs e ferramentas de cliente de compartilhamento de rede."
+      },
+      "other": {
+        "title": "Outras verificações",
+        "description": "Verificações adicionais reportadas por este control plane."
+      }
+    }
+  },
+  "firewallRules": {
+    "liveStatus": "Status do firewall ao vivo",
+    "liveStatusNote": "Da verificação de preflight do próprio host. Veja Configurações, Doctor para a checklist completa de hardening.",
+    "emptyTitle": "Nenhuma regra de firewall configurada",
+    "emptyBody": "Adicione uma regra para permitir ou negar tráfego a uma porta específica, opcionalmente restrita a um CIDR de origem.",
+    "cols": {
+      "action": "Ação",
+      "port": "Porta",
+      "protocol": "Protocolo",
+      "source": "Origem",
+      "label": "Rótulo",
+      "added": "Adicionada",
+      "actions": "Ações"
+    },
+    "anywhere": "Qualquer lugar",
+    "none": "Nenhum",
+    "allow": "Permitir",
+    "deny": "Negar",
+    "closeTitle": "Esta regra fechará uma porta",
+    "restrictTitle": "Esta regra restringe uma porta a uma origem",
+    "closeBody": "O tráfego para esta porta será descartado. Uma regra que afete a API de gerenciamento, as conexões de agents ou o ingress é recusada automaticamente.",
+    "restrictBody": "O tráfego de fora deste CIDR não chegará mais a esta porta. Uma regra que afete a API de gerenciamento, as conexões de agents ou o ingress é recusada automaticamente.",
+    "addRule": "Adicionar regra",
+    "addDeny": "Adicionar regra de negação",
+    "adding": "Adicionando...",
+    "addTitle": "Adicionar regra de firewall",
+    "addBody": "Permita ou negue tráfego a uma porta, opcionalmente restrita a um CIDR de origem. Aplicada na próxima passagem de reconcile.",
+    "createdToast": "Regra de firewall para a porta {{port}} criada.",
+    "sourceCidr": "CIDR de origem (opcional)",
+    "sourceCidrPlaceholder": "10.0.0.0/24 (deixe em branco para qualquer origem)",
+    "labelOptional": "Rótulo (opcional)",
+    "labelPlaceholder": "para que serve esta regra",
+    "cancel": "Cancelar",
+    "remove": "Remover",
+    "removing": "Removendo...",
+    "removeTitle": "Remover esta regra?",
+    "removeAllowBody": "Isto deixará de permitir tráfego para a porta {{port}}/{{protocol}} assim que a próxima passagem de reconcile a remover, a menos que algo mais neste host ainda o permita.",
+    "removeDenyBody": "Isto deixará de negar tráfego para a porta {{port}}/{{protocol}} assim que a próxima passagem de reconcile a remover.",
+    "removedToast": "Regra de firewall removida."
+  },
+  "storageDestinations": {
+    "accountLabel": {
+      "r2": "ID da conta Cloudflare",
+      "oracle": "Namespace",
+      "default": "ID da conta ou namespace"
+    },
+    "usage": {
+      "header": "Uso",
+      "none": "Vazio",
+      "ofQuota": "{{used}} de {{quota}}",
+      "overQuota": "Acima da cota",
+      "cost": "Custo estimado por mês",
+      "free": "Grátis",
+      "defaultFor": "Padrão para",
+      "noDefault": "Nenhum"
+    },
+    "kind": {
+      "agent": "Diretório do node",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "classes": {
+      "backups": "Backups",
+      "archives": "Arquivos de log",
+      "artifacts": "Artefatos de pipeline",
+      "cache": "Cache de build",
+      "dumps": "Dumps de dados"
+    },
+    "defaults": {
+      "title": "Destino padrão por classe de dados",
+      "description": "Para onde cada tipo de dado vai quando nenhum destino é escolhido. Diretórios de nodes só podem guardar backups e dumps.",
+      "unset": "Não definido",
+      "clear": "Limpar",
+      "saved": "{{class}} agora vão para {{name}}.",
+      "cleared": "Padrão de {{class}} removido.",
+      "pick": "Escolha um destino"
+    },
+    "node": {
+      "add": "Adicionar diretório de node",
+      "title": "Adicionar um destino de diretório de node",
+      "description": "Transmita backups para um diretório confinado em um node registrado pela conexão de agent existente. Sem SSH, sem shell, sem credenciais.",
+      "name": "Nome",
+      "node": "Node",
+      "nodePlaceholder": "Escolha um node",
+      "directory": "Diretório",
+      "directoryHint": "Relativo à raiz de armazenamento do node (APP_AGENT_STORAGE_DIR no agent). O padrão é backups.",
+      "quota": "Cota flexível (GB)",
+      "quotaHint": "Sinalizado quando os backups a excedem. 0 significa sem limite.",
+      "verify": "Testar a conexão antes de salvar (grava e exclui um arquivo de teste)",
+      "connect": "Conectar",
+      "connecting": "Conectando...",
+      "connected": "Diretório de node \"{{name}}\" conectado.",
+      "noNodes": "Registre um node primeiro para guardar dados nele."
+    },
+    "test": {
+      "title": "Teste de conexão de \"{{name}}\"",
+      "passed": "\"{{name}}\" está funcionando.",
+      "failedTitle": "\"{{name}}\" falhou no teste de conexão",
+      "recheck": "Verificar de novo",
+      "checking": "Verificando...",
+      "close": "Fechar",
+      "step": "{{name}}: {{status}}",
+      "ok": "ok",
+      "failed": "falhou"
+    },
+    "fix": {
+      "enable_path_style": {
+        "title": "Ativar endereçamento em estilo de caminho",
+        "description": "Este endpoint não responde a URLs de bucket em estilo virtual-hosted. Um clique muda para https://host/bucket/key e verifica de novo.",
+        "action": "Ativar estilo de caminho e verificar de novo"
+      },
+      "edit_credentials": {
+        "title": "Informe novas credenciais",
+        "description": "O endpoint rejeitou a chave de acesso. Cole um par de chaves funcional, ele é criptografado e nunca mostrado novamente.",
+        "action": "Salvar credenciais e verificar de novo"
+      },
+      "edit_policy": {
+        "title": "Conceda acesso ao bucket para a chave",
+        "description": "A chave é válida, mas não pode gravar, ler e excluir neste bucket. Permita essas ações na política do provedor ou use outro par de chaves.",
+        "action": "Usar outra chave e verificar de novo"
+      },
+      "edit_bucket": {
+        "title": "Corrija o nome do bucket",
+        "description": "Não existe bucket com este nome no endpoint.",
+        "action": "Salvar bucket e verificar de novo"
+      },
+      "edit_region": {
+        "title": "Corrija a região",
+        "description": "O bucket está em outra região.",
+        "action": "Salvar região e verificar de novo"
+      },
+      "edit_endpoint": {
+        "title": "Corrija o endpoint",
+        "description": "Não foi possível alcançar o endpoint ou o certificado dele falhou. Endpoints de rede privada também exigem APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true.",
+        "action": "Salvar endpoint e verificar de novo"
+      },
+      "sync_clock": {
+        "title": "Sincronize o relógio deste servidor",
+        "description": "O endpoint de armazenamento reporta uma grande diferença de relógio. Ative o NTP no host do control plane e verifique de novo.",
+        "action": "Verificar de novo"
+      },
+      "reconnect_node": {
+        "title": "Coloque o node online",
+        "description": "O node não está conectado ao control plane. Inicie o agent dele e verifique de novo.",
+        "action": "Abrir nodes",
+        "recheck": "Verificar de novo"
+      },
+      "enable_node_storage": {
+        "title": "Dê ao node um diretório de armazenamento",
+        "description": "Defina APP_AGENT_STORAGE_DIR no agent para um diretório em que ele possa gravar, reinicie o agent e verifique de novo.",
+        "action": "Verificar de novo"
+      },
+      "fields": {
+        "accessKeyId": "ID da chave de acesso",
+        "secretAccessKey": "Chave de acesso secreta",
+        "bucket": "Bucket",
+        "region": "Região",
+        "endpoint": "Endpoint"
+      }
+    },
+    "empty": {
+      "title": "Nenhum destino de armazenamento",
+      "description": "Conecte AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, qualquer bucket compatível com S3 ou um node registrado para guardar backups, arquivos e dumps."
+    }
+  },
+  "controlPlaneDrKeygen": {
+    "trigger": "Gerar par de chaves",
+    "title": "Nova chave de destinatário de backup",
+    "description": "A chave pública é adicionada aos destinatários de backup. A chave privada é mostrada uma vez e nunca é armazenada neste servidor.",
+    "warning": "Guarde a chave privada offline agora (um gerenciador de senhas ou um cofre). Sem ela, os backups não podem ser descriptografados.",
+    "copy": "Copiar chave privada",
+    "download": "Baixar chave privada",
+    "use": "Já guardei, adicionar a chave pública"
+  },
+  "controlPlaneDrRestore": {
+    "title": "Plano de restauração",
+    "description": "A recuperação substitui o banco de dados do control plane, então roda no host com o control plane parado. Estes são os passos para esta instalação.",
+    "noBackup": "Ainda não existe um backup completo fora da máquina. Execute um backup antes de contar com a recuperação.",
+    "newest": "Backup mais recente: {{key}} ({{when}})",
+    "viaCli": "Comando de restauração para o host",
+    "copy": "Copiar comando",
+    "copied": "Copiado",
+    "warnings": {
+      "escrow_not_acknowledged": "A custódia da chave mestra não foi confirmada: uma restauração sem a chave mestra não consegue ler os segredos armazenados.",
+      "drill_not_passed": "Nenhuma simulação de restauração passou ainda, então este plano não foi testado."
+    },
+    "steps": {
+      "backup_available": {
+        "title": "Há um backup completo disponível",
+        "body": "O backup criptografado mais recente no destino tem tanto os dados quanto o manifesto."
+      },
+      "identity_ready": {
+        "title": "Tenha uma chave privada à mão",
+        "body": "Você precisa da chave privada que corresponda a um dos destinatários do backup."
+      },
+      "master_key_escrow": {
+        "title": "Tenha a custódia da chave mestra à mão",
+        "body": "O backup não contém a chave mestra. Restaure-a a partir do seu pacote de custódia."
+      },
+      "stop_control_plane": {
+        "title": "Pare o control plane",
+        "body": "A restauração se recusa a rodar enquanto o banco de dados está em uso."
+      },
+      "run_restore": {
+        "title": "Execute a restauração no host",
+        "body": "O banco de dados atual é mantido ao lado do restaurado como uma cópia pré-restauração."
+      },
+      "start_and_verify": {
+        "title": "Inicie o control plane e verifique",
+        "body": "Confirme que apps, domínios e nodes voltaram e depois execute um novo backup."
+      }
+    }
+  },
+  "iacPage": {
+    "title": "Infraestrutura como código",
+    "description": "Descreva projetos, ambientes, apps, domínios e bancos de dados em YAML, revise o plano e depois aplique.",
+    "filesTitle": "Arquivos de recursos",
+    "filesDescription": "Um ou mais documentos YAML separados por ---. Os documentos nunca guardam valores de segredos, referencie-os com secretRef.",
+    "yamlLabel": "YAML",
+    "upload": "Enviar arquivos",
+    "sourceLabel": "Origem",
+    "sourcePlaceholder": "infra-repo",
+    "sourceHint": "Marca os apps que esta aplicação cria para que o prune os encontre depois.",
+    "projectLabel": "Somente o projeto",
+    "projectPlaceholder": "shop",
+    "prune": "Prune: excluir apps que esta origem criou e que os arquivos não declaram mais",
+    "pruneNeedsSource": "O prune precisa de um nome de origem.",
+    "noDeploy": "Não reiniciar apps em execução para aplicar alterações de env",
+    "planning": "Planejando...",
+    "plan": "Planejar",
+    "apply": "Aplicar",
+    "confirmTitle": "Aplicar estas alterações?",
+    "confirmSummary": "{{create}} a criar, {{update}} a atualizar, {{delete}} a excluir.",
+    "confirmNote": "A aplicação só prossegue se o estado ao vivo ainda corresponder ao plano que você revisou.",
+    "confirmDeletes": "Isto exclui {{count}} recurso(s).",
+    "cancel": "Cancelar",
+    "planTitle": "Plano",
+    "resultTitle": "Resultado",
+    "resultCounts": "{{applied}} aplicados, {{failed}} com falha, {{skipped}} ignorados",
+    "banner": {
+      "description": "Descreva projetos, apps, domínios e bancos de dados em YAML, revise o plano e depois aplique.",
+      "diagram": {
+        "host": "host",
+        "docker": "Docker",
+        "ingress": "ingress"
+      }
+    },
+    "optionsTitle": "Opções",
+    "optionsDescription": "Controle como a aplicação trata apps que ela já conhece.",
+    "filesChosen_one": "{{count}} arquivo pronto",
+    "filesChosen_many": "{{count}} arquivos prontos",
+    "filesChosen_other": "{{count}} arquivos prontos",
+    "noFiles": "Cole YAML abaixo ou envie arquivos para planejar.",
+    "planAgain": "Planejar de novo",
+    "planFailed": "Não foi possível montar o plano. Corrija os arquivos e planeje de novo.",
+    "applyFailed": "A aplicação não terminou. Planeje de novo para revisar o estado atual."
+  },
+  "githubManualDialog": {
+    "title": "Conectar um GitHub App manualmente",
+    "descPrefix": "Crie o App você mesmo em",
+    "descSuffix": "(ou no /settings/apps/new da sua própria instância do GitHub Enterprise Server) e cole aqui as credenciais resultantes. Não é preciso um domínio principal para salvá-las: só a configuração automática precisa de um.",
+    "instanceLabel": "Instância do GitHub (opcional)",
+    "instanceHint": "Deixe em branco para github.com. Instâncias auto-hospedadas também funcionam, ex.: https://github.example.com.",
+    "appId": "ID do App",
+    "clientId": "ID do cliente",
+    "clientSecret": "Segredo do cliente",
+    "webhookSecret": "Segredo do webhook",
+    "webhookHint": "O valor que você definiu como segredo de webhook do próprio App no GitHub, não gerado aqui.",
+    "privateKey": "Chave privada (.pem)",
+    "privateKeyHint": "Gerada uma vez na página General do App no GitHub e baixada como arquivo .pem. Cole o conteúdo completo.",
+    "installationId": "ID da instalação (opcional)",
+    "accountLogin": "Login da conta (opcional)",
+    "connect": "Conectar",
+    "connecting": "Conectando...",
+    "connected": "GitHub App conectado.",
+    "connectFailed": "Não foi possível conectar o GitHub App."
+  },
+  "drCard": {
+    "neverRun": "nunca executado",
+    "failed": "falhou {{when}}: {{detail}}",
+    "passedPartial": "passou {{when}} (parcial: apenas checksum, descriptografia não testada)",
+    "passed": "passou {{when}} em {{seconds}}s",
+    "started": "{{label}} iniciado.",
+    "labelBackup": "Backup",
+    "labelDrill": "Simulação de restauração",
+    "title": "Recuperação de desastres",
+    "description": "Backups criptografados fora da máquina, custódia de chaves e simulações de restauração.",
+    "backingUp": "Fazendo backup...",
+    "runNow": "Executar agora",
+    "runningDrill": "Executando simulação...",
+    "runDrill": "Executar simulação",
+    "warnings": "Avisos",
+    "lastBackup": "Último backup",
+    "never": "nunca",
+    "nextBackup": "próximo {{when}}",
+    "lastDrill": "Última simulação de restauração",
+    "drillIdentity": "Identidade da simulação",
+    "identityConfigured": "configurada, as simulações descriptografam e restauram por completo",
+    "identityMissing": "não configurada, as simulações verificam apenas checksums (APP_CONTROL_PLANE_DRILL_IDENTITY_FILE)"
+  },
+  "buildCache": {
+    "modeMax": "max (cache de todas as camadas, rebuilds mais rápidos)",
+    "modeMin": "min (cache apenas das camadas finais, bucket menor)",
+    "checking": "Verificando o bucket...",
+    "readFailed": "Não foi possível ler o bucket: {{message}}",
+    "objects": "{{count}}{{plus}} objetos, {{size}}",
+    "lastExport": ", última exportação {{when}}",
+    "clearedMore": "{{deleted}} objetos excluídos. Ainda restam mais, limpe de novo.",
+    "cleared": "Cache limpo ({{deleted}} objetos).",
+    "deleteLayers": "Excluir camadas em cache",
+    "cancel": "Cancelar",
+    "clear": "Limpar cache",
+    "saved": "Cache de build salvo.",
+    "destination": "Destino",
+    "chooseDestination": "Escolha um destino",
+    "exportMode": "Modo de exportação",
+    "useRemote": "Usar o cache remoto",
+    "storedUnder": "As camadas são armazenadas em {{prefix}}. Desative para excluir este app do padrão.",
+    "globalHint": "Vale para todo app sem configuração própria. Cada app faz cache em build-cache/<app>/.",
+    "update": "Atualizar",
+    "save": "Salvar",
+    "removed": "Configuração de cache de build removida.",
+    "removeSetting": "Remover configuração",
+    "notConfiguredTitle": "O cache de build não está configurado neste servidor",
+    "loadFailedTitle": "Não foi possível carregar as configurações de cache de build",
+    "notConfiguredBody": "Defina APP_MASTER_KEY e reinicie o control plane para conectar o armazenamento de objetos.",
+    "unknownError": "Erro desconhecido",
+    "loading": "Carregando...",
+    "noDestinationTitle": "Nenhum destino de armazenamento ainda",
+    "noDestinationBody": "Conecte um bucket em Configurações, Destinos de armazenamento, e use-o como cache de build aqui.",
+    "usingDefault": "Usando o cache de build padrão de todos os apps. Salve uma configuração abaixo para substituí-lo neste app.",
+    "ranWithout": "O último build rodou sem o cache",
+    "lastBuild": "Último build com o cache: {{when}}",
+    "title": "Cache de build",
+    "titleAll": "Cache de build de todos os apps",
+    "description": "Mantenha camadas do BuildKit em um destino de armazenamento para que os rebuilds pulem etapas inalteradas. Um problema no cache nunca faz um build falhar, ele é reportado como aviso."
+  },
+  "gitConnections": {
+    "empty": {
+      "title": "Nenhuma conta conectada",
+      "description": {
+        "gitlab": "Registre uma aplicação OAuth do GitLab e depois autorize-a. O gitlab.com e instâncias auto-gerenciadas podem ser conectados lado a lado.",
+        "bitbucket": "Registre um consumer OAuth do Bitbucket e depois autorize-o. Adicione um segundo consumer depois para outro workspace.",
+        "gitea": "Registre uma aplicação OAuth do Gitea e depois autorize-a. Cada servidor Gitea ou Forgejo é uma conexão própria.",
+        "forgejo": "Registre uma aplicação OAuth do Forgejo e depois autorize-a. Codeberg e servidores auto-hospedados são, cada um, uma conexão própria.",
+        "bitbucket_server": "Crie um token de acesso pessoal no seu Bitbucket Server e adicione-o aqui. Cada servidor ou conta é uma conexão própria.",
+        "azure_devops": "Crie um token de acesso pessoal na sua organização do Azure DevOps e adicione-o aqui."
+      }
+    },
+    "default": "Padrão",
+    "account": "Logado como {{name}}",
+    "accountUnknown": "Conta ainda não lida",
+    "sources_one": "{{count}} origem git",
+    "sources_many": "{{count}} origens git",
+    "sources_other": "{{count}} origens git",
+    "scopeNote": "As conexões pertencem a este control plane e são gerenciadas por admins. Qualquer pessoa autorizada a ler repositórios pode navegar pelo que uma conta enxerga.",
+    "state": {
+      "ok": "Conectado",
+      "notAuthorized": "Não autorizado",
+      "needsReconnect": "Precisa reconectar",
+      "rateLimited": "Com limite de taxa"
+    },
+    "authorize": "Autorizar",
+    "reconnect": "Reconectar",
+    "setDefault": "Definir como padrão",
+    "rename": {
+      "action": "Renomear",
+      "label": "Rótulo da conexão",
+      "save": "Salvar",
+      "cancel": "Cancelar"
+    },
+    "disconnect": {
+      "action": "Desconectar",
+      "pending": "Desconectando",
+      "title": "Desconectar {{label}}?",
+      "description": "Este control plane deixa de usar esta conta e revoga o token dela no provedor onde isso é suportado. Outras contas conectadas não são afetadas.",
+      "sources_one": "{{count}} origem git usa esta conta. Ela permanece, mostra precisa reconectar e volta a funcionar quando você conectar uma conta no mesmo host.",
+      "sources_many": "{{count}} origens git usam esta conta. Elas permanecem, mostram precisa reconectar e voltam a funcionar quando você conectar uma conta no mesmo host.",
+      "sources_other": "{{count}} origens git usam esta conta. Elas permanecem, mostram precisa reconectar e voltam a funcionar quando você conectar uma conta no mesmo host."
+    },
+    "add": {
+      "first": "Adicionar uma conta",
+      "another": "Adicionar outra conta",
+      "title": {
+        "gitlab": "Adicionar uma conta do GitLab",
+        "bitbucket": "Adicionar uma conta do Bitbucket",
+        "gitea": "Adicionar uma conta do Gitea",
+        "forgejo": "Adicionar uma conta do Forgejo",
+        "bitbucket_server": "Adicionar uma conta do Bitbucket Server",
+        "azure_devops": "Adicionar uma organização do Azure DevOps"
+      },
+      "description": "Crie a aplicação OAuth no provedor com a URI de redirecionamento {{callback}} e informe-a aqui. Você será enviado ao provedor para autorizá-la.",
+      "application": "Aplicação OAuth",
+      "newApplication": "Registrar uma nova aplicação OAuth",
+      "reuse": "Reutilizar a aplicação de {{label}}",
+      "applicationHelp": "Reutilize a mesma aplicação para fazer login com outra conta na mesma instância.",
+      "instanceUrl": "URL da instância",
+      "instanceHelp": "gitlab.com ou um endereço auto-gerenciado, por exemplo https://git.example.com.",
+      "clientId": {
+        "gitlab": "ID da aplicação",
+        "bitbucket": "Consumer key",
+        "gitea": "ID do cliente",
+        "forgejo": "ID do cliente",
+        "bitbucket_server": "ID do cliente",
+        "azure_devops": "ID do cliente"
+      },
+      "clientSecret": "Segredo",
+      "label": "Rótulo (opcional)",
+      "labelHelp": "O padrão é o nome da conta depois que você autorizar. Você pode renomeá-lo depois.",
+      "cancel": "Cancelar",
+      "submit": "Salvar e autorizar",
+      "saving": "Salvando",
+      "tokenDescription": "Crie um token de acesso pessoal no servidor com permissão de leitura e escrita em repositórios e cole-o aqui. Ele é verificado e depois armazenado criptografado.",
+      "token": "Token de acesso pessoal",
+      "tokenHelp": "Em Manage account, Personal access tokens. O token nunca é mostrado novamente.",
+      "instanceHelpServer": "O endereço base do seu servidor, por exemplo https://bitbucket.example.com.",
+      "connect": "Verificar e conectar",
+      "verifying": "Verificando",
+      "test": "Testar conexão",
+      "testing": "Testando",
+      "testOk": "Conectado. O servidor respondeu e os detalhes parecem corretos.",
+      "testOkAccount": "Conectado como {{account}}.",
+      "fixLabel": "Correção",
+      "testKind": {
+        "bad_url": {
+          "message": "Esse endereço não parece ser deste tipo de servidor.",
+          "fix": "Use o endereço raiz da instância, por exemplo https://git.example.com, sem um caminho de repositório."
+        },
+        "bad_token": {
+          "message": "O servidor rejeitou o token.",
+          "fix": "Crie um novo token de acesso pessoal com acesso de leitura a repositórios e cole-o novamente."
+        },
+        "tls": {
+          "message": "O certificado TLS do servidor foi rejeitado.",
+          "fix": "Instale um certificado confiável no servidor ou adicione sua CA privada ao repositório de confiança deste control plane."
+        },
+        "unreachable": {
+          "message": "Este control plane não conseguiu alcançar o servidor.",
+          "fix": "Verifique o hostname e a porta, e se a rede ou o firewall permitem acesso de saída a ele."
+        },
+        "bad_scope": {
+          "message": "Falta ao token um escopo de que este control plane precisa.",
+          "fix": "Crie o token de novo com todos os escopos listados nos passos acima marcados e depois cole o novo."
+        }
+      },
+      "callbackLabel": "URL de callback",
+      "callbackCopy": "Copiar",
+      "callbackCopied": "Copiado",
+      "instanceHelpAzure": "O endereço da sua organização, por exemplo https://dev.azure.com/ORG.",
+      "tokenHelpAzure": "User settings, Personal access tokens, com escopo Code (read and write). O token nunca é mostrado novamente."
+    },
+    "token": {
+      "title": "Conectar com um token",
+      "description": "Cole um token de acesso em vez de registrar uma aplicação OAuth. Funciona em uma instalação http simples sem domínio público.",
+      "host": "Host",
+      "guideLabel": "Como criar o token",
+      "server": "Servidor:",
+      "serverEmpty": "informe a URL do servidor acima",
+      "serverHelp": "O endereço que você abre no navegador, por exemplo http://git.lan:3000. http e https funcionam.",
+      "tick": "Marque estes escopos:",
+      "scopes": "Escopos a marcar",
+      "noDomain": "O token é armazenado criptografado e nunca é mostrado novamente. Nenhum domínio público ou URL de callback é necessário.",
+      "steps": {
+        "gitlab": {
+          "open": "Abra a página de tokens de acesso do seu GitLab:",
+          "create": "Selecione Add new token, dê o nome {{name}} e escolha uma data de expiração com a qual você consiga conviver.",
+          "copy": "Selecione Create personal access token e copie o token que começa com glpat-."
+        },
+        "bitbucket": {
+          "open": "Abra os tokens de API da Atlassian:",
+          "create": "Selecione Create API token with scopes, dê o nome {{name}}, escolha Bitbucket como app e escolha seu workspace.",
+          "copy": "Crie o token e cole-o abaixo como seu e-mail da Atlassian, dois-pontos e o token (email:token)."
+        },
+        "gitea": {
+          "open": "Abra a página de aplicações do seu Gitea:",
+          "create": "Em Generate New Token, dê o nome {{name}}.",
+          "copy": "Selecione Generate Token e copie agora, o Gitea mostra uma única vez."
+        },
+        "forgejo": {
+          "open": "Abra a página de aplicações do seu Forgejo:",
+          "create": "Em Generate New Token, dê o nome {{name}}.",
+          "copy": "Selecione Generate Token e copie agora, o Forgejo mostra uma única vez."
+        }
+      },
+      "field": "Token de acesso",
+      "fieldEmailToken": "E-mail e token de API (email:token)",
+      "check": "Verificar token",
+      "scopesFound": "Escopos: {{scopes}}",
+      "scopesUnknown": "Este host não informa os escopos de um token. O acesso a repositórios é verificado no lugar.",
+      "repos_one": "Alcança {{count}}{{plus}} repositório.",
+      "repos_many": "Alcança {{count}}{{plus}} repositórios.",
+      "repos_other": "Alcança {{count}}{{plus}} repositórios.",
+      "noRepos": "Nenhum repositório está acessível ainda. Marque os escopos de repositório ou verifique se a conta é membro de um projeto.",
+      "connected": "Conta conectada",
+      "connectedBody": "O token foi verificado e armazenado criptografado."
+    },
+    "toast": {
+      "added": "Conta salva",
+      "addedBody": "Autorize-a no provedor para concluir.",
+      "disconnected": "Conta desconectada",
+      "renameFailed": "Não foi possível renomear a conta",
+      "authorized": "Conta autorizada",
+      "authorizedBody": "Os repositórios dela agora estão disponíveis para escolha."
+    }
+  },
+  "gitConnectionsHub": {
+    "title": "Conexões Git",
+    "description": "Todas as contas Git conectadas a este servidor, em todos os hosts.",
+    "loadFailed": "Não foi possível carregar suas contas Git. Tente de novo em instantes.",
+    "attention_one": "{{count}} conta precisa de atenção. Reconecte-a para que seus apps continuem recebendo deploys.",
+    "attention_many": "{{count}} contas precisam de atenção. Reconecte-as para que seus apps continuem recebendo deploys.",
+    "attention_other": "{{count}} contas precisam de atenção. Reconecte-as para que seus apps continuem recebendo deploys.",
+    "openSettings": "Configurações do provedor",
+    "scopes": "Escopos: {{scopes}}",
+    "banner": {
+      "description": "Conecte contas do GitHub, GitLab, Bitbucket, Azure DevOps, Gitea ou Forgejo, quantas precisar, e escolha repositórios de qualquer uma delas.",
+      "whatFor": "Conecte uma conta por pessoa, equipe ou organização. Os apps continuam vinculados à conta a partir da qual foram criados, então você pode adicionar ou remover contas sem mexer nos seus apps.",
+      "diagram": {
+        "repos": "Repos",
+        "server": "Servidor",
+        "branches": "Branches"
+      }
+    },
+    "add": {
+      "action": "Adicionar conta",
+      "withToken": "Conectar com um token",
+      "withTokenAsks": "GitLab, Bitbucket, Gitea ou Forgejo. Cole um token, sem app OAuth nem domínio público.",
+      "domainTitle": "Defina primeiro um domínio principal",
+      "domainBody": "Este host envia você de volta ao seu servidor depois do login, então o servidor precisa de um domínio público.",
+      "continue": "Continuar"
+    },
+    "stats": {
+      "repos": "Repos",
+      "apps": "Apps"
+    },
+    "health": {
+      "connected": "Conectado",
+      "needsReconnect": "Precisa reconectar",
+      "notAuthorized": "Não autorizado",
+      "rateLimited": "Com limite de taxa"
+    },
+    "disconnect": {
+      "description": "Os apps nunca são excluídos. Qualquer app que usava esta conta continua rodando e precisa que outra conta seja conectada antes do próximo deploy.",
+      "affected": "Estes apps precisam de outra conta: {{apps}}"
+    },
+    "hosts": {
+      "github": {
+        "name": "GitHub",
+        "asks": "Você vai criar ou escolher um GitHub App e instalá-lo em uma conta ou organização.",
+        "access": "O acesso segue os repositórios em que o App está instalado."
+      },
+      "gitlab": {
+        "name": "GitLab",
+        "asks": "Você vai colar o ID e o segredo de uma aplicação OAuth e depois fazer login.",
+        "access": "O acesso segue os escopos OAuth que você concedeu."
+      },
+      "bitbucket": {
+        "name": "Bitbucket",
+        "asks": "Você vai colar a consumer key e o segredo de um OAuth e depois fazer login.",
+        "access": "O acesso segue as permissões OAuth que você concedeu."
+      },
+      "bitbucket_server": {
+        "name": "Bitbucket Server",
+        "asks": "Você vai colar a URL do servidor e um token de acesso pessoal.",
+        "access": "O acesso segue as permissões do token."
+      },
+      "gitea": {
+        "name": "Gitea",
+        "asks": "Você vai informar a URL do seu Gitea e o ID e segredo de uma aplicação OAuth e depois fazer login.",
+        "access": "O acesso segue os escopos OAuth que você concedeu."
+      },
+      "forgejo": {
+        "name": "Forgejo e Codeberg",
+        "asks": "Você vai informar a URL do servidor (codeberg.org funciona) e o ID e segredo de uma aplicação OAuth e depois fazer login.",
+        "access": "O acesso segue os escopos OAuth que você concedeu."
+      },
+      "azure_devops": {
+        "name": "Azure DevOps",
+        "asks": "Você vai colar a URL da sua organização e um token de acesso pessoal.",
+        "access": "O acesso segue as permissões do token."
+      }
+    }
+  },
+  "emailBranding": {
+    "title": "Identidade visual",
+    "description": "O logo, a cor de destaque e o rodapé que todo e-mail rico compartilha: redefinições de senha, convites, alertas e comunicados.",
+    "logo": "URL do logo",
+    "logoHint": "Uma URL de imagem https. O servidor nunca a busca, então um logo remoto informa ao seu host quando uma mensagem é aberta.",
+    "color": "Cor de destaque",
+    "colorHint": "Um valor hex de seis dígitos como #107292. Deixe vazio para usar a cor da marca.",
+    "footerText": "Texto do rodapé",
+    "footerHint": "Somente texto simples. Variáveis: {{variables}}.",
+    "address": "Endereço postal",
+    "links": "Links do rodapé",
+    "linkLabel": "Rótulo",
+    "linkUrl": "Link https",
+    "addLink": "Adicionar link",
+    "removeLink": "Remover link",
+    "poweredBy": "Mostrar a linha Powered by",
+    "save": "Salvar identidade visual",
+    "saving": "Salvando...",
+    "saved": "Identidade visual do e-mail salva.",
+    "preview": "Prévia",
+    "previewTitle": "Prévia da identidade visual do e-mail",
+    "invalidHttps": "Use um endereço https:// completo. http simples e outros esquemas são recusados.",
+    "invalidColor": "Use uma cor hex de seis dígitos como #107292.",
+    "templates": {
+      "label": "Começar de um modelo",
+      "dashboardLink": "Abrir o painel",
+      "minimal": {
+        "name": "Mínimo",
+        "text": "Enviado por {{brand_name}}."
+      },
+      "standard": {
+        "name": "Padrão",
+        "text": "Enviado por {{brand_name}} a partir de {{instance_name}}. Dúvidas? Escreva para {{support_email}}. {{year}}"
+      },
+      "compliance": {
+        "name": "Conformidade",
+        "text": "Você recebe esta mensagem por causa de atividade em {{instance_name}}. Dúvidas? Escreva para {{support_email}}. {{year}} {{brand_name}}",
+        "address": "{{brand_name}}, substitua esta linha pelo seu endereço postal"
+      }
+    }
+  },
+  "emailProviders": {
+    "title": "Provedores",
+    "description": "O principal envia todos os e-mails. Se ele falhar, um de backup assume até o principal se recuperar.",
+    "loadError": "Não foi possível carregar os provedores: {{message}}",
+    "retry": "Tentar novamente",
+    "roles": {
+      "primary": "Principal",
+      "backup": "Backup"
+    },
+    "health": {
+      "healthy": "Saudável",
+      "failing": "Com falha",
+      "paused": "Pausado",
+      "untested": "Ainda não testado",
+      "none": "Não configurado"
+    },
+    "runningOnBackup": "Rodando no backup",
+    "status": {
+      "lastError": "Último erro",
+      "noError": "Nenhum"
+    },
+    "row": {
+      "noFrom": "Ainda sem endereço de remetente",
+      "lastOk": "Enviado {{when}}",
+      "neverOk": "Nenhum envio ainda",
+      "enabledLabel": "Ativar {{name}}",
+      "edit": "Editar",
+      "editLabel": "Editar {{name}}",
+      "test": "Testar",
+      "testLabel": "Enviar um teste por {{name}}",
+      "promote": "Tornar principal",
+      "promoteLabel": "Tornar {{name}} o principal",
+      "promoted": "{{name}} agora é o principal",
+      "remove": "Remover",
+      "removeLabel": "Remover {{name}}",
+      "lastError": "Último erro: {{kind}}. Execute Testar para ver a correção."
+    },
+    "secret": {
+      "set": "Definido",
+      "replace": "Substituir",
+      "replaceLabel": "Substituir {{label}}",
+      "replaceHint": "Digite o novo valor. O armazenado é sobrescrito ao salvar.",
+      "keep": "Manter o valor armazenado"
+    },
+    "panel": {
+      "editTitle": "Editar o provedor {{role}}",
+      "addTitle": "Adicionar o provedor {{role}}",
+      "backend": "Provedor",
+      "name": "Rótulo",
+      "fromOverride": "Endereço do remetente para este provedor",
+      "fromOverrideHelp": "Opcional. Em branco, envia como {{from}}.",
+      "fromOverrideNoShared": "Necessário, a menos que você defina um endereço de remetente abaixo.",
+      "sesSmtpNote": "As credenciais SMTP do SES vêm do console do SES (configurações de SMTP). Elas não são suas chaves IAM.",
+      "needsSender": "Este provedor ainda não tem endereço de remetente. Defina um antes de salvar.",
+      "needsSenderLink": "Ir para Identidade do remetente",
+      "save": "Salvar provedor",
+      "add": "Adicionar provedor",
+      "cancel": "Cancelar"
+    },
+    "remove": {
+      "title": "Remover {{name}}?",
+      "description": "O provedor e suas credenciais armazenadas são excluídos.",
+      "primaryWithBackup": "O principal não pode ser removido enquanto existir um backup. Torne o backup o principal primeiro, ou remova o backup.",
+      "consequenceCredentials": "As credenciais dele são excluídas e não podem ser recuperadas.",
+      "consequenceNoFailover": "O e-mail deixa de ter um fallback se o principal falhar.",
+      "consequenceNoMail": "Alertas, convites e redefinições de senha param de ser enviados até você adicionar um provedor.",
+      "confirm": "Remover provedor",
+      "removing": "Removendo...",
+      "done": "{{name}} removido"
+    },
+    "add": {
+      "primary": {
+        "title": "Adicionar um provedor",
+        "body": "Escolha de onde alertas, convites e redefinições de senha são enviados.",
+        "action": "Adicionar provedor"
+      },
+      "backup": {
+        "title": "Adicionar um provedor de backup",
+        "body": "O e-mail passa para ele automaticamente se o principal começar a falhar.",
+        "action": "Adicionar backup"
+      }
+    }
+  },
+  "emailSender": {
+    "title": "Identidade do remetente e limites",
+    "optional": "Opcional",
+    "fromPlaceholder": "noreply@seu-dominio.com",
+    "envelopePlaceholder": "Opcional, o padrão é o endereço do remetente",
+    "capsHelp": "Limites de envio: 0 usa o padrão do servidor, que é ilimitado se não for definido.",
+    "useSuggestion": "Sugerido: {{value}}",
+    "useSuggestionLabel": "Usar o valor sugerido {{value}}",
+    "domainHint": "Confirme que {{domain}} está verificado no seu provedor.",
+    "mailgunMismatch": "{{domain}} não está sob o seu domínio Mailgun {{mailgun}}, então o Mailgun provavelmente o recusará.",
+    "domainHintLink": "Verificar SPF, DKIM e DMARC"
+  },
+  "emailTest": {
+    "title": "Verificação de entrega",
+    "description": "Envie uma mensagem real por um único provedor (sem failover) e depois confirme que o domínio do remetente publica SPF, DKIM e DMARC.",
+    "noProviders": "Adicione um provedor acima para enviar um teste e verificar o domínio dele.",
+    "provider": "Enviar por",
+    "to": "Enviar para",
+    "domainFor": "Domínio de {{name}}"
+  },
+  "emailPresets": {
+    "intro": "Escolha seu provedor. Os detalhes de conexão dele são preenchidos, você só adiciona a credencial e o remetente.",
+    "docs": "Documentação do provedor",
+    "items": {
+      "resend": {
+        "name": "Resend",
+        "bestFor": "Envio simples por API com um domínio verificado.",
+        "credentialHint": "Crie uma chave de API em API Keys no painel do Resend."
+      },
+      "ses": {
+        "name": "Amazon SES (API)",
+        "bestFor": "Contas AWS que querem a API do SES com uma chave IAM.",
+        "credentialHint": "Use o segredo de uma chave de acesso IAM autorizada a enviar com o SES."
+      },
+      "ses_smtp": {
+        "name": "Amazon SES (SMTP)",
+        "bestFor": "Contas AWS que preferem credenciais SMTP.",
+        "credentialHint": "Crie credenciais SMTP no console do SES em SMTP settings. Elas não são suas chaves IAM."
+      },
+      "postmark": {
+        "name": "Postmark",
+        "bestFor": "E-mails transacionais com uma assinatura de remetente verificada.",
+        "credentialHint": "Copie o Server API token do seu servidor Postmark."
+      },
+      "sendgrid": {
+        "name": "SendGrid",
+        "bestFor": "Contas SendGrid existentes com autenticação de domínio.",
+        "credentialHint": "Crie uma chave de API com acesso Mail Send em Settings, API Keys."
+      },
+      "mailgun": {
+        "name": "Mailgun",
+        "bestFor": "Envio a partir de um domínio que você verificou no Mailgun.",
+        "credentialHint": "Copie uma chave de API de envio do painel do Mailgun e informe seu domínio de envio."
+      },
+      "gmail": {
+        "name": "Google Workspace ou Gmail",
+        "bestFor": "E-mails de baixo volume a partir de uma conta Google.",
+        "credentialHint": "Use uma senha de app da conta. Defina o nome de usuário como o endereço completo da conta."
+      },
+      "microsoft365": {
+        "name": "Microsoft 365",
+        "bestFor": "E-mails de baixo volume a partir de uma caixa de correio do Microsoft 365.",
+        "credentialHint": "Use a senha da caixa de correio ou uma senha de app. Defina o nome de usuário como o endereço completo da caixa."
+      },
+      "brevo": {
+        "name": "Brevo",
+        "bestFor": "Contas Brevo que enviam pelo relay SMTP.",
+        "credentialHint": "Crie uma chave SMTP na sua conta Brevo. O nome de usuário é o seu login do Brevo."
+      },
+      "smtp": {
+        "name": "Outro servidor SMTP",
+        "bestFor": "Qualquer servidor de e-mail ou relay que fale SMTP.",
+        "credentialHint": "Use a senha que seu servidor de e-mail fornece."
+      }
+    },
+    "ownMailServer": {
+      "name": "Usar meu servidor de e-mail",
+      "bestFor": "Envie como noreply do seu próprio domínio pela página Mail."
+    }
+  },
+  "heartbeat": {
+    "title": "Heartbeat fora do host",
+    "description": "Faz ping em um monitor que você escolhe enquanto este servidor está saudável, para você ser alertado quando os pings pararem, mesmo que a máquina toda esteja fora do ar.",
+    "url": "URL de ping",
+    "urlPlaceholder": "https://hc-ping.com/seu-uuid",
+    "urlHint": "Do Healthchecks, push do Uptime Kuma ou similar. Armazenada criptografada e nunca mostrada novamente.",
+    "urlSet": "Fazendo ping em {{host}}. Cole uma nova URL para substituí-la.",
+    "failUrl": "URL de falha (opcional)",
+    "failUrlHint": "Chamada no lugar quando o servidor sabe que não está saudável.",
+    "agentSilenceUrl": "URL de silêncio do agent (opcional)",
+    "agentSilenceHint": "Todo node faz ping nesta URL de falha quando não consegue alcançar o control plane por um tempo, para que um control plane morto seja notado mesmo com o servidor no ar. Armazenada criptografada.",
+    "agentSilenceSet": "Os nodes fazem ping em {{host}} quando perdem o control plane. Cole uma nova URL para substituí-la.",
+    "clearAgentSilence": "Remover URL do agent",
+    "body": "Enviar detalhes de status (versão, uptime)",
+    "save": "Salvar",
+    "clear": "Desativar",
+    "saved": "Heartbeat salvo",
+    "envManaged": "Definido por APP_HEARTBEAT_URL no servidor. Remova essa variável para gerenciar o heartbeat aqui.",
+    "noKey": "Armazenar a URL exige uma chave mestra configurada.",
+    "result": {
+      "none": "Nenhum ping ainda",
+      "ok": "Último ping enviado",
+      "fail_reported": "Falha reportada",
+      "unhealthy": "Retido, não saudável",
+      "error": "O último ping falhou"
+    }
+  },
+  "rehydrate": {
+    "title": "Relatório de recuperação",
+    "description": "Depois que o control plane for restaurado, traga de volta cada banco de dados e volume de app a partir do backup mais recente.",
+    "helpLabel": "Guia de recuperação do servidor inteiro",
+    "actionsTitle": "Recuperar dados",
+    "actionsDescription": "Planejar é uma simulação. Executar sobrescreve bancos de dados e volumes ao vivo com o backup mais recente.",
+    "allowStale": "Permitir backups mais antigos que o limite de idade",
+    "plan": "Planejar (simulação)",
+    "run": "Executar recuperação",
+    "confirmTitle": "Sobrescrever dados ao vivo?",
+    "confirmBody": "Cada banco de dados e volume com um backup utilizável é substituído por esse backup. Revise o plano primeiro.",
+    "confirm": "Restaurar agora",
+    "cancel": "Cancelar",
+    "started": "Recuperação iniciada",
+    "empty": "Ainda não há plano nem execução. Comece com uma simulação.",
+    "noItems": "Nenhum banco de dados ou volume de app para restaurar.",
+    "summary": "{{restorable}} a restaurar, {{succeeded}} concluídos, {{failed}} com falha, {{blocked}} bloqueados, {{skipped}} ignorados. Janela de perda de dados: {{window}}.",
+    "backupAge": "backup de {{age}} atrás",
+    "mode": {
+      "plan": "Plano",
+      "run": "Execução"
+    },
+    "state": {
+      "planned": "Pronto para executar",
+      "running": "Em execução",
+      "succeeded": "Concluído com sucesso",
+      "partial": "Parcialmente restaurado",
+      "failed": "Falhou"
+    },
+    "kind": {
+      "database": "Banco de dados",
+      "volume": "Volume de app"
+    },
+    "itemStatus": {
+      "planned": "Planejado",
+      "running": "Em execução",
+      "succeeded": "Restaurado",
+      "failed": "Falhou",
+      "skipped": "Ignorado",
+      "blocked": "Bloqueado"
+    },
+    "reason": {
+      "no_backup": "Nenhum backup bem-sucedido encontrado",
+      "backup_too_old": "O backup mais recente é mais antigo que o limite de idade",
+      "engine_keeps_no_data": "Não guarda dados em disco"
+    }
+  },
+  "iacExport": {
+    "title": "Exportar",
+    "description": "Grave o estado ao vivo como arquivos de recursos. Deixe os dois campos vazios para tudo o que você pode ler.",
+    "project": "Projeto",
+    "projectPlaceholder": "shop",
+    "app": "App",
+    "appPlaceholder": "web",
+    "includeValues": "Incluir valores de env em texto simples",
+    "run": "Exportar",
+    "running": "Exportando...",
+    "download": "Baixar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "warning": "aviso: {{message}}",
+    "textLabel": "Arquivos de recursos exportados",
+    "button": "Exportar como código",
+    "dialogTitle": "Exportar {{name}} como código",
+    "dialogDescription": "O arquivo de recurso deste único recurso. Valores de segredos nunca são incluídos.",
+    "loading": "Exportando...",
+    "empty": "Nada para exportar."
+  },
+  "iacPlan": {
+    "summary": "{{create}} a criar, {{update}} a atualizar, {{delete}} a excluir, {{noop}} sem alteração",
+    "summaryErrors": "{{create}} a criar, {{update}} a atualizar, {{delete}} a excluir, {{noop}} sem alteração, {{error}} com erros",
+    "keptNote": "mantido, não está nos arquivos",
+    "denied": "negado",
+    "warning": "aviso: {{message}}",
+    "matches": "O estado ao vivo já corresponde aos arquivos.",
+    "status": {
+      "applied": "aplicado",
+      "failed": "falhou",
+      "denied": "negado",
+      "skipped": "ignorado",
+      "noop": "sem alteração"
+    }
+  },
+  "iacImport": {
+    "button": "Importar YAML",
+    "dialogTitle": "Importar YAML para {{name}}",
+    "dialogDescription": "Cole ou envie YAML de recursos para visualizar o que mudaria. Nada é aplicado aqui.",
+    "textLabel": "YAML para visualizar",
+    "placeholder": "kind: App",
+    "preview": "Visualizar",
+    "previewing": "Planejando...",
+    "upload": "Enviar arquivo",
+    "uploadLabel": "Enviar um arquivo YAML",
+    "cliNote": "Para aplicar, execute:"
+  },
+  "iacHelp": {
+    "hint": "Clique em uma chave para ver o que ela faz.",
+    "default": "Padrão: {{value}}."
+  },
+  "deployUrlCopies": {
+    "title": "Cópias de URL de deploy",
+    "description": "Se os deploys recentes mantêm uma cópia retida e se essa cópia é acessível. Uma alteração vale na próxima passagem de sincronização, sem reiniciar.",
+    "modeLabel": "Modo de cópia",
+    "modes": {
+      "off": {
+        "label": "Desativado",
+        "description": "Nenhuma cópia é mantida."
+      },
+      "private": {
+        "label": "Privado",
+        "description": "As cópias são mantidas suspensas, sem host público nem certificado."
+      },
+      "public": {
+        "label": "Público",
+        "description": "As cópias recebem hostname e certificado próprios, acessíveis pela internet."
+      }
+    },
+    "source": {
+      "stored": "Salvo aqui",
+      "env": "Do ambiente",
+      "default": "Padrão"
+    },
+    "reset": "Restaurar o padrão ({{mode}})",
+    "saved": "Cópias de URL de deploy atualizadas.",
+    "saving": "Salvando...",
+    "confirm": {
+      "title": "Tornar públicas as cópias de deploy?",
+      "description": "Cada cópia retida recebe um hostname público e um certificado próprios. Qualquer pessoa com o endereço pode acessar versões antigas dos seus apps.",
+      "confirm": "Tornar público"
+    }
+  },
+  "appearancePage": {
+    "title": "Aparência",
+    "description": "Base do tema, cor de destaque, fonte, tamanho do texto, largura da página, margem lateral e densidade. As alterações valem assim que você escolhe.",
+    "savedHere": "Salvo neste navegador. Com a sincronização ativada, também acompanha sua conta.",
+    "reset": "Restaurar padrões",
+    "defaultBadge": "Padrão",
+    "recommendedBadge": "Recomendado",
+    "presets": {
+      "title": "Predefinições",
+      "description": "Um clique define várias opções de uma vez.",
+      "default": "Padrão",
+      "defaultHint": "O visual original",
+      "focusDark": "Escuro focado",
+      "focusDarkHint": "Grafite, margens amplas, densidade confortável",
+      "oled": "OLED",
+      "oledHint": "Preto puro, páginas largas, densidade compacta",
+      "paper": "Papel",
+      "paperHint": "Claro quente, fonte legível, páginas estreitas",
+      "customDescription": "Suas configurações não correspondem a uma predefinição.",
+      "custom": "Personalizado"
+    },
+    "theme": {
+      "title": "Modo de cor",
+      "description": "Claro, escuro ou seguir o navegador."
+    },
+    "darkBase": {
+      "title": "Base escura",
+      "description": "A cor de superfície usada no modo escuro.",
+      "soft": "Escuro suave",
+      "softHint": "Quase preto, calmo",
+      "black": "Preto puro",
+      "blackHint": "OLED, economiza energia",
+      "graphite": "Grafite",
+      "graphiteHint": "Neutro, confortável aos olhos",
+      "midnight": "Meia-noite",
+      "midnightHint": "Tom azulado"
+    },
+    "lightBase": {
+      "title": "Base clara",
+      "description": "A cor de superfície usada no modo claro.",
+      "white": "Branco",
+      "whiteHint": "Clássico, brilho máximo",
+      "grey": "Cinza suave",
+      "greyHint": "Menos ofuscamento, cartões brancos",
+      "paper": "Papel",
+      "paperHint": "Tom quente",
+      "cool": "Cinza frio",
+      "coolHint": "Leve tom azulado"
+    },
+    "accent": {
+      "title": "Cor de destaque",
+      "description": "Usada na página ativa, cartões selecionados, links e foco.",
+      "teal": "Azul petróleo",
+      "indigo": "Índigo",
+      "violet": "Violeta",
+      "green": "Verde",
+      "amber": "Âmbar",
+      "rose": "Rosa",
+      "custom": "Cor personalizada",
+      "customColor": "Escolha uma cor de destaque personalizada",
+      "customHex": "Cor hex",
+      "customInvalid": "Use seis dígitos hex, como #0e7490.",
+      "adjusted": "Ajustada para legibilidade"
+    },
+    "font": {
+      "title": "Fonte",
+      "description": "A Geist vem com o app, as outras usam fontes já presentes no seu dispositivo.",
+      "system": "Geist",
+      "systemHint": "Padrão, incluída no app",
+      "device": "Sistema",
+      "deviceHint": "A fonte do seu dispositivo",
+      "rounded": "Arredondada",
+      "roundedHint": "Formas de letra suaves",
+      "serif": "Serifada",
+      "serifHint": "Clássica, estilo texto",
+      "mono": "Mono",
+      "monoHint": "Largura fixa",
+      "readable": "Legível",
+      "readableHint": "Letras largas, mais espaço entre linhas"
+    },
+    "textSize": {
+      "title": "Tamanho do texto",
+      "description": "Escala todo o texto e espaçamento.",
+      "slider": "Tamanho do texto",
+      "quick": "Escolhas rápidas",
+      "sample": "Aa A rápida raposa marrom",
+      "reset": "Restaurar tamanho"
+    },
+    "width": {
+      "title": "Largura da página",
+      "description": "Quão largo fica o conteúdo da página em telas grandes. Telas abaixo de 1024px não são afetadas.",
+      "slider": "Largura do conteúdo",
+      "reset": "Restaurar largura"
+    },
+    "gutter": {
+      "title": "Margem lateral",
+      "description": "Espaço à esquerda e à direita do conteúdo da página a partir do tamanho de tablet.",
+      "tight": "Justa",
+      "tightHint": "Mais espaço para o conteúdo",
+      "normal": "Normal",
+      "normalHint": "Equilibrada",
+      "roomy": "Ampla",
+      "roomyHint": "Mais calma, mais margem"
+    },
+    "density": {
+      "description": "Quanto espaçamento cartões, listas e formulários usam.",
+      "compactHint": "Cabe mais na tela",
+      "comfortableHint": "Mais respiro"
+    },
+    "sections": {
+      "color": "Cor",
+      "type": "Tipografia",
+      "layout": "Layout",
+      "look": "Visual e plano de fundo",
+      "sync": "Sincronização"
+    },
+    "motion": {
+      "title": "Movimento",
+      "description": "Animações e transições em todo o painel.",
+      "system": "Seguir o sistema",
+      "systemHint": "Usar a configuração do dispositivo",
+      "on": "Reduzir",
+      "onHint": "Animação mínima",
+      "off": "Permitir tudo",
+      "offHint": "Ignorar a configuração do dispositivo"
+    },
+    "sync": {
+      "label": "Sincronizar com a minha conta",
+      "hint": "Mantenha estas escolhas em todo navegador em que você fizer login.",
+      "syncing": "Sincronizando...",
+      "synced": "Sincronizado {{when}}",
+      "justNow": "agora mesmo",
+      "notSynced": "Não sincronizado",
+      "tooLarge": "Grande demais para sincronizar. Suas escolhas ficam neste navegador.",
+      "off": "A sincronização está desativada. As escolhas ficam neste navegador.",
+      "export": "Exportar",
+      "import": "Importar",
+      "importLabel": "Importar aparência de um arquivo JSON",
+      "importBad": "Esse arquivo não é uma exportação de aparência válida.",
+      "imported": "Importado."
+    },
+    "look": {
+      "title": "Visual",
+      "description": "Glass-forward adiciona um fundo suave, cantos mais arredondados e botões em cápsula. Restrained é mais plano e denso.",
+      "glass": "Glass-forward",
+      "glassHint": "Fundo suave, cápsulas",
+      "restrained": "Restrained",
+      "restrainedHint": "Plano, cantos compactos"
+    },
+    "backdrop": {
+      "title": "Plano de fundo",
+      "description": "Branded adiciona um degradê suave de cor atrás do app. Plain mantém o fundo totalmente escuro ou claro.",
+      "branded": "Branded",
+      "brandedHint": "Degradê suave de cor",
+      "plain": "Plain",
+      "plainHint": "Sem degradê, fundo sólido"
+    },
+    "radius": {
+      "title": "Arredondamento dos cantos",
+      "description": "Quão arredondados são botões, cartões e campos.",
+      "sharp": "Reto",
+      "sharpHint": "Quadrado, técnico",
+      "normal": "Normal",
+      "normalHint": "O visual original",
+      "soft": "Suave",
+      "softHint": "Mais arredondado, mais amigável"
+    },
+    "contrast": {
+      "title": "Alto contraste",
+      "description": "Bordas mais fortes, texto secundário e anel de foco.",
+      "system": "Seguir o sistema",
+      "systemHint": "Usar a configuração do dispositivo",
+      "on": "Ativado",
+      "onHint": "Sempre em alto contraste",
+      "off": "Desativado",
+      "offHint": "Ignorar a configuração do dispositivo",
+      "sample": "Exemplo de texto secundário"
+    },
+    "codeFont": {
+      "title": "Fonte de código",
+      "description": "Usada em código, logs, terminais e diffs. A Geist Mono vem com o app, as outras usam fontes já presentes no seu dispositivo.",
+      "system-mono": "Geist Mono",
+      "system-monoHint": "Padrão, incluída no app",
+      "device-mono": "Mono do sistema",
+      "device-monoHint": "O padrão do seu dispositivo",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "Se instalada",
+      "fira": "Fira Code",
+      "firaHint": "Se instalada",
+      "menlo": "Menlo",
+      "menloHint": "Mac e similares"
+    },
+    "codeSize": {
+      "title": "Tamanho do código",
+      "description": "Tamanho do texto para código, logs e terminais.",
+      "slider": "Tamanho do código",
+      "reset": "Restaurar tamanho",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "Exemplo de código"
+    },
+    "hub": {
+      "saved": "Salvo",
+      "resetDone": "Padrões restaurados",
+      "theme": {
+        "title": "Tema",
+        "system": "Sistema",
+        "systemHint": "Segue o seu dispositivo",
+        "light": "Claro",
+        "lightHint": "Superfícies brilhantes",
+        "dark": "Escuro",
+        "darkHint": "Pouco ofuscamento",
+        "oled": "OLED",
+        "oledHint": "Preto puro, neste dispositivo"
+      },
+      "preview": {
+        "title": "Prévia ao vivo",
+        "nav": "Navegação de exemplo",
+        "apps": "Apps",
+        "deployments": "Deploys",
+        "servers": "Servidores",
+        "running": "Em execução",
+        "stopped": "Parado",
+        "field": "Nome do app",
+        "fieldValue": "web",
+        "primary": "Fazer deploy",
+        "secondary": "Cancelar",
+        "toast": "Deploy de web feito em 12s",
+        "dialogTitle": "Excluir app?",
+        "dialogBody": "Isto não pode ser desfeito.",
+        "danger": "Excluir"
+      }
+    },
+    "listKeys": {
+      "title": "Atalhos de teclado para listas",
+      "description": "Teclas únicas navegam pelas listas: j e k movem, x seleciona, Enter abre, / foca o filtro, ? mostra as teclas. Desative-as se entrarem em conflito com um leitor de tela ou entrada por voz.",
+      "on": "Ativados",
+      "onHint": "j, k, x, Enter, /, ?",
+      "off": "Desativados",
+      "offHint": "Somente mouse e Tab"
+    }
+  },
+  "secretProviders": {
+    "title": "Provedores de segredos",
+    "hint": "Referências somente leitura resolvidas na inicialização do container; falha de forma fechada. Use como valor de env de um app:",
+    "namePlaceholder": "prod",
+    "formLabel": "Provedor de segredos",
+    "name": "Nome",
+    "type": "Provedor",
+    "projectDoppler": "Projeto",
+    "projectInfisical": "ID do workspace",
+    "envDoppler": "Config",
+    "envInfisical": "Slug do ambiente",
+    "path": "Caminho (opcional)",
+    "baseUrl": "URL base (auto-hospedado)",
+    "projectOnePassword": "Vault padrão",
+    "baseUrlConnect": "URL do servidor Connect",
+    "errBaseUrl": "Uma URL do servidor Connect é obrigatória.",
+    "readOnly": "Somente administradores podem alterar provedores de segredos.",
+    "clientId": "ID do cliente",
+    "clientSecret": "Segredo do cliente",
+    "tokenOrIdentity": "Token de acesso (ou use um ID e segredo de cliente)",
+    "errIdentity": "Informe o ID do cliente e o segredo do cliente (o ID não pode conter dois-pontos nem espaços).",
+    "errIdentityReenter": "Informe o segredo do cliente novamente ao alterar o ID do cliente.",
+    "errVault": "Um vault padrão é obrigatório.",
+    "errIdentityOrToken": "Use um token de acesso ou um ID e segredo de cliente, não os dois.",
+    "token": "Token",
+    "errName": "O nome deve começar com uma letra e usar letras minúsculas, dígitos ou sublinhados (máx. 40).",
+    "errScope": "Projeto e ambiente são obrigatórios.",
+    "errToken": "Um token é obrigatório na primeira vez.",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "add": "Adicionar provedor",
+    "edit": "Editar",
+    "remove": "Remover",
+    "test": "Testar",
+    "testing": "Testando...",
+    "testOk": "A conexão funciona.",
+    "testFail": "O teste falhou.",
+    "selfHosted": "Auto-hospedado",
+    "noToken": "Sem token",
+    "loading": "Carregando provedores...",
+    "empty": "Nenhum provedor de segredos ainda.",
+    "removeTitle": "Remover {{name}}?",
+    "removeConsequence": "Apps que referenciam este provedor falharão ao iniciar até que ele seja adicionado novamente."
+  }
+}

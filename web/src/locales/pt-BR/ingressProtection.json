@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "Confiar na Cloudflare para endereços de visitantes",
+    "helper": "Lê o endereço do visitante de CF-Connecting-IP, mas apenas para conexões vindas das faixas publicadas pela Cloudflare; um cabeçalho forjado de qualquer outro lugar é ignorado. Qualquer cliente da Cloudflare pode alcançar seu servidor por um registro próprio com proxy, então isso não prova que uma requisição passou pela sua zona.",
+    "ranges": "{{count}} faixas ({{source}}), atualizadas a cada {{interval}}.",
+    "source": {
+      "embedded": "incluídas no app",
+      "fetched": "da Cloudflare"
+    },
+    "lastRefresh": "Última atualização: {{when}}.",
+    "neverRefreshed": "Ainda não atualizado, usando a lista incluída.",
+    "lastError": "Erro da última atualização: {{error}}",
+    "saved": "IP do cliente via Cloudflare ativado",
+    "savedOff": "IP do cliente via Cloudflare desativado",
+    "failed": "Não foi possível alterar a configuração de IP do cliente via Cloudflare"
+  },
+  "fallbackCerts": {
+    "label": "Certificados para endereços automáticos",
+    "helper": "Eager solicita o certificado assim que a rota existe; lazy solicita na primeira visita ao endereço automático. Domínios que você adiciona sempre são eager.",
+    "options": {
+      "eager": "Eager",
+      "lazy": "Lazy"
+    },
+    "source": {
+      "default": "Padrão",
+      "env": "Definido pelo ambiente",
+      "saved": "Salvo"
+    },
+    "envHint": "Inicializado a partir de {{env}}. Salvar um valor aqui o substitui.",
+    "reset": "Restaurar padrão",
+    "resetDone": "Certificados de fallback restaurados ao padrão",
+    "saved": "Modo de certificado de fallback salvo",
+    "failed": "Não foi possível alterar o modo de certificado de fallback"
+  }
+}

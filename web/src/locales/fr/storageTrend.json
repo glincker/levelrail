@@ -1,0 +1,36 @@
+{
+  "title": "Utilisation du disque dans le temps",
+  "range": {
+    "label": "Période",
+    "days": "{{count}} j"
+  },
+  "chart": {
+    "label": "Espace disque utilisé au cours des {{days}} derniers jours. Utilisez les flèches du clavier pour lire chaque jour."
+  },
+  "tooltip": {
+    "used": "Utilisé",
+    "free": "Libre",
+    "images": "Images",
+    "containers": "Conteneurs",
+    "volumes": "Volumes",
+    "buildCache": "Cache de build"
+  },
+  "forecast": {
+    "full_one": "Plein dans environ {{count}} jour au rythme actuel",
+    "full_other": "Plein dans environ {{count}} jours au rythme actuel",
+    "full_many": "Plein dans environ {{count}} jours au rythme actuel",
+    "needsDays": "La date de saturation apparaît après {{count}} jours de données.",
+    "flat": "L'utilisation est stable ou en baisse, il n'y a donc pas de date de saturation.",
+    "legend": "Projection"
+  },
+  "legend": {
+    "used": "Utilisé"
+  },
+  "states": {
+    "loading": "Chargement de l'historique du disque",
+    "collecting": "Collecte des données en cours, la première tendance apparaît après deux jours.",
+    "unavailable": "L'historique du disque n'est pas conservé sur ce serveur, il n'y a donc aucune tendance à afficher.",
+    "error": "Impossible de charger l'historique du disque.",
+    "retry": "Réessayer"
+  }
+}

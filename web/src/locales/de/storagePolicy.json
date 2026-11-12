@@ -1,0 +1,56 @@
+{
+  "label": "Speicherrichtlinie",
+  "needsAdmin": "Admin erforderlich",
+  "applied": "Angewendet",
+  "save": "Speichern",
+  "saving": "Speichern",
+  "cancel": "Abbrechen",
+  "close": "Schließen",
+  "range": "Der Server prüft beim Speichern den zulässigen Bereich.",
+  "invalid": "Geben Sie eine ganze Zahl größer als null ein.",
+  "invalidGb": "Geben Sie eine Zahl in GB größer als null ein.",
+  "cleanup": {
+    "title": "Automatische Bereinigung",
+    "on": "An",
+    "off": "Aus",
+    "dryRun": "An, Testlauf",
+    "what": "Entfernt ungenutzte Container, Images und den Build-Cache, wenn der freie Platz knapp wird. Ein Testlauf meldet nur, was entfernt würde.",
+    "enabled": "Automatisch bereinigen",
+    "dryRunField": "Nur Testlauf",
+    "budget": "Bereinigung unterhalb dieses freien Platzes starten",
+    "budgetUnit": "% der Festplatte frei",
+    "budgetValue": "unter {{percent}}% frei"
+  },
+  "keepImages": {
+    "title": "Letzte Images pro App behalten",
+    "value_one": "{{count}} Image pro App",
+    "value_other": "{{count}} Images pro App",
+    "field": "Zu behaltende Images",
+    "unit": "Images pro App",
+    "what": "Ältere Images jeder App werden von der Image-Bereinigung entfernt. Aktive Images und Rollback-Pins bleiben immer erhalten."
+  },
+  "cacheAge": {
+    "title": "Maximales Alter des Build-Caches",
+    "hours_one": "{{count}} Stunde",
+    "hours_other": "{{count}} Stunden",
+    "days_one": "{{count}} Tag",
+    "days_other": "{{count}} Tage",
+    "field": "Maximales Alter",
+    "unit": "Stunden",
+    "what": "Build-Cache, der älter ist, wird von der automatischen Bereinigung entfernt."
+  },
+  "lowDisk": {
+    "title": "Warnung bei wenig Festplattenplatz",
+    "value": "unter {{gb}} GB frei",
+    "field": "Warnen unter",
+    "unit": "GB frei",
+    "what": "Löst eine Warnung und einen Alarm wegen wenig Festplattenplatz aus, wenn der freie Platz darunter fällt."
+  },
+  "criticalDisk": {
+    "title": "Kritische Festplattenschwelle",
+    "value": "unter {{gb}} GB frei",
+    "field": "Kritisch unter",
+    "unit": "GB frei",
+    "what": "Builds, Image-Pulls und Backups werden unterhalb dieses freien Platzes abgelehnt."
+  }
+}

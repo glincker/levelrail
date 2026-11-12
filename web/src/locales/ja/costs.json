@@ -1,0 +1,165 @@
+{
+  "title": "コストエクスプローラー",
+  "description": "支出が時間とともにどこへ向かっているか、今月の見込み額、リスクのある予算を確認できます。金額は、あなたが設定した単価に基づきます。",
+  "error": "コストを読み込めませんでした: {{message}}",
+  "groupBy": {
+    "label": "グループ化",
+    "app": "アプリ",
+    "project": "プロジェクト",
+    "tag": "タグ",
+    "node": "ノード",
+    "kind": "リソースの種類"
+  },
+  "granularity": {
+    "label": "粒度",
+    "daily": "日次",
+    "monthly": "月次"
+  },
+  "period": {
+    "label": "期間",
+    "mtd": "今月分",
+    "30d": "過去30日間",
+    "last_month": "先月"
+  },
+  "months": {
+    "label": "月数",
+    "count_other": "{{count}}か月"
+  },
+  "summary": {
+    "change": "前の期間比 {{value}}",
+    "noChange": "比較できる前の期間がありません"
+  },
+  "series": {
+    "other": "その他",
+    "unassigned": "未割り当て",
+    "untagged": "タグなし"
+  },
+  "kind": {
+    "app": "アプリ",
+    "database": "データベース"
+  },
+  "chart": {
+    "label": "コストの推移"
+  },
+  "table": {
+    "label": "コストのランキング",
+    "name": "名前",
+    "cost": "コスト",
+    "previous": "前回",
+    "change": "変化"
+  },
+  "forecast": {
+    "title": "月末の予測",
+    "range": "{{low}}から{{high}}の間になる見込みです",
+    "hint": "直近の丸1日分のデータから予測しています。日ごとの支出にばらつきがあると、範囲が広がります。",
+    "chart": "今月の累積支出と、予測範囲",
+    "bandName": "範囲",
+    "actual": "ここまでの支出",
+    "projected": "予測",
+    "confidence": {
+      "low": "信頼度: 低",
+      "medium": "信頼度: 中",
+      "high": "信頼度: 高"
+    }
+  },
+  "movers": {
+    "title": "増加が大きい項目",
+    "description": "前の期間と比べて、増加が最も大きい項目です。",
+    "none": "前の期間より増えたものはありません。",
+    "up": "{{name}}は{{amount}}({{pct}})増加しました"
+  },
+  "empty": {
+    "noData": "この期間のコストデータはまだありません。",
+    "noTelemetryTitle": "使用状況のデータはまだありません",
+    "noTelemetryDescription": "コストは、計測された使用量から算出されます。メトリクスの収集が始まると表示されます。",
+    "notConfiguredTitle": "先に単価を設定してください",
+    "notConfiguredDescription": "サーバーや単位あたりのコストをLevelrailに設定するまで、コストはゼロになります。",
+    "configure": "単価を設定"
+  },
+  "budgets": {
+    "title": "予算",
+    "description": "プロジェクト、タグ、アプリごとの月間上限です。しきい値ごとに1回アラートを出し、100%に達すると対象のアプリを一時停止またはスロットリングできます。",
+    "empty": "予算はまだありません。下で追加すると、支出が膨らむ前にアラートを受け取れます。",
+    "addTitle": "予算を追加",
+    "name": "名前",
+    "scope": "適用対象",
+    "scopes": {
+      "project": "プロジェクト",
+      "tag": "タグ",
+      "app": "アプリ"
+    },
+    "target": {
+      "project": "プロジェクト",
+      "tag": "タグ名",
+      "app": "アプリ"
+    },
+    "monthly": "月額",
+    "thresholds": "アラートのしきい値(パーセント)",
+    "action": "100%に達したら",
+    "actions": {
+      "none": "アラートのみ",
+      "throttle": "トラフィックをスロットリング",
+      "pause": "アプリを一時停止"
+    },
+    "actionHint": "スロットリングと一時停止は、予算を引き上げるか、月が替わると解除されます。何も削除されることはありません。",
+    "create": "予算を作成",
+    "created": "予算を作成しました",
+    "error": "予算を保存できませんでした: {{message}}",
+    "remove": "予算{{name}}を削除",
+    "spent": "{{budget}}のうち{{spent}}",
+    "forecast": "予測 {{mid}}({{low}}から{{high}})",
+    "thresholdsLine": "{{levels}}パーセントでアラート。最高到達値: {{reached}}",
+    "none": "なし",
+    "state": {
+      "ok": "順調",
+      "warn": "警告",
+      "over": "予算超過",
+      "forecast": "超過の見込み"
+    },
+    "enforced": {
+      "pause": "アプリを一時停止中",
+      "throttle": "トラフィックをスロットリング中"
+    },
+    "deleteTitle": "予算{{name}}を削除しますか?",
+    "deleteDescription": "適用されていた一時停止やスロットリングは解除されます。支出の履歴には影響しません。",
+    "delete": "予算を削除",
+    "alertHint": "アラートは、予算しきい値のアラートルールを通して送信されます。メール、Slack、Webhookで通知を受け取るには、アラートの画面でルールを追加してください。"
+  },
+  "fix": {
+    "label": "この予算を修正",
+    "raise": "予算を{{amount}}に引き上げる",
+    "raised": "予算を{{amount}}に引き上げました",
+    "pause": "{{app}}を一時停止",
+    "pauseTitle": "{{app}}を一時停止しますか?",
+    "pauseDescription": "再び起動するまで、アプリは応答しなくなります。データは保持されます。",
+    "pauseConfirm": "アプリを一時停止",
+    "pausing": "一時停止中",
+    "rightSize": "アプリのサイズを最適化"
+  },
+  "appCaps": {
+    "title": "アプリごとの上限",
+    "description": "各アプリに設定した月間のエグレスとコストの上限と、現在適用されている制限です。",
+    "loadError": "アプリの上限を読み込めませんでした: {{message}}",
+    "empty": "上限が設定されているアプリはまだありません。アプリを開き、予算カードで月間上限を設定してください。",
+    "app": "アプリ",
+    "usage": "上限の{{pct}}%",
+    "ceiling": "コストの上限",
+    "ceilingLabel": "{{app}}のコスト上限",
+    "egressLabel": "{{app}}のエグレス上限(GiB)",
+    "egressPlaceholder": "GiB",
+    "set": "設定",
+    "saved": "{{app}}の上限を更新しました",
+    "saveFailed": "上限を更新できませんでした: {{message}}",
+    "enforced": {
+      "none": "上限内",
+      "throttle": "スロットリング中",
+      "pause": "一時停止中"
+    },
+    "blocked": "デプロイをブロック中",
+    "overridden": "上書き有効",
+    "preview": "ドライラン",
+    "override": "上書き",
+    "edit": "アプリを開く",
+    "forecast": "超過する見込み"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "title": "Trazas",
+  "subtitle": "Spans que tu app envía por OpenTelemetry, almacenados en este nodo durante la ventana de retención de logs.",
+  "setup": {
+    "title": "Enviar trazas desde esta app",
+    "off": "El trazado está desactivado. Actívalo para obtener una clave de ingesta y las variables de entorno para tu SDK de OpenTelemetry.",
+    "on": "El trazado está activado. Apunta el exportador OTLP/HTTP de tu SDK a este plano de control.",
+    "enable": "Activar el trazado",
+    "enabling": "Activando...",
+    "rotate": "Rotar la clave",
+    "disable": "Desactivar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "keyOnce": "Esta clave se muestra una sola vez. Defínelas en la app y vuelve a desplegar. Al rotarla, la clave anterior deja de funcionar.",
+    "env": "Entorno",
+    "endpoint": "Endpoint",
+    "protocolNote": "Usa OTLP sobre HTTP, protobuf o JSON. Aquí no se acepta gRPC.",
+    "enabledToast": "El trazado está activado.",
+    "disabledToast": "El trazado está desactivado. El exportador de la app recibirá respuestas 401.",
+    "failed": "No se pudo cambiar el trazado."
+  },
+  "filters": {
+    "window": "Ventana",
+    "last15": "Últimos 15 minutos",
+    "last60": "Última hora",
+    "last360": "Últimas 6 horas",
+    "last1440": "Últimas 24 horas",
+    "errorsOnly": "Solo errores",
+    "minMs": "Más lento que (ms)"
+  },
+  "list": {
+    "empty": "Aún no hay trazas en esta ventana. Envía una petición a la app o amplía la ventana.",
+    "loadError": "No se pudieron cargar las trazas: {{message}}",
+    "root": "Petición",
+    "started": "Inicio",
+    "duration": "Duración",
+    "spans": "Spans",
+    "errors": "Errores",
+    "emptyTitle": "Aún no hay trazas",
+    "emptyOff": "El trazado está desactivado para esta app, así que no se recoge nada. Actívalo para obtener una clave de ingesta.",
+    "emptyAction": "Configurar el trazado"
+  },
+  "detail": {
+    "title": "Traza {{id}}",
+    "loading": "Cargando la traza...",
+    "close": "Cerrar",
+    "ofTotal": "de {{total}}",
+    "error": "Error",
+    "attributes": "Atributos",
+    "none": "Sin atributos."
+  }
+}

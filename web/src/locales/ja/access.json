@@ -1,0 +1,69 @@
+{
+  "roles": {
+    "title": "ロール",
+    "description": "ユーザーに割り当てられる、名前付きの権限のセットです。組み込みのロールは固定です。それ以外が必要な場合は、独自に作成してください。",
+    "create": "ロールを作成",
+    "empty": {
+      "title": "ロールが見つかりません",
+      "description": "ロールを作成して、ユーザーに名前付きの権限のセットを付与します。"
+    },
+    "table": {
+      "label": "ロール",
+      "name": "名前",
+      "abilities": "権限",
+      "visibility": "閲覧範囲",
+      "users": "ユーザー",
+      "edit": "編集",
+      "delete": "削除"
+    },
+    "badge": {
+      "builtin": "組み込み",
+      "visibilityAll": "すべて",
+      "visibilityGranted": "付与された環境のみ"
+    },
+    "form": {
+      "createTitle": "ロールを作成",
+      "editTitle": "{{name}} を編集",
+      "description": "このロールが持つ権限と、保持者が閲覧できる範囲を選択します。",
+      "name": "名前",
+      "namePlaceholder": "例: qa-reviewer",
+      "nameRequired": "名前は必須です",
+      "descriptionLabel": "説明",
+      "visibility": "閲覧範囲",
+      "visibilityAll": "権限で許可されるすべて",
+      "visibilityGranted": "各ユーザーに付与された環境のみ",
+      "visibilityGrantedHint": "付与された環境に限定されたロールは、読み取り権限のみを持てます。",
+      "abilitiesRequired": "権限を少なくとも1つ選択してください",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "saving": "保存中..."
+    },
+    "deleteDialog": {
+      "title": "{{name}} を削除しますか?",
+      "description": "このロールをユーザーに付与できなくなります。ユーザーが割り当てられているロールは削除できません。",
+      "inUse": "{{count}} 人がこのロールを持っています。先に再割り当てしてください。",
+      "cancel": "キャンセル",
+      "confirm": "削除",
+      "deleting": "削除中..."
+    },
+    "toast": {
+      "created": "ロール {{name}} を作成しました。",
+      "updated": "ロール {{name}} を更新しました。",
+      "deleted": "ロール {{name}} を削除しました。"
+    }
+  },
+  "userRole": {
+    "trigger": "ロールを変更",
+    "title": "{{email}} のロール",
+    "description": "ロールを選択すると、このユーザーの権限がそのロールの権限に置き換えられます。",
+    "label": "ロール",
+    "grantsTitle": "このユーザーが閲覧できる環境",
+    "grantsHint": "付与された環境のみを閲覧できるロールを持つユーザーは、これらの環境のみを閲覧できます。",
+    "grantsEmpty": "環境はまだありません。",
+    "grantsLoading": "環境を読み込み中...",
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "toast": "{{email}} のロールは {{role}} になりました。"
+  }
+}

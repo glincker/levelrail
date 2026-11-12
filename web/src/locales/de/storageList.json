@@ -1,0 +1,61 @@
+{
+  "viewLabel": "Liste gruppieren",
+  "view": { "type": "Nach Typ", "app": "Nach App" },
+  "search": "Nach Name oder ID suchen",
+  "searchLabel": "Einträge durchsuchen",
+  "clearFilter": "Alle Kategorien anzeigen",
+  "filterActive": "Nur {{category}} wird angezeigt",
+  "category": {
+    "appData": "App-Daten",
+    "images": "Images",
+    "buildCache": "Build-Cache",
+    "containersLogs": "Container und Logs",
+    "other": "Sonstiges"
+  },
+  "kind": {
+    "image": "Images",
+    "volume": "Volumes",
+    "container": "Gestoppte Container",
+    "buildCache": "Build-Cache"
+  },
+  "kindOne": {
+    "image": "Image",
+    "volume": "Volume",
+    "container": "Container",
+    "buildCache": "Build-Cache"
+  },
+  "cols": {
+    "name": "Name",
+    "size": "Größe",
+    "app": "Zugehörige App",
+    "type": "Typ",
+    "reason": "Grund"
+  },
+  "sortBy": "Nach {{column}} sortieren",
+  "noApp": "Keine App",
+  "sizeUnknown": "Nicht gemessen",
+  "group": {
+    "total": "{{size}} insgesamt",
+    "count_one": "{{count}} {{kind}}",
+    "count_other": "{{count}} {{kind}}",
+    "lastDeployed": "Zuletzt deployt"
+  },
+  "reason": {
+    "none": "Keiner",
+    "orphaned": "Verwaist: Keine App besitzt dieses Volume",
+    "inUse": "In Benutzung",
+    "inUseBy": "In Benutzung von {{app}}",
+    "unused": "Nicht in Benutzung",
+    "stopped": "Gestoppter Container",
+    "databaseProtected": "Enthält eine Datenbank, wird nie entfernt",
+    "buildCache": "Wird beim nächsten Build neu aufgebaut"
+  },
+  "protected": "Geschützt",
+  "loading": "Belegung auf dem Datenträger wird gelesen",
+  "error": "Das Speicherinventar konnte nicht gelesen werden.",
+  "retry": "Erneut versuchen",
+  "empty": "Hier gibt es nichts anzuzeigen.",
+  "emptyFiltered": "Keine passenden Einträge.",
+  "unsupportedTitle": "Dieser Node wird noch nicht unterstützt",
+  "unsupportedFallback": "Levelrail kann auf diesem Node noch keine Einträge auflisten. Hier wird nichts geändert."
+}

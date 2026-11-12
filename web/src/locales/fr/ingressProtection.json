@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "Faire confiance à Cloudflare pour les adresses des visiteurs",
+    "helper": "Lit l'adresse du visiteur dans CF-Connecting-IP, mais uniquement pour les connexions provenant des plages publiées par Cloudflare ; un en-tête falsifié venant d'ailleurs est ignoré. Tout client Cloudflare peut atteindre votre serveur via son propre enregistrement proxifié, ce qui ne prouve donc pas qu'une requête est passée par votre zone.",
+    "ranges": "{{count}} plages ({{source}}), actualisées toutes les {{interval}}.",
+    "source": {
+      "embedded": "livrées avec l'app",
+      "fetched": "depuis Cloudflare"
+    },
+    "lastRefresh": "Dernière actualisation : {{when}}.",
+    "neverRefreshed": "Pas encore actualisé, la liste livrée est utilisée.",
+    "lastError": "Erreur de la dernière actualisation : {{error}}",
+    "saved": "L'IP client Cloudflare est activée",
+    "savedOff": "L'IP client Cloudflare est désactivée",
+    "failed": "Impossible de modifier le réglage de l'IP client Cloudflare"
+  },
+  "fallbackCerts": {
+    "label": "Certificats pour les adresses automatiques",
+    "helper": "Anticipé commande le certificat dès que la route existe ; différé le commande à la première visite de l'adresse automatique. Les domaines que vous ajoutez vous-même sont toujours en mode anticipé.",
+    "options": {
+      "eager": "Anticipé",
+      "lazy": "Différé"
+    },
+    "source": {
+      "default": "Par défaut",
+      "env": "Défini par l'environnement",
+      "saved": "Enregistré"
+    },
+    "envHint": "Initialisé depuis {{env}}. Enregistrer une valeur ici la remplace.",
+    "reset": "Rétablir par défaut",
+    "resetDone": "Certificats de repli rétablis par défaut",
+    "saved": "Mode des certificats de repli enregistré",
+    "failed": "Impossible de modifier le mode des certificats de repli"
+  }
+}

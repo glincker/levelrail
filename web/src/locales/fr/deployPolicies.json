@@ -1,0 +1,83 @@
+{
+  "title": "Politiques de deploy",
+  "description": "Garde-fous vérifiés avant chaque deploy, aux niveaux organisation, projet et environnement. Le niveau le plus précis l'emporte pour chaque règle.",
+  "notConfigured": "Les politiques de deploy ne sont pas disponibles sur ce plan de contrôle.",
+  "rootOnly": "Seuls les admins de l'instance peuvent modifier les politiques de deploy. Vous pouvez tout de même lancer une simulation.",
+  "scope": {
+    "label": "Niveau",
+    "org": "Organisation",
+    "project": "Projet",
+    "environment": "Environnement",
+    "idLabel": "ID du projet ou de l'environnement",
+    "idPlaceholder": "proj_123"
+  },
+  "mode": {
+    "off": "Désactivé",
+    "warn": "Avertir",
+    "enforce": "Imposer"
+  },
+  "modeLabel": "Mode pour {{rule}}",
+  "valueLabel": "Valeur pour {{rule}}",
+  "rules": {
+    "allowed_registries": {
+      "title": "Registres d'images autorisés",
+      "hint": "Hôtes séparés par des virgules, par exemple ghcr.io, docker.io.",
+      "placeholder": "ghcr.io, docker.io"
+    },
+    "require_readiness_probe": {
+      "title": "Exiger une sonde de disponibilité",
+      "hint": "Les apps doivent définir une sonde de disponibilité avant de se deployer."
+    },
+    "max_memory_mb": {
+      "title": "Plafond de mémoire (Mo)",
+      "hint": "Une app sans limite de mémoire dépasse le plafond.",
+      "placeholder": "2048"
+    },
+    "max_cpu": {
+      "title": "Plafond de CPU (cœurs)",
+      "hint": "Une app sans limite de CPU dépasse le plafond.",
+      "placeholder": "2"
+    },
+    "forbid_privileged": {
+      "title": "Interdire les containers privilégiés",
+      "hint": "Bloque les apps qui demandent le mode privilégié."
+    },
+    "forbid_host_mounts": {
+      "title": "Interdire les bind mounts de l'hôte",
+      "hint": "Préfixes de chemin facultatifs, séparés par des virgules, qui restent autorisés.",
+      "placeholder": "/srv/data"
+    },
+    "required_labels": {
+      "title": "Libellés obligatoires",
+      "hint": "Clés de libellé séparées par des virgules que chaque app doit définir.",
+      "placeholder": "team, cost-center"
+    },
+    "max_replicas": {
+      "title": "Plafond de réplicas",
+      "hint": "Nombre maximal de réplicas qu'une app peut exécuter.",
+      "placeholder": "5"
+    }
+  },
+  "save": "Enregistrer la politique",
+  "saved": "Politique enregistrée",
+  "clear": "Effacer le niveau",
+  "cleared": "Politique effacée",
+  "dryRun": "Simulation sur les apps actuelles",
+  "dryRunHint": "Prévisualise les règles ci-dessus sans les enregistrer.",
+  "stored": {
+    "title": "Politiques enregistrées",
+    "empty": "Aucune politique pour l'instant. Ajoutez une règle ci-dessus et enregistrez-la, ou lancez d'abord une simulation pour voir ce qui échouerait.",
+    "edit": "Modifier"
+  },
+  "result": {
+    "summary": "{{checked}} apps vérifiées, {{failing}} seraient bloquées, {{warning}} avec avertissements.",
+    "clean": "Toutes les apps respectent ces règles.",
+    "wouldFail": "Serait bloquée",
+    "warns": "Avertissement seulement",
+    "next": "Action suivante"
+  },
+  "errors": {
+    "idRequired": "Saisissez l'ID du projet ou de l'environnement pour ce niveau.",
+    "numberRequired": "{{rule}} nécessite un nombre supérieur à zéro."
+  }
+}

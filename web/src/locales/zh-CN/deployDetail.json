@@ -1,0 +1,350 @@
+{
+  "receipt": {
+    "button": "回执(JSON)",
+    "hint": "下载未签名的部署回执:提交、镜像摘要、请求者、批准者和门禁时间线"
+  },
+  "tabs": {
+    "build": "构建",
+    "image": "镜像",
+    "rollout": "发布",
+    "supply": "供应链"
+  },
+  "state": {
+    "title": "部署状态",
+    "now": "当前",
+    "next": {
+      "queued": "排在它前面的部署完成后会自动开始。",
+      "held": "请从部署历史中释放它,或等待冻结窗口结束。",
+      "building": "构建成功后,新容器会启动,并且必须通过健康检查才会接收流量。",
+      "buildingStatic": "构建成功后,输出会直接发布。不会启动任何容器。",
+      "failed": "请打开构建标签页,查看失败的步骤,修复后再重新部署。",
+      "rolloutFailed": "上一个版本继续提供服务。请检查容器日志和健康检查路径,然后重新部署或回滚。",
+      "rollingOut": "健康检查通过后,流量会切换,旧容器会被移除。",
+      "staticPublished": "无需再等待。访问站点确认新文件已被提供即可。"
+    },
+    "label": {
+      "queued": "排队中",
+      "held": "已暂缓",
+      "awaitingApproval": "等待批准",
+      "canceled": "已取消",
+      "superseded": "已被取代",
+      "failed": "构建失败",
+      "building": "构建中",
+      "rolloutFailed": "发布失败",
+      "published": "已发布",
+      "live": "线上",
+      "rollingOut": "发布中",
+      "buildDone": "构建完成"
+    },
+    "headline": {
+      "queued": "此部署正排在另一个部署之后。",
+      "queuedWhy": "此部署已排队:{{reason}}。",
+      "held": "此部署已暂缓。{{reason}}",
+      "awaitingApproval": "此部署正在等待批准。请在仪表盘中批准它以运行。",
+      "canceled": "此部署在更改任何内容之前被取消。",
+      "superseded": "在应用之前,一个更新的部署取代了此部署。",
+      "failed": "构建失败,因此没有发布任何内容。",
+      "failedWhy": "构建失败:{{error}}",
+      "building": "已构建 {{elapsed}}。",
+      "rolloutFailed": "构建已完成,但发布失败。",
+      "rolloutFailedWhy": "构建已完成,但发布失败:{{reason}}",
+      "staticPublished": "静态站点:由入口直接发布,没有容器需要做健康检查。",
+      "live": "此部署正在提供流量。",
+      "rollingOut": "构建完成。正在等待新容器通过首次健康检查,目前已 {{elapsed}}。",
+      "rollingOutNoImage": "构建完成。发布正在等待,因为此应用尚无容器镜像,目前已 {{elapsed}}。",
+      "untracked": "构建已完成。发布结果只会跟踪最新的部署。",
+      "untrackedImage": "已部署预构建镜像。发布结果只会跟踪最新的部署。"
+    },
+    "mismatch": {
+      "buildOkRolloutPending": "构建已完成,但发布尚未完成。构建状态和发布状态是分开跟踪的,因此两者可以同时成立。",
+      "buildOkRolloutFailed": "构建成功,但新容器没有变为健康,因此上一个版本继续提供服务。",
+      "staticChip": "应用状态显示为 \"{{chip}}\",因为它报告的是容器就绪情况。静态站点没有容器,因此该标记不会阻止此部署。"
+    },
+    "stuck": {
+      "title": "这比预期花费的时间更长",
+      "noImage": "发布已运行超过 {{limit}},且没有为此应用构建出镜像。构建没有产出任何可运行的内容,因此没有可启动的东西。",
+      "health": "发布已运行超过 {{limit}}。新容器可能没有响应健康检查,或者一直在重启。"
+    },
+    "action": {
+      "containerLogs": "查看容器日志",
+      "healthPath": "检查健康检查路径",
+      "network": "打开网络标签页",
+      "rollback": "从历史中回滚",
+      "redeploy": "检查来源并重新部署",
+      "buildTab": "打开构建标签页"
+    }
+  },
+  "live": {
+    "live": "实时",
+    "lastEvent": "最近事件 {{ago}} 前",
+    "noEvents": "暂无事件",
+    "reconnecting": "正在重新连接",
+    "reconnectIn": "{{seconds}} 秒后重试",
+    "retryNow": "立即重试",
+    "polling": "实时流不可用。每 3 秒刷新一次。",
+    "closed": "部署已完成。实时流已关闭。",
+    "connecting": "正在连接"
+  },
+  "build": {
+    "source": "来源",
+    "repo": "仓库",
+    "branch": "分支",
+    "commit": "提交",
+    "builder": "构建器",
+    "framework": "检测到的框架",
+    "image": "镜像",
+    "steps": "构建步骤({{count}})",
+    "traceSteps": "流水线追踪({{count}})",
+    "download": "下载",
+    "builderValue": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Railpack",
+      "static": "静态文件"
+    },
+    "empty": {
+      "noStepTitle": "此部署没有构建步骤",
+      "noStepBody": "预构建镜像按原样部署,因此没有构建输出。部署开始后,流水线追踪(摘要、拉取、启动、健康检查、切换)会显示在这里。",
+      "notCapturedTitle": "未捕获构建输出",
+      "notCapturedBody": "构建没有记录任何日志行。部署本身已完成,因此发布标签页会显示之后发生了什么。",
+      "waitingTitle": "正在等待构建输出",
+      "waitingBody": "构建器一开始写入,日志行就会显示在这里。"
+    },
+    "detected": "检测到:{{value}}",
+    "detectedBuilder": "可在构建设置中覆盖。"
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "将标签解析为摘要",
+      "registry_auth": "镜像仓库认证检查",
+      "image_pull": "镜像拉取",
+      "image_pull_layer": "层",
+      "image_inspect": "镜像检查",
+      "config_validate": "配置验证",
+      "ensure_network": "确保网络",
+      "ensure_volume": "确保卷",
+      "container_create": "创建容器",
+      "container_start": "启动容器",
+      "docker_event": "Docker 事件",
+      "readiness_probe": "就绪探针",
+      "readiness_gate": "就绪门禁",
+      "stability_gate": "稳定性门禁",
+      "cutover": "切换",
+      "drain_old": "排空旧容器",
+      "retain_image": "为回滚保留镜像",
+      "compose_parse": "解析 compose 文件",
+      "compose_plan": "Compose 计划",
+      "compose_service": "Compose 服务",
+      "depends_on": "依赖顺序",
+      "deploy_summary": "部署结果"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "镜像",
+      "prepare": "准备",
+      "container": "容器",
+      "readiness": "就绪检查",
+      "cutover": "切换",
+      "summary": "结果"
+    },
+    "attempts_other": "已尝试 {{count}} 次",
+    "pullProgress": "镜像拉取进度",
+    "folded": {
+      "image_pull_layer_other": "{{count}} 层",
+      "readiness_probe_other": "{{count}} 次探测尝试",
+      "docker_event_other": "{{count}} 个守护进程事件"
+    }
+  },
+  "rollout": {
+    "title": "发布时间线",
+    "counts": {
+      "title": "滚动更新进度",
+      "wave": "第 {{wave}} 批,共 {{waves}} 批",
+      "ready": "就绪",
+      "updated": "已更新",
+      "unavailable": "不可用",
+      "surge": "超出",
+      "policy": "最大超出 {{surge}},最大不可用 {{unavailable}},最小可用 {{min}}"
+    },
+    "stageStatus": {
+      "pending": "待处理",
+      "running": "运行中",
+      "done": "完成",
+      "failed": "失败",
+      "skipped": "已跳过",
+      "unknown": "未跟踪"
+    },
+    "stage": {
+      "build": "构建",
+      "publish": "发布",
+      "health-check": "健康检查",
+      "cutover": "切换",
+      "cleanup": "清理"
+    },
+    "reason": {
+      "pendingHealth": "构建产出镜像后开始。",
+      "runningHealth": "正在等待新容器通过就绪探针,之后才会接收流量。",
+      "runningNoImage": "无法启动:此应用尚无容器镜像。",
+      "pendingCutover": "健康检查通过后开始。",
+      "pendingCleanup": "流量移到新容器后开始。",
+      "doneBuild": "构建完成。",
+      "donePublish": "文件由入口直接发布。",
+      "skippedBuild": "此部署没有运行构建步骤。",
+      "stuck": "已运行超过 {{limit}}。"
+    },
+    "staticNote": "静态站点:由入口直接发布,没有容器需要做健康检查。",
+    "started": "开始于 {{at}}",
+    "finished": "结束于 {{at}}",
+    "duration": "耗时 {{duration}}",
+    "runningFor": "已运行 {{duration}}",
+    "details": "详情",
+    "technical": "技术详情",
+    "gate": "就绪门禁与观察",
+    "probes": "健康探测尝试",
+    "conditionLine": "{{reason}}({{status}}):{{message}}",
+    "noConditions": "reconciler 尚未报告此应用的任何状态。"
+  },
+  "page": {
+    "notInHistory": "此部署尝试不在此应用的当前历史中。",
+    "currentChip": "当前"
+  },
+  "drawer": {
+    "whatWentWrong": "出了什么问题",
+    "failedAtStep": "失败于步骤:{{step}}",
+    "noErrorRecorded": "部署失败。没有记录错误。",
+    "lastLogLines": "最后几行日志",
+    "tailFailed": "无法加载日志尾部。",
+    "viewFullLogs": "查看完整日志",
+    "live": "实时",
+    "timing": "耗时",
+    "started": "开始",
+    "finished": "结束",
+    "duration": "时长",
+    "notFinished": "未结束",
+    "source": "来源",
+    "trigger": "触发方式",
+    "rollbackTo": "回滚到",
+    "branch": "分支",
+    "commit": "提交",
+    "message": "说明",
+    "author": "作者",
+    "pullRequest": "拉取请求",
+    "app": "应用",
+    "image": "镜像",
+    "domains": "域名",
+    "loadingDomains": "正在加载域名",
+    "noDomains": "未配置域名。",
+    "preview": "预览",
+    "supplyChain": "供应链"
+  },
+  "stream": {
+    "title": "实时日志流已断开",
+    "bodyNoRetry": "在重新连接之前,可能会缺少部分行。",
+    "nextAttempt": "下次尝试 {{when}}。",
+    "retryIn": "{{seconds}} 秒后",
+    "retryNow": "立即重试",
+    "switchToPolling": "切换为轮询",
+    "download": "下载完整日志"
+  },
+  "fix": {
+    "title": "修复并重新部署",
+    "hint": "打开最可能导致此问题的设置,更改后再重新部署。",
+    "link": {
+      "environment": "编辑环境变量",
+      "source": "检查构建设置",
+      "deploySettings": "检查部署设置",
+      "resources": "调整资源"
+    },
+    "docs": "阅读此错误的文档"
+  },
+  "fixReturn": {
+    "body": "你正在修复一次失败的部署({{target}})。重新部署以应用你的更改。",
+    "redeploy": "立即重新部署",
+    "back": "返回失败的部署",
+    "dismiss": "忽略",
+    "region": "带着你的更改重新部署",
+    "started": "正在带着你的更改重新部署。"
+  },
+  "rebuild": {
+    "started": "已开始重新构建。",
+    "startedNoCache": "已开始不使用缓存的重新构建。"
+  },
+  "report": {
+    "copy": "复制为报告",
+    "copied": "报告已复制",
+    "failed": "无法复制报告",
+    "stage": "失败的阶段"
+  },
+  "cache": {
+    "summary": "缓存:{{total}} 个步骤中复用了 {{cached}} 个",
+    "unknown": "缓存:未知"
+  },
+  "rollback": {
+    "note": "恢复镜像 {{image}}。环境变量、卷和迁移不会被还原。"
+  },
+  "phases": {
+    "label": "构建阶段",
+    "all": "全部",
+    "install": "安装",
+    "build": "构建",
+    "push": "推送",
+    "other": "其他",
+    "chip": "{{phase}}({{count}})",
+    "showSteps": "显示步骤",
+    "hideSteps": "隐藏步骤",
+    "stepsLabel": "构建步骤",
+    "cached": "已缓存",
+    "jump": "跳到{{label}}的第一行",
+    "total": "{{phase}}:{{time}}",
+    "noTiming": "无耗时数据",
+    "truncated": "仅在前 {{count}} 行中检测了阶段。"
+  },
+  "chain": {
+    "position": "此链中的第 {{position}} 次尝试"
+  },
+  "deployPhases": {
+    "label": "部署进度",
+    "phase": {
+      "upload": "上传",
+      "install": "安装",
+      "build": "构建",
+      "export_image": "导出镜像",
+      "health_check": "健康检查",
+      "cutover": "切换"
+    },
+    "status": {
+      "pending": "等待中",
+      "running": "进行中",
+      "done": "完成",
+      "failed": "失败",
+      "skipped": "已跳过"
+    },
+    "eta": "通常约需 {{typical}} 分钟,还剩 {{left}} 分钟",
+    "etaOver": "通常约需 {{typical}} 分钟,这次花的时间更长",
+    "stillWorking": "仍在处理中。有一段时间没有新的日志行,这在耗时较长的步骤中是正常的。",
+    "stillWorkingExport": "仍在处理中。导出镜像可能会安静好几分钟,这是正常的。"
+  },
+  "buildReport": {
+    "title": "构建报告",
+    "shared": "共享的首次加载",
+    "route": "路由",
+    "kind": "类型",
+    "size": "大小",
+    "firstLoad": "首次加载",
+    "noRoutes": "构建输出中没有找到路由。",
+    "warnings": "注意",
+    "notStored": "构建日志未存储,因此此部署没有报告。",
+    "kinds": {
+      "static": "静态",
+      "isr": "ISR",
+      "dynamic": "动态",
+      "unknown": "未知"
+    }
+  },
+  "failureCard": {
+    "title": "出了什么问题",
+    "stage": "失败的阶段",
+    "error": "错误",
+    "showLess": "收起",
+    "showMore": "展开"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "title": "Teste A/B",
+  "description": "Envie uma parte dos visitantes deste app para um deploy de branch ou uma release retida. Cada visitante mantém a mesma variante por meio de um cookie, que só é definido enquanto um teste está em andamento.",
+  "nav": "Teste A/B",
+  "loading": "Carregando o teste A/B",
+  "loadError": "Não foi possível carregar o teste A/B: {{message}}",
+  "unsupportedTitle": "O teste A/B não está disponível para este app",
+  "unsupportedHelp": "Funciona para apps de container com um domínio. Sites estáticos ainda não são suportados.",
+  "empty": {
+    "title": "Nenhum teste A/B em andamento",
+    "body": "Escolha um deploy de branch ou uma release retida, dê a ele uma parte dos visitantes e compare as contagens de requisições antes de promover a vencedora."
+  },
+  "start": {
+    "title": "Iniciar um teste A/B",
+    "kind": "Origem da variante",
+    "kindBranch": "Deploy de branch",
+    "kindRelease": "Release retida",
+    "branch": "Deploy de branch",
+    "branchPlaceholder": "Escolha um deploy de branch",
+    "noBranches": "Nenhum deploy de branch pronto. Ative os deploys de branch e envie uma branch primeiro.",
+    "release": "Nome do deploy da release",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "Rótulo da variante",
+    "weight": "Parte dos visitantes (%)",
+    "cookieName": "Nome do cookie",
+    "cookieTtl": "Duração do cookie",
+    "cookieTtlHelp": "Como 720h. Deixe vazio para usar o padrão do servidor.",
+    "submit": "Iniciar teste",
+    "success": "Teste A/B iniciado",
+    "errorTitle": "Não foi possível iniciar o teste A/B"
+  },
+  "status": {
+    "running": "Em andamento",
+    "stopped": "Parado",
+    "live": "Ao vivo",
+    "ready": "Pronto",
+    "unavailable": "Indisponível"
+  },
+  "kind": {
+    "production": "Produção",
+    "branch": "Deploy de branch",
+    "release": "Release"
+  },
+  "table": {
+    "caption": "Variantes do teste A/B em andamento",
+    "variant": "Variante",
+    "status": "Status",
+    "weight": "Peso",
+    "requests": "Requisições",
+    "actions": "Ações",
+    "weightFor": "Parte dos visitantes de {{label}}",
+    "productionKeeps": "A produção mantém {{percent}}%",
+    "overshoot": "As variantes ocupam mais de 100%, reduza um peso.",
+    "saveWeights": "Salvar pesos",
+    "weightsSaved": "Pesos salvos",
+    "copyQa": "Copiar link de QA",
+    "qaCopied": "Link de QA copiado",
+    "qaHelp": "Abrir o link de QA força aquela variante no seu navegador e a mantém.",
+    "promote": "Promover",
+    "unavailableHelp": "Esta variante não está acessível, então os visitantes dela recebem a produção."
+  },
+  "stats": {
+    "title": "Requisições por hora",
+    "hour": "Hora",
+    "total": "{{count}} requisições desde o início do teste",
+    "none": "Nenhuma requisição contada ainda."
+  },
+  "cookie": {
+    "summary": "Cookie {{name}}, dura {{hours}} horas. Adicione ?{{param}}=<variant> a uma URL para forçar uma variante."
+  },
+  "stop": {
+    "button": "Parar teste",
+    "title": "Parar o teste A/B?",
+    "body": "Todos os visitantes voltam a receber a produção. As contagens de requisições são mantidas.",
+    "confirm": "Parar teste",
+    "success": "Teste A/B parado"
+  },
+  "promote": {
+    "title": "Promover {{label}}?",
+    "body": "{{label}} se torna o deploy de produção pelo caminho normal de deploy, e depois o teste termina.",
+    "locked": "Isto é recusado enquanto a publicação estiver bloqueada para o app.",
+    "confirm": "Promover vencedora",
+    "success": "Vencedora promovida"
+  },
+  "ended": {
+    "title": "Último teste",
+    "reason": "Terminou: {{reason}}"
+  },
+  "error": "Falha na ação do teste A/B"
+}

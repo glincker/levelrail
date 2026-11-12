@@ -1,0 +1,184 @@
+{
+  "title": "清理",
+  "description": "控制每种数据保留多久,在清理运行前查看将要移除的内容,并查看每次运行记录。",
+  "tabs": {
+    "label": "清理分区",
+    "overview": "概览",
+    "disk": "磁盘与 Docker",
+    "history": "历史"
+  },
+  "loadError": "无法加载清理目标:{{message}}",
+  "retry": "重试",
+  "readOnly": "你可以查看清理设置。更改保留期、切换模式和运行清理需要 root 账户。",
+  "empty": {
+    "title": "暂无清理目标",
+    "body": "此控制面没有报告任何可清理的数据类型。请在下次升级后再检查。"
+  },
+  "categories": {
+    "auth": "登录与令牌",
+    "audit": "审计",
+    "deploys": "部署",
+    "docker": "Docker",
+    "data": "数据",
+    "observability": "可观测性",
+    "messaging": "消息",
+    "other": "其他"
+  },
+  "hero": {
+    "stored": "已存储数据",
+    "reclaimable": "可回收",
+    "storedHint": "由清理所管理的数据类型存储的数据",
+    "usageLabel": "清理所管理的数据位于何处",
+    "segmentLabel": "{{category}}:{{size}},占总量的 {{percent}}%",
+    "legendFilter": "仅显示{{category}}",
+    "clearFilter": "显示所有类别",
+    "lastRun": "上次运行",
+    "neverRun": "尚未运行过清理",
+    "scheduler": "调度器",
+    "schedulerOn": "每 {{interval}}",
+    "schedulerOff": "调度器已关闭",
+    "previewCount_other": "{{count}} 个数据类型处于预览模式",
+    "previewNone": "没有任何内容在预览模式中等待",
+    "reviewAction": "查看并启用",
+    "reclaimableHint": "已启用的数据类型按当前保留期将移除的行数和大小",
+    "calculate": "计算可回收量",
+    "calculating": "正在检查 {{done}} / {{total}}",
+    "calculateFailed": "无法检查 {{title}}:{{message}}",
+    "reclaimableNone": "没有超出保留窗口的内容"
+  },
+  "group": {
+    "count_other": "{{count}} 个数据类型"
+  },
+  "target": {
+    "usage_other": "{{rows}} 行,{{size}}",
+    "usageEmpty": "没有存储内容",
+    "oldest": "最早 {{when}}",
+    "shareLabel": "{{title}} 占{{category}}数据的 {{percent}}%",
+    "retention": "保留",
+    "floor": "最少 {{days}} 天",
+    "floorTip": "安全策略至少保留 {{days}} 天。请选择更长的期限,或选择永不以保留所有内容。",
+    "mode": "模式",
+    "modes": {
+      "off": "关闭",
+      "preview": "预览",
+      "on": "开启"
+    },
+    "status": {
+      "off": "关闭",
+      "preview": "预览",
+      "on": "开启",
+      "running": "运行中"
+    },
+    "previewBadge": "预览模式,尚未删除任何内容",
+    "lastRun": "上次运行 {{when}}",
+    "lastRunDry": "上次运行 {{when}}(试运行)",
+    "lastRunFailed": "上次运行 {{when}} 失败",
+    "neverRun": "从未运行",
+    "nextRun": "下次 {{when}}",
+    "noNextRun": "未安排",
+    "preview": "预览",
+    "previewing": "正在检查...",
+    "cleanNow": "立即清理",
+    "readThrough": "在磁盘与 Docker 中管理",
+    "readThroughAction": "打开磁盘与 Docker",
+    "keepForever": "保留期设为永不,因此不会移除任何内容。",
+    "destructive": "永久删除数据",
+    "unknown": "-",
+    "lockedOption": "低于 {{days}} 天的最小值。请选择更长的期限。"
+  },
+  "impact": {
+    "title": "将被移除的内容",
+    "summary_other": "将移除 {{rows}} 行,约 {{size}},均早于 {{days}} 天前。",
+    "nothing": "没有早于 {{days}} 天的内容。不会移除任何内容。",
+    "close": "关闭",
+    "error": "无法预览:{{message}}"
+  },
+  "run": {
+    "running": "正在移除旧数据...",
+    "done_other": "已移除 {{rows}} 行,{{size}}。删除是永久的。",
+    "nothing": "没有需要移除的内容。没有行超出保留窗口。",
+    "more": "仍有更多旧行,请再次运行以继续。",
+    "failed": "清理失败:{{message}}",
+    "dismiss": "关闭"
+  },
+  "confirmRun": {
+    "title": "清理 {{title}}?",
+    "body_other": "这将永久移除 {{rows}} 行,约 {{size}},均早于 {{days}} 天前。",
+    "consequence": "已移除的行无法恢复。不会删除其他任何内容。",
+    "action": "立即清理",
+    "cancel": "取消"
+  },
+  "confirmMode": {
+    "title": "开启 {{title}}?",
+    "body": "从下一次计划运行起,早于 {{days}} 天的行将被真正删除。在此之前它只会记录将要移除的内容。",
+    "consequence": "已删除的行无法恢复。",
+    "action": "开启",
+    "cancel": "取消"
+  },
+  "confirmShorten": {
+    "title": "缩短 {{title}} 的保留时间?",
+    "body": "早于新期限的行将在下次运行时被移除。",
+    "consequence": "这是对数据保留时长的破坏性更改。",
+    "action": "缩短保留期",
+    "cancel": "取消"
+  },
+  "toast": {
+    "retentionSaved": "{{title}} 的保留期已保存。",
+    "retentionError": "无法保存 {{title}} 的保留期:{{message}}",
+    "modeSaved": "{{title}} 现在为{{mode}}。",
+    "modeError": "无法更改 {{title}}:{{message}}"
+  },
+  "history": {
+    "title": "运行历史",
+    "filters": {
+      "target": "数据类型",
+      "allTargets": "所有数据类型",
+      "since": "从",
+      "until": "到",
+      "kind": "类型",
+      "status": "状态",
+      "allKinds": "试运行和真实运行",
+      "dry": "试运行",
+      "real": "真实运行",
+      "allStatuses": "任意状态",
+      "ok": "成功",
+      "failed": "失败",
+      "reset": "重置筛选"
+    },
+    "exportCsv": "导出 CSV",
+    "exportJson": "导出 JSON",
+    "exportLabel": "导出筛选后的历史",
+    "loadError": "无法加载运行历史:{{message}}",
+    "empty": {
+      "title": "没有匹配的运行",
+      "body": "清理运行会显示在这里,包括计划的和手动的、试运行和真实运行。"
+    },
+    "emptyFiltered": "没有符合这些筛选条件的运行。重置筛选即可查看所有运行。",
+    "dryRun": "试运行",
+    "realRun": "已移除",
+    "failed": "失败",
+    "outcomeDry_other": "将移除 {{rows}} 行,{{size}}",
+    "outcomeDryNone": "不会移除任何内容",
+    "outcomeReal_other": "已移除 {{rows}} 行,{{size}}",
+    "outcomeRealNone": "没有需要移除的内容",
+    "meta": "{{trigger}},保留 {{days}} 天",
+    "byActor": "由 {{actor}}",
+    "trigger": {
+      "scheduled": "计划",
+      "manual": "手动",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "时间",
+      "target": "数据类型",
+      "kind": "类型",
+      "result": "结果",
+      "trigger": "触发方式",
+      "days": "保留"
+    },
+    "timeline": "运行时间线",
+    "loadMore": "加载更多",
+    "loadingMore": "正在加载..."
+  }
+}

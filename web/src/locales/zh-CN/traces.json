@@ -1,0 +1,52 @@
+{
+  "title": "链路追踪",
+  "subtitle": "你的应用通过 OpenTelemetry 发送的 span，在此节点上按日志保留期限存储。",
+  "setup": {
+    "title": "从此应用发送追踪数据",
+    "off": "追踪已关闭。开启后可获得采集密钥和 OpenTelemetry SDK 所需的环境变量。",
+    "on": "追踪已开启。请将 SDK 的 OTLP/HTTP exporter 指向此控制平面。",
+    "enable": "开启追踪",
+    "enabling": "开启中...",
+    "rotate": "轮换密钥",
+    "disable": "关闭",
+    "copy": "复制",
+    "copied": "已复制",
+    "keyOnce": "此密钥只显示一次。请在应用上设置这些值并重新部署。轮换后旧密钥将失效。",
+    "env": "环境变量",
+    "endpoint": "端点",
+    "protocolNote": "请使用基于 HTTP 的 OTLP，protobuf 或 JSON 格式。此处不接受 gRPC。",
+    "enabledToast": "追踪已开启。",
+    "disabledToast": "追踪已关闭。应用的 exporter 将收到 401 响应。",
+    "failed": "无法更改追踪设置。"
+  },
+  "filters": {
+    "window": "时间范围",
+    "last15": "最近 15 分钟",
+    "last60": "最近 1 小时",
+    "last360": "最近 6 小时",
+    "last1440": "最近 24 小时",
+    "errorsOnly": "仅错误",
+    "minMs": "慢于（毫秒）"
+  },
+  "list": {
+    "empty": "此时间范围内还没有追踪数据。请通过应用发送一个请求，或扩大时间范围。",
+    "loadError": "无法加载追踪数据：{{message}}",
+    "root": "请求",
+    "started": "开始时间",
+    "duration": "耗时",
+    "spans": "Span 数",
+    "errors": "错误数",
+    "emptyTitle": "还没有追踪数据",
+    "emptyOff": "此应用的追踪已关闭，因此不会收集任何数据。开启后可获得采集密钥。",
+    "emptyAction": "设置追踪"
+  },
+  "detail": {
+    "title": "追踪 {{id}}",
+    "loading": "正在加载追踪...",
+    "close": "关闭",
+    "ofTotal": "共 {{total}}",
+    "error": "错误",
+    "attributes": "属性",
+    "none": "没有属性。"
+  }
+}

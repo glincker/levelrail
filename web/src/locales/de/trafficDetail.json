@@ -1,0 +1,190 @@
+{
+  "title": "Traffic",
+  "subtitle": "Rate, Fehler und Dauer für Anfragen, die über den Ingress ausgeliefert werden, ohne Änderungen an der App.",
+  "windowLabel": "Zeitfenster",
+  "windows": {
+    "5m": "5 Minuten",
+    "1h": "1 Stunde",
+    "24h": "24 Stunden",
+    "7d": "7 Tage"
+  },
+  "audience": {
+    "referrers": {
+      "title": "Top-Referrer",
+      "hint": "Nur verweisende Hosts. Pfade und Query-Strings werden nie gespeichert. Direkt bedeutet kein Referer-Header.",
+      "label": "Referrer",
+      "empty": "In diesem Zeitfenster gibt es noch keine Referrer-Daten."
+    },
+    "countries": {
+      "title": "Top-Länder",
+      "hint": "Grobes Land aus einem CDN-Header oder einer GeoIP-Datenbank, nie pro Client gespeichert.",
+      "label": "Land",
+      "empty": "Keine Länderdaten. Legen Sie am Ingress eine GeoIP-Datenbank oder einen vertrauenswürdigen Länder-Header fest, um zu sehen, woher der Traffic kommt."
+    },
+    "requests": "Anfragen",
+    "share": "Anteil"
+  },
+  "markers": {
+    "hint": "Senkrechte Linien markieren Deployments. Wählen Sie eine aus, um zu sehen, was sich geändert hat."
+  },
+  "kpi": {
+    "rate": "Anfragen pro Sekunde",
+    "requests": "{{count}} Anfragen im Zeitfenster",
+    "error5xx": "Serverfehler (5xx)",
+    "error4xx": "Clientfehler (4xx)",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99-Latenz",
+    "upstreamErrors": "{{count}} Upstream-Fehler"
+  },
+  "slo": {
+    "title": "Fehlerbudget",
+    "objective": "{{objective}} Ziel {{target}} %",
+    "burn": "Burn-Rate",
+    "burnHint": "1,0x verbraucht das Budget genau über den SLO-Zeitraum",
+    "remaining": "Verbleibendes Budget",
+    "none": "Für diese App ist kein SLO festgelegt. Fügen Sie einen SLO-Burn-Alarm hinzu, um das Fehlerbudget hier zu sehen.",
+    "noneAction": "SLO-Alarm einrichten"
+  },
+  "replicas": {
+    "title": "Replikate",
+    "hint": "Pro Upstream-Adresse am Ingress gemessen.",
+    "upstream": "Replikat",
+    "requests": "Anfragen",
+    "rate": "Anfr./s",
+    "error5xx": "5xx",
+    "error4xx": "4xx",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99",
+    "empty": "Noch keine Daten pro Replikat. Sie erscheinen, sobald Anfragen über den Ingress einen Container erreichen."
+  },
+  "routes": {
+    "title": "Langsamste Routen",
+    "topTitle": "Top-Pfade",
+    "topEmpty": "In diesem Zeitfenster gibt es keine Anfragen.",
+    "hint": "Langsamste Seiten und API-Routen. Statische Dateien sind ausgenommen.",
+    "route": "Route",
+    "requests": "Anfragen",
+    "avg": "Durchschnittsdauer",
+    "error5xx": "5xx",
+    "empty": "Keine Route hat in diesem Zeitfenster genug Traffic für eine Rangfolge.",
+    "kindTabs": "Routenart",
+    "kind": {
+      "page": "Seiten",
+      "api": "API",
+      "asset": "Assets"
+    },
+    "topTitleByKind": {
+      "page": "Top-Seiten",
+      "api": "Top-API-Routen",
+      "asset": "Top-Assets"
+    },
+    "kindHint": {
+      "page": "Seiten, die Besucher aufrufen. IDs und Query-Strings werden nie gespeichert.",
+      "api": "API-Aufrufe, nach Route gruppiert. IDs und Query-Strings werden nie gespeichert.",
+      "asset": "Statische Dateien wie Skripte, Stile und Bilder. Sie werden getrennt gezählt, damit sie Ihre Seiten nicht verdecken."
+    }
+  },
+  "samples": {
+    "title": "Langsame und fehlgeschlagene Anfragen",
+    "hint": "Eine Stichprobe von Anfragen, die fehlgeschlagen oder langsam waren, auf dem Node gespeichert, der sie ausgeliefert hat.",
+    "empty": "In diesem Zeitfenster wurden keine langsamen oder fehlgeschlagenen Anfragen erfasst.",
+    "requestId": "Anfrage-ID"
+  },
+  "empty": {
+    "title": "Kein Traffic in diesem Zeitfenster",
+    "description": "Anfragen erscheinen hier, sobald die App über eine Domain ausliefert. Versuchen Sie ein längeres Zeitfenster oder prüfen Sie, ob eine Domain auf diese App zeigt.",
+    "action": "Domains prüfen"
+  },
+  "error": {
+    "title": "Traffic ist nicht verfügbar",
+    "description": "{{message}}",
+    "retry": "Erneut versuchen"
+  },
+  "charts": {
+    "title": "Live-Diagramme"
+  },
+  "shield": {
+    "title": "Schutz vor Bots und Missbrauch",
+    "action": "Schutzmaßnahmen anpassen",
+    "blocked_one": "{{count}} Anfrage abgewiesen",
+    "blocked_other": "{{count}} Anfragen abgewiesen",
+    "none": "In diesem Zeitfenster wurde nichts abgewiesen. Fügen Sie auf der Domain-Seite Limits pro Client und eine Bot-Sperrliste hinzu, damit Scraper keine Bandbreite verbrauchen.",
+    "reasons": {
+      "rate_limit": "Rate begrenzt",
+      "concurrency": "Zu viele offene Anfragen",
+      "bad_bot": "Schädlicher Bot",
+      "body_too_large": "Body zu groß"
+    }
+  },
+  "spikes": {
+    "title": "Fehlerspitzen",
+    "hint": "Zeiträume, in denen der Anteil der Serverfehler vom Rest des Zeitfensters abstach, dem Deployment zugeordnet, das kurz davor begann.",
+    "none": "In diesem Zeitfenster gibt es keine Fehlerspitzen.",
+    "peak": "{{rate}} Serverfehler am Höhepunkt",
+    "detail": "{{errors}} von {{requests}} Anfragen sind fehlgeschlagen. Typisch für dieses Zeitfenster: {{baseline}}.",
+    "afterDeploy": "Nach Deployment {{image}} ({{time}})",
+    "noDeploy": "Kein aktuelles Deployment"
+  },
+  "abuse": {
+    "title": "Missbrauchsabwehr",
+    "subtitle": "Begrenzen Sie, wie schnell ein einzelner Client auf diese App zugreifen kann, und weisen Sie bekannte schädliche Adressen und Agents ab. Beginnen Sie mit Nur protokollieren, um zu sehen, was blockiert würde.",
+    "loadError": "Die Missbrauchsabwehr konnte nicht geladen werden: {{message}}",
+    "modeLabel": "Modus",
+    "modes": {
+      "off": "Aus",
+      "log_only": "Nur protokollieren",
+      "enforce": "Durchsetzen"
+    },
+    "modeHints": {
+      "off": "Es wird nichts geprüft.",
+      "log_only": "Zählt, was blockiert würde, und blockiert nichts.",
+      "enforce": "Weist passende Anfragen ab. Ratenlimits antworten mit 429 und Retry-After."
+    },
+    "rateLabel": "Anfragen pro Client",
+    "rps": "Pro Sekunde",
+    "burst": "Burst",
+    "suggestionFromPeak": "Vorgeschlagen anhand Ihrer Spitze von {{peak}} Anfragen pro Sekunde: {{rps}} pro Client, Burst {{burst}}.",
+    "suggestionDefault": "Kein aktueller Traffic als Grundlage. Vorgeschlagener Start: {{rps}} pro Client, Burst {{burst}}.",
+    "useSuggestion": "Vorschlag verwenden",
+    "denyCidrs": "Adressen blockieren",
+    "denyCidrsPlaceholder": "203.0.113.0/24",
+    "denyAgents": "User-Agents blockieren",
+    "denyAgentsPlaceholder": "python-requests",
+    "requireUa": "Anfragen ohne User-Agent abweisen",
+    "invalidNumber": "Rate und Burst müssen Zahlen sein.",
+    "previewNeedsRule": "Fügen Sie eine Rate oder eine Sperrliste hinzu, um ihre Wirkung anzuzeigen.",
+    "previewEmpty": "Es werden noch keine aktuellen Anfragen zum Wiedergeben vorgehalten, daher gibt es nichts anzuzeigen.",
+    "previewResult": "Hätte {{blocked}} von {{total}} aktuellen Anfragen blockiert ({{percent}} %)",
+    "previewWindow": "in den letzten {{minutes}} min",
+    "topClients": "Am stärksten betroffene Clients: {{clients}}",
+    "enforceNeedsPreview": "Das Durchsetzen ist verfügbar, sobald die obige Vorschau geladen wurde.",
+    "reasons": {
+      "rate_limit": "Rate begrenzt",
+      "deny_cidr": "Blockierte Adresse",
+      "deny_user_agent": "Blockierter User-Agent",
+      "missing_user_agent": "Kein User-Agent"
+    },
+    "counters": "Erlaubt {{allowed}}, würde blockieren {{wouldBlock}}, blockiert {{blocked}} in diesem Zeitfenster.",
+    "failOpen_one": "{{count}} Anfrage wurde ungeprüft ausgeliefert, weil die Abwehr ausgefallen ist.",
+    "failOpen_other": "{{count}} Anfragen wurden ungeprüft ausgeliefert, weil die Abwehr ausgefallen ist.",
+    "status": {
+      "Off": "Aus",
+      "LogOnly": "Nur zählen",
+      "Enforcing": "Wird durchgesetzt",
+      "Pending": "Wird angewendet",
+      "NoRoutes": "Nichts zu schützen",
+      "ClientIPHidden": "Client-Adressen verborgen",
+      "InvalidPolicy": "Richtlinie ungültig"
+    },
+    "statusHint": {
+      "NoRoutes": "Die App hat derzeit keine Proxy-Route (gestoppt, im Ruhemodus oder eine statische Website), daher gibt es für die Richtlinie nichts anzuwenden.",
+      "ClientIPHidden": "Ein vorgeschalteter Proxy verbirgt die Besucheradressen, daher würden sich alle Besucher ein Limit teilen. Legen Sie die vertrauenswürdigen Proxys in den Ingress-Einstellungen fest."
+    },
+    "save": "Speichern",
+    "saveLogOnly": "Mit Nur protokollieren starten",
+    "startEnforcing": "Durchsetzung starten",
+    "saved": "Missbrauchsabwehr gespeichert ({{mode}})."
+  }
+}

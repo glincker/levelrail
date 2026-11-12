@@ -1,0 +1,214 @@
+{
+  "title": "资源",
+  "description": "所有应用、数据库、节点、域名、存储桶和私有网络汇总在一个可搜索的列表中。为它们打标签，保存常用视图，并查看每个标签的成本。",
+  "search": {
+    "label": "搜索资源",
+    "placeholder": "按名称、详情或标签搜索"
+  },
+  "kind": {
+    "all": "全部",
+    "app": "应用",
+    "database": "数据库",
+    "node": "节点",
+    "domain": "域名",
+    "bucket": "存储桶",
+    "network": "私有网络",
+    "appOne": "应用",
+    "databaseOne": "数据库",
+    "nodeOne": "节点",
+    "domainOne": "域名",
+    "bucketOne": "存储桶",
+    "networkOne": "私有网络"
+  },
+  "tags": {
+    "filter": "标签",
+    "filterLabel": "按标签筛选，资源必须包含所有选中的标签",
+    "none": "还没有标签。选择资源并使用“添加标签”创建第一个。",
+    "clear": "清除标签"
+  },
+  "list": {
+    "label": "资源",
+    "name": "名称",
+    "detail": "详情",
+    "tags": "标签",
+    "selectAll": "选择所有显示的资源",
+    "selectOne": "选择 {{name}}",
+    "shown": "显示 {{shown}} / {{total}}",
+    "emptyTitle": "没有匹配的资源",
+    "emptyDescription": "清除搜索或标签筛选即可再次查看全部内容。",
+    "emptyAction": "清除筛选",
+    "errorTitle": "无法加载资源",
+    "retry": "重试"
+  },
+  "bulk": {
+    "selected_other": "已选择 {{count}} 项",
+    "addTag": "添加标签",
+    "removeTag": "移除标签",
+    "clear": "清除选择"
+  },
+  "dialog": {
+    "addTitle": "为 {{count}} 个资源添加标签",
+    "removeTitle": "从 {{count}} 个资源中移除标签",
+    "description": "请先预览更改。在你应用之前不会写入任何内容。",
+    "tagLabel": "标签",
+    "tagPlaceholder": "team:shop",
+    "tagHint": "小写的 key 或 key:value，例如 env:prod。可用于按标签归集成本。",
+    "preview": "预览更改",
+    "previewing": "检查中...",
+    "apply": "应用到 {{count}} 个",
+    "applying": "应用中...",
+    "cancel": "取消",
+    "close": "关闭",
+    "summaryDry": "预览：{{would}} 个将更改，{{skipped}} 个已符合要求，{{blocked}} 个被阻止。",
+    "summaryDone": "完成：{{done}} 个已更改，{{skipped}} 个已符合要求，{{blocked}} 个被阻止。",
+    "failed": "无法预览或应用此更改。",
+    "doneToast": "已在 {{count}} 个资源上更新标签 {{tag}}"
+  },
+  "appAction": {
+    "restart": "重启应用",
+    "redeploy": "重新部署应用",
+    "restartTitle": "重启 {{count}} 个应用",
+    "redeployTitle": "重新部署 {{count}} 个应用",
+    "restartDescription": "预览哪些应用会重启。每个应用各自重启，在你应用之前不会发生任何事。",
+    "redeployDescription": "预览哪些应用会重新部署其当前版本。在你应用之前不会发生任何事。",
+    "summaryDry": "预览：{{would}} 个将运行，{{skipped}} 个已跳过，{{blocked}} 个被阻止。",
+    "summaryDone": "完成：{{done}} 个已开始，{{skipped}} 个已跳过，{{blocked}} 个被阻止。",
+    "failed": "无法预览或应用此操作。",
+    "restartToast": "正在重启 {{count}} 个应用",
+    "redeployToast": "正在重新部署 {{count}} 个应用"
+  },
+  "status": {
+    "ok": "已更改",
+    "would_apply": "将更改",
+    "skipped": "已设置",
+    "denied": "无权限",
+    "not_found": "未找到",
+    "error": "失败"
+  },
+  "views": {
+    "button": "已保存的视图",
+    "label": "已保存的视图",
+    "empty": "还没有已保存的视图。设置好搜索后，在这里保存。",
+    "saveTitle": "保存当前筛选条件",
+    "namePlaceholder": "视图名称",
+    "save": "保存视图",
+    "saved": "视图 {{name}} 已保存",
+    "apply": "打开视图 {{name}}",
+    "delete": "删除视图 {{name}}",
+    "deleted": "视图已删除"
+  },
+  "cost": {
+    "title": "按标签的成本",
+    "description": "本月至今，带有多个标签的资源会在每个标签下各计一次。",
+    "open": "打开完整成本报告",
+    "empty": "为一些应用或数据库打上标签，即可在这里查看按标签分组的成本。",
+    "untagged": "无标签"
+  },
+  "palette": {
+    "open": "打开资源浏览器",
+    "openKeywords": "资源 标签 浏览器 搜索 全部",
+    "tagged": "带有标签 {{tag}} 的资源",
+    "view": "已保存的视图：{{name}}",
+    "bucket": "存储桶 {{name}}",
+    "network": "私有网络 {{name}}"
+  },
+  "scale": {
+    "title": "扩缩容",
+    "tag": "部署之后",
+    "description": "此应用当前的资源使用情况，以及如何给它更多空间。这里的每个数字都是实时从此服务器读取的。",
+    "replicas": "副本",
+    "memoryLimit": "内存限制",
+    "noLimit": "未设置限制",
+    "cpu": "CPU（整个应用）",
+    "memory": "内存（整个应用）",
+    "unknown": "尚未上报",
+    "autoscale": "自动扩缩容",
+    "autoscaleOff": "关闭",
+    "autoscaleOn": "已开启，副本数在 {{min}} 到 {{max}} 之间",
+    "lastDecision": "最近一次决策：{{reason}}，{{at}}",
+    "noDecision": "尚无决策记录",
+    "replicaHealth": "副本健康状况",
+    "noReplicaHealth": "为此应用设置负载均衡器后，各副本的健康状况会显示在这里。",
+    "replicaRow": "副本 {{n}}",
+    "state": {
+      "healthy": "健康",
+      "unhealthy": "不健康",
+      "draining": "排空中",
+      "disabled": "已停用",
+      "unknown": "未知"
+    },
+    "guide": {
+      "title": "接下来做什么",
+      "resize": "给每个副本更多空间：在上方“资源”部分提高内存限制，然后重新部署。当内存接近上限时请提高它。",
+      "replicas": "处理更多流量：在部署设置中提高副本数。每个副本都是应用的一份拷贝，共同分担负载。",
+      "autoscale": "让应用跟随负载：在下方开启自动扩缩容，并选择最小值和最大值。在你设置之前它是关闭的。",
+      "biggerHost": "当服务器本身资源不足时，换用更大的主机：调整规格后主机上的 CPU 或内存仍然很高，或者增加副本不再降低负载。同一台服务器上的副本共享该服务器。"
+    }
+  },
+  "replicaTable": {
+    "title": "副本",
+    "replica": "副本",
+    "address": "地址",
+    "health": "健康状况",
+    "connections": "连接数",
+    "weight": "权重",
+    "lastCheck": "上次检查",
+    "drain": "排空",
+    "never": "尚未检查",
+    "replicaRow": "副本 {{n}}",
+    "drainReplica": "排空副本 {{n}}",
+    "drainFailed": "无法更改副本",
+    "state": {
+      "healthy": "健康",
+      "unhealthy": "不健康",
+      "draining": "排空中",
+      "disabled": "已停用",
+      "unknown": "未知"
+    }
+  },
+  "nextCache": {
+    "title": "共享缓存（Next.js）",
+    "hint": "将 ISR 和数据缓存保存在 Redis 中，使每个副本提供相同的页面。",
+    "toggle": "在副本之间共享 ISR 和数据缓存",
+    "linked": "已关联 Redis 数据库：{{name}}",
+    "notLinked": "没有 Redis 数据库关联到此应用。在关联之前，部署会中止。",
+    "linkExisting": "关联 {{name}}",
+    "create": "创建 Redis",
+    "linkedToast": "已关联 {{name}}",
+    "saved": "共享缓存已保存",
+    "autoNote": "NEXT_BUILD_ID 和缓存 URL 会在下次部署时自动设置。",
+    "suggest": "此应用运行 {{count}} 个副本，但没有共享缓存。请开启它，让副本对缓存的页面保持一致。",
+    "redeploy": "重新部署以应用",
+    "noGit": "请从你的 git 来源重新部署以应用此设置；此应用没有 git 来源。",
+    "started": "已开始重新部署 {{name}}",
+    "errorTitle": "无法更新共享缓存"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "版本偏差防护",
+    "held": "已保留上一个版本，将在此时移除",
+    "noneHeld": "未保留上一个版本",
+    "cache": "共享缓存",
+    "redis": "Redis",
+    "off": "关闭",
+    "configure": "配置",
+    "vitals": "Web 核心指标",
+    "collecting": "采集中",
+    "notCollecting": "未采集",
+    "cron": "Cron 任务",
+    "cronCount_other": "{{count}} 个任务",
+    "noCron": "无",
+    "manage": "管理",
+    "advisor": {
+      "title": "建议",
+      "empty": "未发现问题",
+      "copy": "复制命令",
+      "copyFailed": "无法复制",
+      "severity": {
+        "info": "信息",
+        "warn": "警告",
+        "error": "错误"
+      }
+    }
+  }
+}

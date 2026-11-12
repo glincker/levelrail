@@ -1,0 +1,111 @@
+{
+  "title": "流量导出",
+  "description": "为每个已完成的请求发送一条记录到 PostHog、OpenTelemetry 采集器或你自己的端点。投递在请求路径之外排队进行,绝不会拖慢请求或使其失败。",
+  "card": {
+    "title": "导出目的地",
+    "description": "除非你为每个目的地单独选择开启,否则记录不包含访客身份。"
+  },
+  "add": "添加目的地",
+  "loadError": "无法加载流量导出:{{message}}",
+  "notConfigured": "流量导出需要主密钥来存储目的地凭据。",
+  "empty": {
+    "title": "没有导出目的地",
+    "description": "添加目的地,将请求记录流式传输到你的分析工具。"
+  },
+  "kinds": {
+    "posthog": "PostHog",
+    "otlp": "OpenTelemetry",
+    "webhook": "Webhook"
+  },
+  "state": {
+    "active": "活跃",
+    "idle": "未投递",
+    "disabled": "已暂停",
+    "invalid": "需要处理",
+    "failing": "失败中"
+  },
+  "errorKinds": {
+    "auth": "凭据被拒绝",
+    "rejected": "请求被拒绝",
+    "rate_limited": "已被限流",
+    "server": "目的地错误",
+    "blocked_target": "地址不被允许",
+    "timeout": "已超时",
+    "network": "无法访问",
+    "config": "设置无效",
+    "other": "投递失败"
+  },
+  "row": {
+    "lastSuccess": "上次投递 {{when}}",
+    "never": "尚未投递",
+    "queued": "{{count}} 条排队中",
+    "dropped": "{{count}} 条已丢弃",
+    "failed": "{{count}} 条失败",
+    "identity": "已开启身份字段",
+    "noIdentity": "无访客身份",
+    "target": "发送到 {{host}}",
+    "enabled": "已启用",
+    "test": "发送测试",
+    "testing": "正在发送",
+    "testOk": "{{name}} 已接受测试记录",
+    "testFailed": "{{name}} 未接受测试记录:{{reason}}",
+    "edit": "编辑",
+    "remove": "移除"
+  },
+  "remove": {
+    "title": "移除 {{name}}?",
+    "description": "其已存储的凭据将被删除,排队中的记录将被丢弃。",
+    "confirm": "移除目的地"
+  },
+  "sheet": {
+    "addTitle": "添加导出目的地",
+    "editTitle": "编辑 {{name}}",
+    "description": "凭据加密存储,之后不会再显示。",
+    "name": "名称",
+    "namePlaceholder": "产品分析",
+    "kind": "目的地类型",
+    "host": "PostHog 区域或 URL",
+    "hostPlaceholder": "us、eu 或 https://posthog.example.com",
+    "token": "项目令牌",
+    "tokenStored": "已存储令牌。留空则保留。",
+    "url": "端点 URL",
+    "urlPlaceholder": "https://collector.example.com",
+    "urlStored": "已存储 URL。留空则保留。",
+    "authHeader": "Authorization 请求头的值",
+    "authHeaderHint": "可选,例如 Bearer 加一个令牌。留空则保留已存储的值。",
+    "fieldsTitle": "可选字段",
+    "fieldsHint": "每条记录已包含方法、路径、状态、耗时和请求 ID。除非你勾选,否则下面的内容都不会发送。",
+    "ipTruncate": "截断客户端 IP",
+    "ipTruncateHint": "将 IPv4 地址的最后一个八位组或 IPv6 地址的最后 80 位置零。",
+    "sample": "导出的追踪比例",
+    "sampleHint": "0 到 1 之间的数字。1 表示导出每个请求。",
+    "enabled": "投递到此目的地",
+    "save": "保存目的地",
+    "saving": "正在保存",
+    "cancel": "取消",
+    "saveFailed": "无法保存:{{message}}"
+  },
+  "fields": {
+    "referrer_host": {
+      "label": "来源主机",
+      "hint": "请求来自的站点,仅主机名。"
+    },
+    "client_ip": {
+      "label": "客户端 IP 地址",
+      "hint": "在许多地区属于个人数据。"
+    },
+    "user_agent": {
+      "label": "User agent",
+      "hint": "浏览器和设备字符串。"
+    },
+    "visitor_id": {
+      "label": "匿名访客 ID",
+      "hint": "由 IP 和 user agent 生成、每日轮换的哈希。仍然算作标识符。"
+    }
+  },
+  "disclaimer": {
+    "title": "此目的地将接收访客身份信息",
+    "body": "客户端 IP、user agent 或访客 ID 可以识别个人。只有在你的隐私声明涵盖向该目的地共享这些数据且你有合法依据时才启用。Cookie、认证头、查询字符串和请求体永远不会被导出。"
+  },
+  "privacy": "默认情况下不导出客户端 IP、user agent 或访客 ID。Cookie、认证头、查询字符串和请求体永远不会被导出。"
+}

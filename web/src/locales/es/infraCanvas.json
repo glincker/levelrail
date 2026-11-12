@@ -1,0 +1,59 @@
+{
+  "title": "{{name}}: Infraestructura",
+  "description": "Arrastra, desplaza y haz zoom para ver cómo se conectan las apps, bases de datos, dominios, balanceadores de carga, volúmenes y nodos de este proyecto. Las posiciones se recuerdan en este navegador.",
+  "canvasLabel": "Lienzo de infraestructura con {{count}} recursos. Enfoca un recurso y usa las flechas para moverlo.",
+  "empty": {
+    "title": "Aún no hay nada en este proyecto",
+    "description": "Asigna una app o una base de datos a este proyecto para ver aquí cómo se relacionan.",
+    "action": "Volver al proyecto"
+  },
+  "error": {
+    "title": "No se pudo cargar el grafo de infraestructura"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Base de datos",
+    "volume": "Volumen",
+    "domain": "Dominio",
+    "load_balancer": "Balanceador de carga",
+    "node": "Nodo"
+  },
+  "edge": {
+    "database_binding": "Conexión de base de datos",
+    "depends_on": "Depende de",
+    "volume_attachment": "Volumen adjunto",
+    "egress_allow": "Regla de salida permitida",
+    "routing": "Enrutamiento",
+    "load_balances": "Balancea el tráfico hacia",
+    "placed_on": "Se ejecuta en"
+  },
+  "status": {
+    "healthy": "Saludable",
+    "deploying": "Desplegando",
+    "failed": "Fallido",
+    "idle": "Sin estado",
+    "draft": "Borrador, aún sin aplicar"
+  },
+  "toolbar": {
+    "label": "Controles del lienzo",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "fit": "Ajustar a la vista",
+    "resetLayout": "Restablecer la disposición",
+    "zoomLevel": "Zoom {{percent}} por ciento",
+    "hidden": "{{count}} recursos están fuera de pantalla y no se dibujan hasta que te desplaces hasta ellos."
+  },
+  "panel": {
+    "label": "Detalles de {{name}}",
+    "close": "Cerrar los detalles",
+    "connections": "Conexiones",
+    "noConnections": "Aún no hay nada conectado a este recurso.",
+    "actions": "Acciones rápidas",
+    "overview": "Abrir el resumen",
+    "logs": "Ver los logs",
+    "deploys": "Despliegues y rollback",
+    "domains": "Gestionar dominios",
+    "metrics": "Ver las métricas"
+  },
+  "legend": "Leyenda"
+}

@@ -1,0 +1,145 @@
+{
+  "title": "Upgrades",
+  "description": "Mantenha este banco de dados atualizado. Todo upgrade faz um backup antes e pode sofrer rollback.",
+  "loadFailed": "Não foi possível carregar as informações de upgrade: {{error}}",
+  "unavailableTitle": "Os upgrades não estão disponíveis",
+  "current": {
+    "title": "Versão atual",
+    "engine": "Engine",
+    "version": "Versão",
+    "line": "Linha de lançamento {{line}}",
+    "floating": "Este banco de dados segue uma tag flutuante, então a versão exata pode mudar na próxima reinicialização.",
+    "notComparable": "Não foi possível comparar esta versão com o catálogo, então nenhum alvo de upgrade é oferecido.",
+    "advisories": "Avisos de segurança conhecidos que afetam esta versão",
+    "catalogUpdated": "Catálogo atualizado em {{date}}",
+    "blockersTitle": "Os upgrades estão bloqueados",
+    "manualReason": "Upgrade manual necessário"
+  },
+  "support": {
+    "supported": "Com suporte",
+    "eol_soon": "Fim de vida em breve ({{date}})",
+    "eol_soonNoDate": "Fim de vida em breve",
+    "eol": "Fim de vida",
+    "unknown": "Suporte desconhecido"
+  },
+  "targets": {
+    "tableLabel": "Alvos de upgrade",
+    "title": "Versões disponíveis",
+    "description": "Upgrades de patch e minor podem ser feitos daqui. Upgrades major mudam o formato em disco e são protegidos.",
+    "emptyTitle": "Nenhum upgrade disponível",
+    "empty": "Você já está na versão mais recente que o catálogo conhece.",
+    "columns": {
+      "version": "Versão",
+      "kind": "Tipo",
+      "details": "Detalhes",
+      "actions": "Ações"
+    },
+    "kind": {
+      "patch": "Patch",
+      "minor": "Minor",
+      "major": "Major"
+    },
+    "security": "Correção de segurança",
+    "automatic": "Automático",
+    "eol": "Fim de vida em {{date}}",
+    "upgradeNow": "Fazer upgrade agora",
+    "majorHint": "Upgrades major exigem o fluxo protegido de upgrade major, não este botão."
+  },
+  "dialog": {
+    "title": "Fazer upgrade de {{name}} para {{version}}",
+    "description": "Um backup é feito primeiro. O banco de dados reinicia e fica indisponível por um breve período.",
+    "confirmLabel": "Digite {{name}} para confirmar",
+    "cancel": "Cancelar",
+    "confirm": "Fazer upgrade",
+    "starting": "Iniciando",
+    "toast": "Upgrade para {{version}} iniciado",
+    "failedToast": "Não foi possível iniciar o upgrade"
+  },
+  "policy": {
+    "title": "Upgrades automáticos",
+    "description": "Escolha o que é aplicado automaticamente e quando.",
+    "inheritedNote": "Este banco de dados usa a política padrão da plataforma.",
+    "override": "Sobrescrever para este banco de dados",
+    "useDefault": "Usar o padrão da plataforma",
+    "autoUpgrade": "Aplicar automaticamente",
+    "auto": {
+      "off": "Desativado, upgrade manual",
+      "patch": "Somente versões de patch",
+      "minor": "Versões de patch e minor"
+    },
+    "window": "Janela de manutenção",
+    "preset": {
+      "daily": "Diariamente às 03:00",
+      "sundays": "Aos domingos às 03:00",
+      "custom": "Cron personalizado"
+    },
+    "cron": "Expressão cron",
+    "duration": "Duração da janela (horas)",
+    "timezone": "Fuso horário",
+    "backupBefore": "Fazer backup antes do upgrade",
+    "backupBeforeHint": "Sempre ativado. Um upgrade nunca começa sem um backup recente.",
+    "verifyAfter": "Verificar após o upgrade",
+    "verifyAfterHint": "Restaura o backup em um container temporário e verifica se ele abre.",
+    "revertOnFailure": "Fazer rollback em caso de falha",
+    "revertOnFailureHint": "Volta automaticamente à versão anterior se o upgrade falhar.",
+    "notify": "Notificar estes canais",
+    "noChannels": "Ainda não existem canais de notificação.",
+    "nextWindow": "Próxima janela",
+    "windowOpen": "Uma janela de manutenção está aberta agora",
+    "nextTarget": "Próximo upgrade automático",
+    "noNextTarget": "Nada está na fila para upgrade automático.",
+    "save": "Salvar política",
+    "saving": "Salvando",
+    "saved": "Política de upgrade salva",
+    "failedToast": "Não foi possível salvar a política"
+  },
+  "history": {
+    "title": "Histórico de upgrades",
+    "emptyTitle": "Nenhum histórico de upgrades",
+    "empty": "Nenhum upgrade foi executado neste banco de dados ainda.",
+    "active": "Upgrade em andamento",
+    "from": "{{from}} para {{to}}",
+    "backup": "Backup {{id}}",
+    "started": "Iniciado em {{date}}",
+    "finished": "Concluído em {{date}}",
+    "source": {
+      "auto": "Automático",
+      "manual": "Manual"
+    },
+    "state": {
+      "pending": "Pendente",
+      "backing_up": "Fazendo backup",
+      "upgrading": "Fazendo upgrade",
+      "verifying": "Verificando",
+      "succeeded": "Concluído com sucesso",
+      "reverted": "Rollback feito",
+      "failed": "Falhou"
+    },
+    "revert": {
+      "image": "Rollback feito pela image",
+      "volume_snapshot": "Rollback feito a partir do snapshot do volume",
+      "backup_restore": "Rollback feito a partir da restauração do backup"
+    },
+    "reason": "Motivo: {{reason}}"
+  },
+  "steps": {
+    "backup": {
+      "title": "Faça o backup primeiro",
+      "body": "Um backup recente é feito para que você sempre possa voltar a estes dados exatos.",
+      "skipped": "Ignorado pela política. Ative o backup antes do upgrade no cartão de política para maior segurança."
+    },
+    "change": {
+      "title": "Mude a versão",
+      "body": "O banco de dados reinicia na nova versão. Espere uma breve interrupção enquanto ele sobe.",
+      "skipped": ""
+    },
+    "verify": {
+      "title": "Verifique",
+      "body": "O upgrade é verificado restaurando o backup e testando a nova versão.",
+      "skipped": "Ignorado pela política. Nada confirma que a nova versão funciona até você verificar."
+    },
+    "majorWarning": "Este é um salto de versão major. Os arquivos de dados mudam de formato e não há como voltar no mesmo lugar. Faça e teste um backup e confirme que seu aplicativo oferece suporte à nova versão antes de continuar.",
+    "rollbackAuto": "Rollback: se o upgrade falhar, a versão anterior é restaurada automaticamente. Não é oferecido um rollback manual com um clique, então restaure o backup do passo 1 se precisar voltar depois.",
+    "rollbackManual": "Rollback: a reversão automática está desativada e não há rollback manual com um clique. Se algo der errado, restaure o backup do passo 1. Ative reverter em caso de falha no cartão de política para ter um caminho automático."
+  }
+}

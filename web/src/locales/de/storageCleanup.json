@@ -1,0 +1,69 @@
+{
+  "title": "Bereinigungsplan",
+  "description": "Prüfen Sie, was Levelrail entfernen würde, und wenden Sie dann nur an, was Sie auswählen.",
+  "tabs": {
+    "label": "Bereiche der Bereinigung",
+    "plan": "Plan",
+    "history": "Verlauf"
+  },
+  "stages": {
+    "containers": "Container",
+    "images": "Images",
+    "build_cache": "Build-Cache",
+    "volumes": "Volumes",
+    "deploy_attempts": "Deploy-Versuche",
+    "api_tokens": "API-Tokens"
+  },
+  "wholeStage": "Gemeinsam bereinigt, alles dieser Stufe oder nichts.",
+  "selectStage": "Alles aus {{stage}} auswählen",
+  "selectRow": "{{name}} auswählen",
+  "locked": {
+    "database": "Datenbankdaten werden nie automatisch entfernt.",
+    "kept": "Vorerst behalten.",
+    "label": "Gesperrt"
+  },
+  "stageNote": "Nicht ausgeführt: {{reason}}",
+  "loading": "Es wird geprüft, was entfernt werden kann",
+  "empty": "Nichts muss entfernt werden.",
+  "error": "Der Bereinigungsplan konnte nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "selected": "{{size}} ausgewählt in {{count}} Einträgen",
+  "none": "Nichts ausgewählt",
+  "preview": "Vorschau",
+  "previewing": "Vorschau wird erstellt",
+  "apply": "Anwenden",
+  "applying": "Wird angewendet",
+  "confirm": {
+    "line": "Jetzt {{size}} in {{count}} Einträgen entfernen? Gelöschte Daten können nicht wiederhergestellt werden.",
+    "yes": "Ja, löschen",
+    "cancel": "Abbrechen"
+  },
+  "result": {
+    "previewed": "Vorschau: {{size}} würden freigegeben.",
+    "applied": "Erledigt: {{size}} freigegeben.",
+    "ignoredTitle": "Nicht berührt",
+    "ignoredRow": "{{name}} ({{stage}}): {{reason}}",
+    "failed": "Der Lauf meldete einen Fehler: {{error}}"
+  },
+  "history": {
+    "loading": "Frühere Läufe werden geladen",
+    "empty": "Noch keine Bereinigungsläufe.",
+    "error": "Der Bereinigungsverlauf konnte nicht geladen werden.",
+    "time": "Zeit",
+    "by": "Gestartet von",
+    "reclaimed": "Freigegeben",
+    "mode": "Modus",
+    "dryRun": "Testlauf",
+    "applied": "Angewendet",
+    "trigger": {
+      "scheduled": "Geplant",
+      "manual": "Manuell",
+      "disk_fix": "Festplatten-Korrektur"
+    },
+    "kind": {
+      "user": "Benutzer",
+      "api_token": "API-Token",
+      "schedule": "Zeitplan"
+    }
+  }
+}

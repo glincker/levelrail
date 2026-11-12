@@ -1,0 +1,104 @@
+{
+  "card": {
+    "title": "Passkeys",
+    "description": "Connectez-vous avec Touch ID, Windows Hello, votre téléphone ou une clé de sécurité au lieu d'un mot de passe.",
+    "statusEnabled_one": "La connexion par passkey est activée, {{count}} passkey enregistrée",
+    "statusEnabled_other": "La connexion par passkey est activée, {{count}} passkeys enregistrées",
+    "statusEnabled_many": "La connexion par passkey est activée, {{count}} passkeys enregistrées",
+    "statusOff": "La connexion par passkey est désactivée tant que vous n'ajoutez pas de passkey",
+    "retry": "Réessayer",
+    "add": "Ajouter une passkey",
+    "test": "Tester la connexion",
+    "testing": "En attente de votre passkey...",
+    "testOk": "Passkey vérifiée. Rien d'autre n'a changé.",
+    "testFailedTitle": "Le test de la passkey a échoué"
+  },
+  "empty": {
+    "title": "Aucune passkey pour l'instant",
+    "body": "Les passkeys résistent à l'hameçonnage, sont plus rapides qu'un mot de passe et restent sur votre appareil ou dans votre gestionnaire de mots de passe. Ajoutez-en une pour vous connecter d'un geste ou d'un regard.",
+    "action": "Ajouter votre première passkey"
+  },
+  "nudge": {
+    "backupTitle": "Ajoutez une seconde passkey comme secours",
+    "backupBody": "Avec une seule passkey, perdre cet appareil vous oblige à revenir à votre mot de passe. Enregistrez un autre appareil ou une clé de sécurité.",
+    "backupAction": "Ajouter une passkey de secours"
+  },
+  "row": {
+    "provider": "Passkey",
+    "synced": "Synchronisée",
+    "deviceBound": "Liée à l'appareil",
+    "syncedHint": "Sauvegardée par votre fournisseur de passkeys et disponible sur vos autres appareils.",
+    "deviceBoundHint": "Reste sur cet authentificateur et ne peut pas être récupérée si vous la perdez.",
+    "added": "Ajoutée",
+    "lastUsed": "Dernière utilisation",
+    "neverUsed": "Jamais utilisée",
+    "signIns_one": "{{count}} connexion",
+    "signIns_other": "{{count}} connexions",
+    "signIns_many": "{{count}} connexions",
+    "transport": {
+      "usb": "USB",
+      "nfc": "NFC",
+      "ble": "Bluetooth",
+      "internal": "Cet appareil",
+      "hybrid": "Téléphone",
+      "smart-card": "Carte à puce"
+    },
+    "rename": "Renommer {{name}}",
+    "renameLabel": "Nom de la passkey",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "renameFailed": "Impossible de renommer cette passkey. Réessayez.",
+    "remove": "Supprimer {{name}}"
+  },
+  "remove": {
+    "title": "Supprimer cette passkey ?",
+    "description": "\"{{name}}\" ne pourra plus se connecter à ce compte.",
+    "lastWarning": "C'est votre seule passkey. Assurez-vous de pouvoir encore vous connecter avec votre mot de passe ou l'authentification à deux facteurs.",
+    "confirm": "Supprimer",
+    "pending": "Suppression...",
+    "blockedTitle": "Vous seriez verrouillé hors de votre compte",
+    "blockedBody": "C'est votre seul moyen de vous connecter. Ajoutez d'abord une autre passkey, un mot de passe ou l'authentification à deux facteurs.",
+    "blockedAddPasskey": "Ajouter une autre passkey",
+    "blockedFailed": "Impossible de supprimer cette passkey. Réessayez."
+  },
+  "addDialog": {
+    "title": "Ajouter une passkey",
+    "description": "Donnez-lui un nom pour la reconnaître plus tard, puis suivez l'invite de votre navigateur.",
+    "nameLabel": "Nom",
+    "stepName": "La nommer",
+    "stepPrompt": "Approuver dans votre navigateur",
+    "stepSaved": "Enregistrée",
+    "continue": "Continuer",
+    "waiting": "En attente de votre navigateur...",
+    "saving": "Enregistrement de votre passkey...",
+    "cancel": "Annuler",
+    "done": "Terminé",
+    "savedTitle": "Passkey ajoutée",
+    "savedBody": "\"{{name}}\" est prête à l'emploi.",
+    "savedProvider": "Stockée dans {{provider}}",
+    "retry": "Réessayer",
+    "defaults": {
+      "mac": "Touch ID du MacBook",
+      "iphone": "iPhone",
+      "ipad": "iPad",
+      "windows": "Windows Hello",
+      "android": "Téléphone Android",
+      "linux": "Appareil Linux",
+      "generic": "Ma passkey"
+    }
+  },
+  "errors": {
+    "cancelled": "L'invite de passkey a été fermée avant la fin. Rien n'a été enregistré.",
+    "timeout": "Le navigateur a attendu trop longtemps votre passkey. Réessayez quand vous êtes prêt.",
+    "alreadyRegistered": "Cet authentificateur possède déjà une passkey pour ce compte. Utilisez un autre appareil ou supprimez d'abord l'ancienne passkey.",
+    "unsupported": "Ce navigateur ou cet appareil ne prend pas en charge les passkeys. Essayez un autre navigateur ou une clé de sécurité.",
+    "insecureOrigin": "Les passkeys ne fonctionnent que sur l'adresse exacte configurée comme URL du tableau de bord, en https. Ouvrez le tableau de bord depuis cette adresse et réessayez.",
+    "rejected": "Le serveur n'a pas pu vérifier cette passkey. Réessayez, ou utilisez un autre authentificateur.",
+    "rateLimited": "Trop de tentatives. Attendez une minute et réessayez.",
+    "unavailable": "Les passkeys ne sont pas encore configurées sur ce serveur. Demandez à un administrateur de définir l'URL du tableau de bord.",
+    "lastMethod": "C'est votre seul moyen de vous connecter. Ajoutez d'abord une autre passkey, un mot de passe ou l'authentification à deux facteurs.",
+    "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "unknown": "La demande de passkey a échoué. Réessayez."
+  }
+}

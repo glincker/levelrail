@@ -1,0 +1,104 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "Rechercher des dépôts...",
+      "empty": "Aucun dépôt trouvé.",
+      "noMatch": "Aucun dépôt ne correspond à \"{{search}}\".",
+      "loadFailed": "Impossible de lister les dépôts."
+    },
+    "projects": {
+      "searchPlaceholder": "Rechercher des projets...",
+      "empty": "Aucun projet trouvé.",
+      "noMatch": "Aucun projet ne correspond à \"{{search}}\".",
+      "loadFailed": "Impossible de lister les projets."
+    },
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation",
+    "refreshHint": "Liste à nouveau les dépôts depuis le fournisseur au lieu d'utiliser la liste enregistrée.",
+    "filters": {
+      "label": "Filtres",
+      "allOwners": "Tous les propriétaires",
+      "hideArchived": "Masquer les archivés",
+      "hideForks": "Masquer les forks",
+      "allAccounts": "Tous les comptes"
+    },
+    "status": {
+      "showing": "{{shown}} affichés sur {{total}}.",
+      "searchToNarrow": "Recherchez ou choisissez un propriétaire pour réduire la liste.",
+      "loadedOf": "{{loaded}} chargés au total.",
+      "updated": "Mis à jour {{time}}.",
+      "stale": "Liste enregistrée, actualisation en arrière-plan.",
+      "truncated": "Ce compte a plus de {{cap}} dépôts que ceux listés ici. La recherche ne couvre que les {{cap}} premiers ; collez l'URL d'un dépôt pour en utiliser un au-delà.",
+      "rateLimited": "Le fournisseur limite le débit de ce control plane, voici donc la liste enregistrée. Nouvelle vérification après {{time}}.",
+      "rateLimitedEmpty": "Le fournisseur limite le débit de ce control plane et il n'y a pas encore de liste enregistrée. Réessayez après {{time}}.",
+      "rateLimitedNoTime": "Le fournisseur limite le débit de ce control plane. Réessayez dans une minute."
+    },
+    "loadMore": "Afficher plus",
+    "loadingMore": "Chargement",
+    "accountError": "Impossible de lister {{account}} : {{error}}",
+    "badges": {
+      "archived": "Archivé",
+      "fork": "Fork",
+      "private": "Dépôt privé",
+      "running": "Exécuté en tant que {{name}}"
+    },
+    "retry": "Réessayer",
+    "account": "Compte : {{name}}"
+  },
+  "connection": {
+    "label": "État de la connexion",
+    "healthy": "Sain",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server",
+      "azure_devops": "Azure DevOps"
+    },
+    "needs_reauthorize": {
+      "title": "{{provider}} doit être reconnecté",
+      "body": "L'autorisation a été révoquée, a expiré ou n'est plus acceptée, les dépôts ne peuvent donc être ni listés ni clonés tant que vous ne vous reconnectez pas."
+    },
+    "revoked": {
+      "title": "La connexion {{provider}} a été supprimée",
+      "body": "L'installation ou l'autorisation n'existe plus chez le fournisseur. Reconnectez-vous pour l'utiliser à nouveau."
+    },
+    "rate_limited": {
+      "title": "{{provider}} limite le débit de ce control plane",
+      "body": "Les listes enregistrées sont toujours affichées. Nouvelle vérification après {{time}}."
+    },
+    "reconnect": "Reconnecter {{provider}}",
+    "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "L'adresse de webhook de ce control plane est privée ou locale, donc GitHub, GitLab et les autres hébergeurs git ne peuvent pas l'appeler. Les push n'arriveront pas.",
+      "no_public_url": "Ce control plane n'a pas encore d'adresse publique, donc les hébergeurs git n'ont aucune adresse de webhook à appeler. Les push n'arriveront pas."
+    },
+    "urlFixHint": "Définissez une URL publique pour les webhooks ci-dessous, puis enregistrez à nouveau le webhook.",
+    "registration": {
+      "registered": "Webhook enregistré chez le fournisseur.",
+      "failed": "Le webhook n'a pas été enregistré chez le fournisseur : {{error}}",
+      "registerAgain": "Enregistrer à nouveau",
+      "registering": "Enregistrement",
+      "done": "Webhook enregistré.",
+      "failedToast": "Impossible d'enregistrer le webhook."
+    },
+    "poll": {
+      "last": "Dernière vérification {{time}}.",
+      "never": "Pas encore vérifié.",
+      "lastWebhook": "Dernier webhook {{time}}.",
+      "noWebhook": "Aucun webhook n'est encore arrivé.",
+      "error": "La dernière vérification a échoué : {{error}}",
+      "disabled": "L'interrogation pour détecter les push manqués est désactivée."
+    },
+    "connection": {
+      "needs_reconnect": "Le compte à partir duquel ce dépôt a été choisi a été déconnecté. La source reste, mais les webhooks et les aperçus ne peuvent pas l'utiliser tant que vous ne connectez pas à nouveau un compte sur le même hôte.",
+      "needs_reauthorize": "Le compte {{label}} doit être reconnecté pour que les webhooks et les aperçus de cette source fonctionnent.",
+      "revoked": "Le compte {{label}} a été supprimé chez le fournisseur. Reconnectez-le pour utiliser à nouveau cette source.",
+      "reconnect": "Reconnecter {{provider}}"
+    }
+  }
+}

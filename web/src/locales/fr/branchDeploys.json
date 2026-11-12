@@ -1,0 +1,46 @@
+{
+  "title": "Déploiements de branche",
+  "description": "Donnez à une branche sa propre URL stable, reconstruite à chaque push. Supprimée quand la branche est supprimée ou devient inactive.",
+  "settings": {
+    "mode": "Quelles branches obtiennent un déploiement",
+    "modeOff": "Aucune (désactivé)",
+    "modeAll": "Toutes les branches",
+    "modePatterns": "Uniquement les branches listées",
+    "patterns": "Branches et motifs",
+    "patternsHint": "Un par ligne. Utilisez un nom exact ou un motif comme feature/* (une étoile correspond à n'importe quels caractères).",
+    "patternsPlaceholder": "staging\nfeature/*",
+    "productionNote": "La branche de production ({{branch}}) n'est jamais listée ici : elle se déploie comme l'app elle-même.",
+    "idleNote": "Un déploiement de branche sans push depuis {{hours}} heures est supprimé.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement",
+    "saved": "Paramètres de déploiement de branche enregistrés.",
+    "saveError": "Impossible d'enregistrer les paramètres."
+  },
+  "list": {
+    "title": "Déploiements de branche actifs",
+    "emptyTitle": "Aucun déploiement de branche pour l'instant",
+    "emptyOff": "Activez les déploiements de branche ci-dessus, puis faites un push sur une branche correspondante.",
+    "emptyOn": "Faites un push sur une branche correspondante et son déploiement apparaîtra ici.",
+    "noUrl": "Pas d'URL (définissez un domaine de base des apps ou un domaine principal)",
+    "expires": "Supprimé s'il n'y a pas de nouveau push :",
+    "open": "Ouvrir",
+    "openLabel": "Ouvrir le déploiement {{branch}}",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le déploiement {{branch}}",
+    "loadError": "Impossible de charger les déploiements de branche."
+  },
+  "status": {
+    "deploying": "Déploiement en cours",
+    "active": "Actif",
+    "failed": "Échec"
+  },
+  "deleteDialog": {
+    "title": "Supprimer le déploiement {{branch}} ?",
+    "description": "Son URL cesse de fonctionner. Le prochain push sur la branche le déploie à nouveau.",
+    "consequence": "Le déploiement, ses conteneurs et son enregistrement DNS sont supprimés.",
+    "confirm": "Supprimer le déploiement",
+    "pending": "Suppression",
+    "success": "Déploiement de branche supprimé.",
+    "error": "Impossible de supprimer le déploiement de branche."
+  }
+}

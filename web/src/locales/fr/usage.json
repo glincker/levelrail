@@ -1,0 +1,133 @@
+{
+  "title": "Usage et coût",
+  "description": "Où vont l'argent et la capacité, répartis selon ce que chaque app et chaque base de données utilise réellement. Il s'agit d'un showback de vos propres prix, pas d'une facture.",
+  "period": {
+    "label": "Période",
+    "mtd": "Mois en cours",
+    "30d": "30 derniers jours",
+    "last_month": "Mois dernier"
+  },
+  "summary": {
+    "total": "Total estimé",
+    "change": "{{value}} par rapport à la période précédente",
+    "noChange": "Aucune période précédente à comparer",
+    "forecast": "Prévision pour la fin du mois",
+    "forecastHint": "Basée sur les dernières journées complètes de dépenses.",
+    "unallocated": "Non alloué",
+    "unallocatedHint": "Capacité inactive que personne n'a utilisée. Elle est affichée ici au lieu d'être cachée dans le coût des apps.",
+    "allocated": "Alloué aux apps"
+  },
+  "chart": {
+    "label": "Coût quotidien par projet",
+    "other": "Autres projets",
+    "unallocated": "Non alloué",
+    "unassigned": "Aucun projet"
+  },
+  "dimension": {
+    "label": "Répartir par",
+    "project": "Projet",
+    "environment": "Environnement",
+    "team": "Équipe",
+    "resource": "App ou base de données",
+    "tag": "Tag"
+  },
+  "table": {
+    "label": "Classement des coûts",
+    "name": "Nom",
+    "cost": "Coût estimé",
+    "previous": "Précédent",
+    "change": "Variation",
+    "trend": "Tendance",
+    "unassigned": "Non assigné",
+    "untagged": "Sans tag",
+    "tagNote": "Une ressource avec plusieurs tags est comptée sous chacun d'eux, donc les totaux par tag peuvent dépasser le total du rapport.",
+    "empty": "Rien à afficher pour cette période pour l'instant."
+  },
+  "movers": {
+    "title": "Plus fortes variations",
+    "up": "{{name}} a augmenté de {{amount}}",
+    "down": "{{name}} a diminué de {{amount}}",
+    "none": "Aucune ressource n'a changé de coût depuis la période précédente."
+  },
+  "export": {
+    "csv": "Exporter en CSV",
+    "json": "Exporter en JSON"
+  },
+  "empty": {
+    "notConfiguredTitle": "Définissez vos prix pour voir les coûts",
+    "notConfiguredDescription": "L'usage est déjà enregistré. Saisissez ce que vous coûte un serveur, ou un prix par vCPU et par Gio-heure, et chaque app reçoit un coût.",
+    "notConfiguredAskAdmin": "Demandez à un admin de l'instance de définir les prix. L'usage est déjà enregistré.",
+    "noTelemetryTitle": "Les données d'usage ne sont pas disponibles",
+    "noTelemetryDescription": "Le coût nécessite le collecteur de métriques. Activez l'observabilité pour enregistrer le CPU et la mémoire par app.",
+    "configure": "Définir les prix"
+  },
+  "unpriced": "{{nodes}} n'a pas encore de prix, donc les apps qui y tournent ne sont pas chiffrées.",
+  "error": "Impossible de charger l'usage : {{message}}",
+  "settings": {
+    "open": "Prix",
+    "title": "Prix et allocation",
+    "description": "Les coûts sont vos propres prix appliqués à l'usage mesuré. Chaque jour est chiffré au moment de son enregistrement, donc modifier les prix ne réécrit pas l'historique sauf si vous demandez de rechiffrer le mois en cours.",
+    "mode": "Mode de tarification",
+    "modeNode": "Répartir la facture mensuelle de chaque serveur",
+    "modeNodeHint": "Saisissez ce que coûte chaque serveur par mois. La facture est partagée entre les apps selon la part du serveur qu'elles ont utilisée.",
+    "modeUnit": "Prix par unité d'usage",
+    "modeUnitHint": "Saisissez un prix par vCPU-heure et par Gio-heure. Utile quand il n'y a pas de facture unique à répartir.",
+    "currency": "Devise",
+    "nodes": "Factures des serveurs",
+    "nodeMonthly": "Prix mensuel",
+    "nodeVcpus": "vCPU",
+    "nodeMemory": "Mémoire (Gio)",
+    "detected": "Détecté : {{vcpus}} vCPU, {{memory}} Gio",
+    "cpuHour": "Par vCPU-heure",
+    "memHour": "Par Gio-heure de mémoire",
+    "storage": "Par Gio de stockage de volume et par mois",
+    "egress": "Par Gio sortant",
+    "preset": "Partir d'un serveur typique",
+    "presetHint": "Prix indicatifs d'une taille de VPS courante. Corrigez-les selon ce que vous payez.",
+    "idle": "Part de capacité inactive à répartir sur les apps",
+    "idleHintNode": "0 affiche toute la capacité inactive comme Non alloué. 100 la répartit sur les apps selon l'usage pour que le rapport corresponde à la facture complète.",
+    "idleHintUnit": "Ajoutée au coût de chaque app comme surcharge de marge.",
+    "basis": "Mesurer l'usage par",
+    "basisAvg": "Moyenne",
+    "basisP50": "Typique (p50)",
+    "weight": "Part d'une facture de serveur attribuée au CPU",
+    "weightHint": "Le reste est attribué à la mémoire.",
+    "reprice": "Rechiffrer aussi le mois en cours",
+    "repriceHint": "Recalcule les jours déjà enregistrés ce mois-ci avec ces prix.",
+    "save": "Enregistrer les prix",
+    "saving": "Enregistrement",
+    "saved": "Prix enregistrés",
+    "error": "Impossible d'enregistrer les prix : {{message}}",
+    "cancel": "Annuler"
+  },
+  "budgets": {
+    "title": "Budgets",
+    "description": "Une limite mensuelle pour un projet ou une équipe. Les alertes passent par vos canaux de notification quand un budget atteint son niveau d'avertissement, le dépasse ou devrait être dépassé.",
+    "empty": "Aucun budget pour l'instant.",
+    "add": "Ajouter un budget",
+    "scope": "S'applique à",
+    "scopeProject": "Projet",
+    "scopeTeam": "Équipe",
+    "target": "Lequel",
+    "monthly": "Budget mensuel",
+    "warn": "Avertir à (%)",
+    "save": "Enregistrer le budget",
+    "remove": "Supprimer le budget {{name}}",
+    "spent": "{{spent}} sur {{budget}}",
+    "forecast": "Prévision {{amount}}",
+    "state": {
+      "ok": "Sur la bonne voie",
+      "warn": "Proche de la limite",
+      "over": "Budget dépassé",
+      "forecast": "Dépassement prévu"
+    },
+    "alertHint": "Créez une règle d'alerte budget_threshold pour que ces alertes atteignent vos canaux.",
+    "error": "Impossible de mettre à jour les budgets : {{message}}"
+  },
+  "chip": {
+    "label": "Coût ce mois-ci",
+    "value": "{{amount}} jusqu'ici",
+    "forecast": "environ {{amount}} d'ici la fin du mois",
+    "open": "Ouvrir Usage et coût"
+  }
+}

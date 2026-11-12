@@ -1,0 +1,165 @@
+{
+  "defaults": {
+    "tab": "既定",
+    "description": "最初からオンになっているアラートです。段階的な事前通知での証明書の期限、失敗したリストア訓練、オフラインのノードなどがあります。オフにしたものはオフのままで、編集内容が上書きされることはありません。",
+    "loadError": "既定のアラートを読み込めませんでした。",
+    "reset": "既定値に戻す",
+    "resetToast": "既定のアラートをリセットしました",
+    "resetError": "既定のアラートをリセットできませんでした。",
+    "emptyTitle": "既定のアラートはありません",
+    "emptyBody": "既定のアラートは、初回起動時に作成されます。削除したものは、削除されたままです。",
+    "toggleLabel": "{{name}}を有効にする",
+    "enabledToast": "{{name}}をオンにしました",
+    "disabledToast": "{{name}}をオフにしました",
+    "toggleError": "{{name}}を更新できませんでした。",
+    "firing": "発生中",
+    "severity": {
+      "info": "情報",
+      "warning": "警告",
+      "critical": "緊急"
+    }
+  },
+  "tab": "受信トレイ",
+  "title": "アラート受信トレイ",
+  "description": "あなたに届いたアラートが、新しい順に並びます。サイレンス、グループ化、レート制限されたノイズは表示されません。既読の状態は、アカウントに紐づきます。",
+  "loading": "受信トレイを読み込み中",
+  "loadError": "受信トレイを読み込めませんでした。",
+  "retry": "再試行",
+  "unreadOnly": "未読のみ",
+  "markAllRead": "すべて既読にする",
+  "markRead": "既読にする",
+  "markedAll": "受信トレイを既読にしました。",
+  "unreadCount_other": "未読{{count}}件",
+  "empty": {
+    "title": "対応が必要なものはありません",
+    "body": "警告レベル以上の新しい発生と解決が、ここに表示されます。下で最小の重大度を下げると、より多く表示されます。"
+  },
+  "event": {
+    "fired": "発生",
+    "resolved": "解決",
+    "flapping": "フラッピング",
+    "group": "グループ化されたアラート"
+  },
+  "severity": {
+    "info": "情報",
+    "warning": "警告",
+    "critical": "緊急"
+  },
+  "prefs": {
+    "title": "ルーティングと日次ダイジェスト",
+    "minSeverity": "最小の重大度",
+    "mutedApps": "ミュートしたアプリ",
+    "mutedAppsHint": "受信トレイに入れないアラートのアプリ名を、カンマ区切りで指定します。",
+    "digest": "日次ダイジェスト",
+    "digestHint": "過去24時間の要約を1通にまとめ、通知チャンネル経由で送信します。",
+    "digestHour": "送信時刻(UTCの時)",
+    "digestChannel": "ダイジェストのチャンネル",
+    "noChannel": "先に通知チャンネルを作成してください",
+    "save": "設定を保存",
+    "saved": "受信トレイの設定を保存しました。",
+    "saveError": "設定を保存できませんでした。",
+    "digestNeedsChannel": "ダイジェストを送信するチャンネルを選んでください。"
+  },
+  "bell": {
+    "link": "アラート受信トレイ",
+    "unread_other": "未読のアラート{{count}}件"
+  },
+  "page": {
+    "title": "受信トレイ",
+    "description": "対応が必要なアラート、承認リクエスト、失敗が、1件につき1つの操作とともに表示されます。",
+    "kindFilter": "種類で絞り込み",
+    "showArchived": "アーカイブ済み",
+    "listLabel": "受信トレイの項目",
+    "detailLabel": "受信トレイの項目",
+    "kind": {
+      "all": "すべて",
+      "alert": "アラート",
+      "approval": "承認",
+      "deploy": "失敗したデプロイ",
+      "upgrade": "失敗したアップグレード"
+    },
+    "approve": "承認",
+    "matchLabel": "待機中のブラウザーに表示されている番号",
+    "matchPlaceholder": "番号",
+    "deny": "拒否",
+    "retry": "再試行",
+    "fix": "修正",
+    "retryStarted": "{{app}}のデプロイを再試行しています。",
+    "actionError": "処理が完了しませんでした。ソースを開いて、理由を確認してください。",
+    "openSource": "ソースを開く",
+    "archive": "アーカイブ",
+    "restore": "復元",
+    "keys": "キー: j 次へ、k 前へ、e アーカイブ、# 削除、z 元に戻す。",
+    "emptyTitle": "対応が必要なものはありません",
+    "emptyBody": "新しいアラート、承認リクエスト、失敗したデプロイが、ここに表示されます。アラートのルーティングで、届く内容を調整できます。",
+    "emptyAction": "アラート設定を確認",
+    "emptyArchivedTitle": "アーカイブ済みの項目はありません",
+    "emptyArchivedBody": "eでアーカイブした項目は、復元するまでここに保管されます。",
+    "badge": "受信トレイ: 未読{{count}}件",
+    "badgeNone": "受信トレイ",
+    "entry": {
+      "signInTitle": "{{ip}}からの新しいブラウザーでのサインイン",
+      "approvalTitle": "{{app}}が承認待ちです",
+      "approvalDetail": "{{action}} {{image}}、申請者: {{who}}",
+      "deployTitle": "{{app}}のデプロイに失敗しました",
+      "upgradeSucceeded": "{{version}}へのアップグレードに成功しました",
+      "upgradeDetail": "{{from}}から{{to}}にアップグレードしました"
+    },
+    "count_other": "{{count}}件、未読{{unread}}件",
+    "countMore_other": "{{count}}件以上、未読{{unread}}件",
+    "selectItem": "{{title}}を選択",
+    "selectGroup": "すべて選択: {{title}}",
+    "group": {
+      "label": "{{title}}、{{count}}件",
+      "archive_other": "{{count}}件をすべてアーカイブ",
+      "delete_other": "{{count}}件をすべて削除"
+    },
+    "deleted_other": "{{count}}件を削除しました。",
+    "undo": "元に戻す",
+    "deleteError": "削除できませんでした。何も削除されていません。"
+  },
+  "certCard": {
+    "domain": "ドメイン",
+    "issuer": "発行者",
+    "timeLeft": "残り期間",
+    "daysLeft_other": "{{count}}日",
+    "expired": "期限切れ",
+    "why": "理由",
+    "renewNow": "今すぐ更新",
+    "renewing": "更新中...",
+    "checkDns": "DNSを確認して再試行",
+    "renewRequested": "{{domain}}の更新を要求しました。",
+    "renewError": "{{domain}}の証明書を更新できませんでした。",
+    "noChannel": "通知チャンネルが接続されていないため、このアラートはこことダッシュボードにのみ表示されます。",
+    "connectChannel": "通知チャンネルを接続",
+    "alsoEmail": "メールでも通知する",
+    "emailNoProvider": "これを有効にするには、メールプロバイダーを接続してください。",
+    "emailNotVerified": "これを有効にするには、メールアドレスを確認してください。",
+    "emailError": "メール通知を更新できませんでした。"
+  },
+  "bulk": {
+    "label": "一括操作",
+    "selected_other": "{{count}}件選択中",
+    "selectAll": "すべて選択",
+    "delete": "削除",
+    "deleteBlocked": "承認、失敗したデプロイ、失敗したアップグレードは削除できず、アーカイブのみ可能です。",
+    "clear": "選択を解除"
+  },
+  "tidy": {
+    "menu": "整理",
+    "archiveRead": "既読をすべてアーカイブ",
+    "archiveResolved": "解決済みをすべてアーカイブ",
+    "clearResolved": "解決済みをクリア",
+    "deleteArchived": "アーカイブ済みをすべて削除",
+    "confirm_other": "受信トレイから{{count}}件を削除します。アラートの履歴には、記録が残ります。",
+    "confirmAction": "削除",
+    "nothing": "整理するものはありません。",
+    "error": "受信トレイを整理できませんでした。",
+    "done": {
+      "archiveRead_other": "既読の{{count}}件をアーカイブしました。",
+      "archiveResolved_other": "解決済みの{{count}}件をアーカイブしました。",
+      "clearResolved_other": "解決済みの{{count}}件をクリアしました。",
+      "deleteArchived_other": "アーカイブ済みの{{count}}件を削除しました。"
+    }
+  }
+}

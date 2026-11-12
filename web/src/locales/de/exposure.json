@@ -1,0 +1,73 @@
+{
+  "tableLabel": "Veröffentlichte Ports",
+  "title": "Veröffentlichte Ports",
+  "description": "Container-Ports, die auf den Netzwerkschnittstellen eines Servers veröffentlicht sind. Docker umgeht ufw für diese, daher deckt eine scheinbar aktive Firewall sie nicht ab.",
+  "probe": "Von außen prüfen",
+  "probing": "Wird geprüft",
+  "probeNote": "Eine fehlgeschlagene Prüfung wird als nicht bestätigbar gemeldet, nie als geschlossen: Viele Router blockieren, dass ein Server seine eigene öffentliche Adresse anwählt.",
+  "emptyTitle": "Nichts von Ihnen ist zum Internet hin veröffentlicht",
+  "emptyBody": "Kein Container auf diesem Server lauscht ohne Einschränkung auf einer öffentlichen Adresse.",
+  "nodeUnreachable": "Dieser Node konnte nicht auditiert werden: {{error}}",
+  "rulesUnreadable": "Die Firewall-Kette des Hosts konnte nicht gelesen werden: {{reason}}",
+  "columns": {
+    "severity": "Schweregrad",
+    "port": "Port",
+    "container": "Container",
+    "owner": "Inhaber",
+    "bind": "Lauscht auf",
+    "state": "Zustand"
+  },
+  "severity": {
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig",
+    "info": "Info"
+  },
+  "class": {
+    "loopback": "Nur dieser Server",
+    "private": "Privates Netzwerk",
+    "restricted": "Eingeschränkt",
+    "exposed": "Exponiert",
+    "unknown": "Unbekannt"
+  },
+  "owner": {
+    "database": "Datenbank {{name}}",
+    "app": "App {{name}}",
+    "unmanaged": "Nicht verwaltet"
+  },
+  "outside": {
+    "answers": "Von außerhalb dieses Hosts beantwortet",
+    "could_not_confirm": "Von diesem Host aus nicht bestätigbar"
+  },
+  "restrictedTo": "Nur erlaubt von: {{sources}}",
+  "details": "Details",
+  "hideDetails": "Details ausblenden",
+  "restrict": "Nur diese Quellen erlauben",
+  "remove": "Einschränkung entfernen",
+  "removedToast": "Einschränkung entfernt",
+  "appliedToast": "Einschränkung angewendet",
+  "failedToast": "Die Firewall konnte nicht geändert werden",
+  "dialog": {
+    "title": "Port {{port}} einschränken",
+    "description": "Nur die von Ihnen aufgelisteten Quellen können sich verbinden. Alle anderen, auch das Internet, werden verworfen.",
+    "sources": "Erlaubte Quellen",
+    "sourcesHint": "Eine IP oder CIDR pro Zeile, zum Beispiel Ihre anderen Server",
+    "localContainers": "Auch Container auf diesem Server erlauben",
+    "preview": "Regeln in der Vorschau ansehen",
+    "previewTitle": "Genaue Regeln",
+    "effect": "Was verworfen wird",
+    "apply": "Einschränkung anwenden",
+    "cancel": "Abbrechen",
+    "confirm": "Ich verstehe, dass dieser Traffic verworfen wird",
+    "persistence": "Persistenz",
+    "lockoutTitle": "Aussperrrisiko",
+    "callerWarningTitle": "Ihre Adresse wurde nicht geprüft",
+    "forceLockout": "Ich nehme das Risiko in Kauf und möchte es trotzdem anwenden",
+    "autoRevert": "Diese Regel wird probeweise angewendet und rollt sich von selbst zurück, sofern Sie sie nicht im nächsten Schritt behalten.",
+    "trialTitle": "Einschränkung probeweise angewendet",
+    "trialBody": "Prüfen Sie, ob Sie weiterhin erreichen, was Sie brauchen. Die Regel rollt sich um {{time}} zurück, sofern Sie sie nicht behalten.",
+    "keep": "Diese Regel behalten",
+    "letRevert": "Zurückrollen lassen",
+    "keptToast": "Einschränkung behalten"
+  }
+}

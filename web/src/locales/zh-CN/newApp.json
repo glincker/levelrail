@@ -1,0 +1,677 @@
+{
+  "title": "新建应用",
+  "description": "选择一个仓库或其他来源。我们会通过提供商 API 读取它，并建议一套设置供你确认。在你部署之前，不会克隆或创建任何内容。",
+  "steps": {
+    "label": "新建应用的步骤",
+    "source": "来源",
+    "findings": "我们的发现",
+    "review": "审阅并部署"
+  },
+  "nav": {
+    "back": "返回",
+    "review": "审阅"
+  },
+  "source": {
+    "analyzing": "正在读取仓库...",
+    "noProvider": {
+      "lead": "没有连接 git 提供商，而且你也不需要。你可以粘贴仓库 URL、选择模板，或试试示例应用。"
+    },
+    "privateRepo": "我们无法读取此仓库。如果它是私有的，请连接你的 git 提供商，并从列表中选择它。",
+    "privateRepoConnect": "连接 git 提供商",
+    "analyze": "分析仓库",
+    "repos": {
+      "listLabel": "已连接的仓库",
+      "loading": "正在加载你的仓库",
+      "noMatch": "没有仓库匹配“{{query}}”。请粘贴完整 URL 以直接使用。",
+      "private": "私有仓库",
+      "pushed": "推送于 {{when}}",
+      "partial": "部分已连接的账户无法列出。对于缺少的仓库，请粘贴 URL。",
+      "retry": "重试",
+      "refresh": "刷新仓库",
+      "refreshing": "刷新中...",
+      "emptyTitle": "未找到仓库",
+      "emptyBody": "我们目前在你已连接的账户中看不到任何仓库。请在授予访问权限后刷新列表，或在上方粘贴仓库 URL。",
+      "failedTitle": "无法列出你的仓库",
+      "failedBody": "提供商没有响应。请刷新重试，在“设置”中检查连接，或在上方粘贴仓库 URL。"
+    },
+    "git": {
+      "title": "从 Git 导入",
+      "connectTitle": "连接 git 提供商",
+      "connectBody": "连接一个账户即可从你的仓库中选择，或在上方粘贴仓库 URL。",
+      "connect": "连接",
+      "manageAll": "管理 Git 连接",
+      "connectLabel": "连接 {{provider}}",
+      "connected": "已连接",
+      "needsAddress": "GitHub 登录需要此服务器有公网地址。",
+      "useUrlInstead": "改用仓库 URL",
+      "manage": "管理连接",
+      "noProviderHint": "公开仓库无需 git 提供商即可部署。如需私有仓库和推送即部署，请在下方连接一个。"
+    },
+    "templates": {
+      "title": "从模板开始",
+      "seeAll": "查看全部 {{count}} 个模板",
+      "browse": "浏览模板目录",
+      "loading": "正在加载模板",
+      "unavailable": "目前无法获取模板列表。完整目录只需一次点击。",
+      "gridLabel": "精选模板",
+      "retry": "重试",
+      "search": "搜索模板",
+      "categories": "模板分类",
+      "noMatch": "没有模板匹配“{{query}}”。请换个词，或浏览完整目录。",
+      "popular": "热门模板",
+      "browseAll": "浏览全部 {{count}} 个"
+    },
+    "errorManage": "检查 Git 连接",
+    "find": {
+      "label": "仓库",
+      "placeholder": "搜索仓库或粘贴 git URL",
+      "hint": "输入以筛选你的仓库，或粘贴 GitHub、GitLab、Gitea 或 Bitbucket 的 URL（https、git@ 或 /tree/branch 链接）。",
+      "useUrl": "使用此 URL",
+      "clear": "清除"
+    },
+    "choose": {
+      "label": "选择你的应用来自哪里",
+      "git": {
+        "title": "Git 仓库",
+        "hint": "粘贴 URL 或选择仓库"
+      },
+      "template": {
+        "title": "模板",
+        "hint": "自托管现成的应用"
+      },
+      "image": {
+        "title": "容器镜像",
+        "hint": "也支持 Compose、docker run、站点"
+      },
+      "sample": {
+        "title": "示例应用",
+        "hint": "一键试用"
+      }
+    },
+    "sample": {
+      "body": "部署一个小型公开示例应用，几秒钟内就能看到运行中的部署。"
+    }
+  },
+  "findings": {
+    "warnings": {
+      "nothing_detected": "未找到 Dockerfile、compose 文件或已知框架。请在“高级”下选择构建类型。",
+      "read_budget": "已达到文件读取上限，因此可能缺少部分发现项。",
+      "tree_truncated": "此仓库很大，其文件列表被截断了。",
+      "monorepo_choose_app": "这看起来是包含多个应用的 monorepo。请检查下方的应用目录。",
+      "directory_missing": "此分支上不存在该目录。请从上方列表中选择一个，或修正路径。",
+      "port_unknown": "未检测到监听端口。请设置应用监听的端口。"
+    },
+    "app": {
+      "title": "应用",
+      "name": "应用名称",
+      "domain": "域名"
+    },
+    "build": {
+      "title": "构建与运行",
+      "app": "此仓库中的应用",
+      "appHint": "发现了多个可构建的应用。请选择要部署的那个。"
+    },
+    "port": {
+      "label": "应用监听的端口"
+    },
+    "health": {
+      "label": "健康检查路径"
+    },
+    "databases": {
+      "title": "它似乎需要的数据库",
+      "attach": "创建并关联 {{engine}} {{version}}",
+      "name": "数据库名称",
+      "envVar": "连接变量"
+    },
+    "env": {
+      "title": "环境变量",
+      "none": "该仓库没有声明任何环境变量。",
+      "required": "必填",
+      "secret": "密钥",
+      "provided": "已根据 {{source}} 自动填写。",
+      "placeholder": "输入值",
+      "hasDefault": "留空则使用应用自己的默认值",
+      "source": "在 {{source}} 中找到",
+      "optional": "{{count}} 个可选变量",
+      "noValues": "只会从仓库中读取变量名称。绝不会导入值。"
+    },
+    "advanced": {
+      "title": "高级选项",
+      "buildType": "构建类型",
+      "dockerfile": "Dockerfile 路径",
+      "spa": "单页应用模式",
+      "baseDirectory": "构建上下文目录",
+      "validateDirectory": "验证目录",
+      "memory": "内存限制（MiB）",
+      "types": {
+        "railpack": "自动检测（Railpack）",
+        "dockerfile": "Dockerfile",
+        "static": "静态站点"
+      }
+    }
+  },
+  "review": {
+    "summary": "这会根据一个 {{framework}} 仓库创建 {{name}}，带有 {{databases}} 个数据库，在 {{domain}} 提供服务，并开始其首次构建。",
+    "noDomain": "暂无域名",
+    "changesLabel": "将创建的内容",
+    "willCreate": "将被创建",
+    "kinds": {
+      "app": "应用",
+      "source": "仓库",
+      "database": "数据库",
+      "domain": "域名",
+      "env": "环境变量"
+    },
+    "missingTitle": "必填变量为空",
+    "missingBody": "请返回并填写：{{keys}}",
+    "deploy": "部署",
+    "deploying": "正在创建并部署...",
+    "failed": {
+      "generic": "部署未能完成",
+      "database": "无法创建数据库",
+      "app": "无法创建应用",
+      "connection": "无法关联数据库",
+      "source": "无法连接仓库",
+      "build": "无法开始构建"
+    },
+    "failedResume": "应用记录已存在。点击“部署”从中断处继续。"
+  },
+  "toast": {
+    "created": "正在创建“{{name}}”。",
+    "watching": "正在关注首次构建。"
+  },
+  "deployLink": {
+    "title": "已根据链接预填。部署前请审阅",
+    "fromSource": "来自 {{host}} 的链接填写了此表单。在你点击“部署”之前不会创建任何内容。",
+    "fromUnknown": "一个链接填写了此表单。在你点击“部署”之前不会创建任何内容。",
+    "ignoredTitle": "部分链接参数被忽略",
+    "ignoredBody": "这些参数缺失或无效：{{params}}。",
+    "name": "名称",
+    "image": "镜像",
+    "port": "端口",
+    "portHint": "应用在其容器内监听的端口。",
+    "health": "健康检查路径",
+    "healthHint": "留空则跳过健康检查。",
+    "envTitle": "环境变量",
+    "envHint": "链接指定了这些变量。请输入你自己的值。它们会作为密钥存储。",
+    "envValue": "{{key}} 的值",
+    "deploy": "部署",
+    "deploying": "创建中...",
+    "missingImage": "该链接没有包含有效的镜像。请在下方选择此应用的来源。",
+    "errors": {
+      "name": "请使用小写字母、数字和连字符。",
+      "image": "请输入镜像，例如 ghcr.io/you/app:latest。",
+      "port": "请输入 1 到 65535 之间的端口。",
+      "health": "路径必须以单个斜杠开头。"
+    }
+  },
+  "detection": {
+    "title": "我们如何读取此仓库",
+    "why": "原因",
+    "whyFor": "为何检测到{{field}}",
+    "fromFramework": "{{framework}} 的默认值",
+    "framework": "框架与语言",
+    "buildType": "构建类型",
+    "port": "端口",
+    "start": "启动命令",
+    "buildCommand": "构建命令",
+    "output": "输出目录",
+    "runtime": "运行时版本",
+    "health": "健康检查路径",
+    "confidence": {
+      "high": "置信度高",
+      "medium": "置信度中",
+      "low": "置信度低"
+    },
+    "warnings": {
+      "no_lockfile": {
+        "text": "未找到 lockfile，因此安装结果不可复现。",
+        "fix": "请提交你的 lockfile 并重新分析。"
+      },
+      "multiple_dockerfiles": {
+        "text": "发现了多个 Dockerfile。",
+        "fix": "如果选择有误，请在“高级”下选择正确的那个。"
+      },
+      "malformed_manifest": {
+        "text": "无法解析某个清单文件，因此这只是最佳猜测。",
+        "fix": "请修正 JSON 或 TOML 语法并重新分析。"
+      },
+      "dockerfile_no_expose": {
+        "text": "该 Dockerfile 没有 EXPOSE 行。",
+        "fix": "请使用你的端口添加 EXPOSE，或在下方设置端口。"
+      },
+      "monorepo_no_root_app": {
+        "text": "这是一个 monorepo，其根目录没有应用。",
+        "fix": "请在下方为每个包创建一个应用。"
+      },
+      "railpack_unsupported": {
+        "text": "自动构建尚不支持此语言。",
+        "fix": "请向仓库添加 Dockerfile 并重新分析。"
+      }
+    }
+  },
+  "starter": {
+    "open": "入门配置文件",
+    "title": "入门模板",
+    "description": "选择一个起点，回答几个问题，即可获得经过校验、可提交到仓库的文件。",
+    "generate": "生成文件",
+    "generating": "生成中...",
+    "copy": "复制",
+    "copied": "已复制 {{path}}",
+    "next": "请将这些文件提交到你的仓库，然后在“来源”步骤中部署它。",
+    "viaCli": "改用 CLI 生成",
+    "openHint": "生成可提交到仓库的 app.yaml。"
+  },
+  "packages": {
+    "title": "工作区包",
+    "hint": "此仓库包含多个包。请为每个包创建一个应用。每个应用从各自的目录构建，且仅在其变化时重新部署。",
+    "dockerfile": "Dockerfile",
+    "configure": "配置这一项",
+    "creating": "正在创建应用并开始其首次构建...",
+    "open": "打开 {{name}} 的构建",
+    "creatingAll": "正在创建应用...",
+    "createSelected_other": "为每个所选的包创建一个应用（{{count}}）",
+    "envNote": "这里不会询问必填的环境变量。请在每个应用上添加，然后重新部署。"
+  },
+  "plan": {
+    "title": "导入计划",
+    "hint": "在创建任何内容之前，查看每个包将成为怎样的应用：名称、端口、构建类型，以及需要复查的内容。",
+    "review": "预览计划",
+    "loading": "正在读取仓库中的每个包...",
+    "error": "无法生成计划：{{message}}",
+    "retry": "重试",
+    "empty": "未找到工作区包，因此没有可规划的内容。请在下方将此仓库配置为单个应用。",
+    "summary_other": "{{count}} 个包，其中 {{flagged}} 个有警告。在你确认之前不会创建任何内容。",
+    "none": "无",
+    "columns": {
+      "name": "名称",
+      "directory": "目录",
+      "port": "端口",
+      "build": "构建",
+      "dependsOn": "依赖于",
+      "warnings": "警告"
+    },
+    "kinds": {
+      "dockerfile": "Dockerfile",
+      "buildpack": "Buildpack",
+      "static": "静态站点"
+    },
+    "warnings": {
+      "package_cap": "发现 {{found}} 个包，只列出前 {{cap}} 个。请在服务器上提高 APP_WIZARD_MAX_PACKAGES 以查看更多。",
+      "no_workspace": "未找到工作区包。",
+      "tree_truncated": "仓库文件列表被截断，因此可能缺少部分包。",
+      "no_dockerfile": "此处没有 Dockerfile。构建方式为自动检测。",
+      "no_port": "未检测到监听端口。创建之前请先设置。",
+      "duplicate_port": "另一个包建议使用相同的端口。在不同的容器中这没有问题。",
+      "duplicate_name": "另一个包映射到相同的名称，因此已添加后缀。",
+      "name_taken": "已存在同名应用，因此已添加后缀。",
+      "detect_failed": "无法分析此包。"
+    },
+    "editor": {
+      "project": "项目",
+      "noProject": "无项目",
+      "environment": "环境",
+      "noEnvironment": "无环境",
+      "protectedEnv": "{{name}}（受保护，此处不可用）",
+      "deploy": "开始每个应用的首次构建",
+      "columns": {
+        "include": "包含",
+        "env": "环境变量",
+        "status": "状态",
+        "detail": "详情"
+      },
+      "includeRow": "包含 {{name}}",
+      "nameOf": "{{directory}} 的应用名称",
+      "portOf": "{{name}} 的端口",
+      "envButton_other": "{{count}} 个变量",
+      "envTitle": "{{name}} 的环境变量",
+      "envHint": "值只会发送一次用于创建应用。勾选“密钥”可加密存储该值，之后不再显示。",
+      "envEmpty": "还没有变量。",
+      "envKey": "名称",
+      "envValue": "值",
+      "envSecret": "密钥",
+      "envRemove": "移除变量",
+      "envAdd": "添加变量",
+      "envDone": "完成",
+      "review_other": "创建前检查 {{count}} 个应用",
+      "checking": "检查中...",
+      "reviewHint": "目前还没有创建任何内容。检查会先列出所有问题。",
+      "dryRunSummary": "可以创建 {{create}} 个应用。{{problems}} 个有问题，将被跳过。尚未创建任何内容。",
+      "create_other": "创建 {{count}} 个应用",
+      "creating": "创建中...",
+      "backToEdit": "返回编辑",
+      "resultsSummary": "已创建 {{created}} 个应用，{{failed}} 个需要处理。",
+      "retryFailed_other": "重试 {{count}} 个失败的应用",
+      "deployError": "（首次构建：{{message}}）",
+      "error": "导入请求失败：{{message}}",
+      "status": {
+        "created": "已创建",
+        "already_exists": "已存在",
+        "skipped_dependency": "已跳过",
+        "failed": "失败",
+        "would_create": "就绪"
+      },
+      "confirm": {
+        "title_other": "创建 {{count}} 个应用？",
+        "description": "这会一次创建超过 {{above}} 个应用。请审阅列表，然后确认。",
+        "confirm_other": "创建 {{count}} 个应用"
+      }
+    }
+  },
+  "fields": {
+    "basics": "基本信息",
+    "name": "名称",
+    "namePlaceholder": "例如 marketing-site",
+    "image": "镜像",
+    "imagePlaceholder": "例如 ghcr.io/you/app:latest",
+    "imageHint": "要运行的镜像，包含标签。还没有镜像？请在第 1 步选择 git 选项，我们会为你构建一个。",
+    "networking": "网络",
+    "port": "端口",
+    "portPlaceholder": "例如 3000",
+    "portHint": "你的应用在其容器内监听的端口，例如典型 Next.js 应用使用 3000。",
+    "healthCheck": "健康检查",
+    "healthEnable": "启用健康检查",
+    "healthPath": "路径",
+    "healthHint": "在流量切换到新容器之前检查，并在之后用于发现崩溃的容器。如果你的应用不提供此路径，请更改或将其关闭。",
+    "hideAdvanced": "隐藏高级选项",
+    "showAdvanced": "显示高级选项",
+    "strategy": "部署策略",
+    "strategyDefault": "默认（蓝绿）",
+    "strategyRecreate": "重新创建",
+    "strategyBlueGreen": "蓝绿",
+    "strategyRolling": "滚动",
+    "strategyHint": "新版本如何发布。蓝绿部署会在旧版本旁边启动新版本，并在其健康后切换流量。",
+    "replicas": "副本数",
+    "replicasHint": "同时运行多少份应用副本。留空则为一份。",
+    "creating": "创建中...",
+    "create": "创建应用"
+  },
+  "upload": {
+    "title": "从你的电脑部署",
+    "description": "无需 git 远程仓库。文件夹会被上传、构建并部署。",
+    "note": "请在你的项目文件夹中运行这两条命令。.gitignore 中的文件、node_modules 和 .env 文件绝不会被上传。",
+    "copy": "复制",
+    "copied": "已复制",
+    "tokenName": "CLI 部署 {{date}}",
+    "createToken": "创建部署令牌",
+    "creating": "创建中...",
+    "tokenHint": "有效期 {{days}} 天。可以读取、编辑和部署应用。",
+    "tokenOnce": "请立即复制这些内容。令牌只显示一次，有效期 {{days}} 天。",
+    "hideToken": "我已复制，隐藏",
+    "createFailed": "无法创建令牌：{{reason}}",
+    "openTokens": "在“设置”中创建"
+  },
+  "drop": {
+    "cardTitle": "通过拖放文件夹发布",
+    "cardDescription": "拖放已构建站点的文件夹或 .zip 来替换线上内容。_redirects、_headers 和 404.html 都会生效，并且可以从部署历史中回滚。",
+    "zoneLabel": "将站点文件夹或 zip 拖放到此处",
+    "dropHere": "将文件夹或 .zip 拖放到此处",
+    "hint": "包含 index.html 的文件夹，或它的 zip。zip 内的单层外壳文件夹会自动为你解开。",
+    "chooseFolder": "选择文件夹",
+    "chooseZip": "选择 .zip",
+    "empty": "此次拖放中没有可发布的内容。它为空，或只包含 .git 和 node_modules 之类被忽略的文件。请拖放包含你已构建站点的文件夹。",
+    "noIndex": "此文件夹顶层没有 index.html，因此站点根路径会显示 404。如果这不是你想要的，请选择包含 index.html 的文件夹。",
+    "preview": {
+      "source": "来源",
+      "files": "文件",
+      "size": "大小"
+    },
+    "nameLabel": "站点名称",
+    "nameHint": "小写字母、数字和连字符。取自文件夹或文件名。你可以随意更改。",
+    "publish": "发布",
+    "publishNew": "创建并发布",
+    "retry": "重试",
+    "clear": "选择其他内容",
+    "another": "再拖放一个",
+    "stage": {
+      "packing": "正在打包你的文件...",
+      "creating": "正在创建站点...",
+      "uploading": "上传中...",
+      "publishing": "发布中..."
+    },
+    "done": "已发布。请观察部署以获取线上 URL。",
+    "doneNoIndex": "已发布，但 zip 的顶层没有 index.html，因此站点根路径会显示 404。",
+    "errors": {
+      "tooLarge": "此站点超出了上传限制。请移除不需要的大文件，或请管理员提高限制。",
+      "rejected": "上传被拒绝。",
+      "nameTaken": "已存在同名的站点或应用。请更改上方的名称后重试。",
+      "network": "上传被中断。请检查网络连接后重试。",
+      "tooManyFiles": "该文件夹的文件数量对一次拖放来说太多了。请改为压缩一个更小的构建输出文件夹。",
+      "generic": "发布失败。"
+    }
+  },
+  "uploadSource": {
+    "title": "来源：CLI 上传",
+    "hash": "归档哈希",
+    "files": "文件",
+    "redeploy": "请在项目文件夹中使用以下命令再次部署："
+  },
+  "importDatabase": {
+    "title": "需要数据库吗？",
+    "optional": "可选",
+    "detected": "此仓库似乎使用了 {{engine}}，因此在这里提供建议。",
+    "engines": "数据库引擎",
+    "useExisting": "使用现有的",
+    "summary": "创建一个 {{engine}} {{version}} 数据库，并为此应用设置 {{envVar}}。",
+    "summaryBackups": "创建一个带每日备份的 {{engine}} {{version}} 数据库，并为此应用设置 {{envVar}}。",
+    "name": "数据库名称",
+    "nameFree": "此数据库名称可用。",
+    "nameError": {
+      "required": "请为数据库命名。",
+      "format": "请使用小写字母、数字和连字符。",
+      "taken": "已存在同名的数据库。"
+    },
+    "backups": "每日备份",
+    "noDestination": "每日备份需要备份目标位置，而目前尚未设置。",
+    "existingLabel": "现有数据库",
+    "existingPick": "选择数据库",
+    "existingNone": "还没有数据库。",
+    "injected": "添加到应用的变量",
+    "from": "来自 {{database}}"
+  },
+  "import": {
+    "loading": "正在读取仓库",
+    "urlInvalid": "这看起来还不像仓库 URL。",
+    "summary": "使用 {{builder}} 从 {{branch}} 构建，并部署到 {{target}}",
+    "builders": {
+      "railpack": "Railpack",
+      "dockerfile": "你的 Dockerfile",
+      "static": "静态托管",
+      "compose": "Docker Compose"
+    },
+    "card": {
+      "languages": "语言",
+      "branch": "分支",
+      "commitBy": "由 {{author}}，{{when}}",
+      "visibility": {
+        "public": "公开",
+        "private": "私有"
+      }
+    },
+    "detected": {
+      "line": "已检测到：{{stack}}，使用 {{builder}} 构建，监听 {{port}}",
+      "edit": "编辑",
+      "monorepo": "发现多个应用。正在部署 {{dir}}。",
+      "chooseApp": "选择应用"
+    },
+    "notice": {
+      "private_needs_account": "此仓库看起来是私有的。请连接一个能看到它的账户，或使用部署令牌。",
+      "invalid_url": "这看起来还不像仓库 URL。",
+      "not_found": "我们找不到该仓库。请检查 URL 后重试。",
+      "rate_limited": "目前无法预览。你仍然可以继续。",
+      "unsupported_host": "此主机不支持预览。你仍然可以继续。",
+      "connect": "连接账户",
+      "useToken": "使用部署令牌",
+      "tokenLabel": "部署令牌",
+      "tokenApply": "预览",
+      "continue": "继续"
+    },
+    "form": {
+      "name": "应用名称",
+      "nameFree": "此名称可用。",
+      "nameError": {
+        "required": "请为应用命名。",
+        "format": "请使用小写字母、数字和连字符。",
+        "taken": "已存在同名的应用。"
+      },
+      "env": "环境变量",
+      "envRequired": "应用需要此变量才能启动。",
+      "addVar": "添加变量",
+      "varName": "变量名称",
+      "varValue": "变量值",
+      "domain": "地址",
+      "freeAddress": "一个免费地址",
+      "customDomain": "使用自定义域名",
+      "domainPlaceholder": "app.example.com",
+      "domainHint": "首次部署后，请将 CNAME 指向此服务器。",
+      "domainError": "请输入 app.example.com 这样的域名。",
+      "advanced": "高级",
+      "port": "端口",
+      "health": "健康检查路径",
+      "memory": "内存（MB）",
+      "directory": "目录",
+      "buildType": "构建类型",
+      "deploy": "部署",
+      "deploying": "部署中..."
+    },
+    "pushOn": "每次推送都会部署。",
+    "pushOff": "推送不会触发部署。"
+  },
+  "deployOptions": {
+    "title": "部署选项",
+    "beta": "Beta",
+    "push": {
+      "label": "推送到 {{branch}} 时自动部署",
+      "on": "推送到此分支会构建并部署应用。创建应用后会检查 Webhook。",
+      "off": "推送不会触发部署。只有标签或已发布的版本才会。"
+    },
+    "previews": {
+      "label": "为每个拉取请求创建预览",
+      "hint": "每个拉取请求都会获得自己的临时 URL，在其关闭时移除。",
+      "unsupported": "预览需要 GitHub、GitLab、Bitbucket 或 Gitea 仓库。"
+    },
+    "health": {
+      "label": "健康检查路径",
+      "hint": "新版本必须在此路径返回 200，才会接收流量。留空则使用检测到的路径。"
+    },
+    "jobs": {
+      "title": "添加后台 worker 或计划任务",
+      "hint": "计划任务会按计划，以 HTTP 请求的方式调用你应用上的某个路径。没有单独的 worker 进程类型，因此请将长期运行的 worker 作为独立的应用运行。",
+      "path": "要调用的路径",
+      "schedule": "计划",
+      "cron": "Cron 表达式",
+      "remove": "移除此任务",
+      "add": "添加计划任务",
+      "pathError": "路径请以 / 开头，例如 /api/cron/cleanup。",
+      "cronError": "该 cron 表达式无效。",
+      "presets": {
+        "every5": "每 5 分钟",
+        "hourly": "每小时",
+        "daily": "每天 03:00 UTC",
+        "custom": "自定义 cron"
+      }
+    },
+    "failed": {
+      "deployOnPush": "无法设置推送即部署：{{reason}}。",
+      "previews": "无法启用预览：{{reason}}。",
+      "job": "任务 {{path}} 未能创建：{{reason}}。"
+    }
+  },
+  "gitSettings": {
+    "open": "Git 设置",
+    "accounts": "已连接的账户",
+    "none": "尚未连接 git 账户。连接一个即可从你的仓库中选择。",
+    "loaded": "{{count}} 个仓库",
+    "failed": "无法列出",
+    "refreshFailed": "无法刷新：{{reason}}",
+    "defaults": "此应用的默认值",
+    "pickFirst": "请选择仓库，以设置其分支、应用目录和推送即部署。",
+    "directory": "应用目录",
+    "pushOn": "每次推送到此分支都会部署。"
+  },
+  "more": {
+    "title": "更多开始方式",
+    "hide": "关闭",
+    "image": {
+      "title": "容器镜像",
+      "hint": "部署预构建的镜像。"
+    },
+    "compose": {
+      "title": "Docker Compose",
+      "hint": "粘贴或上传文件。"
+    },
+    "run": {
+      "title": "docker run",
+      "hint": "将命令转成应用。"
+    },
+    "site": {
+      "title": "静态站点",
+      "hint": "拖放文件夹或 zip。"
+    },
+    "computer": {
+      "title": "从你的电脑",
+      "hint": "使用 CLI 部署文件夹。"
+    }
+  },
+  "deployButton": {
+    "title": "在你的 README 中添加“部署到 Levelrail”按钮",
+    "description": "生成一个链接，会在读者自己的服务器上打开此表单。它不包含任何密钥。",
+    "image": "镜像",
+    "name": "应用名称（可选）",
+    "namePlaceholder": "my-app",
+    "port": "端口（可选）",
+    "health": "健康检查路径（可选）",
+    "env": "环境变量名称（可选）",
+    "envHint": "仅填写名称，以逗号或换行分隔。读者会在自己的服务器上输入值。",
+    "envError": "请使用 DATABASE_URL 这样的大写名称，不含值，最多 50 个。",
+    "snippet": "Markdown 代码片段",
+    "copy": "复制 Markdown",
+    "copied": "已复制"
+  },
+  "deployPage": {
+    "title": "从链接部署",
+    "description": "请审阅链接填写的内容，然后继续。在你点击“部署”之前不会创建任何内容。",
+    "banner": "已根据链接预填。部署前请审阅",
+    "bannerBody": "请检查下方的仓库、分支和名称。在最后一步确认之前不会创建任何内容。",
+    "ignoredTitle": "部分链接参数被忽略",
+    "ignoredBody": "这些参数缺失、未知或无效：{{params}}。绝不会从链接中读取环境变量的值和密钥。",
+    "repo": "仓库",
+    "branch": "分支",
+    "branchDefault": "默认分支",
+    "name": "建议的名称",
+    "port": "端口",
+    "template": "模板",
+    "templateName": "{{name}}",
+    "reviewRepo": "分析并审阅",
+    "reviewTemplate": "打开模板",
+    "empty": "此链接没有包含有效的仓库或模板。请自行新建应用。",
+    "startNew": "新建应用"
+  },
+  "deployLinkDialog": {
+    "action": "获取“部署”按钮链接",
+    "title": "“部署”按钮链接",
+    "description": "把它放进 README。它会打开此仪表盘，并预填该仓库。读者仍需审阅并确认。不包含任何密钥。",
+    "repo": "仓库 URL",
+    "branch": "分支（可选）",
+    "name": "应用名称（可选）",
+    "link": "链接",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "copy": "复制",
+    "copied": "已复制",
+    "alt": "部署到 {{brand}}",
+    "errors": {
+      "repo": "请输入不含用户名或密码的 https 或 ssh git URL。",
+      "branch": "请使用普通的分支或标签名称。",
+      "name": "请使用小写字母、数字和连字符。"
+    }
+  },
+  "aside": {
+    "title": "你将得到什么",
+    "detect": "我们会根据你的代码检测技术栈和端口。",
+    "review": "由你审阅计划和设置。",
+    "deploy": "一键部署，并带有健康检查。",
+    "address": "应用会获得 {{domain}} 下的地址。",
+    "label": "你将得到什么，以及其他入口"
+  }
+}

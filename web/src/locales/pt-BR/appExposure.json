@@ -1,0 +1,100 @@
+{
+  "title": "Portas e exposição",
+  "description": "Altere a porta em que este app escuta e escolha como ele pode ser acessado. Vários apps podem usar a mesma porta de container: cada um recebe sua própria porta do host.",
+  "containerPort": "Porta do container",
+  "containerPortHelp": "A porta em que o app escuta dentro do container.",
+  "mode": {
+    "label": "Exposição",
+    "proxied": "Pelo proxy",
+    "proxiedHelp": "Acessível pelo seu domínio, ou pelo hostname automático, nas portas 80 e 443. Outros apps o acessam pelo nome. Nenhuma porta do host é aberta.",
+    "direct": "IP e porta diretos",
+    "directHelp": "Também publicado em uma porta do host e aberto no firewall do host, para que você possa verificar o app no endereço do servidor. É HTTP simples e ignora TLS e as barreiras de autenticação."
+  },
+  "hostPort": "Porta do host",
+  "hostPortHelp": "Deixe vazio para escolher automaticamente uma porta livre entre {{lo}} e {{hi}}.",
+  "preview": "Pré-visualizar alterações",
+  "previewing": "Verificando",
+  "apply": "Aplicar",
+  "applying": "Aplicando",
+  "revert": "Voltar a somente proxy",
+  "reset": "Descartar",
+  "nothingToChange": "Nada mudaria.",
+  "willChange": "Isto vai mudar",
+  "recreates": "O container é recriado com as novas configurações. A image não é reconstruída nem baixada novamente.",
+  "remoteNode": "Este app roda em outro node. Portas diretas do host só estão disponíveis para apps no próprio node do control plane.",
+  "plainHttpWarning": "HTTP simples: o tráfego não é criptografado e a autenticação básica ou as barreiras de login configuradas no domínio não se aplicam a esta porta.",
+  "applied": "Exposição atualizada",
+  "appliedDescription": "A reconciliação roda em segundo plano.",
+  "change": {
+    "container_port": "Porta do container",
+    "host_port": "Porta do host",
+    "bind_address": "Endereço de bind",
+    "firewall": "Regra de firewall"
+  },
+  "values": {
+    "automatic": "automática",
+    "open": "aberta",
+    "closed": "fechada"
+  },
+  "urls": {
+    "title": "Onde ele responde",
+    "domain": "Domínio",
+    "fallback": "Hostname automático",
+    "direct": "IP e porta diretos",
+    "none": "Ainda não há URL pública. Adicione um domínio, ative os hostnames automáticos ou use IP e porta diretos.",
+    "noneTitle": "Sem URL pública",
+    "internal": "Outros apps neste servidor o acessam pelo nome do app na porta {{port}}."
+  },
+  "check": {
+    "button": "Testar a partir daqui",
+    "running": "Testando",
+    "scope": "Sondado a partir do host do control plane. Isso não prova que a porta está aberta para toda a internet.",
+    "ok": "Acessível",
+    "status": "HTTP {{status}} em {{ms}} ms",
+    "failures": {
+      "container_not_running": "O container não está rodando, então não há nada para acessar. Inicie o app ou faça um novo deploy.",
+      "container_not_listening": "O container está no ar, mas nada responde na porta publicada. O app pode não escutar na porta do container acima, ou ainda estar iniciando.",
+      "firewall_closed": "O endereço do servidor não responde nesta porta. O firewall do host ou o grupo de segurança do seu provedor de nuvem provavelmente está fechado.",
+      "unreachable_from_host": "O ingress não respondeu a partir deste servidor. Verifique se as portas 80 e 443 estão sendo atendidas.",
+      "tls_not_issued": "O certificado ainda não é confiável. O ingress serve um certificado temporário e tenta novamente a CA pública no ciclo de renovação.",
+      "proxy_route_missing": "O proxy respondeu, mas não tem rota para este hostname. Verifique se o domínio está vinculado a este app.",
+      "upstream_failing": "O proxy tem uma rota, mas o app por trás dela não está respondendo.",
+      "app_error": "O app respondeu com um erro de servidor.",
+      "request_failed": "A requisição não foi concluída."
+    },
+    "fixFirewall": "Abrir configurações de firewall",
+    "fixCertificates": "Abrir domínios e certificados"
+  },
+  "inUse": {
+    "title": "Portas do host em uso neste node",
+    "port": "Porta",
+    "heldBy": "Mantida por",
+    "empty": "Nenhuma porta do host está fixada ou publicada por apps ou pelo control plane.",
+    "emptyTitle": "Nenhuma porta do host fixada",
+    "control": "Control plane: {{name}}",
+    "app": "App {{name}}",
+    "stream": "Stream de {{name}}"
+  },
+  "errors": {
+    "load": "Não foi possível carregar as configurações de exposição.",
+    "invalidPort": "Informe um número inteiro de 1 a 65535."
+  },
+  "tunnel": {
+    "title": "Acessar uma porta privada",
+    "description": "Abra uma porta local que faz túnel até este app sem publicá-lo. Exige a CLI conectada com um token de operador.",
+    "portLabel": "Porta do container {{port}}",
+    "copy": "Copiar o comando do túnel para a porta {{port}}",
+    "copied": "Copiado"
+  },
+  "game": {
+    "title": "Servidor de jogo",
+    "online": "Online",
+    "offline": "Offline",
+    "players": "{{online}}/{{max}} jogadores",
+    "latency": "{{ms}} ms",
+    "copy": "Copiar endereço de entrada",
+    "copied": "Copiado",
+    "notExposed": "Ainda não é público: publique a porta para obter um endereço de entrada.",
+    "noPublicHost": "Entre na porta {{port}} no endereço público deste servidor."
+  }
+}

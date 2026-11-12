@@ -1,0 +1,187 @@
+{
+  "gate": {
+    "title": "Bereitschaftsprüfung und Beobachtung",
+    "rules": "Übernimmt Traffic nach {{passes}} bestandenen Bereitschaftsprüfungen in Folge und {{stable}} Laufzeit ohne Neustart. Das vorherige Release läuft {{drain}} aus, danach wird dieses {{watch}} lang beobachtet.",
+    "pinned": "Als Rollback-Ziel {{ref}} fixiert, daher entfernt die Image-Bereinigung es nie.",
+    "hidden_one": "{{count}} früherer Schritt wird nicht angezeigt.",
+    "hidden_other": "{{count}} frühere Schritte werden nicht angezeigt.",
+    "empty": "Noch keine Prüfschritte aufgezeichnet. Sie erscheinen, sobald der neue Container startet.",
+    "unavailable": "Der Zeitverlauf der Prüfung ist für dieses Deployment nicht verfügbar."
+  },
+  "phase": {
+    "readiness": "Bereitschaft",
+    "stability": "Stabilitätsfenster",
+    "cutover": "Umschaltung",
+    "drain": "Auslaufen",
+    "watch": "Beobachtung nach dem Deployment",
+    "rollback": "Rollback",
+    "pin": "Rollback-Fixierung"
+  },
+  "stage": {
+    "pending": "Ausstehend",
+    "gating": "Durchläuft die Prüfung",
+    "gate_failed": "Prüfung nicht bestanden",
+    "watching": "Wird beobachtet",
+    "cleared": "Freigegeben",
+    "watch_failed": "Beobachtung ausgelöst",
+    "rolled_back": "Zurückgerollt",
+    "watch_stopped": "Beobachtung gestoppt"
+  },
+  "settings": {
+    "title": "Deploy-Sicherheit",
+    "infoTipLabel": "Zur Deploy-Sicherheit",
+    "description": "Ein neues Release übernimmt Traffic erst, nachdem seine Bereitschaftsprüfung mehrmals hintereinander bestanden wurde und es ein stabiles Zeitfenster lang ohne Neustart oder OOM-Kill läuft. Das vorherige Release bedient während des Auslaufens weiter laufende Anfragen. Nach der Umschaltung wird das Release beobachtet, und eine Crashloop, ein OOM-Kill oder eine 5xx-Spitze rollt es zurück.",
+    "inheritHint": "Lassen Sie ein Feld leer, um den darin angezeigten Plattformstandard zu verwenden.",
+    "unavailable": "Die Einstellungen zur Deploy-Sicherheit konnten nicht geladen werden.",
+    "save": "Speichern",
+    "reset": "Plattformstandards verwenden",
+    "on": "an",
+    "off": "aus",
+    "field": {
+      "success_threshold": {
+        "label": "Bestandene Bereitschaftsprüfungen in Folge",
+        "hint": "Aufeinanderfolgende bestandene Bereitschaftsprüfungen, bevor der Traffic umzieht."
+      },
+      "stable_window": {
+        "label": "Stabilitätsfenster",
+        "hint": "Wie lange der neue Container ohne Neustart oder OOM-Kill laufen muss, z. B. 10s."
+      },
+      "drain_timeout": {
+        "label": "Zeitlimit zum Auslaufen",
+        "hint": "Wie lange das vorherige Release nach der Umschaltung weiter ausliefert, z. B. 15s."
+      },
+      "watch_window": {
+        "label": "Beobachtungsfenster",
+        "hint": "Wie lange ein neues Release nach der Umschaltung beobachtet wird, z. B. 10m."
+      },
+      "watch_latency_ratio": {
+        "label": "p95-Latenzvielfaches, das als Regression gilt",
+        "hint": "Verglichen mit dem vorherigen Release. 0 schaltet die Latenzprüfung aus."
+      },
+      "watch_max_restarts": {
+        "label": "Neustarts, die die Beobachtung auslösen",
+        "hint": "Container-Neustarts innerhalb des Beobachtungsfensters, die als Crashloop gelten."
+      },
+      "watch_error_rate": {
+        "label": "5xx-Anteil, der die Beobachtung auslöst (%)",
+        "hint": "Anteil der Anfragen, die innerhalb des Beobachtungsfensters mit 5xx beantwortet werden."
+      },
+      "watch_min_requests": {
+        "label": "Anfragen, bevor der 5xx-Anteil zählt",
+        "hint": "Eine Handvoll Anfragen reicht nicht, um ein Release zu beurteilen."
+      }
+    },
+    "autoRollback": {
+      "label": "Automatisch zurückrollen, wenn die Beobachtung auslöst",
+      "hint": "Für diese App festgelegt.",
+      "inherited": "Folgt dem Plattformstandard ({{value}})."
+    },
+    "toast": {
+      "saved": "Einstellungen zur Deploy-Sicherheit gespeichert.",
+      "error": "Die Einstellungen zur Deploy-Sicherheit konnten nicht gespeichert werden."
+    }
+  },
+  "autoRollback": {
+    "title": "Automatischer Rollback",
+    "infoTipLabel": "Zum automatischen Rollback",
+    "description": "Nachdem ein Release Traffic übernommen hat, wird es ein Zeitfenster lang beobachtet. Eine Crashloop, ein OOM-Kill oder eine 5xx-Spitze ist ein hartes Signal. Eine p95-Latenzregression gegenüber dem vorherigen Release ist ein weiches Signal und löst nie einen Rollback aus, es sei denn, Sie aktivieren das.",
+    "inheritHint": "Lassen Sie ein Feld leer, um den darin angezeigten Plattformstandard zu verwenden.",
+    "mode": {
+      "label": "Modus",
+      "default": "Plattformstandard ({{value}})",
+      "off": "Aus: nicht beobachten",
+      "notify": "Benachrichtigen: nur alarmieren",
+      "auto": "Automatisch: alarmieren und zurückrollen"
+    },
+    "soft": {
+      "label": "Auch eine Latenzregression zurückrollen lassen",
+      "hint": "Gilt nur im automatischen Modus. Sonst sendet eine Latenzregression nur einen Alarm.",
+      "inherited": "Folgt dem Plattformstandard ({{value}})."
+    },
+    "save": "Speichern",
+    "reset": "Plattformstandards verwenden",
+    "toast": {
+      "saved": "Einstellungen zum automatischen Rollback gespeichert.",
+      "error": "Die Einstellungen zum automatischen Rollback konnten nicht gespeichert werden."
+    }
+  },
+  "watch": {
+    "watching": "Beobachtung für {{window}} nach der Umschaltung, noch {{left}}.",
+    "min": "{{count}} min",
+    "sec": "{{count}} s",
+    "progress": "Fortschritt der Beobachtung nach dem Deployment",
+    "tripped": "Beobachtung ausgelöst: {{message}} ({{reason}}).",
+    "rolledBack": "Automatisch zurückgerollt: {{message}} ({{reason}}).",
+    "stopped": "Die Beobachtung wurde vor Ende des Zeitfensters gestoppt.",
+    "off": "Die Beobachtung nach dem Deployment ist für diese App aus.",
+    "notice": "Hinweis: {{message}}",
+    "stop": "Beobachtung stoppen",
+    "stopped_toast": "Beobachtung gestoppt.",
+    "stopError": "Die Beobachtung konnte nicht gestoppt werden.",
+    "rollbackNow": "Jetzt zurückrollen",
+    "rollbackTitle": "Dieses Release zurückrollen?",
+    "rollbackDescription": "Der Traffic wechselt zurück zum aufbewahrten vorherigen Release.",
+    "rollbackConsequence": "Das vorherige Release {{ref}} wird über dieselbe Bereitschaftsprüfung erneut deployt.",
+    "rollbackConfirm": "Zurückrollen",
+    "rollbackPending": "Wird zurückgerollt",
+    "rollbackToast": "Rollback gestartet.",
+    "rollbackError": "Der Rollback war nicht möglich.",
+    "noTarget": "Noch kein aufbewahrtes früheres Release, auf das zurückgerollt werden kann."
+  },
+  "targets": {
+    "title": "Fixierte Rollback-Ziele",
+    "empty": "Noch keine fixierten Releases. Ein Release wird fixiert, wenn es Traffic übernimmt.",
+    "emptyTitle": "Keine fixierten Releases",
+    "live": "Live"
+  },
+  "publishLock": {
+    "lock": "Veröffentlichung sperren",
+    "unlock": "Veröffentlichung entsperren",
+    "bannerTitle": "Die Veröffentlichung ist gesperrt",
+    "bannerBody_one": "{{by}} hat sie gesperrt. Das aktive Release bleibt fixiert, und {{count}} Build wird zurückgehalten.",
+    "bannerBody_other": "{{by}} hat sie gesperrt. Das aktive Release bleibt fixiert, und {{count}} Builds werden zurückgehalten.",
+    "reason": "Grund: {{reason}}",
+    "publish": "Veröffentlichen",
+    "publishedToast": "Veröffentlicht. Der zurückgehaltene Build geht live.",
+    "rollbackLock": "Zurückrollen und sperren",
+    "rollbackLockHint": "Dieses Release erneut deployen und jeden späteren Build zurückhalten",
+    "held": "Zurückgehalten, nicht live",
+    "error": "Die Veröffentlichungssperre konnte nicht geändert werden."
+  },
+  "rolloutState": {
+    "title": "Rollout-Status",
+    "traffic": {
+      "held": "Traffic zurückgehalten",
+      "flipped": "Traffic umgeschaltet",
+      "reverted": "Traffic zurückgeschaltet"
+    },
+    "holdLeft": "Rückhaltezeit endet in {{time}}",
+    "flipped": "Umgeschaltet",
+    "reverted": "Zurückgeschaltet",
+    "gateFailures_one": "{{count}} fehlgeschlagene Prüfung",
+    "gateFailures_other": "{{count}} fehlgeschlagene Prüfungen",
+    "canary": "Canary {{weight}} % (Stufe {{stage}} von {{total}})",
+    "settings": "Einstellungen zur Deploy-Sicherheit"
+  },
+  "explain": {
+    "title": "Warum das fehlgeschlagen ist",
+    "loading": "Erklärung des Fehlers wird geladen",
+    "cause": "Ursache:",
+    "hint": "Nächster Schritt:",
+    "evidence": "Belege",
+    "lastLogs": "Letzte Logzeilen",
+    "rolledBack": "Zurückgerollt",
+    "verdict": {
+      "failed": "Fehlgeschlagen",
+      "rolled_back": "Zurückgerollt"
+    }
+  },
+  "freezeBanner": {
+    "title": "Deploy-Freeze aktiv",
+    "titleUntil": "Deploy-Freeze aktiv bis {{when}}",
+    "body": "Ein manuelles Deployment überschreibt jetzt den Freeze. Nennen Sie den Grund, er wird am Deployment festgehalten.",
+    "reasonLabel": "Grund für das Überschreiben des Freeze",
+    "reasonPlaceholder": "z. B. Hotfix für ein Sicherheitsproblem"
+  },
+  "pullFresh": "Frische Registry-Abfrage verlangen: Schlägt fehl, statt das zwischengespeicherte Image zu deployen, wenn die Registry nicht erreichbar ist."
+}

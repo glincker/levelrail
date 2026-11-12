@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "标签",
+    "description": "附加到应用上的标签,用于分组和筛选。"
+  },
+  "create": {
+    "label": "新标签",
+    "placeholder": "env:prod",
+    "submit": "创建标签",
+    "pending": "正在创建"
+  },
+  "table": {
+    "label": "标签",
+    "name": "名称",
+    "apps": "应用",
+    "resources": "资源",
+    "created": "创建时间",
+    "actions": "操作"
+  },
+  "row": {
+    "showApps": "显示带有 {{name}} 标签的应用",
+    "hideApps": "隐藏带有 {{name}} 标签的应用"
+  },
+  "rename": {
+    "action": "重命名 {{name}}",
+    "label": "{{name}} 的新名称",
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "delete": {
+    "action": "删除 {{name}}",
+    "title": "删除标签 {{name}}?",
+    "description": "该标签将从所有使用它的应用中移除。",
+    "consequence": "应用会继续运行,只是标签会消失。",
+    "confirm": "删除标签",
+    "pending": "正在删除"
+  },
+  "apps": {
+    "loading": "正在加载应用",
+    "empty": "尚无应用使用此标签。",
+    "error": "无法加载此标签的应用。",
+    "list": "带有 {{name}} 标签的应用"
+  },
+  "empty": {
+    "title": "暂无标签",
+    "description": "在上方创建标签,或从应用概览中添加,即可开始为应用分组。"
+  },
+  "error": "无法加载标签。"
+}

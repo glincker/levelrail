@@ -1,0 +1,23 @@
+{
+  "title": "Expiração",
+  "description": "Para apps temporários e de demonstração. Um aviso é registrado {{notice}} horas antes, o app é parado na expiração e excluído {{grace}} horas depois. Apps com volumes, bancos de dados vinculados ou um ambiente protegido são apenas parados, a menos que excluir dados esteja ativado.",
+  "none": "Nenhuma expiração definida.",
+  "state": {
+    "none": "Nenhuma expiração definida.",
+    "scheduled": "Expira em {{at}}.",
+    "noticed": "Expira em {{at}}. O aviso está no log de auditoria.",
+    "stopped": "Parado na expiração. Será excluído após {{after}}, a menos que seja limpo.",
+    "kept": "Parado na expiração e mantido."
+  },
+  "kept": "Mantido, não excluído: {{reason}}.",
+  "clear": "Limpar expiração",
+  "atLabel": "Expira em",
+  "deleteData": "Excluir os dados também",
+  "confirmLabel": "Digite {{name}} para confirmar",
+  "save": "Salvar expiração",
+  "saved": "Expiração salva",
+  "cleared": "Expiração limpa, qualquer exclusão pendente foi cancelada",
+  "failed": "Falha ao alterar a expiração",
+  "hint": "Até {{days}} dias à frente. Limpar sempre cancela uma exclusão pendente; um app parado continua parado até ser iniciado.",
+  "deleteDisabled": "Exclusão desativada pelo operador: apps expirados são apenas parados."
+}

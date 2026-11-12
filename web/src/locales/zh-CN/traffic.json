@@ -1,0 +1,200 @@
+{
+  "status": {
+    "loading": "正在加载状态",
+    "label": {
+      "live": "已上线",
+      "going_live": "正在上线",
+      "propagating": "传播中",
+      "waiting_for_dns": "等待 DNS",
+      "handled_by_proxy": "由你的代理处理",
+      "needs_attention": "需要处理",
+      "expiring_soon": "即将过期",
+      "paused": "已暂停",
+      "not_set_up": "未设置"
+    },
+    "reason": {
+      "runInProgress": "Levelrail 正在设置此域名。",
+      "maintenance": "维护模式已开启，访客会看到维护页面。",
+      "certExpired": "证书已过期。",
+      "renewalStalled": "证书没有在续期。",
+      "acmeFailure": "证书颁发机构无法签发证书。",
+      "resolvesElsewhere": "此域名指向另一台服务器。",
+      "routeError": "无法写入此域名的路由。",
+      "externalProxy": "此域名由你自己的代理提供服务，因此 Levelrail 不检查其证书。",
+      "routeMissing": "还没有路由把此域名的流量发送到应用。",
+      "unconfigured": "此域名尚未进行任何设置。",
+      "noCheck": "此域名尚未检查过。",
+      "notResolving": "请在你的 DNS 提供商处添加下方的记录。此页面会自动再次检查。",
+      "propagating": "记录已存在。部分解析器尚未看到它，这最多可能需要几个小时。",
+      "gettingCertificate": "正在获取你的证书。",
+      "certExpiring": "证书即将过期，且续期状况不正常。",
+      "live": "此域名通过 HTTPS 访问你的应用。",
+      "livePrivate": "此域名通过私有证书访问你的应用。"
+    },
+    "action": {
+      "open_site": "打开站点",
+      "view_progress": "查看进度",
+      "check_again": "重新检查",
+      "show_record": "显示记录",
+      "show_proxy_setup": "显示代理设置",
+      "fix": "修复",
+      "renew": "立即续期",
+      "turn_off": "关闭",
+      "set_up": "设置"
+    }
+  },
+  "age": {
+    "seconds": "{{count}} 秒",
+    "minutes": "{{count}} 分钟",
+    "hours": "{{count}} 小时",
+    "days": "{{count}} 天"
+  },
+  "steps": {
+    "state": {
+      "todo": "待办",
+      "active": "进行中",
+      "done": "完成",
+      "failed": "失败",
+      "skipped": "已跳过"
+    },
+    "position": "第 {{current}} 步，共 {{total}} 步，{{state}}"
+  },
+  "copy": {
+    "copy": "复制",
+    "copied": "已复制",
+    "copyLabel": "复制{{label}}",
+    "fallback": "按 Ctrl+C 复制所选文本。"
+  },
+  "help": {
+    "why": "为什么？",
+    "learnMore": "了解更多"
+  },
+  "confirm": {
+    "intro": "这将：",
+    "cancel": "取消",
+    "typeToConfirm": "输入 {{name}} 以确认",
+    "kind": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "移除"
+    }
+  },
+  "diff": {
+    "setting": "设置",
+    "before": "之前",
+    "after": "之后",
+    "changed": "已更改",
+    "showUnchanged_other": "显示 {{count}} 项未更改",
+    "hideUnchanged": "隐藏未更改",
+    "empty": "没有任何更改。",
+    "none": "无"
+  },
+  "resolvers": {
+    "caption": "各解析器的应答",
+    "resolver": "解析器",
+    "answer": "应答",
+    "match": "是否一致",
+    "matches": "一致",
+    "different": "不同",
+    "noAnswer": "无应答",
+    "lastChecked": "{{age}}前检查",
+    "checkedJustNow": "刚刚检查过",
+    "recheck": "重新检查",
+    "checking": "检查中...",
+    "empty": "还没有解析器应答。"
+  },
+  "cert": {
+    "label": "证书",
+    "none": "DNS 指向这里后会自动签发。",
+    "issuing": "正在获取你的证书。",
+    "healthy_other": "Let's Encrypt，{{date}} 过期（{{count}} 天后）。会自动续期。",
+    "expiring_other": "{{date}} 过期（{{count}} 天后），且续期状况不正常。",
+    "expired": "{{date}} 已过期。",
+    "stalled": "续期已停滞。",
+    "internal": "私有证书，启用 HTTPS 后即受信任。",
+    "custom_other": "你自己的证书，{{date}} 过期（{{count}} 天后）。",
+    "customExpired": "你自己的证书，{{date}} 已过期。",
+    "renew": "立即续期",
+    "useOwn": "使用我自己的证书",
+    "replace": "替换",
+    "acme": {
+      "open_port_80": "Let's Encrypt 无法访问此服务器的 80 端口。请在此服务器上开放 80 端口。",
+      "fix_dns": "Let's Encrypt 找不到此域名。请将其 DNS 指向此服务器。",
+      "wait_rate_limit": "Let's Encrypt 已暂停为此域名签发。我们稍后会重试。",
+      "fix_caa": "CAA 记录阻止了 Let's Encrypt。请添加允许 letsencrypt.org 的 CAA 记录。",
+      "other_proxy": "此服务器上的另一个代理响应了证书检查。请让该代理终止 TLS，或让此服务器使用 80 和 443 端口。",
+      "check_logs": "Let's Encrypt 无法签发证书。请检查入口日志。"
+    }
+  },
+  "progress": {
+    "title": "正在设置 {{domain}}",
+    "done": "{{domain}} 已上线",
+    "failed": "{{domain}} 的设置未能完成",
+    "elapsed": "已用时 {{age}}",
+    "updated": "{{age}}前更新",
+    "undo": "撤销上线",
+    "openSite": "打开站点",
+    "openDoctor": "打开诊断",
+    "retry": "重试",
+    "dismiss": "忽略"
+  },
+  "empty": {
+    "domains": {
+      "title": "添加你的第一个域名",
+      "description": "把域名指向某个应用，Levelrail 会设置 DNS、HTTPS 和路由。",
+      "action": "添加域名"
+    },
+    "noApps": {
+      "title": "请先部署一个应用",
+      "description": "域名会把流量发送到应用。"
+    },
+    "search": {
+      "title": "没有域名匹配“{{query}}”",
+      "action": "清除搜索"
+    },
+    "zones": {
+      "title": "添加区域",
+      "description": "区域可让 Levelrail 为你创建和修复 DNS 记录。"
+    },
+    "soon": {
+      "title": "即将推出",
+      "description": "此页面正在开发中，将在后续版本中推出。"
+    }
+  },
+  "nav": {
+    "traffic": "流量",
+    "domains": "域名",
+    "dns": "DNS",
+    "proxy": "代理",
+    "apps": "应用",
+    "domainsAttention_other": "{{count}} 个域名需要处理",
+    "dnsAttention_other": "{{count}} 个区域未委派",
+    "proxyAttention_other": "{{count}} 条路由有错误"
+  },
+  "palette": {
+    "addDomain": "添加域名",
+    "verify": "验证 {{domain}}",
+    "doctor": "打开 {{domain}} 的诊断",
+    "dnsRecordsFor": "{{domain}} 的 DNS 记录",
+    "domainSettings": "域名设置",
+    "checked": "已检查 {{domain}}：{{result}}",
+    "checkResult": {
+      "connected": "DNS 指向这里",
+      "propagating": "传播中",
+      "not_resolving": "等待 DNS",
+      "resolves_elsewhere": "指向另一台服务器",
+      "unconfigured": "未设置"
+    }
+  },
+  "tab": {
+    "headers": "请求头",
+    "forwarding": "转发",
+    "access": "访问",
+    "cache": "缓存",
+    "ports": "端口",
+    "redirects": "重定向",
+    "activity": "活动",
+    "settings": "设置",
+    "add": "添加区域"
+  }
+}

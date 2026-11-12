@@ -1,0 +1,138 @@
+{
+  "page": {
+    "title": "Teams",
+    "description": "Wer welche Projekte sehen und ändern darf. Jedes Team besitzt seine Projekte, deren Umgebungen, Apps und Datenbanken.",
+    "create": "Neues Team",
+    "createTitle": "Team erstellen",
+    "createName": "Teamname",
+    "createSubmit": "Team erstellen",
+    "created": "Team erstellt",
+    "empty": "Sie gehören noch keinem Team an. Bitten Sie einen Team-Admin um einen Einladungslink.",
+    "pick": "Team",
+    "defaultTeam": "Standard",
+    "defaultHint": "Das Standardteam ist die Instanz selbst. Instanz-Admins verwalten seine Mitglieder auf der Seite Benutzer und hier.",
+    "eyebrow": "Zugriff",
+    "help": "Anleitung zu Teams und Rollen",
+    "count_one": "{{count}} Team",
+    "count_other": "{{count}} Teams",
+    "banner": {
+      "title": "Alle sind im Standardteam",
+      "body": "Erstellen Sie ein Team, um einer Gruppe eigene Projekte, Umgebungen, Apps und Datenbanken mit eigenen Inhabern und Mitgliedern zu geben."
+    }
+  },
+  "roles": {
+    "owner": "Inhaber",
+    "admin": "Admin",
+    "developer": "Entwickler",
+    "viewer": "Betrachter",
+    "ownerHint": "Alles, einschließlich Löschen des Teams und Übertragen der Inhaberschaft.",
+    "adminHint": "Deployt überall, auch in geschützten Umgebungen, und verwaltet Mitglieder.",
+    "developerHint": "Deployt, bearbeitet Umgebungsvariablen und liest Logs, außer in geschützten Umgebungen.",
+    "viewerHint": "Liest Apps, Datenbanken und Logs. Ändert nichts.",
+    "yourRole": "Ihre Rolle: {{role}}"
+  },
+  "members": {
+    "tableLabel": "Teammitglieder",
+    "title": "Mitglieder",
+    "email": "E-Mail",
+    "name": "Name",
+    "role": "Rolle",
+    "actions": "Aktionen",
+    "remove": "Entfernen",
+    "removed": "Mitglied entfernt",
+    "roleChanged": "Rolle aktualisiert",
+    "leave": "Team verlassen",
+    "left": "Sie haben das Team verlassen",
+    "transfer": "Zum Inhaber machen",
+    "transferred": "Inhaberschaft übertragen. Sie sind jetzt Admin.",
+    "roleLabel": "Rolle für {{email}}"
+  },
+  "invites": {
+    "tableLabel": "Team-Einladungen",
+    "statusHeader": "Status",
+    "title": "Einladungen",
+    "create": "Einladen",
+    "email": "E-Mail (optional)",
+    "emailHint": "Leer lassen für einen Einmal-Link, den jeder einlösen kann, der ihn besitzt.",
+    "role": "Rolle",
+    "expires": "Läuft ab in Stunden (optional)",
+    "submit": "Einladung erstellen",
+    "created": "Einladung erstellt. Kopieren Sie den Link jetzt, er wird nicht erneut angezeigt.",
+    "copy": "Link kopieren",
+    "copied": "Link kopiert",
+    "revoke": "Widerrufen",
+    "revoked": "Einladung widerrufen",
+    "link": "Link-Einladung",
+    "empty": "Noch keine Einladungen.",
+    "status": {
+      "pending": "Ausstehend",
+      "accepted": "Angenommen",
+      "revoked": "Widerrufen",
+      "expired": "Abgelaufen"
+    }
+  },
+  "events": {
+    "title": "Audit-Trail des Teams",
+    "empty": "Noch keine Änderungen an Mitgliedschaften aufgezeichnet."
+  },
+  "switcher": {
+    "aria": "Team und Projekt",
+    "allTeams": "Alle Teams",
+    "allProjects": "Alle Projekte",
+    "team": "Team",
+    "project": "Projekt"
+  },
+  "forbidden": {
+    "title": "Sie haben hier keinen Zugriff",
+    "body": "Ihre aktuelle Teamrolle erlaubt dies nicht, oder es gehört zu einem anderen Team.",
+    "switch": "Team wechseln",
+    "teams": "Teams öffnen",
+    "home": "Zurück zum Dashboard"
+  },
+  "accept": {
+    "title": "Einem Team beitreten",
+    "description": "Sie wurden eingeladen, einem Team beizutreten.",
+    "summary": "{{team}} als {{role}} beitreten",
+    "signedInHint": "Sie sind angemeldet, daher gilt die Einladung für Ihr aktuelles Konto.",
+    "newAccountHint": "Noch kein Konto? Erstellen Sie hier eines. Es gehört nur zu diesem Team.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "name": "Anzeigename (optional)",
+    "submit": "Team beitreten",
+    "joined": "Sie sind dem Team beigetreten",
+    "invalid": "Diese Einladung ist ungültig, abgelaufen, widerrufen oder bereits verwendet. Bitten Sie den Team-Admin um eine neue.",
+    "missing": "Dieser Link enthält kein Einladungs-Token."
+  },
+  "quota": {
+    "title": "Kontingente",
+    "teamHint": "Limits für alles, was unter diesem Team abgelegt ist. Eine Änderung, die ein Limit überschreiten würde, wird mit Limit und aktueller Nutzung abgelehnt.",
+    "projectHint": "Limits für alles, was unter diesem Projekt abgelegt ist, zusätzlich zu allen Team-Limits.",
+    "resources": {
+      "apps": "Apps",
+      "databases": "Datenbanken",
+      "memory": "Reservierter Arbeitsspeicher (MB)",
+      "cpu": "Reservierte CPU (Kerne)",
+      "previews": "Vorschau-Umgebungen"
+    },
+    "fields": {
+      "apps": "Max. Apps",
+      "databases": "Max. Datenbanken",
+      "memory": "Max. Arbeitsspeicher (MB)",
+      "cpu": "Max. CPU (Kerne)",
+      "previews": "Max. Vorschauen"
+    },
+    "usage": "{{used}} von {{limit}}",
+    "usageUnlimited": "{{used}} belegt, kein Limit",
+    "full": "Limit erreicht",
+    "nearLimit": "Nahe am Limit",
+    "editHint": "0 bedeutet unbegrenzt. Bestehende Ressourcen werden beim Senken eines Limits nie gestoppt.",
+    "save": "Limits speichern",
+    "clear": "Alle Limits entfernen",
+    "saved": "Kontingent gespeichert",
+    "cleared": "Kontingent-Limits entfernt",
+    "readOnly": "Nur Team-Admins und Inhaber können diese Limits ändern."
+  },
+  "errors": {
+    "generic": "Die Anfrage ist fehlgeschlagen: {{message}}"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "title": "Erreurs",
+  "subtitle": "Erreurs que votre app signale via n'importe quel SDK Sentry, regroupées en problèmes et rattachées au déploiement qui les a produites.",
+  "setup": {
+    "title": "Envoyer des erreurs depuis cette app",
+    "off": "Le suivi des erreurs est désactivé. Activez-le pour obtenir un DSN pour votre SDK Sentry.",
+    "on": "Le suivi des erreurs est activé. Définissez SENTRY_DSN avec le DSN qui vous a été fourni, ou renouvelez-le pour en obtenir un nouveau.",
+    "enable": "Activer le suivi des erreurs",
+    "enabling": "Activation...",
+    "rotate": "Renouveler le DSN",
+    "disable": "Désactiver",
+    "copy": "Copier",
+    "dsnOnce": "Ce DSN n'est affiché qu'une fois. Définissez-le sur l'app et redéployez. Renouveler le DSN invalide l'ancien.",
+    "endpoint": "Point de terminaison",
+    "enabledToast": "Le suivi des erreurs est activé.",
+    "disabledToast": "Le suivi des erreurs est désactivé. Le SDK de l'app recevra des réponses 401.",
+    "failed": "Impossible de modifier le suivi des erreurs."
+  },
+  "filters": {
+    "status": "Statut",
+    "all": "Tous",
+    "open": "Ouvert",
+    "resolved": "Résolu",
+    "ignored": "Ignoré",
+    "window": "Période",
+    "last1": "Dernière heure",
+    "last24": "24 dernières heures",
+    "last168": "7 derniers jours",
+    "last720": "30 derniers jours"
+  },
+  "list": {
+    "empty": "Aucune erreur dans cette période. Dès que votre SDK en signale une, elle apparaît ici.",
+    "loadError": "Impossible de charger les erreurs : {{message}}",
+    "count": "{{count}} événements",
+    "firstSeen": "Première occurrence",
+    "lastSeen": "Dernière occurrence",
+    "regressed": "Régression",
+    "release": "Version {{release}}",
+    "deploy": "Déploiement {{id}}",
+    "emptyTitle": "Aucune erreur",
+    "emptyOff": "Le suivi des erreurs est désactivé pour cette app, rien n'est donc collecté. Activez-le pour obtenir un DSN.",
+    "emptyAction": "Configurer le suivi des erreurs"
+  },
+  "level": {
+    "fatal": "Fatale",
+    "error": "Erreur",
+    "warning": "Avertissement",
+    "info": "Info",
+    "debug": "Debug"
+  },
+  "detail": {
+    "loading": "Chargement du problème...",
+    "stack": "Stack trace",
+    "noStack": "Cet événement ne contenait pas de stack trace.",
+    "latest": "Dernier événement",
+    "samples": "{{count}} événements stockés",
+    "environment": "Environnement {{environment}}",
+    "resolve": "Résoudre",
+    "ignore": "Ignorer",
+    "reopen": "Rouvrir",
+    "updated": "Problème mis à jour.",
+    "updateFailed": "Impossible de mettre à jour le problème."
+  }
+}

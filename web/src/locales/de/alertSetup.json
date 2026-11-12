@@ -1,0 +1,93 @@
+{
+  "template": {
+    "label": "Alarmvorlage",
+    "profile": "App-Typ",
+    "web": "Web-App",
+    "worker": "Worker",
+    "database": "Datenbank",
+    "webHint": "Crash-Loop, 5xx-Rate, langsame Antworten, CPU und ein SLO von 99,9 % Verfügbarkeit.",
+    "workerHint": "Crash-Loop und CPU.",
+    "databaseHint": "Crash-Loop und CPU.",
+    "apply": "Empfohlene Regeln hinzufügen",
+    "applying": "Wird hinzugefügt...",
+    "created": "{{count}} Alarmregeln hinzugefügt",
+    "createdSkipped": "{{count}} Alarmregeln hinzugefügt, {{skipped}} existierten bereits",
+    "allExist": "Alle empfohlenen Regeln existieren bereits",
+    "failed": "Die empfohlenen Regeln konnten nicht hinzugefügt werden",
+    "noChannel": "Es ist kein Benachrichtigungskanal verbunden, daher erscheinen diese Regeln nur im Alarmverlauf, bis Sie einen anhängen."
+  },
+  "quiet": {
+    "title": "Ruhezeiten",
+    "description": "Hält Warn- und Info-Alarme während eines täglichen Zeitfensters zurück und sendet sie am Ende, falls sie noch ausgelöst sind. Kritische Alarme benachrichtigen immer.",
+    "enabled": "Nicht kritische Alarme zurückhalten",
+    "start": "Von",
+    "end": "Bis",
+    "timezone": "Zeitzone",
+    "save": "Ruhezeiten speichern",
+    "saving": "Speichern...",
+    "saved": "Ruhezeiten gespeichert",
+    "clear": "Entfernen",
+    "cleared": "Ruhezeiten entfernt",
+    "loadError": "Ruhezeiten konnten nicht geladen werden.",
+    "saveError": "Ruhezeiten konnten nicht gespeichert werden"
+  },
+  "rules": {
+    "notConfigured": "Nicht konfiguriert",
+    "generic": "generisch",
+    "colName": "Name",
+    "disabled": "Deaktiviert",
+    "colState": "Zustand",
+    "stateFiring": "Ausgelöst",
+    "statePending": "Ausstehend",
+    "stateOk": "OK",
+    "countFiring": "{{count}} ausgelöst",
+    "countPending": "{{count}} ausstehend",
+    "countOk": "{{count}} OK",
+    "silenced": "Stummgeschaltet",
+    "silencedTip": "Benachrichtigungen sind stummgeschaltet",
+    "viewLogs": "Logs ansehen",
+    "colKind": "Art",
+    "colCondition": "Bedingung",
+    "colLastEvaluated": "Zuletzt ausgewertet",
+    "never": "Nie",
+    "colLastValue": "Letzter Wert",
+    "colNotify": "Benachrichtigen",
+    "title": "Alarmregeln",
+    "description": "Regeln für Schwellenwerte, Crash-Loops, Zertifikatsablauf, Fehler geplanter Aufgaben, Domain-Zustand und fehlende Backups über die Metriken, Neustarts, Jobs, Domains und Backup-Zeitpläne dieser App. Benachrichtigt per Webhook, Slack oder Discord bei einem Wechsel zu ausgelöst oder behoben.",
+    "emptyTitle": "Noch keine Alarmregeln",
+    "emptyDescription": "Lassen Sie sich per Webhook, Slack oder Discord benachrichtigen, sobald eine Metrik einen Schwellenwert überschreitet oder ein Container in einen Crash-Loop gerät."
+  },
+  "slo": {
+    "title": "SLO für {{target}} % Verfügbarkeit verfolgen",
+    "detail": "Diese App liefert Traffic aus und hat keinen SLO-Alarm. Ein Ziel von {{target}} % alarmiert Sie, wenn das Fehlerbudget der 30 Tage schnell aufgebraucht wird, und öffnet einen Alarm auf Ticket-Ebene, wenn es langsam aufgebraucht wird.",
+    "noChannel": "Es ist noch kein Benachrichtigungskanal verbunden, daher erscheint die Regel nur im Alarmverlauf, bis Sie einen anhängen.",
+    "create": "SLO-Regel erstellen",
+    "ruleName": "SLO für {{target}} % Verfügbarkeit",
+    "created": "SLO-Alarmregel erstellt.",
+    "createFailed": "Die SLO-Regel konnte nicht erstellt werden."
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "Traffic-Einbruch einer Domain",
+        "help": "Löst aus, wenn die Anfragen im Zeitfenster unter einen Anteil desselben Zeitfensters von gestern fallen. Bleibt still, bis gestern genug Traffic zum Vergleichen vorhanden war."
+      },
+      "parked_domain_cert_expiry": {
+        "label": "Zertifikatsablauf einer geparkten Domain",
+        "help": "Löst aus, wenn für eine geparkte Domain weniger Tage Zertifikatslaufzeit übrig sind als das Limit. Umfasst jede geparkte Domain der Plattform."
+      }
+    },
+    "scopeLabel": "Domain",
+    "scopeApp": "App: {{app}}",
+    "scopeAll": "Alle Domains dieser App",
+    "scopeHelp": "Jede Domain dieser App überwachen oder nur eine.",
+    "windowLabel": "Zeitfenster",
+    "windowHelp": "Wie lang der Abschnitt ist, der mit demselben Abschnitt von gestern verglichen wird. 0 bis 24h.",
+    "percentLabel": "Einbruch unter Prozent von gestern",
+    "percentHelp": "Löst aus, wenn der Traffic unter diesem Prozentsatz von gestern liegt. 50 bedeutet die Hälfte.",
+    "minRequestsLabel": "Mindestanfragen gestern",
+    "minRequestsHelp": "Die Prüfung überspringen, wenn gestern weniger Anfragen vorlagen, damit ruhige Domains keinen Alarm auslösen.",
+    "daysLabel": "Verbleibende Tage",
+    "daysHelp": "Löst aus, wenn für das Zertifikat einer geparkten Domain weniger Tage übrig sind."
+  }
+}

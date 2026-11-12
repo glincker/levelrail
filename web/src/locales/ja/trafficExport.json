@@ -1,0 +1,111 @@
+{
+  "title": "トラフィックのエクスポート",
+  "description": "完了したリクエストごとに1件のレコードを、PostHog、OpenTelemetryコレクター、または独自のエンドポイントに送信します。配信はリクエストの処理経路とは別にキューに入れられ、リクエストを遅くしたり失敗させたりすることはありません。",
+  "card": {
+    "title": "エクスポート先",
+    "description": "宛先ごとにオプトインしない限り、レコードに訪問者の識別情報は含まれません。"
+  },
+  "add": "エクスポート先を追加",
+  "loadError": "トラフィックのエクスポートを読み込めませんでした: {{message}}",
+  "notConfigured": "トラフィックのエクスポートには、エクスポート先の認証情報を保存するためのマスターキーが必要です。",
+  "empty": {
+    "title": "エクスポート先がありません",
+    "description": "エクスポート先を追加すると、リクエストのレコードを分析ツールにストリーミングできます。"
+  },
+  "kinds": {
+    "posthog": "PostHog",
+    "otlp": "OpenTelemetry",
+    "webhook": "Webhook"
+  },
+  "state": {
+    "active": "有効",
+    "idle": "配信なし",
+    "disabled": "一時停止中",
+    "invalid": "要対応",
+    "failing": "失敗中"
+  },
+  "errorKinds": {
+    "auth": "認証情報が拒否されました",
+    "rejected": "リクエストが拒否されました",
+    "rate_limited": "レート制限されました",
+    "server": "エクスポート先のエラー",
+    "blocked_target": "許可されていないアドレス",
+    "timeout": "タイムアウトしました",
+    "network": "到達できません",
+    "config": "設定が無効です",
+    "other": "配信に失敗しました"
+  },
+  "row": {
+    "lastSuccess": "最終配信 {{when}}",
+    "never": "配信はまだありません",
+    "queued": "待機中 {{count}} 件",
+    "dropped": "破棄 {{count}} 件",
+    "failed": "失敗 {{count}} 件",
+    "identity": "識別フィールドがオン",
+    "noIdentity": "訪問者の識別情報なし",
+    "target": "送信先: {{host}}",
+    "enabled": "有効",
+    "test": "テストを送信",
+    "testing": "送信中",
+    "testOk": "{{name}} がテストレコードを受け付けました",
+    "testFailed": "{{name}} がテストレコードを受け付けませんでした: {{reason}}",
+    "edit": "編集",
+    "remove": "削除"
+  },
+  "remove": {
+    "title": "{{name}} を削除しますか?",
+    "description": "保存されている認証情報は削除され、待機中のレコードは破棄されます。",
+    "confirm": "エクスポート先を削除"
+  },
+  "sheet": {
+    "addTitle": "エクスポート先を追加",
+    "editTitle": "{{name}} を編集",
+    "description": "認証情報は暗号化して保存され、再表示されることはありません。",
+    "name": "名前",
+    "namePlaceholder": "プロダクト分析",
+    "kind": "エクスポート先の種類",
+    "host": "PostHogのリージョンまたはURL",
+    "hostPlaceholder": "us、eu、または https://posthog.example.com",
+    "token": "プロジェクトトークン",
+    "tokenStored": "トークンは保存されています。保持するには空のままにしてください。",
+    "url": "エンドポイントURL",
+    "urlPlaceholder": "https://collector.example.com",
+    "urlStored": "URLは保存されています。保持するには空のままにしてください。",
+    "authHeader": "Authorizationヘッダーの値",
+    "authHeaderHint": "任意です。例: Bearerとそれに続くトークン。保存されている値を保持するには空のままにしてください。",
+    "fieldsTitle": "オプションのフィールド",
+    "fieldsHint": "すべてのレコードには、すでにメソッド、パス、ステータス、タイミング、リクエストIDが含まれています。以下は、チェックを入れない限り送信されません。",
+    "ipTruncate": "クライアントIPを切り詰める",
+    "ipTruncateHint": "IPv4アドレスの最後のオクテット、またはIPv6アドレスの最後の80ビットをゼロにします。",
+    "sample": "エクスポートするトレースの割合",
+    "sampleHint": "0から1の数値です。1ではすべてのリクエストをエクスポートします。",
+    "enabled": "このエクスポート先に配信する",
+    "save": "エクスポート先を保存",
+    "saving": "保存中",
+    "cancel": "キャンセル",
+    "saveFailed": "保存できませんでした: {{message}}"
+  },
+  "fields": {
+    "referrer_host": {
+      "label": "リファラーのホスト",
+      "hint": "リクエスト元のサイトで、ホスト名のみです。"
+    },
+    "client_ip": {
+      "label": "クライアントのIPアドレス",
+      "hint": "多くの地域で個人データにあたります。"
+    },
+    "user_agent": {
+      "label": "ユーザーエージェント",
+      "hint": "ブラウザーとデバイスの文字列です。"
+    },
+    "visitor_id": {
+      "label": "匿名の訪問者ID",
+      "hint": "IPとユーザーエージェントから生成される、毎日変わるハッシュです。それでも識別子として扱われます。"
+    }
+  },
+  "disclaimer": {
+    "title": "このエクスポート先は訪問者の識別情報を受信します",
+    "body": "クライアントIP、ユーザーエージェント、訪問者IDは、個人を特定できる可能性があります。プライバシーに関する通知がこのデータをエクスポート先と共有することを対象としており、適法な根拠がある場合にのみ有効にしてください。Cookie、認証ヘッダー、クエリ文字列、リクエストボディはエクスポートされません。"
+  },
+  "privacy": "デフォルトでは、クライアントIP、ユーザーエージェント、訪問者IDはエクスポートされません。Cookie、認証ヘッダー、クエリ文字列、リクエストボディはエクスポートされません。"
+}

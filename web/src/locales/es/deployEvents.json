@@ -1,0 +1,139 @@
+{
+  "title": "Línea de tiempo del despliegue",
+  "subtitle": "Todo lo que ocurrió en un despliegue, en orden.",
+  "pageTitle": "Despliegue {{id}}",
+  "app": "App",
+  "back": "Todos los despliegues",
+  "open": "Línea de tiempo",
+  "verdict": {
+    "running": "En curso",
+    "watching": "En vigilancia",
+    "succeeded": "Correcto",
+    "failed": "Fallido",
+    "rolled_back": "Revertido",
+    "canceled": "Cancelado",
+    "queued": "En cola"
+  },
+  "connection": {
+    "connecting": "Conectando",
+    "live": "En vivo",
+    "ended": "Repetición",
+    "error": "Reconectando"
+  },
+  "frozenNote": "Repetición guardada de cuando este despliegue terminó.",
+  "list": {
+    "label": "Eventos del despliegue, del más antiguo al más reciente",
+    "loading": "Cargando la línea de tiempo del despliegue",
+    "emptyTitle": "Aún no hay eventos",
+    "emptyBody": "Los eventos aparecen aquí a medida que avanza el despliegue."
+  },
+  "announce": "{{title}}: {{status}}",
+  "status": {
+    "running": "En ejecución",
+    "ok": "Hecho",
+    "failed": "Fallido",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "kind": {
+    "trigger": "Disparador",
+    "build": "Compilación",
+    "log": "Salida de la compilación",
+    "image_push": "Subida de la imagen",
+    "hook": "Hook",
+    "step": "Paso",
+    "readiness": "Disponibilidad",
+    "cutover": "Cambio de tráfico",
+    "watch": "Vigilancia posterior al despliegue",
+    "rollback": "Rollback",
+    "outcome": "Resultado",
+    "traffic_impact": "Impacto en el tráfico"
+  },
+  "codes": {
+    "trigger_git_push": "Push de Git recibido",
+    "trigger_webhook": "Webhook recibido",
+    "trigger_manual": "Despliegue iniciado manualmente",
+    "trigger_image": "Despliegue de imagen solicitado",
+    "trigger_compose": "Despliegue de Compose solicitado",
+    "trigger_promote": "Promoción solicitada",
+    "trigger_auto_rollback": "Rollback automático iniciado",
+    "trigger_restart": "Reinicio solicitado",
+    "trigger_queued": "En cola tras otro despliegue",
+    "build_detecting": "Detectando cómo compilar",
+    "build_building": "Compilación",
+    "build_failed": "Falló la compilación",
+    "push": "Subida de la imagen",
+    "readiness_probe": "Sonda de disponibilidad",
+    "watch_crashloop": "Bucle de caídas tras el despliegue",
+    "watch_oom": "Contenedor terminado por falta de memoria tras el despliegue",
+    "watch_exited": "El contenedor terminó tras el despliegue",
+    "watch_error_rate": "La tasa de 5xx subió tras el despliegue",
+    "watch_latency": "La latencia empeoró tras el despliegue",
+    "watch_stopped": "Vigilancia detenida por un operador",
+    "watch_cleared": "Vigilancia posterior al despliegue despejada",
+    "rollback_auto": "Rollback automático",
+    "rollback_no_target": "No hay ningún destino de rollback disponible",
+    "outcome_succeeded": "Despliegue terminado",
+    "outcome_failed": "Despliegue fallido",
+    "outcome_rolled_back": "Despliegue revertido",
+    "outcome_canceled": "Despliegue cancelado",
+    "traffic_impact": "Impacto en el tráfico alrededor del cambio de tráfico"
+  },
+  "trigger": {
+    "rerun": "Repetición de {{id}}"
+  },
+  "logs": {
+    "summary_one": "Salida de la compilación, {{count}} línea",
+    "summary_other": "Salida de la compilación, {{count}} líneas",
+    "region": "Líneas de salida de la compilación",
+    "dropped": "Se omitieron {{count}} líneas anteriores para mantener la repetición pequeña."
+  },
+  "impact": {
+    "title": "Tráfico alrededor del cambio de tráfico",
+    "before": "Antes",
+    "after": "Después",
+    "rate": "Peticiones por segundo",
+    "errors": "Tasa de 5xx",
+    "p95": "Latencia p95",
+    "noTraffic": "No hubo tráfico en esta ventana",
+    "open": "La ventana posterior al cambio de tráfico sigue abierta, así que estas cifras pueden cambiar.",
+    "window": "Las ventanas son de {{window}} a cada lado del cambio de tráfico."
+  },
+  "phases": {
+    "title": "Tiempo por fase",
+    "label": "Duración de cada fase",
+    "trigger": "Disparador",
+    "build": "Compilación",
+    "push": "Subida",
+    "hooks": "Hooks",
+    "deploy": "Despliegue",
+    "readiness": "Disponibilidad",
+    "cutover": "Cambio de tráfico",
+    "watch": "Vigilancia",
+    "outcome": "Resultado"
+  },
+  "compare": {
+    "label": "Comparar con",
+    "none": "Sin comparación",
+    "hint": "Elige otro despliegue de esta app para ver ambas líneas de tiempo lado a lado.",
+    "loading": "Cargando la comparación",
+    "errorTitle": "No se pudo cargar la comparación",
+    "title": "Lado a lado",
+    "deployA": "Este despliegue",
+    "deployB": "Despliegue comparado",
+    "phase": "Fase",
+    "delta": "Diferencia",
+    "faster": "{{value}} más rápido",
+    "slower": "{{value}} más lento",
+    "same": "Igual",
+    "missing": "No alcanzada",
+    "onlyHere": "Solo en este despliegue",
+    "onlyThere": "Solo en el despliegue comparado",
+    "noDifferences": "Ambos despliegues produjeron las mismas señales.",
+    "columnLabel": "Eventos del despliegue {{id}}"
+  },
+  "error": {
+    "title": "No se pudo cargar este despliegue",
+    "notFound": "Este despliegue no existe o no puedes leer su app."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "Conditions",
+    "if": "Si",
+    "and": "Et",
+    "then": "Alors",
+    "fieldLabel": "Champ de la condition {{n}}",
+    "nameLabel": "Nom de la condition {{n}}",
+    "operatorLabel": "Opérateur de la condition {{n}}",
+    "valueLabel": "Valeur de la condition {{n}}",
+    "removeCondition": "Supprimer la condition {{n}}",
+    "addCondition": "ET",
+    "maxConditions": "{{count}} conditions au maximum par règle.",
+    "actionLabel": "Action",
+    "selectAction": "Choisir une action",
+    "ruleName": "Nom",
+    "description": "Description (facultatif)",
+    "cancel": "Annuler",
+    "viewCode": "Voir le code",
+    "hideCode": "Masquer le code",
+    "copy": "Copier",
+    "copied": "Copié",
+    "codeLabel": "Règle telle qu'enregistrée",
+    "codeHelp": "C'est exactement ce qui est enregistré. Lecture seule."
+  }
+}

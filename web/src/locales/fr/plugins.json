@@ -1,0 +1,277 @@
+{
+  "title": "Plugins",
+  "description": "Extensions signées qui s'exécutent dans des containers verrouillés. Rien de tiers ne se charge tant que vous n'avez pas fait confiance à son éditeur et approuvé ce qu'il peut faire.",
+  "install": "Installer un plugin",
+  "tabs": {
+    "installed": "Installés",
+    "marketplace": "Marketplace"
+  },
+  "marketplace": {
+    "search": "Rechercher des plugins",
+    "categories": "Catégories",
+    "allCategories": "Toutes",
+    "verified": "Vérifié",
+    "abilitiesSummary": "Demande : {{abilities}}",
+    "install": "Installer",
+    "update": "Mettre à jour",
+    "uninstall": "Désinstaller",
+    "updateAvailable": "Mettre à jour vers {{version}}",
+    "installedState": "{{version}} installée",
+    "needsNewer": "Nécessite le plan de contrôle {{version}} ou plus récent",
+    "showMore": "Afficher {{count}} de plus",
+    "recheck": "Revérifier",
+    "rechecking": "Vérification...",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "installed": "{{name}} installé et activé",
+    "updated": "{{name}} mis à jour",
+    "uninstalled": "{{name}} supprimé",
+    "loadFailed": "Impossible de charger le marketplace",
+    "empty": {
+      "title": "Aucun plugin ne correspond",
+      "description": "Essayez une autre recherche ou catégorie, ou revérifiez les sources."
+    },
+    "noSources": {
+      "title": "Aucune source de marketplace pour l'instant",
+      "description": "Ajoutez une source d'index ci-dessous. Chaque source est signée par une clé racine à laquelle vous faites confiance."
+    },
+    "problem": {
+      "fetch": "Impossible de joindre {{name}}",
+      "signature": "L'index de {{name}} a échoué à la vérification de signature et a été ignoré",
+      "format": "L'index de {{name}} est mal formé et a été ignoré",
+      "replay": "L'index de {{name}} est plus ancien qu'un index déjà vu et a été ignoré",
+      "too_large": "L'index de {{name}} est trop volumineux et a été ignoré"
+    },
+    "sheet": {
+      "title": "Installer {{name}}",
+      "updateTitle": "Mettre à jour {{name}}",
+      "description": "Vérifiez exactement ce que fait cette installation. Le plan de contrôle revérifie tout avant de modifier quoi que ce soit.",
+      "failed": "Impossible de vérifier cette fiche",
+      "source": "Source du marketplace",
+      "key": "Clé de l'éditeur",
+      "digest": "Digest de l'image",
+      "abilities": "Capacités qui seront approuvées",
+      "exactly": "Seules les capacités listées ici sont approuvées. Rien d'autre n'est accordé, et le plugin est activé une fois installé.",
+      "trust": "Faire confiance à la clé de l'éditeur de {{name}}",
+      "trustHint": "La clé est ajoutée à votre liste de confiance, avec la mention ajoutée depuis le marketplace. Vous pouvez la retirer à tout moment.",
+      "install": "Installer et activer",
+      "update": "Mettre à jour",
+      "pending": "En cours..."
+    },
+    "sources": {
+      "title": "Sources du marketplace",
+      "description": "Chaque source est un index de plugins signé. Seules les fiches signées par la clé racine de la source sont affichées.",
+      "empty": "Aucune source configurée.",
+      "status": {
+        "ok": "à jour",
+        "stale": "dernière copie valide affichée",
+        "error": "indisponible"
+      },
+      "rootKey": "Clé racine {{key}}",
+      "name": "Nom",
+      "url": "URL de l'index",
+      "rootKeyLabel": "Clé publique racine (base64)",
+      "add": "Ajouter une source",
+      "added": "Source ajoutée",
+      "remove": "Retirer",
+      "removeTitle": "Retirer {{name}} ?",
+      "removeDescription": "Ses fiches disparaissent. Les plugins déjà installés depuis elle continuent de tourner."
+    }
+  },
+  "loadFailed": "Impossible de charger les plugins",
+  "loadFailedHint": "Le runtime des plugins nécessite un daemon Docker joignable. Consultez les logs du plan de contrôle, puis rechargez.",
+  "empty": {
+    "title": "Aucun plugin installé",
+    "description": "Faites d'abord confiance à la clé d'un éditeur, puis installez un paquet de plugin obtenu auprès de lui. Consultez le guide des plugins pour le format de paquet.",
+    "action": "Installer votre premier plugin"
+  },
+  "columns": {
+    "name": "Plugin",
+    "state": "Statut",
+    "requested": "Capacités demandées",
+    "approved": "Capacités approuvées",
+    "actions": "Actions"
+  },
+  "publisher": "par {{publisher}}",
+  "none": "Aucune",
+  "state": {
+    "installed": "Approbation requise",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
+    "removing": "Suppression",
+    "running": "En marche",
+    "stopped": "Ne tourne pas"
+  },
+  "lastError": "Dernière erreur : {{message}}",
+  "actions": {
+    "review": "Vérifier et approuver",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "remove": "Supprimer",
+    "enabled": "{{name}} activé",
+    "disabled": "{{name}} désactivé",
+    "removed": "{{name}} supprimé",
+    "failed": "Échec de l'action sur le plugin",
+    "upgrade": "Mettre à niveau",
+    "uninstall": "Désinstaller",
+    "restarted": "{{name}} redémarré"
+  },
+  "abilities": {
+    "read": "Recevoir l'événement d'alerte en cours de livraison (titre, texte, statut, ressource).",
+    "readSensitive": "Recevoir aussi les extraits de logs joints aux alertes, qui peuvent contenir des secrets."
+  },
+  "approve": {
+    "title": "Approuver {{name}}",
+    "description": "Vérifiez exactement ce que {{name}} {{version}} de {{publisher}} demande. Rien n'est accordé tant que vous ne l'avez pas coché et approuvé.",
+    "requested": "Capacités demandées",
+    "network": "Accès réseau",
+    "networkNone": "Aucun réseau. Le plugin ne peut rien atteindre en dehors de son container.",
+    "networkHosts": "Hôtes dont le plugin dit avoir besoin : {{hosts}}.",
+    "networkNote": "Ces hôtes ne sont appliqués que lorsque le proxy de sortie est activé. D'ici là, un plugin avec un hôte déclaré a un accès réseau général.",
+    "image": "Image",
+    "signedBy": "Signé par la clé",
+    "never": "Les secrets ne sont jamais stockés par le plugin. L'identifiant d'un canal n'est envoyé qu'avec chaque livraison.",
+    "submit": "Approuver la sélection",
+    "pending": "Approbation",
+    "later": "Décider plus tard",
+    "needsRead": "Cochez la capacité de lecture : un plugin de notification ne peut pas fonctionner sans elle.",
+    "approved": "{{name}} approuvé. Activez-le pour le démarrer.",
+    "failed": "Impossible d'approuver le plugin"
+  },
+  "installDialog": {
+    "title": "Installer un plugin",
+    "description": "Collez le manifeste et la signature de l'éditeur. L'installation les vérifie et enregistre le paquet. Elle n'approuve ni ne démarre rien.",
+    "manifest": "Manifeste (plugin.yaml)",
+    "manifestHint": "Collez le fichier exactement tel que l'éditeur l'a livré. Toute modification invalide la signature.",
+    "signature": "Signature",
+    "keyId": "Clé de signature",
+    "noKeys": "Aucune clé de confiance pour l'instant. Ajoutez d'abord la clé de l'éditeur ci-dessous.",
+    "pending": "Vérification",
+    "cancel": "Annuler",
+    "installed": "{{name}} installé. Vérifiez ensuite ses capacités.",
+    "failed": "Échec de l'installation",
+    "upgradeTitle": "Mettre à niveau {{name}}",
+    "reviewDescription": "Vérifiez qui l'a publié, s'il est authentifié et exactement ce qu'il peut faire. L'approbation n'accorde que les capacités listées.",
+    "source": "Source",
+    "sourceManifest": "Coller un manifeste",
+    "sourceUrl": "URL du manifeste",
+    "url": "URL du manifeste (https)",
+    "urlHint": "Une signature est lue à la même URL avec .sig ajouté, sauf si vous en collez une ci-dessous.",
+    "signatureHint": "Ne laissez vide que pour un paquet non signé, qui est refusé sauf si l'opérateur autorise les plugins non signés.",
+    "signatureHintUrl": "Facultative quand un fichier .sig se trouve à côté du manifeste.",
+    "keyAuto": "Détecter parmi les clés de confiance",
+    "review": "Vérifier",
+    "reviewing": "Vérification",
+    "back": "Retour",
+    "approveInstall": "Approuver et installer",
+    "installedApproved": "{{name}} installé et approuvé. Activez-le pour le démarrer.",
+    "wrongPlugin": "Ce manifeste concerne un autre plugin que {{name}}."
+  },
+  "remove": {
+    "title": "Supprimer {{name}} ?",
+    "description": "Le plugin est arrêté et supprimé. Les canaux de notification qui l'utilisent cesseront de livrer tant que vous n'aurez pas choisi un autre type de canal.",
+    "confirm": "Supprimer le plugin"
+  },
+  "keys": {
+    "title": "Clés d'éditeurs de confiance",
+    "description": "Seuls les paquets signés par une clé de cette liste peuvent être installés. La liste commence vide.",
+    "emptyTitle": "Aucune clé de confiance",
+    "emptyDescription": "Rien de tiers ne peut être installé. Vérifiez la clé d'un éditeur directement avec lui, puis ajoutez-la.",
+    "name": "Nom de l'éditeur",
+    "publicKey": "Clé publique (base64)",
+    "add": "Faire confiance à la clé",
+    "adding": "Ajout",
+    "added": "Clé approuvée",
+    "addFailed": "Impossible d'ajouter la clé",
+    "colName": "Éditeur",
+    "colKeyId": "ID de clé",
+    "colAdded": "Ajoutée",
+    "remove": "Ne plus faire confiance",
+    "removeTitle": "Ne plus faire confiance à {{name}} ?",
+    "removeDescription": "Les plugins signés par cette clé s'arrêtent au prochain passage du superviseur. Ils restent installés.",
+    "removed": "Clé retirée"
+  },
+  "fix": {
+    "restart": "Correction : redémarrer",
+    "trustKey": "Correction : faire confiance à la clé de signature",
+    "reinstall": "Correction : réinstaller un paquet signé"
+  },
+  "verification": {
+    "verified": "Signature vérifiée",
+    "unsigned": "Non signé",
+    "unsigned_refused": "Non signé, refusé",
+    "untrusted_key": "Clé non approuvée",
+    "bad_signature": "Signature invalide",
+    "digest_mismatch": "Digest différent",
+    "unverified": "Non vérifié"
+  },
+  "egress": {
+    "openTitle": "Les hôtes déclarés ne sont pas appliqués",
+    "openBody": "Les plugins qui déclarent des hôtes sortants partagent un réseau général. Définissez APP_PLUGIN_EGRESS_MODE=proxy pour limiter chaque plugin aux hôtes qu'il a déclarés.",
+    "summary": {
+      "none": "Aucune connexion refusée",
+      "last": "dernière {{when}}",
+      "help": "Compte depuis le dernier redémarrage du proxy de sortie. Les noms d'hôtes refusés se trouvent dans le log du proxy, pas ici.",
+      "reasons": {
+        "host_not_allowed": "hôte non déclaré",
+        "blocked_address": "adresse bloquée",
+        "resolve_failed": "échec de la résolution DNS",
+        "dial_failed": "échec de la connexion",
+        "too_many_tunnels": "trop de connexions",
+        "rate_limited": "limite de débit atteinte",
+        "bad_request": "requête mal formée",
+        "unknown_caller": "appelant inconnu"
+      },
+      "count": "Connexions refusées : {{count}}"
+    }
+  },
+  "review": {
+    "verification": "Vérification",
+    "digest": "Image épinglée à {{digest}}",
+    "signedBy": "Signé par {{key}}",
+    "refused": "Ce paquet ne peut pas être installé",
+    "unsignedWarn": "Les paquets non signés ne sont pas authentifiés. N'installez que si vous l'avez construit vous-même.",
+    "abilities": "Capacités demandées",
+    "newAbility": "Nouveau",
+    "removed": "N'est plus demandé : {{abilities}}",
+    "upgradeFrom": "Mise à niveau depuis la version {{version}}",
+    "panels": "Ajoute {{count}} panneau(x) en lecture seule à cette page, affiché(s) par le tableau de bord à partir du manifeste.",
+    "reapproval": "Accès plus large qu'avant",
+    "reapprovalHint": "Cette version demande des capacités ou des hôtes que la version installée ne demandait pas. Approuver ici accorde exactement l'ensemble listé ci-dessus."
+  },
+  "panels": {
+    "title": "Panneaux de plugins",
+    "from": "{{name}} par {{publisher}}"
+  },
+  "panelHost": {
+    "loadFailed": "Ce panneau n'a pas pu charger ses données.",
+    "retry": "Réessayer",
+    "empty": "Rien à afficher.",
+    "showMore": "Afficher {{count}} de plus",
+    "widgetUnavailable": "cette partie du panneau est indisponible",
+    "confirm": "Confirmer",
+    "actionDone": "Terminé",
+    "actionFailed": "L'action ne s'est pas terminée",
+    "status": {
+      "ok": "OK",
+      "warning": "Avertissement",
+      "error": "Erreur",
+      "unknown": "Inconnu"
+    }
+  },
+  "dns": {
+    "active": "Écrit vos enregistrements DNS",
+    "inactive": "Non utilisé pour les enregistrements DNS, le client intégré les écrit",
+    "use": "Utiliser pour les enregistrements DNS",
+    "useBuiltIn": "Utiliser le client intégré",
+    "test": "Tester la connexion",
+    "testing": "Test en cours...",
+    "testOk_one": "Connecté, le plugin voit {{count}} zone",
+    "testOk_many": "Connecté, le plugin voit {{count}} zones",
+    "testOk_other": "Connecté, le plugin voit {{count}} zones",
+    "testFailed": "Échec du test : {{message}}",
+    "pluginOn": "Les enregistrements DNS sont désormais écrits par {{name}}",
+    "builtInOn": "Les enregistrements DNS sont de nouveau écrits par le client intégré",
+    "needsRunning": "Approuvez et activez le plugin pour le tester ou l'utiliser pour les enregistrements DNS."
+  }
+}

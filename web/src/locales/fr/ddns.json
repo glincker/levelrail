@@ -1,0 +1,69 @@
+{
+  "title": "DNS dynamique",
+  "description": "Maintient un enregistrement DNS pointé vers ce serveur lorsque son IP publique change. Les modifications s'appliquent immédiatement.",
+  "status": {
+    "running": "En cours",
+    "failing": "En échec",
+    "off": "Désactivé",
+    "label": "Statut du programme de mise à jour"
+  },
+  "source": {
+    "stored": "Enregistré",
+    "default": "Valeurs par défaut utilisées"
+  },
+  "enabled": "Activé",
+  "provider": {
+    "label": "Fournisseur",
+    "generic": "URL générique",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "Domaines DuckDNS",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "URL de mise à jour",
+    "labelDuckdns": "Token DuckDNS",
+    "placeholder": "Collez pour définir ou remplacer",
+    "configured": "Configuré ({{host}})",
+    "configuredNoHost": "Configuré",
+    "notConfigured": "Non configuré",
+    "clear": "Effacer",
+    "cleared": "Identifiant effacé."
+  },
+  "advanced": {
+    "toggle": "Avancé",
+    "interval": "Vérifier toutes les (s)",
+    "timeout": "Délai d'expiration (s)",
+    "minGap": "Écart min. entre mises à jour (s)",
+    "reassert": "Renvoyer toutes les (s)",
+    "failAlertAfter": "Alerter après des échecs",
+    "quorum": "Quorum de sondes",
+    "probeUrls": "URL de sonde (une par ligne)",
+    "allowPrivate": "Autoriser les adresses privées",
+    "summary": "Toutes les {{interval}} s, délai {{timeout}} s, quorum {{quorum}}, alerte après {{failAlertAfter}} échecs",
+    "allowInsecureHttp": "Autoriser le HTTP non chiffré"
+  },
+  "last": {
+    "title": "Dernière vérification",
+    "never": "Aucune vérification pour l'instant",
+    "ip": "IP {{ip}}",
+    "result": "Résultat : {{result}}",
+    "check": "vérifié {{when}}",
+    "change": "modifié {{when}}",
+    "failures": "{{count}} échecs consécutifs",
+    "alert": "Alerte active"
+  },
+  "result": {
+    "ok": "ok",
+    "failing": "en échec",
+    "pending": "en attente",
+    "not running": "à l'arrêt"
+  },
+  "save": "Enregistrer",
+  "saving": "Enregistrement...",
+  "saved": "DNS dynamique enregistré.",
+  "error": {
+    "number": "Utilisez des nombres entiers supérieurs ou égaux à 1."
+  }
+}

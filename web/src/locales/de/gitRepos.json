@@ -1,0 +1,104 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "Repositorys durchsuchen...",
+      "empty": "Keine Repositorys gefunden.",
+      "noMatch": "Keine Repositorys passen zu \"{{search}}\".",
+      "loadFailed": "Repositorys konnten nicht aufgelistet werden."
+    },
+    "projects": {
+      "searchPlaceholder": "Projekte durchsuchen...",
+      "empty": "Keine Projekte gefunden.",
+      "noMatch": "Keine Projekte passen zu \"{{search}}\".",
+      "loadFailed": "Projekte konnten nicht aufgelistet werden."
+    },
+    "refresh": "Aktualisieren",
+    "refreshing": "Wird aktualisiert",
+    "refreshHint": "Listet die Repositorys erneut vom Anbieter auf, statt die gespeicherte Liste zu verwenden.",
+    "filters": {
+      "label": "Filter",
+      "allOwners": "Alle Eigentümer",
+      "hideArchived": "Archivierte ausblenden",
+      "hideForks": "Forks ausblenden",
+      "allAccounts": "Alle Konten"
+    },
+    "status": {
+      "showing": "{{shown}} von {{total}} werden angezeigt.",
+      "searchToNarrow": "Suchen Sie oder wählen Sie einen Eigentümer, um die Liste einzugrenzen.",
+      "loadedOf": "Insgesamt {{loaded}} geladen.",
+      "updated": "Aktualisiert {{time}}.",
+      "stale": "Gespeicherte Liste, wird im Hintergrund aktualisiert.",
+      "truncated": "Dieses Konto hat mehr als die hier aufgelisteten {{cap}} Repositorys. Die Suche umfasst nur die ersten {{cap}}. Fügen Sie die URL eines Repositorys ein, um ein weiteres zu verwenden.",
+      "rateLimited": "Der Anbieter begrenzt die Rate dieser Control Plane, daher ist dies die gespeicherte Liste. Erneute Prüfung nach {{time}}.",
+      "rateLimitedEmpty": "Der Anbieter begrenzt die Rate dieser Control Plane, und es gibt noch keine gespeicherte Liste. Versuchen Sie es nach {{time}} erneut.",
+      "rateLimitedNoTime": "Der Anbieter begrenzt die Rate dieser Control Plane. Versuchen Sie es in einer Minute erneut."
+    },
+    "loadMore": "Mehr anzeigen",
+    "loadingMore": "Wird geladen",
+    "accountError": "{{account}} konnte nicht aufgelistet werden: {{error}}",
+    "badges": {
+      "archived": "Archiviert",
+      "fork": "Fork",
+      "private": "Privates Repository",
+      "running": "Läuft als {{name}}"
+    },
+    "retry": "Erneut versuchen",
+    "account": "Konto: {{name}}"
+  },
+  "connection": {
+    "label": "Zustand der Verbindung",
+    "healthy": "Fehlerfrei",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server",
+      "azure_devops": "Azure DevOps"
+    },
+    "needs_reauthorize": {
+      "title": "{{provider}} muss neu verbunden werden",
+      "body": "Die Autorisierung wurde widerrufen, ist abgelaufen oder wird nicht mehr akzeptiert, daher können Repositorys erst nach erneutem Verbinden aufgelistet oder geklont werden."
+    },
+    "revoked": {
+      "title": "Die Verbindung zu {{provider}} wurde entfernt",
+      "body": "Die Installation oder Autorisierung existiert beim Anbieter nicht mehr. Verbinden Sie neu, um sie wieder zu verwenden."
+    },
+    "rate_limited": {
+      "title": "{{provider}} begrenzt die Rate dieser Control Plane",
+      "body": "Gespeicherte Listen werden weiterhin angezeigt. Die Prüfung erfolgt erneut nach {{time}}."
+    },
+    "reconnect": "{{provider}} neu verbinden",
+    "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "Die Webhook-Adresse dieser Control Plane ist privat oder lokal, daher können GitHub, GitLab und andere Git-Hosts sie nicht aufrufen. Pushes kommen nicht an.",
+      "no_public_url": "Diese Control Plane hat noch keine öffentliche Adresse, daher haben Git-Hosts keine Webhook-Adresse, die sie aufrufen könnten. Pushes kommen nicht an."
+    },
+    "urlFixHint": "Legen Sie unten eine öffentliche URL für Webhooks fest und registrieren Sie den Webhook dann erneut.",
+    "registration": {
+      "registered": "Webhook beim Anbieter registriert.",
+      "failed": "Der Webhook wurde beim Anbieter nicht registriert: {{error}}",
+      "registerAgain": "Erneut registrieren",
+      "registering": "Wird registriert",
+      "done": "Webhook registriert.",
+      "failedToast": "Der Webhook konnte nicht registriert werden."
+    },
+    "poll": {
+      "last": "Zuletzt geprüft {{time}}.",
+      "never": "Noch nicht geprüft.",
+      "lastWebhook": "Letzter Webhook {{time}}.",
+      "noWebhook": "Bisher ist kein Webhook eingegangen.",
+      "error": "Die letzte Prüfung ist fehlgeschlagen: {{error}}",
+      "disabled": "Das Abfragen nach verpassten Pushes ist aus."
+    },
+    "connection": {
+      "needs_reconnect": "Das Konto, aus dem dieses Repository gewählt wurde, wurde getrennt. Die Quelle bleibt bestehen, aber Webhooks und Vorschauen können sie erst nutzen, wenn Sie wieder ein Konto beim selben Host verbinden.",
+      "needs_reauthorize": "Das Konto {{label}} muss neu verbunden werden, damit die Webhooks und Vorschauen dieser Quelle funktionieren.",
+      "revoked": "Das Konto {{label}} wurde beim Anbieter entfernt. Verbinden Sie es neu, um diese Quelle wieder zu verwenden.",
+      "reconnect": "{{provider}} neu verbinden"
+    }
+  }
+}

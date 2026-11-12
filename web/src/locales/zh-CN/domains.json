@@ -1,0 +1,1815 @@
+{
+  "readOnlyNotice": "你只有只读权限。如需修改这些设置,请联系管理员获取部署权限。",
+  "authGate": {
+    "badgeOn": "认证网关已开启",
+    "badgeOff": "无认证网关",
+    "setUp": "添加认证网关",
+    "manage": "管理",
+    "hide": "隐藏",
+    "description": "每个请求都会先由你的认证服务检查。返回 2xx 即放行;其他响应(例如跳转到登录页)会原样返回给访客。访客发送的下列请求头副本始终会被移除,因此无法伪造。",
+    "enabled": "启用网关",
+    "urlLabel": "认证服务 URL",
+    "urlHelp": "http 或 https,不含用户名或密码。可以使用内部地址。",
+    "checkPathLabel": "检查路径",
+    "copyHeadersLabel": "传递给应用的请求头",
+    "copyHeadersHelp": "以逗号分隔,最多 16 个。仅在认证响应为 2xx 时从中复制。",
+    "timeoutLabel": "超时(秒)",
+    "timeoutHelp": "留空则使用服务器默认值({{seconds}} 秒)。如果认证服务宕机或过慢,访客会看到错误,而不是应用。",
+    "save": "保存",
+    "saving": "正在保存...",
+    "remove": "移除认证网关",
+    "removing": "正在移除...",
+    "errors": {
+      "urlRequired": "请输入认证服务的 URL。",
+      "timeout": "超时必须是整数秒。"
+    },
+    "providerLabel": "由谁检查访客",
+    "providerExternal": "我的认证服务",
+    "providerBuiltin": "{{name}} 登录",
+    "builtinHelp": "访客使用其 {{name}} 账户登录(包括通行密钥和双重验证),只有下方列出的人员可以通过。应用会收到 X-User、X-Email 和 X-Name。",
+    "builtinUnavailable": "请先设置平台主域名:访客会被转到控制台登录。",
+    "allowLabel": "允许的人员",
+    "allowHelp": "按邮箱指定用户,按名称指定团队或角色。",
+    "allowEmpty": "在你至少添加一个用户、团队或角色之前,任何人都无法进入。",
+    "allowKindLabel": "规则类型",
+    "allowKind": {
+      "user": "用户",
+      "team": "团队",
+      "role": "角色"
+    },
+    "allowPlaceholder": {
+      "user": "person@example.com",
+      "team": "团队名称",
+      "role": "角色名称"
+    },
+    "allowAdd": "添加",
+    "allowRemove": "移除 {{label}}",
+    "liveSessions_other": "{{count}} 位访客已登录",
+    "revokeSessions": "让所有访客退出登录",
+    "revoking": "正在退出登录...",
+    "revoked": "已让 {{count}} 位访客退出登录。",
+    "extraHeadersLabel": "传递给应用的额外请求头",
+    "accessLog": {
+      "title": "访问日志",
+      "show": "显示访问日志",
+      "hide": "隐藏访问日志",
+      "rangeLabel": "时间范围",
+      "range": {
+        "1h": "过去 1 小时",
+        "24h": "过去 24 小时",
+        "7d": "过去 7 天"
+      },
+      "empty": "此时间范围内没有登录活动。",
+      "loadError": "无法加载访问日志。",
+      "anonymous": "未登录",
+      "columns": {
+        "time": "时间",
+        "user": "用户",
+        "decision": "结果",
+        "reason": "原因",
+        "ip": "IP",
+        "count": "请求数"
+      },
+      "decision": {
+        "allowed": "已允许",
+        "denied": "已拒绝",
+        "login_redirect": "已转到登录",
+        "token_issued": "已签发登录链接",
+        "token_exchange": "已登录",
+        "session_revoked": "会话已结束"
+      }
+    }
+  },
+  "wizard": {
+    "open": "引导设置",
+    "close": "关闭引导",
+    "title": "分步添加域名",
+    "description": "将域名指向此应用并获取受信任的证书。每一步都会检查真实状态,在最后一步之前不会保存任何内容。",
+    "step": {
+      "domain": "域名",
+      "dns": "DNS 记录",
+      "port": "容器端口",
+      "certificate": "证书"
+    },
+    "domain": {
+      "label": "域名",
+      "placeholder": "app.example.com",
+      "invalid": "请输入有效的域名,例如 app.example.com。",
+      "environmentLabel": "环境",
+      "environmentDefault": "默认(所有没有自己域名集的环境)",
+      "wwwPreset": "同时路由 {{www}} 并将其重定向到 {{apex}}",
+      "apexPreset": "同时路由 {{apex}} 并将其重定向到 {{www}}"
+    },
+    "dns": {
+      "propagation": "DNS 变更通常几分钟内生效,但根据记录的 TTL 也可能需要几个小时。此页面会自动重新检查,你可以保持打开。",
+      "needDomain": "请在上方输入域名,以查看需要添加的准确记录。"
+    }
+  },
+  "port": {
+    "description": "入口会将请求转发到容器内的 {{port}} 端口。",
+    "listening": "已验证:容器正在监听 {{port}} 端口。",
+    "otherPort": "容器正在监听 {{ports}},而不是 {{port}} 端口。在端口一致之前请求会失败。",
+    "useListening": "使用 {{port}} 端口",
+    "notListening": "正在运行的容器内尚无进程监听 {{port}} 端口。请检查应用是否启动并绑定到 0.0.0.0,而不是 127.0.0.1。",
+    "unknown": "未验证:应用尚未运行,或其 exec 访问已关闭。当前配置的端口是 {{port}}。",
+    "execDisabled": "为此应用开启 exec 访问,以便控制台验证其监听端口。",
+    "notRunning": "应用未运行,因此暂时无法验证其端口。",
+    "recheck": "重新检查",
+    "saved": "端口已更新。"
+  },
+  "certificate": {
+    "http01": "HTTP-01:域名解析到此处后会自动申请证书。80 和 443 端口必须可从互联网访问此服务器。",
+    "dns01Private": "HTTP-01 无法工作:此服务器的地址({{host}})是私有地址,任何证书颁发机构都无法访问 80 端口。请对通配符域名(如 *.example.com)使用 DNS-01。",
+    "dns01Wildcard": "通配符域名通过 DNS-01 验证,需要连接一个 DNS 提供商。",
+    "upstreamProxy": "此服务器前面的反向代理负责获取并续期证书。请将域名指向此服务器;代理必须将其路由到这里。",
+    "providerActive": "DNS-01 提供商:{{provider}}。通配符域名的证书通过它签发。",
+    "providerNone": "尚未连接 DNS-01 提供商。",
+    "setupStep": "下一步:在域名页面连接 Cloudflare、Route53 或 Google Cloud DNS,然后为你的区域添加通配符域名。",
+    "openDomains": "打开域名设置",
+    "connectivity": "从此服务器的可达性",
+    "portOpen": "{{port}} 端口有响应",
+    "portClosed": "{{port}} 端口无响应",
+    "connectivityNote": "这是从控制平面测试该地址。它无法证明端口对整个互联网开放,但这里关闭的端口几乎一定在那里也是关闭的。",
+    "stagingNote": "测试证书是平台级的,而不是按应用设置。若要在没有速率限制的情况下测试,请先在域名设置中开启 Let's Encrypt 测试环境。"
+  },
+  "save": {
+    "submit": "添加域名",
+    "submitting": "正在添加...",
+    "done": "已添加 {{domain}}。",
+    "redirectDone": "{{from}} 现在会重定向到 {{to}}。",
+    "failed": "无法添加域名。"
+  },
+  "googleCloudDns": {
+    "title": "Google Cloud DNS",
+    "description": "通过 Cloud DNS 管理记录并签发通配符证书(DNS-01)。粘贴具有 DNS Administrator 角色的服务账号 JSON 密钥。如果同时启用了 Cloudflare 或 Route53,它们优先。仅针对该 API 的本地模拟进行过测试。",
+    "enabledHint": "使用 Cloud DNS 管理 DNS 记录和通配符证书。",
+    "enabledLabel": "已启用 Google Cloud DNS",
+    "project": "项目",
+    "clientEmail": "服务账号",
+    "keyLabel": "服务账号 JSON 密钥",
+    "keyPlaceholder": "粘贴 JSON 密钥文件的内容",
+    "keyPlaceholderSaved": "粘贴新密钥以替换已保存的密钥",
+    "keySaved": "已保存密钥。留空则保留它。",
+    "keyNone": "尚未保存密钥。",
+    "keyRequired": "启用 Google Cloud DNS 需要服务账号 JSON 密钥。",
+    "save": "保存",
+    "saving": "正在保存...",
+    "test": "测试",
+    "testing": "正在测试...",
+    "testOk": "已连接。找到 {{count}} 个托管区域:{{zones}}",
+    "testFailed": "无法列出区域:{{error}}",
+    "disconnect": "断开连接",
+    "saved": "Google Cloud DNS 设置已保存。",
+    "disconnected": "Google Cloud DNS 已断开连接。"
+  },
+  "provider": {
+    "label": "DNS-01 提供商",
+    "cloudflare": "Cloudflare",
+    "route53": "Route53",
+    "googleclouddns": "Google Cloud DNS",
+    "none": "无",
+    "noneHint": "通配符域名和私有地址服务器需要一个。"
+  },
+  "proxyManaged": {
+    "badge": "由你的代理管理",
+    "line": "证书由你的代理管理(颁发者 {{issuer}},{{date}} 到期,自动续期)",
+    "lineNoIssuer": "证书由你的代理管理({{date}} 到期,自动续期)",
+    "unknown": "证书由你的代理管理。此服务器尚未看到它:请在代理页面验证路由。",
+    "link": "打开代理页面"
+  },
+  "acme": {
+    "title": "证书申请失败",
+    "renewalTitle": "证书续期失败",
+    "caError": "证书颁发机构返回",
+    "action": {
+      "open_port_80": "下一步:向互联网开放 80 和 443 端口。检查防火墙、路由器端口转发和云安全组,然后等待下一次尝试。",
+      "fix_dns": "下一步:将域名的 A 或 AAAA 记录指向此服务器,并等待 DNS 生效。",
+      "wait_rate_limit": "下一步:请稍后重试。证书颁发机构正在对此主机名限速,每次失败的尝试都会计入限额。",
+      "fix_caa": "下一步:移除或修改 CAA 记录,使其允许该证书颁发机构。",
+      "other_proxy": "此服务器上有另一个服务占用了 80 端口,很可能是 Traefik 或 nginx 之类的反向代理。可以让该代理签发证书并将此域名路由到 Levelrail(参见在现有代理之后运行),或者把 80 和 443 端口交给 Levelrail。",
+      "check_logs": "下一步:查看入口日志以获取证书颁发机构的完整响应。"
+    }
+  },
+  "environmentTabs": {
+    "label": "环境",
+    "default": "默认",
+    "defaultHint": "供所有没有自己域名集的环境使用。",
+    "routingNow": "当前路由",
+    "active": "生效中",
+    "activeHint": "此应用被标记为该环境,因此入口路由的就是这一组域名。",
+    "inactiveHint": "目前未路由。当此应用被移入该环境时才开始路由。",
+    "empty": "此环境没有域名。那里使用默认域名集。",
+    "addLabel": "为此环境添加域名",
+    "add": "添加",
+    "remove": "移除 {{domain}}",
+    "saved": "环境域名已保存。",
+    "failed": "无法保存环境域名。",
+    "loadFailed": "无法加载环境域名集。"
+  },
+  "clone": {
+    "copyDomains": "使用新主机名复制域名",
+    "copyDomainsHint": "一个主机名只能属于一个应用,因此每个复制的主机名都会被改写。",
+    "mode": {
+      "prefix": "添加前缀",
+      "replace": "替换父域名"
+    },
+    "prefix": "前缀",
+    "prefixPlaceholder": "uat.",
+    "find": "替换此域名",
+    "findPlaceholder": "example.com",
+    "replace": "替换为",
+    "replacePlaceholder": "uat.example.com"
+  },
+  "connectivityCard": {
+    "title": "可达性",
+    "description": "此服务器地址的 80 和 443 端口是否有响应,以及已连接的 DNS-01 提供商。",
+    "check": "立即检查",
+    "noHost": "未知公网地址。请在控制平面上设置 APP_PUBLIC_HOST。",
+    "private": "此服务器使用私有地址。HTTP-01 在这里无法工作,请对通配符域名使用 DNS-01。",
+    "closed": "80 或 443 端口无响应。请在防火墙中开放它们,或从路由器转发。",
+    "ok": "此服务器的 80 和 443 端口均有响应。"
+  },
+  "searchVisibility": {
+    "hiddenBadge": "对搜索引擎隐藏",
+    "visibleBadge": "对搜索引擎开放",
+    "hide": "对搜索引擎隐藏",
+    "show": "允许索引",
+    "hiddenHelp": "{{domain}} 在每个响应中发送 noindex 头,并提供禁止全部抓取的 robots.txt。这是守规矩的爬虫会遵守的请求,而不是访问控制:如需阻止他人访问,请使用基本认证。",
+    "visibleHelp": "搜索引擎可以索引此域名。隐藏它可让控制台、预发布环境和内部工具不出现在搜索结果中。"
+  },
+  "reverseProxy": {
+    "title": "将控制台放在现有代理之后",
+    "description": "此服务器上的 80 和 443 端口已被其他服务占用。输入你想用于控制台的域名,并复制该代理所需的准确配置。",
+    "holder": "{{port}} 端口由 {{container}}({{image}})发布。",
+    "none": "此服务器上没有其他服务发布 80 或 443 端口,因此 Levelrail 自带的入口可以直接提供控制台。",
+    "domain": "控制台域名",
+    "domainPlaceholder": "console.example.com",
+    "proxy": "代理",
+    "build": "显示配置",
+    "verify": "检查是否可用",
+    "steps": "步骤",
+    "copy": "复制",
+    "copied": "已复制",
+    "reachable": "可达:此域名提供控制台。",
+    "notReachable": "暂时不可达。",
+    "error": "无法生成配置"
+  },
+  "page": {
+    "title": "域名",
+    "description": "路由到你的应用的所有域名。",
+    "helpLabel": "域名与入口指南",
+    "add": "添加域名",
+    "count_other": "{{count}} 个域名",
+    "search": "筛选域名",
+    "tableLabel": "域名",
+    "noMatch": "没有匹配 \"{{query}}\" 的域名",
+    "noMatchBody": "请检查拼写或清除筛选。",
+    "clearSearch": "清除筛选",
+    "col": {
+      "domain": "域名",
+      "app": "应用",
+      "dns": "DNS",
+      "certificate": "证书",
+      "environment": "环境",
+      "expires": "到期",
+      "visibility": "搜索"
+    },
+    "empty": {
+      "noAppsTitle": "还没有可路由的应用",
+      "noAppsBody": "域名将流量路由到应用。请先部署一个应用。",
+      "noAppsAction": "部署应用",
+      "title": "还没有域名",
+      "body": "添加一个或多个域名并将其指向应用。",
+      "action": "添加域名"
+    },
+    "error": {
+      "title": "无法加载域名",
+      "retry": "重试"
+    },
+    "dns": {
+      "connected": "已连接",
+      "not_resolving": "未解析",
+      "resolves_elsewhere": "指向其他位置",
+      "unconfigured": "未知",
+      "checking": "检查中",
+      "notResolvingHint": "尚未找到 DNS 记录。",
+      "elsewhereHint": "解析到其他位置:{{hosts}}。",
+      "elsewhereHintNoHosts": "解析到其他位置。",
+      "privateHint": "此服务器使用私有地址,因此只有 DNS-01 可以签发证书。",
+      "propagating": "正在生效"
+    },
+    "cert": {
+      "none": "尚无证书",
+      "internal": "内部",
+      "failed": "申请失败",
+      "renewsAuto": "自动续期",
+      "renewsProxy": "通过你的代理自动续期",
+      "renewsManual": "已上传证书:请在到期前续期",
+      "daysLeft_other": "剩余 {{count}} 天",
+      "expiresToday": "今天到期",
+      "expiredAgo_other": "已过期 {{count}} 天"
+    },
+    "visibility": {
+      "toggle": "允许搜索引擎索引 {{domain}}",
+      "visible": "可见",
+      "hidden": "隐藏",
+      "failed": "无法更改 {{domain}} 的搜索可见性。"
+    },
+    "row": {
+      "actions": "{{domain}} 的操作",
+      "manage": "在应用中管理",
+      "open": "在新标签页中打开 {{domain}}",
+      "dnsRecord": "显示 DNS 记录",
+      "diagnose": "诊断",
+      "copy": "复制域名",
+      "copied": "域名已复制",
+      "recheck": "重新检查 DNS",
+      "automatic": "自动",
+      "wildcard": "通配符",
+      "wildcardHint": "匹配此域名下的每一个单级子域名。其他应用上的精确域名仍然优先。",
+      "details": "域名设置",
+      "setPrimary": "设为主域名",
+      "move": "移到另一个应用",
+      "park": "断开连接(暂放)",
+      "delete": "删除域名",
+      "primary": "主域名"
+    },
+    "flag": {
+      "waf": "已启用 WAF",
+      "redirect": "已配置重定向",
+      "maintenance": "维护模式已开启",
+      "basicAuth": "已配置基本认证"
+    },
+    "dnsDialog": {
+      "title": "{{domain}} 的 DNS 记录",
+      "close": "关闭"
+    },
+    "platform": {
+      "title": "平台设置",
+      "summary": "入口、HTTPS、控制台地址和 DNS 提供商。",
+      "httpsOff": "未启用 HTTPS",
+      "toggle": "显示平台设置"
+    },
+    "addDialog": {
+      "title": "添加域名",
+      "description": "选择一个应用,并列出应路由到它的域名。",
+      "app": "应用",
+      "appPlaceholder": "选择应用",
+      "domains": "域名",
+      "domainsPlaceholder": "app.example.com\nwww.example.com",
+      "domainsHint": "每行一个,或用逗号分隔。",
+      "ready_other": "{{count}} 个域名可添加",
+      "errors": {
+        "invalid": "不是有效的主机名",
+        "duplicate": "重复",
+        "claimedHere": "已添加到此应用",
+        "claimedOther": "已路由到 {{app}}",
+        "empty": "请至少输入一个域名",
+        "appRequired": "请选择应用"
+      },
+      "submit_other": "添加 {{count}} 个域名",
+      "submitting": "正在添加...",
+      "noApps": "还没有应用。请先部署应用,再为其添加域名。",
+      "resultsTitle": "即将上线",
+      "resultsBody": "下方每个域名都会显示其进度。连接 DNS 提供商后,会自动为你创建记录。",
+      "added": "已添加",
+      "failed": "未添加",
+      "verify": "全部验证",
+      "verifying": "正在检查...",
+      "retryFailed": "重试失败项",
+      "showRecord": "显示记录",
+      "hideRecord": "隐藏记录",
+      "done": "完成",
+      "summary": "已添加 {{ok}} 个,{{failed}} 个未添加。"
+    },
+    "fix": {
+      "useAcme": "使用自动证书",
+      "acmeDone": "{{domain}} 现在使用自动证书。",
+      "uploadAgain": "重新上传",
+      "setPassword": "设置密码",
+      "connectDns": "连接 DNS 提供商",
+      "checkTarget": "检查目标",
+      "checkApp": "打开应用"
+    },
+    "issue": {
+      "custom_cert_unresolved": "未使用已上传的证书,改为自动签发。请重新上传。",
+      "basic_auth_unresolved": "未路由:无法读取基本认证密码。请重新设置。",
+      "dns01_unavailable": "通配符证书需要 DNS 提供商。请在 DNS 设置中启用一个。",
+      "target_unavailable": "未路由:其目标不可用。"
+    }
+  },
+  "proxyPicker": {
+    "title": "代理",
+    "description": "选择由哪个代理响应 80 和 443 端口。受管提供商会自动写入并重载其路由文件。手动提供商会显示需要你自行添加的配置。",
+    "choose": "代理提供商",
+    "loadFailed": "无法读取代理状态。",
+    "retry": "重新检查",
+    "detected": "已检测到",
+    "provider": {
+      "embedded": "内置 Caddy",
+      "traefik": "Traefik",
+      "nginx": "nginx",
+      "caddy": "Caddy(外部)",
+      "haproxy": "HAProxy"
+    },
+    "mode": {
+      "builtin": "内置",
+      "managed": "受管",
+      "manual": "手动"
+    },
+    "embeddedBody": "Levelrail 自带的入口负责 80 和 443 端口并处理证书。不会向其他代理写入任何内容。",
+    "useEmbedded": "使用内置入口",
+    "usingEmbedded": "正在使用内置入口",
+    "embeddedDone": "路由现在使用内置入口。写入你的代理的路由文件已被移除。",
+    "embeddedFailed": "无法切换到内置入口。",
+    "notDetected": "在此服务器上未找到该代理。请在发布 80 和 443 端口的情况下启动它,然后重新检查。",
+    "manualBody": "Levelrail 不会修改 {{proxy}}。试运行会显示你的域名所需的配置,由你手动添加,然后重新检查。",
+    "managedBody": "Levelrail 会为每个域名向 {{proxy}} 写入一个路由文件,检查该文件,重载代理,并通过 HTTPS 验证每个域名。",
+    "dryRun": "试运行",
+    "dryRunning": "正在检查...",
+    "apply": "应用并验证",
+    "applying": "正在应用...",
+    "recheck": "重新检查",
+    "applyDone": "路由已应用。正在等待你的代理加载它们。",
+    "applyFailed": "无法应用路由。",
+    "dryRunFailed": "试运行发现了问题。",
+    "manualNoApply": "手动提供商永远不会自动应用。",
+    "changes": {
+      "title": "将发生的变更",
+      "none": "无需变更。路由已就绪。",
+      "manualTitle": "将此内容添加到你的代理"
+    },
+    "inputs": {
+      "dir": "此服务器上的路由目录",
+      "dirHint": "你的代理读取路由文件的文件夹。未能检测到。",
+      "certDir": "代理容器内的证书目录",
+      "certDirHint": "例如 /etc/letsencrypt/live。未能检测到。"
+    },
+    "rejected": {
+      "title": "代理拒绝了新路由",
+      "body": "没有保留任何内容:文件已回滚,你的代理继续使用原有配置。请修复下面的问题,然后重试。"
+    },
+    "rootOnly": "更改代理需要 root 账户或令牌。",
+    "applyWaiting": "在此服务器上找到 {{proxy}} 后,应用并验证将立即可用。请在上方安装它,或在它运行后重新检查。",
+    "fixViaCli": "通过 CLI 修复"
+  },
+  "proxyMissing": {
+    "title": "{{proxy}} 尚未在此服务器上运行",
+    "looked": "Levelrail 查找了发布 80 或 443 端口且使用 {{proxy}} 镜像的运行中容器,但没有找到。",
+    "foundOther": "Levelrail 在 80 和 443 端口上查找 {{proxy}} 容器,但找到的是 {{other}}。",
+    "refusedTitle": "未做任何更改",
+    "installed": "代理已启动。正在检查它检测到的内容。",
+    "installFailed": "无法启动代理。",
+    "install": {
+      "title": "为我安装并启动 {{proxy}}",
+      "body": "Levelrail 会为你启动官方的 {{proxy}} 容器,并发布 80 和 443 端口。你会先看到确切的方案。",
+      "unsupported": "仅 Traefik 支持自动安装。{{proxy}} 需要你提供证书,请自行启动,或选择其他方式。",
+      "action": "为我安装并启动 {{proxy}}"
+    },
+    "builtin": {
+      "title": "返回内置 Caddy",
+      "body": "切换回此控制平面自带的入口。你的域名和设置会被保留。",
+      "action": "使用内置 Caddy"
+    },
+    "elsewhere": {
+      "title": "它运行在其他位置",
+      "body": "你的代理运行在另一台主机上或使用了其他名称。请输入访问它的方式,然后重新检查。",
+      "action": "手动输入",
+      "hide": "隐藏这些字段"
+    },
+    "plan": {
+      "title": "具体将执行的操作",
+      "image": "镜像",
+      "container": "容器",
+      "ports": "端口",
+      "restart": "重启策略",
+      "mount": "挂载",
+      "file": "写入 {{path}}",
+      "safety": "只会创建这一个容器。你已在运行的容器永远不会被停止或移除,重复执行也不会创建第二个。",
+      "confirm": "确认并启动",
+      "installing": "正在启动...",
+      "cancel": "取消"
+    },
+    "manual": {
+      "body": "这些默认值与标准配置一致。请修改与你的服务器不同的部分。",
+      "save": "保存这些值",
+      "saved": "代理值已保存。请重新检查以查找它。",
+      "saveFailed": "无法保存代理值。",
+      "fields": {
+        "container": "容器名称",
+        "dynamic_dir": "此服务器上的路由目录",
+        "entrypoint_http": "HTTP 入口点",
+        "entrypoint_https": "HTTPS 入口点",
+        "cert_resolver": "证书解析器",
+        "upstream_host": "上游主机"
+      },
+      "hints": {
+        "container": "代理容器的名称。",
+        "dynamic_dir": "你的代理读取路由文件的文件夹。",
+        "entrypoint_http": "监听 80 端口的入口点。",
+        "entrypoint_https": "监听 443 端口的入口点。",
+        "cert_resolver": "如果代理不签发证书,请留空。",
+        "upstream_host": "代理访问此服务器的方式,例如 host.docker.internal。"
+      },
+      "errors": {
+        "name": "请使用字母、数字、点、短横线或下划线。",
+        "absolute": "请输入以 / 开头的绝对路径。",
+        "path": "路径中不能包含空格或 ..。",
+        "host": "请输入不带 http:// 的主机名或地址。"
+      }
+    }
+  },
+  "proxySetup": {
+    "title": "让此域名上线",
+    "description": "你的代理已占用 80 和 443 端口。Levelrail 会写入所需的路由,然后检查流量和证书是否到位。",
+    "unavailable": "此服务器版本不支持代理集成。",
+    "loadFailed": "无法读取代理状态。将在下次刷新时重试。",
+    "steps": {
+      "detect": "查找你的代理",
+      "tls_upstream": "让代理处理 HTTPS",
+      "routes": "写入路由",
+      "dns": "将 DNS 指向此服务器",
+      "verify": "检查流量和证书"
+    },
+    "stepState": {
+      "done": "完成",
+      "todo": "待办",
+      "blocked": "已阻塞",
+      "error": "错误",
+      "waiting": "等待中"
+    },
+    "waitingDetail": "等待找到你的代理",
+    "setup": "设置路由",
+    "settingUp": "正在设置...",
+    "setupDone": "路由已写入。正在等待你的代理加载它们。",
+    "setupFailed": "无法设置路由。",
+    "confirm": {
+      "title": "向你的代理写入路由?",
+      "directory": "Levelrail 会为每个域名向 {{dir}} 写入一个路由文件。你的代理会自行读取该目录,其他内容不会改变。",
+      "directoryUnknown": "未检测到目录。请先修复缺失的项目。",
+      "domainsLabel": "将获得路由的域名",
+      "noDomains": "还没有域名。只有在控制台有域名时才会写入控制台路由。",
+      "submit": "写入路由",
+      "cancel": "取消"
+    },
+    "domains": {
+      "title": "域名",
+      "target": {
+        "app": "应用 {{app}}",
+        "dashboard": "控制台"
+      },
+      "state": {
+        "todo": "尚未设置",
+        "handled": "由你的代理处理",
+        "waiting": "等待证书",
+        "live": "已上线",
+        "error": "错误"
+      },
+      "certificate": {
+        "expired": "{{issuer}},已于 {{date}} 过期",
+        "pending": "代理默认证书,等待签发",
+        "valid": "{{issuer}},有效期至 {{date}}",
+        "untrusted": "{{issuer}},不受信任,有效期至 {{date}}"
+      },
+      "checked": "{{time}} 已检查",
+      "neverChecked": "尚未检查",
+      "verify": "验证",
+      "verifying": "正在验证...",
+      "verifyLive": "{{domain}} 已上线。",
+      "verifyNotLive": "{{domain}} 尚未上线。",
+      "verifyFailed": "无法验证 {{domain}}。",
+      "lastError": "最近的问题:{{error}}",
+      "makeLive": "让此域名上线",
+      "summary": {
+        "ready": "证书已就绪",
+        "waiting": "等待代理获取证书",
+        "waitingSince": "等待代理获取证书(自 {{time}} 起)",
+        "default": "代理正在提供其默认证书:它未能获取证书",
+        "unwired": "路由未接通",
+        "unreachable": "路由无响应"
+      },
+      "retry": "重试证书申请",
+      "retrying": "正在重试...",
+      "retryFailed": "无法重试 {{domain}}。",
+      "copy": "复制",
+      "copied": "已复制"
+    },
+    "facts": {
+      "title": "Levelrail 检测到的内容",
+      "detectedBadge": "已检测",
+      "proxy": "代理",
+      "container": "容器",
+      "image": "镜像",
+      "ports": "已发布端口",
+      "directory": "路由目录",
+      "entrypointHttp": "HTTP 入口点",
+      "entrypointHttps": "HTTPS 入口点",
+      "resolver": "证书解析器",
+      "upstream": "上游主机",
+      "notFound": "未找到",
+      "missingTitle": "暂时无法继续设置",
+      "missingBody": "Levelrail 无法从你的代理读取这些内容。请将它们添加到代理,或在代理设置中输入,然后刷新。",
+      "kind": {
+        "traefik": "Traefik",
+        "nginx": "nginx",
+        "caddy": "Caddy",
+        "haproxy": "HAProxy",
+        "none": "无"
+      }
+    },
+    "none": {
+      "title": "未检测到现有代理",
+      "body": "如果代理运行在 Levelrail 看不到的地方,请按手动指南自行设置。",
+      "guide": "打开手动指南"
+    },
+    "handledByProxy": "由你的代理处理",
+    "byo": {
+      "disclosure": "我有自己的证书",
+      "hint": "仅在你购买了证书时才需要。否则证书会自动签发。",
+      "uploaded": "自带证书",
+      "applied": "使用中",
+      "pending": "待处理",
+      "applyIssue": "已上传的证书已存储但未使用:{{issue}}",
+      "masterKeyFix": "检查加密设置",
+      "expires": "{{date}} 到期",
+      "certLabel": "证书(PEM)",
+      "keyLabel": "私钥(PEM)",
+      "replaceHint": "将完全替换已上传的证书。不支持部分更新。",
+      "newHint": "此域名将使用它代替自动签发,从下一轮 reconcile 开始生效。",
+      "bothRequired": "证书和私钥都是必填项。",
+      "uploadedToast": "已为 {{domain}} 上传证书。",
+      "uploadFailed": "证书上传失败。",
+      "upload": "上传",
+      "uploading": "正在上传...",
+      "revert": "恢复为自动 TLS",
+      "revertTitle": "将 {{domain}} 恢复为自动 TLS?",
+      "revertBody": "已上传的证书会被立即丢弃。如果自动签发无法访问此域名,HTTPS 将中断,直到上传或签发新的证书。",
+      "cancel": "取消",
+      "revertConfirm": "恢复",
+      "reverting": "正在恢复...",
+      "revertedToast": "已将 {{domain}} 恢复为自动 TLS。",
+      "revertFailed": "无法恢复为自动 TLS。",
+      "automatic": "自动 TLS",
+      "add": "添加证书",
+      "replace": "替换",
+      "close": "关闭"
+    }
+  },
+  "ingressUpstream": {
+    "bannerTitle": "HTTPS 由你的代理处理",
+    "bannerBody": "此实例不会申请证书。请将你的域名指向代理主机,由代理终止 TLS 并转发到此入口。",
+    "trustedProxiesMissing": "未设置受信任的代理范围(APP_INGRESS_TRUSTED_PROXIES),因此转发的协议和主机头会被忽略。",
+    "switchLabel": "TLS 由前面的代理终止",
+    "switchHelp": "当 Traefik、nginx 或 Caddy 占用 80 和 443 端口时开启此项。此实例将不再运行 ACME,并使用公网端口生成链接。",
+    "acmeSkipped": "证书签发已存储,但在代理处理 HTTPS 期间会被跳过。",
+    "portLabel": "公网 HTTPS 端口",
+    "portHelp": "如果 Traefik 或 nginx 之类的代理转发到此入口,请输入客户端使用的端口(通常为 443),以便链接正常工作。",
+    "portInvalid": "请输入 0 到 65535 之间的端口,或留空。"
+  },
+  "acmeBlocked": {
+    "title": "无法从这里签发真实证书",
+    "body": "证书颁发机构会检查 80 和 443 端口,而此入口监听的是 {{http}} 和 {{https}}。如果 Traefik 或 nginx 之类的代理占用了这些端口,请让它处理此域名的 HTTPS,并在这里关闭真实证书。否则请把 80 和 443 端口交给 Levelrail,或使用 DNS-01 提供商。",
+    "turnOff": "让我的代理处理 HTTPS",
+    "turningOff": "正在关闭..."
+  },
+  "dnsCheck": {
+    "checking": "正在检查...",
+    "checkedAt": "检查于 {{time}}",
+    "noAnswer": "无响应",
+    "propagatingHelp": "公共 DNS 已将此域名指向此服务器。部分解析器仍在同步;上方列表显示了是哪些以及何时再试。",
+    "notFoundHelp": "还没有解析器找到此记录。请在你的 DNS 提供商处检查记录(类型、名称、值),然后等待几分钟。",
+    "ttl": "(ttl {{seconds}} 秒)",
+    "groups": {
+      "authoritative": "权威名称服务器(权威来源)",
+      "public": "公共解析器",
+      "local": "此服务器的解析器"
+    },
+    "verdict": {
+      "dns_ready": "DNS 已就绪",
+      "public_ready": "公共 DNS 已就绪",
+      "not_found": "未找到记录",
+      "points_elsewhere": "指向其他位置",
+      "unknown": "未检查"
+    },
+    "retryAt": "此服务器的解析器将在 {{time}} 可重试。",
+    "countdown": "(剩余 {{left}})",
+    "flushIntro": "要立即清除此服务器的 DNS 缓存,请在主机上运行:",
+    "copyFlush": "复制清除命令",
+    "hints": {
+      "local_stale": "权威服务器上的 DNS 是正确的。此服务器自己的解析器仍保留旧答案;其他方面不受影响。",
+      "local_stale_long": "此服务器自己的解析器保留旧答案的时间超出预期。DNS 是正确的,因此访客和证书不受影响;请清除缓存或重启解析器。",
+      "was_cloudflare_proxy": "此域名曾由 Cloudflare 代理;你的 DNS 现在直接指向服务器,因此访客会直接访问服务器(源站 IP 不再被隐藏)。",
+      "waiting": "该记录尚未出现在权威服务器上。新记录通常几分钟内就会出现。",
+      "check_zone": "请检查记录是否在正确的 DNS 区域中,且拼写完全一致。",
+      "check_aaaa": "请检查是否有指向其他位置的 AAAA 记录。",
+      "check_cname": "请检查根域名不是被你的提供商展平为其他地址的 CNAME。",
+      "check_nameservers": "请检查没有其他 DNS 提供商拥有权威:你的注册商处的名称服务器必须是持有此记录的那些。"
+    },
+    "certPending": "等待证书",
+    "recheck": "重新检查 DNS"
+  },
+  "goLive": {
+    "loading": "正在检查进度...",
+    "steps": {
+      "dns": "DNS 记录",
+      "counterpart": "www 与根域名配对",
+      "redirect": "规范重定向",
+      "proxy_route": "代理路由",
+      "force_https": "强制 HTTPS",
+      "propagation": "DNS 生效",
+      "certificate": "证书",
+      "http": "站点响应"
+    },
+    "state": {
+      "done": "完成",
+      "pending": "将执行",
+      "skipped": "已跳过",
+      "failed": "失败",
+      "manual": "手动步骤",
+      "conflict": "冲突"
+    },
+    "text": {
+      "dnsDone": "已在 {{provider}} 创建 DNS 记录",
+      "propagatingSeen": "等待 DNS 生效({{resolver}} 已看到)",
+      "propagatingWaiting": "等待记录出现在 DNS 中",
+      "certDone": "证书由 {{issuer}} 签发,有效期至 {{date}}",
+      "skipped": "已跳过:{{reason}}"
+    },
+    "cloudflareBadge": "已在 Cloudflare 创建",
+    "proxiedWarning": "该记录由 Cloudflare 代理。请将 SSL/TLS 模式设为 Full (strict),否则访客可能遇到重定向循环。",
+    "conflictHint": "此名称已存在不同的记录,已保持不动。请移除它,或在开启替换的情况下重新添加该域名。",
+    "connectCloudflare": "未连接 DNS 提供商,请自行添加记录。",
+    "connectCloudflareAction": "连接 Cloudflare 以自动完成此操作。",
+    "openLive": "打开线上站点"
+  },
+  "baseDomain": {
+    "title": "应用基础域名",
+    "description": "没有域名的新应用会获得 app-name.base-domain,并自动为其创建 DNS 记录。",
+    "label": "基础域名",
+    "save": "保存",
+    "saved": "应用基础域名已保存",
+    "invalid": "请输入主机名,例如 apps.example.com。",
+    "zoneChecking": "正在你的 DNS 提供商处查找区域...",
+    "zoneFound": "在 {{provider}} 找到区域 {{zone}}",
+    "zoneNotFound": "你的 DNS 提供商处没有此名称的区域。请先连接管理它的提供商。",
+    "noProvider": "尚未连接 DNS 提供商。",
+    "noProviderAction": "请在下方连接 Cloudflare、Route53 或 Google Cloud DNS。",
+    "backfillHelp": "已有的应用保留其地址。为没有域名的应用分配一个 {{base}} 地址:",
+    "backfillPreview": "预览现有应用",
+    "backfillApply_other": "应用到 {{count}} 个应用",
+    "backfillNone": "每个应用都已有域名。"
+  },
+  "automation": {
+    "title": "域名自动化",
+    "description": "为应用添加域名时自动发生的操作。",
+    "saved": "域名自动化已保存",
+    "previewList": "计划步骤",
+    "previewLabel": "添加以下域名时会发生什么",
+    "previewRun": "显示计划",
+    "previewNeedsApp": "请先创建应用以预览计划。",
+    "previewTitle": "添加 {{domain}} 将会:",
+    "historyTitle": "自动化历史",
+    "historyEmpty": "还没有自动运行记录。",
+    "auditLink": "打开审计日志",
+    "undo": "撤销",
+    "undone": "已撤销",
+    "undoDone": "已撤销:只移除了该次运行创建的内容",
+    "toggles": {
+      "auto_dns": {
+        "label": "创建 DNS 记录",
+        "help": "需要已连接的 DNS 提供商。现有记录永远不会被覆盖。"
+      },
+      "auto_proxy_route": {
+        "label": "创建代理路由",
+        "help": "开启该集成后,等待受管代理路由此域名。"
+      },
+      "force_https": {
+        "label": "强制 HTTPS",
+        "help": "证书就绪后,将访客引导到安全地址。"
+      },
+      "attach_www_counterpart": {
+        "label": "添加 www 或根域名的配对域名",
+        "help": "添加 example.com 时也会添加 www.example.com,反之亦然。"
+      },
+      "wildcard_for_base_domain": {
+        "label": "为基础域名添加通配符记录",
+        "help": "一条记录覆盖应用基础域名下的所有应用。"
+      },
+      "verify_after": {
+        "label": "添加后验证",
+        "help": "检查 DNS、证书和站点,并报告每一步。"
+      }
+    },
+    "www": {
+      "label": "www 策略",
+      "off": "保持两个地址不变",
+      "redirect_to_apex": "将 www 重定向到根域名",
+      "redirect_to_www": "将根域名重定向到 www",
+      "help": "需要配对主机,选择重定向时会自动为你添加。"
+    },
+    "dnsWriter": {
+      "label": "DNS 记录写入方",
+      "builtIn": "内置客户端",
+      "plugin": "{{name}} 插件",
+      "help": "选择修复域名时由哪一个添加 DNS 记录。请先在插件页面测试插件。",
+      "managePlugins": "管理 DNS 插件",
+      "saved": "DNS 记录写入方已保存"
+    }
+  },
+  "standalone": {
+    "modeLabel": "此域名应提供什么?",
+    "modeApp": "路由到应用",
+    "modeProxy": "代理到端口或 URL",
+    "title": "代理域名",
+    "editTitle": "编辑 {{domain}}",
+    "description": "从此服务器的任意端口、你网络中的地址、外部 URL、其他应用的端口或容器提供域名服务。无需应用。",
+    "domain": "域名",
+    "domainPlaceholder": "tools.example.com",
+    "target": "目标",
+    "targetMode": {
+      "port": "此服务器上的端口",
+      "address": "地址",
+      "url": "URL",
+      "app": "应用端口",
+      "container": "容器"
+    },
+    "port": "端口",
+    "portPlaceholder": "3000",
+    "listening": "此服务器上正在监听",
+    "listeningNone": "未检测到监听端口。请输入你的服务使用的端口。",
+    "controlPort": "{{label}}",
+    "address": "主机和端口",
+    "addressPlaceholder": "10.0.0.5:8080 或 db.internal:5000",
+    "addressHint": "私有网络或 mesh 上的 IP 或主机名,以及其端口。",
+    "url": "URL",
+    "urlPlaceholder": "https://backend.example.org",
+    "urlHint": "TLS 和 Host 头跟随该 URL。路径将成为前缀。",
+    "app": "应用",
+    "appPlaceholder": "选择应用",
+    "appPort": "容器端口",
+    "appPortHint": "留空则使用应用的主端口({{port}})。",
+    "container": "容器",
+    "containerPlaceholder": "选择运行中的容器",
+    "containerPort": "容器端口",
+    "noContainers": "未找到运行中的容器。",
+    "preview": "预览",
+    "previewEmpty": "选择目标以查看流量去向。",
+    "advanced": "高级选项",
+    "upstreamTls": "通过 TLS 连接目标",
+    "verifyTls": "验证目标的证书",
+    "verifyTlsHint": "使用自签名证书时请关闭。",
+    "serverName": "TLS 服务器名称",
+    "serverNamePlaceholder": "backend.internal",
+    "hostHeader": "Host 头",
+    "hostPreserve": "保留访客的主机",
+    "hostUpstream": "使用目标的主机",
+    "hostCustom": "自定义",
+    "hostCustomPlaceholder": "internal.example.com",
+    "websocket": "允许 websocket",
+    "connectTimeout": "连接超时(秒)",
+    "readTimeout": "读取超时(秒)",
+    "timeoutHint": "0 表示使用默认值。",
+    "stripPrefix": "去除路径前缀",
+    "stripPrefixPlaceholder": "/app",
+    "descriptionField": "备注",
+    "checking": "正在检查目标...",
+    "confirmTitle": "此服务器将连接到内部目标",
+    "confirmCheck": "我已了解。将此域名的公网流量路由到它。",
+    "submit": "添加域名",
+    "save": "保存更改",
+    "saving": "正在保存...",
+    "added": "{{domain}} 现在代理到 {{target}}",
+    "updated": "{{domain}} 已更新",
+    "removed": "{{domain}} 已移除",
+    "removeFailed": "无法移除 {{domain}}",
+    "resultTitle": "让它上线",
+    "resultBody": "请创建下方的 DNS 记录,之后证书会自动签发。",
+    "unlinked": "未关联",
+    "unlinkedHint": "未关联任何应用。流量会被代理到此目标。",
+    "edit": "编辑目标",
+    "remove": "移除域名",
+    "removeTitle": "移除 {{domain}}?",
+    "removeBody": "到 {{target}} 的路由将在下一轮入口处理时被移除。其设置(认证、WAF、重定向)也会一并移除。",
+    "removeConfirm": "移除",
+    "removing": "正在移除...",
+    "pageDescription": "{{domain}} 的流量控制,代理到 {{target}}。更改将在下一轮入口处理时生效。",
+    "proxiesTo": "代理到",
+    "doneLabel": "完成"
+  },
+  "serverAddress": {
+    "title": "服务器地址",
+    "description": "将你的域名的 DNS 记录指向此服务器。",
+    "ipv4": "IPv4",
+    "ipv6": "IPv6",
+    "none": "未检测到",
+    "copy": "复制 {{value}}",
+    "copied": "已复制",
+    "source": {
+      "override": "手动设置",
+      "detected": "已检测",
+      "env": "来自配置",
+      "none": "未知"
+    },
+    "nat": "此地址不在这里的任何网络接口上,因此服务器位于 NAT 或云地址映射之后。请将 80 和 443 端口转发到它。",
+    "upstream": "前面的代理终止 TLS。请将 DNS 指向该代理,而不是此服务器。",
+    "noneDetected": "未检测到公网地址。请在下方设置,以确保 DNS 检查和记录正确。",
+    "override": "手动设置地址",
+    "overrideHint": "在负载均衡器之后或检测有误时使用。",
+    "save": "保存地址",
+    "clear": "使用自动检测",
+    "saved": "服务器地址已保存",
+    "saveFailed": "无法保存地址",
+    "recordsTitle": "需要创建的 DNS 记录",
+    "recordType": "类型",
+    "recordName": "名称",
+    "recordValue": "值",
+    "orInstead": "或者改用",
+    "recordsNone": "设置公网地址以查看需要创建的记录。",
+    "dnsStatus": "DNS 状态"
+  },
+  "enforcement": {
+    "savedNotEnforced": "已保存,未强制执行",
+    "proxy": {
+      "traefik": "Traefik",
+      "external": "你的代理"
+    },
+    "reason": {
+      "route_unverified": "{{proxy}} 路由 {{domain}},但此服务器尚未确认 {{proxy}} 会把请求交给内置入口。设置已保存,但访客可能无法获得该效果。请验证路由后重新检查。",
+      "proxy_unmanaged": "{{proxy}} 使用此服务器不管理的配置为 {{domain}} 终止 TLS,因此无法确认请求会到达内置入口。设置已保存,但不会报告为已强制执行。",
+      "not_routed": "{{domain}} 尚未路由,因此设置已保存,但没有任何内容被强制执行。"
+    },
+    "proxyPage": "打开代理页面",
+    "docs": "在代理之后哪些控制有效",
+    "flagTitle": "{{label}}(已保存,未强制执行)"
+  },
+  "maintenance": {
+    "on": "维护模式已开启",
+    "off": "未在维护中",
+    "enable": "开启维护模式",
+    "enabling": "正在开启...",
+    "end": "结束维护",
+    "ending": "正在结束...",
+    "activeHint": "访问 {{domain}} 的访客会看到固定的维护页面。容器保持运行;这里不会停止或重启它。",
+    "options": "页面和计划",
+    "hideOptions": "隐藏",
+    "ends": "{{date}} 结束",
+    "bypassCount_other": "{{count}} 个地址可绕过该页面",
+    "healthOpen": "就绪路径上的可用性探测仍可访问应用",
+    "saved": "维护设置已保存",
+    "form": {
+      "title": "页面标题",
+      "titlePlaceholder": "系统维护中",
+      "message": "消息",
+      "messagePlaceholder": "此站点暂时不可用。请稍后再来。",
+      "plainText": "纯文本。访客看到的内容与输入一致,不带格式。",
+      "until": "自动结束于",
+      "untilHelp": "可选。会创建一条计划维护条目,同时显示在状态页上。",
+      "retryAfter": "重试等待时间(分钟)",
+      "retryAfterHelp": "以 Retry-After 发送,让客户端和爬虫知道何时再来。默认 5。",
+      "bypass": "仍可访问应用的地址",
+      "bypassHelp": "IP 地址或 CIDR 范围,每行一个,最多 32 个。可使用你自己的地址在站点停机时进行检查。",
+      "healthBypass": "允许可用性探测访问就绪路径",
+      "enable": "使用这些设置开启维护",
+      "save": "保存设置",
+      "maxHours": "自动关闭时间(小时)",
+      "maxHoursDefault": "未设置结束时间时使用。留空则使用服务器默认值 {{hours}} 小时,0 表示不限制。",
+      "maxHoursNone": "未设置结束时间时的安全保障。留空表示不限制,或输入小时数。",
+      "maxHoursUntil": "无需设置:上方的结束时间已会结束维护。"
+    },
+    "autoOffAt": "将于 {{date}} 自动关闭",
+    "noAutoOff": "不会自动结束,在你结束之前一直开启"
+  },
+  "shieldRecommended": {
+    "title": "滥用防护",
+    "description": "限制单个访客可能给此应用带来的成本。已有限制的域名不会被更改。",
+    "blockBots": "同时拒绝已知恶意机器人和 AI 爬虫",
+    "preview_button": "预览",
+    "apply": "开启推荐限制",
+    "preview": "将为 {{count}} 个域名设置每位访客每分钟 {{rate}} 个请求、同时 {{concurrent}} 个请求。",
+    "skipped": "{{count}} 个域名已有限制,保持不变。",
+    "applied": "已为 {{count}} 个域名开启推荐限制。",
+    "blockedProxy": "此服务器前面有代理并隐藏了访客地址,因此按访客的限制会影响所有人。请先设置受信任的代理列表。"
+  },
+  "edge": {
+    "title": "请求限制和受信任的代理",
+    "description": "请求大小和慢速客户端的上限,以及此服务器前面哪些代理被信任来报告访客地址。",
+    "proxy": {
+      "none": "无代理",
+      "cloudflare": "Cloudflare",
+      "coolify": "Coolify",
+      "traefik": "Traefik",
+      "proxy": "反向代理"
+    },
+    "fix": {
+      "title": "检测到此服务器前面有 {{proxy}}",
+      "body": "在信任该代理之前,访客地址和转发的请求头会被忽略,因此按访客的限制会影响所有人。",
+      "rangesRotate": "此代理使用会随时间变化的公网地址。请信任其公布的范围,而不是单个地址。",
+      "manual": "没有可自动信任的安全地址。请在下方输入代理地址。",
+      "apply": "信任 {{value}}",
+      "recheck": "重新检查",
+      "done": "受信任的代理已保存。限制现在能看到真实的访客地址。"
+    },
+    "trusted": {
+      "label": "受信任的代理",
+      "help": "以逗号分隔的地址、CIDR 范围或 private_ranges。留空表示不信任任何代理。"
+    },
+    "limits": {
+      "body": "请求体上限",
+      "header": "请求头上限",
+      "readHeader": "请求头读取超时",
+      "idle": "空闲连接超时",
+      "help": "留空则使用所示的默认值。"
+    },
+    "unit": {
+      "mib": "MiB",
+      "kib": "KiB",
+      "seconds": "秒"
+    },
+    "envLocked": "由控制平面上的环境变量设置,其优先级更高。",
+    "badNumber": "请输入纯数字,或将字段留空以使用默认值。",
+    "save": "保存限制",
+    "saving": "正在保存...",
+    "saved": "边缘设置已保存。",
+    "loadFailed": "无法加载边缘设置。"
+  },
+  "diagnose": {
+    "title": "诊断 {{domain}}",
+    "description": "检查 DNS、端口、证书和最近的证书错误,并为每个问题给出修复方法。",
+    "running_other": "正在检查... 目前已有 {{count}} 个结果",
+    "status": {
+      "healthy": "一切正常。",
+      "warnings": "可以工作,但有值得修复的问题。",
+      "problems": "有问题导致此域名无法正常工作。"
+    },
+    "propagation": {
+      "settled": "DNS 已稳定",
+      "propagating": "DNS 正在生效",
+      "waiting": "等待 DNS"
+    },
+    "nextCheck": "约 {{seconds}} 秒后再次检查。",
+    "recheck": "重新检查",
+    "tryAgain": "重试",
+    "applying": "正在应用...",
+    "applied": "{{label}}:完成。正在重新检查。",
+    "fromTerminal": "从终端",
+    "copyCommand": "复制命令",
+    "evidence_other": "证据({{count}} 行)",
+    "steps": "步骤",
+    "open": "打开 {{label}}",
+    "copyRecord": "复制 {{name}} 的 {{type}} 记录",
+    "nothingToFix": "无需修复。",
+    "showPassed": "显示其他 {{count}} 项检查",
+    "hidePassed": "隐藏其他检查",
+    "notFound": "此域名尚未关联到应用。请先将其添加到应用,再进行诊断。",
+    "failed": "无法运行诊断:{{message}}"
+  },
+  "appLimits": {
+    "title": "请求大小上限",
+    "description": "限制此应用接受的请求体大小。请求头大小和超时适用于整个服务器。",
+    "body": "请求体上限",
+    "help": "留空则使用服务器值({{instance}} MiB)。",
+    "invalid": "请输入大于零的大小,或留空。",
+    "save": "保存上限",
+    "reset": "使用服务器值",
+    "saved": "请求大小上限已保存。"
+  },
+  "banner": {
+    "description": "将你自己的网址指向应用。HTTPS 证书会自动为你设置。",
+    "diagram": {
+      "domain": "app.example.com",
+      "certificate": "证书",
+      "server": "服务器",
+      "browser": "浏览器"
+    },
+    "noAppsAction": "新建应用"
+  },
+  "editor": {
+    "title": "域名",
+    "descriptionBefore": "通过入口层路由到此应用的域名。平台范围的 ACME 和主域名设置位于",
+    "descriptionLink": "域名",
+    "descriptionAfter": "下。",
+    "dnsHintLink": "DNS 记录类型说明",
+    "dnsHint": "将 A 记录指向此服务器的 IP 地址(或将 CNAME 指向其主机名)。解析生效后会自动签发 TLS 证书。",
+    "empty": "尚未配置域名。",
+    "inputLabel": "域名",
+    "inputPlaceholder": "app.example.com",
+    "remove": "移除域名",
+    "tlsLabel": "TLS 证书:",
+    "provisioning": "正在配置",
+    "add": "添加域名",
+    "save": "保存域名",
+    "saving": "正在保存...",
+    "saved": "域名已保存。",
+    "errors": {
+      "required": "域名为必填项",
+      "invalid": "请输入有效的域名,例如 app.example.com"
+    }
+  },
+  "stepper": {
+    "title": "域名设置步骤",
+    "step": {
+      "domain": "域名",
+      "records": "DNS 记录",
+      "check": "实时检查",
+      "port": "容器端口",
+      "certificate": "证书"
+    },
+    "port": {
+      "next": "端口正确,继续"
+    },
+    "domain": {
+      "label": "域名",
+      "placeholder": "app.example.com",
+      "add": "添加并继续",
+      "invalid": "请输入有效的域名,例如 app.example.com",
+      "offerPair": "还想要 {{other}} 吗?之后可以让它重定向到这里。",
+      "useOther": "使用 {{other}}",
+      "wildcard": "通配符域名需要连接 DNS 提供商,因为证书是通过 DNS 验证的。"
+    },
+    "records": {
+      "providerLabel": "你的 DNS 托管在哪里?",
+      "next": "我已添加记录"
+    },
+    "provider": {
+      "cloudflare": "Cloudflare",
+      "route53": "Route 53",
+      "namecheap": "Namecheap",
+      "other": "其他"
+    },
+    "hint": {
+      "cloudflare": "在 Cloudflare 中打开 DNS,然后进入记录。在证书签发之前,请将代理设为仅 DNS(灰色云朵)。",
+      "route53": "在 Route 53 中打开托管区域,并创建 TTL 为 300 或更低的记录。",
+      "namecheap": "在 Namecheap 中打开 Advanced DNS 并添加记录。主机只填子域名部分。",
+      "namecheapApex": "根域名的主机请使用 @。",
+      "other": "请在管理此域名 DNS 的地方添加记录,通常是你的注册商。名称均显示完整形式。"
+    },
+    "check": {
+      "expected": "预期",
+      "resolved": "解析结果",
+      "none": "暂无",
+      "recheck": "重新检查",
+      "next": "继续",
+      "propagation": "新记录通常几分钟内生效,但最多可能需要几个小时。此处会自动再次检查。",
+      "capped": "自动检查已停止。等 DNS 变更有足够时间扩散后,请点击重新检查。"
+    },
+    "cert": {
+      "pending": "等待证书",
+      "issued": "证书已签发",
+      "failed": "证书失败",
+      "off": "此域名的证书已关闭",
+      "reason": "原因",
+      "logs": "打开日志"
+    }
+  },
+  "statusBar": {
+    "label": "域名状态",
+    "httpsOn": "已启用 HTTPS",
+    "httpsOff": "未启用 HTTPS",
+    "address": "服务器",
+    "fixAddress": "修复:检查地址",
+    "details": "地址详情",
+    "enableHttps": "启用 HTTPS",
+    "parked": "{{count}} 个已暂放",
+    "addressLabel": "服务器地址",
+    "httpsLabel": "HTTPS",
+    "portsLabel": "端口检查",
+    "unknown": "尚未检查"
+  },
+  "cutover": {
+    "title": "切换清单",
+    "loading": "正在检查此服务器...",
+    "error": "无法加载切换清单。",
+    "eta": "约 {{minutes}} 分钟",
+    "getCertificate": "在切换 DNS 之前获取证书",
+    "revertChallenge": "将此域名切换回 HTTP-01",
+    "dns01ThisDomain": "只有此域名的证书使用 DNS-01。此服务器上的其他域名保持各自的验证方式。",
+    "noProvider": "未连接 DNS 提供商,因此 HTTP-01 只有在切换后才能工作。请事先将记录 TTL 降低到 {{ttl}} 秒,或连接 Cloudflare、Route53 或 Google Cloud DNS。",
+    "runbook": "证书操作手册",
+    "guide": "零停机迁移域名",
+    "ready": "可以切换:应用在此服务器上对 {{domain}} 有响应({{cert}})",
+    "notReady": "尚不能切换:应用在此服务器上对 {{domain}} 还没有响应",
+    "certReady": "证书已就绪,预计无停机",
+    "certPending": "证书待签发",
+    "proxied": "此名称由 Cloudflare 代理。无论代理开启还是关闭,切换都能继续工作。",
+    "proxyDocs": "Cloudflare 代理文档",
+    "risk": {
+      "none": "预计无停机",
+      "likely": "可能出现停机",
+      "unknown": "停机风险未知"
+    },
+    "state": {
+      "pass": "已通过",
+      "wait": "等待中",
+      "fail": "失败",
+      "skip": "无需"
+    },
+    "steps": {
+      "app": "应用在此服务器上有响应",
+      "certificate": "证书已就绪",
+      "current_dns": "当前 DNS 和 TTL",
+      "switch_dns": "将 DNS 切换到此服务器",
+      "authoritative": "已从权威服务器验证",
+      "live": "已通过真实名称端到端验证"
+    },
+    "verify": {
+      "loading": "正在检查线上名称...",
+      "error": "无法检查线上名称。",
+      "recheck": "再次检查",
+      "verdict": {
+        "PASS": "就绪",
+        "WARN": "有警告",
+        "FAIL": "失败"
+      }
+    }
+  },
+  "lifecycle": {
+    "pending": "处理中...",
+    "park": {
+      "title": "暂放 {{domain}}?",
+      "body": "{{app}} 将停止提供此域名。它会保持注册,其 DNS 和证书状态保留在已暂放分组中,之后可以关联到任意应用。",
+      "keepsDnsCert": "DNS 记录和自动证书状态也会保留。",
+      "confirm": "暂放域名",
+      "done": "{{domain}} 已暂放",
+      "savesSettings": "暂放会将此域名自身的设置(WAF 和速率限制、自有证书、基本认证、认证网关、维护、重定向、错误页面、搜索可见性、流量策略)随暂放域名一同保存。关联时会恢复这些设置。",
+      "staticNoSettings": "静态站点没有按域名的设置,因此暂放域名不会保存任何设置。"
+    },
+    "move": {
+      "title": "移动 {{domain}}",
+      "body": "将此域名从 {{app}} 移到另一个应用。会先运行冲突检查。",
+      "keepsSettings": "移动会保留域名自身的设置:WAF、自有证书和基本认证会随之迁移。",
+      "target": "移动到",
+      "check": "检查并移动",
+      "confirm": "确认移动",
+      "needsConfirm": "此域名的流量将更换所属者。请确认以继续。",
+      "done": "{{domain}} 已移动到 {{app}}",
+      "dropsSettings": "移动到静态站点会丢弃此域名自身的设置。DNS 和证书状态会保留。",
+      "dropsWarning": "静态站点没有按域名的设置。此域名上的 WAF、自有证书、基本认证和其他设置将被丢弃。"
+    },
+    "delete": {
+      "title": "删除 {{domain}}?",
+      "body": "将此域名从 {{app}} 中完全移除。请输入域名以确认。",
+      "confirm": "删除",
+      "done": "{{domain}} 已删除",
+      "dropsSettings": "删除会移除此域名自身的设置:WAF 和速率限制、自有证书和基本认证都会被丢弃。"
+    },
+    "attach": {
+      "title": "关联 {{domain}}",
+      "body": "选择应提供此已暂放域名的应用。",
+      "confirm": "关联",
+      "done": "{{domain}} 已关联到 {{app}}",
+      "settingsLegend": "已保存的设置",
+      "restore": "恢复已保存的设置(默认)",
+      "startFresh": "重新开始并丢弃它们",
+      "restored": "已恢复:{{kinds}}",
+      "kinds": {
+        "domain_waf": "WAF",
+        "gate_access_rules": "速率限制",
+        "domain_tls_cert": "证书",
+        "domain_basic_auth": "基本认证",
+        "domain_auth_gate": "认证网关",
+        "domain_maintenance": "维护",
+        "domain_redirect": "重定向",
+        "domain_error_page": "错误页面",
+        "domain_search_visibility": "搜索可见性",
+        "domain_traffic_policies": "流量策略"
+      },
+      "dropsWarning": "静态站点没有按域名的设置。此域名已保存的设置将被丢弃,而不会恢复。"
+    },
+    "deleteParked": {
+      "title": "删除已暂放的域名 {{domain}}?",
+      "body": "将忘记此域名及其已暂放的 DNS 和证书状态。请输入域名以确认。"
+    },
+    "environment": {
+      "label": "环境",
+      "default": "默认列表"
+    },
+    "target": {
+      "apps": "应用",
+      "staticSites": "静态站点"
+    }
+  },
+  "parked": {
+    "title": "已暂放",
+    "hint": "已注册但没有任何应用路由。将其关联到应用即可再次提供服务。",
+    "from": "从 {{app}} 暂放",
+    "attach": "关联",
+    "delete": "删除 {{domain}}",
+    "settingsSaved": "设置已保存",
+    "dns": {
+      "pointing": "DNS 已指向",
+      "not_pointing": "DNS 未指向",
+      "unknown": "DNS 未知"
+    },
+    "tls": {
+      "pending": "证书待签发",
+      "none": "无证书"
+    },
+    "fromEnvironment": "从 {{app}}({{environment}})暂放",
+    "staticSite": "静态站点"
+  },
+  "detail": {
+    "description": "此域名在 {{app}} 上的设置。",
+    "allSettings": "所有设置",
+    "routing": "路由",
+    "security": "安全",
+    "pages": "页面",
+    "seo": "SEO",
+    "tls": "TLS",
+    "breadcrumb": "面包屑导航",
+    "back": "域名",
+    "openDomain": "打开 {{domain}} 的页面",
+    "state": {
+      "live": "已上线",
+      "waitingDns": "等待 DNS",
+      "wrongDns": "DNS 指向其他位置",
+      "certFailed": "证书需要处理",
+      "issuing": "正在签发证书",
+      "starting": "即将上线"
+    },
+    "resolvers": {
+      "label": "各服务器的 DNS 响应",
+      "authoritative": "你的 DNS 托管方",
+      "state": {
+        "ok": "正确",
+        "pending": "暂无响应",
+        "wrong": "值错误"
+      }
+    },
+    "provider": {
+      "generic": "请在管理你的域名 DNS 的地方添加此记录,通常是你的注册商或托管服务商。",
+      "cloudflare": "你的 DNS 似乎在 Cloudflare 上。请在那里添加记录,并在证书签发之前关闭橙色云朵。",
+      "route53": "你的 DNS 似乎在 Amazon Route 53 上。请在此域名的托管区域中添加记录。",
+      "godaddy": "你的 DNS 似乎在 GoDaddy 上。请在此域名的 DNS 记录下添加记录。",
+      "namecheap": "你的 DNS 似乎在 Namecheap 上。请在 Advanced DNS 下添加记录。",
+      "google": "你的 DNS 似乎在 Google Cloud DNS 上。请在此域名的区域中添加记录。",
+      "open": "打开 {{name}} DNS",
+      "name": {
+        "cloudflare": "Cloudflare",
+        "route53": "Route 53",
+        "godaddy": "GoDaddy",
+        "namecheap": "Namecheap",
+        "google": "Google"
+      }
+    },
+    "recordType": "记录类型",
+    "field": {
+      "type": "类型",
+      "name": "名称",
+      "value": "值"
+    },
+    "wrongValue": "指向 {{found}},应为 {{should}}。",
+    "sendAdmin": "发送给你的 DNS 管理员",
+    "adminCopied": "消息已复制",
+    "adminMessage": "你好,请添加此 DNS 记录,以便 {{domain}} 能访问我们的服务器。\n\n类型:{{type}}\n名称:{{domain}}\n值:{{value}}\n\n记录可能需要几分钟才能生效。谢谢。",
+    "timeline": {
+      "label": "证书进度",
+      "dns": "DNS 已指向这里",
+      "requested": "已申请证书",
+      "issued": "证书已签发",
+      "expires": "到期",
+      "done": "完成",
+      "todo": "尚未"
+    },
+    "testIt": "测试一下",
+    "redirect": "重定向和 www",
+    "danger": {
+      "title": "危险操作区",
+      "body": "将此域名移到另一个应用、暂放或移除。域名不在期间,访客将无法使用此地址。"
+    }
+  },
+  "waf": {
+    "add": "添加 WAF / 速率限制",
+    "edit": "编辑",
+    "close": "关闭",
+    "summaryWaf": "WAF:{{mode}}",
+    "summaryWafOff": "WAF 已关闭",
+    "summaryRate": "速率限制 {{rps}}/秒,突发 {{burst}}",
+    "summaryRateOff": "无速率限制",
+    "badgeOn": "WAF/速率限制已开启",
+    "badgeOff": "未防护",
+    "helpLabel": "WAF 和速率限制指南",
+    "wafLabel": "OWASP Coraza WAF",
+    "modeLabel": "模式",
+    "modeDetect": "检测(仅记录日志,建议起步使用)",
+    "modeBlock": "拦截(拒绝匹配的请求)",
+    "helpDetect": "匹配 OWASP CRS 规则的请求只会被记录,不会被拒绝。查看日志确认没有误报后,再切换为拦截。",
+    "helpBlock": "匹配 OWASP CRS 规则的请求会被拒绝并返回错误。",
+    "rpsLabel": "速率限制(每个 IP 每秒请求数)",
+    "rpsPlaceholder": "0(已禁用)",
+    "rpsHelp": "0 表示对此域名禁用速率限制。",
+    "burstLabel": "突发额度",
+    "burstPlaceholder": "0(无额外突发)",
+    "burstHelp": "在上述持续速率之外,单秒内允许的请求数。保持为 0 表示严格上限。",
+    "save": "保存",
+    "saving": "正在保存...",
+    "turnOff": "关闭",
+    "removing": "正在移除..."
+  },
+  "bulk": {
+    "barLabel": "批量操作",
+    "selected_other": "已选择 {{count}} 项",
+    "clear": "清除",
+    "selectAll": "选择所有已筛选的域名",
+    "select": "选择",
+    "selectRow": "选择 {{domain}}",
+    "blockedAutomatic": "自动主机名无法暂放或移动",
+    "blockedStandalone": "独立域名无法暂放或移动",
+    "park": "暂放",
+    "move": "移到应用",
+    "attach": "关联",
+    "delete": "删除",
+    "title": {
+      "park": "暂放 {{count}} 个域名",
+      "move": "移动 {{count}} 个域名",
+      "attach": "关联 {{count}} 个已暂放的域名",
+      "delete_parked": "删除 {{count}} 个已暂放的域名"
+    },
+    "body": {
+      "park": "每个域名都将不再由其应用提供服务,并移入已暂放分组。",
+      "move": "选择这些域名的去向。会先运行冲突检查。",
+      "attach": "选择应提供这些已暂放域名的应用或静态站点。",
+      "delete_parked": "将忘记这些域名及其已暂放的 DNS 和证书状态。此操作无法撤销。"
+    },
+    "confirm": {
+      "park": "暂放 {{count}} 个",
+      "move": "检查并移动 {{count}} 个",
+      "attach": "关联 {{count}} 个",
+      "delete_parked": "删除 {{count}} 个"
+    },
+    "attachTo": "关联到",
+    "parkKeeps": "设置会随每个已暂放的域名一同保存,DNS 和证书状态也会保留。",
+    "discard": "重新开始并丢弃已保存的设置",
+    "previewLabel": "将发生的操作",
+    "preview": {
+      "park": "从 {{app}} 暂放",
+      "move": "从 {{from}} 移动到 {{to}}",
+      "attach": "关联到 {{app}}",
+      "delete": "删除已暂放的域名",
+      "noop": "已在目标位置,已跳过"
+    },
+    "resultsLabel": "结果",
+    "col": {
+      "domain": "域名",
+      "result": "结果"
+    },
+    "status": {
+      "ok": "完成",
+      "failed": "失败",
+      "needsConfirmation": "需要确认",
+      "failedGeneric": "失败",
+      "needsConfirmationBody": "此域名的流量将更换所属者。请确认以继续。",
+      "okBody": "完成"
+    },
+    "summary": "{{ok}} 个完成,{{failed}} 个失败,{{waiting}} 个需要确认",
+    "confirmThese_other": "确认这 {{count}} 个",
+    "cancel": "取消",
+    "done": "关闭"
+  },
+  "retention": {
+    "title": "自动清理",
+    "summaryOff": "已关闭。已暂放的域名会保留,直到你删除它们。",
+    "summaryOn": "{{days}} 天后删除已暂放的域名。当前到期:{{due}}。下次运行:{{next}}",
+    "preview": "预览",
+    "turnOn": "开启",
+    "turnOff": "关闭",
+    "turnOnDays": "按 {{count}} 天开启",
+    "close": "关闭",
+    "previewTitle": "预览自动清理",
+    "previewBody": "查看某个保留期限会删除哪些已暂放的域名。",
+    "daysLabel": "保留期限",
+    "days_other": "{{count}} 天",
+    "custom": "自定义",
+    "customLabel": "自定义天数",
+    "estimate": "根据已暂放列表估算。开启清理后会显示精确列表。",
+    "exact": "服务器按已保存设置给出的精确列表。",
+    "dueNow_other": "现在将删除 {{count}} 个域名。",
+    "age_other": "已暂放 {{count}} 天",
+    "batchNote": "每次每小时运行最多删除 {{limit}} 个,最早的优先。其余在之后的运行中处理。",
+    "confirmTitle_other": "{{count}} 天后删除已暂放的域名?",
+    "confirmBody": "当前到期 {{due}} 个,首次运行删除 {{first}} 个(批量上限 {{limit}})。",
+    "consequenceDns": "只会删除已暂放的注册信息。DNS 记录和证书不受影响。",
+    "consequenceBatch": "每次每小时运行最多删除 {{limit}} 个域名,最早的优先。",
+    "offTitle": "关闭自动清理?",
+    "offBody": "已暂放的域名将保留,直到你删除它们。关闭此项不会删除任何内容。",
+    "savedOn_other": "自动清理已开启:{{count}} 天",
+    "savedOff": "自动清理已关闭",
+    "saveFailed": "无法保存该设置"
+  },
+  "reachability": {
+    "title": "可达性",
+    "loading": "正在检查端口",
+    "recheck": "再次检查",
+    "copy": "复制",
+    "copied": "已复制",
+    "forbidden": "你需要读取权限才能查看可达性检查。",
+    "errorTitle": "无法运行可达性检查",
+    "errorBody": "服务器没有响应。请稍后重试。",
+    "dialbackError": "互联网检查失败:{{error}}",
+    "firewall": "本地防火墙:{{state}}",
+    "dialbackOn": "互联网检查已开启:辅助服务会从外部连接此服务器的公网 IP 和你开放的端口。",
+    "dialbackOff": "互联网检查已关闭,因此只运行了本地检查。开启后会把此服务器的公网 IP 及其端口列表发送到你在 doctor.reachability_dialback_url 中设置的 URL。",
+    "settingLink": "打开运行时设置",
+    "pillOk": "端口看起来可达",
+    "pillWarn": "端口需要处理",
+    "openChecklist": "打开清单",
+    "listening": {
+      "yes": "正在监听",
+      "no": "未监听"
+    },
+    "external": {
+      "not_checked": "未从外部检查",
+      "reachable": "可从互联网访问",
+      "unreachable": "被互联网阻断",
+      "unknown": "外部状态未知"
+    },
+    "ports": {
+      "dashboard": "控制台",
+      "http": "HTTP",
+      "https": "HTTPS"
+    }
+  },
+  "watch": {
+    "state": {
+      "waiting_dns": "等待 DNS",
+      "propagating": "DNS 正在生效",
+      "waiting_certificate": "等待证书",
+      "stalled": "已停滞,需要查看"
+    },
+    "nextInSeconds_other": "{{count}} 秒后再次检查",
+    "nextInMinutes_other": "{{count}} 分钟后再次检查"
+  },
+  "rollback": {
+    "button": "回滚此变更",
+    "confirmTitle": "回滚此 DNS 变更?",
+    "confirm": "回滚",
+    "pending": "正在回滚...",
+    "minutesLeft_other": "还可回滚 {{count}} 分钟",
+    "hoursLeft_other": "还可回滚 {{count}} 小时",
+    "closed": "回滚窗口已关闭",
+    "undone": "已回滚",
+    "consequenceRemove": "此变更添加的记录将被移除。",
+    "consequenceRestore": "此变更替换的记录将恢复其原值。",
+    "consequenceSkip": "此后被编辑过的记录保持不动。",
+    "outcomes": "回滚结果",
+    "skipped": "此后已更改,保持不动"
+  },
+  "firstRun": {
+    "label": "第一步",
+    "step": "第 {{n}} 步",
+    "done": "完成",
+    "current": "下一步",
+    "deploy": {
+      "title": "部署应用",
+      "body": "域名指向应用,因此请先部署一个。"
+    },
+    "domain": {
+      "title": "添加你的域名",
+      "body": "将你自己的网址指向该应用。",
+      "action": "添加域名"
+    },
+    "https": {
+      "title": "开启 HTTPS",
+      "body": "开启 HTTPS 后会自动为你签发证书。"
+    }
+  },
+  "tabs": {
+    "label": "域名及相关",
+    "domains": "域名",
+    "certificates": "证书",
+    "dns": "DNS"
+  },
+  "www": {
+    "title": "www 地址",
+    "help": "通过一次重定向,让 {{domain}} 和 www.{{domain}} 都能访问。",
+    "choiceLabel": "应该怎么处理",
+    "choice": {
+      "apex": "将 www 访客转到 {{domain}}",
+      "www": "将 {{domain}} 访客转到 www.{{domain}}",
+      "both": "两个都提供服务,不重定向",
+      "apexOnly": "仅主地址"
+    },
+    "loading": "正在读取你的 DNS 记录",
+    "error": "我们无法读取 DNS 方案:{{message}}",
+    "retry": "再次检查",
+    "records": "DNS 记录",
+    "col": {
+      "type": "类型",
+      "name": "名称",
+      "value": "值",
+      "now": "当前"
+    },
+    "outcome": {
+      "created": "将添加",
+      "updated": "将更改",
+      "unchanged": "已正确",
+      "conflict": "存在不同的记录"
+    },
+    "copy": "复制 {{value}}",
+    "copied": "已复制",
+    "redirect": "{{from}} 将重定向到 {{to}}。",
+    "noProvider": "此域名未连接 DNS 提供商。请在你管理 DNS 的地方添加这些记录,然后再次检查。",
+    "replaceWarning": "已存在不同的记录。应用将替换它。",
+    "apply": "帮我应用",
+    "applyReplace": "替换并应用",
+    "applying": "正在应用",
+    "applyError": "无法应用:{{message}}",
+    "applied": "完成。两个地址均已设置。",
+    "partial": "部分记录未能应用。",
+    "result": {
+      "created": "已添加",
+      "updated": "已更改",
+      "unchanged": "已正确",
+      "conflict": "保持不动",
+      "failed": "失败",
+      "not_attempted": "未尝试"
+    },
+    "redirectApplied": "重定向已生效。",
+    "connectTitle": "将 www 连接到此应用",
+    "connectPointsHere": "www.{{domain}} 已指向此服务器,但尚未连接到此应用。连接它,并将 www 访客转到 {{domain}}。",
+    "connectNeedsDns": "www.{{domain}} 尚未连接到此应用。请在你管理 DNS 的地方添加此 CNAME,然后再次检查。",
+    "connectButton": "连接 www 并重定向",
+    "connecting": "正在连接",
+    "otherOptions": "选择其他选项",
+    "connectedRedirect": "www 重定向到 {{domain}}",
+    "connectedNoRedirect": "www 已连接到此应用",
+    "connectDone": "www 已连接到此应用。",
+    "state": {
+      "already_correct": "已设置",
+      "missing": "未设置"
+    }
+  },
+  "moreOptions": {
+    "title": "更多选项",
+    "activeLabel": "已开启的选项",
+    "access": "访问",
+    "routing": "路由",
+    "protection": "防护和完善",
+    "chip": {
+      "basicAuth": "基本认证",
+      "authGate": "登录网关",
+      "redirect": "重定向",
+      "maintenance": "维护",
+      "waf": "WAF / 速率限制",
+      "errorPages": "自定义错误页面",
+      "hidden": "对搜索隐藏",
+      "ownCert": "自有证书"
+    },
+    "links": {
+      "allSettings": "所有设置",
+      "diagnose": "诊断",
+      "deploys": "应用未运行,请查看部署"
+    }
+  },
+  "readiness": {
+    "title": "域名就绪状态",
+    "checkNow": "立即检查",
+    "countdown": "{{seconds}} 秒后再次检查",
+    "allDone": "全部就绪,无需再检查。",
+    "step": {
+      "dns": "DNS 已指向这里",
+      "cert": "证书已签发",
+      "site": "站点有响应"
+    },
+    "say": {
+      "dns": {
+        "done": "你的域名已指向此服务器。",
+        "progress": "等待 DNS。请添加上方显示的记录。",
+        "blocked": "域名指向其他位置。请修复上方显示的记录。",
+        "waiting": "等待 DNS。"
+      },
+      "cert": {
+        "done": "你的证书已就绪。",
+        "progress": "正在签发你的证书,通常不到一分钟。",
+        "blocked": "签发失败。请查看下方的修复方法。",
+        "waiting": "DNS 指向这里后开始。"
+      },
+      "site": {
+        "done": "你的站点已通过 HTTPS 响应。",
+        "progress": "等待站点响应。",
+        "blocked": "站点没有响应。请查看下方。",
+        "waiting": "证书就绪后开始。"
+      }
+    },
+    "ttl": "DNS 变更最多可能需要 {{time}} 才能到达所有人。",
+    "unit": {
+      "s_other": "{{count}} 秒",
+      "m_other": "{{count}} 分钟",
+      "h_other": "{{count}} 小时"
+    },
+    "localLag": "公共 DNS 已经正确。此服务器自己的解析器可能略有延迟,但不影响你的站点。",
+    "issuing": "正在签发你的证书。此页面会自动更新。",
+    "issueFailed": "无法签发证书。请检查记录是否指向这里且 80 端口已开放,然后点击立即检查。",
+    "route": {
+      "404": "路由返回 404,这表示服务器可达,但尚不认识此域名。",
+      "503": "路由返回 503,这表示服务器可达,但其后的应用尚未就绪或未关联到此域名。",
+      "5xx": "路由返回服务器错误,这表示服务器可达,但其后的应用出现故障。请查看应用日志。"
+    },
+    "diagnose": "为什么没有响应?"
+  },
+  "addWizard": {
+    "progress": "第 {{current}} 步,共 {{total}} 步",
+    "stepNames": {
+      "1": "域名",
+      "2": "指向这里",
+      "3": "即将上线"
+    },
+    "back": "返回",
+    "next": "继续",
+    "advanced": "高级:一次添加多个域名",
+    "backToWizard": "返回引导设置",
+    "step1": {
+      "title": "哪个域名,哪个应用?",
+      "domainLabel": "你的域名",
+      "domainPlaceholder": "example.com",
+      "appLabel": "应用",
+      "appPlaceholder": "选择应用",
+      "kindApex": "这是主域名。我们会在最后一步建议同时连接 www。",
+      "kindSubdomain": "这是子域名,只需要一条记录。",
+      "kindWww": "这是 www 地址。",
+      "adding": "正在添加..."
+    },
+    "errors": {
+      "empty": "请输入你购买的域名,例如 example.com。",
+      "invalid": "这看起来不像域名。请使用字母、数字和点,例如 example.com。",
+      "wildcard": "像 *.example.com 这样的通配符需要使用高级表单。请使用下方链接,或输入单个域名。",
+      "claimedHere": "此应用已在使用该域名。请选择其他域名,或从列表中打开它。",
+      "claimedOther": "应用 {{app}} 已在使用该域名。请先在那里移除它,或选择其他域名。",
+      "noApp": "请选择此域名应打开的应用。",
+      "addFailed": "我们无法添加该域名:{{message}}。请检查名称后重试。"
+    },
+    "step2": {
+      "title": "将你的域名指向这里",
+      "intro": "请在你购买 {{domain}} 的地方添加此记录。它会告诉互联网把访客送到你的服务器。",
+      "type": "类型",
+      "name": "名称",
+      "value": "值",
+      "copy": "复制{{label}}",
+      "copied": "{{label}}已复制",
+      "loading": "正在查找你的服务器地址...",
+      "noRecords": "我们找不到此服务器的公网地址。请打开域名设置并设置服务器地址,然后再回来。",
+      "providerOn": "已连接 DNS 提供商,因此我们可以为你添加此记录。",
+      "providerOff": "未连接 DNS 提供商。请在你的注册商处手动添加记录,复制只需一分钟,然后继续。不会替你更改任何内容。",
+      "apply": "帮我添加记录",
+      "applying": "正在添加...",
+      "applied": "记录已添加。生效可能需要几分钟。",
+      "applyFailed": "我们无法添加该记录:{{message}}。请使用上方的值手动添加,或检查提供商连接。",
+      "continue": "我已添加,继续"
+    },
+    "step3": {
+      "title": "即将上线",
+      "waiting": "我们会自行再次检查。你可以保持此页面打开。",
+      "doneTitle": "{{domain}} 已上线",
+      "doneBody": "访客可以通过 HTTPS 打开你的站点。",
+      "open": "打开 https://{{domain}}",
+      "addAnother": "再添加一个",
+      "finishLater": "稍后完成",
+      "wwwTitle": "同时连接 www",
+      "wwwBody": "访客经常输入 www。点一下即可连接它,并把访客送到 {{domain}}。"
+    }
+  },
+  "limits": {
+    "title": "流量限制",
+    "configured": "已配置",
+    "default": "默认",
+    "bodyLabel": "最大上传(MB)",
+    "readLabel": "读取超时(秒)",
+    "writeLabel": "写入超时(秒)",
+    "bodyHint": "留空表示不限制。{{min}} 到 {{max}} MB。",
+    "timeoutHint": "留空表示默认。最多 {{max}} 秒。",
+    "save": "保存",
+    "reset": "重置为默认",
+    "saved": "流量限制已保存",
+    "resetDone": "流量限制已重置",
+    "note": "在下一轮入口 reconcile 时生效。"
+  },
+  "tuning": {
+    "title": "代理调优",
+    "custom": "自定义",
+    "save": "应用预设",
+    "saved": "代理调优已保存",
+    "note": "在下一轮入口 reconcile 时生效。超时保持在 {{max}} 秒以内,流保持在 {{stream}} 秒以内。",
+    "preset": {
+      "default": {
+        "label": "默认",
+        "hint": "入口默认值,不做调优"
+      },
+      "api": {
+        "label": "API",
+        "hint": "压缩文本,一分钟内响应"
+      },
+      "uploads": {
+        "label": "长时间上传",
+        "hint": "为慢速上传和任务提供五分钟"
+      },
+      "streaming": {
+        "label": "实时流",
+        "hint": "服务器发送事件,每个数据块立即发送"
+      },
+      "websocket": {
+        "label": "WebSocket",
+        "hint": "可在刷新后保持的长连接"
+      }
+    },
+    "notApplied": "入口拒绝了此调优,因此该域名使用默认值。请选择其他预设或重置。"
+  }
+}

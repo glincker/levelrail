@@ -1,0 +1,131 @@
+{
+  "title": "如何访问此应用",
+  "description": "首选的访问地址,以及其他入口。",
+  "actions": {
+    "copy": "复制{{what}}",
+    "copied": "已复制",
+    "open": "打开{{what}}",
+    "test": "测试",
+    "testing": "正在测试",
+    "allowNetwork": "允许网络访问",
+    "change": "更改端口或暴露方式",
+    "openApp": "打开应用",
+    "copyUrl": "复制地址",
+    "recheck": "重新检查",
+    "showDetails": "显示详情",
+    "hideDetails": "隐藏详情",
+    "openOnNetwork": "在此网络中打开(IP 和端口)",
+    "addDomain": "添加域名"
+  },
+  "allow": {
+    "title": "允许网络访问?",
+    "description": "该端口将发布在所有接口上,并在主机防火墙中放行,其他设备可通过明文 HTTP 访问此应用。",
+    "confirm": "允许网络访问",
+    "pending": "正在应用",
+    "none": "不会有任何变化。",
+    "change": "{{what}}:{{from}} 变为 {{to}}",
+    "plain_http": "明文 HTTP:流量未加密,且在域名上配置的登录门禁不适用于此端口。",
+    "recreates": "容器将使用新设置重建。",
+    "done": "已允许网络访问",
+    "doneDescription": "协调在后台运行。"
+  },
+  "errors": {
+    "load": "无法加载应用地址。",
+    "retry": "重试"
+  },
+  "empty": "暂无地址。部署应用后即可获得。",
+  "badges": {
+    "attention": "{{count}} 个需要处理",
+    "port": "端口 {{port}}",
+    "deployed": "已部署",
+    "nodeOffline": "所在节点已离线,自",
+    "previousHeld": "上一个版本已保留,已移除",
+    "previousHeldTitle": "上一个版本,保留至 {{time}}。保留它是为了让回滚即时完成。"
+  },
+  "setup": {
+    "title": "推荐设置",
+    "progress": "已完成 {{done}} / {{total}}",
+    "hide": "对此应用隐藏",
+    "show": "显示推荐设置"
+  },
+  "traffic": {
+    "hint": "暂无流量。第一个请求到达后会显示图表。"
+  },
+  "hero": {
+    "title": "打开你的应用",
+    "stopped": "应用未运行,因此在它启动之前此地址不会有响应。",
+    "fixTitle": "此地址目前还无法从外部访问。请选择一种访问方式:",
+    "fixHint": "在此网络中打开会给出一个可在本地网络使用的 IP 和端口,无需域名。添加域名则可让应用从互联网访问。"
+  },
+  "status": {
+    "live": "在线",
+    "down": "无响应",
+    "unchecked": "未检查",
+    "checking": "正在检查",
+    "stopped": "未运行"
+  },
+  "security": {
+    "secure": "安全",
+    "selfSigned": "自签名证书:浏览器会发出警告",
+    "plain": "未加密"
+  },
+  "scope": {
+    "internet": "互联网上的任何人",
+    "network": "同一网络或 VPN",
+    "server": "仅此服务器",
+    "apps": "此服务器上的其他应用"
+  },
+  "dot": {
+    "ok": "有响应",
+    "down": "无响应",
+    "unknown": "尚未检查"
+  },
+  "others": {
+    "title": "其他入口"
+  },
+  "advanced": {
+    "title": "高级:供其他应用和此服务器使用的地址",
+    "hint": "只有在把应用连接在一起或直接在服务器上操作时才需要。",
+    "noPublic": "此服务器没有公网地址,因此私有网络地址就是入口。",
+    "autoDown": "免费测试地址在此服务器上没有响应。它需要公共 DNS 并开放 80 和 443 端口,因此请使用上面的地址。"
+  },
+  "id": {
+    "domain": "域名",
+    "public": "公网地址",
+    "private": "私有网络",
+    "loopback": "此服务器",
+    "internal": "其他应用",
+    "container": "容器端口",
+    "host": "主机端口"
+  },
+  "note": {
+    "container": "应用在其容器内监听的端口。",
+    "host": "为该容器端口在此服务器上发布的端口。",
+    "hostStopped": "应用未运行,因此没有发布主机端口。",
+    "hostNone": "尚未发布主机端口。重新部署即可发布。",
+    "local": "仅在你登录到此服务器时可用。",
+    "localNone": "应用运行后可用。",
+    "private": "仅在同一网络或通过 VPN 时可用。",
+    "privateLocalhost": "无法从网络访问:该端口绑定到了 localhost。",
+    "privateRemote": "此应用运行在另一个节点上。打开该节点即可查看其网络地址。",
+    "public": "明文 HTTP,任何知道该地址的人都可以访问。",
+    "domain": "通过代理提供服务,并使用 TLS。",
+    "domainAuto": "自动地址。添加你自己的域名即可获得受信任的证书。",
+    "internal": "此服务器上的其他应用使用此名称和端口连接,例如 http://{{address}}。"
+  },
+  "test": {
+    "ok": "{{ms}} ms 内响应",
+    "failed": "应用在此地址上没有响应。它可能仍在启动中。",
+    "reason": {
+      "default": "应用在此地址上没有响应。它可能仍在启动中。",
+      "container_not_running": "应用当前未运行。",
+      "container_not_listening": "应用在此地址上没有响应。它可能仍在启动中。",
+      "firewall_closed": "此地址被阻止,很可能是服务器或托管服务商的防火墙造成的。",
+      "unreachable_from_host": "代理在此地址上尚无响应。",
+      "tls_not_issued": "证书尚不受信任,因此浏览器会显示警告。",
+      "proxy_route_missing": "代理尚无此地址的路由。",
+      "upstream_failing": "代理已连到服务器,但其后的应用没有响应。",
+      "app_error": "应用返回了错误。"
+    }
+  }
+}
