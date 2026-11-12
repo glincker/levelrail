@@ -53,8 +53,8 @@ func TestController_Reconcile_VaultEnv_NotConfigured_FailsLoudly(t *testing.T) {
 		t.Fatal("Reconcile() error = nil, want a failure: a vault-backed env var with nothing configured must never silently start a container missing it")
 	}
 	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
-		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != reasonSecretResolveFailed {
+		t.Errorf("condition = %+v, want Status=False Reason=SecretResolveFailed", cond)
 	}
 	if rt.createCalls != 0 {
 		t.Errorf("createCalls = %d, want 0", rt.createCalls)
