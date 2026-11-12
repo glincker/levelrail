@@ -1,0 +1,289 @@
+{
+  "connect": {
+    "title": "Connecter une source Git",
+    "intro": "Rattachez un dépôt à cette app sans la recréer. Choisissez un dépôt du fournisseur ou collez une URL publique, vérifiez le build, puis liez-le ou déployez tout de suite.",
+    "planTitle": "Ce qui change",
+    "planLoading": "Vérification de cette app et du dépôt...",
+    "current": {
+      "image": "Cette app s'exécute aujourd'hui à partir d'une image.",
+      "upload": "Cette app est servie aujourd'hui à partir de fichiers importés.",
+      "none": "Cette app n'a pas encore été déployée.",
+      "git": "Cette app a déjà un dépôt ; le lier le remplace."
+    },
+    "keepsImage": "{{image}} continue d'être servie jusqu'à la réussite du premier build, et reste dans l'historique des déploiements pour un rollback.",
+    "keepsNothingRunning": "Rien ne s'exécute encore, le premier build démarre l'app.",
+    "keptEnv_one": "{{count}} variable d'environnement conservée",
+    "keptEnv_other": "{{count}} variables d'environnement conservées",
+    "keptEnv_many": "{{count}} variables d'environnement conservées",
+    "keptSecrets_one": "{{count}} secret conservé",
+    "keptSecrets_other": "{{count}} secrets conservés",
+    "keptSecrets_many": "{{count}} secrets conservés",
+    "keptDomains_one": "{{count}} domaine conservé",
+    "keptDomains_other": "{{count}} domaines conservés",
+    "keptDomains_many": "{{count}} domaines conservés",
+    "keptVolumes_one": "{{count}} volume conservé",
+    "keptVolumes_other": "{{count}} volumes conservés",
+    "keptVolumes_many": "{{count}} volumes conservés",
+    "warning": {
+      "group_member": "Cette app fait partie d'un groupe : seul ce service est construit à partir du dépôt.",
+      "replaces_git_source": "Le dépôt actuel et son secret de webhook sont remplacés.",
+      "uploads_stop": "Les imports ultérieurs via la CLI fonctionnent toujours, mais le prochain push les remplace par un build.",
+      "never_deployed": "Il n'y a aucune version en cours d'exécution vers laquelle se rabattre tant que le premier build n'a pas réussi.",
+      "protected_environment": "Cette app est protégée : les déploiements passent par une approbation, faites donc un push sur la branche au lieu de déployer maintenant."
+    },
+    "detectError": {
+      "not_found": "Le dépôt ou la branche est introuvable. Vérifiez l'URL et la branche, ou ajoutez un token pour un dépôt privé.",
+      "access_denied": "Le fournisseur a refusé l'accès. Ajoutez un token de déploiement ou installez l'app sur ce dépôt.",
+      "unreadable": "Le dépôt n'a pas pu être lu. Vous pouvez toujours choisir le build à la main.",
+      "ssh_not_detectable": "Une URL SSH ne peut pas être lue avant la connexion. Connectez-la avec une clé de déploiement, puis lancez la détection depuis les paramètres de build, ou choisissez le build à la main.",
+      "unsupported_host": "Cet hôte ne peut pas être lu avant la connexion. Choisissez le build à la main, ou connectez d'abord puis lancez la détection depuis les paramètres de build."
+    },
+    "buildType": {
+      "railpack": "détection automatique",
+      "dockerfile": "Dockerfile",
+      "static": "site statique"
+    },
+    "suggested": "Build suggéré : {{build}} dans {{where}}",
+    "useSuggestion": "Utiliser ces paramètres",
+    "pickRepoToDetect": "Choisissez un dépôt pour détecter le build.",
+    "deployHint": "Déployez le dernier commit maintenant, ou gardez le lien et déployez au prochain push.",
+    "deployNow": "Déployer maintenant",
+    "deployStarted": "Build démarré depuis {{branch}}.",
+    "deployFailed": "Impossible de démarrer le déploiement.",
+    "deployRunning": "Build en cours. La version actuelle continue d'être servie jusqu'à la réussite du build.",
+    "viewDeploy": "Voir le déploiement"
+  },
+  "card": {
+    "title": "Source Git",
+    "loading": "Chargement...",
+    "pickRepoFirst": "Choisissez d'abord un dépôt ou collez une URL.",
+    "updated": "Source Git mise à jour.",
+    "saveFailed": "Impossible d'enregistrer la source Git.",
+    "disconnected": "Source Git déconnectée.",
+    "disconnectFailed": "Impossible de déconnecter la source Git.",
+    "needService": "Ajoutez au moins un service, ou revenez à un service unique.",
+    "rowsMissingName_one": "La ligne {{rows}} n'a pas de nom de service.",
+    "rowsMissingName_other": "Les lignes {{rows}} n'ont pas de nom de service.",
+    "rowsMissingName_many": "Les lignes {{rows}} n'ont pas de nom de service."
+  },
+  "triggers": {
+    "push": {
+      "label": "Chaque push",
+      "description": "Déployer à chaque push sur la branche cible."
+    },
+    "release": {
+      "label": "Tags et releases",
+      "description": "Déployer uniquement lors d'un push de tag ou (GitHub uniquement) d'une release publiée. Les push de branche ne déploient jamais."
+    }
+  },
+  "buildPacks": {
+    "railpack": "Détection automatique (Railpack)",
+    "dockerfile": "Dockerfile",
+    "static": "Site statique"
+  },
+  "connected": {
+    "repository": "Dépôt",
+    "branch": "Branche",
+    "deployTrigger": "Déclencheur de déploiement",
+    "deployToken": "Token de déploiement",
+    "tokenConfigured": "Configuré",
+    "tokenNotSet": "Non défini (dépôt public)",
+    "alsoDeploys": "Déploie aussi",
+    "servicesFanout": "Éclatement en services",
+    "webhookUrl": "URL du webhook",
+    "webhookNote": "Le secret du webhook n'a été affiché qu'une seule fois, lors de la connexion. Renouvelez-le ci-dessous pour en générer un nouveau, ou déconnectez puis reconnectez pour changer aussi le dépôt ou la branche.",
+    "edit": "Modifier",
+    "disconnect": "Déconnecter"
+  },
+  "justConnected": {
+    "autoRegistered": "Source Git connectée. Un webhook de push a été enregistré automatiquement, aucune configuration manuelle n'est nécessaire.",
+    "secretOnce": "Ce secret de webhook ne sera plus affiché. Collez maintenant les deux valeurs dans les paramètres de webhook du dépôt.",
+    "webhookUrl": "URL du webhook",
+    "webhookSecret": "Secret du webhook",
+    "secretHint": "Définissez-le comme secret d'un webhook GitHub \"Push\" pointant vers l'URL ci-dessus, avec le type de contenu application/json.",
+    "done": "Terminé"
+  },
+  "copy": {
+    "copy": "Copier",
+    "copied": "Copié"
+  },
+  "edit": {
+    "connectedTo": "Actuellement connecté à {{repo}} @ {{branch}}. Choisissez un autre dépôt ci-dessous pour le rediriger, ou laissez tel quel pour ne mettre à jour que les paramètres de build.",
+    "connectIntro": "Connectez un dépôt pour qu'un push sur sa branche cible déploie automatiquement cette app.",
+    "deployTrigger": "Déclencheur de déploiement",
+    "fanoutMode": "Éclatement multi-services",
+    "fanoutAdditional": "Services supplémentaires",
+    "fanoutServices": "Carte des services",
+    "connect": "Connecter",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "buildPack": {
+    "label": "Build pack",
+    "autoDetect": "Détection automatique",
+    "dockerfile": "Dockerfile",
+    "static": "Site statique",
+    "autoDetectDescription": "Recommandé. Levelrail détecte votre framework à partir du dépôt et le construit automatiquement, sans Dockerfile.",
+    "dockerfilePath": "Chemin du Dockerfile (facultatif)",
+    "staticDescription": "Servi directement par l'ingress Caddy intégré, sans conteneur."
+  },
+  "services": {
+    "additionalLabel": "Services supplémentaires (facultatif)",
+    "additionalDescription": "Reconstruit aussi ces services frères à partir du même push, pour un monorepo avec plus d'un service. Chacun a besoin de son propre nom de service existant et de sa configuration de build. Enregistrer avec une ligne renseignée utilise toujours la connexion directe de source git, même pour un dépôt de fournisseur choisi, car l'enregistrement automatique du webhook ne prend pas encore en charge l'éclatement de monorepo.",
+    "mapLabel": "Services (style app.yaml)",
+    "mapDescription": "Chaque push se répartit en un build et un déploiement indépendants par service, selon le même éclatement POST .../deploy-spec qu'un déploiement manuel multi-services, sous une seule app nommée {{appName}}. Remplace le build à service unique ci-dessus ; chaque clé de service devient son propre vrai service nommé {{appName}}-[key].",
+    "add": "Ajouter un service",
+    "removeAdditional": "Supprimer le service supplémentaire",
+    "remove": "Supprimer le service",
+    "duplicate": "Une autre ligne utilise déjà ce nom de service.",
+    "checking": "Vérification par rapport au schéma de la spécification de l'app...",
+    "serviceName": "Nom du service",
+    "buildType": "Type de build",
+    "buildPath": "Chemin de build",
+    "port": "Port"
+  },
+  "network": {
+    "networking": "Réseau",
+    "port": "Port",
+    "portPlaceholder": "p. ex. 3000",
+    "portHint": "Le port sur lequel votre app écoute dans son conteneur, p. ex. 3000 pour une app Next.js classique.",
+    "domain": "Domaine (facultatif)",
+    "domainDescription": "Routé dès que son enregistrement DNS pointe ici. Un certificat TLS est émis automatiquement, ou ajoutez-le plus tard depuis l'onglet Domaines de l'app.",
+    "healthCheck": "Health check",
+    "healthEnable": "Activer un health check",
+    "healthPath": "Chemin",
+    "healthHint": "Vérifié avant de basculer le trafic vers un nouveau conteneur, puis pour détecter un conteneur planté. Les apps détectées par Railpack qui ne servent pas ce chemin devraient le désactiver."
+  },
+  "sshKey": {
+    "title": "Clé de déploiement SSH",
+    "loading": "Chargement...",
+    "none": "Pas encore de clé",
+    "fingerprint": "Empreinte {{fingerprint}}",
+    "publicKey": "Clé publique",
+    "hint": "Ajoutez-la comme clé de déploiement en lecture seule chez l'hébergeur du dépôt.",
+    "hostPinned": "Clé d'hôte épinglée {{fingerprint}}",
+    "hostKeyChoice": "Comment épingler la clé d'hôte",
+    "mode": {
+      "paste": "Coller la clé d'hôte",
+      "tofu": "Confiance à la première utilisation"
+    },
+    "hostKeyLabel": "Clé d'hôte",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "Fait confiance à ce qui répond en premier. Vérifiez l'empreinte affichée ensuite.",
+    "generate": "Générer la clé",
+    "saved": "Clé de déploiement SSH enregistrée.",
+    "removed": "Clé de déploiement SSH supprimée.",
+    "rotate": "Renouveler",
+    "rotateTitle": "Renouveler la clé de déploiement SSH ?",
+    "rotateBody": "Une nouvelle clé remplace l'actuelle. Ajoutez la nouvelle clé publique chez l'hébergeur du dépôt, sinon les récupérations échoueront.",
+    "rotateConfirm": "Renouveler la clé",
+    "remove": "Supprimer",
+    "removeTitle": "Supprimer la clé de déploiement SSH ?",
+    "removeBody": "Les récupérations via SSH échoueront tant qu'une nouvelle clé n'est pas générée.",
+    "removeConfirm": "Supprimer la clé",
+    "cancel": "Annuler"
+  },
+  "dialog": {
+    "open": "Connecter une source Git",
+    "title": "Connecter une source Git",
+    "step": {
+      "source": "Étape 1 sur 3 : choisissez un fournisseur connecté ou collez l'URL d'un dépôt, puis une branche.",
+      "review": "Étape 2 sur 3 : examinez le build détecté et ce que l'app conserve.",
+      "finish": "Étape 3 sur 3 : le premier déploiement depuis ce dépôt."
+    },
+    "next": "Suivant",
+    "back": "Retour",
+    "done": "Terminé",
+    "linkOnly": "Lier uniquement",
+    "linked": "Dépôt lié. Faites un push sur la branche ou déployez quand vous êtes prêt.",
+    "reading": "Lecture du dépôt",
+    "pickService": "Quel service ce dépôt construit-il ?",
+    "effect": {
+      "unchanged": "conserve son image actuelle",
+      "keeps_own_source": "conserve sa propre source Git",
+      "built_with_this_source": "aussi reconstruit depuis ce dépôt"
+    },
+    "detected": "Build détecté : {{build}}",
+    "detectError": {
+      "not_found": "Dépôt ou branche introuvable.",
+      "access_denied": "Pas d'accès à ce dépôt. Choisissez-le depuis un fournisseur connecté.",
+      "unreadable": "Le dépôt n'a pas pu être lu. Vous pouvez toujours choisir le build à la main.",
+      "ssh_not_detectable": "Les URL SSH sont lues après la connexion.",
+      "unsupported_host": "Cet hôte ne peut pas être lu avant la connexion."
+    },
+    "kept": "Conservés : {{env}} variables d'environnement et secrets, {{domains}} domaines, {{volumes}} volumes.",
+    "protected": "Cette app est dans un environnement protégé. Liez uniquement, puis faites un push sur la branche pour que le déploiement passe par l'approbation.",
+    "failingStep": "Échec à l'étape : {{step}}",
+    "status": {
+      "queued": "En file",
+      "building": "Build en cours",
+      "ready": "En ligne",
+      "failed": "Échec",
+      "canceled": "Annulé",
+      "held": "Retenu",
+      "awaiting_approval": "En attente d'approbation",
+      "rolled_back": "Rollback effectué",
+      "superseded": "Remplacé"
+    },
+    "connectionNeedsRead": "Votre accès ne peut pas utiliser la connexion choisie pour lire les dépôts privés, le dépôt a donc été lu sans elle."
+  },
+  "inline": {
+    "title": "Déployer depuis un Dockerfile",
+    "hint": "Aucun dépôt git nécessaire. Collez un Dockerfile ou chargez-en un depuis votre machine.",
+    "loadFile": "Charger depuis un fichier",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "Ajouter un fichier de contexte",
+    "filePath": "Chemin du fichier de contexte {{n}}",
+    "fileContent": "Contenu du fichier de contexte {{n}}",
+    "pathPlaceholder": "path/in/context.txt",
+    "removeFile": "Supprimer le fichier de contexte {{n}}",
+    "deploy": "Déployer",
+    "started": "Build démarré.",
+    "failed": "Impossible de démarrer le build",
+    "deployId": "Déploiement {{id}} démarré."
+  },
+  "triggerPatterns": {
+    "title": "Motifs de déclenchement des déploiements",
+    "tagHelp": "Le mode release déploie aujourd'hui chaque push de tag. Listez des motifs de tag pour ne déployer que les tags correspondants, comme v* pour un train de releases.",
+    "branchHelp": "Le mode push déploie aujourd'hui les push sur {{branch}}. Listez des motifs de branche pour déployer à la place les branches correspondantes de ce dépôt, comme main et release/*.",
+    "tagLabel": "Tags qui déploient",
+    "branchLabel": "Branches qui déploient",
+    "syntax": "Un motif par ligne ou séparés par des virgules. * reste dans un seul segment de chemin, ** traverse /, ? correspond à un caractère. Un motif commençant par ! exclut et l'emporte toujours. Laissez vide pour conserver la valeur par défaut. Les push ignorés affichent leur raison dans les livraisons de webhook.",
+    "save": "Enregistrer les motifs",
+    "saving": "Enregistrement...",
+    "saved": "Motifs de déclenchement enregistrés.",
+    "failed": "Impossible d'enregistrer les motifs de déclenchement."
+  },
+  "fetchExtras": {
+    "title": "Sous-modules et LFS",
+    "note": "Récupère les sous-modules git (https uniquement) et les objets LFS avant chaque build. Les identifiants ne vont qu'à l'hébergeur du dépôt.",
+    "submodules": "Récupérer les sous-modules",
+    "lfs": "Récupérer les objets LFS",
+    "saved": "Paramètres de récupération de la source enregistrés.",
+    "failed": "Impossible d'enregistrer les paramètres de récupération de la source"
+  },
+  "buildSettings": {
+    "title": "Paramètres de build",
+    "description": "Options enregistrées utilisées par tous les builds suivants. L'enregistrement ne démarre pas de déploiement.",
+    "builder": "Constructeur",
+    "dockerfile": "Chemin du Dockerfile",
+    "target": "Étape cible",
+    "provider": "Fournisseur Railpack",
+    "providerAuto": "Détecter automatiquement",
+    "noCache": "Ignorer le cache de couches pour les builds Dockerfile",
+    "needsGit": "Connectez une source git pour changer le constructeur ou le chemin du Dockerfile.",
+    "save": "Enregistrer les paramètres de build",
+    "saving": "Enregistrement...",
+    "saved": "Paramètres de build enregistrés",
+    "failed": "Impossible d'enregistrer les paramètres de build",
+    "errors": {
+      "tooLong": "Cette valeur est trop longue.",
+      "targetCharset": "Utilisez des lettres, des chiffres, des points, des tirets bas ou des tirets, en commençant par une lettre ou un chiffre.",
+      "pathRelative": "Utilisez un chemin à l'intérieur du dépôt, sans .. ni barre oblique initiale.",
+      "provider": "Choisissez un fournisseur pris en charge."
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
+  }
+}

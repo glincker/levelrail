@@ -1,0 +1,301 @@
+{
+  "retry": "Réessayer",
+  "nav": {
+    "label": "Sections du CDN",
+    "overview": "Vue d'ensemble",
+    "caches": "Caches",
+    "redirects": "Redirections",
+    "routing": "Règles de routage"
+  },
+  "window": {
+    "label": "Période",
+    "5m": "5 minutes",
+    "1h": "1 heure",
+    "24h": "24 heures"
+  },
+  "overview": {
+    "title": "CDN et caches",
+    "description": "Requêtes, erreurs et succès du cache sur toutes les apps, et lesquels de vos serveurs y ont répondu."
+  },
+  "tiles": {
+    "requests": "Requêtes",
+    "perSecond": "{{rate}} par seconde",
+    "requestsInfo": "Requêtes traitées par l'ingress sur cette période, d'après les métriques de requêtes.",
+    "errors": "Erreurs serveur (5xx)",
+    "errorsInfo": "Part des requêtes ayant reçu un statut 5xx, y compris les erreurs de l'app.",
+    "hitRate": "Taux de succès du cache",
+    "hitRateInfo": "Succès divisés par succès plus échecs sur les chemins en cache, pour les {{minutes}} dernières minutes. Les requêtes qui contournent le cache ne sont pas comptées.",
+    "hitRateSince": "Succès divisés par succès plus échecs sur les chemins en cache. Compté en mémoire depuis le démarrage de l'ingress, donc remis à zéro au redémarrage.",
+    "saved": "Bande passante économisée",
+    "savedInfo": "Octets de corps de réponse servis depuis le cache plutôt que par l'app, pour les {{minutes}} dernières minutes.",
+    "savedSince": "Octets de corps de réponse servis depuis le cache plutôt que par l'app, depuis le démarrage de l'ingress.",
+    "entries": "Objets en cache",
+    "memory": "Mémoire du cache",
+    "memoryInfo": "Octets conservés dans l'ingress par rapport à son plafond. Les objets les plus anciens et les moins utilisés sont supprimés en premier quand le plafond est atteint.",
+    "none": "Pas de données"
+  },
+  "nodes": {
+    "title": "D'où le trafic est servi",
+    "help": "Les requêtes sont comptées pour le serveur sur lequel chaque app s'exécute. La localisation des visiteurs n'est pas mesurée.",
+    "aria": "Part des requêtes par serveur",
+    "local": "Ce serveur",
+    "apps_one": "{{count}} app",
+    "apps_other": "{{count}} apps",
+    "apps_many": "{{count}} apps",
+    "noRegions": "Pas encore de libellés de région. Ajoutez-en un à un serveur sur la page Nodes pour le voir ici.",
+    "emptyTitle": "Aucune requête sur cette période",
+    "emptyBody": "Les parts apparaissent dès qu'une app derrière un domaine reçoit du trafic.",
+    "emptyAction": "Ouvrir les domaines"
+  },
+  "cacheCard": {
+    "title": "Cache",
+    "help": "Les succès sont servis par l'ingress. Les échecs vont à l'app.",
+    "open": "Ouvrir les caches"
+  },
+  "chart": {
+    "empty": "Pas encore d'activité du cache. Activez le cache pour un domaine pour voir ici les succès et les échecs.",
+    "aria": "{{hits}} succès et {{misses}} échecs du cache sur les {{minutes}} dernières minutes",
+    "span": "{{minutes}} dernières minutes",
+    "hits": "Succès",
+    "misses": "Échecs"
+  },
+  "caches": {
+    "title": "Caches",
+    "description": "Le cache de réponses de l'ingress : son efficacité pour chaque app et comment le vider.",
+    "scopeTitle": "Où vivent les entrées",
+    "scopeBody": "Un seul cache en mémoire dans l'ingress de ce control plane sert toutes les apps, y compris celles d'autres serveurs. Les purges s'y appliquent. Les objets sont étiquetés avec l'en-tête de réponse {{tag}}. Les compteurs sont remis à zéro au redémarrage de l'ingress, et un cache de périphérie par serveur n'est pas encore disponible.",
+    "chartTitle": "Taux de succès dans le temps",
+    "chartHelp": "Succès et échecs du cache par minute sur toutes les apps.",
+    "tabApps": "Apps",
+    "tabPurge": "Purge",
+    "tabHistory": "Historique"
+  },
+  "apps": {
+    "app": "App",
+    "cache": "Cache",
+    "onFor": "Activé pour {{on}} domaines sur {{total}}",
+    "off": "Désactivé",
+    "requests": "Requêtes pouvant être mises en cache",
+    "hitRate": "Taux de succès",
+    "saved": "Bande passante économisée",
+    "aria": "Taux de succès du cache par app, de la plus sollicitée à la moins sollicitée",
+    "emptyTitle": "Aucune app pour l'instant",
+    "emptyBody": "Déployez une app et donnez-lui un domaine, puis activez le cache.",
+    "emptyAction": "Ouvrir les apps",
+    "why": "Pourquoi pas en cache"
+  },
+  "picker": {
+    "label": "App"
+  },
+  "purge": {
+    "scopeLegend": "Que purger",
+    "scope": {
+      "url": {
+        "title": "Une URL",
+        "help": "Un chemin et une requête, toutes les variantes.",
+        "field": "Chemin et requête"
+      },
+      "prefix": {
+        "title": "Préfixe de chemin",
+        "help": "Tout ce qui se trouve sous un chemin.",
+        "field": "Préfixe de chemin"
+      },
+      "tag": {
+        "title": "Tag de cache",
+        "help": "Objets que votre app a étiquetés dans un en-tête de réponse.",
+        "field": "Tag de cache"
+      },
+      "all": {
+        "title": "Tout",
+        "help": "Vide l'intégralité du cache pour ce périmètre.",
+        "field": ""
+      }
+    },
+    "allNote": "Supprime toutes les réponses en cache pour {{target}}. La prochaine requête vers chaque URL va à l'app.",
+    "action": "Purger",
+    "purging": "Purge en cours",
+    "done_one": "{{count}} réponse en cache supprimée.",
+    "done_other": "{{count}} réponses en cache supprimées.",
+    "done_many": "{{count}} réponses en cache supprimées.",
+    "confirmTitle": "Tout purger pour {{target}} ?",
+    "confirmBody": "Toutes les réponses en cache sont supprimées de l'ingress.",
+    "consequenceOrigin": "L'app reçoit de nouveau toutes les requêtes jusqu'à ce que le cache se remplisse, attendez-vous donc à un pic de charge.",
+    "consequenceUndo": "Cette action est irréversible. Elle est enregistrée dans l'historique des purges.",
+    "confirm": "Tout purger"
+  },
+  "history": {
+    "aria": "Purges du cache pour {{app}}, de la plus récente à la plus ancienne",
+    "when": "Quand",
+    "who": "Qui",
+    "domain": "Domaine",
+    "scope": "Quoi",
+    "removed": "Supprimé",
+    "emptyTitle": "Aucune purge pour l'instant",
+    "emptyBody": "Les purges lancées depuis le tableau de bord, la CLI ou l'API sont listées ici avec leur auteur."
+  },
+  "app": {
+    "subtitle": "Mettez en cache les fichiers statiques et les autres réponses sûres à l'ingress pour que les requêtes répétées n'atteignent jamais votre app. Les pages dynamiques restent hors cache sauf si votre app ou une règle l'autorise.",
+    "presetTitle": "Mettre en cache les ressources statiques",
+    "presetBody": "Ajoute une règle pour les images, scripts, styles et polices, et active le cache. Le Cache-Control de votre app l'emporte toujours, et les réponses avec cookies ne sont jamais stockées.",
+    "presetAction": "Mettre en cache les ressources statiques",
+    "presetApplying": "Application",
+    "domain": "Domaine",
+    "state": "Cache",
+    "on": "Activé",
+    "off": "Désactivé",
+    "rules": "Règles",
+    "edit": "Modifier",
+    "editRules": "Modifier les règles",
+    "domainsAria": "Paramètres de cache pour les domaines de {{app}}",
+    "chartTitle": "Taux de succès dans le temps",
+    "counts": "{{hits}} succès, {{misses}} échecs, {{bypasses}} contournés depuis le démarrage de l'ingress.",
+    "noDomainsTitle": "Cette app n'a pas de domaine",
+    "noDomainsBody": "Le cache se place devant les domaines. Ajoutez-en un pour commencer à mettre en cache.",
+    "noDomainsAction": "Ajouter un domaine"
+  },
+  "controls": {
+    "domain": "Domaine",
+    "app": "App",
+    "open": "Ouvrir",
+    "docs": "Guide des contrôles du trafic",
+    "tab": {
+      "redirects": "Redirections",
+      "forwarding": "Redirection de chemins",
+      "headers": "En-têtes"
+    },
+    "redirects": {
+      "title": "Redirections",
+      "description": "Forcez HTTPS, choisissez un hôte canonique et redirigez les anciennes adresses. Chaque domaine a ses propres paramètres.",
+      "aria": "Domaines et leurs paramètres de redirection"
+    },
+    "routing": {
+      "title": "Règles de routage",
+      "description": "Envoyez des chemins vers une autre app ou URL et définissez les en-têtes de requête et de réponse. Chaque domaine a ses propres paramètres.",
+      "aria": "Domaines et leurs paramètres de routage"
+    },
+    "emptyTitle": "Aucun domaine à configurer pour l'instant",
+    "emptyBody": "Ajoutez d'abord un domaine à une app. Ses contrôles de redirection et de routage apparaissent alors ici.",
+    "emptyAction": "Ouvrir les domaines"
+  },
+  "thirdParty": {
+    "title": "Utilisation de Cloudflare, Akamai ou Fastly en amont",
+    "headers": "Envoyez Cache-Control (et un en-tête de tag comme Cache-Tag) depuis votre app. Le CDN et l'ingress les respectent tous les deux.",
+    "clientIp": "Ajoutez les plages d'adresses du CDN au paramètre des proxys de confiance pour que les IP des visiteurs, les limites de débit et les règles de pays utilisent la vraie adresse du client.",
+    "plugins": "Des intégrations officielles pour la purge du CDN et l'orientation du trafic sont prévues via le système de plugins. Rien n'est connecté aujourd'hui.",
+    "docs": "Lire le guide"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "Origine",
+      "edge": "Périphérie"
+    }
+  },
+  "reasons": {
+    "column": "Pourquoi pas en cache",
+    "none": "Rien ne bloque le cache",
+    "fixVary": "Ajouter {{header}} à Vary",
+    "nextjsHelp": "Cela ressemble à une app Next.js. Le préréglage Next.js indexe les pages en cache selon les en-têtes de son routeur.",
+    "nextjsFix": "Appliquer le préréglage Next.js",
+    "short": {
+      "vary_header": "L'app varie selon {{header}}",
+      "set_cookie": "Les réponses définissent un cookie",
+      "private": "Les réponses sont marquées privées",
+      "no_store": "Les réponses interdisent le stockage (no-store)",
+      "no_cache": "Les réponses exigent une revalidation (no-cache)",
+      "status_not_cached": "Le statut de la réponse n'est pas mis en cache",
+      "too_large": "Les réponses sont trop volumineuses",
+      "range": "Les requêtes Range contournent le cache",
+      "authorization": "Les requêtes portent des identifiants",
+      "cookie_request": "Les requêtes portent des cookies",
+      "upgrade": "Les requêtes Upgrade contournent le cache",
+      "other": "Autres raisons"
+    },
+    "long": {
+      "vary_header": "les réponses varient selon l'en-tête {{header}}, qu'aucune règle de cache ne liste, elles ne peuvent donc pas être stockées en toute sécurité.",
+      "set_cookie": "les réponses définissent un cookie, elles sont donc personnelles et ne sont pas stockées.",
+      "private": "les réponses sont marquées privées par l'app.",
+      "no_store": "les requêtes ou les réponses indiquent no-store.",
+      "no_cache": "les réponses indiquent no-cache, elles doivent donc être vérifiées auprès de l'app à chaque fois.",
+      "status_not_cached": "les réponses avaient un statut que la règle ne met pas en cache. Ajoutez le statut à la règle pour le mettre en cache.",
+      "too_large": "les réponses dépassaient la limite de cache par objet.",
+      "range": "les requêtes demandaient une partie d'un fichier (Range), ce qui n'est jamais mis en cache.",
+      "authorization": "les requêtes portaient un en-tête Authorization, elles ne sont donc jamais mises en cache.",
+      "cookie_request": "les requêtes portaient un cookie. Activez la mise en cache avec cookies dans la règle si la page est identique pour tout le monde.",
+      "upgrade": "les requêtes demandaient un changement de protocole (WebSocket), ce qui n'est jamais mis en cache.",
+      "other": "les requêtes ont été exclues du cache pour des raisons moins courantes."
+    }
+  },
+  "proxy": {
+    "title": "Proxy Cloudflare",
+    "body": "Faites passer les domaines de cette app par Cloudflare lorsque Levelrail écrit leurs enregistrements DNS. Les enregistrements existants changent à la prochaine exécution de la correction DNS.",
+    "following": "Suit le paramètre du serveur, actuellement {{state}}.",
+    "override": "Défini pour cette app uniquement.",
+    "reset": "Suivre le paramètre du serveur",
+    "on": "activé",
+    "off": "désactivé"
+  },
+  "edge": {
+    "title": "Périphérie",
+    "pipelineLabel": "Pipeline Git vers la périphérie",
+    "stage": {
+      "git": "Git",
+      "build": "Build",
+      "deploy": "Déploiement",
+      "dns": "DNS",
+      "edge": "Périphérie"
+    },
+    "noDeploy": "Pas encore de déploiement",
+    "dns": "{{count}} enregistrements gérés",
+    "dnsNone": "Aucun enregistrement géré",
+    "health": {
+      "direct": "Direct",
+      "ok": "Via proxy",
+      "attention": "Nécessite votre attention"
+    },
+    "cache": "Cache {{rate}} % de succès, {{entries}} entrées",
+    "lastPurge": "Dernière purge {{when}} ({{scope}})",
+    "purgeFailed": "Échec de la purge : {{error}}",
+    "override": "Périphérie forcée sur {{state}} pour cette app",
+    "overrideOn": "activée",
+    "overrideOff": "désactivée",
+    "provider": "{{provider}} zone {{zone}}, SSL {{mode}}",
+    "setup": "Configurer le CDN",
+    "purges": "Purges récentes",
+    "loading": "Chargement du statut de la périphérie"
+  },
+  "setup": {
+    "title": "Configuration du CDN",
+    "description": "Vérifie le fournisseur, le mode SSL, le challenge DNS et le plan DNS. Il signale les corrections et ne modifie jamais les paramètres de votre zone.",
+    "dryRun": "Lancer une simulation",
+    "running": "Vérification...",
+    "apply": "Appliquer",
+    "applying": "Application...",
+    "close": "Fermer",
+    "provider": "Fournisseur",
+    "providerAuto": "Détecter automatiquement",
+    "fix": "Corriger",
+    "applied": "Appliqué. Le statut de la périphérie s'actualise sous peu.",
+    "dryRunDone": "Simulation uniquement. Rien n'a été modifié.",
+    "result": {
+      "ok": "Toutes les vérifications ont réussi",
+      "warn": "Réussi avec des avertissements",
+      "fail": "Corrigez d'abord les étapes en échec"
+    },
+    "status": {
+      "ok": "OK",
+      "warn": "Avertissement",
+      "fail": "Échec",
+      "skipped": "Ignoré"
+    },
+    "step": {
+      "provider": "Fournisseur",
+      "ssl_mode": "Mode SSL",
+      "acme_dns01": "Challenge DNS ACME",
+      "client_address": "Adresse du client",
+      "dns_plan": "Plan DNS",
+      "apply": "Application",
+      "verify": "Vérification"
+    },
+    "error": "Échec de la configuration du CDN : {{message}}"
+  }
+}
