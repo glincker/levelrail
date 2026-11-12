@@ -1,7 +1,12 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { KeyboardGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
+import {
+  FolderGlassIcon,
+  GlobeGlassIcon,
+  KeyboardGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { usePageActions } from '@/lib/pageActions'
 import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
@@ -77,6 +82,32 @@ export function usePaletteBaseItems(
         go,
         tCommon('shell.locked.paletteSubtitle'),
       ),
+    )
+    const createWords = t('create.keywords')
+    for (const i of items) {
+      if (i.key.startsWith('action-create-') || i.key === 'action-new-app') {
+        i.keywords = `${createWords} ${i.keywords ?? ''}`.trim()
+      } else if (i.group === 'Navigate') {
+        i.keywords = `${t('goTo')} ${i.keywords ?? ''}`.trim()
+      }
+    }
+    items.push(
+      {
+        key: 'action-create-domain',
+        label: t('create.domain'),
+        keywords: createWords,
+        group: 'Actions',
+        icon: <GlobeGlassIcon size="1.4em" />,
+        run: go('/domains'),
+      },
+      {
+        key: 'action-create-project',
+        label: t('create.project'),
+        keywords: createWords,
+        group: 'Actions',
+        icon: <FolderGlassIcon size="1.4em" />,
+        run: go('/projects'),
+      },
     )
     for (const a of pageActions) items.push({ ...a, group: 'Actions' })
     items.push({ ...THEME_ACTION, run: () => setTheme(NEXT_THEME[theme]) })

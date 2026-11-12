@@ -7,6 +7,9 @@ const PREFIX = 1000
 const WORD_PREFIX = 700
 const SUBSTRING = 450
 const SUBSEQUENCE = 200
+const TYPO = 120
+// Typo tolerance only applies to queries at least this long, shorter ones would match everything.
+const TYPO_MIN_LENGTH = 4
 const KEYWORD_EXACT = 420
 const KEYWORD_PREFIX = 380
 const KEYWORD_SUBSTRING = 260
@@ -25,6 +28,27 @@ function isSubsequence(q: string, t: string): boolean {
   return true
 }
 
+/** True when a and b differ by at most one insert, delete, substitution or adjacent swap. */
+export function withinOneEdit(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > 1) return false
+  let i = 0
+  while (i < a.length && i < b.length && a[i] === b[i]) i++
+  if (i === a.length && i === b.length) return true
+  const restA = a.slice(i)
+  const restB = b.slice(i)
+  if (a.length === b.length) {
+    if (restA.slice(1) === restB.slice(1)) return true
+    return (
+      restA[0] === restB[1] &&
+      restA[1] === restB[0] &&
+      restA.slice(2) === restB.slice(2)
+    )
+  }
+  return a.length > b.length
+    ? restA.slice(1) === restB
+    : restA === restB.slice(1)
+}
+
 /** Scores one query token against label text: prefix > word > substring > subsequence. */
 export function scoreToken(token: string, text: string): number | null {
   const q = token.toLowerCase()
@@ -35,6 +59,14 @@ export function scoreToken(token: string, text: string): number | null {
   if (words(t).some((w) => w.startsWith(q))) return WORD_PREFIX + tie
   if (t.includes(q)) return SUBSTRING + tie
   if (q.length >= 2 && isSubsequence(q, t)) return SUBSEQUENCE + tie
+  if (
+    q.length >= TYPO_MIN_LENGTH &&
+    words(t).some(
+      (w) => withinOneEdit(q, w.slice(0, q.length)) || withinOneEdit(q, w),
+    )
+  ) {
+    return TYPO + tie
+  }
   return null
 }
 

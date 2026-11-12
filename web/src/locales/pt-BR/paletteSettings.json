@@ -1,0 +1,12 @@
+{
+  "items": {
+    "email-log": {
+      "title": "Log de entrega de e-mails",
+      "description": "Cada tentativa de envio de e-mail com o seu resultado."
+    },
+    "network-shares": {
+      "title": "Compartilhamentos de rede",
+      "description": "Origens de volumes remotos que qualquer serviço de app pode anexar."
+    }
+  }
+}
