@@ -232,12 +232,7 @@
     }
   },
   "bubbles": {
-    "label": "最近とおすすめ",
-    "recent": "最近",
-    "mostUsed": "よく使う",
-    "nextUp": "次の候補",
-    "remove": "{{name}}を削除",
-    "clear": "履歴をクリア"
+    "label": "最近とおすすめ"
   },
   "mail": {
     "addMailbox": "メール: メールボックスを追加",

@@ -232,12 +232,7 @@
     }
   },
   "bubbles": {
-    "label": "Zuletzt und vorgeschlagen",
-    "recent": "Zuletzt",
-    "mostUsed": "Am häufigsten",
-    "nextUp": "Als Nächstes",
-    "remove": "{{name}} entfernen",
-    "clear": "Verlauf löschen"
+    "label": "Zuletzt und vorgeschlagen"
   },
   "mail": {
     "addMailbox": "Mail: Postfach hinzufügen",

@@ -232,12 +232,7 @@
     }
   },
   "bubbles": {
-    "label": "Recentes e sugeridos",
-    "recent": "Recentes",
-    "mostUsed": "Mais usados",
-    "nextUp": "A seguir",
-    "remove": "Remover {{name}}",
-    "clear": "Limpar histórico"
+    "label": "Recentes e sugeridos"
   },
   "mail": {
     "addMailbox": "Mail: Adicionar caixa de e-mail",

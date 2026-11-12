@@ -10,7 +10,7 @@ describe('LanguageSelect', () => {
     const select = screen.getByRole('combobox')
     expect(select).toHaveValue('es')
     const names = screen.getAllByRole('option').map((o) => o.textContent)
-    expect(names).toEqual(['English (en)', 'español (es)'])
+    expect(names).toEqual(['English (en)', 'Español (es)'])
   })
 
   it('maps a regional language onto the supported code', () => {
@@ -42,7 +42,7 @@ describe('LanguageSelect', () => {
     })
     expect(screen.getByText('es')).toBeTruthy()
     expect(
-      screen.getByRole('combobox', { name: /Cambiar idioma, actual: español/ }),
+      screen.getByRole('combobox', { name: /Cambiar idioma, actual: Español/ }),
     ).toBeTruthy()
   })
 })

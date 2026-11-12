@@ -232,12 +232,7 @@
     }
   },
   "bubbles": {
-    "label": "最近和建议",
-    "recent": "最近",
-    "mostUsed": "最常用",
-    "nextUp": "下一步",
-    "remove": "移除 {{name}}",
-    "clear": "清除历史"
+    "label": "最近和建议"
   },
   "mail": {
     "addMailbox": "邮件：添加邮箱",
