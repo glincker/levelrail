@@ -116,7 +116,7 @@
     "title": "从 git 部署",
     "intro": "将此栈连接到某个仓库。每次推送（或发布）都会从该分支重新部署 compose 文件。",
     "loading": "正在加载 git 连接",
-    "formLabel": "此栈的 git 连接",
+    "formLabel": "此栈的 Git 连接",
     "repoUrl": "仓库 URL",
     "repoPlaceholder": "https://github.com/acme/stack.git",
     "branch": "分支",
@@ -132,7 +132,7 @@
     "save": "保存更改",
     "cancel": "取消",
     "edit": "编辑",
-    "updated": "git 连接已更新",
+    "updated": "Git 连接已更新",
     "state": "当前状态",
     "fromGit": "已从 git 部署",
     "notFromGit": "尚未从 git 部署",
@@ -162,7 +162,7 @@
       "frozen": "此应用的部署目前处于冻结状态。请在冻结结束后重试。",
       "pollNotAllowed": "compose 栈只能在推送或发布时部署，不提供轮询。",
       "notDeployed": "请先部署一次该栈，再连接其仓库。",
-      "noMasterKey": "git 连接需要此控制平面上有主密钥。",
+      "noMasterKey": "Git 连接需要此控制平面上有主密钥。",
       "generic": "出了点问题。"
     }
   },
