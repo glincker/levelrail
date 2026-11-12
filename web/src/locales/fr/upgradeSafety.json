@@ -1,0 +1,56 @@
+{
+  "title": "Avant de mettre à niveau",
+  "loading": "Contrôle de l'espace disque, de la sauvegarde et de l'indisponibilité",
+  "loadError": "Impossible de contrôler cette mise à niveau : {{message}}",
+  "loadErrorNext": "Rechargez la page ou réessayez dans une minute. Rien n'a été modifié.",
+  "retry": "Réessayer",
+  "change": {
+    "label": "Ce qui change",
+    "fromTo": "{{from}} vers {{to}}",
+    "migrations_one": "1 migration de base de données",
+    "migrations_many": "{{count}} migrations de base de données",
+    "migrations_other": "{{count}} migrations de base de données",
+    "noMigrations": "Aucune migration de base de données",
+    "schema": "schéma {{from}} vers {{to}}",
+    "schemaNote": "({{schema}})",
+    "breaking_one": "1 changement cassant",
+    "breaking_many": "{{count}} changements cassants",
+    "breaking_other": "{{count}} changements cassants",
+    "noBreaking": "Aucun changement cassant"
+  },
+  "checks": {
+    "label": "Contrôles",
+    "diskOk": "Disque OK : {{free}} libres, {{needed}} nécessaires",
+    "diskShort": "Disque insuffisant : {{free}} libres, {{needed}} nécessaires",
+    "diskUnknown": "L'espace disque libre n'a pas pu être mesuré",
+    "backupAt": "La sauvegarde va dans {{dir}}",
+    "backupSkipped": "Sauvegarde ignorée, il n'y aura pas de point de restauration",
+    "backupNone": "Aucune sauvegarde pré-mise à niveau n'est configurée"
+  },
+  "downtime": {
+    "label": "Indisponibilité",
+    "estimate": "Environ {{seconds}} s hors ligne pendant le redémarrage du serveur",
+    "restart": "Redémarrage : {{behaviour}}"
+  },
+  "restore": {
+    "label": "En cas de problème, restaurez avec",
+    "after": "Conservez cette commande. Elle restaure la base de données dans l'état où elle était avant la mise à niveau.",
+    "copyLabel": "Commande de restauration"
+  },
+  "blocked": {
+    "disk": "Espace disque libre insuffisant. Libérez {{short}} ou déplacez le répertoire de données, puis rechargez.",
+    "plan": "Cette mise à niveau ne peut pas démarrer : {{reason}}",
+    "planUnknown": "Le plan de mise à niveau a échoué. Rechargez la page, ou lancez la mise à niveau en ligne de commande.",
+    "notes": "Les notes de version ne sont pas encore disponibles. Réessayez dans un instant."
+  },
+  "skip": {
+    "toggle": "Avancé",
+    "label": "Ignorer la sauvegarde pré-mise à niveau",
+    "warning": "Aucun point de restauration ne sera créé. Si la mise à niveau échoue, vous ne pourrez pas revenir aux données actuelles.",
+    "hint": "La sauvegarde a échoué. Corrigez la cause et réessayez, ou ignorez-la à vos risques."
+  },
+  "backupFailed": {
+    "title": "La sauvegarde pré-mise à niveau a échoué, donc rien n'a été modifié",
+    "next": "Libérez de l'espace disque ou vérifiez que le répertoire de sauvegarde est accessible en écriture, puis appuyez à nouveau sur Mettre à niveau. Vous pouvez aussi ignorer la sauvegarde sous Avancé."
+  }
+}
