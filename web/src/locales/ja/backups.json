@@ -1,0 +1,485 @@
+{
+  "health": {
+    "title": "バックアップの健全性",
+    "description": "バックアップ済みのすべてのデータベースとアプリのボリュームを、アプリごとにまとめています。バックアップは、リストアが動作することが確認されて初めて、有効とみなされます。",
+    "loadFailed": "バックアップの健全性を読み込めませんでした: {{error}}",
+    "empty": "バックアップ済みのリソースはまだありません。データベースまたはアプリのボリュームの各ページから、バックアップをスケジュールするか、実行してください。",
+    "databasesGroup": "データベース",
+    "appGroup": "アプリ {{name}}",
+    "columns": {
+      "resource": "リソース",
+      "state": "状態",
+      "lastBackup": "最終バックアップ",
+      "lastRestore": "最終の検証済みリストア",
+      "size": "サイズ",
+      "nextRun": "次回の実行",
+      "actions": "操作"
+    },
+    "state": {
+      "healthy": "正常",
+      "warning": "要対応",
+      "failing": "失敗中",
+      "unverified": "未検証",
+      "unprotected": "バックアップなし"
+    },
+    "never": "未検証",
+    "none": "まだありません",
+    "notScheduled": "スケジュールなし",
+    "encrypted": "暗号化済み",
+    "notEncrypted": "暗号化なし",
+    "backups": "バックアップ{{count}}件",
+    "restoreProven": "{{when}}にリストアを確認済み",
+    "drillFailed": "前回の訓練は失敗しました",
+    "runDrill": "リストアを検証",
+    "drillStarted": "リストア訓練を開始しました",
+    "drillStartedDescription": "一時的なリソースにリストアし、検証してから、削除します。結果は、訓練の履歴に表示されます。",
+    "drillFailedToast": "リストア訓練を開始できませんでした",
+    "restore": "リストア",
+    "restoreDatabase": "リストアのオプション",
+    "policy": "ポリシー"
+  },
+  "encryption": {
+    "on": "新しいボリュームのバックアップは、アップロードする前に、このサーバー上で圧縮され、暗号化されます。公開鍵: {{key}}",
+    "off": "新しいボリュームのバックアップは圧縮されますが、暗号化されません。バケットにアクセスできる人は、誰でも読み取れます。",
+    "keyHint": "キーファイル(APP_BACKUP_ENCRYPTION_KEY_FILE。既定ではデータディレクトリのbackup-encryption.key)のコピーを、このサーバーの外に保管してください。そうしないと、災害後に暗号化されたバックアップをリストアできません。",
+    "column": "暗号化",
+    "badge": "暗号化済み"
+  },
+  "protection": {
+    "title": "バケットの保護",
+    "check": "バケットを確認",
+    "checking": "確認中...",
+    "checkFailed": "バックアップのバケットを調べられませんでした",
+    "locked": "オブジェクトロックがオンです",
+    "versioned": "バージョニングがオンです",
+    "open": "キーを持つ人なら誰でも、バックアップを削除できます",
+    "probeError": "このバケットを調べられませんでした: {{error}}",
+    "target": "保存先 {{id}}"
+  },
+  "restoreWizard": {
+    "title": "{{app}}/{{volume}}をリストア",
+    "description": "リストアは、常に新しいボリュームに対して行われます。既存のボリュームが上書きされることはありません。",
+    "stepBackup": "バックアップを選択",
+    "stepDestination": "場所を選択",
+    "stepConfirm": "確認",
+    "backup": "バックアップ",
+    "noBackups": "このボリュームには、リストアできる、成功したバックアップがありません。",
+    "destination": "リストア先",
+    "sameApp": "元のボリュームの隣に、新しいボリューム",
+    "otherApp": "別のアプリ用の新しいボリューム",
+    "targetApp": "アプリ名",
+    "targetAppHint": "このアプリをデプロイすると、リストアされたデータがマウントされるように、ボリュームに名前が付けられます。",
+    "node": "ノード",
+    "sameNode": "アプリと同じノード",
+    "newName": "ボリューム名",
+    "newNameHint": "空欄にすると、自動で生成されます。",
+    "summary": "バックアップ{{backup}}を、{{node}}上の新しいボリューム{{name}}にリストアします。",
+    "generatedName": "自動生成された名前",
+    "next": "次へ",
+    "back": "戻る",
+    "start": "リストアを開始",
+    "cancel": "キャンセル",
+    "started": "{{name}}にリストアしています",
+    "startedDescription": "進捗は、このボリュームのリストア履歴で確認できます。",
+    "failed": "リストアを開始できませんでした"
+  },
+  "policy": {
+    "title": "{{app}}/{{volume}}のバックアップポリシー",
+    "description": "保持数は、直近のN日、N週、Nか月ごとに、最新のバックアップを1つずつ残します。フックは、アプリのコンテナ内で実行されます。",
+    "daily": "日次の保持数",
+    "weekly": "週次の保持数",
+    "monthly": "月次の保持数",
+    "retentionHint": "0にすると、その区分はオフになります。保持数は、スケジュール自身の直近の保持数と、期間の上限と組み合わされます。",
+    "preHook": "バックアップ前のコマンド",
+    "preHookHint": "ゼロ以外の終了コードでバックアップは失敗するため、整合性のないボリュームがアーカイブされることはありません。",
+    "hooksHidden": "フックのコマンドを変更するにはwrite:sensitive権限が必要なため、非表示になっています。",
+    "postHook": "バックアップ後のコマンド",
+    "pause": "アーカイブのストリーミング中、アプリを一時停止",
+    "pauseHint": "コンテナ内のすべてのプロセスを凍結し、アーカイブ中にファイルが変わらないようにします。アップロードが終わるまで、アプリは利用できません。",
+    "save": "ポリシーを保存",
+    "saved": "バックアップポリシーを保存しました",
+    "failed": "バックアップポリシーを保存できませんでした",
+    "loadFailed": "バックアップポリシーを読み込めませんでした: {{error}}"
+  },
+  "drills": {
+    "title": "リストア訓練",
+    "description": "一時的なリソースに対して行う、スケジュールされたリストアと手動のリストアです。訓練に失敗すると、restore_drill_failedアラートが発生します。",
+    "empty": "実行された訓練はまだありません。訓練は、既定では週に1回、自動で実行されます。",
+    "loadFailed": "訓練を読み込めませんでした: {{error}}",
+    "columns": {
+      "resource": "リソース",
+      "trigger": "トリガー",
+      "result": "結果",
+      "checks": "チェック",
+      "took": "所要時間",
+      "started": "開始"
+    },
+    "status": {
+      "running": "実行中",
+      "passed": "合格",
+      "failed": "失敗"
+    },
+    "trigger": {
+      "manual": "手動",
+      "scheduled": "スケジュール"
+    },
+    "check": {
+      "object": "オブジェクトの存在",
+      "checksum": "チェックサム",
+      "restore": "リストア済み",
+      "content": "内容"
+    },
+    "stage": "{{stage}}で失敗",
+    "files": "{{count}}ファイル",
+    "tables": "{{count}}テーブル",
+    "shortDescription": "一時的なリソースへのリストアで、バックアップが機能することを確認します。",
+    "showAll": "{{count}}件すべてを表示",
+    "showLess": "表示を減らす"
+  },
+  "history": {
+    "title": "すべてのバックアップの試行",
+    "description": "すべてのデータベースとアプリのボリュームにわたる、すべての試行です。新しい順に並びます。"
+  },
+  "page": {
+    "title": "バックアップ",
+    "helpLabel": "バックアップとストレージのガイド",
+    "description": "何が保護されていて、何が保護されていないかを、1か所で確認し、修正できます。",
+    "loadFailed": "バックアップの対象範囲を読み込めませんでした: {{error}}",
+    "loadFailedHint": "サーバーに接続できることを確認してから、もう一度お試しください。",
+    "retry": "再試行",
+    "noResourcesTitle": "バックアップするものはまだありません",
+    "noResourcesDescription": "データベースとアプリのボリュームは、作成するとすぐ、ここに表示されます。",
+    "manageTargets": "バックアップ先を管理"
+  },
+  "summary": {
+    "protected": "{{total}}件のリソースのうち{{protected}}件が保護されています",
+    "headline": {
+      "empty": "データベースもアプリのボリュームも、まだありません。",
+      "allVerified": "すべてのリソースがバックアップされ、リストアが確認されています。",
+      "someUnprotected_other": "{{count}}件のリソースに、バックアップのスケジュールがありません。",
+      "failing": "そのうち{{failing}}件で、バックアップが失敗しています。先にそちらを修正してください。",
+      "unverified": "バックアップはされていますが、すべてのリソースでリストアが確認されているわけではありません。"
+    },
+    "protectEverything": "すべてを保護",
+    "lastVerified": "最終の検証済みリストア",
+    "nextRun": "次回の実行",
+    "storage": "使用中のストレージ"
+  },
+  "coverage": {
+    "state": {
+      "verified": "保護済み、検証済み",
+      "unverified": "保護済み、未検証",
+      "never_ran": "スケジュール済み、未実行",
+      "failing": "バックアップが失敗中",
+      "unprotected": "未保護"
+    },
+    "lastBackup": "最終バックアップ",
+    "lastRestore": "検証済みリストア",
+    "nextRun": "次回の実行",
+    "size": "サイズ"
+  },
+  "row": {
+    "kind": {
+      "database": "データベース",
+      "volume": "ボリューム"
+    },
+    "scratch": "一時",
+    "protect": "保護",
+    "protected": "{{name}}をスケジュールしました",
+    "protectFailed": "{{name}}を保護できませんでした",
+    "backupNow": "今すぐバックアップ",
+    "backupStarted": "{{name}}のバックアップを開始しました",
+    "backupFailed": "{{name}}のバックアップを開始できませんでした"
+  },
+  "target": {
+    "formLabel": "バックアップ先を接続",
+    "providerLabel": "プロバイダー",
+    "connected": "保存先「{{name}}」を接続しました",
+    "connect": "保存先を接続",
+    "connecting": "接続中...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "エグレス料金なし"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "安価なコールドストレージ"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "TBあたりの定額料金"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "リージョンとキー"
+      },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "S3相互運用性、HMACキー"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "CDN付きのS3互換ストレージ"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "EUでホスト、低コスト"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "EUのオブジェクトストレージ"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "S3互換、EUリージョン"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "グローバルなリージョン"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "自分のS3サーバー"
+      },
+      "local": {
+        "name": "ローカルディスク",
+        "hint": "同じマシン、安全ではありません"
+      }
+    },
+    "localRootHint": "{{root}}の下に保存されます。その中のフォルダーを入力してください。",
+    "localWarning": "このマシン自身のディスクに保存されたバックアップは、マシンとともに失われます。不適切なデプロイや、削除されたテーブルからは守れますが、ディスクの故障、ランサムウェア、サーバーの削除からは守れません。お試しの用途に使い、その後、オフサイトの保存先を追加してください。",
+    "field": {
+      "name": "名前",
+      "bucket": "バケット",
+      "region": "リージョン",
+      "endpoint": "エンドポイント",
+      "accessKeyId": "アクセスキーID",
+      "secretAccessKey": "シークレットアクセスキー"
+    },
+    "placeholder": {
+      "name": "例: offsite-backups"
+    },
+    "missing": "{{field}}は必須です。"
+  },
+  "protectAll": {
+    "title": "すべてを保護",
+    "description": "バックアップのないすべてのリソースに、バックアップをスケジュールします。適用するまで、何も変更されません。",
+    "destination": "保存先",
+    "addDestination": "別の保存先を追加",
+    "schedule": "スケジュールと保持",
+    "choice": {
+      "daily": "毎日 03:00",
+      "sixHours": "6時間ごと",
+      "weekly": "毎週日曜 03:00"
+    },
+    "cron": "cronスケジュール",
+    "retain": "保持するバックアップ数",
+    "includeScratch_other": "一時的なリソース{{count}}件(プレビューとカナリア)も保護する",
+    "plan": "変更される内容",
+    "planning": "計画を作成中...",
+    "nothingToDo": "すべてのリソースに、すでにスケジュールがあります。",
+    "kind": {
+      "database": "データベース",
+      "volume": "ボリューム"
+    },
+    "cancel": "キャンセル",
+    "applying": "適用中...",
+    "apply_other": "{{count}}件のリソースを保護",
+    "done_other": "{{count}}件のリソースをスケジュールしました",
+    "someFailed_other": "{{count}}件をスケジュールできませんでした。"
+  },
+  "safety": {
+    "title": "暗号化とバケットの安全性",
+    "encrypted": "暗号化済み",
+    "notEncrypted": "暗号化なし",
+    "copied": "公開鍵をコピーしました",
+    "copyFailed": "公開鍵をコピーできませんでした",
+    "keyDetails": "キーの詳細と、サーバー外での保管",
+    "keyHint": "秘密鍵(APP_BACKUP_ENCRYPTION_KEY_FILE。既定ではデータディレクトリのbackup-encryption.key)を、パスワードマネージャーか別のマシンに保管してください。これがないと、災害後に暗号化されたバックアップをリストアできません。",
+    "copyKey": "公開鍵をコピー",
+    "keyNotStored": "秘密鍵がこのサーバーの外に保管されていることを、まだ確認していません。このサーバーが失われると、これらのバックアップも失われます。",
+    "ack": "このサーバーの外に保管しました",
+    "ackFailed": "確認を保存できませんでした",
+    "later": "後で通知"
+  },
+  "orphans": {
+    "title": "孤立したデータ",
+    "description": "データベースやアプリが削除された後も残っているデータです。データベースを削除しても、そのデータが自動で削除されることはないため、回収するまでここにあるものは何も削除されません。",
+    "empty": "孤立したデータはありません。すべてのボリュームが、まだ存在するデータベースまたはアプリに属しています。",
+    "loadFailed": "孤立したデータを一覧表示できませんでした: {{error}}",
+    "large": "孤立したデータが{{size}}を使っています。確認して、不要なものを回収してください。",
+    "role": {
+      "data": "データボリューム",
+      "certificates": "証明書",
+      "wal archive": "WALアーカイブ",
+      "volume": "ボリューム"
+    },
+    "kind": {
+      "database": "データベース",
+      "volume": "アプリのボリューム",
+      "app": "アプリ"
+    },
+    "sizeUnknown": "サイズは不明",
+    "age_other": "{{count}}日経過",
+    "noBackup": "バックアップなし",
+    "hasBackup_other": "バックアップ{{count}}件",
+    "inspect": "確認",
+    "reclaim": "回収",
+    "volume": "ボリューム",
+    "belongedTo": "所属していたもの",
+    "created": "作成日",
+    "lastBackup": "最終バックアップ",
+    "noBackupDetail": "このデータのバックアップは存在しません",
+    "confirmTitle": "「{{name}}」のデータを回収しますか?",
+    "confirmDescription": "ボリュームがこのサーバーから削除されます。この操作は元に戻せません。",
+    "confirmNoBackup": "このデータのバックアップは存在しません。完全に失われます。",
+    "confirmHasBackup_other": "そのバックアップ{{count}}件は、保存先に残ります。",
+    "confirmAction": "このデータを削除",
+    "reclaiming": "削除中...",
+    "reclaimed": "{{size}}を回収しました"
+  },
+  "deleteData": {
+    "label": "データも削除する",
+    "databaseHint": "データベースとともに、データボリュームを削除します。これを選ばない場合、ボリュームは保持され、バックアップのページの「孤立したデータ」に一覧表示されます。",
+    "appHint": "アプリとともに、アプリのボリュームを削除します。これを選ばない場合、ボリュームは保持され、バックアップのページの「孤立したデータ」に一覧表示されます。",
+    "warning": "データは破棄され、バックアップが存在しない限り、復元できません。"
+  },
+  "firstRun": {
+    "title": "バックアップを設定",
+    "description": "バックアップを安全に保管できる場所を接続すると、すべてのデータベースとアプリのボリュームを、そこから保護できます。",
+    "descriptionWithResources_other": "{{count}}件のリソースに、バックアップがありません。保管できる安全な場所を接続し、1ステップですべてを保護しましょう。",
+    "step": {
+      "destination": {
+        "title": "保存先を追加",
+        "hint": "S3互換のバケット"
+      },
+      "schedule": {
+        "title": "スケジュールを選ぶ",
+        "hint": "毎日が、妥当な既定値です"
+      },
+      "verify": {
+        "title": "リストアを検証",
+        "hint": "リストアできて初めて、バックアップとみなされます"
+      }
+    }
+  },
+  "activity": {
+    "title": "最近のアクティビティ",
+    "subtitle": "すべての試行を、新しい順に表示",
+    "empty": "実行されたバックアップはまだありません。",
+    "loadFailed": "古いバックアップを読み込めませんでした",
+    "deletedTarget": "削除された保存先",
+    "kind": "種類",
+    "resource": "リソース",
+    "status": "ステータス",
+    "target": "保存先",
+    "size": "サイズ",
+    "started": "開始",
+    "verification": "検証",
+    "actions": "操作",
+    "loading": "読み込み中...",
+    "loadOlder": "古いエントリを読み込む"
+  },
+  "baseSchedule": {
+    "title": "ベースバックアップのスケジュール",
+    "description": "ダンプのスケジュールとは独立した、専用のcronでベースバックアップを取ります。空欄にすると、スケジュールされたダンプのたびに1つ取ります。",
+    "cronLabel": "cron式",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "バックアップ先のID",
+    "targetPlaceholder": "既定ではデータベースのバックアップ先",
+    "save": "スケジュールを保存",
+    "saving": "保存中...",
+    "saved": "ベースバックアップのスケジュールを保存しました。"
+  },
+  "tables": {
+    "restores": "リストア",
+    "cloneDatabases": "新規としてリストアしたデータベース",
+    "cloneVolumes": "新規としてリストアしたボリューム",
+    "pipelineRuns": "パイプラインの実行",
+    "activity": "バックアップのアクティビティ",
+    "snapshots": "バックアップ",
+    "pitrBackups": "ベースバックアップ",
+    "pitrRestores": "ポイントインタイムリストア"
+  },
+  "suggestion": {
+    "title": "このデータベースをバックアップ",
+    "description": "保存先は接続されていますが、このデータベースにはスケジュールがありません。推奨: {{schedule}}、直近{{retain}}件を保持。",
+    "apply": "推奨を使う",
+    "applied": "バックアップをスケジュールしました",
+    "failed": "バックアップをスケジュールできませんでした"
+  },
+  "banner": {
+    "description": "自分で管理するストレージへのスケジュールバックアップで、データベースとボリュームを保護し、リストアできることを確認します。",
+    "diagram": {
+      "database": "データベース",
+      "storage": "ストレージ",
+      "schedule": "スケジュール"
+    }
+  },
+  "volumeFiles": {
+    "title": "ファイル",
+    "volume": "ボリューム",
+    "up": "上へ",
+    "upload": "ファイルをアップロード",
+    "loading": "ファイルを読み込み中",
+    "empty": "このディレクトリは空です。",
+    "emptyHint": "アプリがこのボリュームに書き込んだファイルが、ここに表示されます。",
+    "truncated": "一覧が切り詰められています。残りを見るには、サブディレクトリを開いてください。",
+    "download": "{{name}}をダウンロード",
+    "delete": "{{name}}を削除",
+    "confirm": "確認"
+  },
+  "composeDb": {
+    "title": "データベースのバックアップ",
+    "description": "このComposeアプリで検出された、データベースのサービスです。",
+    "loadFailed": "データベースのサービスを読み込めませんでした: {{error}}",
+    "notScheduled": "スケジュールなし",
+    "scheduledSummary": "{{schedule}}、{{retention}}",
+    "paused": "一時停止中",
+    "target": "保存先",
+    "targetPlaceholder": "保存先を選択",
+    "enabled": "有効",
+    "retain": "直近の保持数",
+    "retainDays": "最大保持期間(日)",
+    "save": "保存",
+    "saving": "保存中...",
+    "remove": "削除",
+    "removing": "削除中...",
+    "backUpNow": "今すぐバックアップ",
+    "starting": "開始中...",
+    "noTargets": "バックアップ先はまだありません。",
+    "connectTarget": "設定でバケットを接続",
+    "saved": "バックアップのスケジュールを保存しました。",
+    "saveFailed": "バックアップのスケジュールを保存できませんでした。",
+    "removed": "バックアップのスケジュールを削除しました。",
+    "removeFailed": "バックアップのスケジュールを削除できませんでした。",
+    "started": "バックアップを開始しました。",
+    "startFailed": "バックアップを開始できませんでした。",
+    "removeTitle": "{{service}}のバックアップのスケジュールを削除しますか?",
+    "removeDescription": "スケジュールされたバックアップは停止します。既存のバックアップは保持されます。",
+    "runs": "最近の実行",
+    "runsHide": "実行を隠す",
+    "noRuns": "バックアップはまだありません。",
+    "runsFailed": "実行を読み込めませんでした: {{error}}",
+    "status": {
+      "running": "実行中",
+      "succeeded": "成功",
+      "failed": "失敗"
+    },
+    "restore": "リストア",
+    "restoreNeedsRoot": "データベースのバックアップをリストアできるのは、管理者のみです。",
+    "restoreTitle": "このバックアップから{{service}}をリストア",
+    "restoreWarning": "稼働中のデータベースを、その場で置き換えます。先に、現在のデータの安全用ダンプを取り、実行履歴に表示されます。",
+    "restoreEngine": "エンジン",
+    "restoreObject": "バックアップのオブジェクト",
+    "restoreSize": "サイズ",
+    "restoreLoading": "バックアップを確認中...",
+    "restorePhraseLabel": "確認のため{{phrase}}と入力してください",
+    "restoreConfirm": "データベースを置き換える",
+    "restoreStarting": "開始中...",
+    "restoreCancel": "キャンセル",
+    "restoreClose": "閉じる",
+    "restoreAccepted": "リストアを開始しました。安全用ダンプ: {{id}}。バックグラウンドで実行されるため、結果は、実行履歴と監査ログで確認してください。"
+  }
+}

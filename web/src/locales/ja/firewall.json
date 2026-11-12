@@ -1,0 +1,363 @@
+{
+  "cancel": "キャンセル",
+  "save": "保存",
+  "retry": "再試行",
+  "page": {
+    "title": "ファイアウォール",
+    "description": "Webリクエストが、アプリに届く前にフィルターします。ルールの変更は、再デプロイなしで、すぐに適用されます。",
+    "sections": "ファイアウォールのセクション",
+    "scope": "ホスト",
+    "allHosts": "すべてのホスト",
+    "range": "期間",
+    "ranges": {
+      "1h": "過去1時間",
+      "6h": "過去6時間",
+      "24h": "過去1日"
+    },
+    "tabs": {
+      "overview": "概要",
+      "traffic": "トラフィック",
+      "rules": "ルール",
+      "ports": "ポート",
+      "audit": "監査ログ"
+    },
+    "hostPointer": "開放ポートとホストのファイアウォールは、設定 > ファイアウォールにあります。",
+    "hostPointerLink": "設定 > ファイアウォールを開く",
+    "help": "ファイアウォールのガイド"
+  },
+  "ports": {
+    "loading": "ポートを読み込み中",
+    "loadError": "公開ポートを読み込めませんでした。",
+    "reach": "到達できる範囲"
+  },
+  "outcome": {
+    "allowed": "許可",
+    "denied": "拒否",
+    "challenged": "チャレンジ",
+    "logged": "ログ記録",
+    "rate_limited": "レート制限"
+  },
+  "action": {
+    "allow": "バイパス",
+    "deny": "拒否",
+    "challenge": "チャレンジ",
+    "log": "ログ",
+    "rate_limit": "レート制限"
+  },
+  "actionHint": {
+    "allow": "以降のすべてのルール、BAN、ボットチェックをスキップします。信頼できるクライアントに使ってください。",
+    "deny": "403でリクエストを拒否します。",
+    "challenge": "通過する前に、ブラウザーに短いプルーフオブワークを解かせます。",
+    "log": "リクエストを数えて、そのまま通します。ルールを強制する前のテストに使ってください。",
+    "rate_limit": "クライアントごとに、一致するリクエストをこの数だけ通し、期間が終わるまで429で応答します。"
+  },
+  "mode": {
+    "off": "オフ",
+    "log": "ログのみ",
+    "challenge": "チャレンジ",
+    "block": "ブロック"
+  },
+  "field": {
+    "path": "リクエストのパス",
+    "host": "ホスト",
+    "method": "メソッド",
+    "header": "ヘッダー",
+    "query": "クエリパラメーター",
+    "user_agent": "ユーザーエージェント",
+    "ip": "IPアドレスまたは範囲",
+    "country": "国"
+  },
+  "op": {
+    "equals": "等しい",
+    "starts_with": "で始まる",
+    "contains": "を含む",
+    "glob": "パターンに一致",
+    "in_cidr": "の範囲内",
+    "exists": "が存在する"
+  },
+  "placeholder": {
+    "path": "/api/users",
+    "host": "app.example.com",
+    "method": "POST",
+    "header": "値",
+    "query": "値",
+    "user_agent": "curl",
+    "ip": "203.0.113.0/24",
+    "country": "DE",
+    "paramName": "名前"
+  },
+  "rateLimit": {
+    "count": "許可するリクエスト数",
+    "countUnit": "リクエストあたり",
+    "window": "期間",
+    "windowUnit": "秒"
+  },
+  "reason": {
+    "rule": "ルール",
+    "rate_rule": "レート制限ルール",
+    "ban": "一時的なBAN",
+    "bot": "悪質なボットのリスト",
+    "ai_bot": "AIクローラーのリスト",
+    "attack_mode": "攻撃対応モード",
+    "shield_rate": "ドメインのレート制限",
+    "shield_concurrency": "ドメインの接続数上限",
+    "shield_bot": "ドメインのボットリスト",
+    "shield_body": "ドメインの本文サイズ制限"
+  },
+  "actions": {
+    "failed": "うまくいきませんでした",
+    "blockIp": "このIPをブロック",
+    "allowIp": "このIPを常に許可",
+    "createRule": "これからルールを作成",
+    "blocked": "{{ip}}をブロックしました",
+    "allowed": "{{ip}}は、ファイアウォールをバイパスするようになりました"
+  },
+  "lockout": {
+    "title": "あなた自身がブロックされます",
+    "description": "{{ip}}は、あなたが現在使っているアドレスです。これをブロックすると、サーバーからエントリを削除するまで、このコントロールプレーンにアクセスできなくなります。",
+    "ruleDescription": "このルールは、あなたが現在使っているアドレスに一致します。保存すると、サーバーからルールを削除するまで、このコントロールプレーンにアクセスできなくなります。",
+    "confirm": "それでもブロックする"
+  },
+  "error": {
+    "loadFailed": "ファイアウォールを読み込めませんでした。",
+    "forbiddenTitle": "ファイアウォールのこの部分は表示できません",
+    "forbiddenHelp": "クライアントのアドレスには、read:sensitive権限が必要です。管理者に、あなたのロールまたはトークンへの追加を依頼してください。"
+  },
+  "status": {
+    "activeTitle": "ファイアウォールは有効です",
+    "activeSubtitle": "すべて正常です",
+    "attackTitle": "攻撃対応モードがオンです",
+    "attackUntil": "{{time}}まで、制限が厳しくなっています",
+    "spikeTitle": "ブロックされたトラフィックが急増しています",
+    "spikeSubtitle": "トラフィックのタブを確認するか、攻撃対応モードをオンにしてください",
+    "attackMode": "攻撃対応モード",
+    "customRules": "有効なルール",
+    "botProtection": "悪質なボット",
+    "aiBots": "AIクローラー",
+    "on": "オン",
+    "off": "オフ"
+  },
+  "chart": {
+    "legend": "結果別のリクエスト",
+    "label": "{{range}}の期間における、ファイアウォールの結果別のリクエスト",
+    "none": "なし",
+    "empty": "この期間に、リクエストはまだありません。トラフィックがホストに届くと、すぐに件数が表示されます。"
+  },
+  "alerts": {
+    "title": "アラート",
+    "noneTitle": "アクティブなアラートはありません",
+    "noneHelp": "ブロックまたはチャレンジされたリクエストが1分あたり{{threshold}}を超えると、ここに表示されます。",
+    "spikeTitle": "ブロックされたトラフィックが急増しています",
+    "spikeHelp": "過去{{minutes}}分間で、ブロックまたはチャレンジされたリクエストが1分あたり{{rate}}件です(アラートのしきい値は{{threshold}})。",
+    "turnOn": "攻撃対応モードをオンにする",
+    "attackOn": "攻撃対応モードがオンです。終了"
+  },
+  "topList": {
+    "actionsFor": "{{key}}の操作",
+    "spark": "{{key}}の過去1時間のリクエスト"
+  },
+  "traffic": {
+    "note": "上位の表は概算で、過去{{minutes}}分間を対象としています。メモリ上にのみ保持されるため、コントロールプレーンを再起動するとリセットされます。国、ネットワーク、クライアントのフィンガープリントは表示されません。",
+    "lastHour": "過去1時間",
+    "ips": "上位のIPアドレス",
+    "ipsEmpty": "過去1時間にリクエストはありません。トラフィックが届くと、アドレスがここに表示されます。",
+    "deniedIps": "拒否されたIP",
+    "deniedEmpty": "過去1時間に、拒否、チャレンジ、レート制限されたものはありません。",
+    "userAgents": "上位のユーザーエージェント",
+    "userAgentsEmpty": "過去1時間にリクエストはありません。",
+    "paths": "上位のリクエストパス",
+    "pathsEmpty": "過去1時間にリクエストはありません。",
+    "hosts": "上位のホスト",
+    "hostsEmpty": "過去1時間にリクエストはありません。"
+  },
+  "bans": {
+    "title": "一時的なBAN",
+    "description": "拒否され続けるクライアントは、しばらくのあいだブロックされます。",
+    "retention": "{{window}}以内に{{strikes}}回拒否されたクライアントは、{{duration}}のあいだBANされます。BANはメモリ上にあり、再起動で終了します。",
+    "emptyTitle": "アクティブなBANはありません",
+    "emptyHelp": "拒否され続けるクライアントは、ここで自動的にBANされ、解除するボタンが表示されます。",
+    "loadFailed": "一時的なBANを読み込めませんでした。",
+    "ip": "IPアドレス",
+    "reason": "原因",
+    "requests": "ブロック数",
+    "started": "開始",
+    "ends": "終了",
+    "lift": "解除",
+    "liftFor": "{{ip}}のBANを解除",
+    "lifted": "{{ip}}のBANを解除しました",
+    "search": "BANを検索",
+    "searchPlaceholder": "IPまたは原因を検索",
+    "noMatch": "この検索に一致するBANはありません。",
+    "select": "{{ip}}を選択",
+    "selectAll": "すべてのBANを選択",
+    "selected_other": "{{count}}件選択中",
+    "liftSelected": "選択したものを解除",
+    "liftedMany_other": "{{count}}件のBANを解除しました",
+    "liftManyFailed_other": "{{count}}件のBANを解除できませんでした"
+  },
+  "rules": {
+    "title": "ルール",
+    "manage": "管理",
+    "new": "新しいルール",
+    "customTitle": "カスタムルール",
+    "customHelp": "この順番でチェックされます。許可、拒否、チャレンジを行った最初のルールで、チェックが終了します。変更は、再デプロイなしで適用されます。",
+    "emptyTitle": "カスタムルールはまだありません",
+    "emptyHelp": "ルールを追加して、パス、ヘッダー、ユーザーエージェント、アドレスに一致するリクエストを、拒否、チャレンジ、ログ記録、レート制限できます。",
+    "edit": "編集",
+    "moveUp": "上へ移動",
+    "moveDown": "下へ移動",
+    "delete": "削除",
+    "deleteTitle": "{{name}}を削除しますか?",
+    "deleteHelp": "一致していたトラフィックは、フィルターされなくなります。この操作は元に戻せません。",
+    "enabledFor": "有効: {{name}}",
+    "actionsFor": "{{name}}の操作",
+    "hitsTitle": "コントロールプレーンの起動以降の一致数",
+    "hitsSpark": "{{name}}の過去1時間の一致数"
+  },
+  "ipList": {
+    "blockTitle": "IPのブロック",
+    "blockHelp": "アドレスまたは範囲を、すべてのホスト、または上で選択したホストのみで拒否します。",
+    "bypassTitle": "常に許可",
+    "bypassHelp": "これらのアドレスは、ほかのすべてのルール、BAN、ボットチェックをスキップします。",
+    "ipLabel": "IPアドレスまたはCIDR範囲",
+    "noteLabel": "メモ",
+    "notePlaceholder": "理由(任意)",
+    "block": "ブロック",
+    "bypass": "許可",
+    "required": "IPアドレスまたはCIDR範囲を入力してください。",
+    "removeFor": "{{ip}}を削除",
+    "removed": "{{ip}}を削除しました",
+    "blockEmptyTitle": "ブロックされたアドレスはありません",
+    "blockEmptyHelp": "上でアドレスを追加するか、トラフィックのタブからブロックしてください。",
+    "bypassEmptyTitle": "常に許可されたアドレスはありません",
+    "bypassEmptyHelp": "オフィスや監視用のアドレスを追加して、ルールによって締め出されることがないようにします。",
+    "scopeNote": "新しいエントリは、{{scope}}のみに適用されます。",
+    "allHostsNote": "新しいエントリは、すべてのホストに適用されます。"
+  },
+  "bots": {
+    "title": "ボット管理",
+    "description": "厳選したリストを、ログ、チャレンジ、ブロックに変えます。チャレンジでは、短いブラウザーチェックが表示されます。",
+    "badBots": "悪質なボット",
+    "badBotsHelp": "同梱のリストにある、スクレイパーとスキャナーです。このリストは、サーバーのボットリスト設定で編集します。",
+    "aiBots": "AIクローラー",
+    "aiBotsHelp": "AIモデル向けにコンテンツを収集するクローラーです。下のリストは、編集できるデータです。",
+    "editList": "リストを編集",
+    "customList_other": "カスタムのエントリ{{count}}件",
+    "shippedList_other": "同梱のリスト、エントリ{{count}}件",
+    "bans": "自動BAN",
+    "bansHelp": "拒否され続けるクライアントを、しばらくのあいだBANします。",
+    "bansDetail": "{{window}}以内に{{strikes}}回拒否されたクライアントを、{{duration}}のあいだBANします。",
+    "saved": "ボットの設定を保存しました",
+    "listTitle": "AIクローラーのリスト",
+    "listHelp": "1行に1つ、ユーザーエージェントの部分文字列を入力します。大文字と小文字は区別されません。すべて削除して保存すると、同梱のリストに戻ります。",
+    "listLabel": "AIクローラーのユーザーエージェント",
+    "listReset": "同梱のリストに戻す",
+    "listCount_other": "エントリ{{count}}件",
+    "listTooMany": "エントリは最大{{max}}件です。",
+    "verifiedNote": "照合はユーザーエージェントのみで行われます。クローラーの身元は検証されないため、クライアントがブラウザーや有名なボットを装うことができます。"
+  },
+  "attack": {
+    "title": "危険な操作",
+    "description": "すべてのホストのすべての訪問者に影響する変更です。自動でオフになります。",
+    "switchTitle": "攻撃対応モード",
+    "switchHelp": "すべてのホストで、レートと接続数の制限を厳しくし、悪質なボットのリストを拒否します。必要に応じて、すべての訪問者にブラウザーチェックを課します。",
+    "duration": "期間",
+    "minutes_other": "{{count}}分",
+    "challenge": "すべての訪問者にチャレンジ",
+    "turnOn": "攻撃対応モードをオンにする",
+    "turnOff": "オフにする",
+    "endsIn": "終了",
+    "confirmTitle": "攻撃対応モードをオンにしますか?",
+    "confirmHelp": "それより早くオフにしない限り、{{minutes}}分間オンのままです。",
+    "consequenceLimits": "すべてのクライアントに、低いリクエストレートと接続数の制限がかかります。",
+    "consequenceBots": "悪質なボットのリストにあるボットは、拒否されます。",
+    "consequenceChallenge": "APIクライアントを含め、すべての訪問者が、短いブラウザーチェックを通過する必要があります。",
+    "onToast": "攻撃対応モードをオンにしました",
+    "offToast": "攻撃対応モードをオフにしました"
+  },
+  "limits": {
+    "title": "{{domain}}の制限",
+    "description": "ドメインごとの、レート、接続数、本文サイズの制限と、ボットリスト、許可リストです。これらは、上のファイアウォールのルールの後に実行されます。",
+    "unknownDomain": "このホストはここでは設定されていないため、ドメインごとの制限がありません。"
+  },
+  "audit": {
+    "title": "ファイアウォールの変更",
+    "emptyTitle": "ファイアウォールの変更はまだありません",
+    "emptyHelp": "ルール、IPエントリ、ボットの扱い、攻撃対応モードの作成や変更が、実行者とともにここに記録されます。",
+    "actions": {
+      "rule_created": "ルールを作成",
+      "rule_updated": "ルールを変更",
+      "rule_deleted": "ルールを削除",
+      "rules_reordered": "ルールを並べ替え",
+      "ip_blocked": "IPをブロック",
+      "ip_allowed": "IPを常に許可",
+      "ban_lifted": "BANを解除",
+      "settings_changed": "ボットの設定を変更",
+      "attack_mode_on": "攻撃対応モードをオンにしました",
+      "attack_mode_off": "攻撃対応モードをオフにしました"
+    }
+  },
+  "editor": {
+    "newTitle": "新しいファイアウォールルール",
+    "editTitle": "ファイアウォールルールを編集",
+    "description": "ルールは、すべての条件に一致したときに適用されます。ルールは順番にチェックされるため、ORにするには、複数のルールを追加してください。",
+    "back": "すべてのルール",
+    "create": "ルールを作成",
+    "save": "ルールを保存",
+    "saving": "保存中",
+    "created": "ルールを作成しました",
+    "updated": "ルールを保存しました",
+    "missing": "このルールは、もう存在しません。",
+    "namePlaceholder": "古い管理用パスをブロック",
+    "notePlaceholder": "このルールの目的",
+    "scope": "適用対象",
+    "scopeHelp": "すべてのホスト、または1つのホストです。"
+  },
+  "validation": {
+    "nameRequired": "ルールに、80文字以内の名前を付けてください。",
+    "noteTooLong": "説明は200文字未満にしてください。",
+    "actionRequired": "ルールの動作を選んでください。",
+    "rateCount": "リクエスト数は、1から1,000,000の整数を入力してください。",
+    "rateWindow": "秒数は、1から3,600の整数を入力してください。",
+    "paramName": "英字、数字、ハイフン、アンダースコアで名前を入力してください。",
+    "valueRequired": "256文字以内の値を入力してください。",
+    "ipInvalid": "IPアドレス、または203.0.113.0/24のようなCIDR範囲を入力してください。",
+    "methodInvalid": "GETやPOSTのようなHTTPメソッドを入力してください。",
+    "countryInvalid": "DEのような、2文字の国コードを入力してください。",
+    "pathSlash": "パスは、/で始めてください。",
+    "wildcards": "ワイルドカードは、最大8個までです。"
+  },
+  "banner": {
+    "diagram": {
+      "allowed": "許可",
+      "blocked": "ブロック",
+      "server": "サーバー"
+    }
+  },
+  "list": {
+    "selectAll": "表示中のものをすべて選択",
+    "selectRow": "{{name}}を選択",
+    "searchLabel": "{{list}}を検索",
+    "searchPlaceholder": "名前、メモ、一致条件を検索",
+    "sortLabel": "並べ替え",
+    "sort": {
+      "default": "ルール順",
+      "name": "名前",
+      "hits": "一致が多い順",
+      "recent": "最近変更した順"
+    },
+    "barLabel": "一括操作",
+    "selected_other": "{{count}}件選択中",
+    "enable": "有効にする",
+    "disable": "無効にする",
+    "delete": "削除",
+    "clear": "解除",
+    "noMatch": "この検索に一致するものはありません",
+    "enabledCount_other": "{{count}}件のエントリを有効にしました",
+    "disabledCount_other": "{{count}}件のエントリを無効にしました",
+    "deletedCount_other": "{{count}}件のエントリを削除しました",
+    "bulkFailed_other": "{{count}}件の変更に失敗しました",
+    "deleteTitle_other": "{{count}}件のエントリを削除しますか?",
+    "deleteHelp": "それらによるトラフィックのフィルターは、行われなくなります。この操作は元に戻せません。"
+  }
+}
