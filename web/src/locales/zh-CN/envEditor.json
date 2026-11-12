@@ -1,0 +1,217 @@
+{
+  "title": "环境变量",
+  "description": "你的应用在启动时读取的变量。敏感值在所有位置都会保持遮蔽；显示某个值需要你确认身份，并会记录在审计日志中。",
+  "guide": "密钥指南",
+  "columns": {
+    "key": "键",
+    "value": "值",
+    "type": "类型",
+    "scope": "作用域",
+    "actions": "操作"
+  },
+  "types": {
+    "plain": "明文",
+    "secret": "密钥",
+    "vault": "Vault"
+  },
+  "scope": {
+    "own": "自有值",
+    "inherited": "来自{{tier}}",
+    "overrides": "覆盖{{tier}}",
+    "tiers": {
+      "organization": "组织",
+      "project": "项目",
+      "environment": "环境"
+    }
+  },
+  "value": {
+    "masked": "已隐藏的值",
+    "secretStored": "已加密存储",
+    "secretNew": "新值",
+    "empty": "空",
+    "vaultPath": "Vault 路径",
+    "vaultKey": "字段",
+    "hidesIn": "{{seconds}} 秒后隐藏",
+    "replacePlaceholder": "新值",
+    "valuePlaceholder": "值"
+  },
+  "sensitive": {
+    "badge": "敏感",
+    "convertHint": "看起来像以明文存储的凭据"
+  },
+  "actions": {
+    "reveal": "显示",
+    "hide": "隐藏",
+    "copy": "复制",
+    "copied": "已复制到剪贴板",
+    "replace": "替换",
+    "cancelReplace": "保留当前值",
+    "remove": "移除",
+    "undoRemove": "撤销移除",
+    "override": "覆盖",
+    "rowMenu": "{{key}} 的操作",
+    "markSensitive": "标记为敏感",
+    "markPlain": "向读者显示值",
+    "useAutomatic": "使用自动检测",
+    "convert": "转换为密钥"
+  },
+  "toolbar": {
+    "add": "添加变量",
+    "bulk": "以 .env 编辑",
+    "table": "以表格编辑",
+    "import": "导入 .env 文件",
+    "export": "导出",
+    "exportMasked": "导出（值已遮蔽）",
+    "exportFull": "导出所有值（.env）",
+    "exportFullJson": "导出所有值（JSON）",
+    "review": "审阅更改",
+    "discard": "丢弃",
+    "protection": "保护"
+  },
+  "add": {
+    "keyLabel": "新变量名称",
+    "valueLabel": "新变量的值",
+    "typeLabel": "变量类型",
+    "suggestSecret": "此名称看起来很敏感。请将其存为密钥，使该值静态加密。",
+    "add": "添加",
+    "cancel": "取消",
+    "duplicate": "{{key}} 已存在",
+    "invalidKey": "请使用字母、数字和下划线，且不能以数字开头",
+    "secretsOff": "密钥需要控制平面上有主密钥"
+  },
+  "bulk": {
+    "label": "以 .env 文本表示的变量，每行一个 KEY=value",
+    "hint": "已遮蔽的值（••••••••）会保留已存储的内容。删除一行即可移除变量。Vault 变量请在表格中编辑。",
+    "apply": "应用到表格"
+  },
+  "review": {
+    "title": "审阅更改",
+    "description": "在你确认之前不会保存任何内容。敏感值绝不会显示在这里。",
+    "added": "已添加",
+    "changed": "已更改",
+    "removed": "已移除",
+    "hiddenValue": "值已隐藏",
+    "none": "没有需要保存的更改。",
+    "save": "保存更改",
+    "saving": "保存中...",
+    "back": "返回编辑",
+    "scan": {
+      "title": "这些值看起来像凭据",
+      "description": "任何能读取此应用的人都能看到明文变量。请将它们存为密钥，使其保持加密。",
+      "finding": "{{key}}：{{rule}}",
+      "makeSecret": "存为密钥"
+    }
+  },
+  "saved": "环境变量已保存。",
+  "redeploy": {
+    "title": "需要重新部署",
+    "description": "运行中的容器仍使用旧值。请重启应用以应用新值。",
+    "restart": "立即重启",
+    "restarting": "正在重启 {{name}}。"
+  },
+  "inherited": {
+    "title": "继承的变量",
+    "description": "在组织、项目或环境上设置的变量。覆盖其中一个，可让此应用使用自己的值。"
+  },
+  "empty": {
+    "title": "还没有变量",
+    "description": "添加变量或导入 .env 文件。看起来像凭据的值会被自动遮蔽。"
+  },
+  "stepUp": {
+    "title": "确认是你本人",
+    "descriptionReveal": "在 {{app}} 上显示 {{key}} 会记录在审计日志中。{{minutes}} 分钟内不会再次询问。",
+    "descriptionExport": "导出 {{app}} 的所有值会记录在审计日志中。",
+    "descriptionManage": "在 {{app}} 上让值可见或显示密钥，需要重新确认。",
+    "password": "密码",
+    "code": "验证器代码",
+    "codeHint": "你的账户使用双重验证，因此请同时输入 6 位代码。",
+    "confirm": "确认",
+    "confirming": "检查中...",
+    "passkey": "使用通行密钥",
+    "or": "或",
+    "invalid": "密码或代码不正确。",
+    "locked": "尝试次数过多。请等待几分钟后重试。",
+    "noMethods": "此账户没有可用于确认的密码或通行密钥。请先在账户设置中设置密码。"
+  },
+  "policy": {
+    "disabledTitle": "在此服务器上，密钥值为只写",
+    "disabledBody": "服务器以 APP_SECRET_REVEAL=disabled 运行，因此任何人都无法读回已存储的值。管理员可以将其设置为 step_up，以允许经确认的显示。",
+    "allowTitle": "无需确认即可显示已开启",
+    "allowBody": "APP_SECRET_REVEAL=allow 让任何拥有 read:sensitive 的人无需密码即可查看值。除单管理员的实验环境外，请使用 step_up。",
+    "writeOnlyTitle": "此应用的密钥为只写",
+    "writeOnlyBody": "应用所有者已锁定显示和完整导出。你仍然可以替换值。",
+    "writeOnlyToggle": "此应用的密钥为只写",
+    "writeOnlyToggleHint": "阻止显示和完整导出此应用的所有值。关闭它需要你确认身份。",
+    "invalidTitle": "无法识别显示策略",
+    "invalidBody": "APP_SECRET_REVEAL 的值未知，因此在修复之前，显示功能保持关闭。"
+  },
+  "convert": {
+    "title": "将 {{key}} 转换为密钥？",
+    "description": "该值会移入服务器上的加密存储，并从明文变量中移除。它绝不会经过你的浏览器。",
+    "consequence": "在你重启或重新部署之前，运行中的应用仍保留旧变量。",
+    "confirm": "转换",
+    "pending": "转换中...",
+    "done": "{{key}} 现已成为密钥。"
+  },
+  "errors": {
+    "revealDisabled": "此服务器已关闭显示功能。",
+    "writeOnly": "此应用的密钥为只写。",
+    "importFailed": "无法读取该文件。"
+  },
+  "advanced": {
+    "title": "预览、分支和环境对比",
+    "description": "仅供预览部署和按分支构建使用的值，以及与其他环境的对比。"
+  },
+  "bound": {
+    "title": "已连接的资源",
+    "description": "容器启动时根据数据库链接和存储桶绑定注入的变量。在此只读；请在数据库或存储桶上更改。",
+    "key": "键",
+    "source": "来源",
+    "value": "值",
+    "database": "数据库 {{name}}（{{field}}）",
+    "bucket": "存储桶 {{name}}",
+    "masked": "已遮蔽",
+    "loadFailed": "无法加载已连接的资源。",
+    "retry": "重试"
+  },
+  "health": {
+    "title": "变量健康状况",
+    "description": "在此应用的变量中发现的问题，以及哪些变量被添加、更改或移除。绝不会记录值。",
+    "recheck": "重新检查",
+    "loading": "正在检查变量...",
+    "clean": "未发现问题。",
+    "loadFailed": "无法检查变量。请重新检查以重试。",
+    "fixed": "已修复 {{key}}",
+    "historyTitle": "最近的更改",
+    "historyEmpty": "尚无更改记录。从现在起的编辑会显示在这里。",
+    "byActor": "由 {{actor}}",
+    "kinds": {
+      "empty_value": "值为空。请移除它，或为它设置值。",
+      "shadowed": "同名的密钥或数据库绑定优先，因此这个明文值永远不会被使用。",
+      "case_duplicate": "仅大小写不同的名称：{{detail}}。大多数程序会将它们视为不同的变量。",
+      "missing_secret": "必需的密钥还没有值。请在密钥部分设置它。",
+      "dangling_database": "绑定到数据库 {{detail}}，但它已不存在。"
+    },
+    "fixes": {
+      "remove_key": "移除变量",
+      "remove_database_ref": "移除绑定",
+      "set_secret": "在上方设置值",
+      "rename": "重命名其中一个"
+    },
+    "actions": {
+      "added": "已添加",
+      "changed": "已更改",
+      "removed": "已移除"
+    }
+  },
+  "buildTime": {
+    "badge": "构建时",
+    "tooltip": "已固化在构建中。更改它需要重新构建。",
+    "noticeTitle": "需要重新构建",
+    "noticeDescription": "{{keys}} 已固化在构建中。请重新构建应用以应用此更改。",
+    "rebuild": "立即重新构建",
+    "started": "正在从源码重新构建“{{name}}”。",
+    "view": "查看构建",
+    "noGitSource": "未连接 git 来源。请在项目文件夹中运行 levelrail-cli deploy 来应用此更改，或者在构建镜像的地方重新构建，因为该值已固化在镜像中。"
+  }
+}
