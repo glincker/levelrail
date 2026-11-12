@@ -1,0 +1,520 @@
+{
+  "loadBalancers": {
+    "loadError": "ロードバランサーを読み込めませんでした"
+  },
+  "loadBalancerPicker": {
+    "loadError": "アプリを読み込めませんでした",
+    "loadErrorHint": "このダイアログを閉じて、もう一度お試しください。"
+  },
+  "loadBalancerPage": {
+    "loadError": "ロードバランサーを読み込めませんでした",
+    "statusError": "アップストリームのステータスを読み込めませんでした"
+  },
+  "healthTimeline": {
+    "loadError": "デプロイ履歴を読み込めませんでした",
+    "loadErrorHint": "タイムラインにはデプロイ履歴が必要です。しばらくしてからもう一度お試しください。"
+  },
+  "mesh": {
+    "title": "WireGuardメッシュ",
+    "loading": "メッシュのステータスを読み込み中...",
+    "disabledTitle": "メッシュネットワークは有効になっていません",
+    "disabledHint": "このコントロールプレーンで APP_MESH_ENABLED=1 を設定すると、WireGuardデバイスとピアの可視化が有効になります。",
+    "never": "なし",
+    "secondsAgo": "{{count}}秒前",
+    "minutesAgo": "{{count}}分前",
+    "noMeshAddress": "メッシュアドレスはまだありません",
+    "notPeered": "まだピアリングされていません",
+    "healthy": "正常",
+    "stale": "古い",
+    "noLivePeer": "有効なピアのエントリがありません",
+    "backend": "バックエンド",
+    "unknown": "不明",
+    "meshAddress": "メッシュアドレス",
+    "notAssigned": "未割り当て",
+    "publicKey": "公開鍵",
+    "notGenerated": "まだ生成されていません",
+    "endpoint": "エンドポイント",
+    "lastHandshake": "最終ハンドシェイク",
+    "rotationConfirmed": "前回のローテーションを確認済み: 開始 {{started}}、確認 {{confirmed}}",
+    "rotationConfirmedNoTime": "前回のローテーションを確認済み: 開始 {{started}}",
+    "rotationPending": "前回のローテーションは確認中: 開始 {{started}}",
+    "noPeers": "設定されたピアはまだありません。",
+    "peersLabel": "メッシュのピア",
+    "peer": "ピア",
+    "health": "状態"
+  },
+  "lb": {
+    "header": {
+      "of": "/",
+      "healthy": "正常",
+      "aboutAlgorithm": "このアルゴリズムについて",
+      "checkNow": "今すぐチェック",
+      "checkNowCooldown": "今すぐチェック({{seconds}}秒)",
+      "export": "エクスポート",
+      "moreActions": "その他の操作",
+      "remove": "ロードバランサーを削除",
+      "removeHint": "ドメインは単一のアップストリームに戻ります"
+    },
+    "empty": {
+      "title": "レプリカ間でトラフィックを分散",
+      "description": "ヘルスチェック、リトライ、スムーズな切り替えを提供します。パッシブな障害検出を伴う最小接続数が、最初の設定として適しています。アプリが対応したら、アクティブなヘルスチェックを追加してください。",
+      "create": "推奨の設定を作成",
+      "creating": "作成中",
+      "presets": "またはプリセットから開始",
+      "diagram": "推奨の設定: クライアント、プロキシ、{{count}} 件のレプリカ",
+      "clients": "クライアント",
+      "proxy": "プロキシ"
+    },
+    "remove": {
+      "title": "ロードバランサーを削除しますか?",
+      "description": "{{app}} のドメインは単一のアップストリームに戻ります。実行中のレプリカには影響しません。",
+      "cancel": "キャンセル",
+      "confirm": "削除"
+    },
+    "metrics": {
+      "healthy": "正常",
+      "latency": "レイテンシ",
+      "latencyInfo": "正常なレプリカ全体での、直近のヘルスチェックの中央値です。",
+      "connections": "接続数",
+      "connectionsInfo": "現在、すべてのレプリカで処理中のリクエスト数です。"
+    },
+    "history": {
+      "none": "記録されたチェックはまだありません",
+      "passed": "{{when}}: 成功",
+      "passedIn": "{{when}}: {{ms}}msで成功",
+      "failed": "{{when}}: 失敗",
+      "failedReason": "{{when}}: 失敗、{{reason}}",
+      "failedStatus": "{{when}}: 失敗、ステータス {{status}}"
+    },
+    "table": {
+      "label": "アップストリーム",
+      "upstream": "アップストリーム",
+      "status": "ステータス",
+      "latency": "レイテンシ",
+      "traffic": "トラフィック",
+      "conns": "接続数",
+      "share": "割合",
+      "lastChecks": "直近12回のチェック",
+      "latencyTrend": "{{dial}} の直近30分間のレイテンシ",
+      "noData": "データはまだありません",
+      "replica": "レプリカ {{replica}}",
+      "checked": "確認済み",
+      "notChecked": "まだ確認されていません",
+      "changed": "変更日時",
+      "openConnections": "開いている接続",
+      "shareEstimated": "推定の割合です。実測値ではありません",
+      "shareMeasured": "トラフィックの割合",
+      "actionsFor": "{{name}} の操作",
+      "viewDetails": "詳細を表示",
+      "viewDetailsHint": "チェック、変更、操作"
+    },
+    "drawer": {
+      "description": "アップストリームの詳細と操作",
+      "trafficShare": "トラフィックの割合",
+      "connections": "接続数",
+      "failures": "失敗",
+      "latency": "レイテンシ",
+      "replica": "レプリカ",
+      "node": "ノード",
+      "local": "ローカル",
+      "checked": "確認日時",
+      "actions": "操作",
+      "recentChecks": "最近のチェック",
+      "passed": "成功",
+      "failed": "失敗",
+      "failedReason": "失敗: {{reason}}",
+      "stateChanges": "状態の変更",
+      "noChanges": "記録された変更はありません。",
+      "transition": "{{from}} から {{to}}"
+    },
+    "export": {
+      "formats": "エクスポート形式",
+      "cdkHint": "これはスタッククラスです。CDKアプリに追加し、アプリのエントリポイントでインスタンス化してから、cdk deploy を実行してください。",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "download": "ダウンロード",
+      "contents": "{{file}} の内容",
+      "applyWith": "適用コマンド",
+      "section": "エクスポート",
+      "toggle": "コードとしてエクスポート"
+    },
+    "page": {
+      "loading": "ロードバランサーを読み込み中",
+      "reconcilerNote": "イングレスのリコンサイラーが、次回の巡回で適用します。",
+      "undo": "元に戻す",
+      "saveError": "ロードバランサーを保存できませんでした。",
+      "applied": "適用しました: {{title}}",
+      "applyError": "提案を適用できませんでした。",
+      "unknownError": "不明",
+      "checkFinished": "チェックが完了しました: {{total}} 件中 {{ok}} 件が成功",
+      "checkUnavailable": "「今すぐチェック」はまだ利用できません。",
+      "checkFailed": "チェックに失敗しました。",
+      "adminError": "アップストリームを更新できませんでした。",
+      "removed": "ロードバランサーを削除しました。",
+      "removedHint": "{{app}} は再び単一のアップストリームにルーティングされます。",
+      "removeError": "ロードバランサーを削除できませんでした。",
+      "created": "ロードバランサーを作成しました。",
+      "saved": "ロードバランサーを保存しました。",
+      "newTitle": "新規ロードバランサー",
+      "newHint": "設定を確認してから作成してください。",
+      "guide": "ロードバランシングのガイド"
+    },
+    "algo": {
+      "label": "分散アルゴリズム",
+      "about": "{{name}} について",
+      "roundRobinUse": "リクエストのコストがほぼ同じ場合。",
+      "roundRobinTradeoff": "シンプルで公平ですが、レプリカの負荷状況は考慮されません。",
+      "leastConnUse": "リクエストの処理時間にばらつきがある場合。",
+      "leastConnTradeoff": "負荷が平準化されますが、リクエストごとの管理処理がやや増えます。",
+      "ipHashUse": "Cookieを使わずにクライアントを同じレプリカに固定したい場合。",
+      "ipHashTradeoff": "1つのプロキシやCDNの背後にいるクライアントは、すべて1つのレプリカに振り分けられます。",
+      "clientIpHashUse": "CDNやプロキシの背後でIPによる固定をしたい場合。",
+      "clientIpHashTradeoff": "APP_INGRESS_TRUSTED_PROXIES が必要です。ない場合はIPハッシュと同じ動作になります。",
+      "uriHashUse": "レプリカがパスごとのキャッシュを保持する場合。",
+      "uriHashTradeoff": "アクセスの多いパスが、1つのレプリカを過負荷にする可能性があります。",
+      "cookieUse": "セッションがレプリカのメモリ内にある場合。",
+      "cookieTradeoff": "ブラウザーを1つのレプリカに固定するため、負荷が偏る可能性があります。",
+      "weightedUse": "カナリアリリースや、サイズの異なるレプリカがある場合。",
+      "weightedTradeoff": "重みは手動で管理する必要があります。",
+      "round_robin": {
+        "label": "ラウンドロビン",
+        "description": "各リクエストを、順番に次のレプリカへ送ります。"
+      },
+      "least_conn": {
+        "label": "最小接続数",
+        "description": "アクティブなリクエストが最も少ないレプリカへ送ります。"
+      },
+      "ip_hash": {
+        "label": "IPハッシュ",
+        "description": "同じクライアントアドレスは、常に同じレプリカに届きます。"
+      },
+      "client_ip_hash": {
+        "label": "クライアントIPハッシュ",
+        "description": "信頼されたプロキシの処理後にクライアントIPをハッシュするため、CDNの背後にいるクライアントもレプリカ全体に分散されます。"
+      },
+      "uri_hash": {
+        "label": "URIハッシュ",
+        "description": "同じパスは、常に同じレプリカに届きます(キャッシュに適しています)。"
+      },
+      "cookie": {
+        "label": "スティッキーCookie",
+        "description": "Cookieによって、ブラウザーのセッションが1つのレプリカに固定されます。"
+      },
+      "weighted": {
+        "label": "重み付け",
+        "description": "各レプリカにトラフィックの割合を割り当てます。カナリアリリースに便利です。"
+      }
+    },
+    "bar": {
+      "region": "未保存の変更",
+      "risky": "リスクのある変更",
+      "cancel": "キャンセル",
+      "revert": "元に戻す",
+      "saving": "保存中",
+      "create": "作成",
+      "save": "保存",
+      "confirmTitle": "リスクのある変更を保存しますか?",
+      "confirmHint": "これらの変更は、本番のトラフィックにすぐに反映されます。",
+      "keepEditing": "編集を続ける",
+      "saveAnyway": "それでも保存"
+    },
+    "configure": {
+      "section": "設定",
+      "toggle": "設定",
+      "traffic": "トラフィック",
+      "health": "ヘルス",
+      "resilience": "耐障害性",
+      "cookieName": "Cookie名",
+      "cookieNameInfo": "ブラウザーを1つのレプリカに固定するCookieです。",
+      "presets": "プリセット",
+      "about": "{{name}} について"
+    },
+    "health": {
+      "active": "アクティブチェック",
+      "activeInfo": "一定の間隔ですべてのレプリカにプローブを送り、失敗したレプリカへのトラフィック送信を停止します。",
+      "path": "パス",
+      "pathInfo": "各レプリカにプローブを送るURLです。素早く応答し、アプリ自体のみに依存する必要があります。",
+      "status": "期待するステータス",
+      "statusInfo": "成功とみなされるHTTPステータスです。空欄の場合は、2xxまたは3xxのいずれも受け入れます。",
+      "statusPlaceholder": "2xxまたは3xx",
+      "interval": "間隔",
+      "intervalInfo": "各レプリカにプローブを送る頻度です。",
+      "timeout": "タイムアウト",
+      "timeoutInfo": "応答を待つ時間です。間隔より短くする必要があります。",
+      "fails": "ダウンと判定するまでの失敗回数",
+      "failsInfo": "レプリカがプールから外れるまでの、連続したプローブの失敗回数です。",
+      "passes": "復帰までの成功回数",
+      "passesInfo": "レプリカがプールに復帰するまでの、連続したプローブの成功回数です。",
+      "passive": "パッシブチェック",
+      "passiveInfo": "実際のリクエストを監視します。失敗し続けるレプリカは、次のプローブを待つより早く、一定時間スキップされます。",
+      "maxFails": "スキップするまでの失敗回数",
+      "maxFailsInfo": "スキップの条件となる、ウィンドウ内での失敗したリクエストの数です。",
+      "skipFor": "スキップ期間",
+      "skipForInfo": "失敗したレプリカをスキップする期間です。失敗をカウントするウィンドウでもあります。"
+    },
+    "resilience": {
+      "retries": "リトライ",
+      "retriesInfo": "失敗したリクエストを、諦める前に別のレプリカで再試行します。再生できないストリームの場合はオフにしてください。",
+      "retryCountInfo": "最初の試行に追加される試行回数です。0から10。",
+      "giveUp": "諦めるまでの時間",
+      "giveUpInfo": "1つのリクエストのリトライに費やす合計時間です。",
+      "requestTimeout": "リクエストのタイムアウト",
+      "requestTimeoutInfo": "リクエストを失敗とするまでに、レプリカが応答を開始するのを待つ時間です。",
+      "drain": "デプロイ時のドレイン",
+      "drainInfo": "デプロイ中にレプリカが置き換えられるとき、開いている接続が完了するまでの猶予時間です。",
+      "rate": "レート制限",
+      "rateInfo": "クライアントアドレスごとのリクエスト数を制限します。上限を超えたクライアントには、429のレスポンスが返されます。",
+      "rps": "毎秒のリクエスト数",
+      "rpsInfo": "各クライアントアドレスに許可される、持続的なレートです。",
+      "burst": "バースト",
+      "burstInfo": "短時間のスパイクで許可される追加のリクエスト数です。",
+      "tls": "アップストリームへのTLS",
+      "tlsInfo": "レプリカとの通信に、プレーンなHTTPではなくHTTPSを使用します。",
+      "serverName": "サーバー名",
+      "serverNameInfo": "レプリカの証明書が一致する必要がある名前です。",
+      "skipVerify": "検証をスキップ",
+      "skipVerifyInfo": "あらゆる証明書を受け入れます。テスト専用です。なりすましに対する保護がなくなります。",
+      "notVerified": "証明書は検証されません",
+      "verified": "検証済み"
+    },
+    "weights": {
+      "split": "トラフィックの分割: {{parts}}",
+      "part": "レプリカ {{index}} {{share}}%",
+      "title": "トラフィックの分割",
+      "about": "重みについて",
+      "aboutBody": "重みはレプリカのインデックスに対応します。重み3のレプリカは、重み1のレプリカの3倍のトラフィックを受け取ります。",
+      "replica": "レプリカ {{index}}",
+      "weightFor": "レプリカ {{index}} の重み",
+      "slowStart": "スロースタート",
+      "slowStartInfo": "新しいレプリカは、すぐに全体の割合を受け取るのではなく、この時間をかけて0から設定された重みまで徐々に増えていきます。",
+      "ramp": "新しいレプリカは {{duration}} かけて立ち上がります"
+    },
+    "topology": {
+      "traffic": "トラフィック",
+      "howToRead": "図の見方",
+      "howToReadBody": "線の密度は、各レプリカが受け持つ開いている接続の割合を示します。動きが速いほど、レイテンシが低いことを意味します。形とラベルは状態を示します。チェックマーク付きの円は正常、三角形はドレイン中、四角形はダウンです。",
+      "motionOff": "モーションをオフ",
+      "pause": "一時停止",
+      "play": "再生",
+      "diagram": "クライアントからプロキシを経由する、{{total}} 件のアップストリーム(正常 {{healthy}} 件)へのトラフィック",
+      "node": "{{name}}: {{label}}、{{reason}}。詳細を開く",
+      "replica": "レプリカ {{replica}}",
+      "more": "下の表にさらに {{count}} 件",
+      "clients": "クライアント",
+      "proxy": "プロキシ",
+      "noUpstreams": "アップストリームはまだありません",
+      "noUpstreamsHint": "レプリカが起動すると表示されます。",
+      "allDown": "チェックに合格しているものはありません。レプリカが復旧するまで、リクエストが失敗する可能性があります。",
+      "caption": "アップストリームのステータス",
+      "upstream": "アップストリーム",
+      "state": "状態",
+      "reason": "理由",
+      "share": "割合",
+      "connections": "接続数"
+    },
+    "overview": {
+      "noMatch": "このフィルターに一致するロードバランサーはありません",
+      "noMatchHint": "検索をクリアするか、別の状態を選択してください。",
+      "configure": "ロードバランサーを設定",
+      "search": "アプリ名で検索",
+      "searchLabel": "ロードバランサーを検索",
+      "state": "状態",
+      "all": "すべて",
+      "showing": "{{total}} 件中 {{shown}} 件を表示(上限 {{limit}})",
+      "listLabel": "ロードバランサー",
+      "app": "アプリ",
+      "algorithm": "アルゴリズム",
+      "upstreams": "アップストリーム",
+      "lastCheck": "最終チェック",
+      "notYet": "まだありません",
+      "secondsAgo": "{{count}}秒前",
+      "minutesAgo": "{{count}}分前",
+      "hoursAgo": "{{count}}時間前",
+      "noneObserved": "観測なし",
+      "healthyOf": "{{total}} 件中 {{healthy}} 件が正常",
+      "stateBalancing": "分散中",
+      "stateDegraded": "劣化",
+      "stateNone": "アップストリームなし"
+    },
+    "picker": {
+      "title": "ロードバランサーを設定",
+      "description": "レプリカを分散させたいアプリを選択してください。",
+      "noApps": "アプリはまだありません",
+      "noAppsHint": "ロードバランサーは、アプリのレプリカ間でトラフィックを分散するため、先にアプリを作成してください。",
+      "createApp": "アプリを作成",
+      "search": "アプリを検索",
+      "noMatch": "その検索に一致するアプリはありません",
+      "noMatchHint": "より短い名前や、別の名前を試してください。",
+      "truncated": "最初の {{count}} 件の一致を表示しています。検索を絞り込んでください。"
+    },
+    "preset": {
+      "balanced": {
+        "name": "バランス型のWebアプリ",
+        "useWhen": "一般的なステートレスのWebアプリまたはAPI。"
+      },
+      "sticky": {
+        "name": "スティッキーセッション",
+        "useWhen": "セッションが各レプリカのメモリ内にある場合。"
+      },
+      "websockets": {
+        "name": "WebSocketと長時間接続",
+        "useWhen": "ストリーム、ソケット、ロングポーリング。",
+        "note": "アップグレードされた接続は再生できないため、リトライはオフです。"
+      },
+      "cache": {
+        "name": "キャッシュ重視",
+        "useWhen": "各レプリカがパスごとにウォームキャッシュを保持する場合。"
+      },
+      "canary": {
+        "name": "カナリア 90/10",
+        "useWhen": "新しいリリースを、一部のトラフィックで試します。",
+        "note": "重みはレプリカのインデックスに対応します。レプリカが2件の場合、分割は90/10になります。"
+      },
+      "bluegreen": {
+        "name": "ブルーグリーン切り替え",
+        "useWhen": "素早く、スムーズな引き継ぎでリリースを入れ替えます。"
+      },
+      "apiguard": {
+        "name": "公開APIの保護",
+        "useWhen": "インターネットに公開されているAPI。"
+      }
+    },
+    "admin": {
+      "unsupported": "より新しいコントロールプレーンが必要です",
+      "active": {
+        "label": "有効化",
+        "meaning": "ローテーションに戻り、新しいリクエストを受け取ります。"
+      },
+      "draining": {
+        "label": "ドレイン",
+        "meaning": "開いているリクエストを完了させ、新しいリクエストは送りません。"
+      },
+      "disabled": {
+        "label": "無効化",
+        "meaning": "再び有効にするまで、ローテーションから外れます。"
+      }
+    },
+    "change": {
+      "value": {
+        "off": "オフ",
+        "unset": "未設定",
+        "na": "該当なし",
+        "even": "均等",
+        "noVerify": "検証なし",
+        "passive": "失敗 {{fails}} 回、スキップ {{skip}}",
+        "retries": "{{within}} 以内に {{count}} 回",
+        "rate": "{{rps}}/秒、バースト {{burst}}"
+      },
+      "risk": {
+        "algorithm": "クライアントが別のレプリカに移動し、メモリ内のセッションが失われる可能性があります。",
+        "active": "失敗したレプリカにも、引き続きトラフィックが送られます。",
+        "rate": "上限を超えたクライアントには、429のレスポンスが返されます。",
+        "tls": "レプリカの証明書は検証されません。"
+      },
+      "label": {
+        "algorithm": "アルゴリズム",
+        "cookie": "Cookie",
+        "weights": "トラフィックの分割",
+        "active": "ヘルスチェック",
+        "interval": "チェックの間隔",
+        "timeout": "チェックのタイムアウト",
+        "passes": "復帰までの成功回数",
+        "fails": "ダウンと判定するまでの失敗回数",
+        "status": "期待するステータス",
+        "passive": "パッシブチェック",
+        "retries": "リトライ",
+        "slow": "スロースタート",
+        "drain": "ドレイン",
+        "reqTimeout": "リクエストのタイムアウト",
+        "rate": "レート制限",
+        "tls": "アップストリームのTLS"
+      }
+    },
+    "effect": {
+      "none": "変更はありません。",
+      "split": "新しいリクエストは {{split}} に分割されます。",
+      "follow": "新しいリクエストは {{algo}} に従います。",
+      "drain": "デプロイ時、開いているストリームは {{drain}} の間維持されます。",
+      "default": "新しいリクエストに適用されます。開いている接続は切断されません。"
+    },
+    "suggest": {
+      "noHealth": {
+        "title": "ヘルスチェックがありません",
+        "detail": "失敗したレプリカにも、引き続きトラフィックが送られます。",
+        "action": "/healthz のチェックを追加"
+      },
+      "single": {
+        "title": "レプリカが1件のため、分散するものがありません",
+        "detail": "フェイルオーバーのために、レプリカを2件実行してください。",
+        "action": "レプリカ数を設定"
+      },
+      "flapping": {
+        "title": "アップストリームが不安定です",
+        "detail": "10分間に3回以上、状態が変化しています。",
+        "action": "3回の失敗を必須にする"
+      },
+      "ipHash": {
+        "title": "プロキシの背後でのIPハッシュ",
+        "detail": "CDNや共有プロキシの背後にいるクライアントは、1つのレプリカに振り分けられます。",
+        "action": "スティッキーCookieを使用"
+      },
+      "weights": {
+        "title": "重みが無視されています",
+        "detail": "重みを使用するのは、重み付けアルゴリズムのみです。",
+        "action": "重み付けを使用"
+      },
+      "passive": {
+        "title": "パッシブチェックがオフです",
+        "detail": "実際のリクエストの失敗により、レプリカをより早く切り離せる可能性があります。",
+        "action": "有効化"
+      },
+      "slowStart": {
+        "title": "スロースタートがありません",
+        "detail": "新しいレプリカが、すぐに全体の割合を受け取ります。",
+        "action": "30秒かけて立ち上げる"
+      },
+      "drain": {
+        "title": "デプロイで開いているストリームが切断されます",
+        "detail": "ドレイン時間が設定されていません。",
+        "action": "15秒間ドレイン"
+      },
+      "timeout": {
+        "title": "ヘルスチェックのタイムアウトが厳しすぎます",
+        "detail": "チェックのp95は {{ms}}ms で、タイムアウトは {{timeout}} です。",
+        "action": "{{next}}秒に引き上げる"
+      }
+    }
+  },
+  "guided": {
+    "databases": {
+      "title": "データベースはまだありません",
+      "body": "ノード上に、マネージドのPostgres、MySQL、Redis、MongoDBのデータベースを作成できます。バックアップと認証情報は自動で管理されます。",
+      "action": "データベースを作成"
+    },
+    "builds": {
+      "title": "ビルドはまだありません",
+      "body": "アプリがGitリポジトリまたはDockerfileからデプロイされると、ここにビルドが表示されます。アプリをデプロイして、最初のビルドを開始してください。",
+      "action": "アプリをデプロイ"
+    },
+    "backups": {
+      "title": "バックアップされているものはまだありません",
+      "body": "データベースまたはボリュームをバックアップのスケジュールに追加するか、バックアップ先を接続すると、そのコピーがここに表示されます。",
+      "action": "バックアップ先を管理"
+    },
+    "firewall": {
+      "title": "ファイアウォールのルールはまだありません",
+      "body": "アプリが公開しているポートのみが開いています。接続元の範囲からのポートを許可または拒否するルールを追加してください。",
+      "action": "ルールを追加"
+    },
+    "alerts": {
+      "title": "アラートはまだありません",
+      "body": "アラートはアプリに属します。アプリを選択し、クラッシュループ、ドメインの状態、証明書の有効期限のルールを追加してください。",
+      "action": "アプリを選択"
+    },
+    "certificates": {
+      "title": "証明書はまだありません",
+      "body": "アプリにドメインを追加すると、証明書は自動的に発行されます。",
+      "action": "ドメインを追加"
+    }
+  }
+}

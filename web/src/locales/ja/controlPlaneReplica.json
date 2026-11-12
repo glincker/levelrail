@@ -1,0 +1,7 @@
+{
+  "label": "継続レプリカ",
+  "summary": "{{seconds}}秒ごと、最終送信 {{age}}({{kb}} KB、{{ms}} ms)",
+  "neverShipped": "{{seconds}}秒ごと、まだ何も送信されていません",
+  "pending": "{{age}}から変更が待機中です",
+  "error": "前回の送信に失敗しました: {{message}}"
+}

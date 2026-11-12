@@ -1,0 +1,350 @@
+{
+  "receipt": {
+    "button": "レシート(JSON)",
+    "hint": "署名なしのデプロイレシートをダウンロードします。コミット、イメージダイジェスト、リクエスト者、承認者、ゲートのタイムラインを含みます"
+  },
+  "tabs": {
+    "build": "ビルド",
+    "image": "イメージ",
+    "rollout": "ロールアウト",
+    "supply": "サプライチェーン"
+  },
+  "state": {
+    "title": "デプロイのステータス",
+    "now": "現在",
+    "next": {
+      "queued": "先行するデプロイが完了すると、自動的に開始されます。",
+      "held": "デプロイ履歴から解放するか、凍結ウィンドウが終了するまで待ってください。",
+      "building": "ビルドが成功すると新しいコンテナが起動し、トラフィックを受け取る前にヘルスチェックに合格する必要があります。",
+      "buildingStatic": "ビルドが成功すると、出力が直接公開されます。コンテナは起動されません。",
+      "failed": "ビルドタブを開いて失敗したステップを確認し、修正してから、もう一度デプロイしてください。",
+      "rolloutFailed": "以前のバージョンが引き続きリクエストを処理します。コンテナのログとヘルスパスを確認してから、再デプロイまたはロールバックしてください。",
+      "rollingOut": "ヘルスチェックに合格すると、トラフィックが切り替わり、古いコンテナが削除されます。",
+      "staticPublished": "これ以上待つものはありません。サイトにアクセスして、新しいファイルが配信されていることを確認してください。"
+    },
+    "label": {
+      "queued": "待機中",
+      "held": "保留中",
+      "awaitingApproval": "承認待ち",
+      "canceled": "キャンセル済み",
+      "superseded": "置き換え済み",
+      "failed": "ビルド失敗",
+      "building": "ビルド中",
+      "rolloutFailed": "ロールアウト失敗",
+      "published": "公開済み",
+      "live": "稼働中",
+      "rollingOut": "ロールアウト中",
+      "buildDone": "ビルド完了"
+    },
+    "headline": {
+      "queued": "このデプロイは、別のデプロイの後ろで待機中です。",
+      "queuedWhy": "このデプロイは待機中です: {{reason}}。",
+      "held": "このデプロイは保留中です。{{reason}}",
+      "awaitingApproval": "このデプロイは承認を待っています。実行するには、ダッシュボードで承認してください。",
+      "canceled": "このデプロイは、何も変更しないうちにキャンセルされました。",
+      "superseded": "適用される前に、より新しいデプロイに置き換えられました。",
+      "failed": "ビルドが失敗したため、何もロールアウトされていません。",
+      "failedWhy": "ビルドが失敗しました: {{error}}",
+      "building": "{{elapsed}} ビルド中です。",
+      "rolloutFailed": "ビルドは完了しましたが、ロールアウトが失敗しました。",
+      "rolloutFailedWhy": "ビルドは完了しましたが、ロールアウトが失敗しました: {{reason}}",
+      "staticPublished": "静的サイト: イングレスによって直接公開されており、ヘルスチェックするコンテナはありません。",
+      "live": "このデプロイがトラフィックを処理しています。",
+      "rollingOut": "ビルドが完了しました。新しいコンテナが最初のヘルスチェックに合格するのを待っています(これまでに {{elapsed}})。",
+      "rollingOutNoImage": "ビルドが完了しました。このアプリのコンテナイメージがまだ存在しないため、ロールアウトが待機中です(これまでに {{elapsed}})。",
+      "untracked": "ビルドが完了しました。ロールアウトの結果は、最新のデプロイについてのみ追跡されます。",
+      "untrackedImage": "ビルド済みのイメージがデプロイされました。ロールアウトの結果は、最新のデプロイについてのみ追跡されます。"
+    },
+    "mismatch": {
+      "buildOkRolloutPending": "ビルドは完了しましたが、ロールアウトは完了していません。ビルドのステータスとロールアウトのステータスは別々に追跡されるため、両方が同時に成り立ちます。",
+      "buildOkRolloutFailed": "ビルドは成功しましたが、新しいコンテナが正常な状態にならなかったため、以前のバージョンが引き続きリクエストを処理します。",
+      "staticChip": "アプリのステータスが「{{chip}}」なのは、コンテナの準備状況を報告しているためです。静的サイトにはコンテナがないため、そのチップはこのデプロイを妨げません。"
+    },
+    "stuck": {
+      "title": "想定より時間がかかっています",
+      "noImage": "ロールアウトが {{limit}} 以上実行されていますが、このアプリのイメージはビルドされていません。ビルドは実行可能なものを生成しなかったため、起動するものがありません。",
+      "health": "ロールアウトが {{limit}} 以上実行されています。新しいコンテナがヘルスチェックに応答していないか、再起動を繰り返している可能性があります。"
+    },
+    "action": {
+      "containerLogs": "コンテナのログを表示",
+      "healthPath": "ヘルスパスを確認",
+      "network": "ネットワークタブを開く",
+      "rollback": "履歴からロールバック",
+      "redeploy": "ソースを確認して再デプロイ",
+      "buildTab": "ビルドタブを開く"
+    }
+  },
+  "live": {
+    "live": "ライブ",
+    "lastEvent": "最後のイベント: {{ago}}前",
+    "noEvents": "イベントはまだありません",
+    "reconnecting": "再接続中",
+    "reconnectIn": "{{seconds}}秒後に再試行",
+    "retryNow": "今すぐ再試行",
+    "polling": "ライブストリームを利用できません。3秒ごとに更新しています。",
+    "closed": "デプロイが完了しました。ライブストリームを閉じました。",
+    "connecting": "接続中"
+  },
+  "build": {
+    "source": "ソース",
+    "repo": "リポジトリ",
+    "branch": "ブランチ",
+    "commit": "コミット",
+    "builder": "ビルダー",
+    "framework": "検出されたフレームワーク",
+    "image": "イメージ",
+    "steps": "ビルドステップ({{count}})",
+    "traceSteps": "パイプライントレース({{count}})",
+    "download": "ダウンロード",
+    "builderValue": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Railpack",
+      "static": "静的ファイル"
+    },
+    "empty": {
+      "noStepTitle": "このデプロイにはビルドステップがありませんでした",
+      "noStepBody": "ビルド済みのイメージがそのままデプロイされたため、ビルド出力はありません。パイプライントレース(ダイジェスト、プル、起動、ヘルスチェック、切り替え)は、デプロイが始まるとここに表示されます。",
+      "notCapturedTitle": "ビルド出力は取得されませんでした",
+      "notCapturedBody": "ビルドはログ行を記録しませんでした。デプロイ自体は完了しているため、その後の経過はロールアウトタブで確認できます。",
+      "waitingTitle": "ビルド出力を待っています",
+      "waitingBody": "ビルダーが書き込みを始めると、すぐにここに行が表示されます。"
+    },
+    "detected": "検出: {{value}}",
+    "detectedBuilder": "ビルド設定で上書きできます。"
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "タグをダイジェストに解決",
+      "registry_auth": "レジストリ認証の確認",
+      "image_pull": "イメージのプル",
+      "image_pull_layer": "レイヤー",
+      "image_inspect": "イメージのインスペクト",
+      "config_validate": "構成の検証",
+      "ensure_network": "ネットワークの確保",
+      "ensure_volume": "ボリュームの確保",
+      "container_create": "コンテナの作成",
+      "container_start": "コンテナの起動",
+      "docker_event": "Dockerイベント",
+      "readiness_probe": "レディネスプローブ",
+      "readiness_gate": "レディネスゲート",
+      "stability_gate": "安定性ゲート",
+      "cutover": "切り替え",
+      "drain_old": "古いコンテナのドレイン",
+      "retain_image": "ロールバック用にイメージを保持",
+      "compose_parse": "composeファイルの解析",
+      "compose_plan": "Composeプラン",
+      "compose_service": "Composeサービス",
+      "depends_on": "依存関係の順序",
+      "deploy_summary": "デプロイ結果"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "イメージ",
+      "prepare": "準備",
+      "container": "コンテナ",
+      "readiness": "レディネス",
+      "cutover": "切り替え",
+      "summary": "結果"
+    },
+    "attempts_other": "{{count}} 回試行",
+    "pullProgress": "イメージのプルの進捗",
+    "folded": {
+      "image_pull_layer_other": "{{count}} 個のレイヤー",
+      "readiness_probe_other": "プローブの試行 {{count}} 回",
+      "docker_event_other": "デーモンイベント {{count}} 件"
+    }
+  },
+  "rollout": {
+    "title": "ロールアウトのタイムライン",
+    "counts": {
+      "title": "ローリングアップデートの進捗",
+      "wave": "ウェーブ {{wave}} / {{waves}}",
+      "ready": "準備完了",
+      "updated": "更新済み",
+      "unavailable": "利用不可",
+      "surge": "サージ",
+      "policy": "最大サージ {{surge}}、最大利用不可 {{unavailable}}、最小利用可能 {{min}}"
+    },
+    "stageStatus": {
+      "pending": "保留中",
+      "running": "実行中",
+      "done": "完了",
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "unknown": "追跡なし"
+    },
+    "stage": {
+      "build": "ビルド",
+      "publish": "公開",
+      "health-check": "ヘルスチェック",
+      "cutover": "切り替え",
+      "cleanup": "クリーンアップ"
+    },
+    "reason": {
+      "pendingHealth": "ビルドがイメージを生成すると開始されます。",
+      "runningHealth": "新しいコンテナがレディネスプローブに合格するまで、トラフィックを受け取らずに待機しています。",
+      "runningNoImage": "開始できません: このアプリのコンテナイメージがまだ存在しません。",
+      "pendingCutover": "ヘルスチェックに合格した後に開始されます。",
+      "pendingCleanup": "トラフィックが新しいコンテナに移った後に開始されます。",
+      "doneBuild": "ビルドが完了しました。",
+      "donePublish": "イングレスによってファイルが直接公開されました。",
+      "skippedBuild": "このデプロイではビルドステップが実行されませんでした。",
+      "stuck": "{{limit}} 以上実行されています。"
+    },
+    "staticNote": "静的サイト: イングレスによって直接公開されており、ヘルスチェックするコンテナはありません。",
+    "started": "開始: {{at}}",
+    "finished": "完了: {{at}}",
+    "duration": "所要時間: {{duration}}",
+    "runningFor": "{{duration}} 実行中",
+    "details": "詳細",
+    "technical": "技術的な詳細",
+    "gate": "レディネスゲートと監視",
+    "probes": "ヘルスプローブの試行",
+    "conditionLine": "{{reason}}({{status}}): {{message}}",
+    "noConditions": "リコンサイラーは、このアプリのステータスをまだ報告していません。"
+  },
+  "page": {
+    "notInHistory": "このデプロイの試行は、このアプリの現在の履歴にありません。",
+    "currentChip": "現在"
+  },
+  "drawer": {
+    "whatWentWrong": "問題の内容",
+    "failedAtStep": "失敗したステップ: {{step}}",
+    "noErrorRecorded": "デプロイが失敗しました。エラーは記録されていません。",
+    "lastLogLines": "最後のログ行",
+    "tailFailed": "ログの末尾を読み込めませんでした。",
+    "viewFullLogs": "すべてのログを表示",
+    "live": "ライブ",
+    "timing": "タイミング",
+    "started": "開始",
+    "finished": "完了",
+    "duration": "所要時間",
+    "notFinished": "未完了",
+    "source": "ソース",
+    "trigger": "トリガー",
+    "rollbackTo": "ロールバック先",
+    "branch": "ブランチ",
+    "commit": "コミット",
+    "message": "メッセージ",
+    "author": "作成者",
+    "pullRequest": "プルリクエスト",
+    "app": "アプリ",
+    "image": "イメージ",
+    "domains": "ドメイン",
+    "loadingDomains": "ドメインを読み込み中",
+    "noDomains": "ドメインが構成されていません。",
+    "preview": "プレビュー",
+    "supplyChain": "サプライチェーン"
+  },
+  "stream": {
+    "title": "ライブログストリームが切断されました",
+    "bodyNoRetry": "再接続するまで、行が欠落している可能性があります。",
+    "nextAttempt": "次の試行: {{when}}。",
+    "retryIn": "{{seconds}}秒後",
+    "retryNow": "今すぐ再試行",
+    "switchToPolling": "ポーリングに切り替え",
+    "download": "完全なログをダウンロード"
+  },
+  "fix": {
+    "title": "修正して再デプロイ",
+    "hint": "原因である可能性が最も高い設定を開いて変更し、再デプロイしてください。",
+    "link": {
+      "environment": "環境変数を編集",
+      "source": "ビルド設定を確認",
+      "deploySettings": "デプロイ設定を確認",
+      "resources": "リソースを調整"
+    },
+    "docs": "このエラーのドキュメントを読む"
+  },
+  "fixReturn": {
+    "body": "失敗したデプロイ({{target}})を修正していました。変更を適用するには再デプロイしてください。",
+    "redeploy": "今すぐ再デプロイ",
+    "back": "失敗したデプロイに戻る",
+    "dismiss": "閉じる",
+    "region": "変更を反映して再デプロイ",
+    "started": "変更を反映して再デプロイしています。"
+  },
+  "rebuild": {
+    "started": "再ビルドを開始しました。",
+    "startedNoCache": "キャッシュなしの再ビルドを開始しました。"
+  },
+  "report": {
+    "copy": "レポートとしてコピー",
+    "copied": "レポートをコピーしました",
+    "failed": "レポートをコピーできませんでした",
+    "stage": "失敗したステージ"
+  },
+  "cache": {
+    "summary": "キャッシュ: {{total}} ステップ中 {{cached}} ステップを再利用",
+    "unknown": "キャッシュ: 不明"
+  },
+  "rollback": {
+    "note": "イメージ {{image}} を復元します。環境変数、ボリューム、マイグレーションは元に戻りません。"
+  },
+  "phases": {
+    "label": "ビルドフェーズ",
+    "all": "すべて",
+    "install": "インストール",
+    "build": "ビルド",
+    "push": "プッシュ",
+    "other": "その他",
+    "chip": "{{phase}}({{count}})",
+    "showSteps": "ステップを表示",
+    "hideSteps": "ステップを隠す",
+    "stepsLabel": "ビルドステップ",
+    "cached": "キャッシュ済み",
+    "jump": "{{label}} の最初の行へ移動",
+    "total": "{{phase}}: {{time}}",
+    "noTiming": "タイミングなし",
+    "truncated": "フェーズは最初の {{count}} 行からのみ検出されました。"
+  },
+  "chain": {
+    "position": "このチェーンの {{position}} 回目の試行"
+  },
+  "deployPhases": {
+    "label": "デプロイの進捗",
+    "phase": {
+      "upload": "アップロード",
+      "install": "インストール",
+      "build": "ビルド",
+      "export_image": "イメージのエクスポート",
+      "health_check": "ヘルスチェック",
+      "cutover": "切り替え"
+    },
+    "status": {
+      "pending": "待機中",
+      "running": "進行中",
+      "done": "完了",
+      "failed": "失敗",
+      "skipped": "スキップ"
+    },
+    "eta": "通常は約 {{typical}} 分かかります。残り {{left}} 分",
+    "etaOver": "通常は約 {{typical}} 分かかりますが、今回は時間がかかっています",
+    "stillWorking": "処理中です。しばらく新しいログ行がありませんが、長いステップでは通常のことです。",
+    "stillWorkingExport": "処理中です。イメージのエクスポートは数分間出力がないことがありますが、通常のことです。"
+  },
+  "buildReport": {
+    "title": "ビルドレポート",
+    "shared": "共通の初回ロード",
+    "route": "ルート",
+    "kind": "種類",
+    "size": "サイズ",
+    "firstLoad": "初回ロード",
+    "noRoutes": "ビルド出力にルートが見つかりませんでした。",
+    "warnings": "ご注意",
+    "notStored": "ビルドログが保存されていないため、このデプロイのレポートはありません。",
+    "kinds": {
+      "static": "静的",
+      "isr": "ISR",
+      "dynamic": "動的",
+      "unknown": "不明"
+    }
+  },
+  "failureCard": {
+    "title": "問題の内容",
+    "stage": "失敗したステージ",
+    "error": "エラー",
+    "showLess": "表示を減らす",
+    "showMore": "もっと見る"
+  }
+}

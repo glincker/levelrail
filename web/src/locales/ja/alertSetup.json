@@ -1,0 +1,93 @@
+{
+  "template": {
+    "label": "アラートテンプレート",
+    "profile": "アプリの種類",
+    "web": "Webアプリ",
+    "worker": "ワーカー",
+    "database": "データベース",
+    "webHint": "クラッシュループ、5xx率、応答の遅延、CPU、99.9%の可用性SLOです。",
+    "workerHint": "クラッシュループとCPUです。",
+    "databaseHint": "クラッシュループとCPUです。",
+    "apply": "推奨ルールを追加",
+    "applying": "追加中...",
+    "created": "{{count}}件のアラートルールを追加しました",
+    "createdSkipped": "{{count}}件のアラートルールを追加しました。{{skipped}}件はすでに存在していました",
+    "allExist": "推奨ルールはすべてすでに存在します",
+    "failed": "推奨ルールを追加できませんでした",
+    "noChannel": "通知チャンネルが接続されていないため、接続するまでこれらのルールはアラート履歴にのみ表示されます。"
+  },
+  "quiet": {
+    "title": "サイレント時間",
+    "description": "毎日の指定した時間帯は警告と情報のアラートを保留し、時間帯が終わった時点でまだ発報中であれば送信します。重大なアラートは常に通知されます。",
+    "enabled": "重大でないアラートを保留",
+    "start": "開始",
+    "end": "終了",
+    "timezone": "タイムゾーン",
+    "save": "サイレント時間を保存",
+    "saving": "保存中...",
+    "saved": "サイレント時間を保存しました",
+    "clear": "削除",
+    "cleared": "サイレント時間を削除しました",
+    "loadError": "サイレント時間を読み込めませんでした。",
+    "saveError": "サイレント時間を保存できませんでした"
+  },
+  "rules": {
+    "notConfigured": "未設定",
+    "generic": "汎用",
+    "colName": "名前",
+    "disabled": "無効",
+    "colState": "状態",
+    "stateFiring": "発報中",
+    "statePending": "保留中",
+    "stateOk": "正常",
+    "countFiring": "{{count}}件が発報中",
+    "countPending": "{{count}}件が保留中",
+    "countOk": "{{count}}件が正常",
+    "silenced": "サイレンス中",
+    "silencedTip": "通知はサイレンスされています",
+    "viewLogs": "ログを表示",
+    "colKind": "種類",
+    "colCondition": "条件",
+    "colLastEvaluated": "最終評価",
+    "never": "なし",
+    "colLastValue": "最終値",
+    "colNotify": "通知",
+    "title": "アラートルール",
+    "description": "このアプリのメトリクス、再起動、ジョブ、ドメイン、バックアップスケジュールに対する、しきい値、クラッシュループ、証明書の有効期限、スケジュールタスクの失敗、ドメインの正常性、バックアップ欠落のルールです。発報と解消の遷移時に、Webhook、Slack、Discordで通知します。",
+    "emptyTitle": "アラートルールはまだありません",
+    "emptyDescription": "メトリクスがしきい値を超えた瞬間や、コンテナがクラッシュループを始めた瞬間に、Webhook、Slack、Discordで通知を受け取れます。"
+  },
+  "slo": {
+    "title": "{{target}}%の可用性SLOを追跡",
+    "detail": "このアプリはトラフィックを配信していますが、SLOアラートがありません。{{target}}%の目標では、30日間のエラーバジェットが急速に消費されると呼び出しで通知し、ゆっくり消費されるとチケットレベルのアラートを作成します。",
+    "noChannel": "通知チャンネルがまだ接続されていないため、接続するまでこのルールはアラート履歴にのみ表示されます。",
+    "create": "SLOルールを作成",
+    "ruleName": "{{target}}%の可用性SLO",
+    "created": "SLOアラートルールを作成しました。",
+    "createFailed": "SLOルールを作成できませんでした。"
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "ドメインのトラフィック低下",
+        "help": "ウィンドウ内のリクエスト数が、前日の同じウィンドウに対する割合を下回ると発報します。比較できるだけの前日のトラフィックがあるまでは発報しません。"
+      },
+      "parked_domain_cert_expiry": {
+        "label": "パークドメインの証明書の有効期限",
+        "help": "パークドメインの証明書の残り日数が上限を下回ると発報します。プラットフォーム上のすべてのパークドメインが対象です。"
+      }
+    },
+    "scopeLabel": "ドメイン",
+    "scopeApp": "アプリ: {{app}}",
+    "scopeAll": "このアプリのすべてのドメイン",
+    "scopeHelp": "このアプリのすべてのドメイン、または1つだけを監視します。",
+    "windowLabel": "ウィンドウ",
+    "windowHelp": "前日の同じ時間帯と比較する期間の長さです。0から24時間。",
+    "percentLabel": "前日に対する下限パーセント",
+    "percentHelp": "トラフィックが前日のこのパーセントを下回ると発報します。50は半分を意味します。",
+    "minRequestsLabel": "前日の最小リクエスト数",
+    "minRequestsHelp": "前日のリクエスト数がこれより少ない場合はチェックをスキップするため、トラフィックの少ないドメインでアラートは発生しません。",
+    "daysLabel": "残り日数",
+    "daysHelp": "パークドメインの証明書の残り日数がこれより少ないと発報します。"
+  }
+}

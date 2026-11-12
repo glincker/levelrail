@@ -1,0 +1,73 @@
+{
+  "tableLabel": "公開ポート",
+  "title": "公開ポート",
+  "description": "サーバーのネットワークインターフェースで公開されているコンテナのポートです。Dockerはこれらに対してufwを迂回するため、有効に見えるファイアウォールでも保護されません。",
+  "probe": "外部から確認",
+  "probing": "確認中",
+  "probeNote": "確認に失敗した場合は「確認できませんでした」と報告され、閉じているとは報告されません。多くのルーターは、サーバーが自身の公開アドレスに接続することをブロックします。",
+  "emptyTitle": "インターネットに公開されているものはありません",
+  "emptyBody": "このサーバー上で、制限なしに公開アドレスで待ち受けているコンテナはありません。",
+  "nodeUnreachable": "このノードを監査できませんでした: {{error}}",
+  "rulesUnreadable": "ホストのファイアウォールチェーンを読み取れませんでした: {{reason}}",
+  "columns": {
+    "severity": "重大度",
+    "port": "ポート",
+    "container": "コンテナ",
+    "owner": "所有者",
+    "bind": "待ち受け先",
+    "state": "状態"
+  },
+  "severity": {
+    "high": "高",
+    "medium": "中",
+    "low": "低",
+    "info": "情報"
+  },
+  "class": {
+    "loopback": "このサーバーのみ",
+    "private": "プライベートネットワーク",
+    "restricted": "制限あり",
+    "exposed": "公開中",
+    "unknown": "不明"
+  },
+  "owner": {
+    "database": "データベース {{name}}",
+    "app": "アプリ {{name}}",
+    "unmanaged": "管理対象外"
+  },
+  "outside": {
+    "answers": "このホストの外部から応答があります",
+    "could_not_confirm": "このホストからは確認できませんでした"
+  },
+  "restrictedTo": "次からのみ許可: {{sources}}",
+  "details": "詳細",
+  "hideDetails": "詳細を隠す",
+  "restrict": "これらの接続元のみ許可",
+  "remove": "制限を解除",
+  "removedToast": "制限を解除しました",
+  "appliedToast": "制限を適用しました",
+  "failedToast": "ファイアウォールを変更できませんでした",
+  "dialog": {
+    "title": "ポート {{port}} を制限",
+    "description": "指定した接続元のみが接続できます。インターネットを含むそれ以外はすべて破棄されます。",
+    "sources": "許可する接続元",
+    "sourcesHint": "1行につきIPまたはCIDRを1つ入力します。例: 他のサーバー",
+    "localContainers": "このサーバー上のコンテナも許可する",
+    "preview": "ルールをプレビュー",
+    "previewTitle": "実際のルール",
+    "effect": "破棄される通信",
+    "apply": "制限を適用",
+    "cancel": "キャンセル",
+    "confirm": "この通信が破棄されることを理解しました",
+    "persistence": "永続化",
+    "lockoutTitle": "締め出しのリスク",
+    "callerWarningTitle": "あなたのアドレスは確認されていません",
+    "forceLockout": "リスクを承知のうえ、それでも適用します",
+    "autoRevert": "このルールは試験的に適用され、次のステップで保持しない限り自動的にロールバックされます。",
+    "trialTitle": "制限を試験的に適用しました",
+    "trialBody": "必要なものに引き続き接続できることを確認してください。保持しない限り、{{time}} にルールはロールバックされます。",
+    "keep": "このルールを保持",
+    "letRevert": "ロールバックする",
+    "keptToast": "制限を保持しました"
+  }
+}

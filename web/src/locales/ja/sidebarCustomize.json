@@ -1,0 +1,20 @@
+{
+  "title": "サイドバーをカスタマイズ",
+  "description": "グループやページの並べ替え、表示、非表示ができます。非表示にしたページも検索から開けます。",
+  "groups": "サイドバーのグループ",
+  "itemsIn": "{{label}}内のページ",
+  "moveUp": "{{label}}を上へ移動",
+  "moveDown": "{{label}}を下へ移動",
+  "show": "{{label}}を表示",
+  "moved": "{{label}}を{{total}}件中{{position}}番目に移動しました",
+  "currentPage": "現在のページ",
+  "currentGroup": "現在のページを含む",
+  "reset": "初期設定に戻す",
+  "resetDone": "サイドバーを初期設定に戻しました",
+  "done": "完了",
+  "recent": {
+    "group": "最近",
+    "app": "アプリ",
+    "database": "データベース"
+  }
+}

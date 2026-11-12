@@ -1,0 +1,58 @@
+{
+  "title": "デプロイコンテキスト",
+  "description": "デプロイの種類ごとに、環境変数と静的ビルドの設定を指定します。空のままの項目は、アプリの既定値を引き継ぎます。",
+  "editor": {
+    "context": "コンテキスト",
+    "branchPattern": "ブランチパターン",
+    "branchPatternHint": "正確な名前、またはrelease/*のようなglobを指定します。",
+    "env": "環境変数",
+    "envHint": "1行にKEY=VALUEを1つ。シークレットにはブランチの環境変数の上書きを使ってください。",
+    "buildCommand": "ビルドコマンド",
+    "publishDir": "公開ディレクトリ",
+    "buildArgs": "ビルド引数",
+    "buildArgsHint": "1行にKEY=VALUEを1つ。",
+    "save": "コンテキストを保存",
+    "saving": "保存中",
+    "saved": "コンテキストを保存しました。",
+    "saveError": "コンテキストを保存できませんでした。",
+    "clear": "クリア",
+    "cleared": "コンテキストをクリアしました。",
+    "clearError": "コンテキストをクリアできませんでした。",
+    "invalidLine": "「{{line}}」の行はKEY=VALUEの形式にしてください。",
+    "loadError": "保存済みのコンテキストを読み込めませんでした。"
+  },
+  "contexts": {
+    "deploy-preview": "デプロイプレビュー (プルリクエスト)",
+    "branch-deploy": "ブランチデプロイ",
+    "branch": "特定のブランチ"
+  },
+  "saved": {
+    "title": "保存済みのコンテキスト",
+    "empty": "コンテキストの上書きはまだありません。すべてのデプロイでアプリの既定値が使われます。",
+    "summary": "環境変数{{env}}個、ビルド引数{{args}}個",
+    "edit": "編集"
+  },
+  "effective": {
+    "title": "このデプロイの有効な設定",
+    "description": "どの値が優先され、どこから来たかを表示します。シークレットはマスクされたままです。",
+    "context": "デプロイ形態",
+    "production": "本番",
+    "branch": "ブランチ",
+    "branchPlaceholder": "release/1.2",
+    "env": "環境変数",
+    "buildCommand": "ビルドコマンド",
+    "publishDir": "公開ディレクトリ",
+    "buildArg": "ビルド引数 {{name}}",
+    "none": "なし",
+    "empty": "このデプロイには環境変数が設定されていません。",
+    "loadError": "有効な設定を読み込めませんでした。",
+    "secret": "シークレット",
+    "source": {
+      "app": "アプリの既定値",
+      "preview-env": "プレビュー環境",
+      "context": "コンテキスト",
+      "branch-context": "ブランチのコンテキスト",
+      "branch-env": "ブランチの上書き"
+    }
+  }
+}

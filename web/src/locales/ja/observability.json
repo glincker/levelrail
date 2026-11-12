@@ -1,0 +1,379 @@
+{
+  "chart": {
+    "noData": "この範囲にデータはありません。"
+  },
+  "compare": {
+    "toggle": "前の期間と比較",
+    "previousPeriod": "前の期間",
+    "previous5xx": "5xx、前の期間",
+    "previousP95": "p95、前の期間"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "メモリ",
+    "network": "ネットワークI/O",
+    "disk": "ディスクI/O",
+    "build": "ビルド所要時間",
+    "requestRate": "リクエストレート",
+    "requestRateHint": "イングレスでの1秒あたりのリクエスト数",
+    "requests": "リクエスト",
+    "errorRate": "エラー率",
+    "errorRateHint": "4xxと5xxで応答したリクエストの割合",
+    "latency": "レイテンシ",
+    "latencyHint": "この範囲のp95は {{p95}} ms",
+    "memoryLimit": "上限 {{limit}}、使用量 {{usage}}"
+  },
+  "series": {
+    "CPU": "CPU",
+    "usage": "使用量",
+    "limit": "上限",
+    "received": "受信",
+    "sent": "送信",
+    "read": "読み取り",
+    "write": "書き込み",
+    "duration": "所要時間"
+  },
+  "markers": {
+    "deploy": "{{status}}のデプロイ: {{image}}、開始 {{time}}",
+    "restart": "{{time}} にコンテナを {{count}} 回再起動"
+  },
+  "deployStatus": {
+    "succeeded": "成功",
+    "failed": "失敗",
+    "running": "実行中",
+    "held": "保留中(凍結)",
+    "awaiting_approval": "承認待ち",
+    "superseded": "置き換え済み",
+    "queued": "待機中",
+    "canceled": "キャンセル済み",
+    "pending": "ノードの復帰まで待機中"
+  },
+  "deployDetails": {
+    "title": "{{status}}のデプロイ",
+    "image": "イメージ",
+    "commit": "コミット",
+    "source": "実行元",
+    "duration": "所要時間",
+    "error": "エラー",
+    "openLogs": "デプロイログを開く"
+  },
+  "dashboard": {
+    "title": "メトリクス",
+    "summary": "{{time}} 時点。この範囲のデプロイは {{deploys}} 件です。破線はデプロイ(緑は成功、赤は失敗、灰色は実行中)、琥珀色の線はコンテナの再起動を示します。",
+    "restarts": "再起動: この範囲で {{count}} 回。",
+    "hint": "チャートを選択すると、その時点を調査できます。マーカーを選択すると、デプロイの詳細が表示されます。"
+  },
+  "range": {
+    "from": "開始",
+    "to": "終了",
+    "apply": "範囲を適用"
+  },
+  "requests": {
+    "unavailable": "リクエストのメトリクスを利用できません: {{message}}",
+    "empty": "この範囲にリクエストのトラフィックはありません。アプリがドメイン経由でリクエストを受け付けると、リクエストレート、エラー率、レイテンシがここに表示されます。"
+  },
+  "investigation": {
+    "title": "調査",
+    "heading": "{{time}} を調査中",
+    "window": "{{from}} から {{to}} のウィンドウを、その前のウィンドウと比較しています。",
+    "viewLogs": "この時刻のログを表示",
+    "clear": "選択を解除",
+    "beforeAfter": "前と発生中",
+    "baseline": "前",
+    "during": "発生中",
+    "metric": {
+      "rate": "リクエストレート",
+      "p50": "p50レイテンシ",
+      "p95": "p95レイテンシ",
+      "p99": "p99レイテンシ",
+      "err4": "4xxの割合",
+      "err5": "5xxの割合"
+    },
+    "noTraffic": "このウィンドウにリクエストのトラフィックはありません。",
+    "topRoutes": "上位のルート",
+    "noRoutes": "このウィンドウに記録されたルートはありません。",
+    "routesUnavailable": "このコントロールプレーンでは、ルートごとの統計を利用できません。",
+    "route": "ルート",
+    "requests": "リクエスト",
+    "avg": "平均",
+    "statusCodes": "ステータスコード",
+    "whatChanged": "変更内容",
+    "noChanges": "この時間帯に変更はありませんでした。",
+    "likelyCause": "考えられる原因"
+  },
+  "logs": {
+    "serviceFilter": {
+      "label": "サービス"
+    },
+    "container": "コンテナ",
+    "allContainers": "すべてのコンテナ",
+    "stream": "ストリーム",
+    "anyStream": "stdoutとstderr",
+    "minLevel": "最小レベル",
+    "anyLevel": "すべてのレベル",
+    "jsonFields": "JSONフィールド",
+    "fieldKey": "field.path",
+    "fieldOp": "演算子",
+    "fieldValue": "値",
+    "addFilter": "フィルターを追加",
+    "removeFilter": "フィルター {{filter}} を削除",
+    "copyPermalink": "パーマリンクをコピー",
+    "copied": "コピーしました"
+  },
+  "live": {
+    "pause": "ライブテールを一時停止",
+    "resume": "再開(新しい {{count}} 行)"
+  },
+  "failure": {
+    "title": "障害のコンテキスト",
+    "crashloopTitle": "このアプリはクラッシュループしています",
+    "deployFailedTitle": "最新のデプロイが失敗しました",
+    "crashloopSummary": "直近 {{minutes}} 分間に {{count}} 回再起動しました。コンテナが最後に書き込んだ行を表示しています。",
+    "deploySummary": "{{image}} のデプロイが完了しませんでした。その出力の最後の行を表示しています。",
+    "copy": "行をコピー",
+    "openDeployLogs": "デプロイログを開く",
+    "openLogs": "すべてのログを開く",
+    "noLines": "この障害に対して取得されたログ行はありません。",
+    "lastLine": "最後の行:",
+    "showing": "全 {{total}} 行のうち、最後の {{shown}} 行を表示しています。",
+    "linesLabel": "障害が発生したコンテナの最後のログ行",
+    "expand": "詳細を表示",
+    "collapse": "詳細を隠す"
+  },
+  "containerExit": {
+    "exitedAt": "{{time}} にコンテナが終了コード {{code}} で終了しました",
+    "exited": "コンテナが終了コード {{code}} で終了しました",
+    "oomAt": "{{time}} にメモリ上限を超えたため、コンテナが強制終了されました",
+    "oom": "メモリ上限を超えたため、コンテナが強制終了されました",
+    "deployTitle": "このリリースが停止した理由",
+    "deploySummary": "コンテナ {{container}} は、リクエストを処理できる状態になる前に停止しました。コンテナが最後に出力した行を表示しています。",
+    "noLines": "コンテナは停止するまで何も出力しませんでした。",
+    "showing": "最後の {{count}} 行",
+    "linesLabel": "コンテナが最後に出力した行",
+    "hint": "エントリポイントにサブコマンド(例: serve)が必要なイメージは、指定がない場合にヘルプを出力して終了コード0で終了します。コマンドを設定して再デプロイしてください。"
+  },
+  "liveLogs": {
+    "lineCount": "{{count}} 行(直近のコンテキストに続いてライブ)",
+    "lastOutput": "{{count}} 行: 停止したコンテナの最後の出力",
+    "waiting": "ログ出力を待っています...",
+    "noContainer": "ログを出力するコンテナが実行されていません: {{reason}}",
+    "viewDeploys": "直近のデプロイログを表示"
+  },
+  "connection": {
+    "connecting": "接続中...",
+    "open": "ライブ",
+    "error": "再接続中...",
+    "notRunning": "実行されていません",
+    "noContainer": "コンテナなし"
+  },
+  "databaseRule": {
+    "kind": {
+      "database_disk_high": "データベースのディスク使用率が高い",
+      "database_connections_high": "データベースの接続数が多い",
+      "database_down": "データベースのダウン",
+      "database_backup_stale": "データベースのバックアップが古い"
+    },
+    "database": "データベース",
+    "choose": "データベースを選択",
+    "noDatabases": "データベースはまだありません。先にデータベースのページから作成してください。",
+    "thresholdPercent": "アラートのしきい値(パーセント)",
+    "thresholdHours": "最後に成功したバックアップがこの時間より古い場合にアラート(時間)",
+    "hint": {
+      "database_disk_high": "データディスクの使用率がこの値以上の間、発火します。デフォルト(85)にするには0のままにしてください。",
+      "database_connections_high": "開いている接続数が上限のこの割合以上の間、発火します。デフォルト(80)にするには0のままにしてください。",
+      "database_down": "データベースが接続を受け付けていない間、発火します。",
+      "database_backup_stale": "最新の成功したバックアップがこれより古い場合に発火します。デフォルト(26時間)にするには0のままにしてください。"
+    },
+    "pickDatabase": "監視するデータベースを選択してください",
+    "badPercent": "0から100の間で指定してください",
+    "badHours": "0から8760の間で指定してください"
+  },
+  "alertKinds": {
+    "whatToDo": "対処方法",
+    "backup_failed": {
+      "label": "バックアップの失敗",
+      "description": "スケジュールされたバックアップが完了しなかったときに発火します。",
+      "action": "失敗したバックアップの実行を開いてエラーを確認し、原因を修正してから、バックアップを実行して成功することを確認してください。"
+    },
+    "deploy_failed": {
+      "label": "デプロイの失敗",
+      "description": "新しいリリースがトラフィックを処理する前にデプロイが停止したときに発火します。",
+      "action": "デプロイのログを読んで停止した理由を確認し、原因を修正してから、もう一度デプロイしてください。"
+    },
+    "monitor_down": {
+      "label": "モニターのダウン",
+      "description": "稼働監視モニターが確認チェックの後もダウンしたままのときに発火し、復旧すると解消されます。",
+      "action": "モニターの結果を開いて失敗の理由を確認し、対象またはそのネットワーク経路を修正してください。"
+    },
+    "oom_killed": {
+      "label": "OOMによる強制終了",
+      "description": "再起動ウィンドウ内で、メモリ不足のためカーネルがこのアプリのコンテナを繰り返し強制終了したときに発火します。",
+      "action": "アプリのメモリ上限を引き上げるか、リークを修正してから再デプロイし、メモリのチャートを確認してください。"
+    },
+    "database_down": {
+      "label": "データベースのダウン",
+      "description": "データベースが接続を受け付けていない間、発火します。",
+      "action": "データベースのログを確認し、停止している場合は再起動してください。"
+    },
+    "database_backup_stale": {
+      "label": "データベースのバックアップが古い",
+      "description": "最新の成功したバックアップが、設定した上限より古い場合に発火します。",
+      "action": "データベースのバックアップスケジュールと最近のバックアップの実行を確認し、今すぐバックアップを実行してください。"
+    },
+    "database_disk_high": {
+      "label": "データベースのディスク使用率が高い",
+      "description": "データベースのデータディスクの使用率がしきい値以上の間、発火します。",
+      "action": "データベースの容量が尽きる前に、データディスクの空き容量を確保するか、サイズを拡張してください。"
+    },
+    "database_connections_high": {
+      "label": "データベースの接続数が多い",
+      "description": "開いている接続数がデータベースの上限に近い間、発火します。",
+      "action": "アプリにアイドル状態の接続やリークした接続がないか確認するか、接続数の上限を引き上げてください。"
+    },
+    "node_disk_space": {
+      "label": "ノードのディスク容量",
+      "description": "ノードのディスクがほぼ満杯になったときに発火します。",
+      "action": "ノード上の未使用のイメージと古いログを削除するか、ワークロードを別のノードに移してください。"
+    },
+    "email_delivery_failing": {
+      "label": "メール配信の失敗",
+      "description": "送信メールの送信失敗が続いている間、発火します。",
+      "action": "メールプロバイダーの設定と最近の配信エラーを確認し、テストメールを送信してください。"
+    },
+    "cleanup_failing": {
+      "label": "データクリーンアップの失敗",
+      "description": "スケジュールされた、または手動のデータクリーンアップの実行が失敗し続けている間、発火します。",
+      "action": "クリーンアップを開いて失敗した実行のエラーを確認し、そのデータ種別をもう一度実行してください。"
+    },
+    "job_failing": {
+      "label": "ジョブの失敗",
+      "description": "失敗時のアラートが有効なこのアプリのジョブが失敗するたびに、ジョブごとにレート制限付きで1回発火します。",
+      "action": "ジョブの実行履歴を開いて失敗した実行のログを確認し、原因を修正してから、今すぐ実行して確認してください。"
+    }
+  },
+  "budgetThreshold": {
+    "hint": "プロジェクトまたはチームの予算(使用量とコスト)が警告レベルに達した、上限を超えた、または今月中に超過すると予測される間、発火します。新しいレベルを超えたときにのみ、再度通知されます。"
+  },
+  "alerts": {
+    "noChannelWarning": "通知チャンネルが設定されていないため、このルールは誰にも通知せずに発火します。上でチャンネルを選択するか、設定 > 通知チャンネルで接続してください。"
+  },
+  "explorer": {
+    "title": "上位のエラーシグネチャ",
+    "subtitle": "数値、ID、タイムスタンプを無視して、似たエラー行をまとめています。",
+    "occurrences_other": "{{count}} 回発生",
+    "firstSeen": "初回検出 {{time}}",
+    "lastSeen": "最終検出 {{time}}",
+    "newBadge": "新規",
+    "sparkline": "選択した範囲における {{count}} 回の発生の推移",
+    "viewLines": "行を表示",
+    "alertOnThis": "これをアラート対象にする",
+    "onlyNew_other": "新規のみ({{count}})",
+    "noNew": "この範囲に新しい種類のエラーはありません。",
+    "empty": "この範囲にエラー行はありません。",
+    "emptyHint": "時間範囲を広げるか、次回のデプロイ後にもう一度確認してください。",
+    "truncated": "最新の {{rows}} 行のみ読み取りました。正確な件数を得るには範囲を絞り込んでください。",
+    "saved": "保存済み",
+    "orderLabel": "結果の並び順",
+    "orderNewest": "新しい順",
+    "orderRelevance": "関連度順",
+    "savedHeading": "保存済みのクエリ",
+    "savedEmpty": "このアプリの保存済みクエリはまだありません。",
+    "recent": "最近",
+    "saveName": "現在の検索の名前",
+    "saveCurrent": "現在の検索を保存",
+    "saveNeedsFilter": "保存するには、検索、レベル、またはフィールドのフィルターを追加してください。",
+    "shareWithTeam": "このアプリを表示できるすべてのユーザーと共有",
+    "pinToApp": "このアプリにピン留め",
+    "savedToast": "クエリを保存しました。",
+    "deleteSaved": "保存済みクエリ {{name}} を削除",
+    "alertFromSearch": "これをアラート対象にする",
+    "alertTitle": "ログアラートを作成",
+    "alertDescription": "ウィンドウ内で一致する行がしきい値に達すると発火します。保存されたログに対して毎分チェックされます。",
+    "alertAnyLine": "{{level}} 以上のすべての行",
+    "alertDefaultName": "{{app}} のログアラート",
+    "alertName": "名前",
+    "alertMode": "アラートの種類",
+    "modeCount": "一致する件数が次以上",
+    "modeRate": "1分あたりの行数が次以上",
+    "alertThreshold": "しきい値",
+    "alertWindow": "ウィンドウ",
+    "inWindow": "{{window}} 以内",
+    "cooldown": "クールダウン",
+    "channel": "通知チャンネル",
+    "channelNone": "チャンネルなし",
+    "cancel": "キャンセル",
+    "createAlert": "アラートを作成",
+    "alertCreated": "アラートルール「{{name}}」を作成しました。",
+    "wrap": "折り返し",
+    "entryDetail": "ログ行",
+    "copyLine": "行をコピー",
+    "closeDetail": "詳細を閉じる",
+    "filterByField": "{{field}} で絞り込み",
+    "context": "前後の行",
+    "loading": "読み込み中...",
+    "signatureFilter": "エラーシグネチャ {{id}} の行を表示しています。",
+    "clearSignature": "すべての行を表示",
+    "newErrorTypes_other": "このデプロイ以降、新しい種類のエラーが {{count}} 件あります",
+    "tabErrors": "エラー",
+    "conditionPattern": "{{what}} に一致する行が {{minutes}} 分以内に {{count}} 行以上",
+    "conditionRate": "{{minutes}} 分間にわたり、{{level}} 以上の行が毎分 {{rate}} 行を超える",
+    "searchPlaceholder": "ログメッセージを検索...",
+    "searchLabel": "ログメッセージを検索",
+    "clearSearch": "検索をクリア",
+    "searchSyntax": "構文: \"完全一致のフレーズ\"、prefix*、a OR b、a NOT b、-word、( ) でグループ化。"
+  },
+  "slo": {
+    "title": "サービスレベル目標",
+    "availabilityObjective": "リクエストの {{target}}% が成功する",
+    "latencyObjective": "リクエストの {{target}}% が {{ms}} ms以内に完了する",
+    "noTraffic": "トラフィックなし",
+    "noTrafficHint": "評価ウィンドウ内にこのアプリへのリクエストがなかったため、まだ測定するものがありません。",
+    "paging": "ページング",
+    "burning": "消費中",
+    "healthy": "正常",
+    "firing": "発火中",
+    "budgetRemaining": "残りのエラーバジェット",
+    "tierWindow": "{{name}}({{long}}と{{short}})",
+    "burnRate": "{{rate}}倍の消費"
+  },
+  "appScrape": {
+    "title": "アプリのメトリクス",
+    "subtitle": "コンテナ上のアプリ自身のメトリクスエンドポイントから収集した系列です。",
+    "metric": "メトリクス",
+    "pickMetric": "メトリクスを選択",
+    "range": "範囲",
+    "hours_other": "直近 {{count}} 時間",
+    "empty": "保存された系列はまだありません。最初の収集は次の間隔で実行されます。",
+    "port": "コンテナのポート",
+    "path": "パス",
+    "save": "ターゲットを保存",
+    "lastError": "前回の収集に失敗しました: {{error}}",
+    "invalidPort": "1から65535のポートを入力してください。",
+    "invalidPath": "/metrics のようなシンプルなパスを使用してください。"
+  },
+  "accessSearch": {
+    "formLabel": "リクエストフィルター",
+    "status": "ステータス",
+    "anyStatus": "すべてのステータス",
+    "method": "メソッド",
+    "anyMethod": "すべてのメソッド",
+    "path": "パスのプレフィックス",
+    "pathPlaceholder": "/api/",
+    "text": "パスに含まれる文字列",
+    "textPlaceholder": "パス内のテキスト",
+    "window": "時間ウィンドウ",
+    "search": "検索",
+    "privacyNote": "最近のリクエストはエッジのメモリ内に保持されます。クエリ文字列は記録されず、クライアントIPは表示されません。",
+    "loading": "リクエストを読み込み中",
+    "empty": "これらのフィルターに一致するリクエストはありません。",
+    "colTime": "時刻",
+    "colStatus": "ステータス",
+    "colMethod": "メソッド",
+    "colPath": "ホストとパス",
+    "colDuration": "ms",
+    "truncated": "検索がスキャンの上限で停止しました。完全な結果を得るにはフィルターを絞り込んでください。",
+    "newer": "新しい",
+    "older": "古い",
+    "tab": "リクエスト"
+  }
+}

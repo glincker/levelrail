@@ -1,0 +1,120 @@
+{
+  "title": "ビルド",
+  "subtitle": "すべてのアプリのビルドキューと履歴です。待機中のもの、実行中のもの、ビルド所要時間、キャッシュの効果、イメージのサイズを確認できます。",
+  "retry": "再試行",
+  "error": {
+    "title": "ビルドを読み込めませんでした"
+  },
+  "node": {
+    "label": "ノード",
+    "local": "このサーバー"
+  },
+  "tiles": {
+    "queued": "待機中",
+    "running": "実行中",
+    "finished": "完了",
+    "failed": "失敗"
+  },
+  "limits": {
+    "perNode": "各ノードで最大 {{count}} 件のビルドが同時に実行され、残りはキューで待機します。",
+    "node": "{{node}}: 実行中 {{running}} 件、待機中 {{waiting}} 件"
+  },
+  "platforms": {
+    "target": "ビルドの対象は {{platform}} です。これはビルドノードのプラットフォームです。",
+    "singleOnly": "マルチプラットフォームビルドはまだサポートされていません。"
+  },
+  "columns": {
+    "build": "ビルド",
+    "status": "ステータス",
+    "duration": "所要時間",
+    "cache": "キャッシュ",
+    "image": "イメージ",
+    "node": "ノードとプラットフォーム",
+    "actions": "操作"
+  },
+  "status": {
+    "queued": "待機中",
+    "queuedAt": "待機中、#{{position}}",
+    "held": "保留中",
+    "running": "実行中",
+    "succeeded": "成功",
+    "failed": "失敗",
+    "canceled": "キャンセル済み",
+    "superseded": "置き換え済み",
+    "stuck": "停止している可能性があります"
+  },
+  "actions": {
+    "logs": "ログ",
+    "cancel": "キャンセル",
+    "cancelStuck": "停止したビルドをキャンセル",
+    "cancelDone": "ビルドをキャンセルしました",
+    "cancelFailed": "ビルドをキャンセルできませんでした",
+    "retry": "再試行",
+    "retryDone": "接続されているブランチからビルドを再開しました",
+    "retryFailed": "ビルドを再試行できませんでした",
+    "freeCache": "ビルドキャッシュを解放"
+  },
+  "empty": {
+    "title": "ビルドはまだありません",
+    "description": "アプリがgitソースからデプロイされると、ここにビルドが表示されます。"
+  },
+  "cacheFull": {
+    "title": "ビルドでディスク容量が不足しました",
+    "description": "アイドル状態のビルドキャッシュは安全に削除できます。実行中のビルドのキャッシュは保持されます。"
+  },
+  "cache": {
+    "title": "ビルドキャッシュ",
+    "prune": "アイドルキャッシュを解放",
+    "total": "キャッシュサイズ",
+    "inUse": "使用中",
+    "reclaimable": "解放可能",
+    "records": "レコード",
+    "errorTitle": "ビルドキャッシュを読み込めませんでした",
+    "unsupportedTitle": "ビルドキャッシュは利用できません",
+    "unsupported": "このノードはまだビルドキャッシュを報告していません。"
+  },
+  "prune": {
+    "title": "アイドル状態のビルドキャッシュを解放",
+    "loading": "解放できる内容を確認しています。",
+    "description": "{{count}} 件のキャッシュレコードが {{hours}} 時間以上アイドル状態です。削除すると {{size}} を解放できます。",
+    "consequences": "キャッシュが再構築されるため、各アプリの次回ビルドは時間がかかる場合があります。",
+    "confirm": "{{size}} を解放",
+    "pending": "キャッシュを解放中",
+    "done": "{{count}} 件のキャッシュレコードを削除し、{{size}} を解放しました"
+  },
+  "banner": {
+    "description": "ビルドはソースを実行可能なイメージに変換します。最初のデプロイ後、すべてのアプリのキュー、履歴、キャッシュがここに表示されます。",
+    "diagram": {
+      "source": "ソース",
+      "build": "ビルド",
+      "image": "イメージ",
+      "cache": "キャッシュ"
+    }
+  },
+  "quota": {
+    "title": "キャッシュクォータ",
+    "errorTitle": "キャッシュクォータを読み込めませんでした",
+    "appQuota": "アプリごとのクォータ",
+    "maxRecords": "1回の解放あたりのレコード数",
+    "gib_other": "{{count}} GiB",
+    "off": "オフ",
+    "restartNote": "アプリごとのクォータは、ダッシュボード、CLI、またはpushによる各アプリの次回ビルド後に適用されます。設定の build.cache_app_quota_gb で変更してください。",
+    "empty": "解放されたキャッシュはまだありません。",
+    "col": {
+      "app": "アプリ",
+      "trigger": "トリガー",
+      "when": "日時",
+      "freed": "解放量",
+      "note": "備考"
+    },
+    "trigger": {
+      "auto": "ビルド後",
+      "manual": "手動"
+    },
+    "note": {
+      "running": "スキップしました(ビルド実行中)",
+      "bounded": "レコード数の上限に達したため、残りは次回のビルドで処理されます",
+      "partial": "途中で停止しました。解放された分は保持されます"
+    }
+  }
+}

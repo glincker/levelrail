@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "訪問者のアドレスにCloudflareを信頼する",
+    "helper": "訪問者のアドレスをCF-Connecting-IPから読み取りますが、Cloudflareが公開している範囲からの接続に限ります。それ以外から送られた偽装ヘッダーは無視されます。Cloudflareのお客様はどなたでも、自分のプロキシ経由のレコードを通じてサーバーに到達できるため、これはリクエストがあなたのゾーン経由で届いたことの証明にはなりません。",
+    "ranges": "{{count}} 件の範囲({{source}})、{{interval}}ごとに更新。",
+    "source": {
+      "embedded": "アプリに同梱",
+      "fetched": "Cloudflareから取得"
+    },
+    "lastRefresh": "最終更新: {{when}}。",
+    "neverRefreshed": "まだ更新されていません。同梱のリストを使用しています。",
+    "lastError": "前回の更新エラー: {{error}}",
+    "saved": "CloudflareのクライアントIPをオンにしました",
+    "savedOff": "CloudflareのクライアントIPをオフにしました",
+    "failed": "CloudflareのクライアントIP設定を変更できませんでした"
+  },
+  "fallbackCerts": {
+    "label": "自動アドレスの証明書",
+    "helper": "「即時」はルートが作成された時点で証明書を発注し、「遅延」は自動アドレスへの最初のアクセス時に発注します。ご自身で追加したドメインは常に即時です。",
+    "options": {
+      "eager": "即時",
+      "lazy": "遅延"
+    },
+    "source": {
+      "default": "デフォルト",
+      "env": "環境変数で設定",
+      "saved": "保存済み"
+    },
+    "envHint": "{{env}} から初期設定されています。ここで値を保存すると上書きされます。",
+    "reset": "デフォルトに戻す",
+    "resetDone": "フォールバック証明書をデフォルトに戻しました",
+    "saved": "フォールバック証明書のモードを保存しました",
+    "failed": "フォールバック証明書のモードを変更できませんでした"
+  }
+}

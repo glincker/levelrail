@@ -1,0 +1,84 @@
+{
+  "page": {
+    "title": "ダッシュボードをセットアップ",
+    "description": "いくつかの簡単な選択です。どれもスキップして、後から戻れます。"
+  },
+  "rail": {
+    "label": "セットアップの手順",
+    "progress": "手順 {{current}} / {{total}}: {{name}}",
+    "done": "完了"
+  },
+  "steps": {
+    "welcome": {
+      "label": "ようこそ",
+      "title": "Levelrailへようこそ",
+      "description": "このサーバーでアプリを実行します。Levelrailがそれらを管理します。"
+    },
+    "profile": {
+      "label": "プロフィール",
+      "title": "あなたのプロフィール",
+      "description": "チームに表示される名前と画像です。"
+    },
+    "preferences": {
+      "label": "環境設定",
+      "title": "Levelrailの表示設定",
+      "description": "変更は操作と同時に反映されます。これらはすべて、後から設定で編集できます。"
+    },
+    "finish": {
+      "label": "完了",
+      "title": "セットアップが完了しました",
+      "description": "選択内容を保存しました。次におすすめの2つの場所です。"
+    }
+  },
+  "footer": {
+    "back": "戻る",
+    "skip": "今はスキップ",
+    "continue": "続ける",
+    "start": "開始",
+    "finish": "完了"
+  },
+  "welcome": {
+    "deploy": "リポジトリ、イメージ、テンプレートからアプリをデプロイします。",
+    "protect": "LevelrailがHTTPSを設定し、バックアップを取り、問題が発生したときに通知します。",
+    "time": "セットアップには約5分かかります。どの手順もスキップできます。",
+    "dismiss": "今後は表示しない"
+  },
+  "profile": {
+    "section": "プロフィール",
+    "name": "表示名",
+    "nameHint": "最大 {{max}} 文字です。",
+    "avatar": "アバター",
+    "avatarHint": "アカウントから選ばれた色の上にイニシャルが表示されます。カスタムカラーは近日対応予定です。",
+    "gravatar": "Gravatarを使用",
+    "gravatarHint": "gravatar.comから画像を読み込むため、お使いのブラウザがそのサイトに接続します。デフォルトではオフです。"
+  },
+  "preferences": {
+    "section": "環境設定"
+  },
+  "finish": {
+    "deploy": "最初のアプリをデプロイ",
+    "guide": "HTTPS、バックアップ、アラートのセットアップガイドに従う",
+    "open": "開く"
+  },
+  "card": {
+    "title": "ダッシュボードをセットアップ",
+    "body": "名前、外観、言語を選択します。約5分で完了します。",
+    "start": "開始",
+    "resumeTitle": "セットアップを完了",
+    "resumeBody": "手順 {{current}} / {{total}} で中断しています。",
+    "resume": "続ける",
+    "dismiss": "今後は表示しない"
+  },
+  "closed": {
+    "body": "セットアップは完了しました。いつでももう一度実行できます。",
+    "restart": "セットアップを再実行",
+    "dashboard": "ダッシュボードへ移動"
+  },
+  "unavailable": {
+    "body": "このサーバーでは、ガイド付きセットアップを利用できません。"
+  },
+  "errors": {
+    "save": "進行状況を保存できませんでした。もう一度お試しください。",
+    "transition": "現在、その移動は許可されていません。ページを再読み込みして、もう一度お試しください。"
+  }
+}
