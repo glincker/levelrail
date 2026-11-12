@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -38,7 +39,8 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return
 	}
-	all, err := rt.expensiveRead(r.Context(), "app-resource-usage", func(ctx context.Context) (any, error) {
+	// Keyed per router so routers sharing a process never serve each other's cached list.
+	all, err := rt.expensiveRead(r.Context(), fmt.Sprintf("app-resource-usage:%p", rt), func(ctx context.Context) (any, error) {
 		return rt.computeAppResourceUsage(ctx)
 	})
 	if err != nil {
