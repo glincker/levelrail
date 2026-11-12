@@ -1,0 +1,96 @@
+{
+  "title": "Reglas de enrutamiento",
+  "description": "Redirecciones, reescrituras y cabeceras con las que se publicó este sitio. Proceden de los archivos _redirects y _headers del directorio publicado y de app.yaml, y solo cambian cuando despliegas.",
+  "loadFailed": "No se pudieron cargar las reglas de enrutamiento.",
+  "retry": "Reintentar",
+  "notStatic": {
+    "title": "Esta app no es un sitio estático",
+    "description": "Las reglas de enrutamiento se aplican a las apps compiladas con build.type: static. Las apps de contenedor usan los controles de tráfico de la página Dominios."
+  },
+  "notPublished": {
+    "title": "Publicado antes de que existieran las reglas de enrutamiento",
+    "description": "Vuelve a desplegar este sitio para activar _redirects, _headers y las opciones de SPA, URLs limpias y 404. No se pierde nada: el sitio sigue sirviendo sus archivos como antes."
+  },
+  "options": {
+    "title": "Opciones de servicio",
+    "spa": "Respaldo de aplicación de una sola página",
+    "cleanUrls": "URLs limpias",
+    "trailingSlash": "Barra final",
+    "notFound": "Página 404",
+    "on": "Activado",
+    "off": "Desactivado",
+    "slashOff": "Dejar como se solicitó",
+    "slashAdd": "Añadir siempre",
+    "slashRemove": "Quitar siempre",
+    "defaultNotFound": "404.html si existe"
+  },
+  "precedence": {
+    "title": "Orden de evaluación",
+    "body": "Las reglas se ejecutan primero, en orden, y gana la primera que coincide. Una regla se omite cuando existe un archivo en la ruta solicitada, salvo que se fuerce con !. Después se sirven los archivos, luego el respaldo de aplicación de una sola página y por último la página 404."
+  },
+  "rules": {
+    "title": "Redirecciones y reescrituras",
+    "label": "Reglas de redirección y reescritura",
+    "from": "Desde",
+    "to": "Hacia",
+    "status": "Estado",
+    "source": "Definida en",
+    "forced": "forzada",
+    "kindRewrite": "reescritura",
+    "kindRedirect": "redirección",
+    "kindPage": "página",
+    "empty": {
+      "title": "No hay reglas de redirección ni reescritura",
+      "description": "Añade un archivo _redirects al directorio publicado, o una lista routes a app.yaml, y despliega."
+    }
+  },
+  "headers": {
+    "title": "Cabeceras de respuesta",
+    "label": "Reglas de cabeceras",
+    "path": "Ruta",
+    "set": "Establece",
+    "remove": "Quita",
+    "source": "Definida en",
+    "empty": {
+      "title": "No hay reglas de cabeceras",
+      "description": "Añade un archivo _headers al directorio publicado, o una lista headers a app.yaml, y despliega."
+    }
+  },
+  "problems": {
+    "title": "Problemas encontrados al publicar este despliegue",
+    "description": "Estas líneas se omitieron y no se aplican. Corrígelas en tu repositorio y vuelve a desplegar.",
+    "line": "línea {{line}}",
+    "none": "No se encontraron problemas."
+  },
+  "test": {
+    "title": "Probar una URL",
+    "description": "Pasa una petición por las reglas y archivos en vivo y mira cuál la responde.",
+    "pathLabel": "Ruta",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "Cadena de consulta",
+    "queryPlaceholder": "id=42",
+    "run": "Probar",
+    "running": "Probando",
+    "result": "Resultado",
+    "redirectTo": "Redirige a {{target}}",
+    "serves": "Sirve {{file}}",
+    "plain": "Respuesta simple sin página",
+    "matchedRule": "Regla: {{rule}}",
+    "noRule": "Ninguna regla coincidió, respondieron los archivos y las opciones",
+    "trace": "Pasos",
+    "headersApplied": "Cabeceras añadidas",
+    "invalidPath": "Introduce una ruta que empiece por /",
+    "failed": "No se pudo ejecutar la prueba."
+  },
+  "lint": {
+    "title": "Comprobar las reglas antes de desplegar",
+    "description": "Pega el contenido de un archivo _redirects o _headers para ver cómo se interpreta. No se despliega nada.",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "Comprobar",
+    "running": "Comprobando",
+    "ok": "{{rules}} reglas y {{headers}} bloques de cabeceras interpretados sin problemas.",
+    "withProblems": "{{rules}} reglas y {{headers}} bloques de cabeceras interpretados, {{problems}} líneas omitidas.",
+    "failed": "No se pudo ejecutar la comprobación."
+  }
+}

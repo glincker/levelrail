@@ -1,0 +1,42 @@
+{
+  "title": "Pipeline de logs",
+  "subtitle": "Reglas que se aplican en orden a las líneas de log de esta app antes de almacenarlas: unir registros de varias líneas, ocultar secretos, extraer campos, descartar ruido.",
+  "rules": {
+    "title": "Reglas",
+    "empty": "Aún no hay reglas. Los logs se almacenan exactamente como los escribe la app. Añade una regla para empezar a darles forma.",
+    "add": "Añadir regla",
+    "remove": "Quitar la regla {{index}}",
+    "moveUp": "Subir la regla {{index}}",
+    "moveDown": "Bajar la regla {{index}}",
+    "kind": "Tipo",
+    "pattern": "Patrón (regex)",
+    "replace": "Reemplazar por",
+    "replacePlaceholder": "[REDACTED]",
+    "limit": "Máximo {{max}} reglas.",
+    "multilineOnce": "Solo se permite una regla multilínea."
+  },
+  "kinds": {
+    "multiline": "Multilínea (el patrón inicia un registro)",
+    "redact": "Ocultar (reemplaza las coincidencias)",
+    "parse": "Analizar (los grupos con nombre pasan a ser campos)",
+    "drop": "Descartar (elimina las líneas que coinciden)"
+  },
+  "preview": {
+    "title": "Vista previa",
+    "samples": "Líneas de log de ejemplo, una por línea",
+    "samplesPlaceholder": "2026-01-01 ERROR token=abc123 failed",
+    "empty": "Pega algunas líneas de ejemplo para ver qué almacenaría el pipeline.",
+    "dropped": "Descartada",
+    "unchanged": "Sin cambios",
+    "loading": "Actualizando la vista previa",
+    "error": "La vista previa falló: {{message}}"
+  },
+  "actions": {
+    "save": "Guardar el pipeline",
+    "clear": "Borrar el pipeline",
+    "savedToast": "Pipeline de logs guardado",
+    "clearedToast": "Pipeline de logs borrado",
+    "failed": "No se pudo actualizar el pipeline de logs"
+  },
+  "loadError": "No se pudo cargar el pipeline de logs: {{message}}"
+}

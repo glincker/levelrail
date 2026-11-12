@@ -1,0 +1,46 @@
+{
+  "title": "Despliegues de ramas",
+  "description": "Da a una rama su propia URL estable que se recompila en cada push. Se elimina cuando se borra la rama o queda inactiva.",
+  "settings": {
+    "mode": "Qué ramas tienen despliegue",
+    "modeOff": "Ninguna (desactivado)",
+    "modeAll": "Todas las ramas",
+    "modePatterns": "Solo las ramas indicadas",
+    "patterns": "Ramas y patrones",
+    "patternsHint": "Uno por línea. Usa un nombre exacto o un patrón como feature/* (un asterisco coincide con cualquier carácter).",
+    "patternsPlaceholder": "staging\nfeature/*",
+    "productionNote": "La rama de producción ({{branch}}) nunca aparece aquí: se despliega como la propia app.",
+    "idleNote": "Un despliegue de rama sin ningún push durante {{hours}} horas se elimina.",
+    "save": "Guardar",
+    "saving": "Guardando",
+    "saved": "Ajustes de despliegues de ramas guardados.",
+    "saveError": "No se pudieron guardar los ajustes."
+  },
+  "list": {
+    "title": "Despliegues de ramas activos",
+    "emptyTitle": "Aún no hay despliegues de ramas",
+    "emptyOff": "Activa los despliegues de ramas arriba y luego haz push a una rama que coincida.",
+    "emptyOn": "Haz push a una rama que coincida y su despliegue aparecerá aquí.",
+    "noUrl": "Sin URL (define un dominio base de apps o un dominio principal)",
+    "expires": "Se elimina si no hay un push nuevo:",
+    "open": "Abrir",
+    "openLabel": "Abrir el despliegue de {{branch}}",
+    "delete": "Eliminar",
+    "deleteLabel": "Eliminar el despliegue de {{branch}}",
+    "loadError": "No se pudieron cargar los despliegues de ramas."
+  },
+  "status": {
+    "deploying": "Desplegando",
+    "active": "Activo",
+    "failed": "Fallido"
+  },
+  "deleteDialog": {
+    "title": "¿Eliminar el despliegue de {{branch}}?",
+    "description": "Su URL deja de funcionar. El próximo push a la rama lo vuelve a desplegar.",
+    "consequence": "Se eliminan el despliegue, sus contenedores y su registro DNS.",
+    "confirm": "Eliminar despliegue",
+    "pending": "Eliminando",
+    "success": "Despliegue de rama eliminado.",
+    "error": "No se pudo eliminar el despliegue de la rama."
+  }
+}
