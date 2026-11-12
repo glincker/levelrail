@@ -1,0 +1,439 @@
+{
+  "page": {
+    "title": "Central de segurança",
+    "description": "Sua pontuação de segurança, o que corrigir primeiro e todas as sessões e dispositivos que podem alcançar este control plane.",
+    "tabs": {
+      "checklist": "Checklist",
+      "sessions": "Sessões e dispositivos",
+      "policy": "Política",
+      "rotations": "Rotações de segredos",
+      "compliance": "Conformidade",
+      "exposure": "Exposição",
+      "advisories": "Avisos de segurança"
+    },
+    "loadError": "Não foi possível carregar a central de segurança.",
+    "retry": "Tentar novamente"
+  },
+  "score": {
+    "label": "Pontuação de segurança",
+    "grade": "Nota {{grade}}",
+    "generated": "Verificado {{time}}",
+    "failing": "{{critical}} críticos, {{high}} altos, {{medium}} médios, {{low}} baixos",
+    "passing": "{{count}} verificações passam",
+    "unknown": "{{count}} não puderam ser verificadas",
+    "recommended": "{{count}} passos recomendados não afetam a pontuação até você fazer o deploy de um app",
+    "summaryOnly": "Somente admins veem o checklist completo. Peça a um admin para revisar os itens por trás desta pontuação."
+  },
+  "severity": {
+    "critical": "Crítica",
+    "high": "Alta",
+    "medium": "Média",
+    "low": "Baixa"
+  },
+  "status": {
+    "pass": "Passou",
+    "fail": "Requer ação",
+    "recommended": "Recomendado",
+    "unknown": "Desconhecido"
+  },
+  "supplyGate": {
+    "blockOnHigh": {
+      "label": "Bloquear em alta ou crítica",
+      "summary": "Retém releases com achados graves.",
+      "detail": "Uma release com uma vulnerabilidade alta ou crítica não vai ao ar. A release anterior continua atendendo e o deploy registra o motivo. Se o próprio scanner falhar, a release é permitida."
+    }
+  },
+  "reach": {
+    "title": "O que a internet pode alcançar",
+    "description": "Cada domínio e porta publicada por app e banco de dados, com uma correção para o que não deveria estar aberto. As correções usam os mesmos controles das páginas de app, firewall e banco de dados.",
+    "recheck": "Verificar novamente",
+    "rechecking": "Verificando",
+    "recheckError": "Não foi possível verificar novamente.",
+    "loadError": "Não foi possível carregar o relatório de exposição.",
+    "rulesUnreadable": "As regras de firewall de um node não puderam ser lidas, então uma porta restrita pode aparecer como aberta.",
+    "clean": "Nada arriscado está acessível. {{count}} portas publicadas são restringidas por regras de firewall.",
+    "subjects": "Apps e bancos de dados",
+    "private": "Inacessível de fora",
+    "fixed": "Corrigido. O relatório foi verificado novamente.",
+    "stillFailing": "A alteração foi aplicada, mas o achado ainda está lá.",
+    "applyError": "Não foi possível aplicar a correção.",
+    "severity": {
+      "high": "Alta",
+      "medium": "Média",
+      "low": "Baixa",
+      "info": "Info"
+    },
+    "type": {
+      "app": "App",
+      "database": "Banco de dados"
+    },
+    "kinds": {
+      "app_direct_port": {
+        "title": "{{name}} está aberto em {{port}}",
+        "why": "Uma porta direta ignora o TLS, os portões de login e o shield. Servi-la pelo proxy fecha a porta.",
+        "fix": "Servir pelo proxy"
+      },
+      "app_no_shield": {
+        "title": "{{name}} não tem shield em {{domain}}",
+        "why": "Sem limites de taxa, um único cliente pode usar toda a capacidade do app.",
+        "fix": "Aplicar o shield recomendado"
+      },
+      "database_public": {
+        "title": "O banco de dados {{name}} está aberto à internet em {{port}}",
+        "why": "Qualquer um que encontre a porta pode tentar fazer login. Restrinja-a a endereços conhecidos ou torne-a privada.",
+        "fix": "Revisar acesso"
+      },
+      "port_exposed": {
+        "title": "{{container}} está aberto em {{port}}",
+        "why": "O Docker publica portas além do firewall do host, então qualquer um pode alcançar esta.",
+        "fix": "Restringir no firewall"
+      },
+      "docker_api": {
+        "title": "A API do Docker está aberta em {{port}}",
+        "why": "Qualquer um que a alcance controla todos os containers do servidor.",
+        "fix": "Restringir no firewall"
+      }
+    },
+    "confirm": {
+      "title": "Fechar a porta direta?",
+      "description": "O app é recriado com a mesma imagem e passa a ser acessível somente pelo proxy. Tudo o que usa o endereço direto para de funcionar.",
+      "confirm": "Fechar a porta",
+      "pending": "Aplicando"
+    }
+  },
+  "checklist": {
+    "platform": "Plataforma",
+    "account": "Sua conta",
+    "empty": "Nada para verificar ainda.",
+    "count": "{{count}} afetados",
+    "showPassing": "Mostrar verificações aprovadas",
+    "hidePassing": "Ocultar verificações aprovadas",
+    "fix": "Corrigir",
+    "open": "Abrir",
+    "cli": "Pela CLI",
+    "applied": "Alteração aplicada.",
+    "applyError": "Não foi possível aplicar a alteração."
+  },
+  "items": {
+    "admin_without_mfa": {
+      "title": "Admins sem dois fatores ou passkey",
+      "pass": "Todo admin tem dois fatores ou uma passkey",
+      "why": "Uma senha de admin vazada, sozinha, daria controle total de todos os apps e segredos."
+    },
+    "account_flagged": {
+      "title": "Contas sinalizadas para uma nova senha",
+      "pass": "Nenhuma conta está sinalizada para redefinição de senha",
+      "why": "Alguém relatou um login nestas contas que não era da pessoa."
+    },
+    "recovery_codes_missing": {
+      "title": "Contas sem códigos de recuperação restantes",
+      "pass": "Toda conta com dois fatores tem códigos de recuperação",
+      "why": "Perder o app autenticador deixaria estas contas bloqueadas, sem como voltar."
+    },
+    "no_admin_passkey": {
+      "title": "Nenhum admin tem uma passkey",
+      "pass": "Os admins têm {{count}} passkey(s)",
+      "why": "Passkeys não podem sofrer phishing nem ser reutilizadas, ao contrário de senhas e códigos."
+    },
+    "token_root": {
+      "title": "Tokens de API que têm root",
+      "pass": "Nenhum token de API tem root",
+      "why": "Um token root pode fazer tudo o que um admin pode, incluindo criar mais tokens."
+    },
+    "token_no_expiry": {
+      "title": "Tokens de API que nunca expiram",
+      "pass": "Todo token de API tem uma expiração",
+      "why": "Um token sem expiração continua funcionando muito depois de alguém lembrar que ele existe."
+    },
+    "token_signin_approve": {
+      "title": "Tokens de API que podem aprovar logins",
+      "pass": "Nenhum token de API pode aprovar logins",
+      "why": "Um token assim pode revelar códigos de login e aprovar novos navegadores para o proprietário dele."
+    },
+    "token_unused": {
+      "title": "Tokens de API sem uso há muito tempo",
+      "pass": "Nenhum token de API sem uso há muito tempo",
+      "why": "Tokens sem uso são puro risco: revogue o que ninguém mais precisa."
+    },
+    "sessions_old": {
+      "title": "Sessões antigas ainda conectadas",
+      "pass": "Nenhuma sessão antiga",
+      "why": "Sessões de longa duração em navegadores esquecidos são uma entrada fácil."
+    },
+    "secret_reveal_allow": {
+      "title": "Valores de segredos podem ser revelados sem confirmação",
+      "pass": "Revelar o valor de um segredo exige confirmação de senha ou passkey",
+      "why": "Com APP_SECRET_REVEAL=allow, qualquer um com read:sensitive ou uma sessão roubada pode ler todos os valores de segredos. Defina como step_up."
+    },
+    "new_device_approval_off": {
+      "title": "A aprovação de novo navegador está desativada",
+      "pass": "A aprovação de novo navegador está ativada",
+      "why": "Sem ela, uma senha roubada faz login de qualquer lugar sem uma segunda verificação."
+    },
+    "approval_password_only": {
+      "title": "Somente logins por senha precisam de aprovação de novo navegador",
+      "pass": "Todo método de login precisa de aprovação de novo navegador",
+      "why": "Logins por passkey e OAuth de um novo navegador pulam hoje a etapa de aprovação."
+    },
+    "code_login_admins": {
+      "title": "Admins podem fazer login com um código",
+      "pass": "Admins não podem fazer login com um código",
+      "why": "Um código enviado a uma sessão aberta ou por e-mail é um caminho mais fraco para uma conta de admin."
+    },
+    "public_exposure": {
+      "title": "Portas de containers abertas à internet",
+      "pass": "Nenhuma porta pública sem restrição",
+      "why": "O Docker publica portas além do firewall do host, então estas são acessíveis por qualquer um."
+    },
+    "docker_api_exposed": {
+      "title": "A API do Docker é acessível pela internet",
+      "pass": "A API do Docker não está exposta",
+      "why": "Acesso não autenticado à API do Docker é controle total do servidor."
+    },
+    "offbox_backup_off": {
+      "title": "Os backups do control plane fora da máquina estão desativados",
+      "pass": "Os backups criptografados fora da máquina estão ativados",
+      "why": "Perder esta máquina perderia todas as definições de apps, segredos e certificados."
+    },
+    "offsite_backup_unencrypted": {
+      "title": "Destinos de backup sem criptografia",
+      "pass": "Todo destino de backup é criptografado",
+      "why": "Uma cópia armazenada sem criptografia pode ser lida por qualquer um que entre nesse armazenamento. Ative a criptografia nas configurações do destino de backup e depois execute um novo backup."
+    },
+    "audit_anchor_off": {
+      "title": "Nenhuma âncora do log de auditoria fora da máquina está configurada",
+      "pass": "Uma âncora do log de auditoria fora da máquina está ativada",
+      "why": "Sem uma cópia do topo da cadeia de auditoria fora desta máquina, alguém com root aqui pode reescrever o histórico e assiná-lo novamente sem ser detectado."
+    },
+    "master_key_rotation": {
+      "title": "A chave mestra está ausente ou com a rotação atrasada",
+      "pass": "A chave mestra foi rotacionada recentemente",
+      "why": "Rotacionar a chave mestra limita o que uma cópia antiga vazada pode descriptografar."
+    },
+    "secrets_old": {
+      "title": "Segredos mais antigos que {{detail}}",
+      "pass": "Nenhum segredo antigo",
+      "why": "Segredos antigos têm mais chance de ter vazado em algum ponto do caminho."
+    },
+    "tls_not_public": {
+      "title": "Domínios sem um certificado publicamente confiável",
+      "pass": "Todo domínio tem um certificado público",
+      "why": "Os navegadores alertam nesses domínios, o que treina as pessoas a ignorar alertas."
+    },
+    "hsts_off": {
+      "title": "O HSTS está desativado enquanto há certificados reais",
+      "pass": "O HSTS está ativado ou ainda não é necessário",
+      "why": "Sem HSTS, uma primeira visita por HTTP simples pode ser interceptada e rebaixada."
+    },
+    "domains_unshielded": {
+      "title": "Domínios sem shield",
+      "pass": "Todo domínio roteado tem um shield",
+      "why": "Um shield limita as requisições por visitante e barra bots abusivos, para que um cliente barulhento não prejudique o resto."
+    },
+    "saml_open_domains": {
+      "title": "Conexões SAML que aceitam qualquer domínio de e-mail",
+      "pass": "Toda conexão SAML ativada limita o login aos seus domínios",
+      "why": "Sem uma lista de domínios permitidos, qualquer endereço que seu provedor de identidade afirmar pode corresponder a uma conta aqui. Adicione seus domínios nas configurações da conexão."
+    },
+    "microsoft_no_tenant": {
+      "title": "O login da Microsoft não está vinculado a um único tenant",
+      "pass": "O login da Microsoft está desativado ou vinculado ao seu tenant",
+      "why": "No tenant compartilhado, qualquer diretório pode afirmar um endereço de e-mail, então nenhuma conta nova é criada a partir dele. Defina o ID do seu tenant nas configurações do provedor Microsoft."
+    },
+    "agents_outdated": {
+      "title": "Agents de node mais antigos que a versão mínima",
+      "pass": "Todo agent de node está atualizado",
+      "why": "Agents antigos perdem correções de segurança que o control plane já espera."
+    },
+    "login_anomalies": {
+      "title": "Rajadas de logins com falha",
+      "pass": "Nenhuma rajada de logins com falha",
+      "why": "Muitas senhas erradas em pouco tempo geralmente significam que alguém está tentando adivinhar."
+    },
+    "own_mfa": {
+      "title": "Sua conta não tem dois fatores nem passkey",
+      "pass": "Sua conta tem dois fatores ou uma passkey",
+      "why": "Sua senha sozinha é tudo o que é preciso para entrar como você."
+    },
+    "own_recovery_codes": {
+      "title": "Você não tem códigos de recuperação restantes",
+      "pass": "Você tem códigos de recuperação",
+      "why": "Sem eles, perder seu autenticador deixa você sem acesso."
+    },
+    "own_account_flagged": {
+      "title": "Sua conta precisa de uma nova senha",
+      "pass": "Sua conta não está sinalizada",
+      "why": "Um login na sua conta foi relatado como não sendo seu."
+    },
+    "agent_token_unnamed": {
+      "title": "Tokens de API que podem alterar coisas não têm nome de agente",
+      "pass": "Todo token de escrita ou deploy está rotulado ou revisado",
+      "why": "Um token sem nome de agente não é governado pelo controle de IA, então uma ferramenta de IA com ele age sem limites de modo ou de ambiente."
+    },
+    "ai_control_admin": {
+      "title": "O controle de IA está no modo admin",
+      "pass": "O controle de IA está abaixo do modo admin",
+      "why": "O modo admin permite que agentes alterem configurações e acessos, e não apenas apps. O modo operate cobre os deploys do dia a dia."
+    },
+    "agent_tokens_production": {
+      "title": "Tokens de agente podem alterar a produção",
+      "pass": "Nenhum token de agente pode alterar a produção",
+      "why": "Enquanto o controle de IA estiver acima de observe, tokens de agente que podem escrever ou fazer deploy ainda podem alcançar rotas que a proteção de produção não cobre, como apply e ambientes."
+    },
+    "prod_env_unprotected": {
+      "title": "Ambientes de produção sem proteção",
+      "pass": "Todo ambiente de produção está protegido",
+      "why": "Um ambiente protegido pede aprovação antes que deploys, rollbacks e promoções cheguem a ele."
+    },
+    "prod_apps_unguarded": {
+      "title": "Apps de produção sem uma política de deploy impositiva",
+      "pass": "Todo app de produção tem uma política de deploy impositiva",
+      "why": "Uma regra em modo de aviso apenas relata. Sem uma regra em modo de imposição, nada bloqueia um deploy arriscado em um app de produção."
+    },
+    "audit_sink_none": {
+      "title": "O log de auditoria não é enviado a lugar nenhum",
+      "pass": "O log de auditoria é encaminhado a um destino externo",
+      "why": "Um stream de auditoria fora desta máquina guarda um registro das ações de agentes e de deploys mesmo que este host seja perdido."
+    }
+  },
+  "actions": {
+    "set_policy": "Aplicar a política recomendada",
+    "disable_code_login_admins": "Desativar o login por código para admins",
+    "review_sessions": "Revisar sessões",
+    "enable_hsts": "Ativar HSTS"
+  },
+  "hsts": {
+    "title": "Ativar HSTS",
+    "description": "Verificamos se todo domínio público serve um certificado publicamente confiável antes de permitir ativar isto.",
+    "probing": "Verificando certificados...",
+    "probeError": "Não foi possível executar a verificação de certificados.",
+    "trusted": "Certificado confiável",
+    "notTrusted": "Autoassinado, interno ou inacessível por HTTPS",
+    "noDomains": "Nenhum domínio público está configurado ainda.",
+    "blocked": "O HSTS continua desativado até todos os domínios passarem. Com um certificado autoassinado, os navegadores recusariam o site sem como contornar o alerta.",
+    "warning": "O HSTS cobre subdomínios e os navegadores o lembram por 180 dias, então não pode ser desfeito para visitantes que já o viram.",
+    "recheck": "Verificar novamente",
+    "confirm": "Ativar HSTS",
+    "enabled": "O HSTS está ativado",
+    "enableError": "Não foi possível ativar o HSTS"
+  },
+  "sessions": {
+    "tableLabel": "Sessões ativas",
+    "title": "Sessões ativas",
+    "description": "Navegadores conectados a esta conta. A localização é a rede a que o endereço pertence, não um lugar.",
+    "viewing": "Visualizando a conta",
+    "self": "Sua conta",
+    "browser": "Navegador",
+    "network": "Rede",
+    "created": "Login em",
+    "lastSeen": "Última atividade",
+    "current": "Este navegador",
+    "revoke": "Sair",
+    "revokeAria": "Encerrar a sessão {{id}}",
+    "revoked": "Sessão encerrada.",
+    "revokeError": "Não foi possível encerrar essa sessão.",
+    "revokeOthers": "Encerrar todas as outras sessões",
+    "revokeOthersAdmin": "Encerrar todas as sessões desta conta",
+    "revokeOthersDone": "{{count}} sessão(ões) encerrada(s). Os navegadores confiáveis e os logins em espera também foram redefinidos.",
+    "empty": "Nenhuma sessão ativa.",
+    "devicesTitle": "Navegadores confiáveis",
+    "devicesDescription": "Navegadores que pulam a aprovação de novo navegador. Remova os que você não reconhece.",
+    "devicesEmpty": "Nenhum navegador confiável.",
+    "deviceRemove": "Remover",
+    "deviceRemoved": "Navegador removido.",
+    "tokensTitle": "Tokens de API",
+    "tokensDescription": "Tokens que pertencem a esta conta, com a data do último uso de cada um.",
+    "tokensEmpty": "Nenhum token de API.",
+    "neverUsed": "Nunca usado",
+    "usedAgo": "Usado {{time}}",
+    "manageTokens": "Gerenciar tokens",
+    "confirmTitle": "Encerrar as outras sessões?",
+    "confirmBody": "Todos os outros navegadores conectados a esta conta são desconectados, e os navegadores confiáveis e os logins em espera são redefinidos.",
+    "confirm": "Encerrá-las",
+    "cancel": "Cancelar"
+  },
+  "policy": {
+    "title": "Política de segurança",
+    "description": "Regras da plataforma para a aprovação de logins e a higiene dos tokens de API. As alterações se aplicam na hora.",
+    "adminOnly": "Somente admins podem alterar a política de segurança.",
+    "source": {
+      "saved": "Salva aqui",
+      "env": "Do ambiente",
+      "default": "Padrão"
+    },
+    "approvalScope": "A aprovação de novo navegador se aplica a",
+    "scopePasswordOnly": "Somente logins por senha",
+    "scopeAllMethods": "Todo método de login (senha, passkey, OAuth)",
+    "approvalOff": "A aprovação de novo navegador está desativada neste servidor, então esta configuração não tem efeito até ela ser reativada.",
+    "maxLifetime": "Maior duração de um token de API (dias, 0 para sem limite)",
+    "warnUnused": "Sinalizar tokens sem uso por (dias, 0 para parar)",
+    "disableUnused": "Desativar tokens sem uso por (dias, 0 para parar)",
+    "disableHint": "Um token recebe um aviso primeiro e é desativado {{days}} dias depois, a menos que seja usado.",
+    "save": "Salvar política",
+    "saved": "Política de segurança salva.",
+    "saveError": "Não foi possível salvar a política de segurança."
+  },
+  "account": {
+    "title": "Exigir aprovação para novos navegadores na minha conta",
+    "description": "Peça a uma das suas sessões conectadas que aprove qualquer novo navegador, seja qual for o método de login que ele use.",
+    "on": "Aprovação obrigatória para todo método de login na sua conta.",
+    "off": "Sua conta segue a política da plataforma.",
+    "saveError": "Não foi possível alterar esta configuração.",
+    "flagged": "Um login na sua conta foi relatado como não sendo seu. Altere sua senha agora; isso remove este aviso."
+  },
+  "alertPage": {
+    "title": "Este login não foi você?",
+    "description": "Confirme para encerrar a sessão desse navegador, esquecer seus navegadores confiáveis e sinalizar sua conta para uma nova senha.",
+    "confirm": "Não fui eu, encerrar a sessão",
+    "working": "Encerrando a sessão...",
+    "done": "Pronto. Esse navegador foi desconectado e sua conta está sinalizada. Faça login e altere sua senha agora.",
+    "doneNoSession": "Pronto. Essa sessão já havia terminado. Sua conta está sinalizada: faça login e altere sua senha agora.",
+    "signIn": "Ir para o login",
+    "missing": "Este link está sem o token. Abra o link do e-mail novamente.",
+    "error": "Este link é inválido, já foi usado ou expirou."
+  },
+  "advisories": {
+    "title": "Avisos de segurança conhecidos",
+    "off": "Nenhum feed de avisos está configurado. Defina APP_ADVISORY_FEED no servidor para ativar isto.",
+    "unsigned": "sem assinatura",
+    "verified": "assinado, verificado",
+    "invalid": "assinatura inválida",
+    "feed": "{{count}} avisos, {{signature}}",
+    "none": "Nenhuma imagem em execução corresponde a um aviso conhecido.",
+    "summary_one": "{{count}} imagem em execução corresponde a um aviso conhecido",
+    "summary_many": "{{count}} imagens em execução correspondem a um aviso conhecido",
+    "summary_other": "{{count}} imagens em execução correspondem a um aviso conhecido",
+    "fixedIn": "Corrigido em {{version}}",
+    "reference": "Referência",
+    "loadError": "Não foi possível carregar os avisos."
+  },
+  "imageScanning": {
+    "page": {
+      "title": "Varredura de imagens",
+      "description": "A política de varredura padrão de toda a instância."
+    },
+    "scan": {
+      "label": "Verificar imagens em busca de vulnerabilidades conhecidas"
+    },
+    "gate": {
+      "label": "Portão de deploy",
+      "options": {
+        "off": "Desativado",
+        "warn": "Somente avisar",
+        "block_on_critical": "Bloquear em crítica",
+        "block_on_high": "Bloquear em alta ou crítica"
+      },
+      "needsScan": "Ative a varredura para usar um portão diferente de Desativado."
+    },
+    "save": {
+      "action": "Salvar política",
+      "pending": "Salvando",
+      "done": "Política salva."
+    },
+    "inherit": "Os apps sem política própria herdam esta.",
+    "serverOff": "A varredura de vulnerabilidades está desativada neste control plane, então a política ainda não tem efeito.",
+    "rootOnly": "Somente uma conta root pode alterar esta política.",
+    "loading": "Carregando a política",
+    "error": "Não foi possível carregar a política de varredura."
+  }
+}
