@@ -9,6 +9,8 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -134,7 +136,7 @@ func TestLive_RemoteBuildDispatch(t *testing.T) {
 	cancelSession()
 	select {
 	case err := <-sessionDone:
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) && status.Code(err) != codes.Canceled {
 			t.Errorf("RunSession returned %v after cancellation", err)
 		}
 	case <-time.After(10 * time.Second):
