@@ -1,0 +1,64 @@
+{
+  "title": "错误",
+  "subtitle": "你的应用通过任意 Sentry SDK 上报的错误，按问题分组，并关联到产生它们的部署。",
+  "setup": {
+    "title": "从此应用发送错误",
+    "off": "错误追踪已关闭。开启后可获得供 Sentry SDK 使用的 DSN。",
+    "on": "错误追踪已开启。请将 SENTRY_DSN 设置为你获得的 DSN，或轮换以获取新的 DSN。",
+    "enable": "开启错误追踪",
+    "enabling": "开启中...",
+    "rotate": "轮换 DSN",
+    "disable": "关闭",
+    "copy": "复制",
+    "dsnOnce": "此 DSN 只显示一次。请在应用上设置并重新部署。轮换后旧 DSN 将失效。",
+    "endpoint": "端点",
+    "enabledToast": "错误追踪已开启。",
+    "disabledToast": "错误追踪已关闭。应用的 SDK 将收到 401 响应。",
+    "failed": "无法更改错误追踪设置。"
+  },
+  "filters": {
+    "status": "状态",
+    "all": "全部",
+    "open": "未解决",
+    "resolved": "已解决",
+    "ignored": "已忽略",
+    "window": "时间范围",
+    "last1": "最近 1 小时",
+    "last24": "最近 24 小时",
+    "last168": "最近 7 天",
+    "last720": "最近 30 天"
+  },
+  "list": {
+    "empty": "此时间范围内没有错误。SDK 一旦上报错误，就会显示在这里。",
+    "loadError": "无法加载错误：{{message}}",
+    "count": "{{count}} 个事件",
+    "firstSeen": "首次出现",
+    "lastSeen": "最近出现",
+    "regressed": "回归",
+    "release": "版本 {{release}}",
+    "deploy": "部署 {{id}}",
+    "emptyTitle": "没有错误",
+    "emptyOff": "此应用的错误追踪已关闭，因此不会收集任何内容。开启后可获得 DSN。",
+    "emptyAction": "设置错误追踪"
+  },
+  "level": {
+    "fatal": "致命",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "debug": "调试"
+  },
+  "detail": {
+    "loading": "正在加载问题...",
+    "stack": "堆栈跟踪",
+    "noStack": "此事件没有携带堆栈跟踪。",
+    "latest": "最新事件",
+    "samples": "已存储 {{count}} 个事件",
+    "environment": "环境 {{environment}}",
+    "resolve": "标为已解决",
+    "ignore": "忽略",
+    "reopen": "重新打开",
+    "updated": "问题已更新。",
+    "updateFailed": "无法更新问题。"
+  }
+}
