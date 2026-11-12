@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-394 listed, 15 amd64 only, 149 unknown, of 558 templates.
+394 listed, 15 amd64 only, 161 unknown, of 570 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -36,6 +36,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `adminer` | listed | pass |
 | `affine` | listed | not tested |
 | `alertmanager` | listed | pass |
+| `ampache` | unknown | not tested |
 | `answer` | listed | not tested |
 | `anubis` | unknown | not tested |
 | `anythingllm` | listed | not tested |
@@ -91,6 +92,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `cockpit-cms` | listed | not tested |
 | `cockroachdb` | unknown | not tested |
 | `code-server` | listed | not tested |
+| `coder` | unknown | not tested |
 | `comfyui` | amd64 only | not tested |
 | `commafeed` | unknown | not tested |
 | `consul` | listed | pass |
@@ -290,7 +292,9 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `mailhog` | amd64 only | fail |
 | `mailpit` | listed | pass |
 | `maintainerr` | listed | not tested |
+| `manyfold` | unknown | not tested |
 | `mariadb` | unknown | not tested |
+| `mariadb-adminer` | unknown | not tested |
 | `marimo` | listed | not tested |
 | `matomo` | listed | not tested |
 | `matrix-synapse` | listed | not tested |
@@ -306,6 +310,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `memos` | listed | pass |
 | `meshcentral` | listed | not tested |
 | `metabase` | amd64 only | pass |
+| `metabase-postgres` | unknown | not tested |
 | `metamcp` | listed | not tested |
 | `metube` | listed | pass |
 | `milvus` | listed | not tested |
@@ -326,6 +331,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `multi-scrobbler` | listed | not tested |
 | `mylar3` | listed | not tested |
 | `mysql` | unknown | not tested |
+| `mysql-phpmyadmin` | unknown | not tested |
 | `n8n` | listed | pass |
 | `n8n-ai-starter` | listed | not tested |
 | `n8n-mcp` | unknown | not tested |
@@ -338,6 +344,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `netdata` | listed | not tested |
 | `new-api` | listed | not tested |
 | `nextcloud` | listed | pass |
+| `nextcloud-postgres` | unknown | not tested |
 | `nextjs-postgres-starter` | listed | not tested |
 | `nexus` | listed | not tested |
 | `nginx` | unknown | not tested |
@@ -400,6 +407,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `pgweb` | listed | not tested |
 | `photoprism` | listed | not tested |
 | `photoview` | listed | not tested |
+| `phpipam` | unknown | not tested |
 | `phpmyadmin` | listed | pass |
 | `pi-hole` | listed | not tested |
 | `picoshare` | unknown | not tested |
@@ -416,6 +424,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `pocketbase` | listed | pass |
 | `portainer` | listed | pass |
 | `postgres` | unknown | not tested |
+| `postgres-pgweb` | unknown | not tested |
 | `postiz` | listed | not tested |
 | `prefect` | listed | not tested |
 | `privatebin` | listed | pass |
@@ -502,6 +511,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `supertokens` | listed | not tested |
 | `sure` | listed | not tested |
 | `surrealdb` | unknown | not tested |
+| `svix` | unknown | not tested |
 | `swagger-ui` | unknown | not tested |
 | `syncthing` | listed | pass |
 | `syncthing-discovery` | unknown | not tested |
@@ -557,9 +567,11 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `victoriametrics` | listed | not tested |
 | `vikunja` | listed | pass |
 | `vllm` | listed | not tested |
+| `voidauth` | unknown | not tested |
 | `vvveb` | listed | not tested |
 | `wakapi` | listed | pass |
 | `wallabag` | listed | not tested |
+| `wallabag-postgres` | unknown | not tested |
 | `wallos` | listed | pass |
 | `weaviate` | listed | not tested |
 | `web-check` | listed | not tested |

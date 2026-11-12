@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 558 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 161 not checked** of 570 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -159,6 +159,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `adminer` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `affine` | yes | linux/amd64, linux/arm64 |
 | `alertmanager` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `ampache` | not checked | - |
 | `answer` | yes | linux/amd64, linux/arm64 |
 | `anubis` | not checked | - |
 | `anythingllm` | yes | linux/amd64, linux/arm64 |
@@ -214,6 +215,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `cockpit-cms` | yes | linux/amd64, linux/arm64 |
 | `cockroachdb` | not checked | - |
 | `code-server` | yes | linux/amd64, linux/arm64 |
+| `coder` | not checked | - |
 | `comfyui` | amd64 only | linux/amd64 |
 | `commafeed` | not checked | - |
 | `consul` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
@@ -413,7 +415,9 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `mailhog` | amd64 only | linux/amd64 |
 | `mailpit` | yes | linux/386, linux/amd64, linux/arm64 |
 | `maintainerr` | yes | linux/amd64, linux/arm64 |
+| `manyfold` | not checked | - |
 | `mariadb` | not checked | - |
+| `mariadb-adminer` | not checked | - |
 | `marimo` | yes | linux/amd64, linux/arm64 |
 | `matomo` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `matrix-synapse` | yes | linux/amd64, linux/arm64 |
@@ -429,6 +433,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `memos` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `meshcentral` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `metabase` | amd64 only | linux/amd64 |
+| `metabase-postgres` | not checked | - |
 | `metamcp` | yes | linux/amd64, linux/arm64 |
 | `metube` | yes | linux/amd64, linux/arm64 |
 | `milvus` | yes | linux/amd64, linux/arm64 |
@@ -449,6 +454,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `multi-scrobbler` | yes | linux/amd64, linux/arm64 |
 | `mylar3` | yes | linux/amd64, linux/arm64 |
 | `mysql` | not checked | - |
+| `mysql-phpmyadmin` | not checked | - |
 | `n8n` | yes | linux/amd64, linux/arm64 |
 | `n8n-ai-starter` | yes | linux/amd64, linux/arm64 |
 | `n8n-mcp` | not checked | - |
@@ -461,6 +467,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `netdata` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `new-api` | yes | linux/amd64, linux/arm64 |
 | `nextcloud` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/mips64le, linux/ppc64le, linux/s390x |
+| `nextcloud-postgres` | not checked | - |
 | `nextjs-postgres-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nexus` | yes | linux/amd64, linux/arm64 |
 | `nginx` | not checked | - |
@@ -523,6 +530,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `pgweb` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `photoprism` | yes | linux/amd64, linux/arm64 |
 | `photoview` | yes | linux/amd64, linux/arm64 |
+| `phpipam` | not checked | - |
 | `phpmyadmin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `pi-hole` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `picoshare` | not checked | - |
@@ -539,6 +547,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `pocketbase` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `portainer` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, windows/amd64 |
 | `postgres` | not checked | - |
+| `postgres-pgweb` | not checked | - |
 | `postiz` | yes | linux/amd64, linux/arm64 |
 | `prefect` | yes | linux/amd64, linux/arm64 |
 | `privatebin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
@@ -625,6 +634,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `supertokens` | yes | linux/amd64, linux/arm64 |
 | `sure` | yes | linux/amd64, linux/arm64 |
 | `surrealdb` | not checked | - |
+| `svix` | not checked | - |
 | `swagger-ui` | not checked | - |
 | `syncthing` | yes | linux/amd64, linux/arm64 |
 | `syncthing-discovery` | not checked | - |
@@ -680,9 +690,11 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `victoriametrics` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `vikunja` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `vllm` | yes | linux/amd64, linux/arm64 |
+| `voidauth` | not checked | - |
 | `vvveb` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `wakapi` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `wallabag` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `wallabag-postgres` | not checked | - |
 | `wallos` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `weaviate` | yes | linux/amd64, linux/arm64 |
 | `web-check` | yes | linux/amd64, linux/arm64 |

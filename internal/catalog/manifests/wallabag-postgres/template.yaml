@@ -1,0 +1,38 @@
+id: wallabag-postgres
+name: Wallabag with Postgres
+description: A read it later app that saves web articles in a clean, distraction free format, with its data kept in a bundled Postgres database instead of SQLite. The default login is wallabag with the password wallabag, change it first.
+icon: book-bookmark
+category: Productivity
+documentation_url: https://doc.wallabag.org/
+source_repo: https://github.com/wallabag/wallabag
+license: MIT
+license_class: permissive
+license_url: https://github.com/wallabag/wallabag/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in as wallabag with the password wallabag, then change the password under your profile.
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+  - key: SECRET
+    label: Application secret
+    description: Signs sessions and tokens. Changing it signs every user out.
+    generate: hex
+    length: 32
+    secret: true
+domains:
+  - service: wallabag
+    port: 80
+    description: Public address of Wallabag.
+healthcheck:
+  service: wallabag
+  port: 80
+  path: /

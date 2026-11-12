@@ -1,0 +1,69 @@
+---
+title: "Self-host Ampache with Docker"
+sidebarTitle: "Ampache"
+description: "A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes."
+"og:url": "https://docs.levelrail.com/self-host/ampache"
+---
+
+A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes.
+
+This page describes the Levelrail template for Ampache (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://ampache.org/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ampache` | `ampache/ampache:8.4.0` | 80 | `config -&#62; /var/www/html/config`<br />`media -&#62; /media` |
+| `db` | `mariadb:11.8.9` | none | `mariadb_data -&#62; /var/lib/mysql` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MYSQL_DATABASE` | Preset in the template |
+| `db` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`): MYSQL_ROOT_PASSWORD.
+- Stores data in named volumes (`ampache`, `db`): config, mariadb_data, media.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Ampache with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Ampache. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ampache --name my-ampache
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+- [Calibre-Web Automated](/self-host/calibre-web-automated)
+
+All templates are listed in the [self-host gallery](/self-host).

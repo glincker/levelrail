@@ -2,14 +2,14 @@
   "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 558,
-    "images": 602,
+    "templates": 570,
+    "images": 613,
     "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 149,
+    "arm64_unknown": 161,
     "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 152
+    "image_arm64_unknown": 163
   },
   "templates": [
     {
@@ -270,6 +270,33 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "ampache",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ampache/ampache:8.4.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.8.9",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
     },
@@ -1563,6 +1590,27 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-01T00:10:24Z"
+        }
+      ]
+    },
+    {
+      "id": "coder",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/coder/coder:v2.39.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6178,6 +6226,34 @@
       ]
     },
     {
+      "id": "manyfold",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/manyfold3d/manyfold:0.154.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7.4.7-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "mariadb",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -6188,6 +6264,33 @@
           "amd64": "unknown",
           "arm64": "unknown",
           "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "mariadb-adminer",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "adminer:5.5.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.8.9",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
     },
@@ -6520,6 +6623,27 @@
           "arm64": "no",
           "source": "manifest",
           "checked_at": "2026-11-01T00:10:24Z"
+        }
+      ]
+    },
+    {
+      "id": "metabase-postgres",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "metabase/metabase:v0.65.4.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6940,6 +7064,27 @@
       ]
     },
     {
+      "id": "mysql-phpmyadmin",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mysql:8.4.13",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "phpmyadmin:5.2.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "n8n",
       "amd64": "yes",
       "arm64": "yes",
@@ -7273,6 +7418,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "nextcloud-postgres",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nextcloud:33.0.10-apache",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7.4.7-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -8711,6 +8884,33 @@
       ]
     },
     {
+      "id": "phpipam",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mariadb:11.8.9",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        },
+        {
+          "ref": "phpipam/phpipam-www:v1.9.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "phpmyadmin",
       "amd64": "yes",
       "arm64": "yes",
@@ -9141,6 +9341,32 @@
           "amd64": "unknown",
           "arm64": "unknown",
           "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "postgres-pgweb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "sosedoff/pgweb:0.17.0",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
     },
@@ -10999,6 +11225,34 @@
       ]
     },
     {
+      "id": "svix",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7.4.7-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "svix/svix-server:v1.105.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "swagger-ui",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -12158,6 +12412,27 @@
       ]
     },
     {
+      "id": "voidauth",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "voidauth/voidauth:1.19.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "vvveb",
       "amd64": "yes",
       "arm64": "yes",
@@ -12228,6 +12503,27 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "wallabag-postgres",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:17.11-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "wallabag/wallabag:2.6.15",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

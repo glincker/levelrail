@@ -1466,6 +1466,164 @@
    }
   },
   {
+   "id": "ampache",
+   "aliases": [],
+   "name": "Ampache",
+   "slogan": "A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes.",
+   "description": "A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes.",
+   "first_run": [
+    "Open the page and run the installer with database host db, database ampache, user root and the generated root password, then create the admin."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/ampache/ampache",
+   "documentation_url": "https://ampache.org/",
+   "license": {
+    "spdx": "AGPL-3.0-or-later",
+    "class": "network-copyleft",
+    "url": "https://github.com/ampache/ampache/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ampache",
+     "image": "ampache/ampache",
+     "tag": "8.4.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.8.9",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MYSQL_ROOT_PASSWORD",
+      "label": "Database root password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "ampache",
+     "image": "ampache/ampache:8.4.0",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "config -> /var/www/html/config",
+      "media -> /media"
+     ]
+    },
+    {
+     "name": "db",
+     "image": "mariadb:11.8.9",
+     "ports": [],
+     "volumes": [
+      "mariadb_data -> /var/lib/mysql"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MYSQL_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MYSQL_ROOT_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "MYSQL_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ampache",
+       "db"
+      ],
+      "detail": "config, mariadb_data, media",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "answer",
    "aliases": [],
    "name": "Apache Answer",
@@ -9774,6 +9932,183 @@
        "code-server"
       ],
       "detail": "code_server_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "coder",
+   "aliases": [],
+   "name": "Coder",
+   "slogan": "A self-hosted platform for cloud development environments, backed by Postgres. This runs the Coder server only, with no Docker socket, so add workspace templates that use remote infrastructure. Create the first admin on first open.",
+   "description": "A self-hosted platform for cloud development environments, backed by Postgres. This runs the Coder server only, with no Docker socket, so add workspace templates that use remote infrastructure. Create the first admin on first open.",
+   "first_run": [
+    "Open the page and create the first admin user."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/coder/coder",
+   "documentation_url": "https://coder.com/docs",
+   "license": {
+    "spdx": "AGPL-3.0-or-later",
+    "class": "network-copyleft",
+    "url": "https://github.com/coder/coder/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "coder",
+     "image": "ghcr.io/coder/coder",
+     "tag": "v2.39.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 768,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "coder",
+     "image": "ghcr.io/coder/coder:v2.39.1",
+     "ports": [
+      7080
+     ],
+     "volumes": []
+    },
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "coder",
+     "name": "CODER_ACCESS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "coder",
+     "name": "CODER_HTTP_ADDRESS",
+     "kind": "preset"
+    },
+    {
+     "service": "coder",
+     "name": "CODER_PG_CONNECTION_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "coder",
+       "db"
+      ],
+      "detail": "CODER_PG_CONNECTION_URL, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "coder"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "pgdata",
       "message": "Stores data in named volumes"
      }
     ],
@@ -39324,6 +39659,238 @@
    }
   },
   {
+   "id": "manyfold",
+   "aliases": [],
+   "name": "Manyfold",
+   "slogan": "A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open.",
+   "description": "A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open.",
+   "first_run": [
+    "Open the page and create the first admin account, then add a library path."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/manyfold3d/manyfold",
+   "documentation_url": "https://manyfold.app/get-started/docker",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/manyfold3d/manyfold/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "manyfold",
+     "image": "ghcr.io/manyfold3d/manyfold",
+     "tag": "0.154.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7.4.7-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 768,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "SECRET_KEY_BASE",
+      "label": "Secret key base",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "manyfold",
+     "image": "ghcr.io/manyfold3d/manyfold:0.154.1",
+     "ports": [
+      3214
+     ],
+     "volumes": [
+      "libraries -> /libraries"
+     ]
+    },
+    {
+     "name": "redis",
+     "image": "redis:7.4.7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "DATABASE_ADAPTER",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "DATABASE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "DATABASE_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "DATABASE_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "manyfold",
+     "name": "DATABASE_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "DATABASE_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "REDIS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "manyfold",
+     "name": "SECRET_KEY_BASE",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "manyfold"
+      ],
+      "detail": "DATABASE_PASSWORD, SECRET_KEY_BASE, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "manyfold",
+       "redis"
+      ],
+      "detail": "libraries, pgdata, redis_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "mariadb",
    "aliases": [],
    "name": "MariaDB",
@@ -39434,6 +40001,160 @@
       "severity": "info",
       "services": [
        "mariadb"
+      ],
+      "detail": "mariadb_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mariadb-adminer",
+   "aliases": [],
+   "name": "MariaDB with Adminer",
+   "slogan": "A MariaDB 11.8 server paired with the Adminer web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to Adminer with server db, user root and the generated root password.",
+   "description": "A MariaDB 11.8 server paired with the Adminer web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to Adminer with server db, user root and the generated root password.",
+   "first_run": [
+    "Open the page and sign in with system MySQL, server db, user root and the generated root password from the app secrets."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/vrana/adminer",
+   "documentation_url": "https://www.adminer.org/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/vrana/adminer/blob/master/readme.md"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "adminer",
+     "image": "adminer",
+     "tag": "5.5.1",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.8.9",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MARIADB_ROOT_PASSWORD",
+      "label": "MariaDB root password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "adminer",
+     "image": "adminer:5.5.1",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    },
+    {
+     "name": "db",
+     "image": "mariadb:11.8.9",
+     "ports": [],
+     "volumes": [
+      "mariadb_data -> /var/lib/mysql"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "adminer",
+     "name": "ADMINER_DEFAULT_SERVER",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "MARIADB_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
       ],
       "detail": "mariadb_data",
       "message": "Stores data in named volumes"
@@ -41498,6 +42219,195 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "metabase-postgres",
+   "aliases": [],
+   "name": "Metabase with Postgres",
+   "slogan": "Metabase business intelligence with its own application data kept in a bundled Postgres database instead of the built in file, so dashboards and questions survive upgrades and scale past a single user. Create the admin on first open.",
+   "description": "Metabase business intelligence with its own application data kept in a bundled Postgres database instead of the built in file, so dashboards and questions survive upgrades and scale past a single user. Create the admin on first open.",
+   "first_run": [
+    "Open the page, create the admin account, then connect the databases you want to explore."
+   ],
+   "category": "Analytics",
+   "status": "active",
+   "source_repo": "https://github.com/metabase/metabase",
+   "documentation_url": "https://www.metabase.com/docs/latest/installation-and-operation/configuring-application-database",
+   "license": {
+    "spdx": "AGPL-3.0-or-later",
+    "class": "network-copyleft",
+    "url": "https://github.com/metabase/metabase/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "metabase",
+     "image": "metabase/metabase",
+     "tag": "v0.65.4.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1536,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "metabase",
+     "image": "metabase/metabase:v0.65.4.1",
+     "ports": [
+      3000
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "metabase",
+     "name": "JAVA_OPTS",
+     "kind": "preset"
+    },
+    {
+     "service": "metabase",
+     "name": "MB_DB_DBNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "metabase",
+     "name": "MB_DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "metabase",
+     "name": "MB_DB_PASS",
+     "kind": "generated"
+    },
+    {
+     "service": "metabase",
+     "name": "MB_DB_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "metabase",
+     "name": "MB_DB_TYPE",
+     "kind": "preset"
+    },
+    {
+     "service": "metabase",
+     "name": "MB_DB_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "metabase"
+      ],
+      "detail": "MB_DB_PASS, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -44618,6 +45528,159 @@
    }
   },
   {
+   "id": "mysql-phpmyadmin",
+   "aliases": [],
+   "name": "MySQL with phpMyAdmin",
+   "slogan": "A MySQL 8.4 server paired with the phpMyAdmin web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to phpMyAdmin as root with the generated root password.",
+   "description": "A MySQL 8.4 server paired with the phpMyAdmin web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to phpMyAdmin as root with the generated root password.",
+   "first_run": [
+    "Open the page and sign in as root with the generated root password from the app secrets."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/phpmyadmin/phpmyadmin",
+   "documentation_url": "https://docs.phpmyadmin.net/en/latest/setup.html#docker",
+   "license": {
+    "spdx": "GPL-2.0-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/phpmyadmin/phpmyadmin/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mysql",
+     "tag": "8.4.13",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "phpmyadmin",
+     "image": "phpmyadmin",
+     "tag": "5.2.3",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 768,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MYSQL_ROOT_PASSWORD",
+      "label": "MySQL root password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mysql:8.4.13",
+     "ports": [],
+     "volumes": [
+      "mysql_data -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "phpmyadmin",
+     "image": "phpmyadmin:5.2.3",
+     "ports": [
+      80
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MYSQL_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "phpmyadmin",
+     "name": "PMA_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "phpmyadmin",
+     "name": "PMA_PORT",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "MYSQL_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "mysql_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "n8n",
    "aliases": [],
    "name": "n8n",
@@ -46563,6 +47626,223 @@
        "nextcloud"
       ],
       "detail": "nextcloud_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "nextcloud-postgres",
+   "aliases": [],
+   "name": "Nextcloud with Postgres and Redis",
+   "slogan": "Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.",
+   "description": "Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.",
+   "first_run": [
+    "Sign in as admin with the generated admin password from the app secrets. First start takes a minute while the database is prepared."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/nextcloud/server",
+   "documentation_url": "https://docs.nextcloud.com/server/latest/admin_manual/installation/",
+   "license": {
+    "spdx": "AGPL-3.0-or-later",
+    "class": "network-copyleft",
+    "url": "https://github.com/nextcloud/server/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "nextcloud",
+     "image": "nextcloud",
+     "tag": "33.0.10-apache",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7.4.7-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1536,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "nextcloud",
+     "image": "nextcloud:33.0.10-apache",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "nextcloud_html -> /var/www/html"
+     ]
+    },
+    {
+     "name": "redis",
+     "image": "redis:7.4.7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "nextcloud",
+     "name": "NEXTCLOUD_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "nextcloud",
+     "name": "NEXTCLOUD_ADMIN_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "nextcloud",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "nextcloud",
+     "name": "POSTGRES_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "nextcloud",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "nextcloud",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "nextcloud",
+     "name": "REDIS_HOST",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "nextcloud"
+      ],
+      "detail": "NEXTCLOUD_ADMIN_PASSWORD, POSTGRES_PASSWORD, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "nextcloud",
+       "redis"
+      ],
+      "detail": "nextcloud_html, pgdata, redis_data",
       "message": "Stores data in named volumes"
      }
     ],
@@ -55874,6 +57154,198 @@
    }
   },
   {
+   "id": "phpipam",
+   "aliases": [],
+   "name": "phpIPAM",
+   "slogan": "An open source IP address management app for tracking subnets, addresses, VLANs and devices, backed by MariaDB. Finish the database install from the first page with the generated root password.",
+   "description": "An open source IP address management app for tracking subnets, addresses, VLANs and devices, backed by MariaDB. Finish the database install from the first page with the generated root password.",
+   "first_run": [
+    "Open the page, choose automatic database installation, enter root and the generated database root password, then set the admin password."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/phpipam/phpipam",
+   "documentation_url": "https://phpipam.net/documents/",
+   "license": {
+    "spdx": "GPL-3.0-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/phpipam/phpipam/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.8.9",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "phpipam",
+     "image": "phpipam/phpipam-www",
+     "tag": "v1.9.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MYSQL_ROOT_PASSWORD",
+      "label": "Database root password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "IPAM_DATABASE_PASS",
+      "label": "Database app password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mariadb:11.8.9",
+     "ports": [],
+     "volumes": [
+      "mariadb_data -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "phpipam",
+     "image": "phpipam/phpipam-www:v1.9.0",
+     "ports": [
+      80
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MYSQL_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "phpipam",
+     "name": "IPAM_DATABASE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "phpipam",
+     "name": "IPAM_DATABASE_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "phpipam",
+     "name": "IPAM_DATABASE_PASS",
+     "kind": "generated"
+    },
+    {
+     "service": "phpipam",
+     "name": "IPAM_DATABASE_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "phpipam",
+     "name": "IPAM_DATABASE_WEBHOST",
+     "kind": "preset"
+    },
+    {
+     "service": "phpipam",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "phpipam"
+      ],
+      "detail": "IPAM_DATABASE_PASS, MYSQL_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "mariadb_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "phpmyadmin",
    "aliases": [],
    "name": "phpMyAdmin",
@@ -58419,6 +59891,160 @@
       "severity": "info",
       "services": [
        "postgres"
+      ],
+      "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "postgres-pgweb",
+   "aliases": [],
+   "name": "PostgreSQL with pgweb",
+   "slogan": "A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private.",
+   "description": "A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private.",
+   "first_run": [
+    "Open the page, the console is already connected to the bundled database."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/sosedoff/pgweb",
+   "documentation_url": "https://github.com/sosedoff/pgweb/wiki",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/sosedoff/pgweb/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "pgweb",
+     "image": "sosedoff/pgweb",
+     "tag": "0.17.0",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 384,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "POSTGRES_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "pgweb",
+     "image": "sosedoff/pgweb:0.17.0",
+     "ports": [
+      8081
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "pgweb",
+     "name": "PGWEB_DATABASE_URL",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "pgweb"
+      ],
+      "detail": "PGWEB_DATABASE_URL, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
       ],
       "detail": "pgdata",
       "message": "Stores data in named volumes"
@@ -70986,6 +72612,205 @@
    }
   },
   {
+   "id": "svix",
+   "aliases": [],
+   "name": "Svix",
+   "slogan": "A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret.",
+   "description": "A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret.",
+   "first_run": [
+    "Create an API token with the svix-server jwt generate command inside the container, then call the API at the published port."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/svix/svix-webhooks",
+   "documentation_url": "https://docs.svix.com/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/svix/svix-webhooks/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7.4.7-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "svix",
+     "image": "svix/svix-server",
+     "tag": "v1.105.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 384,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "JWT_SECRET",
+      "label": "JWT secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "redis",
+     "image": "redis:7.4.7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    },
+    {
+     "name": "svix",
+     "image": "svix/svix-server:v1.105.0",
+     "ports": [
+      8071
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "svix",
+     "name": "SVIX_DB_DSN",
+     "kind": "generated"
+    },
+    {
+     "service": "svix",
+     "name": "SVIX_JWT_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "svix",
+     "name": "SVIX_REDIS_DSN",
+     "kind": "preset"
+    },
+    {
+     "service": "svix",
+     "name": "WAIT_FOR",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "svix"
+      ],
+      "detail": "POSTGRES_PASSWORD, SVIX_DB_DSN, SVIX_JWT_SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "redis"
+      ],
+      "detail": "pgdata, redis_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "swagger-ui",
    "aliases": [],
    "name": "Swagger UI",
@@ -78589,6 +80414,184 @@
    }
   },
   {
+   "id": "voidauth",
+   "aliases": [],
+   "name": "VoidAuth",
+   "slogan": "A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.",
+   "description": "A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.",
+   "first_run": [
+    "Read the first admin invitation link from the voidauth container log, open it and set the admin password."
+   ],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/voidauth/voidauth",
+   "documentation_url": "https://voidauth.app/",
+   "license": {
+    "spdx": "AGPL-3.0-or-later",
+    "class": "network-copyleft",
+    "url": "https://github.com/voidauth/voidauth/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "voidauth",
+     "image": "voidauth/voidauth",
+     "tag": "1.19.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 384,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "STORAGE_KEY",
+      "label": "Storage key",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "voidauth",
+     "image": "voidauth/voidauth:1.19.1",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "config -> /app/config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "voidauth",
+     "name": "APP_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "voidauth",
+     "name": "DB_ADAPTER",
+     "kind": "preset"
+    },
+    {
+     "service": "voidauth",
+     "name": "DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "voidauth",
+     "name": "DB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "voidauth",
+     "name": "STORAGE_KEY",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "voidauth"
+      ],
+      "detail": "DB_PASSWORD, STORAGE_KEY, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "voidauth"
+      ],
+      "detail": "config, pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "vvveb",
    "aliases": [],
    "name": "Vvveb CMS",
@@ -79027,6 +81030,219 @@
        "wallabag"
       ],
       "detail": "wallabag_data, wallabag_images",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "wallabag-postgres",
+   "aliases": [],
+   "name": "Wallabag with Postgres",
+   "slogan": "A read it later app that saves web articles in a clean, distraction free format, with its data kept in a bundled Postgres database instead of SQLite. The default login is wallabag with the password wallabag, change it first.",
+   "description": "A read it later app that saves web articles in a clean, distraction free format, with its data kept in a bundled Postgres database instead of SQLite. The default login is wallabag with the password wallabag, change it first.",
+   "first_run": [
+    "Sign in as wallabag with the password wallabag, then change the password under your profile."
+   ],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/wallabag/wallabag",
+   "documentation_url": "https://doc.wallabag.org/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/wallabag/wallabag/blob/HEAD/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "wallabag",
+     "image": "wallabag/wallabag",
+     "tag": "2.6.15",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "SECRET",
+      "label": "Application secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "wallabag",
+     "image": "wallabag/wallabag:2.6.15",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "wallabag_images -> /var/www/wallabag/web/assets/images"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_CHARSET",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_DRIVER",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DATABASE_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__DOMAIN_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__FOSUSER_REGISTRATION",
+     "kind": "preset"
+    },
+    {
+     "service": "wallabag",
+     "name": "SYMFONY__ENV__SECRET",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "wallabag"
+      ],
+      "detail": "POSTGRES_PASSWORD, SYMFONY__ENV__DATABASE_PASSWORD, SYMFONY__ENV__SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "wallabag"
+      ],
+      "detail": "pgdata, wallabag_images",
       "message": "Stores data in named volumes"
      }
     ],

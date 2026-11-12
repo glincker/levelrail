@@ -1,0 +1,75 @@
+---
+title: "Self-host Svix with Docker"
+sidebarTitle: "Svix"
+description: "A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret."
+"og:url": "https://docs.levelrail.com/self-host/svix"
+---
+
+A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret.
+
+This page describes the Levelrail template for Svix (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.svix.com/.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:17.11-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `redis` | `redis:7.4.7-alpine` | none | `redis_data -&#62; /data` |
+| `svix` | `svix/svix-server:v1.105.0` | 8071 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `svix` | `SVIX_DB_DSN` | Generated at deploy |
+| `svix` | `SVIX_JWT_SECRET` | Generated at deploy |
+| `svix` | `SVIX_REDIS_DSN` | Preset in the template |
+| `svix` | `WAIT_FOR` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `svix`): POSTGRES_PASSWORD, SVIX_DB_DSN, SVIX_JWT_SECRET.
+- Stores data in named volumes (`db`, `redis`): pgdata, redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Svix with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Svix. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy svix --name my-svix
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

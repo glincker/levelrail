@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-558 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+570 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -63,6 +63,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [GoatCounter](/self-host/goatcounter): A privacy-friendly, open-source web analytics platform that never tracks individual visitors.
 - [Matomo](/self-host/matomo): A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.
 - [Metabase](/self-host/metabase): Ask questions of your data and share dashboards, no SQL required.
+- [Metabase with Postgres](/self-host/metabase-postgres): Metabase business intelligence with its own application data kept in a bundled Postgres database instead of the built in file, so dashboards and questions survive upgrades and scale past a single user. Create the admin on first open.
 - [Plausible Analytics](/self-host/plausible): Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required.
 - [Redash](/self-host/redash): Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit.
 - [Tianji](/self-host/tianji): An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard.
@@ -196,11 +197,13 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [InfluxDB](/self-host/influxdb): An open-source time-series database for metrics, events, and IoT analytics.
 - [libSQL Server](/self-host/libsql): Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume.
 - [MariaDB](/self-host/mariadb): The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.
+- [MariaDB with Adminer](/self-host/mariadb-adminer): A MariaDB 11.8 server paired with the Adminer web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to Adminer with server db, user root and the generated root password.
 - [Memcached](/self-host/memcached): A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.
 - [Milvus](/self-host/milvus): A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.
 - [Mongo Express](/self-host/mongo-express): A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.
 - [MongoDB](/self-host/mongodb): The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017.
 - [MySQL](/self-host/mysql): The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306.
+- [MySQL with phpMyAdmin](/self-host/mysql-phpmyadmin): A MySQL 8.4 server paired with the phpMyAdmin web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to phpMyAdmin as root with the generated root password.
 - [Neo4j](/self-host/neo4j): A graph database with the Cypher query language, Community Edition, including the browser console.
 - [NocoDB](/self-host/nocodb): Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.
 - [OpenSearch](/self-host/opensearch): A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200.
@@ -210,6 +213,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [pgvector Postgres](/self-host/pgvector): PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data.
 - [phpMyAdmin](/self-host/phpmyadmin): A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database.
 - [PostgreSQL](/self-host/postgres): The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.
+- [PostgreSQL with pgweb](/self-host/postgres-pgweb): A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private.
 - [Qdrant](/self-host/qdrant): A vector similarity search engine for storing, searching, and managing embeddings.
 - [QuestDB](/self-host/questdb): A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain.
 - [Redis](/self-host/redis): The Redis in-memory data store on the BSD licensed 7.2 line, with append-only persistence and a generated password. It is not published on the host, so reach it from other services in this project at redis:6379.
@@ -239,6 +243,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Browserless](/self-host/browserless): A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering.
 - [ByteStash](/self-host/bytestash): A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants.
 - [code-server](/self-host/code-server): Run VS Code in the browser, on your own hardware, from any device with a tab open.
+- [Coder](/self-host/coder): A self-hosted platform for cloud development environments, backed by Postgres. This runs the Coder server only, with no Docker socket, so add workspace templates that use remote infrastructure. Create the first admin on first open.
 - [ConvertX](/self-host/convertx): A self-hosted file converter that handles well over a thousand image, document, and media formats.
 - [CyberChef](/self-host/cyberchef): The cyber swiss army knife: encode, decode, hash, and analyse data in the browser.
 - [Databasus](/self-host/databasus): A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases.
@@ -297,6 +302,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [SonarQube Community](/self-host/sonarqube): Continuous code quality and security analysis across 30+ languages, with quality gates for every pull request.
 - [Sonatype Nexus Repository](/self-host/nexus): A universal artifact repository for Maven, npm, Docker, PyPI, and more, with proxying and caching.
 - [Strapi](/self-host/strapi): An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API.
+- [Svix](/self-host/svix): A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret.
 - [Swagger UI](/self-host/swagger-ui): Renders an OpenAPI description as interactive API documentation you can try from the browser. It is static, has no login and no database.
 - [Termix](/self-host/termix): A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard.
 - [Tolgee](/self-host/tolgee): A localization management platform where developers and translators work in one shared UI.
@@ -360,6 +366,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Nginx Proxy Manager](/self-host/nginx-proxy-manager): A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.
 - [NSQ](/self-host/nsq): A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151.
 - [OpenResty](/self-host/openresty): The OpenResty web platform, Nginx with LuaJIT, on the Alpine image with a persistent web root. It serves the default page until you add content or configuration.
+- [phpIPAM](/self-host/phpipam): An open source IP address management app for tracking subnets, addresses, VLANs and devices, backed by MariaDB. Finish the database install from the first page with the generated root password.
 - [Pi-hole](/self-host/pi-hole): Network-wide ad blocking that works as a DNS sinkhole for your whole network.
 - [Portainer](/self-host/portainer): A web UI for managing containers, images, volumes, and networks.
 - [RabbitMQ](/self-host/rabbitmq): A widely used open-source message broker supporting AMQP, MQTT, and STOMP.
@@ -382,6 +389,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 ## Media
 
+- [Ampache](/self-host/ampache): A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes.
 - [Audiobookshelf](/self-host/audiobookshelf): A self-hosted server for your audiobooks and podcasts, with sync across every device.
 - [Bazarr](/self-host/bazarr): Companion to Sonarr and Radarr that finds and downloads subtitles for your media library.
 - [Calibre](/self-host/calibre): The Calibre e-book manager in a browser desktop session, for organising, converting and reading your library.
@@ -401,6 +409,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Komga](/self-host/komga): A media server for comics, manga, and digital books with a clean reading interface.
 - [Lidarr](/self-host/lidarr): Watches your indexers for new albums from artists you follow and automatically grabs and organizes them.
 - [Lyrion Music Server](/self-host/lyrion): The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.
+- [Manyfold](/self-host/manyfold): A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open.
 - [MeTube](/self-host/metube): A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.
 - [mStream](/self-host/mstream): A lightweight personal music streaming server with a web player and mobile apps.
 - [Navidrome](/self-host/navidrome): Stream your own music collection from a Subsonic-compatible server to any device, anywhere.
@@ -573,6 +582,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Vert](/self-host/vert): A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload.
 - [Vikunja](/self-host/vikunja): An open-source task and project manager for teams that outgrew sticky notes.
 - [Wallabag](/self-host/wallabag): A read-it-later app that saves web articles in a clean, distraction-free format.
+- [Wallabag with Postgres](/self-host/wallabag-postgres): A read it later app that saves web articles in a clean, distraction free format, with its data kept in a bundled Postgres database instead of SQLite. The default login is wallabag with the password wallabag, change it first.
 - [Wekan](/self-host/wekan): An open-source Kanban board with swimlanes, checklists and webhooks, a self-hosted alternative to Trello.
 - [Wiki.js](/self-host/wikijs): A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres.
 
@@ -601,6 +611,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Tinyauth](/self-host/tinyauth): A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.
 - [Vault](/self-host/vault): HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it.
 - [Vaultwarden](/self-host/vaultwarden): A lightweight, self-hosted password manager server compatible with the Bitwarden clients.
+- [VoidAuth](/self-host/voidauth): A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.
 - [Whoogle Search](/self-host/whoogle): A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required.
 
 ## Starter Kits
@@ -624,6 +635,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [FileBrowser Quantum](/self-host/filebrowser-quantum): A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.
 - [Kopia](/self-host/kopia): Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.
 - [MinIO](/self-host/minio): S3-compatible object storage you run yourself, with a built-in web console.
+- [Nextcloud with Postgres and Redis](/self-host/nextcloud-postgres): Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.
 - [ownCloud](/self-host/owncloud): The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking.
 - [ownCloud Infinite Scale](/self-host/ocis): File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.
 - [PicoShare](/self-host/picoshare): Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.

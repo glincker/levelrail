@@ -1,0 +1,26 @@
+services:
+  pgweb:
+    image: sosedoff/pgweb:0.17.0
+    ports: ["8081"]
+    environment:
+      PGWEB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8081/ || curl -fsS -o /dev/null http://127.0.0.1:8081/"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

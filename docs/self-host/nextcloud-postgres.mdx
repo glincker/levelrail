@@ -1,0 +1,78 @@
+---
+title: "Self-host Nextcloud with Postgres and Redis with Docker"
+sidebarTitle: "Nextcloud with Postgres and Redis"
+description: "Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password."
+"og:url": "https://docs.levelrail.com/self-host/nextcloud-postgres"
+---
+
+Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.
+
+This page describes the Levelrail template for Nextcloud with Postgres and Redis (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.nextcloud.com/server/latest/admin_manual/installation/.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:17.11-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `nextcloud` | `nextcloud:33.0.10-apache` | 80 | `nextcloud_html -&#62; /var/www/html` |
+| `redis` | `redis:7.4.7-alpine` | none | `redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `nextcloud` | `NEXTCLOUD_ADMIN_PASSWORD` | Generated at deploy |
+| `nextcloud` | `NEXTCLOUD_ADMIN_USER` | Preset in the template |
+| `nextcloud` | `POSTGRES_DB` | Preset in the template |
+| `nextcloud` | `POSTGRES_HOST` | Preset in the template |
+| `nextcloud` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `nextcloud` | `POSTGRES_USER` | Preset in the template |
+| `nextcloud` | `REDIS_HOST` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `nextcloud`): NEXTCLOUD_ADMIN_PASSWORD, POSTGRES_PASSWORD, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `nextcloud`, `redis`): nextcloud_html, pgdata, redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Nextcloud with Postgres and Redis with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Nextcloud with Postgres and Redis. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy nextcloud-postgres --name my-nextcloud-postgres
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Dufs](/self-host/dufs)
+- [Duplicati](/self-host/duplicati)
+
+All templates are listed in the [self-host gallery](/self-host).

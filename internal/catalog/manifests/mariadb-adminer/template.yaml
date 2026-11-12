@@ -1,0 +1,32 @@
+id: mariadb-adminer
+name: MariaDB with Adminer
+description: A MariaDB 11.8 server paired with the Adminer web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to Adminer with server db, user root and the generated root password.
+icon: database
+category: Database Tools
+documentation_url: https://www.adminer.org/
+source_repo: https://github.com/vrana/adminer
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/vrana/adminer/blob/master/readme.md
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Open the page and sign in with system MySQL, server db, user root and the generated root password from the app secrets.
+env:
+  - key: MARIADB_ROOT_PASSWORD
+    label: MariaDB root password
+    description: Root password for the bundled MariaDB server. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: adminer
+    port: 8080
+    description: Public address of the Adminer console. Keep it private, it can reach the whole database.
+healthcheck:
+  service: adminer
+  port: 8080
+  path: /

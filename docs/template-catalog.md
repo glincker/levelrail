@@ -25,28 +25,28 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (558 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (570 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 46 |
-| [Analytics](#analytics) | 10 |
+| [Analytics](#analytics) | 11 |
 | [Applications](#applications) | 44 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 24 |
 | [Dashboard](#dashboard) | 9 |
-| [Database Tools](#database-tools) | 47 |
-| [Developer Tools](#developer-tools) | 79 |
+| [Database Tools](#database-tools) | 50 |
+| [Developer Tools](#developer-tools) | 81 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 32 |
+| [Infrastructure](#infrastructure) | 33 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 45 |
+| [Media](#media) | 47 |
 | [Monitoring](#monitoring) | 48 |
-| [Productivity](#productivity) | 85 |
-| [Security](#security) | 24 |
+| [Productivity](#productivity) | 86 |
+| [Security](#security) | 25 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 20 |
+| [Storage](#storage) | 21 |
 | [Backups](#backups) | 2 |
 | [Databases](#databases) | 1 |
 | [Mail](#mail) | 2 |
@@ -113,6 +113,7 @@ Generated from `internal/catalog.Templates` (558 entries as of this build). Run 
 | [GoatCounter](https://www.goatcounter.com/help) | A privacy-friendly, open-source web analytics platform that never tracks individual visitors. | `goatcounter` |  |
 | [Matomo](https://matomo.org/faq/how-to-install/install-matomo-with-docker/) | A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. | `matomo` |  |
 | [Metabase](https://www.metabase.com/docs/latest/) | Ask questions of your data and share dashboards, no SQL required. | `metabase` |  |
+| [Metabase with Postgres](https://www.metabase.com/docs/latest/installation-and-operation/configuring-application-database) | Metabase business intelligence with its own application data kept in a bundled Postgres database instead of the built in file, so dashboards and questions survive upgrades and scale past a single user. Create the admin on first open. | `metabase-postgres` |  |
 | [Plausible Analytics](https://plausible.io/docs/self-hosting) | Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required. | `plausible` |  |
 | [Redash](https://redash.io/help/) | Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit. | `redash` |  |
 | [Tianji](https://tianji.dev/docs/intro) | An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard. | `tianji` |  |
@@ -251,11 +252,13 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
 | [libSQL Server](https://github.com/tursodatabase/libsql/tree/main/libsql-server) | Server for libSQL, the open contribution fork of SQLite, speaking the Hrana protocol over HTTP. Runs as a single primary node with data on a volume. | `libsql` |  |
 | [MariaDB](https://mariadb.com/kb/en/documentation/) | The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306. | `mariadb` |  |
+| [MariaDB with Adminer](https://www.adminer.org/) | A MariaDB 11.8 server paired with the Adminer web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to Adminer with server db, user root and the generated root password. | `mariadb-adminer` |  |
 | [Memcached](https://memcached.org/) | A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. | `memcached` |  |
 | [Milvus](https://milvus.io/docs) | A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. | `milvus` |  |
 | [Mongo Express](https://github.com/mongo-express/mongo-express) | A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. | `mongo-express` |  |
 | [MongoDB](https://www.mongodb.com/docs/manual/) | The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017. | `mongodb` |  |
 | [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) | The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306. | `mysql` |  |
+| [MySQL with phpMyAdmin](https://docs.phpmyadmin.net/en/latest/setup.html#docker) | A MySQL 8.4 server paired with the phpMyAdmin web console, already wired together. The database is not published on the host, so other services in this project reach it at db:3306. Sign in to phpMyAdmin as root with the generated root password. | `mysql-phpmyadmin` |  |
 | [Neo4j](https://neo4j.com/docs/) | A graph database with the Cypher query language, Community Edition, including the browser console. | `neo4j` |  |
 | [NocoDB](https://docs.nocodb.com) | Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. | `nocodb` |  |
 | [OpenSearch](https://opensearch.org/docs/latest/) | A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200. | `opensearch` |  |
@@ -265,6 +268,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [pgvector Postgres](https://github.com/pgvector/pgvector) | PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. | `pgvector` |  |
 | [phpMyAdmin](https://www.phpmyadmin.net/docs/) | A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database. | `phpmyadmin` |  |
 | [PostgreSQL](https://www.postgresql.org/docs/17/) | The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432. | `postgres` |  |
+| [PostgreSQL with pgweb](https://github.com/sosedoff/pgweb/wiki) | A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private. | `postgres-pgweb` |  |
 | [Qdrant](https://qdrant.tech/documentation/) | A vector similarity search engine for storing, searching, and managing embeddings. | `qdrant` |  |
 | [QuestDB](https://questdb.com/docs/) | A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain. | `questdb` |  |
 | [Redis](https://redis.io/docs/) | The Redis in-memory data store on the BSD licensed 7.2 line, with append-only persistence and a generated password. It is not published on the host, so reach it from other services in this project at redis:6379. | `redis` |  |
@@ -292,12 +296,13 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Browserless](https://docs.browserless.io) | A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering. | `browserless` |  |
 | [ByteStash](https://github.com/jordan-dalby/ByteStash) | A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants. | `bytestash` |  |
 | [code-server](https://coder.com/docs/code-server) | Run VS Code in the browser, on your own hardware, from any device with a tab open. | `code-server` |  |
+| [Coder](https://coder.com/docs) | A self-hosted platform for cloud development environments, backed by Postgres. This runs the Coder server only, with no Docker socket, so add workspace templates that use remote infrastructure. Create the first admin on first open. | `coder` |  |
 | [ConvertX](https://github.com/C4illin/ConvertX) | A self-hosted file converter that handles well over a thousand image, document, and media formats. | `convertx` |  |
 | [CyberChef](https://github.com/gchq/CyberChef/wiki) | The cyber swiss army knife: encode, decode, hash, and analyse data in the browser. | `cyberchef` |  |
 | [Databasus](https://databasus.com/installation) | A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases. | `databasus` |  |
 | [Directus](https://docs.directus.io) | An open-source headless CMS and instant REST/GraphQL API layer over your own database. | `directus` |  |
-| [Docker Registry](https://distribution.github.io/distribution/) | The official open source registry for storing and distributing your own container images. | `registry` |  |
 | [Docker Registry](https://distribution.github.io/distribution/) | A private registry for storing and distributing your own container images. | `docker-registry` |  |
+| [Docker Registry](https://distribution.github.io/distribution/) | The official open source registry for storing and distributing your own container images. | `registry` |  |
 | [Docker Registry (Authenticated)](https://distribution.github.io/distribution/) | A private container registry with HTTP basic auth baked in at boot, unlike the catalog's open registry entry. | `docker-registry-auth` |  |
 | [Flagsmith](https://docs.flagsmith.com/) | A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin. | `flagsmith` |  |
 | [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | A headless-browser proxy that solves Cloudflare and DDoS-Guard challenges for other self-hosted tools. | `flaresolverr` |  |
@@ -320,8 +325,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Inngest](https://www.inngest.com/docs/self-hosting) | A durable workflow engine for background jobs, queues, cron and event-driven functions, backed by Postgres and Redis. | `inngest` |  |
 | [IT Tools](https://it-tools.tech) | A collection of handy online tools for developers: converters, generators, formatters, and more. | `it-tools` |  |
 | [Jenkins](https://www.jenkins.io/doc) | The long-running automation server for building, testing, and deploying with thousands of plugins. | `jenkins` |  |
-| [Jupyter Notebook](https://jupyter.org/documentation) | A web-based notebook environment for interactive Python, data analysis, and visualization. | `jupyter-notebook-python` |  |
 | [Jupyter Notebook](https://jupyter.org/) | A Jupyter Notebook server for interactive Python data work, protected by a generated access token. | `jupyter-notebook` |  |
+| [Jupyter Notebook](https://jupyter.org/documentation) | A web-based notebook environment for interactive Python, data analysis, and visualization. | `jupyter-notebook-python` |  |
 | [Kellnr](https://kellnr.io/documentation) | Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume. | `kellnr` |  |
 | [Kroki](https://docs.kroki.io/) | An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it. | `kroki` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
@@ -350,6 +355,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [SonarQube Community](https://docs.sonarsource.com/sonarqube-community-build) | Continuous code quality and security analysis across 30+ languages, with quality gates for every pull request. | `sonarqube` |  |
 | [Sonatype Nexus Repository](https://help.sonatype.com/en/sonatype-nexus-repository.html) | A universal artifact repository for Maven, npm, Docker, PyPI, and more, with proxying and caching. | `nexus` |  |
 | [Strapi](https://docs.strapi.io/) | An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API. | `strapi` |  |
+| [Svix](https://docs.svix.com/) | A webhooks sending service with retries, signatures, a message log and an HTTP API, backed by Postgres and Redis. Create applications and send events through the API with a token signed by your JWT secret. | `svix` |  |
 | [Swagger UI](https://github.com/swagger-api/swagger-ui) | Renders an OpenAPI description as interactive API documentation you can try from the browser. It is static, has no login and no database. | `swagger-ui` |  |
 | [Termix](https://github.com/LukeGus/Termix) | A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard. | `termix` |  |
 | [Tolgee](https://tolgee.io/platform) | A localization management platform where developers and translators work in one shared UI. | `tolgee` |  |
@@ -419,6 +425,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |
 | [NSQ](https://nsq.io/overview/design.html) | A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151. | `nsq` |  |
 | [OpenResty](https://openresty.org/en/) | The OpenResty web platform, Nginx with LuaJIT, on the Alpine image with a persistent web root. It serves the default page until you add content or configuration. | `openresty` |  |
+| [phpIPAM](https://phpipam.net/documents/) | An open source IP address management app for tracking subnets, addresses, VLANs and devices, backed by MariaDB. Finish the database install from the first page with the generated root password. | `phpipam` |  |
 | [Pi-hole](https://docs.pi-hole.net) | Network-wide ad blocking that works as a DNS sinkhole for your whole network. | `pi-hole` |  |
 | [Portainer](https://docs.portainer.io) | A web UI for managing containers, images, volumes, and networks. | `portainer` |  |
 | [RabbitMQ](https://www.rabbitmq.com/documentation.html) | A widely used open-source message broker supporting AMQP, MQTT, and STOMP. | `rabbitmq` |  |
@@ -440,6 +447,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [Ampache](https://ampache.org/) | A web based audio and video streaming server with a library, playlists, users and a Subsonic compatible API, backed by MariaDB. Finish the install from the first page with the database details shown in the notes. | `ampache` |  |
 | [Audiobookshelf](https://www.audiobookshelf.org/docs) | A self-hosted server for your audiobooks and podcasts, with sync across every device. | `audiobookshelf` |  |
 | [Bazarr](https://wiki.bazarr.media) | Companion to Sonarr and Radarr that finds and downloads subtitles for your media library. | `bazarr` |  |
 | [Calibre](https://manual.calibre-ebook.com/) | The Calibre e-book manager in a browser desktop session, for organising, converting and reading your library. | `calibre` |  |
@@ -459,6 +467,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Komga](https://komga.org/docs/installation/docker) | A media server for comics, manga, and digital books with a clean reading interface. | `komga` |  |
 | [Lidarr](https://wiki.servarr.com/lidarr) | Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. | `lidarr` |  |
 | [Lyrion Music Server](https://lyrion.org/) | The successor to Logitech Media Server, streaming your music to Squeezebox players and apps. | `lyrion` |  |
+| [Manyfold](https://manyfold.app/get-started/docker) | A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open. | `manyfold` |  |
 | [MeTube](https://github.com/alexta69/metube) | A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. | `metube` |  |
 | [mStream](https://mstream.io/) | A lightweight personal music streaming server with a web player and mobile apps. | `mstream` |  |
 | [Navidrome](https://www.navidrome.org/docs/) | Stream your own music collection from a Subsonic-compatible server to any device, anywhere. | `navidrome` |  |
@@ -626,6 +635,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Vert](https://github.com/vert-sh/vert) | A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload. | `vert` |  |
 | [Vikunja](https://vikunja.io/docs/) | An open-source task and project manager for teams that outgrew sticky notes. | `vikunja` |  |
 | [Wallabag](https://doc.wallabag.org) | A read-it-later app that saves web articles in a clean, distraction-free format. | `wallabag` |  |
+| [Wallabag with Postgres](https://doc.wallabag.org/) | A read it later app that saves web articles in a clean, distraction free format, with its data kept in a bundled Postgres database instead of SQLite. The default login is wallabag with the password wallabag, change it first. | `wallabag-postgres` |  |
 | [Wekan](https://github.com/wekan/wekan/wiki) | An open-source Kanban board with swimlanes, checklists and webhooks, a self-hosted alternative to Trello. | `wekan` |  |
 | [Wiki.js](https://docs.requarks.io) | A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres. | `wikijs` |  |
 
@@ -656,6 +666,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Tinyauth](https://tinyauth.app/docs/getting-started) | A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form. | `tinyauth` |  |
 | [Vault](https://developer.hashicorp.com/vault/docs/deploy/run-container) | HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it. | `vault` |  |
 | [Vaultwarden](https://github.com/dani-garcia/vaultwarden/wiki) | A lightweight, self-hosted password manager server compatible with the Bitwarden clients. | `vaultwarden` |  |
+| [VoidAuth](https://voidauth.app/) | A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log. | `voidauth` |  |
 | [Whoogle Search](https://github.com/benbusby/whoogle-search) | A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required. | `whoogle` |  |
 
 ## Starter Kits
@@ -683,6 +694,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser/wiki) | A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings. | `filebrowser-quantum` |  |
 | [Kopia](https://kopia.io/docs/installation/#quick-setup-using-docker) | Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. | `kopia` |  |
 | [MinIO](https://min.io/docs/minio/linux/index.html) | S3-compatible object storage you run yourself, with a built-in web console. | `minio` |  |
+| [Nextcloud with Postgres and Redis](https://docs.nextcloud.com/server/latest/admin_manual/installation/) | Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password. | `nextcloud-postgres` |  |
 | [ownCloud](https://doc.owncloud.com/server/) | The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking. | `owncloud` |  |
 | [ownCloud Infinite Scale](https://doc.owncloud.com/ocis/next/) | File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start. | `ocis` |  |
 | [PicoShare](https://github.com/mtlynch/picoshare#readme) | Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page. | `picoshare` |  |

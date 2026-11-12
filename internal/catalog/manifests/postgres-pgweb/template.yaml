@@ -1,0 +1,32 @@
+id: postgres-pgweb
+name: PostgreSQL with pgweb
+description: A PostgreSQL 17 server paired with the pgweb browser console, already wired together. The database is not published on the host, so other services in this project reach it at db:5432. pgweb opens straight into the database with the generated credentials, so keep its address private.
+icon: database
+category: Database Tools
+documentation_url: https://github.com/sosedoff/pgweb/wiki
+source_repo: https://github.com/sosedoff/pgweb
+license: MIT
+license_class: permissive
+license_url: https://github.com/sosedoff/pgweb/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 402653184
+first_run:
+  - Open the page, the console is already connected to the bundled database.
+env:
+  - key: POSTGRES_PASSWORD
+    label: Database password
+    description: Password for the bundled PostgreSQL superuser. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: pgweb
+    port: 8081
+    description: Public address of the pgweb console. Keep it private, it is signed in to the database.
+healthcheck:
+  service: pgweb
+  port: 8081
+  path: /

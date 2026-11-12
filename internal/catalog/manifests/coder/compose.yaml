@@ -1,0 +1,24 @@
+services:
+  coder:
+    image: ghcr.io/coder/coder:v2.39.1
+    ports: ["7080"]
+    environment:
+      CODER_PG_CONNECTION_URL: postgresql://coder:${DB_PASSWORD}@db:5432/coder?sslmode=disable
+      CODER_HTTP_ADDRESS: 0.0.0.0:7080
+      CODER_ACCESS_URL: ${SERVICE_URL_CODER:-http://localhost:7080}
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: coder
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: coder
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coder -d coder"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

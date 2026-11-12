@@ -1,0 +1,38 @@
+id: nextcloud-postgres
+name: Nextcloud with Postgres and Redis
+description: Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.
+icon: cloud
+category: Storage
+documentation_url: https://docs.nextcloud.com/server/latest/admin_manual/installation/
+source_repo: https://github.com/nextcloud/server
+license: AGPL-3.0-or-later
+license_class: network-copyleft
+license_url: https://github.com/nextcloud/server/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1610612736
+first_run:
+  - Sign in as admin with the generated admin password from the app secrets. First start takes a minute while the database is prepared.
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+  - key: ADMIN_PASSWORD
+    label: Admin password
+    description: Password of the admin user created on first start.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: nextcloud
+    port: 80
+    description: Public address of Nextcloud.
+healthcheck:
+  service: nextcloud
+  port: 80
+  path: /status.php
