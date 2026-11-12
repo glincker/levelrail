@@ -128,6 +128,9 @@ func (c *Controller) tailContainerLogs(ctx context.Context, name string) []store
 			out = out[1:]
 		}
 	}
-	<-errs
+	// Best effort tail: a stream error leaves a shorter tail, not a failure.
+	if err := <-errs; err != nil {
+		return out
+	}
 	return out
 }

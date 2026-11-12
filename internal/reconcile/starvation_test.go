@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -41,7 +42,10 @@ func runEngine(t *testing.T, e *Engine) {
 	t.Cleanup(func() {
 		cancel()
 		select {
-		case <-done:
+		case err := <-done:
+			if err != nil && !errors.Is(err, context.Canceled) {
+				t.Errorf("Run returned %v", err)
+			}
 		case <-time.After(5 * time.Second):
 			t.Error("Run did not return after cancel")
 		}
@@ -161,7 +165,9 @@ func TestStarvation_KeyOnlyRequeueRerunsOnlyItsKey(t *testing.T) {
 			go func() { done <- e.Run(ctx, nil, time.Hour) }()
 			defer func() {
 				cancel()
-				<-done
+				if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+					t.Errorf("Run returned %v", err)
+				}
 			}()
 
 			waitFor(t, 2*time.Second, "pending app re-ran on its own", func() bool { return bad.runs.Load() >= 5 })
