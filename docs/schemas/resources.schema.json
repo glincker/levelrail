@@ -595,8 +595,41 @@
               "type": "boolean"
             },
             "secret": {
-              "description": "Treat the value as a secret.",
-              "type": "boolean"
+              "description": "Treat the value as a secret (true), or point at a value in a named secret connection.",
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "conn": {
+                      "description": "Secret connection name.",
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "key": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "path": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "version": {
+                      "description": "Pinned secret version, where the connection supports it.",
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "conn",
+                    "path",
+                    "key"
+                  ],
+                  "type": "object"
+                }
+              ]
             },
             "vault": {
               "additionalProperties": false,
@@ -628,8 +661,43 @@
               "type": "boolean"
             },
             "secretRef": {
-              "minLength": 1,
-              "type": "string"
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": false,
+                  "description": "A value in a named secret connection, read at container create.",
+                  "properties": {
+                    "conn": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "connection": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "key": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "path": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "version": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "key"
+                  ],
+                  "type": "object"
+                }
+              ]
             }
           },
           "required": [

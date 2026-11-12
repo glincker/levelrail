@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/secretsource"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -13,6 +14,10 @@ import (
 type setAppVaultEnvRequest struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+	// Conn (with Path, Key, Version) or Ref (secret://conn/path#key) names a secret connection reference.
+	Conn    string `json:"conn,omitempty"`
+	Version int    `json:"version,omitempty"`
+	Ref     string `json:"ref,omitempty"`
 }
 
 // handleSetAppVaultEnv handles PUT /api/v1/apps/{name}/vault-env/{key}:
@@ -36,6 +41,26 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if req.Ref != "" {
+		parsed, err := secretsource.ParseRef(req.Ref)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid secret reference: "+err.Error())
+			return
+		}
+		req = setAppVaultEnvRequest{Conn: parsed.Conn, Path: parsed.Path, Key: parsed.Key, Version: parsed.Version}
+	}
+	var connRef secretsource.Ref
+	if req.Conn != "" {
+		parsed, err := envRefOf(appVaultEnvRef{Conn: req.Conn, Path: req.Path, Key: req.Key, Version: req.Version})
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid secret reference: "+err.Error())
+			return
+		}
+		connRef = parsed
+		if !rt.allowSecretRefs(w, r, connRef) {
+			return
+		}
+	}
 	if req.Path == "" || req.Key == "" {
 		writeError(w, http.StatusBadRequest, "path and key are both required")
 		return
@@ -57,13 +82,16 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := rt.apps.SetServiceVaultEnvVar(r.Context(), name, key, &store.VaultEnvRef{Path: req.Path, Key: req.Key}); err != nil {
+	if err := rt.apps.SetServiceVaultEnvVar(r.Context(), name, key, &store.VaultEnvRef{Path: req.Path, Key: req.Key, Conn: req.Conn, Version: req.Version}); err != nil {
 		rt.internalError(w, "api: set app vault env failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 
+	if req.Conn != "" {
+		rt.auditSecretRef(r, name, key, connRef.String())
+	}
 	rt.nudgeReconciler()
-	writeJSON(w, http.StatusOK, appVaultEnvRef(req))
+	writeJSON(w, http.StatusOK, appVaultEnvRef{Path: req.Path, Key: req.Key, Conn: req.Conn, Version: req.Version})
 }
 
 // handleClearAppVaultEnv handles DELETE /api/v1/apps/{name}/vault-env/{key}:

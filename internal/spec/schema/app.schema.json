@@ -650,7 +650,23 @@
           "minProperties": 1,
           "properties": {
             "from": { "description": "Name of the variable to copy the value from.", "type": "string", "minLength": 1 },
-            "secret": { "description": "Treat the value as a secret.", "type": "boolean" },
+            "secret": {
+              "description": "Treat the value as a secret (true), or point at a value in a named secret connection.",
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["conn", "path", "key"],
+                  "properties": {
+                    "conn": { "description": "Secret connection name.", "type": "string", "minLength": 1 },
+                    "path": { "type": "string", "minLength": 1 },
+                    "key": { "type": "string", "minLength": 1 },
+                    "version": { "description": "Pinned secret version, where the connection supports it.", "type": "integer", "minimum": 1 }
+                  }
+                }
+              ]
+            },
             "required": { "description": "Fail the deploy when the value is missing.", "type": "boolean" },
             "vault": {
               "description": "Read the value from a vault path and key.",

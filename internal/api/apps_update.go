@@ -48,6 +48,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	mergeOmittedAppFields(&req, *existing, sent)
 
+	if !rt.vetSecretRefs(w, r, name, existing.VaultEnv, &req) {
+		return
+	}
 	if err := validateAppUpdate(req, *existing); err != nil {
 		writeAppInvalid(w, err)
 		return

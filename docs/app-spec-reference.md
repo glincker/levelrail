@@ -377,6 +377,7 @@ an object with these fields.
 | `secret` | boolean | no | `false` | The operator provides this value at deploy time through envelope-encrypted secret storage; it is never written to `app.yaml` or the git repo. |
 | `required` | boolean | no | `false` | Only meaningful alongside `secret: true`: fail the deploy if no value has been provided, rather than starting the container with the variable unset. |
 | `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](/deploying-apps#external-secrets-from-hashicorp-vault). |
+| `secret` (object) | `{ conn, path, key, version? }` | no | none | Reads the value from a named secret connection at container create. The string form `secret://conn/path#key` is the same. Mutually exclusive with `from` and `vault`. See [named connection references](/vault-secret-references#named-connection-references). |
 
 The object form must set at least one of `from`, `secret`, or `vault`.
 `vault` is mutually exclusive with both `from` and `secret`: a given env

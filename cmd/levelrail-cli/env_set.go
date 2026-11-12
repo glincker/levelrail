@@ -21,6 +21,8 @@ var envSetStdin io.Reader = os.Stdin
 func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "env set", "print the plan as JSON to stdout and nothing else", stderr)
 	var apply, noApply, allowFiles bool
+	refs := secretRefFlag{}
+	fs.Var(refs, "secret", "env var read from a secret connection as NAME=secret://conn/path#key, repeatable; only the reference is stored, never a value")
 	fs.BoolVar(&allowFiles, "allow-file-values", false, "let KEY=@/path, @./path and @~/path read the value from a local file")
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
 	fs.BoolVar(&noApply, "no-apply", false, "leave the change pending even when apps.env_apply_on_set is on")
@@ -33,8 +35,8 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return exitUsage
 	}
 	rest := fs.Args()
-	if len(rest) < 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: env set requires an app name and at least one KEY=VALUE\n\n", prog)
+	if len(rest) < 2 && (len(rest) != 1 || len(refs) == 0) {
+		_, _ = fmt.Fprintf(stderr, "%s: env set requires an app name and at least one KEY=VALUE or --secret NAME=secret://conn/path#key\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
@@ -83,6 +85,15 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
 		}
 		rebuildKeys = saved.RebuildKeys
+		result.Applied = true
+	}
+	// After the env PUT, which would otherwise resend a stale vault_env map.
+	for _, k := range sortedRefKeys(refs) {
+		if _, err := client.SetAppVaultEnv(ctx, name, k, refs[k]); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set secret reference %q for app %q: %w", k, name, err))
+		}
+	}
+	if len(refs) > 0 {
 		result.Applied = true
 	}
 	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
@@ -236,6 +247,7 @@ KEY=@- reads the value from stdin (once per call). With --allow-file-values, KEY
 reads it from a file; without the flag such a value is refused, so a script cannot upload a local file by accident.
 One trailing newline is dropped and sources are limited to 64 KiB of UTF-8 text. KEY=@@text is an escape that sets
 the literal "@text". Any other leading @ (for example @oncall) is stored as typed.
+--secret NAME=secret://conn/path#key (repeatable) points a variable at a secret connection; only the reference is stored.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
 Changes reach the running container at the next restart, or now with --apply.
 NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s deploy <app> --latest", an upload app "%[1]s deploy <dir>".

@@ -167,3 +167,36 @@ The form is `op://PROVIDER/[VAULT/]ITEM/FIELD`. Without a vault, the provider's 
 `--base-url` is required and its address may be private, because the Connect server is yours. Link-local addresses are always refused and a redirect to another host is refused. The same rules, fail closed behavior and runtime settings as above apply. Each read makes up to three requests (vault, item, item detail) and is cached for the cache time.
 
 Not verified against a real Connect server yet: the tests use a local fake of the Connect API.
+
+## Named connection references
+
+An env var can also point at a value in a named secret connection with one reference form:
+
+```text
+secret://<connection>/<path>#<key>
+secret://<connection>/<path>#<key>?version=3
+```
+
+In app.yaml and stack files the same reference is an object, so it needs no quoting:
+
+```yaml
+env:
+  DATABASE_URL: secret://prod-vault/apps/web#database_url
+  API_KEY: { secret: { conn: prod-vault, path: apps/web, key: api_key } }
+```
+
+`{ secret: true }` still means a value in the built in encrypted store, and `{ vault: { path, key } }` still reads the single Vault connection. Both keep working unchanged. `secret://vault/<path>#<key>` names the same Vault connection.
+
+Rules:
+
+- Levelrail stores the reference text only. The value is read just before the container is created and is never saved in the database, revisions, logs, events or API responses.
+- If a reference cannot be read (denied, missing, or the connection is down), the deploy is blocked. The error names the reference, never the value.
+- Setting or changing a reference needs the root ability, and an audit entry records the reference text.
+
+From the CLI:
+
+```bash
+levelrail-cli env set web --secret API_KEY=secret://prod-vault/apps/web#api_key
+```
+
+The value of `--secret` must be a `secret://` reference. A literal value is refused so it never lands in shell history. In stack files (see [Platform as code](/platform-as-code)) the same string or the `secret` object works in `env`, and `secretRef: { connection, path, key }` is accepted too. The plan shows the reference text.

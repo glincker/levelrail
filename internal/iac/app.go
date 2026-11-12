@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/secretsource"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -189,8 +190,10 @@ type appFields struct {
 	Environment string            `json:"environment,omitempty"`
 	Tags        []string          `json:"tags,omitempty"`
 	// Connections maps an env var to "database.field"; never a value.
-	Connections map[string]string    `json:"connections,omitempty"`
-	Jobs        map[string]jobFields `json:"jobs,omitempty"`
+	Connections map[string]string `json:"connections,omitempty"`
+	// SecretRefs maps an env var to a secret://conn/path#key reference; never a value.
+	SecretRefs map[string]string    `json:"secretRefs,omitempty"`
+	Jobs       map[string]jobFields `json:"jobs,omitempty"`
 	// Volumes maps a logical volume name to its mount path; named volumes only.
 	Volumes map[string]string `json:"volumes,omitempty"`
 	// PublishedPorts is nil when undeclared, so live ports stay unmanaged; an empty list clears them.
@@ -220,7 +223,7 @@ func normPorts(in []spec.PublishedPort) []spec.PublishedPort {
 	return out
 }
 
-var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true, "volumes": true}
+var additiveApp = map[string]bool{"secretRefs": true, "domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true, "volumes": true}
 
 func memoryString(b int64) string {
 	const mi = 1024 * 1024
@@ -390,6 +393,14 @@ func appFromWire(a wireApp, names idNames) appFields {
 			f.Volumes[n] = path
 		}
 	}
+	for k, v := range a.VaultEnv {
+		if ref := wireSecretRef(v); ref != "" {
+			if f.SecretRefs == nil {
+				f.SecretRefs = map[string]string{}
+			}
+			f.SecretRefs[k] = ref
+		}
+	}
 	if len(a.DatabaseEnv) > 0 {
 		f.Connections = make(map[string]string, len(a.DatabaseEnv))
 		for k, ref := range a.DatabaseEnv {
@@ -419,8 +430,23 @@ func unsupportedApp(a wireApp) []string {
 	if len(a.Egress) > 0 {
 		out = append(out, "egress policy")
 	}
-	if len(a.VaultEnv) > 0 {
-		out = append(out, "vault env")
+	for _, v := range a.VaultEnv {
+		if wireSecretRef(v) == "" {
+			out = append(out, "vault env")
+			break
+		}
 	}
 	return out
+}
+
+// wireSecretRef renders a live vault_env entry as secret:// text, or "" for the legacy Vault form.
+func wireSecretRef(v map[string]any) string {
+	conn, _ := v["conn"].(string)
+	path, _ := v["path"].(string)
+	key, _ := v["key"].(string)
+	if conn == "" {
+		return ""
+	}
+	n, _ := v["version"].(float64)
+	return secretsource.Ref{Conn: conn, Path: path, Key: key, Version: int(n)}.String()
 }

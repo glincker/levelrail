@@ -35,6 +35,11 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		return store.DesiredService{}, err
 	}
 
+	vaultEnv, err := vaultEnvRefs(svc.Env)
+	if err != nil {
+		return store.DesiredService{}, err
+	}
+
 	d := store.DesiredService{
 		Name:        name,
 		Image:       image,
@@ -43,7 +48,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Env:         literalEnv(svc.Env),
 		SecretEnv:   secretEnvRefs(svc.Env),
 		DatabaseEnv: databaseEnv,
-		VaultEnv:    vaultEnvRefs(svc.Env),
+		VaultEnv:    vaultEnv,
 		// Effective*, not the raw field: svc.Strategy/svc.Replicas can be
 		// "" / 0 (unset in app.yaml), and store.DesiredService's own doc
 		// comment on these two fields requires them to always be the
@@ -153,7 +158,7 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
-		if v.Secret || v.From != "" || v.Vault != nil {
+		if v.Secret || v.From != "" || v.Vault != nil || v.SecretRef != nil {
 			continue
 		}
 		out[k] = v.Value
@@ -167,18 +172,26 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 // { from: ... }. app.yaml parsing (internal/spec.EnvVar.UnmarshalYAML)
 // already rejects a malformed vault block (empty path/key, or vault
 // combined with secret/from), so this needs no error return.
-func vaultEnvRefs(env map[string]spec.EnvVar) map[string]store.VaultEnvRef {
+func vaultEnvRefs(env map[string]spec.EnvVar) (map[string]store.VaultEnvRef, error) {
 	var out map[string]store.VaultEnvRef
 	for k, v := range env {
-		if v.Vault == nil {
+		if v.Vault == nil && v.SecretRef == nil {
 			continue
 		}
 		if out == nil {
 			out = make(map[string]store.VaultEnvRef)
 		}
+		if v.SecretRef != nil {
+			conn, path, key, ver, err := v.SecretRef.Parts()
+			if err != nil {
+				return nil, fmt.Errorf("env var %q: %w", k, err)
+			}
+			out[k] = store.VaultEnvRef{Conn: conn, Path: path, Key: key, Version: ver}
+			continue
+		}
 		out[k] = store.VaultEnvRef{Path: v.Vault.Path, Key: v.Vault.Key}
 	}
-	return out
+	return out, nil
 }
 
 // parseFromRef parses app.yaml's { from: "<database>.<field>" } env var
