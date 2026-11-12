@@ -1,0 +1,175 @@
+{
+  "title": "Budget",
+  "description": "Plafonnez le trafic sortant et le coût mensuels de cette app. Vous êtes alerté à mesure que l'usage grimpe, et l'app peut être bridée ou mise en pause quand la limite est atteinte. Les compteurs se réinitialisent le premier de chaque mois (UTC).",
+  "loading": "Chargement du budget",
+  "loadError": "Impossible de charger le budget de cette app.",
+  "retry": "Réessayer",
+  "empty": {
+    "title": "Aucun budget défini",
+    "body": "Sans budget, un trafic élevé peut faire grimper le trafic sortant et le coût sans prévenir. Définissez une limite pour recevoir des alertes à 50, 80 et 100 pour cent.",
+    "action": "Définir un budget"
+  },
+  "status": {
+    "resets": "Réinitialisé {{date}}",
+    "month": "Mois {{period}}"
+  },
+  "reason": {
+    "WithinBudget": "Dans le budget",
+    "ThresholdReached": "Niveau d'alerte atteint",
+    "LimitReachedAlertOnly": "Limite atteinte, alerte seulement",
+    "Throttled": "Bridée",
+    "Paused": "En pause",
+    "EnforcementPending": "Application en cours",
+    "DeploysBlocked": "Nouveaux deploys bloqués"
+  },
+  "usage": {
+    "egress": "Trafic sortant",
+    "cost": "Coût",
+    "ofLimit": "{{used}} sur {{limit}}",
+    "costOfLimit": "{{used}} sur {{limit}}",
+    "notPriced": "Aucun prix n'est configuré, donc le coût affiche zéro et son plafond ne peut pas se déclencher. Définissez les prix sur la page Usage et coût."
+  },
+  "summary": {
+    "alerts": "Alertes à {{levels}}",
+    "action": {
+      "none": "À 100 pour cent : alerte seulement, l'app continue de servir",
+      "throttle": "À 100 pour cent : chaque client est limité à {{rps}} requêtes par seconde",
+      "pause": "À 100 pour cent : l'app est mise en pause avec une réponse de maintenance"
+    },
+    "guard": {
+      "alert": "Les deploys ne sont jamais bloqués par ce budget",
+      "block_deploys": "À 100 pour cent : les nouveaux deploys sont refusés jusqu'au mois prochain, une limite plus élevée ou une dérogation root"
+    }
+  },
+  "actions": {
+    "edit": "Modifier le budget",
+    "remove": "Supprimer le budget",
+    "preview": "Prévisualiser une pause"
+  },
+  "form": {
+    "egress": "Limite mensuelle de trafic sortant (Gio)",
+    "egressHelp": "Octets de réponse HTTP servis par l'ingress. Laissez vide pour ne pas limiter le trafic sortant.",
+    "cost": "Plafond de coût mensuel",
+    "costHelp": "Utilise les prix de la page Usage et coût. Laissez vide pour ne pas plafonner le coût.",
+    "thresholds": "Niveaux d'alerte (pourcentage)",
+    "thresholdsHelp": "Séparés par des virgules, de 1 à 100. Par défaut 50, 80, 100.",
+    "action": "Quand la limite est atteinte",
+    "actionNone": "Alerte seulement",
+    "actionNoneHelp": "L'app continue de servir.",
+    "actionThrottle": "Brider",
+    "actionThrottleHelp": "Limite chaque client à un nombre de requêtes par seconde. Cela ralentit les gros appelants mais n'est pas un plafond de bande passante.",
+    "actionPause": "Mettre en pause",
+    "actionPauseHelp": "Sert une réponse de maintenance jusqu'au mois prochain ou jusqu'à ce que vous releviez la limite.",
+    "rps": "Requêtes par seconde et par client",
+    "save": "Enregistrer le budget",
+    "saving": "Enregistrement",
+    "cancel": "Annuler",
+    "needLimit": "Définissez une limite de trafic sortant, un plafond de coût, ou les deux.",
+    "badNumber": "Saisissez un nombre supérieur ou égal à zéro.",
+    "badThresholds": "Utilisez des pourcentages entiers de 1 à 100, séparés par des virgules."
+  },
+  "remove": {
+    "title": "Supprimer ce budget ?",
+    "description": "L'app n'est plus limitée ni surveillée par des alertes.",
+    "consequences": {
+      "lift": "Tout bridage ou toute pause en vigueur est levé.",
+      "history": "L'historique de ce qui s'est passé est conservé."
+    },
+    "confirm": "Supprimer le budget",
+    "pending": "Suppression"
+  },
+  "history": {
+    "title": "Historique",
+    "empty": "Rien ne s'est encore passé. Les alertes, bridages, pauses et réinitialisations mensuelles sont listés ici.",
+    "loadError": "Impossible de charger l'historique.",
+    "kind": {
+      "threshold": "Niveau d'alerte atteint",
+      "enforced": "Action appliquée",
+      "released": "Action levée",
+      "rollover": "Réinitialisation mensuelle",
+      "configured": "Budget modifié",
+      "cleared": "Budget supprimé"
+    }
+  },
+  "toast": {
+    "saved": "Budget enregistré",
+    "removed": "Budget supprimé",
+    "errorTitle": "Échec de la requête de budget",
+    "overridden": "Deploys autorisés pour une courte durée"
+  },
+  "forecast": {
+    "projected": "{{value}} projetés d'ici la fin du mois",
+    "overLimit": "(au-dessus de la limite)"
+  },
+  "guard": {
+    "legend": "Deploys à la limite",
+    "alert": {
+      "label": "Continuer à deployer",
+      "help": "Atteindre la limite déclenche seulement une alerte et applique l'action ci-dessus."
+    },
+    "block_deploys": {
+      "label": "Bloquer les nouveaux deploys",
+      "help": "Refuse les nouveaux deploys à 100 pour cent. La version en cours continue de servir. Un utilisateur root peut déroger."
+    },
+    "blocked": "Les nouveaux deploys de cette app sont refusés jusqu'au mois prochain, jusqu'à ce que la limite soit relevée ou qu'un utilisateur root les autorise.",
+    "overridden": "Les deploys sont autorisés jusqu'à {{time}} par une dérogation : {{reason}}",
+    "override": "Autoriser les deploys"
+  },
+  "override": {
+    "title": "Autoriser les deploys pour une courte durée ?",
+    "description": "Une dérogation root laisse passer les nouveaux deploys alors que la limite reste atteinte. Elle expire d'elle-même.",
+    "audited": "Votre nom et votre motif sont enregistrés dans l'historique du budget.",
+    "expires": "La dérogation prend fin après une courte période, puis la protection s'applique de nouveau.",
+    "reason": "Motif",
+    "reasonPlaceholder": "Pourquoi ce deploy ne peut pas attendre",
+    "confirm": "Autoriser les deploys",
+    "pending": "Autorisation"
+  },
+  "preview": {
+    "title": "Ce que ferait une pause",
+    "description": "Un aperçu de l'arrêt de chaque app concernée jusqu'à la fin du mois. Rien n'est modifié.",
+    "noApps": "Aucune app concernée.",
+    "replicas_one": "{{count}} réplica",
+    "replicas_many": "{{count}} réplicas",
+    "replicas_other": "{{count}} réplicas",
+    "saves": "économise environ {{value}}",
+    "total": "{{replicas}} réplicas s'arrêteraient, économisant environ {{value}} sur les {{days}} jours restants.",
+    "noChanges": "Une vraie pause n'est pas encore disponible. Cet aperçu ne change rien.",
+    "close": "Fermer"
+  },
+  "alertRule": {
+    "name": "Alertes de plafond de dépenses",
+    "create": "M'alerter",
+    "creating": "Création",
+    "created": "Règle d'alerte créée. Associez un canal de notification pour la recevoir."
+  },
+  "project": {
+    "title": "Dépenses",
+    "description": "Un plafond de coût mensuel pour chaque app de ce projet, avec une projection et une protection de deploy facultative.",
+    "empty": {
+      "title": "Aucun plafond de dépenses sur ce projet",
+      "body": "Définissez un montant mensuel pour recevoir des alertes à mesure que le projet dépense et, si vous le choisissez, bloquer les nouveaux deploys à la limite.",
+      "action": "Définir un plafond de dépenses"
+    },
+    "form": {
+      "amount": "Montant mensuel ({{currency}})",
+      "save": "Enregistrer le plafond de dépenses",
+      "saving": "Enregistrement",
+      "cancel": "Annuler",
+      "badAmount": "Saisissez un montant supérieur à zéro."
+    },
+    "summary": "{{spent}} sur {{limit}} ce mois-ci",
+    "level": {
+      "over": "Au-dessus de la limite",
+      "warn": "Niveau d'alerte atteint",
+      "forecast": "Dépassement en vue",
+      "ok": "Dans le budget"
+    },
+    "edit": "Modifier",
+    "remove": "Supprimer",
+    "saved": "Plafond de dépenses enregistré",
+    "removed": "Plafond de dépenses supprimé",
+    "loadError": "Impossible de charger le plafond de dépenses du projet.",
+    "resets": "Réinitialisé {{date}}"
+  }
+}
