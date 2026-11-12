@@ -102,7 +102,7 @@
       "gpu": "Auf einem GPU-Node",
       "gpuHint": "Ollama, vLLM oder llama.cpp auf einer NVIDIA-GPU. Am besten für große Modelle.",
       "cpu": "Auf der CPU ausführen",
-      "cpuHint": "Ein kleines Modell auf CPU und Arbeitsspeicher dieses Servers, mit harten Limits. Keine GPU nötig."
+      "cpuHint": "Ein kleines Modell auf CPU und RAM dieses Servers, mit harten Limits. Keine GPU nötig."
     },
     "deploy": {
       "description": "Führt ein kleines Modell auf der CPU dieses Servers mit harten CPU- und Arbeitsspeicher-Limits aus, samt OpenAI-kompatiblem Endpunkt, der durch einen API-Schlüssel geschützt ist.",

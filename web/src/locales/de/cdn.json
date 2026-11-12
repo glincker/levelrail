@@ -1,0 +1,299 @@
+{
+  "retry": "Erneut versuchen",
+  "nav": {
+    "label": "CDN-Bereiche",
+    "overview": "Übersicht",
+    "caches": "Caches",
+    "redirects": "Weiterleitungen",
+    "routing": "Routing-Regeln"
+  },
+  "window": {
+    "label": "Zeitraum",
+    "5m": "5 Minuten",
+    "1h": "1 Stunde",
+    "24h": "24 Stunden"
+  },
+  "overview": {
+    "title": "CDN und Caches",
+    "description": "Anfragen, Fehler und Cache-Treffer über alle Apps hinweg und welcher Ihrer Server sie beantwortet hat."
+  },
+  "tiles": {
+    "requests": "Anfragen",
+    "perSecond": "{{rate}} pro Sekunde",
+    "requestsInfo": "Anfragen, die der Ingress in diesem Zeitraum verarbeitet hat, aus den Anfragemetriken.",
+    "errors": "Serverfehler (5xx)",
+    "errorsInfo": "Anteil der Anfragen, die mit einem 5xx-Status beantwortet wurden, einschließlich Fehlern der App.",
+    "hitRate": "Cache-Trefferquote",
+    "hitRateInfo": "Treffer geteilt durch Treffer plus Fehlgriffe auf gecachten Pfaden, für die letzten {{minutes}} Minuten. Anfragen, die den Cache umgehen, werden nicht gezählt.",
+    "hitRateSince": "Treffer geteilt durch Treffer plus Fehlgriffe auf gecachten Pfaden. Im Speicher seit dem Start des Ingress gezählt, daher wird bei einem Neustart zurückgesetzt.",
+    "saved": "Eingesparte Bandbreite",
+    "savedInfo": "Response-Body-Bytes, die in den letzten {{minutes}} Minuten aus dem Cache statt von der App ausgeliefert wurden.",
+    "savedSince": "Response-Body-Bytes, die seit dem Start des Ingress aus dem Cache statt von der App ausgeliefert wurden.",
+    "entries": "Gecachte Objekte",
+    "memory": "Cache-Speicher",
+    "memoryInfo": "Im Ingress gehaltene Bytes im Verhältnis zur Obergrenze. Bei Erreichen der Obergrenze werden zuerst die ältesten, am wenigsten genutzten Objekte verworfen.",
+    "none": "Keine Daten"
+  },
+  "nodes": {
+    "title": "Woher der Traffic ausgeliefert wird",
+    "help": "Anfragen werden für den Server gezählt, auf dem jede App läuft. Der Standort der Besucher wird nicht gemessen.",
+    "aria": "Anteil der Anfragen nach Server",
+    "local": "Dieser Server",
+    "apps_one": "{{count}} App",
+    "apps_other": "{{count}} Apps",
+    "noRegions": "Noch keine Regionsbezeichnungen. Fügen Sie einem Server auf der Seite Nodes eine hinzu, um sie hier zu sehen.",
+    "emptyTitle": "Keine Anfragen in diesem Zeitraum",
+    "emptyBody": "Anteile erscheinen, sobald eine App hinter einer Domain Traffic erhält.",
+    "emptyAction": "Domains öffnen"
+  },
+  "cacheCard": {
+    "title": "Cache",
+    "help": "Treffer werden vom Ingress beantwortet. Fehlgriffe gehen an die App.",
+    "open": "Caches öffnen"
+  },
+  "chart": {
+    "empty": "Noch keine Cache-Aktivität. Aktivieren Sie das Caching für eine Domain, um hier Treffer und Fehlgriffe zu sehen.",
+    "aria": "{{hits}} Cache-Treffer und {{misses}} Fehlgriffe in den letzten {{minutes}} Minuten",
+    "span": "Letzte {{minutes}} Minuten",
+    "hits": "Treffer",
+    "misses": "Fehlgriffe"
+  },
+  "caches": {
+    "title": "Caches",
+    "description": "Der Response-Cache im Ingress: wie gut er für jede App funktioniert und wie Sie ihn leeren.",
+    "scopeTitle": "Wo Einträge liegen",
+    "scopeBody": "Ein einziger Cache im Arbeitsspeicher des Ingress auf dieser Control Plane bedient jede App, auch Apps auf anderen Servern. Bereinigungen wirken dort. Objekte sind mit dem Response-Header {{tag}} getaggt. Zähler werden beim Neustart des Ingress zurückgesetzt, und ein Edge-Cache pro Server ist noch nicht verfügbar.",
+    "chartTitle": "Trefferquote im Zeitverlauf",
+    "chartHelp": "Cache-Treffer und Fehlgriffe pro Minute über alle Apps.",
+    "tabApps": "Apps",
+    "tabPurge": "Bereinigen",
+    "tabHistory": "Verlauf"
+  },
+  "apps": {
+    "app": "App",
+    "cache": "Caching",
+    "onFor": "An für {{on}} von {{total}} Domains",
+    "off": "Aus",
+    "requests": "Cachebare Anfragen",
+    "hitRate": "Trefferquote",
+    "saved": "Eingesparte Bandbreite",
+    "aria": "Cache-Trefferquote nach App, die aktivste zuerst",
+    "emptyTitle": "Noch keine Apps",
+    "emptyBody": "Deployen Sie eine App, geben Sie ihr eine Domain und aktivieren Sie dann das Caching.",
+    "emptyAction": "Apps öffnen",
+    "why": "Warum nicht gecacht"
+  },
+  "picker": {
+    "label": "App"
+  },
+  "purge": {
+    "scopeLegend": "Was bereinigt werden soll",
+    "scope": {
+      "url": {
+        "title": "Eine URL",
+        "help": "Ein Pfad und eine Query, jede Variante.",
+        "field": "Pfad und Query"
+      },
+      "prefix": {
+        "title": "Pfadpräfix",
+        "help": "Alles unter einem Pfad.",
+        "field": "Pfadpräfix"
+      },
+      "tag": {
+        "title": "Cache-Tag",
+        "help": "Objekte, die Ihre App in einem Response-Header getaggt hat.",
+        "field": "Cache-Tag"
+      },
+      "all": {
+        "title": "Alles",
+        "help": "Leert den gesamten Cache für diesen Bereich.",
+        "field": ""
+      }
+    },
+    "allNote": "Entfernt jede gecachte Antwort für {{target}}. Die nächste Anfrage an jede URL geht an die App.",
+    "action": "Bereinigen",
+    "purging": "Wird bereinigt",
+    "done_one": "{{count}} gecachte Antwort entfernt.",
+    "done_other": "{{count}} gecachte Antworten entfernt.",
+    "confirmTitle": "Alles für {{target}} bereinigen?",
+    "confirmBody": "Jede gecachte Antwort wird aus dem Ingress entfernt.",
+    "consequenceOrigin": "Die App erhält wieder alle Anfragen, bis sich der Cache neu füllt, rechnen Sie daher mit einer Lastspitze.",
+    "consequenceUndo": "Das lässt sich nicht rückgängig machen. Es wird im Bereinigungsverlauf festgehalten.",
+    "confirm": "Alles bereinigen"
+  },
+  "history": {
+    "aria": "Cache-Bereinigungen für {{app}}, neueste zuerst",
+    "when": "Wann",
+    "who": "Wer",
+    "domain": "Domain",
+    "scope": "Was",
+    "removed": "Entfernt",
+    "emptyTitle": "Noch keine Bereinigungen",
+    "emptyBody": "Bereinigungen über das Dashboard, die CLI oder die API werden hier mit demjenigen aufgelistet, der sie ausgeführt hat."
+  },
+  "app": {
+    "subtitle": "Cachen Sie statische Dateien und andere sichere Antworten am Ingress, damit wiederholte Anfragen Ihre App nie erreichen. Dynamische Seiten bleiben ungecacht, sofern Ihre App oder eine Regel es nicht erlaubt.",
+    "presetTitle": "Statische Assets cachen",
+    "presetBody": "Fügt eine Regel für Bilder, Skripte, Stile und Schriften hinzu und aktiviert das Caching. Das eigene Cache-Control Ihrer App hat weiterhin Vorrang, und Antworten mit Cookies werden nie gespeichert.",
+    "presetAction": "Statische Assets cachen",
+    "presetApplying": "Wird angewendet",
+    "domain": "Domain",
+    "state": "Caching",
+    "on": "An",
+    "off": "Aus",
+    "rules": "Regeln",
+    "edit": "Bearbeiten",
+    "editRules": "Regeln bearbeiten",
+    "domainsAria": "Cache-Einstellungen für die Domains von {{app}}",
+    "chartTitle": "Trefferquote im Zeitverlauf",
+    "counts": "{{hits}} Treffer, {{misses}} Fehlgriffe, {{bypasses}} umgangen seit dem Start des Ingress.",
+    "noDomainsTitle": "Diese App hat keine Domain",
+    "noDomainsBody": "Der Cache sitzt vor Domains. Fügen Sie eine hinzu, um mit dem Caching zu beginnen.",
+    "noDomainsAction": "Domain hinzufügen"
+  },
+  "controls": {
+    "domain": "Domain",
+    "app": "App",
+    "open": "Öffnen",
+    "docs": "Anleitung zur Traffic-Steuerung",
+    "tab": {
+      "redirects": "Weiterleitungen",
+      "forwarding": "Pfadweiterleitung",
+      "headers": "Header"
+    },
+    "redirects": {
+      "title": "Weiterleitungen",
+      "description": "Erzwingen Sie HTTPS, wählen Sie einen kanonischen Host und leiten Sie alte Adressen weiter. Jede Domain hat eigene Einstellungen.",
+      "aria": "Domains und ihre Weiterleitungseinstellungen"
+    },
+    "routing": {
+      "title": "Routing-Regeln",
+      "description": "Leiten Sie Pfade an eine andere App oder URL und legen Sie Anfrage- und Antwort-Header fest. Jede Domain hat eigene Einstellungen.",
+      "aria": "Domains und ihre Routing-Einstellungen"
+    },
+    "emptyTitle": "Noch keine Domains zu konfigurieren",
+    "emptyBody": "Fügen Sie zuerst einer App eine Domain hinzu. Ihre Steuerung für Weiterleitungen und Routing erscheint dann hier.",
+    "emptyAction": "Domains öffnen"
+  },
+  "thirdParty": {
+    "title": "Cloudflare, Akamai oder Fastly vorgeschaltet",
+    "headers": "Senden Sie Cache-Control (und einen Tag-Header wie Cache-Tag) von Ihrer App. Sowohl das CDN als auch der Ingress befolgen sie.",
+    "clientIp": "Fügen Sie die Adressbereiche des CDN zur Einstellung für vertrauenswürdige Proxys hinzu, damit Besucher-IPs, Ratenlimits und Länderregeln die echte Client-Adresse verwenden.",
+    "plugins": "Erstanbieter-Integrationen für CDN-Bereinigung und Traffic-Steuerung sind über das Plugin-System geplant. Heute ist nichts verbunden.",
+    "docs": "Anleitung lesen"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "Origin",
+      "edge": "Edge"
+    }
+  },
+  "reasons": {
+    "column": "Warum nicht gecacht",
+    "none": "Nichts blockiert den Cache",
+    "fixVary": "{{header}} zu Vary hinzufügen",
+    "nextjsHelp": "Dies sieht nach einer Next.js-App aus. Die Next.js-Vorlage schlüsselt gecachte Seiten nach ihren Router-Headern.",
+    "nextjsFix": "Next.js-Vorlage anwenden",
+    "short": {
+      "vary_header": "Die App variiert nach {{header}}",
+      "set_cookie": "Antworten setzen ein Cookie",
+      "private": "Antworten sind als privat markiert",
+      "no_store": "Antworten verbieten das Speichern (no-store)",
+      "no_cache": "Antworten erfordern eine Revalidierung (no-cache)",
+      "status_not_cached": "Der Antwortstatus wird nicht gecacht",
+      "too_large": "Antworten sind zu groß",
+      "range": "Range-Anfragen umgehen den Cache",
+      "authorization": "Anfragen tragen Zugangsdaten",
+      "cookie_request": "Anfragen tragen Cookies",
+      "upgrade": "Upgrade-Anfragen umgehen den Cache",
+      "other": "Sonstige Gründe"
+    },
+    "long": {
+      "vary_header": "Antworten variieren nach dem Header {{header}}, den keine Cache-Regel aufführt, daher lassen sie sich nicht sicher speichern.",
+      "set_cookie": "Antworten setzen ein Cookie, sind daher personenbezogen und werden nicht gespeichert.",
+      "private": "Antworten sind von der App als privat markiert.",
+      "no_store": "Anfragen oder Antworten enthalten no-store.",
+      "no_cache": "Antworten enthalten no-cache, daher müssen sie jedes Mal bei der App geprüft werden.",
+      "status_not_cached": "Antworten hatten einen Status, den die Regel nicht cacht. Fügen Sie den Status zur Regel hinzu, um ihn zu cachen.",
+      "too_large": "Antworten waren größer als das Cache-Limit pro Objekt.",
+      "range": "Anfragen verlangten einen Teil einer Datei (Range), was nie gecacht wird.",
+      "authorization": "Anfragen trugen einen Authorization-Header, daher werden sie nie gecacht.",
+      "cookie_request": "Anfragen trugen ein Cookie. Aktivieren Sie in der Regel das Caching mit Cookies, wenn die Seite für alle gleich ist.",
+      "upgrade": "Anfragen verlangten einen Protokollwechsel (WebSocket), der nie gecacht wird.",
+      "other": "Anfragen wurden aus selteneren Gründen vom Cache ausgeschlossen."
+    }
+  },
+  "proxy": {
+    "title": "Cloudflare-Proxy",
+    "body": "Leiten Sie die Domains dieser App über Cloudflare, wenn Levelrail deren DNS-Einträge schreibt. Bestehende Einträge ändern sich beim nächsten Lauf der DNS-Korrektur.",
+    "following": "Folgt der Servereinstellung, derzeit {{state}}.",
+    "override": "Nur für diese App festgelegt.",
+    "reset": "Der Servereinstellung folgen",
+    "on": "an",
+    "off": "aus"
+  },
+  "edge": {
+    "title": "Edge",
+    "pipelineLabel": "Pipeline von Git zum Edge",
+    "stage": {
+      "git": "Git",
+      "build": "Build",
+      "deploy": "Deployment",
+      "dns": "DNS",
+      "edge": "Edge"
+    },
+    "noDeploy": "Noch kein Deployment",
+    "dns": "{{count}} verwaltete Einträge",
+    "dnsNone": "Keine verwalteten Einträge",
+    "health": {
+      "direct": "Direkt",
+      "ok": "Per Proxy",
+      "attention": "Erfordert Aufmerksamkeit"
+    },
+    "cache": "Cache {{rate}} % Treffer, {{entries}} Einträge",
+    "lastPurge": "Letzte Bereinigung {{when}} ({{scope}})",
+    "purgeFailed": "Bereinigung fehlgeschlagen: {{error}}",
+    "override": "Edge für diese App erzwungen {{state}}",
+    "overrideOn": "an",
+    "overrideOff": "aus",
+    "provider": "{{provider}}-Zone {{zone}}, SSL {{mode}}",
+    "setup": "CDN einrichten",
+    "purges": "Letzte Bereinigungen",
+    "loading": "Edge-Status wird geladen"
+  },
+  "setup": {
+    "title": "CDN-Einrichtung",
+    "description": "Prüft den Anbieter, den SSL-Modus, die DNS-Challenge und den DNS-Plan. Es meldet Korrekturen und ändert nie Ihre Zoneneinstellungen.",
+    "dryRun": "Testlauf ausführen",
+    "running": "Wird geprüft...",
+    "apply": "Anwenden",
+    "applying": "Wird angewendet...",
+    "close": "Schließen",
+    "provider": "Anbieter",
+    "providerAuto": "Automatisch erkennen",
+    "fix": "Beheben",
+    "applied": "Angewendet. Der Edge-Status wird gleich aktualisiert.",
+    "dryRunDone": "Nur Testlauf. Es wurde nichts geändert.",
+    "result": {
+      "ok": "Alle Prüfungen bestanden",
+      "warn": "Mit Warnungen bestanden",
+      "fail": "Beheben Sie zuerst die fehlgeschlagenen Schritte"
+    },
+    "status": {
+      "ok": "OK",
+      "warn": "Warnung",
+      "fail": "Fehlgeschlagen",
+      "skipped": "Übersprungen"
+    },
+    "step": {
+      "provider": "Anbieter",
+      "ssl_mode": "SSL-Modus",
+      "acme_dns01": "ACME-DNS-Challenge",
+      "client_address": "Client-Adresse",
+      "dns_plan": "DNS-Plan",
+      "apply": "Anwenden",
+      "verify": "Verifizieren"
+    },
+    "error": "CDN-Einrichtung fehlgeschlagen: {{message}}"
+  }
+}
