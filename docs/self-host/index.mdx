@@ -4,10 +4,11 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-570 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+574 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
+- [Agentgateway](/self-host/agentgateway): Proxy built for agent traffic that routes MCP, A2A and LLM requests. The install form carries config.yaml as an editable file, so it starts with a listener that answers on port 3000.
 - [AnythingLLM](/self-host/anythingllm): A private chat workspace over your documents, with built-in RAG and support for local or hosted models.
 - [Bifrost](/self-host/bifrost): Fast open source LLM gateway that routes requests to many providers behind one OpenAI compatible API, with a web UI for keys and routing rules.
 - [Big-AGI](/self-host/big-agi): A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
@@ -23,6 +24,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Langflow](/self-host/langflow): A visual low-code tool for building and deploying multi-agent and RAG workflows in Python.
 - [Langfuse](/self-host/langfuse): Trace, evaluate, and debug LLM applications with prompt management and cost analytics.
 - [LibreChat](/self-host/librechat): A self-hosted ChatGPT-style interface for many model providers, with agents, search, and multi-user login.
+- [LightRAG](/self-host/lightrag): Graph based retrieval augmented generation server with a web UI and API. Runs on local file storage; point it at a model provider with the LLM and embedding settings.
 - [LiteLLM Proxy](/self-host/litellm): One OpenAI-format gateway in front of 100+ model providers, with keys, budgets, and spend tracking.
 - [llama.cpp Server](/self-host/llama-cpp): The llama.cpp HTTP server: run quantized GGUF models on plain CPUs with an OpenAI-compatible API.
 - [Lobe Chat](/self-host/lobe-chat): A modern, open-source AI chat framework supporting many model providers.
@@ -274,6 +276,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Jenkins](/self-host/jenkins): The long-running automation server for building, testing, and deploying with thousands of plugins.
 - [Jupyter Notebook](/self-host/jupyter-notebook): A Jupyter Notebook server for interactive Python data work, protected by a generated access token.
 - [Jupyter Notebook](/self-host/jupyter-notebook-python): A web-based notebook environment for interactive Python, data analysis, and visualization.
+- [JupyterHub](/self-host/jupyterhub): Multi user server that manages and proxies notebook servers. The install form carries jupyterhub_config.py as an editable file with a generated shared password, so it starts with a working login.
 - [Kellnr](/self-host/kellnr): Self-hosted registry for private Rust crates with a web UI and docs hosting. Runs a single container with data on a volume.
 - [Kroki](/self-host/kroki): An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it.
 - [LibreTranslate](/self-host/libretranslate): A free and open machine translation API that runs entirely on your own hardware.
@@ -601,6 +604,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Keycloak (Postgres)](/self-host/keycloak-postgres): Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup.
 - [lldap](/self-host/lldap): A lightweight LDAP server with a friendly web UI, built for homelab and small-team authentication.
 - [Logto](/self-host/logto): Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing.
+- [OAuth2 Proxy](/self-host/oauth2-proxy): Reverse proxy that puts an OAuth2 or OIDC login in front of any upstream. The install form carries oauth2-proxy.cfg as an editable file with a generated cookie secret, so it starts without extra flags.
 - [One-Time Secret](/self-host/onetimesecret): Share a password or API key through a link that self-destructs after the first view, backed by Redis.
 - [OpenBao](/self-host/openbao): OpenBao, the open source secrets manager forked from Vault, with integrated Raft storage. It is reachable only from services in this project at openbao:8200 over plain HTTP and is not published on the host.
 - [Passbolt](/self-host/passbolt): An open-source password manager built for teams, compatible with the usual browser extensions.

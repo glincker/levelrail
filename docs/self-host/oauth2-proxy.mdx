@@ -1,0 +1,61 @@
+---
+title: "Self-host OAuth2 Proxy with Docker"
+sidebarTitle: "OAuth2 Proxy"
+description: "Reverse proxy that puts an OAuth2 or OIDC login in front of any upstream. The install form carries oauth2-proxy.cfg as an editable file with a generated cookie secret, so it starts without extra flags."
+"og:url": "https://docs.levelrail.com/self-host/oauth2-proxy"
+---
+
+Reverse proxy that puts an OAuth2 or OIDC login in front of any upstream. The install form carries oauth2-proxy.cfg as an editable file with a generated cookie secret, so it starts without extra flags.
+
+This page describes the Levelrail template for OAuth2 Proxy (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://oauth2-proxy.github.io/oauth2-proxy/.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `oauth2-proxy` | `quay.io/oauth2-proxy/oauth2-proxy:v7.15.6` | 4180 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- No health check, so a deploy is judged by the process starting (`oauth2-proxy`).
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy OAuth2 Proxy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select OAuth2 Proxy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy oauth2-proxy --name my-oauth2-proxy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Anubis](/self-host/anubis)
+- [Authelia](/self-host/authelia)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+
+All templates are listed in the [self-host gallery](/self-host).

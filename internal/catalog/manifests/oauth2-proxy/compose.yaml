@@ -1,0 +1,15 @@
+services:
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
+    ports: ["4180"]
+    command: ["--config=/etc/oauth2-proxy.cfg"]
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /ping
+      port: 4180
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

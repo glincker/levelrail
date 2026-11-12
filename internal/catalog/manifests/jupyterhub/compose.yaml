@@ -1,0 +1,16 @@
+services:
+  jupyterhub:
+    image: quay.io/jupyterhub/jupyterhub:5.4.0
+    ports: ["8000"]
+    volumes:
+      - data:/srv/jupyterhub/state
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /hub/health
+      port: 8000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

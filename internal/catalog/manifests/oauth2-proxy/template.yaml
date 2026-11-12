@@ -1,0 +1,59 @@
+id: oauth2-proxy
+name: OAuth2 Proxy
+description: Reverse proxy that puts an OAuth2 or OIDC login in front of any upstream. The install form carries oauth2-proxy.cfg as an editable file with a generated cookie secret, so it starts without extra flags.
+icon: shield-check
+category: Security
+documentation_url: https://oauth2-proxy.github.io/oauth2-proxy/
+source_repo: https://github.com/oauth2-proxy/oauth2-proxy
+license: MIT
+license_class: permissive
+license_url: https://github.com/oauth2-proxy/oauth2-proxy/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Set the client id and client secret from your identity provider, then edit the config file setting to change the provider and the upstream. Open the address followed by /ping to confirm it is up.
+env:
+  - key: OAUTH2_COOKIE_SECRET
+    label: Cookie secret
+    description: Key that signs the session cookie, 32 characters.
+    generate: password
+    length: 32
+    secret: true
+  - key: OAUTH2_CLIENT_ID
+    label: Client id
+    description: OAuth client id from your identity provider.
+    default: replace-with-client-id
+  - key: OAUTH2_CLIENT_SECRET
+    label: Client secret
+    description: OAuth client secret from your identity provider, replace the generated value.
+    generate: password
+    length: 32
+    secret: true
+  - key: OAUTH2_PROXY_CONFIG
+    type: file
+    service: oauth2-proxy
+    path: /etc/oauth2-proxy.cfg
+    mode: "0444"
+    label: oauth2-proxy.cfg
+    description: The full OAuth2 Proxy configuration, mounted read-only.
+    secret: true
+    default: |
+      http_address = "0.0.0.0:4180"
+      provider = "github"
+      client_id = "${OAUTH2_CLIENT_ID}"
+      client_secret = "${OAUTH2_CLIENT_SECRET}"
+      cookie_secret = "${OAUTH2_COOKIE_SECRET}"
+      cookie_secure = false
+      email_domains = ["*"]
+      upstreams = ["static://202"]
+domains:
+  - service: oauth2-proxy
+    port: 4180
+    description: Public address of the login proxy.
+healthcheck:
+  service: oauth2-proxy
+  port: 4180
+  path: /ping

@@ -557,6 +557,7 @@
           {
             "group": "AI",
             "pages": [
+              "self-host/agentgateway",
               "self-host/anythingllm",
               "self-host/bifrost",
               "self-host/big-agi",
@@ -572,6 +573,7 @@
               "self-host/langflow",
               "self-host/langfuse",
               "self-host/librechat",
+              "self-host/lightrag",
               "self-host/litellm",
               "self-host/llama-cpp",
               "self-host/lobe-chat",
@@ -835,6 +837,7 @@
               "self-host/jenkins",
               "self-host/jupyter-notebook",
               "self-host/jupyter-notebook-python",
+              "self-host/jupyterhub",
               "self-host/kellnr",
               "self-host/kroki",
               "self-host/libretranslate",
@@ -1182,6 +1185,7 @@
               "self-host/keycloak-postgres",
               "self-host/lldap",
               "self-host/logto",
+              "self-host/oauth2-proxy",
               "self-host/onetimesecret",
               "self-host/openbao",
               "self-host/passbolt",
