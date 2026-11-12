@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-394 listed, 15 amd64 only, 149 unknown, of 558 templates.
+394 listed, 15 amd64 only, 153 unknown, of 562 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -35,6 +35,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `adguard-home` | listed | not tested |
 | `adminer` | listed | pass |
 | `affine` | listed | not tested |
+| `agentgateway` | unknown | not tested |
 | `alertmanager` | listed | pass |
 | `answer` | listed | not tested |
 | `anubis` | unknown | not tested |
@@ -233,6 +234,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `jupyter-gpu` | amd64 only | not tested |
 | `jupyter-notebook` | listed | not tested |
 | `jupyter-notebook-python` | listed | not tested |
+| `jupyterhub` | unknown | not tested |
 | `kafka` | unknown | not tested |
 | `kanboard` | listed | not tested |
 | `kapowarr` | unknown | not tested |
@@ -262,6 +264,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `libretranslate` | listed | not tested |
 | `libsql` | unknown | not tested |
 | `lidarr` | listed | not tested |
+| `lightrag` | unknown | not tested |
 | `limesurvey` | listed | not tested |
 | `linkace` | listed | not tested |
 | `linkding` | listed | pass |
@@ -354,6 +357,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `nsq` | unknown | not tested |
 | `ntfy` | listed | pass |
 | `nzbget` | unknown | not tested |
+| `oauth2-proxy` | unknown | not tested |
 | `obsidian-livesync` | listed | not tested |
 | `ocis` | unknown | not tested |
 | `odoo` | listed | not tested |

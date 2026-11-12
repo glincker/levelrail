@@ -1,0 +1,58 @@
+id: lightrag
+name: LightRAG
+description: Graph based retrieval augmented generation server with a web UI and API. Runs on local file storage; point it at a model provider with the LLM and embedding settings.
+icon: graph
+category: AI
+documentation_url: https://github.com/HKUDS/LightRAG/blob/main/lightrag/api/README.md
+source_repo: https://github.com/HKUDS/LightRAG
+license: MIT
+license_class: permissive
+license_url: https://github.com/HKUDS/LightRAG/blob/HEAD/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Set the LLM and embedding settings for your provider, then open the address to upload documents and query them. The generated API key protects the API.
+first_boot_seconds: 120
+env:
+  - key: LIGHTRAG_API_KEY
+    label: API key
+    description: Key clients send in the X-API-Key header.
+    generate: password
+    length: 32
+    secret: true
+  - key: LLM_BINDING
+    label: Provider
+    description: Provider type such as ollama or openai.
+    default: ollama
+  - key: LLM_BINDING_HOST
+    label: Provider address
+    description: Address of the model provider.
+    default: http://host.docker.internal:11434
+  - key: LLM_BINDING_API_KEY
+    label: Provider key
+    description: Key for the provider, leave the placeholder for a local one.
+    default: not-needed
+    secret: true
+  - key: LLM_MODEL
+    label: Chat model
+    description: Model used for extraction and answers.
+    default: qwen2.5:7b
+  - key: EMBEDDING_MODEL
+    label: Embedding model
+    description: Model used for embeddings.
+    default: bge-m3:latest
+  - key: EMBEDDING_DIM
+    label: Embedding size
+    description: Vector size the embedding model returns.
+    default: "1024"
+domains:
+  - service: lightrag
+    port: 9621
+    description: Public address of the web UI and API.
+healthcheck:
+  service: lightrag
+  port: 9621
+  path: /health

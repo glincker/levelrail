@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 558 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 153 not checked** of 562 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -158,6 +158,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `adguard-home` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `adminer` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `affine` | yes | linux/amd64, linux/arm64 |
+| `agentgateway` | not checked | - |
 | `alertmanager` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `answer` | yes | linux/amd64, linux/arm64 |
 | `anubis` | not checked | - |
@@ -356,6 +357,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `jupyter-gpu` | amd64 only | linux/amd64 |
 | `jupyter-notebook` | yes | linux/amd64, linux/arm64 |
 | `jupyter-notebook-python` | yes | linux/amd64, linux/arm64 |
+| `jupyterhub` | not checked | - |
 | `kafka` | not checked | - |
 | `kanboard` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `kapowarr` | not checked | - |
@@ -385,6 +387,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `libretranslate` | yes | linux/amd64, linux/arm64 |
 | `libsql` | not checked | - |
 | `lidarr` | yes | linux/amd64, linux/arm64 |
+| `lightrag` | not checked | - |
 | `limesurvey` | yes | linux/amd64, linux/arm64 |
 | `linkace` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `linkding` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -477,6 +480,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 
 | `nsq` | not checked | - |
 | `ntfy` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nzbget` | not checked | - |
+| `oauth2-proxy` | not checked | - |
 | `obsidian-livesync` | yes | linux/amd64, linux/arm64 |
 | `ocis` | not checked | - |
 | `odoo` | yes | linux/amd64, linux/arm64, linux/ppc64le |
