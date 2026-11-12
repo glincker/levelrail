@@ -1,0 +1,200 @@
+{
+  "title": "Nettoyage",
+  "description": "Contrôlez la durée de conservation de chaque type de données, voyez ce qu'un nettoyage supprimerait avant son exécution et examinez chaque exécution.",
+  "tabs": {
+    "label": "Sections du nettoyage",
+    "overview": "Vue d'ensemble",
+    "disk": "Disque et Docker",
+    "history": "Historique"
+  },
+  "loadError": "Impossible de charger les cibles de nettoyage : {{message}}",
+  "retry": "Réessayer",
+  "readOnly": "Vous pouvez consulter les paramètres de nettoyage. Modifier la rétention, changer de mode et lancer un nettoyage nécessitent un compte root.",
+  "empty": {
+    "title": "Aucune cible de nettoyage pour l'instant",
+    "body": "Ce plan de contrôle n'a signalé aucun type de données à nettoyer. Revérifiez après la prochaine mise à niveau."
+  },
+  "categories": {
+    "auth": "Connexion et tokens",
+    "audit": "Audit",
+    "deploys": "Deploys",
+    "docker": "Docker",
+    "data": "Données",
+    "observability": "Observabilité",
+    "messaging": "Messagerie",
+    "other": "Autre"
+  },
+  "hero": {
+    "stored": "Données stockées",
+    "reclaimable": "Récupérable",
+    "storedHint": "Stockées par les types de données que le nettoyage gère",
+    "usageLabel": "Où se trouvent les données gérées par le nettoyage",
+    "segmentLabel": "{{category}} : {{size}}, {{percent}} % du total",
+    "legendFilter": "Afficher uniquement {{category}}",
+    "clearFilter": "Afficher toutes les catégories",
+    "lastRun": "Dernière exécution",
+    "neverRun": "Aucun nettoyage n'a encore été exécuté",
+    "scheduler": "Planificateur",
+    "schedulerOn": "Toutes les {{interval}}",
+    "schedulerOff": "Le planificateur est désactivé",
+    "previewCount_one": "{{count}} type de données est en mode aperçu",
+    "previewCount_many": "{{count}} types de données sont en mode aperçu",
+    "previewCount_other": "{{count}} types de données sont en mode aperçu",
+    "previewNone": "Rien n'attend en mode aperçu",
+    "reviewAction": "Examiner et activer",
+    "reclaimableHint": "Lignes et taille que les types de données activés supprimeraient à leur rétention actuelle",
+    "calculate": "Calculer le récupérable",
+    "calculating": "Contrôle de {{done}} sur {{total}}",
+    "calculateFailed": "Impossible de contrôler {{title}} : {{message}}",
+    "reclaimableNone": "Rien n'a dépassé sa fenêtre de rétention"
+  },
+  "group": {
+    "count_one": "{{count}} type de données",
+    "count_many": "{{count}} types de données",
+    "count_other": "{{count}} types de données"
+  },
+  "target": {
+    "usage_one": "{{rows}} ligne, {{size}}",
+    "usage_many": "{{rows}} lignes, {{size}}",
+    "usage_other": "{{rows}} lignes, {{size}}",
+    "usageEmpty": "Rien de stocké",
+    "oldest": "la plus ancienne {{when}}",
+    "shareLabel": "{{title}} détient {{percent}} % des données {{category}}",
+    "retention": "Conserver pendant",
+    "floor": "Minimum {{days}} jours",
+    "floorTip": "La politique de sécurité conserve au moins {{days}} jours. Choisissez une période plus longue, ou Jamais pour tout conserver.",
+    "mode": "Mode",
+    "modes": {
+      "off": "Désactivé",
+      "preview": "Aperçu",
+      "on": "Activé"
+    },
+    "status": {
+      "off": "Désactivé",
+      "preview": "Aperçu",
+      "on": "Activé",
+      "running": "En cours"
+    },
+    "previewBadge": "Mode aperçu, rien n'est encore supprimé",
+    "lastRun": "Dernière exécution {{when}}",
+    "lastRunDry": "Dernière exécution {{when}} (simulation)",
+    "lastRunFailed": "La dernière exécution {{when}} a échoué",
+    "neverRun": "Jamais exécuté",
+    "nextRun": "Prochaine {{when}}",
+    "noNextRun": "Non planifié",
+    "preview": "Aperçu",
+    "previewing": "Contrôle...",
+    "cleanNow": "Nettoyer maintenant",
+    "readThrough": "Géré dans Disque et Docker",
+    "readThroughAction": "Ouvrir Disque et Docker",
+    "keepForever": "La rétention est réglée sur Jamais, donc rien n'est supprimé.",
+    "destructive": "Supprime définitivement les données",
+    "unknown": "-",
+    "lockedOption": "En dessous du minimum de {{days}} jours. Choisissez une période plus longue."
+  },
+  "impact": {
+    "title": "Ce qui serait supprimé",
+    "summary_one": "Supprimera {{rows}} ligne, environ {{size}}, de plus de {{days}} jours.",
+    "summary_many": "Supprimera {{rows}} lignes, environ {{size}}, de plus de {{days}} jours.",
+    "summary_other": "Supprimera {{rows}} lignes, environ {{size}}, de plus de {{days}} jours.",
+    "nothing": "Rien n'est plus ancien que {{days}} jours. Rien ne serait supprimé.",
+    "close": "Fermer",
+    "error": "Impossible de prévisualiser : {{message}}"
+  },
+  "run": {
+    "running": "Suppression des anciennes données...",
+    "done_one": "{{rows}} ligne supprimée, {{size}}. La suppression est définitive.",
+    "done_many": "{{rows}} lignes supprimées, {{size}}. La suppression est définitive.",
+    "done_other": "{{rows}} lignes supprimées, {{size}}. La suppression est définitive.",
+    "nothing": "Rien à supprimer. Aucune ligne n'avait dépassé la fenêtre de rétention.",
+    "more": "D'autres anciennes lignes restent, relancez pour continuer.",
+    "failed": "Échec du nettoyage : {{message}}",
+    "dismiss": "Fermer"
+  },
+  "confirmRun": {
+    "title": "Nettoyer {{title}} ?",
+    "body_one": "Cela supprime définitivement {{rows}} ligne, environ {{size}}, de plus de {{days}} jours.",
+    "body_many": "Cela supprime définitivement {{rows}} lignes, environ {{size}}, de plus de {{days}} jours.",
+    "body_other": "Cela supprime définitivement {{rows}} lignes, environ {{size}}, de plus de {{days}} jours.",
+    "consequence": "Les lignes supprimées ne peuvent pas être restaurées. Rien d'autre n'est supprimé.",
+    "action": "Nettoyer maintenant",
+    "cancel": "Annuler"
+  },
+  "confirmMode": {
+    "title": "Activer {{title}} ?",
+    "body": "À partir de la prochaine exécution planifiée, les lignes de plus de {{days}} jours sont réellement supprimées. Jusqu'ici, cela n'enregistrait que ce qui aurait été supprimé.",
+    "consequence": "Les lignes supprimées ne peuvent pas être restaurées.",
+    "action": "Activer",
+    "cancel": "Annuler"
+  },
+  "confirmShorten": {
+    "title": "Conserver {{title}} moins longtemps ?",
+    "body": "Les lignes plus anciennes que la nouvelle période seront supprimées à la prochaine exécution.",
+    "consequence": "C'est une modification destructive de la durée de conservation des données.",
+    "action": "Raccourcir la rétention",
+    "cancel": "Annuler"
+  },
+  "toast": {
+    "retentionSaved": "Rétention de {{title}} enregistrée.",
+    "retentionError": "Impossible d'enregistrer la rétention de {{title}} : {{message}}",
+    "modeSaved": "{{title}} est maintenant {{mode}}.",
+    "modeError": "Impossible de modifier {{title}} : {{message}}"
+  },
+  "history": {
+    "title": "Historique des exécutions",
+    "filters": {
+      "target": "Type de données",
+      "allTargets": "Tous les types de données",
+      "since": "Du",
+      "until": "Au",
+      "kind": "Type",
+      "status": "Statut",
+      "allKinds": "Simulations et réelles",
+      "dry": "Simulations",
+      "real": "Exécutions réelles",
+      "allStatuses": "Tout statut",
+      "ok": "Réussies",
+      "failed": "Échouées",
+      "reset": "Réinitialiser les filtres"
+    },
+    "exportCsv": "Exporter en CSV",
+    "exportJson": "Exporter en JSON",
+    "exportLabel": "Exporter l'historique filtré",
+    "loadError": "Impossible de charger l'historique des exécutions : {{message}}",
+    "empty": {
+      "title": "Aucune exécution ne correspond",
+      "body": "Les exécutions de nettoyage apparaissent ici, planifiées et manuelles, simulées et réelles."
+    },
+    "emptyFiltered": "Aucune exécution ne correspond à ces filtres. Réinitialisez-les pour voir toutes les exécutions.",
+    "dryRun": "Simulation",
+    "realRun": "Supprimé",
+    "failed": "Échoué",
+    "outcomeDry_one": "Supprimerait {{rows}} ligne, {{size}}",
+    "outcomeDry_many": "Supprimerait {{rows}} lignes, {{size}}",
+    "outcomeDry_other": "Supprimerait {{rows}} lignes, {{size}}",
+    "outcomeDryNone": "Rien ne serait supprimé",
+    "outcomeReal_one": "{{rows}} ligne supprimée, {{size}}",
+    "outcomeReal_many": "{{rows}} lignes supprimées, {{size}}",
+    "outcomeReal_other": "{{rows}} lignes supprimées, {{size}}",
+    "outcomeRealNone": "Rien à supprimer",
+    "meta": "{{trigger}}, conservation de {{days}} jours",
+    "byActor": "par {{actor}}",
+    "trigger": {
+      "scheduled": "Planifié",
+      "manual": "Manuel",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "Quand",
+      "target": "Type de données",
+      "kind": "Type",
+      "result": "Résultat",
+      "trigger": "Déclencheur",
+      "days": "Conservation"
+    },
+    "timeline": "Chronologie des exécutions",
+    "loadMore": "Charger plus",
+    "loadingMore": "Chargement..."
+  }
+}
