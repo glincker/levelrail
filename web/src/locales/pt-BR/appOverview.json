@@ -1,0 +1,29 @@
+{
+  "title": "Visão geral",
+  "image": "Imagem",
+  "port": "Porta",
+  "memoryLimit": "Limite de memória",
+  "cpuLimit": "Limite de CPU",
+  "swapLimit": "Limite de swap",
+  "cpuPinning": "Fixação de CPU",
+  "notSet": "não definido",
+  "deployStrategy": "Estratégia de deploy",
+  "replicas": "Réplicas",
+  "node": "Node",
+  "project": "Projeto",
+  "environment": "Ambiente",
+  "noProject": "sem projeto",
+  "noEnvironment": "sem ambiente",
+  "readinessProbe": "Sonda de prontidão",
+  "livenessProbe": "Sonda de vitalidade",
+  "path": "Caminho:",
+  "interval": "Intervalo:",
+  "timeout": "Timeout:",
+  "failureThreshold": "Limite de falhas:",
+  "notConfigured": "não configurado",
+  "strategy": {
+    "recreate": "Recriar",
+    "blueGreen": "Blue-green",
+    "rolling": "Rolling"
+  }
+}

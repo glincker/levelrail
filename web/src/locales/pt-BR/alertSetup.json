@@ -1,0 +1,93 @@
+{
+  "template": {
+    "label": "Template de alertas",
+    "profile": "Tipo de app",
+    "web": "App web",
+    "worker": "Worker",
+    "database": "Banco de dados",
+    "webHint": "Crash loop, taxa de 5xx, respostas lentas, CPU e um SLO de disponibilidade de 99,9%.",
+    "workerHint": "Crash loop e CPU.",
+    "databaseHint": "Crash loop e CPU.",
+    "apply": "Adicionar regras recomendadas",
+    "applying": "Adicionando...",
+    "created": "{{count}} regras de alerta adicionadas",
+    "createdSkipped": "{{count}} regras de alerta adicionadas, {{skipped}} já existiam",
+    "allExist": "Todas as regras recomendadas já existem",
+    "failed": "Não foi possível adicionar as regras recomendadas",
+    "noChannel": "Nenhum canal de notificação está conectado, então estas regras só aparecem no histórico de alertas até você anexar um."
+  },
+  "quiet": {
+    "title": "Horário silencioso",
+    "description": "Retém alertas de aviso e informativos durante uma janela diária e os envia quando ela termina, se ainda estiverem disparando. Alertas críticos sempre notificam.",
+    "enabled": "Reter alertas não críticos",
+    "start": "De",
+    "end": "Até",
+    "timezone": "Fuso horário",
+    "save": "Salvar horário silencioso",
+    "saving": "Salvando...",
+    "saved": "Horário silencioso salvo",
+    "clear": "Remover",
+    "cleared": "Horário silencioso removido",
+    "loadError": "Não foi possível carregar o horário silencioso.",
+    "saveError": "Não foi possível salvar o horário silencioso"
+  },
+  "rules": {
+    "notConfigured": "Não configurado",
+    "generic": "genérico",
+    "colName": "Nome",
+    "disabled": "Desativada",
+    "colState": "Estado",
+    "stateFiring": "Disparando",
+    "statePending": "Pendente",
+    "stateOk": "OK",
+    "countFiring": "{{count}} disparando",
+    "countPending": "{{count}} pendentes",
+    "countOk": "{{count}} ok",
+    "silenced": "Silenciado",
+    "silencedTip": "As notificações estão silenciadas",
+    "viewLogs": "Ver logs",
+    "colKind": "Tipo",
+    "colCondition": "Condição",
+    "colLastEvaluated": "Última avaliação",
+    "never": "Nunca",
+    "colLastValue": "Último valor",
+    "colNotify": "Notificar",
+    "title": "Regras de alerta",
+    "description": "Regras de limite, crashloop, expiração de certificado, falha de tarefa agendada, saúde de domínio e backup ausente sobre as métricas, reinícios, jobs, domínios e agendamentos de backup deste app. Notifica por webhook, Slack ou Discord em uma transição de disparado/resolvido.",
+    "emptyTitle": "Nenhuma regra de alerta ainda",
+    "emptyDescription": "Seja notificado no momento em que uma métrica cruza um limite ou um container começa a entrar em crashloop, por webhook, Slack ou Discord."
+  },
+  "slo": {
+    "title": "Acompanhar um SLO de disponibilidade de {{target}}%",
+    "detail": "Este app está atendendo tráfego e não tem alerta de SLO. Uma meta de {{target}}% avisa você quando o orçamento de erros de 30 dias é consumido rápido e abre um alerta de nível de ticket quando é consumido devagar.",
+    "noChannel": "Nenhum canal de notificação está conectado ainda, então a regra só aparecerá no histórico de alertas até você anexar um.",
+    "create": "Criar regra de SLO",
+    "ruleName": "SLO de disponibilidade de {{target}}%",
+    "created": "Regra de alerta de SLO criada.",
+    "createFailed": "Não foi possível criar a regra de SLO."
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "Queda de tráfego do domínio",
+        "help": "Dispara quando as requisições na janela caem abaixo de uma parte da mesma janela de ontem. Fica quieto até haver tráfego suficiente ontem para comparar."
+      },
+      "parked_domain_cert_expiry": {
+        "label": "Expiração de certificado de domínio estacionado",
+        "help": "Dispara quando um domínio estacionado tem menos dias de certificado restantes que o limite. Cobre todos os domínios estacionados da plataforma."
+      }
+    },
+    "scopeLabel": "Domínio",
+    "scopeApp": "App: {{app}}",
+    "scopeAll": "Todos os domínios deste app",
+    "scopeHelp": "Observe todos os domínios deste app ou apenas um.",
+    "windowLabel": "Janela",
+    "windowHelp": "Quanto tempo de trecho comparar com o mesmo trecho de ontem. De 0 a 24h.",
+    "percentLabel": "Queda abaixo do percentual de ontem",
+    "percentHelp": "Dispara quando o tráfego está abaixo deste percentual de ontem. 50 significa metade.",
+    "minRequestsLabel": "Mínimo de requisições ontem",
+    "minRequestsHelp": "Ignora a verificação quando ontem teve menos requisições que isto, para que domínios calmos não gerem alertas.",
+    "daysLabel": "Dias restantes",
+    "daysHelp": "Dispara quando o certificado de um domínio estacionado tem menos dias restantes que isto."
+  }
+}

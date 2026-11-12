@@ -1,0 +1,133 @@
+{
+  "title": "Uso e custo",
+  "description": "Para onde vão o dinheiro e a capacidade, divididos pelo que cada app e banco de dados realmente usa. Isto é um showback dos seus próprios preços, não uma fatura.",
+  "period": {
+    "label": "Período",
+    "mtd": "Mês até agora",
+    "30d": "Últimos 30 dias",
+    "last_month": "Mês passado"
+  },
+  "summary": {
+    "total": "Total estimado",
+    "change": "{{value}} vs período anterior",
+    "noChange": "Sem período anterior para comparar",
+    "forecast": "Previsão para o fim do mês",
+    "forecastHint": "Com base nos últimos dias completos de gasto.",
+    "unallocated": "Não alocado",
+    "unallocatedHint": "Capacidade ociosa que ninguém usou. É mostrada aqui em vez de ficar escondida nos custos dos apps.",
+    "allocated": "Alocado aos apps"
+  },
+  "chart": {
+    "label": "Custo diário por projeto",
+    "other": "Outros projetos",
+    "unallocated": "Não alocado",
+    "unassigned": "Sem projeto"
+  },
+  "dimension": {
+    "label": "Detalhar por",
+    "project": "Projeto",
+    "environment": "Ambiente",
+    "team": "Equipe",
+    "resource": "App ou banco de dados",
+    "tag": "Tag"
+  },
+  "table": {
+    "label": "Ranking de custos",
+    "name": "Nome",
+    "cost": "Custo estimado",
+    "previous": "Anterior",
+    "change": "Mudança",
+    "trend": "Tendência",
+    "unassigned": "Não atribuído",
+    "untagged": "Sem tag",
+    "tagNote": "Um recurso com várias tags é contado em cada uma delas, então os totais por tag podem somar mais que o total do relatório.",
+    "empty": "Nada para mostrar neste período ainda."
+  },
+  "movers": {
+    "title": "Maiores variações",
+    "up": "{{name}} subiu {{amount}}",
+    "down": "{{name}} caiu {{amount}}",
+    "none": "Nenhum recurso mudou de custo desde o período anterior."
+  },
+  "export": {
+    "csv": "Exportar CSV",
+    "json": "Exportar JSON"
+  },
+  "empty": {
+    "notConfiguredTitle": "Defina seus preços para ver os custos",
+    "notConfiguredDescription": "O uso já está sendo registrado. Informe quanto um servidor custa para você, ou um preço por vCPU e por GiB hora, e cada app passa a ter um custo.",
+    "notConfiguredAskAdmin": "Peça a um admin da instância para definir os preços. O uso já está sendo registrado.",
+    "noTelemetryTitle": "Os dados de uso não estão disponíveis",
+    "noTelemetryDescription": "O custo precisa do coletor de métricas. Ative a observabilidade para registrar CPU e memória por app.",
+    "configure": "Definir preços"
+  },
+  "unpriced": "{{nodes}} ainda não tem preço, então os apps que rodam lá não têm custo calculado.",
+  "error": "Não foi possível carregar o uso: {{message}}",
+  "settings": {
+    "open": "Preços",
+    "title": "Preços e alocação",
+    "description": "Os custos são os seus próprios preços aplicados ao uso medido. Cada dia é precificado quando é registrado, então alterar os preços não reescreve o histórico, a menos que você peça para reprecificar o mês até agora.",
+    "mode": "Como precificar",
+    "modeNode": "Dividir a fatura mensal de cada servidor",
+    "modeNodeHint": "Informe quanto cada servidor custa por mês. A fatura é repartida entre os apps conforme quanto do servidor eles usaram.",
+    "modeUnit": "Preço por unidade de uso",
+    "modeUnitHint": "Informe um preço por vCPU hora e por GiB hora. Útil quando não há uma fatura única para dividir.",
+    "currency": "Moeda",
+    "nodes": "Faturas dos servidores",
+    "nodeMonthly": "Preço mensal",
+    "nodeVcpus": "vCPUs",
+    "nodeMemory": "Memória (GiB)",
+    "detected": "Detectado: {{vcpus}} vCPUs, {{memory}} GiB",
+    "cpuHour": "Por vCPU hora",
+    "memHour": "Por GiB de memória hora",
+    "storage": "Por GiB de armazenamento de volume por mês",
+    "egress": "Por GiB enviado",
+    "preset": "Começar de um servidor típico",
+    "presetHint": "Preços ilustrativos de um tamanho comum de VPS. Corrija para o que você paga.",
+    "idle": "Parte da capacidade ociosa a distribuir entre os apps",
+    "idleHintNode": "0 mostra toda a capacidade ociosa como Não alocado. 100 a distribui entre os apps por uso, para que o relatório feche com a fatura inteira.",
+    "idleHintUnit": "Adicionada ao custo de cada app como sobrecarga de folga.",
+    "basis": "Medir o uso por",
+    "basisAvg": "Média",
+    "basisP50": "Típico (p50)",
+    "weight": "Parte da fatura do servidor atribuída à CPU",
+    "weightHint": "O restante é atribuído à memória.",
+    "reprice": "Reprecificar também o mês até agora",
+    "repriceHint": "Recalcula os dias já registrados neste mês com estes preços.",
+    "save": "Salvar preços",
+    "saving": "Salvando",
+    "saved": "Preços salvos",
+    "error": "Não foi possível salvar os preços: {{message}}",
+    "cancel": "Cancelar"
+  },
+  "budgets": {
+    "title": "Orçamentos",
+    "description": "Um limite mensal para um projeto ou uma equipe. Os alertas passam pelos seus canais de notificação quando um orçamento atinge o nível de aviso, é ultrapassado ou tem previsão de estouro.",
+    "empty": "Nenhum orçamento ainda.",
+    "add": "Adicionar orçamento",
+    "scope": "Aplica-se a",
+    "scopeProject": "Projeto",
+    "scopeTeam": "Equipe",
+    "target": "Qual",
+    "monthly": "Orçamento mensal",
+    "warn": "Avisar em (%)",
+    "save": "Salvar orçamento",
+    "remove": "Remover o orçamento {{name}}",
+    "spent": "{{spent}} de {{budget}}",
+    "forecast": "Previsão {{amount}}",
+    "state": {
+      "ok": "No caminho",
+      "warn": "Perto do limite",
+      "over": "Acima do orçamento",
+      "forecast": "Previsão de estouro"
+    },
+    "alertHint": "Crie uma regra de alerta budget_threshold para que estes cheguem aos seus canais.",
+    "error": "Não foi possível atualizar os orçamentos: {{message}}"
+  },
+  "chip": {
+    "label": "Custo neste mês",
+    "value": "{{amount}} até agora",
+    "forecast": "cerca de {{amount}} até o fim do mês",
+    "open": "Abrir uso e custo"
+  }
+}

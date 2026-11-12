@@ -1,0 +1,69 @@
+{
+  "roles": {
+    "title": "Funções",
+    "description": "Conjuntos nomeados de permissões que você pode atribuir a pessoas. As funções integradas são fixas; crie as suas para qualquer caso intermediário.",
+    "create": "Criar função",
+    "empty": {
+      "title": "Nenhuma função encontrada",
+      "description": "Crie uma função para dar às pessoas um conjunto nomeado de permissões."
+    },
+    "table": {
+      "label": "Funções",
+      "name": "Nome",
+      "abilities": "Permissões",
+      "visibility": "Enxerga",
+      "users": "Usuários",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "badge": {
+      "builtin": "Integrada",
+      "visibilityAll": "Tudo",
+      "visibilityGranted": "Somente ambientes concedidos"
+    },
+    "form": {
+      "createTitle": "Criar função",
+      "editTitle": "Editar {{name}}",
+      "description": "Escolha as permissões que esta função carrega e o que quem a tem pode ver.",
+      "name": "Nome",
+      "namePlaceholder": "ex.: qa-reviewer",
+      "nameRequired": "O nome é obrigatório",
+      "descriptionLabel": "Descrição",
+      "visibility": "Visibilidade",
+      "visibilityAll": "Tudo o que as permissões permitem",
+      "visibilityGranted": "Somente ambientes concedidos a cada pessoa",
+      "visibilityGrantedHint": "Uma função limitada a ambientes concedidos só pode ter a permissão de leitura.",
+      "abilitiesRequired": "Escolha pelo menos uma permissão",
+      "cancel": "Cancelar",
+      "save": "Salvar",
+      "saving": "Salvando..."
+    },
+    "deleteDialog": {
+      "title": "Excluir {{name}}?",
+      "description": "Não será mais possível atribuir esta função a pessoas. Uma função que ainda tem pessoas atribuídas não pode ser excluída.",
+      "inUse": "{{count}} pessoas têm esta função. Reatribua-as primeiro.",
+      "cancel": "Cancelar",
+      "confirm": "Excluir",
+      "deleting": "Excluindo..."
+    },
+    "toast": {
+      "created": "Função {{name}} criada.",
+      "updated": "Função {{name}} atualizada.",
+      "deleted": "Função {{name}} excluída."
+    }
+  },
+  "userRole": {
+    "trigger": "Alterar função",
+    "title": "Função de {{email}}",
+    "description": "Escolher uma função substitui as permissões desta pessoa pelas da função.",
+    "label": "Função",
+    "grantsTitle": "Ambientes que esta pessoa pode ver",
+    "grantsHint": "Pessoas com uma função de visibilidade concedida veem apenas estes ambientes.",
+    "grantsEmpty": "Ainda não existem ambientes.",
+    "grantsLoading": "Carregando ambientes...",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "toast": "{{email}} agora é {{role}}."
+  }
+}

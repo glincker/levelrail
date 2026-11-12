@@ -1,0 +1,122 @@
+{
+  "title": "Builds",
+  "subtitle": "A fila e o histórico de builds de todos os apps: o que está esperando, o que está rodando, quanto tempo os builds levam, quanto o cache ajuda e quão grandes são as imagens.",
+  "retry": "Tentar novamente",
+  "error": {
+    "title": "Não foi possível carregar os builds"
+  },
+  "node": {
+    "label": "Node",
+    "local": "Este servidor"
+  },
+  "tiles": {
+    "queued": "Na fila",
+    "running": "Em execução",
+    "finished": "Concluídos",
+    "failed": "Com falha"
+  },
+  "limits": {
+    "perNode": "Até {{count}} builds rodam ao mesmo tempo em cada node, o restante espera na fila.",
+    "node": "{{node}}: {{running}} em execução, {{waiting}} esperando"
+  },
+  "platforms": {
+    "target": "Os builds visam {{platform}}, a plataforma do node de build.",
+    "singleOnly": "Builds multiplataforma ainda não são suportados."
+  },
+  "columns": {
+    "build": "Build",
+    "status": "Status",
+    "duration": "Tempo",
+    "cache": "Cache",
+    "image": "Imagem",
+    "node": "Node e plataforma",
+    "actions": "Ações"
+  },
+  "status": {
+    "queued": "Na fila",
+    "queuedAt": "Na fila, #{{position}}",
+    "held": "Retido",
+    "running": "Em execução",
+    "succeeded": "Bem-sucedido",
+    "failed": "Falhou",
+    "canceled": "Cancelado",
+    "superseded": "Substituído",
+    "stuck": "Pode estar travado"
+  },
+  "actions": {
+    "logs": "Logs",
+    "cancel": "Cancelar",
+    "cancelStuck": "Cancelar build travado",
+    "cancelDone": "Build cancelado",
+    "cancelFailed": "Não foi possível cancelar o build",
+    "retry": "Tentar novamente",
+    "retryDone": "Build reiniciado a partir da branch conectada",
+    "retryFailed": "Não foi possível tentar o build novamente",
+    "freeCache": "Liberar cache de build"
+  },
+  "empty": {
+    "title": "Nenhum build ainda",
+    "description": "Os builds aparecem aqui quando um app faz deploy a partir de uma origem Git."
+  },
+  "cacheFull": {
+    "title": "Um build ficou sem espaço em disco",
+    "description": "O cache de build ocioso pode ser removido com segurança. Builds em execução mantêm o cache deles."
+  },
+  "cache": {
+    "title": "Cache de build",
+    "prune": "Liberar cache ocioso",
+    "total": "Tamanho do cache",
+    "inUse": "Em uso",
+    "reclaimable": "Pode ser liberado",
+    "records": "Registros",
+    "errorTitle": "Não foi possível carregar o cache de build",
+    "unsupportedTitle": "Cache de build indisponível",
+    "unsupported": "Este node ainda não informa o cache de build."
+  },
+  "prune": {
+    "title": "Liberar cache de build ocioso",
+    "loading": "Verificando o que pode ser liberado.",
+    "description": "{{count}} registros de cache estão ociosos há {{hours}} horas ou mais. Removê-los libera {{size}}.",
+    "consequences": "O próximo build de cada app pode demorar mais enquanto o cache dele é reconstruído.",
+    "confirm": "Liberar {{size}}",
+    "pending": "Liberando cache",
+    "done": "{{count}} registros de cache removidos, {{size}} liberados"
+  },
+  "banner": {
+    "description": "Os builds transformam seu código-fonte em uma imagem executável. A fila, o histórico e o cache de todos os apps ficam aqui depois do primeiro deploy.",
+    "diagram": {
+      "source": "código",
+      "build": "build",
+      "image": "imagem",
+      "cache": "cache"
+    }
+  },
+  "quota": {
+    "title": "Cota de cache",
+    "errorTitle": "Não foi possível carregar a cota de cache",
+    "appQuota": "Cota por app",
+    "maxRecords": "Registros por recuperação",
+    "gib_one": "{{count}} GiB",
+    "gib_many": "{{count}} GiB",
+    "gib_other": "{{count}} GiB",
+    "off": "Desativada",
+    "restartNote": "A cota por app se aplica após o próximo build de cada app, pelo painel, pela CLI ou por um push. Altere em Configurações, em build.cache_app_quota_gb.",
+    "empty": "Nenhum cache foi recuperado ainda.",
+    "col": {
+      "app": "App",
+      "trigger": "Gatilho",
+      "when": "Quando",
+      "freed": "Liberado",
+      "note": "Observação"
+    },
+    "trigger": {
+      "auto": "Após um build",
+      "manual": "Manual"
+    },
+    "note": {
+      "running": "Ignorado, um build estava em execução",
+      "bounded": "Limite de registros atingido, o restante segue no próximo build",
+      "partial": "Interrompido cedo, o que foi liberado é mantido"
+    }
+  }
+}

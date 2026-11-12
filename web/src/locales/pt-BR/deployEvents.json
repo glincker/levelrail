@@ -1,0 +1,140 @@
+{
+  "title": "Linha do tempo do deploy",
+  "subtitle": "Tudo o que aconteceu em um deploy, em ordem.",
+  "pageTitle": "Deploy {{id}}",
+  "app": "App",
+  "back": "Todos os deploys",
+  "open": "Linha do tempo",
+  "verdict": {
+    "running": "Em andamento",
+    "watching": "Observando",
+    "succeeded": "Bem-sucedido",
+    "failed": "Falhou",
+    "rolled_back": "Rollback feito",
+    "canceled": "Cancelado",
+    "queued": "Na fila"
+  },
+  "connection": {
+    "connecting": "Conectando",
+    "live": "Ao vivo",
+    "ended": "Reprodução",
+    "error": "Reconectando"
+  },
+  "frozenNote": "Reprodução salva de quando este deploy se estabilizou.",
+  "list": {
+    "label": "Eventos do deploy, do mais antigo ao mais recente",
+    "loading": "Carregando a linha do tempo do deploy",
+    "emptyTitle": "Nenhum evento ainda",
+    "emptyBody": "Os eventos aparecem aqui conforme o deploy avança."
+  },
+  "announce": "{{title}}: {{status}}",
+  "status": {
+    "running": "Em execução",
+    "ok": "Concluído",
+    "failed": "Falhou",
+    "warning": "Aviso",
+    "info": "Info"
+  },
+  "kind": {
+    "trigger": "Gatilho",
+    "build": "Build",
+    "log": "Saída do build",
+    "image_push": "Push da imagem",
+    "hook": "Hook",
+    "step": "Etapa",
+    "readiness": "Prontidão",
+    "cutover": "Cutover",
+    "watch": "Observação pós-deploy",
+    "rollback": "Rollback",
+    "outcome": "Resultado",
+    "traffic_impact": "Impacto no tráfego"
+  },
+  "codes": {
+    "trigger_git_push": "Push do Git recebido",
+    "trigger_webhook": "Webhook recebido",
+    "trigger_manual": "Deploy iniciado manualmente",
+    "trigger_image": "Deploy de imagem solicitado",
+    "trigger_compose": "Deploy do Compose solicitado",
+    "trigger_promote": "Promoção solicitada",
+    "trigger_auto_rollback": "Rollback automático iniciado",
+    "trigger_restart": "Reinício solicitado",
+    "trigger_queued": "Na fila atrás de outro deploy",
+    "build_detecting": "Detectando como fazer o build",
+    "build_building": "Build",
+    "build_failed": "O build falhou",
+    "push": "Push da imagem",
+    "readiness_probe": "Sonda de prontidão",
+    "watch_crashloop": "Crashloop após o deploy",
+    "watch_oom": "Container encerrado por falta de memória após o deploy",
+    "watch_exited": "Container encerrou após o deploy",
+    "watch_error_rate": "A taxa de 5xx subiu após o deploy",
+    "watch_latency": "A latência piorou após o deploy",
+    "watch_stopped": "Observação interrompida por um operador",
+    "watch_cleared": "Observação pós-deploy encerrada",
+    "rollback_auto": "Rollback automático",
+    "rollback_no_target": "Nenhum alvo de rollback disponível",
+    "outcome_succeeded": "Deploy concluído",
+    "outcome_failed": "O deploy falhou",
+    "outcome_rolled_back": "Rollback do deploy feito",
+    "outcome_canceled": "Deploy cancelado",
+    "traffic_impact": "Impacto no tráfego em torno do cutover"
+  },
+  "trigger": {
+    "rerun": "Nova execução de {{id}}"
+  },
+  "logs": {
+    "summary_one": "Saída do build, {{count}} linha",
+    "summary_many": "Saída do build, {{count}} linhas",
+    "summary_other": "Saída do build, {{count}} linhas",
+    "region": "Linhas da saída do build",
+    "dropped": "{{count}} linhas anteriores foram omitidas para manter a reprodução pequena."
+  },
+  "impact": {
+    "title": "Tráfego em torno do cutover",
+    "before": "Antes",
+    "after": "Depois",
+    "rate": "Requisições por segundo",
+    "errors": "Taxa de 5xx",
+    "p95": "Latência p95",
+    "noTraffic": "Sem tráfego nesta janela",
+    "open": "A janela após o cutover ainda está aberta, então estes números podem mudar.",
+    "window": "As janelas têm {{window}} de cada lado do cutover."
+  },
+  "phases": {
+    "title": "Tempo por fase",
+    "label": "Duração de cada fase",
+    "trigger": "Gatilho",
+    "build": "Build",
+    "push": "Push",
+    "hooks": "Hooks",
+    "deploy": "Deploy",
+    "readiness": "Prontidão",
+    "cutover": "Cutover",
+    "watch": "Observação",
+    "outcome": "Resultado"
+  },
+  "compare": {
+    "label": "Comparar com",
+    "none": "Sem comparação",
+    "hint": "Escolha outro deploy deste app para ver as duas linhas do tempo lado a lado.",
+    "loading": "Carregando a comparação",
+    "errorTitle": "Não foi possível carregar a comparação",
+    "title": "Lado a lado",
+    "deployA": "Este deploy",
+    "deployB": "Deploy comparado",
+    "phase": "Fase",
+    "delta": "Diferença",
+    "faster": "{{value}} mais rápido",
+    "slower": "{{value}} mais lento",
+    "same": "Igual",
+    "missing": "Não alcançado",
+    "onlyHere": "Somente neste deploy",
+    "onlyThere": "Somente no deploy comparado",
+    "noDifferences": "Os dois deploys produziram os mesmos sinais.",
+    "columnLabel": "Eventos do deploy {{id}}"
+  },
+  "error": {
+    "title": "Não foi possível carregar este deploy",
+    "notFound": "Este deploy não existe ou você não pode ler o app dele."
+  }
+}

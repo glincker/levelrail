@@ -1,0 +1,1565 @@
+{
+  "deployNote": {
+    "queueLabel": "Sobre a fila",
+    "queueBody": "Os deploys de um app rodam um de cada vez. Este começa sozinho quando o deploy à frente dele termina ou é cancelado."
+  },
+  "statusReasons": {
+    "about": "O que este motivo significa",
+    "next": "Próximo passo:"
+  },
+  "nodeSelect": {
+    "auto": "Automático (menos carregado)",
+    "autoHint": "O automático o coloca no node elegível menos carregado. Escolha um node para fixá-lo lá."
+  },
+  "draft": {
+    "message": "Você tem um rascunho não salvo de {{time}}.",
+    "continue": "Continuar de onde parou",
+    "startOver": "Começar de novo",
+    "dismiss": "Dispensar"
+  },
+  "deployHistory": {
+    "filters": {
+      "search": "Buscar mensagem, commit, autor",
+      "branch": "Branch",
+      "author": "Autor",
+      "status": "Status",
+      "all": "Todos ({{label}})",
+      "clear": "Limpar filtros",
+      "noMatch": "Nenhum deploy corresponde a estes filtros",
+      "noMatchHint": "Limpe os filtros para ver todos os deploys."
+    },
+    "visit": "Visitar",
+    "visitLabel": "Visitar {{url}}",
+    "promote": "Promover para produção",
+    "promoteHint": "Faz deste build exato a release ao vivo, fixada por digest",
+    "promoted": "Promoção disparada.",
+    "promotedPending": "A promoção está aguardando aprovação.",
+    "promoteFailed": "Não foi possível promover.",
+    "deployNow": "Fazer deploy agora",
+    "latest": "Último deploy",
+    "earlier": "Deploys anteriores",
+    "failedLog": "Ver o log da etapa que falhou",
+    "failedLogLabel": "Ver o log da etapa que falhou de {{title}}",
+    "watchLog": "Acompanhar",
+    "viewLogs": "Logs",
+    "settingsLink": "Configurações de deploy",
+    "settingsLinkHint": "As opções de build, execução, segurança e automação deste app ficam em um só lugar.",
+    "settingsLinkCta": "Abrir as configurações de deploy",
+    "rerunOf": "Nova tentativa de {{id}}",
+    "rerunOfLabel": "Abrir os logs de {{id}}, o deploy que este executou novamente",
+    "current": "Atual",
+    "rollbackBadge": "Rollback",
+    "outcomeFailed": "Não está atendendo"
+  },
+  "actions": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "retry": "Tentar novamente",
+    "backToApps": "Voltar aos apps",
+    "viewOverview": "Ver visão geral",
+    "viewApp": "Ver app",
+    "viewDatabase": "Ver banco de dados",
+    "closeToast": "Fechar notificação"
+  },
+  "deployApprovalStatus": {
+    "all": "Todas",
+    "pending": "Pendentes",
+    "approving": "Aplicando",
+    "approved": "Aprovadas",
+    "rejected": "Rejeitadas",
+    "expired": "Expiradas"
+  },
+  "tableLabels": {
+    "appServices": "Serviços do app",
+    "bindMounts": "Bind mounts",
+    "modelKeys": "Chaves de API",
+    "agentTokens": "Tokens de agente",
+    "approvals": "Aprovações de deploy",
+    "registryCredentials": "Credenciais de registry",
+    "networkShares": "Compartilhamentos de rede",
+    "deployNotifyTargets": "Destinos de notificação de deploy",
+    "statusComponents": "Componentes da página de status",
+    "alertRules": "Regras de alerta",
+    "alertSilences": "Silenciamentos de alertas",
+    "maintenanceWindows": "Janelas de manutenção",
+    "featureFlags": "Feature flags"
+  },
+  "healthScore": {
+    "title": "Saúde e prontidão",
+    "notFound": "Não foi possível encontrar \"{{appName}}\". Ele pode ter sido excluído ou pertencer a uma instância diferente da que você está logado.",
+    "loadFailed": "Não foi possível carregar saúde e prontidão. {{message}}",
+    "status": {
+      "pass": "Pronto",
+      "warn": "Revisar",
+      "fail": "Requer atenção"
+    },
+    "summary": "{{pass}} de {{total}} verificações passam",
+    "allClear": "Todas as verificações passam. Nada requer a sua atenção.",
+    "needsAction": "Requer ação"
+  },
+  "logs": {
+    "previousContainerEnded": "A instância anterior do container terminou",
+    "copyLineAria": "Copiar esta linha de log",
+    "copyLine": "Copiar linha",
+    "copied": "Copiado",
+    "lineCopied": "Linha copiada"
+  },
+  "sessionLink": {
+    "signingIn": "Fazendo seu login...",
+    "invalid": "Este link de login é inválido ou expirou. Solicite um novo.",
+    "backToSignIn": "Voltar ao login"
+  },
+  "ssoAutoRedirect": {
+    "redirecting": "Redirecionando você para {{provider}}...",
+    "cancel": "Cancelar",
+    "cancelled": "Redirecionamento automático cancelado.",
+    "passwordInstead": "Entrar com uma senha"
+  },
+  "sessionEnded": {
+    "notice": "Você foi desconectado porque sua sessão terminou, por exemplo após uma atualização ou reinício. Faça login novamente para continuar. Os tokens de API não são afetados."
+  },
+  "loadMore": {
+    "showing": "Mostrando {{loaded}} de {{total}}",
+    "button": "Carregar mais"
+  },
+  "appsList": {
+    "quick": {
+      "open": "Abrir {{domain}}",
+      "redeploy": "Refazer o deploy de {{name}}",
+      "logs": "Logs de {{name}}"
+    },
+    "title": "Apps",
+    "tableLabel": "Apps",
+    "colName": "Nome",
+    "colNode": "Node",
+    "colTraffic": "Tráfego 1h",
+    "colP95": "p95",
+    "colErrors": "Erros",
+    "colDeployed": "Implantado",
+    "selectApp": "Selecionar {{name}}",
+    "count_one": "{{count}} app",
+    "count_many": "{{count}} apps",
+    "count_other": "{{count}} apps",
+    "count_filtered_one": "{{count}} de {{total}} app",
+    "count_filtered_many": "{{count}} de {{total}} apps",
+    "count_filtered_other": "{{count}} de {{total}} apps",
+    "selectAll": "Selecionar todos",
+    "deselectAll": "Desmarcar todos",
+    "newDatabase": "Novo banco de dados",
+    "newApp": "Novo app",
+    "import": "Importar",
+    "connectGit": "Conectar Git",
+    "firstRun": {
+      "title": "Faça o deploy do seu primeiro app",
+      "subtitle": "Escolha um ponto de partida. Você terá um app em execução e um link em poucos minutos.",
+      "template": {
+        "title": "De um template",
+        "body": "Instalações com um clique como Postgres, n8n ou Ghost."
+      },
+      "git": {
+        "title": "De um repositório Git",
+        "body": "Faça o build e o deploy de um repositório com um Dockerfile."
+      },
+      "image": {
+        "title": "De uma imagem de container",
+        "body": "Execute qualquer imagem de um registry."
+      }
+    },
+    "emptyTitle": "Nenhum app ainda",
+    "emptyBody": "Faça o deploy a partir de um repositório Git ou de uma imagem de container, ou importe apps de outra plataforma.",
+    "noMatchTitle": "Nenhum app corresponde",
+    "noMatchBody": "Nenhum app se ajusta ao status e à busca atuais. Limpe os filtros para ver todos os {{total}}.",
+    "clearFilters": "Limpar filtros",
+    "errorBody": "Não foi possível carregar a lista de apps. {{message}}",
+    "retry": "Tentar novamente",
+    "banner": {
+      "description": "Faça o deploy a partir de um link Git, uma imagem de container ou um template e depois abra no navegador.",
+      "compactDescription": "Tudo o que está rodando neste servidor.",
+      "diagram": {
+        "git": "branch git",
+        "app": "app",
+        "browser": "navegador"
+      }
+    }
+  },
+  "appAnalysis": {
+    "confidence": "Confiança {{level}}",
+    "causes": "Causas suspeitas",
+    "hide": "Ocultar relatório",
+    "loadFailed": "Não foi possível carregar este relatório.",
+    "loading": "Carregando relatório",
+    "recommendations": "Recomendações",
+    "status": {
+      "complete": "Concluída",
+      "insufficient_data": "Dados insuficientes"
+    },
+    "saving": "Economiza cerca de ${{amount}}/mês",
+    "timeline": "Linha do tempo",
+    "title": "Análise",
+    "view": "Ver relatório",
+    "evidence": {
+      "title": "Evidências",
+      "metric": "Métrica",
+      "trend": "Tendência",
+      "anomalies_one": "{{count}} anomalia",
+      "anomalies_many": "{{count}} anomalias",
+      "anomalies_other": "{{count}} anomalias",
+      "sizingChange": "{{current}} para {{suggested}}",
+      "logLevel": "{{level}}: {{lines}} linhas, {{groups}} grupos",
+      "restarts_one": "{{count}} reinício",
+      "restarts_many": "{{count}} reinícios",
+      "restarts_other": "{{count}} reinícios",
+      "dimension": {
+        "memory": "Memória",
+        "cpu": "CPU"
+      },
+      "trends": {
+        "flat": "estável",
+        "none": "sem dados",
+        "rising": "subindo",
+        "falling": "caindo"
+      }
+    }
+  },
+  "appReleases": {
+    "title": "Releases",
+    "current": "Atual"
+  },
+  "appResourceTree": {
+    "title": "Recursos",
+    "groups": {
+      "databases": "Bancos de dados",
+      "deployment": "Deploy",
+      "domains": "Domínios",
+      "env": "Chaves de ambiente",
+      "replicas": "Réplicas",
+      "volumes": "Volumes"
+    }
+  },
+  "appSectionHelp": "Leia o guia desta página",
+  "appActions": {
+    "deploy": "Deploy",
+    "restart": "Reiniciar",
+    "restarting": "Reiniciando...",
+    "more": "Mais ações",
+    "redeploy": "Refazer o deploy do atual",
+    "redeploying": "Refazendo o deploy...",
+    "start": "Iniciar",
+    "stop": "Parar",
+    "promote": "Promover...",
+    "clone": "Clonar...",
+    "delete": "Excluir...",
+    "wake": "Despertar agora"
+  },
+  "paletteAction": {
+    "restartTitle": "Reiniciar {{name}}?",
+    "restartDescription": "Os containers em execução são substituídos por novos.",
+    "restartConsequence": "As requisições podem falhar brevemente enquanto o app volta.",
+    "restartConfirm": "Reiniciar",
+    "stopTitle": "Parar {{name}}?",
+    "stopDescription": "O app para de atender tráfego até você iniciá-lo novamente.",
+    "stopConsequence": "A configuração, as variáveis de ambiente e os domínios são mantidos.",
+    "stopConfirm": "Parar",
+    "rollbackTitle": "Fazer rollback de {{name}}?",
+    "rollbackDescription": "Refaz o deploy da release anterior: {{image}}.",
+    "rollbackConsequence": "A release atual deixa de atender assim que a anterior estiver saudável.",
+    "rollbackConfirm": "Fazer rollback",
+    "rollbackNone": "{{name}} não tem uma release anterior para a qual fazer rollback.",
+    "rollbackFailed": "O rollback falhou",
+    "rollbackStarted": "Fazendo rollback de \"{{name}}\".",
+    "pending": "Processando...",
+    "alreadyStopped": "{{name}} já está parado."
+  },
+  "unsavedGuard": {
+    "title": "Descartar as alterações não salvas?",
+    "description": "Você tem edições que não foram salvas. Sair agora as perderá.",
+    "keep": "Continuar editando",
+    "discard": "Descartar"
+  },
+  "confirmDialog": {
+    "cancel": "Cancelar",
+    "typePrompt": "Digite {{value}} para confirmar"
+  },
+  "deleteApp": {
+    "trigger": "Excluir",
+    "title": "Excluir \"{{name}}\"?",
+    "description": "Isto para e remove os containers do app e depois exclui o app. Se o node dele estiver inacessível, o app ainda é excluído e a limpeza tenta novamente até ter sucesso. Isto não pode ser desfeito.",
+    "cancel": "Cancelar",
+    "confirm": "Excluir {{name}}",
+    "deleting": "Excluindo...",
+    "deleted": "App \"{{name}}\" excluído.",
+    "pendingTitle": "App \"{{name}}\" excluído, limpeza pendente.",
+    "pendingDescription": "Os containers dele ainda não foram removidos ({{reason}}). A limpeza tenta novamente automaticamente."
+  },
+  "cascadeDelete": {
+    "label": "Excluir também tudo o que está dentro",
+    "hint": "Remove todos os apps e bancos de dados dentro dele, e os containers deles. Os volumes são mantidos. Se algo não puder ser removido, nada mais é perdido e você pode executar isto novamente."
+  },
+  "loginHelp": {
+    "lockedOut": "Ficou sem acesso? No servidor, execute",
+    "emergencyDocs": "Acesso de emergência"
+  },
+  "appTabs": {
+    "sections": "Seções do app",
+    "pages": "Páginas em {{section}}",
+    "showAll": "Mostrar todas as abas ({{count}} ocultas)",
+    "showLess": "Ocultar as abas que não se aplicam",
+    "groups": {
+      "deploy": "Deploy",
+      "traffic": "Tráfego",
+      "config": "Configuração",
+      "observe": "Observação"
+    },
+    "items": {
+      "containers": "Containers"
+    },
+    "more": "Mais",
+    "overview": "Visão geral"
+  },
+  "recommended": {
+    "title": "Recomendado a seguir",
+    "dismiss": "Dispensar: {{title}}",
+    "more": "+{{count}} mais",
+    "less": "Mostrar menos",
+    "failed_deploy": {
+      "title": "O último deploy falhou",
+      "button": "Ver o log do build"
+    },
+    "add_domain": {
+      "title": "Nenhum domínio ainda",
+      "button": "Adicionar um domínio"
+    },
+    "enable_backups": {
+      "title": "Um banco de dados não tem agendamento de backup",
+      "button": "Ativar backups"
+    },
+    "add_health_check": {
+      "title": "Sem verificação de saúde",
+      "button": "Adicionar uma verificação de saúde"
+    },
+    "enable_previews": {
+      "title": "Os previews estão desativados para os seus pull requests",
+      "button": "Ativar previews"
+    }
+  },
+  "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "Seções de deploys",
+        "deploys": "Deploys",
+        "timeline": "Linha do tempo",
+        "builds": "Builds"
+      },
+      "platform": {
+        "label": "Seções da plataforma",
+        "overview": "Visão geral",
+        "https": "HTTPS",
+        "ingress": "Ingress",
+        "addresses": "Endereços",
+        "dnsProviders": "Provedores de DNS"
+      },
+      "cost": {
+        "label": "Seções de uso e custo",
+        "usage": "Uso",
+        "costs": "Explorador de custos"
+      }
+    },
+    "navTabs": {
+      "group": {
+        "apps": "Seções de apps",
+        "pipelines": "Seções de pipelines",
+        "databases": "Seções de bancos de dados",
+        "storage": "Seções de armazenamento",
+        "domains": "Seções de domínios",
+        "traffic": "Seções de tráfego",
+        "servers": "Seções de servidores",
+        "registry": "Seções do registry",
+        "cost": "Seções de uso e custo",
+        "alerts": "Seções de alertas",
+        "security": "Seções de segurança"
+      },
+      "tab": {
+        "apps": "Apps",
+        "projects": "Projetos",
+        "templates": "Templates",
+        "tags": "Tags",
+        "variables": "Variáveis",
+        "sources": "Origens",
+        "pipelines": "Pipelines",
+        "approvals": "Aprovações",
+        "databases": "Bancos de dados",
+        "backups": "Backups",
+        "storage": "Visão geral",
+        "assets": "Assets",
+        "networkShares": "Compartilhamentos de rede",
+        "domains": "Domínios",
+        "dns": "DNS",
+        "mail": "E-mail",
+        "proxy": "Proxy",
+        "loadBalancers": "Load balancers",
+        "cdn": "CDN",
+        "firewall": "Firewall",
+        "nodes": "Servidores",
+        "privateNetworks": "Rede privada",
+        "topology": "Topologia",
+        "certificates": "Certificados",
+        "channels": "Canais",
+        "status": "Status",
+        "alerts": "Alertas",
+        "providers": "Provedores de nuvem",
+        "images": "Imagens",
+        "registry": "Registry",
+        "credentials": "Credenciais",
+        "usage": "Uso",
+        "costs": "Custos",
+        "advisor": "Consultor de recursos",
+        "resources": "Recursos",
+        "security": "Central de segurança",
+        "iam": "Políticas de IAM",
+        "imageScanning": "Varredura de imagens",
+        "bootstrapScripts": "Scripts de bootstrap",
+        "keys": "Chaves e tokens",
+        "team": "Equipe",
+        "auditLog": "Log de auditoria"
+      }
+    },
+    "pins": {
+      "group": "Fixados",
+      "pin": "Fixar {{label}}",
+      "limit": "Limite de fixados atingido ({{max}}). Desafixe um primeiro."
+    },
+    "customize": {
+      "open": "Personalizar barra lateral"
+    },
+    "locked": {
+      "badge": "Beta",
+      "description": "Este é um recurso beta e está desativado. Abra-o para ir a Recursos beta e ativá-lo.",
+      "paletteSubtitle": "Recurso beta bloqueado. Ative-o em Recursos beta"
+    },
+    "skipToContent": "Pular para o conteúdo",
+    "topBar": "Barra superior",
+    "toggleSidebar": "Alternar barra lateral",
+    "search": {
+      "label": "Buscar ou executar um comando",
+      "placeholder": "Buscar ou ir para..."
+    },
+    "dashboardTitle": "Painel",
+    "status": {
+      "ok": "Tudo certo",
+      "issues_one": "{{count}} problema",
+      "issues_many": "{{count}} problemas",
+      "issues_other": "{{count}} problemas",
+      "triggerLabel": "Status da plataforma: {{label}}",
+      "title": "Status da plataforma",
+      "healthy": "Docker, disco, nodes e certificados parecem estar bem.",
+      "view": "Ver",
+      "snooze": "Adiar",
+      "snoozeItem": "Adiar {{title}}",
+      "snoozedCount": "{{count}} adiados",
+      "showAgain": "Mostrar novamente",
+      "insecureTitle": "O painel não está em HTTPS",
+      "insecureDetail": "As sessões trafegam sem criptografia"
+    },
+    "snoozeFor": {
+      "1h": "1 hora",
+      "1d": "1 dia",
+      "forever": "Para sempre"
+    },
+    "theme": {
+      "label": "Tema: {{theme}}",
+      "menu": "Escolher tema",
+      "heading": "Tema",
+      "light": "Claro",
+      "dark": "Escuro",
+      "oled": "Preto OLED",
+      "system": "Sistema"
+    },
+    "help": {
+      "label": "Ajuda",
+      "forPage": "Ajuda para esta página",
+      "getStarted": "Primeiros passos",
+      "docs": "Documentação",
+      "troubleshooting": "Solução de problemas",
+      "systemStatus": "Doctor",
+      "report": "Relatar um problema",
+      "community": "Perguntar à comunidade",
+      "suggest": "Sugerir um recurso"
+    },
+    "account": {
+      "controlPlane": "Control plane",
+      "updateAvailable": "Atualização disponível: {{version}}",
+      "updateAvailableShort": "Atualização disponível",
+      "signOut": "Sair"
+    },
+    "breadcrumb": {
+      "label": "Trilha de navegação",
+      "home": "Início"
+    },
+    "navGroup": {
+      "home": "Início",
+      "primary": "Início",
+      "build": "Build",
+      "data": "Dados",
+      "traffic": "Rede",
+      "infrastructure": "Infraestrutura",
+      "platform": "Plataforma",
+      "access": "Segurança",
+      "ai": "IA"
+    },
+    "nav": {
+      "dashboard": "Painel",
+      "status": "Status",
+      "apps": "Apps",
+      "deployments": "Deploys",
+      "projects": "Projetos",
+      "templates": "Templates",
+      "tags": "Tags",
+      "get-started": "Primeiros passos",
+      "welcome": "Configuração inicial",
+      "migrate": "Migrar",
+      "databases": "Bancos de dados",
+      "backups": "Backups",
+      "domains": "Domínios",
+      "dns": "DNS",
+      "proxy": "Tráfego",
+      "loadbalancers": "Load balancers",
+      "firewall": "Firewall",
+      "private-networks": "Rede privada",
+      "nodes": "Servidores",
+      "network": "Topologia",
+      "cdn": "CDN e caches",
+      "registry": "Registry",
+      "registry-credentials": "Credenciais",
+      "network-shares": "Compartilhamentos de rede",
+      "node-providers": "Provedores de nuvem",
+      "iam-policies": "Políticas de IAM",
+      "models": "Modelos de IA",
+      "pipelines": "Pipelines",
+      "approvals": "Aprovações de deploy",
+      "inbox": "Caixa de entrada",
+      "alerts": "Alertas",
+      "assistant": "Assistente de IA",
+      "settings": "Configurações",
+      "help": "Ajuda",
+      "functions": "Funções",
+      "storage": "Armazenamento",
+      "assets": "Assets",
+      "mail": "E-mail",
+      "resource-advisor": "Consultor de recursos",
+      "usage": "Uso e custo",
+      "resources": "Recursos",
+      "security": "Segurança",
+      "console": "Console"
+    },
+    "quickNav": {
+      "label": "Navegação rápida (segure L)"
+    },
+    "newApp": "Novo app",
+    "pageWidth": {
+      "compact": "Largura compacta",
+      "comfortable": "Largura confortável",
+      "wide": "Larga",
+      "full": "Largura total",
+      "custom": "Largura exata"
+    },
+    "logoStatus": {
+      "healthy": "Tudo está saudável",
+      "update": "Há uma atualização disponível",
+      "degraded": "Degradado: algumas verificações requerem atenção",
+      "incident": "Incidente: uma verificação de saúde está falhando",
+      "busy": "Uma atualização ou reinício está em andamento",
+      "unknown": "Status desconhecido"
+    },
+    "accountMenu": {
+      "account": "Configurações da conta",
+      "feedback": "Feedback",
+      "theme": "Tema",
+      "changelog": "Changelog",
+      "help": "Ajuda",
+      "docs": "Documentação",
+      "allNormal": "Todos os sistemas normais",
+      "issues_one": "{{count}} problema requer atenção",
+      "issues_many": "{{count}} problemas requerem atenção",
+      "issues_other": "{{count}} problemas requerem atenção"
+    },
+    "banner": {
+      "dismiss": "Dispensar",
+      "retryNow": "Tentar agora",
+      "offline": "Não foi possível alcançar o control plane. As atualizações ao vivo estão pausadas.",
+      "dockerDown": "O Docker está inacessível. Deploys e reinícios vão falhar.",
+      "viewNode": "Ver node",
+      "diskFull": "Disco quase cheio.",
+      "diskFullDetail": "Disco quase cheio, {{detail}}."
+    },
+    "notifications": {
+      "title": "Notificações",
+      "unread": "Notificações: {{count}} não lidas",
+      "allRead": "Notificações: todas lidas"
+    },
+    "whatsNew": {
+      "title": "Novidades",
+      "unread": "Novidades: {{count}} não lidas",
+      "allCaughtUp": "Novidades: tudo em dia",
+      "empty": "Nenhuma nota de versão disponível ainda.",
+      "loading": "Carregando notas de versão...",
+      "error": "Não foi possível carregar as notas de versão.",
+      "retry": "Tentar novamente",
+      "markSeen": "Marcar tudo como visto",
+      "updateAvailable": "Atualização disponível: {{version}}",
+      "onLatest": "Você está na versão mais recente",
+      "versionUnknown": "Status da versão desconhecido",
+      "allChangesGrouped": "Todas as alterações",
+      "openFullNotes": "Abrir as notas de versão completas",
+      "update": "Atualizar agora",
+      "releaseNotes": "Notas de versão",
+      "highlights": "Destaques",
+      "allChanges": "Todas as alterações ({{count}})",
+      "toast": {
+        "title": "Atualizado para {{version}}",
+        "body": "Veja as novidades",
+        "open": "Veja as novidades"
+      },
+      "groups": {
+        "apps": "Apps",
+        "domains": "Domínios",
+        "storage": "Armazenamento",
+        "nextjs": "Next.js",
+        "other": "Outros"
+      },
+      "cta": {
+        "domains": "Abrir Domínios",
+        "storage": "Abrir Armazenamento",
+        "apps": "Abrir Apps",
+        "deployments": "Abrir Deploys",
+        "settings": "Abrir Configurações"
+      }
+    },
+    "navAttention": "{{count}} requerem atenção",
+    "headerMore": "Mais controles do cabeçalho",
+    "headerUtilities": "Mais: novidades, chat, ajuda e tema",
+    "chat": "Chat"
+  },
+  "cliConsole": {
+    "title": "Console",
+    "description": "Executa a CLI como você. Todo comando é auditado.",
+    "navLabel": "Console",
+    "terminalLabel": "Terminal do console da CLI",
+    "pressEnter": "Pressione Enter para conectar. Uma nova confirmação é necessária.",
+    "connecting": "Conectando...",
+    "connected": "Conectado a {{server}}. Digite help para listar os comandos.",
+    "disconnected": "Desconectado, pressione Enter para reconectar",
+    "connectFailed": "Não foi possível conectar, pressione Enter para tentar novamente",
+    "connectFailedWith": "Não foi possível conectar: {{message}}",
+    "reconnectHint": "Pressione Enter para tentar novamente",
+    "stepUpCancelled": "Confirmação cancelada.",
+    "exitCode": "código de saída {{code}}",
+    "genericError": "Algo deu errado. Tente novamente.",
+    "unknownCommand": "Comando desconhecido: {{name}}",
+    "helpIntro": "Comandos disponíveis (Tab completa, help <command> lista os subcomandos):",
+    "helpLocal": "Também: help, clear. Ctrl+C cancela um comando em execução, Ctrl+L limpa a tela.",
+    "state": {
+      "idle": "Não conectado",
+      "connecting": "Conectando",
+      "open": "Conectado",
+      "closed": "Desconectado"
+    },
+    "quick": {
+      "title": "Ações rápidas",
+      "connectFirst": "Conecte o console para ver as ações rápidas.",
+      "groups": {
+        "overview": "Visão geral",
+        "apps": "Apps",
+        "platform": "Plataforma"
+      },
+      "params": {
+        "app": "App",
+        "node": "Node",
+        "image": "Imagem para o rollback"
+      },
+      "pick": "Escolher...",
+      "willRun": "Vai executar",
+      "incomplete": "Preencha os campos acima",
+      "run": "Executar",
+      "review": "Revisar",
+      "stop": "Parar",
+      "selectedApp": "App selecionado",
+      "clearSelected": "Limpar o app selecionado",
+      "confirmTitle": "Executar este comando?",
+      "actions": {
+        "status": {
+          "label": "Status"
+        },
+        "version": {
+          "label": "Versão"
+        },
+        "appsList": {
+          "label": "Listar apps"
+        },
+        "deploysList": {
+          "label": "Listar deploys"
+        },
+        "nodesList": {
+          "label": "Listar nodes"
+        },
+        "databasesList": {
+          "label": "Listar bancos de dados"
+        },
+        "appStatus": {
+          "label": "Status do app"
+        },
+        "appLogs": {
+          "label": "Logs do app"
+        },
+        "appDeploys": {
+          "label": "Deploys do app"
+        },
+        "nodeGet": {
+          "label": "Detalhes do node"
+        },
+        "appRestart": {
+          "label": "Reiniciar app"
+        },
+        "appRedeploy": {
+          "label": "Refazer o deploy do app"
+        },
+        "appRollback": {
+          "label": "Fazer rollback do app",
+          "consequence": "O app volta a apontar para uma imagem mais antiga e o container dele é substituído."
+        },
+        "systemRestart": {
+          "label": "Reiniciar a plataforma",
+          "consequence": "O control plane reinicia e o painel fica indisponível até ele voltar."
+        }
+      }
+    },
+    "dock": {
+      "offTitle": "O console está desativado",
+      "offDescription": "O console da CLI é um recurso beta e vem desativado por padrão. Um administrador pode ativá-lo em Configurações, Recursos beta."
+    }
+  },
+  "dock": {
+    "region": "Dock do assistente",
+    "regionSide": "Painel lateral do dock do assistente",
+    "header": "Cabeçalho do dock",
+    "moveHint": "As setas movem o dock, Shift para passos maiores, Home redefine a posição dele.",
+    "toggle": "Alternar o dock do assistente",
+    "toggleHint": "Dock do assistente (Ctrl+J, Ctrl+Shift+M altera o layout)",
+    "launcher": "Abrir o dock do assistente",
+    "launcherUnread": "Abrir o dock do assistente, nova resposta",
+    "unread": "Nova resposta",
+    "close": "Fechar dock",
+    "minimize": "Minimizar para o iniciador",
+    "maximize": "Maximizar dock",
+    "restore": "Restaurar o tamanho do dock",
+    "menu": "Layout e opções do dock",
+    "tabsLabel": "Abas do dock",
+    "resizeWidth": "Redimensionar a largura do dock",
+    "resizeHeight": "Redimensionar a altura do dock",
+    "sheetHandle": "Arraste para baixo para minimizar",
+    "mode": {
+      "float": "Janela flutuante",
+      "bottom": "Painel inferior",
+      "side": "Painel lateral direito"
+    },
+    "push": "Empurrar o conteúdo da página",
+    "reset": "Restaurar posição e tamanho",
+    "tabs": {
+      "aiChat": "Chat de IA",
+      "console": "Console"
+    },
+    "ai": {
+      "notConfiguredTitle": "Nenhum provedor de IA configurado",
+      "notConfiguredDescription": "Adicione uma chave de API BYOK em Configurações para começar a conversar.",
+      "configure": "Configurar o assistente de IA",
+      "experimentalOffTitle": "O chat de IA está desativado",
+      "experimentalOffDescription": "O chat de IA é um recurso beta e vem desativado por padrão. Um administrador pode ativá-lo em Configurações, Recursos beta. Não é necessário acesso ao servidor.",
+      "enableInSettings": "Ativar em Configurações"
+    }
+  },
+  "login": {
+    "signInTitle": "Entrar",
+    "signInHint": "Informe suas credenciais para continuar.",
+    "setupTitle": "Configure a conta de admin",
+    "setupHint": "Crie a primeira conta desta instância. O cadastro é apenas para a primeira conta.",
+    "signInTab": "Entrar",
+    "setupTab": "Configurar conta de admin"
+  },
+  "localMode": {
+    "title": "Esta é uma instância local",
+    "body": "Tudo aqui vive nesta máquina e só é acessível a partir dela. Diretório de dados:",
+    "resetUnavailable": "A redefinição está disponível quando a instância foi iniciada com o comando dev.",
+    "reset": "Redefinir",
+    "failed": "Não foi possível iniciar a redefinição.",
+    "dialog": {
+      "title": "Redefinir esta instância local?",
+      "description": "Todos os apps, registros de bancos de dados, segredos e configurações são excluídos e a instância começa do zero.",
+      "consequence1": "Os containers já criados continuam rodando até você removê-los.",
+      "consequence2": "Uma nova senha de admin é gerada e impressa no terminal que executa o comando dev.",
+      "confirm": "Redefinir instância",
+      "resetting": "Redefinindo...",
+      "cancel": "Cancelar"
+    }
+  },
+  "controlPlaneRestart": {
+    "action": "Reiniciar o control plane",
+    "title": "Reiniciar o control plane?",
+    "description": "O painel e a API ficam offline por alguns segundos enquanto o processo reinicia. Os apps e bancos de dados em execução continuam rodando.",
+    "consequence1": "Os deploys e streams de logs em andamento são interrompidos e retomados depois.",
+    "consequence2": "Os nodes conectados se reconectam sozinhos.",
+    "unsupported": "O reinício automático não está disponível aqui: nada relançaria o processo.",
+    "stopping": "Reiniciando: o control plane está sendo desligado...",
+    "waiting": "Reiniciando: aguardando o control plane voltar...",
+    "back": "O control plane está online novamente.",
+    "timeout": "O control plane não voltou após dois minutos. Verifique o serviço no servidor.",
+    "keepWaiting": "Continuar aguardando",
+    "dismiss": "Dispensar"
+  },
+  "foundation": {
+    "signIn": {
+      "eyebrowSignIn": "Entrar",
+      "eyebrowSetup": "Primeira execução",
+      "titleSignIn": "Entrar",
+      "titleSetup": "Configure a conta de admin",
+      "subtitleSignIn": "Informe suas credenciais para continuar.",
+      "subtitleSetup": "Crie a primeira conta desta instância. O cadastro é apenas para a primeira conta.",
+      "tabSignIn": "Entrar",
+      "tabSetup": "Configurar conta de admin",
+      "or": "ou",
+      "continueWith": "Continuar com {{provider}}",
+      "sso": "SSO",
+      "errors": {
+        "generic": "O login falhou. Tente novamente.",
+        "provider_denied": "O login foi cancelado.",
+        "invalid_state": "Esse link de login expirou ou já foi usado. Tente novamente.",
+        "exchange_failed": "O login com o provedor falhou. Tente novamente.",
+        "userinfo_failed": "Não foi possível ler os detalhes da sua conta no provedor.",
+        "domain_not_allowed": "O login é restrito a domínios de e-mail específicos, e sua conta não corresponde a eles.",
+        "email_in_use": "Já existe uma conta com este e-mail. Entre com sua senha e depois conecte este provedor em Configurações.",
+        "already_linked": "Essa identidade já está vinculada a outro usuário.",
+        "rate_limited": "Tentativas de login demais. Aguarde um minuto e tente novamente.",
+        "saml_unavailable": "O login único não está disponível agora. Peça a um administrador para verificar a conexão SAML.",
+        "saml_invalid": "Não foi possível verificar a resposta do seu provedor de identidade. Tente novamente, ou peça a um administrador para verificar as configurações de SAML.",
+        "saml_replayed": "Essa resposta de login já foi usada. Inicie o login novamente.",
+        "sso_not_provisioned": "Sua conta ainda não foi configurada aqui. Peça a um administrador para convidar você ou ativar a criação automática de contas.",
+        "sso_no_role": "Os grupos do seu provedor de identidade não concedem acesso aqui. Peça a um administrador para mapear um dos seus grupos para uma função.",
+        "sso_no_email": "Seu provedor de identidade não enviou um endereço de e-mail, então nenhuma conta pôde ser associada.",
+        "account_disabled": "Esta conta está desativada. Peça a um administrador para restaurar o acesso.",
+        "sso_root_not_linkable": "Este e-mail pertence a uma conta de administrador que não pode ser vinculada por login único. Entre com sua senha."
+      },
+      "ssoEmail": "E-mail de trabalho",
+      "ssoContinue": "Continuar com SSO",
+      "ssoCheck": "Continuar",
+      "ssoContinueWith": "Continuar com SSO ({{name}})",
+      "ssoRouted": "Sua organização faz login por {{provider}}.",
+      "ssoNoRoute": "Nenhum login único está configurado para esse e-mail. Entre com sua senha ou outra opção."
+    },
+    "banner": {
+      "dismiss": "Dispensar"
+    },
+    "saveBar": {
+      "label": "Alterações não salvas",
+      "unsaved": "Você tem alterações não salvas.",
+      "save": "Salvar alterações",
+      "saving": "Salvando...",
+      "discard": "Descartar"
+    },
+    "table": {
+      "actions": "Ações",
+      "select": "Selecionar",
+      "rowActions": "Ações de {{name}}"
+    }
+  },
+  "confirmAction": {
+    "token": {
+      "trigger": "Revogar",
+      "title": "Revogar \"{{name}}\"?",
+      "consequence0": "Tudo o que usa este token perde o acesso imediatamente.",
+      "consequence1": "Isto não pode ser desfeito.",
+      "abilities": "Permissões: {{abilities}}",
+      "confirm": "Revogar token",
+      "pending": "Revogando...",
+      "success": "Token \"{{name}}\" revogado.",
+      "devFixture": "Os tokens de fixtures de desenvolvimento são recriados na próxima inicialização em modo dev, a menos que você os remova do arquivo de fixtures."
+    },
+    "alertRule": {
+      "trigger": "Excluir",
+      "title": "Excluir \"{{name}}\"?",
+      "confirm": "Excluir regra",
+      "pending": "Excluindo...",
+      "success": "Regra de alerta \"{{name}}\" excluída.",
+      "consequence0": "A regra deixa de ser avaliada e de notificar imediatamente.",
+      "consequence1": "Isto não pode ser desfeito."
+    },
+    "backupTarget": {
+      "trigger": "Excluir",
+      "title": "Excluir \"{{name}}\"?",
+      "confirm": "Excluir",
+      "pending": "Excluindo...",
+      "success": "Destino de backup \"{{name}}\" excluído.",
+      "consequence0": "A conexão com este bucket é removida.",
+      "consequence1": "Nada que já tenha sido copiado para lá é excluído.",
+      "consequence2": "Isto não pode ser desfeito.",
+      "error": "Não foi possível excluir \"{{name}}\"."
+    },
+    "networkShare": {
+      "trigger": "Excluir",
+      "title": "Excluir \"{{name}}\"?",
+      "confirm": "Excluir",
+      "pending": "Excluindo...",
+      "success": "Compartilhamento de rede \"{{name}}\" excluído.",
+      "consequence0": "Qualquer volume de app que ainda monte este compartilhamento falha ao iniciar no próximo deploy.",
+      "consequence1": "Isto não pode ser desfeito.",
+      "error": "Não foi possível excluir \"{{name}}\"."
+    },
+    "registryCredential": {
+      "trigger": "Excluir",
+      "title": "Excluir \"{{name}}\"?",
+      "confirm": "Excluir",
+      "pending": "Excluindo...",
+      "success": "Credencial de registry \"{{name}}\" excluída.",
+      "consequence0": "Qualquer serviço que referencie esta credencial falha ao fazer pull de uma imagem privada no próximo deploy.",
+      "consequence1": "Isto não pode ser desfeito.",
+      "error": "Não foi possível excluir \"{{name}}\"."
+    },
+    "model": {
+      "trigger": "Excluir",
+      "title": "Excluir \"{{name}}\"?",
+      "confirm": "Excluir",
+      "pending": "Excluindo...",
+      "success": "Modelo \"{{name}}\" excluído.",
+      "consequence0": "O container do mecanismo é removido e a chave de API deixa de funcionar.",
+      "consequence1": "Os pesos baixados são mantidos, então fazer o deploy do mesmo modelo novamente não os baixa duas vezes."
+    },
+    "featureFlag": {
+      "trigger": "Excluir",
+      "title": "Excluir \"{{name}}\"?",
+      "confirm": "Excluir flag",
+      "pending": "Excluindo...",
+      "success": "Feature flag excluída.",
+      "consequence0": "A flag deixa de ser resolvida imediatamente.",
+      "consequence1": "Qualquer app que ainda chame o endpoint de avaliação dela passa a receber um 404.",
+      "consequence2": "Isto não pode ser desfeito."
+    }
+  },
+  "lockedOut": {
+    "link": "Ficou sem acesso?",
+    "title": "Volte a entrar pelo servidor",
+    "description": "Estes comandos rodam na máquina que hospeda o control plane, como um usuário que consiga ler o diretório de dados dele. Nada aqui precisa de e-mail ou de outro navegador conectado.",
+    "copy": "Copiar comando",
+    "footer": "Se o diretório de dados não for o padrão, defina APP_DATA_DIR antes do comando.",
+    "routes": {
+      "password": {
+        "title": "Redefinir a senha do admin",
+        "body": "Imprime uma nova senha uma vez, encerra as sessões dessa conta em todos os lugares e limpa o bloqueio."
+      },
+      "token": {
+        "title": "Obter um token root de curta duração",
+        "body": "Para corrigir configurações pela CLI quando o painel não pode ser usado. Ele expira sozinho."
+      },
+      "approve": {
+        "title": "Aprovar um login em espera",
+        "body": "Use o ID da requisição e o número exibido na tela de aprovação do novo navegador."
+      }
+    }
+  },
+  "pages": {
+    "title": "Páginas",
+    "count_one": "{{count}} página",
+    "count_many": "{{count}} páginas",
+    "count_other": "{{count}} páginas",
+    "noDomain": "sem domínio"
+  },
+  "gitAccess": {
+    "validate": "Validar acesso",
+    "validating": "Validando...",
+    "recheck": "Verificar novamente",
+    "ok": "O acesso funciona.",
+    "fix": "Corrigir",
+    "checks": {
+      "repo_url": "URL do repositório",
+      "credential": "Credencial",
+      "access": "Acesso ao repositório",
+      "connection": "Conexão",
+      "installation": "Instalação",
+      "credentials": "Credenciais do app"
+    }
+  },
+  "replicaNotice": {
+    "sameServer": "Todas as {{replicas}} réplicas rodam no mesmo servidor. Réplicas extras adicionam capacidade e distribuem a carga lá, mas não protegem o app se esse servidor cair.",
+    "autoscaleOwned": "O autoscaler define o número de réplicas deste app. Altere a política de autoscale, ou remova-a, para definir as réplicas manualmente."
+  },
+  "templateDefaults": {
+    "strategyReason": "Definido pelo template: {{reason}}",
+    "recreateDowntime": "Recriar para o container antigo antes de o novo iniciar, então cada deploy tem uma breve indisponibilidade. Um deploy que falha na verificação de prontidão faz rollback para a imagem anterior.",
+    "memoryNote": "Este limite é o dobro da memória recomendada pelo template, para deixar folga. Edite-o aqui para alterá-lo."
+  },
+  "pageLoading": {
+    "label": "Carregando página"
+  },
+  "deployRetry": {
+    "retry": "Tentar o deploy novamente",
+    "more": "Mais formas de tentar novamente",
+    "rebuild": "Refazer o build a partir do código-fonte",
+    "rebuildNoCache": "Refazer o build sem cache"
+  },
+  "deploySettings": {
+    "nav": {
+      "label": "Seções das configurações de deploy"
+    },
+    "flow": {
+      "title": "Como o seu deploy funciona",
+      "build": "Build",
+      "push": "Push",
+      "rollout": "Rollout",
+      "healthCheck": "Verificação de saúde",
+      "buildHint": "Transforma seu código-fonte em uma imagem.",
+      "pushHint": "Armazena a imagem para que qualquer node possa executá-la.",
+      "rolloutHint": "Inicia novas réplicas e move o tráfego para elas.",
+      "healthCheckHint": "Confirma que a nova release está saudável antes de ela continuar no ar."
+    },
+    "recommended": "Os campos deixados vazios usam o padrão da plataforma, exibido em cinza dentro do campo.",
+    "groups": {
+      "build": {
+        "title": "Build",
+        "description": "Como o seu código-fonte vira uma imagem: hooks, cache e o que é verificado."
+      },
+      "run": {
+        "title": "Execução",
+        "description": "Como a nova release inicia: porta, estratégia de rollout e comandos pré-deploy."
+      },
+      "safety": {
+        "title": "Segurança",
+        "description": "O que protege o tráfego ao vivo: verificações de saúde, rollback, canário e congelamentos."
+      },
+      "automation": {
+        "title": "Automação",
+        "description": "O que faz deploy por você: agendamentos, previews, atualizações de imagem e CI."
+      }
+    },
+    "cards": {
+      "buildHooks": "Executa seus próprios comandos em pontos definidos de um build, como antes ou depois da etapa de build.",
+      "buildCache": "Reutiliza camadas inalteradas entre builds para que os builds repetidos terminem mais rápido.",
+      "supplyChain": "Verifica cada imagem construída em busca de vulnerabilidades conhecidas e pode bloquear releases arriscadas.",
+      "secretScan": "Procura credenciais vazadas no seu código-fonte antes de ele ser publicado.",
+      "port": "Define a porta em que o seu app escuta para que o tráfego chegue ao lugar certo.",
+      "strategy": "Escolhe como uma nova release substitui a antiga e quantas réplicas rodam.",
+      "hooks": "Executa um comando, como uma migração de banco de dados, antes de uma nova release iniciar.",
+      "safety": "Define por quanto tempo uma nova release deve permanecer saudável antes de a antiga ser desativada.",
+      "watch": "Continua observando uma release depois que ela vai ao ar e faz rollback se ela degradar.",
+      "autoRollback": "Refaz o deploy da última imagem funcional quando um alerta de crashloop dispara.",
+      "predeploySnapshot": "Faz backup dos bancos de dados vinculados antes de cada deploy para que um rollback também possa restaurar os dados.",
+      "sloBurn": "Faz rollback automaticamente quando o orçamento de erros é consumido rápido demais após um deploy.",
+      "canary": "Envia uma pequena parte do tráfego para uma nova imagem antes de todos a receberem.",
+      "freeze": "Bloqueia os deploys automáticos durante as janelas que você escolher, como um feriado.",
+      "scheduled": "Coloca na fila um deploy para executar em um horário posterior que você escolher.",
+      "cancelSuperseded": "Cancela os deploys mais antigos na fila quando um mais novo chega.",
+      "preview": "Cria uma cópia temporária do seu app para cada pull request.",
+      "imageAutoUpdate": "Refaz o deploy automaticamente quando uma imagem mais nova para a sua tag é publicada.",
+      "badge": "Mostra um selo de status de deploy ao vivo que você pode incorporar em um README.",
+      "githubActions": "Permite que um workflow do GitHub Actions faça deploy deste app.",
+      "ciDeploy": "Dá ao seu sistema de CI um token e um comando para fazer deploy deste app.",
+      "rolloutPolicy": "Limita quantas réplicas podem exceder ou ficar indisponíveis enquanto uma release gradual é implantada."
+    },
+    "whatItDoes": "O que isto faz:"
+  },
+  "cardSkeleton": {
+    "loading": "Carregando"
+  },
+  "cancelSuperseded": {
+    "title": "Substituir deploys substituídos na fila",
+    "infoLabel": "Sobre a substituição de deploys na fila",
+    "infoBody": "Somente os deploys que ainda esperam na fila são substituídos, e somente por um mais novo da mesma branch. Um deploy que já começou a fazer build nunca é cancelado automaticamente.",
+    "enabled": "Ativado",
+    "enabledHint": "Quando um commit mais novo de uma branch entra na fila atrás de um deploy em execução, os deploys mais antigos na fila dessa branch são marcados como substituídos em vez de fazer build um após o outro.",
+    "on": "Os deploys substituídos na fila serão substituídos.",
+    "off": "Os deploys na fila são mantidos.",
+    "saveFailed": "Não foi possível atualizar a configuração."
+  },
+  "codeBlock": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyFailed": "Falha ao copiar",
+    "wrap": "Quebrar linhas",
+    "reveal": "Revelar",
+    "hide": "Ocultar",
+    "region": "Código",
+    "commandRegion": "Comando"
+  },
+  "banners": {
+    "loadBalancers": {
+      "title": "Load balancers",
+      "description": "Distribua o tráfego de um app entre as réplicas dele com verificações de saúde e cutovers suaves.",
+      "compactDescription": "Todo app que balanceia tráfego, com a saúde dos upstreams ao vivo.",
+      "diagram": {
+        "browser": "navegador",
+        "balancer": "balancer",
+        "server": "servidor"
+      }
+    },
+    "projects": {
+      "title": "Projetos",
+      "description": "Rótulos opcionais para agrupar um app com o banco de dados e o cache dele. Nada sobre como eles rodam muda.",
+      "compactDescription": "Rótulos que agrupam apps e bancos de dados relacionados.",
+      "count_one": "{{count}} projeto",
+      "count_many": "{{count}} projetos",
+      "count_other": "{{count}} projetos",
+      "diagram": {
+        "project": "projeto",
+        "members": "apps e bancos de dados"
+      }
+    }
+  },
+  "projectsPage": {
+    "list": {
+      "name": "Nome",
+      "created": "Criado em"
+    },
+    "empty": {
+      "title": "Nenhum projeto ainda",
+      "description": "Os projetos agrupam um app com o banco de dados e o cache dele. Crie um para começar a organizar."
+    },
+    "error": {
+      "title": "Não foi possível carregar os projetos",
+      "description": "{{error}}",
+      "retry": "Tentar novamente"
+    }
+  },
+  "apiError": {
+    "recheckDocker": "Verificar o Docker novamente",
+    "rechecking": "Verificando...",
+    "fixing": "Corrigindo...",
+    "fixFailed": "A correção não funcionou.",
+    "requestId": "ID da requisição: {{id}}",
+    "copyRequestId": "Copiar ID da requisição",
+    "copied": "Copiado",
+    "generic": "O servidor encontrou um erro. Tente novamente.",
+    "toastTitle": "Isso não funcionou",
+    "friendly": {
+      "generic": {
+        "action": "Tente novamente e cite o ID da requisição se continuar falhando.",
+        "title": "Algo deu errado"
+      },
+      "docker": {
+        "message": "O Docker não está acessível neste host.",
+        "action": "Inicie o Docker e depois verifique novamente.",
+        "title": "O Docker não está em execução"
+      },
+      "unauthorized": {
+        "message": "Sua sessão terminou.",
+        "action": "Faça login novamente para continuar.",
+        "title": "Você foi desconectado"
+      },
+      "forbidden": {
+        "message": "Sua conta não tem permissão para fazer isto.",
+        "action": "Peça a um proprietário ou admin para conceder o acesso.",
+        "title": "Não permitido"
+      },
+      "conflict": {
+        "message": "Isto entra em conflito com algo que já existe.",
+        "action": "Renomeie-o ou remova o existente e tente novamente.",
+        "title": "Já existe"
+      },
+      "validation": {
+        "message": "Alguns dos valores não são válidos.",
+        "action": "Verifique os campos e tente novamente.",
+        "title": "Verifique os detalhes"
+      },
+      "rateLimited": {
+        "message": "Requisições demais em pouco tempo.",
+        "action": "Aguarde um momento e tente novamente.",
+        "title": "Requisições demais"
+      },
+      "diskFull": {
+        "message": "O servidor está sem espaço em disco.",
+        "action": "Libere espaço em Configurações, Limpeza, e tente novamente.",
+        "title": "Sem espaço em disco"
+      },
+      "unreachable": {
+        "message": "O control plane não está respondendo.",
+        "action": "Aguarde alguns segundos e tente novamente.",
+        "title": "O servidor não está respondendo"
+      },
+      "network": {
+        "message": "Não foi possível alcançar o servidor.",
+        "action": "Verifique sua conexão e tente novamente.",
+        "title": "Não foi possível alcançar o servidor"
+      },
+      "missingAbility": {
+        "title": "Permissão ausente",
+        "message": "Isto precisa da permissão {{ability}}.",
+        "action": "Use um token ou função que a tenha, ou peça a um admin."
+      },
+      "timeout": {
+        "title": "A requisição esgotou o tempo",
+        "message": "O servidor demorou demais para responder.",
+        "action": "Aguarde um momento e tente novamente."
+      },
+      "notFound": {
+        "title": "Não encontrado",
+        "message": "Esse item não existe mais.",
+        "action": "Atualize a página. Ele pode ter sido renomeado ou excluído."
+      },
+      "tooLarge": {
+        "title": "Grande demais",
+        "message": "O upload é maior do que o servidor aceita.",
+        "action": "Use um arquivo menor e tente novamente."
+      },
+      "serverError": {
+        "title": "Erro do servidor",
+        "message": "O servidor encontrou um erro. Tente novamente.",
+        "action": "Tente novamente em instantes e cite o ID da requisição se continuar falhando."
+      },
+      "needsConfirmation": {
+        "title": "Confirmação necessária",
+        "message": "Esta alteração precisa da sua confirmação primeiro.",
+        "action": "Revise o aviso, confirme e tente novamente."
+      },
+      "domainTaken": {
+        "title": "Domínio já em uso",
+        "message": "Outro app já usa este domínio.",
+        "action": "Escolha um domínio diferente ou remova-o do outro app."
+      },
+      "emailTaken": {
+        "title": "E-mail já em uso",
+        "message": "Esse e-mail pertence a outra conta.",
+        "action": "Use um endereço de e-mail diferente."
+      },
+      "stepUp": {
+        "title": "Confirme que é você",
+        "message": "Esta ação precisa de uma nova verificação de identidade.",
+        "action": "Informe seu código ou passkey quando solicitado e tente novamente."
+      },
+      "portConflict": {
+        "title": "Porta já publicada",
+        "message": "Outro serviço já publica esta porta.",
+        "action": "Escolha uma porta livre e tente novamente."
+      },
+      "emailNotConfigured": {
+        "title": "O e-mail não está configurado",
+        "message": "Nenhum provedor de e-mail está configurado ainda.",
+        "action": "Adicione um em Configurações, E-mail, e tente novamente."
+      }
+    }
+  },
+  "notFound": {
+    "requested": "Solicitado: {{name}}",
+    "causes": "Ele pode ter sido renomeado ou excluído, ou pertence a um projeto ou ambiente diferente do selecionado no seletor do cabeçalho.",
+    "didYouMean": "Você quis dizer",
+    "resources": {
+      "app": {
+        "title": "App não encontrado",
+        "list": "Voltar aos apps",
+        "create": "Fazer deploy de um novo app"
+      },
+      "database": {
+        "title": "Banco de dados não encontrado",
+        "list": "Voltar aos bancos de dados"
+      },
+      "domain": {
+        "title": "Domínio não encontrado",
+        "list": "Voltar aos domínios"
+      },
+      "template": {
+        "title": "Template não encontrado",
+        "list": "Voltar aos templates"
+      },
+      "project": {
+        "title": "Projeto não encontrado",
+        "list": "Voltar aos projetos"
+      },
+      "generic": {
+        "title": "Página não encontrada",
+        "list": "Voltar ao painel"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "Algo deu errado",
+      "body": "Esta página encontrou um erro inesperado. Tentar novamente muitas vezes resolve. Se continuar acontecendo, copie os detalhes e relate.",
+      "retry": "Tentar novamente",
+      "home": "Voltar ao painel"
+    },
+    "unreachable": {
+      "title": "Não foi possível alcançar o control plane",
+      "body": "O servidor não respondeu ou retornou um erro. Seus apps continuam rodando. Verifique se o control plane está no ar e tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "details": "Detalhes",
+    "copy": "Copiar detalhes",
+    "copied": "Copiado",
+    "report": "Relatar um problema",
+    "requestId": "ID da requisição: {{id}}",
+    "detailsHeader": "Relatório de erro"
+  },
+  "secretInput": {
+    "show": "Mostrar valor",
+    "hide": "Ocultar valor",
+    "existing": "Definido. Deixe em branco para manter o valor atual."
+  },
+  "lbTraffic": {
+    "title": "Tráfego",
+    "empty": "Nenhum dado de tráfego ainda",
+    "emptyHint": "As taxas aparecem quando as requisições passarem pelo ingress.",
+    "rps": "{{value}} req/s",
+    "errors": "{{value}} erros",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "Requisições por segundo nos últimos {{minutes}} minutos para {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} campo requer atenção",
+    "title_many": "{{count}} campos requerem atenção",
+    "title_other": "{{count}} campos requerem atenção",
+    "name": "Nome",
+    "engine": "Mecanismo",
+    "version": "Versão",
+    "envKey": "Nome da variável, linha {{row}}",
+    "envValue": "Valor da variável, linha {{row}}"
+  },
+  "appPower": {
+    "restartTitle": "Reiniciar {{name}}?",
+    "restartDescription": "Os containers são substituídos por novos, então o app fica brevemente fora do ar.",
+    "restartConsequenceRequests": "As requisições em andamento podem falhar enquanto ele volta.",
+    "restartConsequencePolicy": "A política de reinício o traz de volta sozinha se ele sair.",
+    "restartConfirm": "Reiniciar",
+    "restartSkip": "Não perguntar novamente para reiniciar",
+    "stopTitle": "Parar {{name}}?",
+    "stopDescription": "O app para de atender tráfego até você iniciá-lo novamente.",
+    "stopConsequenceRequests": "As requisições em andamento são descartadas.",
+    "stopConsequencePolicy": "A política de reinício não o trará de volta. A configuração, as variáveis de ambiente e os domínios são mantidos.",
+    "stopConfirm": "Parar",
+    "pending": "Processando...",
+    "applying": "Aplicando alterações.",
+    "restarting": "Reiniciando...",
+    "stillRestarting": "Ainda reiniciando...",
+    "stopping": "Parando...",
+    "restarted": "\"{{name}}\" reiniciado.",
+    "stopped": "\"{{name}}\" parado.",
+    "restartFailed": "\"{{name}}\" não voltou",
+    "stillRestartingToast": "\"{{name}}\" ainda está reiniciando",
+    "stillRestartingHint": "Ele ainda não informou que está saudável. Verifique os logs.",
+    "stillStoppingToast": "\"{{name}}\" ainda está parando",
+    "viewLogs": "Ver logs",
+    "starting": "Iniciando \"{{name}}\"."
+  },
+  "resourceLabels": {
+    "title": "Rótulos",
+    "description": "Pares de chave e valor livres para agrupar e filtrar. Eles não alteram como o recurso roda.",
+    "empty": "Nenhum rótulo ainda.",
+    "edit": "Editar rótulos",
+    "save": "Salvar rótulos",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "saved": "Rótulos salvos",
+    "keyPlaceholder": "chave",
+    "valuePlaceholder": "valor",
+    "add": "Adicionar rótulo",
+    "remove": "Remover o rótulo {{key}}",
+    "duplicate": "Cada chave pode ser usada uma vez.",
+    "incomplete": "Preencha a chave e o valor, ou remova a linha.",
+    "filterLabel": "Filtrar por rótulo",
+    "filterButton": "Rótulos",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "filterInvalid": "Não foi possível ler esse seletor."
+  },
+  "pinnedDigest": {
+    "tip": "A aprovação faz o deploy exatamente desta imagem, mesmo que a tag se mova.",
+    "copy": "Copiar o digest completo da imagem",
+    "copied": "Digest da imagem copiado"
+  },
+  "visitors": {
+    "title": "Visitantes",
+    "windowLabel": "Janela de tempo",
+    "window": {
+      "1h": "1h",
+      "24h": "24h",
+      "7d": "7d",
+      "30d": "30d"
+    },
+    "requests": "Requisições",
+    "visitorsLabel": "Visitantes únicos",
+    "visitorsHint": "Visitantes únicos, contados novamente após cada redefinição de privacidade de {{period}}. Não são únicos de toda a vida.",
+    "trend": "Requisições na janela selecionada",
+    "statusLabel": "Respostas por classe",
+    "details": "Principais páginas e referenciadores",
+    "topPaths": "Principais páginas",
+    "topReferrers": "Principais referenciadores",
+    "none": "Nenhum registrado",
+    "byDomain": "Por domínio",
+    "domainRow": "{{requests}} requisições, {{visitors}} visitantes",
+    "partial": "Os dados começam {{when}}, depois desta janela, então os números podem estar parciais.",
+    "empty": "Nenhuma requisição nesta janela ainda.",
+    "loadError": "Os números de visitantes estão indisponíveis agora.",
+    "retry": "Tentar novamente",
+    "viewTraffic": "Detalhes do tráfego",
+    "section": "Visitantes",
+    "domainLabel": "Domínio",
+    "allDomains": "Todos os domínios",
+    "statusSplit": "Divisão por status",
+    "pathHeader": "Página",
+    "referrerHeader": "Referenciador",
+    "countHeader": "Requisições",
+    "topPathsCaption": "As 10 principais páginas nesta janela",
+    "topReferrersCaption": "Os 10 principais referenciadores nesta janela",
+    "unavailable": "Os números de visitantes precisam do log de acesso do edge, que não está ativado nesta instalação.",
+    "chartHeading": "Requisições ao longo do tempo",
+    "exportCsv": "Baixar CSV",
+    "exportEmpty": "Nada para exportar nesta janela."
+  },
+  "overviewHero": {
+    "addressInfo": "Sobre este endereço",
+    "addTag": "Adicionar tag...",
+    "addTagTitle": "Adicionar uma tag",
+    "tagName": "Nome da tag",
+    "tagAdd": "Adicionar tag",
+    "tagAdding": "Adicionando...",
+    "removeTag": "Remover a tag {{name}}",
+    "retryDeploy": "Tentar o deploy novamente",
+    "deploy": "Deploy",
+    "restart": "Reiniciar",
+    "openApp": "Abrir app",
+    "stickyLabel": "Cabeçalho do app"
+  },
+  "reportIssue": {
+    "title": "Revise antes de relatar",
+    "description": "Isto abre um formulário \"{{template}}\" pré-preenchido no GitHub. Nada é enviado até você enviá-lo lá.",
+    "issueTitle": "Título",
+    "include": "Incluir {{field}}",
+    "privacy": "Somente os detalhes listados aqui são enviados. Sem tokens, cookies, valores de variáveis de ambiente, e-mails ou query strings.",
+    "count": "{{used}} caracteres, limite {{max}}",
+    "cancel": "Cancelar",
+    "open": "Abrir no GitHub",
+    "templates": {
+      "bug_report": "Relatório de bug",
+      "docs_problem": "Problema na documentação",
+      "migration_problem": "Problema de migração",
+      "feature_request": "Pedido de recurso",
+      "template_request": "Pedido de template"
+    },
+    "fields": {
+      "version": "Versão do painel",
+      "component": "Componente",
+      "actual": "O que aconteceu",
+      "context": "Ambiente",
+      "page": "Página da documentação",
+      "problem": "O que está errado ou ausente",
+      "failed": "O que falhou",
+      "config": "Configuração de origem",
+      "solution": "Comportamento proposto",
+      "service": "Nome do serviço",
+      "upstream": "Link upstream",
+      "ports": "Portas"
+    }
+  },
+  "kit": {
+    "jumpTo": "Ir para",
+    "onThisPage": "Nesta página",
+    "retry": "Tentar novamente"
+  },
+  "roleGate": {
+    "needsAdmin": "Requer admin",
+    "needsOperator": "Requer operador"
+  },
+  "overview": {
+    "connectGitSource": "Conectar origem Git"
+  },
+  "a11y": {
+    "routeNotFound": {
+      "title": "Página não encontrada",
+      "body": "Este endereço não corresponde a uma página. Ela pode ter mudado de lugar, ou o link está desatualizado.",
+      "suggestions": "Páginas com nome parecido",
+      "home": "Voltar ao painel"
+    },
+    "tables": {
+      "alertHistory": "Histórico de alertas",
+      "appExposure": "Portas expostas",
+      "appReplicas": "Réplicas do app",
+      "archiveFiles": "Arquivos do arquivo",
+      "dnsRecords": "Registros DNS",
+      "importEnv": "Variáveis de ambiente importadas",
+      "investigationMetrics": "Métricas da investigação",
+      "investigationEvents": "Eventos da investigação",
+      "modelUsage": "Uso de modelos",
+      "pipelineInsights": "Insights de pipelines",
+      "pipelineSlowSteps": "Etapas mais lentas de pipelines",
+      "splitTests": "Variantes do teste A/B",
+      "statusWebhooks": "Webhooks da página de status",
+      "myAccess": "Meu acesso",
+      "agentConnect": "Conexões de agentes",
+      "aiUsage": "Uso de IA",
+      "appAnalysis": "Análise do app",
+      "vitalsRoutes": "Web vitals por rota",
+      "cleanupHistory": "Histórico de limpeza",
+      "engineStats": "Estatísticas do mecanismo do banco de dados",
+      "buildReport": "Relatório do build",
+      "dnsDelegation": "Delegação de DNS",
+      "dnsPropagation": "Resultados da propagação de DNS",
+      "redirects": "Redirecionamentos",
+      "serverAddresses": "Endereços do servidor",
+      "exposure": "Exposição",
+      "firewallPorts": "Portas abertas",
+      "functionKv": "Entradas de chave e valor da função",
+      "mailQueue": "Fila de e-mails",
+      "importPlan": "Plano de importação",
+      "importPlanServices": "Serviços do plano de importação",
+      "nodePatches": "Patches do node",
+      "pluginPanel": "Dados do plugin",
+      "plugins": "Plugins",
+      "trustedKeys": "Chaves de assinatura confiáveis",
+      "findingChanges": "Alterações propostas",
+      "benchmarkCompare": "Comparação de benchmarks",
+      "benchmarkResults": "Resultados de benchmark",
+      "benchmarkSteps": "Etapas do benchmark",
+      "benchmarkSamples": "Amostras do benchmark",
+      "benchmarkRuns": "Execuções de benchmark",
+      "trafficDiff": "Pré-visualização da alteração de tráfego",
+      "trafficTopPaths": "Principais caminhos",
+      "trafficBreakdown": "Detalhamento do tráfego",
+      "trafficErrors": "Erros de tráfego",
+      "firewallRules": "Regras de firewall",
+      "mobileDevices": "Dispositivos móveis"
+    }
+  },
+  "resourceNotes": {
+    "title": "Descrição e notas",
+    "hint": "Registre o proprietário, a finalidade e os links de runbook. Markdown é suportado.",
+    "empty": "Nenhuma descrição ou nota ainda.",
+    "edit": "Editar notas",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Resumo de uma linha exibido na lista",
+    "notesLabel": "Notas",
+    "notesPlaceholder": "Proprietário, finalidade, links de runbook",
+    "preview": "Pré-visualizar",
+    "write": "Escrever",
+    "noSecrets": "Todos que podem ler este recurso podem ler as notas dele. Nunca coloque segredos aqui.",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "saved": "Notas salvas"
+  },
+  "copyCommand": {
+    "trigger": "Copiar {{name}} como comando",
+    "title": "Copiar como comando",
+    "cli": "{{action}}: comando da CLI",
+    "api": "{{action}}: chamada de API",
+    "copiedCli": "Comando da CLI copiado",
+    "copiedApi": "Chamada de API copiada, defina primeiro a variável do token",
+    "actions": {
+      "app_restart": "Reiniciar",
+      "app_stop": "Parar",
+      "app_start": "Iniciar",
+      "app_scale": "Escalar",
+      "app_rollback": "Fazer rollback",
+      "deploy_rollback": "Fazer rollback para este deploy",
+      "database_start": "Iniciar",
+      "database_stop": "Parar",
+      "database_backup": "Fazer backup agora",
+      "domain_check": "Verificar",
+      "domain_remove": "Remover",
+      "cert_renew": "Renovar certificado",
+      "job_run": "Executar agora",
+      "node_cordon": "Isolar (cordon)",
+      "node_uncordon": "Reativar (uncordon)"
+    }
+  }
+}

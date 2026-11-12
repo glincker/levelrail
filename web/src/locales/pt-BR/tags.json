@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Tags",
+    "description": "Rótulos que você anexa a apps para agrupá-los e filtrá-los."
+  },
+  "create": {
+    "label": "Nova tag",
+    "placeholder": "env:prod",
+    "submit": "Criar tag",
+    "pending": "Criando"
+  },
+  "table": {
+    "label": "Tags",
+    "name": "Nome",
+    "apps": "Apps",
+    "resources": "Recursos",
+    "created": "Criada em",
+    "actions": "Ações"
+  },
+  "row": {
+    "showApps": "Mostrar apps com a tag {{name}}",
+    "hideApps": "Ocultar apps com a tag {{name}}"
+  },
+  "rename": {
+    "action": "Renomear {{name}}",
+    "label": "Novo nome para {{name}}",
+    "save": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "delete": {
+    "action": "Excluir {{name}}",
+    "title": "Excluir a tag {{name}}?",
+    "description": "A tag é removida de todos os apps que a usam.",
+    "consequence": "Os apps continuam rodando; só o rótulo desaparece.",
+    "confirm": "Excluir tag",
+    "pending": "Excluindo"
+  },
+  "apps": {
+    "loading": "Carregando apps",
+    "empty": "Nenhum app usa esta tag ainda.",
+    "error": "Não foi possível carregar os apps desta tag.",
+    "list": "Apps com a tag {{name}}"
+  },
+  "empty": {
+    "title": "Nenhuma tag ainda",
+    "description": "Crie uma tag acima, ou adicione uma pela visão geral de um app, para começar a agrupar apps."
+  },
+  "error": "Não foi possível carregar as tags."
+}

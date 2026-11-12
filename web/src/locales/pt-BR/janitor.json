@@ -1,0 +1,108 @@
+{
+  "title": "Limpeza automática",
+  "description": "Libera disco neste node em um agendamento: containers e imagens não utilizados, cache de build acima do orçamento, volumes órfãos (mantidos antes em quarentena) e tentativas de deploy com falha antigas. Alvos de rollback e volumes usados por apps em execução nunca são removidos.",
+  "loadError": "Não foi possível carregar o status da limpeza.",
+  "notConfigured": "A limpeza não está disponível neste control plane.",
+  "mode": {
+    "off": "Desativada",
+    "preview": "Somente pré-visualização",
+    "removing": "Removendo"
+  },
+  "status": {
+    "title": "Disco e última passagem",
+    "free": "{{free}} livres de {{total}} ({{percent}}%)",
+    "freeUnknown": "O espaço livre não é informado para este node.",
+    "budget": "A limpeza por tamanho começa abaixo de {{percent}}% livre.",
+    "reclaimed": "Recuperado até agora: {{size}}",
+    "lastPass": "Última passagem {{when}} ({{trigger}}, {{size}})",
+    "noPass": "Nenhuma limpeza foi executada ainda.",
+    "trigger": {
+      "scheduled": "agendada",
+      "manual": "manual",
+      "disk_fix": "correção de disco"
+    }
+  },
+  "pressure": {
+    "title": "O espaço em disco está abaixo do orçamento",
+    "body": "Limpar agora remove dados do Docker não utilizados e tentativas antigas. O que ainda está em uso permanece.",
+    "action": "Limpar agora"
+  },
+  "actions": {
+    "preview": "Pré-visualizar",
+    "runNow": "Executar agora",
+    "running": "Executando"
+  },
+  "toast": {
+    "previewed": "Pré-visualização pronta, nada foi removido.",
+    "ran": "Limpeza concluída, {{size}} recuperados.",
+    "failed": "Limpeza concluída com erros: {{error}}",
+    "saved": "Política de limpeza salva."
+  },
+  "report": {
+    "title": "O que uma passagem faz",
+    "empty": "Nada para limpar.",
+    "more": "e mais {{count}}",
+    "skipped": "Ignorado: {{reason}}",
+    "failed": "Falhou: {{error}}",
+    "previewNote": "Somente pré-visualização, nada foi removido."
+  },
+  "stage": {
+    "containers": "Containers parados",
+    "images": "Imagens órfãs",
+    "build_cache": "Cache de build",
+    "volumes": "Volumes órfãos",
+    "deploy_attempts": "Tentativas de deploy antigas",
+    "api_tokens": "Tokens de API revogados e expirados"
+  },
+  "stageHelp": {
+    "containers": "Containers parados que nenhum app ou banco de dados ainda quer. Executa quando o disco está curto.",
+    "images": "Somente imagens sem tag. Imagens com tag, que incluem alvos de rollback, nunca são removidas.",
+    "build_cache": "Cache de build ocioso além do limite de idade, e mais quando o cache está acima do orçamento.",
+    "volumes": "Volumes que nenhum app usa são mantidos em quarentena e só são excluídos se você permitir. Dados de banco de dados nunca são removidos.",
+    "deploy_attempts": "Tentativas com falha, substituídas e canceladas além da retenção. Tentativas bem-sucedidas e fixações de rollback permanecem.",
+    "api_tokens": "Tokens de API revogados ou expirados além da janela de retenção. Tokens ativos nunca são removidos. Defina as janelas em Configurações, Tokens de API."
+  },
+  "action": {
+    "removed": "Removido",
+    "would_remove": "Seria removido",
+    "quarantined": "Em quarentena",
+    "would_quarantine": "Iria para quarentena",
+    "kept": "Mantido"
+  },
+  "quarantine": {
+    "title": "Volumes em quarentena",
+    "description": "Volumes que nada usa. Só são excluídos depois que a retenção termina e a exclusão automática está ativada.",
+    "empty": "Nenhum volume em quarentena.",
+    "ready": "Pronto para excluir",
+    "until": "Pode ser excluído {{date}}",
+    "deleteOff": "A exclusão automática está desativada"
+  },
+  "policy": {
+    "title": "Política",
+    "enabled": "Limpeza agendada",
+    "enabledHelp": "Executa passagens em segundo plano.",
+    "dryRun": "Somente pré-visualização",
+    "dryRunHelp": "As passagens agendadas relatam o que fariam e não removem nada. Desative para começar a remover.",
+    "interval": "Minutos entre passagens",
+    "budget": "Orçamento de disco livre (%)",
+    "budgetHelp": "Containers e imagens só são limpos quando o espaço livre cai abaixo disso.",
+    "cacheBudget": "Orçamento do cache de build (MB)",
+    "cacheBudgetHelp": "Acima deste tamanho, o cache ocioso é reduzido mais a fundo. 0 desativa o orçamento.",
+    "cacheAge": "Inatividade máxima do cache de build (horas)",
+    "quarantineDays": "Quarentena de volumes (dias)",
+    "deleteVolumes": "Excluir volumes após a quarentena",
+    "deleteVolumesHelp": "Desativado mantém os volumes órfãos listados para sempre. Volumes de banco de dados nunca são excluídos.",
+    "attemptDays": "Retenção de tentativas de deploy (dias)",
+    "attemptKeep": "Tentativas mais recentes mantidas por app",
+    "stages": "Etapas",
+    "save": "Salvar política",
+    "rootOnly": "Somente uma conta root pode alterar a política.",
+    "invalid": "Todo número deve ser um inteiro de pelo menos 1."
+  },
+  "history": {
+    "title": "Histórico de bytes recuperados",
+    "empty": "Nenhuma limpeza registrada ainda.",
+    "row": "{{when}}, {{trigger}}",
+    "failed": "teve erros"
+  }
+}

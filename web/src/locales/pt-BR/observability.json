@@ -1,0 +1,387 @@
+{
+  "chart": {
+    "noData": "Sem dados neste intervalo."
+  },
+  "compare": {
+    "toggle": "Comparar com o período anterior",
+    "previousPeriod": "Período anterior",
+    "previous5xx": "5xx, período anterior",
+    "previousP95": "p95, período anterior"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Memória",
+    "network": "E/S de rede",
+    "disk": "E/S de disco",
+    "build": "Duração do build",
+    "requestRate": "Taxa de requisições",
+    "requestRateHint": "Requisições por segundo no ingress",
+    "requests": "Requisições",
+    "errorRate": "Taxa de erros",
+    "errorRateHint": "Parcela das requisições respondidas com 4xx e 5xx",
+    "latency": "Latência",
+    "latencyHint": "p95 {{p95}} ms neste intervalo",
+    "memoryLimit": "limite {{limit}}, usando {{usage}}"
+  },
+  "series": {
+    "CPU": "CPU",
+    "usage": "Uso",
+    "limit": "Limite",
+    "received": "Recebido",
+    "sent": "Enviado",
+    "read": "Leitura",
+    "write": "Gravação",
+    "duration": "Duração"
+  },
+  "markers": {
+    "deploy": "Deploy {{status}}: {{image}}, iniciado {{time}}",
+    "restart": "{{count}} reinício(s) de container em {{time}}"
+  },
+  "deployStatus": {
+    "succeeded": "Bem-sucedido",
+    "failed": "Falhou",
+    "running": "Em execução",
+    "held": "Retido (congelado)",
+    "awaiting_approval": "Aguardando aprovação",
+    "superseded": "Substituído",
+    "queued": "Na fila",
+    "canceled": "Cancelado",
+    "pending": "Na fila até o node voltar"
+  },
+  "deployDetails": {
+    "title": "Deploy {{status}}",
+    "image": "Imagem",
+    "commit": "Commit",
+    "source": "Disparado por",
+    "duration": "Duração",
+    "error": "Erro",
+    "openLogs": "Abrir logs do deploy"
+  },
+  "dashboard": {
+    "title": "Métricas",
+    "summary": "Em {{time}}. {{deploys}} deploys neste intervalo. As linhas tracejadas marcam deploys (verde bem-sucedido, vermelho com falha, cinza em execução) e as linhas âmbar marcam reinícios de containers.",
+    "restarts": "Reinícios: {{count}} neste intervalo.",
+    "hint": "Selecione um gráfico para investigar aquele momento. Selecione um marcador para ver os detalhes do deploy."
+  },
+  "range": {
+    "from": "De",
+    "to": "Até",
+    "apply": "Aplicar intervalo"
+  },
+  "requests": {
+    "unavailable": "Métricas de requisições indisponíveis: {{message}}",
+    "empty": "Nenhum tráfego de requisições neste intervalo. A taxa de requisições, a taxa de erros e a latência aparecem aqui quando o app receber requisições pelo domínio dele."
+  },
+  "investigation": {
+    "title": "Investigação",
+    "heading": "Investigando {{time}}",
+    "window": "Janela de {{from}} até {{to}}, comparada com a janela anterior.",
+    "viewLogs": "Ver logs neste horário",
+    "clear": "Limpar seleção",
+    "beforeAfter": "Antes e durante",
+    "baseline": "Antes",
+    "during": "Durante",
+    "metric": {
+      "rate": "Taxa de requisições",
+      "p50": "Latência p50",
+      "p95": "Latência p95",
+      "p99": "Latência p99",
+      "err4": "Taxa de 4xx",
+      "err5": "Taxa de 5xx"
+    },
+    "noTraffic": "Nenhum tráfego de requisições nesta janela.",
+    "topRoutes": "Principais rotas",
+    "noRoutes": "Nenhuma rota registrada nesta janela.",
+    "routesUnavailable": "As estatísticas por rota não estão disponíveis neste control plane.",
+    "route": "Rota",
+    "requests": "Requisições",
+    "avg": "Média",
+    "statusCodes": "Códigos de status",
+    "whatChanged": "O que mudou",
+    "noChanges": "Nada mudou por volta deste horário.",
+    "likelyCause": "Causa provável"
+  },
+  "logs": {
+    "serviceFilter": {
+      "label": "Serviço"
+    },
+    "container": "Container",
+    "allContainers": "Todos os containers",
+    "stream": "Stream",
+    "anyStream": "stdout e stderr",
+    "minLevel": "Nível mínimo",
+    "anyLevel": "Qualquer nível",
+    "jsonFields": "Campos JSON",
+    "fieldKey": "campo.caminho",
+    "fieldOp": "Operador",
+    "fieldValue": "valor",
+    "addFilter": "Adicionar filtro",
+    "removeFilter": "Remover o filtro {{filter}}",
+    "copyPermalink": "Copiar permalink",
+    "copied": "Copiado"
+  },
+  "live": {
+    "pause": "Pausar o acompanhamento ao vivo",
+    "resume": "Retomar ({{count}} novas linhas)"
+  },
+  "failure": {
+    "title": "Contexto da falha",
+    "crashloopTitle": "Este app está em crashloop",
+    "deployFailedTitle": "O último deploy falhou",
+    "crashloopSummary": "{{count}} reinícios nos últimos {{minutes}} minutos. Estas são as últimas linhas que o container escreveu.",
+    "deploySummary": "O deploy de {{image}} não foi concluído. Estas são as últimas linhas da saída dele.",
+    "copy": "Copiar linhas",
+    "openDeployLogs": "Abrir logs do deploy",
+    "openLogs": "Abrir logs completos",
+    "noLines": "Nenhuma linha de log foi capturada para esta falha.",
+    "lastLine": "Última linha:",
+    "showing": "Mostrando as últimas {{shown}} de {{total}} linhas.",
+    "linesLabel": "Últimas linhas de log do container que falhou",
+    "expand": "Mostrar detalhes",
+    "collapse": "Ocultar detalhes"
+  },
+  "containerExit": {
+    "exitedAt": "O container saiu com o código {{code}} em {{time}}",
+    "exited": "O container saiu com o código {{code}}",
+    "oomAt": "O container foi encerrado por exceder o limite de memória em {{time}}",
+    "oom": "O container foi encerrado por exceder o limite de memória",
+    "deployTitle": "Por que esta release parou",
+    "deploySummary": "O container {{container}} parou antes de conseguir atender. Estas são as últimas linhas que ele imprimiu.",
+    "noLines": "O container não imprimiu nada antes de parar.",
+    "showing": "Últimas {{count}} linhas",
+    "linesLabel": "Últimas linhas que o container imprimiu",
+    "hint": "Uma imagem cujo entrypoint precisa de um subcomando (por exemplo serve) imprime a ajuda e sai com 0 quando nenhum é informado: defina o comando e refaça o deploy."
+  },
+  "liveLogs": {
+    "lineCount": "{{count}} linhas (contexto recente, depois ao vivo)",
+    "lastOutput": "{{count}} linhas: a última saída do container parado",
+    "waiting": "Aguardando a saída de logs...",
+    "noContainer": "Nenhum container está em execução para produzir logs: {{reason}}",
+    "viewDeploys": "Mostrar o log do último deploy"
+  },
+  "connection": {
+    "connecting": "Conectando...",
+    "open": "Ao vivo",
+    "error": "Reconectando...",
+    "notRunning": "Parado",
+    "noContainer": "Nenhum container"
+  },
+  "databaseRule": {
+    "kind": {
+      "database_disk_high": "Disco do banco de dados alto",
+      "database_connections_high": "Conexões do banco de dados altas",
+      "database_down": "Banco de dados fora do ar",
+      "database_backup_stale": "Backup do banco de dados desatualizado"
+    },
+    "database": "Banco de dados",
+    "choose": "Escolha um banco de dados",
+    "noDatabases": "Nenhum banco de dados ainda. Crie um primeiro na página Bancos de dados.",
+    "thresholdPercent": "Alertar em (percentual)",
+    "thresholdHours": "Alertar quando o último bom backup for mais antigo que (horas)",
+    "hint": {
+      "database_disk_high": "Dispara enquanto o disco de dados estiver igual ou acima deste percentual. Deixe 0 para o padrão (85).",
+      "database_connections_high": "Dispara enquanto as conexões abertas estiverem iguais ou acima deste percentual do limite. Deixe 0 para o padrão (80).",
+      "database_down": "Dispara enquanto o banco de dados não estiver aceitando conexões.",
+      "database_backup_stale": "Dispara quando o backup bem-sucedido mais recente for mais antigo que isto. Deixe 0 para o padrão (26 horas)."
+    },
+    "pickDatabase": "Escolha qual banco de dados observar",
+    "badPercent": "Deve estar entre 0 e 100",
+    "badHours": "Deve estar entre 0 e 8760"
+  },
+  "alertKinds": {
+    "whatToDo": "O que fazer",
+    "backup_failed": {
+      "label": "Backup falhou",
+      "description": "Dispara quando um backup agendado não é concluído.",
+      "action": "Abra a execução de backup com falha para ler o erro, corrija a causa e depois execute um backup para confirmar que ele é bem-sucedido."
+    },
+    "deploy_failed": {
+      "label": "Deploy falhou",
+      "description": "Dispara quando um deploy para antes de a nova release atender tráfego.",
+      "action": "Leia os logs do deploy para ver por que ele parou, corrija a causa e faça o deploy novamente."
+    },
+    "monitor_down": {
+      "label": "Monitor fora do ar",
+      "description": "Dispara quando um monitor de disponibilidade continua fora do ar após as verificações de confirmação e se resolve quando ele se recupera.",
+      "action": "Abra os resultados do monitor para ver o motivo da falha e depois corrija o alvo ou o caminho de rede dele."
+    },
+    "oom_killed": {
+      "label": "Encerrado por OOM",
+      "description": "Dispara quando o kernel encerra o container deste app por falta de memória, repetidamente dentro da janela de reinícios.",
+      "action": "Aumente o limite de memória do app ou corrija o vazamento, depois refaça o deploy e observe o gráfico de memória."
+    },
+    "database_down": {
+      "label": "Banco de dados fora do ar",
+      "description": "Dispara enquanto o banco de dados não estiver aceitando conexões.",
+      "action": "Verifique os logs do banco de dados e reinicie-o se ele parou."
+    },
+    "database_backup_stale": {
+      "label": "Backup do banco de dados desatualizado",
+      "description": "Dispara quando o backup bem-sucedido mais recente é mais antigo que o limite que você definiu.",
+      "action": "Verifique o agendamento de backup do banco de dados e as execuções recentes de backup, depois execute um backup agora."
+    },
+    "database_disk_high": {
+      "label": "Disco do banco de dados alto",
+      "description": "Dispara enquanto o disco de dados do banco de dados estiver igual ou acima do limite.",
+      "action": "Libere espaço no disco de dados ou aumente-o antes que o banco de dados fique sem espaço."
+    },
+    "database_connections_high": {
+      "label": "Conexões do banco de dados altas",
+      "description": "Dispara enquanto as conexões abertas estiverem próximas do limite do banco de dados.",
+      "action": "Procure conexões ociosas ou vazadas nos seus apps, ou aumente o limite de conexões."
+    },
+    "node_disk_space": {
+      "label": "Espaço em disco do node",
+      "description": "Dispara quando o disco de um node está quase cheio.",
+      "action": "Remova imagens não utilizadas e logs antigos no node, ou mova cargas de trabalho para outro node."
+    },
+    "email_delivery_failing": {
+      "label": "Entrega de e-mails falhando",
+      "description": "Dispara enquanto os e-mails de saída continuam falhando no envio.",
+      "action": "Verifique as configurações do provedor de e-mail e os erros de entrega recentes e depois envie um e-mail de teste."
+    },
+    "cleanup_failing": {
+      "label": "Limpeza de dados falhando",
+      "description": "Dispara enquanto as execuções de limpeza de dados agendadas ou manuais continuam falhando.",
+      "action": "Abra Limpeza, leia o erro da execução com falha e depois execute esse tipo de dado novamente."
+    },
+    "job_failing": {
+      "label": "Job falhando",
+      "description": "Dispara uma vez por job com falha neste app que tem o alerta em caso de falha ativado, com limite de taxa por job.",
+      "action": "Abra o histórico de execuções do job para ler os logs da execução com falha, corrija a causa e execute-o agora para confirmar."
+    }
+  },
+  "budgetThreshold": {
+    "hint": "Dispara enquanto qualquer orçamento de projeto ou equipe (Uso e custo) atingiu o nível de aviso, passou do limite ou tem previsão de estouro neste mês. Ele só notifica novamente quando um novo nível é cruzado."
+  },
+  "alerts": {
+    "noChannelWarning": "Nenhum canal de notificação está definido, então esta regra vai disparar sem notificar ninguém. Escolha um canal acima, ou conecte um em Configurações > Canais de notificação."
+  },
+  "explorer": {
+    "title": "Principais assinaturas de erro",
+    "subtitle": "Linhas de erro semelhantes agrupadas, ignorando números, ids e timestamps.",
+    "occurrences_one": "{{count}} ocorrência",
+    "occurrences_many": "{{count}} ocorrências",
+    "occurrences_other": "{{count}} ocorrências",
+    "firstSeen": "vista pela primeira vez {{time}}",
+    "lastSeen": "vista pela última vez {{time}}",
+    "newBadge": "Nova",
+    "sparkline": "Tendência de {{count}} ocorrências no intervalo selecionado",
+    "viewLines": "Ver linhas",
+    "alertOnThis": "Alertar sobre isto",
+    "onlyNew_one": "Somente novas ({{count}})",
+    "onlyNew_many": "Somente novas ({{count}})",
+    "onlyNew_other": "Somente novas ({{count}})",
+    "noNew": "Nenhum tipo de erro novo neste intervalo.",
+    "empty": "Nenhuma linha de erro neste intervalo.",
+    "emptyHint": "Amplie o intervalo de tempo ou volte depois do próximo deploy.",
+    "truncated": "Somente as {{rows}} linhas mais recentes foram lidas. Restrinja o intervalo para contagens exatas.",
+    "saved": "Salva",
+    "orderLabel": "Ordem dos resultados",
+    "orderNewest": "Mais recentes",
+    "orderRelevance": "Relevância",
+    "savedHeading": "Consultas salvas",
+    "savedEmpty": "Nenhuma consulta salva para este app ainda.",
+    "recent": "Recentes",
+    "saveName": "Nome da busca atual",
+    "saveCurrent": "Salvar a busca atual",
+    "saveNeedsFilter": "Adicione uma busca, nível ou filtro de campo para salvá-la.",
+    "shareWithTeam": "Compartilhar com todos que podem ver este app",
+    "pinToApp": "Fixar neste app",
+    "savedToast": "Consulta salva.",
+    "deleteSaved": "Excluir a consulta salva {{name}}",
+    "alertFromSearch": "Alertar sobre isto",
+    "alertTitle": "Criar um alerta de log",
+    "alertDescription": "Dispara quando as linhas correspondentes atingem o limite dentro da janela. Verificado a cada minuto a partir dos logs armazenados.",
+    "alertAnyLine": "Qualquer linha em {{level}} ou acima",
+    "alertDefaultName": "Alerta de log de {{app}}",
+    "alertName": "Nome",
+    "alertMode": "Tipo de alerta",
+    "modeCount": "Corresponde a pelo menos",
+    "modeRate": "Linhas por minuto, pelo menos",
+    "alertThreshold": "Limite",
+    "alertWindow": "Janela",
+    "inWindow": "em {{window}}",
+    "cooldown": "Intervalo de espera",
+    "channel": "Canal de notificação",
+    "channelNone": "Nenhum canal",
+    "cancel": "Cancelar",
+    "createAlert": "Criar alerta",
+    "alertCreated": "Regra de alerta \"{{name}}\" criada.",
+    "wrap": "Quebrar linhas",
+    "entryDetail": "Linha de log",
+    "copyLine": "Copiar linha",
+    "closeDetail": "Fechar detalhes",
+    "filterByField": "Filtrar por {{field}}",
+    "context": "Linhas ao redor",
+    "loading": "Carregando...",
+    "signatureFilter": "Mostrando as linhas da assinatura de erro {{id}}.",
+    "clearSignature": "Mostrar todas as linhas",
+    "newErrorTypes_one": "{{count}} novo tipo de erro desde este deploy",
+    "newErrorTypes_many": "{{count}} novos tipos de erro desde este deploy",
+    "newErrorTypes_other": "{{count}} novos tipos de erro desde este deploy",
+    "tabErrors": "Erros",
+    "conditionPattern": "{{count}} ou mais linhas correspondendo a {{what}} em {{minutes}} min",
+    "conditionRate": "Mais de {{rate}} linhas por minuto em {{level}} ou acima ao longo de {{minutes}} min",
+    "searchPlaceholder": "Buscar mensagens de log...",
+    "searchLabel": "Buscar mensagens de log",
+    "clearSearch": "Limpar busca",
+    "searchSyntax": "Sintaxe: \"frase exata\", prefixo*, a OR b, a NOT b, -palavra, ( ) para agrupar."
+  },
+  "slo": {
+    "title": "Objetivos de nível de serviço",
+    "availabilityObjective": "{{target}}% das requisições têm sucesso",
+    "latencyObjective": "{{target}}% das requisições terminam em até {{ms}} ms",
+    "noTraffic": "Sem tráfego",
+    "noTrafficHint": "Nenhuma requisição chegou a este app na janela de avaliação, então ainda não há o que medir.",
+    "paging": "Acionando plantão",
+    "burning": "Consumindo",
+    "healthy": "Saudável",
+    "firing": "Disparando",
+    "budgetRemaining": "Orçamento de erros restante",
+    "tierWindow": "{{name}} ({{long}} e {{short}})",
+    "burnRate": "consumo {{rate}}x"
+  },
+  "appScrape": {
+    "title": "Métricas do app",
+    "subtitle": "Séries coletadas do próprio endpoint de métricas do app no container dele.",
+    "metric": "Métrica",
+    "pickMetric": "Escolha uma métrica",
+    "range": "Intervalo",
+    "hours_one": "Última {{count}} hora",
+    "hours_many": "Últimas {{count}} horas",
+    "hours_other": "Últimas {{count}} horas",
+    "empty": "Nenhuma série armazenada ainda. A primeira coleta ocorre no próximo intervalo.",
+    "port": "Porta do container",
+    "path": "Caminho",
+    "save": "Salvar alvo",
+    "lastError": "A última coleta falhou: {{error}}",
+    "invalidPort": "Informe uma porta de 1 a 65535.",
+    "invalidPath": "Use um caminho simples como /metrics."
+  },
+  "accessSearch": {
+    "formLabel": "Filtros de requisições",
+    "status": "Status",
+    "anyStatus": "Qualquer status",
+    "method": "Método",
+    "anyMethod": "Qualquer método",
+    "path": "Prefixo do caminho",
+    "pathPlaceholder": "/api/",
+    "text": "O caminho contém",
+    "textPlaceholder": "Texto no caminho",
+    "window": "Janela de tempo",
+    "search": "Buscar",
+    "privacyNote": "Requisições recentes mantidas em memória no edge. As query strings nunca são registradas e os IPs dos clientes não são exibidos.",
+    "loading": "Carregando requisições",
+    "empty": "Nenhuma requisição corresponde a estes filtros.",
+    "colTime": "Hora",
+    "colStatus": "Status",
+    "colMethod": "Método",
+    "colPath": "Host e caminho",
+    "colDuration": "ms",
+    "truncated": "A busca parou no limite de varredura. Restrinja os filtros para um resultado completo.",
+    "newer": "Mais novas",
+    "older": "Mais antigas",
+    "tab": "Requisições"
+  }
+}

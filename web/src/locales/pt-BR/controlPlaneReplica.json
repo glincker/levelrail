@@ -1,0 +1,7 @@
+{
+  "label": "Réplica contínua",
+  "summary": "a cada {{seconds}}s, último envio {{age}} ({{kb}} KB, {{ms}} ms)",
+  "neverShipped": "a cada {{seconds}}s, nada enviado ainda",
+  "pending": "alterações aguardando desde {{age}}",
+  "error": "o último envio falhou: {{message}}"
+}

@@ -1,0 +1,65 @@
+{
+  "title": "{{client}} quer ler este control plane",
+  "signedInAs": "Aprovando como {{user}} em {{host}}",
+  "instanceOnly": "Aprovando em {{host}}",
+  "redirectsTo": "Depois que você responder, seu navegador volta para",
+  "access": {
+    "none": "Sua conta não tem nenhum dos acessos solicitados, então nada pode ser concedido.",
+    "read": "Acesso somente leitura aos seus recursos. Segredos e valores sensíveis permanecem ocultos.",
+    "sensitive": "Acesso somente leitura, incluindo valores sensíveis.",
+    "trimmed": "Parte do que foi solicitado ficou de fora porque sua conta não tem essa permissão."
+  },
+  "facts": {
+    "never": "Ele nunca pode criar, alterar, fazer deploy ou excluir nada.",
+    "permissions": "Ele roda como você, com no máximo as suas próprias permissões.",
+    "expiry": "O acesso dura {{access}} e é renovado por até {{refresh}}, a menos que você o revogue.",
+    "revoke": "Você pode remover o cliente a qualquer momento em Configurações, Acesso à CLI."
+  },
+  "approve": "Aprovar",
+  "deny": "Negar",
+  "working": "Processando",
+  "duration": {
+    "minutes_one": "{{count}} minuto",
+    "minutes_many": "{{count}} minutos",
+    "minutes_other": "{{count}} minutos",
+    "hours_one": "{{count}} hora",
+    "hours_many": "{{count}} horas",
+    "hours_other": "{{count}} horas",
+    "days_one": "{{count}} dia",
+    "days_many": "{{count}} dias",
+    "days_other": "{{count}} dias"
+  },
+  "errors": {
+    "missing": "Este link não tem uma solicitação de autorização. Inicie a conexão novamente pelo seu cliente de IA.",
+    "featureOff": "A conexão de clientes de IA está desativada. Ative o MCP remoto em Configurações, Recursos beta.",
+    "gone": "Esta solicitação expirou ou já foi respondida. Inicie a conexão novamente pelo seu cliente de IA.",
+    "unavailable": "O login do MCP remoto não está disponível neste control plane.",
+    "load": "Não foi possível carregar esta solicitação. Verifique sua conexão e recarregue.",
+    "decide": "Não foi possível registrar sua resposta."
+  },
+  "clients": {
+    "title": "Clientes de IA conectados",
+    "body": "Clientes pré-registrados que podem pedir para se conectar por MCP remoto.",
+    "add": "Adicionar cliente",
+    "name": "Nome",
+    "uris": "URIs de redirecionamento",
+    "urisPlaceholder": "https://client.example/callback",
+    "create": "Criar",
+    "cancel": "Cancelar",
+    "created": "Cliente criado",
+    "clientId": "ID do cliente:",
+    "empty": "Nenhum cliente pré-registrado.",
+    "loadError": "Não foi possível carregar os clientes de IA.",
+    "remove": "Remover {{name}}",
+    "confirmTitle": "Remover {{name}}?",
+    "confirmBody": "Os tokens de acesso dele param de funcionar imediatamente. Ele pode ser adicionado novamente depois.",
+    "confirm": "Remover cliente",
+    "dismiss": "Dispensar"
+  },
+  "scopes": {
+    "heading": "Acesso sendo concedido",
+    "read": "Ler recursos e o status deles",
+    "sensitive": "Ler valores sensíveis, como o conteúdo de segredos"
+  },
+  "approveSensitive": "Aprovar com acesso sensível"
+}
