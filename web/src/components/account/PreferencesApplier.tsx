@@ -3,8 +3,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../ThemeProvider'
-import { preferencesQueryOptions } from '../../queries/accountSelf'
-import { isSupportedLanguage } from '../../lib/languages'
+import {
+  preferencesQueryOptions,
+  useSavePreferences,
+} from '../../queries/accountSelf'
+import {
+  clearChosenLanguage,
+  isSupportedLanguage,
+  takeChosenLanguage,
+} from '../../lib/languages'
 import { setUserTimezone } from '../../lib/userPreferences'
 
 const LANDING_DONE_KEY = 'levelrail-landing-applied'
@@ -33,6 +40,7 @@ export function PreferencesApplier() {
   const { setTheme } = useTheme()
   const router = useRouter()
   const { i18n } = useTranslation()
+  const { mutate: savePreferences } = useSavePreferences()
 
   const timezone = data?.timezone
   const language = data?.language
@@ -43,11 +51,25 @@ export function PreferencesApplier() {
     if (timezone !== undefined) setUserTimezone(timezone)
   }, [timezone])
 
+  // A language picked before sign-in is saved to the account once; otherwise the account value wins.
   useEffect(() => {
+    if (!data) return
+    const chosen = takeChosenLanguage()
+    if (
+      chosen !== '' &&
+      chosen !== language &&
+      isSupportedLanguage(i18n, chosen)
+    ) {
+      clearChosenLanguage()
+      void i18n.changeLanguage(chosen)
+      savePreferences({ ...data, language: chosen })
+      return
+    }
+    clearChosenLanguage()
     if (language && isSupportedLanguage(i18n, language)) {
       void i18n.changeLanguage(language)
     }
-  }, [language, i18n])
+  }, [data, language, i18n, savePreferences])
 
   useEffect(() => {
     if (theme) setTheme(theme)

@@ -12,6 +12,7 @@ import { ScopePicker } from '../environments/ScopePicker'
 import { CliModal } from '../cli/CliModal'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
 import { HeaderOverflow, HeaderUtilities } from './HeaderOverflow'
+import { HeaderLanguageSelect } from '../language/HeaderLanguageSelect'
 import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
@@ -96,6 +97,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
                 <NotificationCenter />
               </div>
             </div>
+            <HeaderLanguageSelect className="@max-md:hidden" />
             <HeaderUtilities />
             <HeaderOverflow />
           </div>

@@ -39,6 +39,7 @@ import { ScopePicker } from '../environments/ScopePicker'
 import { DockToggle } from '../dock/DockToggle'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
+import { HeaderLanguageSelect } from '../language/HeaderLanguageSelect'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { WhatsNewPanel } from './WhatsNewPanel'
@@ -159,6 +160,7 @@ export function HeaderOverflow() {
           <WhatsNewPanel />
           <DockToggle />
           <HelpMenu />
+          <HeaderLanguageSelect />
           <ThemeToggle />
         </div>
       </PopoverContent>

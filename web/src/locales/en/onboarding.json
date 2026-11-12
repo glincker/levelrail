@@ -9,6 +9,11 @@
     "done": "done"
   },
   "steps": {
+    "language": {
+      "label": "Language",
+      "title": "Choose your language",
+      "description": "Pick the language for the dashboard. The page changes as you choose."
+    },
     "welcome": {
       "label": "Welcome",
       "title": "Welcome to Levelrail",
@@ -80,5 +85,9 @@
   "errors": {
     "save": "Could not save your progress. Try again.",
     "transition": "That move is not allowed right now. Reload the page and try again."
+  },
+  "language": {
+    "label": "Language",
+    "hint": "Press Enter to continue. You can change this any time from the header or in Settings."
   }
 }

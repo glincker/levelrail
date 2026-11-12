@@ -1,10 +1,17 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import accountEn from '../../locales/en/account.json'
+import commonEn from '../../locales/en/common.json'
 import type { Preferences } from '../../queries/accountSelf'
 
 const mutate = vi.fn()
@@ -34,9 +41,9 @@ void i18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
   supportedLngs: ['en', 'es', 'cimode'],
-  ns: ['account'],
+  ns: ['account', 'common'],
   defaultNS: 'account',
-  resources: { en: { account: accountEn } },
+  resources: { en: { account: accountEn, common: commonEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -76,13 +83,11 @@ describe('PreferencesCard', () => {
 
   it('lists the browser default first and marks the active language', async () => {
     await renderCard({ ...DEFAULT_PREFERENCES, language: 'es' })
-    fireEvent.click(screen.getByRole('combobox', { name: /language/i }))
-    const options = await screen.findAllByRole('option')
+    const select = screen.getByRole('combobox', { name: /language/i })
+    const options = within(select).getAllByRole('option')
     expect(options[0]).toHaveTextContent('Browser default')
-    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
-      'Spanish',
-    )
-    fireEvent.click(options[1] as HTMLElement)
+    expect(select).toHaveValue('es')
+    fireEvent.change(select, { target: { value: 'en' } })
     expect(mutate).toHaveBeenCalledWith(
       { ...DEFAULT_PREFERENCES, language: 'en' },
       expect.anything(),
