@@ -14,7 +14,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -566,7 +565,7 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		// no fidelity loss to call out here.
 		for k, ref := range svc.VaultEnv {
 			if ref.Conn != "" {
-				out.Env[k] = spec.EnvVar{SecretRef: &secretsource.Ref{Conn: ref.Conn, Path: ref.Path, Key: ref.Key, Version: ref.Version}}
+				out.Env[k] = spec.EnvVar{SecretRef: &spec.SecretRef{Conn: ref.Conn, Path: ref.Path, Key: ref.Key, Version: ref.Version}}
 				continue
 			}
 			out.Env[k] = spec.EnvVar{Vault: &spec.VaultRef{Path: ref.Path, Key: ref.Key}}

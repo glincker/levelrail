@@ -23,7 +23,7 @@ func refController(t *testing.T, fake *secretsource.FakeProvider, desired *store
 		t.Fatal(err)
 	}
 	rt := newFakeRuntime(0)
-	c := New("web", &fakeStore{svc: desired}, rt, WithSecretSources(func() SecretSources { return res }))
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretSources(func() SecretSources { return testRefSources{res} }))
 	return c, rt
 }
 
@@ -75,4 +75,14 @@ func TestSecretRefUnconfiguredFailsClosed(t *testing.T) {
 	if _, err := c.Reconcile(context.Background()); err == nil {
 		t.Fatal("a reference with no connections must fail")
 	}
+}
+
+type testRefSources struct{ r *secretsource.Resolver }
+
+func (a testRefSources) ResolveRef(ctx context.Context, conn, path, key string, version int) (string, error) {
+	v, err := a.r.Resolve(ctx, secretsource.Ref{Conn: conn, Path: path, Key: key, Version: version})
+	if err != nil {
+		return "", err
+	}
+	return string(v.Reveal()), nil
 }

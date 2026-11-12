@@ -47,7 +47,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/secretrotation"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/vault"
@@ -126,9 +125,9 @@ type VaultResolver interface {
 }
 
 // SecretSources resolves secret://conn/path#key references through named
-// connections. *secretsource.Resolver satisfies it.
+// connections. Kept free of the resolver package to keep its fan-in small.
 type SecretSources interface {
-	Resolve(ctx context.Context, ref secretsource.Ref) (secretsource.Value, error)
+	ResolveRef(ctx context.Context, conn, path, key string, version int) (string, error)
 }
 
 // ProjectEnvStore is the narrow surface this controller needs to
@@ -1863,12 +1862,10 @@ func (c *Controller) resolveSecretRefEnv(ctx context.Context, refs map[string]st
 	slices.Sort(keys)
 	for _, envVar := range keys {
 		r := refs[envVar]
-		ref := secretsource.Ref{Conn: r.Conn, Path: r.Path, Key: r.Key, Version: r.Version}
-		v, err := src.Resolve(ctx, ref)
+		val, err := src.ResolveRef(ctx, r.Conn, r.Path, r.Key, r.Version)
 		if err != nil {
-			return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, ref.String(), err)
+			return nil, fmt.Errorf("env var %q (secret reference %s): %w", envVar, r.SecretRef(), err)
 		}
-		val := string(v.Reveal())
 		secretmask.Add(val)
 		out[envVar] = val
 	}

@@ -54,7 +54,18 @@ var liveSecretConns atomic.Pointer[secretconn.Service]
 // currentSecretSources returns the resolver, or nil (not a typed nil) when unwired.
 func currentSecretSources() application.SecretSources {
 	if s := liveSecretConns.Load(); s != nil && s.Sources != nil {
-		return s.Sources
+		return refSources{s.Sources}
 	}
 	return nil
+}
+
+// refSources adapts the resolver to the controller's string based surface.
+type refSources struct{ r *secretsource.Resolver }
+
+func (a refSources) ResolveRef(ctx context.Context, conn, path, key string, version int) (string, error) {
+	v, err := a.r.Resolve(ctx, secretsource.Ref{Conn: conn, Path: path, Key: key, Version: version})
+	if err != nil {
+		return "", err
+	}
+	return string(v.Reveal()), nil
 }
