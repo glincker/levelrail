@@ -1,0 +1,11 @@
+{
+  "more": {
+    "show": "Plus d'infos",
+    "hide": "Moins",
+    "label": "En savoir plus sur la prise en main"
+  },
+  "paths": {
+    "show": "Autres façons de déployer",
+    "hide": "Masquer les autres façons"
+  }
+}

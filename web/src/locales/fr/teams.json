@@ -1,0 +1,139 @@
+{
+  "page": {
+    "title": "Équipes",
+    "description": "Qui peut voir et modifier quels projets. Chaque équipe possède ses projets, leurs environnements, leurs apps et leurs bases de données.",
+    "create": "Nouvelle équipe",
+    "createTitle": "Créer une équipe",
+    "createName": "Nom de l'équipe",
+    "createSubmit": "Créer l'équipe",
+    "created": "Équipe créée",
+    "empty": "Vous n'êtes dans aucune équipe pour l'instant. Demandez un lien d'invitation à un admin d'équipe.",
+    "pick": "Équipe",
+    "defaultTeam": "Par défaut",
+    "defaultHint": "L'équipe par défaut est l'instance elle-même. Les admins de l'instance gèrent ses membres sur la page Utilisateurs et ici.",
+    "eyebrow": "Accès",
+    "help": "Guide des équipes et des rôles",
+    "count_one": "{{count}} équipe",
+    "count_other": "{{count}} équipes",
+    "count_many": "{{count}} équipes",
+    "banner": {
+      "title": "Tout le monde est dans l'équipe par défaut",
+      "body": "Créez une équipe pour donner à un groupe ses propres projets, environnements, apps et bases de données, avec ses propres propriétaires et membres."
+    }
+  },
+  "roles": {
+    "owner": "Propriétaire",
+    "admin": "Admin",
+    "developer": "Développeur",
+    "viewer": "Lecteur",
+    "ownerHint": "Tout, y compris supprimer l'équipe et transférer la propriété.",
+    "adminHint": "Déploie partout, y compris dans les environnements protégés, et gère les membres.",
+    "developerHint": "Déploie, modifie les variables d'environnement et lit les logs, sauf dans les environnements protégés.",
+    "viewerHint": "Lit les apps, les bases de données et les logs. Ne modifie rien.",
+    "yourRole": "Votre rôle : {{role}}"
+  },
+  "members": {
+    "tableLabel": "Membres de l'équipe",
+    "title": "Membres",
+    "email": "E-mail",
+    "name": "Nom",
+    "role": "Rôle",
+    "actions": "Actions",
+    "remove": "Retirer",
+    "removed": "Membre retiré",
+    "roleChanged": "Rôle mis à jour",
+    "leave": "Quitter l'équipe",
+    "left": "Vous avez quitté l'équipe",
+    "transfer": "Nommer propriétaire",
+    "transferred": "Propriété transférée. Vous êtes maintenant admin.",
+    "roleLabel": "Rôle pour {{email}}"
+  },
+  "invites": {
+    "tableLabel": "Invitations à l'équipe",
+    "statusHeader": "Statut",
+    "title": "Invitations",
+    "create": "Inviter",
+    "email": "E-mail (facultatif)",
+    "emailHint": "Laissez vide pour un lien à usage unique que toute personne le détenant peut utiliser.",
+    "role": "Rôle",
+    "expires": "Expire dans (heures, facultatif)",
+    "submit": "Créer l'invitation",
+    "created": "Invitation créée. Copiez le lien maintenant, il ne sera plus affiché.",
+    "copy": "Copier le lien",
+    "copied": "Lien copié",
+    "revoke": "Révoquer",
+    "revoked": "Invitation révoquée",
+    "link": "Invitation par lien",
+    "empty": "Aucune invitation pour l'instant.",
+    "status": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "revoked": "Révoquée",
+      "expired": "Expirée"
+    }
+  },
+  "events": {
+    "title": "Piste d'audit de l'équipe",
+    "empty": "Aucun changement d'appartenance enregistré pour l'instant."
+  },
+  "switcher": {
+    "aria": "Équipe et projet",
+    "allTeams": "Toutes les équipes",
+    "allProjects": "Tous les projets",
+    "team": "Équipe",
+    "project": "Projet"
+  },
+  "forbidden": {
+    "title": "Vous n'avez pas accès ici",
+    "body": "Votre rôle actuel dans l'équipe ne le permet pas, ou cela appartient à une autre équipe.",
+    "switch": "Changer d'équipe",
+    "teams": "Ouvrir les équipes",
+    "home": "Retour au tableau de bord"
+  },
+  "accept": {
+    "title": "Rejoindre une équipe",
+    "description": "Vous avez été invité à rejoindre une équipe.",
+    "summary": "Rejoindre {{team}} en tant que {{role}}",
+    "signedInHint": "Vous êtes connecté, l'invitation rattache donc votre compte actuel.",
+    "newAccountHint": "Pas encore de compte ? Créez-en un ici. Il appartient uniquement à cette équipe.",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "name": "Nom d'affichage (facultatif)",
+    "submit": "Rejoindre l'équipe",
+    "joined": "Vous avez rejoint l'équipe",
+    "invalid": "Cette invitation est invalide, expirée, révoquée ou déjà utilisée. Demandez-en une nouvelle à l'admin de l'équipe.",
+    "missing": "Ce lien ne contient pas de token d'invitation."
+  },
+  "quota": {
+    "title": "Quotas",
+    "teamHint": "Limites pour tout ce qui est rattaché à cette équipe. Un changement qui dépasserait une limite est refusé, en indiquant la limite et l'utilisation actuelle.",
+    "projectHint": "Limites pour tout ce qui est rattaché à ce projet, en plus des limites de l'équipe.",
+    "resources": {
+      "apps": "Apps",
+      "databases": "Bases de données",
+      "memory": "Mémoire réservée (Mo)",
+      "cpu": "CPU réservé (cœurs)",
+      "previews": "Environnements d'aperçu"
+    },
+    "fields": {
+      "apps": "Apps max.",
+      "databases": "Bases de données max.",
+      "memory": "Mémoire max. (Mo)",
+      "cpu": "CPU max. (cœurs)",
+      "previews": "Aperçus max."
+    },
+    "usage": "{{used}} sur {{limit}}",
+    "usageUnlimited": "{{used}} utilisés, sans limite",
+    "full": "À la limite",
+    "nearLimit": "Proche de la limite",
+    "editHint": "0 signifie illimité. Les ressources existantes ne sont jamais arrêtées quand une limite est abaissée.",
+    "save": "Enregistrer les limites",
+    "clear": "Supprimer toutes les limites",
+    "saved": "Quota enregistré",
+    "cleared": "Limites de quota supprimées",
+    "readOnly": "Seuls les admins et propriétaires de l'équipe peuvent modifier ces limites."
+  },
+  "errors": {
+    "generic": "La requête a échoué : {{message}}"
+  }
+}

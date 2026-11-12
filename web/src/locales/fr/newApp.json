@@ -1,0 +1,694 @@
+{
+  "title": "Nouvelle app",
+  "description": "Choisissez un dépôt ou une autre source. Nous le lisons via l'API du fournisseur et suggérons une configuration que vous confirmez. Rien n'est cloné ni créé tant que vous ne déployez pas.",
+  "steps": {
+    "label": "Étapes de la nouvelle app",
+    "source": "D'où elle vient",
+    "findings": "Ce que nous avons trouvé",
+    "review": "Examiner et déployer"
+  },
+  "nav": {
+    "back": "Retour",
+    "review": "Examiner"
+  },
+  "source": {
+    "analyzing": "Lecture du dépôt...",
+    "noProvider": {
+      "lead": "Aucun fournisseur git n'est connecté, et vous n'en avez pas besoin. Collez l'URL d'un dépôt, choisissez un template ou essayez l'app d'exemple."
+    },
+    "privateRepo": "Nous n'avons pas pu lire ce dépôt. S'il est privé, connectez votre fournisseur git et choisissez-le dans la liste.",
+    "privateRepoConnect": "Connecter un fournisseur git",
+    "analyze": "Analyser le dépôt",
+    "repos": {
+      "listLabel": "Dépôts connectés",
+      "loading": "Chargement de vos dépôts",
+      "noMatch": "Aucun dépôt ne correspond à \"{{query}}\". Collez son URL complète pour l'utiliser directement.",
+      "private": "Dépôt privé",
+      "pushed": "poussé {{when}}",
+      "partial": "Certains comptes connectés n'ont pas pu être listés. Collez une URL pour tout ce qui manque.",
+      "retry": "Réessayer",
+      "refresh": "Actualiser les dépôts",
+      "refreshing": "Actualisation...",
+      "emptyTitle": "Aucun dépôt trouvé",
+      "emptyBody": "Nous ne voyons encore aucun dépôt dans vos comptes connectés. Actualisez la liste après avoir accordé l'accès, ou collez l'URL d'un dépôt ci-dessus.",
+      "failedTitle": "Impossible de lister vos dépôts",
+      "failedBody": "Le fournisseur n'a pas répondu. Actualisez pour réessayer, vérifiez la connexion dans les Paramètres, ou collez l'URL d'un dépôt ci-dessus."
+    },
+    "git": {
+      "title": "Importer depuis Git",
+      "connectTitle": "Connecter un fournisseur git",
+      "connectBody": "Connectez un compte pour choisir parmi vos dépôts, ou collez l'URL d'un dépôt ci-dessus.",
+      "connect": "Connecter",
+      "manageAll": "Gérer les connexions Git",
+      "connectLabel": "Connecter {{provider}}",
+      "connected": "Connecté",
+      "needsAddress": "La connexion GitHub nécessite une adresse publique pour ce serveur.",
+      "useUrlInstead": "Utiliser plutôt l'URL d'un dépôt",
+      "manage": "Gérer les connexions",
+      "noProviderHint": "Les dépôts publics se déploient sans fournisseur git. Connectez-en un ci-dessous pour les dépôts privés et le déploiement au push."
+    },
+    "templates": {
+      "title": "Partir d'un template",
+      "seeAll": "Voir les {{count}} templates",
+      "browse": "Parcourir le catalogue de templates",
+      "loading": "Chargement des templates",
+      "unavailable": "La liste des templates n'est pas disponible pour le moment. Le catalogue complet est à un clic.",
+      "gridLabel": "Templates mis en avant",
+      "retry": "Réessayer",
+      "search": "Rechercher des templates",
+      "categories": "Catégories de templates",
+      "noMatch": "Aucun template ne correspond à \"{{query}}\". Essayez un autre mot ou parcourez le catalogue complet.",
+      "popular": "Templates populaires",
+      "browseAll": "Parcourir les {{count}}"
+    },
+    "errorManage": "Vérifier les connexions Git",
+    "find": {
+      "label": "Dépôt",
+      "placeholder": "Rechercher des dépôts ou coller une URL git",
+      "hint": "Tapez pour filtrer vos dépôts, ou collez une URL GitHub, GitLab, Gitea ou Bitbucket (https, git@ ou un lien /tree/branche).",
+      "useUrl": "Utiliser cette URL",
+      "clear": "Effacer"
+    },
+    "choose": {
+      "label": "Choisissez d'où vient votre app",
+      "git": {
+        "title": "Dépôt Git",
+        "hint": "Collez une URL ou choisissez un dépôt"
+      },
+      "template": {
+        "title": "Template",
+        "hint": "Auto-hébergez une app prête à l'emploi"
+      },
+      "image": {
+        "title": "Image de conteneur",
+        "hint": "Aussi Compose, docker run, site"
+      },
+      "sample": {
+        "title": "App d'exemple",
+        "hint": "Essayez-la en un clic"
+      }
+    },
+    "sample": {
+      "body": "Déploie une petite app d'exemple publique pour que vous voyiez un déploiement en cours en quelques secondes."
+    }
+  },
+  "findings": {
+    "warnings": {
+      "nothing_detected": "Aucun Dockerfile, fichier compose ni framework connu trouvé. Choisissez le type de build dans Avancé.",
+      "read_budget": "La limite de lecture des fichiers a été atteinte, certains résultats peuvent donc manquer.",
+      "tree_truncated": "Ce dépôt est volumineux et la liste de ses fichiers a été tronquée.",
+      "monorepo_choose_app": "Cela ressemble à un monorepo avec plusieurs apps. Vérifiez le répertoire de l'app ci-dessous.",
+      "directory_missing": "Ce répertoire n'existe pas sur cette branche. Choisissez-en un dans la liste ci-dessus ou corrigez le chemin.",
+      "port_unknown": "Aucun port d'écoute n'a été détecté. Définissez le port sur lequel l'app écoute."
+    },
+    "app": {
+      "title": "App",
+      "name": "Nom de l'app",
+      "domain": "Domaine"
+    },
+    "build": {
+      "title": "Build et exécution",
+      "app": "App de ce dépôt",
+      "appHint": "Plusieurs apps constructibles ont été trouvées. Choisissez celle à déployer."
+    },
+    "port": {
+      "label": "Port sur lequel l'app écoute"
+    },
+    "health": {
+      "label": "Chemin du health check"
+    },
+    "databases": {
+      "title": "Bases de données dont elle semble avoir besoin",
+      "attach": "Créer et rattacher {{engine}} {{version}}",
+      "name": "Nom de la base de données",
+      "envVar": "Variable de connexion"
+    },
+    "env": {
+      "title": "Variables d'environnement",
+      "none": "Le dépôt ne déclare aucune variable d'environnement.",
+      "required": "Obligatoire",
+      "secret": "Secret",
+      "provided": "Renseignée automatiquement depuis {{source}}.",
+      "placeholder": "Saisissez une valeur",
+      "hasDefault": "Laissez vide pour utiliser la valeur par défaut de l'app",
+      "source": "Trouvée dans {{source}}",
+      "optional": "{{count}} variables facultatives",
+      "noValues": "Seuls les noms des variables sont lus depuis le dépôt. Les valeurs ne sont jamais importées."
+    },
+    "advanced": {
+      "title": "Options avancées",
+      "buildType": "Type de build",
+      "dockerfile": "Chemin du Dockerfile",
+      "spa": "Mode application monopage",
+      "baseDirectory": "Répertoire du contexte de build",
+      "validateDirectory": "Valider le répertoire",
+      "memory": "Limite de mémoire (Mio)",
+      "types": {
+        "railpack": "Détection automatique (Railpack)",
+        "dockerfile": "Dockerfile",
+        "static": "Site statique"
+      }
+    }
+  },
+  "review": {
+    "summary": "Cela crée {{name}} à partir d'un dépôt {{framework}} avec {{databases}} base(s) de données, servie à {{domain}}, et démarre son premier build.",
+    "noDomain": "pas encore de domaine",
+    "changesLabel": "Ce qui sera créé",
+    "willCreate": "Sera créé",
+    "kinds": {
+      "app": "App",
+      "source": "Dépôt",
+      "database": "Base de données",
+      "domain": "Domaine",
+      "env": "Variable d'environnement"
+    },
+    "missingTitle": "Des variables obligatoires sont vides",
+    "missingBody": "Revenez en arrière et renseignez : {{keys}}",
+    "deploy": "Déployer",
+    "deploying": "Création et déploiement...",
+    "failed": {
+      "generic": "Le déploiement ne s'est pas terminé",
+      "database": "Impossible de créer la base de données",
+      "app": "Impossible de créer l'app",
+      "connection": "Impossible de rattacher la base de données",
+      "source": "Impossible de connecter le dépôt",
+      "build": "Impossible de démarrer le build"
+    },
+    "failedResume": "L'enregistrement de l'app existe. Appuyez sur Déployer pour reprendre là où cela s'est arrêté."
+  },
+  "toast": {
+    "created": "Création de \"{{name}}\".",
+    "watching": "Suivi du premier build."
+  },
+  "deployLink": {
+    "title": "Prérempli depuis un lien. Examinez avant de déployer",
+    "fromSource": "Un lien de {{host}} a rempli ce formulaire. Rien n'est créé tant que vous n'appuyez pas sur Déployer.",
+    "fromUnknown": "Un lien a rempli ce formulaire. Rien n'est créé tant que vous n'appuyez pas sur Déployer.",
+    "ignoredTitle": "Certains paramètres du lien ont été ignorés",
+    "ignoredBody": "Ceux-ci étaient absents ou invalides : {{params}}.",
+    "name": "Nom",
+    "image": "Image",
+    "port": "Port",
+    "portHint": "Le port sur lequel l'app écoute dans son conteneur.",
+    "health": "Chemin du health check",
+    "healthHint": "Laissez vide pour ignorer le health check.",
+    "envTitle": "Variables d'environnement",
+    "envHint": "Le lien nomme ces variables. Saisissez vos propres valeurs. Elles sont stockées comme secrets.",
+    "envValue": "Valeur de {{key}}",
+    "deploy": "Déployer",
+    "deploying": "Création...",
+    "missingImage": "Le lien ne contenait pas d'image valide. Choisissez ci-dessous d'où vient cette app.",
+    "errors": {
+      "name": "Utilisez des lettres minuscules, des chiffres et des tirets.",
+      "image": "Saisissez une image comme ghcr.io/you/app:latest.",
+      "port": "Saisissez un port de 1 à 65535.",
+      "health": "Le chemin doit commencer par une seule barre oblique."
+    }
+  },
+  "detection": {
+    "title": "Comment nous lisons ce dépôt",
+    "why": "Pourquoi",
+    "whyFor": "Pourquoi {{field}} a été détecté",
+    "fromFramework": "Valeur par défaut pour {{framework}}",
+    "framework": "Framework et langage",
+    "buildType": "Type de build",
+    "port": "Port",
+    "start": "Commande de démarrage",
+    "buildCommand": "Commande de build",
+    "output": "Répertoire de sortie",
+    "runtime": "Version du runtime",
+    "health": "Chemin du health check",
+    "confidence": {
+      "high": "Confiance élevée",
+      "medium": "Confiance moyenne",
+      "low": "Confiance faible"
+    },
+    "warnings": {
+      "no_lockfile": {
+        "text": "Aucun lockfile n'a été trouvé, les installations ne sont donc pas reproductibles.",
+        "fix": "Commitez votre lockfile et analysez à nouveau."
+      },
+      "multiple_dockerfiles": {
+        "text": "Plusieurs Dockerfile ont été trouvés.",
+        "fix": "Choisissez le bon dans Avancé si le choix est incorrect."
+      },
+      "malformed_manifest": {
+        "text": "Un manifeste n'a pas pu être analysé, il s'agit donc d'une meilleure estimation.",
+        "fix": "Corrigez la syntaxe JSON ou TOML et analysez à nouveau."
+      },
+      "dockerfile_no_expose": {
+        "text": "Le Dockerfile n'a pas de ligne EXPOSE.",
+        "fix": "Ajoutez EXPOSE avec votre port, ou définissez le port ci-dessous."
+      },
+      "monorepo_no_root_app": {
+        "text": "Il s'agit d'un monorepo sans app à sa racine.",
+        "fix": "Créez une app par package ci-dessous."
+      },
+      "railpack_unsupported": {
+        "text": "Les builds automatiques ne couvrent pas encore ce langage.",
+        "fix": "Ajoutez un Dockerfile au dépôt et analysez à nouveau."
+      }
+    }
+  },
+  "starter": {
+    "open": "Fichiers de configuration de démarrage",
+    "title": "Templates de démarrage",
+    "description": "Choisissez un point de départ, répondez à quelques questions et obtenez des fichiers validés à commiter dans votre dépôt.",
+    "generate": "Générer les fichiers",
+    "generating": "Génération...",
+    "copy": "Copier",
+    "copied": "{{path}} copié",
+    "next": "Commitez ces fichiers dans votre dépôt, puis déployez-le depuis l'étape D'où elle vient.",
+    "viaCli": "Générer plutôt avec la CLI",
+    "openHint": "Générez app.yaml à commiter dans votre dépôt."
+  },
+  "packages": {
+    "title": "Packages du workspace",
+    "hint": "Ce dépôt contient plusieurs packages. Créez une app par package. Chacune se construit depuis son propre répertoire et ne se redéploie que lorsqu'elle change.",
+    "dockerfile": "Dockerfile",
+    "configure": "Configurer celui-ci",
+    "creating": "Création de l'app et démarrage de son premier build...",
+    "open": "Ouvrir le build de {{name}}",
+    "creatingAll": "Création des apps...",
+    "createSelected_one": "Créer une app pour le package sélectionné",
+    "createSelected_other": "Créer une app pour chaque package sélectionné ({{count}})",
+    "createSelected_many": "Créer une app pour chaque package sélectionné ({{count}})",
+    "createSelected_zero": "Créer une app pour chaque package sélectionné",
+    "envNote": "Les variables d'environnement obligatoires ne sont pas demandées ici. Ajoutez-les sur chaque app, puis redéployez."
+  },
+  "plan": {
+    "title": "Plan d'import",
+    "hint": "Voyez l'app que deviendrait chaque package avant de créer quoi que ce soit : nom, port, type de build et ce qu'il faut revérifier.",
+    "review": "Prévisualiser le plan",
+    "loading": "Lecture de chaque package du dépôt...",
+    "error": "Impossible de construire le plan : {{message}}",
+    "retry": "Réessayer",
+    "empty": "Aucun package de workspace n'a été trouvé, il n'y a donc rien à planifier. Configurez ce dépôt comme une seule app ci-dessous.",
+    "summary_one": "{{count}} package, {{flagged}} avec des avertissements. Rien n'est créé tant que vous ne confirmez pas.",
+    "summary_other": "{{count}} packages, {{flagged}} avec des avertissements. Rien n'est créé tant que vous ne confirmez pas.",
+    "summary_many": "{{count}} packages, {{flagged}} avec des avertissements. Rien n'est créé tant que vous ne confirmez pas.",
+    "none": "Aucun",
+    "columns": {
+      "name": "Nom",
+      "directory": "Répertoire",
+      "port": "Port",
+      "build": "Build",
+      "dependsOn": "Dépend de",
+      "warnings": "Avertissements"
+    },
+    "kinds": {
+      "dockerfile": "Dockerfile",
+      "buildpack": "Buildpack",
+      "static": "Site statique"
+    },
+    "warnings": {
+      "package_cap": "{{found}} packages trouvés, seuls les {{cap}} premiers sont listés. Augmentez APP_WIZARD_MAX_PACKAGES sur le serveur pour en voir plus.",
+      "no_workspace": "Aucun package de workspace n'a été trouvé.",
+      "tree_truncated": "La liste des fichiers du dépôt a été tronquée, certains packages peuvent donc manquer.",
+      "no_dockerfile": "Pas de Dockerfile ici. Le build est détecté automatiquement.",
+      "no_port": "Aucun port d'écoute détecté. Définissez-le avant de créer.",
+      "duplicate_port": "Un autre package propose le même port. Ce n'est pas un problème dans des conteneurs séparés.",
+      "duplicate_name": "Un autre package correspond au même nom, un suffixe a donc été ajouté.",
+      "name_taken": "Une app portant ce nom existe déjà, un suffixe a donc été ajouté.",
+      "detect_failed": "Ce package n'a pas pu être analysé."
+    },
+    "editor": {
+      "project": "Projet",
+      "noProject": "Aucun projet",
+      "environment": "Environnement",
+      "noEnvironment": "Aucun environnement",
+      "protectedEnv": "{{name}} (protégé, non disponible ici)",
+      "deploy": "Démarrer le premier build de chaque app",
+      "columns": {
+        "include": "Inclure",
+        "env": "Variables d'environnement",
+        "status": "Statut",
+        "detail": "Détails"
+      },
+      "includeRow": "Inclure {{name}}",
+      "nameOf": "Nom de l'app pour {{directory}}",
+      "portOf": "Port de {{name}}",
+      "envButton_one": "{{count}} variable",
+      "envButton_other": "{{count}} variables",
+      "envButton_many": "{{count}} variables",
+      "envTitle": "Variables d'environnement de {{name}}",
+      "envHint": "Les valeurs sont envoyées une seule fois pour créer l'app. Cochez Secret pour stocker une valeur chiffrée. Elle n'est plus jamais affichée.",
+      "envEmpty": "Aucune variable pour l'instant.",
+      "envKey": "Nom",
+      "envValue": "Valeur",
+      "envSecret": "Secret",
+      "envRemove": "Supprimer la variable",
+      "envAdd": "Ajouter une variable",
+      "envDone": "Terminé",
+      "review_one": "Vérifier {{count}} app avant de créer",
+      "review_other": "Vérifier {{count}} apps avant de créer",
+      "review_many": "Vérifier {{count}} apps avant de créer",
+      "checking": "Vérification...",
+      "reviewHint": "Rien n'est encore créé. La vérification liste d'abord chaque problème.",
+      "dryRunSummary": "{{create}} apps peuvent être créées. {{problems}} ont des problèmes et seront ignorées. Rien n'a été créé.",
+      "create_one": "Créer {{count}} app",
+      "create_other": "Créer {{count}} apps",
+      "create_many": "Créer {{count}} apps",
+      "creating": "Création...",
+      "backToEdit": "Retour à l'édition",
+      "resultsSummary": "{{created}} apps créées, {{failed}} nécessitent votre attention.",
+      "retryFailed_one": "Réessayer {{count}} app en échec",
+      "retryFailed_other": "Réessayer {{count}} apps en échec",
+      "retryFailed_many": "Réessayer {{count}} apps en échec",
+      "deployError": "(premier build : {{message}})",
+      "error": "La requête d'import a échoué : {{message}}",
+      "status": {
+        "created": "Créée",
+        "already_exists": "Existe déjà",
+        "skipped_dependency": "Ignorée",
+        "failed": "Échec",
+        "would_create": "Prête"
+      },
+      "confirm": {
+        "title_one": "Créer {{count}} app ?",
+        "title_other": "Créer {{count}} apps ?",
+        "title_many": "Créer {{count}} apps ?",
+        "description": "Cela crée plus de {{above}} apps à la fois. Examinez la liste, puis confirmez.",
+        "confirm_one": "Créer {{count}} app",
+        "confirm_other": "Créer {{count}} apps",
+        "confirm_many": "Créer {{count}} apps"
+      }
+    }
+  },
+  "fields": {
+    "basics": "Bases",
+    "name": "Nom",
+    "namePlaceholder": "p. ex. marketing-site",
+    "image": "Image",
+    "imagePlaceholder": "p. ex. ghcr.io/you/app:latest",
+    "imageHint": "L'image à exécuter, avec un tag. Pas encore d'image ? Choisissez l'option git à l'étape 1 et nous en construirons une.",
+    "networking": "Réseau",
+    "port": "Port",
+    "portPlaceholder": "p. ex. 3000",
+    "portHint": "Le port sur lequel votre app écoute dans son conteneur, p. ex. 3000 pour une app Next.js classique.",
+    "healthCheck": "Health check",
+    "healthEnable": "Activer un health check",
+    "healthPath": "Chemin",
+    "healthHint": "Vérifié avant que le trafic ne bascule vers un nouveau conteneur, puis pour repérer un conteneur planté. Modifiez-le ou désactivez-le si votre app ne sert pas ce chemin.",
+    "hideAdvanced": "Masquer les options avancées",
+    "showAdvanced": "Afficher les options avancées",
+    "strategy": "Stratégie de déploiement",
+    "strategyDefault": "Par défaut (blue-green)",
+    "strategyRecreate": "Recréation",
+    "strategyBlueGreen": "Blue-green",
+    "strategyRolling": "Progressif",
+    "strategyHint": "Comment les nouvelles versions sont déployées. Blue-green démarre la nouvelle version à côté de l'ancienne et bascule le trafic une fois qu'elle est saine.",
+    "replicas": "Réplicas",
+    "replicasHint": "Combien de copies de votre app s'exécutent en même temps. Laissez vide pour une seule.",
+    "creating": "Création...",
+    "create": "Créer l'app"
+  },
+  "upload": {
+    "title": "Déployer depuis votre ordinateur",
+    "description": "Aucun remote git nécessaire. Le dossier est importé, construit et déployé.",
+    "note": "Exécutez les deux dans le dossier de votre projet. Les fichiers de .gitignore, node_modules et les fichiers .env ne sont jamais importés.",
+    "copy": "Copier",
+    "copied": "Copié",
+    "tokenName": "Déploiement CLI {{date}}",
+    "createToken": "Créer un token de déploiement",
+    "creating": "Création...",
+    "tokenHint": "Valide pendant {{days}} jours. Peut lire, modifier et déployer des apps.",
+    "tokenOnce": "Copiez-les maintenant. Le token n'est affiché qu'une fois et est valide pendant {{days}} jours.",
+    "hideToken": "Je les ai copiés, masquer",
+    "createFailed": "Impossible de créer un token : {{reason}}",
+    "openTokens": "En créer un dans les Paramètres"
+  },
+  "drop": {
+    "cardTitle": "Publier en déposant un dossier",
+    "cardDescription": "Déposez un dossier ou un .zip d'un site construit pour remplacer ce qui est en ligne. _redirects, _headers et 404.html sont pris en compte, et vous pouvez faire un rollback depuis l'historique des déploiements.",
+    "zoneLabel": "Déposez ici un dossier de site ou un zip",
+    "dropHere": "Déposez un dossier ou un .zip ici",
+    "hint": "Un dossier contenant index.html, ou un zip de celui-ci. Un unique dossier enveloppe à l'intérieur du zip est retiré pour vous.",
+    "chooseFolder": "Choisir un dossier",
+    "chooseZip": "Choisir un .zip",
+    "empty": "Rien à publier dans ce dépôt. Il était vide ou ne contenait que des fichiers ignorés comme .git et node_modules. Déposez le dossier qui contient votre site construit.",
+    "noIndex": "Ce dossier n'a pas d'index.html à sa racine, la racine du site affichera donc une 404. Choisissez le dossier qui contient index.html si ce n'est pas ce que vous voulez.",
+    "preview": {
+      "source": "Source",
+      "files": "Fichiers",
+      "size": "Taille"
+    },
+    "nameLabel": "Nom du site",
+    "nameHint": "Lettres minuscules, chiffres et tirets. Tiré du nom du dossier ou du fichier. Modifiez-le si vous le souhaitez.",
+    "publish": "Publier",
+    "publishNew": "Créer et publier",
+    "retry": "Réessayer",
+    "clear": "Choisir autre chose",
+    "another": "En déposer un autre",
+    "stage": {
+      "packing": "Empaquetage de vos fichiers...",
+      "creating": "Création du site...",
+      "uploading": "Import...",
+      "publishing": "Publication..."
+    },
+    "done": "Publié. Suivez le déploiement pour obtenir l'URL en ligne.",
+    "doneNoIndex": "Publié, mais le zip n'a pas d'index.html à sa racine, la racine du site affiche donc une 404.",
+    "errors": {
+      "tooLarge": "Ce site dépasse les limites d'import. Supprimez les gros fichiers dont vous n'avez pas besoin, ou demandez à un admin d'augmenter les limites.",
+      "rejected": "L'import a été rejeté.",
+      "nameTaken": "Un site ou une app portant ce nom existe déjà. Modifiez le nom ci-dessus et réessayez.",
+      "network": "L'import a été interrompu. Vérifiez votre connexion et réessayez.",
+      "tooManyFiles": "Ce dossier contient trop de fichiers pour un seul dépôt. Compressez plutôt un dossier de sortie de build plus petit.",
+      "generic": "La publication a échoué."
+    }
+  },
+  "uploadSource": {
+    "title": "Source : import CLI",
+    "hash": "Hachage de l'archive",
+    "files": "Fichiers",
+    "redeploy": "Redéployez depuis le dossier du projet avec :"
+  },
+  "importDatabase": {
+    "title": "Besoin d'une base de données ?",
+    "optional": "Facultatif",
+    "detected": "Ce dépôt semble utiliser {{engine}}, il est donc suggéré ici.",
+    "engines": "Moteur de base de données",
+    "useExisting": "Utiliser une base existante",
+    "summary": "Crée une base de données {{engine}} {{version}} et définit {{envVar}} pour cette app.",
+    "summaryBackups": "Crée une base de données {{engine}} {{version}} avec des sauvegardes quotidiennes et définit {{envVar}} pour cette app.",
+    "name": "Nom de la base de données",
+    "nameFree": "Ce nom de base de données est disponible.",
+    "nameError": {
+      "required": "Donnez un nom à la base de données.",
+      "format": "Utilisez des lettres minuscules, des chiffres et des tirets.",
+      "taken": "Une base de données portant ce nom existe déjà."
+    },
+    "backups": "La sauvegarder chaque jour",
+    "noDestination": "Les sauvegardes quotidiennes nécessitent une destination de sauvegarde, et aucune n'est encore configurée.",
+    "existingLabel": "Base de données existante",
+    "existingPick": "Choisir une base de données",
+    "existingNone": "Aucune base de données pour l'instant.",
+    "injected": "Variables ajoutées à l'app",
+    "from": "depuis {{database}}"
+  },
+  "import": {
+    "loading": "Lecture du dépôt",
+    "urlInvalid": "Cela ne ressemble pas encore à l'URL d'un dépôt.",
+    "summary": "Se construit avec {{builder}} depuis {{branch}} et se déploie vers {{target}}",
+    "builders": {
+      "railpack": "Railpack",
+      "dockerfile": "votre Dockerfile",
+      "static": "l'hébergement statique",
+      "compose": "Docker Compose"
+    },
+    "card": {
+      "languages": "Langages",
+      "branch": "Branche",
+      "commitBy": "par {{author}}, {{when}}",
+      "visibility": {
+        "public": "Public",
+        "private": "Privé"
+      }
+    },
+    "detected": {
+      "line": "Détecté : {{stack}}, se construit avec {{builder}}, écoute sur {{port}}",
+      "edit": "Modifier",
+      "monorepo": "Plusieurs apps trouvées. Déploiement de {{dir}}.",
+      "chooseApp": "Choisir l'app"
+    },
+    "notice": {
+      "private_needs_account": "Ce dépôt semble privé. Connectez un compte qui peut le voir, ou utilisez un token de déploiement.",
+      "invalid_url": "Cela ne ressemble pas encore à l'URL d'un dépôt.",
+      "not_found": "Nous n'avons pas trouvé ce dépôt. Vérifiez l'URL et réessayez.",
+      "rate_limited": "Aperçu indisponible pour le moment. Vous pouvez quand même continuer.",
+      "unsupported_host": "Cet hôte n'a pas d'aperçu. Vous pouvez quand même continuer.",
+      "connect": "Connecter un compte",
+      "useToken": "Utiliser un token de déploiement",
+      "tokenLabel": "Token de déploiement",
+      "tokenApply": "Aperçu",
+      "continue": "Continuer"
+    },
+    "form": {
+      "name": "Nom de l'app",
+      "nameFree": "Ce nom est disponible.",
+      "nameError": {
+        "required": "Donnez un nom à l'app.",
+        "format": "Utilisez des lettres minuscules, des chiffres et des tirets.",
+        "taken": "Une app portant ce nom existe déjà."
+      },
+      "env": "Variables d'environnement",
+      "envRequired": "L'app a besoin de cette variable pour démarrer.",
+      "addVar": "Ajouter une variable",
+      "varName": "Nom de la variable",
+      "varValue": "Valeur de la variable",
+      "domain": "Adresse",
+      "freeAddress": "une adresse gratuite",
+      "customDomain": "Utiliser un domaine personnalisé",
+      "domainPlaceholder": "app.example.com",
+      "domainHint": "Faites pointer un CNAME vers ce serveur après le premier déploiement.",
+      "domainError": "Saisissez un domaine comme app.example.com.",
+      "advanced": "Avancé",
+      "port": "Port",
+      "health": "Chemin du health check",
+      "memory": "Mémoire (Mo)",
+      "directory": "Répertoire",
+      "buildType": "Type de build",
+      "deploy": "Déployer",
+      "deploying": "Déploiement..."
+    },
+    "pushOn": "Se déploie à chaque push.",
+    "pushOff": "Les push ne déploieront pas."
+  },
+  "deployOptions": {
+    "title": "Options de déploiement",
+    "beta": "Bêta",
+    "push": {
+      "label": "Déployer automatiquement quand je pousse sur {{branch}}",
+      "on": "Un push sur cette branche construit et déploie l'app. Le webhook est vérifié après la création de l'app.",
+      "off": "Les push ne déploieront pas. Seuls un tag ou une release publiée le feront."
+    },
+    "previews": {
+      "label": "Prévisualiser chaque pull request",
+      "hint": "Chaque pull request obtient sa propre URL temporaire, supprimée à sa fermeture.",
+      "unsupported": "Les aperçus nécessitent un dépôt GitHub, GitLab, Bitbucket ou Gitea."
+    },
+    "health": {
+      "label": "Chemin du health check",
+      "hint": "Une nouvelle version doit répondre 200 ici avant de recevoir du trafic. Laissez vide pour utiliser le chemin détecté."
+    },
+    "jobs": {
+      "title": "Ajouter un worker en arrière-plan ou un job planifié",
+      "hint": "Les jobs planifiés appellent un chemin de votre app selon un calendrier, sous forme de requêtes HTTP. Il n'existe pas de type de processus worker distinct, exécutez donc un worker de longue durée comme sa propre app.",
+      "path": "Chemin à appeler",
+      "schedule": "Calendrier",
+      "cron": "Expression cron",
+      "remove": "Supprimer ce job",
+      "add": "Ajouter un job planifié",
+      "pathError": "Commencez le chemin par /, par exemple /api/cron/cleanup.",
+      "cronError": "Cette expression cron n'est pas valide.",
+      "presets": {
+        "every5": "Toutes les 5 minutes",
+        "hourly": "Toutes les heures",
+        "daily": "Tous les jours à 03:00 UTC",
+        "custom": "Cron personnalisé"
+      }
+    },
+    "failed": {
+      "deployOnPush": "Le déploiement au push n'a pas pu être configuré : {{reason}}.",
+      "previews": "Les aperçus n'ont pas pu être activés : {{reason}}.",
+      "job": "Le job {{path}} n'a pas été créé : {{reason}}."
+    }
+  },
+  "gitSettings": {
+    "open": "Paramètres Git",
+    "accounts": "Comptes connectés",
+    "none": "Aucun compte git n'est encore connecté. Connectez-en un pour choisir parmi vos dépôts.",
+    "loaded": "{{count}} dépôts",
+    "failed": "impossible de lister",
+    "refreshFailed": "Impossible d'actualiser : {{reason}}",
+    "defaults": "Valeurs par défaut pour cette app",
+    "pickFirst": "Choisissez un dépôt pour définir sa branche, le répertoire de l'app et le déploiement au push.",
+    "directory": "Répertoire de l'app",
+    "pushOn": "Chaque push sur cette branche déploie."
+  },
+  "more": {
+    "title": "Plus de façons de démarrer",
+    "hide": "Fermer",
+    "image": {
+      "title": "Image de conteneur",
+      "hint": "Déployez une image prédéfinie."
+    },
+    "compose": {
+      "title": "Docker Compose",
+      "hint": "Collez ou importez un fichier."
+    },
+    "run": {
+      "title": "docker run",
+      "hint": "Transformez une commande en app."
+    },
+    "site": {
+      "title": "Site statique",
+      "hint": "Déposez un dossier ou un zip."
+    },
+    "computer": {
+      "title": "Depuis votre ordinateur",
+      "hint": "Déployez un dossier avec la CLI."
+    }
+  },
+  "deployButton": {
+    "title": "Ajoutez un bouton Deploy to Levelrail à votre README",
+    "description": "Construisez un lien qui ouvre ce formulaire sur le propre serveur du lecteur. Il ne transporte aucun secret.",
+    "image": "Image",
+    "name": "Nom de l'app (facultatif)",
+    "namePlaceholder": "my-app",
+    "port": "Port (facultatif)",
+    "health": "Chemin du health check (facultatif)",
+    "env": "Noms des variables d'environnement (facultatif)",
+    "envHint": "Noms uniquement, séparés par des virgules ou des retours à la ligne. Les lecteurs saisissent les valeurs sur leur propre serveur.",
+    "envError": "Utilisez des noms en majuscules comme DATABASE_URL, sans valeurs, 50 au maximum.",
+    "snippet": "Extrait Markdown",
+    "copy": "Copier le Markdown",
+    "copied": "Copié"
+  },
+  "deployPage": {
+    "title": "Déployer depuis un lien",
+    "description": "Examinez ce que le lien a rempli, puis continuez. Rien n'est créé tant que vous n'appuyez pas sur Déployer.",
+    "banner": "Prérempli depuis un lien. Examinez avant de déployer",
+    "bannerBody": "Vérifiez le dépôt, la branche et le nom ci-dessous. Rien n'est créé tant que vous ne confirmez pas à la dernière étape.",
+    "ignoredTitle": "Certains paramètres du lien ont été ignorés",
+    "ignoredBody": "Ceux-ci étaient absents, inconnus ou invalides : {{params}}. Les valeurs d'environnement et les secrets ne sont jamais lus depuis un lien.",
+    "repo": "Dépôt",
+    "branch": "Branche",
+    "branchDefault": "Branche par défaut",
+    "name": "Nom suggéré",
+    "port": "Port",
+    "template": "Template",
+    "templateName": "{{name}}",
+    "reviewRepo": "Analyser et examiner",
+    "reviewTemplate": "Ouvrir le template",
+    "empty": "Ce lien ne contenait ni dépôt ni template valide. Démarrez vous-même une nouvelle app.",
+    "startNew": "Démarrer une nouvelle app"
+  },
+  "deployLinkDialog": {
+    "action": "Obtenir un lien de bouton Deploy",
+    "title": "Lien de bouton Deploy",
+    "description": "Placez-le dans un README. Il ouvre ce tableau de bord avec le dépôt prérempli. Le lecteur examine et confirme toujours. Aucun secret n'est inclus.",
+    "repo": "URL du dépôt",
+    "branch": "Branche (facultatif)",
+    "name": "Nom de l'app (facultatif)",
+    "link": "Lien",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "copy": "Copier",
+    "copied": "Copié",
+    "alt": "Déployer sur {{brand}}",
+    "errors": {
+      "repo": "Saisissez une URL git https ou ssh sans nom d'utilisateur ni mot de passe.",
+      "branch": "Utilisez un simple nom de branche ou de tag.",
+      "name": "Utilisez des lettres minuscules, des chiffres et des tirets."
+    }
+  },
+  "aside": {
+    "title": "Ce que vous obtiendrez",
+    "detect": "Nous détectons la stack et les ports à partir de votre code.",
+    "review": "Vous examinez le plan et les paramètres.",
+    "deploy": "Un clic le déploie avec des health checks.",
+    "address": "Les apps reçoivent une adresse sous {{domain}}.",
+    "label": "Ce que vous obtiendrez et autres façons d'entrer"
+  }
+}

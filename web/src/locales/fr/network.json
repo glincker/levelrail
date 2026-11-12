@@ -1,0 +1,104 @@
+{
+  "privateLink": "Réseaux privés et règles",
+  "page": {
+    "title": "Réseau",
+    "description": "Où chaque app et chaque base de données s'exécute, et comment elles se joignent. Zone interne {{zone}}."
+  },
+  "summary": {
+    "nodes": "Serveurs",
+    "mesh": "Mesh",
+    "zone": "Zone interne",
+    "resources": "Apps et bases de données",
+    "meshOff": "Désactivé",
+    "meshOn": "Activé",
+    "meshRestart": "Redémarrage nécessaire"
+  },
+  "group": {
+    "thisServer": "Ce serveur (control plane)",
+    "unplaced": "Non placées",
+    "unplacedHint": "Ces ressources sont placées sur un node que ce control plane ne connaît pas ({{ids}}). Déplacez-les vers ce serveur, ou ajoutez à nouveau le node.",
+    "moveHint": "Ouvrez une app ou une base de données et choisissez un node pour la déplacer vers ce serveur.",
+    "reAdd": "Ajouter à nouveau un node",
+    "empty": "Rien ne s'exécute encore ici.",
+    "cordoned": "Cordonné",
+    "noMeshAddress": "Pas encore sur le mesh",
+    "viewNode": "Détails du node"
+  },
+  "resource": {
+    "app": "App",
+    "database": "Base de données",
+    "copy": "Copier l'adresse interne",
+    "copied": "Copié",
+    "local": "local",
+    "connectsTo": "Se connecte à {{database}}",
+    "noMeshAddress": "Pas d'adresse mesh",
+    "noMeshAddressHint": "Cette ressource se trouve sur un node sans adresse mesh, les autres nodes ne peuvent donc pas l'atteindre."
+  },
+  "legend": {
+    "title": "Comment lire cette page",
+    "server": "Un serveur qui exécute Levelrail. La première carte est le control plane lui-même.",
+    "internalName": "Le nom interne que les autres apps utilisent pour joindre cette ressource. Utilisez le bouton de copie pour le copier dans une chaîne de connexion.",
+    "local": "Local signifie que la ressource se trouve sur ce serveur et est joignable directement, sans mesh.",
+    "mesh": "Avec le mesh activé, les ressources des autres serveurs reçoivent une adresse mesh et le même nom interne fonctionne d'un serveur à l'autre."
+  },
+  "empty": {
+    "title": "Rien ne s'exécute pour l'instant",
+    "description": "Déployez une app ou créez une base de données et elle apparaîtra ici, groupée par serveur d'exécution.",
+    "action": "Aller aux apps"
+  },
+  "error": {
+    "load": "Impossible de charger la vue d'ensemble du réseau."
+  },
+  "mesh": {
+    "title": "Réseau mesh",
+    "description": "Un réseau WireGuard privé entre vos serveurs, afin que les apps et bases de données de serveurs différents se joignent par leur nom interne. Vous n'en avez besoin que si vous gérez plus d'un serveur.",
+    "state": {
+      "off": "Désactivé",
+      "on": "Activé",
+      "enabling": "Redémarrage nécessaire",
+      "disabling": "Redémarrage nécessaire pour désactiver",
+      "error": "Impossible de démarrer"
+    },
+    "pinned": "Défini par {{envVar}} sur le serveur. Supprimez-le là-bas pour gérer le mesh depuis ici.",
+    "readiness": "Disponibilité",
+    "check": {
+      "wireguard": "Prise en charge de WireGuard",
+      "udp_port": "Port UDP disponible",
+      "firewall": "Pare-feu",
+      "public_address": "Adresse publique du control plane",
+      "local_node": "Ce serveur en tant que node"
+    },
+    "status": {
+      "pass": "Prêt",
+      "warn": "À vérifier",
+      "fail": "Bloqué"
+    },
+    "fix": "Correction : {{hint}}",
+    "enable": "Activer le mesh",
+    "disable": "Désactiver le mesh",
+    "enableTitle": "Activer le réseau mesh ?",
+    "enableDescription": "Le mesh est enregistré maintenant et démarre au redémarrage du control plane.",
+    "disableTitle": "Désactiver le réseau mesh ?",
+    "disableDescription": "Le mesh s'arrête au prochain redémarrage du control plane.",
+    "disableNodes": "{{count}} autre(s) node(s) sont enrôlés et joignent ce control plane via le mesh. La désactivation les déconnecte.",
+    "restartRequired": "Redémarrez le control plane pour appliquer ce changement.",
+    "restartCommand": "À exécuter sur le serveur :",
+    "saved": "Paramètre du mesh enregistré",
+    "startError": "Le mesh n'a pas démarré : {{error}}",
+    "blocked": "Corrigez d'abord les vérifications bloquées, puis activez le mesh.",
+    "rootOnly": "Seul un administrateur peut modifier ceci.",
+    "otherNodes": "Autres nodes enrôlés : {{count}}",
+    "enableConsequence1": "Ce serveur ouvre une interface WireGuard et écoute sur un port UDP (51820 par défaut).",
+    "enableConsequence2": "Les agents des autres nodes se connectent à ce control plane via le mesh.",
+    "enableConsequence3": "Les apps et bases de données reçoivent des adresses internes joignables d'un serveur à l'autre.",
+    "disableConsequence1": "Les apps et bases de données des autres serveurs perdent leurs adresses internes inter-serveurs.",
+    "disableConsequence2": "Tout ce qui se trouve sur ce serveur continue de fonctionner localement."
+  },
+  "banner": {
+    "diagram": {
+      "app": "App",
+      "node": "Node",
+      "server": "Serveur"
+    }
+  }
+}

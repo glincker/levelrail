@@ -1,0 +1,59 @@
+{
+  "title": "{{name}} : Infrastructure",
+  "description": "Faites glisser, déplacez et zoomez pour voir comment les apps, bases de données, domaines, load balancers, volumes et nodes de ce projet sont reliés. Les positions sont mémorisées dans ce navigateur.",
+  "canvasLabel": "Canevas d'infrastructure avec {{count}} ressources. Sélectionnez une ressource et utilisez les flèches du clavier pour la déplacer.",
+  "empty": {
+    "title": "Rien n'est encore rattaché à ce projet",
+    "description": "Affectez une app ou une base de données à ce projet pour voir ici leurs relations.",
+    "action": "Retour au projet"
+  },
+  "error": {
+    "title": "Impossible de charger le graphe d'infrastructure"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Base de données",
+    "volume": "Volume",
+    "domain": "Domaine",
+    "load_balancer": "Load balancer",
+    "node": "Node"
+  },
+  "edge": {
+    "database_binding": "Connexion à la base de données",
+    "depends_on": "Dépend de",
+    "volume_attachment": "Rattachement de volume",
+    "egress_allow": "Règle d'autorisation de sortie",
+    "routing": "Routage",
+    "load_balances": "Répartit le trafic vers",
+    "placed_on": "S'exécute sur"
+  },
+  "status": {
+    "healthy": "Sain",
+    "deploying": "Déploiement en cours",
+    "failed": "Échec",
+    "idle": "Aucun statut",
+    "draft": "Brouillon, pas encore appliqué"
+  },
+  "toolbar": {
+    "label": "Commandes du canevas",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "fit": "Ajuster à la vue",
+    "resetLayout": "Réinitialiser la disposition",
+    "zoomLevel": "Zoom {{percent}} pour cent",
+    "hidden": "{{count}} ressources sont hors écran et ne sont pas dessinées tant que vous ne vous en approchez pas."
+  },
+  "panel": {
+    "label": "Détails de {{name}}",
+    "close": "Fermer les détails",
+    "connections": "Connexions",
+    "noConnections": "Rien n'est encore relié à cette ressource.",
+    "actions": "Actions rapides",
+    "overview": "Ouvrir la vue d'ensemble",
+    "logs": "Voir les logs",
+    "deploys": "Déploiements et rollback",
+    "domains": "Gérer les domaines",
+    "metrics": "Voir les métriques"
+  },
+  "legend": "Légende"
+}

@@ -1,0 +1,62 @@
+{
+  "title": "Stockage",
+  "subtitle": "Ce que Docker conserve sur le disque pour vos apps, et ce qu'il est sûr de libérer.",
+  "node": {
+    "label": "Node",
+    "local": "Ce serveur",
+    "partial": "Pour l'instant, seules les images sont mesurées pour ce node.",
+    "unsupportedTitle": "Ce node n'est pas encore pris en charge",
+    "unsupported": "Levelrail ne peut pas encore lire le stockage de ce node. Rien n'est modifié ici.",
+    "retry": "Vérifier à nouveau"
+  },
+  "engine": {
+    "title": "Moteur et signatures"
+  },
+  "verdict": {
+    "space": "{{free}} libres sur {{total}}.",
+    "health": {
+      "healthy": "Sain",
+      "low": "Espace faible",
+      "critical": "Critique"
+    },
+    "safe": "{{size}} peuvent être supprimés en toute sécurité.",
+    "nothingSafe": "Rien à supprimer.",
+    "forecast_one": "Plein dans environ {{count}} jour au rythme actuel.",
+    "forecast_other": "Plein dans environ {{count}} jours au rythme actuel.",
+    "forecast_many": "Plein dans environ {{count}} jours au rythme actuel."
+  },
+  "disk": {
+    "label": "Utilisation du disque",
+    "legend": "Filtrer par catégorie",
+    "unmeasured": "Non mesuré",
+    "segmentLabel": "{{name}}, {{size}}",
+    "filterLabel": "Filtre : {{name}}",
+    "categories": {
+      "appData": "Données des apps",
+      "images": "Images",
+      "buildCache": "Cache de build",
+      "containersLogs": "Conteneurs et logs",
+      "other": "Autre",
+      "free": "Libre"
+    },
+    "meaning": {
+      "appData": "Volumes et bases de données appartenant à vos apps. Jamais supprimés automatiquement.",
+      "images": "Images Docker de vos déploiements. Les anciennes et les inutilisées peuvent être supprimées.",
+      "buildCache": "Couches conservées pour accélérer les builds. Peut être vidé sans risque, le prochain build sera simplement plus lent.",
+      "containersLogs": "Conteneurs arrêtés et leurs fichiers de log.",
+      "other": "Tout le reste sur le disque, en dehors de Levelrail."
+    },
+    "tip": {
+      "sizeShare": "{{size}}, {{share}} du disque",
+      "reclaimable": "{{size}} peuvent être supprimés en toute sécurité",
+      "nothingToFree": "Rien à supprimer"
+    }
+  },
+  "actions": {
+    "terminal": "Exécuter dans un terminal",
+    "review": "Examiner le nettoyage"
+  },
+  "errors": {
+    "status": "Impossible de lire l'utilisation du disque pour le moment."
+  }
+}

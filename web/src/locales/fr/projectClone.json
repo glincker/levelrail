@@ -1,0 +1,30 @@
+{
+  "trigger": "Cloner",
+  "title": "Cloner le projet",
+  "description": "Copiez les apps de ce projet dans un nouveau projet. Les apps clonées sont créées suspendues, rien ne s'exécute donc tant que vous ne les démarrez pas.",
+  "name": "Nom du nouveau projet",
+  "nameHint": "Si le nom est déjà pris, un numéro est ajouté.",
+  "options": {
+    "envVars": "Copier les variables d'environnement",
+    "settings": "Copier les paramètres de l'app",
+    "domains": "Domaines",
+    "domainsNone": "Aucun",
+    "domainsPlaceholder": "Noms d'hôte fictifs"
+  },
+  "preview": "Prévisualiser le plan",
+  "previewing": "Vérification...",
+  "apply": "Créer le clone",
+  "applying": "Clonage...",
+  "cancel": "Fermer",
+  "plan": {
+    "apps": "Apps à créer ({{count}})",
+    "appLine": "{{source}} vers {{name}}",
+    "envVars": "{{count}} variables d'environnement",
+    "suspended": "Les apps clonées sont créées suspendues. Démarrez-les depuis le nouveau projet une fois les valeurs renseignées.",
+    "secrets": "Clés secrètes nécessitant une valeur ({{count}})",
+    "secretsLink": "Les renseigner dans le nouveau projet",
+    "skipped": "Ignorées ({{count}})",
+    "empty": "Rien à créer."
+  },
+  "done": "Projet cloné."
+}

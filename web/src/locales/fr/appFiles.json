@@ -1,0 +1,47 @@
+{
+  "title": "Fichiers",
+  "description": "Fichiers de configuration en ligne écrits dans le conteneur au démarrage. Les fichiers secrets ne sont plus jamais affichés après l'enregistrement.",
+  "empty": "Aucun fichier en ligne pour l'instant.",
+  "emptyHint": "Ajoutez un fichier pour le monter dans l'app au moment du déploiement.",
+  "add": "Ajouter un fichier",
+  "edit": "Modifier {{path}}",
+  "delete": "Supprimer {{path}}",
+  "redacted": "Masqué",
+  "secretBadge": "Secret",
+  "size": "{{count}} octets",
+  "loadError": "Impossible de charger les fichiers.",
+  "dialog": {
+    "addTitle": "Ajouter un fichier",
+    "editTitle": "Modifier le fichier",
+    "description": "Enregistré sous forme d'un seul fichier dans le conteneur de l'app.",
+    "path": "Chemin",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "Mode",
+    "modePlaceholder": "0644",
+    "content": "Contenu",
+    "contentRedactedHint": "Ce fichier est secret. Saisissez un nouveau contenu pour le remplacer.",
+    "secret": "Fichier secret",
+    "secretHelp": "Le contenu secret n'est plus jamais affiché après l'enregistrement.",
+    "restart": "Redémarrer maintenant pour appliquer",
+    "cancel": "Annuler",
+    "save": "Enregistrer le fichier",
+    "saving": "Enregistrement..."
+  },
+  "validation": {
+    "path": "Le chemin doit être absolu.",
+    "mode": "Le mode doit être octal, par exemple 0644."
+  },
+  "deleteDialog": {
+    "title": "Supprimer le fichier ?",
+    "description": "{{path}} sera supprimé de l'app.",
+    "restart": "Redémarrer maintenant pour appliquer",
+    "confirm": "Supprimer",
+    "deleting": "Suppression..."
+  },
+  "toast": {
+    "saved": "Fichier enregistré.",
+    "saveFailed": "Impossible d'enregistrer le fichier.",
+    "deleted": "Fichier supprimé.",
+    "deleteFailed": "Impossible de supprimer le fichier."
+  }
+}

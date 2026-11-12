@@ -1,0 +1,7 @@
+{
+  "urlTitle": "URL du dépôt public",
+  "connect": {
+    "title": "Besoin de dépôts privés ou du déploiement à chaque push ?",
+    "reason": "Un fournisseur Git vous permet de choisir parmi vos dépôts et de redéployer à chaque push. Tout ce qui précède fonctionne sans lui."
+  }
+}

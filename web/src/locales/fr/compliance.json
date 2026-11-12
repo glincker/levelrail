@@ -1,0 +1,57 @@
+{
+  "rootOnly": "Les revues d'accès et les dossiers de preuves sont réservés aux comptes root.",
+  "kind": {
+    "user": "Compte utilisateur",
+    "team_member": "Appartenance à une équipe",
+    "api_token": "Token d'API",
+    "env_grant": "Autorisation d'environnement"
+  },
+  "review": {
+    "title": "Revues d'accès",
+    "description": "Une revue liste chaque utilisateur, appartenance à une équipe, token d'API et autorisation d'environnement avec la date de dernière activité. Marquez chaque ligne à conserver ou à révoquer. Les révocations s'appliquent quand vous terminez la revue et sont inscrites dans le journal d'audit.",
+    "name": "Nom (facultatif)",
+    "dueDays": "Échéance en jours",
+    "repeatDays": "Répéter tous les jours (0 pour à la demande)",
+    "start": "Démarrer la revue",
+    "empty": "Aucune revue d'accès pour l'instant. Démarrez-en une pour consigner qui a encore besoin d'un accès.",
+    "due": "Échéance",
+    "overdue": "En retard",
+    "open": "Ouvrir",
+    "hide": "Masquer",
+    "status": {
+      "open": "Ouverte",
+      "completed": "Terminée"
+    },
+    "lastActive": "Dernière activité",
+    "never": "jamais",
+    "keep": "Conserver",
+    "revoke": "Révoquer",
+    "revoked": "Révoqué",
+    "progress": "{{decided}} sur {{total}} décidés, {{revoke}} à révoquer",
+    "complete": "Terminer la revue",
+    "completing": "Application en cours",
+    "confirmTitle": "Terminer cette revue d'accès ?",
+    "confirmDescription": "{{count}} autorisation(s) d'accès seront révoquées maintenant. Cette action ne peut pas être annulée d'ici.",
+    "completed": "Revue terminée, {{count}} révoqué(s)",
+    "partial": "{{count}} révocation(s) ont échoué, la revue reste ouverte"
+  },
+  "packs": {
+    "title": "Dossiers de preuves",
+    "description": "Une archive signée pour une période : journal d'audit, revues d'accès, historique des sauvegardes et des tests de restauration, approbations de déploiement, paramètres de sécurité et inventaire des certificats, avec un manifeste de hachages SHA-256.",
+    "notCertification": "Un dossier de preuves est un enregistrement destiné à être examiné par un auditeur. Ce n'est ni une certification ni une preuve de conformité à un référentiel.",
+    "from": "Du",
+    "to": "Au",
+    "rangeTo": "au",
+    "generate": "Générer le dossier",
+    "empty": "Aucun dossier de preuves pour l'instant.",
+    "status": {
+      "running": "Génération",
+      "complete": "Prêt",
+      "failed": "Échec"
+    },
+    "verify": "Vérifier",
+    "download": "Télécharger",
+    "verifyOk": "Le dossier correspond à son manifeste et à sa signature",
+    "verifyFailed": "Le dossier a échoué à la vérification"
+  }
+}
