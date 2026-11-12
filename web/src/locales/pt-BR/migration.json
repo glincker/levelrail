@@ -522,7 +522,7 @@
       "user": "Usuário SSH",
       "passphrase": "Senha da chave",
       "key": "Chave privada",
-      "keyPlaceholder": "Cole a chave privada OpenSSH aqui",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
       "keyFile": "Ou carregue a chave privada de um arquivo",
       "keyHelp": "Mantida em memória somente durante esta sessão e enviada no corpo da requisição. Nunca armazenada nem registrada em log. Quem tem esta chave pode agir como esse usuário no servidor antigo, então use uma chave que você possa remover depois.",
       "advanced": "Senha, caminho do socket do Docker e opções de rede",

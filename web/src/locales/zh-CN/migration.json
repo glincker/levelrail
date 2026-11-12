@@ -1,0 +1,858 @@
+{
+  "title": "导入之后：数据与切换",
+  "description": "导入的数据库和卷一开始是空的。请把数据复制进来，检查每个域名是否可以安全切换，然后更改 DNS。在你切换之前，源端会继续提供服务。",
+  "data": {
+    "title": "复制数据库数据",
+    "description": "将源数据库的转储以流的方式导入托管数据库，并比对行数。重复执行会替换目标的内容，因此失败的复制可以安全重试。",
+    "empty": "还没有托管数据库。请先从某个平台导入。",
+    "emptyTitle": "没有托管数据库",
+    "copy": "复制数据",
+    "cancel": "取消",
+    "start": "开始复制",
+    "starting": "启动中",
+    "loadError": "无法加载数据库复制状态。",
+    "startError": "无法开始复制",
+    "tablesChecked": "已检查 {{count}} 个表，{{bad}} 个不一致",
+    "differs": "{{name}}：源 {{source}}，目标 {{target}}",
+    "passwordHelp": "仅在复制期间保存在内存中，从不存储。",
+    "fields": {
+      "host": "源主机",
+      "port": "端口",
+      "user": "用户",
+      "password": "密码",
+      "database": "数据库名称",
+      "authDatabase": "认证数据库（MongoDB）",
+      "tls": "要求到源端使用 TLS"
+    },
+    "status": {
+      "pending": "未复制",
+      "copying": "复制中",
+      "verified": "已验证",
+      "failed": "失败",
+      "unsupported": "不支持"
+    }
+  },
+  "volumes": {
+    "title": "复制卷",
+    "description": "控制平面不会移动卷的内容，因为这需要源主机上的 root 权限。这里会打印要在此节点上运行的命令。",
+    "source": "源端 SSH 登录",
+    "sourcePlaceholder": "root@old-server.example.com",
+    "show": "显示命令",
+    "loading": "正在生成命令",
+    "none": "没有导入的应用带有持久卷或绑定挂载。",
+    "copyCommand": "复制命令",
+    "loadError": "无法生成命令"
+  },
+  "cutover": {
+    "title": "切换检查",
+    "description": "针对每个导入的域名：应用在此处是否健康，客户端缓存旧地址多久，以及 DNS 当前指向哪里。不会替你切换任何内容。",
+    "targetIp": "此节点的公网 IP",
+    "targetIpHelp": "留空时自动检测。",
+    "check": "运行检查",
+    "verify": "切换后验证",
+    "running": "检查中",
+    "noDomains": "没有导入的应用带有可检查的域名。",
+    "loadError": "无法运行检查",
+    "thisNode": "此节点：{{ips}}",
+    "change": "将 {{type}} {{name}} 设置为 {{value}}（TTL {{ttl}}）",
+    "replaces": "替换 {{what}}",
+    "verdict": {
+      "go": "可以切换",
+      "wait": "请等待",
+      "no-go": "不可切换",
+      "switched": "已切换"
+    },
+    "phase": {
+      "pre-switch": "切换之前",
+      "post-switch": "切换之后"
+    }
+  },
+  "hub": {
+    "title": "迁移数据库服务器",
+    "description": "在一次引导式运行中迁移源服务器上的所有数据库。源端只会被读取，不会向其写入或从中移除任何内容，并且在你切换任何内容之前，你要验证每个数据库。",
+    "newMigration": "开始新的迁移",
+    "forget": "忘记此计划",
+    "forgetHelp": "移除计划以及保存在内存中的密码。已在此处创建的数据库会保留。",
+    "resume": "{{host}} 的会话",
+    "steps": {
+      "connect": "连接",
+      "inventory": "清单",
+      "preflight": "预检",
+      "copy": "复制",
+      "verify": "验证",
+      "cutover": "切换"
+    },
+    "safeToSkip": {
+      "title": "哪些可以安全跳过",
+      "never": "每次复制后，绝不要跳过逐表行数检查。它能证明数据已到达。",
+      "volumes": "卷：如果你的应用都没有把文件保存在卷上，可以安全跳过。",
+      "cutover": "切换检查：如果你手动切换应用并自行检查，可以安全跳过。",
+      "warnings": "阅读警告后可以继续。阻止项则不能继续。"
+    },
+    "connect": {
+      "title": "连接到源服务器",
+      "description": "输入服务器的地址，以及一个能读取你要迁移的所有数据库的用户。密码仅在此会话期间保存在内存中，从不存储或记录日志。",
+      "engine": "引擎",
+      "host": "主机",
+      "port": "端口",
+      "portHelp": "留空时使用该引擎的默认值。",
+      "user": "用户",
+      "password": "密码",
+      "tls": "要求到源端使用 TLS",
+      "submit": "读取服务器",
+      "submitting": "正在读取服务器",
+      "error": "无法读取源服务器",
+      "readOnly": "对源端只会运行只读语句和转储工具。",
+      "advanced": "改为复制单个已导入的数据库",
+      "local": "此节点上的数据库容器",
+      "localNone": "另一台服务器（输入主机和端口）",
+      "localHelp": "通过容器自己的 Docker 网络读取。由于 Docker 隔离网络，辅助程序无法访问同一台机器上的主机地址。",
+      "localProblem": "{{name}}（{{problem}}）"
+    },
+    "inventory": {
+      "title": "服务器上的数据库",
+      "summary": "共 {{count}} 个数据库，合计 {{size}}。服务器版本 {{version}}，目标节点剩余 {{free}}。",
+      "empty": "服务器上没有此用户可读取的数据库。请检查该用户的权限后重试。",
+      "columns": {
+        "select": "复制",
+        "source": "源数据库",
+        "size": "大小",
+        "tables": "表",
+        "extensions": "扩展",
+        "target": "新数据库名称"
+      },
+      "selectAll": "选择所有数据库",
+      "selectOne": "复制 {{name}}",
+      "targetLabel": "{{name}} 的新数据库名称",
+      "next": "继续到预检",
+      "noneSelected": "请至少选择一个数据库以继续。"
+    },
+    "preflight": {
+      "title": "预检",
+      "description": "目前尚未写入任何内容。这些检查会在创建任何数据库之前运行。",
+      "blocked": "已阻止",
+      "warning": "警告",
+      "ok": "就绪",
+      "required": "含安全余量约需 {{required}}，剩余 {{free}}。预计耗时 {{time}}。",
+      "passwordTitle": "需要源端密码",
+      "passwordHelp": "密码已不再保存在内存中。请再次输入。它仅用于本次运行。",
+      "start": "复制 {{count}} 个数据库",
+      "starting": "启动中",
+      "fixBlocked": "请修复或取消选择被阻止的数据库以继续。",
+      "back": "返回清单",
+      "startError": "无法开始复制",
+      "reachTitle": "可达性",
+      "reach": "辅助程序通过 {{network}} 网络访问源端。"
+    },
+    "copy": {
+      "title": "复制",
+      "description": "数据库并行复制。一个失败绝不会停止其他的，重复复制是安全的。",
+      "running": "复制中，已完成 {{done}} / {{total}}",
+      "idle": "没有正在运行的任务。",
+      "retry": "重试失败项",
+      "continue": "继续到验证",
+      "empty": "尚未开始任何复制。请从预检步骤开始。",
+      "status": {
+        "pending": "等待中",
+        "copying": "复制中",
+        "verified": "已验证",
+        "failed": "失败"
+      }
+    },
+    "verify": {
+      "title": "验证",
+      "description": "源端每个表的行数都已与副本比对。只有完全一致的才会标记为已验证。",
+      "tables": "{{count}} 个表一致",
+      "differs": "{{name}}：源 {{source}}，副本 {{target}}",
+      "receipt": "下载回执（JSON）",
+      "receiptHelp": "一份记录，证明每个数据库都已验证且源端未被改动。不含任何密钥。",
+      "source": "源端未被改动",
+      "next": "继续到切换",
+      "noneVerified": "还没有数据库通过验证。请修复上面的失败项后重试。"
+    },
+    "cutover": {
+      "title": "切换你的应用",
+      "description": "将每个应用指向其新数据库，然后运行切换检查。不会替你切换任何内容。",
+      "connection": "{{name}} 的连接",
+      "reference": "在应用的连接中把它引用为 {{ref}}，平台会填入相应的值。",
+      "reveal": "显示密钥",
+      "revealing": "显示中",
+      "hide": "隐藏密钥",
+      "revealNote": "显示操作会记录在审计日志中。",
+      "loadError": "无法加载连接详情",
+      "revealError": "无法显示密钥"
+    },
+    "loadError": "无法加载迁移计划。"
+  },
+  "appImport": {
+    "title": "迁移向导",
+    "description": "逐个规划、暂存、验证并切换每个应用，来源可以是 Coolify、Dokploy、CapRover 或旧服务器。你的旧实例只会被读取。其上的任何内容都不会被停止、编辑或删除。",
+    "loadError": "无法加载导入会话。",
+    "newImport": "开始新的导入",
+    "forget": "忘记此会话",
+    "forgetHelp": "忘记计划和进度。已在此处暂存的应用会保留。请先使用回滚来移除它们。",
+    "resume": "正在从 {{url}} 导入",
+    "back": "返回",
+    "steps": {
+      "connect": "连接",
+      "inventory": "清单",
+      "preflight": "预检",
+      "stage": "暂存",
+      "images": "迁移镜像",
+      "verify": "构建并验证",
+      "volumes": "卷",
+      "cutover": "切换",
+      "takeover": "接管端口",
+      "retire": "可安全删除"
+    },
+    "safe": {
+      "title": "这会做什么，不会做什么",
+      "readOnly": "只会向旧平台发送读取请求。凭据仅在此会话期间保存在内存中，从不存储。",
+      "staged": "暂存的应用会以停止且未路由的状态创建，环境变量和密钥会加密导入。",
+      "volumes": "卷数据绝不会替你复制。你会得到每个卷的确切命令，并自行确认。",
+      "dns": "DNS 绝不会替你更改。你在满意后自行切换每个域名，并且可以随时切回。"
+    },
+    "verdict": {
+      "ready": "就绪",
+      "ready-with-notes": "就绪，附带说明",
+      "needs-attention": "需要处理",
+      "unsupported": "不支持"
+    },
+    "state": {
+      "planned": "已规划",
+      "staged": "已暂存",
+      "building": "构建中",
+      "verified": "已验证",
+      "verify-failed": "验证失败",
+      "stage-failed": "暂存失败",
+      "routed": "已路由",
+      "rolled-back": "已回滚"
+    },
+    "connect": {
+      "title": "连接到 {{name}}",
+      "reconnectTitle": "请再次输入令牌",
+      "description": "请使用只读 API 令牌。如果希望导入密钥值，请添加 read:sensitive 能力。否则它们会返回为空并被标记。",
+      "url": "{{name}} URL",
+      "token": "API 令牌",
+      "tokenHelp": "仅在此会话期间保存在内存中，并通过请求体发送。从不存储或记录日志。",
+      "network": "专用网络选项",
+      "loopback": "源端在这台机器上（回环）",
+      "private": "源端在专用网络中",
+      "insecure": "跳过 TLS 验证（自签名证书）",
+      "networkHelp": "控制平面还需要设置相应的 APP_IMPORT_ALLOW_LOOPBACK 或 APP_IMPORT_ALLOW_PRIVATE_NETWORKS，这些选项才会生效。",
+      "readOnly": "读取清单不会在此处创建任何内容。",
+      "error": "无法读取源端",
+      "submit": "读取清单",
+      "submitting": "读取中...",
+      "dockerTitle": "从 Docker 主机接管容器",
+      "snapshotHelp": "包含环境变量，其中有密钥。仅在此会话期间保存在内存中，并通过请求体发送。从不存储或记录日志。",
+      "snapshotFile": "或从文件加载",
+      "mode": {
+        "api": "平台 API",
+        "docker": "Docker 快照",
+        "compose": "Compose 文件",
+        "dokku": "Dokku 环境转储",
+        "ssh": "通过 SSH 连接"
+      },
+      "fileDescription": {
+        "docker": "不需要 API 令牌。粘贴在旧服务器上运行下方命令的输出。它会读取容器设置和环境变量，不会在那里更改任何内容。",
+        "compose": "粘贴 docker-compose 文件。每个带镜像的服务会成为一个应用，数据库镜像会成为托管数据库。不会连接任何外部系统。",
+        "dokku": "粘贴一个 Dokku 应用的环境。只会读取其变量，因此请在规划后设置镜像、端口和域名。不会连接任何外部系统。"
+      },
+      "fileCommand": {
+        "docker": "docker inspect $(docker ps -aq)",
+        "compose": "cat docker-compose.yml",
+        "dokku": "dokku config:export APP"
+      },
+      "fileLabel": {
+        "docker": "docker inspect 输出",
+        "compose": "Compose 文件",
+        "dokku": "环境转储"
+      },
+      "appName": "Dokku 应用名称",
+      "platform": "源平台",
+      "platformName": {
+        "coolify": "Coolify",
+        "dokploy": "Dokploy",
+        "caprover": "CapRover"
+      },
+      "tokenFor": {
+        "coolify": "API 令牌",
+        "dokploy": "API 密钥",
+        "caprover": "密码"
+      },
+      "test": "测试连接",
+      "testing": "测试中...",
+      "testOk": "已连接到 {{name}}。发现 {{apps}} 个应用、{{databases}} 个数据库、{{volumes}} 个卷、{{domains}} 个域名和 {{crons}} 个 cron 任务。{{unsupported}} 个无法导入。",
+      "testServers": "服务器：{{list}}",
+      "testFailure": {
+        "credentials": "源端拒绝了该凭据。请检查令牌或密码及其权限。",
+        "blocked": "不允许此地址。如果源端在你自己的网络中，请使用下方的专用网络选项。",
+        "unreachable": "源端没有响应。请检查 URL 和端口，以及此服务器是否能访问它。"
+      }
+    },
+    "inventory": {
+      "title": "发现的应用",
+      "description": "选择要迁移的内容。每个应用都会显示它在这里对应什么，以及哪些需要你处理。",
+      "selectOne": "选择 {{name}}",
+      "selectAll": "选择所有可导入的",
+      "selectNone": "全不选",
+      "empty": "在源端没有发现应用。",
+      "noProject": "无项目",
+      "showMore": "再显示 {{count}} 个",
+      "continue": "继续处理 {{count}} 个应用",
+      "pickOne": "请至少选择一个应用以继续。",
+      "stale": "令牌已不再保存，因此这些结论来自上一次读取。请再次输入以刷新。",
+      "maps": {
+        "dockerfile": "Dockerfile 构建",
+        "railpack": "Railpack 构建",
+        "static": "静态站点",
+        "image": "镜像"
+      },
+      "port": "端口 {{port}}",
+      "health": "健康检查 {{path}}",
+      "memory": "限制 {{size}}",
+      "server": "服务器 {{name}}",
+      "env": "{{plain}} 个明文变量和 {{secret}} 个密钥变量",
+      "domains": "域名：{{list}}",
+      "volume": "卷 {{path}}（{{size}}）",
+      "sizeUnknown": "源端未报告大小",
+      "dbMoved": "使用 {{name}}，已迁移到 {{target}}",
+      "dbNotMoved": "使用 {{name}}，尚未迁移到此处",
+      "next": "下一步：{{action}}",
+      "source": {
+        "git": "Git",
+        "image": "镜像",
+        "compose": "Compose",
+        "service": "一键服务",
+        "unknown": "未知"
+      },
+      "crons": "{{count}} 个 cron 任务"
+    },
+    "preflight": {
+      "title": "预检与映射",
+      "description": "目前尚未写入任何内容。请查看名称和域名冲突，把旧数据库主机名映射到新位置，并阅读确切的更改。",
+      "needsToken": "令牌已不再保存。请再次输入以评估环境变量的值。",
+      "mappingTitle": "主机名映射",
+      "mappingHelp": "提到旧内部主机名的环境变量值，会在暂存应用时被改写为新主机名。除非在此列出，否则不会改写任何内容。",
+      "suggested": "根据你已迁移的数据库给出的建议",
+      "use": "使用",
+      "remove": "移除",
+      "from": "旧主机名",
+      "to": "新主机名",
+      "add": "添加映射",
+      "save": "保存映射",
+      "saving": "保存中...",
+      "collision": "当名称已被占用时：",
+      "collisionMode": {
+        "suffix": "添加数字后缀",
+        "skip": "跳过该应用"
+      },
+      "passed": "{{count}} 项检查已通过。",
+      "check": {
+        "name": "名称",
+        "domains": "域名",
+        "env-keys": "变量名",
+        "db-hosts": "数据库主机名",
+        "secrets": "密钥",
+        "build": "构建方式",
+        "disk": "磁盘"
+      },
+      "diff": "映射会改写的值",
+      "diffHelp": "连接字符串中的密码已被遮盖。只有主机名会改变，因此如果新数据库使用不同的凭据，请更新用户和密码。",
+      "secret": "密钥",
+      "continue": "继续到暂存",
+      "blocked": "{{count}} 项检查被阻止"
+    },
+    "run": {
+      "stageTitle": "暂存应用",
+      "verifyTitle": "构建并验证",
+      "stageDescription": "在此处创建每个所选应用，处于停止且未路由的状态。再次运行会从失败处继续，并且绝不会重复创建应用。",
+      "verifyDescription": "启动每个应用，构建或拉取它，等待其自身的健康检查，然后在切换前再次停止它。一个应用失败绝不会阻止其他应用。",
+      "needsToken": "令牌已不再保存。请返回预检并再次输入，才能暂存。",
+      "importedAs": "已导入为 {{name}}",
+      "openApp": "打开应用",
+      "openLogs": "日志",
+      "verifyOne": "验证",
+      "verifyAgain": "再次验证",
+      "verifyAll": "全部验证",
+      "working": "处理中...",
+      "resume": "继续暂存",
+      "stage": "暂存应用",
+      "rollback": "回滚",
+      "rollbackConfirm": "移除此次导入创建的所有应用？",
+      "rollbackYes": "移除它们",
+      "cancel": "取消",
+      "stageNote": "回滚只会移除此次导入创建的应用。卷会保留在磁盘上。",
+      "verifyNote": "验证会短暂启动应用。如果它运行后台任务，这些任务会针对其所配置的数据库工作。",
+      "toVerify": "继续到验证",
+      "toVolumes": "继续到卷",
+      "retry": "重试",
+      "interrupted": "被重启中断。请再次验证。",
+      "progressTitle": "实时进度",
+      "progress": "已完成 {{done}} / {{total}}，{{failed}} 个失败",
+      "failedHelp": "失败的项目绝不会阻止其他项目。可以单独重试它，或修复原因后再次运行该步骤。"
+    },
+    "volumes": {
+      "title": "持久卷",
+      "description": "使用下方命令复制每个卷，然后勾选它。在源端仍在线时运行一次，并在切换前再运行一次。",
+      "none": "所选应用都没有持久卷。",
+      "source": "源服务器（user@host）",
+      "sourcePlaceholder": "root@coolify.example.com",
+      "show": "显示命令",
+      "confirm": "已复制 {{path}}",
+      "command": "卷复制命令",
+      "continue": "继续到切换",
+      "pending": "{{count}} 个卷尚未确认"
+    },
+    "cutover": {
+      "title": "切换",
+      "description": "针对每个应用：降低 TTL，在此处启用路由，更改 DNS 记录，然后运行切换后检查。",
+      "keepSource": "在你满意之前，请让源端保持运行。",
+      "keepSourceBody": "这里的任何操作都不会停止或更改旧实例上的任何内容。如需切回，请把 DNS 记录重新指向源端。",
+      "routed": "已启用路由",
+      "notRouted": "未路由",
+      "volumesPending": "{{count}} 个卷未确认",
+      "disableRouting": "禁用路由",
+      "enableRouting": "启用路由",
+      "enableAnyway": "仍然启用路由",
+      "none": "还没有带域名的已验证应用。",
+      "receipt": "下载回执",
+      "receiptNote": "一份 JSON 记录，说明导入了什么以及哪些仍需手动处理。不含任何密钥。",
+      "guide": {
+        "open": "引导式切换",
+        "close": "关闭",
+        "title": "{{app}} 的切换",
+        "recheck": "再次检查",
+        "safety": "源平台上的任何内容都不会被触碰。切换可以回滚，验证失败时会自动回滚。",
+        "status": {
+          "pass": "通过",
+          "warn": "警告",
+          "block": "已阻止"
+        },
+        "verdict": {
+          "ready": "就绪",
+          "warnings": "就绪，但有警告",
+          "blocked": "已阻止"
+        },
+        "method": {
+          "dns": "DNS 提供商",
+          "proxy": "托管代理路由",
+          "manual": "手动记录",
+          "none": "已指向此处"
+        },
+        "domainLine": "{{domain}}：通过{{method}}切换，当前为 {{current}}",
+        "copyRecord": "复制记录",
+        "dryRun": "试运行",
+        "typeToConfirm": "输入 {{app}} 以切换",
+        "acceptWarnings": "忽略警告继续",
+        "switch": "切换流量",
+        "rollback": "回滚",
+        "confirmDns": "我已更改记录",
+        "manualRecord": "将 {{type}} {{domain}} 设置为 {{value}}，然后点击按钮",
+        "liveHint": "流量已在此处上线，并已通过公开名称验证。请让源端再运行一个完整的流量周期。",
+        "noRuns": "还没有运行记录。试运行会启动应用，通过此节点的入口探测它，然后再次停止，且不会更改任何记录。",
+        "mode": {
+          "dry_run": "试运行",
+          "switch": "切换"
+        },
+        "state": {
+          "planning": "规划中",
+          "ready": "就绪",
+          "starting": "启动中",
+          "verifying": "验证中",
+          "switching": "切换中",
+          "live": "已上线",
+          "rolled_back": "已回滚",
+          "failed": "失败"
+        },
+        "step": {
+          "readiness": "就绪检查",
+          "route": "启动",
+          "healthy": "健康",
+          "ingress_probe": "入口探测",
+          "dns_preview": "预览",
+          "switch": "切换",
+          "post_verify": "验证",
+          "cleanup": "停止",
+          "rollback": "恢复",
+          "manual_dns": "手动 DNS"
+        }
+      },
+      "next": "下一步：接管端口"
+    },
+    "images": {
+      "title": "迁移在源主机上构建的镜像",
+      "description": "这些应用运行的镜像是在旧服务器上构建的，不存在于任何镜像仓库中。控制平面通过 SSH 在源端运行 docker save，将数据流加载到此节点，并对照快照检查每个镜像 ID。源端不会运行其他任何内容。",
+      "none": "所选应用都没有使用在源主机上构建的镜像。请继续到验证。",
+      "unsupported": "此控制平面没有可用于加载镜像的节点运行时。",
+      "loadError": "无法加载镜像列表。",
+      "ssh": "源端 SSH 登录",
+      "sshPlaceholder": "root@old-server.example.com",
+      "sshHelp": "user@host 或 user@host:port。该登录必须能够运行 docker。主机密钥在首次使用时受信任并被固定。",
+      "key": "私钥",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "keyHeld": "此会话已保存一个密钥，留空即可复用",
+      "keyHelp": "仅在此会话期间保存在内存中，从不存储或记录日志。",
+      "passphrase": "密钥口令（可选）",
+      "agent": "使用控制平面自己的 SSH agent，而不是密钥",
+      "move": "迁移镜像",
+      "retry": "迁移剩余镜像",
+      "cancel": "取消",
+      "running": "正在从 {{source}} 迁移镜像",
+      "continue": "继续到验证",
+      "pending": "{{count}} 个镜像尚未在此节点上",
+      "ids": "源 {{source}}，已加载 {{loaded}}",
+      "sourceId": "源镜像 {{source}}",
+      "noSourceId": "快照中没有镜像 ID，因此无法验证加载结果。",
+      "state": {
+        "pending": "未迁移",
+        "running": "迁移中",
+        "verified": "已验证",
+        "loaded": "已加载，未验证",
+        "failed": "失败",
+        "cancelled": "已取消"
+      },
+      "viaTunnel": "镜像通过同一条 SSH 连接以只读方式传输。旧服务器上不会运行任何内容，也不需要额外的登录。"
+    },
+    "ssh": {
+      "description": "仅凭 SSH 登录，即可从旧的 Coolify、Dokploy、CapRover 或 Dokku 服务器导入。不需要平台令牌，也不需要 Agent。SSH 仅用于访问 Docker 套接字，并且只发送读取请求：旧服务器上绝不会运行任何内容。",
+      "host": "服务器地址",
+      "port": "SSH 端口",
+      "user": "SSH 用户",
+      "passphrase": "密钥口令",
+      "key": "私钥",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "keyFile": "或从文件加载私钥",
+      "keyHelp": "仅在此会话期间保存在内存中，并通过请求体发送。从不存储或记录日志。持有此密钥的人可以在旧服务器上以该用户身份操作，因此请使用事后可以移除的密钥。",
+      "advanced": "密码、Docker 套接字路径和网络选项",
+      "password": "密码（代替密钥）",
+      "socket": "旧服务器上的 Docker 套接字路径",
+      "test": "测试连接",
+      "testing": "测试中",
+      "recheck": "重新检查",
+      "readOnlyNote": "只读：列出容器、卷和镜像。",
+      "storedConfig": "环境变量和设置来自运行中的容器。不会读取旧平台自身存储的配置（Coolify 的数据库、CapRover 的数据文件夹、Dokku 的应用文件夹）。",
+      "hostKey": {
+        "title": "确认服务器身份",
+        "read": "读取主机密钥",
+        "reading": "读取中",
+        "help": "读取服务器出示的指纹，然后确认它与旧服务器报告的一致。指纹错误或已更改会中止连接。",
+        "list": "服务器出示的主机密钥",
+        "fingerprint": "主机密钥指纹",
+        "confirm": "此指纹与我的旧服务器一致",
+        "compare": "与旧服务器上的指纹比对",
+        "compareCommand": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
+        "insecure": "跳过主机密钥验证（不安全）",
+        "insecureTitle": "主机密钥验证已关闭",
+        "insecureBody": "此服务器与旧服务器之间的任何人都可能读取所发送的内容，包括密钥。请改为确认指纹。此会话在所有位置都会被标记为未验证。",
+        "placeholder": "SHA256:..."
+      },
+      "ok": {
+        "title": "已连接",
+        "reads": "只读：列出容器、卷和镜像。",
+        "counts": "Docker {{version}}：{{containers}} 个容器（{{running}} 个运行中），{{volumes}} 个卷，{{images}} 个镜像。"
+      },
+      "fix": {
+        "viaCli": "通过 CLI 修复",
+        "auth_failed": {
+          "title": "登录被拒绝",
+          "body": "请检查私钥、其口令和用户名，然后重新检查。"
+        },
+        "host_key_mismatch": {
+          "title": "主机密钥不匹配",
+          "body": "服务器出示的主机密钥与你确认过的不同。如果你预期会有此变化，请信任新指纹并再次确认。",
+          "trust": "信任 {{fingerprint}}"
+        },
+        "host_key_required": {
+          "title": "请先确认主机密钥",
+          "body": "连接之前，请先读取服务器指纹并确认。"
+        },
+        "socket_permission": {
+          "title": "该用户无法使用 Docker 套接字",
+          "body": "在旧服务器上把 SSH 用户加入 docker 组，重新登录，然后重新检查。",
+          "command": "sudo usermod -aG docker USER"
+        },
+        "socket_path": {
+          "title": "该路径下没有 Docker 套接字",
+          "body": "请选择正确的套接字路径，或在高级选项中输入。",
+          "try": "尝试 {{path}}"
+        },
+        "socket_forbidden": {
+          "title": "服务器阻止了套接字转发",
+          "body": "旧服务器的 sshd 拒绝对此登录转发到 Unix 套接字。请为此用户允许流本地转发，然后重新检查。"
+        },
+        "unreachable": {
+          "title": "无法连接到服务器",
+          "body": "请检查地址和端口，以及此服务器是否能访问它，然后重新检查。"
+        },
+        "blocked_address": {
+          "title": "不允许该地址",
+          "body": "除非控制平面运维人员允许，否则专用网络地址会被阻止。云元数据地址始终不被允许。",
+          "allow": "允许专用地址"
+        },
+        "other": {
+          "title": "连接失败",
+          "body": "请查看下方消息，然后重新检查。"
+        }
+      },
+      "volumes": {
+        "title": "通过 SSH 复制",
+        "description": "运行中容器的卷会通过 SSH 连接传输，在旧服务器上只读，每个最多 {{size}}。已停止的容器和绑定挂载需要使用下方的命令。",
+        "reconnect": "SSH 登录仅保存在内存中。请重新连接源端以复制卷。",
+        "copy": "通过 SSH 复制卷",
+        "again": "再次复制",
+        "running": "复制中",
+        "done": "{{files}} 个文件，{{size}}",
+        "leftOut": "已排除：{{entry}}",
+        "fallback": "请在 DNS 切换前再运行一次复制，以捕获最后的更改。",
+        "state": {
+          "pending": "等待中",
+          "running": "复制中",
+          "copied": "已复制",
+          "failed": "失败",
+          "skipped": "使用命令"
+        }
+      }
+    },
+    "exit": {
+      "title": "退出报告",
+      "help": "每个资源会变成什么，哪些仍需要你处理，DNS 切换顺序以及切换清单。只读。",
+      "show": "显示退出报告",
+      "recheck": "重新检查",
+      "next": "下一步：",
+      "ready": "每个资源都已导入，且无需处理。在移除任何内容之前，请运行可安全删除检查。",
+      "wavesTitle": "DNS 切换顺序",
+      "checklistTitle": "切换清单",
+      "outcome": {
+        "imported": "已导入",
+        "manual": "需要手动处理",
+        "skipped": "已跳过"
+      },
+      "mode": {
+        "dry-run": "计划",
+        "verify": "验证"
+      }
+    },
+    "probe": {
+      "dns": "立即检查 DNS",
+      "http": "检查应用在此处是否有响应",
+      "checking": "检查中...",
+      "help": "响应检查会直接用域名访问此服务器，因此在 DNS 迁移之前也能工作。",
+      "ok": "通过",
+      "failed": "失败"
+    },
+    "retire": {
+      "title": "可以安全删除旧实例吗？",
+      "description": "只有下方每项检查都凭此次迁移的证据通过后，这里才会变绿。在此之前，请让旧实例继续运行作为后备。",
+      "run": "运行实时检查",
+      "running": "检查中...",
+      "targetIp": "此服务器的公网 IP",
+      "safeTitle": "所有关卡均已通过",
+      "safeBody": "请先停止旧实例，并保持停止几天。之后才能删除它，并保留其备份。",
+      "notSafeTitle": "暂时还不能安全删除",
+      "notSafeBody": "仍有 {{count}} 个关卡未通过。旧实例上没有任何内容被更改。",
+      "confirm": "我已完成",
+      "status": {
+        "pass": "通过",
+        "fail": "失败",
+        "pending": "未检查",
+        "manual": "需要你处理"
+      },
+      "next": "下一步：",
+      "fallbackTitle": "如果出了问题",
+      "gate": {
+        "staged": "应用已在此处构建并健康",
+        "leftovers": "导入器无法迁移的资源",
+        "volumes": "卷已复制",
+        "databases": "数据库复制已验证",
+        "routed": "应用正在此处提供其域名服务",
+        "dns": "DNS 指向此服务器",
+        "responds": "应用从此服务器响应",
+        "source-backup": "旧实例已备份",
+        "traffic-cycle": "已完成完整的流量周期"
+      },
+      "back": "返回",
+      "open": "继续到可安全删除检查"
+    }
+  },
+  "platformImport": {
+    "tokenApi": "API 令牌",
+    "tokenKey": "API 密钥",
+    "tokenPassword": "登录密码",
+    "tokenAccess": "访问令牌",
+    "teamId": "团队 ID（可选）",
+    "teamIdPlaceholder": "team_... 或团队 slug，个人账户请留空",
+    "vercelUrlPlaceholder": "留空以使用公共 Vercel API",
+    "requestFailed": "请求失败",
+    "summaryTitle": "导入摘要",
+    "summaryCounts": "已创建 {{created}} 个，失败 {{failed}} 个，已导入 {{already}} 个。",
+    "retryHint": "再次运行导入以重试失败的项目。已完成的项目会被跳过。",
+    "dataNotMigrated": "数据不会被迁移",
+    "another": "开始另一次导入",
+    "reviewTitle": "查看将要导入的内容",
+    "nothingFound": "在源端没有发现任何内容。请检查 URL，并确认该凭据能看到你的项目。",
+    "importFailed": "导入失败",
+    "importing": "导入中...",
+    "importSelected": "导入所选的 {{count}} 个",
+    "back": "返回",
+    "connectTitle": "连接源平台",
+    "connectIntro": "从其他平台读取应用、数据库和设置，而不会更改它。凭据每一步只会发送给此控制平面一次，从不存储。",
+    "platform": "平台",
+    "sourceUrl": "源 URL",
+    "herokuUrlPlaceholder": "留空以使用公共 Heroku API",
+    "skipTakenLabel": "跳过已被使用的名称",
+    "skipTaken": "跳过名称已被占用的资源（默认会重命名它们）",
+    "privateLabel": "源端在专用网络中",
+    "private": "源端在专用网络中（需要控制平面启用该选项）",
+    "insecureLabel": "跳过 TLS 验证",
+    "insecure": "跳过 TLS 验证（自签名源端）",
+    "readFailed": "无法读取源端",
+    "reading": "正在读取源端...",
+    "discover": "发现",
+    "extras": {
+      "title": "备份和告警渠道",
+      "target": "备份目标 {{name}}",
+      "schedule": "{{name}} 的备份计划",
+      "channel": "告警渠道 {{name}}",
+      "hasKeys": "源端有密钥",
+      "noKeys": "源端无密钥",
+      "hasSecret": "源端有令牌",
+      "noSecret": "源端无令牌",
+      "retain_other": "保留 {{count}} 份",
+      "paused": "已暂停",
+      "running": "运行中",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "includeCredentials": "包含凭据",
+      "includeCredentialsWarning": "把源端的存储密钥和渠道令牌复制到此实例。它们会直接发送给创建调用，从不在此处显示。",
+      "enableSchedules": "保持备份计划运行",
+      "enableSchedulesWarning": "关闭：导入的计划会以暂停状态创建。开启：在源端运行过的计划会在此处开始运行。",
+      "enableChannels": "以启用状态创建告警渠道",
+      "enableChannelsWarning": "关闭：导入的渠道会以禁用状态创建。开启：已启用的渠道会立即收到广播通知。",
+      "importOnly": "仅导入备份和渠道",
+      "undoButton_other": "撤销 {{count}} 个已导入的项目",
+      "undoFailed": "撤销失败",
+      "undoItem": "{{name}}：{{action}}",
+      "undo": {
+        "removed": "已移除",
+        "skipped": "保持原样",
+        "failed": "失败"
+      },
+      "state": {
+        "would_create": "将被创建",
+        "needs_secret": "需要凭据",
+        "created": "已创建",
+        "exists": "已存在",
+        "pending": "待处理",
+        "skipped": "已跳过",
+        "review": "待查看",
+        "failed": "失败",
+        "unsupported": "不支持"
+      }
+    }
+  },
+  "importPlan": {
+    "anonymousVolume": "（匿名）",
+    "importingToast": "正在导入“{{name}}”。",
+    "watching": "正在查看构建日志。",
+    "appearsShortly": "它很快就会出现在应用列表中。",
+    "readFirst": "部署前请阅读",
+    "appName": "应用名称",
+    "nameInvalid": "只能使用小写字母、数字和连字符。",
+    "containerPort": "容器端口",
+    "portInvalid": "请输入应用监听的端口。",
+    "domainSuggestion": "域名建议：{{domain}}。创建应用后，请在其域名标签页中添加真实域名。",
+    "why": "原因：{{reason}}",
+    "health": "健康检查：GET {{path}}",
+    "needsApproval": "需要 root 审批",
+    "nothing": "在此输入中没有发现可部署的内容。",
+    "required": "部署前必填：{{keys}}",
+    "back": "返回",
+    "deploying": "部署中...",
+    "deploy": "部署"
+  },
+  "takeover": {
+    "title": "接管此服务器的端口",
+    "description": "把 80 和 443 端口从旧平台的代理移到此服务器自己的入口，并记录退路。请在最后执行此操作，此时每个应用都已暂存、验证且数据已复制。",
+    "rootOnly": "只有 root 账户可以接管端口。你可以阅读预检结果，但运行按钮保持关闭。",
+    "loadError": "无法读取预检结果。",
+    "recheck": "重新检查",
+    "rechecking": "检查中",
+    "ports": "当前监听 {{from}}，之后监听 {{to}}。",
+    "verdict": {
+      "ready": "就绪",
+      "warnings": "就绪，但有警告",
+      "blocked": "已阻止",
+      "done": "完成"
+    },
+    "status": {
+      "pass": "通过",
+      "warn": "警告",
+      "block": "已阻止"
+    },
+    "domainsTitle": "此服务器将提供服务的域名",
+    "healthy": "健康",
+    "unhealthy": "不健康",
+    "dns": {
+      "ok": "DNS 在此处",
+      "elsewhere": "DNS 在别处",
+      "unresolved": "无 DNS"
+    },
+    "cert": {
+      "custom": "已上传的证书",
+      "acme": "首次使用时签发"
+    },
+    "stepsTitle": "运行会做什么",
+    "rollbackTitle": "如何撤销",
+    "acceptUnmanaged": "我接受上面列出的域名会在旧代理停止时下线。",
+    "alreadyDone": "此服务器已在监听 80 和 443 端口。没有剩余的操作。",
+    "copyCommand": "复制命令",
+    "copied": "已复制",
+    "runTitle": "接管运行",
+    "state": {
+      "preparing": "准备中",
+      "applying": "重启中",
+      "verifying": "验证中",
+      "done": "完成",
+      "rolling_back": "回滚中",
+      "rolled_back": "已回滚",
+      "failed": "需要处理"
+    },
+    "step": {
+      "rollback_record": "已记录退路",
+      "stop_old_proxy": "旧代理已停止",
+      "tls_settings": "TLS 在此处处理",
+      "listen_addresses": "新地址已存储",
+      "restart": "重启",
+      "verify": "通过 HTTPS 验证",
+      "rollback": "回滚"
+    },
+    "hint": {
+      "applying": "控制平面正在重启。此页面会自动重新连接。",
+      "verifying": "正在检查每个域名。如果在 {{seconds}} 秒内未成功，会自动回滚。",
+      "done": "此服务器现在提供 80 和 443 端口的服务。旧代理容器已停止，但未移除。你随时可以回滚。",
+      "rolling_back": "正在恢复之前的地址并重新启动旧代理。",
+      "rolled_back": "之前的地址已恢复，旧代理已重新运行。",
+      "failed": "有操作未完成。请阅读上面的消息，修复后重新检查。"
+    },
+    "run": {
+      "button": "接管端口",
+      "note": "验证失败会在 {{seconds}} 秒后自动回滚。",
+      "dialogTitle": "接管 80 和 443 端口？",
+      "dialogDescription": "在代理停止、此服务器开始响应期间，访客会看到短暂的停顿。",
+      "consequenceStop": "旧代理容器会被停止，但不会被移除。",
+      "consequenceRestart": "控制平面会重启一次，以监听新端口。",
+      "consequenceRollback": "如果任何域名验证失败，接管会自动回滚。",
+      "confirm": "接管",
+      "pending": "启动中"
+    },
+    "rollback": {
+      "button": "回滚",
+      "title": "回滚接管？",
+      "description": "重启后，之前的监听地址和 TLS 设置会恢复，旧代理会重新启动。",
+      "confirm": "回滚",
+      "pending": "回滚中"
+    }
+  }
+}
