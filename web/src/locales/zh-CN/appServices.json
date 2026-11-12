@@ -1,0 +1,16 @@
+{
+  "replicas": "副本数",
+  "decrease": "减少 {{name}} 的副本数",
+  "increase": "增加 {{name}} 的副本数",
+  "apply": "应用",
+  "applying": "应用中",
+  "restart": "重启 {{name}}",
+  "restartTitle": "重启 {{name}}？",
+  "restartBody": "这会重新创建此服务的容器。其他服务继续运行。",
+  "restartConfirm": "重启",
+  "restarting": "重启中",
+  "readOnly": "修改服务需要部署权限",
+  "actions": "操作",
+  "scaleFailed": "无法扩缩此服务。",
+  "restartFailed": "无法重启此服务。"
+}

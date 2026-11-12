@@ -1,0 +1,42 @@
+{
+  "title": "日志管道",
+  "subtitle": "在存储之前，按顺序对此应用的日志行应用规则：合并多行记录、脱敏密钥、提取字段、丢弃噪声。",
+  "rules": {
+    "title": "规则",
+    "empty": "尚无规则。日志将按应用写入的原样存储。添加规则即可开始整理。",
+    "add": "添加规则",
+    "remove": "移除规则 {{index}}",
+    "moveUp": "上移规则 {{index}}",
+    "moveDown": "下移规则 {{index}}",
+    "kind": "类型",
+    "pattern": "模式（正则）",
+    "replace": "替换为",
+    "replacePlaceholder": "[REDACTED]",
+    "limit": "最多 {{max}} 条规则。",
+    "multilineOnce": "只允许一条多行规则。"
+  },
+  "kinds": {
+    "multiline": "多行（模式标志一条记录的开头）",
+    "redact": "脱敏（替换匹配内容）",
+    "parse": "解析（命名分组变为字段）",
+    "drop": "丢弃（舍弃匹配的行）"
+  },
+  "preview": {
+    "title": "预览",
+    "samples": "示例日志行，每行一条",
+    "samplesPlaceholder": "2026-01-01 ERROR token=abc123 failed",
+    "empty": "粘贴几行示例，查看管道会存储什么。",
+    "dropped": "已丢弃",
+    "unchanged": "未更改",
+    "loading": "正在更新预览",
+    "error": "预览失败：{{message}}"
+  },
+  "actions": {
+    "save": "保存管道",
+    "clear": "清除管道",
+    "savedToast": "日志管道已保存",
+    "clearedToast": "日志管道已清除",
+    "failed": "无法更新日志管道"
+  },
+  "loadError": "无法加载日志管道：{{message}}"
+}

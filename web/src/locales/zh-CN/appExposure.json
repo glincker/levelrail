@@ -1,0 +1,100 @@
+{
+  "title": "端口与暴露",
+  "description": "更改此应用监听的端口，并选择访问它的方式。多个应用可以使用同一个容器端口：每个应用都会获得自己的主机端口。",
+  "containerPort": "容器端口",
+  "containerPortHelp": "应用在其容器内监听的端口。",
+  "mode": {
+    "label": "暴露方式",
+    "proxied": "通过代理",
+    "proxiedHelp": "可通过其域名或自动主机名，在 80 和 443 端口访问。其他应用通过名称访问它。不会开放主机端口。",
+    "direct": "直接 IP 和端口",
+    "directHelp": "同时发布在某个主机端口并在主机防火墙中开放，因此你可以通过服务器地址检查应用。这是明文 HTTP，会绕过 TLS 和认证关卡。"
+  },
+  "hostPort": "主机端口",
+  "hostPortHelp": "留空则自动在 {{lo}} 到 {{hi}} 之间选择一个空闲端口。",
+  "preview": "预览更改",
+  "previewing": "检查中",
+  "apply": "应用",
+  "applying": "应用中",
+  "revert": "切换回仅代理",
+  "reset": "放弃",
+  "nothingToChange": "不会有任何更改。",
+  "willChange": "这将更改",
+  "recreates": "容器将使用新设置重新创建。镜像不会重新构建或再次拉取。",
+  "remoteNode": "此应用运行在另一个节点上。直接主机端口仅适用于控制平面自身节点上的应用。",
+  "plainHttpWarning": "明文 HTTP：流量未加密，域名上配置的基本认证或登录关卡不适用于此端口。",
+  "applied": "暴露方式已更新",
+  "appliedDescription": "协调(reconcile)在后台运行。",
+  "change": {
+    "container_port": "容器端口",
+    "host_port": "主机端口",
+    "bind_address": "绑定地址",
+    "firewall": "防火墙规则"
+  },
+  "values": {
+    "automatic": "自动",
+    "open": "开放",
+    "closed": "关闭"
+  },
+  "urls": {
+    "title": "访问入口",
+    "domain": "域名",
+    "fallback": "自动主机名",
+    "direct": "直接 IP 和端口",
+    "none": "还没有公网 URL。请添加域名、开启自动主机名，或使用直接 IP 和端口。",
+    "noneTitle": "没有公网 URL",
+    "internal": "此服务器上的其他应用通过应用名称在 {{port}} 端口访问它。"
+  },
+  "check": {
+    "button": "从这里测试",
+    "running": "测试中",
+    "scope": "从控制平面主机探测。这无法证明该端口对整个互联网开放。",
+    "ok": "可访问",
+    "status": "HTTP {{status}}，耗时 {{ms}} 毫秒",
+    "failures": {
+      "container_not_running": "容器未运行，因此没有可访问的内容。请启动或重新部署应用。",
+      "container_not_listening": "容器已启动，但其发布的端口上没有响应。应用可能没有监听上面的容器端口，或者仍在启动中。",
+      "firewall_closed": "服务器地址在此端口上没有响应。可能是主机防火墙或云服务商的安全组已关闭。",
+      "unreachable_from_host": "入口没有从此服务器响应。请检查 80 和 443 端口是否正在提供服务。",
+      "tls_not_issued": "证书尚未被信任。入口正在提供临时证书，并会在续期周期内重试公共 CA。",
+      "proxy_route_missing": "代理有响应，但没有此主机名的路由。请检查域名是否已绑定到此应用。",
+      "upstream_failing": "代理有路由，但其后的应用没有响应。",
+      "app_error": "应用返回了服务器错误。",
+      "request_failed": "请求未能完成。"
+    },
+    "fixFirewall": "打开防火墙设置",
+    "fixCertificates": "打开域名和证书"
+  },
+  "inUse": {
+    "title": "此节点上正在使用的主机端口",
+    "port": "端口",
+    "heldBy": "占用方",
+    "empty": "应用或控制平面没有固定或发布任何主机端口。",
+    "emptyTitle": "没有固定的主机端口",
+    "control": "控制平面：{{name}}",
+    "app": "应用 {{name}}",
+    "stream": "{{name}} 的流"
+  },
+  "errors": {
+    "load": "无法加载暴露设置。",
+    "invalidPort": "请输入 1 到 65535 之间的整数。"
+  },
+  "tunnel": {
+    "title": "访问私有端口",
+    "description": "打开一个本地端口，在不发布的前提下通过隧道连接到此应用。需要使用操作员令牌登录的 CLI。",
+    "portLabel": "容器端口 {{port}}",
+    "copy": "复制端口 {{port}} 的隧道命令",
+    "copied": "已复制"
+  },
+  "game": {
+    "title": "游戏服务器",
+    "online": "在线",
+    "offline": "离线",
+    "players": "{{online}}/{{max}} 名玩家",
+    "latency": "{{ms}} 毫秒",
+    "copy": "复制加入地址",
+    "copied": "已复制",
+    "notExposed": "尚未公开：发布端口即可获得加入地址。",
+    "noPublicHost": "请在此服务器公网地址的 {{port}} 端口加入。"
+  }
+}

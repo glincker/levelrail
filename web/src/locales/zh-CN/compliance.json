@@ -1,0 +1,57 @@
+{
+  "rootOnly": "访问审查和证据包仅限 root 账户使用。",
+  "kind": {
+    "user": "用户账户",
+    "team_member": "团队成员身份",
+    "api_token": "API 令牌",
+    "env_grant": "环境授权"
+  },
+  "review": {
+    "title": "访问审查",
+    "description": "审查会列出每个用户、团队成员身份、API 令牌和环境授权，以及它们最近一次活跃的时间。将每一行标记为保留或撤销。撤销会在你完成审查时生效，并写入审计日志。",
+    "name": "名称（可选）",
+    "dueDays": "几天后到期",
+    "repeatDays": "每隔几天重复（0 表示按需）",
+    "start": "开始审查",
+    "empty": "还没有访问审查。开始一次审查，记录谁仍然需要访问权限。",
+    "due": "到期",
+    "overdue": "已逾期",
+    "open": "打开",
+    "hide": "隐藏",
+    "status": {
+      "open": "进行中",
+      "completed": "已完成"
+    },
+    "lastActive": "最近活跃",
+    "never": "从未",
+    "keep": "保留",
+    "revoke": "撤销",
+    "revoked": "已撤销",
+    "progress": "已决定 {{decided}} / {{total}}，待撤销 {{revoke}}",
+    "complete": "完成审查",
+    "completing": "应用中",
+    "confirmTitle": "完成此访问审查？",
+    "confirmDescription": "将立即撤销 {{count}} 项访问授权。在此处无法撤回。",
+    "completed": "审查已完成，已撤销 {{count}} 项",
+    "partial": "有 {{count}} 项撤销失败，审查保持进行中"
+  },
+  "packs": {
+    "title": "证据包",
+    "description": "针对某个日期范围的签名归档：审计日志、访问审查、备份与恢复测试历史、部署审批、安全设置和证书清单，并附带 SHA-256 哈希清单。",
+    "notCertification": "证据包是供审计人员检查的记录，并不是任何框架的认证或合规证明。",
+    "from": "起始",
+    "to": "结束",
+    "rangeTo": "至",
+    "generate": "生成证据包",
+    "empty": "还没有证据包。",
+    "status": {
+      "running": "生成中",
+      "complete": "已就绪",
+      "failed": "失败"
+    },
+    "verify": "验证",
+    "download": "下载",
+    "verifyOk": "证据包与其清单和签名一致",
+    "verifyFailed": "证据包验证失败"
+  }
+}

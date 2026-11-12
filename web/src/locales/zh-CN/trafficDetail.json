@@ -1,0 +1,188 @@
+{
+  "title": "流量",
+  "subtitle": "通过入口提供服务的请求的速率、错误和耗时，无需改动应用。",
+  "windowLabel": "时间范围",
+  "windows": {
+    "5m": "5 分钟",
+    "1h": "1 小时",
+    "24h": "24 小时",
+    "7d": "7 天"
+  },
+  "audience": {
+    "referrers": {
+      "title": "热门来源",
+      "hint": "仅记录来源主机。绝不存储路径和查询字符串。“直接访问”表示没有 Referer 头。",
+      "label": "来源",
+      "empty": "此时间范围内还没有来源数据。"
+    },
+    "countries": {
+      "title": "热门国家",
+      "hint": "来自 CDN 请求头或 GeoIP 数据库的粗略国家信息，绝不按客户端存储。",
+      "label": "国家",
+      "empty": "没有国家数据。请在入口上设置 GeoIP 数据库或受信任的国家请求头，以查看流量来自哪里。"
+    },
+    "requests": "请求数",
+    "share": "占比"
+  },
+  "markers": {
+    "hint": "竖线标记部署。选择其中一条可查看有什么变化。"
+  },
+  "kpi": {
+    "rate": "每秒请求数",
+    "requests": "时间范围内 {{count}} 个请求",
+    "error5xx": "服务器错误（5xx）",
+    "error4xx": "客户端错误（4xx）",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99 延迟",
+    "upstreamErrors": "{{count}} 次上游失败"
+  },
+  "slo": {
+    "title": "错误预算",
+    "objective": "{{objective}} 目标 {{target}}%",
+    "burn": "消耗速率",
+    "burnHint": "1.0x 表示恰好在 SLO 周期内用完预算",
+    "remaining": "剩余预算",
+    "none": "此应用未设置 SLO。添加 SLO 消耗告警后，即可在这里查看错误预算。",
+    "noneAction": "设置 SLO 告警"
+  },
+  "replicas": {
+    "title": "副本",
+    "hint": "在入口处按上游地址统计。",
+    "upstream": "副本",
+    "requests": "请求数",
+    "rate": "请求/秒",
+    "error5xx": "5xx",
+    "error4xx": "4xx",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99",
+    "empty": "还没有各副本的数据。请求经由入口到达容器后就会出现。"
+  },
+  "routes": {
+    "title": "最慢的路由",
+    "topTitle": "热门路径",
+    "topEmpty": "此时间范围内没有请求。",
+    "hint": "最慢的页面和 API 路由。不包含静态文件。",
+    "route": "路由",
+    "requests": "请求数",
+    "avg": "平均耗时",
+    "error5xx": "5xx",
+    "empty": "此时间范围内没有路由拥有足够的流量来排名。",
+    "kindTabs": "路由类型",
+    "kind": {
+      "page": "页面",
+      "api": "API",
+      "asset": "资源"
+    },
+    "topTitleByKind": {
+      "page": "热门页面",
+      "api": "热门 API 路由",
+      "asset": "热门资源"
+    },
+    "kindHint": {
+      "page": "人们访问的页面。绝不存储 ID 和查询字符串。",
+      "api": "按路由分组的 API 调用。绝不存储 ID 和查询字符串。",
+      "asset": "脚本、样式和图片等静态文件。单独统计，以免淹没你的页面。"
+    }
+  },
+  "samples": {
+    "title": "慢请求和失败请求",
+    "hint": "失败或运行缓慢的请求样本，保存在提供服务的节点上。",
+    "empty": "此时间范围内没有采样到慢请求或失败请求。",
+    "requestId": "请求 ID"
+  },
+  "empty": {
+    "title": "此时间范围内没有流量",
+    "description": "应用通过域名提供服务后，请求就会显示在这里。请尝试更长的时间范围，或检查是否有域名指向此应用。",
+    "action": "检查域名"
+  },
+  "error": {
+    "title": "流量不可用",
+    "description": "{{message}}",
+    "retry": "重试"
+  },
+  "charts": {
+    "title": "实时图表"
+  },
+  "shield": {
+    "title": "机器人与滥用防护",
+    "action": "调整防护",
+    "blocked_other": "已拒绝 {{count}} 个请求",
+    "none": "此时间范围内没有拒绝任何请求。请在域名页面添加每客户端限制和机器人黑名单，避免爬虫耗尽带宽。",
+    "reasons": {
+      "rate_limit": "已限流",
+      "concurrency": "打开的请求过多",
+      "bad_bot": "恶意机器人",
+      "body_too_large": "请求体过大"
+    }
+  },
+  "spikes": {
+    "title": "错误激增",
+    "hint": "服务器错误占比明显高于时间范围内其余部分的时段，并与稍早之前开始的部署相匹配。",
+    "none": "此时间范围内没有错误激增。",
+    "peak": "峰值时服务器错误 {{rate}}",
+    "detail": "{{requests}} 个请求中有 {{errors}} 个失败。此时间范围内的典型值：{{baseline}}。",
+    "afterDeploy": "部署 {{image}} 之后（{{time}}）",
+    "noDeploy": "近期没有部署"
+  },
+  "abuse": {
+    "title": "滥用防御",
+    "subtitle": "限制单个客户端访问此应用的速度，并拒绝已知的恶意地址和 agent。建议先从仅记录开始，看看哪些会被拦截。",
+    "loadError": "无法加载滥用防御：{{message}}",
+    "modeLabel": "模式",
+    "modes": {
+      "off": "关闭",
+      "log_only": "仅记录",
+      "enforce": "强制执行"
+    },
+    "modeHints": {
+      "off": "不检查任何内容。",
+      "log_only": "统计会被拦截的请求，但不拦截任何请求。",
+      "enforce": "拒绝匹配的请求。限流会返回 429 并带有 Retry-After。"
+    },
+    "rateLabel": "每客户端请求数",
+    "rps": "每秒",
+    "burst": "突发",
+    "suggestionFromPeak": "根据你每秒 {{peak}} 个请求的峰值建议：每客户端 {{rps}}，突发 {{burst}}。",
+    "suggestionDefault": "近期没有可用于估算的流量。建议起始值：每客户端 {{rps}}，突发 {{burst}}。",
+    "useSuggestion": "使用建议",
+    "denyCidrs": "拦截地址",
+    "denyCidrsPlaceholder": "203.0.113.0/24",
+    "denyAgents": "拦截 user agent",
+    "denyAgentsPlaceholder": "python-requests",
+    "requireUa": "拒绝没有 User-Agent 的请求",
+    "invalidNumber": "速率和突发必须是数字。",
+    "previewNeedsRule": "请添加速率或拦截列表以预览其效果。",
+    "previewEmpty": "目前没有可重放的近期请求，因此没有可预览的内容。",
+    "previewResult": "本会拦截 {{total}} 个近期请求中的 {{blocked}} 个（{{percent}}%）",
+    "previewWindow": "最近 {{minutes}} 分钟内",
+    "topClients": "受影响最多的客户端：{{clients}}",
+    "enforceNeedsPreview": "上方预览加载完成后才能强制执行。",
+    "reasons": {
+      "rate_limit": "已限流",
+      "deny_cidr": "已拦截的地址",
+      "deny_user_agent": "已拦截的 user agent",
+      "missing_user_agent": "没有 User-Agent"
+    },
+    "counters": "此时间范围内：允许 {{allowed}}，本会拦截 {{wouldBlock}}，已拦截 {{blocked}}。",
+    "failOpen_other": "因防御失败，有 {{count}} 个请求未经检查就被放行。",
+    "status": {
+      "Off": "关闭",
+      "LogOnly": "仅统计",
+      "Enforcing": "强制执行中",
+      "Pending": "应用中",
+      "NoRoutes": "没有可保护的内容",
+      "ClientIPHidden": "客户端地址已隐藏",
+      "InvalidPolicy": "策略无效"
+    },
+    "statusHint": {
+      "NoRoutes": "应用目前没有代理路由（已停止、休眠或是静态站点），因此策略无可应用之处。",
+      "ClientIPHidden": "前面的代理隐藏了访客地址，因此所有访客会共用同一个限制。请在入口设置中配置受信任的代理。"
+    },
+    "save": "保存",
+    "saveLogOnly": "从仅记录开始",
+    "startEnforcing": "开始强制执行",
+    "saved": "滥用防御已保存（{{mode}}）。"
+  }
+}

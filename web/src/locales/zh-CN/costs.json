@@ -1,0 +1,165 @@
+{
+  "title": "成本分析",
+  "description": "查看支出随时间的去向、本月预计达到多少，以及哪些预算有风险。数据按你自己设定的价格计算。",
+  "error": "无法加载成本：{{message}}",
+  "groupBy": {
+    "label": "分组方式",
+    "app": "应用",
+    "project": "项目",
+    "tag": "标签",
+    "node": "节点",
+    "kind": "资源类型"
+  },
+  "granularity": {
+    "label": "粒度",
+    "daily": "按日",
+    "monthly": "按月"
+  },
+  "period": {
+    "label": "时段",
+    "mtd": "本月至今",
+    "30d": "最近 30 天",
+    "last_month": "上个月"
+  },
+  "months": {
+    "label": "月数",
+    "count_other": "{{count}} 个月"
+  },
+  "summary": {
+    "change": "较上一时段 {{value}}",
+    "noChange": "没有可比较的上一时段"
+  },
+  "series": {
+    "other": "其他",
+    "unassigned": "未分配",
+    "untagged": "无标签"
+  },
+  "kind": {
+    "app": "应用",
+    "database": "数据库"
+  },
+  "chart": {
+    "label": "成本随时间变化"
+  },
+  "table": {
+    "label": "成本排名",
+    "name": "名称",
+    "cost": "成本",
+    "previous": "上一时段",
+    "change": "变化"
+  },
+  "forecast": {
+    "title": "月末预测",
+    "range": "可能介于 {{low}} 和 {{high}} 之间",
+    "hint": "根据近期完整的天数推算。每日支出不均匀时，范围会变宽。",
+    "chart": "本月累计支出及预测范围",
+    "bandName": "范围",
+    "actual": "目前已支出",
+    "projected": "预测",
+    "confidence": {
+      "low": "置信度低",
+      "medium": "置信度中",
+      "high": "置信度高"
+    }
+  },
+  "movers": {
+    "title": "变化最大",
+    "description": "相比上一时段增长最多的项目。",
+    "none": "相比上一时段没有任何增长。",
+    "up": "{{name}} 增加了 {{amount}}（{{pct}}）"
+  },
+  "empty": {
+    "noData": "此时段还没有成本数据。",
+    "noTelemetryTitle": "还没有用量数据",
+    "noTelemetryDescription": "成本由实测用量得出。开始采集指标后就会出现。",
+    "notConfiguredTitle": "请先设置价格",
+    "notConfiguredDescription": "在你告诉 Levelrail 你的服务器或单位的成本之前，成本均为零。",
+    "configure": "设置价格"
+  },
+  "budgets": {
+    "title": "预算",
+    "description": "针对项目、标签或应用的月度限额。每个预算在每个阈值上只告警一次，并可在达到 100% 时暂停或限流其范围内的应用。",
+    "empty": "还没有预算。在下方添加一个，以便在支出失控之前收到提醒。",
+    "addTitle": "添加预算",
+    "name": "名称",
+    "scope": "适用于",
+    "scopes": {
+      "project": "项目",
+      "tag": "标签",
+      "app": "应用"
+    },
+    "target": {
+      "project": "项目",
+      "tag": "标签名称",
+      "app": "应用"
+    },
+    "monthly": "月度金额",
+    "thresholds": "告警阈值（百分比）",
+    "action": "达到 100% 时",
+    "actions": {
+      "none": "仅告警",
+      "throttle": "限制流量",
+      "pause": "暂停应用"
+    },
+    "actionHint": "当你提高预算或月份更替时，限流和暂停会解除。绝不会删除任何内容。",
+    "create": "创建预算",
+    "created": "预算已创建",
+    "error": "无法保存预算：{{message}}",
+    "remove": "删除预算 {{name}}",
+    "spent": "{{spent}} / {{budget}}",
+    "forecast": "预测 {{mid}}（{{low}} 到 {{high}}）",
+    "thresholdsLine": "在 {{levels}}% 时告警。已达到的最高值：{{reached}}",
+    "none": "无",
+    "state": {
+      "ok": "正常",
+      "warn": "警告",
+      "over": "已超预算",
+      "forecast": "预测超支"
+    },
+    "enforced": {
+      "pause": "应用已暂停",
+      "throttle": "流量已限制"
+    },
+    "deleteTitle": "删除预算 {{name}}？",
+    "deleteDescription": "它所施加的任何暂停或限流都会解除。支出历史不受影响。",
+    "delete": "删除预算",
+    "alertHint": "告警通过你的预算阈值告警规则发送。如果想要邮件、Slack 或 Webhook 通知，请在“告警”下添加一条。"
+  },
+  "fix": {
+    "label": "修复此预算",
+    "raise": "将预算提高到 {{amount}}",
+    "raised": "预算已提高到 {{amount}}",
+    "pause": "暂停 {{app}}",
+    "pauseTitle": "暂停 {{app}}？",
+    "pauseDescription": "在你再次启动之前，应用会停止提供服务。其数据会保留。",
+    "pauseConfirm": "暂停应用",
+    "pausing": "暂停中",
+    "rightSize": "调整应用规格"
+  },
+  "appCaps": {
+    "title": "每应用上限",
+    "description": "为每个应用设置的月度出站流量和成本上限，以及当前生效的限制。",
+    "loadError": "无法加载应用上限：{{message}}",
+    "empty": "还没有应用设置上限。请打开某个应用，在其预算卡片上设置月度上限。",
+    "app": "应用",
+    "usage": "占上限的 {{pct}}%",
+    "ceiling": "成本上限",
+    "ceilingLabel": "{{app}} 的成本上限",
+    "egressLabel": "{{app}} 的出站流量上限（GiB）",
+    "egressPlaceholder": "GiB",
+    "set": "设置",
+    "saved": "已更新 {{app}} 的上限",
+    "saveFailed": "无法更新上限：{{message}}",
+    "enforced": {
+      "none": "在上限之内",
+      "throttle": "已限流",
+      "pause": "已暂停"
+    },
+    "blocked": "部署已被阻止",
+    "overridden": "覆盖生效中",
+    "preview": "试运行",
+    "override": "覆盖",
+    "edit": "打开应用",
+    "forecast": "预计将超出"
+  }
+}

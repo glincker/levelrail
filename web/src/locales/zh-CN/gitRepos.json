@@ -1,0 +1,104 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "搜索仓库...",
+      "empty": "未找到仓库。",
+      "noMatch": "没有仓库匹配“{{search}}”。",
+      "loadFailed": "无法列出仓库。"
+    },
+    "projects": {
+      "searchPlaceholder": "搜索项目...",
+      "empty": "未找到项目。",
+      "noMatch": "没有项目匹配“{{search}}”。",
+      "loadFailed": "无法列出项目。"
+    },
+    "refresh": "刷新",
+    "refreshing": "刷新中",
+    "refreshHint": "重新从提供商列出仓库，而不是使用已保存的列表。",
+    "filters": {
+      "label": "筛选",
+      "allOwners": "所有所有者",
+      "hideArchived": "隐藏已归档",
+      "hideForks": "隐藏 Fork",
+      "allAccounts": "所有账户"
+    },
+    "status": {
+      "showing": "显示 {{shown}} / {{total}}。",
+      "searchToNarrow": "搜索或选择所有者以缩小列表。",
+      "loadedOf": "共已加载 {{loaded}} 个。",
+      "updated": "更新于 {{time}}。",
+      "stale": "已保存的列表，正在后台刷新。",
+      "truncated": "此账户的仓库数量超过了这里列出的 {{cap}} 个。搜索只覆盖前 {{cap}} 个；若要使用更靠后的仓库，请粘贴仓库 URL。",
+      "rateLimited": "提供商正在对此控制平面限流，因此显示的是已保存的列表。将在 {{time}} 之后再次检查。",
+      "rateLimitedEmpty": "提供商正在对此控制平面限流，并且还没有已保存的列表。请在 {{time}} 之后重试。",
+      "rateLimitedNoTime": "提供商正在对此控制平面限流。请一分钟后重试。"
+    },
+    "loadMore": "显示更多",
+    "loadingMore": "加载中",
+    "accountError": "无法列出 {{account}}：{{error}}",
+    "badges": {
+      "archived": "已归档",
+      "fork": "Fork",
+      "private": "私有仓库",
+      "running": "正以 {{name}} 运行"
+    },
+    "retry": "重试",
+    "account": "账户：{{name}}"
+  },
+  "connection": {
+    "label": "连接健康状况",
+    "healthy": "健康",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server",
+      "azure_devops": "Azure DevOps"
+    },
+    "needs_reauthorize": {
+      "title": "需要重新连接 {{provider}}",
+      "body": "授权已被撤销、已过期或不再被接受，在你重新连接之前，无法列出或克隆仓库。"
+    },
+    "revoked": {
+      "title": "{{provider}} 连接已被移除",
+      "body": "提供商上的安装或授权已不存在。请重新连接以再次使用。"
+    },
+    "rate_limited": {
+      "title": "{{provider}} 正在对此控制平面限流",
+      "body": "仍会显示已保存的列表。将在 {{time}} 之后再次检查。"
+    },
+    "reconnect": "重新连接 {{provider}}",
+    "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "此控制平面的 Webhook 地址是私有或本地地址，因此 GitHub、GitLab 和其他 Git 托管服务无法调用它。推送将无法送达。",
+      "no_public_url": "此控制平面还没有公网地址，因此 Git 托管服务没有可调用的 Webhook 地址。推送将无法送达。"
+    },
+    "urlFixHint": "请在下方设置 Webhook 的公网 URL，然后重新注册 Webhook。",
+    "registration": {
+      "registered": "Webhook 已在提供商上注册。",
+      "failed": "Webhook 未能在提供商上注册：{{error}}",
+      "registerAgain": "重新注册",
+      "registering": "注册中",
+      "done": "Webhook 已注册。",
+      "failedToast": "无法注册 Webhook。"
+    },
+    "poll": {
+      "last": "上次检查于 {{time}}。",
+      "never": "尚未检查。",
+      "lastWebhook": "上次 Webhook 于 {{time}}。",
+      "noWebhook": "尚未收到任何 Webhook。",
+      "error": "上次检查失败：{{error}}",
+      "disabled": "已关闭对漏掉推送的轮询。"
+    },
+    "connection": {
+      "needs_reconnect": "选取此仓库时使用的账户已断开连接。来源仍会保留，但在你于同一主机上重新连接账户之前，Webhook 和预览无法使用它。",
+      "needs_reauthorize": "账户 {{label}} 需要重新连接，此来源的 Webhook 和预览才能正常工作。",
+      "revoked": "账户 {{label}} 已在提供商上被移除。请重新连接以再次使用此来源。",
+      "reconnect": "重新连接 {{provider}}"
+    }
+  }
+}

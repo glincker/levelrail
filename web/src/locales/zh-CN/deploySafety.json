@@ -1,0 +1,184 @@
+{
+  "gate": {
+    "title": "就绪门槛与观察",
+    "rules": "在连续 {{passes}} 次就绪检查通过，并且无重启运行 {{stable}} 之后才接收流量。上一个版本会排空 {{drain}}，随后对此版本观察 {{watch}}。",
+    "pinned": "已固定为回滚目标 {{ref}}，因此镜像清理绝不会将其删除。",
+    "hidden_other": "有 {{count}} 个较早的步骤未显示。",
+    "empty": "尚无门槛步骤记录。新容器启动后就会出现。",
+    "unavailable": "此次部署没有门槛时间线。"
+  },
+  "phase": {
+    "readiness": "就绪",
+    "stability": "稳定窗口",
+    "cutover": "切换",
+    "drain": "排空",
+    "watch": "部署后观察",
+    "rollback": "回滚",
+    "pin": "回滚固定"
+  },
+  "stage": {
+    "pending": "待处理",
+    "gating": "正在通过门槛",
+    "gate_failed": "未通过门槛",
+    "watching": "观察中",
+    "cleared": "已通过",
+    "watch_failed": "观察触发",
+    "rolled_back": "已回滚",
+    "watch_stopped": "观察已停止"
+  },
+  "settings": {
+    "title": "部署安全",
+    "infoTipLabel": "关于部署安全",
+    "description": "新版本只有在其就绪探针连续多次通过，并在稳定窗口内运行且没有重启或被 OOM 终止之后，才会接收流量。上一个版本在排空期间继续处理进行中的请求。切换之后会对该版本进行观察，崩溃循环、OOM 终止或 5xx 激增都会触发回滚。",
+    "inheritHint": "留空的字段使用其中显示的平台默认值。",
+    "unavailable": "无法加载部署安全设置。",
+    "save": "保存",
+    "reset": "使用平台默认值",
+    "on": "开",
+    "off": "关",
+    "field": {
+      "success_threshold": {
+        "label": "连续就绪通过次数",
+        "hint": "流量切换之前，就绪探针需要连续通过的次数。"
+      },
+      "stable_window": {
+        "label": "稳定窗口",
+        "hint": "新容器必须在没有重启或 OOM 终止的情况下运行多久，例如 10s。"
+      },
+      "drain_timeout": {
+        "label": "排空超时",
+        "hint": "切换之后上一个版本继续提供服务的时长，例如 15s。"
+      },
+      "watch_window": {
+        "label": "观察窗口",
+        "hint": "切换之后对新版本观察多久，例如 10m。"
+      },
+      "watch_latency_ratio": {
+        "label": "视为退化的 p95 延迟倍数",
+        "hint": "与上一个版本相比。0 表示关闭延迟检查。"
+      },
+      "watch_max_restarts": {
+        "label": "触发观察的重启次数",
+        "hint": "观察窗口内，被视为崩溃循环的容器重启次数。"
+      },
+      "watch_error_rate": {
+        "label": "触发观察的 5xx 占比（%）",
+        "hint": "观察窗口内以 5xx 响应的请求占比。"
+      },
+      "watch_min_requests": {
+        "label": "5xx 占比生效前所需的请求数",
+        "hint": "寥寥几个请求不足以判断一个版本。"
+      }
+    },
+    "autoRollback": {
+      "label": "观察触发时自动回滚",
+      "hint": "为此应用设置。",
+      "inherited": "沿用平台默认值（{{value}}）。"
+    },
+    "toast": {
+      "saved": "部署安全设置已保存。",
+      "error": "无法保存部署安全设置。"
+    }
+  },
+  "autoRollback": {
+    "title": "自动回滚",
+    "infoTipLabel": "关于自动回滚",
+    "description": "版本接收流量之后，会在一个窗口内被观察。崩溃循环、OOM 终止或 5xx 激增是硬性信号。相比上一个版本的 p95 延迟退化是软性信号，除非你选择开启，否则绝不会触发回滚。",
+    "inheritHint": "留空的字段使用其中显示的平台默认值。",
+    "mode": {
+      "label": "模式",
+      "default": "平台默认值（{{value}}）",
+      "off": "关闭：不观察",
+      "notify": "通知：仅告警",
+      "auto": "自动：告警并回滚"
+    },
+    "soft": {
+      "label": "延迟退化时也回滚",
+      "hint": "仅在自动模式下生效。否则延迟退化只会发送告警。",
+      "inherited": "沿用平台默认值（{{value}}）。"
+    },
+    "save": "保存",
+    "reset": "使用平台默认值",
+    "toast": {
+      "saved": "自动回滚设置已保存。",
+      "error": "无法保存自动回滚设置。"
+    }
+  },
+  "watch": {
+    "watching": "切换后观察 {{window}}，剩余 {{left}}。",
+    "min": "{{count}} 分钟",
+    "sec": "{{count}} 秒",
+    "progress": "部署后观察进度",
+    "tripped": "观察已触发：{{message}}（{{reason}}）。",
+    "rolledBack": "已自动回滚：{{message}}（{{reason}}）。",
+    "stopped": "观察在窗口结束前已停止。",
+    "off": "此应用已关闭部署后观察。",
+    "notice": "请注意：{{message}}",
+    "stop": "停止观察",
+    "stopped_toast": "观察已停止。",
+    "stopError": "无法停止观察。",
+    "rollbackNow": "立即回滚",
+    "rollbackTitle": "回滚此版本？",
+    "rollbackDescription": "流量会切回保留的上一个版本。",
+    "rollbackConsequence": "上一个版本 {{ref}} 会经由相同的就绪门槛重新部署。",
+    "rollbackConfirm": "回滚",
+    "rollbackPending": "回滚中",
+    "rollbackToast": "回滚已开始。",
+    "rollbackError": "无法回滚。",
+    "noTarget": "还没有可回滚到的已保留早期版本。"
+  },
+  "targets": {
+    "title": "已固定的回滚目标",
+    "empty": "还没有已固定的版本。版本在接收流量时会被固定。",
+    "emptyTitle": "没有已固定的版本",
+    "live": "线上"
+  },
+  "publishLock": {
+    "lock": "锁定发布",
+    "unlock": "解锁发布",
+    "bannerTitle": "发布已锁定",
+    "bannerBody_other": "{{by}} 将其锁定。线上版本保持固定，{{count}} 个构建被挂起。",
+    "reason": "原因：{{reason}}",
+    "publish": "发布",
+    "publishedToast": "已发布。挂起的构建正在上线。",
+    "rollbackLock": "回滚并锁定",
+    "rollbackLockHint": "重新部署此版本，并挂起之后的所有构建",
+    "held": "已挂起，未上线",
+    "error": "无法更改发布锁定。"
+  },
+  "rolloutState": {
+    "title": "发布状态",
+    "traffic": {
+      "held": "流量已挂起",
+      "flipped": "流量已切换",
+      "reverted": "流量已切回"
+    },
+    "holdLeft": "挂起将在 {{time}} 后结束",
+    "flipped": "已切换",
+    "reverted": "已切回",
+    "gateFailures_other": "{{count}} 次门槛检查失败",
+    "canary": "金丝雀 {{weight}}%（第 {{stage}} 阶段，共 {{total}} 阶段）",
+    "settings": "部署安全设置"
+  },
+  "explain": {
+    "title": "为什么失败",
+    "loading": "正在加载失败说明",
+    "cause": "原因：",
+    "hint": "下一步：",
+    "evidence": "依据",
+    "lastLogs": "最后几行日志",
+    "rolledBack": "已回滚",
+    "verdict": {
+      "failed": "失败",
+      "rolled_back": "已回滚"
+    }
+  },
+  "freezeBanner": {
+    "title": "部署冻结生效中",
+    "titleUntil": "部署冻结生效至 {{when}}",
+    "body": "现在手动部署会覆盖冻结。请说明原因；该原因会记录在此次部署上。",
+    "reasonLabel": "冻结覆盖原因",
+    "reasonPlaceholder": "例如：修复安全问题的热修复"
+  },
+  "pullFresh": "要求重新查询镜像仓库：如果仓库不可达，则失败，而不是部署缓存的镜像。"
+}

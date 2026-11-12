@@ -1,0 +1,89 @@
+{
+  "trend": {
+    "title": "构建性能",
+    "loadError": "无法加载构建统计。",
+    "empty": "尚无构建记录。下次构建后会显示统计。",
+    "p50": "构建中位数",
+    "p95": "最慢的 5%（p95）",
+    "cacheHit": "缓存命中",
+    "failures": "失败或超时",
+    "none": "不适用",
+    "chartLabel_other": "最近 {{count}} 次构建的耗时，从旧到新",
+    "footnote_other": "基于最近 {{count}} 次构建。耗时仅统计成功的构建。",
+    "skewed_other": "有 {{count}} 次构建的耗时为负数（时钟偏差），已从耗时统计中排除。"
+  },
+  "speed": {
+    "title": "加快构建",
+    "saved": "在 {{count}} 次构建中，缓存大约节省了 {{saved}}（冷构建 {{cold}}，缓存构建 {{warm}}）。",
+    "none": "没有可建议的提速项。",
+    "loadError": "无法加载构建提速建议。",
+    "fixing": "应用中...",
+    "fixed": "构建缓存已启用。",
+    "fixError": "无法应用修复",
+    "fix": {
+      "auto": "启用缓存",
+      "guided": "设置缓存"
+    },
+    "findings": {
+      "cache_disabled": {
+        "title": "远程构建缓存已关闭",
+        "body": "已配置缓存目标，但处于停用状态，因此每次构建都从头开始。"
+      },
+      "cache_unconfigured": {
+        "title": "未配置远程构建缓存",
+        "body": "大多数构建步骤每次都会重新运行。请选择一个存储目标，使步骤可在多次构建和多个节点之间复用。"
+      },
+      "low_cache_hit": {
+        "title": "很少有构建步骤被复用",
+        "body": "请把很少变动的步骤放在 Dockerfile 的前面（先复制 lockfile 并安装依赖，再复制源代码），并为 node_modules、.git 和构建输出添加 .dockerignore，避免无关文件使层失效。"
+      },
+      "slower_recently": {
+        "title": "最近构建变慢了",
+        "body": "最近的构建中位数比之前慢了至少 30%。请对比最近的部署，查看是否有新依赖、更大的构建上下文，或缓存不再命中。"
+      }
+    }
+  },
+  "settings": {
+    "title": "构建性能",
+    "description": "限制构建可运行的时长、可使用的 CPU 和内存，以及同时运行的构建数量。多余的构建会在队列中等待。",
+    "loadError": "无法加载构建限制。",
+    "timeoutLabel": "构建超时（分钟）",
+    "timeoutHelp": "运行超过此时长的构建会被停止，并标记为超时。0 表示不限制。",
+    "concurrentLabel": "并发构建数",
+    "concurrentHelp": "超过此数量的构建会等待空闲名额。0 表示不限制。",
+    "defaultsNote": "默认值来自 APP_BUILD_TIMEOUT、APP_BUILD_MAX_CONCURRENT、APP_BUILD_MEMORY_MB 和 APP_BUILD_CPU_MILLIS：{{timeout}} 分钟、{{concurrent}} 个构建、{{memory}} MB、{{cpu}} 核。",
+    "overridden": "已覆盖",
+    "save": "保存限制",
+    "reset": "使用默认值",
+    "saved": "构建限制已保存。",
+    "resetDone": "构建限制已重置为默认值。",
+    "rootOnly": "只有 root 账户可以更改构建限制。",
+    "memoryLabel": "构建内存（MB）",
+    "memoryHelp": "使用内存超过此值的构建会被终止，并标记为超出内存限制。0 表示不限制。",
+    "cpuLabel": "构建 CPU（核）",
+    "cpuHelp": "限制一次构建可使用的 CPU，例如 1.5。0 表示不限制。"
+  },
+  "limits": {
+    "title": "构建限制",
+    "description": "仅对此应用生效的上限。未设置的值沿用控制平面默认值。",
+    "loadError": "无法加载构建限制。",
+    "timeoutLabel": "超时（分钟）",
+    "memoryLabel": "内存（MB）",
+    "cpuLabel": "CPU（核）",
+    "unlimited": "无限制",
+    "globalNote": "控制平面默认值：{{timeout}} 分钟、{{memory}} MB、{{cpu}} 核。0 表示不限制。",
+    "overridden": "已覆盖",
+    "save": "保存限制",
+    "saved": "构建限制已保存。",
+    "reset": "使用默认值",
+    "resetDone": "构建限制已重置为默认值。",
+    "rootOnly": "只有 root 账户可以更改构建限制。",
+    "hit": {
+      "memory_limit": "上次构建因使用超过 {{value}} MB 内存而被终止。",
+      "timeout": "上次构建在 {{value}} 分钟后被停止。"
+    },
+    "raiseMemory": "将内存提高到 {{value}} MB",
+    "raiseTimeout": "将超时提高到 {{value}} 分钟",
+    "raised": "限制已提高。请重试部署。"
+  }
+}

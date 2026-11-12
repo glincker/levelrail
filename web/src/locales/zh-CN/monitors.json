@@ -1,0 +1,152 @@
+{
+  "title": "可用性监控",
+  "add": "添加监控",
+  "cancel": "取消",
+  "empty": "还没有监控。添加一个来监控某个 URL、TCP 端口、cron 任务或证书。",
+  "loadError": "无法加载监控：{{message}}",
+  "columns": {
+    "name": "名称",
+    "target": "目标",
+    "state": "状态",
+    "lastCheck": "上次检查",
+    "uptime": "可用率（24 小时）"
+  },
+  "state": {
+    "up": "正常",
+    "suspect": "可疑",
+    "down": "宕机",
+    "recovering": "恢复中",
+    "degraded": "降级",
+    "paused": "已暂停",
+    "unknown": "无数据"
+  },
+  "notAvailable": "不适用",
+  "never": "从未",
+  "form": {
+    "kind": "类型",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "heartbeat": "Cron 心跳",
+    "tls": "TLS 证书",
+    "grace": "宽限（秒）",
+    "graceHint": "间隔之后额外等待的时间，超过后任务才算迟到。留空则使用服务器默认值。",
+    "warnDays": "警告（天）",
+    "critDays": "严重（天）",
+    "daysHint": "低于警告天数为降级，低于严重天数为宕机。留空则使用服务器默认值。",
+    "serverDefault": "默认",
+    "pingTitle": "将此添加到你的任务中",
+    "pingHint": "仅显示一次。在任务开始前追加 /start，出错时追加 /fail。如果泄露，请在该行或通过 CLI 轮换。",
+    "copy": "复制",
+    "copied": "已复制",
+    "done": "完成",
+    "url": "URL",
+    "host": "主机",
+    "port": "端口",
+    "name": "名称",
+    "interval": "间隔（秒）",
+    "timeout": "超时（毫秒）",
+    "statusLink": "开启状态页事件",
+    "statusLinkHint": "在此监控宕机期间，于关联的状态组件上开启一个事件，并在恢复后将其解决。默认关闭。",
+    "save": "创建",
+    "saving": "创建中...",
+    "created": "监控 {{name}} 已创建",
+    "error": "无法创建监控：{{message}}",
+    "urlPlaceholder": "https://example.com/health"
+  },
+  "delete": {
+    "action": "删除 {{name}}",
+    "title": "删除监控 {{name}}？",
+    "description": "它的结果和汇总数据将一并删除。",
+    "confirm": "删除",
+    "pending": "删除中...",
+    "done": "监控 {{name}} 已删除"
+  },
+  "pause": {
+    "action": "暂停 {{name}}"
+  },
+  "resume": {
+    "action": "恢复 {{name}}"
+  },
+  "rotate": {
+    "action": "轮换 {{name}} 的令牌",
+    "title": "轮换 {{name}} 的 ping URL？",
+    "description": "旧 URL 会立即失效。新 URL 仅显示一次，因此请随后立即更新你的任务。",
+    "confirm": "轮换",
+    "pending": "轮换中..."
+  },
+  "incidents": {
+    "title": "事件",
+    "empty": "没有事件。已确认的监控故障和升级的告警会显示在这里。",
+    "loadError": "无法加载事件：{{message}}",
+    "refresh": "刷新",
+    "published": "公开",
+    "detailHint": "内部时间线和公开草稿",
+    "timeline": "内部时间线",
+    "ack": "确认",
+    "resolve": "解决",
+    "state": {
+      "triggered": "已触发",
+      "acknowledged": "已确认",
+      "resolved": "已解决"
+    },
+    "status": {
+      "investigating": "调查中",
+      "identified": "已定位",
+      "monitoring": "观察中",
+      "resolved": "已解决"
+    },
+    "note": {
+      "label": "添加备注（内部）",
+      "add": "添加备注"
+    },
+    "draft": {
+      "title": "公开更新草稿",
+      "name": "标题",
+      "status": "状态",
+      "body": "消息",
+      "save": "保存草稿",
+      "saved": "草稿已保存",
+      "prefillBody": "我们正在调查：{{title}}。受影响：{{monitor}}。",
+      "unknownMonitor": "服务"
+    },
+    "publish": {
+      "action": "发布",
+      "confirmTitle": "发布到公开状态页？",
+      "confirmBody": "这会立即公开，且无法取消发布。请检查下方文本。",
+      "confirm": "公开发布",
+      "pending": "发布中...",
+      "done": "事件已发布",
+      "already": "已发布。更多公开更新请在状态页设置中发布。",
+      "stale": "自你加载以来，此事件已发生变化。请刷新并重新审阅草稿。",
+      "changed": "发布期间草稿发生了变化。没有发布任何内容；请重新审阅。"
+    },
+    "postmortem": {
+      "title": "事后复盘",
+      "none": "还没有事后复盘。起草时会根据此事件填入影响窗口和告警。",
+      "start": "起草事后复盘",
+      "refresh": "刷新窗口和告警",
+      "save": "保存",
+      "publish": "发布事后复盘",
+      "pending": "发布中...",
+      "confirmTitle": "发布此事后复盘？",
+      "confirmBody": "发布后会锁定事后复盘，之后任何人都无法编辑。",
+      "window": "影响时段 {{start}} 至 {{end}}",
+      "ongoing": "未记录",
+      "alerts": "告警",
+      "noAlerts": "此事件没有记录任何告警。",
+      "itemsHint": "每行一个行动项",
+      "publishedBy": "{{by}} 于 {{at}} 发布",
+      "state": {
+        "draft": "草稿",
+        "published": "已发布"
+      },
+      "fields": {
+        "summary": "摘要",
+        "impact": "影响",
+        "root_cause": "根本原因",
+        "resolution": "解决方案",
+        "action_items": "行动项"
+      }
+    }
+  }
+}

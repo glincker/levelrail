@@ -1,0 +1,100 @@
+{
+  "card": {
+    "title": "通行密钥",
+    "description": "使用 Touch ID、Windows Hello、手机或安全密钥登录，无需密码。",
+    "statusEnabled_other": "已开启通行密钥登录，已注册 {{count}} 个通行密钥",
+    "statusOff": "添加通行密钥之前，通行密钥登录处于关闭状态",
+    "retry": "重试",
+    "add": "添加通行密钥",
+    "test": "测试登录",
+    "testing": "正在等待你的通行密钥...",
+    "testOk": "通行密钥已验证。其他内容均未更改。",
+    "testFailedTitle": "通行密钥测试未通过"
+  },
+  "empty": {
+    "title": "还没有通行密钥",
+    "body": "通行密钥可防钓鱼，比密码更快，并且保存在你的设备或密码管理器中。添加一个，即可通过触碰或扫脸登录。",
+    "action": "添加你的第一个通行密钥"
+  },
+  "nudge": {
+    "backupTitle": "再添加一个通行密钥作为备份",
+    "backupBody": "只有一个通行密钥时，丢失该设备就只能退回到使用密码。请注册另一台设备或一把安全密钥。",
+    "backupAction": "添加备份通行密钥"
+  },
+  "row": {
+    "provider": "通行密钥",
+    "synced": "已同步",
+    "deviceBound": "绑定设备",
+    "syncedHint": "由你的通行密钥提供商备份，并可在你的其他设备上使用。",
+    "deviceBoundHint": "仅保留在此验证器上，丢失后无法恢复。",
+    "added": "添加时间",
+    "lastUsed": "最近使用",
+    "neverUsed": "从未使用",
+    "signIns_other": "登录 {{count}} 次",
+    "transport": {
+      "usb": "USB",
+      "nfc": "NFC",
+      "ble": "蓝牙",
+      "internal": "此设备",
+      "hybrid": "手机",
+      "smart-card": "智能卡"
+    },
+    "rename": "重命名 {{name}}",
+    "renameLabel": "通行密钥名称",
+    "save": "保存",
+    "cancel": "取消",
+    "saving": "保存中...",
+    "renameFailed": "无法重命名此通行密钥。请重试。",
+    "remove": "移除 {{name}}"
+  },
+  "remove": {
+    "title": "移除此通行密钥？",
+    "description": "“{{name}}”将无法再登录此账户。",
+    "lastWarning": "这是你唯一的通行密钥。请确保你仍可使用密码或双重验证登录。",
+    "confirm": "移除",
+    "pending": "移除中...",
+    "blockedTitle": "你将无法登录",
+    "blockedBody": "这是你唯一的登录方式。请先添加另一个通行密钥、密码或双重验证。",
+    "blockedAddPasskey": "添加另一个通行密钥",
+    "blockedFailed": "无法移除此通行密钥。请重试。"
+  },
+  "addDialog": {
+    "title": "添加通行密钥",
+    "description": "为它命名以便日后识别，然后按照浏览器的提示操作。",
+    "nameLabel": "名称",
+    "stepName": "命名",
+    "stepPrompt": "在浏览器中确认",
+    "stepSaved": "已保存",
+    "continue": "继续",
+    "waiting": "正在等待你的浏览器...",
+    "saving": "正在保存你的通行密钥...",
+    "cancel": "取消",
+    "done": "完成",
+    "savedTitle": "通行密钥已添加",
+    "savedBody": "“{{name}}”已可使用。",
+    "savedProvider": "存储于 {{provider}}",
+    "retry": "重试",
+    "defaults": {
+      "mac": "MacBook Touch ID",
+      "iphone": "iPhone",
+      "ipad": "iPad",
+      "windows": "Windows Hello",
+      "android": "Android 手机",
+      "linux": "Linux 设备",
+      "generic": "我的通行密钥"
+    }
+  },
+  "errors": {
+    "cancelled": "通行密钥提示在完成前被关闭。没有保存任何内容。",
+    "timeout": "浏览器等待你的通行密钥的时间过长。准备好后请重试。",
+    "alreadyRegistered": "此验证器已经为此账户注册了通行密钥。请使用其他设备，或先移除旧的通行密钥。",
+    "unsupported": "此浏览器或设备不支持通行密钥。请尝试其他浏览器或安全密钥。",
+    "insecureOrigin": "通行密钥仅在通过 https 访问、且与配置为仪表盘 URL 的地址完全一致时才可用。请从该地址打开仪表盘后重试。",
+    "rejected": "服务器无法验证此通行密钥。请重试，或使用其他验证器。",
+    "rateLimited": "尝试次数过多。请等待一分钟后重试。",
+    "unavailable": "此服务器尚未设置通行密钥。请让管理员设置仪表盘 URL。",
+    "lastMethod": "这是你唯一的登录方式。请先添加另一个通行密钥、密码或双重验证。",
+    "network": "无法连接到服务器。请检查网络连接后重试。",
+    "unknown": "通行密钥请求失败。请重试。"
+  }
+}

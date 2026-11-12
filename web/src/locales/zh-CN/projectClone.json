@@ -1,0 +1,30 @@
+{
+  "trigger": "克隆",
+  "title": "克隆项目",
+  "description": "把此项目的应用复制到一个新项目。克隆的应用以暂停状态创建，在你启动之前不会运行。",
+  "name": "新项目名称",
+  "nameHint": "如果名称已被占用，会自动加上数字。",
+  "options": {
+    "envVars": "复制环境变量",
+    "settings": "复制应用设置",
+    "domains": "域名",
+    "domainsNone": "无",
+    "domainsPlaceholder": "占位主机名"
+  },
+  "preview": "预览计划",
+  "previewing": "检查中...",
+  "apply": "创建克隆",
+  "applying": "克隆中...",
+  "cancel": "关闭",
+  "plan": {
+    "apps": "将创建的应用（{{count}}）",
+    "appLine": "{{source}} 到 {{name}}",
+    "envVars": "{{count}} 个环境变量",
+    "suspended": "克隆的应用以暂停状态创建。设置好值后，请在新项目中启动它们。",
+    "secrets": "需要填写值的密钥（{{count}}）",
+    "secretsLink": "在新项目中设置",
+    "skipped": "已跳过（{{count}}）",
+    "empty": "没有可创建的内容。"
+  },
+  "done": "项目已克隆。"
+}

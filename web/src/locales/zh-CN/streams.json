@@ -1,0 +1,38 @@
+{
+  "tableLabel": "转发的端口",
+  "page": {
+    "title": "流",
+    "description": "以原始 TCP 方式把主机端口转发到此应用的某个容器端口。暂不支持 UDP、TLS 终止和访问列表。",
+    "pendingNote": "添加到运行中应用的流会在其下次重启时生效，重启会自动进行。"
+  },
+  "table": {
+    "hostPort": "主机端口",
+    "containerPort": "容器端口",
+    "protocol": "协议",
+    "created": "添加时间",
+    "actions": "操作"
+  },
+  "empty": {
+    "title": "尚未配置流",
+    "description": "添加一个流，把主机端口转发到此应用的某个容器端口。"
+  },
+  "add": {
+    "trigger": "添加流",
+    "hostPortLabel": "主机端口",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "容器端口",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "协议",
+    "submit": "添加流",
+    "submitting": "添加中..."
+  },
+  "remove": {
+    "trigger": "移除",
+    "removing": "移除中..."
+  },
+  "toast": {
+    "created": "已创建主机端口 {{hostPort}} 上的流。",
+    "removed": "流已移除。",
+    "errorTitle": "无法保存此流。"
+  }
+}

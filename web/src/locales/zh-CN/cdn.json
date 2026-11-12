@@ -1,0 +1,297 @@
+{
+  "retry": "重试",
+  "nav": {
+    "label": "CDN 分区",
+    "overview": "概览",
+    "caches": "缓存",
+    "redirects": "重定向",
+    "routing": "路由规则"
+  },
+  "window": {
+    "label": "时间范围",
+    "5m": "5 分钟",
+    "1h": "1 小时",
+    "24h": "24 小时"
+  },
+  "overview": {
+    "title": "CDN 与缓存",
+    "description": "所有应用的请求、错误和缓存命中情况，以及你的哪些服务器响应了这些请求。"
+  },
+  "tiles": {
+    "requests": "请求数",
+    "perSecond": "每秒 {{rate}} 个",
+    "requestsInfo": "入口在此时间范围内处理的请求数，来自请求指标。",
+    "errors": "服务器错误（5xx）",
+    "errorsInfo": "以 5xx 状态响应的请求占比，包括来自应用的错误。",
+    "hitRate": "缓存命中率",
+    "hitRateInfo": "最近 {{minutes}} 分钟内，缓存路径上的命中数占命中数加未命中数的比例。绕过缓存的请求不计入。",
+    "hitRateSince": "缓存路径上的命中数占命中数加未命中数的比例。自入口启动以来在内存中统计，因此重启后会重置。",
+    "saved": "节省的带宽",
+    "savedInfo": "最近 {{minutes}} 分钟内，由缓存而非应用提供的响应体字节数。",
+    "savedSince": "自入口启动以来，由缓存而非应用提供的响应体字节数。",
+    "entries": "缓存对象",
+    "memory": "缓存内存",
+    "memoryInfo": "入口中占用的字节数及其上限。达到上限时，最久未使用的最旧对象会最先被丢弃。",
+    "none": "无数据"
+  },
+  "nodes": {
+    "title": "流量由哪里提供",
+    "help": "请求按每个应用所在的服务器统计。不测量访客位置。",
+    "aria": "各服务器的请求占比",
+    "local": "此服务器",
+    "apps_other": "{{count}} 个应用",
+    "noRegions": "还没有区域标签。请在“节点”页面为服务器添加一个，即可在这里看到。",
+    "emptyTitle": "此时间范围内没有请求",
+    "emptyBody": "域名背后的应用收到流量后，占比就会出现。",
+    "emptyAction": "打开域名"
+  },
+  "cacheCard": {
+    "title": "缓存",
+    "help": "命中由入口响应。未命中则交给应用。",
+    "open": "打开缓存"
+  },
+  "chart": {
+    "empty": "还没有缓存活动。为某个域名开启缓存后，即可在这里看到命中和未命中。",
+    "aria": "最近 {{minutes}} 分钟内 {{hits}} 次缓存命中和 {{misses}} 次未命中",
+    "span": "最近 {{minutes}} 分钟",
+    "hits": "命中",
+    "misses": "未命中"
+  },
+  "caches": {
+    "title": "缓存",
+    "description": "入口中的响应缓存：它对每个应用的效果如何，以及如何清除。",
+    "scopeTitle": "条目存放在哪里",
+    "scopeBody": "此控制平面上入口中的一个内存缓存为所有应用提供服务，包括其他服务器上的应用。清除操作在那里生效。对象通过 {{tag}} 响应头打标签。入口重启时计数器会重置，暂不提供每台服务器各自的边缘缓存。",
+    "chartTitle": "命中率随时间变化",
+    "chartHelp": "所有应用每分钟的缓存命中和未命中。",
+    "tabApps": "应用",
+    "tabPurge": "清除",
+    "tabHistory": "历史"
+  },
+  "apps": {
+    "app": "应用",
+    "cache": "缓存状态",
+    "onFor": "{{total}} 个域名中有 {{on}} 个已开启",
+    "off": "关闭",
+    "requests": "可缓存的请求",
+    "hitRate": "命中率",
+    "saved": "节省的带宽",
+    "aria": "按应用统计的缓存命中率，最繁忙的在前",
+    "emptyTitle": "还没有应用",
+    "emptyBody": "部署应用并为其设置域名，然后开启缓存。",
+    "emptyAction": "打开应用",
+    "why": "为何未缓存"
+  },
+  "picker": {
+    "label": "应用"
+  },
+  "purge": {
+    "scopeLegend": "要清除什么",
+    "scope": {
+      "url": {
+        "title": "单个 URL",
+        "help": "一个路径和查询参数，包含所有变体。",
+        "field": "路径和查询参数"
+      },
+      "prefix": {
+        "title": "路径前缀",
+        "help": "某个路径下的所有内容。",
+        "field": "路径前缀"
+      },
+      "tag": {
+        "title": "缓存标签",
+        "help": "你的应用在响应头中标记的对象。",
+        "field": "缓存标签"
+      },
+      "all": {
+        "title": "全部",
+        "help": "清空此范围的整个缓存。",
+        "field": ""
+      }
+    },
+    "allNote": "移除 {{target}} 的所有缓存响应。对每个 URL 的下一次请求都会发往应用。",
+    "action": "清除",
+    "purging": "清除中",
+    "done_other": "已移除 {{count}} 个缓存响应。",
+    "confirmTitle": "清除 {{target}} 的全部内容？",
+    "confirmBody": "入口中的所有缓存响应都会被移除。",
+    "consequenceOrigin": "在缓存重新填充之前，应用会再次收到所有请求，因此预计会有一阵负载激增。",
+    "consequenceUndo": "此操作无法撤销。它会记录在清除历史中。",
+    "confirm": "清除全部"
+  },
+  "history": {
+    "aria": "{{app}} 的缓存清除记录，最新的在前",
+    "when": "时间",
+    "who": "操作者",
+    "domain": "域名",
+    "scope": "内容",
+    "removed": "已移除",
+    "emptyTitle": "还没有清除记录",
+    "emptyBody": "通过仪表盘、CLI 或 API 执行的清除会连同操作者一起列在这里。"
+  },
+  "app": {
+    "subtitle": "在入口处缓存静态文件和其他安全的响应，使重复请求不再到达你的应用。动态页面除非应用或规则允许，否则不会被缓存。",
+    "presetTitle": "缓存静态资源",
+    "presetBody": "为图片、脚本、样式和字体添加一条规则，并开启缓存。应用自己的 Cache-Control 仍然优先，带 Cookie 的响应绝不会被存储。",
+    "presetAction": "缓存静态资源",
+    "presetApplying": "应用中",
+    "domain": "域名",
+    "state": "缓存状态",
+    "on": "开",
+    "off": "关",
+    "rules": "规则",
+    "edit": "编辑",
+    "editRules": "编辑规则",
+    "domainsAria": "{{app}} 各域名的缓存设置",
+    "chartTitle": "命中率随时间变化",
+    "counts": "自入口启动以来，命中 {{hits}} 次，未命中 {{misses}} 次，绕过 {{bypasses}} 次。",
+    "noDomainsTitle": "此应用没有域名",
+    "noDomainsBody": "缓存位于域名之前。添加一个域名即可开始缓存。",
+    "noDomainsAction": "添加域名"
+  },
+  "controls": {
+    "domain": "域名",
+    "app": "应用",
+    "open": "打开",
+    "docs": "流量控制指南",
+    "tab": {
+      "redirects": "重定向",
+      "forwarding": "路径转发",
+      "headers": "请求头"
+    },
+    "redirects": {
+      "title": "重定向",
+      "description": "强制使用 HTTPS、选择规范主机并转发旧地址。每个域名有各自的设置。",
+      "aria": "各域名及其重定向设置"
+    },
+    "routing": {
+      "title": "路由规则",
+      "description": "将路径发送到另一个应用或 URL，并设置请求头和响应头。每个域名有各自的设置。",
+      "aria": "各域名及其路由设置"
+    },
+    "emptyTitle": "还没有可配置的域名",
+    "emptyBody": "请先为某个应用添加域名。它的重定向和路由控制随后会出现在这里。",
+    "emptyAction": "打开域名"
+  },
+  "thirdParty": {
+    "title": "前面使用 Cloudflare、Akamai 或 Fastly",
+    "headers": "从你的应用发送 Cache-Control（以及 Cache-Tag 之类的标签头）。CDN 和入口都会遵循它们。",
+    "clientIp": "将 CDN 的地址段添加到受信任代理设置中，使访客 IP、速率限制和国家规则使用真实的客户端地址。",
+    "plugins": "针对 CDN 清除和流量调度的第一方集成计划通过插件系统提供。目前没有连接任何内容。",
+    "docs": "阅读指南"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "源站",
+      "edge": "边缘"
+    }
+  },
+  "reasons": {
+    "column": "为何未缓存",
+    "none": "没有任何因素阻碍缓存",
+    "fixVary": "将 {{header}} 添加到 Vary",
+    "nextjsHelp": "这看起来是一个 Next.js 应用。Next.js 预设会按其路由请求头区分缓存页面。",
+    "nextjsFix": "应用 Next.js 预设",
+    "short": {
+      "vary_header": "应用按 {{header}} 变化",
+      "set_cookie": "响应设置了 Cookie",
+      "private": "响应被标记为 private",
+      "no_store": "响应禁止存储（no-store）",
+      "no_cache": "响应要求重新验证（no-cache）",
+      "status_not_cached": "该响应状态不会被缓存",
+      "too_large": "响应过大",
+      "range": "Range 请求会跳过缓存",
+      "authorization": "请求携带凭据",
+      "cookie_request": "请求携带 Cookie",
+      "upgrade": "Upgrade 请求会跳过缓存",
+      "other": "其他原因"
+    },
+    "long": {
+      "vary_header": "响应按 {{header}} 请求头变化，而没有缓存规则列出它，因此无法安全存储。",
+      "set_cookie": "响应设置了 Cookie，因此属于个人内容，不会被存储。",
+      "private": "应用将响应标记为 private。",
+      "no_store": "请求或响应声明了 no-store。",
+      "no_cache": "响应声明了 no-cache，因此每次都必须与应用核对。",
+      "status_not_cached": "响应的状态是规则不缓存的状态。请将该状态添加到规则中以缓存它。",
+      "too_large": "响应超过了单个对象的缓存上限。",
+      "range": "请求只要求文件的一部分（Range），这从不会被缓存。",
+      "authorization": "请求带有 Authorization 请求头，因此从不会被缓存。",
+      "cookie_request": "请求携带了 Cookie。如果该页面对所有人都相同，请在规则中开启带 Cookie 缓存。",
+      "upgrade": "请求要求切换协议（WebSocket），这从不会被缓存。",
+      "other": "请求因较少见的原因被排除在缓存之外。"
+    }
+  },
+  "proxy": {
+    "title": "Cloudflare 代理",
+    "body": "当 Levelrail 写入此应用域名的 DNS 记录时，通过 Cloudflare 代理这些域名。现有记录会在下次 DNS 修复运行时更改。",
+    "following": "沿用服务器设置，当前为{{state}}。",
+    "override": "仅为此应用设置。",
+    "reset": "沿用服务器设置",
+    "on": "开启",
+    "off": "关闭"
+  },
+  "edge": {
+    "title": "边缘",
+    "pipelineLabel": "从 Git 到边缘的流水线",
+    "stage": {
+      "git": "Git",
+      "build": "构建",
+      "deploy": "部署",
+      "dns": "DNS",
+      "edge": "边缘"
+    },
+    "noDeploy": "还没有部署",
+    "dns": "{{count}} 条托管记录",
+    "dnsNone": "没有托管记录",
+    "health": {
+      "direct": "直连",
+      "ok": "已代理",
+      "attention": "需要处理"
+    },
+    "cache": "缓存命中 {{rate}}%，{{entries}} 个条目",
+    "lastPurge": "上次清除 {{when}}（{{scope}}）",
+    "purgeFailed": "清除失败：{{error}}",
+    "override": "已为此应用强制边缘{{state}}",
+    "overrideOn": "开启",
+    "overrideOff": "关闭",
+    "provider": "{{provider}} 区域 {{zone}}，SSL {{mode}}",
+    "setup": "设置 CDN",
+    "purges": "最近的清除",
+    "loading": "正在加载边缘状态"
+  },
+  "setup": {
+    "title": "CDN 设置",
+    "description": "检查提供商、SSL 模式、DNS 质询和 DNS 计划。它会报告修复建议，且绝不会更改你的区域设置。",
+    "dryRun": "运行试运行",
+    "running": "检查中...",
+    "apply": "应用",
+    "applying": "应用中...",
+    "close": "关闭",
+    "provider": "提供商",
+    "providerAuto": "自动检测",
+    "fix": "修复",
+    "applied": "已应用。边缘状态稍后会刷新。",
+    "dryRunDone": "仅为试运行。没有更改任何内容。",
+    "result": {
+      "ok": "所有检查均通过",
+      "warn": "通过但有警告",
+      "fail": "请先修复失败的步骤"
+    },
+    "status": {
+      "ok": "正常",
+      "warn": "警告",
+      "fail": "失败",
+      "skipped": "已跳过"
+    },
+    "step": {
+      "provider": "提供商",
+      "ssl_mode": "SSL 模式",
+      "acme_dns01": "ACME DNS 质询",
+      "client_address": "客户端地址",
+      "dns_plan": "DNS 计划",
+      "apply": "应用",
+      "verify": "验证"
+    },
+    "error": "CDN 设置失败：{{message}}"
+  }
+}

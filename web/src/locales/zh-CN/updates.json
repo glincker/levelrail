@@ -1,0 +1,719 @@
+{
+  "notes": {
+    "title": "发布说明",
+    "alert": {
+      "note": "备注",
+      "tip": "提示",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "注意"
+    }
+  },
+  "copy": {
+    "copy": "复制",
+    "copied": "已复制"
+  },
+  "preflight": {
+    "cardTitle": "升级预检",
+    "cardDescription": "升级前的只读检查。",
+    "running": "正在运行预检...",
+    "unavailable": "目前无法进行预检。",
+    "checksLabel": "升级预检项",
+    "blocked": "升级被阻止：请先修复未通过的检查。",
+    "upgradeCommand": "请在服务器上运行此命令（绝不会自动运行）",
+    "rollbackCommand": "在升级出问题后回滚数据库",
+    "status": {
+      "ok": "通过",
+      "warn": "警告",
+      "fail": "已阻塞",
+      "unknown": "未知",
+      "pending": "等待中",
+      "skipped": "不适用"
+    },
+    "waiting": "此版本仍在发布中。你的服务器没有任何问题。请几分钟后再检查。",
+    "recheckAll": "重新检查",
+    "protects": "保护：{{what}}",
+    "fix": {
+      "backupNow": "立即备份",
+      "backingUp": "备份中...",
+      "recheck": "重新检查",
+      "rechecking": "重新检查中...",
+      "openRollback": "前往回滚"
+    },
+    "retry": "重试"
+  },
+  "history": {
+    "olderSummary": "较早的版本（{{count}}）",
+    "olderWhy": "这些版本支持的数据库格式比你当前的更旧，因此不会作为升级选项提供。回到其中某个版本意味着恢复备份，这会丢失此后写入的数据。",
+    "title": "版本历史与回滚",
+    "description": "最近五个版本。选择一个来预览回到该版本会发生什么。此页面不会应用任何内容。回滚在服务器上运行，因此控制平面绝不会替换它自己。",
+    "viewLabel": "显示",
+    "view": {
+      "stable": "稳定版",
+      "beta": "Beta",
+      "all": "稳定版和 Beta"
+    },
+    "loading": "正在加载最近的版本...",
+    "loadError": "无法加载版本历史：{{message}}",
+    "retry": "重试",
+    "empty": "此通道没有找到版本。",
+    "emptyHint": "请在上方切换到另一个通道，或检查此主机能否访问 github.com。",
+    "githubUnreachable": "无法访问 GitHub。显示的是缓存的版本和此主机上保留的二进制文件。",
+    "currentSchema": "数据库 schema 版本 {{version}}",
+    "currentSchemaUnknown": "无法读取数据库 schema 版本",
+    "running": "运行中",
+    "retained": "保留在此主机上",
+    "retainedHelp": "即时完成，离线也可用",
+    "notRetained": "回滚时下载",
+    "noBinary": "此平台没有二进制文件",
+    "binarySize": "{{size}} MB",
+    "unsigned": "未签名",
+    "channel": {
+      "stable": "稳定版",
+      "beta": "Beta"
+    },
+    "schema": "Schema {{version}}",
+    "schemaUnknown": "Schema 未知",
+    "verdict": {
+      "binary_only": "安全：仅替换二进制",
+      "forward": "更新的 schema：向前迁移",
+      "restore_required": "需要恢复备份",
+      "unknown": "兼容性未知"
+    },
+    "preview": "预览回滚",
+    "previewRunning": "这是正在运行的版本",
+    "previewFor": "预览回滚到 {{version}}"
+  },
+  "plan": {
+    "title": "回滚到 {{version}}",
+    "description": "只读预览。没有任何更改。",
+    "loading": "正在对照你的数据库检查此版本...",
+    "loadError": "无法生成回滚计划：{{message}}",
+    "close": "关闭",
+    "summary": "正在运行 {{from}}，数据库 schema 为 {{schema}}。",
+    "target": "{{version}} 支持 schema {{schema}}。",
+    "targetUnknown": "{{version}} 没有发布 schema 版本。",
+    "downtime": "预计停机时间：服务重启期间约 {{seconds}} 秒。",
+    "blocked": "已阻塞：回滚之前，请先修复下方未通过的检查。",
+    "stepsTitle": "将会发生什么",
+    "checksTitle": "预检项",
+    "changesTitle": "在 {{target}} 和 {{current}} 之间你会失去什么",
+    "noChanges": "中间的各个版本没有可用的发布说明。",
+    "verdict": {
+      "binary_only": "安全。数据库 schema 一致，因此只会替换程序。你的数据不受影响。",
+      "forward": "此版本比你的数据库更新，启动时会将其向前迁移。这属于升级，而不是回滚。",
+      "restore_required": "无法仅回滚二进制。此版本比你的数据库 schema 更旧，会拒绝启动。唯一的退路是恢复数据库备份，这会永久丢失其之后写入的一切。",
+      "unknown": "此版本没有发布其数据库 schema 版本，因此无法确认兼容性。较旧的程序在较新的 schema 上会拒绝启动且不会触碰数据，如果发生这种情况，会自动恢复到上一个版本。"
+    },
+    "step": {
+      "backup": "对控制平面数据库做一次全新备份",
+      "fetch": "下载该版本，并验证其校验和与签名",
+      "verify": "对照已记录的校验和，重新检查保留的二进制文件",
+      "stop": "停止控制平面（应用继续运行）",
+      "restore_backup": "用你选择的备份替换数据库",
+      "swap_binary": "将程序替换为 {{version}}",
+      "start": "启动控制平面",
+      "verify_health": "等待健康检查和就绪检查通过",
+      "auto_recover": "如果它没有变得健康，则自动放回上一个版本"
+    },
+    "warning": {
+      "data_loss": "所选备份之后写入的数据将永久丢失。",
+      "unknown_schema": "Schema 兼容性未知。",
+      "forward_migration": "数据库将向前迁移。",
+      "no_compatible_backup": "没有足够旧的本地备份可用于此版本，因此无法从这里回滚到它。",
+      "dev_build": "这是开发构建，因此无法保留正在运行的二进制文件用于回滚。"
+    },
+    "dataLoss": {
+      "title": "这会丢失数据",
+      "body": "恢复会用备份替换数据库。备份之后写入的任何内容都会丢失，包括部署、设置更改和审计条目。当前数据库会作为副本保存在旁边，并且会先做一次全新备份。",
+      "since": "{{time}} 之后的一切都会丢失。",
+      "backupsTitle": "此主机上的备份",
+      "backupRow": "{{name}}，创建于 {{time}}，schema {{schema}}",
+      "compatible": "兼容",
+      "incompatible": "对此版本来说太新",
+      "noneCompatible": "此主机上没有与 {{version}} 兼容的备份。"
+    },
+    "recheck": "重新检查",
+    "rechecking": "检查中...",
+    "commands": {
+      "fetch": "1. 在服务器上暂存已验证的版本",
+      "apply": "2. 在服务器上回滚（系统会要求你输入 {{version}}）",
+      "restore": "在服务器上回滚并恢复备份"
+    },
+    "backupHint": "超过一天的备份会在上方标出。在任何更改之前，也会自动做一次全新备份。",
+    "oneClick": {
+      "button": "立即回滚",
+      "unavailable": "无法从仪表盘应用此回滚：{{reason}}",
+      "confirmTitle": "回滚到 {{version}}？",
+      "confirmBody": "控制平面会先备份，再替换程序并重启。应用继续运行。如果旧版本没有变得健康，会自动恢复当前版本。",
+      "confirm": "回滚",
+      "pending": "启动中...",
+      "started": "已开始回滚到 {{version}}。控制平面恢复后，仪表盘会重新连接。"
+    }
+  },
+  "verify": {
+    "title": "升级或回滚后验证",
+    "description": "运行控制平面自身的健康检查并报告结果。服务恢复后请运行一次。",
+    "run": "运行验证",
+    "running": "验证中...",
+    "pass": "健康：所有检查均通过。",
+    "passWarn": "健康，但有需要查看的警告。",
+    "fail": "不健康：{{count}} 项检查失败。",
+    "failPlural": "不健康：{{count}} 项检查失败。",
+    "error": "验证无法运行：{{message}}",
+    "checkedAt": "检查于 {{time}}"
+  },
+  "upgradeHistory": {
+    "title": "升级历史",
+    "description": "此控制平面运行过的版本。请确认每一项更改。",
+    "loading": "正在加载升级历史...",
+    "loadError": "无法加载升级历史：{{message}}",
+    "empty": "尚无升级记录",
+    "emptyHint": "每当控制平面以不同版本启动时，就会新增一行。",
+    "pendingTitle_other": "{{count}} 项更改待查看",
+    "acknowledge": "确认",
+    "acknowledgedToast": "升级已确认。",
+    "ackedBy": "由 {{who}} 于 {{when}} 确认。",
+    "kind": {
+      "installed": "已安装",
+      "adopted": "历史从此开始",
+      "upgraded": "已升级",
+      "rolled_back": "已回滚",
+      "rebuilt": "已重新构建",
+      "development": "开发构建",
+      "changed": "版本已更改"
+    },
+    "initiator": "由 {{who}} 使用 {{method}}。",
+    "initiatorUnknown": "发起者未知。没有任何记录说明是谁更改了版本（未留下安装程序备注）。",
+    "initiatorUnknownShort": "某位运维人员",
+    "methodUnknown": "一种未记录的方式",
+    "schemaDelta": "数据库 schema {{before}} 到 {{after}}",
+    "schemaUnknown": "未记录数据库 schema 变化",
+    "schemaMoved": "数据库 schema 已更改。回到之前的版本需要恢复数据库，这会丢失此后写入的数据。",
+    "backup": "备份：{{name}}",
+    "noBackup": "未记录备份",
+    "health": {
+      "booted": "已正常启动并迁移完成",
+      "unknown": "未记录健康状况"
+    },
+    "releasePage": "发布页面",
+    "noReleasePage": "开发构建：没有发布页面",
+    "compare": "对比更改",
+    "rollbackTo": "回滚到 {{version}}",
+    "notes": "当时的发布说明",
+    "notesPending": "正在获取发布说明",
+    "notesUnavailable": "当时没有可用的发布说明",
+    "agents": {
+      "title": "节点 agent 版本",
+      "first": "首次上报"
+    },
+    "howTitle": "工作原理",
+    "howBody": "无论以何种方式安装，每次以不同版本启动都会被记录，因此不会有任何静默升级。看到更改后，请确认它。",
+    "lastRecorded": "最近记录于 {{when}}",
+    "loadingLabel": "正在加载升级历史",
+    "pendingBanner_other": "{{count}} 项更改待查看",
+    "ackAria": "确认 {{version}}",
+    "acknowledged": "已确认",
+    "ackAnnounce": "已确认升级到 {{version}}",
+    "showAll": "显示全部 {{count}} 项",
+    "showLess": "显示最新 {{count}} 项",
+    "details": "{{version}} 的详情",
+    "viaShort": "{{who}} 通过 {{method}}",
+    "byShort": "由 {{who}}",
+    "unknownShort": "发起者未知",
+    "schemaChip": "Schema {{before}} 到 {{after}}",
+    "backupOk": "已记录备份",
+    "backupMissing": "无备份，schema 已更改",
+    "backupNone": "无备份",
+    "list": "升级历史"
+  },
+  "restorePoints": {
+    "title": "恢复点",
+    "description": "每次升级之前，都会自动创建一个恢复点（数据库副本、程序和服务文件）。恢复会放回程序；只有当正在运行的数据库已被更新的版本更改过时，才会一并放回数据库。",
+    "empty": "还没有恢复点。下次升级之前会自动创建一个。",
+    "size": "{{mb}} MB",
+    "withData": "同时恢复数据库",
+    "binaryOnly": "仅程序",
+    "restore": "恢复",
+    "pending": "恢复中...",
+    "confirmTitle": "恢复 {{version}}？",
+    "confirmWithData": "程序和数据库都会回到 {{time}} 时的状态。此后保存的所有内容都将被丢弃。被替换的数据库会保留在主机上。",
+    "confirmBinaryOnly": "程序会回到较早的版本。数据库已经兼容，因此不会丢失任何已保存的更改。",
+    "started": "正在主机上恢复 {{version}}。结果会显示在上方的升级尝试中。"
+  },
+  "selfUpgrade": {
+    "dbRestored": "数据库已从快照恢复。自快照以来的 {{minutes}} 分钟更改已被回滚。",
+    "dbKept": "数据库本来就与上一个版本兼容，因此没有丢失任何更改。",
+    "title": "升级此服务器",
+    "description": "下载该版本，检查其校验和与签名，备份数据库，在副本上试运行迁移，替换程序并重启。如果新版本没有及时变得健康，会自动恢复之前的程序和数据。",
+    "loading": "正在准备升级计划...",
+    "noPlan": "目前没有可用的升级计划。无法获取最新版本。",
+    "target": "从 {{current}} 升级到 {{target}}",
+    "notesMissingTitle": "破坏性变更未知",
+    "notesMissing": "无法获取发布说明，因此无法在这里检查破坏性变更。请先阅读它们，然后运行下方显示的主机命令。",
+    "breakingTitle": "这些版本之间的破坏性变更",
+    "noBreaking": "这些版本之间没有声明任何破坏性变更。",
+    "ackRequired": "确认以继续",
+    "ackFirst": "确认每一项破坏性变更后才能启用升级。",
+    "safety": "会先保留数据库快照和当前程序。有问题的版本会被自动回滚。在升级失败的健康观察窗口内写入控制平面的数据不会被保留。",
+    "apply": "升级到 {{version}}",
+    "starting": "启动中...",
+    "started": "升级正在主机上运行。控制平面重启后，此页面会重新连接。",
+    "hostOnly": "此主机无法从仪表盘运行升级：{{reason}}。",
+    "hostCommand": "请在服务器上以 root 身份运行",
+    "attemptsTitle": "升级尝试",
+    "noAttempts": "此服务器上还没有运行过任何升级。",
+    "by": "由 {{who}}",
+    "rolledBackNote": "上一个版本 {{version}} 已再次运行，其数据已被恢复。",
+    "outcome": {
+      "running": "运行中",
+      "succeeded": "成功",
+      "rolled_back": "已回滚",
+      "refused": "已拒绝",
+      "failed": "失败"
+    },
+    "step": {
+      "guard": "检查请求",
+      "download": "下载",
+      "verify_checksum": "验证校验和",
+      "verify_signature": "验证签名",
+      "probe_binary": "探测新程序",
+      "backup": "备份",
+      "migration_check": "试运行迁移",
+      "stop": "停止",
+      "swap": "替换程序",
+      "start": "启动",
+      "health": "健康检查",
+      "rollback": "回滚"
+    },
+    "notPinned": "此服务器会验证版本签名。在下次升级检查签名之后，此安装只接受已签名的版本。",
+    "pinned": "仅限已签名的版本，自 {{version}} 起固定。未签名的版本会被拒绝。",
+    "noAttemptsHint": "无论是你在这里发起还是按计划进行，每次尝试都会连同它所执行的每个步骤显示在这里。",
+    "to": "到",
+    "unknownActor": "未知",
+    "showOlder_other": "显示 {{count}} 次更早的尝试",
+    "version": {
+      "dev_other": "开发构建，在 {{base}} 之后有 {{commits}} 个提交（{{sha}}）",
+      "unknown": "未知"
+    },
+    "summary": {
+      "current": "当前版本",
+      "lastOk": "上次成功的升级",
+      "never": "从未",
+      "failed": "最近 30 天内失败"
+    },
+    "failure": {
+      "title": "出了什么问题",
+      "cause": {
+        "disk_full": "服务器磁盘空间已用尽。",
+        "network": "无法下载该版本。",
+        "checksum_mismatch": "下载的文件与其校验和不一致。",
+        "signature_invalid": "无法验证版本签名，因此被拒绝。",
+        "binary_unusable": "新程序未通过启动探测。",
+        "backup_failed": "无法进行升级前备份。",
+        "migration_incompatible": "数据库迁移试运行失败。",
+        "service_control": "无法停止或启动服务。",
+        "swap_failed": "无法放置新程序。",
+        "not_healthy": "新版本没有变得健康。",
+        "guard_refused": "升级在开始之前就被拒绝了。",
+        "unknown": "该步骤因此页面无法识别的原因而失败。"
+      },
+      "fix": "释放磁盘空间",
+      "retry": "重试",
+      "rollback": "回滚",
+      "fixed": "清理已完成。你现在可以重试。",
+      "stillFailing": "清理已运行，但问题仍然存在。",
+      "started": "已在主机上开始。请在时间线中跟进。",
+      "cliSummary": "通过 CLI 修复",
+      "cliHint": "请在已登录此服务器的机器上运行："
+    }
+  },
+  "readiness": {
+    "title": "服务器就绪状态",
+    "description": "谁占用了 80 和 443 端口、Docker 版本与隔离、暴露的 Docker API、磁盘、内存、防火墙和 DNS，以及此服务器所需的安装模式。",
+    "domainLabel": "你将使用的域名（可选）",
+    "recheck": "重新检查",
+    "checking": "检查中...",
+    "checksLabel": "服务器就绪检查项",
+    "failed": "就绪检查无法运行：{{message}}",
+    "nextStep": "下一步",
+    "status": {
+      "pass": "就绪",
+      "warn": "请查看",
+      "fail": "请修复",
+      "info": "信息"
+    },
+    "mode": {
+      "own_ports": "推荐：使用自己的 80 和 443 端口安装",
+      "behind_proxy": "推荐：安装在你现有的代理之后"
+    }
+  },
+  "channel": {
+    "description": "要对比哪个发布通道，以及（如已启用）在后台检查哪个。检查绝不会自行应用更新。",
+    "autoCheckHelp": "这只控制控制平面是否定期检查，并在有更新版本时显示通知。只有当你发起或安排升级，或下方的自动升级已开启时，才会应用版本。"
+  },
+  "upgradeNow": {
+    "button": "立即升级到 {{version}}",
+    "fixFirst": "请修复上方被阻塞的检查，以启用升级。",
+    "blockedTitle_other": "有 {{count}} 项检查需要处理后才能升级",
+    "waitingTitle": "正在等待版本发布完成",
+    "schemaBlockedTitle": "不提供 {{version}}：它比你的数据库更旧",
+    "hero": {
+      "aheadTitle": "你正在运行开发构建",
+      "aheadBody": "你正在运行开发构建（schema {{schema}}）。最新版本 {{latest}} 比你的数据更旧，因此没有可升级的目标。包含你的数据格式的下一个版本发布后会自动提供。",
+      "aheadBodyNoSchema": "你正在运行开发构建。最新版本 {{latest}} 比你的数据更旧，因此没有可升级的目标。包含你的数据格式的下一个版本发布后会自动提供。",
+      "checkAgain": "重新检查",
+      "checking": "检查中...",
+      "notes": "查看发布说明",
+      "rollback": "回滚到 {{version}}",
+      "rollbackNone": "回滚",
+      "rollbackNoneWhy": "此主机上还没有较旧版本的恢复点。",
+      "planTitle": "升级计划",
+      "planFromTo": "{{from}} 到 {{to}}",
+      "planMigrations_other": "需要应用 {{count}} 个数据库迁移",
+      "planMigrationsUnknown": "数据库迁移：该版本未上报",
+      "planRestorePoint": "会先创建恢复点，使上一个版本及其数据可以恢复。",
+      "planVerify": "新版本有 {{seconds}} 秒时间来证明自己是健康的，之后才会被保留。"
+    },
+    "confirmTitle": "升级到 {{version}}",
+    "confirmDescription": "此服务器将从 {{current}} 升级到 {{target}}。你的应用继续运行。",
+    "willBackup": "在任何更改之前，会先备份并保留控制平面数据库。",
+    "willRestart": "控制平面会重启一次。此页面会自动重新连接。",
+    "willRollback": "如果新版本没有及时变得健康，会自动恢复之前的程序及其数据。",
+    "confirm": "立即升级",
+    "progressTitle": "正在升级到 {{version}}",
+    "reconnect": "升级期间控制平面会重启。此页面会持续检查，并在新版本响应后重新加载。",
+    "done": "已升级到 {{version}}"
+  },
+  "progress": {
+    "running": "正在升级到 {{version}}",
+    "elapsed": "已用时 {{time}}",
+    "waiting": "正在主机上启动升级...",
+    "reconnecting": "控制平面正在重启。重新连接最多可能需要两分钟。",
+    "log": "实时日志",
+    "successBody": "此服务器现在运行 {{version}}。",
+    "releaseNotes": "阅读发布说明",
+    "failedAt": "停止于：{{step}}",
+    "rolledBack": "上一个版本 {{version}} 已再次运行，其数据已被恢复。",
+    "untouched": "没有任何更改。{{version}} 仍在运行。",
+    "nextAction": "请修复上述原因，然后在此页面再次升级，或在主机上运行所示的命令。",
+    "dismiss": "忽略",
+    "end": {
+      "succeeded": "已升级到 {{version}}",
+      "rolled_back": "升级到 {{version}} 已被回滚",
+      "refused": "升级到 {{version}} 已被拒绝",
+      "failed": "升级到 {{version}} 失败"
+    },
+    "retry": "重试升级",
+    "rollBack": "回滚"
+  },
+  "schedule": {
+    "button": "安排升级",
+    "dialogTitle": "安排升级到 {{version}}",
+    "dialogDescription": "检查会在计划时间再次运行。如果有任何一项失败，则不会应用任何内容，你会收到告警，并会不断重试，直到宽限期结束。",
+    "whenLabel": "时间",
+    "whenAt": "在指定时间",
+    "whenWindow": "在下一个维护窗口",
+    "atLabel": "日期和时间（服务器时区：{{timezone}}）",
+    "windowNext": "下一个窗口开启于 {{time}}（{{timezone}}）。",
+    "noWindow": "尚未配置维护窗口。请在“自动升级”下设置一个，或选择一个时间。",
+    "majorAck": "我了解这是大版本跳跃，如果不恢复备份，可能无法回退。",
+    "firesNote": "只有 root 会话或令牌可以安排或取消。每项更改都会写入审计日志。",
+    "cancel": "取消",
+    "submit": "安排升级",
+    "reschedule": "重新安排",
+    "saving": "保存中...",
+    "cancelSchedule": "取消计划",
+    "bannerTitle": "升级到 {{version}} 已安排在 {{time}}（{{timezone}}）",
+    "automatic": "由自动升级安排",
+    "blockedReason": "尚未应用：{{reason}}。将重试至 {{until}}。",
+    "state": {
+      "pending": "已安排",
+      "blocked": "已挂起",
+      "running": "运行中",
+      "applied": "已应用",
+      "failed": "失败",
+      "cancelled": "已取消",
+      "missed": "已错过"
+    }
+  },
+  "auto": {
+    "title": "自动升级",
+    "description": "默认关闭。开启后，控制平面会把新版本安排到你的维护窗口中，并使用与手动升级相同的检查、备份和回滚来应用它们。",
+    "loading": "正在加载自动升级策略...",
+    "unavailable": "自动升级策略仅对 root 会话和令牌可用。",
+    "modeLabel": "自动升级",
+    "modeHelp": "含有需要你确认的破坏性变更的版本，以及大版本跳跃，绝不会被自动应用。",
+    "mode": {
+      "off": "关闭（仅在我发起或安排时升级）",
+      "patch": "仅补丁版本（相同的小版本）",
+      "any": "已配置通道上的任何新版本"
+    },
+    "notice": {
+      "off": "自动升级已关闭。此控制平面仅在你发起或安排升级时升级。",
+      "patch": "已为补丁版本开启自动升级。新的补丁版本会在达到最短发布时长后，在你的维护窗口内应用。",
+      "any": "已为通道上的任何新版本开启自动升级。版本会在达到最短发布时长后，在你的维护窗口内应用。",
+      "paused": "自动升级已暂停。在你恢复之前，不会自动应用任何内容。"
+    },
+    "windowLabel": "维护窗口",
+    "preset": {
+      "nightly": "每晚 03:00",
+      "weekly": "每周日 03:00",
+      "weekdays": "工作日 02:00",
+      "custom": "自定义 cron"
+    },
+    "cronLabel": "Cron（窗口开始）",
+    "durationLabel": "窗口时长（分钟）",
+    "timezoneLabel": "时区",
+    "minAgeLabel": "最短发布时长（天）",
+    "minAgeHelp": "在版本发布后等待这么多天，让其他人先发现早期的回归问题。",
+    "notifyLabel": "通知",
+    "notifyNone": "还没有通知渠道。添加之后，告警会发送到每个已启用的渠道。",
+    "notifyHelp": "已安排、已挂起和失败的升级通知发往哪里。如果一个都不选，则使用所有已启用的渠道。",
+    "pauseLabel": "暂停自动升级",
+    "nextWindow": "下一个窗口：{{time}}（{{timezone}}）。",
+    "decision": "{{version}} 的最新决策：{{decision}}",
+    "save": "保存",
+    "saved": "自动升级策略已保存。",
+    "edgeUnavailable": "edge 通道不提供自动升级。edge 构建是容器镜像，而不是已签名的发布二进制。请切换到 beta 或稳定版以使用它们。"
+  },
+  "channels": {
+    "label": "通道",
+    "active": "发布通道",
+    "stable": {
+      "label": "稳定版（推荐）",
+      "description": "已签名、可供日常使用的版本。"
+    },
+    "beta": {
+      "label": "Beta（预发布）",
+      "description": "带有新功能、比稳定版稍早的已签名预发布版本。"
+    },
+    "edge": {
+      "label": "Edge（最新 main，不稳定）",
+      "description": "main 上最新提交的容器镜像。未签名，可能出问题，仅限容器安装。"
+    }
+  },
+  "version": {
+    "running": "运行中的版本",
+    "latest": "有新版本可用：{{version}}",
+    "latestEdge": "有更新的 edge 构建可用：{{version}}",
+    "upToDate": "你已在使用最新版本。",
+    "upToDateEdge": "你已在使用最新的 edge 构建。",
+    "edgeHostBinary": "Edge 是容器镜像通道。此控制平面以主机二进制方式运行，因此无法跟随 edge。",
+    "none": "尚未发布任何版本。",
+    "viewRelease": "查看版本",
+    "viewCommit": "查看提交",
+    "image": "镜像：{{image}}",
+    "channelLine": "通道：{{channel}}"
+  },
+  "edge": {
+    "title": "Edge 是容器镜像",
+    "intro": "Edge 构建是容器镜像，而不是已签名的二进制，因此没有可供验证的发布或校验和。",
+    "pull": "拉取镜像",
+    "recreate": "重新创建容器",
+    "compose": "或者在你的 compose 文件中固定它",
+    "binaryTitle": "无法在此主机上安装 Edge",
+    "binaryBody": "Edge 构建无法安装为主机二进制。请切换到提供已签名二进制的通道。",
+    "switchTo": "切换到 {{channel}}",
+    "switched": "通道已切换到 {{channel}}。",
+    "commit": "提交 {{commit}}"
+  },
+  "page": {
+    "title": "更新",
+    "description": "当前版本、发布通道和可用版本。",
+    "errorTitle": "无法加载更新设置",
+    "errorBody": "无法加载更新页面：{{message}}。你的服务器仍在运行。请稍后重试。",
+    "retry": "重试",
+    "sourceNote": "与 GitHub 上已发布的版本进行对比。"
+  },
+  "status": {
+    "state": {
+      "upToDate": "已是最新",
+      "available": "有可用更新",
+      "scheduled": "已安排升级",
+      "inProgress": "升级进行中",
+      "checkFailed": "检查失败",
+      "noReleases": "没有版本",
+      "hostBinary": "无法跟随"
+    },
+    "runningVersion": "运行中的版本",
+    "lastChecked": "上次检查 {{time}}",
+    "neverChecked": "尚未检查",
+    "checkNow": "立即检查",
+    "checking": "检查中...",
+    "checked": "已检查更新。",
+    "checkFailedTitle": "无法检查更新",
+    "checkFailedBody": "无法访问发布源：{{message}}。你的服务器不受影响。请检查此主机能否访问 github.com，然后重试。",
+    "viewNotes": "查看发布说明",
+    "delta": "{{from}} 到 {{to}}",
+    "inProgressBody": "升级正在运行。新版本响应后，此页面会重新加载。",
+    "githubRepo": "打开 GitHub 仓库",
+    "bannerAlt": "品牌横幅"
+  },
+  "changes": {
+    "title": "升级后会有什么变化",
+    "versionLabel": "版本",
+    "releasedLabel": "发布时间",
+    "releasedUnknown": "未公布日期",
+    "notesToggle": "发布说明",
+    "notesEmpty": "发布说明暂不可用。",
+    "safetyTitle": "将会发生什么",
+    "migrations": {
+      "title": "数据库迁移",
+      "none": "没有数据库迁移",
+      "count_other": "将运行 {{count}} 个数据库迁移",
+      "item": "迁移 {{version}}：{{name}}",
+      "showAll": "显示全部 {{count}} 项",
+      "showLess": "显示更少",
+      "test": "在副本上测试迁移",
+      "testing": "正在副本上测试...",
+      "retry": "再次测试",
+      "successTitle": "迁移已顺利应用",
+      "success": "全部 {{count}} 个迁移都已顺利应用到副本上。此服务器上没有任何更改。",
+      "successTime": "耗时 {{seconds}} 秒。",
+      "failTitle": "有迁移在副本上失败",
+      "failed": "迁移 {{version}}（{{name}}）失败：{{error}}",
+      "failedUnknown": "有迁移失败：{{error}}",
+      "failHint": "现在更新会被阻止或有风险。此服务器上的数据没有被触碰。",
+      "viewFailing": "查看失败的迁移",
+      "busy": "已有另一项测试正在运行。请稍后重试。",
+      "noSpace": "可用磁盘空间不足，无法在副本上测试。",
+      "error": "测试无法运行：{{error}}"
+    }
+  },
+  "settings": {
+    "channelDescription": "此服务器跟随哪个发布通道。",
+    "channelActive": "已保存的通道",
+    "backgroundTitle": "后台检查",
+    "backgroundDescription": "按计划查找新版本并显示通知。",
+    "backgroundLabel": "在后台检查更新",
+    "save": "保存",
+    "saved": "更新设置已保存。",
+    "unsaved": "你有未保存的更改。"
+  },
+  "pipeline": {
+    "phase": {
+      "prepare": "准备",
+      "validate": "校验",
+      "protect": "保护",
+      "switch": "切换",
+      "confirm": "确认",
+      "other": "其他"
+    },
+    "state": {
+      "ok": "完成",
+      "running": "运行中",
+      "failed": "失败",
+      "skipped": "已跳过",
+      "pending": "等待中"
+    },
+    "reconnecting": "正在重启控制平面，重新连接中...",
+    "rolledBack": "已回滚到 {{version}}。你的数据完好无损。",
+    "to": "到",
+    "totalTime": "共 {{time}}",
+    "backupAt": "备份：{{name}}",
+    "reload": "重新加载",
+    "bar": {
+      "title": "正在升级到 {{version}}",
+      "step": "第 {{n}} 步，共 {{total}} 步",
+      "view": "查看进度",
+      "reconnecting": "正在重启控制平面，重新连接中..."
+    },
+    "sidebar": {
+      "running": "升级中"
+    }
+  },
+  "stepper": {
+    "label": "升级步骤",
+    "step": {
+      "check": "检查",
+      "preflight": "预检",
+      "download": "下载",
+      "apply": "应用",
+      "verify": "验证"
+    },
+    "status": {
+      "done": "已完成",
+      "current": "进行中",
+      "failed": "失败",
+      "blocked": "已阻塞",
+      "upcoming": "尚未开始"
+    }
+  },
+  "cli": {
+    "summary": "通过 CLI 修复"
+  },
+  "result": {
+    "succeeded": "已于 {{time}} 从 {{from}} 升级到 {{to}}，验证通过",
+    "succeededUnverified": "已于 {{time}} 从 {{from}} 升级到 {{to}}，验证未完成",
+    "failed": "升级到 {{to}} 未能完成：{{reason}}",
+    "rolledBack": "升级到 {{to}} 已回滚到 {{from}}。你的数据完好无损。",
+    "details": "查看尝试详情",
+    "hideDetails": "隐藏尝试详情",
+    "notes": "发布说明",
+    "dismiss": "忽略",
+    "running": "升级到 {{to}} 已在运行（尝试 {{id}}）。",
+    "runningLink": "查看正在运行的尝试",
+    "disabledRunning": "正在升级到 {{to}}，第 {{n}} 步，共 {{total}} 步",
+    "toast": "升级到 {{to}} 成功"
+  },
+  "control": {
+    "barLabel": "更新操作",
+    "update": "更新到 {{version}}",
+    "cancel": "取消更新",
+    "retry": "重试",
+    "viewLogs": "查看日志",
+    "more": "更多操作",
+    "restartServer": "重启服务器",
+    "liveLabel": "升级进度",
+    "starting": "启动中",
+    "elapsed": "已用时 {{time}}",
+    "lastProgress": "上次进展在 {{time}}前",
+    "progressLabel": "{{step}} 的进度",
+    "bytes": "{{done}} / {{total}}（{{percent}}%）",
+    "sizeUnknown": "尚未上报大小",
+    "stuckTitle": "{{step}}步骤似乎卡住了",
+    "stuckBody": "已有 {{time}}没有进展。在你决定期间，你的服务器继续运行当前版本。",
+    "cancelHint": "取消会停止更新并保留当前版本。",
+    "retryHint": "重试会再次启动卡住的步骤。",
+    "restartHint": "重启服务器会重启控制平面。你的应用继续运行。",
+    "reconnecting": "无法连接到服务器获取状态。仍在尝试。",
+    "retryNow": "立即重试",
+    "restartTitle": "重启控制平面？",
+    "restartBody": "仪表盘会短暂离线，此页面会自动重新连接。应用继续运行。进行中的更新会在重启后继续。",
+    "restartConfirm": "重启服务器",
+    "restarting": "重启中...",
+    "cancelling": "取消中...",
+    "failedCause": "失败原因：{{cause}}",
+    "failedCli": "请在服务器上运行：{{cli}}",
+    "stuckShort": "升级似乎卡住了"
+  },
+  "autoUpdate": {
+    "title": "自动更新",
+    "safety": "每次更新前后都会进行校验和、签名、备份和回滚。健康检查失败会自动回滚。",
+    "state": "自动更新",
+    "stateOn": "开",
+    "stateOff": "关",
+    "statePaused": "已暂停至 {{date}}",
+    "defaultApplied": "此安装默认已开启。",
+    "modeLabel": "模式",
+    "mode": {
+      "off": "关闭",
+      "patch": "补丁版本",
+      "any": "任何版本"
+    },
+    "window": "窗口（cron）",
+    "windowMinutes": "时长（分钟）",
+    "pause": "暂停（天）",
+    "pauseHelp": "0 表示恢复",
+    "health": "健康观察窗口（秒）",
+    "channel": "通道",
+    "save": "保存",
+    "saved": "自动更新设置已保存。",
+    "error": "无法保存：{{message}}",
+    "notice": {
+      "dismiss": "忽略",
+      "manage": "管理"
+    }
+  }
+}

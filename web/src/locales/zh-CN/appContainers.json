@@ -1,0 +1,46 @@
+{
+  "title": "容器",
+  "count_other": "{{count}} 个副本",
+  "loading": "正在加载容器",
+  "forbidden": "你没有权限查看此应用的容器。",
+  "error": "无法加载容器：{{message}}",
+  "empty": {
+    "title": "没有运行中的容器",
+    "description": "应用已停止或处于休眠状态。当前状态：{{status}}。"
+  },
+  "unavailable": "不可用",
+  "unavailableTip": "对于远程节点，agent 不会上报此字段。",
+  "none": "无",
+  "copyId": "复制容器 ID",
+  "copied": "已复制",
+  "restarts_other": "重启 {{count}} 次",
+  "uptime": "已运行 {{duration}}",
+  "node": "节点",
+  "fields": {
+    "image": "镜像",
+    "digest": "摘要",
+    "ports": "端口",
+    "networks": "网络",
+    "mounts": "挂载",
+    "limits": "限制",
+    "cpu": "CPU",
+    "memory": "内存",
+    "health": "健康状况"
+  },
+  "state": {
+    "running": "运行中",
+    "stopped": "已停止",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "健康",
+    "unhealthy": "不健康",
+    "starting": "启动中",
+    "none": "无检查",
+    "streak": "连续失败 {{count}} 次"
+  },
+  "readOnly": "只读",
+  "limitsValue": "{{cpu}} CPU，{{memory}}",
+  "noLimit": "无限制",
+  "usage": "{{used}} / {{limit}}"
+}

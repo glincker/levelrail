@@ -1,0 +1,198 @@
+{
+  "card": {
+    "title": "免费 HTTPS，无需设置 DNS",
+    "description": "通过带有真实 Let's Encrypt 证书的 HTTPS 提供此仪表盘和你的应用。无需在域名注册商处配置任何内容。",
+    "compactHint": "在开启之前，浏览器会将你的地址标记为不安全。",
+    "setUp": "设置",
+    "noPublicIp": "不知道此服务器的公网 IP 地址，因此无法构建零 DNS 主机名。请在控制平面上将 APP_PUBLIC_HOST 设置为该 IP 并重启，或使用下方你自己的域名。",
+    "httpSignInNote": "开启之后，请通过 https 地址登录。",
+    "emailLabel": "接收证书通知的邮箱",
+    "emailHelp": "任何你会查看的收件箱都可以。证书免费并会自动续期：只有在证书即将过期且无法续期时，Let's Encrypt 才会给你发邮件。",
+    "stagingLabel": "先使用 Let's Encrypt staging 测试",
+    "stagingHelp": "staging 证书不受浏览器信任，但 staging 没有实质性的速率限制。用它来证明 80 和 443 端口可以访问。",
+    "enable": "启用 HTTPS",
+    "enabling": "正在申请证书",
+    "retry": "重试",
+    "recheck": "重新检查",
+    "rechecking": "检查中",
+    "recheckHelp": "如果该地址尚未解析到此服务器，请在管理 DNS 或防火墙的地方修复，然后重新检查。这里无需更改任何其他内容。",
+    "pending": "正在为 {{domain}} 申请证书。通常需要不到一分钟。",
+    "issued": "{{domain}} 已开启 HTTPS。",
+    "issuedDetail": "由 {{issuer}} 签发，{{date}} 过期。自动续期。",
+    "stagingIssued": "这是 staging 证书，因此浏览器会显示警告。请关闭 staging 并再次运行，以获取受信任的证书。",
+    "openDashboard": "通过 HTTPS 打开仪表盘",
+    "dashboardUrlSaved": "仪表盘 URL 已设置为 {{url}}。",
+    "dashboardUrlFailed": "无法保存仪表盘 URL。",
+    "failedTitle": "无法获取证书",
+    "enableFailed": "无法启用 HTTPS。",
+    "preflightTitle": "80 或 443 端口可能已关闭",
+    "preflightBody": "此服务器无法通过其公网地址在 {{ports}} 端口访问自身。Let's Encrypt 必须能从互联网访问 80 端口（续期还需要 443 端口）。请在你的云防火墙中开放它们，或运行设置中的防火墙步骤。在某些路由器之后，此检查可能不准确，因此在更改任何内容之前，请先等待证书。"
+  },
+  "hint": {
+    "unreachable": "Let's Encrypt 无法通过 80 端口访问此服务器。请在你的防火墙和云服务商的安全组中开放 80 和 443 端口，然后重试。",
+    "rate_limited": "Let's Encrypt 正在对此主机名限流。请等待后再重试，调试期间请使用 staging。",
+    "dns": "该主机名未解析到此服务器。请检查检测到的公网 IP 是否正确。",
+    "caa": "CAA DNS 记录禁止 Let's Encrypt 为此主机名签发证书。",
+    "unknown": "Let's Encrypt 拒绝了该请求。完整的响应见下方以及控制平面日志。"
+  },
+  "fallback": {
+    "title": "自动应用主机名",
+    "description": "没有域名的应用会从提供自动 TLS 的免费通配 DNS 服务获得 https://<app>.<dashed-ip>.<provider>，因此全新部署无需任何 DNS 即可访问。",
+    "toggleLabel": "为没有域名的应用提供自动主机名",
+    "publicHost": "服务器地址：{{host}}（{{source}}）",
+    "noPublicHost": "未检测到公网地址。请在控制平面上设置 APP_PUBLIC_HOST 以开启此功能。",
+    "saved": "自动主机名已更新。",
+    "saveFailed": "无法更新自动主机名。",
+    "source": {
+      "env": "来自 APP_PUBLIC_HOST",
+      "detected": "已检测到",
+      "disabled": "检测已停用",
+      "none": "未找到"
+    }
+  },
+  "dnsProvider": {
+    "defaultLabel": "通配 DNS 提供商（所有应用的默认值）",
+    "appLabel": "此应用的通配 DNS 提供商",
+    "inherit": "使用默认值（{{provider}}）",
+    "inheritNote": "此应用沿用“设置，域名”中选择的提供商。",
+    "custom": "自定义基础域名",
+    "customNote": "使用你自己的通配记录，应用将被命名为 <app>.<你的基础域名>。",
+    "baseLabel": "基础域名",
+    "basePlaceholder": "apps.example.com",
+    "baseHint": "用 A 记录将 *.{{domain}} 指向此服务器，然后运行“测试解析”。",
+    "betaHint": "免费的公共服务。适合测试，不建议用于生产流量。",
+    "save": "保存",
+    "saved": "通配 DNS 提供商已更新。",
+    "saveFailed": "无法更新通配 DNS 提供商。",
+    "test": "测试解析",
+    "testing": "测试中...",
+    "status": {
+      "ok": "解析到此服务器",
+      "wrong_ip": "解析到另一个地址",
+      "not_resolving": "无法解析",
+      "unavailable": "无法测试"
+    },
+    "fixHeading": "修复：",
+    "fixSwitch": "切换到 {{provider}}",
+    "fixCustom": "使用你自己的域名",
+    "digToggle": "用 dig 手动检查",
+    "confirmTitle": "更改自动主机名？",
+    "confirmBody": "此应用可通过 {{host}} 访问。",
+    "confirmOldStops": "新主机名一旦路由生效，旧主机名就会停止工作。",
+    "confirmNoDowntime": "路由会原地更新，没有停机时间。使用旧主机名的书签和 Webhook 需要更新。",
+    "confirmAction": "更改主机名"
+  },
+  "domain": {
+    "automatic": "自动"
+  },
+  "network": {
+    "off": "此服务器已关闭自动主机名。",
+    "offAction": "开启",
+    "noPublicHost": "不知道此服务器的公网 IP，因此无法构建自动主机名。请在控制平面上设置 APP_PUBLIC_HOST。",
+    "publishedPorts": "已发布的端口",
+    "portMapping": "{{host}} → {{container}}"
+  },
+  "wizard": {
+    "ownDomainTitle": "或使用你自己的域名",
+    "sslipReady": "免费主机名上的 HTTPS 已就绪。你可以继续，也可以同时设置你自己的域名。"
+  },
+  "certTable": {
+    "internalBadge": "内部 CA",
+    "internalHint": "由此服务器自己的短期 CA 签发并自动续期。在你启用 HTTPS 之前，浏览器会显示警告。",
+    "internalRenews": "自动续期",
+    "acmeBadge": "Let's Encrypt",
+    "custom": "自定义",
+    "proxyBadge": "你的代理",
+    "proxyRenews": "由你的代理管理，自动续期。",
+    "proxyUnknown": "由你的代理管理。尚未看到：请在代理页面验证路由。",
+    "proxyLink": "打开代理页面",
+    "getTrusted": "获取受信任的证书",
+    "useOwn": "使用我自己的证书"
+  },
+  "domainCert": {
+    "action": "获取真实证书",
+    "title": "为 {{domain}} 获取真实证书",
+    "intro": "这会检查 {{domain}} 是否指向这里，以及 Let's Encrypt 能否访问此服务器，然后申请受信任的证书。在此之前，访客会看到浏览器警告。",
+    "appliesToAll": "公共证书是服务器级别的设置：开启后适用于此服务器上的每个域名，并且自动续期。",
+    "checking": "正在检查 DNS、80 端口、CAA 记录、你的联系邮箱和 Let's Encrypt 限制",
+    "checkFailed": "检查无法运行。",
+    "recheck": "重新检查",
+    "emailLabel": "接收证书通知的邮箱",
+    "emailHelp": "默认使用你的管理员账户。只有在证书即将过期且无法续期时，Let's Encrypt 才会发邮件。",
+    "stagingLabel": "先使用 Let's Encrypt staging 演练",
+    "stagingHelp": "staging 没有实质性限制，但使用测试 CA 签名。浏览器不会信任其结果，因此之后请在不使用 staging 的情况下再运行一次。",
+    "stagingWarning": "staging 证书不受信任：访客仍会看到警告。",
+    "ackPorts": "我确认 80 和 443 端口已开放（此服务器可能无法访问自身）",
+    "nextSafe": "下一次可安全尝试的时间：{{date}}",
+    "next": "下一步：{{fix}}",
+    "submit": "获取真实证书",
+    "requesting": "申请中",
+    "requestFailed": "无法申请证书。",
+    "item": {
+      "issuable": "公开名称",
+      "upstream_proxy": "TLS 归属",
+      "dns": "DNS 指向这里",
+      "ports": "80 端口可访问",
+      "caa": "CAA 记录",
+      "email": "联系邮箱",
+      "rate_limit": "Let's Encrypt 限制",
+      "staging": "Staging CA",
+      "replaces_certificate": "可用的证书"
+    },
+    "state": {
+      "pass": "已通过",
+      "warn": "请检查",
+      "fail": "已阻塞",
+      "skipped": "已跳过"
+    },
+    "progress": {
+      "pendingTitle": "质询进行中",
+      "pendingBody": "Let's Encrypt 正在检查你是否控制 {{domain}}。通常需要不到一分钟。",
+      "issuedTitle": "证书已签发",
+      "failedTitle": "Let's Encrypt 没有签发证书",
+      "caSaid": "CA 的回复",
+      "issuer": "颁发者",
+      "expires": "过期时间",
+      "renews": "续期起始",
+      "tryAgain": "重试",
+      "close": "关闭",
+      "stagingIssued": "这是 staging 证书，因此浏览器仍会显示警告。请在不使用 staging 的情况下再次运行，以获取受信任的证书。"
+    },
+    "kind": {
+      "none": "无证书",
+      "internal": "内部证书",
+      "staging": "Staging",
+      "letsencrypt": "Let's Encrypt",
+      "custom": "已上传的证书",
+      "proxy": "代理证书",
+      "other": "公共 CA"
+    },
+    "kindHint": {
+      "none": "此域名尚未签发证书。",
+      "internal": "由此服务器自己签发。浏览器不信任它，并会显示警告。",
+      "staging": "由 Let's Encrypt 测试 CA 签发。浏览器不信任它。",
+      "letsencrypt": "由 Let's Encrypt 签发并自动续期。",
+      "custom": "你上传的证书。它不会自行续期。",
+      "proxy": "由此服务器前面的代理签发并续期。",
+      "other": "由公共证书颁发机构签发。"
+    },
+    "badge": {
+      "days_other": "剩余 {{count}} 天",
+      "expired": "已过期",
+      "renewed": "已于 {{date}} 续期",
+      "renewalFailed": "上次续期失败于 {{date}}",
+      "retrying": "将于 {{date}} 重试"
+    }
+  },
+  "portEditor": {
+    "publishedPorts": "额外发布的端口",
+    "publishedPortsPlaceholder": "51820:51820/udp, 53/udp",
+    "publishedPortsHint": "HOST:CONTAINER/udp 或 /tcp，以逗号分隔。仅在此服务器上发布。",
+    "errors": {
+      "syntax": "“{{entry}}”不是端口，请使用 HOST:CONTAINER/udp",
+      "protocol": "“{{entry}}”：协议必须是 tcp 或 udp",
+      "range": "“{{entry}}”：端口必须介于 1 和 65535 之间",
+      "duplicate": "“{{entry}}”被列出了两次"
+    }
+  }
+}
