@@ -92,7 +92,10 @@ func TestFootprintPhase(t *testing.T) {
 	fmt.Println(footprintResultTag + string(b))
 	_ = syscall.Kill(os.Getpid(), syscall.SIGTERM)
 	select {
-	case <-runErr:
+	case err := <-runErr:
+		if err != nil {
+			t.Logf("session ended: %v", err)
+		}
 	case <-time.After(30 * time.Second):
 	}
 }

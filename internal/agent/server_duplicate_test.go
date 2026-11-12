@@ -77,7 +77,10 @@ func TestServer_Session_DuplicateConnection_NewestWins(t *testing.T) {
 	second.recvErr = errors.New("connection reset")
 	close(second.recv)
 	select {
-	case <-secondDone:
+	case err := <-secondDone:
+		if err != nil {
+			t.Logf("session ended: %v", err)
+		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("second session did not end")
 	}

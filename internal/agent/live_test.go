@@ -4,6 +4,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"strings"
@@ -211,7 +212,10 @@ func TestLive_EnrollAndSession(t *testing.T) {
 	// Cleanly end the session and confirm the server side notices.
 	sessionCancel()
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Errorf("RunSession returned %v after cancellation", err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for RunSession to return after cancellation")
 	}

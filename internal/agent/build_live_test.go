@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -132,7 +133,10 @@ func TestLive_RemoteBuildDispatch(t *testing.T) {
 
 	cancelSession()
 	select {
-	case <-sessionDone:
+	case err := <-sessionDone:
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Errorf("RunSession returned %v after cancellation", err)
+		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("timed out waiting for RunSession to return after cancellation")
 	}

@@ -212,7 +212,9 @@ func TestRunBacksOffWhenIdleAndWakesOnNudge(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	cancel()
-	<-done
+	if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+		t.Errorf("Run returned %v", err)
+	}
 }
 
 func TestParseMemory(t *testing.T) {
