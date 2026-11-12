@@ -48,3 +48,16 @@ describe('paletteHistory', () => {
     expect(topFrecent(5)).toEqual([])
   })
 })
+
+describe('frecency order', () => {
+  it('ranks a recently used destination above an older one with the same count', () => {
+    const day = 24 * 60 * 60 * 1000
+    const now = Date.now()
+    window.localStorage.clear()
+    recordVisit('old', now - 60 * day)
+    recordVisit('old', now - 60 * day)
+    recordVisit('fresh', now)
+    recordVisit('fresh', now)
+    expect(topFrecent(2, now)).toEqual(['fresh', 'old'])
+  })
+})

@@ -2,27 +2,21 @@ import '@/styles/palette-tokens.css'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
-import { useRouterState } from '@tanstack/react-router'
-import { SearchGlassIcon } from '@thesvg/ui-react'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import {
   DialogPortal,
   DialogOverlay,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   isRecentEligible,
   loadRecentKeys,
   pushRecentKey,
-  removeRecentKey,
 } from '@/lib/recentItems'
 import { chipLabel } from '@/lib/paletteQuery'
-import {
-  loadRecentSearches,
-  pushRecentSearch,
-  removeRecentSearch,
-} from '@/lib/paletteSearches'
+import { loadRecentSearches, pushRecentSearch } from '@/lib/paletteSearches'
 import { usePaletteBaseItems } from '../hooks/usePaletteBaseItems'
 import { usePaletteEntries } from '../hooks/usePaletteEntries'
 import { usePaletteSearch } from '../hooks/usePaletteSearch'
@@ -39,6 +33,9 @@ import { parseMode } from '@/lib/paletteMode'
 import { recordModeUse } from '@/lib/paletteModeUse'
 import { firstIndexOfGroup } from '@/lib/paletteJump'
 import { PalettePreview, PREVIEW_ID } from './palette/PalettePreview'
+import { usePreviewHasContent } from './palette/usePreviewHasContent'
+import { usePinnedPages } from '../hooks/usePinnedPages'
+import { usePaletteLanguage } from '../hooks/usePaletteLanguage'
 import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
 
 // Below this width the preview pane drops out and the list is the only column.
@@ -74,11 +71,34 @@ export function CommandPalette({
   const [expanded, setExpanded] = React.useState<ReadonlySet<string>>(new Set())
   const [pending, setPending] = React.useState<PaletteItem | null>(null)
   const [saving, setSaving] = React.useState(false)
+  // Results stay folded away until the user types or asks for them with Down or Tab.
+  const [panelForced, setPanelForced] = React.useState(false)
+  const [step, setStep] = React.useState<'language' | null>(null)
+  const composing = React.useRef(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const wide = useMediaQuery(PREVIEW_QUERY)
   const { t } = useTranslation('palette')
   const ps = usePaletteSearch(open)
-  const baseItems = usePaletteBaseItems(onShowShortcuts)
+  const navigate = useNavigate()
+  const { pinned } = usePinnedPages()
+  const coreItems = usePaletteBaseItems(onShowShortcuts)
+  const openLanguageStep = React.useCallback(() => {
+    setStep('language')
+    setPanelForced(true)
+    setActiveIndex(0)
+  }, [])
+  const language = usePaletteLanguage(openLanguageStep)
+  const baseItems = React.useMemo(
+    () => [...coreItems, ...language.base],
+    [coreItems, language.base],
+  )
+  const stepView = React.useMemo(
+    () =>
+      step === 'language'
+        ? { header: t('language.title'), items: language.step }
+        : null,
+    [step, language.step, t],
+  )
   const currentApp = useRouterState({
     select: (st) => /^\/apps\/([^/]+)/.exec(st.location.pathname)?.[1],
   })
@@ -93,6 +113,9 @@ export function CommandPalette({
     expanded,
     expand,
     currentApp,
+    step: stepView,
+    recentSearches,
+    applyQuery: ps.applyQuery,
   })
   const results = React.useMemo(
     () => entries.flatMap((e) => (e.type === 'item' ? [e.item] : [])),
@@ -119,6 +142,8 @@ export function CommandPalette({
       setActiveIndex(0)
       setPending(null)
       setSaving(false)
+      setPanelForced(false)
+      setStep(null)
       setExpanded(new Set())
       setRecentKeys(loadRecentKeys())
       setRecentSearches(loadRecentSearches())
@@ -143,6 +168,8 @@ export function CommandPalette({
     ps.reset()
     setPending(null)
     setSaving(false)
+    setPanelForced(false)
+    setStep(null)
     setExpanded(new Set())
   }, [ps])
 
@@ -180,60 +207,100 @@ export function CommandPalette({
     [close, ps.serverQuery, ps.text],
   )
 
-  const removeKey = React.useCallback((key: string) => {
-    setRecentKeys(removeRecentKey(key))
-  }, [])
-  const removeSearch = React.useCallback((q: string) => {
-    setRecentSearches(removeRecentSearch(q))
-  }, [])
-  const bubbleGroups = usePaletteBubbles({
+  const openPath = React.useCallback(
+    (path: string) => {
+      void navigate({ to: path })
+      close()
+    },
+    [navigate, close],
+  )
+  const bubbles = usePaletteBubbles({
     baseItems,
     recentKeys,
-    recentSearches,
+    pinned,
     version: historyVersion,
-    applyQuery: ps.applyQuery,
-    onRemoveKey: removeKey,
-    onRemoveSearch: removeSearch,
+    openPath,
     select,
   })
-  const idle = ps.text === '' && ps.chips.length === 0 && !pending
-
-  const layered =
-    pending !== null || saving || ps.text !== '' || ps.chips.length > 0
+  const panelOpen =
+    panelForced ||
+    step !== null ||
+    pending !== null ||
+    saving ||
+    ps.text !== '' ||
+    ps.chips.length > 0
+  const layered = panelOpen
 
   function dropLayer() {
     if (pending) setPending(null)
     else if (saving) setSaving(false)
+    else if (step) setStep(null)
     else clearAll()
   }
 
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (composing.current || e.nativeEvent.isComposing) return
     const item = results[activeIndex]
     const count = results.length
-    const groupKey = /^Digit([1-4])$/.exec(e.code)
-    if (e.altKey && groupKey) {
-      const target = firstIndexOfGroup(entries, Number(groupKey[1]))
+    const digit = /^Digit([1-9])$/.exec(e.code)
+    if (e.altKey && digit) {
+      const n = Number(digit[1])
+      if (!panelOpen) {
+        const bubble = bubbles[n - 1]
+        if (bubble) {
+          e.preventDefault()
+          bubble.onPick()
+        }
+        return
+      }
+      const target = firstIndexOfGroup(entries, n)
       if (target !== null) {
         e.preventDefault()
         setActiveIndex(target)
       }
       return
     }
+    const letter = /^Key([A-Z])$/.exec(e.code)
+    if (e.altKey && letter && panelOpen) {
+      const action = item?.preview?.actions?.find(
+        (a) => a.shortcut === letter[1],
+      )
+      if (action) {
+        e.preventDefault()
+        action.run()
+        close()
+        return
+      }
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
+      if (!panelOpen) {
+        setPanelForced(true)
+        setActiveIndex(0)
+        return
+      }
       setActiveIndex((i) => (count === 0 ? 0 : (i + 1) % count))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
+      if (!panelOpen) return
       setActiveIndex((i) => (count === 0 ? 0 : (i - 1 + count) % count))
     } else if (e.key === 'Enter') {
       e.preventDefault()
+      if (!panelOpen) {
+        setPanelForced(true)
+        return
+      }
       if ((e.metaKey || e.ctrlKey) && item?.secondary) {
         item.secondary()
         close()
       } else if (pending) select(pending, true)
       else if (item) select(item)
     } else if (e.key === 'Tab') {
-      if (item?.secondary) {
+      if (!panelOpen && !e.shiftKey) {
+        e.preventDefault()
+        setPanelForced(true)
+        setActiveIndex(0)
+      } else if (item?.secondary) {
         e.preventDefault()
         item.secondary()
         close()
@@ -252,7 +319,9 @@ export function CommandPalette({
 
   const optionId = (item: PaletteItem) => `command-palette-option-${item.key}`
   const activeItem = results[activeIndex]
-  const showPreview = wide && results.length > 0 && !loading
+  const hasPreviewContent = usePreviewHasContent(activeItem)
+  const showPreview =
+    panelOpen && wide && results.length > 0 && !loading && hasPreviewContent
 
   return (
     <DialogPrimitive.Root
@@ -270,171 +339,227 @@ export function CommandPalette({
         <DialogOverlay />
         <DialogPrimitive.Popup
           data-slot="command-palette"
-          className="fixed top-24 left-1/2 z-50 flex max-h-[calc(100dvh-8rem)] w-full max-w-lg -translate-x-1/2 flex-col gap-2 text-sm text-popover-foreground duration-100 outline-none md:max-w-4xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          className="fixed top-24 left-1/2 z-50 flex max-h-[calc(100dvh-8rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 flex-col gap-2 text-sm text-popover-foreground duration-100 outline-none md:max-w-4xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
-          <div className="banner-edge relative flex shrink-0 flex-wrap items-center gap-3 rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-200 palette-pill px-5">
-            <SearchGlassIcon className="size-6 shrink-0 text-muted-foreground" />
-            <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
-            <Input
-              ref={inputRef}
-              role="combobox"
-              aria-label={t('searchLabel')}
-              aria-expanded={open}
-              aria-controls="command-palette-listbox"
-              aria-autocomplete="list"
-              aria-activedescendant={
-                activeItem ? optionId(activeItem) : undefined
-              }
-              aria-describedby={showPreview ? PREVIEW_ID : undefined}
-              value={ps.text}
-              onChange={(e) => {
-                ps.setInput(e.target.value)
-                setActiveIndex(0)
-                setPending(null)
-              }}
-              onKeyDown={handleInputKeyDown}
-              placeholder={ps.chips.length > 0 ? '' : t('placeholder')}
-              data-bare
-              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent look-glass:border-transparent look-glass:bg-transparent look-glass:dark:border-transparent look-glass:dark:bg-transparent look-glass:focus-visible:border-transparent"
-            />
-          </div>
-          <div
-            data-slot="command-palette-panel"
-            className="banner-edge relative flex min-h-0 flex-col overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-4 motion-safe:delay-75 motion-safe:duration-300 motion-safe:fill-mode-backwards palette-panel"
-          >
-            <ModePills
-              active={parseMode(ps.text)?.kind ?? null}
-              onPick={(kind, prefix) => {
-                recordModeUse(kind)
-                ps.setInput(prefix)
-                setActiveIndex(0)
-                inputRef.current?.focus()
-              }}
-            />
-            {idle ? (
-              <RecentBubbles
-                groups={bubbleGroups}
-                onClear={() => {
-                  clearHistory()
-                  setRecentKeys([])
-                  setRecentSearches([])
-                  setHistoryVersion((v) => v + 1)
-                }}
-              />
-            ) : null}
-            {pending ? (
+          <div className="group/pal flex shrink-0 flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <div
-                role="alert"
-                className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2"
+                data-slot="command-palette-field"
+                className="banner-edge palette-pill relative flex min-w-0 flex-1 basis-56 items-center gap-3 rounded-full px-5 transition-shadow focus-within:ring-2 focus-within:ring-ring motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-200"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">
-                    {t('confirm.title', { action: pending.label })}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('confirm.description')}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setPending(null)}
-                >
-                  {t('confirm.cancel')}
-                </Button>
-                <Button size="sm" onClick={() => select(pending, true)}>
-                  {t('confirm.run')}
-                </Button>
-              </div>
-            ) : null}
-            {loading ? (
-              <p
-                role="status"
-                className="px-3 py-2 text-xs text-muted-foreground"
-              >
-                {t('loading')}
-              </p>
-            ) : null}
-            {failed ? (
-              <div
-                role="alert"
-                className="flex items-center gap-2 px-3 py-2 text-xs"
-              >
-                <p className="min-w-0 flex-1 text-muted-foreground">
-                  {t('error', { message: ps.search.error?.message ?? '' })}{' '}
-                  {t('errorOffline')}
-                </p>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => void ps.search.refetch()}
-                >
-                  {t('retry')}
-                </Button>
-              </div>
-            ) : null}
-            <div className="flex min-h-0 flex-1">
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                {results.length === 0 && !loading ? (
-                  <div
-                    id="command-palette-listbox"
-                    role="listbox"
-                    aria-label={t('resultsLabel')}
-                    className="p-2"
-                  >
-                    <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
-                      {t('empty')}{' '}
-                      {searching && !failed ? t('emptyBroaden') : ''}
-                    </p>
-                    {lastChip ? (
-                      <div className="flex justify-center pb-2">
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={ps.popChip}
-                        >
-                          {t('emptyRemoveFilter', {
-                            chip: chipLabel(lastChip),
-                          })}
-                        </Button>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <PaletteList
-                    entries={entries}
-                    label={t('resultsLabel')}
-                    activeIndex={activeIndex}
-                    query={ps.text}
-                    optionId={optionId}
-                    onSelect={select}
+                <SearchGlassIcon className="size-6 shrink-0 text-muted-foreground" />
+                <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  role="combobox"
+                  aria-label={t('searchLabel')}
+                  aria-expanded={panelOpen}
+                  aria-controls={
+                    panelOpen ? 'command-palette-listbox' : undefined
+                  }
+                  aria-autocomplete="list"
+                  aria-activedescendant={
+                    panelOpen && activeItem ? optionId(activeItem) : undefined
+                  }
+                  aria-describedby={showPreview ? PREVIEW_ID : undefined}
+                  data-bare
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={ps.text}
+                  onChange={(e) => {
+                    ps.setInput(e.target.value)
+                    setActiveIndex(0)
+                    setPending(null)
+                  }}
+                  onCompositionStart={() => {
+                    composing.current = true
+                  }}
+                  onCompositionEnd={() => {
+                    composing.current = false
+                  }}
+                  onKeyDown={handleInputKeyDown}
+                  placeholder={ps.chips.length > 0 ? '' : t('placeholder')}
+                  className="h-14 min-w-32 flex-1 border-0 bg-transparent p-0 shadow-none text-base text-foreground outline-none placeholder:text-muted-foreground"
+                />
+                {searching && ps.search.isFetching ? (
+                  <span
+                    role="status"
+                    aria-label={t('loading')}
+                    className="size-4 shrink-0 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground motion-reduce:animate-none"
                   />
-                )}
+                ) : null}
+                {ps.text !== '' ? (
+                  <button
+                    type="button"
+                    aria-label={t('clearInput')}
+                    onClick={() => {
+                      ps.setInput('')
+                      setActiveIndex(0)
+                      inputRef.current?.focus()
+                    }}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-foreground/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <XGlassIcon size={16} />
+                  </button>
+                ) : null}
               </div>
-              {showPreview ? (
-                <PalettePreview
-                  item={activeItem}
-                  onRun={(item) => select(item)}
-                  onSecondary={(item) => {
-                    item.secondary?.()
-                    close()
+              {panelOpen ? null : <RecentBubbles bubbles={bubbles} />}
+            </div>
+            {panelOpen ? null : (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 opacity-0 transition-opacity duration-200 group-focus-within/pal:opacity-100 motion-reduce:transition-none">
+                <ModePills
+                  active={parseMode(ps.text)?.kind ?? null}
+                  onPick={(kind, prefix) => {
+                    recordModeUse(kind)
+                    ps.setInput(prefix)
+                    setActiveIndex(0)
+                    inputRef.current?.focus()
                   }}
                 />
-              ) : null}
-            </div>
-            {saving ? (
-              <SaveSearchForm
-                query={ps.serverQuery}
-                onDone={() => setSaving(false)}
-              />
-            ) : null}
-            <PaletteFooter>
-              {searching && !failed ? (
-                <SaveSearchButton onToggle={() => setSaving((s) => !s)} />
-              ) : null}
-            </PaletteFooter>
+                {bubbles.length > 0 ? (
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => {
+                      clearHistory()
+                      setRecentKeys([])
+                      setRecentSearches([])
+                      setHistoryVersion((v) => v + 1)
+                    }}
+                    className="ms-auto rounded-full px-2 py-0.5 text-xs text-muted-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {t('hints.clear')}
+                  </button>
+                ) : null}
+              </div>
+            )}
           </div>
+          <p role="status" aria-live="polite" className="sr-only">
+            {panelOpen && !loading
+              ? t('resultCount', { count: results.length })
+              : ''}
+          </p>
+          {panelOpen ? (
+            <div
+              data-slot="command-palette-panel"
+              className="banner-edge relative flex min-h-0 flex-col overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 palette-panel"
+            >
+              {pending ? (
+                <div
+                  role="alert"
+                  className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {t('confirm.title', { action: pending.label })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('confirm.description')}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPending(null)}
+                  >
+                    {t('confirm.cancel')}
+                  </Button>
+                  <Button size="sm" onClick={() => select(pending, true)}>
+                    {t('confirm.run')}
+                  </Button>
+                </div>
+              ) : null}
+              {loading ? (
+                <p
+                  role="status"
+                  className="px-3 py-2 text-xs text-muted-foreground"
+                >
+                  {t('loading')}
+                </p>
+              ) : null}
+              {failed ? (
+                <div
+                  role="alert"
+                  className="flex items-center gap-2 px-3 py-2 text-xs"
+                >
+                  <p className="min-w-0 flex-1 text-muted-foreground">
+                    {t('error', { message: ps.search.error?.message ?? '' })}{' '}
+                    {t('errorOffline')}
+                  </p>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => void ps.search.refetch()}
+                  >
+                    {t('retry')}
+                  </Button>
+                </div>
+              ) : null}
+              <div className="flex min-h-0 flex-1">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                  {results.length === 0 && !loading ? (
+                    <div
+                      id="command-palette-listbox"
+                      role="listbox"
+                      aria-label={t('resultsLabel')}
+                      className="p-2"
+                    >
+                      <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
+                        {t('empty')}{' '}
+                        {searching && !failed ? t('emptyBroaden') : ''}
+                      </p>
+                      {lastChip ? (
+                        <div className="flex justify-center pb-2">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={ps.popChip}
+                          >
+                            {t('emptyRemoveFilter', {
+                              chip: chipLabel(lastChip),
+                            })}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <PaletteList
+                      entries={entries}
+                      label={t('resultsLabel')}
+                      activeIndex={activeIndex}
+                      query={ps.text}
+                      optionId={optionId}
+                      onSelect={select}
+                    />
+                  )}
+                </div>
+                {showPreview ? (
+                  <PalettePreview
+                    item={activeItem}
+                    onRun={(item) => select(item)}
+                    onSecondary={(item) => {
+                      item.secondary?.()
+                      close()
+                    }}
+                  />
+                ) : null}
+              </div>
+              {saving ? (
+                <SaveSearchForm
+                  query={ps.serverQuery}
+                  onDone={() => setSaving(false)}
+                />
+              ) : null}
+              <PaletteFooter>
+                {searching && !failed ? (
+                  <SaveSearchButton onToggle={() => setSaving((s) => !s)} />
+                ) : null}
+              </PaletteFooter>
+            </div>
+          ) : null}
         </DialogPrimitive.Popup>
       </DialogPortal>
     </DialogPrimitive.Root>

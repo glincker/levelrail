@@ -28,7 +28,10 @@
     "savedSearches": "Saved searches",
     "filters": "Filters",
     "starter": "Try next",
-    "related": "Related"
+    "related": "Related",
+    "Languages": "Languages",
+    "Create": "Create",
+    "Ask": "Not found?"
   },
   "kind": {
     "app": "Apps",
@@ -81,7 +84,7 @@
   "footer": {
     "navigate": "navigate",
     "select": "select",
-    "secondary": "secondary",
+    "secondary": "alt action",
     "close": "close"
   },
   "keyboardShortcuts": "Keyboard shortcuts",
@@ -186,7 +189,13 @@
       "action-mail-backup": "Starts a backup of your mail server now.",
       "action-mail-webmail": "Opens webmail in a new tab.",
       "action-mail-queue": "Opens the outgoing mail queue."
-    }
+    },
+    "logs": "Logs",
+    "deploys": "Deploys",
+    "restart": "Restart",
+    "status": "Status",
+    "url": "URL",
+    "image": "Image"
   },
   "modes": {
     "docs": {
@@ -232,12 +241,7 @@
     }
   },
   "bubbles": {
-    "label": "Recent and suggested",
-    "recent": "Recent",
-    "mostUsed": "Most used",
-    "nextUp": "Next up",
-    "remove": "Remove {{name}}",
-    "clear": "Clear history"
+    "label": "Quick links"
   },
   "mail": {
     "addMailbox": "Mail: Add mailbox",
@@ -248,5 +252,28 @@
     "backupFailed": "Mail backup failed",
     "keywords": "mail email mailbox"
   },
-  "connectSource": "Connect Git source for {{app}}"
+  "connectSource": "Connect Git source for {{app}}",
+  "language": {
+    "title": "Language",
+    "change": "Change language",
+    "description": "Pick the dashboard language. It applies at once and is saved to your account.",
+    "switchTo": "Language: {{name}}",
+    "browser": "Language: {{name}} (browser)",
+    "current": "Current language",
+    "saveFailed": "Could not save the language.",
+    "keywords": "language languages locale idioma Sprache langue lingua 言語 语言"
+  },
+  "create": {
+    "domain": "Add domain",
+    "project": "Create project",
+    "keywords": "new create add"
+  },
+  "goTo": "go to open",
+  "hints": {
+    "label": "Search modes",
+    "clear": "Clear history"
+  },
+  "clearInput": "Clear search",
+  "resultCount_one": "{{count}} result",
+  "resultCount_other": "{{count}} results"
 }

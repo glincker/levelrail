@@ -86,6 +86,16 @@ export interface PalettePreviewData {
   primaryLabel?: string
   /** Small facts shown as chips: category, status, requirements. */
   facts?: string[]
+  /** Extra buttons in the preview, each with an Alt+letter shortcut. */
+  actions?: PreviewAction[]
+}
+
+export interface PreviewAction {
+  id: string
+  label: string
+  /** Letter pressed with Alt while this item is highlighted. */
+  shortcut: string
+  run: () => void
 }
 
 export interface RouteEntry {
@@ -122,6 +132,7 @@ export const GROUP_ORDER = [
   'DNS zones',
   'DNS records',
   'Actions',
+  'Languages',
 ] as const
 
 const nav = (

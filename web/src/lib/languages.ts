@@ -7,7 +7,8 @@ export interface LanguageOption {
 
 function languageName(code: string): string {
   try {
-    return new Intl.DisplayNames([code], { type: 'language' }).of(code) ?? code
+    const name = new Intl.DisplayNames([code], { type: 'language' }).of(code)
+    return name ? name.charAt(0).toLocaleUpperCase(code) + name.slice(1) : code
   } catch {
     return code
   }

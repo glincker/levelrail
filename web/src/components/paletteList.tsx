@@ -61,7 +61,7 @@ function VirtualEntries({
         return (
           <div
             key={entry.key}
-            className="absolute top-0 left-0 w-full"
+            className="absolute top-0 start-0 w-full"
             style={{ transform: `translateY(${row.start}px)` }}
           >
             {entry.type === 'header' ? (

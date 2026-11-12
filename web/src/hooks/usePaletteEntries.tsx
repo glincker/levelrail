@@ -6,6 +6,7 @@ import {
   BotGlassIcon,
   FunnelGlassIcon,
   LayersGlassIcon,
+  RestoreGlassIcon,
 } from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { parseMode } from '@/lib/paletteMode'
@@ -39,7 +40,15 @@ const STATIC_SEARCH_GROUPS = new Set([
   'Navigate',
   'Settings',
   'Domain actions',
+  'Languages',
 ])
+const CREATE_INTENT = /^(?:new|create|add)\b/i
+const CREATE_KEYS = [
+  'action-create-app',
+  'action-create-database',
+  'action-create-domain',
+  'action-create-project',
+] as const
 const MAX_STATIC_MATCHES = 5
 const MAX_VALUE_SUGGESTIONS = 5
 
@@ -58,12 +67,16 @@ interface Input {
   expanded: ReadonlySet<string>
   expand: (kind: string) => void
   currentApp?: string
+  /** Second step (for example the language list) that replaces every other entry. */
+  step?: { header: string; items: PaletteItem[] } | null
+  recentSearches?: readonly string[]
+  applyQuery?: (q: string) => void
 }
 
 // Builds the flat header/item list the palette renders, for both the idle and the searching state.
 export function usePaletteEntries(input: Input): PaletteEntry[] {
   const { ps, baseItems, recentKeys, expanded, expand } = input
-  const { currentApp } = input
+  const { currentApp, step, recentSearches, applyQuery } = input
   const { t } = useTranslation('palette')
   const navigate = useNavigate()
   const experimental = useExperimentalFeatures()
@@ -113,6 +126,23 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       }
     }
     const q = ps.text.trim()
+    const askAssistant = (term: string): PaletteItem => ({
+      key: 'fallback-ask-assistant',
+      label: t('modes.assistant.ask', { term }),
+      group: 'assistant',
+      icon: <BotGlassIcon size="1.4em" />,
+      preview: {
+        kind: 'assistant',
+        description: t('modes.assistant.preview'),
+        primaryLabel: t('modes.assistant.open'),
+      },
+      run: () => void navigate({ to: '/ai-assistant' }),
+    })
+
+    if (step) {
+      push('step', step.header, step.items)
+      return out
+    }
 
     if (modeItems) {
       push(`mode-${mode?.kind ?? ''}`, modeItems.header, modeItems.items)
@@ -157,6 +187,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     }
 
     if (!searching) {
+      const baseItemsIdle = baseItems.filter((i) => i.group !== 'Languages')
       const byKey = new Map(baseItems.map((i) => [i.key, i]))
       const specs = buildPaletteSuggestions({
         currentApp: currentApp ? decodeURIComponent(currentApp) : undefined,
@@ -256,7 +287,19 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
             }),
         })),
       )
-      pushStatic(baseItems)
+      push(
+        'recentSearches',
+        t('groups.recentSearches'),
+        (recentSearches ?? []).slice(0, MAX_VALUE_SUGGESTIONS).map((q2) => ({
+          key: `recent-search-${q2}`,
+          label: q2,
+          group: 'recentSearches',
+          icon: <RestoreGlassIcon size="1.4em" />,
+          keepOpen: true,
+          run: () => applyQuery?.(q2),
+        })),
+      )
+      pushStatic(baseItemsIdle)
       return out
     }
 
@@ -276,12 +319,24 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     // Client-only matches: the built-in fallback when search fails, and a
     // supplement to server hits otherwise. Chips mean a scoped search, so
     // static entries would only add noise.
+    const createItems: PaletteItem[] = CREATE_INTENT.test(q)
+      ? CREATE_KEYS.flatMap((k) => {
+          const item = byKey.get(k)
+          return item
+            ? [{ ...item, key: `create-${item.key}`, group: 'Create' }]
+            : []
+        })
+      : []
+    const createKeys = new Set<string>(CREATE_KEYS)
+    push('create', t('groups.Create'), createItems)
+
     const clientItems = (hideSettings: boolean): PaletteItem[] => {
       if (ps.chips.length > 0 || q === '') return []
       const counts = new Map<string, number>()
       return rankItems(baseItems, q, (i) => i.keywords).filter((i) => {
         if (!STATIC_SEARCH_GROUPS.has(i.group)) return false
         if (relatedKeys.has(i.key)) return false
+        if (createItems.length > 0 && createKeys.has(i.key)) return false
         if (hideSettings && i.group === 'Settings') return false
         const n = (counts.get(i.group) ?? 0) + 1
         counts.set(i.group, n)
@@ -299,6 +354,12 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       const row = savedRows?.find((s) => `saved:${s.id}` === hit.ref)
       if (row) ps.applyQuery(row.query)
     }
+    // A language query is a command, not a search: list it above any server hits.
+    const staticEarly = clientItems(false).some(
+      (i) => i.group === 'Languages' || i.key === 'action-change-language',
+    )
+    if (staticEarly)
+      pushStatic(clientItems(hits.some((h) => h.kind === 'setting')))
     for (const g of groupHits(hits, expanded)) {
       const items = g.hits.map((h) => ({
         ...hitToItem(h, {
@@ -328,7 +389,8 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
         items,
       )
     }
-    pushStatic(clientItems(hits.some((h) => h.kind === 'setting')))
+    const staticItems = clientItems(hits.some((h) => h.kind === 'setting'))
+    if (!staticEarly) pushStatic(staticItems)
     const serverTemplates = new Set(
       hits
         .filter((h) => h.kind === 'template')
@@ -339,6 +401,9 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       groupLabel('Templates'),
       templateItems.filter((i) => !serverTemplates.has(i.label.toLowerCase())),
     )
+    if (out.length === 0 && ps.chips.length === 0 && q !== '') {
+      push('ask', t('groups.Ask'), [askAssistant(q)])
+    }
     return out
   }, [
     queryClient,
@@ -354,6 +419,9 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     currentApp,
     recentKeys,
     savedRows,
+    step,
+    recentSearches,
+    applyQuery,
     deleteSavedSearch,
     experimental,
     navigate,

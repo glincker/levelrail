@@ -1,0 +1,42 @@
+{
+  "groups": {
+    "Languages": "Idiomas",
+    "Create": "Crear",
+    "Ask": "No lo encuentras"
+  },
+  "language": {
+    "title": "Idioma",
+    "change": "Cambiar idioma",
+    "description": "Elige el idioma del panel. Se aplica al instante y se guarda en tu cuenta.",
+    "switchTo": "Idioma: {{name}}",
+    "browser": "Idioma: {{name}} (navegador)",
+    "current": "Idioma actual",
+    "saveFailed": "No se pudo guardar el idioma.",
+    "keywords": "idioma idiomas language locale Sprache langue lingua 言語 语言"
+  },
+  "create": {
+    "domain": "Añadir dominio",
+    "project": "Crear proyecto",
+    "keywords": "nuevo crear añadir new create add"
+  },
+  "goTo": "ir a abrir go to open",
+  "clearInput": "Borrar búsqueda",
+  "resultCount_one": "{{count}} resultado",
+  "resultCount_other": "{{count}} resultados",
+  "bubbles": { "label": "Enlaces rápidos" },
+  "hints": { "label": "Modos de búsqueda", "clear": "Borrar historial" },
+  "footer": {
+    "navigate": "navegar",
+    "select": "elegir",
+    "secondary": "acción alternativa",
+    "close": "cerrar"
+  },
+  "preview": {
+    "logs": "Registros",
+    "deploys": "Despliegues",
+    "restart": "Reiniciar",
+    "status": "Estado",
+    "url": "URL",
+    "image": "Imagen"
+  }
+}

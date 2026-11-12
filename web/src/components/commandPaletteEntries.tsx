@@ -79,7 +79,7 @@ export function ResultRow({
       tabIndex={-1}
       onClick={onSelect}
       className={cn(
-        'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] outline-none',
+        'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-start text-[15px] outline-none',
         active
           ? 'bg-foreground/10 text-foreground'
           : 'text-foreground/90 hover:bg-foreground/5',
@@ -105,7 +105,7 @@ export function ResultRow({
           <span
             className={cn(
               'truncate text-xs text-muted-foreground',
-              item.stacked ? '' : 'ml-2',
+              item.stacked ? '' : 'ms-2',
             )}
           >
             {item.subtitle}
@@ -119,7 +119,7 @@ export function ResultRow({
         />
       ) : null}
       {item.badge ? (
-        <span className="ml-auto shrink-0">{item.badge}</span>
+        <span className="ms-auto shrink-0">{item.badge}</span>
       ) : null}
       {item.onRemove ? (
         <button
@@ -132,7 +132,7 @@ export function ResultRow({
           }}
           className={cn(
             'shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground',
-            item.badge ? '' : 'ml-auto',
+            item.badge ? '' : 'ms-auto',
           )}
         >
           <XGlassIcon className="size-5" aria-hidden="true" />
@@ -142,7 +142,7 @@ export function ResultRow({
         <span
           className={cn(
             'flex items-center gap-1',
-            item.badge || item.onRemove ? 'ml-2' : 'ml-auto',
+            item.badge || item.onRemove ? 'ms-2' : 'ms-auto',
           )}
           aria-hidden="true"
         >
@@ -155,7 +155,7 @@ export function ResultRow({
           <Kbd>Enter</Kbd>
         </span>
       ) : item.hint ? (
-        <span className="ml-auto flex gap-0.5" aria-hidden="true">
+        <span className="ms-auto flex gap-0.5" aria-hidden="true">
           {item.hint.map((k) => (
             <Kbd key={k}>{k}</Kbd>
           ))}
@@ -198,29 +198,32 @@ export function ChipBar({
 
 export function PaletteFooter({ children }: { children?: React.ReactNode }) {
   const { t } = useTranslation('palette')
+  const hint = 'flex items-center gap-1 whitespace-nowrap'
   return (
     <div
       data-slot="command-palette-footer"
-      className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-border px-3 py-2 text-xs text-muted-foreground"
+      className="flex shrink-0 items-center gap-x-4 overflow-hidden border-t border-border px-4 py-2 text-xs text-muted-foreground"
     >
-      <span aria-hidden="true" className="flex items-center gap-1">
-        <Kbd>Up</Kbd>
-        <Kbd>Down</Kbd>
-        {t('footer.navigate')}
-      </span>
-      <span aria-hidden="true" className="flex items-center gap-1">
-        <Kbd>Enter</Kbd>
-        {t('footer.select')}
-      </span>
-      <span aria-hidden="true" className="flex items-center gap-1">
-        <Kbd>Tab</Kbd>
-        {t('footer.secondary')}
-      </span>
-      <span aria-hidden="true" className="flex items-center gap-1">
-        <Kbd>Esc</Kbd>
-        {t('footer.close')}
-      </span>
-      {children ? <span className="ml-auto">{children}</span> : null}
+      <div aria-hidden="true" className="hidden items-center gap-x-4 sm:flex">
+        <span className={hint}>
+          <Kbd>Up</Kbd>
+          <Kbd>Down</Kbd>
+          {t('footer.navigate')}
+        </span>
+        <span className={hint}>
+          <Kbd>Enter</Kbd>
+          {t('footer.select')}
+        </span>
+        <span className={hint}>
+          <Kbd>Tab</Kbd>
+          {t('footer.secondary')}
+        </span>
+        <span className={hint}>
+          <Kbd>Esc</Kbd>
+          {t('footer.close')}
+        </span>
+      </div>
+      {children ? <span className="ms-auto">{children}</span> : null}
     </div>
   )
 }
