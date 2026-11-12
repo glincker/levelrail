@@ -22,7 +22,12 @@ export function useAutoSavePreferences(saved: Preferences) {
   const apply = (next: Preferences) => {
     setDraft(next)
     if (next.theme !== draft.theme && next.theme !== '') setTheme(next.theme)
-    save.mutate(next, {
+    const changes = Object.fromEntries(
+      Object.entries(next).filter(
+        ([k, v]) => v !== draft[k as keyof Preferences],
+      ),
+    ) as Partial<Preferences>
+    save.mutate(changes, {
       onError: (e) => {
         setDraft(saved)
         toast.add({

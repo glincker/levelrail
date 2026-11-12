@@ -136,6 +136,7 @@ export function hitToItem(hit: SearchHit, ctx: HitItemContext): PaletteItem {
             id: 'restart',
             label: t('preview.restart'),
             shortcut: 'R',
+            confirm: true,
             run: () => ctx.restartApp(name),
           },
         ],

@@ -76,7 +76,7 @@ describe('PreferencesCard', () => {
     expect(screen.queryByText('America/Chicago')).toBeNull()
     fireEvent.click(await screen.findByRole('option', { name: /Asia\/Tokyo/ }))
     expect(mutate).toHaveBeenCalledWith(
-      { ...DEFAULT_PREFERENCES, timezone: 'Asia/Tokyo' },
+      { timezone: 'Asia/Tokyo' },
       expect.anything(),
     )
   })
@@ -88,26 +88,26 @@ describe('PreferencesCard', () => {
     expect(options[0]).toHaveTextContent('Browser default')
     expect(select).toHaveValue('es')
     fireEvent.change(select, { target: { value: 'en' } })
-    expect(mutate).toHaveBeenCalledWith(
-      { ...DEFAULT_PREFERENCES, language: 'en' },
-      expect.anything(),
-    )
+    expect(mutate).toHaveBeenCalledWith({ language: 'en' }, expect.anything())
   })
 
   it('applies a theme choice at once and saves it', async () => {
     await renderCard()
     fireEvent.click(screen.getByRole('radio', { name: 'Dark' }))
     expect(setTheme).toHaveBeenCalledWith('dark')
-    expect(mutate).toHaveBeenCalledWith(
-      { ...DEFAULT_PREFERENCES, theme: 'dark' },
-      expect.anything(),
-    )
+    expect(mutate).toHaveBeenCalledWith({ theme: 'dark' }, expect.anything())
   })
 
   it('resets to defaults, and disables reset when already default', async () => {
     await renderCard({ ...DEFAULT_PREFERENCES, theme: 'light', gravatar: true })
     fireEvent.click(screen.getByRole('button', { name: /reset to defaults/i }))
-    expect(mutate).toHaveBeenCalledWith(DEFAULT_PREFERENCES, expect.anything())
+    expect(mutate).toHaveBeenCalledWith(
+      {
+        theme: DEFAULT_PREFERENCES.theme,
+        gravatar: DEFAULT_PREFERENCES.gravatar,
+      },
+      expect.anything(),
+    )
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: /reset to defaults/i }),

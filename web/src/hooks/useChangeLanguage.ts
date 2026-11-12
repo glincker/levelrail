@@ -47,7 +47,7 @@ export function useChangeLanguage(): ChangeLanguage {
     clearChosenLanguage()
     if (current.language === code) return
     try {
-      await savePrefs.mutateAsync({ ...current, language: code })
+      await savePrefs.mutateAsync({ language: code })
     } catch {
       toast.add({ title: t('language.saveFailed'), type: 'error' })
     }

@@ -34,9 +34,9 @@ export function usePaletteLanguage(openStep: () => void): PaletteLanguageItems {
       void i18n.changeLanguage(lang.code)
       void qc
         .fetchQuery(preferencesQueryOptions())
-        .then((prefs) => {
+        .then(() => {
           save(
-            { ...prefs, language: lang.code },
+            { language: lang.code },
             {
               onError: (e) =>
                 toast.add({

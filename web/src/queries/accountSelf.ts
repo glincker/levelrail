@@ -122,10 +122,31 @@ export function preferencesQueryOptions() {
   })
 }
 
+// Saves run one at a time, each merged onto the latest saved copy, so two controls
+// changing different preferences at once cannot overwrite each other with stale fields.
+let preferenceWrites: Promise<unknown> = Promise.resolve()
+
 export function useSavePreferences() {
   const qc = useQueryClient()
-  return useMutation<Preferences, AccountApiError, Preferences>({
-    mutationFn: (next) => send('PUT', '/api/v1/auth/preferences', next),
+  return useMutation<Preferences, AccountApiError, Partial<Preferences>>({
+    mutationFn: (changes) => {
+      const run = async () => {
+        const base = await qc.ensureQueryData(preferencesQueryOptions())
+        const saved = await send<Preferences>(
+          'PUT',
+          '/api/v1/auth/preferences',
+          {
+            ...base,
+            ...changes,
+          },
+        )
+        qc.setQueryData(accountSelfKeys.preferences, saved)
+        return saved
+      }
+      const next = preferenceWrites.then(run, run)
+      preferenceWrites = next.catch(() => undefined)
+      return next
+    },
     onSuccess: (saved) => {
       qc.setQueryData(accountSelfKeys.preferences, saved)
       void qc.invalidateQueries({ queryKey: accountSelfKeys.activity })

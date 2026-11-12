@@ -95,6 +95,8 @@ export interface PreviewAction {
   label: string
   /** Letter pressed with Alt while this item is highlighted. */
   shortcut: string
+  /** Route through the same confirm step as a destructive server action. */
+  confirm?: boolean
   run: () => void
 }
 

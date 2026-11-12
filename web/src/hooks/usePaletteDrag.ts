@@ -110,7 +110,8 @@ export function usePaletteDrag({
     if (!m) return
     const up = shouldFlipUp(m.pill, offset.current, m.vp)
     m.el.dataset.flip = up ? 'up' : 'down'
-    const room = availableSpace(m.pill, offset.current, m.vp, up)
+    // Results start at the popup edge (below the mode row and any wrapped bubbles), not at the search field.
+    const room = availableSpace(m.base, offset.current, m.vp, up)
     m.el.style.setProperty('--pal-maxh', `${Math.max(room - 16, 160)}px`)
   }, [measure])
 
@@ -162,10 +163,10 @@ export function usePaletteDrag({
     [apply, clamp, enabled, settle],
   )
 
+  // Phones keep dragging off but still resize the results when the screen rotates.
   React.useEffect(() => {
-    if (!enabled) return undefined
     const onResize = () => {
-      apply(clamp(offset.current))
+      if (enabled) apply(clamp(offset.current))
       settle()
     }
     window.addEventListener('resize', onResize)

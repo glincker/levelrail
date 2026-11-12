@@ -62,7 +62,7 @@ export function PreferencesApplier() {
     ) {
       clearChosenLanguage()
       void i18n.changeLanguage(chosen)
-      savePreferences({ ...data, language: chosen })
+      savePreferences({ language: chosen })
       return
     }
     clearChosenLanguage()

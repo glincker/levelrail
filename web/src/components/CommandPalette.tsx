@@ -25,7 +25,7 @@ import { usePaletteEntries } from '../hooks/usePaletteEntries'
 import { usePaletteSearch } from '../hooks/usePaletteSearch'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { recordSearchUse } from '../queries/search'
-import type { PaletteItem } from './commandPaletteData'
+import type { PaletteItem, PreviewAction } from './commandPaletteData'
 import { ChipBar, PaletteFooter } from './commandPaletteEntries'
 import { PaletteList } from './paletteList'
 import { ModePills } from './palette/ModePills'
@@ -224,6 +224,25 @@ export function CommandPalette({
     [close, ps.serverQuery, ps.text],
   )
 
+  const runPreviewAction = React.useCallback(
+    (item: PaletteItem, action: PreviewAction) => {
+      if (action.confirm) {
+        select({
+          ...item,
+          key: `${item.key}:${action.id}`,
+          label: `${action.label}: ${item.label}`,
+          confirm: true,
+          searchRef: undefined,
+          run: action.run,
+        })
+        return
+      }
+      action.run()
+      close()
+    },
+    [select, close],
+  )
+
   const openPath = React.useCallback(
     (path: string) => {
       void navigate({ to: path })
@@ -286,10 +305,9 @@ export function CommandPalette({
       const action = item?.preview?.actions?.find(
         (a) => a.shortcut === letter[1],
       )
-      if (action) {
+      if (action && item) {
         e.preventDefault()
-        action.run()
-        close()
+        runPreviewAction(item, action)
         return
       }
     }
@@ -601,6 +619,7 @@ export function CommandPalette({
                   <PalettePreview
                     item={activeItem}
                     onRun={(item) => select(item)}
+                    onAction={runPreviewAction}
                     onSecondary={(item) => {
                       item.secondary?.()
                       close()

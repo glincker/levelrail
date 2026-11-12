@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { appListQueryOptions } from '../../queries/apps'
-import type { PaletteItem } from '../commandPaletteData'
+import type { PaletteItem, PreviewAction } from '../commandPaletteData'
 import { shortcutLabel } from '@/lib/platform'
 import { Kbd } from '../commandPaletteEntries'
 import { pageText } from './usePreviewHasContent'
@@ -15,6 +15,7 @@ interface Props {
   item: PaletteItem | undefined
   onRun: (item: PaletteItem) => void
   onSecondary: (item: PaletteItem) => void
+  onAction: (item: PaletteItem, action: PreviewAction) => void
 }
 
 function appName(item: PaletteItem): string | null {
@@ -49,7 +50,7 @@ function AppFacts({ name }: { name: string }) {
 }
 
 // Right-hand card for the highlighted result; the list stays the source of truth for selection.
-export function PalettePreview({ item, onRun, onSecondary }: Props) {
+export function PalettePreview({ item, onRun, onSecondary, onAction }: Props) {
   const { t } = useTranslation('palette')
   if (!item) return null
   const pv = item.preview
@@ -108,7 +109,7 @@ export function PalettePreview({ item, onRun, onSecondary }: Props) {
                 variant="outline"
                 tabIndex={-1}
                 aria-keyshortcuts={`Alt+${a.shortcut}`}
-                onClick={a.run}
+                onClick={() => onAction(item, a)}
               >
                 {a.label}
                 <Kbd>{shortcutLabel('alt', a.shortcut)}</Kbd>
