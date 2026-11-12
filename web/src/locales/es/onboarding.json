@@ -9,6 +9,11 @@
     "done": "hecho"
   },
   "steps": {
+    "language": {
+      "label": "Idioma",
+      "title": "Elige tu idioma",
+      "description": "Elige el idioma del panel. La página cambia a medida que eliges."
+    },
     "welcome": {
       "label": "Bienvenida",
       "title": "Te damos la bienvenida a Levelrail",
@@ -80,5 +85,9 @@
   "errors": {
     "save": "No se pudo guardar tu progreso. Inténtalo de nuevo.",
     "transition": "Ese cambio no está permitido ahora. Recarga la página e inténtalo de nuevo."
+  },
+  "language": {
+    "label": "Idioma",
+    "hint": "Pulsa Intro para continuar. Puedes cambiarlo cuando quieras desde la cabecera o en Ajustes."
   }
 }

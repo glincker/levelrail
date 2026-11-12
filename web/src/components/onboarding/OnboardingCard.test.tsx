@@ -36,7 +36,7 @@ describe('OnboardingCard', () => {
   it('offers to continue when in progress', () => {
     current = flow({ state: 'in_progress', current_step: 'profile' })
     render(<OnboardingCard />, { wrapper: Wrap })
-    expect(screen.getByText('You stopped at step 2 of 4.')).toBeTruthy()
+    expect(screen.getByText('You stopped at step 3 of 5.')).toBeTruthy()
   })
 
   it.each([

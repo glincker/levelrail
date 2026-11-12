@@ -29,6 +29,7 @@ import { SsoAutoRedirect } from './SsoAutoRedirect'
 import { SignInFlow } from './SignInFlow'
 import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
+import { HeaderLanguageSelect } from './language/HeaderLanguageSelect'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { LoginBrandPanel } from './LoginBrandPanel'
 import { LockedOutDialog } from './LockedOutDialog'
@@ -166,7 +167,10 @@ export function LoginScreen({
               {brandLabel}
             </span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <HeaderLanguageSelect />
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4 py-6">

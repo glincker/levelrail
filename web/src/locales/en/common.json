@@ -1552,5 +1552,11 @@
       "node_cordon": "Cordon",
       "node_uncordon": "Uncordon"
     }
+  },
+  "language": {
+    "label": "Language",
+    "change": "Change language, current: {{language}}",
+    "browserDefault": "Browser default",
+    "saveFailed": "Could not save your language."
   }
 }

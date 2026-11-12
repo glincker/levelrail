@@ -27,8 +27,9 @@ import {
 } from '@/components/ui/tooltip'
 import { SettingsCardSkeleton } from '../settings/SettingsSkeletons'
 import { DEFAULT_PREFERENCES } from './preferenceDefaults'
+import { LanguageSelect } from '../language/LanguageSelect'
 import { LandingSelect } from './LandingSelect'
-import { useLanguageOptions, useZoneOptions } from './preferenceOptions'
+import { useZoneOptions } from './preferenceOptions'
 import { ThemeChoice, type ThemeValue } from './ThemeChoice'
 import { useAutoSavePreferences } from './useAutoSavePreferences'
 import {
@@ -46,7 +47,6 @@ function PreferencesForm({ saved }: { saved: Preferences }) {
   const landingId = useId()
   const gravatarId = useId()
   const zoneOptions = useZoneOptions(now)
-  const languageOptions = useLanguageOptions()
   const isDefault =
     JSON.stringify(draft) === JSON.stringify(DEFAULT_PREFERENCES)
 
@@ -106,13 +106,11 @@ function PreferencesForm({ saved }: { saved: Preferences }) {
             }
             description={t('preferences.languageHint')}
           >
-            <SearchSelect
+            <LanguageSelect
               id={languageId}
-              options={languageOptions}
+              allowDefault
               value={draft.language}
-              onValueChange={(v) => patch({ language: v })}
-              searchPlaceholder={t('preferences.languageSearch')}
-              emptyMessage={t('preferences.languageEmpty')}
+              onChange={(v) => patch({ language: v })}
             />
           </SettingRow>
           <SettingRow
