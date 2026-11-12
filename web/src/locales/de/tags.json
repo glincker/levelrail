@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Tags",
+    "description": "Labels, die Sie an Apps anhängen, um sie zu gruppieren und zu filtern."
+  },
+  "create": {
+    "label": "Neuer Tag",
+    "placeholder": "env:prod",
+    "submit": "Tag erstellen",
+    "pending": "Wird erstellt"
+  },
+  "table": {
+    "label": "Tags",
+    "name": "Name",
+    "apps": "Apps",
+    "resources": "Ressourcen",
+    "created": "Erstellt",
+    "actions": "Aktionen"
+  },
+  "row": {
+    "showApps": "Apps mit Tag {{name}} anzeigen",
+    "hideApps": "Apps mit Tag {{name}} ausblenden"
+  },
+  "rename": {
+    "action": "{{name}} umbenennen",
+    "label": "Neuer Name für {{name}}",
+    "save": "Speichern",
+    "cancel": "Abbrechen"
+  },
+  "delete": {
+    "action": "{{name}} löschen",
+    "title": "Tag {{name}} löschen?",
+    "description": "Der Tag wird von jeder App entfernt, die ihn verwendet.",
+    "consequence": "Apps laufen weiter; nur das Label verschwindet.",
+    "confirm": "Tag löschen",
+    "pending": "Wird gelöscht"
+  },
+  "apps": {
+    "loading": "Apps werden geladen",
+    "empty": "Noch keine App verwendet diesen Tag.",
+    "error": "Die Apps für diesen Tag konnten nicht geladen werden.",
+    "list": "Apps mit Tag {{name}}"
+  },
+  "empty": {
+    "title": "Noch keine Tags",
+    "description": "Erstellen Sie oben einen Tag oder fügen Sie in der Übersicht einer App einen hinzu, um Apps zu gruppieren."
+  },
+  "error": "Tags konnten nicht geladen werden."
+}

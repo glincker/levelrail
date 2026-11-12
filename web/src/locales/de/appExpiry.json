@@ -1,0 +1,23 @@
+{
+  "title": "Ablauf",
+  "description": "Für temporäre und Demo-Apps. {{notice}} Stunden vorher wird ein Hinweis geschrieben, zum Ablaufzeitpunkt wird die App gestoppt und {{grace}} Stunden später gelöscht. Apps mit Volumes, verknüpften Datenbanken oder einer geschützten Umgebung werden nur gestoppt, sofern \"Daten löschen\" nicht gesetzt ist.",
+  "none": "Kein Ablauf festgelegt.",
+  "state": {
+    "none": "Kein Ablauf festgelegt.",
+    "scheduled": "Läuft ab: {{at}}.",
+    "noticed": "Läuft ab: {{at}}. Der Hinweis steht im Audit-Log.",
+    "stopped": "Bei Ablauf gestoppt. Wird nach {{after}} gelöscht, sofern nicht aufgehoben.",
+    "kept": "Bei Ablauf gestoppt und behalten."
+  },
+  "kept": "Behalten, nicht gelöscht: {{reason}}.",
+  "clear": "Ablauf entfernen",
+  "atLabel": "Läuft ab am",
+  "deleteData": "Auch Daten löschen",
+  "confirmLabel": "Zur Bestätigung {{name}} eingeben",
+  "save": "Ablauf speichern",
+  "saved": "Ablauf gespeichert",
+  "cleared": "Ablauf entfernt, ein ausstehendes Löschen wird abgebrochen",
+  "failed": "Änderung des Ablaufs fehlgeschlagen",
+  "hint": "Bis zu {{days}} Tage im Voraus. Das Entfernen bricht ein ausstehendes Löschen immer ab; eine gestoppte App bleibt gestoppt, bis sie gestartet wird.",
+  "deleteDisabled": "Löschen vom Betreiber deaktiviert: Abgelaufene Apps werden nur gestoppt."
+}

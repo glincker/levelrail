@@ -1,0 +1,32 @@
+{
+  "service": "Dienst",
+  "title": "Laufzeitoptionen für {{service}}",
+  "description": "Container-Optionen, die dieser Dienst setzen darf. Alles andere, etwa zusätzliche Capabilities oder Geräte, bleibt unzugänglich.",
+  "tmpfs": {
+    "label": "Tmpfs-Mounts",
+    "hint": "Einer pro Zeile, /pfad:size=64m. Bis zu {{max}}."
+  },
+  "ulimits": {
+    "label": "Ulimits",
+    "hint": "Eines pro Zeile, name=soft:hard. Bis zu {{max}} von {{names}}."
+  },
+  "extraHosts": {
+    "label": "Zusätzliche Hosts",
+    "hint": "Einer pro Zeile, hostname:ip. Bis zu {{max}}."
+  },
+  "dns": { "label": "DNS-Server", "hint": "Eine IP pro Zeile. Bis zu {{max}}." },
+  "sysctls": {
+    "label": "Sysctls",
+    "hint": "Eines pro Zeile, key=value. Erlaubt: {{names}}."
+  },
+  "stopTimeout": { "label": "Stopp-Timeout (s)", "hint": "Bis zu {{max}}." },
+  "pids": { "label": "Prozesslimit", "hint": "Bis zu {{max}}." },
+  "init": { "label": "Init-Prozess", "hint": "Einen minimalen Init als PID 1 ausführen." },
+  "badUlimit": "Verwenden Sie in jeder Zeile name=soft oder name=soft:hard.",
+  "badSysctl": "Verwenden Sie in jeder Zeile key=value.",
+  "save": "Speichern",
+  "saving": "Speichern",
+  "saved": "Laufzeitoptionen gespeichert",
+  "recreates": "Beim Speichern wird der Container neu erstellt.",
+  "readOnly": "Zum Ändern der Laufzeitoptionen benötigen Sie die Berechtigung für sensible Schreibzugriffe."
+}

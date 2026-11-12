@@ -1,0 +1,43 @@
+{
+  "page": {
+    "title": "Traffic",
+    "description": "Jede Domain, die über den eingebetteten Ingress dieser Control Plane geroutet wird, welcher Node sie tatsächlich bedient und ob sie erreichbar ist."
+  },
+  "table": {
+    "label": "Geroutete Domains",
+    "domain": "Domain",
+    "app": "App",
+    "node": "Node",
+    "reachable": "Erreichbar",
+    "port": "Port",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "Erreichbar",
+    "no": "Nicht erreichbar"
+  },
+  "unreachableBanner_one": "1 Domain ist nicht erreichbar: Ihre App läuft auf einem anderen Node, und der Ingress dieser Control Plane hat keinen nutzbaren WireGuard-Mesh-Pfad dorthin. Prüfen Sie den Mesh-Status auf der Seite Netzwerk.",
+  "unreachableBanner_other": "{{count}} Domains sind nicht erreichbar: Ihre Apps laufen auf anderen Nodes, und der Ingress dieser Control Plane hat keinen nutzbaren WireGuard-Mesh-Pfad dorthin. Prüfen Sie den Mesh-Status auf der Seite Netzwerk.",
+  "fix": {
+    "explanation": "Der WireGuard-Mesh-Pfad zum Node dieser App ist nicht nutzbar, daher kann der eingebettete Ingress sie nicht erreichen. Reparieren Sie das Mesh oder verschieben Sie die App zurück auf diesen Node.",
+    "moveHere": "Auf diesen Node verschieben"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "Benutzerdefiniert"
+  },
+  "empty": {
+    "title": "Noch keine Domains geroutet",
+    "description": "Verbinden Sie über den Tab Domains einer App eine Domain, um hier ihren Traffic-Pfad zu sehen."
+  },
+  "automaticDomain": {
+    "badge": "Automatisch",
+    "betaHint": "Kostenlose Testadresse eines öffentlichen Wildcard-DNS-Dienstes. Funktioniert nur, solange dieser Dienst in Ihrem Netzwerk auflöst. Fügen Sie für die Produktion Ihre eigene Domain hinzu.",
+    "hint": "Von Levelrail anhand der IP dieses Servers vergeben, damit die App ohne DNS-Einrichtung funktioniert. Fügen Sie unten Ihre eigene Domain hinzu, um sie zu ersetzen.",
+    "open": "Öffnen",
+    "tlsNote": "Diese automatische URL verwendet ein selbstsigniertes Zertifikat, bis HTTPS unter Domains aktiviert wird. Einfaches HTTP wird per 308 dorthin umgeleitet."
+  },
+  "banner": {
+    "description": "Domains, die über diese Control Plane geroutet werden, erscheinen hier, zusammen mit dem Node, der sie bedient, und ob sie erreichbar sind."
+  }
+}

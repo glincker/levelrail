@@ -1,0 +1,54 @@
+{
+  "title": "Vor dem Upgrade",
+  "loading": "Festplattenplatz, Backup und Ausfallzeit werden geprüft",
+  "loadError": "Dieses Upgrade konnte nicht geprüft werden: {{message}}",
+  "loadErrorNext": "Laden Sie die Seite neu oder versuchen Sie es in einer Minute erneut. Es wurde nichts geändert.",
+  "retry": "Erneut versuchen",
+  "change": {
+    "label": "Was sich ändert",
+    "fromTo": "{{from}} auf {{to}}",
+    "migrations_one": "1 Datenbankmigration",
+    "migrations_other": "{{count}} Datenbankmigrationen",
+    "noMigrations": "Keine Datenbankmigrationen",
+    "schema": "Schema {{from}} auf {{to}}",
+    "schemaNote": "({{schema}})",
+    "breaking_one": "1 inkompatible Änderung",
+    "breaking_other": "{{count}} inkompatible Änderungen",
+    "noBreaking": "Keine inkompatiblen Änderungen"
+  },
+  "checks": {
+    "label": "Prüfungen",
+    "diskOk": "Festplatte OK: {{free}} frei, {{needed}} benötigt",
+    "diskShort": "Festplatte knapp: {{free}} frei, {{needed}} benötigt",
+    "diskUnknown": "Der freie Festplattenplatz konnte nicht ermittelt werden",
+    "backupAt": "Backup wird in {{dir}} abgelegt",
+    "backupSkipped": "Backup übersprungen, es gibt keinen Wiederherstellungspunkt",
+    "backupNone": "Es ist kein Backup vor dem Upgrade konfiguriert"
+  },
+  "downtime": {
+    "label": "Ausfallzeit",
+    "estimate": "Etwa {{seconds}} s offline, während der Server neu startet",
+    "restart": "Neustart: {{behaviour}}"
+  },
+  "restore": {
+    "label": "Falls etwas schiefgeht, stellen Sie wieder her mit",
+    "after": "Bewahren Sie diesen Befehl auf. Er stellt die Datenbank in den Zustand vor dem Upgrade zurück.",
+    "copyLabel": "Wiederherstellungsbefehl"
+  },
+  "blocked": {
+    "disk": "Nicht genug freier Festplattenplatz. Geben Sie {{short}} frei oder verschieben Sie das Datenverzeichnis, und laden Sie dann neu.",
+    "plan": "Dieses Upgrade kann nicht starten: {{reason}}",
+    "planUnknown": "Der Upgrade-Plan ist fehlgeschlagen. Laden Sie die Seite neu oder führen Sie das Upgrade über die Befehlszeile aus.",
+    "notes": "Die Release Notes für diese Version sind noch nicht verfügbar. Versuchen Sie es in Kürze erneut."
+  },
+  "skip": {
+    "toggle": "Erweitert",
+    "label": "Backup vor dem Upgrade überspringen",
+    "warning": "Es wird kein Wiederherstellungspunkt erstellt. Schlägt das Upgrade fehl, können Sie nicht zu den aktuellen Daten zurückkehren.",
+    "hint": "Das Backup ist fehlgeschlagen. Beheben Sie die Ursache und versuchen Sie es erneut, oder überspringen Sie es auf eigenes Risiko."
+  },
+  "backupFailed": {
+    "title": "Das Backup vor dem Upgrade ist fehlgeschlagen, daher wurde nichts geändert",
+    "next": "Geben Sie Festplattenplatz frei oder prüfen Sie, ob das Backup-Verzeichnis beschreibbar ist, und klicken Sie dann erneut auf Upgrade. Sie können das Backup auch unter Erweitert überspringen."
+  }
+}

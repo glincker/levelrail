@@ -1,0 +1,69 @@
+{
+  "roles": {
+    "title": "Rollen",
+    "description": "Benannte Berechtigungssätze, die Sie Personen zuweisen können. Eingebaute Rollen sind fest; erstellen Sie eigene für alles dazwischen.",
+    "create": "Rolle erstellen",
+    "empty": {
+      "title": "Keine Rollen gefunden",
+      "description": "Erstellen Sie eine Rolle, um Personen einen benannten Berechtigungssatz zu geben."
+    },
+    "table": {
+      "label": "Rollen",
+      "name": "Name",
+      "abilities": "Berechtigungen",
+      "visibility": "Sichtbar",
+      "users": "Benutzer",
+      "edit": "Bearbeiten",
+      "delete": "Löschen"
+    },
+    "badge": {
+      "builtin": "Eingebaut",
+      "visibilityAll": "Alles",
+      "visibilityGranted": "Nur freigegebene Umgebungen"
+    },
+    "form": {
+      "createTitle": "Rolle erstellen",
+      "editTitle": "{{name}} bearbeiten",
+      "description": "Wählen Sie die Berechtigungen dieser Rolle und was ihre Inhaber sehen können.",
+      "name": "Name",
+      "namePlaceholder": "z. B. qa-reviewer",
+      "nameRequired": "Name ist erforderlich",
+      "descriptionLabel": "Beschreibung",
+      "visibility": "Sichtbarkeit",
+      "visibilityAll": "Alles, was die Berechtigungen erlauben",
+      "visibilityGranted": "Nur Umgebungen, die der jeweiligen Person freigegeben sind",
+      "visibilityGrantedHint": "Eine auf freigegebene Umgebungen beschränkte Rolle kann nur die Leseberechtigung enthalten.",
+      "abilitiesRequired": "Wählen Sie mindestens eine Berechtigung",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Speichern..."
+    },
+    "deleteDialog": {
+      "title": "{{name}} löschen?",
+      "description": "Diese Rolle kann Personen nicht mehr zugewiesen werden. Eine Rolle, der noch Personen zugewiesen sind, kann nicht gelöscht werden.",
+      "inUse": "{{count}} Personen haben diese Rolle. Weisen Sie sie zuerst neu zu.",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "toast": {
+      "created": "Rolle {{name}} erstellt.",
+      "updated": "Rolle {{name}} aktualisiert.",
+      "deleted": "Rolle {{name}} gelöscht."
+    }
+  },
+  "userRole": {
+    "trigger": "Rolle ändern",
+    "title": "Rolle für {{email}}",
+    "description": "Die Wahl einer Rolle ersetzt die Berechtigungen dieser Person durch die der Rolle.",
+    "label": "Rolle",
+    "grantsTitle": "Umgebungen, die diese Person sehen kann",
+    "grantsHint": "Personen mit einer Rolle mit freigegebener Sichtbarkeit sehen nur diese Umgebungen.",
+    "grantsEmpty": "Es existieren noch keine Umgebungen.",
+    "grantsLoading": "Umgebungen werden geladen...",
+    "save": "Speichern",
+    "saving": "Speichern...",
+    "cancel": "Abbrechen",
+    "toast": "{{email}} ist jetzt {{role}}."
+  }
+}

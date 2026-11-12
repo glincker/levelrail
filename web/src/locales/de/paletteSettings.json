@@ -1,0 +1,12 @@
+{
+  "items": {
+    "email-log": {
+      "title": "E-Mail-Zustellprotokoll",
+      "description": "Jeder ausgehende E-Mail-Versuch mit seinem Ergebnis."
+    },
+    "network-shares": {
+      "title": "Netzwerkfreigaben",
+      "description": "Remote-Volume-Quellen, die jeder App-Dienst einbinden kann."
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "variables": {
+    "page": {
+      "title": "Variablen",
+      "description": "Wo gemeinsame Variablen liegen. Hier werden nur Namen und Anzahlen angezeigt, nie Werte."
+    },
+    "open": "Öffnen",
+    "count": {
+      "vars_one": "{{count}} Variable",
+      "vars_other": "{{count}} Variablen",
+      "unknown": "Wird gezählt"
+    },
+    "org": {
+      "title": "Organisationen",
+      "empty": {
+        "title": "Keine Organisationen",
+        "description": "Erstellen Sie eine Organisation, um Variablen für ihre Projekte zu teilen."
+      }
+    },
+    "project": {
+      "title": "Projekte",
+      "environments": "Jede Projektseite listet auch ihre Umgebungen auf, die eigene Variablen enthalten.",
+      "empty": {
+        "title": "Keine Projekte",
+        "description": "Erstellen Sie ein Projekt, um Variablen für seine Apps zu teilen."
+      }
+    },
+    "apps": {
+      "title": "Apps",
+      "note": "Variablen einer einzelnen App bearbeiten Sie unter Konfiguration, Umgebung.",
+      "open": "Apps öffnen"
+    }
+  },
+  "sources": {
+    "page": {
+      "title": "Quellen",
+      "description": "Mit dieser Instanz verbundene Git-Anbieter."
+    },
+    "loading": "Anbieter werden geladen",
+    "error": "Git-Anbieter konnten nicht geladen werden.",
+    "empty": {
+      "title": "Keine Git-Anbieter",
+      "description": "Verbinden Sie in den Einstellungen einen Anbieter, um aus einem Repository zu deployen."
+    },
+    "provider": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "bitbucket_server": "Bitbucket Server",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "azure_devops": "Azure DevOps"
+    },
+    "status": {
+      "notConnected": "Nicht verbunden",
+      "ok": "Verbunden",
+      "needs_reauthorize": "Erneute Autorisierung nötig",
+      "revoked": "Widerrufen",
+      "rate_limited": "Ratenbegrenzt"
+    },
+    "accounts_one": "{{count}} Konto",
+    "accounts_other": "{{count}} Konten",
+    "manage": "Verwalten"
+  }
+}

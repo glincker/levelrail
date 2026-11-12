@@ -1,0 +1,63 @@
+{
+  "banner": {
+    "label": "Schreibgeschützte Demo mit Beispieldaten",
+    "resets": "Wird zurückgesetzt {{time}}",
+    "install": "Installieren",
+    "copyInstall": "Installationsbefehl kopieren",
+    "copied": "Kopiert",
+    "github": "GitHub",
+    "docs": "Doku",
+    "tour": "Tour starten"
+  },
+  "readOnly": {
+    "tooltip": "In der Demo schreibgeschützt. Installieren Sie {{brand}}, um dies echt auszuprobieren.",
+    "toastTitle": "Schreibgeschützte Demo",
+    "toastBody": "Diese Aktion ist in der Demo nicht verfügbar. Installieren Sie {{brand}}, um sie echt auszuprobieren."
+  },
+  "login": {
+    "title": "Demo erkunden",
+    "description": "Melden Sie sich als schreibgeschützter Besucher an, um eine vorbefüllte Instanz anzusehen. Nichts, was Sie tun, wird gespeichert.",
+    "button": "Demo erkunden",
+    "pending": "Demo wird gestartet",
+    "humanCheckFailed": "Die Verifizierung als Mensch ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.",
+    "rateLimited": "Zu viele Demo-Sitzungen aus Ihrem Netzwerk. Warten Sie eine Minute und versuchen Sie es erneut.",
+    "failed": "Die Demo konnte nicht gestartet werden. Versuchen Sie es gleich noch einmal.",
+    "credentials": "Oder melden Sie sich mit {{username}} und {{password}} an."
+  },
+  "unavailable": {
+    "title": "In der Demo nicht verfügbar",
+    "terminal": "Terminal und Befehlsausführung führen Befehle auf einem echten Host aus und sind daher in der Demo deaktiviert.",
+    "database": "Der Datenbank-Explorer und die SQL-Konsole verbinden sich mit einer Live-Datenbank und sind daher in der Demo deaktiviert.",
+    "generic": "Diese Funktion benötigt einen echten Host und ist daher in der Demo deaktiviert.",
+    "installHint": "Installieren Sie {{brand}} auf Ihrem eigenen Server, um sie zu nutzen.",
+    "install": "Installation ansehen"
+  },
+  "empty": {
+    "title": "In der Demo gibt es hier nichts",
+    "description": "Dieser Bereich ist in den Demodaten absichtlich leer. Auf einer echten Instanz füllt er sich, während Sie {{brand}} nutzen."
+  },
+  "tour": {
+    "step": "Schritt {{current}} von {{total}}",
+    "next": "Weiter",
+    "back": "Zurück",
+    "done": "Fertig",
+    "skip": "Tour überspringen",
+    "open": "Diese Seite öffnen",
+    "apps": {
+      "title": "Ihre Apps",
+      "body": "Jede App, ihr Status und ihr letzter Deploy in einer Liste. Öffnen Sie eine, um ihre Logs, Domains und Einstellungen zu sehen."
+    },
+    "deploys": {
+      "title": "Deploy-Verlauf und Rollback",
+      "body": "Jeder Deploy wird mit seiner Quelle und seinem Ergebnis aufgezeichnet. Jede frühere Version lässt sich mit einem Klick per Rollback wiederherstellen."
+    },
+    "metrics": {
+      "title": "Metriken mit Deploy-Markierungen",
+      "body": "Öffnen Sie eine App und wählen Sie Metriken. Deploys werden in die Diagramme eingezeichnet, sodass Sie sehen, welches Release die Werte verändert hat."
+    },
+    "nodes": {
+      "title": "Nodes",
+      "body": "Sehen Sie jeden Server Ihrer Flotte, seine Kapazität und was auf ihm läuft."
+    }
+  }
+}

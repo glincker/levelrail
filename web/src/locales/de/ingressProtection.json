@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "Cloudflare für Besucheradressen vertrauen",
+    "helper": "Liest die Besucheradresse aus CF-Connecting-IP, aber nur bei Verbindungen aus den veröffentlichten Cloudflare-Bereichen; ein gefälschter Header von anderswo wird ignoriert. Jeder Cloudflare-Kunde kann Ihren Server über seinen eigenen proxied Record erreichen, daher beweist dies nicht, dass eine Anfrage über Ihre Zone kam.",
+    "ranges": "{{count}} Bereiche ({{source}}), aktualisiert alle {{interval}}.",
+    "source": {
+      "embedded": "mit der App ausgeliefert",
+      "fetched": "von Cloudflare"
+    },
+    "lastRefresh": "Letzte Aktualisierung: {{when}}.",
+    "neverRefreshed": "Noch nicht aktualisiert, die ausgelieferte Liste wird verwendet.",
+    "lastError": "Fehler bei der letzten Aktualisierung: {{error}}",
+    "saved": "Cloudflare-Client-IP ist aktiviert",
+    "savedOff": "Cloudflare-Client-IP ist deaktiviert",
+    "failed": "Die Einstellung für die Cloudflare-Client-IP konnte nicht geändert werden"
+  },
+  "fallbackCerts": {
+    "label": "Zertifikate für automatische Adressen",
+    "helper": "Eager bestellt das Zertifikat, sobald die Route existiert; Lazy bestellt es beim ersten Aufruf der automatischen Adresse. Domains, die Sie selbst hinzufügen, sind immer Eager.",
+    "options": {
+      "eager": "Eager",
+      "lazy": "Lazy"
+    },
+    "source": {
+      "default": "Standard",
+      "env": "Per Umgebung gesetzt",
+      "saved": "Gespeichert"
+    },
+    "envHint": "Aus {{env}} übernommen. Ein hier gespeicherter Wert überschreibt ihn.",
+    "reset": "Auf Standard zurücksetzen",
+    "resetDone": "Fallback-Zertifikate auf Standard zurückgesetzt",
+    "saved": "Modus für Fallback-Zertifikate gespeichert",
+    "failed": "Der Modus für Fallback-Zertifikate konnte nicht geändert werden"
+  }
+}
