@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"maps"
 	"net/http"
 	"slices"
 	"strings"
@@ -60,11 +61,13 @@ func (rt *Router) computePendingChanges(ctx context.Context, svc store.DesiredSe
 		snapshot := *applied
 		snapshot.EnvHashes = hashes
 		wantEnv := store.AppEnvHashes(svc.Name, svc.Env, secretValues)
+		maps.Copy(wantEnv, store.VaultEnvHashes(svc.Name, svc.VaultEnv))
 		for _, k := range unresolved {
 			delete(wantEnv, k)
 		}
 		drift := store.DiffApplied(&snapshot, wantEnv, store.AppliedFields(svc))
-		secretSet := append(store.SecretEnvNames(svc.SecretEnv), strings.Split(applied.Fields[store.AppliedFieldSecretKeys], ",")...)
+		secretSet := append(slices.Collect(maps.Keys(svc.VaultEnv)), store.SecretEnvNames(svc.SecretEnv)...)
+		secretSet = append(secretSet, strings.Split(applied.Fields[store.AppliedFieldSecretKeys], ",")...)
 		for _, k := range drift.EnvKeys {
 			if slices.Contains(secretSet, k) {
 				secretKeys = append(secretKeys, k)

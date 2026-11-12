@@ -209,6 +209,9 @@ func validateConfig(typ string, c Config) (Config, error) {
 		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil {
 			return c, invalid("address must be an http or https URL with a host and no credentials")
 		}
+		if rule := vault.AddressRule(u.Hostname()); rule != "" {
+			return c, invalid("address %s is refused: it is a %s", u.Hostname(), rule)
+		}
 		if c.AuthMethod == "" {
 			c.AuthMethod = store.VaultAuthMethodToken
 		}
@@ -227,6 +230,11 @@ func validateConfig(typ string, c Config) (Config, error) {
 		pc := secretprovider.Config{Name: "conn", Type: typ, Project: c.Project, Environment: c.Environment, Path: c.Path, BaseURL: c.BaseURL}
 		if err := pc.Validate(); err != nil {
 			return c, invalid("%s", err.Error())
+		}
+		if u, err := url.Parse(c.BaseURL); err == nil && u.Hostname() != "" {
+			if rule := vault.AddressRule(u.Hostname()); rule != "" {
+				return c, invalid("base_url %s is refused: it is a %s", u.Hostname(), rule)
+			}
 		}
 		return Config{Project: c.Project, Environment: c.Environment, Path: c.Path, BaseURL: c.BaseURL}, nil
 	}
@@ -390,7 +398,8 @@ func (s *Service) Delete(ctx context.Context, name string) error {
 }
 
 // Test runs the provider's read-only probe and reports a class, never provider output.
-func (s *Service) Test(ctx context.Context, name string) (TestResult, error) {
+// Without a path it proves login only; a path adds a read-only access check.
+func (s *Service) Test(ctx context.Context, name, path string) (TestResult, error) {
 	c, err := s.Get(ctx, name)
 	if err != nil {
 		return TestResult{}, err
@@ -401,6 +410,17 @@ func (s *Service) Test(ctx context.Context, name string) (TestResult, error) {
 		return TestResult{Class: "unsupported", Reason: "this connection type has no health probe"}, nil
 	}
 	if err := pr.Probe(ctx); err != nil {
+		return failure(err), nil
+	}
+	if path == "" {
+		return TestResult{OK: true, Class: "ok"}, nil
+	}
+	pp, ok := p.(PathProber)
+	if !ok {
+		return TestResult{Class: "unsupported", Reason: "path checks are only supported for vault connections"}, nil
+	}
+	path, _, _ = strings.Cut(path, "#")
+	if err := pp.ProbePath(ctx, path); err != nil {
 		return failure(err), nil
 	}
 	return TestResult{OK: true, Class: "ok"}, nil

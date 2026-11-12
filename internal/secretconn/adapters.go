@@ -23,6 +23,11 @@ type Prober interface {
 	Probe(ctx context.Context) error
 }
 
+// PathProber is the optional read-only check that a credential can reach one path.
+type PathProber interface {
+	ProbePath(ctx context.Context, path string) error
+}
+
 // vaultLoad returns the live Vault settings and credentials for one connection.
 type vaultLoad func(ctx context.Context) (cfg store.VaultSettings, current, previous string, graceUntil time.Time, err error)
 
@@ -67,10 +72,24 @@ func (p *vaultProvider) Probe(ctx context.Context) error {
 	return nil
 }
 
+// ProbePath checks the credential can read path, without reading its data.
+func (p *vaultProvider) ProbePath(ctx context.Context, path string) error {
+	cfg, cur, _, _, err := p.load(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: credential unreadable", secretsource.ErrUnavailable)
+	}
+	if err := p.res.ProbePath(ctx, cfg, cur, path); err != nil {
+		return vaultError(p.name, err)
+	}
+	return nil
+}
+
 // vaultError maps to one sentinel and never echoes the server's error bodies.
 func vaultError(name string, err error) error {
 	var re *vaultapi.ResponseError
 	switch {
+	case errors.Is(err, vault.ErrPathDenied):
+		return fmt.Errorf("%w: vault connection %s policy denies the path", secretsource.ErrDenied, name)
 	case errors.Is(err, vault.ErrSecretMissing):
 		return fmt.Errorf("%w: vault connection %s", secretsource.ErrNotFound, name)
 	case errors.As(err, &re):

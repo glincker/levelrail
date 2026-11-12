@@ -45,12 +45,17 @@ func (c *Controller) appliedSnapshot(ctx context.Context, containerName string, 
 			secretKeys = append(secretKeys, ref.Name)
 		}
 	}
+	envHashes := store.AppEnvHashes(c.serviceName, literal, secretValues)
+	for k, h := range store.VaultEnvHashes(c.serviceName, desired.VaultEnv) {
+		envHashes[k] = h
+		secretKeys = append(secretKeys, k)
+	}
 	fields := store.AppliedFields(*desired)
 	fields[store.AppliedFieldSecretKeys] = strings.Join(secretKeys, ",")
 	return &store.AppliedConfig{
 		ServiceName: c.serviceName,
 		Release:     containerName,
-		EnvHashes:   store.AppEnvHashes(c.serviceName, literal, secretValues),
+		EnvHashes:   envHashes,
 		Fields:      fields,
 	}
 }

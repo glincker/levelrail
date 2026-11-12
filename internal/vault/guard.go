@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -22,10 +23,43 @@ const maxRedirects = 3
 // blockedIP always rejects link-local (cloud metadata), unspecified and multicast,
 // and rejects loopback and private ranges unless the admin allowed them.
 func blockedIP(ip net.IP, allowPrivate bool) bool {
-	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+	if alwaysBlockedRule(ip) != "" {
 		return true
 	}
 	return !allowPrivate && (ip.IsPrivate() || ip.IsLoopback())
+}
+
+// alwaysBlockedRule names the never-allowed range ip falls in, "" when none.
+func alwaysBlockedRule(ip net.IP) string {
+	switch {
+	case ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast():
+		return "link-local (cloud metadata) range"
+	case ip.IsUnspecified():
+		return "unspecified address"
+	case ip.IsMulticast():
+		return "multicast range"
+	}
+	return ""
+}
+
+// metadataHosts are names that resolve to a cloud metadata service.
+var metadataHosts = map[string]bool{"metadata.google.internal": true, "metadata": true, "instance-data": true}
+
+// AddressRule reports the always-blocked rule a literal host hits, "" when the
+// host passes. Names are only checked against metadata hosts: the dial-time
+// guard still covers whatever a name resolves to.
+func AddressRule(host string) string {
+	host = strings.Trim(strings.ToLower(host), "[]")
+	if metadataHosts[host] {
+		return "cloud metadata host"
+	}
+	if i := strings.IndexByte(host, '%'); i >= 0 {
+		host = host[:i]
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return alwaysBlockedRule(ip)
+	}
+	return ""
 }
 
 // guardedClient checks the resolved IP at dial time, so DNS rebinding cannot

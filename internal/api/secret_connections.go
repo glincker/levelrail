@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secretconn"
@@ -19,7 +21,7 @@ type SecretConnectionService interface {
 	Create(ctx context.Context, actor, name string, in secretconn.Input) (secretconn.Connection, error)
 	Update(ctx context.Context, name string, in secretconn.Input) (secretconn.Connection, error)
 	Delete(ctx context.Context, name string) error
-	Test(ctx context.Context, name string) (secretconn.TestResult, error)
+	Test(ctx context.Context, name, path string) (secretconn.TestResult, error)
 }
 
 // SetSecretConnections wires the connection service after the router is built, as the boot registry needs the router's settings.
@@ -81,6 +83,12 @@ type secretConnectionRequest struct {
 	Credential    string                 `json:"credential,omitempty"`
 	CredentialRef string                 `json:"credential_ref,omitempty"`
 	Config        secretConnectionConfig `json:"config"`
+}
+
+// secretConnectionTestRequest is the optional body of the test route; an empty
+// Path proves login only.
+type secretConnectionTestRequest struct {
+	Path string `json:"path,omitempty"`
 }
 
 type secretConnectionTestResponse struct {
@@ -219,7 +227,12 @@ func (rt *Router) handleTestSecretConnection(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	name := r.PathValue("name")
-	res, err := svc.Test(r.Context(), name)
+	var req secretConnectionTestRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	res, err := svc.Test(r.Context(), name, strings.TrimSpace(req.Path))
 	if err != nil {
 		rt.writeSecretConnectionError(w, "api: test secret connection failed", err)
 		return

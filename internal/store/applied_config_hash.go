@@ -54,6 +54,20 @@ func AppEnvHashes(serviceName string, literal, secretValues map[string]string) m
 	return out
 }
 
+// VaultEnvHashes hashes each external secret reference (never its value) per
+// env var, so adding, changing or removing a reference reads as env drift.
+func VaultEnvHashes(serviceName string, refs map[string]VaultEnvRef) map[string]string {
+	out := make(map[string]string, len(refs))
+	for k, r := range refs {
+		text := r.SecretRef()
+		if text == "" {
+			text = "legacy:" + r.Path + "#" + r.Key
+		}
+		out[k] = HashEnvValue(serviceName, k, "vault:"+text)
+	}
+	return out
+}
+
 // AppliedFields summarizes the scalar settings baked into a container at
 // creation. Resources and health are applied live, so they are not here.
 func AppliedFields(svc DesiredService) map[string]string {

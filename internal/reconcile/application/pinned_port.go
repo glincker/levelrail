@@ -348,6 +348,16 @@ func (e *requiredSecretError) Error() string {
 
 const reasonRequiredSecretMissing = "RequiredSecretMissing"
 
+// reasonSecretResolveFailed marks a create blocked because an external secret
+// reference could not be read. The wrapped error names the reference and
+// connection, never a value.
+const reasonSecretResolveFailed = "SecretResolveFailed"
+
+type secretResolveError struct{ err error }
+
+func (e *secretResolveError) Error() string { return e.err.Error() }
+func (e *secretResolveError) Unwrap() error { return e.err }
+
 func createFailureReason(err error) string {
 	var remote *publishedPortsRemoteError
 	if errors.As(err, &remote) {
@@ -356,6 +366,10 @@ func createFailureReason(err error) string {
 	var missing *requiredSecretError
 	if errors.As(err, &missing) {
 		return reasonRequiredSecretMissing
+	}
+	var unresolved *secretResolveError
+	if errors.As(err, &unresolved) {
+		return reasonSecretResolveFailed
 	}
 	var exhausted *docker.PoolExhaustedError
 	if errors.As(err, &exhausted) {

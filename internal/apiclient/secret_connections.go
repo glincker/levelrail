@@ -80,8 +80,13 @@ func (c *Client) DeleteSecretConnection(ctx context.Context, name string) error 
 }
 
 // TestSecretConnection calls POST /api/v1/settings/secret-connections/{name}/test.
-func (c *Client) TestSecretConnection(ctx context.Context, name string) (SecretConnectionTest, error) {
+// An empty path proves login only; a path adds a read-only access check.
+func (c *Client) TestSecretConnection(ctx context.Context, name, path string) (SecretConnectionTest, error) {
 	var out SecretConnectionTest
-	err := c.do(ctx, http.MethodPost, secretConnectionsPath+"/"+url.PathEscape(name)+"/test", nil, &out)
+	var body any
+	if path != "" {
+		body = map[string]string{"path": path}
+	}
+	err := c.do(ctx, http.MethodPost, secretConnectionsPath+"/"+url.PathEscape(name)+"/test", body, &out)
 	return out, err
 }

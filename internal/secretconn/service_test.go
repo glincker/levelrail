@@ -258,7 +258,7 @@ func TestTestConnectionUsesProbeAndReportsClassOnly(t *testing.T) {
 		class string
 	}{{nil, "ok"}, {secretsource.ErrDenied, "denied"}, {errors.New("boom " + credCanary), "unavailable"}} {
 		svc.Build = func(Connection) secretsource.Provider { return probeFake{secretsource.NewFake("pv"), c.err} }
-		res, err := svc.Test(ctx, "pv")
+		res, err := svc.Test(ctx, "pv", "")
 		if err != nil || res.Class != c.class || res.OK != (c.err == nil) || strings.Contains(res.Reason, credCanary) {
 			t.Errorf("probe %v => %+v, %v", c.err, res, err)
 		}
@@ -270,8 +270,70 @@ func TestVaultProbeReadsNoSecret(t *testing.T) {
 	svc, _ := newSvc(store.VaultSettings{})
 	ctx := context.Background()
 	_, _ = svc.Create(ctx, "u", "pv", Input{Type: TypeVault, Config: Config{Address: srv.URL}, Credential: credCanary})
-	res, err := svc.Test(ctx, "pv")
+	res, err := svc.Test(ctx, "pv", "")
 	if err != nil || !res.OK {
 		t.Fatalf("probe = %+v, %v", res, err)
+	}
+}
+
+func TestCreateRejectsBlockedAddressesNamingRule(t *testing.T) {
+	svc, _ := newSvc(store.VaultSettings{})
+	for addr, rule := range map[string]string{
+		"http://169.254.169.254":          "link-local",
+		"http://[fd00:ec2::254]:8200":     "", // private, allowed by default
+		"http://0.0.0.0:8200":             "unspecified",
+		"http://239.1.1.1":                "multicast",
+		"http://metadata.google.internal": "metadata host",
+	} {
+		_, err := svc.Create(context.Background(), "u", "n"+strings.NewReplacer(":", "", ".", "", "/", "", "[", "", "]", "").Replace(addr)[:6], Input{Type: TypeVault, Config: Config{Address: addr}, Credential: "t"})
+		if rule == "" {
+			if err != nil {
+				t.Errorf("%s: unexpected %v", addr, err)
+			}
+			continue
+		}
+		if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), rule) {
+			t.Errorf("%s: err = %v, want invalid naming %q", addr, err, rule)
+		}
+	}
+}
+
+func TestPathProbeReportsDeniedAndNotFoundWithoutValues(t *testing.T) {
+	caps := []string{"read"}
+	metaStatus := http.StatusOK
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "lookup-self"):
+			_, _ = w.Write([]byte(`{"data":{"id":"x"}}`))
+		case strings.HasSuffix(r.URL.Path, "capabilities-self"):
+			_, _ = w.Write([]byte(`{"capabilities":["` + strings.Join(caps, `","`) + `"],"data":{"capabilities":["` + strings.Join(caps, `","`) + `"]}}`))
+		case strings.Contains(r.URL.Path, "/metadata/"):
+			w.WriteHeader(metaStatus)
+			if metaStatus == http.StatusOK {
+				_, _ = w.Write([]byte(`{"data":{"current_version":1}}`))
+			}
+		default:
+			t.Errorf("unexpected request %s (a value read)", r.URL.Path)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	svc, _ := newSvc(store.VaultSettings{})
+	ctx := context.Background()
+	_, _ = svc.Create(ctx, "u", "pv", Input{Type: TypeVault, Config: Config{Address: srv.URL}, Credential: credCanary})
+	// The fake vault above does not check the token, so any credential logs in.
+	check := func(want string) {
+		t.Helper()
+		res, err := svc.Test(ctx, "pv", "app1#key")
+		if err != nil || res.Class != want {
+			t.Fatalf("class = %q (%v), want %q", res.Class, err, want)
+		}
+	}
+	check("ok")
+	caps = []string{"deny"}
+	check("denied")
+	caps, metaStatus = []string{"read"}, http.StatusNotFound
+	check("not_found")
+	if res, _ := svc.Test(ctx, "pv", ""); res.Class != "ok" {
+		t.Fatalf("login-only probe = %+v", res)
 	}
 }

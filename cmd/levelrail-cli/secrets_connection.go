@@ -17,13 +17,16 @@ func secretsConnectionUsage(prog string) string {
   %[1]s secrets connection create NAME --type vault|doppler|infisical|onepassword [config flags] (--credential-file PATH|- | --credential-ref NS/KEY)
   %[1]s secrets connection update NAME [config flags] [--credential-file PATH|- | --credential-ref NS/KEY]
   %[1]s secrets connection delete NAME [flags]
-  %[1]s secrets connection test NAME [flags]
+  %[1]s secrets connection test NAME [--path PATH[#key]] [flags]
 
 Named connections are read with secret://NAME/path#key references. The existing
 Vault settings appear as the connection "vault" and existing providers keep
 their names; change those with "secrets provider". Credentials are stored
 encrypted and never shown. Config flags: --address, --namespace, --mount,
 --auth-method, --role-id (Vault); --project, --environment, --path, --base-url.
+"test" proves login only; with --path on a Vault connection it also checks the
+credential's policy allows reading that path (no value is read or returned).
+Addresses in the link-local, metadata, unspecified or multicast ranges are refused.
 `, prog)
 }
 
@@ -145,6 +148,8 @@ func runSecretsConnectionDelete(prog string, args []string, stdout, stderr io.Wr
 
 func runSecretsConnectionTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "secrets connection test", secretsConnectionJSONUsage, stderr)
+	var path string
+	fs.StringVar(&path, "path", "", "also check read access to this secret path (PATH[#key], relative to the connection mount) without reading its value")
 	args, name := splitLeadingName(args)
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -158,13 +163,17 @@ func runSecretsConnectionTest(prog string, args []string, stdout, stderr io.Writ
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	res, err := client.TestSecretConnection(context.Background(), name)
+	res, err := client.TestSecretConnection(context.Background(), name, path)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("test secret connection: %w", err))
 	}
 	code := renderOrFail(stdout, stderr, of, res, func() {
 		if res.OK {
-			_, _ = fmt.Fprintf(stdout, "%s: connection ok\n", name)
+			if path == "" {
+				_, _ = fmt.Fprintf(stdout, "%s: connection ok (proves login only, add --path to check a secret path)\n", name)
+				return
+			}
+			_, _ = fmt.Fprintf(stdout, "%s: connection ok and %s is readable by the credential\n", name, path)
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "%s: connection failed (%s): %s\n", name, res.Class, res.Reason)

@@ -107,7 +107,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {
-		desired.EnvDirty = existing.EnvDirty || !maps.Equal(existing.Env, req.Env)
+		desired.EnvDirty = existing.EnvDirty || !maps.Equal(existing.Env, req.Env) || !maps.Equal(existing.VaultEnv, desired.VaultEnv)
 	}
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken

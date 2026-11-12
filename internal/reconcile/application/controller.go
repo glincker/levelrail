@@ -1072,6 +1072,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		if err := c.createAndStart(ctx, target, desired, released); err != nil {
 			reason, err := c.createFailure(err)
 			c.traceAbort(ctx, desired, target, reason, err)
+			// Without this a blocked create leaves the optimistic "succeeded" attempt in place.
+			c.recordRolloutFailure(ctx, desired, err)
+			c.markGateFailure(ctx, desired, reason)
 			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
@@ -1706,7 +1709,7 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	if len(desired.VaultEnv) > 0 {
 		vaultEnvVars, err := c.resolveVaultEnv(ctx, desired.VaultEnv)
 		if err != nil {
-			return nil, fmt.Errorf("resolve vault env: %w", err)
+			return nil, &secretResolveError{err: fmt.Errorf("resolve vault env: %w", err)}
 		}
 		for k, v := range vaultEnvVars {
 			env[k] = v
