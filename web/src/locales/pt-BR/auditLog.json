@@ -1,0 +1,103 @@
+{
+  "table": {
+    "label": "Log de auditoria",
+    "time": "Hora",
+    "actor": "Autor",
+    "agent": "Agent",
+    "client": "Cliente",
+    "ability": "Permissão",
+    "method": "Método",
+    "path": "Caminho",
+    "status": "Status"
+  },
+  "page": {
+    "description": "Quem alterou o quê: toda escrita, deploy ou requisição de nível raiz, além das renovações automáticas de certificado, das mais recentes para as mais antigas. Requisições somente de leitura não são registradas aqui.",
+    "title": "Log de auditoria",
+    "emptyTitle": "Nenhuma entrada encontrada",
+    "emptyFiltered": "Nenhuma entrada corresponde a estes filtros.",
+    "emptyNone": "Ainda não há requisições auditadas registradas."
+  },
+  "labels": {
+    "certIssued": "Certificado emitido",
+    "certRenewed": "Certificado renovado",
+    "certRenewalRequested": "Renovação de certificado solicitada",
+    "certUploaded": "Certificado enviado",
+    "certRemoved": "Certificado removido",
+    "deviceLoginApproved": "Login da CLI aprovado",
+    "deviceLoginDenied": "Login da CLI negado",
+    "deviceLoginExpired": "Login da CLI expirou",
+    "deviceLoginDismissed": "Aviso de login da CLI dispensado"
+  },
+  "integrity": {
+    "checking": "Verificando a integridade",
+    "intact": "À prova de adulteração: íntegro",
+    "intactDetail": "{{checked}} entradas e {{checkpoints}} checkpoints assinados verificados.",
+    "failed": "A verificação de integridade falhou",
+    "failedDetail_one": "{{count}} problema encontrado. O log de auditoria pode ter sido editado ou truncado.",
+    "failedDetail_many": "{{count}} problemas encontrados. O log de auditoria pode ter sido editado ou truncado.",
+    "failedDetail_other": "{{count}} problemas encontrados. O log de auditoria pode ter sido editado ou truncado.",
+    "unavailable": "Verificação de integridade indisponível",
+    "recheck": "Verificar novamente"
+  },
+  "filters": {
+    "deviceLogin": "Login de dispositivo",
+    "clearPath": "Mostrando uma requisição de login. Limpar",
+    "clientLabel": "Filtrar por cliente",
+    "allClients": "Todos os clientes",
+    "searchPlaceholder": "Buscar autor, caminho, método, endereço",
+    "searchLabel": "Buscar entradas do log de auditoria",
+    "failedOnly": "Somente falhas",
+    "loading": "Carregando...",
+    "loadOlder": "Carregar entradas mais antigas",
+    "rangeLabel": "Filtrar por intervalo de tempo",
+    "anyTime": "Qualquer período",
+    "range": {
+      "1h": "Última hora",
+      "24h": "Últimas 24 horas",
+      "7d": "Últimos 7 dias",
+      "30d": "Últimos 30 dias"
+    },
+    "methodLabel": "Filtrar por método",
+    "anyMethod": "Qualquer método",
+    "actorLabel": "Filtrar por autor",
+    "actorPlaceholder": "Nome do autor",
+    "exportCsv": "Exportar CSV (últimas {{count}} linhas)"
+  },
+  "anchor": {
+    "title": "Âncora de auditoria",
+    "off": "Desativada",
+    "offHint": "Nenhuma cópia externa da cabeça da cadeia de auditoria é exportada.",
+    "offLink": "Definir o webhook da âncora",
+    "exporting": "Exportando",
+    "lastExported": "Última sequência exportada {{seq}}",
+    "at": "em {{time}}",
+    "never": "Nada exportado ainda",
+    "exported": "Exportado",
+    "failed": "Falhou",
+    "dropped": "Descartado",
+    "queued": "Na fila",
+    "lastError": "Último erro",
+    "lastErrorAt": "em {{time}}"
+  },
+  "verify": {
+    "button": "Verificar cadeia",
+    "title": "Verificar a cadeia de auditoria",
+    "description": "Recalcula cada elo de hash. Deixe o intervalo vazio para verificar o log inteiro.",
+    "from": "Da entrada",
+    "to": "Até a entrada",
+    "run": "Verificar",
+    "running": "Verificando",
+    "failedToRun": "Não foi possível executar a verificação.",
+    "okSummary_one": "{{count}} linha verificada, sem quebras.",
+    "okSummary_many": "{{count}} linhas verificadas, sem quebras.",
+    "okSummary_other": "{{count}} linhas verificadas, sem quebras.",
+    "head": "Cabeça da cadeia: entrada {{seq}}",
+    "firstBreak": "Primeira quebra na entrada {{seq}}",
+    "failed": "A verificação da cadeia falhou",
+    "problem": "Entrada {{seq}}: {{reason}}",
+    "rangeEnd": "O intervalo termina na entrada {{seq}}",
+    "outside_one": "Este intervalo está íntegro, mas a cadeia inteira tem {{count}} problema fora dele. Verifique sem um intervalo.",
+    "outside_many": "Este intervalo está íntegro, mas a cadeia inteira tem {{count}} problemas fora dele. Verifique sem um intervalo.",
+    "outside_other": "Este intervalo está íntegro, mas a cadeia inteira tem {{count}} problemas fora dele. Verifique sem um intervalo."
+  }
+}

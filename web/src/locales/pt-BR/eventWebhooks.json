@@ -1,0 +1,63 @@
+{
+  "title": "Webhooks de eventos",
+  "description": "Envie uma requisição HTTPS assinada para o seu próprio endpoint sempre que algo mudar. A entrega é enfileirada, repetida e registrada, e nunca atrasa um deploy.",
+  "add": "Adicionar webhook",
+  "loadError": "Não foi possível carregar os webhooks de eventos: {{message}}",
+  "notConfigured": "Os webhooks de eventos não estão disponíveis neste control plane.",
+  "empty": {
+    "title": "Nenhum webhook de eventos",
+    "description": "Adicione um endpoint HTTPS para ser notificado quando apps forem implantados, usuários mudarem ou configurações forem atualizadas."
+  },
+  "form": {
+    "title": "Adicionar webhook de eventos",
+    "description": "As requisições são assinadas com um segredo exibido uma vez depois que você salvar.",
+    "name": "Nome",
+    "namePlaceholder": "siem",
+    "url": "URL do endpoint",
+    "urlPlaceholder": "https://hooks.example.com/events",
+    "events": "Tipos de evento",
+    "eventsPlaceholder": "apps.*, users.create",
+    "eventsHint": "Tipos ou famílias separados por vírgula, como apps.*. Deixe vazio para receber todos os eventos.",
+    "cancel": "Cancelar",
+    "submit": "Adicionar webhook",
+    "submitting": "Adicionando",
+    "done": "Concluir"
+  },
+  "card": {
+    "allEvents": "Todos os eventos",
+    "paused": "Pausado",
+    "deadBadge": "{{count}} em dead letter",
+    "delivered": "Entregues",
+    "pending": "Pendentes",
+    "dead": "Em dead letter",
+    "lastStatus": "Último status HTTP",
+    "enabled": "Ativado",
+    "log": "Log de entregas",
+    "test": "Enviar teste",
+    "testing": "Enviando",
+    "testOk": "{{name}} aceitou o evento de teste",
+    "testFailed": "{{name}} falhou no teste: {{message}}",
+    "rotate": "Novo segredo",
+    "secretOnce": "Segredo de assinatura, exibido uma vez. Guarde-o agora, ele não pode ser lido novamente.",
+    "delete": "Excluir",
+    "deleteTitle": "Excluir {{name}}?",
+    "deleteDescription": "Seu log de entregas e o segredo de assinatura são removidos. Os eventos deixam de ser enviados imediatamente.",
+    "deleteConfirm": "Excluir webhook",
+    "deleting": "Excluindo"
+  },
+  "deliveries": {
+    "loading": "Carregando entregas",
+    "loadError": "Não foi possível carregar as entregas: {{message}}",
+    "empty": "Ainda não há entregas. Envie um teste ou espere o próximo evento.",
+    "summary": "{{attempts}} tentativas, HTTP {{status}}, {{when}}",
+    "noStatus": "nenhum",
+    "replay": "Reenviar",
+    "replayed": "Entrega enfileirada para outra tentativa",
+    "replayFailed": "Não foi possível reenviar: {{message}}",
+    "state": {
+      "pending": "Pendente",
+      "delivered": "Entregue",
+      "dead": "Em dead letter"
+    }
+  }
+}

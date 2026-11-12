@@ -1,0 +1,69 @@
+{
+  "title": "DNS dinâmico",
+  "description": "Mantém um registro DNS apontando para este servidor quando seu IP público muda. As alterações são aplicadas imediatamente.",
+  "status": {
+    "running": "Em execução",
+    "failing": "Falhando",
+    "off": "Desativado",
+    "label": "Status do atualizador"
+  },
+  "source": {
+    "stored": "Salvo",
+    "default": "Usando padrões"
+  },
+  "enabled": "Ativado",
+  "provider": {
+    "label": "Provedor",
+    "generic": "URL genérica",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "Domínios do DuckDNS",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "URL de atualização",
+    "labelDuckdns": "Token do DuckDNS",
+    "placeholder": "Cole para definir ou substituir",
+    "configured": "Configurado ({{host}})",
+    "configuredNoHost": "Configurado",
+    "notConfigured": "Não configurado",
+    "clear": "Limpar",
+    "cleared": "Credencial limpa."
+  },
+  "advanced": {
+    "toggle": "Avançado",
+    "interval": "Verificar a cada (s)",
+    "timeout": "Timeout (s)",
+    "minGap": "Intervalo mín. entre atualizações (s)",
+    "reassert": "Reenviar a cada (s)",
+    "failAlertAfter": "Alertar após falhas",
+    "quorum": "Quórum de sondas",
+    "probeUrls": "URLs de sonda (uma por linha)",
+    "allowPrivate": "Permitir endereços privados",
+    "summary": "A cada {{interval}}s, timeout de {{timeout}}s, quórum {{quorum}}, alerta após {{failAlertAfter}} falhas",
+    "allowInsecureHttp": "Permitir HTTP simples"
+  },
+  "last": {
+    "title": "Última verificação",
+    "never": "Nenhuma verificação ainda",
+    "ip": "IP {{ip}}",
+    "result": "Resultado: {{result}}",
+    "check": "verificado {{when}}",
+    "change": "alterado {{when}}",
+    "failures": "{{count}} falhas seguidas",
+    "alert": "Alerta ativo"
+  },
+  "result": {
+    "ok": "ok",
+    "failing": "falhando",
+    "pending": "pendente",
+    "not running": "não está rodando"
+  },
+  "save": "Salvar",
+  "saving": "Salvando...",
+  "saved": "DNS dinâmico salvo.",
+  "error": {
+    "number": "Use números inteiros iguais ou maiores que 1."
+  }
+}
