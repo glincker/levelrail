@@ -1,0 +1,192 @@
+{
+  "title": "Trafic",
+  "subtitle": "Débit, erreurs et durée des requêtes servies via l'ingress, sans aucune modification de l'app.",
+  "windowLabel": "Fenêtre de temps",
+  "windows": {
+    "5m": "5 minutes",
+    "1h": "1 heure",
+    "24h": "24 heures",
+    "7d": "7 jours"
+  },
+  "audience": {
+    "referrers": {
+      "title": "Principaux référents",
+      "hint": "Hôtes référents uniquement. Les chemins et les chaînes de requête ne sont jamais stockés. Direct signifie l'absence d'en-tête Referer.",
+      "label": "Référent",
+      "empty": "Pas encore de données de référents dans cette fenêtre."
+    },
+    "countries": {
+      "title": "Principaux pays",
+      "hint": "Pays approximatif issu d'un en-tête CDN ou d'une base GeoIP, jamais stocké par client.",
+      "label": "Pays",
+      "empty": "Aucune donnée de pays. Définissez une base GeoIP ou un en-tête de pays de confiance sur l'ingress pour voir d'où vient le trafic."
+    },
+    "requests": "Requêtes",
+    "share": "Part"
+  },
+  "markers": {
+    "hint": "Les lignes verticales marquent les déploiements. Sélectionnez-en une pour voir ce qui a changé."
+  },
+  "kpi": {
+    "rate": "Requêtes par seconde",
+    "requests": "{{count}} requêtes dans la fenêtre",
+    "error5xx": "Erreurs serveur (5xx)",
+    "error4xx": "Erreurs client (4xx)",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "Latence p99",
+    "upstreamErrors": "{{count}} échecs en amont"
+  },
+  "slo": {
+    "title": "Budget d'erreurs",
+    "objective": "{{objective}} cible {{target}} %",
+    "burn": "Taux de consommation",
+    "burnHint": "1.0x consomme exactement le budget sur la période du SLO",
+    "remaining": "Budget restant",
+    "none": "Aucun SLO n'est défini pour cette app. Ajoutez une alerte de consommation de SLO pour voir ici le budget d'erreurs.",
+    "noneAction": "Configurer une alerte SLO"
+  },
+  "replicas": {
+    "title": "Réplicas",
+    "hint": "Mesuré par adresse en amont à l'ingress.",
+    "upstream": "Réplica",
+    "requests": "Requêtes",
+    "rate": "Req/s",
+    "error5xx": "5xx",
+    "error4xx": "4xx",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99",
+    "empty": "Pas encore de données par réplica. Elles apparaissent dès que des requêtes atteignent un conteneur via l'ingress."
+  },
+  "routes": {
+    "title": "Routes les plus lentes",
+    "topTitle": "Chemins principaux",
+    "topEmpty": "Aucune requête dans cette fenêtre.",
+    "hint": "Pages et routes d'API les plus lentes. Les fichiers statiques sont exclus.",
+    "route": "Route",
+    "requests": "Requêtes",
+    "avg": "Durée moy.",
+    "error5xx": "5xx",
+    "empty": "Aucune route n'a assez de trafic dans cette fenêtre pour être classée.",
+    "kindTabs": "Type de route",
+    "kind": {
+      "page": "Pages",
+      "api": "API",
+      "asset": "Ressources"
+    },
+    "topTitleByKind": {
+      "page": "Pages principales",
+      "api": "Routes d'API principales",
+      "asset": "Ressources principales"
+    },
+    "kindHint": {
+      "page": "Les pages que les gens visitent. Les identifiants et les chaînes de requête ne sont jamais stockés.",
+      "api": "Appels d'API, regroupés par route. Les identifiants et les chaînes de requête ne sont jamais stockés.",
+      "asset": "Fichiers statiques comme les scripts, styles et images. Comptés séparément pour qu'ils n'enterrent pas vos pages."
+    }
+  },
+  "samples": {
+    "title": "Requêtes lentes et en échec",
+    "hint": "Un échantillon de requêtes en échec ou lentes, conservé sur le node qui les a servies.",
+    "empty": "Aucune requête lente ou en échec n'a été échantillonnée dans cette fenêtre.",
+    "requestId": "ID de requête"
+  },
+  "empty": {
+    "title": "Aucun trafic dans cette fenêtre",
+    "description": "Les requêtes apparaissent ici dès que l'app est servie via un domaine. Essayez une fenêtre plus longue ou vérifiez qu'un domaine pointe vers cette app.",
+    "action": "Vérifier les domaines"
+  },
+  "error": {
+    "title": "Le trafic est indisponible",
+    "description": "{{message}}",
+    "retry": "Réessayer"
+  },
+  "charts": {
+    "title": "Graphiques en direct"
+  },
+  "shield": {
+    "title": "Bouclier contre les bots et les abus",
+    "action": "Ajuster les protections",
+    "blocked_one": "{{count}} requête refusée",
+    "blocked_other": "{{count}} requêtes refusées",
+    "blocked_many": "{{count}} requêtes refusées",
+    "none": "Rien n'a été refusé dans cette fenêtre. Ajoutez des limites par client et une liste de blocage de bots sur la page du domaine pour empêcher les scrapers de faire grimper la bande passante.",
+    "reasons": {
+      "rate_limit": "Débit limité",
+      "concurrency": "Trop de requêtes ouvertes",
+      "bad_bot": "Mauvais bot",
+      "body_too_large": "Corps trop volumineux"
+    }
+  },
+  "spikes": {
+    "title": "Pics d'erreurs",
+    "hint": "Périodes où la part d'erreurs serveur s'est démarquée du reste de la fenêtre, rapprochées du déploiement qui avait démarré peu avant.",
+    "none": "Aucun pic d'erreurs dans cette fenêtre.",
+    "peak": "{{rate}} d'erreurs serveur au pic",
+    "detail": "{{errors}} requêtes sur {{requests}} ont échoué. Valeur habituelle pour cette fenêtre : {{baseline}}.",
+    "afterDeploy": "Après le déploiement {{image}} ({{time}})",
+    "noDeploy": "Aucun déploiement récent"
+  },
+  "abuse": {
+    "title": "Défense contre les abus",
+    "subtitle": "Limitez la vitesse à laquelle un client peut solliciter cette app et refusez les adresses et agents malveillants connus. Commencez en mode journalisation seule pour voir ce qui serait bloqué.",
+    "loadError": "Impossible de charger la défense contre les abus : {{message}}",
+    "modeLabel": "Mode",
+    "modes": {
+      "off": "Désactivée",
+      "log_only": "Journalisation seule",
+      "enforce": "Application"
+    },
+    "modeHints": {
+      "off": "Rien n'est vérifié.",
+      "log_only": "Compte ce qui serait bloqué et ne bloque rien.",
+      "enforce": "Refuse les requêtes correspondantes. Les limites de débit répondent 429 avec Retry-After."
+    },
+    "rateLabel": "Requêtes par client",
+    "rps": "Par seconde",
+    "burst": "Rafale",
+    "suggestionFromPeak": "Suggestion d'après votre pic de {{peak}} requêtes par seconde : {{rps}} par client, rafale {{burst}}.",
+    "suggestionDefault": "Pas de trafic récent pour dimensionner. Point de départ suggéré : {{rps}} par client, rafale {{burst}}.",
+    "useSuggestion": "Utiliser la suggestion",
+    "denyCidrs": "Bloquer des adresses",
+    "denyCidrsPlaceholder": "203.0.113.0/24",
+    "denyAgents": "Bloquer des user agents",
+    "denyAgentsPlaceholder": "python-requests",
+    "requireUa": "Refuser les requêtes sans User-Agent",
+    "invalidNumber": "Le débit et la rafale doivent être des nombres.",
+    "previewNeedsRule": "Ajoutez un débit ou une liste de blocage pour prévisualiser son effet.",
+    "previewEmpty": "Aucune requête récente n'est conservée à rejouer pour l'instant, il n'y a donc rien à prévisualiser.",
+    "previewResult": "Aurait bloqué {{blocked}} requêtes récentes sur {{total}} ({{percent}} %)",
+    "previewWindow": "sur les {{minutes}} dernières min",
+    "topClients": "Clients les plus touchés : {{clients}}",
+    "enforceNeedsPreview": "L'application est disponible une fois l'aperçu ci-dessus chargé.",
+    "reasons": {
+      "rate_limit": "Débit limité",
+      "deny_cidr": "Adresse bloquée",
+      "deny_user_agent": "User agent bloqué",
+      "missing_user_agent": "Pas de User-Agent"
+    },
+    "counters": "Autorisées {{allowed}}, seraient bloquées {{wouldBlock}}, bloquées {{blocked}} dans cette fenêtre.",
+    "failOpen_one": "{{count}} requête a été servie sans vérification car la défense a échoué.",
+    "failOpen_other": "{{count}} requêtes ont été servies sans vérification car la défense a échoué.",
+    "failOpen_many": "{{count}} requêtes ont été servies sans vérification car la défense a échoué.",
+    "status": {
+      "Off": "Désactivée",
+      "LogOnly": "Comptage uniquement",
+      "Enforcing": "En application",
+      "Pending": "Application en cours",
+      "NoRoutes": "Rien à protéger",
+      "ClientIPHidden": "Adresses des clients masquées",
+      "InvalidPolicy": "Politique invalide"
+    },
+    "statusHint": {
+      "NoRoutes": "L'app n'a actuellement aucune route via le proxy (arrêtée, en veille ou site statique), la politique n'a donc rien à quoi s'appliquer.",
+      "ClientIPHidden": "Un proxy en amont masque les adresses des visiteurs, donc tous les visiteurs partageraient une seule limite. Définissez les proxys de confiance dans les paramètres de l'ingress."
+    },
+    "save": "Enregistrer",
+    "saveLogOnly": "Commencer en journalisation seule",
+    "startEnforcing": "Commencer l'application",
+    "saved": "Défense contre les abus enregistrée ({{mode}})."
+  }
+}
