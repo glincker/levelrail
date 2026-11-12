@@ -1,0 +1,131 @@
+{
+  "title": "自动扩缩容",
+  "description": "随负载变化增减副本，数量介于你设置的最小值和最大值之间。扩容快，缩容慢，每个决策都会连同原因一起记录。",
+  "loading": "正在加载自动扩缩容",
+  "loadError": "无法加载此应用的自动扩缩容。",
+  "retry": "重试",
+  "empty": {
+    "title": "自动扩缩容已关闭",
+    "body": "应用保持你手动设置的副本数。开启自动扩缩容后，副本数会在最小值和最大值之间跟随负载。开启期间，手动修改副本数会被拒绝。",
+    "action": "设置自动扩缩容"
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_percent": "内存",
+    "requests_per_replica": "每副本请求数"
+  },
+  "reason": {
+    "Pending": "等待首次检查",
+    "WithinTarget": "已达目标",
+    "ScaledUp": "已扩容",
+    "ScaledDown": "已缩容",
+    "MetricsUnavailable": "没有最新指标",
+    "CooldownActive": "冷却中",
+    "Stabilizing": "确认缩容中",
+    "NoCapacity": "没有容量",
+    "SpendCapPaused": "受支出上限限制",
+    "AtMaximum": "已达最大值",
+    "AtMinimum": "已达最小值",
+    "BoundsCorrected": "已调回范围内",
+    "Suspended": "应用已停止",
+    "ScaleFailed": "扩缩容失败",
+    "Flapping": "反复波动"
+  },
+  "blocked": {
+    "cooldown": "冷却",
+    "stabilization": "稳定窗口",
+    "spend_cap": "支出上限",
+    "no_capacity": "没有容量",
+    "max_replicas": "最大副本数",
+    "min_replicas": "最小副本数",
+    "global_ceiling": "全局上限",
+    "step_limit": "步长限制",
+    "no_metrics": "没有指标",
+    "suspended": "应用已停止"
+  },
+  "next": {
+    "no_capacity": "没有节点有空间容纳更多副本。请添加节点、释放容量，或降低应用的 CPU 和内存请求。参见“放置”卡片。",
+    "spend_cap": "支出上限正在生效，因此不会增加副本。请提高预算，或等待下个月重置。",
+    "no_metrics": "指标缺失或已过期，因此副本数保持不变。请检查应用是否在运行，以及指标是否正常采集。",
+    "max_replicas": "负载需要的副本数超过了最大值。如果应用应继续增长，请提高最大值。",
+    "global_ceiling": "运维方的全局副本上限正在限制此应用。请在控制平面上提高 APP_AUTOSCALE_MAX_REPLICAS 以允许更多。",
+    "flapping": "副本数不断改变方向。请在“高级”下放宽容差或延长冷却时间。"
+  },
+  "stats": {
+    "replicas": "副本",
+    "replicasValue": "当前 {{current}}，期望 {{desired}}",
+    "range": "范围",
+    "rangeValue": "{{min}} 到 {{max}}",
+    "band": "高于则扩容，低于则缩容",
+    "bandValue": "+{{up}}% 和 -{{down}}%",
+    "metricValue": "{{value}}{{unit}}，目标 {{target}}{{unit}}",
+    "metricUnknown": "未知"
+  },
+  "actions": {
+    "edit": "编辑策略",
+    "remove": "移除策略"
+  },
+  "form": {
+    "min": "最小副本数",
+    "minHelp": "绝不会少于此数量。",
+    "max": "最大副本数",
+    "maxHelp": "绝不会多于此数量。受运维方全局上限限制。",
+    "metric": "扩缩依据",
+    "metricCpu": "CPU",
+    "metricCpuHelp": "平均使用量，占应用 CPU 限制的百分比。",
+    "metricMemory": "内存",
+    "metricMemoryHelp": "平均使用量，占应用内存限制的百分比。",
+    "metricRequests": "每副本请求数",
+    "metricRequestsHelp": "入口处每秒请求数除以副本数。",
+    "target": "目标（{{unit}}）",
+    "perSecond": " 请求/秒",
+    "targetHelp": "指标要保持的值。只有明显高于或低于此值时，副本数才会变化。",
+    "advanced": "高级",
+    "advancedHelp": "留空的字段使用其默认值。冷却时间和稳定窗口的单位是分钟。",
+    "upTolerance": "高出目标多少时扩容（百分比）",
+    "downTolerance": "低于目标多少时缩容（百分比）",
+    "upCooldown": "两次扩容之间的等待（分钟）",
+    "downCooldown": "缩容之前的等待（分钟）",
+    "stabilization": "缩容确认时长（分钟）",
+    "stepUp": "一次最多增加的副本数",
+    "stepDown": "一次最多减少的副本数",
+    "save": "保存策略",
+    "saving": "保存中",
+    "cancel": "取消",
+    "error": {
+      "replicas": "请输入整数副本数，且最大值不得小于最小值。",
+      "target": "请输入大于零的目标（CPU 和内存最大为 100）。",
+      "advanced": "请检查高级字段：使用整数，且时间至少为 1 秒。"
+    }
+  },
+  "remove": {
+    "title": "移除此策略？",
+    "description": "应用将不再自行扩缩容。",
+    "consequences": {
+      "replicas": "副本数保持在当前值。",
+      "manual": "你可以再次手动设置副本数。",
+      "history": "决策历史会保留。"
+    },
+    "confirm": "移除策略",
+    "pending": "移除中"
+  },
+  "history": {
+    "title": "最近的决策",
+    "empty": "还没有决策。扩缩容变化和保持不变的原因会列在这里。",
+    "loadError": "无法加载历史。",
+    "replicas": "{{from}} 到 {{to}}",
+    "blockedBy": "受限于{{by}}",
+    "kind": {
+      "scaled_up": "已扩容",
+      "scaled_down": "已缩容",
+      "held": "保持不变",
+      "failed": "扩缩容失败",
+      "configured": "策略已更改",
+      "cleared": "策略已移除"
+    }
+  },
+  "toast": {
+    "saved": "自动扩缩容已保存",
+    "removed": "自动扩缩容已移除"
+  }
+}

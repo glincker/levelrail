@@ -1,0 +1,120 @@
+{
+  "title": "{{name}}：画布",
+  "description": "添加应用和数据库，并把它们连接起来。每项更改都是草稿，在保存之前，你会以计划的形式审阅。",
+  "beta": "Beta",
+  "link": "画布",
+  "loadError": "无法为画布加载此项目。请检查网络连接后重新加载。",
+  "asideLabel": "草稿更改",
+  "iacOff": {
+    "title": "平台即代码已关闭",
+    "description": "画布通过平台即代码 API 把你的草稿转成计划，因此必须先开启该功能，才能审阅或应用。",
+    "action": "打开 Beta 功能"
+  },
+  "empty": {
+    "title": "此项目中还没有任何内容",
+    "description": "从草稿面板添加应用或数据库即可开始搭建。在你应用之前不会创建任何内容。"
+  },
+  "draft": {
+    "title": "草稿",
+    "none": "还没有更改。请添加应用或数据库，或者连接这里已有的两个资源。",
+    "count_other": "{{count}} 项待处理更改",
+    "remove": "从草稿中移除：{{label}}",
+    "review": "审阅更改",
+    "discard": "丢弃草稿"
+  },
+  "add": {
+    "app": "添加应用",
+    "database": "添加数据库"
+  },
+  "appForm": {
+    "title": "添加应用",
+    "description": "运行预构建镜像的新应用。应用后它会加入此项目。",
+    "name": "名称",
+    "image": "镜像",
+    "imageHint": "例如 ghcr.io/acme/web:1.2.3",
+    "port": "端口",
+    "submit": "添加到草稿"
+  },
+  "databaseForm": {
+    "title": "添加数据库",
+    "description": "此项目中的托管数据库。应用时才会创建。",
+    "name": "名称",
+    "engine": "引擎",
+    "version": "版本（可选）",
+    "versionHint": "留空则使用引擎默认版本。",
+    "submit": "添加到草稿"
+  },
+  "connect": {
+    "title": "将应用连接到数据库",
+    "app": "应用",
+    "database": "数据库",
+    "envVar": "环境变量（可选）",
+    "envVarHint": "留空则由服务器选择。",
+    "submit": "添加连接",
+    "choose": "选择",
+    "needBoth": "画布上至少需要一个应用和一个数据库才能连接它们。"
+  },
+  "connections": {
+    "title": "连接",
+    "none": "还没有应用连接到数据库。",
+    "remove": "移除 {{app}} 到 {{database}} 的连接",
+    "more": "显示 {{shown}} / {{total}} 个连接。"
+  },
+  "limits": {
+    "title": "暂不可在此编辑",
+    "body": "卷、域名、负载均衡器和依赖项。请在应用本身中更改这些内容。"
+  },
+  "errors": {
+    "required": "此字段为必填项。",
+    "format": "请使用小写字母、数字和连字符，并以字母或数字开头和结尾。",
+    "taken": "画布上已存在同名的内容。",
+    "port": "请输入 1 到 65535 之间的端口。",
+    "envVar": "请使用字母、数字和下划线，且不能以数字开头。"
+  },
+  "ops": {
+    "addApp": "添加应用 {{name}}（{{image}}）",
+    "addDatabase": "添加 {{engine}} 数据库 {{name}}",
+    "connect": "将 {{app}} 连接到 {{database}}",
+    "disconnect": "断开 {{app}} 与 {{database}} 的连接"
+  },
+  "review": {
+    "title": "审阅更改",
+    "description": "这是应用后会执行的操作。目前还没有任何更改。",
+    "planning": "正在生成计划...",
+    "planError": {
+      "title": "无法生成计划",
+      "retry": "重试",
+      "issuesNext": "请返回，修复或移除上面指出的项目，然后重新审阅。",
+      "generic": "请检查服务器是否可达，以及你是否对此项目有写入权限，然后重试。"
+    },
+    "serverChanges": "来自服务器的计划",
+    "steps": {
+      "title": "连接更改",
+      "note": "这些会在上面的计划应用之后按此顺序运行。服务器不会预览它们。",
+      "connect": "将 {{app}} 以 {{envVar}} 连接到 {{database}}",
+      "connectAuto": "将 {{app}} 连接到 {{database}}",
+      "disconnect": "断开 {{app}} 与 {{database}} 的连接（{{envVar}}）",
+      "unsupported": "{{app}} 是通过其 app.yaml 而不是通过连接来访问 {{database}} 的，因此画布无法移除它。请改为编辑 app.yaml。",
+      "loading": "正在查找当前连接..."
+    },
+    "nothing": "没有可应用的内容。",
+    "apply": "应用",
+    "applying": "应用中...",
+    "back": "返回编辑",
+    "applied": {
+      "title": "已应用",
+      "failed": "部分更改未能应用",
+      "failedNext": "失败步骤之后的内容均未运行。请修复下方指出的原因，然后重新审阅剩余的更改。",
+      "done": "完成"
+    },
+    "stepStatus": {
+      "applied": "已应用",
+      "failed": "失败：{{error}}",
+      "skipped": "已跳过"
+    }
+  },
+  "toast": {
+    "applied": "画布更改已应用。",
+    "failed": "部分画布更改未能应用。"
+  }
+}
