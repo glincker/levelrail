@@ -1,0 +1,30 @@
+{
+  "trigger": "Klonen",
+  "title": "Projekt klonen",
+  "description": "Kopiert die Apps dieses Projekts in ein neues Projekt. Geklonte Apps werden angehalten erstellt, sodass nichts läuft, bis Sie sie starten.",
+  "name": "Name des neuen Projekts",
+  "nameHint": "Ist der Name vergeben, wird eine Zahl angehängt.",
+  "options": {
+    "envVars": "Umgebungsvariablen kopieren",
+    "settings": "App-Einstellungen kopieren",
+    "domains": "Domains",
+    "domainsNone": "Keine",
+    "domainsPlaceholder": "Platzhalter-Hostnamen"
+  },
+  "preview": "Plan anzeigen",
+  "previewing": "Wird geprüft...",
+  "apply": "Klon erstellen",
+  "applying": "Wird geklont...",
+  "cancel": "Schließen",
+  "plan": {
+    "apps": "Zu erstellende Apps ({{count}})",
+    "appLine": "{{source}} nach {{name}}",
+    "envVars": "{{count}} Umgebungsvariablen",
+    "suspended": "Geklonte Apps werden angehalten erstellt. Starten Sie sie im neuen Projekt, sobald die Werte gesetzt sind.",
+    "secrets": "Secret-Schlüssel, die Werte benötigen ({{count}})",
+    "secretsLink": "Im neuen Projekt setzen",
+    "skipped": "Übersprungen ({{count}})",
+    "empty": "Nichts zu erstellen."
+  },
+  "done": "Projekt geklont."
+}

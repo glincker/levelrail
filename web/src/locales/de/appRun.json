@@ -1,0 +1,21 @@
+{
+  "title": "In einem neuen Container ausführen",
+  "description": "Startet einen neuen Container aus dem Image dieser App, mit deren Umgebungsvariablen und Secrets, führt den Befehl einmal aus und zeigt die Ausgabe. Der laufende Container bleibt unberührt.",
+  "service": "Dienst",
+  "command": "Befehl",
+  "placeholder": "bin/migrate",
+  "hint": "Wird direkt ausgeführt, ohne Shell. Argumente mit Leerzeichen setzen Sie in Anführungszeichen. Für Pipes oder Umleitungen verwenden Sie sh -c \"...\".",
+  "run": "Ausführen",
+  "running": "Läuft...",
+  "exitCode": "Exit-Code",
+  "state": "Status",
+  "output": "Ausgabe",
+  "empty": "(keine Ausgabe)",
+  "truncated": "Die Ausgabe war länger, als der Server speichert. Es wird nur der letzte Teil angezeigt.",
+  "accessRule": "Einmalige Ausführungen und geplante Jobs folgen den Zugriffsregeln für Konsolen-Exec: Zum Ausführen eines Befehls benötigen Sie Root-Zugriff auf diese App und aktiviertes Exec.",
+  "timeout": "Zeitlimit (s)",
+  "timeoutPlaceholder": "3600",
+  "cancel": "Abbrechen",
+  "history": "Letzte Ausführungen",
+  "outputWithheld": "Die Ausgabe wird zurückgehalten. Zum Anzeigen von Job-Ausgaben ist Lesezugriff auf sensible Daten erforderlich."
+}

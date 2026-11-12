@@ -1,0 +1,47 @@
+{
+  "title": "Dateien",
+  "description": "Inline-Konfigurationsdateien, die beim Start in den Container geschrieben werden. Geheime Dateien werden nach dem Speichern nie wieder angezeigt.",
+  "empty": "Noch keine Inline-Dateien.",
+  "emptyHint": "Fügen Sie eine Datei hinzu, um sie beim Deployment in die App einzubinden.",
+  "add": "Datei hinzufügen",
+  "edit": "{{path}} bearbeiten",
+  "delete": "{{path}} löschen",
+  "redacted": "Verborgen",
+  "secretBadge": "Secret",
+  "size": "{{count}} Bytes",
+  "loadError": "Dateien konnten nicht geladen werden.",
+  "dialog": {
+    "addTitle": "Datei hinzufügen",
+    "editTitle": "Datei bearbeiten",
+    "description": "Wird als einzelne Datei im App-Container gespeichert.",
+    "path": "Pfad",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "Modus",
+    "modePlaceholder": "0644",
+    "content": "Inhalt",
+    "contentRedactedHint": "Diese Datei ist geheim. Geben Sie neuen Inhalt ein, um sie zu ersetzen.",
+    "secret": "Geheime Datei",
+    "secretHelp": "Geheimer Inhalt wird nach dem Speichern nie wieder angezeigt.",
+    "restart": "Jetzt neu starten, um zu übernehmen",
+    "cancel": "Abbrechen",
+    "save": "Datei speichern",
+    "saving": "Wird gespeichert..."
+  },
+  "validation": {
+    "path": "Der Pfad muss absolut sein.",
+    "mode": "Der Modus muss oktal sein, zum Beispiel 0644."
+  },
+  "deleteDialog": {
+    "title": "Datei löschen?",
+    "description": "{{path}} wird aus der App entfernt.",
+    "restart": "Jetzt neu starten, um zu übernehmen",
+    "confirm": "Löschen",
+    "deleting": "Wird gelöscht..."
+  },
+  "toast": {
+    "saved": "Datei gespeichert.",
+    "saveFailed": "Datei konnte nicht gespeichert werden.",
+    "deleted": "Datei gelöscht.",
+    "deleteFailed": "Datei konnte nicht gelöscht werden."
+  }
+}

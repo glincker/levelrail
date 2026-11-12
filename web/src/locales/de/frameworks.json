@@ -1,0 +1,29 @@
+{
+  "title": "Framework-Vorlage",
+  "description": "Wählen Sie Ihr Framework, um Port, Health-Check und benötigten Speicher auszufüllen.",
+  "detected": "In Ihrem Repository erkannt",
+  "detectedShort": "Erkannt",
+  "loadFailed": "Framework-Vorlagen konnten nicht geladen werden.",
+  "port": "Port",
+  "healthPath": "Health-Pfad",
+  "buildType": "Build",
+  "outputMode": "Ausgabe",
+  "static": "Statische Website, direkt vom integrierten Webserver ausgeliefert",
+  "envHints": "Zu setzende Umgebungsvariablen",
+  "required": "erforderlich",
+  "volumes": "Persistenter Speicher",
+  "mismatchTitle": "Einstellungen weichen von der Vorlage ab",
+  "mismatchBody": "Dieses Formular verwendet Port {{port}} und Health-Pfad {{health}}. {{name}}-Apps nutzen üblicherweise Port {{presetPort}} und {{presetHealth}}.",
+  "applyFix": "Vorlageneinstellungen verwenden",
+  "applied": "Vorlageneinstellungen angewendet.",
+  "dockerfile": "Optimiertes Dockerfile kopieren",
+  "dockerfileCopied": "Dockerfile in die Zwischenablage kopiert.",
+  "dockerfileFailed": "Das Dockerfile konnte nicht kopiert werden.",
+  "outputModes": {
+    "server": "Node- oder Runtime-Server",
+    "standalone": "Eigenständiges Server-Bundle",
+    "static": "Statische Dateien",
+    "jar": "Ausführbare JAR-Datei",
+    "binary": "Einzelnes Binary"
+  }
+}

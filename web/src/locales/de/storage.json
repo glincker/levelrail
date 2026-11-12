@@ -1,0 +1,61 @@
+{
+  "title": "Speicher",
+  "subtitle": "Was Docker für Ihre Apps auf dem Datenträger hält und was sich gefahrlos freigeben lässt.",
+  "node": {
+    "label": "Node",
+    "local": "Dieser Server",
+    "partial": "Für diesen Node wurden bisher nur Images vermessen.",
+    "unsupportedTitle": "Dieser Node wird noch nicht unterstützt",
+    "unsupported": "Levelrail kann den Speicher dieses Nodes noch nicht lesen. Hier wird nichts geändert.",
+    "retry": "Erneut prüfen"
+  },
+  "engine": {
+    "title": "Engine und Signaturen"
+  },
+  "verdict": {
+    "space": "{{free}} frei von {{total}}.",
+    "health": {
+      "healthy": "Fehlerfrei",
+      "low": "Wenig Speicherplatz",
+      "critical": "Kritisch"
+    },
+    "safe": "{{size}} lassen sich gefahrlos entfernen.",
+    "nothingSafe": "Es muss nichts entfernt werden.",
+    "forecast_one": "Bei der aktuellen Rate in etwa {{count}} Tag voll.",
+    "forecast_other": "Bei der aktuellen Rate in etwa {{count}} Tagen voll."
+  },
+  "disk": {
+    "label": "Speicherbelegung",
+    "legend": "Nach Kategorie filtern",
+    "unmeasured": "Nicht gemessen",
+    "segmentLabel": "{{name}}, {{size}}",
+    "filterLabel": "Filter: {{name}}",
+    "categories": {
+      "appData": "App-Daten",
+      "images": "Images",
+      "buildCache": "Build-Cache",
+      "containersLogs": "Container und Logs",
+      "other": "Sonstiges",
+      "free": "Frei"
+    },
+    "meaning": {
+      "appData": "Volumes und Datenbanken Ihrer Apps. Werden nie automatisch entfernt.",
+      "images": "Docker-Images Ihrer Deployments. Alte und ungenutzte können entfernt werden.",
+      "buildCache": "Layer, die Builds beschleunigen. Gefahrlos zu leeren, der nächste Build läuft nur langsamer.",
+      "containersLogs": "Gestoppte Container und ihre Logdateien.",
+      "other": "Alles andere auf dem Datenträger außerhalb von Levelrail."
+    },
+    "tip": {
+      "sizeShare": "{{size}}, {{share}} des Datenträgers",
+      "reclaimable": "{{size}} lassen sich gefahrlos entfernen",
+      "nothingToFree": "Nichts zu entfernen"
+    }
+  },
+  "actions": {
+    "terminal": "In einem Terminal ausführen",
+    "review": "Bereinigung prüfen"
+  },
+  "errors": {
+    "status": "Die Speicherbelegung konnte gerade nicht gelesen werden."
+  }
+}

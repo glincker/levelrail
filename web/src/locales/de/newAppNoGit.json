@@ -1,0 +1,7 @@
+{
+  "urlTitle": "URL des öffentlichen Repositorys",
+  "connect": {
+    "title": "Sie brauchen private Repositorys oder Deployments bei jedem Push?",
+    "reason": "Mit einem Git-Anbieter wählen Sie Ihre Repositorys aus einer Liste und deployen bei jedem Push erneut. Alles oben Genannte funktioniert auch ohne."
+  }
+}

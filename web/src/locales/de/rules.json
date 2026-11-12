@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "Bedingungen",
+    "if": "Wenn",
+    "and": "Und",
+    "then": "Dann",
+    "fieldLabel": "Feld von Bedingung {{n}}",
+    "nameLabel": "Name von Bedingung {{n}}",
+    "operatorLabel": "Operator von Bedingung {{n}}",
+    "valueLabel": "Wert von Bedingung {{n}}",
+    "removeCondition": "Bedingung {{n}} entfernen",
+    "addCondition": "UND",
+    "maxConditions": "Höchstens {{count}} Bedingungen pro Regel.",
+    "actionLabel": "Aktion",
+    "selectAction": "Aktion auswählen",
+    "ruleName": "Name",
+    "description": "Beschreibung (optional)",
+    "cancel": "Abbrechen",
+    "viewCode": "Code anzeigen",
+    "hideCode": "Code ausblenden",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "codeLabel": "Regel wie gespeichert",
+    "codeHelp": "Genau so wird die Regel gespeichert. Nur lesbar."
+  }
+}
