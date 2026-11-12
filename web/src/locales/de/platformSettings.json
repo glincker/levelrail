@@ -1,0 +1,149 @@
+{
+  "breadcrumb": {
+    "settings": "Einstellungen",
+    "platform": "Plattform",
+    "label": "Brotkrümelnavigation"
+  },
+  "overview": {
+    "title": "Plattform",
+    "description": "Wo dieser Server erreichbar ist und wie er Zertifikate erhält. Jede Kachel öffnet ihre eigene Seite.",
+    "tilesLabel": "Plattformstatus",
+    "open": "Öffnen",
+    "loading": "Wird geprüft",
+    "https": {
+      "title": "HTTPS",
+      "off": "HTTPS nicht aktiviert",
+      "offLine": "Das Dashboard und Ihre Apps werden ohne vertrauenswürdiges Zertifikat ausgeliefert.",
+      "on": "HTTPS aktiviert",
+      "onLine": "{{domain}} wird über HTTPS ausgeliefert.",
+      "enable": "HTTPS aktivieren"
+    },
+    "ingress": {
+      "title": "Ingress",
+      "healthy": "Ingress in Ordnung",
+      "healthyLine": "Die Ports 80 und 443 antworten auf {{host}}.",
+      "healthyNoHost": "Die Ports 80 und 443 antworten.",
+      "attention": "Ingress erfordert Aufmerksamkeit",
+      "attentionLine": "Öffnen Sie die Seite, um zu sehen, welcher Port oder welche Adresse das Problem ist."
+    },
+    "addresses": {
+      "title": "Adressen",
+      "set": "Dashboard-Adresse gesetzt",
+      "setLine": "{{url}}",
+      "unset": "Keine Dashboard-Adresse",
+      "unsetLine": "Legen Sie die öffentliche Adresse fest, über die Personen dieses Dashboard erreichen."
+    },
+    "dns": {
+      "title": "DNS-Anbieter",
+      "connected": "DNS: {{providers}} verbunden",
+      "connectedLine": "Records und DNS-01-Zertifikate können für Sie übernommen werden.",
+      "none": "Kein DNS-Anbieter verbunden",
+      "noneLine": "Verbinden Sie einen, um Wildcard-Zertifikate auszustellen und Records anzulegen."
+    },
+    "search": {
+      "label": "Einstellungen durchsuchen",
+      "placeholder": "Plattformeinstellungen durchsuchen",
+      "hint": "Drücken Sie /, um zu suchen",
+      "results": "Ergebnisse der Plattformeinstellungen",
+      "empty": "Keine Plattformeinstellung passt zu \"{{query}}\".",
+      "count_one": "{{count}} Einstellung",
+      "count_other": "{{count}} Einstellungen",
+      "go": "{{title}} auf der Seite {{page}} öffnen"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "Aktivieren Sie ein vertrauenswürdiges Zertifikat für das Dashboard und sehen Sie, wie es um das Zertifikat jeder Domain steht."
+    },
+    "ingress": {
+      "title": "Ingress",
+      "description": "Wie Traffic diesen Server erreicht: der Proxy, seine Ports und eine Anleitung für den Betrieb hinter Ihrem eigenen Reverse-Proxy."
+    },
+    "addresses": {
+      "title": "Adressen",
+      "description": "Die Dashboard-Adresse, die Basisdomain für Apps, automatische Fallback-Hostnamen und DNS-Automatisierung."
+    },
+    "dnsProviders": {
+      "title": "DNS-Anbieter",
+      "description": "Verbinden Sie einen DNS-Anbieter, damit Zertifikate und Records für Sie übernommen werden."
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "Ingress",
+    "addresses": "Adressen",
+    "dns-providers": "DNS-Anbieter"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "HTTPS aktivieren",
+      "description": "Ein vertrauenswürdiges Zertifikat ausstellen und das Dashboard über HTTPS ausliefern."
+    },
+    "certificates": {
+      "title": "Zertifikatsübersicht",
+      "description": "Ablauf und Aussteller jedes Zertifikats, mit einem Link zum Zertifikatscenter."
+    },
+    "ingressSettings": {
+      "title": "Ingress-Einstellungen",
+      "description": "Primäre Domain, ACME-E-Mail und HSTS."
+    },
+    "dns01": {
+      "title": "DNS-Challenge für jeden Host",
+      "description": "Die DNS-01-Challenge für alle Zertifikate verwenden, für Server hinter CGNAT oder mit geschlossenem Port 80."
+    },
+    "ddns": {
+      "title": "Dynamisches DNS",
+      "description": "Einen DNS-Namen auf die öffentliche IP dieses Servers zeigen lassen."
+    },
+    "ingressEdge": {
+      "title": "Ingress-Edge",
+      "description": "Der eingebaute Proxy und die Ports, auf denen er lauscht."
+    },
+    "connectivity": {
+      "title": "Ingress-Konnektivität",
+      "description": "Ob die Ports 80 und 443 auf der Adresse dieses Servers antworten."
+    },
+    "reverseProxy": {
+      "title": "Reverse-Proxy-Anleitung",
+      "description": "Diese Plattform hinter Ihrem eigenen Reverse-Proxy betreiben."
+    },
+    "dashboardUrl": {
+      "title": "Dashboard-Adresse",
+      "description": "Die öffentliche URL, die in Links, E-Mails und Webhooks verwendet wird."
+    },
+    "appsBaseDomain": {
+      "title": "Basisdomain der Apps",
+      "description": "Die Domain, auf der neue Apps eine Subdomain erhalten."
+    },
+    "fallbackDomains": {
+      "title": "Fallback-Domains",
+      "description": "Automatische Hostnamen für Apps, die noch keine Domain haben."
+    },
+    "domainAutomation": {
+      "title": "Domain-Automatisierung",
+      "description": "DNS-Records für neue Domains automatisch anlegen."
+    },
+    "cloudflareDns": {
+      "title": "Cloudflare DNS",
+      "description": "API-Token für DNS-Records und DNS-01-Zertifikate."
+    },
+    "route53Dns": {
+      "title": "Route 53 DNS",
+      "description": "AWS-Zugangsdaten für Records gehosteter Zonen."
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "Dienstkonto für Cloud-DNS-Zonen."
+    }
+  },
+  "strip": {
+    "label": "Plattformstatus",
+    "httpsOff": "HTTPS nicht aktiviert",
+    "httpsOn": "HTTPS aktiviert",
+    "enable": "HTTPS aktivieren",
+    "address": "Dashboard-Adresse",
+    "addressUnset": "Nicht gesetzt",
+    "manage": "Plattformeinstellungen"
+  }
+}

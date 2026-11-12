@@ -1,0 +1,97 @@
+{
+  "title": "Beta-Funktionen",
+  "description": "Jede Funktion, die sich noch bewähren muss. Schalten Sie sie hier ein; wird sie beim Start eingebunden, starten Sie von derselben Karte aus neu, um sie anzuwenden.",
+  "groups": {
+    "beta": "Beta",
+    "experimental": "Experimentell"
+  },
+  "banner": {
+    "title": "{{name}} ist eine Beta-Funktion",
+    "body": "Schalten Sie sie ein, um fortzufahren.",
+    "bodyRestart": "Schalten Sie sie ein und starten Sie dann neu, um sie anzuwenden.",
+    "ready": "{{name}} ist eingeschaltet.",
+    "takeMeThere": "Dorthin gehen",
+    "unknown": "Diese Funktion ist diesem Server nicht bekannt."
+  },
+  "state": {
+    "on": "An",
+    "off": "Aus",
+    "onByEnv": "Durch die Servereinstellung eingeschaltet",
+    "onBySetting": "In den Einstellungen eingeschaltet"
+  },
+  "toggle": {
+    "label": "{{name}} einschalten",
+    "on": "{{name}} eingeschaltet",
+    "off": "{{name}} ausgeschaltet",
+    "error": "{{name}} konnte nicht geändert werden: {{message}}",
+    "lockedByEnv": "Durch die Servereinstellung eingeschaltet, kann hier daher nicht ausgeschaltet werden."
+  },
+  "env": {
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "line": "Einstellungszeile",
+    "systemd": "systemd",
+    "docker": "Docker"
+  },
+  "docs": "Dokumentation lesen",
+  "error": "Beta-Funktionen konnten nicht geladen werden: {{message}}",
+  "readOnly": "Nur ein Administrator kann Beta-Funktionen schalten.",
+  "restart": {
+    "needed": "Gespeichert. Starten Sie neu, um diese Änderung anzuwenden. Laufende Deploys und Log-Streams werden unterbrochen und danach fortgesetzt.",
+    "now": "Jetzt neu starten",
+    "unsupported": "Diese Installation kann sich nicht selbst neu starten, da kein Prozess-Supervisor erkannt wurde. Starten Sie die Control Plane neu und prüfen Sie dann erneut.",
+    "recheck": "Erneut prüfen",
+    "manual": "Stattdessen vom Server aus neu starten",
+    "askAdmin": "Gespeichert. Ein Administrator muss die Control Plane neu starten, um es anzuwenden."
+  },
+  "options": {
+    "open": "Stattdessen CLI oder Serverkonfiguration verwenden",
+    "title": "{{name}} auf anderem Weg einschalten",
+    "description": "Der Schalter auf der Karte bewirkt dasselbe. Nutzen Sie diese Wege, wenn Sie die Befehlszeile bevorzugen oder den Server per Konfiguration verwalten.",
+    "cli": "CLI",
+    "cliLine": "CLI-Befehl",
+    "cliRestartLine": "CLI-Befehl mit Neustart",
+    "server": "Serverkonfiguration",
+    "reload": "systemd neu laden",
+    "restartUnit": "Die Unit neu starten",
+    "recreate": "Den Container neu erstellen",
+    "restartNote": "Diese Funktion wird beim Start des Servers eingebunden, daher wendet ein Neustart sie an."
+  },
+  "profile": {
+    "title": "Serverprofil",
+    "description": "Bestimmt, welche optionalen Teile des Servers starten. Der Wechsel zwischen Profilen löscht nie Daten. Das meiste wird beim Start eingebunden, daher wendet ein Neustart eine Änderung an.",
+    "names": {
+      "minimal": "Minimal",
+      "standard": "Standard",
+      "suite": "Suite"
+    },
+    "summary": {
+      "minimal": "Ein Server, so leichtgewichtig wie möglich. Nichts läuft, was Sie nicht angefordert haben.",
+      "standard": "Die Standardinstallation. Alles, was ein kleines Team braucht.",
+      "suite": "Standard plus Mesh, Plugins und jede experimentelle Funktion."
+    },
+    "facts": {
+      "meshOn": "Mesh an",
+      "meshOff": "Mesh aus",
+      "pluginsOn": "Plugins an",
+      "pluginsOff": "Plugins aus",
+      "experimentalOn": "Alle experimentellen Funktionen an",
+      "experimentalOff": "Experimentelle Funktionen aus",
+      "retention": "Metriken und Logs werden {{days}} Tage aufbewahrt",
+      "loopbackAgent": "Agent-Listener auf Loopback, bis ein Node registriert wird",
+      "lazyLoops": "Backup-Schleifen starten, wenn ein Backup geplant wird",
+      "recommendations": "Backup und Schlüsselrotation werden als Empfehlungen angezeigt, nicht als Punkte der Bewertung",
+      "sbom": "Build-SBOMs an"
+    },
+    "current": "Aktuell",
+    "use": "Dieses Profil verwenden",
+    "confirm": "Bestätigen und anwenden",
+    "saved": "Profil {{name}} gespeichert",
+    "error": "Das Profil konnte nicht geändert werden: {{message}}",
+    "recommended": "Dieser Rechner hat wenig Arbeitsspeicher. Das Profil {{name}} passt am leichtesten.",
+    "pinned": "Vom Server festgelegt",
+    "pinnedHelp": "{{env}} ist auf dem Server gesetzt und bestimmt daher das Profil. Entfernen Sie es dort, um auf dieser Seite zu wählen.",
+    "neverDeletes": "Ein Wechsel nach unten stoppt Schleifen und blendet Routen aus, löscht aber nie Zeilen. Wechsel, die registrierte Nodes oder aktivierte Plugins verwaisen ließen, werden abgelehnt.",
+    "readOnly": "Nur ein Administrator kann das Serverprofil ändern."
+  }
+}
