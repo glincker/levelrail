@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (556 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (558 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -50,7 +50,7 @@ Generated from `internal/catalog.Templates` (556 entries as of this build). Run 
 | [Backups](#backups) | 2 |
 | [Databases](#databases) | 1 |
 | [Mail](#mail) | 2 |
-| [Networking](#networking) | 4 |
+| [Networking](#networking) | 6 |
 
 ## AI
 
@@ -722,6 +722,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Blocky](https://0xerr0r.github.io/blocky/) | DNS proxy and ad blocker with caching and conditional forwarding. The install form carries config.yml as an editable file, so it starts with a small denylist and public upstream resolvers. | `blocky` |  |
 | [CoreDNS](https://coredns.io/manual/toc/) | Plugin based DNS server on the official image. The install form carries the Corefile as an editable file, so it starts as a caching forwarder with health and readiness endpoints. | `coredns` |  |
 | [DDNS Updater](https://github.com/qdm12/ddns-updater) | Keeps DNS records pointed at your changing public IP for many providers, with a small web page showing each record's status. The install form carries config.json as an editable file, so you add your providers there. | `ddns-updater` |  |
+| [Syncthing Discovery Server](https://docs.syncthing.net/users/stdiscosrv.html) | Private global discovery server that lets your Syncthing devices find each other without the public one. Plain HTTP mode, meant to sit behind your own TLS proxy. | `syncthing-discovery` |  |
+| [Syncthing Relay Server](https://docs.syncthing.net/users/strelaysrv.html) | Private relay server that carries Syncthing traffic between devices that cannot connect directly. Exposes a small status page. | `syncthing-relay` |  |
 | [UpSnap](https://github.com/seriousm4x/UpSnap/wiki) | Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports. | `upsnap` |  |
 
 {/* END GENERATED CATALOG TABLE */}

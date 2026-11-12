@@ -71196,6 +71196,202 @@
    }
   },
   {
+   "id": "syncthing-discovery",
+   "aliases": [],
+   "name": "Syncthing Discovery Server",
+   "slogan": "Private global discovery server that lets your Syncthing devices find each other without the public one. Plain HTTP mode, meant to sit behind your own TLS proxy.",
+   "description": "Private global discovery server that lets your Syncthing devices find each other without the public one. Plain HTTP mode, meant to sit behind your own TLS proxy.",
+   "first_run": [
+    "Put a TLS proxy in front of the address, then add it to each device under the global discovery servers setting."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/syncthing/syncthing",
+   "documentation_url": "https://docs.syncthing.net/users/stdiscosrv.html",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/syncthing/syncthing/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "syncthing-discovery",
+     "image": "syncthing/discosrv",
+     "tag": "2.1.7",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "syncthing-discovery",
+     "image": "syncthing/discosrv:2.1.7",
+     "ports": [
+      8443
+     ],
+     "volumes": [
+      "data -> /var/stdiscosrv"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "syncthing-discovery"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "syncthing-discovery"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "syncthing-relay",
+   "aliases": [],
+   "name": "Syncthing Relay Server",
+   "slogan": "Private relay server that carries Syncthing traffic between devices that cannot connect directly. Exposes a small status page.",
+   "description": "Private relay server that carries Syncthing traffic between devices that cannot connect directly. Exposes a small status page.",
+   "first_run": [
+    "Add the relay address to each device under the relay servers setting, using port 22067. The status page is on port 22070."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/syncthing/syncthing",
+   "documentation_url": "https://docs.syncthing.net/users/strelaysrv.html",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/syncthing/syncthing/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "syncthing-relay",
+     "image": "syncthing/relaysrv",
+     "tag": "2.1.7",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "syncthing-relay",
+     "image": "syncthing/relaysrv:2.1.7",
+     "ports": [
+      22070,
+      22067
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "syncthing-relay"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "tandoor-recipes",
    "aliases": [],
    "name": "Tandoor Recipes",

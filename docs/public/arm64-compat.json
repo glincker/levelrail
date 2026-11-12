@@ -2,14 +2,14 @@
   "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 556,
-    "images": 600,
+    "templates": 558,
+    "images": 602,
     "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 147,
+    "arm64_unknown": 149,
     "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 150
+    "image_arm64_unknown": 152
   },
   "templates": [
     {
@@ -11027,6 +11027,34 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "syncthing-discovery",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "syncthing/discosrv:2.1.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "syncthing-relay",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "syncthing/relaysrv:2.1.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

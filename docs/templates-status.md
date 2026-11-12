@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 147 not checked** of 556 templates.
+Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 149 not checked** of 558 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -627,6 +627,8 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 147 not checked** of 
 | `surrealdb` | not checked | - |
 | `swagger-ui` | not checked | - |
 | `syncthing` | yes | linux/amd64, linux/arm64 |
+| `syncthing-discovery` | not checked | - |
+| `syncthing-relay` | not checked | - |
 | `tandoor-recipes` | yes | linux/amd64, linux/arm64 |
 | `tasmoadmin` | not checked | - |
 | `tautulli` | yes | linux/amd64, linux/arm64 |

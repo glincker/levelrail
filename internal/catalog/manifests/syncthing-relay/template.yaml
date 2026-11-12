@@ -1,0 +1,26 @@
+id: syncthing-relay
+name: Syncthing Relay Server
+description: Private relay server that carries Syncthing traffic between devices that cannot connect directly. Exposes a small status page.
+icon: share
+category: Networking
+documentation_url: https://docs.syncthing.net/users/strelaysrv.html
+source_repo: https://github.com/syncthing/syncthing
+license: MPL-2.0
+license_class: copyleft
+license_url: https://github.com/syncthing/syncthing/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Add the relay address to each device under the relay servers setting, using port 22067. The status page is on port 22070.
+first_boot_seconds: 300
+domains:
+  - service: syncthing-relay
+    port: 22070
+    description: Public address of the relay status page.
+healthcheck:
+  service: syncthing-relay
+  port: 22070
+  path: /status

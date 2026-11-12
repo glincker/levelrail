@@ -602,6 +602,8 @@ export const MISSING_TEMPLATE_LOGOS: readonly string[] = [
   'step-ca',
   'stump',
   'swagger-ui',
+  'syncthing-discovery',
+  'syncthing-relay',
   'tasmoadmin',
   'telegraf',
   'tempo',

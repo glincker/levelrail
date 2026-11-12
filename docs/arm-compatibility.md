@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-394 listed, 15 amd64 only, 147 unknown, of 556 templates.
+394 listed, 15 amd64 only, 149 unknown, of 558 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -504,6 +504,8 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `surrealdb` | unknown | not tested |
 | `swagger-ui` | unknown | not tested |
 | `syncthing` | listed | pass |
+| `syncthing-discovery` | unknown | not tested |
+| `syncthing-relay` | unknown | not tested |
 | `tandoor-recipes` | listed | not tested |
 | `tasmoadmin` | unknown | not tested |
 | `tautulli` | listed | pass |

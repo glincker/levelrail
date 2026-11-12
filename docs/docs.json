@@ -1061,6 +1061,8 @@
               "self-host/blocky",
               "self-host/coredns",
               "self-host/ddns-updater",
+              "self-host/syncthing-discovery",
+              "self-host/syncthing-relay",
               "self-host/upsnap"
             ]
           },
