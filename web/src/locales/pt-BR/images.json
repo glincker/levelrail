@@ -1,0 +1,246 @@
+{
+  "title": "Imagens",
+  "subtitle": "Toda imagem de container em um node: qual o tamanho dela, de quais apps e deploys veio e o que pode ser removido com segurança.",
+  "node": {
+    "label": "Node",
+    "local": "Este servidor"
+  },
+  "tiles": {
+    "count": "Imagens",
+    "size": "Disco usado",
+    "reclaimable": "Pode ser liberado",
+    "protected": "Mantidas",
+    "review": "Revisar e limpar",
+    "countSplit": "{{platform}} da plataforma, {{other}} outras",
+    "freeableSplit": "Imagens da plataforma {{platform}}, outras imagens {{other}}",
+    "keptSplit": "{{used}} em uso por containers"
+  },
+  "columns": {
+    "image": "Imagem",
+    "size": "Tamanho",
+    "apps": "Usada por",
+    "status": "Status",
+    "created": "Construída",
+    "actions": "Ações"
+  },
+  "untagged": "sem tag",
+  "status": {
+    "removable": "Pode ser removida",
+    "kept": "Mantida: {{reason}}"
+  },
+  "roles": {
+    "live": "No ar",
+    "rollback_target": "Alvo de rollback",
+    "recent": "Deploy recente",
+    "history": "Deploy mais antigo"
+  },
+  "sources": {
+    "webhook": "Push do Git",
+    "manual": "Deploy manual",
+    "image": "Deploy de imagem",
+    "compose": "Compose",
+    "promote": "Promovido",
+    "auto_rollback": "Rollback automático",
+    "git_push": "Remoto de push do Git",
+    "clone": "Clone",
+    "schedule": "Agendado",
+    "pr_comment": "Comentário de PR",
+    "other": "Deploy"
+  },
+  "cleanup": {
+    "button": "Liberar {{size}}",
+    "nothing": "Nada para remover",
+    "title": "Remover imagens não utilizadas",
+    "description": "Estas imagens não estão no ar, não são alvo de rollback, não estão entre os {{keep}} deploys mais recentes de nenhum app e nenhum container as usa.",
+    "consequences": "Imagens no ar, alvos de rollback e deploys recentes nunca são removidos. As imagens removidas são baixadas ou reconstruídas novamente se um app precisar delas.",
+    "confirm": "Remover imagens",
+    "pending": "Removendo...",
+    "done": "{{count}} imagens removidas, {{size}} liberados.",
+    "partial": "{{count}} imagens não puderam ser removidas.",
+    "failed": "A limpeza falhou",
+    "preview": "Pré-visualizando a limpeza..."
+  },
+  "detail": {
+    "close": "Fechar",
+    "lineage": "Linhagem",
+    "lineageEmpty": "Nenhum deploy desta plataforma usou esta imagem.",
+    "layers": "Camadas",
+    "layersEmpty": "Os tamanhos das camadas não estão disponíveis para esta imagem.",
+    "digest": "Digest",
+    "localBuild": "Construída neste servidor, sem digest de registry",
+    "promotedFrom": "Promovida para {{app}}",
+    "verify": "Verificar assinatura",
+    "verifying": "Verificando...",
+    "layerSize": "{{size}} ({{percent}}%)"
+  },
+  "verify": {
+    "verified": "Assinatura verificada",
+    "unsigned": "Nenhuma assinatura encontrada",
+    "failed": "A verificação da assinatura falhou",
+    "not_configured": "Nenhuma chave de assinatura está configurada",
+    "no_registry_digest": "Construída localmente, nada a verificar",
+    "fix": "Defina um arquivo de chave pública nas configurações do control plane e verifique novamente."
+  },
+  "dockerDegraded": {
+    "message": "O Docker não está respondendo. Deploys e containers estão pausados.",
+    "recheck": "Verificar novamente",
+    "rechecking": "Verificando...",
+    "details": "Saúde do Docker",
+    "dismiss": "Dispensar até o Docker se recuperar"
+  },
+  "dockerHealth": {
+    "title": "Engine do Docker",
+    "recheck": "Verificar novamente",
+    "freeSpace": "Espaço livre",
+    "summary": "Docker {{version}} em {{platform}}. {{reclaimable}} de {{total}} podem ser recuperados.",
+    "status": {
+      "ok": "OK",
+      "warn": "Requer atenção",
+      "fail": "Com falha",
+      "unknown": "Desconhecido"
+    }
+  },
+  "lint": {
+    "title": "Verificação de Dockerfile",
+    "help": "Cole um Dockerfile para verificar usuários root, tags base flutuantes, verificações de saúde ausentes e builds de estágio único.",
+    "inputLabel": "Conteúdo do Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "check": "Verificar",
+    "applyFix": "Aplicar correções seguras",
+    "clean": "Nenhum achado.",
+    "line": "Linha {{line}}:",
+    "severity": {
+      "warn": "Aviso",
+      "info": "Dica"
+    },
+    "toast": {
+      "failed": "Não foi possível verificar o Dockerfile.",
+      "fixed": "Correções aplicadas ao texto acima."
+    }
+  },
+  "policy": {
+    "title": "Política de assinatura",
+    "validate": "Validar",
+    "validating": "Validando...",
+    "refLabel": "Referência de imagem para testar",
+    "refPlaceholder": "Opcional: repo@sha256:... para verificar uma imagem",
+    "error": "Não foi possível validar a política de assinatura.",
+    "valid": "A política de assinatura está funcionando.",
+    "invalid": "A política de assinatura requer atenção.",
+    "fingerprint": "Chave {{value}}.",
+    "sample": {
+      "verified": "A imagem de amostra está assinada pela sua chave.",
+      "unsigned": "A imagem de amostra não tem assinatura.",
+      "failed": "A imagem de amostra falhou na verificação.",
+      "not_configured": "Nenhuma chave pública está configurada.",
+      "no_registry_digest": "A amostra não tem um digest de registry para verificar."
+    },
+    "issues": {
+      "key_unreadable": "Não foi possível ler o arquivo da chave pública, então as verificações de assinatura estão desativadas. Corrija o caminho da chave e reinicie.",
+      "enforce_without_key": "A imposição foi solicitada, mas não há uma chave utilizável, então nada é imposto. Defina um arquivo de chave pública válido.",
+      "key_without_enforcement": "Uma chave está carregada, mas a imposição está desativada, então imagens sem assinatura ainda podem ser promovidas.",
+      "sample_failed": "A imagem de amostra não foi verificada com a sua chave."
+    }
+  },
+  "signatures": {
+    "enforce": "As promoções exigem uma assinatura de imagem válida.",
+    "off": "As verificações de assinatura rodam sob demanda."
+  },
+  "empty": {
+    "title": "Nenhuma imagem neste node",
+    "description": "As imagens aparecem aqui após o primeiro deploy ou build."
+  },
+  "error": {
+    "title": "Não foi possível carregar as imagens",
+    "retry": "Verificar novamente",
+    "unsupported": "Este node ainda não informa as imagens dele."
+  },
+  "banner": {
+    "description": "As imagens aparecem aqui após o primeiro deploy ou build, com o tamanho, os apps que as usam e se podem ser removidas com segurança.",
+    "diagram": {
+      "layers": "Camadas",
+      "node": "Node"
+    }
+  },
+  "rootOnly": "Somente a conta root pode remover imagens. Você ainda pode navegar e filtrá-las.",
+  "badge": {
+    "other": "Outra",
+    "inUse": "Em uso"
+  },
+  "filters": {
+    "label": "Filtrar imagens",
+    "all": "Todas",
+    "platform": "Plataforma",
+    "other": "Outras",
+    "unused": "Não utilizadas",
+    "in_use": "Em uso",
+    "search": "Buscar por nome ou id",
+    "sort": "Ordenar",
+    "sortSize": "Maiores primeiro",
+    "sortAge": "Mais recentes primeiro",
+    "empty": "Nenhuma imagem corresponde a esta visualização.",
+    "reset": "Mostrar todas as imagens"
+  },
+  "row": {
+    "notRemovable": "Esta imagem não pode ser removida",
+    "select": "Selecionar {{name}}",
+    "selectAll": "Selecionar todas as imagens removíveis",
+    "remove": "Remover",
+    "removeNamed": "Remover {{name}}"
+  },
+  "bar": {
+    "label": "Imagens selecionadas",
+    "summary_one": "{{count}} selecionada, {{size}} liberados",
+    "summary_many": "{{count}} selecionadas, {{size}} liberados",
+    "summary_other": "{{count}} selecionadas, {{size}} liberados",
+    "clear": "Limpar",
+    "remove": "Remover selecionadas"
+  },
+  "remove": {
+    "title": "Remover imagens",
+    "description": "Revise o que será removido. Nada é excluído até você confirmar.",
+    "includeUnmanaged": "Remover também outras imagens que nenhum container usa",
+    "previewing": "Verificando o que pode ser removido...",
+    "nothing": "Nada para remover aqui.",
+    "listLabel": "Imagens a remover",
+    "total_one": "{{count}} imagem, {{size}} serão liberados",
+    "total_many": "{{count}} imagens, {{size}} serão liberados",
+    "total_other": "{{count}} imagens, {{size}} serão liberados",
+    "warning": "As imagens removidas são baixadas ou reconstruídas novamente quando um app precisar delas.",
+    "confirm_one": "Remover {{count}} imagem",
+    "confirm_many": "Remover {{count}} imagens",
+    "confirm_other": "Remover {{count}} imagens",
+    "removing": "Removendo...",
+    "cancel": "Cancelar",
+    "done": "Concluído",
+    "resultRemoved_one": "{{count}} imagem removida, {{size}} liberados.",
+    "resultRemoved_many": "{{count}} imagens removidas, {{size}} liberados.",
+    "resultRemoved_other": "{{count}} imagens removidas, {{size}} liberados.",
+    "resultFailed_one": "{{count}} imagem não pôde ser removida:",
+    "resultFailed_many": "{{count}} imagens não puderam ser removidas:",
+    "resultFailed_other": "{{count}} imagens não puderam ser removidas:",
+    "announce_one": "{{count}} imagem removida.",
+    "announce_many": "{{count}} imagens removidas.",
+    "announce_other": "{{count}} imagens removidas."
+  },
+  "retention": {
+    "title": "Retenção de imagens",
+    "description": "Quantas imagens de deploy recentes este app mantém para rollback. A limpeza remove as mais antigas na próxima execução.",
+    "keepLabel": "Imagens a manter",
+    "hint": "0 segue a configuração global, caso contrário {{min}} ou mais.",
+    "preview": "Pré-visualizar remoções",
+    "save": "Salvar",
+    "saved": "Retenção de imagens salva",
+    "saveFailed": "Não foi possível salvar a retenção de imagens",
+    "protected": "Este app está no ambiente protegido {{env}}, então mantém pelo menos {{global}} imagens.",
+    "wouldRemove_one": "A próxima limpeza removeria {{count}} imagem, liberando {{size}}.",
+    "wouldRemove_many": "A próxima limpeza removeria {{count}} imagens, liberando {{size}}.",
+    "wouldRemove_other": "A próxima limpeza removeria {{count}} imagens, liberando {{size}}.",
+    "alwaysKept": "A imagem em execução, as fixações de rollback, a release bem-sucedida anterior, imagens compartilhadas com outros apps e imagens de que um deploy na fila ou retido precisa são sempre mantidas.",
+    "source": {
+      "app": "Mantém as {{count}} imagens de deploy mais recentes (definido neste app).",
+      "app_default": "Mantém as {{count}} imagens de deploy mais recentes (o padrão dos apps).",
+      "global": "Mantém as {{count}} imagens de deploy mais recentes (a configuração global, {{global}})."
+    }
+  }
+}
