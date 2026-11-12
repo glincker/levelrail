@@ -1,0 +1,83 @@
+{
+  "title": "Deploy-Richtlinien",
+  "description": "Leitplanken, die vor jedem Deploy geprüft werden, auf Organisations-, Projekt- und Umgebungsebene. Pro Regel gewinnt die spezifischste Ebene.",
+  "notConfigured": "Deploy-Richtlinien sind auf dieser Control Plane nicht verfügbar.",
+  "rootOnly": "Nur Instanz-Admins können Deploy-Richtlinien ändern. Einen Testlauf können Sie weiterhin ausführen.",
+  "scope": {
+    "label": "Geltungsbereich",
+    "org": "Organisation",
+    "project": "Projekt",
+    "environment": "Umgebung",
+    "idLabel": "ID des Projekts oder der Umgebung",
+    "idPlaceholder": "proj_123"
+  },
+  "mode": {
+    "off": "Aus",
+    "warn": "Warnen",
+    "enforce": "Durchsetzen"
+  },
+  "modeLabel": "Modus für {{rule}}",
+  "valueLabel": "Wert für {{rule}}",
+  "rules": {
+    "allowed_registries": {
+      "title": "Erlaubte Image-Registries",
+      "hint": "Kommagetrennte Hosts, zum Beispiel ghcr.io, docker.io.",
+      "placeholder": "ghcr.io, docker.io"
+    },
+    "require_readiness_probe": {
+      "title": "Eine Readiness-Probe verlangen",
+      "hint": "Apps müssen vor dem Deploy eine Readiness-Probe definieren."
+    },
+    "max_memory_mb": {
+      "title": "Speicherobergrenze (MB)",
+      "hint": "Eine App ohne Speicherlimit überschreitet die Obergrenze.",
+      "placeholder": "2048"
+    },
+    "max_cpu": {
+      "title": "CPU-Obergrenze (Kerne)",
+      "hint": "Eine App ohne CPU-Limit überschreitet die Obergrenze.",
+      "placeholder": "2"
+    },
+    "forbid_privileged": {
+      "title": "Privilegierte Container verbieten",
+      "hint": "Blockiert Apps, die den privilegierten Modus anfordern."
+    },
+    "forbid_host_mounts": {
+      "title": "Host-Bind-Mounts verbieten",
+      "hint": "Optionale kommagetrennte Pfadpräfixe, die erlaubt bleiben.",
+      "placeholder": "/srv/data"
+    },
+    "required_labels": {
+      "title": "Erforderliche Labels",
+      "hint": "Kommagetrennte Label-Schlüssel, die jede App setzen muss.",
+      "placeholder": "team, cost-center"
+    },
+    "max_replicas": {
+      "title": "Replikat-Obergrenze",
+      "hint": "Höchstzahl an Replikaten, die eine App betreiben darf.",
+      "placeholder": "5"
+    }
+  },
+  "save": "Richtlinie speichern",
+  "saved": "Richtlinie gespeichert",
+  "clear": "Geltungsbereich leeren",
+  "cleared": "Richtlinie geleert",
+  "dryRun": "Testlauf gegen aktuelle Apps",
+  "dryRunHint": "Zeigt die obigen Regeln in der Vorschau, ohne sie zu speichern.",
+  "stored": {
+    "title": "Gespeicherte Richtlinien",
+    "empty": "Noch keine Richtlinien. Fügen Sie oben eine Regel hinzu und speichern Sie sie, oder führen Sie zuerst einen Testlauf aus, um zu sehen, was fehlschlagen würde.",
+    "edit": "Bearbeiten"
+  },
+  "result": {
+    "summary": "{{checked}} Apps geprüft, {{failing}} würden blockiert, {{warning}} mit Warnungen.",
+    "clean": "Jede App besteht diese Regeln.",
+    "wouldFail": "Würde blockiert",
+    "warns": "Nur Warnung",
+    "next": "Nächste Aktion"
+  },
+  "errors": {
+    "idRequired": "Geben Sie die ID des Projekts oder der Umgebung für diesen Geltungsbereich ein.",
+    "numberRequired": "{{rule}} benötigt eine Zahl über null."
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "title": "Ruhezustand-Verlauf",
+  "description": "Wann diese App in den Ruhezustand ging, was sie geweckt hat und wie lange das Aufwachen dauerte. Unten sind die letzten 7 Tage dargestellt.",
+  "loading": "Ruhezustand-Verlauf wird geladen",
+  "loadError": "Der Ruhezustand-Verlauf konnte nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "asleepNow": "Im Ruhezustand seit {{since}}",
+  "awakeNow": "Wach",
+  "timelineLabel": "Wach und im Ruhezustand in den letzten 7 Tagen",
+  "timelineStart": "Vor 7 Tagen",
+  "timelineEnd": "Jetzt",
+  "legend": {
+    "asleep": "Im Ruhezustand",
+    "awake": "Wach"
+  },
+  "stats": {
+    "asleep7d": "Ruhezustand, 7 Tage",
+    "asleep30d": "Ruhezustand, 30 Tage",
+    "wakes7d": "Aufwachen, 7 Tage",
+    "avgLatency": "Durchschnittliches Aufwachen",
+    "p95Latency": "Langsamste 5% der Aufwachvorgänge",
+    "lastSlept": "Zuletzt eingeschlafen",
+    "lastWoke": "Zuletzt aufgewacht",
+    "memorySaved": "Gesparter Speicher, 30 Tage",
+    "memorySavedValue": "{{value}} GiB-Stunden",
+    "none": "Noch keine"
+  },
+  "events": {
+    "title": "Ereignisse",
+    "empty": "Noch nichts aufgezeichnet. Ereignisse erscheinen hier, wenn die App in den Ruhezustand geht oder aufwacht.",
+    "emptyTitle": "Keine Ruhezustand-Ereignisse",
+    "kind": {
+      "slept": "In den Ruhezustand gegangen",
+      "woke": "Aufgewacht",
+      "enabled": "Ruhezustand bei Leerlauf eingeschaltet",
+      "disabled": "Ruhezustand bei Leerlauf ausgeschaltet",
+      "wake_failed": "Aufwachen fehlgeschlagen"
+    },
+    "reason": {
+      "idle_timeout": "Leerlauf-Timeout",
+      "manual": "Manuell",
+      "request": "Anfrage",
+      "schedule": "Zeitplan",
+      "deploy": "Deploy",
+      "api": "API",
+      "port": "Traffic auf einem veröffentlichten Port"
+    },
+    "columns": {
+      "when": "Wann",
+      "event": "Ereignis",
+      "reason": "Grund",
+      "measure": "Dauer / Latenz",
+      "detail": "Detail"
+    },
+    "sleptFor": "{{duration}} im Ruhezustand",
+    "readyIn": "Bereit nach {{duration}}",
+    "idleAfter": "Nach {{minutes}} Min. Leerlauf",
+    "fromSource": "von {{source}}",
+    "byActor": "von {{actor}}"
+  },
+  "disabled": {
+    "title": "Ruhezustand bei Leerlauf ist aus",
+    "body": "Schalten Sie ihn ein, um diese App zu stoppen, solange sie niemand nutzt, und hier zu sehen, wann sie schlief und aufwachte.",
+    "action": "Ruhezustand bei Leerlauf einschalten",
+    "toastError": "Ruhezustand bei Leerlauf konnte nicht eingeschaltet werden"
+  },
+  "badge": {
+    "title": "Im Ruhezustand, wacht bei der nächsten Anfrage auf",
+    "asleepFor": "{{duration}} im Ruhezustand"
+  }
+}

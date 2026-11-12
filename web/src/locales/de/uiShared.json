@@ -1,0 +1,85 @@
+{
+  "saveStatus": {
+    "saving": "Speichern",
+    "saved": "Gespeichert",
+    "error": "Speichern nicht möglich"
+  },
+  "breadcrumb": {
+    "label": "Brotkrümelnavigation"
+  },
+  "pagination": {
+    "label": "Seitennavigation",
+    "status": "Seite {{page}} von {{count}}",
+    "previous": "Vorherige Seite",
+    "next": "Nächste Seite"
+  },
+  "stepper": {
+    "decrease": "Verringern",
+    "increase": "Erhöhen"
+  },
+  "chip": {
+    "remove": "{{label}} entfernen"
+  },
+  "timeRangeControls": {
+    "label": "Zeitraum",
+    "refresh": "Aktualisieren"
+  },
+  "logToolbar": {
+    "level": "Log-Stufe",
+    "levels": {
+      "all": "Alle",
+      "errors": "Fehler",
+      "warnings": "Warnungen",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "filterPlaceholder": "Zeilen filtern",
+    "filterLabel": "Log-Zeilen filtern",
+    "jumpToError": "Zum ersten Fehler springen",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "copiedAnnounce": "In die Zwischenablage kopiert",
+    "download": "Herunterladen",
+    "shownOf": "{{shown}} von {{total}} Zeilen"
+  },
+  "filterChips": {
+    "group": "Aktive Filter",
+    "clearAll": "Alle Filter zurücksetzen",
+    "showing": "{{shown}} von {{total}} angezeigt",
+    "emptyTitle": "Nichts passt zu diesen Filtern",
+    "emptyBody": "Alle {{total}} Einträge sind weiterhin vorhanden. Entfernen Sie einen Filter oder setzen Sie alle zurück.",
+    "status": "Status: {{value}}",
+    "search": "Suche: {{value}}",
+    "tag": "Tag: {{value}}",
+    "environment": "Umgebung: {{value}}",
+    "engine": "Engine: {{value}}",
+    "labels": "Labels: {{value}}"
+  },
+  "listKeys": {
+    "title": "Tastenkürzel",
+    "down": "nächste Zeile",
+    "up": "vorherige Zeile",
+    "select": "Zeile auswählen",
+    "open": "Zeile öffnen",
+    "filter": "Filter fokussieren",
+    "hint": "dies ein- oder ausblenden",
+    "close": "Tastenkürzel ausblenden"
+  },
+  "guidedEmpty": {
+    "viaCli": "Oder über die CLI",
+    "cliLabel": "CLI-Befehl"
+  },
+  "savedViews": {
+    "button": "Ansichten",
+    "label": "Gespeicherte Ansichten",
+    "empty": "Noch keine gespeicherten Ansichten.",
+    "apply": "Ansicht {{name}} anwenden",
+    "delete": "Ansicht {{name}} löschen",
+    "deleted": "Ansicht gelöscht",
+    "saved": "Ansicht {{name}} gespeichert",
+    "namePlaceholder": "Aktuelle Filter speichern als",
+    "shareTeam": "Mit meinem Team teilen",
+    "teamBadge": "Team",
+    "save": "Ansicht speichern"
+  }
+}
