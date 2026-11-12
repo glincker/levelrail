@@ -1,0 +1,192 @@
+{
+  "title": "Bereinigung",
+  "description": "Steuern Sie, wie lange jede Datenart aufbewahrt wird, sehen Sie vor der Ausführung, was eine Bereinigung entfernen würde, und prüfen Sie jeden Lauf.",
+  "tabs": {
+    "label": "Bereiche der Bereinigung",
+    "overview": "Übersicht",
+    "disk": "Festplatte und Docker",
+    "history": "Verlauf"
+  },
+  "loadError": "Die Bereinigungsziele konnten nicht geladen werden: {{message}}",
+  "retry": "Erneut versuchen",
+  "readOnly": "Sie können die Bereinigungseinstellungen ansehen. Zum Ändern der Aufbewahrung, Wechseln der Modi und Ausführen einer Bereinigung ist ein Root-Konto nötig.",
+  "empty": {
+    "title": "Noch keine Bereinigungsziele",
+    "body": "Diese Control Plane hat keine zu bereinigenden Datenarten gemeldet. Prüfen Sie nach dem nächsten Upgrade erneut."
+  },
+  "categories": {
+    "auth": "Anmeldung und Tokens",
+    "audit": "Audit",
+    "deploys": "Deploys",
+    "docker": "Docker",
+    "data": "Daten",
+    "observability": "Observability",
+    "messaging": "Messaging",
+    "other": "Sonstiges"
+  },
+  "hero": {
+    "stored": "Gespeicherte Daten",
+    "reclaimable": "Freigebbar",
+    "storedHint": "Gespeichert von Datenarten, die die Bereinigung verwaltet",
+    "usageLabel": "Wo von der Bereinigung verwaltete Daten liegen",
+    "segmentLabel": "{{category}}: {{size}}, {{percent}}% der Gesamtmenge",
+    "legendFilter": "Nur {{category}} anzeigen",
+    "clearFilter": "Alle Kategorien anzeigen",
+    "lastRun": "Letzter Lauf",
+    "neverRun": "Es lief noch keine Bereinigung",
+    "scheduler": "Scheduler",
+    "schedulerOn": "Alle {{interval}}",
+    "schedulerOff": "Der Scheduler ist aus",
+    "previewCount_one": "{{count}} Datenart ist im Vorschaumodus",
+    "previewCount_other": "{{count}} Datenarten sind im Vorschaumodus",
+    "previewNone": "Nichts wartet im Vorschaumodus",
+    "reviewAction": "Prüfen und aktivieren",
+    "reclaimableHint": "Zeilen und Größe, die die aktivierten Datenarten bei ihrer aktuellen Aufbewahrung entfernen würden",
+    "calculate": "Freigebbares berechnen",
+    "calculating": "{{done}} von {{total}} werden geprüft",
+    "calculateFailed": "{{title}} konnte nicht geprüft werden: {{message}}",
+    "reclaimableNone": "Nichts liegt außerhalb seines Aufbewahrungsfensters"
+  },
+  "group": {
+    "count_one": "{{count}} Datenart",
+    "count_other": "{{count}} Datenarten"
+  },
+  "target": {
+    "usage_one": "{{rows}} Zeile, {{size}}",
+    "usage_other": "{{rows}} Zeilen, {{size}}",
+    "usageEmpty": "Nichts gespeichert",
+    "oldest": "älteste {{when}}",
+    "shareLabel": "{{title}} hält {{percent}}% der Daten von {{category}}",
+    "retention": "Aufbewahren für",
+    "floor": "Mindestens {{days}} Tage",
+    "floorTip": "Die Sicherheitsrichtlinie behält mindestens {{days}} Tage. Wählen Sie einen längeren Zeitraum oder Nie, um alles zu behalten.",
+    "mode": "Modus",
+    "modes": {
+      "off": "Aus",
+      "preview": "Vorschau",
+      "on": "An"
+    },
+    "status": {
+      "off": "Aus",
+      "preview": "Vorschau",
+      "on": "An",
+      "running": "Läuft"
+    },
+    "previewBadge": "Vorschaumodus, noch wird nichts gelöscht",
+    "lastRun": "Letzter Lauf {{when}}",
+    "lastRunDry": "Letzter Lauf {{when}} (Testlauf)",
+    "lastRunFailed": "Letzter Lauf {{when}} fehlgeschlagen",
+    "neverRun": "Nie ausgeführt",
+    "nextRun": "Nächster {{when}}",
+    "noNextRun": "Nicht geplant",
+    "preview": "Vorschau",
+    "previewing": "Wird geprüft...",
+    "cleanNow": "Jetzt bereinigen",
+    "readThrough": "Verwaltet unter Festplatte und Docker",
+    "readThroughAction": "Festplatte und Docker öffnen",
+    "keepForever": "Die Aufbewahrung ist auf Nie gesetzt, daher wird nichts entfernt.",
+    "destructive": "Löscht Daten dauerhaft",
+    "unknown": "-",
+    "lockedOption": "Unter dem Minimum von {{days}} Tagen. Wählen Sie einen längeren Zeitraum."
+  },
+  "impact": {
+    "title": "Was entfernt würde",
+    "summary_one": "Entfernt {{rows}} Zeile, etwa {{size}}, älter als {{days}} Tage.",
+    "summary_other": "Entfernt {{rows}} Zeilen, etwa {{size}}, älter als {{days}} Tage.",
+    "nothing": "Nichts ist älter als {{days}} Tage. Es würde nichts entfernt.",
+    "close": "Schließen",
+    "error": "Vorschau nicht möglich: {{message}}"
+  },
+  "run": {
+    "running": "Alte Daten werden entfernt...",
+    "done_one": "{{rows}} Zeile entfernt, {{size}}. Das Löschen ist endgültig.",
+    "done_other": "{{rows}} Zeilen entfernt, {{size}}. Das Löschen ist endgültig.",
+    "nothing": "Nichts zu entfernen. Keine Zeilen lagen außerhalb des Aufbewahrungsfensters.",
+    "more": "Es bleiben weitere alte Zeilen, führen Sie erneut aus, um fortzufahren.",
+    "failed": "Bereinigung fehlgeschlagen: {{message}}",
+    "dismiss": "Schließen"
+  },
+  "confirmRun": {
+    "title": "{{title}} bereinigen?",
+    "body_one": "Dies entfernt dauerhaft {{rows}} Zeile, etwa {{size}}, älter als {{days}} Tage.",
+    "body_other": "Dies entfernt dauerhaft {{rows}} Zeilen, etwa {{size}}, älter als {{days}} Tage.",
+    "consequence": "Entfernte Zeilen können nicht wiederhergestellt werden. Sonst wird nichts gelöscht.",
+    "action": "Jetzt bereinigen",
+    "cancel": "Abbrechen"
+  },
+  "confirmMode": {
+    "title": "{{title}} einschalten?",
+    "body": "Ab dem nächsten geplanten Lauf werden Zeilen, die älter als {{days}} Tage sind, tatsächlich gelöscht. Bisher wurde nur aufgezeichnet, was entfernt würde.",
+    "consequence": "Gelöschte Zeilen können nicht wiederhergestellt werden.",
+    "action": "Einschalten",
+    "cancel": "Abbrechen"
+  },
+  "confirmShorten": {
+    "title": "{{title}} kürzer aufbewahren?",
+    "body": "Zeilen, die älter als der neue Zeitraum sind, werden beim nächsten Lauf entfernt.",
+    "consequence": "Dies ist eine destruktive Änderung daran, wie lange Daten aufbewahrt werden.",
+    "action": "Aufbewahrung verkürzen",
+    "cancel": "Abbrechen"
+  },
+  "toast": {
+    "retentionSaved": "Aufbewahrung für {{title}} gespeichert.",
+    "retentionError": "Die Aufbewahrung für {{title}} konnte nicht gespeichert werden: {{message}}",
+    "modeSaved": "{{title}} ist jetzt {{mode}}.",
+    "modeError": "{{title}} konnte nicht geändert werden: {{message}}"
+  },
+  "history": {
+    "title": "Lauf-Verlauf",
+    "filters": {
+      "target": "Datenart",
+      "allTargets": "Alle Datenarten",
+      "since": "Von",
+      "until": "Bis",
+      "kind": "Typ",
+      "status": "Status",
+      "allKinds": "Test und echt",
+      "dry": "Testläufe",
+      "real": "Echte Läufe",
+      "allStatuses": "Beliebiger Status",
+      "ok": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "reset": "Filter zurücksetzen"
+    },
+    "exportCsv": "CSV exportieren",
+    "exportJson": "JSON exportieren",
+    "exportLabel": "Den gefilterten Verlauf exportieren",
+    "loadError": "Der Lauf-Verlauf konnte nicht geladen werden: {{message}}",
+    "empty": {
+      "title": "Keine Läufe passen",
+      "body": "Bereinigungsläufe erscheinen hier, geplant und manuell, Test und echt."
+    },
+    "emptyFiltered": "Keine Läufe passen zu diesen Filtern. Setzen Sie sie zurück, um alle Läufe zu sehen.",
+    "dryRun": "Testlauf",
+    "realRun": "Entfernt",
+    "failed": "Fehlgeschlagen",
+    "outcomeDry_one": "Würde {{rows}} Zeile entfernen, {{size}}",
+    "outcomeDry_other": "Würde {{rows}} Zeilen entfernen, {{size}}",
+    "outcomeDryNone": "Es würde nichts entfernt",
+    "outcomeReal_one": "{{rows}} Zeile entfernt, {{size}}",
+    "outcomeReal_other": "{{rows}} Zeilen entfernt, {{size}}",
+    "outcomeRealNone": "Nichts zu entfernen",
+    "meta": "{{trigger}}, {{days}} Tage aufbewahrt",
+    "byActor": "von {{actor}}",
+    "trigger": {
+      "scheduled": "Geplant",
+      "manual": "Manuell",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "Wann",
+      "target": "Datenart",
+      "kind": "Typ",
+      "result": "Ergebnis",
+      "trigger": "Auslöser",
+      "days": "Aufbewahren"
+    },
+    "timeline": "Lauf-Zeitachse",
+    "loadMore": "Mehr laden",
+    "loadingMore": "Wird geladen..."
+  }
+}
