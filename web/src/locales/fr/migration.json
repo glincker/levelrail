@@ -1,0 +1,862 @@
+{
+  "title": "Après l'import : données et bascule",
+  "description": "Les bases de données et volumes importés démarrent vides. Copiez les données, vérifiez que chaque domaine peut être basculé sans risque, puis modifiez le DNS. La source continue de servir tant que vous ne l'avez pas fait.",
+  "data": {
+    "title": "Copier les données des bases de données",
+    "description": "Diffuse un dump de la base de données source vers la base gérée et compare le nombre de lignes. Répéter l'opération remplace le contenu de la cible, donc une copie échouée peut être relancée sans risque.",
+    "empty": "Aucune base de données gérée pour l'instant. Importez d'abord depuis une plateforme.",
+    "emptyTitle": "Aucune base de données gérée",
+    "copy": "Copier les données",
+    "cancel": "Annuler",
+    "start": "Démarrer la copie",
+    "starting": "Démarrage",
+    "loadError": "Impossible de charger l'état de la copie de la base de données.",
+    "startError": "Impossible de démarrer la copie",
+    "tablesChecked": "{{count}} tables contrôlées, {{bad}} diffèrent",
+    "differs": "{{name}} : source {{source}}, cible {{target}}",
+    "passwordHelp": "Conservé en mémoire pour la copie et jamais stocké.",
+    "fields": {
+      "host": "Hôte source",
+      "port": "Port",
+      "user": "Utilisateur",
+      "password": "Mot de passe",
+      "database": "Nom de la base de données",
+      "authDatabase": "Base d'authentification (MongoDB)",
+      "tls": "Exiger TLS vers la source"
+    },
+    "status": {
+      "pending": "Non copiée",
+      "copying": "Copie en cours",
+      "verified": "Vérifiée",
+      "failed": "Échouée",
+      "unsupported": "Non prise en charge"
+    }
+  },
+  "volumes": {
+    "title": "Copier les volumes",
+    "description": "Le plan de contrôle ne déplace pas le contenu des volumes, car cela nécessite root sur l'hôte source. Ceci affiche les commandes à exécuter sur ce node.",
+    "source": "Connexion SSH source",
+    "sourcePlaceholder": "root@old-server.example.com",
+    "show": "Afficher les commandes",
+    "loading": "Construction des commandes",
+    "none": "Aucune app importée n'a de volume persistant ni de bind mount.",
+    "copyCommand": "Copier la commande",
+    "loadError": "Impossible de construire les commandes"
+  },
+  "cutover": {
+    "title": "Contrôle de bascule",
+    "description": "Pour chaque domaine importé : l'app est-elle saine ici, combien de temps les clients mettent-ils l'ancienne adresse en cache, et vers où pointe le DNS maintenant. Rien n'est basculé pour vous.",
+    "targetIp": "IP publique de ce node",
+    "targetIpHelp": "Détectée si laissée vide.",
+    "check": "Lancer le contrôle",
+    "verify": "Vérifier après la bascule",
+    "running": "Contrôle en cours",
+    "noDomains": "Aucune app importée n'a de domaine à contrôler.",
+    "loadError": "Impossible de lancer le contrôle",
+    "thisNode": "Ce node : {{ips}}",
+    "change": "Définir {{type}} {{name}} sur {{value}} (TTL {{ttl}})",
+    "replaces": "Remplace {{what}}",
+    "verdict": {
+      "go": "Go",
+      "wait": "Attendre",
+      "no-go": "No-go",
+      "switched": "Basculé"
+    },
+    "phase": {
+      "pre-switch": "Avant la bascule",
+      "post-switch": "Après la bascule"
+    }
+  },
+  "hub": {
+    "title": "Migrer un serveur de bases de données",
+    "description": "Déplacez toutes les bases de données d'un serveur source en une seule exécution guidée. La source n'est que lue. Rien n'y est écrit ni supprimé, et vous vérifiez chaque base de données avant de basculer quoi que ce soit.",
+    "newMigration": "Démarrer une nouvelle migration",
+    "forget": "Oublier ce plan",
+    "forgetHelp": "Supprime le plan et le mot de passe conservé en mémoire. Les bases de données déjà créées ici sont conservées.",
+    "resume": "Session pour {{host}}",
+    "steps": {
+      "connect": "Connexion",
+      "inventory": "Inventaire",
+      "preflight": "Contrôles préalables",
+      "copy": "Copie",
+      "verify": "Vérification",
+      "cutover": "Bascule"
+    },
+    "safeToSkip": {
+      "title": "Ce qui peut être ignoré sans risque",
+      "never": "N'ignorez jamais le contrôle du nombre de lignes par table après chaque copie. Il prouve que les données sont arrivées.",
+      "volumes": "Volumes : peut être ignoré si aucune de vos apps ne conserve de fichiers sur un volume.",
+      "cutover": "Contrôle de bascule : peut être ignoré si vous basculez les apps à la main et les contrôlez vous-même.",
+      "warnings": "Vous pouvez passer outre les avertissements une fois lus. Pas les blocages."
+    },
+    "connect": {
+      "title": "Se connecter au serveur source",
+      "description": "Saisissez l'adresse du serveur et un utilisateur capable de lire chaque base de données à déplacer. Le mot de passe est conservé en mémoire pour cette session uniquement. Il n'est jamais stocké ni journalisé.",
+      "engine": "Moteur",
+      "host": "Hôte",
+      "port": "Port",
+      "portHelp": "Valeur par défaut du moteur si vide.",
+      "user": "Utilisateur",
+      "password": "Mot de passe",
+      "tls": "Exiger TLS vers la source",
+      "submit": "Lire le serveur",
+      "submitting": "Lecture du serveur",
+      "error": "Impossible de lire le serveur source",
+      "readOnly": "Seules des instructions en lecture seule et des outils de dump s'exécutent sur la source.",
+      "advanced": "Copier plutôt une seule base de données importée",
+      "local": "Container de base de données sur ce node",
+      "localNone": "Un autre serveur (saisissez l'hôte et le port)",
+      "localHelp": "Lit le container via son propre réseau Docker. Une adresse d'hôte sur la même machine n'est pas joignable depuis l'assistant car Docker isole les réseaux.",
+      "localProblem": "{{name}} ({{problem}})"
+    },
+    "inventory": {
+      "title": "Bases de données du serveur",
+      "summary": "{{count}} bases de données, {{size}} au total. Version du serveur {{version}}, {{free}} libres sur le node cible.",
+      "empty": "Le serveur n'a aucune base de données que cet utilisateur puisse lire. Vérifiez les permissions de l'utilisateur et réessayez.",
+      "columns": {
+        "select": "Copier",
+        "source": "Base de données source",
+        "size": "Taille",
+        "tables": "Tables",
+        "extensions": "Extensions",
+        "target": "Nom de la nouvelle base de données"
+      },
+      "selectAll": "Sélectionner toutes les bases de données",
+      "selectOne": "Copier {{name}}",
+      "targetLabel": "Nom de la nouvelle base de données pour {{name}}",
+      "next": "Continuer vers les contrôles préalables",
+      "noneSelected": "Sélectionnez au moins une base de données pour continuer."
+    },
+    "preflight": {
+      "title": "Contrôles préalables",
+      "description": "Rien n'a encore été écrit. Ces contrôles s'exécutent avant la création de toute base de données.",
+      "blocked": "Bloquée",
+      "warning": "Avertissement",
+      "ok": "Prête",
+      "required": "Environ {{required}} nécessaires avec une marge de sécurité, {{free}} libres. Durée estimée {{time}}.",
+      "passwordTitle": "Mot de passe de la source requis",
+      "passwordHelp": "Le mot de passe n'est plus conservé en mémoire. Saisissez-le à nouveau. Il n'est utilisé que pour cette exécution.",
+      "start": "Copier {{count}} bases de données",
+      "starting": "Démarrage",
+      "fixBlocked": "Corrigez ou désélectionnez les bases de données bloquées pour continuer.",
+      "back": "Retour à l'inventaire",
+      "startError": "Impossible de démarrer la copie",
+      "reachTitle": "Joignabilité",
+      "reach": "L'assistant joint la source via le réseau {{network}}."
+    },
+    "copy": {
+      "title": "Copie",
+      "description": "Les bases de données se copient en parallèle. L'échec de l'une n'arrête jamais les autres, et répéter une copie est sans risque.",
+      "running": "Copie en cours, {{done}} terminées sur {{total}}",
+      "idle": "Rien n'est en cours.",
+      "retry": "Relancer les échecs",
+      "continue": "Continuer vers la vérification",
+      "empty": "Aucune copie n'a encore été démarrée. Démarrez-la depuis l'étape des contrôles préalables.",
+      "status": {
+        "pending": "En attente",
+        "copying": "Copie en cours",
+        "verified": "Vérifiée",
+        "failed": "Échouée"
+      }
+    },
+    "verify": {
+      "title": "Vérification",
+      "description": "Le nombre de lignes de chaque table de la source a été comparé à celui de la copie. Seules les correspondances exactes sont marquées comme vérifiées.",
+      "tables": "{{count}} tables correspondent",
+      "differs": "{{name}} : source {{source}}, copie {{target}}",
+      "receipt": "Télécharger le reçu (JSON)",
+      "receiptHelp": "Un enregistrement attestant que chaque base de données est vérifiée et que la source n'a pas été modifiée. Il ne contient aucun secret.",
+      "source": "Source non modifiée",
+      "next": "Continuer vers la bascule",
+      "noneVerified": "Aucune base de données n'est encore vérifiée. Corrigez les échecs ci-dessus et relancez."
+    },
+    "cutover": {
+      "title": "Basculez vos apps",
+      "description": "Faites pointer chaque app vers sa nouvelle base de données, puis lancez le contrôle de bascule. Rien n'est basculé pour vous.",
+      "connection": "Connexion pour {{name}}",
+      "reference": "Dans les connexions d'une app, référencez-la comme {{ref}} et la plateforme renseigne les valeurs.",
+      "reveal": "Révéler le secret",
+      "revealing": "Révélation",
+      "hide": "Masquer le secret",
+      "revealNote": "La révélation est enregistrée dans le journal d'audit.",
+      "loadError": "Impossible de charger les détails de la connexion",
+      "revealError": "Impossible de révéler le secret"
+    },
+    "loadError": "Impossible de charger le plan de migration."
+  },
+  "appImport": {
+    "title": "Assistant de migration",
+    "description": "Planifiez, préparez, vérifiez et basculez chaque application une par une, depuis Coolify, Dokploy, CapRover ou un ancien serveur. Votre ancienne instance n'est que lue. Rien n'y est arrêté, modifié ni supprimé.",
+    "loadError": "Impossible de charger la session d'import.",
+    "newImport": "Démarrer un nouvel import",
+    "forget": "Oublier cette session",
+    "forgetHelp": "Oublie le plan et la progression. Les apps déjà préparées ici sont conservées. Utilisez d'abord Rollback pour les supprimer.",
+    "resume": "Import depuis {{url}}",
+    "back": "Retour",
+    "steps": {
+      "connect": "Connexion",
+      "inventory": "Inventaire",
+      "preflight": "Contrôles préalables",
+      "stage": "Préparation",
+      "images": "Déplacer les images",
+      "verify": "Build et vérification",
+      "volumes": "Volumes",
+      "cutover": "Bascule",
+      "takeover": "Reprendre les ports",
+      "retire": "Suppression sans risque"
+    },
+    "safe": {
+      "title": "Ce que cela fait et ne fait pas",
+      "readOnly": "Seules des requêtes de lecture sont envoyées à l'ancienne plateforme. L'identifiant est conservé en mémoire pour cette session et jamais stocké.",
+      "staged": "Les apps préparées sont créées arrêtées et non routées, avec les variables d'environnement et secrets importés chiffrés.",
+      "volumes": "Les données des volumes ne sont jamais copiées pour vous. Vous obtenez la commande exacte par volume et vous la confirmez vous-même.",
+      "dns": "Le DNS n'est jamais modifié pour vous. Vous basculez chaque domaine quand vous êtes satisfait, et vous pouvez revenir en arrière à tout moment."
+    },
+    "verdict": {
+      "ready": "Prête",
+      "ready-with-notes": "Prête avec des remarques",
+      "needs-attention": "Nécessite votre attention",
+      "unsupported": "Non prise en charge"
+    },
+    "state": {
+      "planned": "Planifiée",
+      "staged": "Préparée",
+      "building": "En build",
+      "verified": "Vérifiée",
+      "verify-failed": "Échec de la vérification",
+      "stage-failed": "Échec de la préparation",
+      "routed": "Routée",
+      "rolled-back": "Annulée par rollback"
+    },
+    "connect": {
+      "title": "Se connecter à {{name}}",
+      "reconnectTitle": "Saisissez à nouveau le token",
+      "description": "Utilisez un token d'API en lecture seule. Ajoutez la capacité read:sensitive si vous voulez importer les valeurs des secrets. Sinon elles reviennent vides et sont signalées.",
+      "url": "URL de {{name}}",
+      "token": "Token d'API",
+      "tokenHelp": "Conservé en mémoire pour cette session uniquement et envoyé dans le corps de la requête. Jamais stocké ni journalisé.",
+      "network": "Options de réseau privé",
+      "loopback": "La source est sur cette machine (loopback)",
+      "private": "La source est sur un réseau privé",
+      "insecure": "Ignorer la vérification TLS (certificat auto-signé)",
+      "networkHelp": "Le plan de contrôle a aussi besoin du réglage APP_IMPORT_ALLOW_LOOPBACK ou APP_IMPORT_ALLOW_PRIVATE_NETWORKS correspondant avant que ces options soient prises en compte.",
+      "readOnly": "Lire l'inventaire ne crée rien ici.",
+      "error": "Impossible de lire la source",
+      "submit": "Lire l'inventaire",
+      "submitting": "Lecture...",
+      "dockerTitle": "Reprendre les containers d'un hôte Docker",
+      "snapshotHelp": "Contient des variables d'environnement, dont des secrets. Conservé en mémoire pour cette session uniquement et envoyé dans le corps de la requête. Jamais stocké ni journalisé.",
+      "snapshotFile": "Ou chargez-le depuis un fichier",
+      "mode": {
+        "api": "API de la plateforme",
+        "docker": "Snapshot Docker",
+        "compose": "Fichier Compose",
+        "dokku": "Dump d'env Dokku",
+        "ssh": "Connexion via SSH"
+      },
+      "fileDescription": {
+        "docker": "Aucun token d'API nécessaire. Collez la sortie de la commande ci-dessous, exécutée sur l'ancien serveur. Elle lit les réglages des containers et les variables d'environnement, et ne change rien là-bas.",
+        "compose": "Collez un fichier docker-compose. Chaque service avec une image devient une app, et les images de bases de données deviennent des bases de données gérées. Rien n'est contacté.",
+        "dokku": "Collez l'environnement d'une app Dokku. Seules ses variables sont lues, donc définissez l'image, le port et les domaines après la planification. Rien n'est contacté."
+      },
+      "fileCommand": {
+        "docker": "docker inspect $(docker ps -aq)",
+        "compose": "cat docker-compose.yml",
+        "dokku": "dokku config:export APP"
+      },
+      "fileLabel": {
+        "docker": "Sortie de docker inspect",
+        "compose": "Fichier Compose",
+        "dokku": "Dump de l'environnement"
+      },
+      "appName": "Nom de l'app Dokku",
+      "platform": "Plateforme source",
+      "platformName": {
+        "coolify": "Coolify",
+        "dokploy": "Dokploy",
+        "caprover": "CapRover"
+      },
+      "tokenFor": {
+        "coolify": "Token d'API",
+        "dokploy": "Clé d'API",
+        "caprover": "Mot de passe"
+      },
+      "test": "Tester la connexion",
+      "testing": "Test en cours...",
+      "testOk": "Connecté à {{name}}. Trouvé {{apps}} app(s), {{databases}} base(s) de données, {{volumes}} volume(s), {{domains}} domaine(s) et {{crons}} tâche(s) cron. {{unsupported}} ne peuvent pas être importés.",
+      "testServers": "Serveurs : {{list}}",
+      "testFailure": {
+        "credentials": "La source a rejeté l'identifiant. Vérifiez le token ou le mot de passe et ses permissions.",
+        "blocked": "Cette adresse n'est pas autorisée. Utilisez les options de réseau privé ci-dessous si la source est sur votre propre réseau.",
+        "unreachable": "La source n'a pas répondu. Vérifiez l'URL et le port, et si ce serveur peut la joindre."
+      }
+    },
+    "inventory": {
+      "title": "Applications trouvées",
+      "description": "Choisissez ce qu'il faut déplacer. Chaque app indique à quoi elle correspond ici et ce qui nécessite votre attention.",
+      "selectOne": "Sélectionner {{name}}",
+      "selectAll": "Sélectionner tout ce qui est importable",
+      "selectNone": "Ne rien sélectionner",
+      "empty": "Aucune application n'a été trouvée sur la source.",
+      "noProject": "Aucun projet",
+      "showMore": "Afficher {{count}} de plus",
+      "continue": "Continuer avec {{count}} app(s)",
+      "pickOne": "Sélectionnez au moins une app pour continuer.",
+      "stale": "Le token n'est plus conservé, donc ces verdicts datent de la dernière lecture. Saisissez-le à nouveau pour les actualiser.",
+      "maps": {
+        "dockerfile": "Build Dockerfile",
+        "railpack": "Build Railpack",
+        "static": "Site statique",
+        "image": "Image"
+      },
+      "port": "port {{port}}",
+      "health": "santé {{path}}",
+      "memory": "limite {{size}}",
+      "server": "serveur {{name}}",
+      "env": "{{plain}} variables en clair et {{secret}} secrètes",
+      "domains": "Domaines : {{list}}",
+      "volume": "Volume {{path}} ({{size}})",
+      "sizeUnknown": "taille non communiquée par la source",
+      "dbMoved": "utilise {{name}}, déjà déplacée vers {{target}}",
+      "dbNotMoved": "utilise {{name}}, pas encore déplacée ici",
+      "next": "Ensuite : {{action}}",
+      "source": {
+        "git": "Git",
+        "image": "Image",
+        "compose": "Compose",
+        "service": "Service en un clic",
+        "unknown": "Inconnue"
+      },
+      "crons": "{{count}} tâche(s) cron"
+    },
+    "preflight": {
+      "title": "Contrôles préalables et correspondances",
+      "description": "Rien n'est encore écrit. Examinez les conflits de noms et de domaines, faites correspondre les anciens noms d'hôte de bases de données à leur nouvel emplacement et lisez les changements exacts.",
+      "needsToken": "Le token n'est plus conservé. Saisissez-le à nouveau pour évaluer les valeurs d'environnement.",
+      "mappingTitle": "Correspondance des noms d'hôte",
+      "mappingHelp": "Les valeurs d'environnement qui mentionnent un ancien nom d'hôte interne sont réécrites avec le nouveau lors de la préparation de l'app. Rien n'est réécrit s'il n'est pas listé ici.",
+      "suggested": "Suggéré d'après les bases de données déjà déplacées",
+      "use": "Utiliser",
+      "remove": "Retirer",
+      "from": "Ancien nom d'hôte",
+      "to": "Nouveau nom d'hôte",
+      "add": "Ajouter une correspondance",
+      "save": "Enregistrer la correspondance",
+      "saving": "Enregistrement...",
+      "collision": "Quand un nom est déjà pris :",
+      "collisionMode": {
+        "suffix": "Ajouter un suffixe numérique",
+        "skip": "Ignorer l'app"
+      },
+      "passed": "{{count}} contrôle(s) réussi(s).",
+      "check": {
+        "name": "Nom",
+        "domains": "Domaines",
+        "env-keys": "Noms de variables",
+        "db-hosts": "Noms d'hôte des bases de données",
+        "secrets": "Secrets",
+        "build": "Méthode de build",
+        "disk": "Disque"
+      },
+      "diff": "Valeurs qu'une correspondance réécrit",
+      "diffHelp": "Les mots de passe dans les chaînes de connexion sont masqués. Seul le nom d'hôte change, donc mettez à jour l'utilisateur et le mot de passe si la nouvelle base de données utilise d'autres identifiants.",
+      "secret": "secret",
+      "continue": "Continuer vers la préparation",
+      "blocked": "{{count}} contrôle(s) bloquant(s)"
+    },
+    "run": {
+      "stageTitle": "Préparer les apps",
+      "verifyTitle": "Build et vérification",
+      "stageDescription": "Crée chaque app sélectionnée ici, arrêtée et non routée. Relancer reprend là où un échec s'est arrêté et ne duplique jamais une app.",
+      "verifyDescription": "Démarre chaque app, la construit ou la récupère, attend son propre contrôle de santé et l'arrête à nouveau jusqu'à la bascule. L'échec d'une app ne bloque jamais les autres.",
+      "needsToken": "Le token n'est plus conservé. Retournez aux Contrôles préalables et saisissez-le à nouveau pour préparer.",
+      "importedAs": "importée sous le nom {{name}}",
+      "openApp": "Ouvrir l'app",
+      "openLogs": "Logs",
+      "verifyOne": "Vérifier",
+      "verifyAgain": "Vérifier à nouveau",
+      "verifyAll": "Tout vérifier",
+      "working": "En cours...",
+      "resume": "Reprendre la préparation",
+      "stage": "Préparer les apps",
+      "rollback": "Rollback",
+      "rollbackConfirm": "Supprimer chaque app créée par cet import ?",
+      "rollbackYes": "Les supprimer",
+      "cancel": "Annuler",
+      "stageNote": "Le rollback ne supprime que les apps créées par cet import. Les volumes sont conservés sur le disque.",
+      "verifyNote": "La vérification démarre brièvement l'app. Si elle exécute des jobs en arrière-plan, ils travaillent sur la base de données avec laquelle elle est configurée.",
+      "toVerify": "Continuer vers la vérification",
+      "toVolumes": "Continuer vers les volumes",
+      "retry": "Réessayer",
+      "interrupted": "Interrompue par un redémarrage. Vérifiez-la à nouveau.",
+      "progressTitle": "Progression en direct",
+      "progress": "{{done}} terminées sur {{total}}, {{failed}} échouées",
+      "failedHelp": "Un élément échoué ne bloque jamais les autres. Relancez-le seul, ou corrigez la raison et relancez l'étape."
+    },
+    "volumes": {
+      "title": "Volumes persistants",
+      "description": "Copiez chaque volume avec la commande ci-dessous, puis cochez-le. Exécutez-la une fois pendant que la source est en ligne et à nouveau juste avant la bascule.",
+      "none": "Aucune des apps sélectionnées n'a de volume persistant.",
+      "source": "Serveur source (user@host)",
+      "sourcePlaceholder": "root@coolify.example.com",
+      "show": "Afficher les commandes",
+      "confirm": "{{path}} copié",
+      "command": "Commande de copie du volume",
+      "continue": "Continuer vers la bascule",
+      "pending": "{{count}} volume(s) pas encore confirmé(s)"
+    },
+    "cutover": {
+      "title": "Bascule",
+      "description": "Par app : abaissez le TTL, activez le routage ici, modifiez l'enregistrement DNS, puis lancez le contrôle post-bascule.",
+      "keepSource": "Gardez la source en marche jusqu'à ce que vous soyez satisfait.",
+      "keepSourceBody": "Rien ici n'arrête ni ne modifie quoi que ce soit sur l'ancienne instance. Pour revenir en arrière, faites de nouveau pointer l'enregistrement DNS vers la source.",
+      "routed": "Routage activé",
+      "notRouted": "Non routée",
+      "volumesPending": "{{count}} volume(s) non confirmé(s)",
+      "disableRouting": "Désactiver le routage",
+      "enableRouting": "Activer le routage",
+      "enableAnyway": "Activer le routage quand même",
+      "none": "Aucune app vérifiée avec un domaine pour l'instant.",
+      "receipt": "Télécharger le reçu",
+      "receiptNote": "Un enregistrement JSON de ce qui a été importé et de ce qui reste manuel. Il ne contient aucun secret.",
+      "guide": {
+        "open": "Bascule guidée",
+        "close": "Fermer",
+        "title": "Bascule de {{app}}",
+        "recheck": "Contrôler à nouveau",
+        "safety": "Rien n'est touché sur la plateforme source. Une bascule peut être annulée, et une vérification échouée l'annule automatiquement.",
+        "status": {
+          "pass": "Réussi",
+          "warn": "Avertissement",
+          "block": "Bloqué"
+        },
+        "verdict": {
+          "ready": "Prête",
+          "warnings": "Prête avec des avertissements",
+          "blocked": "Bloquée"
+        },
+        "method": {
+          "dns": "Fournisseur DNS",
+          "proxy": "Route de proxy gérée",
+          "manual": "Enregistrement manuel",
+          "none": "Pointe déjà ici"
+        },
+        "domainLine": "{{domain}} : basculé par {{method}}, pointe maintenant vers {{current}}",
+        "copyRecord": "Copier l'enregistrement",
+        "dryRun": "Simulation",
+        "typeToConfirm": "Saisissez {{app}} pour basculer",
+        "acceptWarnings": "Continuer malgré les avertissements",
+        "switch": "Basculer le trafic",
+        "rollback": "Rollback",
+        "confirmDns": "J'ai modifié l'enregistrement",
+        "manualRecord": "Définissez {{type}} {{domain}} sur {{value}}, puis appuyez sur le bouton",
+        "liveHint": "Le trafic est en direct ici et vérifié via le nom public. Gardez la source en marche pendant un cycle de trafic complet.",
+        "noRuns": "Aucune exécution pour l'instant. Une simulation démarre l'app, la sonde via l'ingress de ce node et l'arrête à nouveau sans modifier d'enregistrement.",
+        "mode": {
+          "dry_run": "Simulation",
+          "switch": "Bascule"
+        },
+        "state": {
+          "planning": "Planification",
+          "ready": "Prête",
+          "starting": "Démarrage",
+          "verifying": "Vérification",
+          "switching": "Bascule en cours",
+          "live": "En ligne",
+          "rolled_back": "Annulée par rollback",
+          "failed": "Échouée"
+        },
+        "step": {
+          "readiness": "Disponibilité",
+          "route": "Démarrage",
+          "healthy": "Saine",
+          "ingress_probe": "Sonde de l'ingress",
+          "dns_preview": "Aperçu",
+          "switch": "Bascule",
+          "post_verify": "Vérification",
+          "cleanup": "Arrêt",
+          "rollback": "Restauration",
+          "manual_dns": "DNS manuel"
+        }
+      },
+      "next": "Ensuite : reprendre les ports"
+    },
+    "images": {
+      "title": "Déplacer les images construites sur l'hôte source",
+      "description": "Ces apps exécutent une image construite sur l'ancien serveur et qui n'existe dans aucun registre. Le plan de contrôle exécute docker save sur la source via SSH, charge le flux sur ce node et vérifie chaque ID d'image par rapport au snapshot. Rien d'autre ne s'exécute sur la source.",
+      "none": "Aucune app sélectionnée n'utilise une image construite sur l'hôte source. Continuez vers la vérification.",
+      "unsupported": "Ce plan de contrôle n'a pas de runtime de node où charger des images.",
+      "loadError": "Impossible de charger la liste des images.",
+      "ssh": "Connexion SSH source",
+      "sshPlaceholder": "root@old-server.example.com",
+      "sshHelp": "user@host ou user@host:port. La connexion doit pouvoir exécuter docker. La clé d'hôte est approuvée à la première utilisation et épinglée.",
+      "key": "Clé privée",
+      "keyPlaceholder": "BEGIN OPENSSH PRIVATE KEY",
+      "keyHeld": "Une clé est conservée pour cette session, laissez vide pour la réutiliser",
+      "keyHelp": "Conservée en mémoire pour cette session uniquement, jamais stockée ni journalisée.",
+      "passphrase": "Phrase secrète de la clé (facultatif)",
+      "agent": "Utiliser l'agent SSH du plan de contrôle plutôt qu'une clé",
+      "move": "Déplacer les images",
+      "retry": "Déplacer les images restantes",
+      "cancel": "Annuler",
+      "running": "Déplacement des images depuis {{source}}",
+      "continue": "Continuer vers la vérification",
+      "pending": "{{count}} image(s) pas encore sur ce node",
+      "ids": "Source {{source}}, chargée {{loaded}}",
+      "sourceId": "Image source {{source}}",
+      "noSourceId": "Le snapshot n'a pas d'ID d'image, donc le chargement ne peut pas être vérifié.",
+      "state": {
+        "pending": "Non déplacée",
+        "running": "Déplacement",
+        "verified": "Vérifiée",
+        "loaded": "Chargée, non vérifiée",
+        "failed": "Échouée",
+        "cancelled": "Annulée"
+      },
+      "viaTunnel": "Les images sont diffusées via la même connexion SSH, en lecture seule. Rien n'est exécuté sur l'ancien serveur, et aucune connexion supplémentaire n'est nécessaire."
+    },
+    "ssh": {
+      "description": "Importez depuis un ancien serveur Coolify, Dokploy, CapRover ou Dokku avec seulement une connexion SSH. Aucun token de plateforme et aucun agent. SSH n'est utilisé que pour atteindre le socket Docker, et seules des requêtes de lecture sont envoyées : rien n'est jamais exécuté sur l'ancien serveur.",
+      "host": "Adresse du serveur",
+      "port": "Port SSH",
+      "user": "Utilisateur SSH",
+      "passphrase": "Phrase secrète de la clé",
+      "key": "Clé privée",
+      "keyPlaceholder": "BEGIN OPENSSH PRIVATE KEY",
+      "keyFile": "Ou chargez la clé privée depuis un fichier",
+      "keyHelp": "Conservée en mémoire pour cette session uniquement et envoyée dans le corps de la requête. Jamais stockée ni journalisée. Toute personne qui détient cette clé peut agir comme cet utilisateur sur l'ancien serveur, donc utilisez une clé que vous pourrez supprimer ensuite.",
+      "advanced": "Mot de passe, chemin du socket Docker et options réseau",
+      "password": "Mot de passe (au lieu d'une clé)",
+      "socket": "Chemin du socket Docker sur l'ancien serveur",
+      "test": "Tester la connexion",
+      "testing": "Test en cours",
+      "recheck": "Revérifier",
+      "readOnlyNote": "Lecture seule : liste les containers, volumes et images.",
+      "storedConfig": "Les variables d'environnement et réglages proviennent des containers en cours d'exécution. La configuration stockée par l'ancienne plateforme elle-même (base de données de Coolify, dossier de données de CapRover, dossier d'apps de Dokku) n'est pas lue.",
+      "hostKey": {
+        "title": "Confirmez l'identité du serveur",
+        "read": "Lire la clé d'hôte",
+        "reading": "Lecture",
+        "help": "Lisez l'empreinte présentée par le serveur, puis confirmez qu'il s'agit de la même que celle signalée par l'ancien serveur. Une empreinte erronée ou modifiée interrompt la connexion.",
+        "list": "Clés d'hôte présentées par le serveur",
+        "fingerprint": "Empreinte de la clé d'hôte",
+        "confirm": "Cette empreinte correspond à mon ancien serveur",
+        "compare": "Comparez avec l'empreinte sur l'ancien serveur",
+        "compareCommand": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
+        "insecure": "Ignorer la vérification de la clé d'hôte (non sûr)",
+        "insecureTitle": "La vérification de la clé d'hôte est désactivée",
+        "insecureBody": "Toute personne située entre ce serveur et l'ancien pourrait lire ce qui est envoyé, y compris la clé. Confirmez plutôt l'empreinte. Cette session est marquée comme non vérifiée partout.",
+        "placeholder": "SHA256:..."
+      },
+      "ok": {
+        "title": "Connecté",
+        "reads": "Lecture seule : liste les containers, volumes et images.",
+        "counts": "Docker {{version}} : {{containers}} containers ({{running}} en marche), {{volumes}} volumes, {{images}} images."
+      },
+      "fix": {
+        "viaCli": "Corriger via la CLI",
+        "auth_failed": {
+          "title": "La connexion a été refusée",
+          "body": "Vérifiez la clé privée, sa phrase secrète et le nom d'utilisateur, puis revérifiez."
+        },
+        "host_key_mismatch": {
+          "title": "La clé d'hôte ne correspond pas",
+          "body": "Le serveur a présenté une clé d'hôte différente de celle que vous avez confirmée. Si vous attendiez ce changement, faites confiance à la nouvelle empreinte et confirmez-la à nouveau.",
+          "trust": "Faire confiance à {{fingerprint}}"
+        },
+        "host_key_required": {
+          "title": "Confirmez d'abord la clé d'hôte",
+          "body": "Lisez l'empreinte du serveur et confirmez-la avant de vous connecter."
+        },
+        "socket_permission": {
+          "title": "L'utilisateur ne peut pas utiliser le socket Docker",
+          "body": "Ajoutez l'utilisateur SSH au groupe docker sur l'ancien serveur, reconnectez-vous, puis revérifiez.",
+          "command": "sudo usermod -aG docker USER"
+        },
+        "socket_path": {
+          "title": "Aucun socket Docker à ce chemin",
+          "body": "Choisissez le bon chemin de socket, ou saisissez-le dans les options avancées.",
+          "try": "Essayer {{path}}"
+        },
+        "socket_forbidden": {
+          "title": "Le serveur bloque la redirection de socket",
+          "body": "Le sshd de l'ancien serveur refuse la redirection vers un socket Unix pour cette connexion. Autorisez la redirection de flux locale pour cet utilisateur, puis revérifiez."
+        },
+        "unreachable": {
+          "title": "Le serveur n'a pas pu être joint",
+          "body": "Vérifiez l'adresse et le port, et que ce serveur peut le joindre, puis revérifiez."
+        },
+        "blocked_address": {
+          "title": "Cette adresse n'est pas autorisée",
+          "body": "Les adresses de réseau privé sont bloquées sauf si l'opérateur du plan de contrôle les autorise. Les adresses de métadonnées cloud ne sont jamais autorisées.",
+          "allow": "Autoriser les adresses privées"
+        },
+        "other": {
+          "title": "La connexion a échoué",
+          "body": "Consultez le message ci-dessous, puis revérifiez."
+        }
+      },
+      "volumes": {
+        "title": "Copier via SSH",
+        "description": "Les volumes des containers en cours d'exécution sont diffusés via la connexion SSH, en lecture seule sur l'ancien serveur, jusqu'à {{size}} chacun. Les containers arrêtés et les bind mounts nécessitent les commandes ci-dessous.",
+        "reconnect": "La connexion SSH n'est conservée qu'en mémoire. Reconnectez la source pour copier les volumes.",
+        "copy": "Copier les volumes via SSH",
+        "again": "Copier à nouveau",
+        "running": "Copie en cours",
+        "done": "{{files}} fichiers, {{size}}",
+        "leftOut": "Exclu : {{entry}}",
+        "fallback": "Relancez la copie juste avant la bascule DNS pour capter les derniers changements.",
+        "state": {
+          "pending": "En attente",
+          "running": "Copie en cours",
+          "copied": "Copié",
+          "failed": "Échoué",
+          "skipped": "Utiliser la commande"
+        }
+      }
+    },
+    "exit": {
+      "title": "Rapport de sortie",
+      "help": "Ce que devient chaque ressource, ce qui a encore besoin de vous, l'ordre de bascule DNS et la liste de contrôle de bascule. Lecture seule.",
+      "show": "Afficher le rapport de sortie",
+      "recheck": "Revérifier",
+      "next": "Ensuite :",
+      "ready": "Chaque ressource est importée et aucune ne nécessite d'action. Lancez le contrôle de suppression sans risque avant de supprimer quoi que ce soit.",
+      "wavesTitle": "Ordre de bascule DNS",
+      "checklistTitle": "Liste de contrôle de bascule",
+      "outcome": {
+        "imported": "Importée",
+        "manual": "Action manuelle requise",
+        "skipped": "Ignorée"
+      },
+      "mode": {
+        "dry-run": "Plan",
+        "verify": "Vérification"
+      }
+    },
+    "probe": {
+      "dns": "Contrôler le DNS maintenant",
+      "http": "Vérifier que l'app répond ici",
+      "checking": "Contrôle en cours...",
+      "help": "Le contrôle de réponse atteint directement ce serveur avec le nom de domaine, donc il fonctionne avant le déplacement du DNS.",
+      "ok": "Réussi",
+      "failed": "Échoué"
+    },
+    "retire": {
+      "title": "Peut-on supprimer l'ancienne instance sans risque ?",
+      "description": "Ceci ne passe au vert que lorsque chaque contrôle ci-dessous réussit avec des preuves issues de cette migration. D'ici là, gardez l'ancienne instance en marche comme solution de repli.",
+      "run": "Lancer les contrôles en direct",
+      "running": "Contrôle en cours...",
+      "targetIp": "IP publique de ce serveur",
+      "safeTitle": "Toutes les barrières sont passées",
+      "safeBody": "Arrêtez d'abord l'ancienne instance et gardez-la arrêtée quelques jours. Ne la supprimez qu'ensuite, et conservez ses sauvegardes.",
+      "notSafeTitle": "Pas encore sûr de supprimer",
+      "notSafeBody": "{{count}} barrière(s) sont encore ouvertes. Rien n'a été modifié sur l'ancienne instance.",
+      "confirm": "Je l'ai fait",
+      "status": {
+        "pass": "Réussi",
+        "fail": "Échoué",
+        "pending": "Non contrôlé",
+        "manual": "Vous êtes attendu"
+      },
+      "next": "Ensuite :",
+      "fallbackTitle": "En cas de problème",
+      "gate": {
+        "staged": "Apps construites et saines ici",
+        "leftovers": "Ressources que l'importeur n'a pas pu déplacer",
+        "volumes": "Volumes copiés",
+        "databases": "Copies de bases de données vérifiées",
+        "routed": "Apps qui servent leurs domaines ici",
+        "dns": "Le DNS pointe vers ce serveur",
+        "responds": "Les apps répondent depuis ce serveur",
+        "source-backup": "Ancienne instance sauvegardée",
+        "traffic-cycle": "Cycle de trafic complet terminé"
+      },
+      "back": "Retour",
+      "open": "Continuer vers le contrôle de suppression sans risque"
+    }
+  },
+  "platformImport": {
+    "tokenApi": "Token d'API",
+    "tokenKey": "Clé d'API",
+    "tokenPassword": "Mot de passe de connexion",
+    "tokenAccess": "Token d'accès",
+    "teamId": "ID d'équipe (facultatif)",
+    "teamIdPlaceholder": "team_... ou slug d'équipe, vide pour votre compte personnel",
+    "vercelUrlPlaceholder": "Laissez vide pour l'API Vercel publique",
+    "requestFailed": "La requête a échoué",
+    "summaryTitle": "Résumé de l'import",
+    "summaryCounts": "{{created}} créés, {{failed}} échoués, {{already}} déjà importés.",
+    "retryHint": "Relancez l'import pour réessayer ce qui a échoué. Les éléments terminés sont ignorés.",
+    "dataNotMigrated": "Les données ne sont pas migrées",
+    "another": "Démarrer un autre import",
+    "reviewTitle": "Vérifiez ce qui sera importé",
+    "nothingFound": "Rien n'a été trouvé sur la source. Vérifiez l'URL et que l'identifiant peut voir vos projets.",
+    "importFailed": "Échec de l'import",
+    "importing": "Import en cours...",
+    "importSelected": "Importer {{count}} sélectionnés",
+    "back": "Retour",
+    "connectTitle": "Connecter la plateforme source",
+    "connectIntro": "Lit les apps, bases de données et réglages de l'autre plateforme sans la modifier. L'identifiant est envoyé à ce plan de contrôle une fois par étape et n'est jamais stocké.",
+    "platform": "Plateforme",
+    "sourceUrl": "URL de la source",
+    "herokuUrlPlaceholder": "Laissez vide pour l'API Heroku publique",
+    "skipTakenLabel": "Ignorer les noms déjà utilisés",
+    "skipTaken": "Ignorer les ressources dont le nom est déjà pris (par défaut, elles sont renommées)",
+    "privateLabel": "La source est sur un réseau privé",
+    "private": "La source est sur un réseau privé (nécessite l'activation côté plan de contrôle)",
+    "insecureLabel": "Ignorer la vérification TLS",
+    "insecure": "Ignorer la vérification TLS (source auto-signée)",
+    "readFailed": "Impossible de lire la source",
+    "reading": "Lecture de la source...",
+    "discover": "Découvrir",
+    "extras": {
+      "title": "Sauvegardes et canaux d'alerte",
+      "target": "Cible de sauvegarde {{name}}",
+      "schedule": "Planification de sauvegarde pour {{name}}",
+      "channel": "Canal d'alerte {{name}}",
+      "hasKeys": "clés sur la source",
+      "noKeys": "aucune clé sur la source",
+      "hasSecret": "token sur la source",
+      "noSecret": "aucun token sur la source",
+      "retain_one": "conserver {{count}}",
+      "retain_many": "conserver {{count}}",
+      "retain_other": "conserver {{count}}",
+      "paused": "en pause",
+      "running": "en cours",
+      "enabled": "activé",
+      "disabled": "désactivé",
+      "includeCredentials": "Inclure les identifiants",
+      "includeCredentialsWarning": "Copie les clés de stockage et tokens de canaux de la source vers cette instance. Ils sont envoyés directement aux appels de création et jamais affichés ici.",
+      "enableSchedules": "Garder les planifications de sauvegarde actives",
+      "enableSchedulesWarning": "Désactivé : les planifications importées sont créées en pause. Activé : les planifications qui s'exécutaient sur la source commencent à s'exécuter ici.",
+      "enableChannels": "Créer les canaux d'alerte activés",
+      "enableChannelsWarning": "Désactivé : les canaux importés sont créés désactivés. Activé : les canaux activés reçoivent immédiatement les avis diffusés.",
+      "importOnly": "Importer uniquement les sauvegardes et canaux",
+      "undoButton_one": "Annuler {{count}} élément importé",
+      "undoButton_many": "Annuler {{count}} éléments importés",
+      "undoButton_other": "Annuler {{count}} éléments importés",
+      "undoFailed": "Échec de l'annulation",
+      "undoItem": "{{name}} : {{action}}",
+      "undo": {
+        "removed": "supprimé",
+        "skipped": "laissé en place",
+        "failed": "échoué"
+      },
+      "state": {
+        "would_create": "Sera créé",
+        "needs_secret": "Identifiants requis",
+        "created": "Créé",
+        "exists": "Existe déjà",
+        "pending": "En attente",
+        "skipped": "Ignoré",
+        "review": "À examiner",
+        "failed": "Échoué",
+        "unsupported": "Non pris en charge"
+      }
+    }
+  },
+  "importPlan": {
+    "anonymousVolume": "(anonyme)",
+    "importingToast": "Import de \"{{name}}\".",
+    "watching": "Surveillance du log de build en cours.",
+    "appearsShortly": "Elle apparaîtra bientôt dans la liste des apps.",
+    "readFirst": "À lire avant de deployer",
+    "appName": "Nom de l'app",
+    "nameInvalid": "Utilisez uniquement des lettres minuscules, des chiffres et des tirets.",
+    "containerPort": "Port du container",
+    "portInvalid": "Saisissez le port sur lequel l'app écoute.",
+    "domainSuggestion": "Domaine suggéré : {{domain}}. Ajoutez de vrais domaines depuis l'onglet Domaines de l'app après sa création.",
+    "why": "Pourquoi : {{reason}}",
+    "health": "Contrôle de santé : GET {{path}}",
+    "needsApproval": "Approbation root requise",
+    "nothing": "Rien à deployer n'a été trouvé dans cette entrée.",
+    "required": "Requis avant de deployer : {{keys}}",
+    "back": "Retour",
+    "deploying": "Deploy en cours...",
+    "deploy": "Deployer"
+  },
+  "takeover": {
+    "title": "Reprendre les ports de ce serveur",
+    "description": "Déplacez les ports 80 et 443 du proxy de votre ancienne plateforme vers l'ingress propre à ce serveur, avec un retour en arrière enregistré. Faites-le en dernier, une fois chaque app préparée, vérifiée et ses données copiées.",
+    "rootOnly": "Seul le compte root peut reprendre les ports. Vous pouvez lire les contrôles préalables, mais le bouton Exécuter reste désactivé.",
+    "loadError": "Impossible de lire les contrôles préalables.",
+    "recheck": "Revérifier",
+    "rechecking": "Vérification",
+    "ports": "Écoute sur {{from}} actuellement, {{to}} après.",
+    "verdict": {
+      "ready": "Prêt",
+      "warnings": "Prêt avec des avertissements",
+      "blocked": "Bloqué",
+      "done": "Terminé"
+    },
+    "status": {
+      "pass": "Réussi",
+      "warn": "Avertissement",
+      "block": "Bloqué"
+    },
+    "domainsTitle": "Domaines que ce serveur va servir",
+    "healthy": "Sain",
+    "unhealthy": "Non sain",
+    "dns": {
+      "ok": "DNS ici",
+      "elsewhere": "DNS ailleurs",
+      "unresolved": "Aucun DNS"
+    },
+    "cert": {
+      "custom": "Certificat téléversé",
+      "acme": "Émis à la première utilisation"
+    },
+    "stepsTitle": "Ce que fait l'exécution",
+    "rollbackTitle": "Comment l'annuler",
+    "acceptUnmanaged": "J'accepte que les domaines listés ci-dessus soient hors ligne quand l'ancien proxy s'arrêtera.",
+    "alreadyDone": "Ce serveur écoute déjà sur les ports 80 et 443. Il n'y a plus rien à faire.",
+    "copyCommand": "Copier la commande",
+    "copied": "Copié",
+    "runTitle": "Exécution de la reprise",
+    "state": {
+      "preparing": "Préparation",
+      "applying": "Redémarrage",
+      "verifying": "Vérification",
+      "done": "Terminé",
+      "rolling_back": "Rollback en cours",
+      "rolled_back": "Annulé par rollback",
+      "failed": "Nécessite votre attention"
+    },
+    "step": {
+      "rollback_record": "Retour en arrière enregistré",
+      "stop_old_proxy": "Ancien proxy arrêté",
+      "tls_settings": "TLS géré ici",
+      "listen_addresses": "Nouvelles adresses stockées",
+      "restart": "Redémarrage",
+      "verify": "Vérification en HTTPS",
+      "rollback": "Rollback"
+    },
+    "hint": {
+      "applying": "Le plan de contrôle redémarre. Cette page se reconnecte d'elle-même.",
+      "verifying": "Contrôle de chaque domaine. Si cela ne réussit pas en {{seconds}} secondes, un rollback est effectué automatiquement.",
+      "done": "Ce serveur sert désormais les ports 80 et 443. Le container de l'ancien proxy est arrêté, pas supprimé. Vous pouvez faire un rollback à tout moment.",
+      "rolling_back": "Restauration des adresses précédentes et redémarrage de l'ancien proxy.",
+      "rolled_back": "Les adresses précédentes sont revenues et l'ancien proxy tourne de nouveau.",
+      "failed": "Quelque chose ne s'est pas terminé. Lisez le message ci-dessus, corrigez-le, puis revérifiez."
+    },
+    "run": {
+      "button": "Reprendre les ports",
+      "note": "Une vérification échouée est annulée automatiquement après {{seconds}} secondes.",
+      "dialogTitle": "Reprendre les ports 80 et 443 ?",
+      "dialogDescription": "Les visiteurs voient une courte pause pendant que le proxy s'arrête et que ce serveur commence à répondre.",
+      "consequenceStop": "Le container de l'ancien proxy est arrêté, pas supprimé.",
+      "consequenceRestart": "Le plan de contrôle redémarre une fois pour écouter sur les nouveaux ports.",
+      "consequenceRollback": "Si un domaine échoue à la vérification, la reprise est annulée automatiquement.",
+      "confirm": "Reprendre",
+      "pending": "Démarrage"
+    },
+    "rollback": {
+      "button": "Rollback",
+      "title": "Faire un rollback de la reprise ?",
+      "description": "Les adresses d'écoute et réglages TLS précédents reviennent après un redémarrage, et l'ancien proxy redémarre.",
+      "confirm": "Rollback",
+      "pending": "Rollback en cours"
+    }
+  }
+}
