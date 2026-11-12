@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "page": {
+      "title": "变量",
+      "description": "共享变量的存放位置。这里只显示名称和数量,从不显示值。"
+    },
+    "open": "打开",
+    "count": {
+      "vars_other": "{{count}} 个变量",
+      "unknown": "正在统计"
+    },
+    "org": {
+      "title": "组织",
+      "empty": {
+        "title": "暂无组织",
+        "description": "创建组织,即可在其项目之间共享变量。"
+      }
+    },
+    "project": {
+      "title": "项目",
+      "environments": "每个项目页面还会列出其环境,环境有各自的变量。",
+      "empty": {
+        "title": "暂无项目",
+        "description": "创建项目,即可在其应用之间共享变量。"
+      }
+    },
+    "apps": {
+      "title": "应用",
+      "note": "单个应用的变量在配置的环境下编辑。",
+      "open": "打开应用"
+    }
+  },
+  "sources": {
+    "page": {
+      "title": "来源",
+      "description": "连接到此实例的 Git 提供方。"
+    },
+    "loading": "正在加载提供方",
+    "error": "无法加载 Git 提供方。",
+    "empty": {
+      "title": "暂无 Git 提供方",
+      "description": "在设置中连接提供方,即可从仓库部署。"
+    },
+    "provider": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "bitbucket_server": "Bitbucket Server",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "azure_devops": "Azure DevOps"
+    },
+    "status": {
+      "notConnected": "未连接",
+      "ok": "已连接",
+      "needs_reauthorize": "需要重新授权",
+      "revoked": "已撤销",
+      "rate_limited": "已被限流"
+    },
+    "accounts_other": "{{count}} 个账户",
+    "manage": "管理"
+  }
+}

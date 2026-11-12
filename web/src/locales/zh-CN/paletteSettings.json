@@ -1,0 +1,12 @@
+{
+  "items": {
+    "email-log": {
+      "title": "邮件投递日志",
+      "description": "每一次外发邮件尝试及其结果。"
+    },
+    "network-shares": {
+      "title": "网络共享",
+      "description": "任何应用服务都可以挂载的远程卷来源。"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "自定义侧边栏",
+  "description": "重新排序、显示或隐藏分组和页面。隐藏的页面仍可通过搜索找到。",
+  "groups": "侧边栏分组",
+  "itemsIn": "{{label}} 中的页面",
+  "moveUp": "上移 {{label}}",
+  "moveDown": "下移 {{label}}",
+  "show": "显示 {{label}}",
+  "moved": "{{label}} 已移至第 {{position}} 位(共 {{total}} 项)",
+  "currentPage": "当前页面",
+  "currentGroup": "包含当前页面",
+  "reset": "恢复默认",
+  "resetDone": "侧边栏已恢复默认",
+  "done": "完成",
+  "recent": {
+    "group": "最近",
+    "app": "应用",
+    "database": "数据库"
+  }
+}

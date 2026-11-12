@@ -1,0 +1,42 @@
+{
+  "page": {
+    "title": "流量",
+    "description": "通过此控制面内置入口路由的所有域名、实际提供服务的节点,以及能否访问。"
+  },
+  "table": {
+    "label": "已路由的域名",
+    "domain": "域名",
+    "app": "应用",
+    "node": "节点",
+    "reachable": "可达",
+    "port": "端口",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "可达",
+    "no": "不可达"
+  },
+  "unreachableBanner_other": "{{count}} 个域名不可达:其应用运行在其他节点上,而此控制面的入口没有可用的 WireGuard mesh 路径通向它们。请在网络页面查看 mesh 状态。",
+  "fix": {
+    "explanation": "通往此应用所在节点的 WireGuard mesh 路径不可用,因此内置入口无法访问它。请修复 mesh,或将应用移回此节点。",
+    "moveHere": "移到此节点"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "自定义"
+  },
+  "empty": {
+    "title": "尚无已路由的域名",
+    "description": "在应用的域名标签页中连接域名后,即可在此查看其流量路径。"
+  },
+  "automaticDomain": {
+    "badge": "自动",
+    "betaHint": "来自公共通配 DNS 服务的免费测试地址。仅在该服务能在你的网络中解析时可用。生产环境请添加你自己的域名。",
+    "hint": "由 Levelrail 根据此服务器的 IP 分配,因此无需配置 DNS 应用即可使用。在下方添加你自己的域名即可替换它。",
+    "open": "打开",
+    "tlsNote": "在域名中启用 HTTPS 之前,此自动 URL 使用自签名证书。普通 http 请求会被 308 重定向到它。"
+  },
+  "banner": {
+    "description": "通过此控制面路由的域名会显示在这里,包括提供服务的节点以及能否访问。"
+  }
+}

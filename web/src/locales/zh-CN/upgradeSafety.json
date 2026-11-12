@@ -1,0 +1,52 @@
+{
+  "title": "升级之前",
+  "loading": "正在检查磁盘空间、备份和停机时间",
+  "loadError": "无法检查此次升级:{{message}}",
+  "loadErrorNext": "请刷新页面,或一分钟后重试。未做任何更改。",
+  "retry": "重试",
+  "change": {
+    "label": "变更内容",
+    "fromTo": "{{from}} 到 {{to}}",
+    "migrations_other": "{{count}} 个数据库迁移",
+    "noMigrations": "无数据库迁移",
+    "schema": "schema {{from}} 到 {{to}}",
+    "schemaNote": "({{schema}})",
+    "breaking_other": "{{count}} 个破坏性变更",
+    "noBreaking": "无破坏性变更"
+  },
+  "checks": {
+    "label": "检查项",
+    "diskOk": "磁盘正常:剩余 {{free}},需要 {{needed}}",
+    "diskShort": "磁盘不足:剩余 {{free}},需要 {{needed}}",
+    "diskUnknown": "无法测量剩余磁盘空间",
+    "backupAt": "备份将保存到 {{dir}}",
+    "backupSkipped": "已跳过备份,将没有恢复点",
+    "backupNone": "未配置升级前备份"
+  },
+  "downtime": {
+    "label": "停机时间",
+    "estimate": "服务器重启期间大约离线 {{seconds}} 秒",
+    "restart": "重启:{{behaviour}}"
+  },
+  "restore": {
+    "label": "如果出现问题,请用以下命令恢复",
+    "after": "请保存此命令。它会将数据库恢复到升级之前的状态。",
+    "copyLabel": "恢复命令"
+  },
+  "blocked": {
+    "disk": "可用磁盘空间不足。请释放 {{short}} 或移动数据目录,然后刷新。",
+    "plan": "无法开始此次升级:{{reason}}",
+    "planUnknown": "升级计划失败。请刷新页面,或通过命令行执行升级。",
+    "notes": "此版本的发布说明暂不可用。请稍后重试。"
+  },
+  "skip": {
+    "toggle": "高级",
+    "label": "跳过升级前备份",
+    "warning": "不会创建恢复点。如果升级失败,你将无法回到当前数据。",
+    "hint": "备份失败。请修复原因后重试,或自行承担风险跳过。"
+  },
+  "backupFailed": {
+    "title": "升级前备份失败,因此未做任何更改",
+    "next": "请释放磁盘空间或检查备份目录是否可写,然后再次点击升级。你也可以在高级选项中跳过备份。"
+  }
+}

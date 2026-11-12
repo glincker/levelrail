@@ -1,0 +1,10 @@
+{
+  "title_other": "{{count}} 个令牌需要处理",
+  "expiring": "{{count}} 个将在 14 天内过期",
+  "longLivedRoot": "{{count}} 个 root 令牌无过期时间",
+  "unusedIntro": "已 {{days}} 天或更久未使用:",
+  "neverUsed": "从未使用",
+  "lastUsed": "上次使用",
+  "revoke": "撤销",
+  "revokeLabel": "撤销 {{name}}"
+}
