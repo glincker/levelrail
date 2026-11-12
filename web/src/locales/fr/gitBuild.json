@@ -179,7 +179,7 @@
   "push": {
     "title": "Deployer avec git push",
     "description": "Bêta. Poussez une branche vers un remote sur ce serveur et il construit et deploie ce commit précis. Le clone et le fetch ne sont pas pris en charge.",
-    "off": "Le deploy par git push est désactivé. C'est une fonction bêta, désactivée par défaut.",
+    "off": "Le deploy par Git push est désactivé. C'est une fonction bêta, désactivée par défaut.",
     "turnOn": "Activer dans Fonctions bêta",
     "notEnabled": "Non activé pour cette app. L'activer crée un token de push, affiché une seule fois.",
     "enable": "Activer git push",
