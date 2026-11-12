@@ -1,0 +1,383 @@
+{
+  "chart": {
+    "noData": "Keine Daten in diesem Zeitraum."
+  },
+  "compare": {
+    "toggle": "Mit der Vorperiode vergleichen",
+    "previousPeriod": "Vorperiode",
+    "previous5xx": "5xx, Vorperiode",
+    "previousP95": "p95, Vorperiode"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Speicher",
+    "network": "Netzwerk-I/O",
+    "disk": "Festplatten-I/O",
+    "build": "Build-Dauer",
+    "requestRate": "Anfragerate",
+    "requestRateHint": "Anfragen pro Sekunde am Ingress",
+    "requests": "Anfragen",
+    "errorRate": "Fehlerrate",
+    "errorRateHint": "Anteil der Anfragen, die mit 4xx und 5xx beantwortet wurden",
+    "latency": "Latenz",
+    "latencyHint": "p95 {{p95}} ms in diesem Zeitraum",
+    "memoryLimit": "Limit {{limit}}, Nutzung {{usage}}"
+  },
+  "series": {
+    "CPU": "CPU",
+    "usage": "Nutzung",
+    "limit": "Limit",
+    "received": "Empfangen",
+    "sent": "Gesendet",
+    "read": "Gelesen",
+    "write": "Geschrieben",
+    "duration": "Dauer"
+  },
+  "markers": {
+    "deploy": "Deploy {{status}}: {{image}}, gestartet {{time}}",
+    "restart": "{{count}} Container-Neustart(s) um {{time}}"
+  },
+  "deployStatus": {
+    "succeeded": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "running": "Läuft",
+    "held": "Zurückgehalten (eingefroren)",
+    "awaiting_approval": "Wartet auf Genehmigung",
+    "superseded": "Abgelöst",
+    "queued": "In der Warteschlange",
+    "canceled": "Abgebrochen",
+    "pending": "In der Warteschlange, bis der Node zurückkehrt"
+  },
+  "deployDetails": {
+    "title": "Deploy {{status}}",
+    "image": "Image",
+    "commit": "Commit",
+    "source": "Ausgelöst von",
+    "duration": "Dauer",
+    "error": "Fehler",
+    "openLogs": "Deploy-Logs öffnen"
+  },
+  "dashboard": {
+    "title": "Metriken",
+    "summary": "Stand {{time}}. {{deploys}} Deploys in diesem Zeitraum. Gestrichelte Linien markieren Deploys (grün erfolgreich, rot fehlgeschlagen, grau laufend) und gelbe Linien markieren Container-Neustarts.",
+    "restarts": "Neustarts: {{count}} in diesem Zeitraum.",
+    "hint": "Wählen Sie ein Diagramm, um diesen Zeitpunkt zu untersuchen. Wählen Sie eine Markierung für die Deploy-Details."
+  },
+  "range": {
+    "from": "Von",
+    "to": "Bis",
+    "apply": "Zeitraum anwenden"
+  },
+  "requests": {
+    "unavailable": "Anfragemetriken nicht verfügbar: {{message}}",
+    "empty": "Kein Anfrage-Traffic in diesem Zeitraum. Anfragerate, Fehlerrate und Latenz erscheinen hier, sobald die App über ihre Domain Anfragen erhält."
+  },
+  "investigation": {
+    "title": "Untersuchung",
+    "heading": "Untersuchung von {{time}}",
+    "window": "Fenster {{from}} bis {{to}}, verglichen mit dem Fenster davor.",
+    "viewLogs": "Logs zu diesem Zeitpunkt ansehen",
+    "clear": "Auswahl aufheben",
+    "beforeAfter": "Vorher und währenddessen",
+    "baseline": "Vorher",
+    "during": "Währenddessen",
+    "metric": {
+      "rate": "Anfragerate",
+      "p50": "p50-Latenz",
+      "p95": "p95-Latenz",
+      "p99": "p99-Latenz",
+      "err4": "4xx-Rate",
+      "err5": "5xx-Rate"
+    },
+    "noTraffic": "Kein Anfrage-Traffic in diesem Fenster.",
+    "topRoutes": "Top-Routen",
+    "noRoutes": "In diesem Fenster wurden keine Routen aufgezeichnet.",
+    "routesUnavailable": "Statistiken pro Route sind auf dieser Control Plane nicht verfügbar.",
+    "route": "Route",
+    "requests": "Anfragen",
+    "avg": "Ø",
+    "statusCodes": "Statuscodes",
+    "whatChanged": "Was sich geändert hat",
+    "noChanges": "Um diese Zeit hat sich nichts geändert.",
+    "likelyCause": "Wahrscheinliche Ursache"
+  },
+  "logs": {
+    "serviceFilter": {
+      "label": "Dienst"
+    },
+    "container": "Container",
+    "allContainers": "Alle Container",
+    "stream": "Stream",
+    "anyStream": "stdout und stderr",
+    "minLevel": "Mindeststufe",
+    "anyLevel": "Beliebige Stufe",
+    "jsonFields": "JSON-Felder",
+    "fieldKey": "field.path",
+    "fieldOp": "Operator",
+    "fieldValue": "Wert",
+    "addFilter": "Filter hinzufügen",
+    "removeFilter": "Filter {{filter}} entfernen",
+    "copyPermalink": "Permalink kopieren",
+    "copied": "Kopiert"
+  },
+  "live": {
+    "pause": "Live-Tail pausieren",
+    "resume": "Fortsetzen ({{count}} neue Zeilen)"
+  },
+  "failure": {
+    "title": "Fehlerkontext",
+    "crashloopTitle": "Diese App befindet sich im Crash-Loop",
+    "deployFailedTitle": "Der letzte Deploy ist fehlgeschlagen",
+    "crashloopSummary": "{{count}} Neustarts in den letzten {{minutes}} Minuten. Dies sind die letzten Zeilen, die der Container geschrieben hat.",
+    "deploySummary": "Der Deploy von {{image}} wurde nicht abgeschlossen. Dies sind die letzten Zeilen seiner Ausgabe.",
+    "copy": "Zeilen kopieren",
+    "openDeployLogs": "Deploy-Logs öffnen",
+    "openLogs": "Vollständige Logs öffnen",
+    "noLines": "Für diesen Fehler wurden keine Log-Zeilen erfasst.",
+    "lastLine": "Letzte Zeile:",
+    "showing": "Angezeigt werden die letzten {{shown}} von {{total}} Zeilen.",
+    "linesLabel": "Letzte Log-Zeilen des fehlerhaften Containers",
+    "expand": "Details anzeigen",
+    "collapse": "Details ausblenden"
+  },
+  "containerExit": {
+    "exitedAt": "Der Container wurde um {{time}} mit Code {{code}} beendet",
+    "exited": "Der Container wurde mit Code {{code}} beendet",
+    "oomAt": "Der Container wurde um {{time}} beendet, weil er sein Speicherlimit überschritten hat",
+    "oom": "Der Container wurde beendet, weil er sein Speicherlimit überschritten hat",
+    "deployTitle": "Warum dieses Release gestoppt wurde",
+    "deploySummary": "Container {{container}} wurde gestoppt, bevor er ausliefern konnte. Dies sind die letzten Zeilen, die er ausgegeben hat.",
+    "noLines": "Der Container hat vor dem Stopp nichts ausgegeben.",
+    "showing": "Letzte {{count}} Zeilen",
+    "linesLabel": "Letzte Zeilen, die der Container ausgegeben hat",
+    "hint": "Ein Image, dessen Entrypoint einen Unterbefehl benötigt (zum Beispiel serve), gibt seine Hilfe aus und beendet sich mit 0, wenn keiner angegeben ist: Setzen Sie den Befehl und deployen Sie erneut."
+  },
+  "liveLogs": {
+    "lineCount": "{{count}} Zeilen (zuletzt Kontext, dann live)",
+    "lastOutput": "{{count}} Zeilen: die letzte Ausgabe des gestoppten Containers",
+    "waiting": "Warten auf Log-Ausgabe...",
+    "noContainer": "Es läuft kein Container, der Logs erzeugen könnte: {{reason}}",
+    "viewDeploys": "Letztes Deploy-Log anzeigen"
+  },
+  "connection": {
+    "connecting": "Verbindet...",
+    "open": "Live",
+    "error": "Verbindet neu...",
+    "notRunning": "Läuft nicht",
+    "noContainer": "Kein Container"
+  },
+  "databaseRule": {
+    "kind": {
+      "database_disk_high": "Datenbank-Festplatte stark belegt",
+      "database_connections_high": "Viele Datenbankverbindungen",
+      "database_down": "Datenbank ausgefallen",
+      "database_backup_stale": "Datenbank-Backup veraltet"
+    },
+    "database": "Datenbank",
+    "choose": "Datenbank wählen",
+    "noDatabases": "Noch keine Datenbanken. Erstellen Sie zuerst eine auf der Seite Datenbanken.",
+    "thresholdPercent": "Alarm bei (Prozent)",
+    "thresholdHours": "Alarm, wenn das letzte gute Backup älter ist als (Stunden)",
+    "hint": {
+      "database_disk_high": "Löst aus, solange die Daten-Festplatte bei oder über diesem Prozentsatz liegt. 0 belassen für den Standard (85).",
+      "database_connections_high": "Löst aus, solange offene Verbindungen bei oder über diesem Prozentsatz des Limits liegen. 0 belassen für den Standard (80).",
+      "database_down": "Löst aus, solange die Datenbank keine Verbindungen annimmt.",
+      "database_backup_stale": "Löst aus, wenn das neueste erfolgreiche Backup älter ist. 0 belassen für den Standard (26 Stunden)."
+    },
+    "pickDatabase": "Wählen Sie, welche Datenbank überwacht wird",
+    "badPercent": "Muss zwischen 0 und 100 liegen",
+    "badHours": "Muss zwischen 0 und 8760 liegen"
+  },
+  "alertKinds": {
+    "whatToDo": "Was zu tun ist",
+    "backup_failed": {
+      "label": "Backup fehlgeschlagen",
+      "description": "Löst aus, wenn ein geplantes Backup nicht abgeschlossen wird.",
+      "action": "Öffnen Sie den fehlgeschlagenen Backup-Lauf, um den Fehler zu lesen, beheben Sie die Ursache und führen Sie dann ein Backup aus, um zu bestätigen, dass es gelingt."
+    },
+    "deploy_failed": {
+      "label": "Deploy fehlgeschlagen",
+      "description": "Löst aus, wenn ein Deploy stoppt, bevor das neue Release Traffic ausliefert.",
+      "action": "Lesen Sie die Logs des Deploys, um zu sehen, warum er gestoppt hat, beheben Sie die Ursache und deployen Sie dann erneut."
+    },
+    "monitor_down": {
+      "label": "Monitor ausgefallen",
+      "description": "Löst aus, wenn ein Uptime-Monitor nach seinen Bestätigungsprüfungen ausgefallen bleibt, und wird behoben, sobald er sich erholt hat.",
+      "action": "Öffnen Sie die Ergebnisse des Monitors, um den Fehlergrund zu sehen, und beheben Sie dann das Ziel oder seinen Netzwerkpfad."
+    },
+    "oom_killed": {
+      "label": "OOM beendet",
+      "description": "Löst aus, wenn der Kernel den Container dieser App wegen Speichermangels wiederholt innerhalb des Neustartfensters beendet.",
+      "action": "Erhöhen Sie das Speicherlimit der App oder beheben Sie das Leck, deployen Sie dann erneut und beobachten Sie das Speicherdiagramm."
+    },
+    "database_down": {
+      "label": "Datenbank ausgefallen",
+      "description": "Löst aus, solange die Datenbank keine Verbindungen annimmt.",
+      "action": "Prüfen Sie die Logs der Datenbank und starten Sie sie neu, falls sie gestoppt ist."
+    },
+    "database_backup_stale": {
+      "label": "Datenbank-Backup veraltet",
+      "description": "Löst aus, wenn das neueste erfolgreiche Backup älter ist als das von Ihnen gesetzte Limit.",
+      "action": "Prüfen Sie den Backup-Zeitplan der Datenbank und die letzten Backup-Läufe und führen Sie dann sofort ein Backup aus."
+    },
+    "database_disk_high": {
+      "label": "Datenbank-Festplatte stark belegt",
+      "description": "Löst aus, solange die Daten-Festplatte der Datenbank bei oder über dem Schwellenwert liegt.",
+      "action": "Geben Sie Platz auf der Daten-Festplatte frei oder vergrößern Sie sie, bevor der Datenbank der Platz ausgeht."
+    },
+    "database_connections_high": {
+      "label": "Viele Datenbankverbindungen",
+      "description": "Löst aus, solange offene Verbindungen nahe am Limit der Datenbank liegen.",
+      "action": "Suchen Sie in Ihren Apps nach untätigen oder undichten Verbindungen oder erhöhen Sie das Verbindungslimit."
+    },
+    "node_disk_space": {
+      "label": "Festplattenplatz des Nodes",
+      "description": "Löst aus, wenn die Festplatte eines Nodes fast voll ist.",
+      "action": "Entfernen Sie ungenutzte Images und alte Logs auf dem Node oder verschieben Sie Workloads auf einen anderen Node."
+    },
+    "email_delivery_failing": {
+      "label": "E-Mail-Zustellung schlägt fehl",
+      "description": "Löst aus, solange das Senden ausgehender E-Mails weiter fehlschlägt.",
+      "action": "Prüfen Sie die Einstellungen des E-Mail-Anbieters und die letzten Zustellungsfehler und senden Sie dann eine Test-E-Mail."
+    },
+    "cleanup_failing": {
+      "label": "Datenbereinigung schlägt fehl",
+      "description": "Löst aus, solange geplante oder manuelle Datenbereinigungsläufe weiter fehlschlagen.",
+      "action": "Öffnen Sie die Bereinigung, lesen Sie den Fehler des fehlgeschlagenen Laufs und führen Sie diese Datenart dann erneut aus."
+    },
+    "job_failing": {
+      "label": "Job schlägt fehl",
+      "description": "Löst einmal pro fehlschlagendem Job dieser App aus, bei dem Alarm bei Fehler eingeschaltet ist, begrenzt pro Job.",
+      "action": "Öffnen Sie den Lauf-Verlauf des Jobs, um die Logs des fehlgeschlagenen Laufs zu lesen, beheben Sie die Ursache und führen Sie ihn dann jetzt aus, um es zu bestätigen."
+    }
+  },
+  "budgetThreshold": {
+    "hint": "Löst aus, solange ein Projekt- oder Team-Budget (Nutzung und Kosten) seine Warnstufe erreicht hat, sein Limit überschritten hat oder voraussichtlich in diesem Monat überschritten wird. Es benachrichtigt erst wieder, wenn eine neue Stufe überschritten wird."
+  },
+  "alerts": {
+    "noChannelWarning": "Es ist kein Benachrichtigungskanal gesetzt, daher löst diese Regel aus, ohne jemanden zu benachrichtigen. Wählen Sie oben einen Kanal oder verbinden Sie einen unter Einstellungen > Benachrichtigungskanäle."
+  },
+  "explorer": {
+    "title": "Häufigste Fehlersignaturen",
+    "subtitle": "Ähnliche Fehlerzeilen zusammengefasst, wobei Zahlen, IDs und Zeitstempel ignoriert werden.",
+    "occurrences_one": "{{count}} Vorkommen",
+    "occurrences_other": "{{count}} Vorkommen",
+    "firstSeen": "zuerst gesehen {{time}}",
+    "lastSeen": "zuletzt gesehen {{time}}",
+    "newBadge": "Neu",
+    "sparkline": "Verlauf von {{count}} Vorkommen im gewählten Zeitraum",
+    "viewLines": "Zeilen ansehen",
+    "alertOnThis": "Dafür alarmieren",
+    "onlyNew_one": "Nur neue ({{count}})",
+    "onlyNew_other": "Nur neue ({{count}})",
+    "noNew": "Keine neuen Fehlertypen in diesem Zeitraum.",
+    "empty": "Keine Fehlerzeilen in diesem Zeitraum.",
+    "emptyHint": "Erweitern Sie den Zeitraum oder schauen Sie nach dem nächsten Deploy wieder vorbei.",
+    "truncated": "Es wurden nur die neuesten {{rows}} Zeilen gelesen. Grenzen Sie den Zeitraum für exakte Zahlen ein.",
+    "saved": "Gespeichert",
+    "orderLabel": "Reihenfolge der Ergebnisse",
+    "orderNewest": "Neueste",
+    "orderRelevance": "Relevanz",
+    "savedHeading": "Gespeicherte Abfragen",
+    "savedEmpty": "Für diese App gibt es noch keine gespeicherten Abfragen.",
+    "recent": "Zuletzt",
+    "saveName": "Name für die aktuelle Suche",
+    "saveCurrent": "Aktuelle Suche speichern",
+    "saveNeedsFilter": "Fügen Sie eine Suche, Stufe oder einen Feldfilter hinzu, um sie zu speichern.",
+    "shareWithTeam": "Mit allen teilen, die diese App sehen können",
+    "pinToApp": "An diese App anheften",
+    "savedToast": "Abfrage gespeichert.",
+    "deleteSaved": "Gespeicherte Abfrage {{name}} löschen",
+    "alertFromSearch": "Dafür alarmieren",
+    "alertTitle": "Log-Alarm erstellen",
+    "alertDescription": "Löst aus, wenn passende Zeilen den Schwellenwert innerhalb des Fensters erreichen. Wird jede Minute anhand gespeicherter Logs geprüft.",
+    "alertAnyLine": "Jede Zeile ab Stufe {{level}}",
+    "alertDefaultName": "Log-Alarm für {{app}}",
+    "alertName": "Name",
+    "alertMode": "Alarmtyp",
+    "modeCount": "Treffer mindestens",
+    "modeRate": "Zeilen pro Minute mindestens",
+    "alertThreshold": "Schwellenwert",
+    "alertWindow": "Fenster",
+    "inWindow": "in {{window}}",
+    "cooldown": "Abkühlzeit",
+    "channel": "Benachrichtigungskanal",
+    "channelNone": "Kein Kanal",
+    "cancel": "Abbrechen",
+    "createAlert": "Alarm erstellen",
+    "alertCreated": "Alarmregel \"{{name}}\" erstellt.",
+    "wrap": "Umbrechen",
+    "entryDetail": "Log-Zeile",
+    "copyLine": "Zeile kopieren",
+    "closeDetail": "Detail schließen",
+    "filterByField": "Nach {{field}} filtern",
+    "context": "Umgebende Zeilen",
+    "loading": "Wird geladen...",
+    "signatureFilter": "Angezeigt werden Zeilen der Fehlersignatur {{id}}.",
+    "clearSignature": "Alle Zeilen anzeigen",
+    "newErrorTypes_one": "{{count}} neuer Fehlertyp seit diesem Deploy",
+    "newErrorTypes_other": "{{count}} neue Fehlertypen seit diesem Deploy",
+    "tabErrors": "Fehler",
+    "conditionPattern": "{{count}} oder mehr Zeilen, die {{what}} entsprechen, innerhalb von {{minutes}} Min.",
+    "conditionRate": "Mehr als {{rate}} Zeilen pro Minute ab Stufe {{level}} über {{minutes}} Min.",
+    "searchPlaceholder": "Log-Nachrichten durchsuchen...",
+    "searchLabel": "Log-Nachrichten durchsuchen",
+    "clearSearch": "Suche leeren",
+    "searchSyntax": "Syntax: \"genaue Wortgruppe\", Präfix*, a OR b, a NOT b, -Wort, ( ) zum Gruppieren."
+  },
+  "slo": {
+    "title": "Service-Level-Ziele",
+    "availabilityObjective": "{{target}}% der Anfragen sind erfolgreich",
+    "latencyObjective": "{{target}}% der Anfragen enden innerhalb von {{ms}} ms",
+    "noTraffic": "Kein Traffic",
+    "noTrafficHint": "Im Auswertungsfenster hat keine Anfrage diese App erreicht, daher gibt es noch nichts zu messen.",
+    "paging": "Alarmierung",
+    "burning": "Verbrauch",
+    "healthy": "In Ordnung",
+    "firing": "Ausgelöst",
+    "budgetRemaining": "Verbleibendes Fehlerbudget",
+    "tierWindow": "{{name}} ({{long}} und {{short}})",
+    "burnRate": "{{rate}}x Verbrauch"
+  },
+  "appScrape": {
+    "title": "App-Metriken",
+    "subtitle": "Reihen, die vom eigenen Metrik-Endpunkt der App in ihrem Container abgerufen werden.",
+    "metric": "Metrik",
+    "pickMetric": "Metrik wählen",
+    "range": "Zeitraum",
+    "hours_one": "Letzte {{count}} Stunde",
+    "hours_other": "Letzte {{count}} Stunden",
+    "empty": "Noch keine Reihen gespeichert. Der erste Abruf läuft im nächsten Intervall.",
+    "port": "Container-Port",
+    "path": "Pfad",
+    "save": "Ziel speichern",
+    "lastError": "Letzter Abruf fehlgeschlagen: {{error}}",
+    "invalidPort": "Geben Sie einen Port von 1 bis 65535 ein.",
+    "invalidPath": "Verwenden Sie einen einfachen Pfad wie /metrics."
+  },
+  "accessSearch": {
+    "formLabel": "Anfragefilter",
+    "status": "Status",
+    "anyStatus": "Beliebiger Status",
+    "method": "Methode",
+    "anyMethod": "Beliebige Methode",
+    "path": "Pfadpräfix",
+    "pathPlaceholder": "/api/",
+    "text": "Pfad enthält",
+    "textPlaceholder": "Text im Pfad",
+    "window": "Zeitfenster",
+    "search": "Suchen",
+    "privacyNote": "Letzte Anfragen werden im Arbeitsspeicher am Edge gehalten. Query-Strings werden nie aufgezeichnet und Client-IPs nicht angezeigt.",
+    "loading": "Anfragen werden geladen",
+    "empty": "Keine Anfragen passen zu diesen Filtern.",
+    "colTime": "Zeit",
+    "colStatus": "Status",
+    "colMethod": "Methode",
+    "colPath": "Host und Pfad",
+    "colDuration": "ms",
+    "truncated": "Die Suche hat ihr Scanlimit erreicht. Grenzen Sie die Filter für ein vollständiges Ergebnis ein.",
+    "newer": "Neuer",
+    "older": "Älter",
+    "tab": "Anfragen"
+  }
+}

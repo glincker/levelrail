@@ -1,0 +1,96 @@
+{
+  "title": "Routing-Regeln",
+  "description": "Weiterleitungen, Rewrites und Header, mit denen diese Website veröffentlicht wurde. Sie stammen aus den Dateien _redirects und _headers im veröffentlichten Verzeichnis sowie aus app.yaml und ändern sich nur, wenn Sie deployen.",
+  "loadFailed": "Die Routing-Regeln konnten nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "notStatic": {
+    "title": "Diese App ist keine statische Website",
+    "description": "Routing-Regeln gelten für Apps mit build.type: static. Container-Apps nutzen die Traffic-Steuerung auf der Seite Domains."
+  },
+  "notPublished": {
+    "title": "Vor Einführung der Routing-Regeln veröffentlicht",
+    "description": "Deployen Sie diese Website erneut, um _redirects, _headers sowie die Optionen für SPA, saubere URLs und 404 zu aktivieren. Nichts geht verloren: Die Website liefert ihre Dateien weiter wie bisher aus."
+  },
+  "options": {
+    "title": "Auslieferungsoptionen",
+    "spa": "Fallback für Single-Page-Apps",
+    "cleanUrls": "Saubere URLs",
+    "trailingSlash": "Abschließender Schrägstrich",
+    "notFound": "404-Seite",
+    "on": "An",
+    "off": "Aus",
+    "slashOff": "Wie angefragt belassen",
+    "slashAdd": "Immer hinzufügen",
+    "slashRemove": "Immer entfernen",
+    "defaultNotFound": "404.html, falls vorhanden"
+  },
+  "precedence": {
+    "title": "Auswertungsreihenfolge",
+    "body": "Zuerst laufen die Regeln der Reihe nach, die erste Übereinstimmung gewinnt. Eine Regel wird übersprungen, wenn am angefragten Pfad eine Datei existiert, es sei denn, sie ist mit ! erzwungen. Danach werden Dateien ausgeliefert, dann der Single-Page-App-Fallback, dann die 404-Seite."
+  },
+  "rules": {
+    "title": "Weiterleitungen und Rewrites",
+    "label": "Regeln für Weiterleitungen und Rewrites",
+    "from": "Von",
+    "to": "Nach",
+    "status": "Status",
+    "source": "Definiert in",
+    "forced": "erzwungen",
+    "kindRewrite": "Rewrite",
+    "kindRedirect": "Weiterleitung",
+    "kindPage": "Seite",
+    "empty": {
+      "title": "Keine Regeln für Weiterleitungen oder Rewrites",
+      "description": "Fügen Sie dem veröffentlichten Verzeichnis eine Datei _redirects oder app.yaml eine routes-Liste hinzu und deployen Sie."
+    }
+  },
+  "headers": {
+    "title": "Antwort-Header",
+    "label": "Header-Regeln",
+    "path": "Pfad",
+    "set": "Setzt",
+    "remove": "Entfernt",
+    "source": "Definiert in",
+    "empty": {
+      "title": "Keine Header-Regeln",
+      "description": "Fügen Sie dem veröffentlichten Verzeichnis eine Datei _headers oder app.yaml eine headers-Liste hinzu und deployen Sie."
+    }
+  },
+  "problems": {
+    "title": "Beim Veröffentlichen dieses Deploys gefundene Probleme",
+    "description": "Diese Zeilen wurden übersprungen und nicht angewendet. Beheben Sie sie in Ihrem Repository und deployen Sie erneut.",
+    "line": "Zeile {{line}}",
+    "none": "Keine Probleme gefunden."
+  },
+  "test": {
+    "title": "URL testen",
+    "description": "Schicken Sie eine Anfrage durch die aktiven Regeln und Dateien und sehen Sie, was sie beantwortet.",
+    "pathLabel": "Pfad",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "Query-String",
+    "queryPlaceholder": "id=42",
+    "run": "Testen",
+    "running": "Wird getestet",
+    "result": "Ergebnis",
+    "redirectTo": "Leitet weiter nach {{target}}",
+    "serves": "Liefert {{file}} aus",
+    "plain": "Einfache Antwort ohne Seite",
+    "matchedRule": "Regel: {{rule}}",
+    "noRule": "Keine Regel passte, beantwortet durch Dateien und Optionen",
+    "trace": "Schritte",
+    "headersApplied": "Hinzugefügte Header",
+    "invalidPath": "Geben Sie einen Pfad ein, der mit / beginnt",
+    "failed": "Der Test konnte nicht ausgeführt werden."
+  },
+  "lint": {
+    "title": "Regeln vor dem Deploy prüfen",
+    "description": "Fügen Sie den Inhalt einer Datei _redirects oder _headers ein, um zu sehen, wie sie geparst wird. Es wird nichts deployt.",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "Prüfen",
+    "running": "Wird geprüft",
+    "ok": "{{rules}} Regeln und {{headers}} Header-Blöcke ohne Probleme geparst.",
+    "withProblems": "{{rules}} Regeln und {{headers}} Header-Blöcke geparst, {{problems}} Zeilen übersprungen.",
+    "failed": "Die Prüfung konnte nicht ausgeführt werden."
+  }
+}

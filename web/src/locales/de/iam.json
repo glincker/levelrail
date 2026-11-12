@@ -1,0 +1,336 @@
+{
+  "page": {
+    "title": "Zugriffsrichtlinien",
+    "description": "Allow- und Deny-Regeln, begrenzt auf eine App, Datenbank oder Umgebung. Ein Deny gewinnt immer; ein Allow kann engeren Zugriff gewähren als die globalen Berechtigungen eines Tokens.",
+    "createPolicy": "Richtlinie erstellen",
+    "tabs": {
+      "policies": "Richtlinien",
+      "access": "Wer hat Zugriff",
+      "simulator": "Simulator",
+      "analyzer": "Analyzer"
+    },
+    "loadError": "Richtlinien konnten nicht geladen werden",
+    "retry": "Erneut versuchen"
+  },
+  "risk": {
+    "read": "Lesen",
+    "write": "Ändert etwas",
+    "sensitive": "Sensibel",
+    "root": "Root"
+  },
+  "group": {
+    "view": "Ansehen",
+    "change": "Ändern",
+    "deploy": "Deployen",
+    "admin": "Verwalten"
+  },
+  "list": {
+    "empty": {
+      "title": "Noch keine Richtlinien",
+      "description": "Beginnen Sie mit einer Vorlage oder bauen Sie eine Regel nach der anderen. Für niemanden ändert sich etwas, bis eine Richtlinie zugewiesen ist."
+    },
+    "table": {
+      "name": "Richtlinie",
+      "rules": "Regeln",
+      "appliesTo": "Gilt für",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen"
+    },
+    "notAttached": "Nicht zugewiesen",
+    "open": "Öffnen",
+    "edit": "Bearbeiten",
+    "attach": "Zuweisen",
+    "delete": "Löschen",
+    "allow": "{{count}} Allow",
+    "deny": "{{count}} Deny",
+    "rules_one": "{{count}} Regel",
+    "rules_other": "{{count}} Regeln",
+    "appliesToCount_one": "{{count}} Prinzipal",
+    "appliesToCount_other": "{{count}} Prinzipale"
+  },
+  "builder": {
+    "createTitle": "Richtlinie erstellen",
+    "editTitle": "{{name}} bearbeiten",
+    "description": "Wählen Sie, was erlaubt oder verweigert wird, und auf welchen Ressourcen. Das JSON rechts wird erzeugt und ist das, was gespeichert wird.",
+    "name": "Name",
+    "namePlaceholder": "z. B. deployer-staging",
+    "nameRequired": "Name ist erforderlich",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Wofür diese Richtlinie gedacht ist",
+    "statement": "Regel {{n}}",
+    "addStatement": "Regel hinzufügen",
+    "removeStatement": "Regel {{n}} entfernen",
+    "effect": {
+      "label": "Wirkung",
+      "allow": "Allow",
+      "deny": "Deny",
+      "allowHint": "Gewährt diese Berechtigungen auf den Ressourcen unten.",
+      "denyHint": "Blockiert diese Berechtigungen auf den Ressourcen unten, selbst für ein Token, das sie besitzt."
+    },
+    "actions": {
+      "label": "Berechtigungen",
+      "search": "Berechtigungen suchen",
+      "all": "Jede Berechtigung",
+      "allHint": "Passt auf jede aktuelle oder künftige Berechtigung, Root eingeschlossen.",
+      "required": "Wählen Sie mindestens eine Berechtigung",
+      "noMatch": "Keine Berechtigung passt zu dieser Suche.",
+      "selected": "{{count}} ausgewählt"
+    },
+    "resources": {
+      "label": "Ressourcen",
+      "required": "Wählen Sie mindestens eine Ressource",
+      "add": "Ressource hinzufügen",
+      "kind": "Art",
+      "value": "Eine wählen",
+      "search": "Suchen",
+      "noOptions": "Von dieser Art existiert noch nichts.",
+      "remove": "{{resource}} entfernen",
+      "kinds": {
+        "all": "Alles",
+        "project": "Ein Projekt",
+        "environment": "Eine Umgebung",
+        "environment_kind": "Eine Umgebungsart",
+        "app": "Eine bestimmte App",
+        "database": "Eine bestimmte Datenbank",
+        "static_site": "Eine bestimmte statische Website",
+        "pattern": "Ein Namensmuster"
+      },
+      "patternPlaceholder": "app:web-*",
+      "patternHint": "Endet auf * für ein Präfix, zum Beispiel app:web-*",
+      "projectNote": "Wird beim Speichern auf die {{count}} Umgebungen des Projekts erweitert.",
+      "matchNone": "trifft heute auf nichts zu",
+      "matchAll": "alles",
+      "matchChecking": "wird geprüft",
+      "matchApps_one": "{{count}} App",
+      "matchApps_other": "{{count}} Apps",
+      "matchDatabases_one": "{{count}} Datenbank",
+      "matchDatabases_other": "{{count}} Datenbanken",
+      "matchStaticSites_one": "{{count}} statische Website",
+      "matchStaticSites_other": "{{count}} statische Websites"
+    },
+    "conditions": {
+      "title": "Bedingungen",
+      "description": "Der Evaluator hat noch keine Bedingungs-Engine, daher gelten Regeln bedingungslos. Begrenzen Sie über die Ressourcen oben nach Umgebung.",
+      "planned": "Noch nicht durchgesetzt",
+      "sourceIp": "Quell-IP oder CIDR",
+      "timeWindow": "Zeitfenster und Zeitzone",
+      "mfa": "MFA oder Sitzungsalter"
+    },
+    "json": {
+      "title": "Dokument",
+      "advanced": "JSON bearbeiten",
+      "advancedHint": "Die Bearbeitung hier ersetzt die geführten Regeln. Feldfehler verweisen auf den Pfad.",
+      "invalid": "Dies ist kein gültiges Richtliniendokument: {{reason}}",
+      "apply": "Dieses JSON verwenden",
+      "reset": "Zurück zur Führung"
+    },
+    "issues": {
+      "title": "Probleme",
+      "ok": "Dokument ist gültig",
+      "checking": "Wird geprüft"
+    },
+    "template": {
+      "title": "Mit einer Vorlage beginnen",
+      "pick": "Vorlage",
+      "none": "Leere Richtlinie",
+      "use": "Regeln ausfüllen",
+      "param": {
+        "environment": "Umgebung",
+        "app": "App",
+        "database": "Datenbank",
+        "project": "Projekt"
+      },
+      "failed": "Die Vorlage konnte nicht erweitert werden"
+    },
+    "attach": {
+      "title": "Beim Speichern zuweisen",
+      "description": "Optional. Wählen Sie, wer diese Richtlinie sofort erhält.",
+      "none": "Noch niemand"
+    },
+    "save": "Richtlinie speichern",
+    "saving": "Speichern",
+    "saved": "Richtlinie {{name}} gespeichert",
+    "cancel": "Abbrechen"
+  },
+  "impact": {
+    "title": "Was sich dadurch ändert",
+    "checking": "Die Wirkung wird ermittelt",
+    "none": "Noch ist niemand betroffen.",
+    "noChange": "{{name}}: keine Änderung beim effektiven Zugriff.",
+    "recentlyUsed": "In den letzten 7 Tagen verwendet",
+    "guardBlocked": "Blockiert: Dadurch bliebe kein Root-Prinzipal übrig, der die Plattform verwalten kann.",
+    "showResources": "Ressourcen anzeigen",
+    "tooManyHidden": "und mehr",
+    "gains_one": "{{name}} erhält {{ability}} auf {{count}} Ressource",
+    "gains_other": "{{name}} erhält {{ability}} auf {{count}} Ressourcen",
+    "loses_one": "{{name}} verliert {{ability}} auf {{count}} Ressource",
+    "loses_other": "{{name}} verliert {{ability}} auf {{count}} Ressourcen"
+  },
+  "versions": {
+    "title": "Verlauf",
+    "empty": "Noch keine gespeicherten Versionen.",
+    "version": "Version {{n}}",
+    "by": "von {{actor}}",
+    "unknownActor": "unbekannt",
+    "added": "Hinzugefügt",
+    "removed": "Entfernt",
+    "noChange": "Keine Regeländerungen",
+    "initial": "Erste gespeicherte Version"
+  },
+  "detail": {
+    "title": "Richtliniendetails",
+    "rules": "Regeln",
+    "appliesTo": "Gilt für",
+    "nobody": "Niemandem zugewiesen. Sie hat keine Wirkung, bis sie zugewiesen wird.",
+    "findings": "Befunde zu dieser Richtlinie",
+    "noFindings": "Keine Befunde zu dieser Richtlinie.",
+    "detach": "Entziehen",
+    "close": "Schließen"
+  },
+  "access": {
+    "search": "Benutzer und Tokens suchen",
+    "filter": {
+      "all": "Alle",
+      "user": "Benutzer",
+      "token": "Tokens"
+    },
+    "empty": {
+      "title": "Keine Benutzer oder Tokens passen",
+      "description": "Leeren Sie die Suche oder wechseln Sie den Filter."
+    },
+    "user": "Benutzer",
+    "token": "Token",
+    "inactive": "Widerrufen oder abgelaufen",
+    "pickOne": {
+      "title": "Wählen Sie einen Benutzer oder ein Token",
+      "description": "Sehen Sie, was es tun kann und welche Richtlinien das bestimmen."
+    },
+    "attachedPolicies": "Zugewiesene Richtlinien",
+    "noPolicies": "Keine Richtlinien zugewiesen. Nur die eigenen Berechtigungen gelten.",
+    "attach": "Richtlinie zuweisen",
+    "bulkAttach": "Den ausgewählten Tokens zuweisen",
+    "selectedCount": "{{count}} ausgewählt",
+    "selectAllTokens": "Alle angezeigten Tokens auswählen",
+    "clearSelection": "Leeren",
+    "flatAbilities": "Berechtigungen",
+    "lastUsed": "Zuletzt verwendet {{when}}",
+    "neverUsed": "Nie verwendet",
+    "policiesCount_one": "{{count}} Richtlinie",
+    "policiesCount_other": "{{count}} Richtlinien"
+  },
+  "attachDialog": {
+    "attachTitle": "Richtlinie zuweisen",
+    "detachTitle": "Richtlinie entziehen",
+    "description": "Prüfen Sie, was sich ändert, und bestätigen Sie dann. Die Änderung wird im Audit-Log festgehalten.",
+    "policy": "Richtlinie",
+    "policyPick": "Richtlinie wählen",
+    "principals": "Wer",
+    "noPrincipals": "Wählen Sie mindestens einen Benutzer oder ein Token",
+    "confirmAttach": "Zuweisen",
+    "confirmDetach": "Entziehen",
+    "working": "In Arbeit",
+    "failed": "Einige Änderungen sind fehlgeschlagen: {{message}}",
+    "attached_one": "{{name}} wurde {{count}} Prinzipal zugewiesen",
+    "attached_other": "{{name}} wurde {{count}} Prinzipalen zugewiesen",
+    "detached_one": "{{name}} wurde {{count}} Prinzipal entzogen",
+    "detached_other": "{{name}} wurde {{count}} Prinzipalen entzogen"
+  },
+  "effective": {
+    "title": "Was kann {{name}} tun?",
+    "ability": "Berechtigung",
+    "scope": "Erlaubt auf",
+    "viaPolicy": "Durch eine Richtlinie gewährt",
+    "deniedByPolicy": "Durch eine Richtlinie blockiert",
+    "all": "Alle {{total}} Ressourcen",
+    "some": "{{allowed}} von {{total}}",
+    "none": "Keine",
+    "noResources": "Noch keine Apps oder Datenbanken",
+    "restricted": "Dieser Prinzipal sieht nur Umgebungen, die ihm freigegeben wurden.",
+    "apps": "Apps",
+    "databases": "Datenbanken"
+  },
+  "simulator": {
+    "title": "Darf dieser Prinzipal das?",
+    "description": "Führt denselben Evaluator aus, der jede Anfrage absichert. Es wird nichts geändert.",
+    "principal": "Prinzipal",
+    "principalPick": "Benutzer oder Token wählen",
+    "action": "Berechtigung",
+    "resource": "Ressource",
+    "resourcePick": "App oder Datenbank wählen",
+    "resourceCustom": "Oder eine Ressource eingeben",
+    "run": "Prüfen",
+    "running": "Wird geprüft",
+    "allowed": "Erlaubt",
+    "denied": "Verweigert",
+    "summary": "{{name}} {{verdict}} {{action}} auf {{resource}}",
+    "verdictAllow": "darf",
+    "verdictDeny": "darf nicht",
+    "decidedBy": {
+      "explicit_deny": "Ein ausdrückliches Deny in einer zugewiesenen Richtlinie hat dies entschieden.",
+      "base_ability": "Die eigenen Berechtigungen des Prinzipals gewähren es, und kein Deny traf zu.",
+      "explicit_allow": "Ein Allow in einer zugewiesenen Richtlinie gewährt es.",
+      "no_grant": "Nichts gewährt es: Keine Berechtigung und keine Allow-Regel passt.",
+      "hidden": "Die Ressource liegt außerhalb der Umgebungen, die dieser Prinzipal sehen kann, daher lautet die Antwort nicht gefunden.",
+      "inactive_principal": "Dieses Token ist widerrufen oder abgelaufen, daher wird jede Anfrage abgelehnt."
+    },
+    "decidingStatement": "Entscheidende Regel",
+    "matched": "Jede Regel, die zutraf",
+    "noneMatched": "Keine Regel einer zugewiesenen Richtlinie traf zu.",
+    "policy": "Richtlinie {{name}}, Regel {{n}}",
+    "environments": "Gesehener Umgebungsbereich: {{list}}",
+    "failed": "Die Prüfung konnte nicht ausgeführt werden",
+    "needsInput": "Wählen Sie zuerst einen Prinzipal und eine Ressource.",
+    "showEffective": "Was kann dieser Prinzipal tun?"
+  },
+  "analyzer": {
+    "title": "Richtlinien-Analyzer",
+    "description": "Statische Prüfungen über jede Richtlinie, Zuweisung und jedes Token. Jeder Befund sagt, was zu ändern ist.",
+    "score": "Wert {{score}} von 100",
+    "scoreLabel": "Wert für Zugriffshygiene",
+    "clean": {
+      "title": "Keine Befunde",
+      "description": "Nichts in Ihren Richtlinien erfordert Aufmerksamkeit."
+    },
+    "severity": {
+      "critical": "Kritisch",
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig",
+      "info": "Hinweis"
+    },
+    "all": "Alle",
+    "fix": "Beheben",
+    "openPolicy": "Richtlinie öffnen",
+    "openPrincipal": "Zugriff ansehen",
+    "rerun": "Erneut ausführen",
+    "count": "{{count}} Befunde"
+  },
+  "suggestions": {
+    "title": "Minimale Rechte",
+    "description": "Tokens im Vergleich zu dem, was laut Audit-Log in den letzten {{days}} Tagen von ihnen genutzt wurde.",
+    "empty": "Jedes Token besitzt nur Berechtigungen, die es nutzt.",
+    "granted": "Gewährt",
+    "suggested": "Vorgeschlagen",
+    "unused": "Ungenutzt",
+    "status": {
+      "ok": "In Benutzung",
+      "narrow": "Eng",
+      "idle": "Ungenutzt"
+    },
+    "revoke": "Token widerrufen",
+    "revoked": "Token {{name}} widerrufen",
+    "confirmTitle": "{{name}} widerrufen?",
+    "confirmDescription": "Alles, was dieses Token verwendet, funktioniert nicht mehr. Das lässt sich nicht rückgängig machen.",
+    "pending": "Wird widerrufen",
+    "note": "Einfache Leseanfragen werden nicht auditiert, daher wird Lesen nie als ungenutzt markiert."
+  },
+  "delete": {
+    "title": "{{name}} löschen?",
+    "description": "Alle, denen sie zugewiesen ist, verlieren ihre Regeln. Das lässt sich nicht rückgängig machen.",
+    "confirm": "Richtlinie löschen",
+    "deleted": "Richtlinie {{name}} gelöscht"
+  },
+  "errors": {
+    "generic": "Die Anfrage ist fehlgeschlagen. Versuchen Sie es erneut."
+  }
+}

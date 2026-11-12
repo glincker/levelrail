@@ -1,0 +1,276 @@
+{
+  "title": "Plugins",
+  "description": "Signierte Erweiterungen, die in abgeriegelten Containern laufen. Nichts von Dritten wird geladen, bis Sie seinem Herausgeber vertrauen und genehmigen, was es tun darf.",
+  "install": "Plugin installieren",
+  "tabs": {
+    "installed": "Installiert",
+    "marketplace": "Marketplace"
+  },
+  "marketplace": {
+    "search": "Plugins suchen",
+    "categories": "Kategorien",
+    "allCategories": "Alle",
+    "verified": "Verifiziert",
+    "abilitiesSummary": "Fordert an: {{abilities}}",
+    "install": "Installieren",
+    "update": "Aktualisieren",
+    "uninstall": "Deinstallieren",
+    "updateAvailable": "Auf {{version}} aktualisieren",
+    "installedState": "{{version}} installiert",
+    "needsNewer": "Benötigt Control Plane {{version}} oder neuer",
+    "showMore": "{{count}} weitere anzeigen",
+    "recheck": "Erneut prüfen",
+    "rechecking": "Wird geprüft...",
+    "retry": "Erneut versuchen",
+    "cancel": "Abbrechen",
+    "installed": "{{name}} installiert und aktiviert",
+    "updated": "{{name}} aktualisiert",
+    "uninstalled": "{{name}} entfernt",
+    "loadFailed": "Der Marketplace konnte nicht geladen werden",
+    "empty": {
+      "title": "Keine Plugins passen",
+      "description": "Versuchen Sie eine andere Suche oder Kategorie oder prüfen Sie die Quellen erneut."
+    },
+    "noSources": {
+      "title": "Noch keine Marketplace-Quelle",
+      "description": "Fügen Sie unten eine Index-Quelle hinzu. Jede Quelle ist mit einem Root-Schlüssel signiert, dem Sie vertrauen."
+    },
+    "problem": {
+      "fetch": "{{name}} konnte nicht erreicht werden",
+      "signature": "Der Index von {{name}} hat die Signaturprüfung nicht bestanden und wurde ignoriert",
+      "format": "Der Index von {{name}} ist fehlerhaft und wurde ignoriert",
+      "replay": "Der Index von {{name}} ist älter als ein bereits gesehener und wurde ignoriert",
+      "too_large": "Der Index von {{name}} ist zu groß und wurde ignoriert"
+    },
+    "sheet": {
+      "title": "{{name}} installieren",
+      "updateTitle": "{{name}} aktualisieren",
+      "description": "Prüfen Sie genau, was diese Installation tut. Die Control Plane prüft alles noch einmal, bevor sie etwas ändert.",
+      "failed": "Dieser Eintrag konnte nicht verifiziert werden",
+      "source": "Marketplace-Quelle",
+      "key": "Herausgeber-Schlüssel",
+      "digest": "Image-Digest",
+      "abilities": "Berechtigungen, die genehmigt werden",
+      "exactly": "Nur die hier aufgeführten Berechtigungen werden genehmigt. Nichts anderes wird gewährt, und das Plugin wird nach der Installation aktiviert.",
+      "trust": "Dem Herausgeber-Schlüssel von {{name}} vertrauen",
+      "trustHint": "Der Schlüssel wird Ihrer Vertrauensliste hinzugefügt und als vom Marketplace hinzugefügt gekennzeichnet. Sie können ihn jederzeit entfernen.",
+      "install": "Installieren und aktivieren",
+      "update": "Aktualisieren",
+      "pending": "In Arbeit..."
+    },
+    "sources": {
+      "title": "Marketplace-Quellen",
+      "description": "Jede Quelle ist ein signierter Plugin-Index. Es werden nur Einträge angezeigt, die mit dem Root-Schlüssel der Quelle signiert sind.",
+      "empty": "Keine Quellen konfiguriert.",
+      "status": {
+        "ok": "aktuell",
+        "stale": "zeigt die letzte gute Kopie",
+        "error": "nicht verfügbar"
+      },
+      "rootKey": "Root-Schlüssel {{key}}",
+      "name": "Name",
+      "url": "Index-URL",
+      "rootKeyLabel": "Öffentlicher Root-Schlüssel (base64)",
+      "add": "Quelle hinzufügen",
+      "added": "Quelle hinzugefügt",
+      "remove": "Entfernen",
+      "removeTitle": "{{name}} entfernen?",
+      "removeDescription": "Ihre Einträge verschwinden. Bereits daraus installierte Plugins laufen weiter."
+    }
+  },
+  "loadFailed": "Plugins konnten nicht geladen werden",
+  "loadFailedHint": "Die Plugin-Laufzeit benötigt einen erreichbaren Docker-Daemon. Prüfen Sie die Logs der Control Plane und laden Sie dann neu.",
+  "empty": {
+    "title": "Keine Plugins installiert",
+    "description": "Vertrauen Sie zuerst einem Herausgeber-Schlüssel und installieren Sie dann ein Plugin-Paket, das Sie von ihm erhalten haben. Das Paketformat finden Sie in der Plugin-Anleitung.",
+    "action": "Ihr erstes Plugin installieren"
+  },
+  "columns": {
+    "name": "Plugin",
+    "state": "Status",
+    "requested": "Angeforderte Berechtigungen",
+    "approved": "Genehmigte Berechtigungen",
+    "actions": "Aktionen"
+  },
+  "publisher": "von {{publisher}}",
+  "none": "Keine",
+  "state": {
+    "installed": "Genehmigung nötig",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "removing": "Wird entfernt",
+    "running": "Läuft",
+    "stopped": "Läuft nicht"
+  },
+  "lastError": "Letzter Fehler: {{message}}",
+  "actions": {
+    "review": "Prüfen und genehmigen",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "remove": "Entfernen",
+    "enabled": "{{name}} aktiviert",
+    "disabled": "{{name}} deaktiviert",
+    "removed": "{{name}} entfernt",
+    "failed": "Plugin-Aktion fehlgeschlagen",
+    "upgrade": "Upgrade",
+    "uninstall": "Deinstallieren",
+    "restarted": "{{name}} neu gestartet"
+  },
+  "abilities": {
+    "read": "Das zugestellte Alarmereignis empfangen (Titel, Text, Status, Ressource).",
+    "readSensitive": "Auch an Alarme angehängte Log-Auszüge empfangen, die Secrets enthalten können."
+  },
+  "approve": {
+    "title": "{{name}} genehmigen",
+    "description": "Prüfen Sie genau, was {{name}} {{version}} von {{publisher}} anfordert. Nichts wird gewährt, bis Sie es ankreuzen und genehmigen.",
+    "requested": "Angeforderte Berechtigungen",
+    "network": "Netzwerkzugriff",
+    "networkNone": "Kein Netzwerk. Das Plugin kann nichts außerhalb seines Containers erreichen.",
+    "networkHosts": "Hosts, die das Plugin nach eigener Angabe braucht: {{hosts}}.",
+    "networkNote": "Diese Hosts werden nur durchgesetzt, wenn der Egress-Proxy an ist. Bis dahin hat ein Plugin mit einem deklarierten Host allgemeinen Netzwerkzugriff.",
+    "image": "Image",
+    "signedBy": "Signiert mit Schlüssel",
+    "never": "Secrets werden vom Plugin nie gespeichert. Die Zugangsdaten eines Kanals werden nur mit jeder Zustellung gesendet.",
+    "submit": "Auswahl genehmigen",
+    "pending": "Wird genehmigt",
+    "later": "Später entscheiden",
+    "needsRead": "Kreuzen Sie die Leseberechtigung an: Ein Benachrichtigungs-Plugin kann ohne sie nicht funktionieren.",
+    "approved": "{{name}} genehmigt. Aktivieren Sie es, um es zu starten.",
+    "failed": "Das Plugin konnte nicht genehmigt werden"
+  },
+  "installDialog": {
+    "title": "Plugin installieren",
+    "description": "Fügen Sie das Manifest und die Signatur des Herausgebers ein. Die Installation verifiziert sie und zeichnet das Paket auf. Sie genehmigt oder startet nichts.",
+    "manifest": "Manifest (plugin.yaml)",
+    "manifestHint": "Fügen Sie die Datei genau so ein, wie der Herausgeber sie ausgeliefert hat. Jede Änderung bricht die Signatur.",
+    "signature": "Signatur",
+    "keyId": "Signaturschlüssel",
+    "noKeys": "Noch keine vertrauenswürdigen Schlüssel. Fügen Sie zuerst unten den Schlüssel des Herausgebers hinzu.",
+    "pending": "Wird verifiziert",
+    "cancel": "Abbrechen",
+    "installed": "{{name}} installiert. Prüfen Sie als Nächstes seine Berechtigungen.",
+    "failed": "Installation fehlgeschlagen",
+    "upgradeTitle": "{{name}} upgraden",
+    "reviewDescription": "Prüfen Sie, wer dies veröffentlicht hat, ob es verifiziert wird und was genau es darf. Das Genehmigen gewährt nur die aufgeführten Berechtigungen.",
+    "source": "Quelle",
+    "sourceManifest": "Ein Manifest einfügen",
+    "sourceUrl": "Manifest-URL",
+    "url": "Manifest-URL (https)",
+    "urlHint": "Eine Signatur wird von derselben URL mit angehängtem .sig gelesen, sofern Sie unten keine einfügen.",
+    "signatureHint": "Nur für ein unsigniertes Paket leer lassen, das abgelehnt wird, sofern der Betreiber unsignierte Plugins nicht erlaubt.",
+    "signatureHintUrl": "Optional, wenn neben dem Manifest eine .sig-Datei liegt.",
+    "keyAuto": "Aus vertrauenswürdigen Schlüsseln erkennen",
+    "review": "Prüfen",
+    "reviewing": "Wird verifiziert",
+    "back": "Zurück",
+    "approveInstall": "Genehmigen und installieren",
+    "installedApproved": "{{name}} installiert und genehmigt. Aktivieren Sie es, um es zu starten.",
+    "wrongPlugin": "Dieses Manifest gehört zu einem anderen Plugin als {{name}}."
+  },
+  "remove": {
+    "title": "{{name}} entfernen?",
+    "description": "Das Plugin wird gestoppt und gelöscht. Benachrichtigungskanäle, die es verwenden, stellen nicht mehr zu, bis Sie eine andere Kanalart wählen.",
+    "confirm": "Plugin entfernen"
+  },
+  "keys": {
+    "title": "Vertrauenswürdige Herausgeber-Schlüssel",
+    "description": "Es können nur Pakete installiert werden, die mit einem Schlüssel dieser Liste signiert sind. Die Liste beginnt leer.",
+    "emptyTitle": "Keine vertrauenswürdigen Schlüssel",
+    "emptyDescription": "Nichts von Dritten kann installiert werden. Verifizieren Sie den Schlüssel eines Herausgebers direkt mit ihm und fügen Sie ihn dann hinzu.",
+    "name": "Name des Herausgebers",
+    "publicKey": "Öffentlicher Schlüssel (base64)",
+    "add": "Schlüssel vertrauen",
+    "adding": "Wird hinzugefügt",
+    "added": "Schlüssel wird vertraut",
+    "addFailed": "Der Schlüssel konnte nicht hinzugefügt werden",
+    "colName": "Herausgeber",
+    "colKeyId": "Schlüssel-ID",
+    "colAdded": "Hinzugefügt",
+    "remove": "Nicht mehr vertrauen",
+    "removeTitle": "{{name}} nicht mehr vertrauen?",
+    "removeDescription": "Mit diesem Schlüssel signierte Plugins stoppen beim nächsten Supervisor-Durchlauf. Sie bleiben installiert.",
+    "removed": "Schlüssel entfernt"
+  },
+  "fix": {
+    "restart": "Lösung: neu starten",
+    "trustKey": "Lösung: dem Signaturschlüssel vertrauen",
+    "reinstall": "Lösung: ein signiertes Paket neu installieren"
+  },
+  "verification": {
+    "verified": "Signatur verifiziert",
+    "unsigned": "Unsigniert",
+    "unsigned_refused": "Unsigniert, abgelehnt",
+    "untrusted_key": "Schlüssel nicht vertrauenswürdig",
+    "bad_signature": "Ungültige Signatur",
+    "digest_mismatch": "Digest stimmt nicht überein",
+    "unverified": "Nicht verifiziert"
+  },
+  "egress": {
+    "openTitle": "Deklarierte Hosts werden nicht durchgesetzt",
+    "openBody": "Plugins, die ausgehende Hosts deklarieren, teilen sich ein allgemeines Netzwerk. Setzen Sie APP_PLUGIN_EGRESS_MODE=proxy, um jedes Plugin auf die von ihm deklarierten Hosts zu beschränken.",
+    "summary": {
+      "none": "Keine abgelehnten Verbindungen",
+      "last": "zuletzt {{when}}",
+      "help": "Zählt seit dem letzten Neustart des Egress-Proxys. Die Namen der abgelehnten Hosts stehen im Proxy-Log, nicht hier.",
+      "reasons": {
+        "host_not_allowed": "Host nicht deklariert",
+        "blocked_address": "gesperrte Adresse",
+        "resolve_failed": "DNS-Abfrage fehlgeschlagen",
+        "dial_failed": "Verbindung fehlgeschlagen",
+        "too_many_tunnels": "zu viele Verbindungen",
+        "rate_limited": "ratenbegrenzt",
+        "bad_request": "fehlerhafte Anfrage",
+        "unknown_caller": "unbekannter Aufrufer"
+      },
+      "count": "Abgelehnte Verbindungen: {{count}}"
+    }
+  },
+  "review": {
+    "verification": "Verifizierung",
+    "digest": "Image gepinnt auf {{digest}}",
+    "signedBy": "Signiert mit {{key}}",
+    "refused": "Dieses Paket kann nicht installiert werden",
+    "unsignedWarn": "Unsignierte Pakete sind nicht authentifiziert. Installieren Sie es nur, wenn Sie es selbst gebaut haben.",
+    "abilities": "Angeforderte Berechtigungen",
+    "newAbility": "Neu",
+    "removed": "Nicht mehr angefordert: {{abilities}}",
+    "upgradeFrom": "Upgrade von Version {{version}}",
+    "panels": "Fügt dieser Seite {{count}} schreibgeschützte(s) Panel hinzu, vom Dashboard aus dem Manifest gerendert.",
+    "reapproval": "Weiterer Zugriff als bisher",
+    "reapprovalHint": "Diese Version fordert Berechtigungen oder Hosts an, die die installierte nicht angefordert hat. Die Genehmigung hier gewährt genau den oben aufgeführten Satz."
+  },
+  "panels": {
+    "title": "Plugin-Panels",
+    "from": "{{name}} von {{publisher}}"
+  },
+  "panelHost": {
+    "loadFailed": "Dieses Panel konnte seine Daten nicht laden.",
+    "retry": "Erneut versuchen",
+    "empty": "Nichts anzuzeigen.",
+    "showMore": "{{count}} weitere anzeigen",
+    "widgetUnavailable": "dieser Teil des Panels ist nicht verfügbar",
+    "confirm": "Bestätigen",
+    "actionDone": "Erledigt",
+    "actionFailed": "Die Aktion wurde nicht abgeschlossen",
+    "status": {
+      "ok": "OK",
+      "warning": "Warnung",
+      "error": "Fehler",
+      "unknown": "Unbekannt"
+    }
+  },
+  "dns": {
+    "active": "Schreibt Ihre DNS-Records",
+    "inactive": "Nicht für DNS-Records verwendet, der eingebaute Client schreibt sie",
+    "use": "Für DNS-Records verwenden",
+    "useBuiltIn": "Den eingebauten Client verwenden",
+    "test": "Verbindung testen",
+    "testing": "Wird getestet...",
+    "testOk_one": "Verbunden, das Plugin sieht {{count}} Zone",
+    "testOk_other": "Verbunden, das Plugin sieht {{count}} Zonen",
+    "testFailed": "Test fehlgeschlagen: {{message}}",
+    "pluginOn": "DNS-Records werden jetzt von {{name}} geschrieben",
+    "builtInOn": "DNS-Records werden wieder vom eingebauten Client geschrieben",
+    "needsRunning": "Genehmigen und aktivieren Sie das Plugin, um es zu testen oder für DNS-Records zu verwenden."
+  }
+}

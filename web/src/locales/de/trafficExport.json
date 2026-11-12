@@ -1,0 +1,111 @@
+{
+  "title": "Traffic-Export",
+  "description": "Senden Sie pro abgeschlossener Anfrage einen Datensatz an PostHog, einen OpenTelemetry-Collector oder Ihren eigenen Endpunkt. Die Zustellung läuft in einer Warteschlange außerhalb des Anfragepfads und verlangsamt oder verfehlt nie eine Anfrage.",
+  "card": {
+    "title": "Export-Ziele",
+    "description": "Datensätze enthalten keine Besucheridentität, sofern Sie sie nicht pro Ziel aktivieren."
+  },
+  "add": "Ziel hinzufügen",
+  "loadError": "Der Traffic-Export konnte nicht geladen werden: {{message}}",
+  "notConfigured": "Der Traffic-Export benötigt einen Master-Schlüssel, um die Zugangsdaten der Ziele zu speichern.",
+  "empty": {
+    "title": "Keine Export-Ziele",
+    "description": "Fügen Sie ein Ziel hinzu, um Anfragedatensätze an Ihr Analyse-Tool zu streamen."
+  },
+  "kinds": {
+    "posthog": "PostHog",
+    "otlp": "OpenTelemetry",
+    "webhook": "Webhook"
+  },
+  "state": {
+    "active": "Aktiv",
+    "idle": "Keine Zustellung",
+    "disabled": "Pausiert",
+    "invalid": "Erfordert Aufmerksamkeit",
+    "failing": "Schlägt fehl"
+  },
+  "errorKinds": {
+    "auth": "Zugangsdaten abgelehnt",
+    "rejected": "Anfrage abgelehnt",
+    "rate_limited": "Ratenbegrenzt",
+    "server": "Fehler des Ziels",
+    "blocked_target": "Adresse nicht erlaubt",
+    "timeout": "Zeitüberschreitung",
+    "network": "Nicht erreichbar",
+    "config": "Ungültige Einstellungen",
+    "other": "Zustellung fehlgeschlagen"
+  },
+  "row": {
+    "lastSuccess": "Letzte Zustellung {{when}}",
+    "never": "Noch keine Zustellung",
+    "queued": "{{count}} in der Warteschlange",
+    "dropped": "{{count}} verworfen",
+    "failed": "{{count}} fehlgeschlagen",
+    "identity": "Identitätsfelder an",
+    "noIdentity": "Keine Besucheridentität",
+    "target": "Sendet an {{host}}",
+    "enabled": "Aktiviert",
+    "test": "Test senden",
+    "testing": "Wird gesendet",
+    "testOk": "{{name}} hat den Testdatensatz akzeptiert",
+    "testFailed": "{{name}} hat den Testdatensatz nicht akzeptiert: {{reason}}",
+    "edit": "Bearbeiten",
+    "remove": "Entfernen"
+  },
+  "remove": {
+    "title": "{{name}} entfernen?",
+    "description": "Die gespeicherten Zugangsdaten werden gelöscht und Datensätze in der Warteschlange verworfen.",
+    "confirm": "Ziel entfernen"
+  },
+  "sheet": {
+    "addTitle": "Export-Ziel hinzufügen",
+    "editTitle": "{{name}} bearbeiten",
+    "description": "Zugangsdaten werden verschlüsselt gespeichert und nie wieder angezeigt.",
+    "name": "Name",
+    "namePlaceholder": "Produkt-Analytics",
+    "kind": "Zieltyp",
+    "host": "PostHog-Region oder URL",
+    "hostPlaceholder": "us, eu oder https://posthog.example.com",
+    "token": "Projekt-Token",
+    "tokenStored": "Ein Token ist gespeichert. Leer lassen, um es zu behalten.",
+    "url": "Endpunkt-URL",
+    "urlPlaceholder": "https://collector.example.com",
+    "urlStored": "Eine URL ist gespeichert. Leer lassen, um sie zu behalten.",
+    "authHeader": "Wert des Authorization-Headers",
+    "authHeaderHint": "Optional, zum Beispiel Bearer gefolgt von einem Token. Leer lassen, um den gespeicherten Wert zu behalten.",
+    "fieldsTitle": "Optionale Felder",
+    "fieldsHint": "Jeder Datensatz enthält bereits Methode, Pfad, Status, Zeiten und Anfrage-ID. Nichts darunter wird gesendet, solange Sie es nicht ankreuzen.",
+    "ipTruncate": "Client-IP kürzen",
+    "ipTruncateHint": "Das letzte Oktett einer IPv4-Adresse oder die letzten 80 Bit einer IPv6-Adresse auf null setzen.",
+    "sample": "Anteil der exportierten Traces",
+    "sampleHint": "Eine Zahl von 0 bis 1. 1 exportiert jede Anfrage.",
+    "enabled": "An dieses Ziel zustellen",
+    "save": "Ziel speichern",
+    "saving": "Speichern",
+    "cancel": "Abbrechen",
+    "saveFailed": "Speichern nicht möglich: {{message}}"
+  },
+  "fields": {
+    "referrer_host": {
+      "label": "Referrer-Host",
+      "hint": "Die Website, von der die Anfrage kam, nur der Host."
+    },
+    "client_ip": {
+      "label": "Client-IP-Adresse",
+      "hint": "Vielerorts personenbezogene Daten."
+    },
+    "user_agent": {
+      "label": "User-Agent",
+      "hint": "Browser- und Gerätestring."
+    },
+    "visitor_id": {
+      "label": "Anonyme Besucher-ID",
+      "hint": "Ein täglich wechselnder Hash aus IP und User-Agent. Zählt weiterhin als Kennung."
+    }
+  },
+  "disclaimer": {
+    "title": "Dieses Ziel erhält die Besucheridentität",
+    "body": "Client-IP, User-Agent oder Besucher-ID können eine Person identifizieren. Aktivieren Sie sie nur, wenn Ihre Datenschutzerklärung die Weitergabe dieser Daten an das Ziel abdeckt und Sie eine Rechtsgrundlage haben. Cookies, Auth-Header, Query-Strings und Anfrage-Bodys werden nie exportiert."
+  },
+  "privacy": "Standardmäßig werden weder Client-IP, User-Agent noch Besucher-ID exportiert. Cookies, Auth-Header, Query-Strings und Anfrage-Bodys werden nie exportiert."
+}

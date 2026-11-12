@@ -1,0 +1,53 @@
+{
+  "banner": {
+    "title": "Test-Deployment",
+    "body": "Zum Ausprobieren der Vorlage deployt. Behalten Sie sie als dauerhafte App oder stoppen und löschen Sie sie, wenn Sie fertig sind. Bis dahin läuft sie wie jede andere App weiter.",
+    "keep": "Diese App behalten",
+    "delete": "Stoppen und löschen"
+  },
+  "dialog": {
+    "title": "{{name}} als dauerhafte App behalten",
+    "description": "Sie wird nicht mehr als Wegwerf-Test markiert und erscheint wie jede andere App, mit allen Diensten derselben App. Nichts wird neu gestartet und nichts wird gelöscht.",
+    "checklistTitle": "Was eine dauerhafte App haben sollte",
+    "checklistHint": "Richten Sie dies jetzt oder später ein; jeder Punkt öffnet die passende Seite.",
+    "cancel": "Abbrechen",
+    "confirm": "App behalten",
+    "keeping": "Wird behalten...",
+    "loading": "Wird geprüft...",
+    "done": "Erledigt",
+    "todo": "Nicht eingerichtet",
+    "items": {
+      "domain": {
+        "label": "Eine eigene Domain",
+        "done": "Bedient {{domain}}",
+        "todo": "Bisher nur die generierte Adresse",
+        "action": "Domain hinzufügen"
+      },
+      "backup": {
+        "label": "Ein Backup-Zeitplan für ihre Volumes",
+        "done": "{{count}} von {{total}} Volumes geplant",
+        "todo": "Kein Volume hat einen Backup-Zeitplan",
+        "none": "Keine Volumes zu sichern",
+        "action": "Backups planen"
+      },
+      "alert": {
+        "label": "Eine Alarmregel",
+        "done": "{{count}} Alarmregeln",
+        "todo": "Nichts benachrichtigt Sie, wenn sie ausfällt",
+        "action": "Alarmregel hinzufügen"
+      },
+      "placement": {
+        "label": "Ein Projekt und eine Umgebung",
+        "done": "{{project}} / {{environment}}",
+        "projectOnly": "Projekt {{project}}, keine Umgebung",
+        "todo": "Noch in keinem Projekt",
+        "action": "Ablageort wählen"
+      }
+    }
+  },
+  "toast": {
+    "kept": "{{name}} ist jetzt eine dauerhafte App.",
+    "alreadyKept": "{{name}} wurde bereits behalten.",
+    "failed": "Die App konnte nicht behalten werden."
+  }
+}

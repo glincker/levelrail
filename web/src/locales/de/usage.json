@@ -1,0 +1,133 @@
+{
+  "title": "Nutzung und Kosten",
+  "description": "Wohin Geld und Kapazität fließen, aufgeteilt nach dem, was jede App und Datenbank tatsächlich nutzt. Dies ist ein Showback Ihrer eigenen Preise, keine Rechnung.",
+  "period": {
+    "label": "Zeitraum",
+    "mtd": "Monat bis heute",
+    "30d": "Letzte 30 Tage",
+    "last_month": "Letzter Monat"
+  },
+  "summary": {
+    "total": "Geschätzte Summe",
+    "change": "{{value}} ggü. Vorperiode",
+    "noChange": "Keine Vorperiode zum Vergleichen",
+    "forecast": "Prognose zum Monatsende",
+    "forecastHint": "Basiert auf den Ausgaben der letzten vollen Tage.",
+    "unallocated": "Nicht zugeordnet",
+    "unallocatedHint": "Ungenutzte Kapazität, die niemand verwendet hat. Sie wird hier angezeigt, statt in den App-Kosten versteckt zu werden.",
+    "allocated": "Apps zugeordnet"
+  },
+  "chart": {
+    "label": "Tageskosten nach Projekt",
+    "other": "Andere Projekte",
+    "unallocated": "Nicht zugeordnet",
+    "unassigned": "Kein Projekt"
+  },
+  "dimension": {
+    "label": "Aufschlüsseln nach",
+    "project": "Projekt",
+    "environment": "Umgebung",
+    "team": "Team",
+    "resource": "App oder Datenbank",
+    "tag": "Tag"
+  },
+  "table": {
+    "label": "Kostenrangliste",
+    "name": "Name",
+    "cost": "Geschätzte Kosten",
+    "previous": "Vorher",
+    "change": "Änderung",
+    "trend": "Trend",
+    "unassigned": "Nicht zugewiesen",
+    "untagged": "Ohne Tag",
+    "tagNote": "Eine Ressource mit mehreren Tags wird unter jedem davon gezählt, daher können die Tag-Summen mehr ergeben als die Gesamtsumme des Berichts.",
+    "empty": "Für diesen Zeitraum gibt es noch nichts anzuzeigen."
+  },
+  "movers": {
+    "title": "Größte Veränderungen",
+    "up": "{{name}} ist um {{amount}} gestiegen",
+    "down": "{{name}} ist um {{amount}} gesunken",
+    "none": "Keine Ressource hat ihre Kosten seit der Vorperiode verändert."
+  },
+  "export": {
+    "csv": "CSV exportieren",
+    "json": "JSON exportieren"
+  },
+  "empty": {
+    "notConfiguredTitle": "Legen Sie Ihre Preise fest, um Kosten zu sehen",
+    "notConfiguredDescription": "Die Nutzung wird bereits erfasst. Geben Sie ein, was Sie ein Server kostet, oder einen Preis pro vCPU- und GiB-Stunde, und jede App erhält Kosten.",
+    "notConfiguredAskAdmin": "Bitten Sie einen Instanz-Admin, Preise festzulegen. Die Nutzung wird bereits erfasst.",
+    "noTelemetryTitle": "Nutzungsdaten sind nicht verfügbar",
+    "noTelemetryDescription": "Kosten benötigen den Metrik-Collector. Aktivieren Sie die Observability, um CPU und Speicher pro App aufzuzeichnen.",
+    "configure": "Preise festlegen"
+  },
+  "unpriced": "{{nodes}} hat noch keinen Preis, daher werden dort laufende Apps nicht mit Kosten bewertet.",
+  "error": "Die Nutzung konnte nicht geladen werden: {{message}}",
+  "settings": {
+    "open": "Preise",
+    "title": "Preise und Zuordnung",
+    "description": "Kosten sind Ihre eigenen Preise, angewendet auf die gemessene Nutzung. Jeder Tag wird bei der Erfassung bepreist, daher schreibt eine Preisänderung die Historie nicht um, es sei denn, Sie verlangen, den Monat bis heute neu zu bepreisen.",
+    "mode": "Art der Bepreisung",
+    "modeNode": "Monatliche Rechnung jedes Servers aufteilen",
+    "modeNodeHint": "Geben Sie ein, was jeder Server pro Monat kostet. Die Rechnung wird nach dem Anteil der Servernutzung auf die Apps verteilt.",
+    "modeUnit": "Preis pro Nutzungseinheit",
+    "modeUnitHint": "Geben Sie einen Preis pro vCPU-Stunde und GiB-Stunde ein. Nützlich, wenn es keine einzelne Rechnung zum Aufteilen gibt.",
+    "currency": "Währung",
+    "nodes": "Server-Rechnungen",
+    "nodeMonthly": "Monatspreis",
+    "nodeVcpus": "vCPUs",
+    "nodeMemory": "Speicher (GiB)",
+    "detected": "Erkannt: {{vcpus}} vCPUs, {{memory}} GiB",
+    "cpuHour": "Pro vCPU-Stunde",
+    "memHour": "Pro GiB-Speicherstunde",
+    "storage": "Pro GiB Volume-Speicher pro Monat",
+    "egress": "Pro gesendetem GiB",
+    "preset": "Mit einem typischen Server beginnen",
+    "presetHint": "Beispielpreise einer gängigen VPS-Größe. Korrigieren Sie sie auf das, was Sie zahlen.",
+    "idle": "Anteil ungenutzter Kapazität, der auf Apps verteilt wird",
+    "idleHintNode": "0 zeigt die gesamte ungenutzte Kapazität als Nicht zugeordnet. 100 verteilt sie nach Nutzung auf die Apps, sodass der Bericht die gesamte Rechnung ergibt.",
+    "idleHintUnit": "Wird als Reserve-Aufschlag auf die Kosten jeder App addiert.",
+    "basis": "Nutzung messen nach",
+    "basisAvg": "Durchschnitt",
+    "basisP50": "Typisch (p50)",
+    "weight": "Teil einer Serverrechnung, der der CPU zugeordnet wird",
+    "weightHint": "Der Rest wird dem Speicher zugeordnet.",
+    "reprice": "Auch den Monat bis heute neu bepreisen",
+    "repriceHint": "Berechnet die bereits in diesem Monat erfassten Tage mit diesen Preisen neu.",
+    "save": "Preise speichern",
+    "saving": "Speichern",
+    "saved": "Preise gespeichert",
+    "error": "Die Preise konnten nicht gespeichert werden: {{message}}",
+    "cancel": "Abbrechen"
+  },
+  "budgets": {
+    "title": "Budgets",
+    "description": "Ein monatliches Limit für ein Projekt oder ein Team. Alarme gehen über Ihre Benachrichtigungskanäle, wenn ein Budget seine Warnstufe erreicht, überschritten wird oder voraussichtlich überschritten wird.",
+    "empty": "Noch keine Budgets.",
+    "add": "Budget hinzufügen",
+    "scope": "Gilt für",
+    "scopeProject": "Projekt",
+    "scopeTeam": "Team",
+    "target": "Welches",
+    "monthly": "Monatsbudget",
+    "warn": "Warnen bei (%)",
+    "save": "Budget speichern",
+    "remove": "Budget {{name}} entfernen",
+    "spent": "{{spent}} von {{budget}}",
+    "forecast": "Prognose {{amount}}",
+    "state": {
+      "ok": "Im Plan",
+      "warn": "Nahe am Limit",
+      "over": "Über dem Budget",
+      "forecast": "Voraussichtlich überschritten"
+    },
+    "alertHint": "Erstellen Sie eine Alarmregel vom Typ budget_threshold, damit diese Ihre Kanäle erreichen.",
+    "error": "Die Budgets konnten nicht aktualisiert werden: {{message}}"
+  },
+  "chip": {
+    "label": "Kosten in diesem Monat",
+    "value": "bisher {{amount}}",
+    "forecast": "etwa {{amount}} bis Monatsende",
+    "open": "Nutzung und Kosten öffnen"
+  }
+}

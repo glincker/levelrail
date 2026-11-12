@@ -1,0 +1,28 @@
+{
+  "label": "Verwandte Seiten",
+  "heading": "Verwandt",
+  "links": {
+    "account": "Konto",
+    "alertRules": "Alarmregeln",
+    "backups": "Backups",
+    "certificates": "Zertifikate",
+    "cliAccess": "CLI-Zugriff",
+    "dataExport": "Datenexport",
+    "dns": "DNS",
+    "domains": "Domains",
+    "drReport": "Wiederherstellungsbericht",
+    "environments": "Umgebungen",
+    "eventWebhooks": "Event-Webhooks",
+    "firewall": "Firewall",
+    "mobileDevices": "Mobilgeräte",
+    "network": "Netzwerk",
+    "notificationChannels": "Benachrichtigungskanäle",
+    "platformHttps": "Plattform-HTTPS",
+    "privateNetworks": "Private Netzwerke",
+    "security": "Sicherheit",
+    "sessionPolicy": "Sitzungsrichtlinie",
+    "tokens": "API-Tokens",
+    "traffic": "Traffic",
+    "vault": "Vault"
+  }
+}

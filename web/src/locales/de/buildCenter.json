@@ -1,0 +1,121 @@
+{
+  "title": "Builds",
+  "subtitle": "Build-Warteschlange und Verlauf über alle Apps: was wartet, was läuft, wie lange Builds dauern, wie stark der Cache hilft und wie groß die Images sind.",
+  "retry": "Erneut versuchen",
+  "error": {
+    "title": "Builds konnten nicht geladen werden"
+  },
+  "node": {
+    "label": "Node",
+    "local": "Dieser Server"
+  },
+  "tiles": {
+    "queued": "In der Warteschlange",
+    "running": "Läuft",
+    "finished": "Abgeschlossen",
+    "failed": "Fehlgeschlagen"
+  },
+  "limits": {
+    "perNode": "Auf jedem Node laufen bis zu {{count}} Builds gleichzeitig, der Rest wartet in der Warteschlange.",
+    "node": "{{node}}: {{running}} laufen, {{waiting}} warten"
+  },
+  "platforms": {
+    "target": "Builds zielen auf {{platform}}, die Plattform des Build-Nodes.",
+    "singleOnly": "Multi-Plattform-Builds werden noch nicht unterstützt."
+  },
+  "columns": {
+    "build": "Build",
+    "status": "Status",
+    "duration": "Zeit",
+    "cache": "Cache",
+    "image": "Image",
+    "node": "Node und Plattform",
+    "actions": "Aktionen"
+  },
+  "status": {
+    "queued": "In der Warteschlange",
+    "queuedAt": "In der Warteschlange, Nr. {{position}}",
+    "held": "Zurückgehalten",
+    "running": "Läuft",
+    "succeeded": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "canceled": "Abgebrochen",
+    "superseded": "Abgelöst",
+    "stuck": "Hängt möglicherweise"
+  },
+  "actions": {
+    "logs": "Logs",
+    "cancel": "Abbrechen",
+    "cancelStuck": "Hängenden Build abbrechen",
+    "cancelDone": "Build abgebrochen",
+    "cancelFailed": "Der Build konnte nicht abgebrochen werden",
+    "retry": "Wiederholen",
+    "retryDone": "Build vom verbundenen Branch neu gestartet",
+    "retryFailed": "Der Build konnte nicht wiederholt werden",
+    "freeCache": "Build-Cache freigeben"
+  },
+  "empty": {
+    "title": "Noch keine Builds",
+    "description": "Builds erscheinen hier, wenn eine App aus einer Git-Quelle deployt wird."
+  },
+  "cacheFull": {
+    "title": "Einem Build ging der Festplattenplatz aus",
+    "description": "Ungenutzter Build-Cache kann sicher entfernt werden. Laufende Builds behalten ihren Cache."
+  },
+  "cache": {
+    "title": "Build-Cache",
+    "prune": "Ungenutzten Cache freigeben",
+    "total": "Cache-Größe",
+    "inUse": "In Benutzung",
+    "reclaimable": "Freigebbar",
+    "records": "Einträge",
+    "errorTitle": "Der Build-Cache konnte nicht geladen werden",
+    "unsupportedTitle": "Build-Cache nicht verfügbar",
+    "unsupported": "Dieser Node meldet seinen Build-Cache noch nicht."
+  },
+  "prune": {
+    "title": "Ungenutzten Build-Cache freigeben",
+    "loading": "Es wird geprüft, was freigegeben werden kann.",
+    "description": "{{count}} Cache-Einträge sind seit {{hours}} Stunden oder länger ungenutzt. Ihr Entfernen gibt {{size}} frei.",
+    "consequences": "Der nächste Build jeder App kann länger dauern, während ihr Cache neu aufgebaut wird.",
+    "confirm": "{{size}} freigeben",
+    "pending": "Cache wird freigegeben",
+    "done": "{{count}} Cache-Einträge entfernt, {{size}} freigegeben"
+  },
+  "banner": {
+    "description": "Builds machen aus Ihrem Quellcode ein lauffähiges Image. Warteschlange, Verlauf und Cache jeder App erscheinen hier nach dem ersten Deploy.",
+    "diagram": {
+      "source": "Quelle",
+      "build": "Build",
+      "image": "Image",
+      "cache": "Cache"
+    }
+  },
+  "quota": {
+    "title": "Cache-Kontingent",
+    "errorTitle": "Das Cache-Kontingent konnte nicht geladen werden",
+    "appQuota": "Kontingent pro App",
+    "maxRecords": "Einträge pro Freigabe",
+    "gib_one": "{{count}} GiB",
+    "gib_other": "{{count}} GiB",
+    "off": "Aus",
+    "restartNote": "Das Kontingent pro App gilt nach dem nächsten Build jeder App, über das Dashboard, die CLI oder einen Push. Ändern Sie es in den Einstellungen unter build.cache_app_quota_gb.",
+    "empty": "Bisher wurde noch kein Cache freigegeben.",
+    "col": {
+      "app": "App",
+      "trigger": "Auslöser",
+      "when": "Wann",
+      "freed": "Freigegeben",
+      "note": "Hinweis"
+    },
+    "trigger": {
+      "auto": "Nach einem Build",
+      "manual": "Manuell"
+    },
+    "note": {
+      "running": "Übersprungen, ein Build lief",
+      "bounded": "Eintragslimit erreicht, der Rest folgt beim nächsten Build",
+      "partial": "Vorzeitig gestoppt, das Freigegebene bleibt erhalten"
+    }
+  }
+}

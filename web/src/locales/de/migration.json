@@ -1,0 +1,860 @@
+{
+  "title": "Nach dem Import: Daten und Umschaltung",
+  "description": "Importierte Datenbanken und Volumes starten leer. Kopieren Sie die Daten hinein, prüfen Sie, ob jede Domain sicher umgeschaltet werden kann, und ändern Sie dann das DNS. Die Quelle liefert weiter aus, bis Sie das tun.",
+  "data": {
+    "title": "Datenbankdaten kopieren",
+    "description": "Streamt einen Dump aus der Quelldatenbank in die verwaltete und vergleicht die Zeilenzahlen. Eine Wiederholung ersetzt den Inhalt des Ziels, daher lässt sich eine fehlgeschlagene Kopie gefahrlos wiederholen.",
+    "empty": "Noch keine verwalteten Datenbanken. Importieren Sie zuerst von einer Plattform.",
+    "emptyTitle": "Keine verwalteten Datenbanken",
+    "copy": "Daten kopieren",
+    "cancel": "Abbrechen",
+    "start": "Kopie starten",
+    "starting": "Wird gestartet",
+    "loadError": "Der Status der Datenbankkopie konnte nicht geladen werden.",
+    "startError": "Die Kopie konnte nicht gestartet werden",
+    "tablesChecked": "{{count}} Tabellen geprüft, {{bad}} weichen ab",
+    "differs": "{{name}}: Quelle {{source}}, Ziel {{target}}",
+    "passwordHelp": "Wird für die Kopie im Speicher gehalten und nie gespeichert.",
+    "fields": {
+      "host": "Quell-Host",
+      "port": "Port",
+      "user": "Benutzer",
+      "password": "Passwort",
+      "database": "Datenbankname",
+      "authDatabase": "Auth-Datenbank (MongoDB)",
+      "tls": "TLS zur Quelle verlangen"
+    },
+    "status": {
+      "pending": "Nicht kopiert",
+      "copying": "Wird kopiert",
+      "verified": "Verifiziert",
+      "failed": "Fehlgeschlagen",
+      "unsupported": "Nicht unterstützt"
+    }
+  },
+  "volumes": {
+    "title": "Volumes kopieren",
+    "description": "Die Control Plane verschiebt keine Volume-Inhalte, weil dafür Root auf dem Quell-Host nötig ist. Dies gibt die Befehle aus, die Sie auf diesem Node ausführen.",
+    "source": "SSH-Anmeldung der Quelle",
+    "sourcePlaceholder": "root@old-server.example.com",
+    "show": "Befehle anzeigen",
+    "loading": "Befehle werden erstellt",
+    "none": "Keine importierte App hat ein persistentes Volume oder einen Bind-Mount.",
+    "copyCommand": "Kopierbefehl",
+    "loadError": "Die Befehle konnten nicht erstellt werden"
+  },
+  "cutover": {
+    "title": "Prüfung der Umschaltung",
+    "description": "Für jede importierte Domain: Ist die App hier in Ordnung, wie lange cachen Clients die alte Adresse und wohin zeigt das DNS jetzt. Es wird nichts für Sie umgeschaltet.",
+    "targetIp": "Öffentliche IP dieses Nodes",
+    "targetIpHelp": "Wird erkannt, wenn leer gelassen.",
+    "check": "Prüfung ausführen",
+    "verify": "Nach der Umschaltung verifizieren",
+    "running": "Wird geprüft",
+    "noDomains": "Keine importierte App hat eine Domain zum Prüfen.",
+    "loadError": "Die Prüfung konnte nicht ausgeführt werden",
+    "thisNode": "Dieser Node: {{ips}}",
+    "change": "{{type}} {{name}} auf {{value}} setzen (TTL {{ttl}})",
+    "replaces": "Ersetzt {{what}}",
+    "verdict": {
+      "go": "Go",
+      "wait": "Warten",
+      "no-go": "No-Go",
+      "switched": "Umgeschaltet"
+    },
+    "phase": {
+      "pre-switch": "Vor der Umschaltung",
+      "post-switch": "Nach der Umschaltung"
+    }
+  },
+  "hub": {
+    "title": "Einen Datenbankserver migrieren",
+    "description": "Verschieben Sie jede Datenbank eines Quellservers in einem geführten Durchlauf. Die Quelle wird nur gelesen. Es wird nichts darauf geschrieben oder davon entfernt, und Sie verifizieren jede Datenbank, bevor Sie etwas umschalten.",
+    "newMigration": "Neue Migration starten",
+    "forget": "Diesen Plan vergessen",
+    "forgetHelp": "Entfernt den Plan und das im Speicher gehaltene Passwort. Bereits hier erstellte Datenbanken bleiben erhalten.",
+    "resume": "Sitzung für {{host}}",
+    "steps": {
+      "connect": "Verbinden",
+      "inventory": "Bestand",
+      "preflight": "Vorabprüfung",
+      "copy": "Kopieren",
+      "verify": "Verifizieren",
+      "cutover": "Umschaltung"
+    },
+    "safeToSkip": {
+      "title": "Was sich sicher überspringen lässt",
+      "never": "Überspringen Sie nie die Zählprüfung pro Tabelle nach jeder Kopie. Sie belegt, dass die Daten angekommen sind.",
+      "volumes": "Volumes: sicher zu überspringen, wenn keine Ihrer Apps Dateien auf einem Volume hält.",
+      "cutover": "Prüfung der Umschaltung: sicher zu überspringen, wenn Sie Apps von Hand umschalten und selbst prüfen.",
+      "warnings": "Warnungen können nach dem Lesen übergangen werden. Blockaden nicht."
+    },
+    "connect": {
+      "title": "Mit dem Quellserver verbinden",
+      "description": "Geben Sie die Adresse des Servers und einen Benutzer ein, der jede Datenbank lesen kann, die Sie verschieben möchten. Das Passwort wird nur für diese Sitzung im Speicher gehalten. Es wird nie gespeichert oder protokolliert.",
+      "engine": "Engine",
+      "host": "Host",
+      "port": "Port",
+      "portHelp": "Standard der Engine, wenn leer.",
+      "user": "Benutzer",
+      "password": "Passwort",
+      "tls": "TLS zur Quelle verlangen",
+      "submit": "Server lesen",
+      "submitting": "Server wird gelesen",
+      "error": "Der Quellserver konnte nicht gelesen werden",
+      "readOnly": "Gegen die Quelle laufen nur lesende Anweisungen und Dump-Tools.",
+      "advanced": "Stattdessen eine einzelne importierte Datenbank kopieren",
+      "local": "Datenbank-Container auf diesem Node",
+      "localNone": "Ein anderer Server (Host und Port eingeben)",
+      "localHelp": "Liest den Container über sein eigenes Docker-Netzwerk. Eine Host-Adresse auf demselben Rechner ist vom Helfer nicht erreichbar, weil Docker Netzwerke isoliert.",
+      "localProblem": "{{name}} ({{problem}})"
+    },
+    "inventory": {
+      "title": "Datenbanken auf dem Server",
+      "summary": "{{count}} Datenbanken, insgesamt {{size}}. Serverversion {{version}}, {{free}} frei auf dem Ziel-Node.",
+      "empty": "Der Server hat keine Datenbanken, die dieser Benutzer lesen kann. Prüfen Sie die Berechtigungen des Benutzers und versuchen Sie es erneut.",
+      "columns": {
+        "select": "Kopieren",
+        "source": "Quelldatenbank",
+        "size": "Größe",
+        "tables": "Tabellen",
+        "extensions": "Erweiterungen",
+        "target": "Name der neuen Datenbank"
+      },
+      "selectAll": "Alle Datenbanken auswählen",
+      "selectOne": "{{name}} kopieren",
+      "targetLabel": "Name der neuen Datenbank für {{name}}",
+      "next": "Weiter zur Vorabprüfung",
+      "noneSelected": "Wählen Sie mindestens eine Datenbank, um fortzufahren."
+    },
+    "preflight": {
+      "title": "Vorabprüfung",
+      "description": "Es wurde noch nichts geschrieben. Diese Prüfungen laufen, bevor eine Datenbank erstellt wird.",
+      "blocked": "Blockiert",
+      "warning": "Warnung",
+      "ok": "Bereit",
+      "required": "Etwa {{required}} mit Sicherheitsmarge benötigt, {{free}} frei. Geschätzte Zeit {{time}}.",
+      "passwordTitle": "Quellpasswort nötig",
+      "passwordHelp": "Das Passwort wird nicht mehr im Speicher gehalten. Geben Sie es erneut ein. Es wird nur für diesen Durchlauf verwendet.",
+      "start": "{{count}} Datenbanken kopieren",
+      "starting": "Wird gestartet",
+      "fixBlocked": "Beheben Sie die blockierten Datenbanken oder wählen Sie sie ab, um fortzufahren.",
+      "back": "Zurück zum Bestand",
+      "startError": "Die Kopie konnte nicht gestartet werden",
+      "reachTitle": "Erreichbarkeit",
+      "reach": "Der Helfer erreicht die Quelle über das Netzwerk {{network}}."
+    },
+    "copy": {
+      "title": "Kopieren",
+      "description": "Datenbanken werden parallel kopiert. Eine fehlschlagende stoppt nie die anderen, und das Wiederholen einer Kopie ist sicher.",
+      "running": "Wird kopiert, {{done}} von {{total}} fertig",
+      "idle": "Es läuft nichts.",
+      "retry": "Fehlgeschlagene wiederholen",
+      "continue": "Weiter zur Verifizierung",
+      "empty": "Es wurde noch keine Kopie gestartet. Starten Sie sie im Schritt Vorabprüfung.",
+      "status": {
+        "pending": "Wartet",
+        "copying": "Wird kopiert",
+        "verified": "Verifiziert",
+        "failed": "Fehlgeschlagen"
+      }
+    },
+    "verify": {
+      "title": "Verifizieren",
+      "description": "Die Zeilenzahl jeder Tabelle der Quelle wurde mit der Kopie verglichen. Nur exakte Übereinstimmungen werden als verifiziert markiert.",
+      "tables": "{{count}} Tabellen stimmen überein",
+      "differs": "{{name}}: Quelle {{source}}, Kopie {{target}}",
+      "receipt": "Beleg herunterladen (JSON)",
+      "receiptHelp": "Ein Nachweis, dass jede Datenbank verifiziert und die Quelle unberührt ist. Er enthält keine Secrets.",
+      "source": "Quelle unberührt",
+      "next": "Weiter zur Umschaltung",
+      "noneVerified": "Noch keine Datenbank ist verifiziert. Beheben Sie die obigen Fehler und wiederholen Sie es."
+    },
+    "cutover": {
+      "title": "Ihre Apps umschalten",
+      "description": "Richten Sie jede App auf ihre neue Datenbank und führen Sie dann die Prüfung der Umschaltung aus. Es wird nichts für Sie umgeschaltet.",
+      "connection": "Verbindung für {{name}}",
+      "reference": "Verweisen Sie in den Verbindungen einer App darauf als {{ref}}, dann füllt die Plattform die Werte aus.",
+      "reveal": "Secret anzeigen",
+      "revealing": "Wird angezeigt",
+      "hide": "Secret ausblenden",
+      "revealNote": "Das Anzeigen wird im Audit-Log festgehalten.",
+      "loadError": "Die Verbindungsdetails konnten nicht geladen werden",
+      "revealError": "Das Secret konnte nicht angezeigt werden"
+    },
+    "loadError": "Der Migrationsplan konnte nicht geladen werden."
+  },
+  "appImport": {
+    "title": "Migrationsassistent",
+    "description": "Planen, bereitstellen, verifizieren und schalten Sie jede Anwendung einzeln um, von Coolify, Dokploy, CapRover oder einem alten Server. Ihre alte Instanz wird nur gelesen. Nichts darauf wird gestoppt, bearbeitet oder gelöscht.",
+    "loadError": "Die Import-Sitzung konnte nicht geladen werden.",
+    "newImport": "Neuen Import starten",
+    "forget": "Diese Sitzung vergessen",
+    "forgetHelp": "Vergisst Plan und Fortschritt. Bereits hier bereitgestellte Apps bleiben erhalten. Verwenden Sie zuerst Zurückrollen, um sie zu entfernen.",
+    "resume": "Import von {{url}}",
+    "back": "Zurück",
+    "steps": {
+      "connect": "Verbinden",
+      "inventory": "Bestand",
+      "preflight": "Vorabprüfung",
+      "stage": "Bereitstellen",
+      "images": "Images verschieben",
+      "verify": "Bauen und verifizieren",
+      "volumes": "Volumes",
+      "cutover": "Umschaltung",
+      "takeover": "Ports übernehmen",
+      "retire": "Sicher zu löschen"
+    },
+    "safe": {
+      "title": "Was dies tut und was nicht",
+      "readOnly": "An die alte Plattform werden nur Leseanfragen gesendet. Die Zugangsdaten werden für diese Sitzung im Speicher gehalten und nie gespeichert.",
+      "staged": "Bereitgestellte Apps werden gestoppt und ohne Routing erstellt, mit verschlüsselt importierten Umgebungsvariablen und Secrets.",
+      "volumes": "Volume-Daten werden nie für Sie kopiert. Sie erhalten den genauen Befehl pro Volume und bestätigen ihn selbst.",
+      "dns": "Das DNS wird nie für Sie geändert. Sie schalten jede Domain um, wenn Sie zufrieden sind, und können jederzeit zurückschalten."
+    },
+    "verdict": {
+      "ready": "Bereit",
+      "ready-with-notes": "Bereit mit Hinweisen",
+      "needs-attention": "Erfordert Aufmerksamkeit",
+      "unsupported": "Nicht unterstützt"
+    },
+    "state": {
+      "planned": "Geplant",
+      "staged": "Bereitgestellt",
+      "building": "Wird gebaut",
+      "verified": "Verifiziert",
+      "verify-failed": "Verifizierung fehlgeschlagen",
+      "stage-failed": "Bereitstellung fehlgeschlagen",
+      "routed": "Geroutet",
+      "rolled-back": "Zurückgerollt"
+    },
+    "connect": {
+      "title": "Mit {{name}} verbinden",
+      "reconnectTitle": "Token erneut eingeben",
+      "description": "Verwenden Sie ein schreibgeschütztes API-Token. Fügen Sie die Berechtigung read:sensitive hinzu, wenn Secret-Werte importiert werden sollen. Sonst kommen sie leer an und werden markiert.",
+      "url": "URL von {{name}}",
+      "token": "API-Token",
+      "tokenHelp": "Wird nur für diese Sitzung im Speicher gehalten und im Anfrage-Body gesendet. Nie gespeichert oder protokolliert.",
+      "network": "Optionen für private Netzwerke",
+      "loopback": "Die Quelle liegt auf diesem Rechner (Loopback)",
+      "private": "Die Quelle liegt in einem privaten Netzwerk",
+      "insecure": "TLS-Verifizierung überspringen (selbstsigniertes Zertifikat)",
+      "networkHelp": "Die Control Plane benötigt außerdem die passende Einstellung APP_IMPORT_ALLOW_LOOPBACK oder APP_IMPORT_ALLOW_PRIVATE_NETWORKS, bevor diese berücksichtigt werden.",
+      "readOnly": "Das Lesen des Bestands erstellt hier nichts.",
+      "error": "Die Quelle konnte nicht gelesen werden",
+      "submit": "Bestand lesen",
+      "submitting": "Wird gelesen...",
+      "dockerTitle": "Container von einem Docker-Host übernehmen",
+      "snapshotHelp": "Enthält Umgebungsvariablen, auch Secrets. Wird nur für diese Sitzung im Speicher gehalten und im Anfrage-Body gesendet. Nie gespeichert oder protokolliert.",
+      "snapshotFile": "Oder aus einer Datei laden",
+      "mode": {
+        "api": "Plattform-API",
+        "docker": "Docker-Snapshot",
+        "compose": "Compose-Datei",
+        "dokku": "Dokku-Env-Dump",
+        "ssh": "Über SSH verbinden"
+      },
+      "fileDescription": {
+        "docker": "Kein API-Token nötig. Fügen Sie die Ausgabe des Befehls unten ein, der auf dem alten Server ausgeführt wurde. Er liest Container-Einstellungen und Umgebungsvariablen und ändert dort nichts.",
+        "compose": "Fügen Sie eine docker-compose-Datei ein. Jeder Dienst mit einem Image wird zu einer App, und Datenbank-Images werden zu verwalteten Datenbanken. Es wird nichts kontaktiert.",
+        "dokku": "Fügen Sie die Umgebung einer Dokku-App ein. Es werden nur ihre Variablen gelesen, legen Sie daher Image, Port und Domains nach der Planung fest. Es wird nichts kontaktiert."
+      },
+      "fileCommand": {
+        "docker": "docker inspect $(docker ps -aq)",
+        "compose": "cat docker-compose.yml",
+        "dokku": "dokku config:export APP"
+      },
+      "fileLabel": {
+        "docker": "Ausgabe von docker inspect",
+        "compose": "Compose-Datei",
+        "dokku": "Umgebungs-Dump"
+      },
+      "appName": "Name der Dokku-App",
+      "platform": "Quellplattform",
+      "platformName": {
+        "coolify": "Coolify",
+        "dokploy": "Dokploy",
+        "caprover": "CapRover"
+      },
+      "tokenFor": {
+        "coolify": "API-Token",
+        "dokploy": "API-Schlüssel",
+        "caprover": "Passwort"
+      },
+      "test": "Verbindung testen",
+      "testing": "Wird getestet...",
+      "testOk": "Mit {{name}} verbunden. Gefunden: {{apps}} App(s), {{databases}} Datenbank(en), {{volumes}} Volume(s), {{domains}} Domain(s) und {{crons}} Cron-Job(s). {{unsupported}} lassen sich nicht importieren.",
+      "testServers": "Server: {{list}}",
+      "testFailure": {
+        "credentials": "Die Quelle hat die Zugangsdaten abgelehnt. Prüfen Sie das Token oder Passwort und seine Berechtigungen.",
+        "blocked": "Diese Adresse ist nicht erlaubt. Verwenden Sie die Optionen für private Netzwerke unten, wenn die Quelle in Ihrem eigenen Netzwerk liegt.",
+        "unreachable": "Die Quelle hat nicht geantwortet. Prüfen Sie URL und Port und ob dieser Server sie erreichen kann."
+      }
+    },
+    "inventory": {
+      "title": "Gefundene Anwendungen",
+      "description": "Wählen Sie, was verschoben wird. Jede App zeigt, worauf sie hier abgebildet wird und was Ihre Aufmerksamkeit braucht.",
+      "selectOne": "{{name}} auswählen",
+      "selectAll": "Alle importierbaren auswählen",
+      "selectNone": "Keine auswählen",
+      "empty": "Auf der Quelle wurden keine Anwendungen gefunden.",
+      "noProject": "Kein Projekt",
+      "showMore": "{{count}} weitere anzeigen",
+      "continue": "Mit {{count}} App(s) fortfahren",
+      "pickOne": "Wählen Sie mindestens eine App, um fortzufahren.",
+      "stale": "Das Token wird nicht mehr gehalten, daher stammen diese Urteile vom letzten Lesen. Geben Sie es erneut ein, um sie zu aktualisieren.",
+      "maps": {
+        "dockerfile": "Dockerfile-Build",
+        "railpack": "Railpack-Build",
+        "static": "Statische Website",
+        "image": "Image"
+      },
+      "port": "Port {{port}}",
+      "health": "Health {{path}}",
+      "memory": "Limit {{size}}",
+      "server": "Server {{name}}",
+      "env": "{{plain}} einfache und {{secret}} geheime Variablen",
+      "domains": "Domains: {{list}}",
+      "volume": "Volume {{path}} ({{size}})",
+      "sizeUnknown": "Größe von der Quelle nicht gemeldet",
+      "dbMoved": "verwendet {{name}}, bereits nach {{target}} verschoben",
+      "dbNotMoved": "verwendet {{name}}, noch nicht hierher verschoben",
+      "next": "Als Nächstes: {{action}}",
+      "source": {
+        "git": "Git",
+        "image": "Image",
+        "compose": "Compose",
+        "service": "One-Click-Dienst",
+        "unknown": "Unbekannt"
+      },
+      "crons": "{{count}} Cron-Job(s)"
+    },
+    "preflight": {
+      "title": "Vorabprüfung und Zuordnung",
+      "description": "Es wurde noch nichts geschrieben. Prüfen Sie Namens- und Domain-Konflikte, ordnen Sie alte Datenbank-Hostnamen ihrem neuen Platz zu und lesen Sie die genauen Änderungen.",
+      "needsToken": "Das Token wird nicht mehr gehalten. Geben Sie es erneut ein, um Umgebungswerte auszuwerten.",
+      "mappingTitle": "Hostname-Zuordnung",
+      "mappingHelp": "Umgebungswerte, die einen alten internen Hostnamen erwähnen, werden bei der Bereitstellung der App auf den neuen umgeschrieben. Nichts wird umgeschrieben, was hier nicht aufgeführt ist.",
+      "suggested": "Vorgeschlagen aus bereits verschobenen Datenbanken",
+      "use": "Verwenden",
+      "remove": "Entfernen",
+      "from": "Alter Hostname",
+      "to": "Neuer Hostname",
+      "add": "Zuordnung hinzufügen",
+      "save": "Zuordnung speichern",
+      "saving": "Speichern...",
+      "collision": "Wenn ein Name vergeben ist:",
+      "collisionMode": {
+        "suffix": "Ein numerisches Suffix anfügen",
+        "skip": "Die App überspringen"
+      },
+      "passed": "{{count}} Prüfung(en) bestanden.",
+      "check": {
+        "name": "Name",
+        "domains": "Domains",
+        "env-keys": "Variablennamen",
+        "db-hosts": "Datenbank-Hostnamen",
+        "secrets": "Secrets",
+        "build": "Build-Methode",
+        "disk": "Festplatte"
+      },
+      "diff": "Werte, die eine Zuordnung umschreibt",
+      "diffHelp": "Passwörter in Verbindungszeichenfolgen werden maskiert. Nur der Hostname ändert sich, aktualisieren Sie also Benutzer und Passwort, wenn die neue Datenbank andere Zugangsdaten verwendet.",
+      "secret": "Secret",
+      "continue": "Weiter zur Bereitstellung",
+      "blocked": "{{count}} blockierende Prüfung(en)"
+    },
+    "run": {
+      "stageTitle": "Die Apps bereitstellen",
+      "verifyTitle": "Bauen und verifizieren",
+      "stageDescription": "Erstellt jede ausgewählte App hier, gestoppt und ohne Routing. Eine erneute Ausführung setzt dort fort, wo ein Fehler gestoppt hat, und dupliziert nie eine App.",
+      "verifyDescription": "Startet jede App, baut oder pullt sie, wartet auf ihren eigenen Health-Check und stoppt sie bis zur Umschaltung wieder. Eine fehlschlagende App blockiert nie die anderen.",
+      "needsToken": "Das Token wird nicht mehr gehalten. Gehen Sie zurück zur Vorabprüfung und geben Sie es zur Bereitstellung erneut ein.",
+      "importedAs": "importiert als {{name}}",
+      "openApp": "App öffnen",
+      "openLogs": "Logs",
+      "verifyOne": "Verifizieren",
+      "verifyAgain": "Erneut verifizieren",
+      "verifyAll": "Alle verifizieren",
+      "working": "In Arbeit...",
+      "resume": "Bereitstellung fortsetzen",
+      "stage": "Apps bereitstellen",
+      "rollback": "Zurückrollen",
+      "rollbackConfirm": "Jede von diesem Import erstellte App entfernen?",
+      "rollbackYes": "Entfernen",
+      "cancel": "Abbrechen",
+      "stageNote": "Das Zurückrollen entfernt nur Apps, die dieser Import erstellt hat. Volumes bleiben auf der Festplatte.",
+      "verifyNote": "Die Verifizierung startet die App kurz. Führt sie Hintergrundjobs aus, arbeiten diese gegen die Datenbank, mit der sie konfiguriert ist.",
+      "toVerify": "Weiter zur Verifizierung",
+      "toVolumes": "Weiter zu den Volumes",
+      "retry": "Wiederholen",
+      "interrupted": "Durch einen Neustart unterbrochen. Verifizieren Sie sie erneut.",
+      "progressTitle": "Live-Fortschritt",
+      "progress": "{{done}} von {{total}} fertig, {{failed}} fehlgeschlagen",
+      "failedHelp": "Ein fehlgeschlagener Eintrag blockiert nie die anderen. Wiederholen Sie ihn allein oder beheben Sie den Grund und führen Sie den Schritt erneut aus."
+    },
+    "volumes": {
+      "title": "Persistente Volumes",
+      "description": "Kopieren Sie jedes Volume mit dem Befehl unten und haken Sie es dann ab. Führen Sie ihn einmal aus, während die Quelle live ist, und erneut kurz vor der Umschaltung.",
+      "none": "Keine der ausgewählten Apps hat ein persistentes Volume.",
+      "source": "Quellserver (user@host)",
+      "sourcePlaceholder": "root@coolify.example.com",
+      "show": "Befehle anzeigen",
+      "confirm": "{{path}} kopiert",
+      "command": "Volume-Kopierbefehl",
+      "continue": "Weiter zur Umschaltung",
+      "pending": "{{count}} Volume(s) noch nicht bestätigt"
+    },
+    "cutover": {
+      "title": "Umschaltung",
+      "description": "Pro App: die TTL senken, das Routing hier aktivieren, den DNS-Record ändern und dann die Prüfung nach der Umschaltung ausführen.",
+      "keepSource": "Lassen Sie die Quelle laufen, bis Sie zufrieden sind.",
+      "keepSourceBody": "Nichts hier stoppt oder ändert etwas auf der alten Instanz. Um zurückzugehen, richten Sie den DNS-Record wieder auf die Quelle.",
+      "routed": "Routing aktiviert",
+      "notRouted": "Nicht geroutet",
+      "volumesPending": "{{count}} Volume(s) unbestätigt",
+      "disableRouting": "Routing deaktivieren",
+      "enableRouting": "Routing aktivieren",
+      "enableAnyway": "Routing trotzdem aktivieren",
+      "none": "Noch keine verifizierte App mit einer Domain.",
+      "receipt": "Beleg herunterladen",
+      "receiptNote": "Ein JSON-Nachweis darüber, was importiert wurde und was manuell bleibt. Er enthält keine Secrets.",
+      "guide": {
+        "open": "Geführte Umschaltung",
+        "close": "Schließen",
+        "title": "Umschaltung von {{app}}",
+        "recheck": "Erneut prüfen",
+        "safety": "Auf der Quellplattform wird nichts angetastet. Eine Umschaltung lässt sich zurückrollen, und eine fehlgeschlagene Verifizierung rollt sie automatisch zurück.",
+        "status": {
+          "pass": "Bestanden",
+          "warn": "Warnung",
+          "block": "Blockiert"
+        },
+        "verdict": {
+          "ready": "Bereit",
+          "warnings": "Bereit mit Warnungen",
+          "blocked": "Blockiert"
+        },
+        "method": {
+          "dns": "DNS-Anbieter",
+          "proxy": "Geroutete Proxy-Route",
+          "manual": "Manueller Record",
+          "none": "Zeigt bereits hierher"
+        },
+        "domainLine": "{{domain}}: umgeschaltet per {{method}}, jetzt {{current}}",
+        "copyRecord": "Den Record kopieren",
+        "dryRun": "Testlauf",
+        "typeToConfirm": "Geben Sie {{app}} zum Umschalten ein",
+        "acceptWarnings": "Trotz der Warnungen fortfahren",
+        "switch": "Traffic umschalten",
+        "rollback": "Zurückrollen",
+        "confirmDns": "Ich habe den Record geändert",
+        "manualRecord": "Setzen Sie {{type}} {{domain}} auf {{value}} und klicken Sie dann auf den Button",
+        "liveHint": "Der Traffic ist hier live und über den öffentlichen Namen verifiziert. Lassen Sie die Quelle für einen vollen Traffic-Zyklus laufen.",
+        "noRuns": "Noch kein Lauf. Ein Testlauf startet die App, prüft sie über den Ingress dieses Nodes und stoppt sie wieder, ohne einen Record zu ändern.",
+        "mode": {
+          "dry_run": "Testlauf",
+          "switch": "Umschalten"
+        },
+        "state": {
+          "planning": "Wird geplant",
+          "ready": "Bereit",
+          "starting": "Startet",
+          "verifying": "Wird verifiziert",
+          "switching": "Wird umgeschaltet",
+          "live": "Live",
+          "rolled_back": "Zurückgerollt",
+          "failed": "Fehlgeschlagen"
+        },
+        "step": {
+          "readiness": "Bereitschaft",
+          "route": "Start",
+          "healthy": "In Ordnung",
+          "ingress_probe": "Ingress-Prüfung",
+          "dns_preview": "Vorschau",
+          "switch": "Umschalten",
+          "post_verify": "Verifizieren",
+          "cleanup": "Stopp",
+          "rollback": "Wiederherstellen",
+          "manual_dns": "Manuelles DNS"
+        }
+      },
+      "next": "Als Nächstes: Ports übernehmen"
+    },
+    "images": {
+      "title": "Auf dem Quell-Host gebaute Images verschieben",
+      "description": "Diese Apps führen ein Image aus, das auf dem alten Server gebaut wurde und in keiner Registry existiert. Die Control Plane führt auf der Quelle per SSH docker save aus, lädt den Stream in diesen Node und prüft jede Image-ID gegen den Snapshot. Sonst läuft nichts auf der Quelle.",
+      "none": "Keine ausgewählte App verwendet ein auf dem Quell-Host gebautes Image. Weiter zur Verifizierung.",
+      "unsupported": "Diese Control Plane hat keine Node-Laufzeit, in die Images geladen werden könnten.",
+      "loadError": "Die Image-Liste konnte nicht geladen werden.",
+      "ssh": "SSH-Anmeldung der Quelle",
+      "sshPlaceholder": "root@old-server.example.com",
+      "sshHelp": "user@host oder user@host:port. Die Anmeldung muss docker ausführen können. Dem Host-Schlüssel wird bei der ersten Verwendung vertraut und er wird gepinnt.",
+      "key": "Privater Schlüssel",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY ...",
+      "keyHeld": "Ein Schlüssel wird für diese Sitzung gehalten, leer lassen, um ihn wiederzuverwenden",
+      "keyHelp": "Wird nur für diese Sitzung im Speicher gehalten, nie gespeichert oder protokolliert.",
+      "passphrase": "Passphrase des Schlüssels (optional)",
+      "agent": "Den eigenen SSH-Agent der Control Plane statt eines Schlüssels verwenden",
+      "move": "Images verschieben",
+      "retry": "Verbleibende Images verschieben",
+      "cancel": "Abbrechen",
+      "running": "Images werden von {{source}} verschoben",
+      "continue": "Weiter zur Verifizierung",
+      "pending": "{{count}} Image(s) noch nicht auf diesem Node",
+      "ids": "Quelle {{source}}, geladen {{loaded}}",
+      "sourceId": "Quell-Image {{source}}",
+      "noSourceId": "Der Snapshot hat keine Image-ID, daher lässt sich das Laden nicht verifizieren.",
+      "state": {
+        "pending": "Nicht verschoben",
+        "running": "Wird verschoben",
+        "verified": "Verifiziert",
+        "loaded": "Geladen, nicht verifiziert",
+        "failed": "Fehlgeschlagen",
+        "cancelled": "Abgebrochen"
+      },
+      "viaTunnel": "Images werden über dieselbe SSH-Verbindung gestreamt, nur lesend. Auf dem alten Server läuft nichts, und es ist keine zusätzliche Anmeldung nötig."
+    },
+    "ssh": {
+      "description": "Importieren Sie von einem alten Coolify-, Dokploy-, CapRover- oder Dokku-Server nur mit einer SSH-Anmeldung. Kein Plattform-Token und kein Agent. SSH dient nur dazu, den Docker-Socket zu erreichen, und es werden nur Leseanfragen gesendet: Auf dem alten Server wird nie etwas ausgeführt.",
+      "host": "Serveradresse",
+      "port": "SSH-Port",
+      "user": "SSH-Benutzer",
+      "passphrase": "Passphrase des Schlüssels",
+      "key": "Privater Schlüssel",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY ...",
+      "keyFile": "Oder den privaten Schlüssel aus einer Datei laden",
+      "keyHelp": "Wird nur für diese Sitzung im Speicher gehalten und im Anfrage-Body gesendet. Nie gespeichert oder protokolliert. Wer diesen Schlüssel besitzt, kann auf dem alten Server als dieser Benutzer handeln, verwenden Sie daher einen Schlüssel, den Sie danach entfernen können.",
+      "advanced": "Passwort, Pfad des Docker-Sockets und Netzwerkoptionen",
+      "password": "Passwort (statt eines Schlüssels)",
+      "socket": "Pfad des Docker-Sockets auf dem alten Server",
+      "test": "Verbindung testen",
+      "testing": "Wird getestet",
+      "recheck": "Erneut prüfen",
+      "readOnlyNote": "Nur lesend: listet Container, Volumes und Images auf.",
+      "storedConfig": "Umgebungsvariablen und Einstellungen stammen aus den laufenden Containern. Die eigene gespeicherte Konfiguration der alten Plattform (Coolifys Datenbank, CapRovers Datenordner, Dokkus App-Ordner) wird nicht gelesen.",
+      "hostKey": {
+        "title": "Die Identität des Servers bestätigen",
+        "read": "Host-Schlüssel lesen",
+        "reading": "Wird gelesen",
+        "help": "Lesen Sie den Fingerabdruck, den der Server vorlegt, und bestätigen Sie, dass es derselbe ist, den der alte Server meldet. Ein falscher oder geänderter Fingerabdruck stoppt die Verbindung.",
+        "list": "Host-Schlüssel, die der Server vorlegt",
+        "fingerprint": "Fingerabdruck des Host-Schlüssels",
+        "confirm": "Dieser Fingerabdruck stimmt mit meinem alten Server überein",
+        "compare": "Mit dem Fingerabdruck auf dem alten Server vergleichen",
+        "compareCommand": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
+        "insecure": "Verifizierung des Host-Schlüssels überspringen (unsicher)",
+        "insecureTitle": "Die Verifizierung des Host-Schlüssels ist aus",
+        "insecureBody": "Jeder zwischen diesem Server und dem alten könnte mitlesen, was gesendet wird, einschließlich des Schlüssels. Bestätigen Sie stattdessen den Fingerabdruck. Diese Sitzung wird überall als nicht verifiziert markiert.",
+        "placeholder": "SHA256:..."
+      },
+      "ok": {
+        "title": "Verbunden",
+        "reads": "Nur lesend: listet Container, Volumes und Images auf.",
+        "counts": "Docker {{version}}: {{containers}} Container ({{running}} laufen), {{volumes}} Volumes, {{images}} Images."
+      },
+      "fix": {
+        "viaCli": "Über die CLI beheben",
+        "auth_failed": {
+          "title": "Die Anmeldung wurde abgelehnt",
+          "body": "Prüfen Sie den privaten Schlüssel, seine Passphrase und den Benutzernamen und prüfen Sie dann erneut."
+        },
+        "host_key_mismatch": {
+          "title": "Der Host-Schlüssel stimmt nicht überein",
+          "body": "Der Server hat einen anderen Host-Schlüssel vorgelegt als den, den Sie bestätigt haben. Wenn Sie die Änderung erwartet haben, vertrauen Sie dem neuen Fingerabdruck und bestätigen Sie ihn erneut.",
+          "trust": "{{fingerprint}} vertrauen"
+        },
+        "host_key_required": {
+          "title": "Bestätigen Sie zuerst den Host-Schlüssel",
+          "body": "Lesen Sie den Fingerabdruck des Servers und bestätigen Sie ihn vor dem Verbinden."
+        },
+        "socket_permission": {
+          "title": "Der Benutzer kann den Docker-Socket nicht verwenden",
+          "body": "Fügen Sie den SSH-Benutzer auf dem alten Server zur Gruppe docker hinzu, melden Sie sich erneut an und prüfen Sie dann erneut.",
+          "command": "sudo usermod -aG docker USER"
+        },
+        "socket_path": {
+          "title": "Kein Docker-Socket an diesem Pfad",
+          "body": "Wählen Sie den richtigen Socket-Pfad oder geben Sie ihn unter den erweiterten Optionen ein.",
+          "try": "{{path}} versuchen"
+        },
+        "socket_forbidden": {
+          "title": "Der Server blockiert die Socket-Weiterleitung",
+          "body": "Das sshd des alten Servers lehnt die Weiterleitung an einen Unix-Socket für diese Anmeldung ab. Erlauben Sie Stream-Local-Forwarding für diesen Benutzer und prüfen Sie dann erneut."
+        },
+        "unreachable": {
+          "title": "Der Server war nicht erreichbar",
+          "body": "Prüfen Sie Adresse und Port und ob dieser Server ihn erreichen kann, und prüfen Sie dann erneut."
+        },
+        "blocked_address": {
+          "title": "Diese Adresse ist nicht erlaubt",
+          "body": "Adressen privater Netzwerke sind blockiert, sofern der Betreiber der Control Plane sie nicht erlaubt. Cloud-Metadaten-Adressen sind nie erlaubt.",
+          "allow": "Private Adressen erlauben"
+        },
+        "other": {
+          "title": "Die Verbindung ist fehlgeschlagen",
+          "body": "Lesen Sie die Meldung unten und prüfen Sie dann erneut."
+        }
+      },
+      "volumes": {
+        "title": "Über SSH kopieren",
+        "description": "Volumes laufender Container werden über die SSH-Verbindung gestreamt, auf dem alten Server nur lesend, bis zu {{size}} je Volume. Gestoppte Container und Bind-Mounts benötigen die Befehle unten.",
+        "reconnect": "Die SSH-Anmeldung wird nur im Speicher gehalten. Verbinden Sie die Quelle erneut, um Volumes zu kopieren.",
+        "copy": "Volumes über SSH kopieren",
+        "again": "Erneut kopieren",
+        "running": "Wird kopiert",
+        "done": "{{files}} Dateien, {{size}}",
+        "leftOut": "Ausgelassen: {{entry}}",
+        "fallback": "Führen Sie die Kopie kurz vor der DNS-Umschaltung erneut aus, um die letzten Änderungen zu erfassen.",
+        "state": {
+          "pending": "Wartet",
+          "running": "Wird kopiert",
+          "copied": "Kopiert",
+          "failed": "Fehlgeschlagen",
+          "skipped": "Den Befehl verwenden"
+        }
+      }
+    },
+    "exit": {
+      "title": "Abschlussbericht",
+      "help": "Was jede Ressource wird, was noch Ihr Eingreifen braucht, die Reihenfolge der DNS-Umschaltung und die Checkliste zur Umschaltung. Nur lesend.",
+      "show": "Abschlussbericht anzeigen",
+      "recheck": "Erneut prüfen",
+      "next": "Als Nächstes:",
+      "ready": "Jede Ressource ist importiert und keine braucht eine Aktion. Führen Sie die Prüfung Sicher zu löschen aus, bevor Sie etwas entfernen.",
+      "wavesTitle": "Reihenfolge der DNS-Umschaltung",
+      "checklistTitle": "Checkliste zur Umschaltung",
+      "outcome": {
+        "imported": "Importiert",
+        "manual": "Braucht manuelle Aktion",
+        "skipped": "Übersprungen"
+      },
+      "mode": {
+        "dry-run": "Plan",
+        "verify": "Verifizierung"
+      }
+    },
+    "probe": {
+      "dns": "DNS jetzt prüfen",
+      "http": "Prüfen, ob die App hier antwortet",
+      "checking": "Wird geprüft...",
+      "help": "Die Antwortprüfung erreicht diesen Server direkt mit dem Domainnamen und funktioniert daher, bevor das DNS umgezogen ist.",
+      "ok": "Bestanden",
+      "failed": "Fehlgeschlagen"
+    },
+    "retire": {
+      "title": "Ist es sicher, die alte Instanz zu löschen?",
+      "description": "Dies wird erst grün, wenn jede Prüfung unten mit Belegen aus dieser Migration besteht. Bis dahin lassen Sie die alte Instanz als Rückfall laufen.",
+      "run": "Die Live-Prüfungen ausführen",
+      "running": "Wird geprüft...",
+      "targetIp": "Öffentliche IP dieses Servers",
+      "safeTitle": "Jede Schranke bestanden",
+      "safeBody": "Stoppen Sie zuerst die alte Instanz und lassen Sie sie einige Tage gestoppt. Löschen Sie sie erst danach und behalten Sie ihre Backups.",
+      "notSafeTitle": "Noch nicht sicher zu löschen",
+      "notSafeBody": "{{count}} Schranke(n) sind noch offen. Auf der alten Instanz wurde nichts geändert.",
+      "confirm": "Das habe ich getan",
+      "status": {
+        "pass": "Bestanden",
+        "fail": "Fehlgeschlagen",
+        "pending": "Nicht geprüft",
+        "manual": "Braucht Sie"
+      },
+      "next": "Als Nächstes:",
+      "fallbackTitle": "Falls etwas schiefgeht",
+      "gate": {
+        "staged": "Apps hier gebaut und in Ordnung",
+        "leftovers": "Ressourcen, die der Importer nicht verschieben konnte",
+        "volumes": "Volumes kopiert",
+        "databases": "Datenbankkopien verifiziert",
+        "routed": "Apps liefern ihre Domains hier aus",
+        "dns": "DNS zeigt auf diesen Server",
+        "responds": "Apps antworten von diesem Server",
+        "source-backup": "Alte Instanz gesichert",
+        "traffic-cycle": "Voller Traffic-Zyklus abgeschlossen"
+      },
+      "back": "Zurück",
+      "open": "Weiter zur Prüfung Sicher zu löschen"
+    }
+  },
+  "platformImport": {
+    "tokenApi": "API-Token",
+    "tokenKey": "API-Schlüssel",
+    "tokenPassword": "Anmeldepasswort",
+    "tokenAccess": "Zugriffstoken",
+    "teamId": "Team-ID (optional)",
+    "teamIdPlaceholder": "team_... oder Team-Slug, leer für Ihr persönliches Konto",
+    "vercelUrlPlaceholder": "Leer lassen für die öffentliche Vercel-API",
+    "requestFailed": "Anfrage fehlgeschlagen",
+    "summaryTitle": "Importzusammenfassung",
+    "summaryCounts": "{{created}} erstellt, {{failed}} fehlgeschlagen, {{already}} bereits importiert.",
+    "retryHint": "Führen Sie den Import erneut aus, um Fehlgeschlagenes zu wiederholen. Abgeschlossene Einträge werden übersprungen.",
+    "dataNotMigrated": "Daten werden nicht migriert",
+    "another": "Weiteren Import starten",
+    "reviewTitle": "Prüfen, was importiert wird",
+    "nothingFound": "Auf der Quelle wurde nichts gefunden. Prüfen Sie die URL und ob die Zugangsdaten Ihre Projekte sehen können.",
+    "importFailed": "Import fehlgeschlagen",
+    "importing": "Wird importiert...",
+    "importSelected": "{{count}} ausgewählte importieren",
+    "back": "Zurück",
+    "connectTitle": "Die Quellplattform verbinden",
+    "connectIntro": "Liest Apps, Datenbanken und Einstellungen der anderen Plattform, ohne sie zu ändern. Die Zugangsdaten werden pro Schritt einmal an diese Control Plane gesendet und nie gespeichert.",
+    "platform": "Plattform",
+    "sourceUrl": "Quell-URL",
+    "herokuUrlPlaceholder": "Leer lassen für die öffentliche Heroku-API",
+    "skipTakenLabel": "Bereits verwendete Namen überspringen",
+    "skipTaken": "Ressourcen überspringen, deren Name schon vergeben ist (standardmäßig werden sie umbenannt)",
+    "privateLabel": "Quelle liegt in einem privaten Netzwerk",
+    "private": "Quelle liegt in einem privaten Netzwerk (benötigt die Freigabe der Control Plane)",
+    "insecureLabel": "TLS-Verifizierung überspringen",
+    "insecure": "TLS-Verifizierung überspringen (selbstsignierte Quelle)",
+    "readFailed": "Die Quelle konnte nicht gelesen werden",
+    "reading": "Quelle wird gelesen...",
+    "discover": "Erkunden",
+    "extras": {
+      "title": "Backups und Alarmkanäle",
+      "target": "Backup-Ziel {{name}}",
+      "schedule": "Backup-Zeitplan für {{name}}",
+      "channel": "Alarmkanal {{name}}",
+      "hasKeys": "Schlüssel auf der Quelle",
+      "noKeys": "keine Schlüssel auf der Quelle",
+      "hasSecret": "Token auf der Quelle",
+      "noSecret": "kein Token auf der Quelle",
+      "retain_one": "{{count}} behalten",
+      "retain_other": "{{count}} behalten",
+      "paused": "pausiert",
+      "running": "läuft",
+      "enabled": "aktiviert",
+      "disabled": "deaktiviert",
+      "includeCredentials": "Zugangsdaten einbeziehen",
+      "includeCredentialsWarning": "Kopiert die Speicherschlüssel und Kanal-Tokens der Quelle in diese Instanz. Sie werden direkt an die Erstellungsaufrufe gesendet und hier nie angezeigt.",
+      "enableSchedules": "Backup-Zeitpläne weiterlaufen lassen",
+      "enableSchedulesWarning": "Aus: Importierte Zeitpläne werden pausiert erstellt. An: Zeitpläne, die auf der Quelle liefen, laufen hier weiter.",
+      "enableChannels": "Alarmkanäle aktiviert erstellen",
+      "enableChannelsWarning": "Aus: Importierte Kanäle werden deaktiviert erstellt. An: Aktivierte Kanäle erhalten sofort Rundmeldungen.",
+      "importOnly": "Nur Backups und Kanäle importieren",
+      "undoButton_one": "{{count}} importierten Eintrag rückgängig machen",
+      "undoButton_other": "{{count}} importierte Einträge rückgängig machen",
+      "undoFailed": "Rückgängigmachen fehlgeschlagen",
+      "undoItem": "{{name}}: {{action}}",
+      "undo": {
+        "removed": "entfernt",
+        "skipped": "belassen",
+        "failed": "fehlgeschlagen"
+      },
+      "state": {
+        "would_create": "Wird erstellt",
+        "needs_secret": "Braucht Zugangsdaten",
+        "created": "Erstellt",
+        "exists": "Existiert bereits",
+        "pending": "Ausstehend",
+        "skipped": "Übersprungen",
+        "review": "Prüfen",
+        "failed": "Fehlgeschlagen",
+        "unsupported": "Nicht unterstützt"
+      }
+    }
+  },
+  "importPlan": {
+    "anonymousVolume": "(anonym)",
+    "importingToast": "\"{{name}}\" wird importiert.",
+    "watching": "Das Build-Log wird jetzt beobachtet.",
+    "appearsShortly": "Sie erscheint in Kürze in der App-Liste.",
+    "readFirst": "Vor dem Deployen lesen",
+    "appName": "App-Name",
+    "nameInvalid": "Verwenden Sie nur Kleinbuchstaben, Ziffern und Bindestriche.",
+    "containerPort": "Container-Port",
+    "portInvalid": "Geben Sie den Port ein, auf dem die App lauscht.",
+    "domainSuggestion": "Domain-Vorschlag: {{domain}}. Fügen Sie echte Domains im Tab Domains der App hinzu, nachdem sie erstellt wurde.",
+    "why": "Warum: {{reason}}",
+    "health": "Health-Check: GET {{path}}",
+    "needsApproval": "Benötigt Root-Genehmigung",
+    "nothing": "In dieser Eingabe wurde nichts zum Deployen gefunden.",
+    "required": "Vor dem Deployen erforderlich: {{keys}}",
+    "back": "Zurück",
+    "deploying": "Wird deployt...",
+    "deploy": "Deployen"
+  },
+  "takeover": {
+    "title": "Die Ports dieses Servers übernehmen",
+    "description": "Verschieben Sie die Ports 80 und 443 vom Proxy Ihrer alten Plattform auf den eigenen Ingress dieses Servers, mit einem festgehaltenen Rückweg. Tun Sie dies zuletzt, nachdem jede App bereitgestellt, verifiziert und ihre Daten kopiert sind.",
+    "rootOnly": "Nur das Root-Konto kann Ports übernehmen. Sie können die Vorabprüfung lesen, aber der Button Ausführen bleibt aus.",
+    "loadError": "Die Vorabprüfung konnte nicht gelesen werden.",
+    "recheck": "Erneut prüfen",
+    "rechecking": "Wird geprüft",
+    "ports": "Lauscht jetzt auf {{from}}, danach auf {{to}}.",
+    "verdict": {
+      "ready": "Bereit",
+      "warnings": "Bereit mit Warnungen",
+      "blocked": "Blockiert",
+      "done": "Erledigt"
+    },
+    "status": {
+      "pass": "Bestanden",
+      "warn": "Warnung",
+      "block": "Blockiert"
+    },
+    "domainsTitle": "Domains, die dieser Server ausliefert",
+    "healthy": "In Ordnung",
+    "unhealthy": "Nicht in Ordnung",
+    "dns": {
+      "ok": "DNS hier",
+      "elsewhere": "DNS anderswo",
+      "unresolved": "Kein DNS"
+    },
+    "cert": {
+      "custom": "Hochgeladenes Zertifikat",
+      "acme": "Bei erster Verwendung ausgestellt"
+    },
+    "stepsTitle": "Was der Lauf tut",
+    "rollbackTitle": "Wie es rückgängig gemacht wird",
+    "acceptUnmanaged": "Ich akzeptiere, dass die oben aufgeführten Domains offline gehen, wenn der alte Proxy stoppt.",
+    "alreadyDone": "Dieser Server lauscht bereits auf den Ports 80 und 443. Es bleibt nichts zu tun.",
+    "copyCommand": "Befehl kopieren",
+    "copied": "Kopiert",
+    "runTitle": "Übernahmelauf",
+    "state": {
+      "preparing": "Wird vorbereitet",
+      "applying": "Startet neu",
+      "verifying": "Wird verifiziert",
+      "done": "Erledigt",
+      "rolling_back": "Wird zurückgerollt",
+      "rolled_back": "Zurückgerollt",
+      "failed": "Erfordert Aufmerksamkeit"
+    },
+    "step": {
+      "rollback_record": "Rückweg festgehalten",
+      "stop_old_proxy": "Alter Proxy gestoppt",
+      "tls_settings": "TLS wird hier behandelt",
+      "listen_addresses": "Neue Adressen gespeichert",
+      "restart": "Neustart",
+      "verify": "Über HTTPS verifizieren",
+      "rollback": "Rollback"
+    },
+    "hint": {
+      "applying": "Die Control Plane startet neu. Diese Seite verbindet sich von selbst wieder.",
+      "verifying": "Jede Domain wird geprüft. Gelingt dies nicht innerhalb von {{seconds}} Sekunden, rollt es sich von selbst zurück.",
+      "done": "Dieser Server liefert jetzt die Ports 80 und 443 aus. Der Container des alten Proxys ist gestoppt, nicht entfernt. Sie können jederzeit zurückrollen.",
+      "rolling_back": "Die vorherigen Adressen werden wiederhergestellt und der alte Proxy wird wieder gestartet.",
+      "rolled_back": "Die vorherigen Adressen sind zurück und der alte Proxy läuft wieder.",
+      "failed": "Etwas wurde nicht abgeschlossen. Lesen Sie die Meldung oben, beheben Sie es und prüfen Sie dann erneut."
+    },
+    "run": {
+      "button": "Ports übernehmen",
+      "note": "Eine fehlgeschlagene Verifizierung rollt sich nach {{seconds}} Sekunden von selbst zurück.",
+      "dialogTitle": "Die Ports 80 und 443 übernehmen?",
+      "dialogDescription": "Besucher sehen eine kurze Pause, während der Proxy stoppt und dieser Server zu antworten beginnt.",
+      "consequenceStop": "Der Container des alten Proxys wird gestoppt, nicht entfernt.",
+      "consequenceRestart": "Die Control Plane startet einmal neu, um auf den neuen Ports zu lauschen.",
+      "consequenceRollback": "Besteht eine Domain die Verifizierung nicht, rollt sich die Übernahme von selbst zurück.",
+      "confirm": "Übernehmen",
+      "pending": "Wird gestartet"
+    },
+    "rollback": {
+      "button": "Zurückrollen",
+      "title": "Die Übernahme zurückrollen?",
+      "description": "Die vorherigen Lauschadressen und TLS-Einstellungen kehren nach einem Neustart zurück, und der alte Proxy startet wieder.",
+      "confirm": "Zurückrollen",
+      "pending": "Wird zurückgerollt"
+    }
+  }
+}

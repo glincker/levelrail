@@ -1,0 +1,58 @@
+{
+  "title": "Deploy-Kontexte",
+  "description": "Legen Sie Umgebungsvariablen und statische Build-Einstellungen pro Deploy-Art fest. Alles, was Sie leer lassen, erbt den App-Standard.",
+  "editor": {
+    "context": "Kontext",
+    "branchPattern": "Branch-Muster",
+    "branchPatternHint": "Exakter Name oder ein Glob wie release/*.",
+    "env": "Umgebungsvariablen",
+    "envHint": "Ein KEY=VALUE pro Zeile. Verwenden Sie Branch-Env-Überschreibungen für Secrets.",
+    "buildCommand": "Build-Befehl",
+    "publishDir": "Veröffentlichungsverzeichnis",
+    "buildArgs": "Build-Argumente",
+    "buildArgsHint": "Ein KEY=VALUE pro Zeile.",
+    "save": "Kontext speichern",
+    "saving": "Speichern",
+    "saved": "Kontext gespeichert.",
+    "saveError": "Der Kontext konnte nicht gespeichert werden.",
+    "clear": "Leeren",
+    "cleared": "Kontext geleert.",
+    "clearError": "Der Kontext konnte nicht geleert werden.",
+    "invalidLine": "Zeile \"{{line}}\" muss KEY=VALUE sein.",
+    "loadError": "Die gespeicherten Kontexte konnten nicht geladen werden."
+  },
+  "contexts": {
+    "deploy-preview": "Deploy-Vorschau (Pull Requests)",
+    "branch-deploy": "Branch-Deploy",
+    "branch": "Ein bestimmter Branch"
+  },
+  "saved": {
+    "title": "Gespeicherte Kontexte",
+    "empty": "Noch keine Kontext-Überschreibungen. Jeder Deploy verwendet die App-Standards.",
+    "summary": "{{env}} Umgebungsvariablen, {{args}} Build-Argumente",
+    "edit": "Bearbeiten"
+  },
+  "effective": {
+    "title": "Wirksame Konfiguration für diesen Deploy",
+    "description": "Welcher Wert gewinnt und woher er stammt. Secrets bleiben maskiert.",
+    "context": "Deployen als",
+    "production": "Produktion",
+    "branch": "Branch",
+    "branchPlaceholder": "release/1.2",
+    "env": "Umgebungsvariablen",
+    "buildCommand": "Build-Befehl",
+    "publishDir": "Veröffentlichungsverzeichnis",
+    "buildArg": "Build-Argument {{name}}",
+    "none": "keine",
+    "empty": "Für diesen Deploy sind keine Umgebungsvariablen gesetzt.",
+    "loadError": "Die wirksame Konfiguration konnte nicht geladen werden.",
+    "secret": "Secret",
+    "source": {
+      "app": "App-Standard",
+      "preview-env": "Vorschau-Umgebung",
+      "context": "Kontext",
+      "branch-context": "Branch-Kontext",
+      "branch-env": "Branch-Überschreibung"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "title": "Automatische Bereinigung",
+  "description": "Gibt auf diesem Node nach Zeitplan Festplattenplatz frei: ungenutzte Container und Images, Build-Cache über dem Budget, verwaiste Volumes (zuerst in Quarantäne) und alte fehlgeschlagene Deploy-Versuche. Rollback-Ziele und Volumes laufender Apps werden nie entfernt.",
+  "loadError": "Der Bereinigungsstatus konnte nicht geladen werden.",
+  "notConfigured": "Die Bereinigung ist auf dieser Control Plane nicht verfügbar.",
+  "mode": {
+    "off": "Aus",
+    "preview": "Nur Vorschau",
+    "removing": "Entfernt"
+  },
+  "status": {
+    "title": "Festplatte und letzter Durchlauf",
+    "free": "{{free}} frei von {{total}} ({{percent}}%)",
+    "freeUnknown": "Für diesen Node wird kein freier Platz gemeldet.",
+    "budget": "Die größenbasierte Bereinigung startet unter {{percent}}% frei.",
+    "reclaimed": "Bisher freigegeben: {{size}}",
+    "lastPass": "Letzter Durchlauf {{when}} ({{trigger}}, {{size}})",
+    "noPass": "Es lief noch keine Bereinigung.",
+    "trigger": {
+      "scheduled": "geplant",
+      "manual": "manuell",
+      "disk_fix": "Festplatten-Korrektur"
+    }
+  },
+  "pressure": {
+    "title": "Der Festplattenplatz liegt unter dem Budget",
+    "body": "Jetzt bereinigen entfernt ungenutzte Docker-Daten und alte Versuche. Was noch in Gebrauch ist, bleibt erhalten.",
+    "action": "Jetzt bereinigen"
+  },
+  "actions": {
+    "preview": "Vorschau",
+    "runNow": "Jetzt ausführen",
+    "running": "Läuft"
+  },
+  "toast": {
+    "previewed": "Vorschau bereit, nichts wurde entfernt.",
+    "ran": "Bereinigung abgeschlossen, {{size}} freigegeben.",
+    "failed": "Bereinigung mit Fehlern abgeschlossen: {{error}}",
+    "saved": "Bereinigungsrichtlinie gespeichert."
+  },
+  "report": {
+    "title": "Was ein Durchlauf tut",
+    "empty": "Nichts zu bereinigen.",
+    "more": "und {{count}} weitere",
+    "skipped": "Übersprungen: {{reason}}",
+    "failed": "Fehlgeschlagen: {{error}}",
+    "previewNote": "Nur Vorschau, nichts wurde entfernt."
+  },
+  "stage": {
+    "containers": "Gestoppte Container",
+    "images": "Dangling Images",
+    "build_cache": "Build-Cache",
+    "volumes": "Verwaiste Volumes",
+    "deploy_attempts": "Alte Deploy-Versuche",
+    "api_tokens": "Widerrufene und abgelaufene API-Tokens"
+  },
+  "stageHelp": {
+    "containers": "Gestoppte Container, die keine App und keine Datenbank mehr braucht. Läuft, wenn der Festplattenplatz knapp ist.",
+    "images": "Nur Images ohne Tag. Images mit Tag, darunter Rollback-Ziele, werden nie entfernt.",
+    "build_cache": "Ungenutzter Build-Cache über dem Altersgrenzwert, und mehr, wenn der Cache das Budget überschreitet.",
+    "volumes": "Volumes, die keine App nutzt, kommen in Quarantäne und werden nur gelöscht, wenn Sie es erlauben. Datenbankdaten werden nie entfernt.",
+    "deploy_attempts": "Fehlgeschlagene, abgelöste und abgebrochene Versuche nach Ablauf der Aufbewahrung. Erfolgreiche Versuche und Rollback-Pins bleiben.",
+    "api_tokens": "Widerrufene oder abgelaufene API-Tokens nach Ablauf ihrer Aufbewahrungsfrist. Aktive Tokens werden nie entfernt. Legen Sie die Fristen unter Einstellungen, API-Tokens fest."
+  },
+  "action": {
+    "removed": "Entfernt",
+    "would_remove": "Würde entfernen",
+    "quarantined": "In Quarantäne",
+    "would_quarantine": "Würde in Quarantäne setzen",
+    "kept": "Behalten"
+  },
+  "quarantine": {
+    "title": "Volumes in Quarantäne",
+    "description": "Volumes, die niemand nutzt. Sie werden erst gelöscht, wenn die Sperrfrist endet und das automatische Löschen aktiv ist.",
+    "empty": "Keine Volumes in Quarantäne.",
+    "ready": "Bereit zum Löschen",
+    "until": "Löschbar {{date}}",
+    "deleteOff": "Automatisches Löschen ist aus"
+  },
+  "policy": {
+    "title": "Richtlinie",
+    "enabled": "Geplante Bereinigung",
+    "enabledHelp": "Durchläufe im Hintergrund ausführen.",
+    "dryRun": "Nur Vorschau",
+    "dryRunHelp": "Geplante Durchläufe melden, was sie tun würden, und entfernen nichts. Schalten Sie aus, um mit dem Entfernen zu beginnen.",
+    "interval": "Minuten zwischen Durchläufen",
+    "budget": "Budget für freien Festplattenplatz (%)",
+    "budgetHelp": "Container und Images werden nur bereinigt, wenn der freie Platz darunter fällt.",
+    "cacheBudget": "Budget des Build-Caches (MB)",
+    "cacheBudgetHelp": "Über dieser Größe wird ungenutzter Cache stärker gekürzt. 0 schaltet das Budget aus.",
+    "cacheAge": "Maximale Leerlaufzeit des Build-Caches (Stunden)",
+    "quarantineDays": "Volume-Quarantäne (Tage)",
+    "deleteVolumes": "Volumes nach der Quarantäne löschen",
+    "deleteVolumesHelp": "Aus belässt verwaiste Volumes dauerhaft in der Liste. Datenbank-Volumes werden nie gelöscht.",
+    "attemptDays": "Aufbewahrung von Deploy-Versuchen (Tage)",
+    "attemptKeep": "Neueste Versuche pro App behalten",
+    "stages": "Stufen",
+    "save": "Richtlinie speichern",
+    "rootOnly": "Nur ein Root-Konto kann die Richtlinie ändern.",
+    "invalid": "Jede Zahl muss eine ganze Zahl von mindestens 1 sein."
+  },
+  "history": {
+    "title": "Verlauf freigegebener Bytes",
+    "empty": "Noch keine Bereinigungsläufe aufgezeichnet.",
+    "row": "{{when}}, {{trigger}}",
+    "failed": "hatte Fehler"
+  }
+}

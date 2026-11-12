@@ -1,0 +1,520 @@
+{
+  "loadBalancers": {
+    "loadError": "Load Balancer konnten nicht geladen werden"
+  },
+  "loadBalancerPicker": {
+    "loadError": "Ihre Apps konnten nicht geladen werden",
+    "loadErrorHint": "Schließen Sie diesen Dialog und versuchen Sie es erneut."
+  },
+  "loadBalancerPage": {
+    "loadError": "Der Load Balancer konnte nicht geladen werden",
+    "statusError": "Der Upstream-Status konnte nicht geladen werden"
+  },
+  "healthTimeline": {
+    "loadError": "Der Deploy-Verlauf konnte nicht geladen werden",
+    "loadErrorHint": "Die Zeitachse braucht ihn. Versuchen Sie es gleich noch einmal."
+  },
+  "mesh": {
+    "title": "WireGuard-Mesh",
+    "loading": "Mesh-Status wird geladen...",
+    "disabledTitle": "Mesh-Netzwerk ist nicht aktiviert",
+    "disabledHint": "Setzen Sie APP_MESH_ENABLED=1 auf dieser Control Plane, um ihr WireGuard-Gerät und die Peer-Sichtbarkeit hochzufahren.",
+    "never": "Nie",
+    "secondsAgo": "vor {{count}} s",
+    "minutesAgo": "vor {{count}} Min.",
+    "noMeshAddress": "Noch keine Mesh-Adresse",
+    "notPeered": "Noch kein Peering",
+    "healthy": "In Ordnung",
+    "stale": "Veraltet",
+    "noLivePeer": "Kein Live-Peer-Eintrag",
+    "backend": "Backend",
+    "unknown": "Unbekannt",
+    "meshAddress": "Mesh-Adresse",
+    "notAssigned": "Nicht zugewiesen",
+    "publicKey": "Öffentlicher Schlüssel",
+    "notGenerated": "Noch nicht erzeugt",
+    "endpoint": "Endpunkt",
+    "lastHandshake": "Letzter Handshake",
+    "rotationConfirmed": "Letzte Rotation bestätigt: gestartet {{started}}, bestätigt {{confirmed}}",
+    "rotationConfirmedNoTime": "Letzte Rotation bestätigt: gestartet {{started}}",
+    "rotationPending": "Letzte Rotation wird noch bestätigt: gestartet {{started}}",
+    "noPeers": "Noch keine Peers konfiguriert.",
+    "peersLabel": "Mesh-Peers",
+    "peer": "Peer",
+    "health": "Zustand"
+  },
+  "lb": {
+    "header": {
+      "of": "von",
+      "healthy": "in Ordnung",
+      "aboutAlgorithm": "Zu diesem Algorithmus",
+      "checkNow": "Jetzt prüfen",
+      "checkNowCooldown": "Jetzt prüfen ({{seconds}} s)",
+      "export": "Exportieren",
+      "moreActions": "Weitere Aktionen",
+      "remove": "Load Balancer entfernen",
+      "removeHint": "Domains gehen zurück zu einem einzelnen Upstream"
+    },
+    "empty": {
+      "title": "Traffic auf Replikate verteilen",
+      "description": "Health-Checks, Wiederholungen und saubere Umschaltungen. Least Connections mit passiver Fehlererkennung ist ein guter Anfang. Fügen Sie einen aktiven Health-Check hinzu, sobald Ihre App einen ausliefert.",
+      "create": "Empfohlene Einrichtung erstellen",
+      "creating": "Wird erstellt",
+      "presets": "Oder mit einer Voreinstellung beginnen",
+      "diagram": "Empfohlene Einrichtung: Clients, Proxy, {{count}} Replikate",
+      "clients": "Clients",
+      "proxy": "Proxy"
+    },
+    "remove": {
+      "title": "Load Balancer entfernen?",
+      "description": "Domains für {{app}} gehen zurück zu einem einzelnen Upstream. Laufende Replikate werden nicht angetastet.",
+      "cancel": "Abbrechen",
+      "confirm": "Entfernen"
+    },
+    "metrics": {
+      "healthy": "In Ordnung",
+      "latency": "Latenz",
+      "latencyInfo": "Median des letzten Health-Checks über gesunde Replikate.",
+      "connections": "Verbindungen",
+      "connectionsInfo": "Aktuell offene Anfragen über alle Replikate."
+    },
+    "history": {
+      "none": "Noch keine Prüfungen aufgezeichnet",
+      "passed": "{{when}}: bestanden",
+      "passedIn": "{{when}}: bestanden in {{ms}}ms",
+      "failed": "{{when}}: fehlgeschlagen",
+      "failedReason": "{{when}}: fehlgeschlagen, {{reason}}",
+      "failedStatus": "{{when}}: fehlgeschlagen, Status {{status}}"
+    },
+    "table": {
+      "label": "Upstreams",
+      "upstream": "Upstream",
+      "status": "Status",
+      "latency": "Latenz",
+      "traffic": "Traffic",
+      "conns": "Verb.",
+      "share": "Anteil",
+      "lastChecks": "Letzte 12 Prüfungen",
+      "latencyTrend": "Latenz der letzten 30 Minuten für {{dial}}",
+      "noData": "noch keine Daten",
+      "replica": "Replikat {{replica}}",
+      "checked": "geprüft",
+      "notChecked": "noch nicht geprüft",
+      "changed": "geändert",
+      "openConnections": "Offene Verbindungen",
+      "shareEstimated": "Geschätzter Anteil, nicht gemessen",
+      "shareMeasured": "Traffic-Anteil",
+      "actionsFor": "Aktionen für {{name}}",
+      "viewDetails": "Details ansehen",
+      "viewDetailsHint": "Prüfungen, Änderungen und Aktionen"
+    },
+    "drawer": {
+      "description": "Upstream-Details und Aktionen",
+      "trafficShare": "Traffic-Anteil",
+      "connections": "Verbindungen",
+      "failures": "Fehler",
+      "latency": "Latenz",
+      "replica": "Replikat",
+      "node": "Node",
+      "local": "lokal",
+      "checked": "Geprüft",
+      "actions": "Aktionen",
+      "recentChecks": "Letzte Prüfungen",
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen",
+      "failedReason": "Fehlgeschlagen: {{reason}}",
+      "stateChanges": "Zustandsänderungen",
+      "noChanges": "Keine Änderungen aufgezeichnet.",
+      "transition": "{{from}} auf {{to}}"
+    },
+    "export": {
+      "formats": "Exportformat",
+      "cdkHint": "Dies ist eine Stack-Klasse. Fügen Sie sie einer CDK-App hinzu und instanziieren Sie sie im Einstiegspunkt Ihrer App, führen Sie dann cdk deploy aus.",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "download": "Herunterladen",
+      "contents": "Inhalt von {{file}}",
+      "applyWith": "Anwenden mit",
+      "section": "Export",
+      "toggle": "Als Code exportieren"
+    },
+    "page": {
+      "loading": "Load Balancer wird geladen",
+      "reconcilerNote": "Der Ingress-Reconciler wendet es bei seinem nächsten Durchlauf an.",
+      "undo": "Rückgängig",
+      "saveError": "Der Load Balancer konnte nicht gespeichert werden.",
+      "applied": "Angewendet: {{title}}",
+      "applyError": "Der Vorschlag konnte nicht angewendet werden.",
+      "unknownError": "Unbekannt",
+      "checkFinished": "Prüfung beendet: {{ok}} von {{total}} bestanden",
+      "checkUnavailable": "Jetzt prüfen ist noch nicht verfügbar.",
+      "checkFailed": "Prüfung fehlgeschlagen.",
+      "adminError": "Der Upstream konnte nicht aktualisiert werden.",
+      "removed": "Load Balancer entfernt.",
+      "removedHint": "{{app}} routet wieder zu einem einzelnen Upstream.",
+      "removeError": "Der Load Balancer konnte nicht entfernt werden.",
+      "created": "Load Balancer erstellt.",
+      "saved": "Load Balancer gespeichert.",
+      "newTitle": "Neuer Load Balancer",
+      "newHint": "Prüfen Sie die Einstellungen und erstellen Sie ihn dann.",
+      "guide": "Anleitung zum Load Balancing"
+    },
+    "algo": {
+      "label": "Balancing-Algorithmus",
+      "about": "Zu {{name}}",
+      "roundRobinUse": "Anfragen kosten etwa gleich viel.",
+      "roundRobinTradeoff": "Einfach und fair, ignoriert aber, wie ausgelastet ein Replikat ist.",
+      "leastConnUse": "Anfragen unterscheiden sich in ihrer Dauer.",
+      "leastConnTradeoff": "Gleicht die Last aus, etwas mehr Buchführung pro Anfrage.",
+      "ipHashUse": "Clients sollen ohne Cookies am selben Ort bleiben.",
+      "ipHashTradeoff": "Clients hinter einem Proxy oder CDN landen alle auf einem Replikat.",
+      "clientIpHashUse": "Sie möchten IP-Stickiness hinter einem CDN oder Proxy.",
+      "clientIpHashTradeoff": "Benötigt APP_INGRESS_TRUSTED_PROXIES, sonst entspricht es dem IP-Hash.",
+      "uriHashUse": "Replikate halten Caches pro Pfad.",
+      "uriHashTradeoff": "Häufige Pfade können ein Replikat überlasten.",
+      "cookieUse": "Sitzungen liegen im Speicher des Replikats.",
+      "cookieTradeoff": "Bindet einen Browser an ein Replikat, daher ist ungleiche Last möglich.",
+      "weightedUse": "Canaries oder Replikate unterschiedlicher Größe.",
+      "weightedTradeoff": "Sie pflegen die Gewichte von Hand.",
+      "round_robin": {
+        "label": "Round Robin",
+        "description": "Jede Anfrage geht der Reihe nach an das nächste Replikat."
+      },
+      "least_conn": {
+        "label": "Least Connections",
+        "description": "An das Replikat mit den wenigsten aktiven Anfragen senden."
+      },
+      "ip_hash": {
+        "label": "IP-Hash",
+        "description": "Dieselbe Client-Adresse erreicht immer dasselbe Replikat."
+      },
+      "client_ip_hash": {
+        "label": "Client-IP-Hash",
+        "description": "Hasht die Client-IP nach der Behandlung vertrauenswürdiger Proxys, sodass sich Clients hinter einem CDN auf Replikate verteilen."
+      },
+      "uri_hash": {
+        "label": "URI-Hash",
+        "description": "Derselbe Pfad erreicht immer dasselbe Replikat (cachefreundlich)."
+      },
+      "cookie": {
+        "label": "Sticky-Cookie",
+        "description": "Ein Cookie bindet eine Browser-Sitzung an ein Replikat."
+      },
+      "weighted": {
+        "label": "Gewichtet",
+        "description": "Geben Sie jedem Replikat einen Traffic-Anteil, nützlich für Canaries."
+      }
+    },
+    "bar": {
+      "region": "Nicht gespeicherte Änderungen",
+      "risky": "Riskante Änderung",
+      "cancel": "Abbrechen",
+      "revert": "Zurücksetzen",
+      "saving": "Speichern",
+      "create": "Erstellen",
+      "save": "Speichern",
+      "confirmTitle": "Riskante Änderungen speichern?",
+      "confirmHint": "Diese wirken sofort auf Live-Traffic.",
+      "keepEditing": "Weiter bearbeiten",
+      "saveAnyway": "Trotzdem speichern"
+    },
+    "configure": {
+      "section": "Konfigurieren",
+      "toggle": "Konfigurieren",
+      "traffic": "Traffic",
+      "health": "Zustand",
+      "resilience": "Resilienz",
+      "cookieName": "Cookie-Name",
+      "cookieNameInfo": "Das Cookie, das einen Browser an ein Replikat bindet.",
+      "presets": "Voreinstellungen",
+      "about": "Zu {{name}}"
+    },
+    "health": {
+      "active": "Aktive Prüfungen",
+      "activeInfo": "Jedes Replikat in einem Intervall prüfen und keinen Traffic mehr an eines senden, das fehlschlägt.",
+      "path": "Pfad",
+      "pathInfo": "Die URL, die auf jedem Replikat geprüft wird. Sie sollte schnell antworten und nur von der App selbst abhängen.",
+      "status": "Erwarteter Status",
+      "statusInfo": "Der HTTP-Status, der als bestanden zählt. Leer akzeptiert jedes 2xx oder 3xx.",
+      "statusPlaceholder": "2xx oder 3xx",
+      "interval": "Intervall",
+      "intervalInfo": "Wie oft jedes Replikat geprüft wird.",
+      "timeout": "Timeout",
+      "timeoutInfo": "Wie lange auf eine Antwort gewartet wird. Muss kürzer als das Intervall sein.",
+      "fails": "Fehler bis zur Markierung als ausgefallen",
+      "failsInfo": "Aufeinanderfolgende fehlgeschlagene Prüfungen, bevor ein Replikat den Pool verlässt.",
+      "passes": "Erfolge bis zur Erholung",
+      "passesInfo": "Aufeinanderfolgende bestandene Prüfungen, bevor ein Replikat dem Pool wieder beitritt.",
+      "passive": "Passive Prüfungen",
+      "passiveInfo": "Echte Anfragen beobachten. Ein Replikat, bei dem sie immer wieder fehlschlagen, wird eine Weile übersprungen, schneller als auf die nächste Prüfung zu warten.",
+      "maxFails": "Fehler vor dem Überspringen",
+      "maxFailsInfo": "Fehlgeschlagene Anfragen innerhalb des Fensters, die ein Überspringen auslösen.",
+      "skipFor": "Überspringen für",
+      "skipForInfo": "Wie lange ein fehlerhaftes Replikat übersprungen wird, und das Fenster, in dem Fehler gezählt werden."
+    },
+    "resilience": {
+      "retries": "Wiederholungen",
+      "retriesInfo": "Eine fehlgeschlagene Anfrage auf einem anderen Replikat wiederholen, bevor aufgegeben wird. Für Streams, die sich nicht wiederholen lassen, ausschalten.",
+      "retryCountInfo": "Zusätzliche Versuche nach dem ersten. 0 bis 10.",
+      "giveUp": "Aufgeben nach",
+      "giveUpInfo": "Gesamtzeit, die für Wiederholungen einer Anfrage aufgewendet wird.",
+      "requestTimeout": "Anfrage-Timeout",
+      "requestTimeoutInfo": "Wie lange darauf gewartet wird, dass ein Replikat zu antworten beginnt, bevor die Anfrage fehlschlägt.",
+      "drain": "Beim Deploy leeren",
+      "drainInfo": "Wie lange offene Verbindungen enden dürfen, wenn ein Replikat bei einem Deploy ersetzt wird.",
+      "rate": "Ratenlimit",
+      "rateInfo": "Anfragen pro Client-Adresse begrenzen. Clients über dem Limit erhalten eine 429-Antwort.",
+      "rps": "Anfragen pro Sekunde",
+      "rpsInfo": "Dauerhaft erlaubte Rate für jede Client-Adresse.",
+      "burst": "Burst",
+      "burstInfo": "Zusätzliche Anfragen, die bei einer kurzen Spitze erlaubt sind.",
+      "tls": "TLS zu Upstreams",
+      "tlsInfo": "Mit den Replikaten HTTPS statt einfachem HTTP sprechen.",
+      "serverName": "Servername",
+      "serverNameInfo": "Name, dem das Zertifikat der Replikate entsprechen muss.",
+      "skipVerify": "Verifizierung überspringen",
+      "skipVerifyInfo": "Jedes Zertifikat akzeptieren. Nur zum Testen: Es entfernt den Schutz vor Identitätsvortäuschung.",
+      "notVerified": "Zertifikate nicht verifiziert",
+      "verified": "Verifiziert"
+    },
+    "weights": {
+      "split": "Traffic-Aufteilung: {{parts}}",
+      "part": "Replikat {{index}} {{share}}%",
+      "title": "Traffic-Aufteilung",
+      "about": "Zu Gewichten",
+      "aboutBody": "Gewichte folgen dem Replikat-Index. Ein Replikat mit Gewicht 3 erhält dreimal so viel Traffic wie eines mit Gewicht 1.",
+      "replica": "Replikat {{index}}",
+      "weightFor": "Gewicht für Replikat {{index}}",
+      "slowStart": "Langsamer Start",
+      "slowStartInfo": "Ein neues Replikat steigt über diese Zeit von null auf sein Gewicht an, statt sofort seinen vollen Anteil zu übernehmen.",
+      "ramp": "Neue Replikate steigen über {{duration}} an"
+    },
+    "topology": {
+      "traffic": "Traffic",
+      "howToRead": "So lesen Sie das Diagramm",
+      "howToReadBody": "Die Liniendichte zeigt den Anteil jedes Replikats an den offenen Verbindungen. Schnellere Bewegung bedeutet niedrigere Latenz. Formen und Beschriftungen zeigen den Zustand: Ein Kreis mit Häkchen ist in Ordnung, ein Dreieck wird geleert, ein Quadrat ist ausgefallen.",
+      "motionOff": "Bewegung aus",
+      "pause": "Pausieren",
+      "play": "Abspielen",
+      "diagram": "Traffic von Clients über den Proxy zu {{total}} Upstreams, {{healthy}} in Ordnung",
+      "node": "{{name}}: {{label}}, {{reason}}. Details öffnen",
+      "replica": "Replikat {{replica}}",
+      "more": "+{{count}} weitere in der Tabelle unten",
+      "clients": "Clients",
+      "proxy": "Proxy",
+      "noUpstreams": "Noch keine Upstreams",
+      "noUpstreamsHint": "Sie erscheinen, sobald Replikate starten.",
+      "allDown": "Nichts besteht die Prüfungen. Anfragen können fehlschlagen, bis sich ein Replikat erholt.",
+      "caption": "Upstream-Status",
+      "upstream": "Upstream",
+      "state": "Zustand",
+      "reason": "Grund",
+      "share": "Anteil",
+      "connections": "Verbindungen"
+    },
+    "overview": {
+      "noMatch": "Keine Load Balancer passen zu diesem Filter",
+      "noMatchHint": "Leeren Sie die Suche oder wählen Sie einen anderen Zustand.",
+      "configure": "Einen Load Balancer konfigurieren",
+      "search": "Nach App-Name suchen",
+      "searchLabel": "Load Balancer suchen",
+      "state": "Zustand",
+      "all": "Alle",
+      "showing": "{{shown}} von {{total}} angezeigt (Limit {{limit}})",
+      "listLabel": "Load Balancer",
+      "app": "App",
+      "algorithm": "Algorithmus",
+      "upstreams": "Upstreams",
+      "lastCheck": "Letzte Prüfung",
+      "notYet": "Noch nicht",
+      "secondsAgo": "vor {{count}} s",
+      "minutesAgo": "vor {{count}} Min.",
+      "hoursAgo": "vor {{count}} Std.",
+      "noneObserved": "Keine beobachtet",
+      "healthyOf": "{{healthy}} von {{total}} in Ordnung",
+      "stateBalancing": "Verteilt",
+      "stateDegraded": "Beeinträchtigt",
+      "stateNone": "Keine Upstreams"
+    },
+    "picker": {
+      "title": "Einen Load Balancer konfigurieren",
+      "description": "Wählen Sie die App, deren Replikate Sie verteilen möchten.",
+      "noApps": "Sie haben noch keine Apps",
+      "noAppsHint": "Ein Load Balancer verteilt Traffic auf die Replikate einer App, erstellen Sie daher zuerst eine App.",
+      "createApp": "App erstellen",
+      "search": "Apps suchen",
+      "noMatch": "Keine App passt zu dieser Suche",
+      "noMatchHint": "Versuchen Sie einen kürzeren oder anderen Namen.",
+      "truncated": "Es werden die ersten {{count}} Treffer angezeigt. Verfeinern Sie die Suche, um sie einzugrenzen."
+    },
+    "preset": {
+      "balanced": {
+        "name": "Ausgewogene Web-App",
+        "useWhen": "Eine typische zustandslose Web-App oder API."
+      },
+      "sticky": {
+        "name": "Sticky Sessions",
+        "useWhen": "Sitzungen liegen im Speicher jedes Replikats."
+      },
+      "websockets": {
+        "name": "WebSockets und langlebig",
+        "useWhen": "Streams, Sockets oder Long Polling.",
+        "note": "Wiederholungen sind aus, weil hochgestufte Verbindungen nicht wiederholt werden können."
+      },
+      "cache": {
+        "name": "Cachefreundlich",
+        "useWhen": "Jedes Replikat hält einen warmen Cache pro Pfad."
+      },
+      "canary": {
+        "name": "Canary 90/10",
+        "useWhen": "Ein neues Release mit einem Teil des Traffics ausprobieren.",
+        "note": "Gewichte folgen dem Replikat-Index: Bei 2 Replikaten beträgt die Aufteilung 90/10."
+      },
+      "bluegreen": {
+        "name": "Blue-Green-Umschaltung",
+        "useWhen": "Releases mit einer schnellen, sauberen Übergabe tauschen."
+      },
+      "apiguard": {
+        "name": "Public-API-Schutz",
+        "useWhen": "Eine API, die zum Internet hin offen ist."
+      }
+    },
+    "admin": {
+      "unsupported": "Benötigt eine neuere Control Plane",
+      "active": {
+        "label": "Aktivieren",
+        "meaning": "Wieder in der Rotation und erhält neue Anfragen."
+      },
+      "draining": {
+        "label": "Leeren",
+        "meaning": "Offene Anfragen beenden, keine neuen senden."
+      },
+      "disabled": {
+        "label": "Deaktivieren",
+        "meaning": "Aus der Rotation, bis Sie es wieder aktivieren."
+      }
+    },
+    "change": {
+      "value": {
+        "off": "aus",
+        "unset": "nicht gesetzt",
+        "na": "n. v.",
+        "even": "gleichmäßig",
+        "noVerify": "keine Verifizierung",
+        "passive": "{{fails}} Fehler, {{skip}} überspringen",
+        "retries": "{{count}} innerhalb von {{within}}",
+        "rate": "{{rps}}/s, Burst {{burst}}"
+      },
+      "risk": {
+        "algorithm": "Clients wechseln möglicherweise zu einem anderen Replikat und verlieren Sitzungen im Speicher.",
+        "active": "Ausgefallene Replikate erhalten weiterhin Traffic.",
+        "rate": "Clients über dem Limit erhalten 429-Antworten.",
+        "tls": "Die Zertifikate der Replikate werden nicht verifiziert."
+      },
+      "label": {
+        "algorithm": "Algorithmus",
+        "cookie": "Cookie",
+        "weights": "Traffic-Aufteilung",
+        "active": "Health-Check",
+        "interval": "Prüfintervall",
+        "timeout": "Prüf-Timeout",
+        "passes": "Erfolge bis zur Erholung",
+        "fails": "Fehler bis zur Markierung als ausgefallen",
+        "status": "Erwarteter Status",
+        "passive": "Passive Prüfungen",
+        "retries": "Wiederholungen",
+        "slow": "Langsamer Start",
+        "drain": "Leeren",
+        "reqTimeout": "Anfrage-Timeout",
+        "rate": "Ratenlimit",
+        "tls": "Upstream-TLS"
+      }
+    },
+    "effect": {
+      "none": "Keine Änderungen.",
+      "split": "Neue Anfragen werden aufgeteilt: {{split}}.",
+      "follow": "Neue Anfragen folgen {{algo}}.",
+      "drain": "Deploys halten offene Streams für {{drain}}.",
+      "default": "Gilt für neue Anfragen; offene Verbindungen werden nicht getrennt."
+    },
+    "suggest": {
+      "noHealth": {
+        "title": "Kein Health-Check",
+        "detail": "Ein ausgefallenes Replikat erhält weiterhin Traffic.",
+        "action": "/healthz-Prüfung hinzufügen"
+      },
+      "single": {
+        "title": "Ein Replikat, nichts zu verteilen",
+        "detail": "Betreiben Sie zwei Replikate für Failover.",
+        "action": "Replikate festlegen"
+      },
+      "flapping": {
+        "title": "Ein Upstream flattert",
+        "detail": "3 oder mehr Zustandswechsel in 10 Minuten.",
+        "action": "3 Fehler verlangen"
+      },
+      "ipHash": {
+        "title": "IP-Hash hinter einem Proxy",
+        "detail": "Clients hinter einem CDN oder gemeinsamen Proxy landen auf einem Replikat.",
+        "action": "Sticky-Cookie verwenden"
+      },
+      "weights": {
+        "title": "Gewichte werden ignoriert",
+        "detail": "Nur der gewichtete Algorithmus verwendet sie.",
+        "action": "Gewichtet verwenden"
+      },
+      "passive": {
+        "title": "Passive Prüfungen sind aus",
+        "detail": "Echte Anfragefehler könnten ein Replikat früher ausschließen.",
+        "action": "Aktivieren"
+      },
+      "slowStart": {
+        "title": "Kein langsamer Start",
+        "detail": "Ein neues Replikat erhält sofort seinen vollen Anteil.",
+        "action": "Über 30 s hochfahren"
+      },
+      "drain": {
+        "title": "Deploys trennen offene Streams",
+        "detail": "Es ist keine Leerungszeit gesetzt.",
+        "action": "15 s leeren"
+      },
+      "timeout": {
+        "title": "Health-Timeout ist knapp",
+        "detail": "Prüfungen dauern bei p95 {{ms}}ms, der Timeout beträgt {{timeout}}.",
+        "action": "Auf {{next}} s erhöhen"
+      }
+    }
+  },
+  "guided": {
+    "databases": {
+      "title": "Noch keine Datenbanken",
+      "body": "Erstellen Sie auf einem Ihrer Nodes eine verwaltete Postgres-, MySQL-, Redis- oder MongoDB-Datenbank, bei der Backups und Zugangsdaten für Sie erledigt werden.",
+      "action": "Datenbank erstellen"
+    },
+    "builds": {
+      "title": "Noch keine Builds",
+      "body": "Builds erscheinen hier, wenn eine App aus einem Git-Repo oder einem Dockerfile deployt wird. Deployen Sie eine App, um den ersten zu starten.",
+      "action": "App deployen"
+    },
+    "backups": {
+      "title": "Noch nichts ist gesichert",
+      "body": "Fügen Sie eine Datenbank oder ein Volume zu einem Backup-Zeitplan hinzu oder verbinden Sie ein Backup-Ziel, dann erscheinen ihre Kopien hier.",
+      "action": "Backup-Ziele verwalten"
+    },
+    "firewall": {
+      "title": "Noch keine Firewall-Regeln",
+      "body": "Nur die Ports, die Ihre Apps veröffentlichen, sind offen. Fügen Sie eine Regel hinzu, um einen Port aus einem Quellbereich zu erlauben oder zu verweigern.",
+      "action": "Regel hinzufügen"
+    },
+    "alerts": {
+      "title": "Noch keine Alarme",
+      "body": "Alarme gehören zu einer App. Wählen Sie eine App und fügen Sie eine Regel für Crash-Loops, Domain-Zustand oder Zertifikatsablauf hinzu.",
+      "action": "App wählen"
+    },
+    "certificates": {
+      "title": "Noch keine Zertifikate",
+      "body": "Zertifikate werden automatisch ausgestellt, wenn Sie einer App eine Domain hinzufügen.",
+      "action": "Domain hinzufügen"
+    }
+  }
+}

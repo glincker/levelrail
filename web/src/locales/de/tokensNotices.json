@@ -1,0 +1,11 @@
+{
+  "title_one": "{{count}} Token erfordert Aufmerksamkeit",
+  "title_other": "{{count}} Tokens erfordern Aufmerksamkeit",
+  "expiring": "{{count}} laufen innerhalb von 14 Tagen ab",
+  "longLivedRoot": "{{count}} Root-Token ohne Ablauf",
+  "unusedIntro": "Seit {{days}} Tagen oder länger ungenutzt:",
+  "neverUsed": "nie verwendet",
+  "lastUsed": "zuletzt verwendet",
+  "revoke": "Widerrufen",
+  "revokeLabel": "{{name}} widerrufen"
+}

@@ -1,0 +1,7 @@
+{
+  "label": "Kontinuierliche Replik",
+  "summary": "alle {{seconds}} s, zuletzt übertragen {{age}} ({{kb}} KB, {{ms}} ms)",
+  "neverShipped": "alle {{seconds}} s, noch nichts übertragen",
+  "pending": "Änderungen warten seit {{age}}",
+  "error": "letzte Übertragung fehlgeschlagen: {{message}}"
+}
