@@ -1,0 +1,53 @@
+{
+  "banner": {
+    "title": "Deploy de teste",
+    "body": "Publicado para experimentar o template. Mantenha como um app permanente, ou pare e exclua quando terminar. Até lá, ele continua rodando como qualquer outro app.",
+    "keep": "Manter este app",
+    "delete": "Parar e excluir"
+  },
+  "dialog": {
+    "title": "Manter {{name}} como app permanente",
+    "description": "Ele deixa de ser marcado como teste descartável e aparece como todos os outros apps, com todos os serviços do mesmo app. Nada é reiniciado e nada é excluído.",
+    "checklistTitle": "O que um app permanente deve ter",
+    "checklistHint": "Configure agora ou depois; cada item abre a tela que cuida disso.",
+    "cancel": "Cancelar",
+    "confirm": "Manter app",
+    "keeping": "Mantendo...",
+    "loading": "Verificando...",
+    "done": "Pronto",
+    "todo": "Não configurado",
+    "items": {
+      "domain": {
+        "label": "Um domínio personalizado",
+        "done": "Atende {{domain}}",
+        "todo": "Apenas o endereço gerado até agora",
+        "action": "Adicionar um domínio"
+      },
+      "backup": {
+        "label": "Um agendamento de backup para os volumes",
+        "done": "{{count}} de {{total}} volumes agendados",
+        "todo": "Nenhum volume tem agendamento de backup",
+        "none": "Nenhum volume para backup",
+        "action": "Agendar backups"
+      },
+      "alert": {
+        "label": "Uma regra de alerta",
+        "done": "{{count}} regras de alerta",
+        "todo": "Nada avisa você quando ele quebra",
+        "action": "Adicionar uma regra de alerta"
+      },
+      "placement": {
+        "label": "Um projeto e um ambiente",
+        "done": "{{project}} / {{environment}}",
+        "projectOnly": "Projeto {{project}}, sem ambiente",
+        "todo": "Ainda não está em um projeto",
+        "action": "Escolher onde ele fica"
+      }
+    }
+  },
+  "toast": {
+    "kept": "{{name}} agora é um app permanente.",
+    "alreadyKept": "{{name}} já havia sido mantido.",
+    "failed": "Não foi possível manter o app."
+  }
+}

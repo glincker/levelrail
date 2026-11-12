@@ -1,0 +1,19 @@
+{
+  "title": "Web vitals",
+  "collect": "Coletar",
+  "errorTitle": "Falha ao atualizar os web vitals",
+  "snippetHint": "Adicione esta tag ao seu site. Ela envia LCP, INP, CLS, TTFB e FCP de visitas reais, sem cookies e sem endereços IP.",
+  "copySnippet": "Copiar snippet",
+  "copied": "Copiado",
+  "createKey": "Criar chave de beacon",
+  "rotateKey": "Rotacionar chave",
+  "emptyDisabled": "Ative a coleta e adicione o snippet para ver como os visitantes reais enxergam este app.",
+  "emptyEnabled": "Ainda sem dados. Visite seu site com o snippet instalado e os resultados aparecem aqui.",
+  "p75Label": "{{metric}} p75",
+  "route": "Rota",
+  "windowNote": "p75 nos últimos {{days}} dias.",
+  "routesTitle": "Web vitals por rota",
+  "viewAllRoutes": "Ver todas as rotas ({{count}})",
+  "samples": "Amostras",
+  "legend": "Verde é bom, âmbar precisa melhorar, vermelho é ruim, usando os limites padrão do Core Web Vitals."
+}

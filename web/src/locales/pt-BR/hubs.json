@@ -1,0 +1,67 @@
+{
+  "variables": {
+    "page": {
+      "title": "Variáveis",
+      "description": "Onde ficam as variáveis compartilhadas. Apenas nomes e contagens, os valores nunca são mostrados aqui."
+    },
+    "open": "Abrir",
+    "count": {
+      "vars_one": "{{count}} variável",
+      "vars_many": "{{count}} variáveis",
+      "vars_other": "{{count}} variáveis",
+      "unknown": "Contando"
+    },
+    "org": {
+      "title": "Organizações",
+      "empty": {
+        "title": "Nenhuma organização",
+        "description": "Crie uma organização para compartilhar variáveis entre os projetos dela."
+      }
+    },
+    "project": {
+      "title": "Projetos",
+      "environments": "A página de cada projeto também lista os ambientes dele, que têm suas próprias variáveis.",
+      "empty": {
+        "title": "Nenhum projeto",
+        "description": "Crie um projeto para compartilhar variáveis entre os apps dele."
+      }
+    },
+    "apps": {
+      "title": "Apps",
+      "note": "As variáveis de um app são editadas em Configuração, Ambiente.",
+      "open": "Abrir apps"
+    }
+  },
+  "sources": {
+    "page": {
+      "title": "Origens",
+      "description": "Provedores Git conectados a esta instância."
+    },
+    "loading": "Carregando provedores",
+    "error": "Não foi possível carregar os provedores Git.",
+    "empty": {
+      "title": "Nenhum provedor Git",
+      "description": "Conecte um provedor em Configurações para fazer deploy a partir de um repositório."
+    },
+    "provider": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "bitbucket_server": "Bitbucket Server",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "azure_devops": "Azure DevOps"
+    },
+    "status": {
+      "notConnected": "Não conectado",
+      "ok": "Conectado",
+      "needs_reauthorize": "Requer nova autorização",
+      "revoked": "Revogado",
+      "rate_limited": "Limite de taxa atingido"
+    },
+    "accounts_one": "{{count}} conta",
+    "accounts_many": "{{count}} contas",
+    "accounts_other": "{{count}} contas",
+    "manage": "Gerenciar"
+  }
+}

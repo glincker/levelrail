@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "pinned": "Fixadas",
+    "recentlyViewed": "Vistas recentemente",
+    "troubleshooting": "Solução de problemas",
+    "allPages": "Todas as páginas",
+    "docsSite": "Site de documentação"
+  },
+  "pin": {
+    "label": "Fixar página",
+    "tooltip": "Fixe esta página nos seus favoritos"
+  },
+  "unpin": {
+    "label": "Desafixar página",
+    "tooltip": "Remover esta página dos seus favoritos"
+  },
+  "filter": {
+    "troubleshootingOnly": "Solução de problemas"
+  },
+  "toolbar": {
+    "export": "Exportar",
+    "copyMarkdown": "Copiar página como Markdown",
+    "viewSourceGitHub": "Ver código-fonte no GitHub",
+    "openDocsSite": "Abrir no site de documentação",
+    "copied": "Copiado"
+  },
+  "offlineNotice": {
+    "title": "Cópia offline",
+    "description": "Esta é a cópia offline embutida no seu servidor, para quando você não tem acesso à internet. A versão mais recente desta página está no site de documentação.",
+    "dismiss": "Dispensar"
+  },
+  "toc": {
+    "title": "Nesta página"
+  },
+  "code": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  }
+}

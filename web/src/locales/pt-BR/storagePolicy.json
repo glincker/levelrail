@@ -1,0 +1,59 @@
+{
+  "label": "Política de armazenamento",
+  "needsAdmin": "Requer admin",
+  "applied": "Aplicada",
+  "save": "Salvar",
+  "saving": "Salvando",
+  "cancel": "Cancelar",
+  "close": "Fechar",
+  "range": "O servidor verifica o intervalo permitido quando você salva.",
+  "invalid": "Informe um número inteiro maior que zero.",
+  "invalidGb": "Informe um número de GB maior que zero.",
+  "cleanup": {
+    "title": "Limpeza automática",
+    "on": "Ativada",
+    "off": "Desativada",
+    "dryRun": "Ativada, simulação",
+    "what": "Remove containers, imagens e cache de build não utilizados quando o espaço livre está baixo. A simulação apenas informa o que seria removido.",
+    "enabled": "Limpar automaticamente",
+    "dryRunField": "Somente simulação",
+    "budget": "Iniciar a limpeza abaixo deste espaço livre",
+    "budgetUnit": "% do disco livre",
+    "budgetValue": "abaixo de {{percent}}% livre"
+  },
+  "keepImages": {
+    "title": "Manter as últimas imagens por app",
+    "value_one": "{{count}} imagem por app",
+    "value_many": "{{count}} imagens por app",
+    "value_other": "{{count}} imagens por app",
+    "field": "Imagens a manter",
+    "unit": "imagens por app",
+    "what": "As imagens mais antigas de cada app são removidas pela limpeza de imagens. Imagens em uso e fixações de rollback são sempre mantidas."
+  },
+  "cacheAge": {
+    "title": "Idade máxima do cache de build",
+    "hours_one": "{{count}} hora",
+    "hours_many": "{{count}} horas",
+    "hours_other": "{{count}} horas",
+    "days_one": "{{count}} dia",
+    "days_many": "{{count}} dias",
+    "days_other": "{{count}} dias",
+    "field": "Idade máxima",
+    "unit": "horas",
+    "what": "O cache de build mais antigo que isso é removido pela limpeza automática."
+  },
+  "lowDisk": {
+    "title": "Aviso de pouco disco",
+    "value": "abaixo de {{gb}} GB livres",
+    "field": "Avisar abaixo de",
+    "unit": "GB livres",
+    "what": "Gera um aviso e um alerta de pouco disco quando o espaço livre cai abaixo disso."
+  },
+  "criticalDisk": {
+    "title": "Limite crítico de disco",
+    "value": "abaixo de {{gb}} GB livres",
+    "field": "Crítico abaixo de",
+    "unit": "GB livres",
+    "what": "Builds, pulls de imagens e backups são recusados abaixo deste espaço livre."
+  }
+}

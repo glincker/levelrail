@@ -1,0 +1,20 @@
+{
+  "title": "Personalizar barra lateral",
+  "description": "Reordene, mostre ou oculte grupos e páginas. As páginas ocultas continuam acessíveis pela busca.",
+  "groups": "Grupos da barra lateral",
+  "itemsIn": "Páginas em {{label}}",
+  "moveUp": "Mover {{label}} para cima",
+  "moveDown": "Mover {{label}} para baixo",
+  "show": "Mostrar {{label}}",
+  "moved": "{{label}} movido para a posição {{position}} de {{total}}",
+  "currentPage": "Página atual",
+  "currentGroup": "Contém a página atual",
+  "reset": "Restaurar padrão",
+  "resetDone": "Barra lateral restaurada ao padrão",
+  "done": "Concluído",
+  "recent": {
+    "group": "Recentes",
+    "app": "App",
+    "database": "Banco de dados"
+  }
+}

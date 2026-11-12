@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "title": "Orçamento de certificados",
+    "usage": "{{issued}} de {{warn}} certificados nos últimos {{days}} dias",
+    "meterLabel": "Certificados emitidos nos últimos {{days}} dias",
+    "status": {
+      "ok": "Dentro do orçamento",
+      "near": "Perto do limite",
+      "over": "Acima do limite"
+    },
+    "body": {
+      "ok": "Há bastante margem antes do limite de aviso.",
+      "near": "Os endereços automáticos consomem o orçamento compartilhado do Let's Encrypt. Fique de olho antes de fazer deploy de muitos apps novos.",
+      "over": "Os endereços automáticos consomem o orçamento compartilhado do Let's Encrypt. O limite de taxa agora pode quebrar os primeiros deploys até a janela avançar."
+    },
+    "threshold": "Avisar em",
+    "thresholdHelp": "Aplica na hora. Apenas avisa, nada é bloqueado.",
+    "save": "Salvar",
+    "saving": "Salvando",
+    "saved": "Salvo",
+    "saveFailed": "Não foi possível salvar",
+    "invalid": "Informe um número inteiro de pelo menos 1.",
+    "doctor": "Abrir a verificação de saúde",
+    "loadError": "Não foi possível carregar o orçamento de certificados.",
+    "retry": "Tentar novamente"
+  },
+  "autoHost": {
+    "title": "Apps que usam um endereço automático",
+    "help": "Desativar remove o endereço automático e o certificado dele para esse app. Domínios personalizados não são afetados.",
+    "search": "Buscar apps",
+    "empty": "Nenhum app ainda. Crie um app e ele recebe um endereço automático por padrão.",
+    "noMatch": "Nenhum app corresponde à sua busca.",
+    "name": "App",
+    "address": "Endereço",
+    "on": "Ativado",
+    "off": "Desativado",
+    "toggle": "Endereço automático para {{name}}",
+    "loadError": "Não foi possível carregar os apps.",
+    "retry": "Tentar novamente",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "more": "Mostrar mais"
+  }
+}

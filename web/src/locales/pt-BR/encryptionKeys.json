@@ -1,0 +1,72 @@
+{
+  "master": {
+    "title": "Chave mestra",
+    "age_one": "{{count}} dia de idade",
+    "age_many": "{{count}} dias de idade",
+    "age_other": "{{count}} dias de idade",
+    "never": "Nunca rotacionada"
+  },
+  "apps": {
+    "title": "Chaves de dados dos apps",
+    "empty": "Nenhum app armazenou um segredo ainda, então não há chaves de dados para rotacionar.",
+    "age_one": "{{count}} dia",
+    "age_many": "{{count}} dias",
+    "age_other": "{{count}} dias",
+    "values_one": "{{count}} segredo",
+    "values_many": "{{count}} segredos",
+    "values_other": "{{count}} segredos",
+    "overdue": "Acima do limite",
+    "current": "Atual",
+    "rotate": "Rotacionar chave",
+    "rotateAll": "Rotacionar todas as chaves",
+    "neverRotated": "Criada em {{date}}",
+    "rotatedOn": "Rotacionada em {{date}}"
+  },
+  "lastRun": {
+    "title": "Última execução de rotacionar tudo",
+    "progress": "{{done}} de {{total}} apps, {{failed}} com falha",
+    "finished": "Concluída em {{date}}",
+    "interrupted": "Interrompida. Rotacione todas as chaves novamente para retomar de onde parou."
+  },
+  "policy": {
+    "title": "Idade máxima da chave",
+    "description": "Envia um lembrete pelos seus canais de notificação quando uma chave é mais antiga que isso. 0 desativa os lembretes.",
+    "maxAge": "Idade máxima em dias",
+    "remindEvery": "Repetir o lembrete a cada (dias)",
+    "save": "Salvar política",
+    "saving": "Salvando",
+    "saved": "Política de idade das chaves salva"
+  },
+  "hint": {
+    "fixMaster": "Rotacionar agora",
+    "fixApp": "Rotacionar esta chave",
+    "fixAll": "Rotacionar todas as chaves",
+    "fixPolicy": "Lembrar a cada 90 dias"
+  },
+  "confirm": {
+    "titleOne": "Rotacionar a chave de dados de {{app}}?",
+    "titleAll": "Rotacionar todas as chaves de dados dos apps?",
+    "descriptionOne": "Uma nova chave é gerada e todos os segredos deste app são recriptografados em uma única etapa. Se algo falhar, nada muda.",
+    "descriptionAll": "Cada app é rotacionado em sua própria etapa. Uma execução interrompida no meio é retomada de onde parou.",
+    "consequenceReadable": "Todos os segredos continuam legíveis e nenhuma reinicialização é necessária.",
+    "consequenceAudit": "A rotação é registrada no log de auditoria.",
+    "action": "Rotacionar",
+    "pending": "Rotacionando",
+    "typed": "ROTATE"
+  },
+  "result": {
+    "single_one": "Chave de {{app}} rotacionada e {{count}} segredo recriptografado",
+    "single_many": "Chave de {{app}} rotacionada e {{count}} segredos recriptografados",
+    "single_other": "Chave de {{app}} rotacionada e {{count}} segredos recriptografados",
+    "all": "{{rotated}} chaves rotacionadas, {{skipped}} já atuais",
+    "allFailed": "{{failed}} chaves não puderam ser rotacionadas e foram mantidas sem alteração: {{names}}",
+    "partial": "A execução foi interrompida. Rotacione todas as chaves novamente para retomar."
+  },
+  "errors": {
+    "load": "Não foi possível carregar o status das chaves de criptografia",
+    "rotate": "Falha na rotação"
+  },
+  "title": "Chaves de criptografia",
+  "description": "Cada segredo é criptografado com uma chave de dados do seu app, e essas chaves são protegidas pela chave mestra. Rotacione-as para limitar por quanto tempo uma mesma chave fica em uso.",
+  "guide": "Guia de rotação de chaves"
+}

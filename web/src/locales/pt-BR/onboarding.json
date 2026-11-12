@@ -1,0 +1,84 @@
+{
+  "page": {
+    "title": "Configure seu painel",
+    "description": "Algumas escolhas rápidas. Pule o que quiser e volte depois."
+  },
+  "rail": {
+    "label": "Etapas de configuração",
+    "progress": "Etapa {{current}} de {{total}}: {{name}}",
+    "done": "concluída"
+  },
+  "steps": {
+    "welcome": {
+      "label": "Boas-vindas",
+      "title": "Bem-vindo ao Levelrail",
+      "description": "Você roda apps neste servidor. O Levelrail cuida deles."
+    },
+    "profile": {
+      "label": "Perfil",
+      "title": "Seu perfil",
+      "description": "Como seu nome e sua foto aparecem para a equipe."
+    },
+    "preferences": {
+      "label": "Preferências",
+      "title": "Como o Levelrail aparece para você",
+      "description": "As alterações são aplicadas na hora. Você pode editar tudo isso depois em Configurações."
+    },
+    "finish": {
+      "label": "Concluir",
+      "title": "Tudo configurado",
+      "description": "Suas escolhas foram salvas. Dois bons lugares para ir em seguida."
+    }
+  },
+  "footer": {
+    "back": "Voltar",
+    "skip": "Pular por enquanto",
+    "continue": "Continuar",
+    "start": "Começar",
+    "finish": "Concluir"
+  },
+  "welcome": {
+    "deploy": "Faça deploy de apps a partir de um repositório, uma imagem ou um template.",
+    "protect": "O Levelrail configura o HTTPS, faz backups e avisa quando algo quebra.",
+    "time": "A configuração leva cerca de 5 minutos. Todas as etapas podem ser puladas.",
+    "dismiss": "Não mostrar isto novamente"
+  },
+  "profile": {
+    "section": "Perfil",
+    "name": "Nome de exibição",
+    "nameHint": "Até {{max}} caracteres.",
+    "avatar": "Avatar",
+    "avatarHint": "Iniciais sobre uma cor escolhida a partir da sua conta. Cores personalizadas estão a caminho.",
+    "gravatar": "Usar Gravatar",
+    "gravatarHint": "Carrega sua foto de gravatar.com, então seu navegador entra em contato com eles. Desativado por padrão."
+  },
+  "preferences": {
+    "section": "Preferências"
+  },
+  "finish": {
+    "deploy": "Faça o deploy do seu primeiro app",
+    "guide": "Siga o guia de configuração para HTTPS, backups e alertas",
+    "open": "Abrir"
+  },
+  "card": {
+    "title": "Configure seu painel",
+    "body": "Escolha seu nome, aparência e idioma. Leva cerca de 5 minutos.",
+    "start": "Começar",
+    "resumeTitle": "Termine a configuração",
+    "resumeBody": "Você parou na etapa {{current}} de {{total}}.",
+    "resume": "Continuar",
+    "dismiss": "Não mostrar novamente"
+  },
+  "closed": {
+    "body": "A configuração foi concluída. Você pode executá-la novamente quando quiser.",
+    "restart": "Executar a configuração novamente",
+    "dashboard": "Ir para o painel"
+  },
+  "unavailable": {
+    "body": "A configuração guiada não está disponível neste servidor."
+  },
+  "errors": {
+    "save": "Não foi possível salvar seu progresso. Tente novamente.",
+    "transition": "Essa mudança não é permitida agora. Recarregue a página e tente novamente."
+  }
+}

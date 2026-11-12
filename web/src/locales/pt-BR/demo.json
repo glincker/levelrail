@@ -1,0 +1,63 @@
+{
+  "banner": {
+    "label": "Demonstração somente leitura com dados de exemplo",
+    "resets": "Reinicia {{time}}",
+    "install": "Instalar",
+    "copyInstall": "Copiar comando de instalação",
+    "copied": "Copiado",
+    "github": "GitHub",
+    "docs": "Documentação",
+    "tour": "Fazer o tour"
+  },
+  "readOnly": {
+    "tooltip": "Somente leitura na demonstração. Instale o {{brand}} para testar de verdade.",
+    "toastTitle": "Demonstração somente leitura",
+    "toastBody": "Esta ação não está disponível na demonstração. Instale o {{brand}} para testá-la de verdade."
+  },
+  "login": {
+    "title": "Explore a demonstração",
+    "description": "Entre como visitante somente leitura para conhecer uma instância com dados de exemplo. Nada do que você fizer é salvo.",
+    "button": "Explorar a demonstração",
+    "pending": "Iniciando a demonstração",
+    "humanCheckFailed": "A verificação humana falhou. Recarregue a página e tente novamente.",
+    "rateLimited": "Sessões de demonstração demais vindas da sua rede. Aguarde um minuto e tente novamente.",
+    "failed": "Não foi possível iniciar a demonstração. Tente novamente em instantes.",
+    "credentials": "Ou entre com {{username}} e {{password}}."
+  },
+  "unavailable": {
+    "title": "Indisponível na demonstração",
+    "terminal": "O terminal e a execução de comandos rodam comandos em um host real, por isso estão desativados na demonstração.",
+    "database": "O explorador de banco de dados e o console SQL se conectam a um banco de dados real, por isso estão desativados na demonstração.",
+    "generic": "Este recurso precisa de um host real, por isso está desativado na demonstração.",
+    "installHint": "Instale o {{brand}} no seu próprio servidor para usá-lo.",
+    "install": "Veja como instalar"
+  },
+  "empty": {
+    "title": "Nada aqui na demonstração",
+    "description": "Esta área está vazia de propósito nos dados da demonstração. Em uma instância real, ela é preenchida conforme você usa o {{brand}}."
+  },
+  "tour": {
+    "step": "Passo {{current}} de {{total}}",
+    "next": "Próximo",
+    "back": "Voltar",
+    "done": "Concluir",
+    "skip": "Pular tour",
+    "open": "Abrir esta página",
+    "apps": {
+      "title": "Seus apps",
+      "body": "Todos os apps, o status e o último deploy de cada um em uma única lista. Abra um para ver os logs, domínios e configurações."
+    },
+    "deploys": {
+      "title": "Histórico de deploys e rollback",
+      "body": "Cada deploy é registrado com sua origem e resultado. É possível fazer rollback para qualquer versão anterior com um clique."
+    },
+    "metrics": {
+      "title": "Métricas com marcadores de deploy",
+      "body": "Abra um app e escolha Métricas. Os deploys são desenhados nos gráficos, para você ver qual release mudou os números."
+    },
+    "nodes": {
+      "title": "Nodes",
+      "body": "Veja todos os servidores da sua frota, a capacidade deles e o que roda em cada um."
+    }
+  }
+}
