@@ -1,3 +1,5 @@
+// The drag hook keeps its position in refs and only touches them in handlers, which the refs rule cannot see through.
+/* eslint-disable react-hooks/refs */
 import '@/styles/palette-tokens.css'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -35,12 +37,15 @@ import { recordModeUse } from '@/lib/paletteModeUse'
 import { firstIndexOfGroup } from '@/lib/paletteJump'
 import { PalettePreview, PREVIEW_ID } from './palette/PalettePreview'
 import { usePreviewHasContent } from './palette/usePreviewHasContent'
+import { usePaletteDrag } from '../hooks/usePaletteDrag'
 import { usePinnedPages } from '../hooks/usePinnedPages'
 import { usePaletteLanguage } from '../hooks/usePaletteLanguage'
 import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
 
 // Below this width the preview pane drops out and the list is the only column.
 const PREVIEW_QUERY = '(min-width: 768px)'
+// Phones get a fixed palette; dragging needs room to move.
+const DRAG_QUERY = '(min-width: 640px)'
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
 // Command palette: Cmd+K (Mac) / Ctrl+K (elsewhere) opens it from anywhere
@@ -79,7 +84,17 @@ export function CommandPalette({
   const composing = React.useRef(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const wide = useMediaQuery(PREVIEW_QUERY)
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY)
+  const canDrag = useMediaQuery(DRAG_QUERY)
+  const rtl = typeof document !== 'undefined' && document.dir === 'rtl'
   const { t } = useTranslation('palette')
+  const drag = usePaletteDrag({
+    enabled: canDrag,
+    rtl,
+    reducedMotion,
+    describe: (o) =>
+      t('drag.moved', { x: Math.round(o.x), y: Math.round(o.y) }),
+  })
   const ps = usePaletteSearch(open)
   const navigate = useNavigate()
   const { pinned } = usePinnedPages()
@@ -233,7 +248,6 @@ export function CommandPalette({
     ps.chips.length > 0
   const layered = panelOpen
   // Keep the panel mounted until its exit animation ends so it slides away instead of vanishing.
-  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY)
   const [exited, setExited] = React.useState(true)
   if (panelOpen && exited) setExited(false)
   const panelVisible = panelOpen || (!exited && !reducedMotion)
@@ -345,8 +359,9 @@ export function CommandPalette({
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Popup
+          ref={drag.attach}
           data-slot="command-palette"
-          className="fixed top-24 left-1/2 z-50 flex max-h-[calc(100dvh-8rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 flex-col gap-2 text-sm text-popover-foreground duration-100 outline-none md:max-w-4xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          className="group/popup fixed top-24 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-lg translate-x-[calc(-50%+var(--pal-x,0px))] translate-y-(--pal-y,0px) flex-col gap-2 data-[snapping=true]:transition-[translate] data-[snapping=true]:duration-150 data-[snapping=true]:ease-out text-sm text-popover-foreground duration-100 outline-none md:max-w-4xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
           <div className="group/pal flex shrink-0 flex-col gap-2">
@@ -355,6 +370,30 @@ export function CommandPalette({
                 data-slot="command-palette-field"
                 className="banner-edge palette-pill relative flex min-w-0 flex-1 basis-56 items-center gap-3 rounded-full px-5 transition-shadow focus-within:ring-2 focus-within:ring-ring motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-200"
               >
+                {canDrag ? (
+                  <button
+                    type="button"
+                    aria-label={t('drag.label')}
+                    aria-describedby="command-palette-drag-hint"
+                    title={t('drag.label')}
+                    {...drag.gripProps}
+                    className="-ms-3 hidden size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-full text-muted-foreground outline-none select-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing sm:flex"
+                  >
+                    <svg
+                      viewBox="0 0 8 14"
+                      className="h-3.5 w-2"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <circle cx="2" cy="2" r="1" />
+                      <circle cx="6" cy="2" r="1" />
+                      <circle cx="2" cy="7" r="1" />
+                      <circle cx="6" cy="7" r="1" />
+                      <circle cx="2" cy="12" r="1" />
+                      <circle cx="6" cy="12" r="1" />
+                    </svg>
+                  </button>
+                ) : null}
                 <SearchGlassIcon className="size-6 shrink-0 text-muted-foreground" />
                 <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
                 <input
@@ -444,6 +483,12 @@ export function CommandPalette({
               </div>
             }
           </div>
+          <p id="command-palette-drag-hint" className="sr-only">
+            {t('drag.hint')}
+          </p>
+          <p aria-live="polite" className="sr-only">
+            {drag.announcement}
+          </p>
           <p role="status" aria-live="polite" className="sr-only">
             {panelOpen && !loading
               ? t('resultCount', { count: results.length })
@@ -457,10 +502,10 @@ export function CommandPalette({
                 if (!panelOpen) setExited(true)
               }}
               className={cn(
-                'banner-edge relative flex min-h-0 flex-col overflow-hidden rounded-3xl motion-safe:duration-200 motion-safe:ease-out motion-safe:fill-mode-forwards palette-panel',
+                'banner-edge absolute inset-x-0 top-full z-10 mt-2 flex max-h-(--pal-maxh,calc(100dvh-12rem)) min-h-0 flex-col overflow-hidden rounded-3xl group-data-[dragging=true]/popup:invisible group-data-[flip=up]/popup:top-auto group-data-[flip=up]/popup:bottom-full group-data-[flip=up]/popup:mt-0 group-data-[flip=up]/popup:mb-2 motion-safe:duration-200 motion-safe:ease-out motion-safe:fill-mode-forwards palette-panel',
                 panelOpen
-                  ? 'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2'
-                  : 'motion-safe:animate-out motion-safe:fade-out-0 motion-safe:slide-out-to-top-2',
+                  ? 'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 group-data-[flip=up]/popup:motion-safe:slide-in-from-bottom-2'
+                  : 'motion-safe:animate-out motion-safe:fade-out-0 motion-safe:slide-out-to-top-2 group-data-[flip=up]/popup:motion-safe:slide-out-to-bottom-2',
               )}
             >
               {pending ? (

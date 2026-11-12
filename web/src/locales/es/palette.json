@@ -44,5 +44,10 @@
     "status": "Estado",
     "url": "URL",
     "image": "Imagen"
+  },
+  "drag": {
+    "label": "Mover la paleta",
+    "hint": "Arrastra para mover, o mantén Alt u Option con las flechas. Añade Mayús para saltar a un borde. Inicio la centra.",
+    "moved": "Movida a {{x}}, {{y}}"
   }
 }
