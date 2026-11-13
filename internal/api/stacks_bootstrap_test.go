@@ -120,3 +120,28 @@ func TestStackDestroyKeepsDatabasesUnlessDeleteData(t *testing.T) {
 		t.Fatal("delete_data left the database behind")
 	}
 }
+
+func TestStackBootstrapNoSideEffectOnStalePlan(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	var plan stackPlanResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/plan", stackBody(t, iacTestDocs, nil)), &plan); code != http.StatusOK || plan.Plan == nil {
+		t.Fatalf("plan = %d", code)
+	}
+	var stale iacErrorBody
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, iacTestDocs, map[string]any{"expected_plan_hash": "v2:wrong"})), &stale)
+	if code != http.StatusConflict || stale.Code != "plan_stale" {
+		t.Fatalf("stale apply = %d %+v", code, stale)
+	}
+	if _, err := db.GetStackByName(t.Context(), "qa1"); err == nil {
+		t.Fatal("a stale first apply created the stack")
+	}
+	if _, found := rt.projectByName(t.Context(), "shop"); found {
+		t.Fatal("a stale first apply created the project")
+	}
+	var out stackApplyResponse
+	code = iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, iacTestDocs, map[string]any{"expected_plan_hash": plan.Plan.Hash})), &out)
+	if code != http.StatusOK || out.Revision == nil {
+		t.Fatalf("apply with the planned hash = %d %+v", code, out)
+	}
+}

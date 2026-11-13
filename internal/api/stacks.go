@@ -743,6 +743,8 @@ type stackRun struct {
 	warnings   []string
 	// pending is the revision an approval is applying; nil for a fresh apply.
 	pending *store.StackRevisionRecord
+	// hashChecked means a first apply already compared expected_plan_hash before creating anything.
+	hashChecked bool
 }
 
 func newHolder(c stackCaller) string {
@@ -763,17 +765,19 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 	if !ok || rt.refuseWeaken(w, r, req) {
 		return
 	}
+	checked := false
 	stack, err := ss.GetStackByName(r.Context(), r.PathValue("name"))
 	if errors.Is(err, store.ErrStackNotFound) {
 		stack, ok = rt.createStackOnApply(w, r, ss, req)
 		if !ok {
 			return
 		}
+		checked = true
 	} else if err != nil {
 		rt.writeStackError(w, "apply", err)
 		return
 	}
-	rt.runStack(w, r, ss, stackRun{stack: stack, req: req, action: auditStackApply})
+	rt.runStack(w, r, ss, stackRun{stack: stack, req: req, action: auditStackApply, hashChecked: checked})
 }
 
 // createStackOnApply makes a first apply self-contained: it resolves the project
@@ -789,13 +793,19 @@ func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss 
 	if !ok {
 		return store.StackRecord{}, false
 	}
-	res, _, issues := req.iac(name, project, false).build()
+	res, opts, issues := req.iac(name, project, false).build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(name, issues))
 		return store.StackRecord{}, false
 	}
 	if len(res) == 0 {
 		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
+		return store.StackRecord{}, false
+	}
+	// The hash comes from a plan made before the project existed, so it is compared
+	// here, before any row is written; creating first would change the plan.
+	if req.ExpectedPlanHash != "" && !rt.checkNewStackHash(w, r, ss, name, project, res, opts, req) {
 		return store.StackRecord{}, false
 	}
 	proj, found := rt.projectByName(r.Context(), project)
@@ -816,6 +826,25 @@ func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss 
 		return store.StackRecord{}, false
 	}
 	return rec, true
+}
+
+// checkNewStackHash plans a not yet existing stack exactly as the plan endpoint does and compares the hash.
+func (rt *Router) checkNewStackHash(w http.ResponseWriter, r *http.Request, ss StackStore, name, project string, res []*iac.Resource, opts iac.Options, req stackRequest) bool {
+	lctx, err := rt.stackLedgerContext(r.Context(), ss, "", name, project, "", res, req)
+	if err != nil {
+		rt.writeStackError(w, "apply", err)
+		return false
+	}
+	st, err := iac.Load(lctx, rt.iacDoer(r), res, opts)
+	if err != nil {
+		rt.internalError(w, "api: stack apply load failed", err)
+		return false
+	}
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, iac.PlanFor(st, res, opts)); err != nil {
+		rt.writeStackError(w, "apply", err)
+		return false
+	}
+	return true
 }
 
 // runStack is the shared apply path for apply and rollback: pin check, lease,
@@ -923,7 +952,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.writeStackError(w, run.action, fmt.Errorf("%w: it exceeds the mass-prune guard (APP_STACK_PRUNE_MAX_PERCENT, APP_STACK_PRUNE_MAX_COUNT); plan to review, then pass allow_mass_prune", iac.ErrPruneNotAllowed))
 		return
 	}
-	if err := iac.CheckPlanHash(req.ExpectedPlanHash, plan); err != nil {
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, plan); err != nil && !run.hashChecked {
 		rt.writeStackError(w, run.action, err)
 		return
 	}
