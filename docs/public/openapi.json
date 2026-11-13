@@ -2258,7 +2258,7 @@
     },
     "/api/v1/apply": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Apply declared documents to live state without a stack record. 503 apply_disabled while the kill switch is off. Error codes: docs/iac/errors.md.\n\nRequires the `write` ability.",
         "operationId": "handleIaCApply",
         "requestBody": {
           "content": {
@@ -2328,16 +2328,16 @@
             ]
           }
         ],
-        "summary": "Ia C Apply",
+        "summary": "Apply declared documents to live state without a stack record.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
     },
     "/api/v1/apply/plan": {
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Plan only: diff declared documents against live state without a stack. Persists nothing. Error codes: docs/iac/errors.md.\n\nRequires the `read` ability.",
         "operationId": "handleIaCPlan",
         "requestBody": {
           "content": {
@@ -2407,16 +2407,16 @@
             ]
           }
         ],
-        "summary": "Ia C Plan",
+        "summary": "Plan only: diff declared documents against live state without a stack.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
     },
     "/api/v1/apply/schema": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "JSON schema of the declarative document kinds.\n\nRequires the `read` ability.",
         "operationId": "handleIaCSchema",
         "responses": {
           "200": {
@@ -2475,9 +2475,9 @@
             ]
           }
         ],
-        "summary": "Ia C Schema",
+        "summary": "JSON schema of the declarative document kinds.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
@@ -62953,7 +62953,7 @@
         "security": [],
         "summary": "Stack OIDC Exchange",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ]
       }
     },
@@ -83612,7 +83612,7 @@
     },
     "/api/v1/export": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Export live state as declarative documents. Secret values are never included.\n\nRequires the `read` ability.",
         "operationId": "handleIaCExport",
         "responses": {
           "200": {
@@ -83671,9 +83671,9 @@
             ]
           }
         ],
-        "summary": "Ia C Export",
+        "summary": "Export live state as declarative documents.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
@@ -95566,7 +95566,7 @@
         ],
         "summary": "Import K8s",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
@@ -147106,7 +147106,7 @@
         ],
         "summary": "List Stack Templates",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
@@ -147184,7 +147184,7 @@
         ],
         "summary": "Get Stack Template",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
@@ -147273,14 +147273,14 @@
         ],
         "summary": "Render Stack Template",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
     },
     "/api/v1/stacks": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "List stacks. Each row carries its latest revision, status and drift summary.\n\nRequires the `read` ability.",
         "operationId": "handleListStacks",
         "responses": {
           "200": {
@@ -147339,14 +147339,14 @@
             ]
           }
         ],
-        "summary": "List Stacks",
+        "summary": "List stacks.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       },
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Create an empty stack to own a set of declared resources. Apply fills it.\n\nRequires the `write` ability.",
         "operationId": "handleCreateStack",
         "requestBody": {
           "content": {
@@ -147416,16 +147416,16 @@
             ]
           }
         ],
-        "summary": "Create Stack",
+        "summary": "Create an empty stack to own a set of declared resources.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
     },
     "/api/v1/stacks/{name}": {
       "delete": {
-        "description": "Requires the `write` ability.",
+        "description": "Delete the stack record. The resources it created are left in place.\n\nRequires the `write` ability.",
         "operationId": "handleDeleteStack",
         "parameters": [
           {
@@ -147494,14 +147494,14 @@
             ]
           }
         ],
-        "summary": "Delete Stack",
+        "summary": "Delete the stack record.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       },
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Show one stack with its settings, pinned revision and latest status.\n\nRequires the `read` ability.",
         "operationId": "handleGetStack",
         "parameters": [
           {
@@ -147570,14 +147570,14 @@
             ]
           }
         ],
-        "summary": "Get Stack",
+        "summary": "Show one stack with its settings, pinned revision and latest status.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       },
       "patch": {
-        "description": "Requires the `root` ability.",
+        "description": "Change stack settings: prune, drift check and approval requirement. Root only.\n\nRequires the `root` ability.",
         "operationId": "handleUpdateStackSettings",
         "parameters": [
           {
@@ -147657,16 +147657,16 @@
             ]
           }
         ],
-        "summary": "Update Stack Settings",
+        "summary": "Change stack settings: prune, drift check and approval requirement.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       }
     },
     "/api/v1/stacks/{name}/apply": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Apply the documents as a new revision. Send an Idempotency-Key so a retry returns the stored revision. Pass expected_plan_hash to refuse a stale plan with 409 (plan_hash_version when the hash is the old shape). 503 apply_disabled while the kill switch is off. Error codes: docs/iac/errors.md.\n\nRequires the `write` ability.",
         "operationId": "handleStackApply",
         "parameters": [
           {
@@ -147749,16 +147749,16 @@
             ]
           }
         ],
-        "summary": "Stack Apply",
+        "summary": "Apply the documents as a new revision.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
     },
     "/api/v1/stacks/{name}/oidc-trusts": {
       "get": {
-        "description": "Requires the `root` ability.",
+        "description": "List the CI OIDC trusts of a stack. Root only.\n\nRequires the `root` ability.",
         "operationId": "handleListStackTrusts",
         "parameters": [
           {
@@ -147827,14 +147827,14 @@
             ]
           }
         ],
-        "summary": "List Stack Trusts",
+        "summary": "List the CI OIDC trusts of a stack.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       },
       "post": {
-        "description": "Requires the `root` ability.",
+        "description": "Trust a CI OIDC issuer and subject to apply this stack without a long lived token. Root only.\n\nRequires the `root` ability.",
         "operationId": "handleCreateStackTrust",
         "parameters": [
           {
@@ -147914,16 +147914,16 @@
             ]
           }
         ],
-        "summary": "Create Stack Trust",
+        "summary": "Trust a CI OIDC issuer and subject to apply this stack without a long lived token.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       }
     },
     "/api/v1/stacks/{name}/oidc-trusts/{id}": {
       "delete": {
-        "description": "Requires the `root` ability.",
+        "description": "Remove a CI OIDC trust. Root only.\n\nRequires the `root` ability.",
         "operationId": "handleDeleteStackTrust",
         "parameters": [
           {
@@ -148000,16 +148000,16 @@
             ]
           }
         ],
-        "summary": "Delete Stack Trust",
+        "summary": "Remove a CI OIDC trust.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       }
     },
     "/api/v1/stacks/{name}/pin": {
       "delete": {
-        "description": "Requires the `write` ability.",
+        "description": "Remove the revision pin from the stack.\n\nRequires the `write` ability.",
         "operationId": "handleStackUnpin",
         "parameters": [
           {
@@ -148078,14 +148078,14 @@
             ]
           }
         ],
-        "summary": "Stack Unpin",
+        "summary": "Remove the revision pin from the stack.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       },
       "put": {
-        "description": "Requires the `write` ability.",
+        "description": "Pin the stack to a revision number.\n\nRequires the `write` ability.",
         "operationId": "handleStackPin",
         "parameters": [
           {
@@ -148165,16 +148165,16 @@
             ]
           }
         ],
-        "summary": "Stack Pin",
+        "summary": "Pin the stack to a revision number.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
     },
     "/api/v1/stacks/{name}/plan": {
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Plan only: diff the submitted documents against live state and return the plan and its plan_hash. Persists nothing. Error codes: docs/iac/errors.md.\n\nRequires the `read` ability.",
         "operationId": "handleStackPlan",
         "parameters": [
           {
@@ -148254,16 +148254,16 @@
             ]
           }
         ],
-        "summary": "Stack Plan",
+        "summary": "Plan only: diff the submitted documents against live state and return the plan and its plan_hash.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
     },
     "/api/v1/stacks/{name}/revisions": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "List revisions, newest first, with status, actor, git metadata and plan hash.\n\nRequires the `read` ability.",
         "operationId": "handleStackRevisions",
         "parameters": [
           {
@@ -148332,16 +148332,16 @@
             ]
           }
         ],
-        "summary": "Stack Revisions",
+        "summary": "List revisions, newest first, with status, actor, git metadata and plan hash.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
     },
     "/api/v1/stacks/{name}/revisions/{n}": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Show one revision with its documents and the result of its apply.\n\nRequires the `read` ability.",
         "operationId": "handleStackRevision",
         "parameters": [
           {
@@ -148418,16 +148418,16 @@
             ]
           }
         ],
-        "summary": "Stack Revision",
+        "summary": "Show one revision with its documents and the result of its apply.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
     },
     "/api/v1/stacks/{name}/revisions/{n}/approve": {
       "post": {
-        "description": "Requires the `root` ability.",
+        "description": "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off.\n\nRequires the `root` ability.",
         "operationId": "handleStackApprove",
         "parameters": [
           {
@@ -148518,16 +148518,16 @@
             ]
           }
         ],
-        "summary": "Stack Approve",
+        "summary": "Approve a revision awaiting approval and apply it.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       }
     },
     "/api/v1/stacks/{name}/revisions/{n}/diff": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Diff a revision against the previous one, or against another with the against query.\n\nRequires the `read` ability.",
         "operationId": "handleStackDiff",
         "parameters": [
           {
@@ -148604,16 +148604,16 @@
             ]
           }
         ],
-        "summary": "Stack Diff",
+        "summary": "Diff a revision against the previous one, or against another with the against query.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "read"
       }
     },
     "/api/v1/stacks/{name}/revisions/{n}/reject": {
       "post": {
-        "description": "Requires the `root` ability.",
+        "description": "Reject a revision awaiting approval, with an optional reason. Root only.\n\nRequires the `root` ability.",
         "operationId": "handleStackReject",
         "parameters": [
           {
@@ -148701,16 +148701,16 @@
             ]
           }
         ],
-        "summary": "Stack Reject",
+        "summary": "Reject a revision awaiting approval, with an optional reason.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       }
     },
     "/api/v1/stacks/{name}/revisions/{n}/rollback": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Apply the documents of revision n as a new revision. History is not rewritten. Honors Idempotency-Key. 503 apply_disabled while the kill switch is off.\n\nRequires the `write` ability.",
         "operationId": "handleStackRollback",
         "parameters": [
           {
@@ -148801,16 +148801,16 @@
             ]
           }
         ],
-        "summary": "Stack Rollback",
+        "summary": "Apply the documents of revision n as a new revision.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "write"
       }
     },
     "/api/v1/stacks/{name}/unlock": {
       "post": {
-        "description": "Requires the `root` ability.",
+        "description": "Release a stuck apply lease. Root only.\n\nRequires the `root` ability.",
         "operationId": "handleStackUnlock",
         "parameters": [
           {
@@ -148890,9 +148890,9 @@
             ]
           }
         ],
-        "summary": "Stack Unlock",
+        "summary": "Release a stuck apply lease.",
         "tags": [
-          "Other"
+          "IaC Stacks"
         ],
         "x-required-ability": "root"
       }
@@ -165687,6 +165687,10 @@
     {
       "description": "Routes in the Git Provider Apps group.",
       "name": "Git Provider Apps"
+    },
+    {
+      "description": "Routes in the IaC Stacks group.",
+      "name": "IaC Stacks"
     },
     {
       "description": "Routes in the Ingress / Certificates / Domains / Email / Cloudflare group.",

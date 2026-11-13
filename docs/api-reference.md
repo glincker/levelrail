@@ -1537,6 +1537,41 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | PUT | /api/v1/models/{name}/endpoint/routing | AbilityWrite | handleSetEndpointRouting |
 | PUT | /api/v1/models/{name}/endpoint/credential | AbilityWriteSensitive | handleSetEndpointCredential |
 
+## IaC Stacks
+
+Declarative plan, apply, export, stacks, revisions, approvals and CI trusts.
+
+| Method | Path | Ability | Handler |
+| --- | --- | --- | --- |
+| POST | /api/v1/apply/plan | AbilityRead | handleIaCPlan |
+| POST | /api/v1/apply | AbilityWrite | handleIaCApply |
+| GET | /api/v1/export | AbilityRead | handleIaCExport |
+| GET | /api/v1/apply/schema | AbilityRead | handleIaCSchema |
+| GET | /api/v1/stacks | AbilityRead | handleListStacks |
+| POST | /api/v1/stacks | AbilityWrite | handleCreateStack |
+| GET | /api/v1/stacks/{name} | AbilityRead | handleGetStack |
+| PATCH | /api/v1/stacks/{name} | AbilityRoot | handleUpdateStackSettings |
+| DELETE | /api/v1/stacks/{name} | AbilityWrite | handleDeleteStack |
+| POST | /api/v1/stacks/{name}/plan | AbilityRead | handleStackPlan |
+| POST | /api/v1/stacks/{name}/apply | AbilityWrite | handleStackApply |
+| GET | /api/v1/stacks/{name}/revisions | AbilityRead | handleStackRevisions |
+| GET | /api/v1/stacks/{name}/revisions/{n} | AbilityRead | handleStackRevision |
+| GET | /api/v1/stacks/{name}/revisions/{n}/diff | AbilityRead | handleStackDiff |
+| POST | /api/v1/stacks/{name}/revisions/{n}/rollback | AbilityWrite | handleStackRollback |
+| PUT | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackPin |
+| DELETE | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackUnpin |
+| POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
+| POST | /api/v1/stacks/{name}/revisions/{n}/approve | AbilityRoot | handleStackApprove |
+| POST | /api/v1/stacks/{name}/revisions/{n}/reject | AbilityRoot | handleStackReject |
+| POST | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleCreateStackTrust |
+| GET | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleListStackTrusts |
+| DELETE | /api/v1/stacks/{name}/oidc-trusts/{id} | AbilityRoot | handleDeleteStackTrust |
+| POST | /api/v1/ci/stack-oidc-exchange | Public | handleStackOIDCExchange |
+| GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
+| GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
+| POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
+| POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
+
 ## Other
 
 Routes that do not fit an existing group.
@@ -1611,10 +1646,6 @@ Routes that do not fit an existing group.
 | GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
 | POST | /api/v1/preflight | AbilityWrite | handlePreflightNew |
 | POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
-| POST | /api/v1/apply/plan | AbilityRead | handleIaCPlan |
-| POST | /api/v1/apply | AbilityWrite | handleIaCApply |
-| GET | /api/v1/export | AbilityRead | handleIaCExport |
-| GET | /api/v1/apply/schema | AbilityRead | handleIaCSchema |
 | POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
 | POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
 | GET | /api/v1/deployments | AbilityRead | handleListDeployments |
@@ -2171,26 +2202,6 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
 | POST | /api/v1/imports/platform/databases/{name}/hosted/preflight | AbilityWriteSensitive | handleHostedPreflight |
 | POST | /api/v1/imports/platform/databases/{name}/hosted/run | AbilityWriteSensitive | handleHostedRun |
-| GET | /api/v1/stacks | AbilityRead | handleListStacks |
-| POST | /api/v1/stacks | AbilityWrite | handleCreateStack |
-| GET | /api/v1/stacks/{name} | AbilityRead | handleGetStack |
-| PATCH | /api/v1/stacks/{name} | AbilityRoot | handleUpdateStackSettings |
-| DELETE | /api/v1/stacks/{name} | AbilityWrite | handleDeleteStack |
-| POST | /api/v1/stacks/{name}/plan | AbilityRead | handleStackPlan |
-| POST | /api/v1/stacks/{name}/apply | AbilityWrite | handleStackApply |
-| GET | /api/v1/stacks/{name}/revisions | AbilityRead | handleStackRevisions |
-| GET | /api/v1/stacks/{name}/revisions/{n} | AbilityRead | handleStackRevision |
-| GET | /api/v1/stacks/{name}/revisions/{n}/diff | AbilityRead | handleStackDiff |
-| POST | /api/v1/stacks/{name}/revisions/{n}/rollback | AbilityWrite | handleStackRollback |
-| PUT | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackPin |
-| DELETE | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackUnpin |
-| POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
-| POST | /api/v1/stacks/{name}/revisions/{n}/approve | AbilityRoot | handleStackApprove |
-| POST | /api/v1/stacks/{name}/revisions/{n}/reject | AbilityRoot | handleStackReject |
-| POST | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleCreateStackTrust |
-| GET | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleListStackTrusts |
-| DELETE | /api/v1/stacks/{name}/oidc-trusts/{id} | AbilityRoot | handleDeleteStackTrust |
-| POST | /api/v1/ci/stack-oidc-exchange | Public | handleStackOIDCExchange |
 | GET | /api/v1/assets/buckets | AbilityRead | handleListAssetBuckets |
 | POST | /api/v1/assets/buckets | AbilityWriteSensitive | handleCreateAssetBucket |
 | GET | /api/v1/assets/buckets/{id} | AbilityRead | handleGetAssetBucket |
@@ -2204,10 +2215,6 @@ Routes that do not fit an existing group.
 | POST | /api/v1/assets/buckets/{id}/uploads/confirm | AbilityWrite | handleConfirmAssetUpload |
 | PUT | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleUploadAsset |
 | DELETE | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleDeleteAsset |
-| GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
-| GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
-| POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
-| POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
 | POST | /api/v1/control-plane/rehydrate/plan | AbilityRoot | handleRehydratePlan |
 | POST | /api/v1/control-plane/rehydrate/run | AbilityRoot | handleRehydrateRun |
 | GET | /api/v1/control-plane/rehydrate/report | AbilityRoot | handleRehydrateReport |
