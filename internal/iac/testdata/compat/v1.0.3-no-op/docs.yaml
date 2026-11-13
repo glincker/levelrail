@@ -1,0 +1,20 @@
+version: 1
+kind: Project
+metadata: {name: shop}
+spec:
+  env:
+    REGION: eu
+---
+version: 1
+kind: Environment
+metadata: {name: production}
+spec: {project: shop}
+---
+version: 1
+kind: Tag
+metadata: {name: frontend}
+---
+version: 1
+kind: Database
+metadata: {name: main-db}
+spec: {engine: postgres, version: "16", project: shop}

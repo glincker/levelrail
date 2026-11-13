@@ -1,0 +1,50 @@
+{
+  "projects": {
+    "p1": {
+      "id": "p1",
+      "name": "shop"
+    }
+  },
+  "envVars": {
+    "p/p1": {
+      "REGION": "eu",
+      "LEGACY_FLAG": "on"
+    }
+  },
+  "tags": {
+    "t1": {
+      "id": "t1",
+      "name": "frontend"
+    },
+    "t2": {
+      "id": "t2",
+      "name": "legacy"
+    }
+  },
+  "apps": {
+    "web": {
+      "name": "web",
+      "image": "ghcr.io/acme/web:1.2.3",
+      "port": 3000,
+      "bind_address": "private",
+      "domains": [
+        "app.example.com",
+        "old.example.com"
+      ],
+      "strategy": "blue-green",
+      "replicas": 2,
+      "project_id": "p1",
+      "env_dirty": false
+    },
+    "handmade": {
+      "name": "handmade",
+      "image": "nginx:1",
+      "port": 80,
+      "bind_address": "private",
+      "strategy": "blue-green",
+      "replicas": 1,
+      "project_id": "p1",
+      "env_dirty": false
+    }
+  }
+}
