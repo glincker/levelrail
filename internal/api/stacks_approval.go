@@ -112,7 +112,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	ctx := r.Context()
 	aps, ok := ss.(stackApprovalStore)
 	if !ok {
-		writeError(w, http.StatusNotImplemented, "approvals are not available on this store")
+		writeIaCError(w, http.StatusNotImplemented, iac.CodeUnavailable, "approvals are not available on this store", nil)
 		return
 	}
 	stack, req := run.stack, run.req
@@ -216,16 +216,16 @@ func (rt *Router) pendingStillApprovable(ctx context.Context, w http.ResponseWri
 
 func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss StackStore, stack store.StackRecord, v store.StackRevisionRecord) bool {
 	if v.Status == store.StackRevFailed && bytes.Equal(v.ResultJSON, expiredResult()) {
-		writeError(w, http.StatusGone, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number))
+		writeIaCError(w, http.StatusGone, iac.CodePlanStale, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number), nil)
 		return false
 	}
 	if v.Status != store.StackRevPendingApproval {
-		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", v.Number, v.Status))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", v.Number, v.Status), nil)
 		return false
 	}
 	if approvalExpired(v, time.Now()) {
 		_, _ = failPending(context.WithoutCancel(ctx), ss, stack.ID, v.Number, expiredResult(), time.Now())
-		writeError(w, http.StatusGone, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number))
+		writeIaCError(w, http.StatusGone, iac.CodePlanStale, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number), nil)
 		return false
 	}
 	return true
@@ -234,7 +234,7 @@ func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss
 func decodeOptionalJSON(w http.ResponseWriter, r *http.Request, out any) bool {
 	err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(out)
 	if err != nil && !errors.Is(err, io.EOF) {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return false
 	}
 	return true
@@ -264,7 +264,7 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	}
 	caller := rt.stackCaller(r)
 	if caller.isCI {
-		writeError(w, http.StatusForbidden, "a CI token cannot approve a stack revision")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "a CI token cannot approve a stack revision", nil)
 		return
 	}
 	if !rt.checkApprovable(r.Context(), w, ss, s, rev) {
@@ -273,7 +273,7 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	if rev.RequesterUserID == "" && rev.TokenID != "" {
 		owner, err := rt.tokenOwnerOf(r.Context(), rev.TokenID)
 		if errors.Is(err, errApprovalOwnerUnknown) {
-			writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
 			return
 		}
 		if err != nil {
@@ -283,11 +283,11 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		rev.RequesterUserID = owner
 	}
 	if !distinctApprover(caller, rev) {
-		writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
 		return
 	}
 	if body.ExpectedPlanHash != "" && body.ExpectedPlanHash != rev.PlanHash {
-		writeError(w, http.StatusConflict, "the plan changed since it was reviewed; re-plan and request approval again")
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, "the plan changed since it was reviewed; re-plan and request approval again", nil)
 		return
 	}
 	files, err := decodeRenderedFiles(rev.RenderedDocs)
@@ -386,7 +386,7 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rev.Status != store.StackRevPendingApproval {
-		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", n, rev.Status))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", n, rev.Status), nil)
 		return
 	}
 	if stackRejectAfterRead != nil {
@@ -400,7 +400,7 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !ok {
-		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is no longer awaiting approval", n))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is no longer awaiting approval", n), nil)
 		return
 	}
 	rev.Status = store.StackRevFailed
