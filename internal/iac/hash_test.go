@@ -1,6 +1,11 @@
 package iac
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+)
 
 func v2Plan(t *testing.T, mutate func(*Resource)) Plan {
 	t.Helper()
@@ -34,5 +39,36 @@ func TestPlanHashV2(t *testing.T) {
 	}
 	if PlanHashV1(base) == "" {
 		t.Fatal("v1 hash unavailable")
+	}
+}
+
+func TestPlanHashV1Accepted(t *testing.T) {
+	SetPlanHashKey([]byte("k"))
+	f := newFake()
+	res := mustBuild(t, fixture, Options{})
+	st, _ := Load(context.Background(), f, res, Options{})
+	p := PlanFor(st, res, Options{})
+	on := true
+	SetV1HashAcceptedSource(func() bool { return on })
+	t.Cleanup(func() { SetV1HashAcceptedSource(nil) })
+
+	if err := CheckPlanHash(p.Hash, p); err != nil {
+		t.Fatalf("v2: %v", err)
+	}
+	if err := CheckPlanHash(PlanHashV1(p), p); err != nil {
+		t.Fatalf("v1 accepted: %v", err)
+	}
+	if err := CheckPlanHash("0123456789abcdef", p); !errors.Is(err, ErrPlanChanged) {
+		t.Fatalf("wrong v1 = %v", err)
+	}
+	if err := CheckPlanHash("v2:"+strings.Repeat("0", 64), p); !errors.Is(err, ErrPlanChanged) {
+		t.Fatalf("wrong v2 = %v", err)
+	}
+	on = false
+	if err := CheckPlanHash(PlanHashV1(p), p); !errors.Is(err, ErrPlanHashVersion) {
+		t.Fatalf("v1 refused = %v", err)
+	}
+	if _, err := Apply(context.Background(), f, res, Options{}, PlanHashV1(p)); !errors.Is(err, ErrPlanHashVersion) {
+		t.Fatalf("apply v1 refused = %v", err)
 	}
 }

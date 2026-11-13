@@ -20,6 +20,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/functions"
+	"github.com/GLINCKER/levelrail/internal/iac"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/mailcert"
@@ -30,6 +31,7 @@ import (
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -239,6 +241,7 @@ func (s *bootState) wireRouter() {
 	configureNodeCerts(apiRouter, agentServer, agentServer)
 	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
+	setupIaCPlanHashKey(secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
 	apiRouter.SetNodeOnboarding(s.onboardingReports, nodepreflight.ConfigFromEnv(os.LookupEnv))
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
@@ -489,3 +492,13 @@ func mailKeyBackupExcludes(db *store.DB) func(context.Context, string, string) (
 		return mailcert.BackupExcludes(svc.TemplateID, volumeName), nil
 	}
 }
+
+// setupIaCPlanHashKey keys plan hashes from the master key so they survive
+// restarts and match across nodes of one install.
+func setupIaCPlanHashKey(sm *secrets.Manager) {
+	if key := sm.DeriveKey(iacPlanHashKeyPurpose); key != nil {
+		iac.SetPlanHashKey(key)
+	}
+}
+
+const iacPlanHashKeyPurpose = "iac-plan-hash"

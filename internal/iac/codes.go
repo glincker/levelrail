@@ -35,6 +35,7 @@ const (
 	CodeSchemaVersionUnsupported = "schema_version_unsupported"
 	CodeOwnershipConflict        = "ownership_conflict"
 	CodePlanStale                = "plan_stale"
+	CodePlanHashVersion          = "plan_hash_version"
 	CodeStackLocked              = "stack_locked"
 	CodeStackSourceSync          = "stack_source_sync"
 	CodePruneGuard               = "prune_guard"
@@ -49,6 +50,6 @@ var AllCodes = []string{
 	CodeProtectedResource, CodeImmutableField, CodeSyncedExternally,
 	CodeRefProjectMissing, CodeRefEnvironmentMissing, CodeRefAppMissing, CodeRefSecretMissing,
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
-	CodePlanStale, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
+	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument,
 }

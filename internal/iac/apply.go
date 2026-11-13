@@ -5,11 +5,54 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
+	"sync/atomic"
 )
 
 // ErrPlanChanged means live state moved between the plan a user reviewed
 // and the apply that followed.
 var ErrPlanChanged = errors.New("the plan changed since it was reviewed; plan again")
+
+// ErrPlanHashVersion means the submitted hash has the old unkeyed shape and
+// the install no longer accepts it; plan again to get a current hash.
+var ErrPlanHashVersion = errors.New(CodePlanHashVersion + ": the plan hash is from an older release; plan again")
+
+var v1HashAccepted atomic.Pointer[func() bool]
+
+// SetV1HashAcceptedSource follows the iac.v1_hash_accepted setting live;
+// unset means v1 hashes are refused.
+func SetV1HashAcceptedSource(fn func() bool) { v1HashAccepted.Store(&fn) }
+
+func v1HashesAccepted() bool {
+	if fn := v1HashAccepted.Load(); fn != nil && *fn != nil {
+		return (*fn)()
+	}
+	return false
+}
+
+var v1HashRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
+
+// CheckPlanHash compares a submitted hash with the recomputed plan. Empty
+// means no pin. A v1 shaped hash passes only while the setting allows it.
+func CheckPlanHash(expected string, plan Plan) error {
+	switch {
+	case expected == "":
+		return nil
+	case strings.HasPrefix(expected, HashV2Prefix):
+		if expected == plan.Hash {
+			return nil
+		}
+	case v1HashRe.MatchString(expected):
+		if !v1HashesAccepted() {
+			return ErrPlanHashVersion
+		}
+		if expected == PlanHashV1(plan) {
+			return nil
+		}
+	}
+	return ErrPlanChanged
+}
 
 // Item outcomes.
 const (
@@ -142,8 +185,8 @@ func Apply(ctx context.Context, d Doer, res []*Resource, opts Options, expectedH
 		return ApplyResult{}, err
 	}
 	plan, items := buildPlan(st, res, opts)
-	if expectedHash != "" && expectedHash != plan.Hash {
-		return ApplyResult{Plan: plan}, ErrPlanChanged
+	if err := CheckPlanHash(expectedHash, plan); err != nil {
+		return ApplyResult{Plan: plan}, err
 	}
 	out := ApplyResult{Plan: plan}
 	if plan.Summary.Error > 0 && !opts.ContinueOnError {
