@@ -92,6 +92,7 @@ func (g *goldenLedger) context() context.Context {
 // live state is loaded into the same fake control plane the other tests use,
 // so live.json has the fake's own shape (projects, apps, tags, ...).
 func TestGoldenPlans(t *testing.T) {
+	SetPlanHashKey([]byte("golden-fixed-key"))
 	dirs, err := filepath.Glob(filepath.Join("testdata", "golden", "*"))
 	if err != nil {
 		t.Fatal(err)

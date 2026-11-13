@@ -2,9 +2,6 @@ package iac
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"sort"
 )
@@ -121,14 +118,26 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 			plan.Summary.Error++
 		}
 	}
-	plan.Hash = planHash(plan.Changes)
+	plan.Hash = planHashV2(opts.Source, opts.Prune, plan.Changes, planSecretNames(p.items))
 	return plan, p.items
 }
 
-func planHash(changes []Change) string {
-	raw, _ := json.Marshal(changes)
-	sum := sha256.Sum256(raw)
-	return hex.EncodeToString(sum[:8])
+func planSecretNames(items []*item) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, it := range items {
+		if it.res == nil {
+			continue
+		}
+		for _, n := range it.res.SecretRefs {
+			k := it.res.Key() + "/" + n
+			if !seen[k] {
+				seen[k] = true
+				out = append(out, k)
+			}
+		}
+	}
+	return out
 }
 
 func sortItems(items []*item) {
