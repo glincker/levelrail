@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/subtle"
+	"errors"
 	"io"
 	"log/slog"
 	"math"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/erroringest"
+	"github.com/GLINCKER/levelrail/internal/monitor"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -27,6 +29,10 @@ const (
 
 	envErrorIngestPerMin    = "APP_ERROR_INGEST_PER_MIN"
 	envErrorEventsPerIssue  = "APP_ERROR_EVENTS_PER_ISSUE"
+	envErrorDedupHours      = "APP_ERROR_DEDUP_HOURS"
+	envErrorDedupMax        = "APP_ERROR_DEDUP_MAX"
+	defaultErrorDedupHours  = 168
+	defaultErrorDedupMax    = 50000
 	defaultErrorIngestRate  = 600
 	deployIDCacheTTL        = 10 * time.Second
 	errorIngestSecretName   = "key"
@@ -66,6 +72,36 @@ type errorTrackingState struct {
 	mu      sync.Mutex
 	buckets map[string]*errorBucket
 	deploys map[string]deployIDEntry
+	seen    map[string]time.Time
+}
+
+// firstSeen reports whether this app has not already sent event id within the
+// window, and remembers it. The map is capped so a flood cannot grow it.
+func (s *errorTrackingState) firstSeen(app, id string, now time.Time, window time.Duration, maxEntries int) bool {
+	if id == "" {
+		return true
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.seen == nil {
+		s.seen = map[string]time.Time{}
+	}
+	k := app + "/" + id
+	if exp, ok := s.seen[k]; ok && now.Before(exp) {
+		return false
+	}
+	if len(s.seen) >= maxEntries {
+		for key, exp := range s.seen {
+			if !now.Before(exp) {
+				delete(s.seen, key)
+			}
+		}
+		if len(s.seen) >= maxEntries {
+			return true
+		}
+	}
+	s.seen[k] = now.Add(window)
+	return true
 }
 
 // allow takes one token from the app's bucket; when it is empty the second
@@ -240,22 +276,30 @@ func (rt *Router) ingestSentry(w http.ResponseWriter, r *http.Request, legacy bo
 		return
 	}
 	var events []telemetry.ErrorEvent
+	var checkIns []erroringest.CheckIn
 	if legacy {
 		var ev telemetry.ErrorEvent
 		if ev, err = erroringest.ParseStore(body); err == nil {
 			events = []telemetry.ErrorEvent{ev}
 		}
 	} else {
-		events, err = erroringest.ParseEnvelope(body)
+		events, checkIns, err = erroringest.ParseEnvelopeItems(body)
 	}
-	if err != nil && len(events) == 0 {
+	if err != nil && len(events) == 0 && len(checkIns) == 0 {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	now := time.Now()
 	deployID := rt.currentDeployID(r.Context(), app, now)
 	keep := envPositiveInt(envErrorEventsPerIssue, telemetry.DefaultErrorEventsPerIssue)
+	rt.applyCheckIns(r.Context(), app, checkIns)
+	window := time.Duration(envPositiveInt(envErrorDedupHours, defaultErrorDedupHours)) * time.Hour
+	maxSeen := envPositiveInt(envErrorDedupMax, defaultErrorDedupMax)
 	for _, ev := range events {
+		// Retried envelopes repeat event ids; count each one once.
+		if !rt.errTrack.firstSeen(app, ev.EventID, now, window, maxSeen) {
+			continue
+		}
 		ev.ResourceID = "service:" + app
 		ev.DeployID = deployID
 		if _, werr := rt.errTrack.store.WriteErrorEvent(r.Context(), ev, keep); werr != nil {
@@ -268,4 +312,25 @@ func (rt *Router) ingestSentry(w http.ResponseWriter, r *http.Request, legacy bo
 		id = events[0].EventID
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"id": id})
+}
+
+// applyCheckIns feeds Sentry cron check-ins to heartbeat monitors named
+// "<app>/<slug>". Unknown slugs are ignored so SDK retries stay quiet.
+func (rt *Router) applyCheckIns(ctx context.Context, app string, checkIns []erroringest.CheckIn) {
+	h, ok := rt.heartbeats()
+	if !ok {
+		return
+	}
+	for _, c := range checkIns {
+		signal := monitor.PingOK
+		switch c.Status {
+		case "in_progress":
+			signal = monitor.PingStart
+		case "error":
+			signal = monitor.PingFail
+		}
+		if err := h.CheckIn(ctx, app+"/"+c.Slug, signal); err != nil && !errors.Is(err, monitor.ErrNotFound) {
+			slog.Warn("api: sentry check-in failed", slog.String("app", app), slog.String("err", err.Error()))
+		}
+	}
 }

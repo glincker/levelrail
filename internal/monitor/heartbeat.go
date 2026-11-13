@@ -84,6 +84,28 @@ func (s *Service) Ping(ctx context.Context, token, signal string) error {
 	if err != nil || m.Kind != KindHeartbeat || !m.Enabled {
 		return ErrNotFound
 	}
+	return s.record(ctx, m, signal)
+}
+
+// CheckIn records a signal for the enabled heartbeat monitor with this exact name, the path
+// Sentry cron check-ins take. The name is scoped by the caller so one app cannot ping another's.
+func (s *Service) CheckIn(ctx context.Context, name, signal string) error {
+	if s.hb == nil {
+		return ErrNotFound
+	}
+	ms, err := s.store.ListMonitors(ctx)
+	if err != nil {
+		return err
+	}
+	for _, m := range ms {
+		if m.Kind == KindHeartbeat && m.Enabled && m.Name == name {
+			return s.record(ctx, m, signal)
+		}
+	}
+	return ErrNotFound
+}
+
+func (s *Service) record(ctx context.Context, m Monitor, signal string) error {
 	now := s.now()
 	if err := s.hb.RecordHeartbeat(ctx, m.ID, signal, now.Unix()); err != nil {
 		return err
