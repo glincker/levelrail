@@ -4,7 +4,11 @@ import type { PendingChanges } from '../../queries/appTimeline'
 import type { TrafficStats } from '../../queries/appTraffic'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttemptStatus } from '../../types/deployAttempt'
-import { ERROR_RATE_DANGER, MEMORY_HIGH_RATIO } from './config'
+import {
+  ERROR_RATE_DANGER,
+  MEMORY_HIGH_RATIO,
+  MIN_SAMPLE_REQUESTS,
+} from './config'
 import type { Tone } from '@/components/kit'
 
 export const MAX_SUGGESTIONS = 3
@@ -106,7 +110,7 @@ export function computeSuggestions(
   const errorRate = input.traffic?.current.errorRate ?? 0
   if (
     input.traffic &&
-    input.traffic.current.requests > 0 &&
+    input.traffic.current.requests >= MIN_SAMPLE_REQUESTS &&
     errorRate >= ERROR_RATE_DANGER
   ) {
     out.push({

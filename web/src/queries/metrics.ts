@@ -110,8 +110,19 @@ export function useMetricSeries(
   range: MetricRangeParams,
   options?: { enabled?: boolean },
 ) {
+  const scope = [...metricKeys.all(appName), metric]
   return useQuery({
     ...metricSeriesQueryOptions(appName, metric, range),
     enabled: options?.enabled ?? true,
+    // The window slides every poll, so the key changes each tick: keep the last
+    // reading for the same app and metric instead of flashing a skeleton.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery && keyStartsWith(previousQuery.queryKey, scope)
+        ? previous
+        : undefined,
   })
+}
+
+function keyStartsWith(key: readonly unknown[], prefix: readonly unknown[]) {
+  return prefix.every((part, i) => key[i] === part)
 }

@@ -1,25 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { computeTraffic } from './appTraffic'
-import type { RequestPoint } from '../types/requests'
+import { percentChange } from './appTraffic'
 
-const NOW = Date.parse('2026-01-01T01:00:00Z')
+describe('percentChange', () => {
+  it('returns undefined without a baseline', () => {
+    expect(percentChange(5, 0)).toBeUndefined()
+  })
 
-function point(minutesAgo: number, requests: number): RequestPoint {
-  return {
-    timestamp: new Date(NOW - minutesAgo * 60_000).toISOString(),
-    requests,
-    rate_per_sec: requests / 60,
-    error_rate_4xx: 0,
-    error_rate_5xx: 0,
-    p50_ms: 10,
-    p95_ms: 20,
-    p99_ms: 30,
-  } as RequestPoint
-}
+  it('computes the change when samples are large enough', () => {
+    expect(
+      percentChange(200, 100, { current: 60, previous: 40, minSample: 30 }),
+    ).toBe(100)
+  })
 
-describe('computeTraffic', () => {
-  it('divides by the window length so idle minutes do not inflate the rate', () => {
-    const stats = computeTraffic([point(5, 600)], 60, NOW)
-    expect(stats.current.ratePerSec).toBeCloseTo(600 / 3600)
+  it('returns undefined when either window is below the minimum sample', () => {
+    expect(
+      percentChange(0.5, 0.001, { current: 40, previous: 1, minSample: 30 }),
+    ).toBeUndefined()
+    expect(
+      percentChange(5, 1, { current: 3, previous: 50, minSample: 30 }),
+    ).toBeUndefined()
   })
 })

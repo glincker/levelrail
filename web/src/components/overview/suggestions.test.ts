@@ -87,6 +87,10 @@ describe('computeSuggestions', () => {
     expect(ids({ ...healthy, traffic: traffic(0.9, 0) })).toEqual([])
   })
 
+  it('does not flag failing requests on a tiny sample', () => {
+    expect(ids({ ...healthy, traffic: traffic(0.125, 8) })).toEqual([])
+  })
+
   it('flags memory pressure only without a limit', () => {
     const noLimit = { ...healthy.app, resources: null }
     const memory = { usage: 90, limit: 100 }
