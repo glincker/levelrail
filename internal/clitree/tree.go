@@ -170,7 +170,7 @@ var Tree = map[string]*Node{
 		"builds":             {Subs: map[string]*Node{"trigger": nil}},
 		"moves":              {Subs: map[string]*Node{"list": nil, "get": nil}},
 		"vault-env":          {Subs: map[string]*Node{"set": nil, "clear": nil}},
-		"preview-env":        {Subs: map[string]*Node{"set": nil, "clear": nil}},
+		"preview-env":        {Subs: map[string]*Node{"set": nil, "clear": nil, "exclude": nil, "include": nil}},
 		"branch-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil}},
 		"contexts":           {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil, "show": nil}},
 		"branch-deploys":     {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil}},

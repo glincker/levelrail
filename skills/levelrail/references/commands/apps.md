@@ -1312,7 +1312,7 @@ shows it again, including in the pull request comment.
 
 ## levelrail-cli apps preview-env
 
-Subcommands: clear, set
+Subcommands: clear, exclude, include, set
 
 ```
 Usage:
