@@ -175,6 +175,136 @@ describe('CommandPalette', () => {
     expect(navigate).toHaveBeenCalledWith({ to: '/', params: undefined })
   })
 
+  describe('pinned quick links', () => {
+    const pins = (list: Array<{ path: string; title: string }>) =>
+      window.localStorage.setItem(
+        'levelrail:pinned-pages',
+        JSON.stringify(list),
+      )
+    const stored = () =>
+      (
+        JSON.parse(
+          window.localStorage.getItem('levelrail:palette-bubbles') ?? '[]',
+        ) as Array<{ id: string }>
+      ).map((p) => p.id)
+
+    it('shows legacy pins as bubbles and Alt+digit follows the displayed order', () => {
+      pins([
+        { path: '/one', title: 'One' },
+        { path: '/two', title: 'Two' },
+      ])
+      renderPalette()
+      const labels = screen
+        .getAllByRole('button', { name: /^(One|Two)$/ })
+        .map((b) => b.getAttribute('aria-label'))
+      expect(labels).toEqual(['One', 'Two'])
+      fireEvent.keyDown(screen.getByRole('combobox'), {
+        code: 'Digit2',
+        key: '2',
+        altKey: true,
+      })
+      expect(navigate).toHaveBeenCalledWith({ to: '/two' })
+    })
+
+    it('pins and unpins the highlighted page with Alt+P and announces it', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      await user.type(screen.getByRole('combobox'), 'Go to Status')
+      const combo = screen.getByRole('combobox')
+      fireEvent.keyDown(combo, { code: 'KeyP', key: 'π', altKey: true })
+      await waitFor(() => expect(stored()).toHaveLength(1))
+      expect(await screen.findByText(/^Pinned /)).toBeInTheDocument()
+      expect(screen.getAllByTestId('bubble-pin-mark')).toHaveLength(1)
+      fireEvent.keyDown(combo, { code: 'KeyP', key: 'π', altKey: true })
+      await waitFor(() => expect(stored()).toHaveLength(0))
+      expect(await screen.findByText(/^Unpinned /)).toBeInTheDocument()
+    })
+
+    it('pins a result dropped on the bubble row at the drop position', async () => {
+      pins([{ path: '/one', title: 'One' }])
+      const user = userEvent.setup()
+      const rect = vi
+        .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+        .mockReturnValue({
+          left: 0,
+          right: 500,
+          top: 0,
+          bottom: 500,
+          width: 44,
+          height: 44,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        })
+      renderPalette()
+      await user.type(screen.getByRole('combobox'), 'Go to Status')
+      const row = await screen.findByRole('option', { name: /Go to Status/ })
+      fireEvent.pointerDown(row, {
+        button: 0,
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 300,
+        clientY: 100,
+      })
+      fireEvent.pointerMove(row, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 10,
+        clientY: 10,
+      })
+      expect(
+        screen.getByRole('group', { name: 'Quick links' }),
+      ).toHaveAttribute('data-drop', 'true')
+      fireEvent.pointerUp(row, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 10,
+        clientY: 10,
+      })
+      rect.mockRestore()
+      fireEvent.click(row)
+      expect(navigate).not.toHaveBeenCalled()
+      await waitFor(() =>
+        expect(stored()).toEqual([
+          expect.stringMatching(/^item:/),
+          'path:/one',
+        ]),
+      )
+      expect(
+        screen.getByRole('group', { name: 'Quick links' }),
+      ).not.toHaveAttribute('data-drop')
+    })
+
+    it('does not start a drag below the threshold, so a click still opens the row', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      await user.type(screen.getByRole('combobox'), 'Go to Status')
+      const row = await screen.findByRole('option', { name: /Go to Status/ })
+      fireEvent.pointerDown(row, {
+        button: 0,
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 300,
+        clientY: 100,
+      })
+      fireEvent.pointerMove(row, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 301,
+        clientY: 100,
+      })
+      fireEvent.pointerUp(row, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 301,
+        clientY: 100,
+      })
+      fireEvent.click(row)
+      expect(navigate).toHaveBeenCalled()
+      expect(stored()).toHaveLength(0)
+    })
+  })
+
   it('keeps the footer outside the scrolling list so rows never sit under it', async () => {
     const user = userEvent.setup()
     renderPalette()
