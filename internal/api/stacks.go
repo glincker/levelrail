@@ -932,6 +932,9 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		return
 	}
 
+	if run.pending != nil {
+		rt.emitStackPlanEvent(ctx, stackEventApproved, stack.Name, caller.name, plan, rev.Number)
+	}
 	leaseCtx, stopLease := keepStackLease(lctx, ss, stack.ID, holder, rt.stackLockTTL(ctx), rt.stackLockRenewFraction(ctx))
 	if stackBeforeApply != nil {
 		stackBeforeApply()
@@ -967,6 +970,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "status": status, "rollback_of": run.rollbackOf,
 		"counts": map[string]int{"create": plan.Summary.Create, "update": plan.Summary.Update, "delete": plan.Summary.Delete, "noop": plan.Summary.Noop, "error": plan.Summary.Error},
 	})
+	rt.emitStackOutcome(ctx, run, caller.name, plan, rev.Number, status, aerr)
 	if leaseLost {
 		writeIaCError(w, http.StatusConflict, iac.CodeStackLocked, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again", nil)
 		return

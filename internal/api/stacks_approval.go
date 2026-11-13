@@ -167,6 +167,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	rt.auditStack(r, auditStackApprovalRequested, map[string]any{
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "rollback_of": run.rollbackOf, "allow_weaken": req.AllowWeaken,
 	})
+	rt.emitStackPlanEvent(ctx, stackEventApprovalRequested, stack.Name, caller.name, plan, rev.Number)
 	warnings := append(run.warnings, "approval required: nothing was applied; an administrator other than the requester must approve this revision and supply any secrets")
 	if req.AllowWeaken {
 		warnings = append(warnings, "this revision weakens a security protection (allow_weaken); only a human root session can approve it")

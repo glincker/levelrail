@@ -4,6 +4,9 @@ import (
 	"context"
 	"sort"
 
+	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/store"
+
 	"github.com/GLINCKER/levelrail/internal/eventhook"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
@@ -60,4 +63,28 @@ func (rt *Router) emitStackEvent(ctx context.Context, typ, stack, actor, planHas
 		maxNames = rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackDriftSummaryMax)
 	}
 	rt.eventWebhooks.Emit(eventhook.Event{Type: typ, Data: stackEventPayload(stack, actor, planHash, revision, names, counts, maxNames)})
+}
+
+// emitStackPlanEvent names the plan's changed items and counts, never a field value.
+func (rt *Router) emitStackPlanEvent(ctx context.Context, typ, stack, actor string, plan iac.Plan, revision int) {
+	names := make([]string, 0, len(plan.Changes))
+	for _, c := range plan.Changes {
+		if c.Action != iac.ActionNoop {
+			names = append(names, string(c.Kind)+"/"+c.Name)
+		}
+	}
+	counts := map[string]int{"create": plan.Summary.Create, "update": plan.Summary.Update, "delete": plan.Summary.Delete, "error": plan.Summary.Error}
+	rt.emitStackEvent(ctx, typ, stack, actor, plan.Hash, revision, names, counts)
+}
+
+// emitStackOutcome emits exactly one result event: failed, rolled back or applied.
+func (rt *Router) emitStackOutcome(ctx context.Context, run stackRun, actor string, plan iac.Plan, revision int, status string, aerr error) {
+	typ := stackEventApplied
+	switch {
+	case aerr != nil || status != store.StackRevApplied:
+		typ = stackEventApplyFailed
+	case run.rollbackOf > 0:
+		typ = stackEventRolledBack
+	}
+	rt.emitStackPlanEvent(ctx, typ, run.stack.Name, actor, plan, revision)
 }

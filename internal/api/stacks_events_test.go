@@ -2,11 +2,14 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/eventhook"
+	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // captureEvents records emitted events; the other service methods are unused.
@@ -81,4 +84,55 @@ func (c *captureEvents) count(typ string) int {
 		}
 	}
 	return n
+}
+
+func expectEvents(t *testing.T, sink *captureEvents, want map[string]int) {
+	t.Helper()
+	for _, typ := range []string{stackEventApplied, stackEventApprovalRequested, stackEventApproved, stackEventRolledBack, stackEventApplyFailed} {
+		if got := sink.count(typ); got != want[typ] {
+			t.Errorf("%s events = %d, want %d: %s", typ, got, want[typ], sink.json(t))
+		}
+	}
+}
+
+func TestStackEventsApplyAndRollback(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	sink := &captureEvents{}
+	rt.SetEventWebhooks(sink)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.2.3"), map[string]any{"secrets": map[string]string{"TOKEN": "hunter2-secret-value"}})
+	expectEvents(t, sink, map[string]int{stackEventApplied: 1})
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.2.4"), nil)
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/revisions/1/rollback", ""), nil); code != http.StatusOK {
+		t.Fatalf("rollback = %d", code)
+	}
+	expectEvents(t, sink, map[string]int{stackEventApplied: 2, stackEventRolledBack: 1})
+	raw := sink.json(t)
+	for _, leak := range []string{"hunter2-secret-value", "1.2.3", "1.2.4"} {
+		if strings.Contains(raw, leak) {
+			t.Fatalf("event carries a value %q: %s", leak, raw)
+		}
+	}
+}
+
+func TestStackEventsApproval(t *testing.T) {
+	rt, _, cookie, approver := approvalFixture(t)
+	sink := &captureEvents{}
+	rt.SetEventWebhooks(sink)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), map[string]any{"secrets": map[string]string{"TOKEN": "hunter2-secret-value"}})
+	expectEvents(t, sink, map[string]int{stackEventApprovalRequested: 1})
+	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil); code != http.StatusOK {
+		t.Fatalf("approve = %d", code)
+	}
+	expectEvents(t, sink, map[string]int{stackEventApprovalRequested: 1, stackEventApproved: 1, stackEventApplied: 1})
+	if strings.Contains(sink.json(t), "hunter2-secret-value") {
+		t.Fatalf("secret in events: %s", sink.json(t))
+	}
+}
+
+func TestStackEventsFailureIsOneApplyFailed(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	sink := &captureEvents{}
+	rt.SetEventWebhooks(sink)
+	rt.emitStackOutcome(t.Context(), stackRun{stack: store.StackRecord{Name: "shop-prod"}}, "user:a", iac.Plan{}, 2, store.StackRevFailed, nil)
+	expectEvents(t, sink, map[string]int{stackEventApplyFailed: 1})
 }
