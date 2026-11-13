@@ -813,6 +813,15 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 	return out, err
 }
 
+// ResumeApp calls POST /api/v1/apps/{name}/resume and returns how many quarantined containers it released.
+func (c *Client) ResumeApp(ctx context.Context, name string) (int, error) {
+	var out struct {
+		Resumed int `json:"resumed"`
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/resume", nil, &out)
+	return out.Resumed, err
+}
+
 // AppActionQueued calls POST /api/v1/apps/{name}/{action} (restart, start or
 // stop) with queue_while_offline set, so an offline node records it as pending.
 func (c *Client) AppActionQueued(ctx context.Context, name, action string) (AppResource, error) {

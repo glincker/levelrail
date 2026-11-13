@@ -117,3 +117,24 @@ func TestRun_AppsRestart_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
 	}
 }
+
+func TestRun_AppsResume(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"resumed":2}`))
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	if got := run("levelrail-cli-test", []string{"apps", "resume", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap()); got != exitOK {
+		t.Fatalf("exit = %d (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/resume" {
+		t.Errorf("request = %s %s", gotMethod, gotPath)
+	}
+	if !strings.Contains(stdout.String(), "2 container(s) released") {
+		t.Errorf("stdout = %q", stdout.String())
+	}
+}

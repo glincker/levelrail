@@ -777,6 +777,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleSetAppRestartSchedule |
 | DELETE | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleClearAppRestartSchedule |
 | PATCH | /api/v1/apps/{name}/build-hooks/{id} | AbilityWriteSensitive | handleUpdateBuildHook |
+| POST | /api/v1/apps/{name}/resume | AbilityDeploy | handleResumeApp |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
