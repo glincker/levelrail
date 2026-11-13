@@ -133,3 +133,42 @@ func TestStackConcurrentAppliesExactlyOneWinsOtherGetsClearConflict(t *testing.T
 		t.Fatalf("revisions = %d %v, want exactly one", len(revs), err)
 	}
 }
+
+func TestStackSecretSurvivesNoEventOrStreamLeak(t *testing.T) {
+	db := openTestDB(t)
+	mk, err := secrets.GenerateMasterKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	logs := &lockedBuffer{}
+	logger := slog.New(slog.NewTextHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	rt := NewRouter(logger, testBrand(), db, WithSecretSetter(secrets.NewManager(db, mk)))
+	sink := &captureEvents{}
+	rt.SetEventWebhooks(sink)
+	cookie := stackSeed(t, rt, db)
+	stream := openChangeStream(t, rt, cookie)
+
+	const secret = "s3cr3t-events-0xFEEDBEEF" //nolint:gosec // fixture, not a credential
+	docs := strings.Replace(stackTestDocs("ghcr.io/acme/web:1.0.0"), "      LOG_LEVEL: info\n", "      LOG_LEVEL: info\n      DB_PASSWORD: {secretRef: DB_PASSWORD}\n", 1)
+	supplied := map[string]any{"secrets": map[string]string{"web/DB_PASSWORD": secret}}
+	planOut := stackPlanRaw(t, rt, cookie, docs, supplied)
+	code, out := stackApply(t, rt, cookie, docs, supplied)
+	if code != http.StatusOK || out.Revision == nil {
+		t.Fatalf("apply = %d %+v", code, out.Issues)
+	}
+	rt.emitStackEvent(t.Context(), stackEventApplied, "shop-prod", "user:admin", "abcdef0123456789abcdef", out.Revision.Number, []string{"app/web"}, map[string]int{"create": 1})
+	topics := nextChangeTopics(t, stream)
+
+	applyOut, _ := json.Marshal(out)
+	for name, text := range map[string]string{
+		"event payloads": sink.json(t), "change stream": strings.Join(topics, ","),
+		"plan output": planOut, "apply response": string(applyOut), "logs": logs.String(),
+	} {
+		if strings.Contains(text, secret) {
+			t.Errorf("%s hold the secret value", name)
+		}
+	}
+	if sink.count("stacks.applied") != 1 {
+		t.Fatal("stacks.applied event was not emitted")
+	}
+}
