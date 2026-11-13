@@ -187,6 +187,8 @@ heartbeat.job_backoff_max
 heartbeat.job_max_attempts
 heartbeat.job_queue
 iac.plan_value_max
+iac.apply_enabled
+iac.v1_hash_accepted
 images.keep_per_app
 images.prune_schedule
 images.pull_concurrency
@@ -317,6 +319,14 @@ spool.quota_bytes
 stacks.history_limit
 stacks.prune_max_count
 stacks.prune_max_percent
+stacks.approval_ttl
+stacks.drift_interval_seconds
+stacks.drift_summary_max
+stacks.drift_rotation_minutes
+stacks.lock_renew_fraction
+stacks.lock_ttl
+stacks.oidc_ttl
+stacks.solo_self_approve
 storage.critical_free_percent
 storage.large_unmanaged_image_mb
 storage.low_free_percent
