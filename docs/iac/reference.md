@@ -25,6 +25,41 @@ Every document has `version: 1`, a `kind`, a `metadata.name` and a `spec`. Field
 
 No fields.
 
+## CloudAccount
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `spec.auth` | object | yes |  |
+| `spec.limits` | object | yes | Spend and size limits every plan is checked against. |
+| `spec.provider` | `oracle` | yes | Cloud provider module. |
+| `spec.region` | string | yes | Provider region identifier. |
+| `spec.scope` | object | no | Where resources live, by identifier (not secret). |
+
+## CloudNetwork
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `spec.account` | string | yes | Name of the CloudAccount. |
+| `spec.cidr` | string | yes | Network range in CIDR form. |
+| `spec.ingress` | list of object | no | Inbound ports opened from the internet. Nothing else is open. |
+
+## CloudInstance
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `spec.account` | string | yes | Name of the CloudAccount. |
+| `spec.network` | string | yes | Name of the CloudNetwork. |
+| `spec.node` | object | no | Join the new machine to this control plane as a node. |
+| `spec.shape` | object | yes |  |
+
+## CloudBucket
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `spec.account` | string | yes | Name of the CloudAccount. |
+| `spec.region` | string | no | Overrides the account region. |
+| `spec.versioning` | boolean | no |  |
+
 ## Node
 
 | Field | Type | Required | Description |

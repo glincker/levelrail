@@ -32,6 +32,9 @@ var codeDocs = map[string]codeDoc{
 	iac.CodeStackLocked:              {"The resource belongs to a stack with drift policy `lock`, so manual changes are refused (HTTP 409).", "Change the manifest and apply it, or ask an administrator. See [Drift](/stacks#drift)."},
 	iac.CodeStackSourceSync:          {"The stack is synced from a source, so a direct apply is refused.", "Change the source, not the stack."},
 	iac.CodePruneGuard:               {"Prune was refused because it would delete more of the stack than the prune guard allows without confirmation.", "Check the plan, then confirm with `allow_mass_prune` if the deletions are intended."},
+	iac.CodePlanHashVersion:          {"The submitted plan hash has the old unkeyed shape, which this control plane no longer accepts.", "Run the plan again to get a current hash."},
+	iac.CodeInvalidRequest:           {"The request itself is malformed, for example a missing or unreadable field.", "Fix the request and send it again."},
+	iac.CodeInvalidDocument:          {"A document failed validation.", "Read the issue lines; each names the file, line and field."},
 	iac.CodeApplyDisabled:            {"Apply is switched off for this control plane or stack.", "Ask an administrator to enable it."},
 }
 

@@ -8,11 +8,12 @@
   "x-stability": {
     "Project": "stable", "Environment": "stable", "Tag": "stable", "Node": "stable", "Setting": "stable",
     "Database": "stable", "App": "stable", "Domain": "stable",
-    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta"
+    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta",
+    "CloudAccount": "beta", "CloudNetwork": "beta", "CloudInstance": "beta", "CloudBucket": "beta"
   },
   "properties": {
     "version": { "const": 1 },
-    "kind": { "enum": ["Project", "Environment", "Tag", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
+    "kind": { "enum": ["Project", "Environment", "Tag", "CloudAccount", "CloudNetwork", "CloudInstance", "CloudBucket", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
     "metadata": { "$ref": "#/$defs/metadata" },
     "spec": { "type": "object" }
   },
@@ -21,6 +22,10 @@
     { "if": { "properties": { "kind": { "const": "Project" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/projectSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Environment" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/environmentSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Tag" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "type": "object", "additionalProperties": false } } } },
+    { "if": { "properties": { "kind": { "const": "CloudAccount" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/cloudAccountSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "CloudNetwork" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/cloudNetworkSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "CloudInstance" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/cloudInstanceSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "CloudBucket" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/cloudBucketSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Node" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/nodeSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Setting" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/settingSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Database" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/databaseSpec" } } } },
@@ -88,6 +93,108 @@
         "environment": { "description": "Name of the environment the app deploys to.", "type": "string", "minLength": 1 },
         "tags": { "description": "Tags attached to the app.", "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
         "service": { "description": "The service definition, same fields as an app.yaml service.", "$ref": "#/$defs/service" }
+      }
+    },
+    "cloudAccountSpec": {
+      "description": "A cloud account. It holds no credential: auth names a secret in the secret store.",
+      "type": "object",
+      "required": ["provider", "region", "auth", "limits"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "description": "Cloud provider module.", "enum": ["oracle"] },
+        "region": { "description": "Provider region identifier.", "type": "string", "minLength": 1 },
+        "scope": {
+          "description": "Where resources live, by identifier (not secret).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "compartment": { "description": "Compartment identifier.", "type": "string", "minLength": 1 },
+            "accountId": { "description": "Account or project identifier.", "type": "string", "minLength": 1 }
+          }
+        },
+        "auth": {
+          "type": "object",
+          "required": ["method", "secretRef"],
+          "additionalProperties": false,
+          "properties": {
+            "method": { "description": "How the credential is read.", "enum": ["secret_ref"] },
+            "secretRef": { "description": "Name of the secret that holds the credential.", "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$" }
+          }
+        },
+        "limits": {
+          "description": "Spend and size limits every plan is checked against.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "monthlyCost": { "type": "number", "minimum": 0 },
+            "instances": { "type": "integer", "minimum": 0 },
+            "vcpus": { "type": "integer", "minimum": 0 },
+            "memoryGB": { "type": "number", "minimum": 0 },
+            "storageGB": { "type": "number", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "cloudNetworkSpec": {
+      "type": "object",
+      "required": ["account", "cidr"],
+      "additionalProperties": false,
+      "properties": {
+        "account": { "description": "Name of the CloudAccount.", "type": "string", "minLength": 1 },
+        "cidr": { "description": "Network range in CIDR form.", "type": "string", "minLength": 1 },
+        "ingress": {
+          "description": "Inbound ports opened from the internet. Nothing else is open.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["port"],
+            "additionalProperties": false,
+            "properties": {
+              "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "protocol": { "enum": ["tcp", "udp"] }
+            }
+          }
+        }
+      }
+    },
+    "cloudInstanceSpec": {
+      "type": "object",
+      "required": ["account", "network", "shape"],
+      "additionalProperties": false,
+      "properties": {
+        "account": { "description": "Name of the CloudAccount.", "type": "string", "minLength": 1 },
+        "network": { "description": "Name of the CloudNetwork.", "type": "string", "minLength": 1 },
+        "shape": {
+          "type": "object",
+          "required": ["cpu", "memoryGB"],
+          "additionalProperties": false,
+          "properties": {
+            "cpu": { "type": "integer", "minimum": 1 },
+            "memoryGB": { "type": "number", "exclusiveMinimum": 0 },
+            "arch": { "enum": ["amd64", "arm64"] },
+            "diskGB": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "node": {
+          "description": "Join the new machine to this control plane as a node.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "join": { "type": "boolean" },
+            "role": { "type": "string", "minLength": 1 },
+            "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "cloudBucketSpec": {
+      "type": "object",
+      "required": ["account"],
+      "additionalProperties": false,
+      "properties": {
+        "account": { "description": "Name of the CloudAccount.", "type": "string", "minLength": 1 },
+        "region": { "description": "Overrides the account region.", "type": "string", "minLength": 1 },
+        "versioning": { "type": "boolean" }
       }
     },
     "nodeSpec": {

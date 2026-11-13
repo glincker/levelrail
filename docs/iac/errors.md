@@ -25,7 +25,10 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `schema_version_unsupported` | The document `version` is not one this control plane reads. | Set `version: 1`. |
 | `ownership_conflict` | The resource is already owned by a different stack or source. | Apply it from the stack or source that owns it, or release it there first. |
 | `plan_stale` | The live state changed after the plan was made, so the plan no longer matches. | Run the plan again and apply the new one. |
+| `plan_hash_version` | The submitted plan hash has the old unkeyed shape, which this control plane no longer accepts. | Run the plan again to get a current hash. |
 | `stack_locked` | The resource belongs to a stack with drift policy `lock`, so manual changes are refused (HTTP 409). | Change the manifest and apply it, or ask an administrator. See [Drift](/stacks#drift). |
 | `stack_source_sync` | The stack is synced from a source, so a direct apply is refused. | Change the source, not the stack. |
 | `prune_guard` | Prune was refused because it would delete more of the stack than the prune guard allows without confirmation. | Check the plan, then confirm with `allow_mass_prune` if the deletions are intended. |
 | `apply_disabled` | Apply is switched off for this control plane or stack. | Ask an administrator to enable it. |
+| `invalid_request` | The request itself is malformed, for example a missing or unreadable field. | Fix the request and send it again. |
+| `invalid_document` | A document failed validation. | Read the issue lines; each names the file, line and field. |

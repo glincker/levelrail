@@ -23,21 +23,25 @@ type Kind string
 
 // Resource kinds, in dependency order.
 const (
-	KindProject      Kind = "Project"
-	KindEnvironment  Kind = "Environment"
-	KindTag          Kind = "Tag"
-	KindNode         Kind = "Node"
-	KindSetting      Kind = "Setting"
-	KindDatabase     Kind = "Database"
-	KindApp          Kind = "App"
-	KindDomain       Kind = "Domain"
-	KindLoadBalancer Kind = "LoadBalancer"
-	KindPipeline     Kind = "Pipeline"
-	KindAlertRule    Kind = "AlertRule"
+	KindProject       Kind = "Project"
+	KindEnvironment   Kind = "Environment"
+	KindTag           Kind = "Tag"
+	KindCloudAccount  Kind = "CloudAccount"
+	KindCloudNetwork  Kind = "CloudNetwork"
+	KindCloudInstance Kind = "CloudInstance"
+	KindCloudBucket   Kind = "CloudBucket"
+	KindNode          Kind = "Node"
+	KindSetting       Kind = "Setting"
+	KindDatabase      Kind = "Database"
+	KindApp           Kind = "App"
+	KindDomain        Kind = "Domain"
+	KindLoadBalancer  Kind = "LoadBalancer"
+	KindPipeline      Kind = "Pipeline"
+	KindAlertRule     Kind = "AlertRule"
 )
 
 // Kinds lists every kind in the order changes are applied.
-var Kinds = []Kind{KindProject, KindEnvironment, KindTag, KindNode, KindSetting, KindDatabase, KindApp, KindDomain, KindLoadBalancer, KindPipeline, KindAlertRule}
+var Kinds = []Kind{KindProject, KindEnvironment, KindTag, KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket, KindNode, KindSetting, KindDatabase, KindApp, KindDomain, KindLoadBalancer, KindPipeline, KindAlertRule}
 
 func kindRank(k Kind) int {
 	for i, c := range Kinds {

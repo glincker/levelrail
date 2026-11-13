@@ -63,6 +63,10 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 		if d.Root == nil || d.Root.Kind != yaml.MappingNode {
 			continue
 		}
+		if isCloudKind(d.Kind) && !cloudEnabled() {
+			issues = append(issues, cloudDisabledIssue(d))
+			continue
+		}
 		var subst map[string][]string
 		if d.Kind == KindApp {
 			var mi []Issue
@@ -189,6 +193,9 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			s.at("metadata.name", "tag names are at most 64 characters")
 		}
 		r.Fields = map[string]any{}
+	case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
+		r.Fields = buildCloud(d, s)
+		r.Warnings = append(r.Warnings, cloudValidateOnlyWarning)
 	case KindNode:
 		r.Fields = buildNode(d, s)
 	case KindSetting:
