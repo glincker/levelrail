@@ -180,6 +180,9 @@ export interface CreateDatabaseRequest {
   backup_schedule?: string
   backup_retain?: number
   backup_retain_days?: number
+  // Redis, Valkey and KeyDB only.
+  tls?: 'required' | 'optional' | 'off'
+  auth?: 'auto' | 'none'
 }
 
 // POST /api/v1/databases. Rejects a name that already exists with a 409

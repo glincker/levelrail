@@ -1104,5 +1104,30 @@
     "failed": "Could not update parameters",
     "note": "Clear a field to go back to the engine default.",
     "pendingNote": "Applying restarts the database. A start after a stop applies it too."
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "Password",
+    "tlsMode": {
+      "required": "Required",
+      "optional": "Optional (TLS and plain)",
+      "off": "Off"
+    },
+    "authMode": {
+      "auto": "Generate one",
+      "none": "None"
+    }
+  },
+  "cacheConnect": {
+    "title": "Connect",
+    "host": "Host",
+    "port": "Port",
+    "tlsPort": "TLS port",
+    "tlsRequired": "TLS required",
+    "tlsOptional": "TLS optional",
+    "makeOptional": "Allow plain too",
+    "optionalHint": "Serve TLS next to the plain private port so older clients can still connect. The database restarts.",
+    "optionalToast": "TLS is now optional, the database will restart",
+    "optionalFailed": "Could not switch TLS"
   }
 }

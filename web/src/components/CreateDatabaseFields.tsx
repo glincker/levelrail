@@ -43,6 +43,14 @@ import {
 import { CreateFormShell } from './CreateFormShell'
 import { getProjectScope } from '../lib/projectScope'
 import { PostgresFlavorField } from './PostgresFlavorField'
+import {
+  CACHE_AUTH_MODES,
+  CACHE_TLS_MODES,
+  DEFAULT_CACHE_AUTH,
+  DEFAULT_CACHE_TLS,
+  cacheCreateOptions,
+  isCacheEngine,
+} from '@/lib/cacheAccess'
 import { withFlavor, type PostgresFlavor } from '@/lib/databaseCatalog'
 import {
   AUTO_NODE_VALUE,
@@ -109,6 +117,9 @@ const createDatabaseSchema = z.object({
   node: z.string().optional(),
   // Optional project id, same shape as node above.
   project: z.string().optional(),
+  // Redis, Valkey and KeyDB only, ignored for other engines on submit.
+  tls: z.string().optional(),
+  auth: z.string().optional(),
 })
 
 type CreateDatabaseFormInput = z.input<typeof createDatabaseSchema>
@@ -198,7 +209,10 @@ export function CreateDatabaseFields({
     version: '',
     node: AUTO_NODE_VALUE,
     project: getProjectScope() || NO_PROJECT_VALUE,
+    tls: DEFAULT_CACHE_TLS,
+    auth: DEFAULT_CACHE_AUTH,
   }
+  const { t: td } = useTranslation('databases')
   const { t: tc } = useTranslation('common')
   const form = useAppForm<CreateDatabaseFormInput, CreateDatabaseFormOutput>(
     createDatabaseSchema,
@@ -294,6 +308,7 @@ export function CreateDatabaseFields({
         // comment gives: node_id left undefined otherwise lets the
         // server auto-place this database via simple spread scheduling.
         node_id: resolveSubmittedNodeId(showAdvanced || multiNode, nodeId),
+        ...cacheCreateOptions(values.engine, values.tls, values.auth),
       },
       { onSuccess },
     )
@@ -431,6 +446,57 @@ export function CreateDatabaseFields({
               setValue('version', next, { shouldDirty: true })
             }}
           />
+        ) : null}
+
+        {isCacheEngine(watchedEngine) ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="database-tls">
+                {td('cacheCreate.tls')}
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="tls"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="database-tls" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CACHE_TLS_MODES.map((mode) => (
+                        <SelectItem key={mode} value={mode}>
+                          {td(`cacheCreate.tlsMode.${mode}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="database-auth">
+                {td('cacheCreate.auth')}
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="auth"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="database-auth" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CACHE_AUTH_MODES.map((mode) => (
+                        <SelectItem key={mode} value={mode}>
+                          {td(`cacheCreate.authMode.${mode}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </Field>
+          </div>
         ) : null}
 
         {multiNode ? (
