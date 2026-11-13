@@ -45,15 +45,12 @@ func TestPolicyCheck(t *testing.T) {
 	}
 }
 
-func TestPolicyFromEnv(t *testing.T) {
-	env := map[string]string{"APP_CLOUD_MAX_DESTROYS": "3", "APP_CLOUD_ALLOW_PROTECTED_DELETE": "on"}
-	p := PolicyFromEnv(func(k string) string { return env[k] })
-	if p.MaxDestroys != 3 || !p.AllowProtectedDelete {
+func TestNewPolicy(t *testing.T) {
+	if p := NewPolicy(3, true); p.MaxDestroys != 3 || !p.AllowProtectedDelete {
 		t.Fatalf("got %+v", p)
 	}
-	d := PolicyFromEnv(func(string) string { return "" })
-	if d.MaxDestroys != 0 || d.AllowProtectedDelete {
-		t.Fatalf("defaults not strict: %+v", d)
+	if p := NewPolicy(-2, false); p.MaxDestroys != 0 || p.AllowProtectedDelete {
+		t.Fatalf("negative cap must stay strict: %+v", p)
 	}
 }
 

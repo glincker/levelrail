@@ -43,11 +43,11 @@ func TestCostEstimate(t *testing.T) {
 	}
 }
 
-func TestCostPolicyFromEnv(t *testing.T) {
-	if CostPolicyFromEnv(func(string) string { return "" }, 5).AllowUnpriced {
-		t.Fatal("default must block unpriced")
+func TestNewCostPolicy(t *testing.T) {
+	if NewCostPolicy(5, true).AllowUnpriced {
+		t.Fatal("required full estimate must block unpriced")
 	}
-	if !CostPolicyFromEnv(func(string) string { return "off" }, 5).AllowUnpriced {
-		t.Fatal("off must allow")
+	if !NewCostPolicy(5, false).AllowUnpriced {
+		t.Fatal("not required must allow")
 	}
 }

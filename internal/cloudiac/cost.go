@@ -2,7 +2,6 @@ package cloudiac
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 )
@@ -39,13 +38,10 @@ type CostPolicy struct {
 	AllowUnpriced bool
 }
 
-// CostPolicyFromEnv seeds the unpriced rule. The default blocks unpriced types.
-func CostPolicyFromEnv(getenv func(string) string, limitMicros int64) CostPolicy {
-	if getenv == nil {
-		getenv = os.Getenv
-	}
-	v := strings.ToLower(strings.TrimSpace(getenv("APP_CLOUD_REQUIRE_FULL_ESTIMATE")))
-	return CostPolicy{MonthlyLimitMicros: limitMicros, AllowUnpriced: v == "off" || v == "false" || v == "0"}
+// NewCostPolicy builds a cost policy from runtime setting values read by the
+// caller. requireFullEstimate true blocks resources without a price.
+func NewCostPolicy(limitMicros int64, requireFullEstimate bool) CostPolicy {
+	return CostPolicy{MonthlyLimitMicros: limitMicros, AllowUnpriced: !requireFullEstimate}
 }
 
 // CostEstimate is the outcome of pricing a change set.

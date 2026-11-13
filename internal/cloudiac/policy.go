@@ -3,9 +3,7 @@ package cloudiac
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -118,17 +116,10 @@ type Policy struct {
 	AllowProtectedDelete bool
 }
 
-// PolicyFromEnv seeds a policy from environment values. Defaults are the strict ones.
-func PolicyFromEnv(getenv func(string) string) Policy {
-	if getenv == nil {
-		getenv = os.Getenv
-	}
-	p := Policy{}
-	if v, err := strconv.Atoi(strings.TrimSpace(getenv("APP_CLOUD_MAX_DESTROYS"))); err == nil && v > 0 {
-		p.MaxDestroys = v
-	}
-	p.AllowProtectedDelete = strings.EqualFold(strings.TrimSpace(getenv("APP_CLOUD_ALLOW_PROTECTED_DELETE")), "on")
-	return p
+// NewPolicy builds a policy from runtime setting values read by the caller.
+// A negative cap is treated as zero so a bad value stays strict.
+func NewPolicy(maxDestroys int, allowProtectedDelete bool) Policy {
+	return Policy{MaxDestroys: max(maxDestroys, 0), AllowProtectedDelete: allowProtectedDelete}
 }
 
 func isDestroy(action string) bool {

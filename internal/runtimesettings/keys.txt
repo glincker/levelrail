@@ -380,3 +380,8 @@ volumes.transfer_timeout
 volumes.usage_alert_percent
 appsleep.max_waiters
 appsleep.wake_wait_seconds
+cloud.max_destroys
+cloud.allow_protected_delete
+cloud.require_full_estimate
+cloud.engine_timeout_seconds
+cloud.default_monthly_cost_limit
