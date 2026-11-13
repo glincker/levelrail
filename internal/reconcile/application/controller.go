@@ -1089,6 +1089,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		justDeployed = true
 		created = true
 	case !state.Running:
+		if held, restarts := c.restartBackoff.Quarantined(target); held {
+			return replicaOutcome{reason: reasonQuarantined}, errors.New(deploysafety.QuarantineMessage(target, restarts))
+		}
 		if wait, restarts := c.restartBackoff.remaining(target, time.Now()); wait > 0 {
 			return replicaOutcome{reason: reasonCrashLoopBackOff}, errors.New(deploysafety.CrashLoopMessage(target, restarts, wait))
 		}

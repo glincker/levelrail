@@ -72,6 +72,21 @@ func deployMaxConcurrent(logger *slog.Logger) int {
 
 // envDurationOr parses name as a duration, falling back to def when unset
 // or invalid. "0" is a valid value.
+// envIntOr and envFloatOr read a non-negative number, falling back to def on an unset or bad value.
+func envIntOr(name string, def int) int {
+	if n, err := strconv.Atoi(os.Getenv(name)); err == nil && n >= 0 {
+		return n
+	}
+	return def
+}
+
+func envFloatOr(name string, def float64) float64 {
+	if f, err := strconv.ParseFloat(os.Getenv(name), 64); err == nil && f >= 0 {
+		return f
+	}
+	return def
+}
+
 func envDurationOr(logger *slog.Logger, name string, def time.Duration) time.Duration {
 	raw := os.Getenv(name)
 	if raw == "" {
@@ -170,18 +185,24 @@ const (
 	restartBackoffBaseEnv  = "APP_RESTART_BACKOFF_BASE"
 	restartBackoffMaxEnv   = "APP_RESTART_BACKOFF_MAX"
 	restartBackoffResetEnv = "APP_RESTART_BACKOFF_RESET"
+	restartQuarantineEnv   = "APP_RESTART_QUARANTINE_AFTER"
+	restartJitterEnv       = "APP_RESTART_BACKOFF_JITTER"
 
 	defaultRestartBackoffBase  = 5 * time.Second
 	defaultRestartBackoffMax   = 2 * time.Minute
 	defaultRestartBackoffReset = 10 * time.Minute
+	defaultRestartQuarantine   = 8
+	defaultRestartJitter       = 0.2
 )
 
 // newRestartBackoff builds the shared crash restart backoff from env;
 // APP_RESTART_BACKOFF_BASE=0 turns backoff off.
 func newRestartBackoff(logger *slog.Logger) *application.RestartBackoff {
-	return application.NewRestartBackoff(
+	b := application.NewRestartBackoff(
 		envDurationOr(logger, restartBackoffBaseEnv, defaultRestartBackoffBase),
 		envDurationOr(logger, restartBackoffMaxEnv, defaultRestartBackoffMax),
 		envDurationOr(logger, restartBackoffResetEnv, defaultRestartBackoffReset),
 	)
+	b.SetBreaker(envIntOr(restartQuarantineEnv, defaultRestartQuarantine), envFloatOr(restartJitterEnv, defaultRestartJitter))
+	return b
 }

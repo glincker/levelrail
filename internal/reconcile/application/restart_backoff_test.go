@@ -123,3 +123,73 @@ func TestController_Reconcile_CrashDuringReadiness_ThenCrashLoopBackOff(t *testi
 		t.Errorf("startCalls = %d, want %d: a backed-off container must not be restarted", rt.startCalls, starts)
 	}
 }
+
+func TestRestartBackoffBreakerQuarantinesAndResumes(t *testing.T) {
+	b := NewRestartBackoff(time.Second, time.Minute, time.Hour)
+	b.SetBreaker(3, 0.5)
+	b.rnd = func() float64 { return 1 }
+	now := time.Now()
+	b.recordRestart("web-5222ac0e", now)
+	if wait, _ := b.remaining("web-5222ac0e", now); wait != 1500*time.Millisecond {
+		t.Fatalf("first delay = %v, want 1.5s with full jitter", wait)
+	}
+	b.recordRestart("web-5222ac0e", now)
+	if held, _ := b.Quarantined("web-5222ac0e"); held {
+		t.Fatal("quarantined before the threshold")
+	}
+	b.recordRestart("web-5222ac0e", now)
+	if held, n := b.Quarantined("web-5222ac0e"); !held || n != 3 {
+		t.Fatalf("Quarantined = %v, %d, want held after 3 restarts", held, n)
+	}
+	// A long quiet spell must not release a quarantined container on its own.
+	b.observeRunning("web-5222ac0e", now.Add(24*time.Hour))
+	b.recordRestart("web-5222ac0e", now.Add(24*time.Hour))
+	if held, _ := b.Quarantined("web-5222ac0e"); !held {
+		t.Fatal("breaker released without a resume")
+	}
+	if got := b.Resume("web"); got != 1 {
+		t.Fatalf("Resume = %d, want 1", got)
+	}
+	if held, _ := b.Quarantined("web-5222ac0e"); held {
+		t.Fatal("still quarantined after resume")
+	}
+}
+
+func TestRestartBackoffBreakerOffByDefault(t *testing.T) {
+	b := NewRestartBackoff(time.Second, time.Minute, time.Hour)
+	for range 50 {
+		b.recordRestart("web-5222ac0e", time.Now())
+	}
+	if held, _ := b.Quarantined("web-5222ac0e"); held {
+		t.Fatal("breaker must be off until SetBreaker")
+	}
+}
+
+func TestController_Reconcile_QuarantinedContainerStaysStopped(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	backoff := NewRestartBackoff(time.Nanosecond, time.Nanosecond, time.Hour)
+	backoff.SetBreaker(1, 0)
+	backoff.recordRestart(target, time.Now())
+
+	result, err := New("web", &fakeStore{svc: desired}, rt, WithRestartBackoff(backoff)).Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a quarantine error")
+	}
+	if cond := conditionOf(t, result); cond.Reason != reasonQuarantined {
+		t.Errorf("reason = %q, want %q", cond.Reason, reasonQuarantined)
+	}
+	if rt.startCalls != 0 {
+		t.Fatalf("startCalls = %d, want 0: a quarantined container must stay stopped", rt.startCalls)
+	}
+
+	backoff.Resume("web")
+	if _, err := New("web", &fakeStore{svc: desired}, rt, WithRestartBackoff(backoff)).Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() after resume error = %v", err)
+	}
+	if rt.startCalls != 1 {
+		t.Fatalf("startCalls after resume = %d, want 1", rt.startCalls)
+	}
+}
