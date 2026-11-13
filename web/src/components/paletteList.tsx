@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { shortcutLabel } from '@/lib/platform'
 import type { PaletteItem } from './commandPaletteData'
+import type { RowDragProps } from '../hooks/usePinDrop'
 import { ResultRow } from './commandPaletteEntries'
 
 export type PaletteEntry =
@@ -40,6 +41,7 @@ function VirtualEntries({
   query,
   optionId,
   onSelect,
+  rowDrag,
   scrollRef,
 }: ListProps & { scrollRef: React.RefObject<HTMLDivElement | null> }) {
   const virtualizer = useVirtualizer({
@@ -79,6 +81,7 @@ function VirtualEntries({
                 active={entry.index === activeIndex}
                 query={query}
                 onSelect={() => onSelect(entry.item)}
+                drag={rowDrag?.(entry.item)}
               />
             )}
           </div>
@@ -94,6 +97,8 @@ interface ListProps {
   query: string
   optionId: (item: PaletteItem) => string
   onSelect: (item: PaletteItem) => void
+  /** Drag handlers for rows that can be pinned. */
+  rowDrag?: (item: PaletteItem) => RowDragProps | undefined
 }
 
 export function PaletteList({
@@ -129,6 +134,7 @@ export function PaletteList({
               active={entry.index === props.activeIndex}
               query={props.query}
               onSelect={() => props.onSelect(entry.item)}
+              drag={props.rowDrag?.(entry.item)}
             />
           ),
         )

@@ -38,6 +38,9 @@ import { firstIndexOfGroup } from '@/lib/paletteJump'
 import { PalettePreview, PREVIEW_ID } from './palette/PalettePreview'
 import { usePreviewHasContent } from './palette/usePreviewHasContent'
 import { usePaletteDrag } from '../hooks/usePaletteDrag'
+import { usePinDrop } from '../hooks/usePinDrop'
+import { PinGhost } from './palette/PinGhost'
+import { pinEntryFor } from '@/lib/paletteBubbleLayout'
 import { usePaletteBubbleLayout } from '../hooks/usePaletteBubbleLayout'
 import { usePaletteLanguage } from '../hooks/usePaletteLanguage'
 import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
@@ -262,6 +265,12 @@ export function CommandPalette({
     select,
   })
   const bubbleRowRef = React.useRef<HTMLDivElement>(null)
+  const ghostRef = React.useRef<HTMLDivElement>(null)
+  const rowDrag = usePinDrop({
+    rowRef: bubbleRowRef,
+    ghostRef,
+    onPin: (entry, index) => layout.pinAt(entry, index, bubbles),
+  })
   const panelOpen =
     panelForced ||
     step !== null ||
@@ -303,6 +312,16 @@ export function CommandPalette({
         setActiveIndex(target)
       }
       return
+    }
+    if (e.altKey && e.code === 'KeyP' && panelOpen && item) {
+      const hasAction = item.preview?.actions?.some((a) => a.shortcut === 'P')
+      if (!hasAction) {
+        e.preventDefault()
+        const entry = pinEntryFor(item)
+        if (entry) layout.toggle(entry, bubbles)
+        else layout.say(t('bubbles.notPinnable'))
+        return
+      }
     }
     const letter = /^Key([A-Z])$/.exec(e.code)
     if (e.altKey && letter && panelOpen) {
@@ -520,6 +539,7 @@ export function CommandPalette({
           <p aria-live="polite" className="sr-only">
             {layout.announcement}
           </p>
+          <PinGhost ghostRef={ghostRef} />
           <p role="status" aria-live="polite" className="sr-only">
             {panelOpen && !loading
               ? t('resultCount', { count: results.length })
@@ -625,6 +645,7 @@ export function CommandPalette({
                       query={ps.text}
                       optionId={optionId}
                       onSelect={select}
+                      rowDrag={rowDrag}
                     />
                   )}
                 </div>
