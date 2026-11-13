@@ -293,6 +293,7 @@
               "log-explorer",
               "custom-dashboards",
               "tracing",
+              "otlp-ingest",
               "error-tracking",
               "loki-api",
               "log-pipelines",
