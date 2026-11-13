@@ -53,9 +53,9 @@ func awaitingFirstBuild(conditions []reconcile.Condition) bool {
 	return false
 }
 
-// Without this, an unconfigured optional feature stays Unknown forever and the app never leaves Reconciling.
+// Without this, an unconfigured optional feature, or a side check the node could not run, stays Unknown forever and the app never leaves Reconciling.
 func isOptionalFeatureUnconfigured(c reconcile.Condition) bool {
-	return c.Status == reconcile.ConditionUnknown && (c.Reason == "NotConfigured" || c.Reason == "Disabled")
+	return c.Status == reconcile.ConditionUnknown && (c.Reason == "NotConfigured" || c.Reason == "Disabled" || c.Reason == "Unverified")
 }
 
 // Batched status lives on the list endpoint only, so per-app endpoints avoid a second, drifting status representation.

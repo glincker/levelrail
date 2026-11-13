@@ -324,6 +324,7 @@ type Controller struct {
 	dependsOnTimeout    func(context.Context) time.Duration // nil waits forever, see WithDependsOnTimeout
 	dependsOnMu         sync.Mutex
 	dependsOnSince      map[string]dependencyWait // first pass a service waited on a dependency
+	volumeWrites        volumeWriteMemo           // last volume write check per container, see probeVolumeWrites
 }
 
 // Option configures optional Controller behavior.
@@ -766,7 +767,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	} else {
 		c.reviveLastReady(ctx, targets, desired)
 	}
-	return c.appendEgressCondition(ctx, result, targets, desired), err
+	return c.appendVolumeWriteCondition(c.appendEgressCondition(ctx, result, targets, desired), targets), err
 }
 
 func isReady(r reconcile.Result) bool {
@@ -1515,6 +1516,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	startSpan.Done(ctx, name+" is running")
+	c.probeVolumeWrites(ctx, tr, name, id, spec.Volumes)
 	if err := c.connectExternalNetworks(ctx, desired, name); err != nil {
 		return err
 	}

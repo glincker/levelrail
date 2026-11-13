@@ -63,6 +63,18 @@ describe('summarizeAppStatus', () => {
     expect(result).toEqual({ label: 'Healthy', variant: 'success' })
   })
 
+  it('reports healthy when a side check could not run on the node', () => {
+    const result = summarizeAppStatus([
+      condition({}),
+      condition({
+        Type: 'VolumesWritable',
+        Status: 'Unknown',
+        Reason: 'Unverified',
+      }),
+    ])
+    expect(result).toEqual({ label: 'Healthy', variant: 'success' })
+  })
+
   it('reports not deployed for an app awaiting its first build', () => {
     const result = summarizeAppStatus([
       condition({ Status: 'Unknown', Reason: 'AwaitingFirstBuild' }),

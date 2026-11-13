@@ -64,7 +64,9 @@ export function isNodeOfflineStatus(conditions: ReconcileCondition[]): boolean {
 export function isOptionalFeatureUnconfigured(c: ReconcileCondition): boolean {
   return (
     c.Status === 'Unknown' &&
-    (c.Reason === 'NotConfigured' || c.Reason === 'Disabled')
+    (c.Reason === 'NotConfigured' ||
+      c.Reason === 'Disabled' ||
+      c.Reason === 'Unverified')
   )
 }
 
