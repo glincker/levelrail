@@ -197,6 +197,9 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM deploy_freeze_windows WHERE scope = ?`, DeployFreezeScopeApp(name)); err != nil {
 		return fmt.Errorf("store: delete desired service %q: clear freeze windows: %w", name, err)
 	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM restart_quarantine WHERE app_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: clear restart quarantine: %w", name, err)
+	}
 	if _, err := db.ExecContext(ctx, `DELETE FROM app_expiry WHERE app_name = ?`, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: clear app expiry: %w", name, err)
 	}

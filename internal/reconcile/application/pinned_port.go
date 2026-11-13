@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -345,12 +346,21 @@ func (c *Controller) parkFailedCandidate(ctx context.Context, state *docker.Cont
 	if syncer, ok := c.runtime.(docker.RestartPolicySyncer); ok {
 		_, _ = syncer.SyncRestartPolicy(ctx, state.ID, "no")
 	}
-	_ = c.stopContainer(ctx, state.ID)
+	// Cleared so the next sweep restores the desired policy once the container is released.
+	c.policySwept.Delete(state.ID)
+	if err := c.stopContainer(ctx, state.ID); err != nil {
+		slog.Warn("reconcile: could not stop a parked container, retrying next pass", slog.String("container", state.Name), slog.String("error", err.Error()))
+	}
 }
 
 // dockerRestartLoop quarantines a running container that Docker's own restart policy keeps cycling,
 // stopping it and turning that policy off so the daemon cannot bring it back.
 func (c *Controller) dockerRestartLoop(ctx context.Context, name string, state *docker.ContainerState) (bool, int) {
+	// A held container that is running means an earlier stop failed or the hold was restored at boot.
+	if held, restarts := c.restartBackoff.Quarantined(name); held {
+		c.parkFailedCandidate(ctx, state)
+		return true, restarts
+	}
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
 		return false, 0

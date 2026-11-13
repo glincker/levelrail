@@ -29,6 +29,7 @@ func TestQuarantineSinkHeldRestoreAndRelease(t *testing.T) {
 		t.Fatalf("held = %v, want one call with 2", sink.held)
 	}
 	fresh := NewRestartBackoff(time.Second, time.Second, time.Hour)
+	fresh.SetBreaker(2, 0)
 	fresh.Restore("web-abcd1234", 2, now)
 	if ok, _ := fresh.Quarantined("web-abcd1234"); !ok {
 		t.Fatal("restored container not quarantined")
@@ -65,5 +66,46 @@ func TestObserveDockerRestartsQuarantinesInsideWindow(t *testing.T) {
 	b.ObserveDockerRestarts(slow, 2, now.Add(4*time.Minute))
 	if b.ObserveDockerRestarts(slow, 3, now.Add(6*time.Minute)) {
 		t.Fatal("restarts spread beyond the window must not quarantine")
+	}
+}
+
+// lateSink releases the container from inside Held's first call, mimicking a Resume that
+// lands between the breaker opening and the sink being told.
+func TestHeldAfterResumeIsDropped(t *testing.T) {
+	sink := &fakeSink{held: map[string]int{}}
+	b := NewRestartBackoff(time.Second, time.Second, time.Hour)
+	b.SetBreaker(1, 0)
+	name := "web-abcd1234"
+	b.mu.Lock()
+	held, s := b.record(name, time.Now())
+	b.mu.Unlock()
+	b.SetSink(sink)
+	b.Resume("web")
+	b.notifyHeld(s, name, held, time.Now())
+	b.notifyHeld(sink, name, 1, time.Now())
+	if len(sink.held) != 0 {
+		t.Fatalf("held after resume reached the sink: %v", sink.held)
+	}
+}
+
+func TestRestoreSkippedWhenBreakerOff(t *testing.T) {
+	b := NewRestartBackoff(time.Second, time.Second, time.Hour)
+	b.Restore("web-abcd1234", 5, time.Now())
+	if ok, _ := b.Quarantined("web-abcd1234"); ok {
+		t.Fatal("restore must be ignored when the breaker is off")
+	}
+}
+
+func TestObserveDockerRestartsLongGapRebaselines(t *testing.T) {
+	b := NewRestartBackoff(time.Second, time.Second, time.Hour)
+	b.SetBreaker(3, 0)
+	b.SetDockerWindow(time.Minute)
+	now := time.Now()
+	b.ObserveDockerRestarts("web-abcd1234", 0, now)
+	if b.ObserveDockerRestarts("web-abcd1234", 9, now.Add(time.Hour)) {
+		t.Fatal("restarts seen across a gap longer than the window must not trip")
+	}
+	if !b.ObserveDockerRestarts("web-abcd1234", 12, now.Add(time.Hour+10*time.Second)) {
+		t.Fatal("fresh restarts after re-baseline must still trip")
 	}
 }

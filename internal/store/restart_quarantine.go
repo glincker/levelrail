@@ -53,3 +53,13 @@ func (db *DB) ListRestartQuarantine(ctx context.Context) ([]RestartQuarantine, e
 	}
 	return out, rows.Err()
 }
+
+// PruneRestartQuarantine drops rows whose app no longer exists and returns how many went.
+func (db *DB) PruneRestartQuarantine(ctx context.Context) (int64, error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM restart_quarantine WHERE app_name NOT IN (SELECT name FROM desired_services)`)
+	if err != nil {
+		return 0, fmt.Errorf("store: prune restart quarantine: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}

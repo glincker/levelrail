@@ -43,6 +43,8 @@ type RestartBackoff struct {
 	jitter float64
 	rnd    func() float64
 	sink   QuarantineSink
+	// sinkMu orders sink calls so a late Held cannot undo a Release.
+	sinkMu sync.Mutex
 	// dockerWindow is how far back Docker's own restarts count toward the breaker.
 	dockerWindow time.Duration
 	docker       map[string]*dockerTrack
@@ -51,6 +53,7 @@ type RestartBackoff struct {
 // dockerTrack follows one container's Docker RestartCount between passes.
 type dockerTrack struct {
 	last  int
+	seen  time.Time
 	times []time.Time
 }
 
@@ -80,10 +83,17 @@ func (b *RestartBackoff) ObserveDockerRestarts(name string, count int, now time.
 		if b.docker == nil {
 			b.docker = make(map[string]*dockerTrack)
 		}
-		b.docker[name] = &dockerTrack{last: count}
+		b.docker[name] = &dockerTrack{last: count, seen: now}
 		b.mu.Unlock()
 		return false
 	}
+	// A gap longer than the window hides when the restarts happened, so only re-baseline.
+	if now.Sub(t.seen) > b.dockerWindow {
+		t.last, t.seen, t.times = count, now, nil
+		b.mu.Unlock()
+		return false
+	}
+	t.seen = now
 	for i := t.last; i < count; i++ {
 		t.times = append(t.times, now)
 	}
@@ -108,9 +118,7 @@ func (b *RestartBackoff) ObserveDockerRestarts(name string, count int, now time.
 	delete(b.docker, name)
 	sink := b.sink
 	b.mu.Unlock()
-	if sink != nil {
-		sink.Held(name, len(kept), now)
-	}
+	b.notifyHeld(sink, name, len(kept), now)
 	return true
 }
 
@@ -138,6 +146,9 @@ func (b *RestartBackoff) Restore(name string, restarts int, at time.Time) {
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.quarantineAfter <= 0 {
+		return
+	}
 	b.entries[name] = &backoffEntry{restarts: restarts, lastStart: at, quarantined: true}
 }
 
@@ -194,6 +205,8 @@ func (b *RestartBackoff) release(sink QuarantineSink, names []string) {
 	if sink == nil {
 		return
 	}
+	b.sinkMu.Lock()
+	defer b.sinkMu.Unlock()
 	for _, name := range names {
 		sink.Released(name)
 	}
@@ -240,8 +253,20 @@ func (b *RestartBackoff) recordRestart(name string, now time.Time) {
 	b.mu.Lock()
 	held, sink := b.record(name, now)
 	b.mu.Unlock()
-	if held > 0 && sink != nil {
-		sink.Held(name, held, now)
+	if held > 0 {
+		b.notifyHeld(sink, name, held, now)
+	}
+}
+
+// notifyHeld reports a hold only if it still stands, under sinkMu so it cannot land after a release.
+func (b *RestartBackoff) notifyHeld(sink QuarantineSink, name string, restarts int, now time.Time) {
+	if sink == nil {
+		return
+	}
+	b.sinkMu.Lock()
+	defer b.sinkMu.Unlock()
+	if ok, _ := b.Quarantined(name); ok {
+		sink.Held(name, restarts, now)
 	}
 }
 
