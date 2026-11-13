@@ -2,7 +2,11 @@
 // (internal/api/iac.go): POST /api/v1/apply/plan, POST /api/v1/apply and
 // GET /api/v1/export.
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { projectKeys } from './projects'
 import { ApiError, readErrorMessage } from '../lib/apiError'
@@ -26,6 +30,7 @@ export interface IacChange {
   kept?: IacFieldChange[]
   warnings?: string[]
   reason?: string
+  code?: string
   denied?: boolean
   file?: string
   line?: number
@@ -52,6 +57,7 @@ export interface IacIssue {
   path?: string
   line: number
   message: string
+  code?: string
 }
 
 export type IacItemStatus = 'applied' | 'failed' | 'denied' | 'skipped' | 'noop'
@@ -144,6 +150,22 @@ export function usePlanIac() {
         'plan',
       )
       return out.plan
+    },
+  })
+}
+
+// x-stability per kind from the published schema; a kind that is absent is stable.
+export function iacSchemaQueryOptions() {
+  return queryOptions({
+    queryKey: ['iac-schema'] as const,
+    staleTime: Infinity,
+    queryFn: async (): Promise<Record<string, string>> => {
+      const body = await iacRequest<{ 'x-stability'?: Record<string, string> }>(
+        '/api/v1/apply/schema',
+        undefined,
+        'schema',
+      )
+      return body['x-stability'] ?? {}
     },
   })
 }

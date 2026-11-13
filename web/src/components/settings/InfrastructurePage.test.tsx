@@ -36,6 +36,8 @@ vi.mock('../../queries/iac', () => ({
   }),
 }))
 vi.mock('../IacExportCard', () => ({ IacExportCard: () => null }))
+vi.mock('../iac/IacStudio', () => ({ IacStudio: () => null }))
+vi.mock('../iac/IacTemplateStrip', () => ({ IacTemplateStrip: () => null }))
 vi.mock('../IacPlanView', () => ({
   IacPlanView: () => null,
   IacResultView: () => null,

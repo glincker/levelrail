@@ -3917,5 +3917,22 @@
     "empty": "No secret providers yet.",
     "removeTitle": "Remove {{name}}?",
     "removeConsequence": "Apps referencing this provider will fail to start until it is re-added."
+  },
+  "iacStudio": {
+    "tabFiles": "Files",
+    "tabStudio": "Studio",
+    "templates": "Templates",
+    "use": "Use",
+    "copy": "Copy",
+    "useNamed": "Use template {{name}}",
+    "copyNamed": "Copy template {{name}}",
+    "editor": "Resource YAML",
+    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
+    "cloudNote": "Cloud kinds are rejected unless the cloud feature is on. No cloud credentials are entered here.",
+    "planHash": "Plan",
+    "beta": "Beta",
+    "codeDoc": "Error code {{code}}, open the reference",
+    "applyDisabled": "Apply is switched off on this instance. Plans still work.",
+    "replan": "Plan again"
   }
 }

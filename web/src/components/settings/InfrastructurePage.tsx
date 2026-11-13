@@ -27,6 +27,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { PageBanner } from '@/components/PageBanner'
 import { LazyInfrastructureDiagram } from '@/components/banners/LazyInfraDiagrams'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { IacStudio } from '../iac/IacStudio'
+import { IacTemplateStrip } from '../iac/IacTemplateStrip'
 import { IacExportCard } from '../../components/IacExportCard'
 import { IacPlanView, IacResultView } from '../../components/IacPlanView'
 import { IacIssuesError, useApplyIac, usePlanIac } from '../../queries/iac'
@@ -138,109 +141,134 @@ export function InfrastructurePage() {
         size={size}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('iacPage.filesTitle')}</CardTitle>
-          <CardDescription>{t('iacPage.filesDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Field>
-            <FieldLabel htmlFor="iac-yaml">{t('iacPage.yamlLabel')}</FieldLabel>
-            <Textarea
-              id="iac-yaml"
-              className="min-h-48 font-mono text-xs"
-              value={pasted}
-              onChange={(e) => setPasted(e.target.value)}
-              placeholder={'version: 1\nkind: App\nmetadata:\n  name: web'}
-            />
-          </Field>
-          <p className="text-xs text-muted-foreground">
-            {uploaded.length > 0
-              ? `${t('iacPage.filesChosen', { count: uploaded.length })}: ${uploaded.map((f) => f.name).join(', ')}`
-              : t('iacPage.noFiles')}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" disabled={!canPlan} onClick={handlePlan}>
-              {planIac.isPending ? t('iacPage.planning') : t('iacPage.plan')}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!canApply}
-              onClick={() => setConfirming(true)}
-            >
-              {t('iacPage.apply')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('iacPage.optionsTitle')}</CardTitle>
-          <CardDescription>{t('iacPage.optionsDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="iac-source">
-                {t('iacPage.sourceLabel')}
-              </FieldLabel>
-              <Input
-                id="iac-source"
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-                placeholder={t('iacPage.sourcePlaceholder')}
-              />
-              <FieldDescription>{t('iacPage.sourceHint')}</FieldDescription>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="iac-project">
-                {t('iacPage.projectLabel')}
-              </FieldLabel>
-              <Input
-                id="iac-project"
-                value={project}
-                onChange={(e) => setProject(e.target.value)}
-                placeholder={t('iacPage.projectPlaceholder')}
-              />
-            </Field>
-          </div>
-          <div className="space-y-2">
-            <label
-              htmlFor="iac-prune"
-              className="flex items-center gap-2 text-sm text-foreground"
-            >
-              <Checkbox
-                id="iac-prune"
-                checked={prune}
-                onCheckedChange={(v) => setPrune(v === true)}
-              />
-              {t('iacPage.prune')}
-            </label>
-            {pruneNeedsSource ? (
-              <p className="text-xs text-tone-warning">
-                {t('iacPage.pruneNeedsSource')}
+      <Tabs defaultValue="files">
+        <TabsList>
+          <TabsTrigger value="files">{t('iacStudio.tabFiles')}</TabsTrigger>
+          <TabsTrigger value="studio">{t('iacStudio.tabStudio')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="studio">
+          <IacStudio />
+        </TabsContent>
+        <TabsContent
+          value="files"
+          className="flex flex-col gap-(--glinr-page-gap)"
+        >
+          {hero ? <IacTemplateStrip onUse={setPasted} /> : null}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('iacPage.filesTitle')}</CardTitle>
+              <CardDescription>{t('iacPage.filesDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Field>
+                <FieldLabel htmlFor="iac-yaml">
+                  {t('iacPage.yamlLabel')}
+                </FieldLabel>
+                <Textarea
+                  id="iac-yaml"
+                  className="min-h-48 font-mono text-xs"
+                  value={pasted}
+                  onChange={(e) => setPasted(e.target.value)}
+                  placeholder={'version: 1\nkind: App\nmetadata:\n  name: web'}
+                />
+              </Field>
+              <p className="text-xs text-muted-foreground">
+                {uploaded.length > 0
+                  ? `${t('iacPage.filesChosen', { count: uploaded.length })}: ${uploaded.map((f) => f.name).join(', ')}`
+                  : t('iacPage.noFiles')}
               </p>
-            ) : null}
-            <label
-              htmlFor="iac-no-deploy"
-              className="flex items-center gap-2 text-sm text-foreground"
-            >
-              <Checkbox
-                id="iac-no-deploy"
-                checked={noDeploy}
-                onCheckedChange={(v) => setNoDeploy(v === true)}
-              />
-              {t('iacPage.noDeploy')}
-            </label>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" disabled={!canPlan} onClick={handlePlan}>
+                  {planIac.isPending
+                    ? t('iacPage.planning')
+                    : t('iacPage.plan')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!canApply}
+                  onClick={() => setConfirming(true)}
+                >
+                  {t('iacPage.apply')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-      <PlanCard planIac={planIac} reviewed={reviewed} onRetry={handlePlan} />
-      <ResultCard applyIac={applyIac} onReplan={handlePlan} />
-      <IacExportCard />
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('iacPage.optionsTitle')}</CardTitle>
+              <CardDescription>
+                {t('iacPage.optionsDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="iac-source">
+                    {t('iacPage.sourceLabel')}
+                  </FieldLabel>
+                  <Input
+                    id="iac-source"
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                    placeholder={t('iacPage.sourcePlaceholder')}
+                  />
+                  <FieldDescription>{t('iacPage.sourceHint')}</FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="iac-project">
+                    {t('iacPage.projectLabel')}
+                  </FieldLabel>
+                  <Input
+                    id="iac-project"
+                    value={project}
+                    onChange={(e) => setProject(e.target.value)}
+                    placeholder={t('iacPage.projectPlaceholder')}
+                  />
+                </Field>
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="iac-prune"
+                  className="flex items-center gap-2 text-sm text-foreground"
+                >
+                  <Checkbox
+                    id="iac-prune"
+                    checked={prune}
+                    onCheckedChange={(v) => setPrune(v === true)}
+                  />
+                  {t('iacPage.prune')}
+                </label>
+                {pruneNeedsSource ? (
+                  <p className="text-xs text-tone-warning">
+                    {t('iacPage.pruneNeedsSource')}
+                  </p>
+                ) : null}
+                <label
+                  htmlFor="iac-no-deploy"
+                  className="flex items-center gap-2 text-sm text-foreground"
+                >
+                  <Checkbox
+                    id="iac-no-deploy"
+                    checked={noDeploy}
+                    onCheckedChange={(v) => setNoDeploy(v === true)}
+                  />
+                  {t('iacPage.noDeploy')}
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          <PlanCard
+            planIac={planIac}
+            reviewed={reviewed}
+            onRetry={handlePlan}
+          />
+          <ResultCard applyIac={applyIac} onReplan={handlePlan} />
+          <IacExportCard />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
