@@ -55,6 +55,8 @@ kind: Tag
 metadata: { name: frontend }
 ```
 
+Export prints every tag, including tags no app uses.
+
 ### Database
 
 ```yaml
@@ -152,7 +154,7 @@ Pre-deploy snapshot policy, the CI gate of a git source and the heartbeat monito
 
 ### Domain
 
-Adds a hostname to an app. It is additive with the App's own `domains`, and a hostname can belong to one app only.
+Adds a hostname to an app. It is additive with the App's own `domains`, and a hostname can belong to one app only. Export folds domains into each App's `service.domains` and does not print Domain documents.
 
 ```yaml
 version: 1

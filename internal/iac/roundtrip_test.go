@@ -93,6 +93,7 @@ func TestRoundTripStableKinds(t *testing.T) {
 		{kind: KindProject, doc: "version: 1\nkind: Project\nmetadata: {name: shop}\nspec: {env: {REGION: eu}}\n", export: ExportOptions{IncludeEnvValues: true}},
 		{kind: KindEnvironment, doc: "version: 1\nkind: Project\nmetadata: {name: shop}\n---\nversion: 1\nkind: Environment\nmetadata: {name: production}\nspec: {project: shop, protected: true, env: {LOG_LEVEL: info}}\n", export: ExportOptions{IncludeEnvValues: true}},
 		{kind: KindTag, doc: "version: 1\nkind: Tag\nmetadata: {name: frontend}\n---\nversion: 1\nkind: App\nmetadata: {name: api}\nspec:\n  tags: [frontend]\n  service:\n    build: {type: image, image: x}\n    port: 80\n", want: "tags:"},
+		{kind: KindTag, doc: "version: 1\nkind: Tag\nmetadata: {name: orphan}\n", want: "name: orphan"},
 		{kind: KindDatabase, doc: "version: 1\nkind: Database\nmetadata: {name: main-db}\nspec: {engine: postgres, version: \"16\"}\n"},
 		{kind: KindApp, doc: strings.Replace(roundTripApp, "%s", "    env: {LOG_LEVEL: info}\n", 1), export: ExportOptions{IncludeEnvValues: true}},
 		{kind: KindDomain, doc: strings.Replace(roundTripApp, "%s", "", 1) + "---\nversion: 1\nkind: Domain\nmetadata: {name: www.example.com}\nspec: {app: api}\n", want: "- www.example.com"},

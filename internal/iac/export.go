@@ -152,6 +152,14 @@ func Export(ctx context.Context, d Doer, opts ExportOptions) (ExportResult, erro
 		}
 	}
 	e.databases()
+	if opts.App == "" && opts.Project == "" {
+		// Unattached tags have no app to carry them, so a full export reads them from live state.
+		for name := range e.st.tags {
+			if !strings.HasPrefix(name, tagManagedPre) {
+				e.tags[name] = true
+			}
+		}
+	}
 	for _, t := range sortedKeys(e.tags) {
 		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindTag, Metadata: outMeta{Name: t}})
 	}
