@@ -6,14 +6,20 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 )
 
 func validateYAML(t *testing.T, name string, data []byte) {
 	t.Helper()
+	validateYAMLWith(t, name, data, Options{})
+}
+
+func validateYAMLWith(t *testing.T, name string, data []byte, opts Options) {
+	t.Helper()
 	docs, issues := ParseDocuments([]Source{{Name: name, Data: data}})
 	if len(issues) == 0 {
-		_, issues = Build(docs, Options{})
+		_, issues = Build(docs, opts)
 	}
 	if len(issues) > 0 {
 		t.Errorf("%s does not validate: %v\n%s", name, issues, data)
@@ -49,7 +55,9 @@ func TestIaCExamples(t *testing.T) {
 			return err
 		}
 		files++
-		validateYAML(t, path, raw)
+		for _, vars := range exampleVarSets(t, filepath.Dir(path)) {
+			validateYAMLWith(t, path, raw, Options{Vars: vars})
+		}
 		return nil
 	})
 	if err != nil {
@@ -58,6 +66,38 @@ func TestIaCExamples(t *testing.T) {
 	if files < 2 {
 		t.Fatalf("found %d example files, expected at least 2", files)
 	}
+}
+
+// exampleVarSets returns one var map per values/*.yml file next to an example
+// (each environment is checked on its own), or one empty set when it has none.
+func exampleVarSets(t *testing.T, dir string) []map[string]string {
+	t.Helper()
+	files, _ := filepath.Glob(filepath.Join(dir, "values", "*.yml"))
+	if len(files) == 0 {
+		files, _ = filepath.Glob(filepath.Join(dir, ".env.example"))
+	}
+	if len(files) == 0 {
+		return []map[string]string{nil}
+	}
+	var sets []map[string]string
+	for _, f := range files {
+		raw, err := os.ReadFile(f) //nolint:gosec // globbed examples path
+		if err != nil {
+			t.Fatal(err)
+		}
+		vars := map[string]string{}
+		for _, line := range strings.Split(string(raw), "\n") {
+			k, v, ok := strings.Cut(strings.TrimSpace(line), ":")
+			if filepath.Base(f) == ".env.example" {
+				k, v, ok = strings.Cut(strings.TrimSpace(line), "=")
+			}
+			if ok && k != "" && !strings.HasPrefix(k, "#") {
+				vars[k] = strings.TrimSpace(v)
+			}
+		}
+		sets = append(sets, vars)
+	}
+	return sets
 }
 
 func TestDocsExamplesValidate(t *testing.T) {

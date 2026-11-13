@@ -1,0 +1,4 @@
+IMAGE_TAG: 1.9.0-rc1
+REPLICAS: 1
+DOMAIN: staging.shop.example.com
+LOG_LEVEL: debug

@@ -1,0 +1,4 @@
+IMAGE_TAG: 1.8.2
+REPLICAS: 2
+DOMAIN: shop.example.com
+LOG_LEVEL: info
