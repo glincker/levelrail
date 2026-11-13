@@ -307,12 +307,17 @@ func (rt *Router) writeStackError(w http.ResponseWriter, what string, err error)
 	err = mapStackStoreError(err)
 	switch {
 	case errors.Is(err, store.ErrStackNotFound), errors.Is(err, store.ErrStackRevisionNotFound):
-		writeError(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, store.ErrStackExists), errors.Is(err, iac.ErrStackLocked), errors.Is(err, iac.ErrStackPinned),
-		errors.Is(err, iac.ErrLedgerConflict), errors.Is(err, iac.ErrPlanChanged), errors.Is(err, store.ErrStackBadTransition):
-		writeError(w, http.StatusConflict, err.Error())
-	case errors.Is(err, iac.ErrPruneNotAllowed), errors.Is(err, store.ErrStackSecretLeak):
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusNotFound, errorCodeForStatus(http.StatusNotFound), err.Error(), nil)
+	case errors.Is(err, iac.ErrPlanChanged):
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
+	case errors.Is(err, iac.ErrStackLocked), errors.Is(err, iac.ErrStackPinned):
+		writeIaCError(w, http.StatusConflict, iac.CodeStackLocked, err.Error(), nil)
+	case errors.Is(err, store.ErrStackExists), errors.Is(err, iac.ErrLedgerConflict), errors.Is(err, store.ErrStackBadTransition):
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, err.Error(), nil)
+	case errors.Is(err, iac.ErrPruneNotAllowed):
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodePruneGuard, err.Error(), nil)
+	case errors.Is(err, store.ErrStackSecretLeak):
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidDocument, err.Error(), nil)
 	default:
 		rt.internalError(w, "api: stack "+what+" failed", err)
 	}
@@ -321,7 +326,7 @@ func (rt *Router) writeStackError(w http.ResponseWriter, what string, err error)
 func (rt *Router) stackStoreOr501(w http.ResponseWriter) (StackStore, bool) {
 	ss := rt.stackStore()
 	if ss == nil || rt.projects == nil {
-		writeError(w, http.StatusNotImplemented, "stacks are not available on this store")
+		writeIaCError(w, http.StatusNotImplemented, iac.CodeUnavailable, "stacks are not available on this store", nil)
 		return nil, false
 	}
 	return ss, true
@@ -426,18 +431,18 @@ func decodeStackRequest(w http.ResponseWriter, r *http.Request, filesOptional bo
 	var req stackRequest
 	err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&req)
 	if err != nil && (!filesOptional || !errors.Is(err, io.EOF)) {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return req, false
 	}
 	if !filesOptional && (len(req.Files) == 0 || len(req.Files) > maxIaCFiles) {
-		writeError(w, http.StatusBadRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
 		return req, false
 	}
 	if req.IdempotencyKey == "" {
 		req.IdempotencyKey = r.Header.Get(headerIdempotencyKey)
 	}
 	if len(req.IdempotencyKey) > idempotencyKeyMaxLen {
-		writeError(w, http.StatusBadRequest, "idempotency key must be at most 255 characters")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "idempotency key must be at most 255 characters", nil)
 		return req, false
 	}
 	return req, true
@@ -559,38 +564,38 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 	}
 	var in stackCreateRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&in); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return
 	}
 	if err := iac.ValidateStackName(in.Name); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	scope, err := iac.ParseStackLevel(in.Scope)
 	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	var proj store.Project
 	if scope == iac.LevelInstall {
 		// Only a human root session may create install-wide state, never a token.
 		if !rt.lockOverrideAllowed(r) {
-			writeError(w, http.StatusForbidden, "only a human root session may create an install stack")
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "only a human root session may create an install stack", nil)
 			return
 		}
 		if in.Project != "" {
-			writeError(w, http.StatusUnprocessableEntity, "an install stack has no project")
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, "an install stack has no project", nil)
 			return
 		}
 	} else {
 		var found bool
 		if proj, found = rt.projectByName(r.Context(), in.Project); !found {
-			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("project %q was not found", in.Project))
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, fmt.Sprintf("project %q was not found", in.Project), nil)
 			return
 		}
 	}
 	if (in.AllowPrune || in.RequireApproval || in.DriftPolicy != "") && !rt.callerIsAdmin(r) {
-		writeError(w, http.StatusForbidden, "only an administrator may set allow_prune, drift_policy or require_approval")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "only an administrator may set allow_prune, drift_policy or require_approval", nil)
 		return
 	}
 	rec, err := rt.createStack(r, ss, in, proj.ID)
@@ -599,7 +604,7 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 			rt.writeStackError(w, "create", err)
 			return
 		}
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	rt.auditStack(r, auditStackCreate, map[string]any{"stack": rec.Name, "project": proj.Name, "scope": stackScopeOf(rec)})
@@ -612,7 +617,7 @@ func (rt *Router) handleUpdateStackSettings(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if rt.stackCaller(r).isCI {
-		writeError(w, http.StatusForbidden, "a CI token cannot change stack settings")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "a CI token cannot change stack settings", nil)
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)
@@ -621,7 +626,7 @@ func (rt *Router) handleUpdateStackSettings(w http.ResponseWriter, r *http.Reque
 	}
 	var in stackSettingsRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&in); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return
 	}
 	if in.AllowPrune != nil {
@@ -633,7 +638,7 @@ func (rt *Router) handleUpdateStackSettings(w http.ResponseWriter, r *http.Reque
 	if in.DriftPolicy != nil {
 		p, err := iac.ParseDriftPolicy(*in.DriftPolicy)
 		if err != nil {
-			writeError(w, http.StatusUnprocessableEntity, err.Error())
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 			return
 		}
 		s.DriftPolicy = string(p)
@@ -693,7 +698,7 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !resp.StackExists && len(res) == 0 {
-		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
 		return
 	}
 	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, stack.Scope, res, req)
@@ -756,7 +761,7 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss StackStore, req stackRequest) (store.StackRecord, bool) {
 	name := r.PathValue("name")
 	if err := iac.ValidateStackName(name); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return store.StackRecord{}, false
 	}
 	project, create, ok := rt.resolveNewStack(w, r, req)
@@ -769,7 +774,7 @@ func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss 
 		return store.StackRecord{}, false
 	}
 	if len(res) == 0 {
-		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
 		return store.StackRecord{}, false
 	}
 	proj, found := rt.projectByName(r.Context(), project)
@@ -778,7 +783,7 @@ func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss 
 			return store.StackRecord{}, false
 		}
 	} else if !found {
-		writeError(w, http.StatusUnprocessableEntity, missingProjectMessage(project))
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, missingProjectMessage(project), nil)
 		return store.StackRecord{}, false
 	}
 	rec, err := rt.createStack(r, ss, stackCreateRequest{Name: name, Project: project}, proj.ID)
@@ -947,7 +952,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		"counts": map[string]int{"create": plan.Summary.Create, "update": plan.Summary.Update, "delete": plan.Summary.Delete, "noop": plan.Summary.Noop, "error": plan.Summary.Error},
 	})
 	if leaseLost {
-		writeError(w, http.StatusConflict, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again")
+		writeIaCError(w, http.StatusConflict, iac.CodeStackLocked, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again", nil)
 		return
 	}
 	if aerr != nil {
@@ -1070,7 +1075,7 @@ func (rt *Router) handleStackPin(w http.ResponseWriter, r *http.Request) {
 	}
 	var in stackPinRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&in); err != nil || in.Revision < 1 {
-		writeError(w, http.StatusBadRequest, "body must be {\"revision\": n} with n >= 1")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "body must be {\"revision\": n} with n >= 1", nil)
 		return
 	}
 	if err := ss.SetStackPin(r.Context(), s.ID, in.Revision); err != nil {
@@ -1107,7 +1112,7 @@ func (rt *Router) handleStackUnlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rt.stackCaller(r).isCI {
-		writeError(w, http.StatusForbidden, "a CI token cannot force-release a stack lock")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "a CI token cannot force-release a stack lock", nil)
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)
@@ -1130,22 +1135,22 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 	}
 	mode, err := iac.ParseStackDeleteMode(r.URL.Query().Get("mode"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	caller := rt.stackCaller(r)
 	// Forget releases the whole ledger for adoption, so it is gated like destroy.
 	if caller.isCI || !rt.callerIsAdmin(r) {
-		writeError(w, http.StatusForbidden, "deleting a stack needs an administrator session or token and is never allowed from CI")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "deleting a stack needs an administrator session or token and is never allowed from CI", nil)
 		return
 	}
 	deleteData := r.URL.Query().Get("delete_data") == "true"
 	if deleteData && mode != iac.StackDestroy {
-		writeError(w, http.StatusBadRequest, "delete_data only applies with mode=destroy")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "delete_data only applies with mode=destroy", nil)
 		return
 	}
 	if deleteData && !rt.callerHasAbility(r, AbilityWriteSensitive) {
-		writeError(w, http.StatusForbidden, "deleting database data needs the root or write:sensitive ability")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "deleting database data needs the root or write:sensitive ability", nil)
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)

@@ -16,7 +16,7 @@ import (
 // route handlers so no mutation handler needs to know about stacks.
 
 const (
-	errCodeStackLocked      = "stack_locked"
+	errCodeStackLocked      = iac.CodeStackLocked
 	auditStackLockOverride  = "stack.lock_override"
 	headerOverrideStackLock = "X-Levelrail-Override-Stack-Lock"
 	stackDriftLock          = "lock"
@@ -230,8 +230,8 @@ func (rt *Router) stackLockMiddleware(next http.Handler) http.Handler {
 		if err != nil && failsClosed(ts) && rt.lockHasPrincipal(r) {
 			// Settings hold security knobs, so a broken ledger read refuses the write.
 			rt.logger.Warn("api: stack lock lookup failed, refusing setting write", slog.String("error", err.Error()), slog.String("route", r.Method+" "+r.URL.Path))
-			writeCodedError(w, http.StatusServiceUnavailable, errCodeStackLockUnavailable,
-				"could not check whether a stack owns this setting; retry shortly")
+			writeIaCError(w, http.StatusServiceUnavailable, errCodeStackLockUnavailable,
+				"could not check whether a stack owns this setting; retry shortly", nil)
 			return
 		}
 		if err != nil {
@@ -258,8 +258,8 @@ func (rt *Router) stackLockMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		writeCodedError(w, http.StatusConflict, errCodeStackLocked,
-			"managed by stack "+stack.Name+" (drift policy lock): change the stack manifest and apply it, or ask an administrator to unlock the stack or override the lock")
+		writeIaCError(w, http.StatusConflict, errCodeStackLocked,
+			"managed by stack "+stack.Name+" (drift policy lock): change the stack manifest and apply it, or ask an administrator to unlock the stack or override the lock", nil)
 	})
 }
 

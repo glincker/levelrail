@@ -38,7 +38,7 @@ type stackDiffResponse struct {
 func revisionNumber(w http.ResponseWriter, r *http.Request) (int, bool) {
 	n, err := strconv.Atoi(r.PathValue("n"))
 	if err != nil || n < 1 {
-		writeError(w, http.StatusBadRequest, "revision number must be a positive integer")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "revision number must be a positive integer", nil)
 		return 0, false
 	}
 	return n, true
@@ -246,7 +246,7 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 	}
 	m, err := strconv.Atoi(against)
 	if err != nil || m < 1 {
-		writeError(w, http.StatusBadRequest, "against must be a revision number or \"live\"")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "against must be a revision number or \"live\"", nil)
 		return
 	}
 	other, err := ss.GetStackRevision(r.Context(), s.ID, m)
@@ -269,7 +269,7 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	writeError(w, http.StatusUnprocessableEntity, err.Error())
+	writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidDocument, err.Error(), nil)
 }
 
 func (rt *Router) handleStackRollback(w http.ResponseWriter, r *http.Request) {
