@@ -120,7 +120,10 @@ export function StatusDot({ status }: { status: AppStatusSummary }) {
 export function StatusLabel({ status }: { status: AppStatusSummary }) {
   const deploying = statusBucket({ status }) === 'deploying'
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs">
+    <span
+      className="inline-flex items-center gap-1.5 text-xs"
+      title={status.variant === 'muted' ? status.message : undefined}
+    >
       <StatusDot status={status} />
       <span
         className={cn(

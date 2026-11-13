@@ -1209,6 +1209,9 @@ func TestNormalizeRepoURL(t *testing.T) {
 		"ssh://git@git.example.com:2222/org/app": "https://git.example.com/org/app",
 		"git@github.com:org/repo.git":            "https://github.com/org/repo.git",
 		"git://github.com/org/repo":              "https://github.com/org/repo",
+		"git@gitlab.com:group/sub/app.git":       "https://gitlab.com/group/sub/app.git",
+		"ssh://git@ssh.github.com:443/org/repo":  "https://github.com/org/repo",
+		"myalias:org/repo":                       "myalias:org/repo",
 		"https://github.com/org/repo":            "https://github.com/org/repo",
 		"":                                       "",
 	}

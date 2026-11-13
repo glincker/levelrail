@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
 )
 
 var secretKeyRe = regexp.MustCompile(`(?i)(^|_)(secret|password|passwd|pwd|token|api_?key|private_?key|credential|auth|dsn)($|_)|_key$|^database_url$|^redis_url$|^mongo(db)?_url$|^db_url$|pass|secret|token|api_?key|credential|dsn`)
@@ -193,24 +195,29 @@ func splitImageRef(image string) (repo, tag string) {
 	return image, ""
 }
 
-func gitURLFromRepo(repo, host string) string {
+// sourceRepoHost is where an "owner/repo" repository field without a host lives.
+const sourceRepoHost = "github.com"
+
+// gitURLFromRepo maps a source's repository field to a clone URL: http(s)
+// URLs pass through, ssh, scp style and "owner/repo" forms become https,
+// and anything unreadable is returned as is for the importer to report.
+func gitURLFromRepo(repo string) string {
 	repo = strings.TrimSpace(repo)
-	if repo == "" {
-		return ""
-	}
-	if strings.Contains(repo, "://") {
+	r, err := reporef.ParseWithHost(repo, sourceRepoHost)
+	if err != nil || (r.IsHTTP() && strings.Contains(repo, "://")) {
 		return repo
 	}
-	if strings.HasPrefix(repo, "git@") {
-		r := strings.TrimPrefix(repo, "git@")
-		r = strings.Replace(r, ":", "/", 1)
-		return "https://" + strings.TrimSuffix(r, ".git")
+	return r.CloneURL()
+}
+
+// setGitURL records the app's clone URL and notes an ssh source mapped to https.
+func (a *App) setGitURL(repo string) {
+	a.GitURL = gitURLFromRepo(repo)
+	if r, err := reporef.Parse(repo); err == nil && !r.IsHTTP() {
+		a.Notes = append(a.Notes, Note{Reason: "the source cloned the repository over ssh; it is imported as " + a.GitURL,
+			Manual: "connect a git provider that can read the repository, or add a deploy key after import"})
 	}
-	repo = strings.TrimSuffix(strings.Trim(repo, "/"), ".git")
-	if first, _, _ := strings.Cut(repo, "/"); strings.Contains(first, ".") {
-		return "https://" + repo
-	}
-	return "https://" + host + "/" + repo
+	a.scrubGitURL()
 }
 
 // sensitiveRepoQueryKeys are query parameters that commonly carry a git token.

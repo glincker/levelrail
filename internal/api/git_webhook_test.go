@@ -101,8 +101,12 @@ func TestHandleGitPushWebhook_NoGitSource(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d (same as a bad signature)", rec.Code, http.StatusUnauthorized)
+	}
+	rows, err := db.ListWebhookDeliveries(context.Background(), "web", 10, nil)
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("deliveries = %d, err = %v, want no row stored for an app without a git source", len(rows), err)
 	}
 }
 

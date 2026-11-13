@@ -99,7 +99,7 @@ Pick the route that matches what you have.
 
 In the dashboard, choose **New app** and paste a repository URL. Levelrail shows a deployment plan before it creates anything: build method, port, environment variables, volumes, and warnings. Confirm it, and the build log streams live.
 
-From the server (or any machine where you ran `levelrail-cli login --device`), the same flow is:
+From the server (or any machine where you have run `levelrail-cli login --api-url URL --code CODE`, see [Use the CLI from your laptop](#use-the-cli-from-your-laptop)), the same flow is:
 
 ```bash
 levelrail-cli import https://github.com/your-org/your-app
@@ -118,7 +118,7 @@ This reads a public repository over HTTPS. To deploy on every push, or to read a
 | Message | What to do |
 | --- | --- |
 | `plan import: request POST http://localhost:8080/api/v1/imports/plan: ... connection refused` | The control plane is not running on that address. Run `systemctl start levelrail`. If the dashboard uses another port, set `APP_API_URL` first. |
-| `start device login: ... connection refused` | `levelrail-cli login --device` points at the wrong address. Set `APP_API_URL=http://127.0.0.1:<dashboard port>` and run it again. |
+| `start device login: ... connection refused` | `levelrail-cli login` points at the wrong address. Pass `--api-url http://127.0.0.1:<dashboard port>` (or set `APP_API_URL`) and run it again. |
 
 </Accordion>
 
@@ -230,6 +230,8 @@ curl -fsSL https://levelrail.com/install-cli.sh | sh
 export APP_API_URL=https://console.example.com
 levelrail-cli login --api-url https://console.example.com --code ABCD-EF23
 ```
+
+The CLI has no server address until you give one: always pass `--api-url` (or set `APP_API_URL`) on the first login. To manage a second server, add `--profile NAME` to the login and to every later command for that server; without it the login uses the `default` profile, which is pinned to the first server it saw (a different server is refused until you pass `--reauth`).
 
 Right after setup, the dashboard home shows a **Connect your CLI** card. Press **Show my command** and paste the one line it prints into your terminal. The code is single use, expires in minutes and is only ever shown to a signed-in dashboard session, so it signs the CLI in with no password and no approval step:
 

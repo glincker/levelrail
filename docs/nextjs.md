@@ -54,6 +54,8 @@ With the `--framework nextjs` flag on `apps create`, the volume is attached for 
 
 The volume belongs to one container. See the replica section below.
 
+If your Dockerfile ends with a `USER` line (for example `USER nextjs`), Levelrail gives the new volume to that user before the first start and then checks it is writable; a `VolumeNotWritable` status names the path and the fix. See [image cache troubleshooting](/nextjs-image-cache#troubleshooting).
+
 ## Health check
 
 The preset uses `/` as the health path. A page that renders data can be slow or fail for reasons that do not mean the process is down, so add a cheap route and use it. In the App Router, create `app/api/health/route.ts`:

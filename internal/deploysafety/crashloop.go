@@ -11,6 +11,15 @@ import (
 // keeps exiting waits out its restart delay.
 const ReasonCrashLoopBackOff = "CrashLoopBackOff"
 
+// ReasonQuarantined is the Ready condition reason once the crash-loop breaker
+// stopped restarting a container, until an operator resumes the app.
+const ReasonQuarantined = "Quarantined"
+
+// QuarantineMessage is the condition message for a quarantined container.
+func QuarantineMessage(container string, restarts int) string {
+	return fmt.Sprintf("%q was quarantined after %d restarts, resume the app to try again", container, restarts)
+}
+
 var crashLoopMessageRe = regexp.MustCompile(`\((\d+) restarts\), next restart in (\S+)`)
 
 // CrashLoopMessage is the condition message the controller writes; the CLI

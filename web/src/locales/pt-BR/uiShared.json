@@ -40,7 +40,10 @@
     "copied": "Copiado",
     "copiedAnnounce": "Copiado para a área de transferência",
     "download": "Baixar",
-    "shownOf": "{{shown}} de {{total}} linhas"
+    "shownOf": "{{shown}} de {{total}} linhas",
+    "wrap": "Quebrar linhas",
+    "copySelection": "Copiar seleção",
+    "copyAll": "Copiar tudo visível"
   },
   "filterChips": {
     "group": "Filtros ativos",

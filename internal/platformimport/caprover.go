@@ -174,8 +174,8 @@ func mapCapRoverApp(def caproverDefinition, rootDomain string) App {
 		app.Policy.BasicAuthUser = def.HTTPAuth.User
 	}
 	if wh := def.AppPushWebhook; wh != nil && wh.RepoInfo.Repo != "" {
-		app.Kind, app.GitURL, app.GitBranch = SourceGit, gitURLFromRepo(wh.RepoInfo.Repo, "github.com"), wh.RepoInfo.Branch
-		app.scrubGitURL()
+		app.Kind, app.GitBranch = SourceGit, wh.RepoInfo.Branch
+		app.setGitURL(wh.RepoInfo.Repo)
 		app.BuildMethod = "dockerfile"
 	} else {
 		app.Notes = append(app.Notes, Note{Reason: "the source stores no image or repository identity for this app, its image only exists on the source host", Manual: "connect a repository or push an image to a registry, then set it as the app source"})

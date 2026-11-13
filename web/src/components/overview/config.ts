@@ -9,6 +9,12 @@ export const ERROR_RATE_DANGER = numberFromEnv(
   0.05,
 )
 
+/** Fewest requests in a window before rates, deltas and the failing banner are trusted. */
+export const MIN_SAMPLE_REQUESTS = numberFromEnv(
+  import.meta.env.VITE_OVERVIEW_MIN_SAMPLE_REQUESTS,
+  30,
+)
+
 /** Memory usage share of the limit above which "raise the limit" shows. */
 export const MEMORY_HIGH_RATIO = numberFromEnv(
   import.meta.env.VITE_OVERVIEW_MEMORY_HIGH_RATIO,

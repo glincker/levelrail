@@ -203,3 +203,26 @@ func apiKeyCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName, eng
 	}
 	return &database.APIKeyCredentials{Key: key}, nil
 }
+
+// redisCredentialsFor returns the password the API stored at create time, or nil when the
+// database has none. It never generates one: a password appearing on a running server is the operator's choice.
+func redisCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.RedisCredentials, error) {
+	if mgr == nil {
+		return nil, nil
+	}
+	exists, err := mgr.Exists(ctx, dbName, database.RedisPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("check redis password for %q: %w", dbName, err)
+	}
+	if !exists {
+		return nil, nil
+	}
+	password, err := mgr.Resolve(ctx, dbName, database.RedisPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve redis password for %q: %w", dbName, err)
+	}
+	if password == "" {
+		return nil, errors.New("resolved redis password is empty")
+	}
+	return &database.RedisCredentials{Password: password}, nil
+}

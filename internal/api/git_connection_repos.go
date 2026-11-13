@@ -120,6 +120,7 @@ func (rt *Router) handleUseGitConnectionRepoAsSource(w http.ResponseWriter, r *h
 		return
 	}
 	rt.recordWebhookRegistration(ctx, req.AppName, nil)
+	result.Resource.WebhookSecret = ""
 	status := http.StatusOK
 	if result.Creating {
 		status = http.StatusCreated

@@ -2,18 +2,15 @@ import * as React from 'react'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { topFrecent } from '@/lib/paletteHistory'
 import { PALETTE_BUBBLE_MAX } from '@/lib/paletteConfig'
+import type { PinnedBubble } from '@/lib/paletteBubbleLayout'
 import type { PaletteItem } from '../components/commandPaletteData'
 import type { Bubble } from '../components/palette/RecentBubbles'
-
-interface Pinned {
-  path: string
-  title: string
-}
 
 interface Input {
   baseItems: PaletteItem[]
   recentKeys: string[]
-  pinned: readonly Pinned[]
+  /** Hand-placed bubbles; they come first, in stored order. */
+  pinned: readonly PinnedBubble[]
   /** Bumped whenever the stored history changes, so the bubbles re-read it. */
   version: number
   openPath: (path: string) => void
@@ -21,12 +18,13 @@ interface Input {
   select: (item: PaletteItem) => void
 }
 
-// Quick links beside the search pill: most visited first, then recently opened, then pinned.
+// Quick links beside the search pill: pinned first, then most visited, then recently opened.
 export function usePaletteBubbles(input: Input): Bubble[] {
   const { baseItems, recentKeys, pinned, version, openPath, select } = input
   return React.useMemo<Bubble[]>(() => {
     void version
     const byKey = new Map(baseItems.map((i) => [i.key, i]))
+    const pinnedIds = new Set(pinned.map((p) => p.id))
     const seen = new Set<string>()
     const out: Bubble[] = []
     const add = (b: Bubble) => {
@@ -34,26 +32,48 @@ export function usePaletteBubbles(input: Input): Bubble[] {
       seen.add(b.key)
       out.push(b)
     }
-    const page = (key: string) => {
-      const item = byKey.get(key)
-      if (!item) return
-      add({
-        key: `bubble-${key}`,
+    const fromItem = (item: PaletteItem): Bubble => {
+      const id = `item:${item.key}`
+      return {
+        key: id,
         label: item.label,
         icon: item.icon,
+        href: item.preview?.path,
+        pinned: pinnedIds.has(id),
+        entry: {
+          id,
+          title: item.label,
+          itemKey: item.key,
+          path: item.preview?.path,
+        },
         onPick: () => select(item),
-      })
+      }
     }
-    topFrecent(PALETTE_BUBBLE_MAX * 2).forEach(page)
-    recentKeys.forEach(page)
     for (const p of pinned) {
-      add({
-        key: `bubble-pin-${p.path}`,
-        label: p.title,
-        icon: <PinGlassIcon size="1.4em" />,
-        onPick: () => openPath(p.path),
-      })
+      const item = p.itemKey ? byKey.get(p.itemKey) : undefined
+      const path = p.path
+      add(
+        item
+          ? { ...fromItem(item), key: p.id, pinned: true, entry: p }
+          : {
+              key: p.id,
+              label: p.title,
+              icon: <PinGlassIcon size="1.4em" />,
+              href: path,
+              pinned: true,
+              entry: p,
+              onPick: () => {
+                if (path) openPath(path)
+              },
+            },
+      )
     }
+    const auto = (key: string) => {
+      const item = byKey.get(key)
+      if (item) add(fromItem(item))
+    }
+    topFrecent(PALETTE_BUBBLE_MAX * 2).forEach(auto)
+    recentKeys.forEach(auto)
     return out
   }, [baseItems, recentKeys, pinned, version, openPath, select])
 }

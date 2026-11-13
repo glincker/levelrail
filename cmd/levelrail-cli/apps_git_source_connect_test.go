@@ -79,3 +79,50 @@ func TestRun_AppsGitSourcePlan(t *testing.T) {
 		}
 	}
 }
+
+func newSecretEchoServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gitSourceResource{ServiceName: "web", RepoURL: "https://github.com/acme/web", Branch: "main", BuildType: "dockerfile", WebhookSecret: "onetimesecret99"})
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestRun_AppsGitSourceSet_HidesWebhookSecretByDefault(t *testing.T) {
+	srv := newSecretEchoServer(t)
+	for _, extra := range [][]string{nil, {"--json"}} {
+		args := append([]string{"apps", "git-source", "set", "web", "--repo", "https://github.com/acme/web", "--api-url", srv.URL}, extra...)
+		stdout, _ := runCLIExpectOK(t, args)
+		if strings.Contains(stdout, "onetimesecret99") {
+			t.Fatalf("args %v: stdout leaked the webhook secret: %q", extra, stdout)
+		}
+		if extra == nil && !strings.Contains(stdout, "git-source webhook web --rotate") {
+			t.Fatalf("stdout = %q, want a pointer to the rotate command", stdout)
+		}
+	}
+}
+
+func TestRun_AppsGitSourceSet_ShowSecretPrintsIt(t *testing.T) {
+	srv := newSecretEchoServer(t)
+	for _, extra := range [][]string{nil, {"--json"}} {
+		args := append([]string{"apps", "git-source", "set", "web", "--repo", "https://github.com/acme/web", "--show-secret", "--api-url", srv.URL}, extra...)
+		stdout, _ := runCLIExpectOK(t, args)
+		if !strings.Contains(stdout, "onetimesecret99") {
+			t.Fatalf("args %v: stdout = %q, want the secret with --show-secret", extra, stdout)
+		}
+	}
+}
+
+func TestRun_AppsGitSourceCompose_HidesWebhookSecretByDefault(t *testing.T) {
+	srv := newSecretEchoServer(t)
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "git-source", "compose", "web", "--repo", "https://github.com/acme/web", "--api-url", srv.URL, "--json"})
+	if strings.Contains(stdout, "onetimesecret99") {
+		t.Fatalf("stdout leaked the webhook secret: %q", stdout)
+	}
+	stdout, _ = runCLIExpectOK(t, []string{"apps", "git-source", "compose", "web", "--repo", "https://github.com/acme/web", "--show-secret", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "onetimesecret99") {
+		t.Fatalf("stdout = %q, want the secret with --show-secret", stdout)
+	}
+}

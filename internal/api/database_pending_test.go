@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/dbprovision"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -132,4 +134,35 @@ func TestPendingDatabase_CreatedDatabaseCannotBeEditedOrDiscarded(t *testing.T) 
 		t.Fatalf("provision_state = %q, want empty once created", got.ProvisionState)
 	}
 	_ = store.EngineRedis
+}
+
+func TestCreateDatabase_CacheAccessOptions(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	setter := &fakeSecretSetter{}
+	rt.secrets = setter
+	cookie := loginTestSession(t, rt, db)
+
+	rec := doDB(t, rt, cookie, http.MethodPost, "/api/v1/databases", `{"name":"cache","engine":"valkey","version":"8","tls":"optional","auth":"auto"}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if setter.lastService != "cache" || setter.lastKey != database.RedisPasswordEnvKey || len(setter.lastValue) < 32 {
+		t.Fatalf("password not stored: %+v", setter)
+	}
+	if strings.Contains(rec.Body.String(), setter.lastValue) {
+		t.Fatal("generated password leaked in the response")
+	}
+	if mode, err := db.GetDatabaseTLSMode(context.Background(), "cache"); err != nil || mode != store.DatabaseTLSModeOptional {
+		t.Fatalf("tls mode = %q, %v", mode, err)
+	}
+
+	for _, body := range []string{
+		`{"name":"pg","engine":"postgres","version":"16","auth":"auto"}`,
+		`{"name":"bad","engine":"redis","version":"7","tls":"sometimes"}`,
+	} {
+		if got := doDB(t, rt, cookie, http.MethodPost, "/api/v1/databases", body).Code; got != http.StatusBadRequest {
+			t.Fatalf("%s: status = %d, want 400", body, got)
+		}
+	}
 }

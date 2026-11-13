@@ -13,16 +13,26 @@ import {
   useAppTraffic,
   type TrafficStats,
 } from '../../queries/appTraffic'
-import { ERROR_RATE_DANGER, TRAFFIC_WINDOW_MINUTES } from './config'
+import { formatRate } from './trafficFormat'
+import {
+  ERROR_RATE_DANGER,
+  MIN_SAMPLE_REQUESTS,
+  TRAFFIC_WINDOW_MINUTES,
+} from './config'
 
 const MIN_DELTA_PERCENT = 1
 
-function formatRate(rate: number): string {
-  return rate < 10 ? rate.toFixed(2) : rate.toFixed(1)
-}
-
-function delta(current: number, previous: number, goodWhen: 'up' | 'down') {
-  const change = percentChange(current, previous)
+function delta(
+  current: number,
+  previous: number,
+  goodWhen: 'up' | 'down',
+  stats: TrafficStats,
+) {
+  const change = percentChange(current, previous, {
+    current: stats.current.requests,
+    previous: stats.previous.requests,
+    minSample: MIN_SAMPLE_REQUESTS,
+  })
   if (change === undefined || Math.abs(change) < MIN_DELTA_PERCENT) {
     return undefined
   }
@@ -36,37 +46,47 @@ function delta(current: number, previous: number, goodWhen: 'up' | 'down') {
 export function TrafficTilesView({ stats }: { stats: TrafficStats }) {
   const { current, previous } = stats
   const windowLabel = `the last ${TRAFFIC_WINDOW_MINUTES} minutes`
+  const rate = formatRate(current.ratePerSec)
+  const count = (
+    <span className="text-xs text-muted-foreground">
+      {current.requests.toLocaleString()}{' '}
+      {current.requests === 1 ? 'request' : 'requests'} in{' '}
+      {TRAFFIC_WINDOW_MINUTES} min
+      {current.requests < MIN_SAMPLE_REQUESTS ? ', low traffic' : ''}
+    </span>
+  )
   return (
     <>
       <MetricTile
         label="Requests"
         icon={<ActivityGlassIcon className="size-5" />}
-        value={formatRate(current.ratePerSec)}
-        unit="req/s"
-        delta={delta(current.ratePerSec, previous.ratePerSec, 'up')}
+        value={rate.value}
+        unit={rate.unit}
+        delta={delta(current.ratePerSec, previous.ratePerSec, 'up', stats)}
+        note={count}
         series={stats.rateSeries}
         tone="accent"
         info={`Average requests per second through the ingress over ${windowLabel}.`}
       />
       <MetricTile
-        label="Errors"
+        label="Errors (4xx + 5xx)"
         icon={<CircleAlertGlassIcon className="size-5 text-tone-danger" />}
         value={(current.errorRate * 100).toFixed(1)}
         unit="%"
-        delta={delta(current.errorRate, previous.errorRate, 'down')}
+        delta={delta(current.errorRate, previous.errorRate, 'down', stats)}
         series={stats.errorSeries}
         tone={current.errorRate >= ERROR_RATE_DANGER ? 'danger' : 'success'}
-        info={`Share of responses with a 4xx or 5xx status over ${windowLabel}.`}
+        info={`Share of responses with a 4xx or 5xx status over ${windowLabel}. The Apps list counts 5xx only.`}
       />
       <MetricTile
-        label="p95 latency"
+        label={`p95 latency, last ${TRAFFIC_WINDOW_MINUTES} min`}
         icon={<ClockGlassIcon className="size-5" />}
         value={Math.round(current.p95Ms)}
         unit="ms"
-        delta={delta(current.p95Ms, previous.p95Ms, 'down')}
+        delta={delta(current.p95Ms, previous.p95Ms, 'down', stats)}
         series={stats.p95Series}
         tone="info"
-        info={`95% of requests finished faster than this over ${windowLabel}.`}
+        info={`95% of requests finished faster than this over ${windowLabel}, from the server's merged histogram. The Apps list uses a longer window.`}
       />
     </>
   )

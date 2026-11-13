@@ -40,8 +40,8 @@ func checkLoginServer(prog, profile, apiURL string, reauth bool, stderr io.Write
 			if info != nil {
 				got = describeServer(*info)
 			}
-			return nil, fmt.Errorf("profile %q is pinned to %q (%s, fingerprint %s) but %s is %s; run \"%s auth login --reauth --profile %s\" to replace the pin",
-				profile, existing.ServerName, apiclient.ShortInstanceID(existing.InstanceID), existing.Fingerprint, apiURL, got, prog, profile)
+			return nil, fmt.Errorf("fix: %s auth login --reauth --profile %s (if the server was reinstalled), or use the right --api-url. Profile %q is pinned to %q (%s) but %s is %s",
+				prog, profile, profile, existing.ServerName, apiclient.ShortInstanceID(existing.InstanceID), apiURL, got)
 		}
 	}
 	if info != nil {

@@ -1,10 +1,10 @@
 // Overview traffic tiles: one GET /apps/{name}/requests over two windows,
-// split client-side into "now" and "previous" so each tile can show a delta.
+// the server returns the window summary and the previous equal window for deltas.
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { fetchRequestSeries } from './requests'
-import type { RequestPoint } from '../types/requests'
+import type { RequestSeries, RequestSummary } from '../types/requests'
 import {
   TRAFFIC_REFETCH_MS,
   TRAFFIC_WINDOW_MINUTES,
@@ -16,7 +16,7 @@ const STEP = '60s'
 export interface WindowStats {
   requests: number
   ratePerSec: number
-  /** 4xx plus 5xx as a 0 to 1 share of requests. */
+  /** 4xx plus 5xx as a 0 to 1 share of requests (the Apps list counts 5xx only). */
   errorRate: number
   p95Ms: number
 }
@@ -30,54 +30,57 @@ export interface TrafficStats {
   p95Series: number[]
 }
 
-function windowStats(
-  points: RequestPoint[],
-  windowMinutes: number,
-): WindowStats {
-  const requests = points.reduce((s, p) => s + p.requests, 0)
-  // The API omits idle minutes, so divide by the window length, not the point count.
-  const ratePerSec = requests / (windowMinutes * 60)
-  const errors = points.reduce(
-    (s, p) => s + p.requests * (p.error_rate_4xx + p.error_rate_5xx),
-    0,
-  )
-  const p95 = points.reduce((s, p) => s + p.requests * p.p95_ms, 0)
+const EMPTY_WINDOW: WindowStats = {
+  requests: 0,
+  ratePerSec: 0,
+  errorRate: 0,
+  p95Ms: 0,
+}
+
+// Server summaries come from merged histograms, so p95 is a real percentile
+// of the window rather than an average of per-minute values.
+function summaryStats(s: RequestSummary | undefined): WindowStats {
+  if (!s) return EMPTY_WINDOW
   return {
-    requests,
-    ratePerSec,
-    errorRate: requests > 0 ? errors / requests : 0,
-    p95Ms: requests > 0 ? p95 / requests : 0,
+    requests: s.requests,
+    ratePerSec: s.rate_per_sec,
+    errorRate: s.error_rate_4xx + s.error_rate_5xx,
+    p95Ms: s.p95_ms,
   }
 }
 
-export function computeTraffic(
-  points: RequestPoint[],
-  windowMinutes: number,
-  nowMs: number,
-): TrafficStats {
-  const cutoff = nowMs - windowMinutes * MS_PER_MINUTE
-  const current = points.filter((p) => Date.parse(p.timestamp) > cutoff)
-  const previous = points.filter((p) => Date.parse(p.timestamp) <= cutoff)
-  const cur = windowStats(current, windowMinutes)
-  const prev = windowStats(previous, windowMinutes)
+export function computeTraffic(series: RequestSeries): TrafficStats {
+  const points = series.points ?? []
+  const cur = summaryStats(series.summary)
+  const prev = summaryStats(series.previous_summary)
   return {
     hasTraffic: cur.requests + prev.requests > 0,
     current: cur,
     previous: prev,
-    rateSeries: current.map((p) => p.rate_per_sec),
-    errorSeries: current.map(
-      (p) => (p.error_rate_4xx + p.error_rate_5xx) * 100,
-    ),
-    p95Series: current.map((p) => p.p95_ms),
+    rateSeries: points.map((p) => p.rate_per_sec),
+    errorSeries: points.map((p) => (p.error_rate_4xx + p.error_rate_5xx) * 100),
+    p95Series: points.map((p) => p.p95_ms),
   }
 }
 
-/** Percent change versus the previous window, undefined without a baseline. */
+/**
+ * Percent change versus the previous window. Undefined without a baseline or
+ * when either window has fewer requests than minSample, so tiny samples never
+ * produce a huge badge.
+ */
 export function percentChange(
   current: number,
   previous: number,
+  samples?: { current: number; previous: number; minSample: number },
 ): number | undefined {
   if (previous <= 0) return undefined
+  if (
+    samples &&
+    (samples.current < samples.minSample ||
+      samples.previous < samples.minSample)
+  ) {
+    return undefined
+  }
   return ((current - previous) / previous) * 100
 }
 
@@ -92,13 +95,15 @@ export function useAppTraffic(appName: string) {
     queryFn: async (): Promise<TrafficStats> => {
       const now = Date.now()
       const series = await fetchRequestSeries(appName, {
-        from: new Date(now - 2 * TRAFFIC_WINDOW_MINUTES * MS_PER_MINUTE),
+        from: new Date(now - TRAFFIC_WINDOW_MINUTES * MS_PER_MINUTE),
         to: new Date(now),
         step: STEP,
+        compare: true,
       })
-      return computeTraffic(series.points ?? [], TRAFFIC_WINDOW_MINUTES, now)
+      return computeTraffic(series)
     },
     refetchInterval: TRAFFIC_REFETCH_MS,
     retry: false,
+    placeholderData: keepPreviousData,
   })
 }

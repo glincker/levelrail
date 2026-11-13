@@ -195,10 +195,11 @@ type Router struct {
 	compliance             *compliance.Service                 // nil until SetCompliance: compliance routes answer 501
 	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
 	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
-	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	traces                 TraceStore                          // nil is valid: trace routes answer 501
-	logPipelines           LogPipelineStore                    // nil is valid: log pipeline routes answer 501
-	logBudgets             LogBudgetStore                      // nil is valid: log budget routes answer 501
+	crashBreaker           atomic.Pointer[CrashBreaker]
+	telemetry              TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	traces                 TraceStore       // nil is valid: trace routes answer 501
+	logPipelines           LogPipelineStore // nil is valid: log pipeline routes answer 501
+	logBudgets             LogBudgetStore   // nil is valid: log budget routes answer 501
 	logUsageCache          logUsageCache
 	traceKeys              traceKeyCache
 	errTrack               errorTrackingState
@@ -434,6 +435,8 @@ type Router struct {
 	// nil is valid, the same "unset means unthrottled" shape apiRateLimit
 	// above establishes. Set via WithWebhookRateLimit.
 	webhookRateLimit *apiRateLimiter
+	// webhookIPRateLimit is the same route's per-client-IP budget across all app names. nil means unthrottled.
+	webhookIPRateLimit *apiRateLimiter
 	// tokenRedeemRateLimit throttles the unauthenticated token-redeeming
 	// routes (reset-password, invite accept) per client IP. nil means unthrottled.
 	tokenRedeemRateLimit *apiRateLimiter

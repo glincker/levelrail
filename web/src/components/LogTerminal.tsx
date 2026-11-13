@@ -14,6 +14,8 @@ import {
   logLinesToText,
   type LogFilter,
 } from '../lib/logFilter'
+import { useNowTick } from '../hooks/useNowTick'
+import { readLogSelection } from '../lib/logSelection'
 import { LogRow, LOG_ROW_HEIGHT_PX as ROW_HEIGHT_PX } from './LogRow'
 import { LogToolbar } from './LogToolbar'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
@@ -75,6 +77,8 @@ export function LogTerminal({
 }) {
   const { t } = useTranslation('observability')
   const [isFullscreen, setIsFullscreen] = useState(false)
+  // Long JSON lines wrap by default so nothing is clipped.
+  const [wrap, setWrap] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [filter, setFilter] = useState<LogFilter>({
     text: '',
@@ -86,6 +90,9 @@ export function LogTerminal({
     [allLines, filter],
   )
   const parentRef = useRef<HTMLDivElement>(null)
+  // Tick only when the stream actually carries timestamps.
+  const hasTimes = allLines[allLines.length - 1]?.at !== undefined
+  const now = useNowTick(hasTimes)
   // The toggle button unmounts and remounts as a fresh DOM node across
   // the fullscreen transition (the Dialog portals `body` elsewhere
   // entirely), so the browser's own "what had focus before the popup
@@ -199,8 +206,15 @@ export function LogTerminal({
     virtualizer.scrollToIndex(idx, { align: 'center' })
   }, [lines, pauseTracked, virtualizer])
 
-  const handleCopy = useCallback(
+  const handleCopyAll = useCallback(
     () => navigator.clipboard.writeText(logLinesToText(lines)),
+    [lines],
+  )
+  const handleCopySelection = useCallback(
+    () =>
+      navigator.clipboard.writeText(
+        readLogSelection(parentRef.current) || logLinesToText(lines),
+      ),
     [lines],
   )
   const handleDownload = useCallback(() => {
@@ -227,9 +241,12 @@ export function LogTerminal({
         onFilterChange={setFilter}
         shown={lines.length}
         total={allLines.length}
-        onCopy={handleCopy}
+        onCopySelection={handleCopySelection}
+        onCopyAll={handleCopyAll}
         onDownload={handleDownload}
         onJumpToError={handleJumpToError}
+        wrap={wrap}
+        onWrapChange={setWrap}
       />
       <div
         ref={parentRef}
@@ -273,6 +290,8 @@ export function LogTerminal({
                   }}
                   measure={virtualizer.measureElement}
                   highlight={filter.text}
+                  wrap={wrap}
+                  now={now}
                 />
               )
             })}

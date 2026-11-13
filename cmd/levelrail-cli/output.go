@@ -361,7 +361,7 @@ func printAppsTable(out io.Writer, apps []appResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT\tNODE\tENV")
+	_, _ = fmt.Fprintln(tw, "NAME\tSTATUS\tIMAGE\tPORT\tNODE\tENV")
 	for _, a := range apps {
 		port := fmt.Sprintf("%d", a.Port)
 		if len(a.PublishedPorts) > 0 {
@@ -375,7 +375,11 @@ func printAppsTable(out io.Writer, apps []appResource) {
 		if a.EnvDirty {
 			env = "pending restart"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", a.Name, a.Image, port, node, env)
+		status := "-"
+		if a.Status != nil && a.Status.Label != "" {
+			status = a.Status.Label
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", a.Name, status, a.Image, port, node, env)
 	}
 	_ = tw.Flush()
 }

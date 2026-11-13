@@ -187,3 +187,59 @@ func TestCacheConfig_String(t *testing.T) {
 		})
 	}
 }
+
+func TestCacheConfigForApp(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  CacheConfig
+		id   string
+		want string
+	}{
+		{"no registry unchanged", CacheConfig{Dir: "/c"}, "web", ""},
+		{"plain base", CacheConfig{RegistryRef: "127.0.0.1:5000/buildcache"}, "web", "127.0.0.1:5000/buildcache/web:cache"},
+		{"tagged base drops its tag", CacheConfig{RegistryRef: "example.com/cache:old"}, "web", "example.com/cache/web:cache"},
+		{"host port is not a tag", CacheConfig{RegistryRef: "example.com:5000"}, "web", "example.com:5000/web:cache"},
+		{"empty id falls back", CacheConfig{RegistryRef: "example.com/cache"}, "", "example.com/cache/shared:cache"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.cfg.ForApp(tt.id)
+			if got.RegistryRef != tt.want {
+				t.Fatalf("RegistryRef = %q, want %q", got.RegistryRef, tt.want)
+			}
+			if got.Dir != tt.cfg.Dir || got.RegistryInsecure != tt.cfg.RegistryInsecure {
+				t.Fatalf("other fields changed: %+v", got)
+			}
+		})
+	}
+}
+
+func TestTwoAppsNeverShareARegistryRef(t *testing.T) {
+	base := CacheConfig{RegistryRef: "127.0.0.1:5000/buildcache", RegistryInsecure: true}
+	reqs := []Request{
+		{Tag: "reg/app-one:abc"}, {Tag: "reg/app-two:abc"}, {Tag: "reg/app-one:def", CacheID: "app-one-pr-7"},
+		{Tag: "reg/Weird_App.v2:1"},
+	}
+	seen := map[string]string{}
+	for _, r := range reqs {
+		cfg := base.ForApp(r.cacheID())
+		if prev, dup := seen[cfg.RegistryRef]; dup {
+			t.Fatalf("%s and %s share %s", prev, r.Tag, cfg.RegistryRef)
+		}
+		seen[cfg.RegistryRef] = r.Tag
+		if cfg.RegistryRef == base.RegistryRef {
+			t.Fatalf("legacy shared ref reused for %s", r.Tag)
+		}
+	}
+}
+
+func TestPerAppRefAppearsOnImportAndExport(t *testing.T) {
+	cfg := CacheConfig{RegistryRef: "example.com/buildcache", RegistryInsecure: true}.ForApp("web")
+	imports, exports, err := cfg.entries()
+	if err != nil || len(imports) != 1 || len(exports) != 1 {
+		t.Fatalf("entries: %v %d %d", err, len(imports), len(exports))
+	}
+	if imports[0].Attrs["ref"] != "example.com/buildcache/web:cache" || exports[0].Attrs["ref"] != imports[0].Attrs["ref"] || exports[0].Attrs["insecure"] != "true" {
+		t.Fatalf("imports %+v exports %+v", imports[0].Attrs, exports[0].Attrs)
+	}
+}

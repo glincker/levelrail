@@ -517,8 +517,7 @@ func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp
 		app.Notes = append(app.Notes, Note{Reason: "unknown build pack " + a.BuildPack, Manual: "set the build method after import"})
 	}
 	if app.Kind == SourceGit {
-		app.GitURL = gitURLFromRepo(a.GitRepository, "github.com")
-		app.scrubGitURL()
+		app.setGitURL(a.GitRepository)
 		app.GitBranch = a.GitBranch
 	}
 	httpCheck := a.HealthCheckType == "" || strings.EqualFold(a.HealthCheckType, "http")

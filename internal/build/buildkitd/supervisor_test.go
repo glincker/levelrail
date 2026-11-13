@@ -90,7 +90,7 @@ func TestBuildkitdCreatesWithHardenedSpec(t *testing.T) {
 		t.Fatalf("socket dir mode %v err %v", fi, err)
 	}
 	body, _ := os.ReadFile(filepath.Join(s.cfg.ConfigDir, "buildkitd.toml"))
-	if !strings.Contains(string(body), "keepBytes = 104857600") {
+	if !strings.Contains(string(body), "maxUsedSpace = \"100MB\"") {
 		t.Fatalf("toml: %s", body)
 	}
 }

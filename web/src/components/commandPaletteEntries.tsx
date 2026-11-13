@@ -1,4 +1,5 @@
 import * as React from 'react'
+import type { RowDragProps } from '../hooks/usePinDrop'
 import { useTranslation } from 'react-i18next'
 import { LockGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
@@ -58,12 +59,15 @@ export function ResultRow({
   active,
   query = '',
   onSelect,
+  drag,
 }: {
   item: PaletteItem
   query?: string
   optionId: string
   active: boolean
   onSelect: () => void
+  /** Pointer handlers that make the row draggable onto the bubbles. */
+  drag?: RowDragProps
 }) {
   const ref = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
@@ -78,7 +82,14 @@ export function ResultRow({
       aria-selected={active}
       data-active={active}
       tabIndex={-1}
-      onClick={onSelect}
+      onClick={() => {
+        if (drag?.takeClick()) return
+        onSelect()
+      }}
+      onPointerDown={drag?.onPointerDown}
+      onPointerMove={drag?.onPointerMove}
+      onPointerUp={drag?.onPointerUp}
+      onPointerCancel={drag?.onPointerCancel}
       className={cn(
         'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-start text-[15px] outline-none',
         active

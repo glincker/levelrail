@@ -1,4 +1,7 @@
-# Prometheus scrape endpoint
+---
+title: "Prometheus scrape endpoint"
+description: "Scrape app, database, node and deploy metrics from GET /metrics with a read token."
+---
 
 `GET /metrics` serves app, database, node and deploy metrics in the Prometheus text format. It is never public: every request needs a read token, and a token limited to some apps only sees those apps.
 

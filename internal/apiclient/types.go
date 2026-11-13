@@ -133,6 +133,8 @@ type AppResource struct {
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
 	EnvDirty bool `json:"env_dirty"`
+	// Status is the rollup the list endpoint attaches; nil on every other endpoint.
+	Status *AppStatusSummary `json:"status,omitempty"`
 	// RebuildRequired and RebuildKeys are response-only on PUT: build-time
 	// env keys (NEXT_PUBLIC_, VITE_) changed, which need a rebuild to apply.
 	RebuildRequired bool     `json:"rebuild_required,omitempty"`
@@ -1704,6 +1706,10 @@ type DatabaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// TLS and Auth are request-only create options for Redis, Valkey and KeyDB:
+	// tls is required, optional or off; auth is auto or none.
+	TLS  string `json:"tls,omitempty"`
+	Auth string `json:"auth,omitempty"`
 	// AutoPlaced mirrors internal/api's databaseResource.AutoPlaced: see
 	// AppResource's identically-named field doc comment.
 	AutoPlaced bool `json:"auto_placed,omitempty"`

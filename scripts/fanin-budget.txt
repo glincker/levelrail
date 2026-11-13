@@ -26,6 +26,7 @@ internal/envredact 71
 internal/extdb 36
 internal/footprint 182
 internal/frameworks 52
+internal/gitprovider/reporef 46
 internal/gitsshkey 21
 internal/gpu 170
 internal/loadbalancer 180

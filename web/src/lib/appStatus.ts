@@ -37,6 +37,13 @@ export function summarizeAppStatus(
   ) {
     return { label: 'Healthy', variant: 'success' }
   }
+  if (
+    conditions.some(
+      (c) => c.Status === 'Unknown' && c.Reason === 'AwaitingFirstBuild',
+    )
+  ) {
+    return { label: 'Not deployed', variant: 'muted' }
+  }
   return { label: 'Reconciling', variant: 'muted' }
 }
 
@@ -57,7 +64,9 @@ export function isNodeOfflineStatus(conditions: ReconcileCondition[]): boolean {
 export function isOptionalFeatureUnconfigured(c: ReconcileCondition): boolean {
   return (
     c.Status === 'Unknown' &&
-    (c.Reason === 'NotConfigured' || c.Reason === 'Disabled')
+    (c.Reason === 'NotConfigured' ||
+      c.Reason === 'Disabled' ||
+      c.Reason === 'Unverified')
   )
 }
 

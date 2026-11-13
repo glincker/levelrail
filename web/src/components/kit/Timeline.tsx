@@ -27,7 +27,7 @@ function Row({ item, last }: { item: TimelineItem; last: boolean }) {
   const content = (
     <>
       <div className="flex min-w-0 flex-col">
-        <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+        <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium [overflow-wrap:anywhere]">
           {item.title}
           {item.badge}
         </span>

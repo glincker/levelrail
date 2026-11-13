@@ -407,6 +407,9 @@ func (s *bootState) startReconciler() {
 		}
 		return ""
 	})
+	restartBackoff := newRestartBackoff(logger)
+	wireRestartQuarantine(ctx, restartBackoff, db, s.alertingDB, logger)
+	s.apiRouter.SetCrashBreaker(restartBackoff)
 	sourceDeps := dynamicSourceDeps{
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
@@ -432,7 +435,7 @@ func (s *bootState) startReconciler() {
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
 		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
-		restartBackoff:               newRestartBackoff(logger),
+		restartBackoff:               restartBackoff,
 		retainedDeploys:              &deployurls.Guard{Store: db, Max: deployurls.MaxUnreadyFromEnv(os.Getenv)},
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),

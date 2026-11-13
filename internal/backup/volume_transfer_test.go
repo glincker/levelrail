@@ -223,3 +223,25 @@ func TestImportSizeCapLateLeavesVolumeUntouched(t *testing.T) {
 		t.Fatal("an over-cap archive must not clear or write the volume")
 	}
 }
+
+func TestImportChownsRootToArchiveOwner(t *testing.T) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	_ = tw.WriteHeader(&tar.Header{Name: "./", Typeflag: tar.TypeDir, Mode: 0o755, Uid: 101, Gid: 101})
+	_ = tw.Close()
+	_ = gz.Close()
+	f := &fakeTransferRuntime{}
+	if _, err := (&VolumeTransfer{Runtime: f}).Import(context.Background(), "data", &buf, ImportOptions{MaxBytes: 1 << 20}); err != nil {
+		t.Fatal(err)
+	}
+	var chown []string
+	for _, c := range f.cmds {
+		if c[0] == "chown" {
+			chown = c
+		}
+	}
+	if len(chown) != 3 || chown[1] != "101:101" {
+		t.Fatalf("chown cmd = %v", chown)
+	}
+}

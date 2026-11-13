@@ -188,6 +188,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/now", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSleepAppNow))
 	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/wake", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleWakeApp))
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/resume", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleResumeApp))
 
 	// Stop/start (handleStopApp/handleStartApp's own doc comments): same
 	// AbilityDeploy tier as restart above, the same class of lifecycle

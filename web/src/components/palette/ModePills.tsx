@@ -56,7 +56,7 @@ export function ModePills({
               'flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5',
               on
                 ? 'border-transparent bg-foreground text-background'
-                : 'border-border bg-background/60 text-muted-foreground hover:bg-foreground/10 hover:text-foreground',
+                : 'palette-pill border-border text-muted-foreground hover:text-foreground hover:brightness-95',
             )}
           >
             {pill.icon}

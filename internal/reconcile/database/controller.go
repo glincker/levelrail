@@ -259,6 +259,9 @@ type Controller struct {
 	apiKeyCreds     *APIKeyCredentials
 	tls             *TLSMaterial
 	tlsDisabled     bool
+	tlsOptional     bool
+	redisBlocked    bool
+	redisCreds      *RedisCredentials
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	meshEndpoints   meshEndpointResolver
 	meshPorts       MeshPortLookup
@@ -473,10 +476,19 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		return unknownResult("Suspended"), nil
 	}
 
+	if c.redisBlocked && SupportsRedisPassword(desired.Engine) {
+		return credentialsBlockedResult(), nil
+	}
+
+	if desired.PubliclyAccessible && RefusesPublicBind(desired.Engine, c.redisPassword() != "", desired.PublicBindAddress) {
+		err := fmt.Errorf("%s has no password, so it is only published on the host's loopback address", desired.Engine)
+		return notReady("UnauthenticatedExposureRefused", err), nil
+	}
+
 	switch desired.Engine {
 	case store.EngineRedis:
-		command, containerPort := redisCommandAndPort(c.tls, redisServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired))
+		command, containerPort := redisServerArgs(c.tls, c.tlsOptional, c.redisPassword(), redisServerBin)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired), c.redisAccess())
 
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
@@ -561,14 +573,14 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		// under a new name. See the package doc comment for why an
 		// unauthenticated Redis-family database is an accepted posture
 		// here.
-		command, containerPort := redisCommandAndPort(c.tls, keydbServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
+		command, containerPort := redisServerArgs(c.tls, c.tlsOptional, c.redisPassword(), keydbServerBin)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.redisAccess())
 
 	case store.EngineValkey:
 		// Same /data path, port and defaults as Redis and the same TLS flags,
 		// but the TLS command must name the binary the Valkey image ships.
-		command, containerPort := redisCommandAndPort(c.tls, valkeyServerBin)
-		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired))
+		command, containerPort := redisServerArgs(c.tls, c.tlsOptional, c.redisPassword(), valkeyServerBin)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls, c.engineParamsSpec(desired), c.redisAccess())
 
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
@@ -773,7 +785,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		spec.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: desired.PublicPort, HostIP: hostIP}}
 	}
 	meshPort := containerPort
-	if tlsMaterial != nil {
+	if tlsMaterial != nil && !c.tlsOptional {
 		if p, ok := TLSContainerPort(desired.Engine); ok {
 			meshPort = p
 		}
@@ -855,6 +867,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		justDeployed = true
 
 	case labelsKnown && tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return replaceFailure(c.dbName, err)
+		}
+		justDeployed = true
+
+	case labelsKnown && spec.Labels[redisAccessLabelKey] != state.Labels[redisAccessLabelKey]:
+		// TLS mode or password changed: both live in the command line.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return replaceFailure(c.dbName, err)
 		}
@@ -1186,23 +1205,7 @@ const (
 // resolveDatabaseURL (internal/reconcile/application) never verifies
 // this certificate's issuer, only that the connection is encrypted.
 func redisCommandAndPort(tls *TLSMaterial, bin string) ([]string, int) {
-	if tls == nil {
-		return nil, redisContainerPort
-	}
-	command := []string{bin}
-	if bin == keydbServerBin {
-		// The KeyDB image turns protected mode off only inside its conf file, which a bare
-		// flag command would drop, so keep the conf and disable it explicitly.
-		command = append(command, keydbConfPath, "--protected-mode", "no")
-	}
-	command = append(command,
-		"--tls-port", strconv.Itoa(redisTLSContainerPort),
-		"--port", "0",
-		"--tls-cert-file", certsMountPath+"/"+tlsCertFile,
-		"--tls-key-file", certsMountPath+"/"+tlsKeyFile,
-		"--tls-auth-clients", "no",
-	)
-	return command, redisTLSContainerPort
+	return redisServerArgs(tls, false, "", bin)
 }
 
 // dragonflyCommand overrides the image's default CMD: its entrypoint.sh

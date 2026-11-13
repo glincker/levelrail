@@ -167,3 +167,26 @@ func TestHandleGitPushWebhook_RateLimit_DisabledByDefault(t *testing.T) {
 		}
 	}
 }
+
+func TestHandleGitPushWebhook_IPRateLimit_IgnoresAppName(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(newFakeGitSourceSecrets()), WithWebhookIPRateLimit(2))
+	post := func(name, addr string) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/"+name, strings.NewReader("{}"))
+		req.RemoteAddr = addr
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for i, name := range []string{"a", "b"} {
+		if got := post(name, "203.0.113.20:1"); got != http.StatusUnauthorized {
+			t.Fatalf("attempt %d: status = %d, want 401", i, got)
+		}
+	}
+	if got := post("c", "203.0.113.20:1"); got != http.StatusTooManyRequests {
+		t.Fatalf("third distinct name: status = %d, want 429", got)
+	}
+	if got := post("a", "203.0.113.21:1"); got != http.StatusUnauthorized {
+		t.Fatalf("other client: status = %d, want 401", got)
+	}
+}

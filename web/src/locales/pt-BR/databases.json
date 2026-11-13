@@ -1118,5 +1118,30 @@
     "failed": "Não foi possível atualizar os parâmetros",
     "note": "Limpe um campo para voltar ao padrão do mecanismo.",
     "pendingNote": "Aplicar reinicia o banco de dados. Uma inicialização após uma parada também o aplica."
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "Senha",
+    "tlsMode": {
+      "required": "Obrigatório",
+      "optional": "Opcional (TLS e sem criptografia)",
+      "off": "Desativado"
+    },
+    "authMode": {
+      "auto": "Gerar uma",
+      "none": "Nenhuma"
+    }
+  },
+  "cacheConnect": {
+    "title": "Conectar",
+    "host": "Host",
+    "port": "Porta",
+    "tlsPort": "Porta TLS",
+    "tlsRequired": "TLS obrigatório",
+    "tlsOptional": "TLS opcional",
+    "makeOptional": "Permitir também sem criptografia",
+    "optionalHint": "Oferece TLS ao lado da porta privada sem criptografia para que clientes antigos ainda se conectem. O banco de dados reinicia.",
+    "optionalToast": "O TLS agora é opcional, o banco de dados vai reiniciar",
+    "optionalFailed": "Não foi possível alterar o TLS"
   }
 }

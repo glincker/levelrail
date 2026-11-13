@@ -129,6 +129,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 	}
 
 	resp.WebhookRegistered = true
+	resp.WebhookSecret = ""
 	rt.recordWebhookRegistration(ctx, req.AppName, nil)
 	rt.logger.Info("api: github repo connected as git source", slog.String("app_name", req.AppName), slog.String("owner", owner), slog.String("repo", repo), slog.Bool("creating", result.Creating))
 	writeJSON(w, status, resp)

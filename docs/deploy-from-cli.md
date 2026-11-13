@@ -49,6 +49,8 @@ https://demo-app.203-0-113-10.sslip.io
 
 On the first deploy of a new domain the certificate is requested only when the app goes live, so the URL can refuse connections for up to a minute. When the certificate is not issued yet, the summary adds `live on <url> (certificate is being issued, usually under a minute)` on stderr, and `--json` carries `"certificate": "pending"`. Pass `--wait-url` to block until it is issued (limit `APP_DEPLOY_CERT_WAIT`, default 2m).
 
+An upload is a one-off build: pushing to the repository afterwards does not deploy it. When the directory is a git checkout whose `origin` remote is a repository URL and the app has no git source yet, a healthy deploy (here and in `up`) ends with one line on stderr naming the exact `apps git-source set APP --repo URL --branch BRANCH` command to connect it. Nothing is connected for you. Set `APP_GIT_SOURCE_HINT=off` to hide the line.
+
 The exit code is 0 for a healthy deploy, 7 when the deploy failed or rolled back and a timeout code when `--timeout` (default 15 minutes) ends before the deploy finishes. The deploy itself keeps running after a timeout.
 
 ## What is uploaded

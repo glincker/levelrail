@@ -13,6 +13,7 @@ import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
 import { NoBackupsCard } from '../../../components/databases/NoBackupsCard'
 import { engineHasBackups } from '@/lib/databaseCatalog'
+import { isCacheEngine } from '@/lib/cacheAccess'
 import { PointInTimeRestoreSection } from '../../../components/PointInTimeRestoreSection'
 import { MajorUpgradeCard } from '../../../components/MajorUpgradeCard'
 import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAccessCard'
@@ -26,6 +27,11 @@ const ConnectionCard = lazy(() =>
   import('../../../components/databases/overview/ConnectionCard').then((m) => ({
     default: m.ConnectionCard,
   })),
+)
+const CacheConnectionCard = lazy(() =>
+  import('../../../components/databases/overview/CacheConnectionCard').then(
+    (m) => ({ default: m.CacheConnectionCard }),
+  ),
 )
 const DatabaseDataActionsCard = lazy(() =>
   import('../../../components/databases/DatabaseDataActionsCard').then((m) => ({
@@ -158,6 +164,11 @@ function OverviewSection() {
           <ConnectionCard database={database} />
         </Suspense>
       )}
+      {!database.provision_state && isCacheEngine(database.engine) ? (
+        <Suspense fallback={null}>
+          <CacheConnectionCard database={database} />
+        </Suspense>
+      ) : null}
 
       <DatabaseLinksCard database={database.name} />
       <Suspense fallback={null}>

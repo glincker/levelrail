@@ -117,6 +117,7 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 // so a build dispatched to this node from a control plane can export the
 // same tar onto the wire instead (SolveRemote, remote.go).
 func (c *Client) solveDockerfile(ctx context.Context, req Request, cache CacheConfig, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
+	cache = cache.ForApp(req.cacheID())
 	if req.S3Cache != nil {
 		cache.S3 = req.S3Cache
 	}

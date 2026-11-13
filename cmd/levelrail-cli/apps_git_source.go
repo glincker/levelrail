@@ -115,7 +115,8 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	var repoURL, branch, buildType, buildPath, token, triggerMode, baseDirectory string
 	fs.StringVar(&repoURL, "repo-url", "", "repo URL to connect (required)")
 	fs.StringVar(&repoURL, "repo", "", "alias for --repo-url")
-	var deployNow bool
+	var deployNow, showSecret bool
+	fs.BoolVar(&showSecret, "show-secret", false, "print the webhook secret generated on first connect (hidden by default, also from --json)")
 	fs.BoolVar(&deployNow, "deploy", false, "build and deploy the branch right after connecting; the running image serves until the build succeeds")
 	fs.StringVar(&branch, "branch", "", "branch to deploy on push (default: the server's default branch)")
 	fs.StringVar(&buildType, "build-type", "", "dockerfile, railpack, or static (default: dockerfile)")
@@ -180,11 +181,10 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source for app %q: %w", name, err))
 	}
 
+	gs, withheld := withholdWebhookSecret(gs, showSecret)
 	if err := renderResult(stdout, of.Format, of.Query, gs, func() {
 		printGitSourceHuman(stdout, gs)
-		if gs.WebhookSecret != "" {
-			_, _ = fmt.Fprintf(stdout, "webhook_secret: %s (shown once, will not be shown again)\n", gs.WebhookSecret)
-		}
+		printWebhookSecretNotice(stdout, prog, name, gs.WebhookSecret, withheld)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -324,5 +324,24 @@ func printGitSourceReliability(out io.Writer, gs gitSourceResource) {
 		if p.Error != "" {
 			_, _ = fmt.Fprintf(out, "poll_error:     %s\n", p.Error)
 		}
+	}
+}
+
+// withholdWebhookSecret drops the one-time webhook secret from gs unless show is set, and reports whether one was dropped.
+func withholdWebhookSecret(gs gitSourceResource, show bool) (gitSourceResource, bool) {
+	if show || gs.WebhookSecret == "" {
+		return gs, false
+	}
+	gs.WebhookSecret = ""
+	return gs, true
+}
+
+// printWebhookSecretNotice shows the secret when it was asked for, or points at the rotate command when it was withheld.
+func printWebhookSecretNotice(w io.Writer, prog, name, secret string, withheld bool) {
+	switch {
+	case secret != "":
+		_, _ = fmt.Fprintf(w, "webhook_secret: %s (shown once, will not be shown again)\n", secret)
+	case withheld:
+		_, _ = fmt.Fprintf(w, "webhook secret not shown. To paste one into the git provider, run: %s apps git-source webhook %s --rotate\n", prog, name)
 	}
 }

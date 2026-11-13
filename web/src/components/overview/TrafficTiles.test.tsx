@@ -81,6 +81,30 @@ describe('TrafficTiles', () => {
     expect(screen.getAllByTestId('metric-delta')[0]).toHaveTextContent('100%')
   })
 
+  it('hides delta badges and shows raw counts and per-minute units on tiny samples', () => {
+    const tiny = {
+      requests: 8,
+      ratePerSec: 8 / 1800,
+      errorRate: 0.125,
+      p95Ms: 90,
+    }
+    state = {
+      isPending: false,
+      isError: false,
+      data: {
+        ...stats(),
+        current: tiny,
+        previous: { requests: 1, ratePerSec: 0.0005, errorRate: 0, p95Ms: 10 },
+      },
+    }
+    render(<TrafficTiles appName="web" url="https://a.io" />)
+    expect(screen.queryAllByTestId('metric-delta')).toHaveLength(0)
+    expect(screen.getByText('req/min')).toBeInTheDocument()
+    expect(
+      screen.getByText(/8 requests in 30 min, low traffic/),
+    ).toBeInTheDocument()
+  })
+
   it('shows an inline error with retry', () => {
     state = { isPending: false, isError: true }
     render(<TrafficTiles appName="web" url="https://a.io" />)

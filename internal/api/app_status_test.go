@@ -63,9 +63,32 @@ func TestSummarizeAppConditions(t *testing.T) {
 			want: appStatusSummary{Label: "Healthy", Variant: "success"},
 		},
 		{
-			name: "a genuinely pending unknown condition still reconciles",
+			name: "an unverified side check does not block healthy",
+			conditions: []reconcile.Condition{
+				{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Deployed"},
+				{Type: "VolumesWritable", Status: reconcile.ConditionUnknown, Reason: "Unverified"},
+			},
+			want: appStatusSummary{Label: "Healthy", Variant: "success"},
+		},
+		{
+			name: "an unwritable volume needs attention",
+			conditions: []reconcile.Condition{
+				{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Deployed"},
+				{Type: "VolumesWritable", Status: reconcile.ConditionFalse, Reason: "VolumeNotWritable", Message: "volume /app/.next/cache is not writable by user 1001"},
+			},
+			want: appStatusSummary{Label: "Attention needed", Variant: "destructive", Reason: "VolumeNotWritable", Message: "volume /app/.next/cache is not writable by user 1001"},
+		},
+		{
+			name: "an app awaiting its first build is not deployed",
 			conditions: []reconcile.Condition{
 				{Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "AwaitingFirstBuild"},
+			},
+			want: appStatusSummary{Label: "Not deployed", Variant: "muted", Reason: "AwaitingFirstBuild", Message: notDeployedHint},
+		},
+		{
+			name: "a genuinely pending unknown condition still reconciles",
+			conditions: []reconcile.Condition{
+				{Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "PullingImage"},
 			},
 			want: appStatusSummary{Label: "Reconciling", Variant: "muted"},
 		},

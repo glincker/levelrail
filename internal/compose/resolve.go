@@ -2,6 +2,8 @@ package compose
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -110,7 +112,9 @@ func resolveMagicVars(
 			continue
 		}
 		newEnv := make(Environment, len(svc.Environment))
-		for envKey, value := range svc.Environment {
+		// Sorted so unresolved, warnings and persist order are deterministic.
+		for _, envKey := range slices.Sorted(maps.Keys(svc.Environment)) {
+			value := svc.Environment[envKey]
 			if interpolate {
 				var ierr error
 				value, ierr = interpolateValue(value, f.InterpVars, func(w string) {

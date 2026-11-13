@@ -103,5 +103,8 @@ func runAppsVolumesImport(prog string, args []string, stdout, stderr io.Writer, 
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		_, _ = fmt.Fprintf(stdout, "imported %d entries (%d bytes) into %s/%s\n", res.Entries, res.Bytes, rest[0], rest[1])
+		if res.Warning != "" {
+			_, _ = fmt.Fprintf(stderr, "warning: %s\n", res.Warning)
+		}
 	})
 }

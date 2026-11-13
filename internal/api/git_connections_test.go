@@ -545,6 +545,9 @@ func TestGitConnections_UseAsSourceRecordsConnectionAndHooksWithItsToken(t *test
 	if res.ConnectionID != b.ID || res.Branch != "trunk" {
 		t.Errorf("resource = %+v", res)
 	}
+	if res.WebhookSecret != "" || strings.Contains(rec.Body.String(), "webhook_secret") {
+		t.Errorf("body = %s, want no webhook secret once the hook is registered for the caller", rec.Body.String())
+	}
 	gs, err := db.GetGitSource(t.Context(), "web")
 	if err != nil || gs.ConnectionID != b.ID {
 		t.Fatalf("stored source connection = %q, err %v; want %q", gs.ConnectionID, err, b.ID)

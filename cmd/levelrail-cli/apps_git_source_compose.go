@@ -14,9 +14,10 @@ func runAppsGitSourceCompose(prog string, args []string, stdout, stderr io.Write
 	repo := fs.String("repo", "", "repository URL (http, https or ssh); omit to show the current source")
 	branch := fs.String("branch", "", "branch whose pushes redeploy the stack (default main)")
 	path := fs.String("path", "", "compose file path relative to the repository root (default compose.yaml)")
+	showSecret := fs.Bool("show-secret", false, "print the webhook secret generated on first connect (hidden by default, also from --json)")
 	trigger := fs.String("trigger-mode", "", "push (default) or the other trigger modes git-source set accepts")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source compose <name> [--repo URL --branch B --path docker/compose.yml] [flags]\n\nDeploys an existing compose app from a compose file in a git repository.\nPushes to the branch redeploy the stack. The webhook secret is shown once.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source compose <name> [--repo URL --branch B --path docker/compose.yml] [flags]\n\nDeploys an existing compose app from a compose file in a git repository.\nPushes to the branch redeploy the stack. The webhook secret is hidden unless --show-secret is set.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps git-source compose", "app name"}, lookupEnv)
@@ -33,12 +34,11 @@ func runAppsGitSourceCompose(prog string, args []string, stdout, stderr io.Write
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("compose git source for app %q: %w", name, err))
 	}
+	gs, withheld := withholdWebhookSecret(gs, *showSecret)
 	if err := renderResult(stdout, of.Format, of.Query, gs, func() {
 		printGitSourceHuman(stdout, gs)
 		_, _ = fmt.Fprintf(stdout, "compose_path: %s\n", gs.ComposePath)
-		if gs.WebhookSecret != "" {
-			_, _ = fmt.Fprintf(stdout, "webhook_secret: %s (shown once, will not be shown again)\n", gs.WebhookSecret)
-		}
+		printWebhookSecretNotice(stdout, prog, name, gs.WebhookSecret, withheld)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

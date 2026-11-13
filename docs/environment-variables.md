@@ -882,6 +882,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
+| `APP_VOLUME_WRITE_PROBE` | on | After each container start, checks once that the app's user can write the root of every volume it mounts, without exec, and reports the result as the `VolumesWritable` condition (`VolumeNotWritable` names the path, user and fix). Nodes whose runtime cannot run the check report `Unverified`, which does not mark the app unhealthy. Set to `0`, `false` or `off` to skip it. Control plane. |
 | `APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS` | ``2`` | Restarts during a rollout before it counts as a crash loop and fails. Control plane. |
 | `APP_DEFAULT_ALERTS` | computed | Set to off to skip creating the default alert rules on first start. Control plane. |
 | `APP_DB_CRASH_LOOP_RESTARTS` | ``3`` | Restarts before a database counts as crash-looping. Control plane. |

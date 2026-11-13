@@ -61,7 +61,7 @@ func runAppsDeploysRollbackTo(prog string, args []string, stdout, stderr io.Writ
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys rollback-to", "print the updated app as JSON to stdout and nothing else", stderr)
 	var confirm bool
 	var extra deployExtraFlags
-	fs.BoolVar(&confirm, "confirm", false, "confirm deploying into a protected environment; omit to be prompted interactively if needed")
+	bindConfirmFlag(fs, &confirm, "confirm deploying into a protected environment; omit to be prompted interactively if needed")
 	fs.BoolVar(&extra.overrideFreeze, "override-freeze", false, "roll back even though a deploy freeze window is active (requires --override-reason)")
 	fs.StringVar(&extra.overrideReason, "override-reason", "", "why this rollback overrides the freeze, recorded on the deploy")
 	var lock bool
@@ -130,6 +130,7 @@ rules as "apps deploy".
 Flags:
   --watch                    follow the rollback's readiness gate until it takes traffic or fails
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
+  --yes, -y                  same as --confirm
   --override-freeze          roll back even though a deploy freeze window is active (requires --override-reason)
   --override-reason string   why this rollback overrides the freeze, recorded on the deploy
   --lock                     also lock publishing so later builds are held until you publish them

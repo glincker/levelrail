@@ -141,6 +141,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithNewDeviceApproval(api.NewDeviceApprovalFromEnv()),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
+		api.WithWebhookIPRateLimit(webhookIPRateLimitRPM(logger)),
 		api.WithTokenRedeemRateLimit(runtimesettings.ClampLimit(runtimesettings.KeyAPIRateLimitRedeem, apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM))),
 		api.WithDataDir(dataDir),
 		api.WithTrustRoot(trustRoot),

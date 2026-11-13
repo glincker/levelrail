@@ -69,7 +69,7 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 		if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
 			return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 		}
-		return finishUploadDeploy(ctx, client, prog, inf, fromHash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
+		return finishUploadDeploy(ctx, client, prog, inf, fromHash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut, nil)
 	}
 
 	st, err := os.Stat(src)
@@ -132,7 +132,7 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 	}
-	return finishUploadDeploy(ctx, client, prog, inf, hash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
+	return finishUploadDeploy(ctx, client, prog, inf, hash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut, nil)
 }
 
 // listZip counts a zip's files and bytes so the plan can be shown before anything is sent.

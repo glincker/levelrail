@@ -16,6 +16,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/fixit"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -230,11 +231,11 @@ func (rt *Router) registerGitSourceWebhook(ctx context.Context, name string, gs 
 }
 
 func repoHostAndPath(repoURL string) (host, path string) {
-	u, err := url.Parse(repoURL)
-	if err != nil || u.Host == "" {
+	r, err := reporef.Parse(repoURL)
+	if err != nil {
 		return "", ""
 	}
-	return strings.ToLower(u.Hostname()), strings.Trim(strings.TrimSuffix(strings.Trim(u.Path, "/"), ".git"), "/")
+	return r.Host, r.Path()
 }
 
 func repoURLHost(raw string) string {

@@ -218,7 +218,7 @@ func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer
 			return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 		}
 		fromHash = hash
-		return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
+		return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut, lookupEnv)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -235,7 +235,7 @@ func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 	}
 	res.Hash = fromHash
-	return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
+	return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut, lookupEnv)
 }
 
 // dirAppName turns the directory's own name into a valid app name, or "" to fall back to detection.
@@ -386,7 +386,7 @@ func packAndUpload(ctx context.Context, client *Client, app string, plan sourceu
 // logDrainGrace lets the last log lines print after the verdict before the follow is cut.
 const logDrainGrace = 2 * time.Second
 
-func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf upInference, hash string, buildEnv map[string]string, timeout, urlWait time.Duration, res *deployUploadResult, stdout, stderr io.Writer, of outputFlags, jsonOut bool) int {
+func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf upInference, hash string, buildEnv map[string]string, timeout, urlWait time.Duration, res *deployUploadResult, stdout, stderr io.Writer, of outputFlags, jsonOut bool, lookupEnv func(string) (string, bool)) int {
 	name := inf.Flags.name
 	req := buildTriggerRequest{
 		UploadHash: hash,
@@ -480,6 +480,10 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		}
 		if res.Status == apiclient.DeployOutcomeStopped {
 			_, _ = fmt.Fprintf(stderr, "%q is stopped, so this deploy was built but is not live. Start it with: %s apps start %s\n", name, prog, name)
+		}
+		// Static drops pass no lookupEnv: they have no build, so no git source to suggest.
+		if res.Status == apiclient.DeployOutcomeHealthy && lookupEnv != nil {
+			printGitSourceHint(ctx, client, prog, name, detectGitAt(inf.Dir).detectedGit, lookupEnv, stderr)
 		}
 		printUploadFailure(stderr, res)
 	})

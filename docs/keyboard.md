@@ -1,4 +1,7 @@
-# Keyboard shortcuts
+---
+title: "Keyboard shortcuts"
+description: "Single-key shortcuts for the dashboard lists and the deployments page."
+---
 
 ## Lists
 

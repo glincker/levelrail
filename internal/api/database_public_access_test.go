@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -116,6 +118,7 @@ func TestHandleSetDatabasePublicAccess_BindAddressDefaultsToPrivate(t *testing.T
 // explicit "public" bind_address is honored and persisted.
 func TestHandleSetDatabasePublicAccess_ExplicitBindAddress(t *testing.T) {
 	rt, db := newTestRouter(t)
+	rt.secrets = &fakeSecretSetter{existsValues: map[string]bool{"main/" + database.RedisPasswordEnvKey: true}}
 	cookie := loginTestSession(t, rt, db)
 	seedRedisDatabaseForTest(t, db)
 
@@ -255,5 +258,39 @@ func TestHandleGetDatabase_SurfacesPublicAccess(t *testing.T) {
 	}
 	if !got.PubliclyAccessible || got.PublicPort != 15432 {
 		t.Errorf("GET response = %+v, want publicly_accessible=true public_port=15432", got)
+	}
+}
+
+func TestHandleSetDatabasePublicAccess_PasswordlessCacheRefusesNonLoopback(t *testing.T) {
+	for _, engine := range []string{store.EngineRedis, store.EngineValkey, store.EngineKeyDB, store.EngineDragonfly} {
+		for _, bind := range []string{"public", "10.0.0.5", "0.0.0.0"} {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: engine, Version: "7"}); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"bind_address":"`+bind+`"}`))
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "private") {
+				t.Fatalf("%s bind %s: status = %d body = %s, want 400 with a fix hint", engine, bind, rec.Code, rec.Body.String())
+			}
+			saved, _ := db.GetDesiredDatabase(context.Background(), "main")
+			if saved.PubliclyAccessible {
+				t.Fatalf("%s bind %s: refused request still persisted public access", engine, bind)
+			}
+		}
+	}
+}
+
+func TestHandleSetDatabasePublicAccess_PasswordlessCacheAllowsLoopback(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedRedisDatabaseForTest(t, db)
+	for _, body := range []string{`{}`, `{"bind_address":"private"}`, `{"bind_address":"127.0.0.1"}`} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", body))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("body %s: status = %d %s, want 200", body, rec.Code, rec.Body.String())
+		}
 	}
 }

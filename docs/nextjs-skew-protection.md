@@ -1,4 +1,7 @@
-# Next.js skew protection, deploy side
+---
+title: "Next.js skew protection, deploy side"
+description: "What the deploy side does so a browser tab on an old Next.js build keeps working after a cutover."
+---
 
 Slices S9 and S10 of ADR 074. A browser tab on an old Next.js build asks for old
 `/_next/static/<hash>` chunks and server action ids after a cutover. This

@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -23,17 +23,26 @@ function renderRow(
   line: string,
   expanded: boolean,
   stream: LogLine['stream'] = 'stdout',
+  wrap?: boolean,
+  at?: number,
+  now?: number,
 ) {
   const onToggle = vi.fn()
   render(
     <I18nextProvider i18n={testI18n}>
       <LogRow
-        logLine={{ id: 1, line, stream }}
+        logLine={
+          at === undefined
+            ? { id: 1, line, stream }
+            : { id: 1, line, stream, at }
+        }
         index={0}
         start={0}
         expanded={expanded}
         onToggle={onToggle}
         measure={() => undefined}
+        wrap={wrap}
+        now={now}
       />
     </I18nextProvider>,
   )
@@ -45,12 +54,27 @@ describe('LogRow', () => {
     cleanup()
   })
 
-  it('shows a level tag and toggles on click', async () => {
-    const { onToggle } = renderRow('WARN disk low', false)
+  it('shows a level tag and keeps the line text in a plain selectable cell', () => {
+    renderRow('WARN disk low', false)
     expect(screen.getByText('WRN')).toBeInTheDocument()
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { expanded: false }))
+    const cell = screen.getByText('WARN disk low')
+    expect(cell).toHaveClass('select-text')
+    expect(cell.closest('button')).toBeNull()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('has no per-line copy control', () => {
+    renderRow('{"level":"error","msg":"boom"}', true)
+    expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
+    expect(screen.queryByText('Copy line')).toBeNull()
+  })
+
+  it('toggles a JSON line from the gutter chevron only', async () => {
+    const { onToggle } = renderRow('{"level":"error","msg":"boom"}', false)
+    const user = userEvent.setup()
+    await user.click(screen.getByText(/"msg":"boom"/))
+    expect(onToggle).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Expand JSON' }))
     expect(onToggle).toHaveBeenCalledOnce()
   })
 
@@ -59,12 +83,14 @@ describe('LogRow', () => {
     expect(
       screen.getByText((c) => c.includes('"msg": "boom"')),
     ).toBeInTheDocument()
-    expect(screen.getByText('Copy line')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Collapse JSON' }),
+    ).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('shows non-JSON lines in full when expanded', () => {
-    renderRow('plain text line', true)
-    expect(screen.getAllByText('plain text line')).toHaveLength(2)
+  it('offers no expand control for plain text lines', () => {
+    renderRow('plain text line', false)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('renders a system line as a translated marker, not raw wire text', () => {
@@ -78,31 +104,40 @@ describe('LogRow', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('announces a copy only on the copied row and clears its timer on unmount', async () => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText: vi.fn().mockResolvedValue(undefined) },
-    })
-    const { unmount } = render(
-      <I18nextProvider i18n={testI18n}>
-        <LogRow
-          logLine={{ id: 1, line: 'hello', stream: 'stdout' }}
-          index={0}
-          start={0}
-          expanded={false}
-          onToggle={() => undefined}
-          measure={() => undefined}
-        />
-      </I18nextProvider>,
-    )
-    expect(screen.queryByRole('status')).toBeNull()
-    await act(async () => {
-      screen.getByRole('button', { name: 'Copy this log line' }).click()
-      await Promise.resolve()
-    })
-    expect(screen.getByRole('status')).toHaveTextContent('Line copied')
-    const clear = vi.spyOn(window, 'clearTimeout')
-    unmount()
-    expect(clear).toHaveBeenCalled()
+  it('wraps long lines by default and never truncates them', () => {
+    const long = `{"msg":"${'x'.repeat(400)}"}`
+    renderRow(long, false)
+    const cell = screen.getByText(long)
+    expect(cell).toHaveClass('whitespace-pre-wrap', 'break-words')
+    expect(cell).not.toHaveClass('truncate')
+  })
+
+  it('keeps one line with sideways scroll when wrap is off', () => {
+    renderRow('plain', false, 'stdout', false)
+    const cell = screen.getByText('plain')
+    expect(cell).toHaveClass('whitespace-pre')
+    expect(cell).not.toHaveClass('truncate', 'whitespace-pre-wrap')
+  })
+
+  it('renders the level as text with an accessible name', () => {
+    renderRow('ERROR boom', false)
+    expect(screen.getByText('ERR')).toBeInTheDocument()
+    expect(
+      screen.getByText('error', { selector: '.sr-only' }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows a relative time with the absolute time in the title', () => {
+    const at = Date.UTC(2026, 10, 12, 12, 0, 0)
+    renderRow('hello', false, 'stdout', true, at, at + 12_000)
+    const time = screen.getByText(/12/, { selector: 'time' })
+    expect(time).toHaveAttribute('datetime', '2026-11-12T12:00:00.000Z')
+    expect(time.getAttribute('title')).toMatch(/2026/)
+    expect(time).toHaveClass('select-none')
+  })
+
+  it('shows no time when the line has none', () => {
+    renderRow('hello', false, 'stdout', true, undefined, Date.now())
+    expect(document.querySelector('time')).toBeNull()
   })
 })

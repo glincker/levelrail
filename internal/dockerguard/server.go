@@ -78,8 +78,14 @@ func listenPrivate(socket string) (net.Listener, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dockerguard: listen on %s: %w", socket, err)
 	}
+	// Close removes the path itself; a late listener close must not unlink a
+	// socket a quick restart has already rebound there.
+	if ul, ok := ln.(*net.UnixListener); ok {
+		ul.SetUnlinkOnClose(false)
+	}
 	if err := os.Chmod(socket, 0o600); err != nil {
 		_ = ln.Close()
+		_ = os.Remove(socket)
 		return nil, fmt.Errorf("dockerguard: chmod %s: %w", socket, err)
 	}
 	return ln, nil

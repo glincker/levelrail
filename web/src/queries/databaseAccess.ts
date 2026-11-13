@@ -283,3 +283,17 @@ export function useSetTlsEnabled(name: string) {
     onSuccess: invalidate,
   })
 }
+
+// Redis, Valkey and KeyDB: serve TLS next to the plain private port.
+export function useSetTlsOptional(name: string) {
+  const invalidate = useInvalidateAccess(name)
+  return useMutation<void, ApiError, void>({
+    mutationFn: () =>
+      request(
+        `${base(name)}/tls`,
+        json('PUT', { enabled: true, mode: 'optional' }),
+        'switch tls to optional',
+      ),
+    onSuccess: invalidate,
+  })
+}

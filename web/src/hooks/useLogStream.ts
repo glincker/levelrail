@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppRunStatus } from '../types/containerExit'
+import { parseLogTime } from '../lib/logTime'
 
 // Generic SSE log-tailing hook, shared by two real backends behind the
 // same wire contract: GET /api/v1/apps/{name}/deploys/{deployId}/logs
@@ -59,6 +60,8 @@ export interface LogLine {
   // after a deploy. Only the live app-log backend ever sends it; the
   // deploy-log backend never does.
   stream: 'stdout' | 'stderr' | 'system'
+  /** Epoch ms from the server's `at`, when the stream provides one. */
+  at?: number
 }
 
 export type LogStreamConnectionState = 'connecting' | 'open' | 'error'
@@ -115,11 +118,13 @@ const MAX_BUFFERED_LINES = 8000
 interface ParsedLogEvent {
   line: string
   stream: 'stdout' | 'stderr' | 'system'
+  at?: number
 }
 
 interface RawLogEventPayload {
   line: string
   stream?: unknown
+  at?: unknown
 }
 
 function isRawLogEventPayload(value: unknown): value is RawLogEventPayload {
@@ -158,7 +163,10 @@ function parseEventPayload(raw: string): ParsedLogEvent {
       } else if (parsed.stream === 'system') {
         stream = 'system'
       }
-      return { line: parsed.line, stream }
+      const at = parseLogTime(parsed.at)
+      return at === undefined
+        ? { line: parsed.line, stream }
+        : { line: parsed.line, stream, at }
     }
   } catch {
     // Not JSON: fall through and treat the whole payload as a bare line.
@@ -277,11 +285,14 @@ export function useLogStream(
           overlapExpected = []
         }
 
-        const { line, stream } = parsed
+        const { line, stream, at } = parsed
         const id = nextIdRef.current
         nextIdRef.current += 1
         setLines((prev) => {
-          const withNewLine = [...prev, { id, line, stream }]
+          const withNewLine = [
+            ...prev,
+            at === undefined ? { id, line, stream } : { id, line, stream, at },
+          ]
           const capped =
             withNewLine.length > MAX_BUFFERED_LINES
               ? withNewLine.slice(withNewLine.length - MAX_BUFFERED_LINES)

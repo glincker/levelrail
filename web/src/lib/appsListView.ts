@@ -16,7 +16,10 @@ export function statusBucket(app: Pick<AppListEntry, 'status'>): StatusBucket {
   const { variant, label } = app.status
   if (variant === 'success') return 'running'
   if (variant === 'destructive') return 'failing'
-  return label === 'Stopped' ? 'stopped' : 'deploying'
+  // A staged app is idle, not in flight, so it must not pulse as deploying.
+  return label === 'Stopped' || label === 'Not deployed'
+    ? 'stopped'
+    : 'deploying'
 }
 
 export function countBuckets(

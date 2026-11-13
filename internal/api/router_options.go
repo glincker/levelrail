@@ -1146,6 +1146,11 @@ func WithWebhookRateLimit(perMinute int) Option {
 	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
 }
 
+// WithWebhookIPRateLimit sets the per-client-IP budget, across every app name, on the git push webhook route. perMinute <= 0 disables it.
+func WithWebhookIPRateLimit(perMinute int) Option {
+	return func(rt *Router) { rt.webhookIPRateLimit = newAPIRateLimiter(perMinute) }
+}
+
 // WithNewDeviceApproval pauses a password login from an untrusted browser
 // until another live session of the account approves it.
 func WithNewDeviceApproval(on bool) Option {

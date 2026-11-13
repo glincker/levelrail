@@ -20,7 +20,7 @@ func appStatusBucket(sum appStatusSummary) string {
 		return appBucketRunning
 	case sum.Variant == "destructive":
 		return appBucketFailing
-	case sum.Label == "Stopped":
+	case sum.Label == "Stopped", sum.Label == "Not deployed":
 		return appBucketStopped
 	default:
 		return appBucketDeploying

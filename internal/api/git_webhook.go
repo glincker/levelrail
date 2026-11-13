@@ -29,7 +29,7 @@ type gitSourceFetchFunc func(ctx context.Context, repoURL, sha, token string) (d
 
 // Multi-app webhook handler for POST /api/v1/webhooks/github/{name}. Unauthenticated by design: GitHub and GitLab cannot present a session,
 // so the per-app secret checked by verifyGitPushWebhookAuth stands in for auth. The URL still says github for already-configured webhooks.
-// Returns 404 when no git source is connected for name; 501 is reserved for control-plane-wide gaps.
+// An app with no git source gets the same 401 as a bad signature; 501 is reserved for control-plane-wide gaps.
 func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	// Explicit text/plain stops clients from sniffing success bodies, which embed pusher-controlled fields, as HTML.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -37,6 +37,14 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	// Rate limit runs first, before the 501 and any DB or secret work, so abusive clients are cheap to reject.
+	if rt.webhookIPRateLimit != nil {
+		// Keyed on the client address alone: an attacker picks the app name, so a per-name key never fills.
+		if allowed, retryAfter := rt.webhookIPRateLimit.allow(clientIP(r)); !allowed {
+			rt.logger.Warn("api: git push webhook: client rate limited", slog.String("remote_addr", r.RemoteAddr))
+			writeRateLimited(w, retryAfter)
+			return
+		}
+	}
 	if rt.webhookRateLimit != nil {
 		key := clientIP(r) + "|" + name
 		if allowed, retryAfter := rt.webhookRateLimit.allow(key); !allowed {
@@ -67,8 +75,10 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 
 	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
 	if errors.Is(err, store.ErrGitSourceNotFound) {
-		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, false, http.StatusNotFound, body, "no git source connected for this app", "")
-		writeError(w, http.StatusNotFound, "no git source connected for this app")
+		// Same answer and no stored row as a bad signature, so the endpoint does not reveal which apps exist or grow the table.
+		verifyGitPushWebhookAuth("unknown-app-placeholder-secret", body, r.Header)
+		rt.logger.Warn("api: git push webhook: no git source for the requested app", slog.String("remote_addr", r.RemoteAddr))
+		writeError(w, http.StatusUnauthorized, "invalid signature")
 		return
 	}
 	if err != nil {

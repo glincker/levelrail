@@ -84,7 +84,9 @@
     "copyLineAria": "Copiar esta línea del registro",
     "copyLine": "Copiar línea",
     "copied": "Copiado",
-    "lineCopied": "Línea copiada"
+    "lineCopied": "Línea copiada",
+    "expandJson": "Expandir JSON",
+    "collapseJson": "Contraer JSON"
   },
   "sessionLink": {
     "signingIn": "Iniciando tu sesión...",

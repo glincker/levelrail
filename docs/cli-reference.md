@@ -76,13 +76,13 @@ Exit codes are stable and shared by every command:
 | Code | Meaning |
 | --- | --- |
 | 0 | Success |
-| 1 | Usage error (unknown command, missing argument, bad flag); also a failed check for `control-plane-backups verify` and a critical item for `attention` |
-| 2 | Validation error: well-formed flags, but the request they describe is invalid |
+| 1 | Usage error (unknown command, missing argument, bad flag); also a failed check for `control-plane-backups verify`, a critical item for `attention`, and a `doctor` report that is not all clear (table output) |
+| 2 | Validation error: well-formed flags, but the request they describe is invalid; also "changes pending" for `diff` and for `apply --dry-run --exit-code`, and an invalid file for `apps validate-spec` |
 | 3 | Network error: the control plane could not be reached |
 | 4 | API error: the control plane replied with a non-2xx status (use `code` and `http_status` in the JSON error to tell auth, not found and conflict apart) |
 | 5 | Deploy failed: `apps wait` reached a failed deploy |
 | 6 | Deploy timeout: `apps wait` or `apps deploys wait` gave up before the deploy converged |
-| 7 | `apps deploys wait` ended on a deploy that failed, was canceled, superseded or blocked |
+| 7 | `apps deploys wait` ended on a deploy that failed, was canceled, superseded or blocked; `go-live --wait` ended with the domain not live |
 | 10 | `update --check --exit-code` found a newer CLI release (the check itself worked) |
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.

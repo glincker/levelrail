@@ -1,4 +1,7 @@
-# Web vitals
+---
+title: "Web vitals"
+description: "Collect real user LCP, INP, CLS, TTFB and FCP for an app without a vendor SDK."
+---
 
 Levelrail collects real user LCP, INP, CLS, TTFB and FCP for an app with no vendor SDK. Vendor analytics SDKs from a typical managed platform do nothing elsewhere, so this replaces them.
 

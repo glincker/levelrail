@@ -324,6 +324,7 @@ type Controller struct {
 	dependsOnTimeout    func(context.Context) time.Duration // nil waits forever, see WithDependsOnTimeout
 	dependsOnMu         sync.Mutex
 	dependsOnSince      map[string]dependencyWait // first pass a service waited on a dependency
+	volumeWrites        volumeWriteMemo           // last volume write check per container, see probeVolumeWrites
 }
 
 // Option configures optional Controller behavior.
@@ -766,7 +767,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	} else {
 		c.reviveLastReady(ctx, targets, desired)
 	}
-	return c.appendEgressCondition(ctx, result, targets, desired), err
+	return c.appendVolumeWriteCondition(c.appendEgressCondition(ctx, result, targets, desired), targets), err
 }
 
 func isReady(r reconcile.Result) bool {
@@ -1089,6 +1090,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		justDeployed = true
 		created = true
 	case !state.Running:
+		if held, restarts := c.restartBackoff.Quarantined(target); held {
+			return replicaOutcome{reason: reasonQuarantined}, errors.New(deploysafety.QuarantineMessage(target, restarts))
+		}
 		if wait, restarts := c.restartBackoff.remaining(target, time.Now()); wait > 0 {
 			return replicaOutcome{reason: reasonCrashLoopBackOff}, errors.New(deploysafety.CrashLoopMessage(target, restarts, wait))
 		}
@@ -1127,6 +1131,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if !justDeployed {
+		if held, restarts := c.dockerRestartLoop(ctx, target, state); held {
+			return replicaOutcome{reason: reasonQuarantined}, errors.New(deploysafety.QuarantineMessage(target, restarts))
+		}
 		c.restartBackoff.observeRunning(target, time.Now())
 		defers := c.defersReadiness(desired)
 		if defers {
@@ -1509,6 +1516,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	startSpan.Done(ctx, name+" is running")
+	c.probeVolumeWrites(ctx, tr, name, id, spec.Volumes)
 	if err := c.connectExternalNetworks(ctx, desired, name); err != nil {
 		return err
 	}
@@ -2031,11 +2039,13 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	if err != nil {
 		return "", err
 	}
-	if tlsEnabled {
-		if tlsPort, ok := database.TLSContainerPort(desiredDB.Engine); ok {
-			port = tlsPort
-		}
+	tlsPort, _ := database.TLSContainerPort(desiredDB.Engine)
+	// Optional TLS keeps the plain port for url and port, and offers tls_port next to it.
+	optionalTLS := tlsEnabled && c.databaseTLSOptional(ctx, dbName)
+	if tlsEnabled && !optionalTLS && tlsPort != 0 {
+		port = tlsPort
 	}
+	urlTLS := tlsEnabled && !optionalTLS
 	if crossNode {
 		host, port = ep.host, ep.port
 	}
@@ -2056,13 +2066,18 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 			return strconv.Itoa(poolerPort), nil
 		}
 		return strconv.Itoa(port), nil
-	case "tls_ca":
+	case "tls_port":
+		if !tlsEnabled {
+			return "", nil
+		}
+		return strconv.Itoa(tlsPort), nil
+	case "tls_ca", "ca":
 		if !tlsEnabled {
 			return "", nil
 		}
 		return c.secretResolver.Resolve(ctx, dbName, database.TLSCertEnvKey)
 	case "direct_url":
-		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, urlTLS)
 	case "database":
 		return dbName, nil
 	case "username":
@@ -2074,7 +2089,7 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 			// Client to pooler stays inside the namespace bridge, no TLS there.
 			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, poolerPort, false)
 		}
-		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, urlTLS)
 	default:
 		return "", fmt.Errorf("unsupported database field %q", field)
 	}
@@ -2098,7 +2113,22 @@ func (c *Controller) databaseTLSEnabled(ctx context.Context, dbName, engine stri
 	return exists, nil
 }
 
+// databaseTLSOptional reports whether dbName serves TLS next to its plain port.
+func (c *Controller) databaseTLSOptional(ctx context.Context, dbName string) bool {
+	g, ok := c.databases.(interface {
+		GetDatabaseTLSMode(ctx context.Context, database string) (string, error)
+	})
+	if !ok {
+		return false
+	}
+	mode, err := g.GetDatabaseTLSMode(ctx, dbName)
+	return err == nil && mode == store.DatabaseTLSModeOptional
+}
+
 func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine string) (string, error) {
+	if database.SupportsRedisPassword(engine) {
+		return c.resolveRedisPassword(ctx, dbName)
+	}
 	secretKey, ok := database.PasswordSecretKey(engine)
 	if !ok {
 		return "", fmt.Errorf("%s databases have no password", engine)
@@ -2111,6 +2141,19 @@ func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine
 		return "", fmt.Errorf("resolve password for database %q: %w", dbName, err)
 	}
 	return password, nil
+}
+
+// resolveRedisPassword is "" when the database was created without one, so apps reading
+// REDIS_PASSWORD get an empty value instead of a failed deploy.
+func (c *Controller) resolveRedisPassword(ctx context.Context, dbName string) (string, error) {
+	if c.secretResolver == nil {
+		return "", nil
+	}
+	exists, err := c.secretResolver.Exists(ctx, dbName, database.RedisPasswordEnvKey)
+	if err != nil || !exists {
+		return "", err
+	}
+	return c.secretResolver.Resolve(ctx, dbName, database.RedisPasswordEnvKey)
 }
 
 // resolveDatabaseURL builds a full connection URL. Redis, KeyDB, and
@@ -2139,7 +2182,18 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		if tlsEnabled {
 			scheme = "rediss"
 		}
-		return fmt.Sprintf("%s://%s:%d", scheme, host, port), nil
+		pw := ""
+		if database.SupportsRedisPassword(engine) {
+			var err error
+			if pw, err = c.resolveRedisPassword(ctx, dbName); err != nil {
+				return "", err
+			}
+		}
+		u := url.URL{Scheme: scheme, Host: fmt.Sprintf("%s:%d", host, port)}
+		if pw != "" {
+			u.User = url.UserPassword("", pw)
+		}
+		return u.String(), nil
 	}
 	if engine == store.EngineMemcached {
 		// Memcached clients take a host:port server list, no scheme.

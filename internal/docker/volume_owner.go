@@ -17,8 +17,8 @@ import (
 
 // A new named volume mounted at a path the image does not contain is created
 // root-owned, so an image that runs as a non-root USER cannot write to it.
-// chownFreshVolumes fixes that once, while the volume is still empty.
-// A spec user overrides the image USER, so the volume is chowned to the user
+// chownFreshVolumes fixes that while the volume is empty, or later for a
+// Levelrail-created volume whose root-owned root the user cannot write. A spec user overrides the image USER, so the volume is chowned to the user
 // the process really runs as.
 func (c *Client) chownFreshVolumes(ctx context.Context, containerID, image, user string, volumes []VolumeMount) error {
 	if len(volumes) == 0 {
@@ -45,11 +45,15 @@ func (c *Client) chownFreshVolumes(ctx context.Context, containerID, image, user
 		if v.ReadOnly {
 			continue
 		}
-		fresh, err := c.volumeIsFreshRootOwned(ctx, containerID, v.ContainerPath)
+		root, empty, err := c.volumeRoot(ctx, containerID, v.ContainerPath)
 		if err != nil {
 			return err
 		}
-		if !fresh {
+		wanted := rootChownWanted(root, empty, false, uid, gid)
+		if !wanted && rootChownWanted(root, empty, true, uid, gid) {
+			wanted = c.volumeManaged(ctx, v.Name)
+		}
+		if !wanted {
 			continue
 		}
 		if err := c.chownVolume(ctx, v.Name, uid, gid); err != nil {
@@ -57,6 +61,46 @@ func (c *Client) chownFreshVolumes(ctx context.Context, containerID, image, user
 		}
 	}
 	return nil
+}
+
+// rootChownWanted decides whether a volume root goes to the runtime user. A fresh
+// root-owned root always does; one holding files (an earlier deploy as root, or
+// image content copied in) only when Levelrail created the volume and the user cannot write it.
+func rootChownWanted(root *tar.Header, empty, managed bool, uid, gid int) bool {
+	if root == nil || root.Typeflag != tar.TypeDir || root.Uid != 0 || root.Gid != 0 {
+		return false
+	}
+	if empty {
+		return true
+	}
+	return managed && !dirWritableBy(uid, gid, root.Uid, root.Gid, root.Mode)
+}
+
+// dirWritableBy reports whether uid:gid may create entries in a directory with
+// that owner and mode, from the owner, group and other bits (write and search).
+func dirWritableBy(uid, gid, ownerUID, ownerGID int, mode int64) bool {
+	const write, search = 0o2, 0o1
+	bits := mode & 0o7
+	switch {
+	case uid == 0:
+		return true
+	case uid == ownerUID:
+		bits = (mode >> 6) & 0o7
+	case gid == ownerGID:
+		bits = (mode >> 3) & 0o7
+	}
+	return bits&write != 0 && bits&search != 0
+}
+
+// volumeManaged reports whether Levelrail created the volume for an owner; an
+// unreadable or unlabelled volume is left alone.
+func (c *Client) volumeManaged(ctx context.Context, name string) bool {
+	v, err := c.cli.VolumeInspect(ctx, name)
+	if err != nil {
+		return false
+	}
+	_, ok := v.Labels[VolumeOwnerAppLabel]
+	return ok
 }
 
 func isRootUser(user string) bool {
@@ -152,26 +196,21 @@ func (c *Client) readContainerFile(ctx context.Context, containerID, path string
 	return data, nil
 }
 
-// volumeIsFreshRootOwned reports whether dir is a root-owned, empty
-// directory: the only state in which chowning cannot touch real data.
-func (c *Client) volumeIsFreshRootOwned(ctx context.Context, containerID, dir string) (bool, error) {
+// volumeRoot reads the mount point's own tar header and whether it holds
+// nothing else; the stream is closed after at most two headers.
+func (c *Client) volumeRoot(ctx context.Context, containerID, dir string) (*tar.Header, bool, error) {
 	rc, _, err := c.cli.CopyFromContainer(ctx, containerID, dir)
 	if err != nil {
-		return false, fmt.Errorf("inspect volume dir %s: %w", dir, err)
+		return nil, false, fmt.Errorf("inspect volume dir %s: %w", dir, err)
 	}
 	defer func() { _ = rc.Close() }()
 	tr := tar.NewReader(rc)
 	root, err := tr.Next()
 	if err != nil {
-		return false, fmt.Errorf("read volume dir %s: %w", dir, err)
+		return nil, false, fmt.Errorf("read volume dir %s: %w", dir, err)
 	}
-	if root.Typeflag != tar.TypeDir || root.Uid != 0 || root.Gid != 0 {
-		return false, nil
-	}
-	if _, err := tr.Next(); !errors.Is(err, io.EOF) {
-		return false, nil
-	}
-	return true, nil
+	_, err = tr.Next()
+	return root, errors.Is(err, io.EOF), nil
 }
 
 // chownHelperImage is the throwaway image that runs chown against the volume:

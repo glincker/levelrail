@@ -12,6 +12,7 @@ package build
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	bkclient "github.com/moby/buildkit/client"
 )
@@ -71,6 +72,27 @@ func (c CacheConfig) validate() error {
 		return ErrCacheRegistryRefRequired
 	}
 	return nil
+}
+
+// sharedCacheID names the registry cache of a build with no usable app id.
+const sharedCacheID = "shared"
+
+// ForApp scopes the registry backend to one app: <base>/<id>:cache. A tag on
+// the configured base is dropped, and the old shared ref is simply never read
+// again. With no registry configured it returns c unchanged.
+func (c CacheConfig) ForApp(id string) CacheConfig {
+	if c.RegistryRef == "" {
+		return c
+	}
+	base := c.RegistryRef
+	if i := strings.LastIndex(base, ":"); i > strings.LastIndex(base, "/") && strings.Contains(base, "/") {
+		base = base[:i]
+	}
+	if id == "" {
+		id = sharedCacheID
+	}
+	c.RegistryRef = base + "/" + id + ":cache"
+	return c
 }
 
 // entries builds the BuildKit CacheOptionsEntry values for both import

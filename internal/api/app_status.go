@@ -11,7 +11,7 @@ type appStatusSummary struct {
 	Message string `json:"message,omitempty"`
 }
 
-// Mirrors summarizeAppStatus: any False wins, then all True means healthy, otherwise still reconciling.
+// Mirrors summarizeAppStatus: any False wins, then all True means healthy, a never-built app is Not deployed, otherwise still reconciling.
 func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 	if len(conditions) == 0 {
 		return appStatusSummary{Label: "No status yet", Variant: "muted"}
@@ -33,12 +33,29 @@ func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 	if allTrue {
 		return appStatusSummary{Label: "Healthy", Variant: "success"}
 	}
+	if awaitingFirstBuild(conditions) {
+		return appStatusSummary{Label: "Not deployed", Variant: "muted", Reason: reasonAwaitingFirstBuild, Message: notDeployedHint}
+	}
 	return appStatusSummary{Label: "Reconciling", Variant: "muted"}
 }
 
-// Without this, an unconfigured optional feature stays Unknown forever and the app never leaves Reconciling.
+// The application controller reports this reason for an app whose image is still the pending placeholder.
+const reasonAwaitingFirstBuild = "AwaitingFirstBuild"
+
+const notDeployedHint = "Staged: deploy it or connect a git repo"
+
+func awaitingFirstBuild(conditions []reconcile.Condition) bool {
+	for _, c := range conditions {
+		if c.Status == reconcile.ConditionUnknown && c.Reason == reasonAwaitingFirstBuild {
+			return true
+		}
+	}
+	return false
+}
+
+// Without this, an unconfigured optional feature, or a side check the node could not run, stays Unknown forever and the app never leaves Reconciling.
 func isOptionalFeatureUnconfigured(c reconcile.Condition) bool {
-	return c.Status == reconcile.ConditionUnknown && (c.Reason == "NotConfigured" || c.Reason == "Disabled")
+	return c.Status == reconcile.ConditionUnknown && (c.Reason == "NotConfigured" || c.Reason == "Disabled" || c.Reason == "Unverified")
 }
 
 // Batched status lives on the list endpoint only, so per-app endpoints avoid a second, drifting status representation.

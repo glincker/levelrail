@@ -135,6 +135,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsStreams(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "resume":
+		return runAppsResume(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "scale":
 		return runAppsScale(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":

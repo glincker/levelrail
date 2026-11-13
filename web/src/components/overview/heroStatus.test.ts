@@ -144,6 +144,15 @@ describe('deriveHeroStatus', () => {
           }
   })
 
+  it('reports a never-built app as not deployed rather than healthy', () => {
+    const s = deriveHeroStatus({
+      ...base,
+      conditions: [cond({ Status: 'Unknown', Reason: 'AwaitingFirstBuild' })],
+    })
+    expect(s.label).toBe('Not deployed')
+    expect(s.live).toBe(false)
+  })
+
   it('prefers the server failed outcome over a local Reconciling read', () => {
     const conditions = [cond({ Status: 'Unknown', Reason: 'Pending' })]
     const withServer = deriveHeroStatus({
