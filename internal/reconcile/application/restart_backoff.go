@@ -42,6 +42,34 @@ type RestartBackoff struct {
 	// jitter spreads each delay by up to this fraction so containers do not retry in step.
 	jitter float64
 	rnd    func() float64
+	sink   QuarantineSink
+}
+
+// QuarantineSink is told when the breaker holds or releases a container, so the
+// hold survives a restart and can raise an alert. Calls run outside the tracker lock.
+type QuarantineSink interface {
+	Held(container string, restarts int, at time.Time)
+	Released(container string)
+}
+
+// SetSink attaches the persistence and alert hook. Call before sharing the tracker.
+func (b *RestartBackoff) SetSink(s QuarantineSink) {
+	if b == nil {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.sink = s
+}
+
+// Restore re-opens the breaker for a container persisted before a restart.
+func (b *RestartBackoff) Restore(name string, restarts int, at time.Time) {
+	if b == nil {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.entries[name] = &backoffEntry{restarts: restarts, lastStart: at, quarantined: true}
 }
 
 // SetBreaker enables jitter (a 0 to 1 fraction) and the crash-loop breaker. Call before sharing the tracker.
@@ -75,15 +103,26 @@ func (b *RestartBackoff) Resume(serviceName string) int {
 		return 0
 	}
 	b.mu.Lock()
-	defer b.mu.Unlock()
-	n := 0
+	var released []string
 	for name, e := range b.entries {
 		if e.quarantined && ownsContainer(serviceName, name) {
 			delete(b.entries, name)
-			n++
+			released = append(released, name)
 		}
 	}
-	return n
+	sink := b.sink
+	b.mu.Unlock()
+	b.release(sink, released)
+	return len(released)
+}
+
+func (b *RestartBackoff) release(sink QuarantineSink, names []string) {
+	if sink == nil {
+		return
+	}
+	for _, name := range names {
+		sink.Released(name)
+	}
 }
 
 func (b *RestartBackoff) jittered(d time.Duration) time.Duration {
@@ -125,7 +164,15 @@ func (b *RestartBackoff) recordRestart(name string, now time.Time) {
 		return
 	}
 	b.mu.Lock()
-	defer b.mu.Unlock()
+	held, sink := b.record(name, now)
+	b.mu.Unlock()
+	if held > 0 && sink != nil {
+		sink.Held(name, held, now)
+	}
+}
+
+// record updates the entry under the lock and returns the restart count when this call opened the breaker.
+func (b *RestartBackoff) record(name string, now time.Time) (int, QuarantineSink) {
 	e, ok := b.entries[name]
 	if ok && !e.quarantined && now.Sub(e.lastStart) >= b.resetAfter {
 		ok = false
@@ -144,9 +191,11 @@ func (b *RestartBackoff) recordRestart(name string, now time.Time) {
 	}
 	e.lastStart = now
 	e.next = now.Add(b.jittered(delay))
-	if b.quarantineAfter > 0 && e.restarts >= b.quarantineAfter {
+	if b.quarantineAfter > 0 && e.restarts >= b.quarantineAfter && !e.quarantined {
 		e.quarantined = true
+		return e.restarts, b.sink
 	}
+	return 0, nil
 }
 
 // observeRunning forgets name once it has stayed up for resetAfter.
@@ -171,10 +220,16 @@ func (b *RestartBackoff) retain(serviceName string, names []string) {
 		keep[n] = true
 	}
 	b.mu.Lock()
-	defer b.mu.Unlock()
-	for name := range b.entries {
+	var released []string
+	for name, e := range b.entries {
 		if !keep[name] && ownsContainer(serviceName, name) {
 			delete(b.entries, name)
+			if e.quarantined {
+				released = append(released, name)
+			}
 		}
 	}
+	sink := b.sink
+	b.mu.Unlock()
+	b.release(sink, released)
 }

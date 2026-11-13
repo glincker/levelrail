@@ -408,6 +408,7 @@ func (s *bootState) startReconciler() {
 		return ""
 	})
 	restartBackoff := newRestartBackoff(logger)
+	wireRestartQuarantine(ctx, restartBackoff, db, s.alertingDB, logger)
 	s.apiRouter.SetCrashBreaker(restartBackoff)
 	sourceDeps := dynamicSourceDeps{
 		deployGate:                   gate,
