@@ -3,7 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { useIsMobile } from '../../hooks/use-mobile'
 import { useLogStream } from '../../hooks/useLogStream'
-import { LEVEL_DOT, levelOf } from './logLevels'
+import { levelOf } from './logLevels'
+import { LogLevelTag } from '../LogLevelTag'
 import { stripAnsiCodes } from '../../lib/ansi'
 import { buildLiveLogStreamUrl } from '../../queries/liveLogs'
 import { LOG_EMPTY_MESSAGE } from '../../lib/logMessages'
@@ -28,11 +29,10 @@ function TailBody({ appName }: { appName: string }) {
     <ul className="space-y-0.5 px-3 py-2 font-mono text-xs">
       {tail.map((l) => (
         <li key={l.id} className="flex items-start gap-2">
-          <span
-            aria-hidden="true"
-            className={`mt-1.5 size-1.5 shrink-0 rounded-full ${LEVEL_DOT[levelOf(l)]}`}
-          />
-          <span className="min-w-0 truncate">{stripAnsiCodes(l.line)}</span>
+          <LogLevelTag level={levelOf(l)} />
+          <span className="min-w-0 break-words whitespace-pre-wrap">
+            {stripAnsiCodes(l.line)}
+          </span>
         </li>
       ))}
     </ul>

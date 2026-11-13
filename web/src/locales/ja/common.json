@@ -102,7 +102,9 @@
     "copyLineAria": "このログ行をコピー",
     "copyLine": "行をコピー",
     "copied": "コピーしました",
-    "lineCopied": "行をコピーしました"
+    "lineCopied": "行をコピーしました",
+    "expandJson": "JSON を展開",
+    "collapseJson": "JSON を折りたたむ"
   },
   "sessionLink": {
     "signingIn": "サインインしています...",

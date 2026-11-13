@@ -40,7 +40,10 @@
     "copied": "コピーしました",
     "copiedAnnounce": "クリップボードにコピーしました",
     "download": "ダウンロード",
-    "shownOf": "{{total}} 行中 {{shown}} 行"
+    "shownOf": "{{total}} 行中 {{shown}} 行",
+    "wrap": "行を折り返す",
+    "copySelection": "選択範囲をコピー",
+    "copyAll": "表示中をすべてコピー"
   },
   "filterChips": {
     "group": "有効なフィルター",

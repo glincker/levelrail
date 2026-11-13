@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -16,9 +16,16 @@ void i18next.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
-function setup(filter: LogFilter = { text: '', stderrOnly: false }, shown = 5) {
+function setup(
+  filter: LogFilter = { text: '', stderrOnly: false },
+  shown = 5,
+  wrap = true,
+) {
+  const onWrapChange = vi.fn()
   const onFilterChange = vi.fn()
-  const onCopy = vi.fn(() => Promise.resolve())
+  const onCopySelection = vi.fn(() => Promise.resolve())
+  const onCopyAll = vi.fn(() => Promise.resolve())
+  const onDownload = vi.fn()
   const onJumpToError = vi.fn()
   render(
     <LogToolbar
@@ -26,12 +33,22 @@ function setup(filter: LogFilter = { text: '', stderrOnly: false }, shown = 5) {
       onFilterChange={onFilterChange}
       shown={shown}
       total={5}
-      onCopy={onCopy}
-      onDownload={vi.fn()}
+      onCopySelection={onCopySelection}
+      onCopyAll={onCopyAll}
+      onDownload={onDownload}
       onJumpToError={onJumpToError}
+      wrap={wrap}
+      onWrapChange={onWrapChange}
     />,
   )
-  return { onFilterChange, onCopy, onJumpToError }
+  return {
+    onFilterChange,
+    onCopySelection,
+    onCopyAll,
+    onDownload,
+    onJumpToError,
+    onWrapChange,
+  }
 }
 
 describe('LogToolbar', () => {
@@ -72,17 +89,41 @@ describe('LogToolbar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('2 of 5 lines')
   })
 
-  it('announces a copy and calls jump to error', async () => {
-    const { onCopy, onJumpToError } = setup()
+  it('offers one action set: copy selection, copy all visible, download', async () => {
+    const { onCopySelection, onCopyAll, onDownload } = setup()
     const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: /Copy/ }))
-    expect(onCopy).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: /Copy selection/ }))
+    expect(onCopySelection).toHaveBeenCalledOnce()
+    expect(onCopyAll).not.toHaveBeenCalled()
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Copied to clipboard',
     )
-    await user.click(
-      screen.getByRole('button', { name: /Jump to first error/ }),
-    )
+    await user.click(screen.getByRole('button', { name: /Copy all visible/ }))
+    expect(onCopyAll).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: /Download/ }))
+    expect(onDownload).toHaveBeenCalledOnce()
+  })
+
+  it('does not collapse the text selection when pressing copy selection', () => {
+    setup()
+    const btn = screen.getByRole('button', { name: /Copy selection/ })
+    const notPrevented = fireEvent.mouseDown(btn)
+    expect(notPrevented).toBe(false)
+  })
+
+  it('calls jump to error', async () => {
+    const { onJumpToError } = setup()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /Jump to first error/ }))
     expect(onJumpToError).toHaveBeenCalledOnce()
+  })
+
+  it('exposes wrap as a pressed toggle and flips it', async () => {
+    const { onWrapChange } = setup(undefined, 5, true)
+    const toggle = screen.getByRole('button', { name: 'Wrap lines' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.setup().click(toggle)
+    expect(onWrapChange).toHaveBeenCalledWith(false)
   })
 })

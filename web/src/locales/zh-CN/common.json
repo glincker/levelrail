@@ -102,7 +102,9 @@
     "copyLineAria": "复制此日志行",
     "copyLine": "复制行",
     "copied": "已复制",
-    "lineCopied": "已复制该行"
+    "lineCopied": "已复制该行",
+    "expandJson": "展开 JSON",
+    "collapseJson": "折叠 JSON"
   },
   "sessionLink": {
     "signingIn": "正在为你登录...",

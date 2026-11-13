@@ -102,7 +102,9 @@
     "copyLineAria": "Copy this log line",
     "copyLine": "Copy line",
     "copied": "Copied",
-    "lineCopied": "Line copied"
+    "lineCopied": "Line copied",
+    "expandJson": "Expand JSON",
+    "collapseJson": "Collapse JSON"
   },
   "sessionLink": {
     "signingIn": "Signing you in...",

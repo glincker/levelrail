@@ -25,27 +25,34 @@ export function LogToolbar({
   onFilterChange,
   shown,
   total,
-  onCopy,
+  onCopySelection,
+  onCopyAll,
   onDownload,
   onJumpToError,
+  wrap,
+  onWrapChange,
 }: {
   filter: LogFilter
   onFilterChange: (next: LogFilter) => void
   shown: number
   total: number
-  onCopy: () => Promise<void>
+  /** Copies the user's text selection, or the visible lines when none. */
+  onCopySelection: () => Promise<void>
+  onCopyAll: () => Promise<void>
   onDownload: () => void
   onJumpToError: () => void
+  wrap: boolean
+  onWrapChange: (next: boolean) => void
 }) {
   const { t } = useTranslation('uiShared')
   const activeLevel = filter.level ?? 'all'
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'selection' | 'all' | null>(null)
 
-  const handleCopy = async () => {
-    await onCopy()
-    setCopied(true)
+  const handleCopy = async (kind: 'selection' | 'all') => {
+    await (kind === 'selection' ? onCopySelection() : onCopyAll())
+    setCopied(kind)
     window.setTimeout(() => {
-      setCopied(false)
+      setCopied(null)
     }, 1500)
   }
 
@@ -88,15 +95,45 @@ export function LogToolbar({
       <Button
         type="button"
         size="xs"
-        variant="outline"
-        onClick={() => void handleCopy()}
+        variant={wrap ? 'secondary' : 'outline'}
+        aria-pressed={wrap}
+        onClick={() => {
+          onWrapChange(!wrap)
+        }}
       >
-        {copied ? (
+        {t('logToolbar.wrap')}
+      </Button>
+      <Button
+        type="button"
+        size="xs"
+        variant="outline"
+        // Keep the text selection alive: a button press must not collapse it before we read it.
+        onMouseDown={(e) => {
+          e.preventDefault()
+        }}
+        onClick={() => void handleCopy('selection')}
+      >
+        {copied === 'selection' ? (
           <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
           <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
-        {copied ? t('logToolbar.copied') : t('logToolbar.copy')}
+        {copied === 'selection'
+          ? t('logToolbar.copied')
+          : t('logToolbar.copySelection')}
+      </Button>
+      <Button
+        type="button"
+        size="xs"
+        variant="outline"
+        onClick={() => void handleCopy('all')}
+      >
+        {copied === 'all' ? (
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
+        ) : (
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
+        )}
+        {copied === 'all' ? t('logToolbar.copied') : t('logToolbar.copyAll')}
       </Button>
       <Button type="button" size="xs" variant="outline" onClick={onDownload}>
         <DownloadGlassIcon size="1.4em" aria-hidden="true" />
@@ -113,7 +150,7 @@ export function LogToolbar({
               shown: shown.toLocaleString(),
               total: total.toLocaleString(),
             })
-          : copied
+          : copied !== null
             ? t('logToolbar.copiedAnnounce')
             : ''}
       </span>

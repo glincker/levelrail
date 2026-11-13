@@ -1,6 +1,6 @@
 import { act } from 'react'
 import { render, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useLogStream } from './useLogStream'
 
 // jsdom has no native EventSource; this stub gives a test direct control
@@ -151,5 +151,33 @@ describe('useLogStream', () => {
     })
 
     screen.getByText('lines:line 1|line 2|line 3')
+  })
+
+  it('keeps the server timestamp when the event carries one', () => {
+    vi.stubGlobal('EventSource', StubEventSource)
+    function AtProbe() {
+      const { lines } = useLogStream('/at')
+      return (
+        <p>
+          at:{lines.map((l) => (l.at === undefined ? 'none' : l.at)).join('|')}
+        </p>
+      )
+    }
+    render(<AtProbe />)
+    const source = latestSource()
+    act(() => {
+      source.emitOpen()
+      source.emitMessage(
+        JSON.stringify({
+          line: 'a',
+          stream: 'stdout',
+          at: '2026-11-12T12:00:00Z',
+        }),
+      )
+      source.emitMessage(logEvent('b'))
+    })
+    expect(
+      screen.getByText(`at:${Date.UTC(2026, 10, 12, 12, 0, 0)}|none`),
+    ).toBeInTheDocument()
   })
 })
