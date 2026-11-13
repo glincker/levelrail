@@ -26,6 +26,8 @@ const (
 	ErrPlanRejected ErrorKind = "plan_rejected"
 	// ErrStateDiverged means apply ran but its state could not be written under the fence.
 	ErrStateDiverged ErrorKind = "state_diverged"
+	// ErrQuarantineHeld means the stack has unrecovered quarantined state, so no run may start.
+	ErrQuarantineHeld ErrorKind = "state_quarantined"
 )
 
 // Sentinels callers match with errors.Is.
@@ -37,7 +39,16 @@ var (
 	ErrPlanStale           = errors.New("cloudiac: the state changed after the plan was made")
 	ErrDestroyNotConfirmed = errors.New("cloudiac: destroy needs an explicit confirmation")
 	ErrStateWriteRejected  = errors.New("cloudiac: state write was rejected, the cloud and the stored state may differ")
+	// ErrStateQuarantined fails closed: a plan against stale state could recreate resources that exist.
+	ErrStateQuarantined = errors.New("cloudiac: the stack has quarantined state that must be recovered first")
 )
+
+// StateQuarantine carries the id of the quarantine row an apply wrote; match it with errors.As.
+type StateQuarantine struct{ ID int64 }
+
+func (q *StateQuarantine) Error() string {
+	return fmt.Sprintf("cloudiac: post apply state is held in cloud state quarantine %d", q.ID)
+}
 
 const (
 	tofuStateFile  = "terraform.tfstate"
@@ -213,6 +224,18 @@ func (e *TofuEngine) begin(ctx context.Context, step Step, spec ModuleSpec, cred
 	s.closers = append(s.closers, func() { _ = d.Locks.ReleaseCloudStateLock(context.WithoutCancel(ctx), lock) })
 	fail := func(err error) (*session, error) { s.close(); return nil, err }
 
+	held, err := d.State.Quarantined(ctx, s.account, s.stack)
+	if err != nil {
+		return fail(stepErr(step, ErrInternal, "check state quarantine: "+err.Error(), errors.Join(ErrStateQuarantined, err)))
+	}
+	if len(held) > 0 {
+		ids := make([]string, 0, len(held))
+		for _, q := range held {
+			ids = append(ids, fmt.Sprint(q.ID))
+		}
+		return fail(stepErr(step, ErrQuarantineHeld, "this stack has quarantined state ("+strings.Join(ids, ", ")+
+			"); recover it with levelrail stack cloud-state recover before the next plan or apply", ErrStateQuarantined))
+	}
 	if s.state, s.version, err = d.State.Load(ctx, s.account, s.stack); err != nil {
 		return fail(stepErr(step, ErrInternal, "load state: "+err.Error(), err))
 	}
@@ -414,11 +437,11 @@ func (e *TofuEngine) applySaved(ctx context.Context, step Step, req ApplyRequest
 		v, serr := e.deps.State.Save(context.WithoutCancel(ctx), s.lock, s.version, next)
 		if serr != nil {
 			res.Diverged = true
-			msg := "apply ran but its state could not be stored under the lock fence; the cloud and the stored state may differ, inspect before the next plan"
-			if runErr != nil {
-				msg += " (the apply also failed)"
+			qerr := e.quarantine(ctx, s, step, next, serr, runErr)
+			if q := (*StateQuarantine)(nil); errors.As(qerr, &q) {
+				res.Log = fmt.Sprintf("%s: state quarantined as %d", step, q.ID)
 			}
-			return res, stepErr(step, ErrStateDiverged, msg, errors.Join(ErrStateWriteRejected, serr))
+			return res, qerr
 		}
 		res.StateVersion = v
 		res.Partial = runErr != nil
@@ -428,6 +451,29 @@ func (e *TofuEngine) applySaved(ctx context.Context, step Step, req ApplyRequest
 	}
 	res.Log = fmt.Sprintf("%s: %d changes applied, state version %d", step, len(res.Changes), res.StateVersion)
 	return res, nil
+}
+
+// quarantine seals the state the apply left before reporting, so the real resources it names stay recoverable.
+func (e *TofuEngine) quarantine(ctx context.Context, s *session, step Step, state []byte, serr, runErr error) error {
+	reason := "store_error"
+	switch {
+	case errors.Is(serr, store.ErrCloudStateLockLost):
+		reason = "fence_moved"
+	case errors.Is(serr, store.ErrCloudStateConflict):
+		reason = "version_conflict"
+	case errors.Is(serr, ErrStateTooLarge):
+		reason = "too_large"
+	}
+	if runErr != nil {
+		reason += ",apply_failed"
+	}
+	id, qerr := e.deps.State.Quarantine(context.WithoutCancel(ctx), s.account, s.stack, s.lock.Fence, reason, state)
+	if qerr != nil {
+		msg := "apply ran but its state could neither be stored nor quarantined; the cloud holds resources the stored state does not, reconcile by hand"
+		return stepErr(step, ErrStateDiverged, msg, errors.Join(ErrStateWriteRejected, serr, qerr))
+	}
+	msg := fmt.Sprintf("apply ran but its state could not be stored under the lock fence (%s); it is sealed in cloud state quarantine %d and the stack is blocked until it is recovered", reason, id)
+	return stepErr(step, ErrStateDiverged, msg, errors.Join(ErrStateWriteRejected, serr, &StateQuarantine{ID: id}))
 }
 
 // checkSaved refuses before any step runs: wrong hash, wrong kind, expired, stale, or now against policy.

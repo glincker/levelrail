@@ -103,3 +103,36 @@ func TestCloudStateLockLifecycleAndFencing(t *testing.T) {
 		t.Fatalf("missing err = %v", err)
 	}
 }
+
+func TestCloudStateQuarantineInsertListResolve(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	now := time.Now()
+	if _, err := db.InsertCloudStateQuarantine(ctx, CloudStateQuarantine{Account: "acct", Stack: "net"}); !errors.Is(err, ErrCloudStateBadInput) {
+		t.Fatalf("empty insert: %v", err)
+	}
+	q := CloudStateQuarantine{Account: "acct", Stack: "net", Sealed: []byte("ct"), Fence: 3, Reason: "fence_moved", CreatedAt: now}
+	id, err := db.InsertCloudStateQuarantine(ctx, q)
+	if err != nil || id == 0 {
+		t.Fatalf("insert: %d %v", id, err)
+	}
+	if other, _ := db.ListCloudStateQuarantine(ctx, "acct", "other"); len(other) != 0 {
+		t.Fatalf("other stack sees %d rows", len(other))
+	}
+	rows, err := db.ListCloudStateQuarantine(ctx, "acct", "net")
+	if err != nil || len(rows) != 1 || rows[0].ID != id || rows[0].Fence != 3 || string(rows[0].Sealed) != "ct" {
+		t.Fatalf("list = %+v, %v", rows, err)
+	}
+	if err := db.ResolveCloudStateQuarantine(ctx, "acct", "other", id, now); !errors.Is(err, ErrCloudStateQuarantineNotFound) {
+		t.Fatalf("cross stack resolve: %v", err)
+	}
+	if err := db.ResolveCloudStateQuarantine(ctx, "acct", "net", id, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.ResolveCloudStateQuarantine(ctx, "acct", "net", id, now); !errors.Is(err, ErrCloudStateQuarantineNotFound) {
+		t.Fatalf("double resolve: %v", err)
+	}
+	if rows, _ := db.ListCloudStateQuarantine(ctx, "acct", "net"); len(rows) != 0 {
+		t.Fatalf("resolved row still listed: %+v", rows)
+	}
+}

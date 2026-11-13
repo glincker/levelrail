@@ -45,6 +45,8 @@ type StateDB interface {
 	PutCloudPlan(ctx context.Context, p store.CloudPlan) error
 	GetCloudPlan(ctx context.Context, account, stack string) (store.CloudPlan, error)
 	DeleteCloudPlan(ctx context.Context, account, stack, hash string) error
+	InsertCloudStateQuarantine(ctx context.Context, q store.CloudStateQuarantine) (int64, error)
+	ListCloudStateQuarantine(ctx context.Context, account, stack string) ([]store.CloudStateQuarantine, error)
 }
 
 // StateStore seals state before it reaches the DB. It never logs and has no method that serves state over an API.
@@ -100,6 +102,35 @@ func (s *StateStore) Save(ctx context.Context, lock store.CloudStateLock, expect
 		return 0, err
 	}
 	return s.db.PutCloudState(ctx, lock, expectVersion, blob, s.now())
+}
+
+// Quarantine seals state that could not be stored live and returns the row id. It takes no lease and no
+// size cap, since the blob describes real resources and losing it would orphan them.
+func (s *StateStore) Quarantine(ctx context.Context, account, stack string, fence int64, reason string, state []byte) (int64, error) {
+	kek, err := s.kek()
+	if err != nil {
+		return 0, err
+	}
+	blob, err := sealLayers(kek, "quarantine-key", "quarantine", account, stack, state)
+	if err != nil {
+		return 0, err
+	}
+	return s.db.InsertCloudStateQuarantine(ctx, store.CloudStateQuarantine{
+		Account: account, Stack: stack, Sealed: blob, Fence: fence, Reason: reason, CreatedAt: s.now()})
+}
+
+// Quarantined lists the unresolved quarantine rows of a stack; any row means the stack must not run.
+func (s *StateStore) Quarantined(ctx context.Context, account, stack string) ([]store.CloudStateQuarantine, error) {
+	return s.db.ListCloudStateQuarantine(ctx, account, stack)
+}
+
+// OpenQuarantine returns the plaintext of a quarantine row for an operator recovery step.
+func (s *StateStore) OpenQuarantine(q store.CloudStateQuarantine) ([]byte, error) {
+	kek, err := s.kek()
+	if err != nil {
+		return nil, err
+	}
+	return openLayers(kek, "quarantine-key", "quarantine", q.Account, q.Stack, q.Sealed)
 }
 
 func (s *StateStore) kek() ([]byte, error) {

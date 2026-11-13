@@ -284,3 +284,69 @@ func (db *DB) DeleteCloudPlan(ctx context.Context, account, stack, hash string) 
 	}
 	return nil
 }
+
+// ErrCloudStateQuarantineNotFound means no unresolved quarantine row has this id for the stack.
+var ErrCloudStateQuarantineNotFound = errors.New("store: cloud state quarantine not found")
+
+// CloudStateQuarantine is post apply state that could not be stored live. Sealed is ciphertext only.
+type CloudStateQuarantine struct {
+	ID        int64
+	Account   string
+	Stack     string
+	Sealed    []byte
+	Fence     int64
+	Reason    string
+	CreatedAt time.Time
+}
+
+// InsertCloudStateQuarantine stores a sealed blob without the lease, since the lease is what was lost.
+func (db *DB) InsertCloudStateQuarantine(ctx context.Context, q CloudStateQuarantine) (int64, error) {
+	if !cloudStateKeyValid(q.Account, q.Stack) || len(q.Sealed) == 0 || q.Reason == "" {
+		return 0, ErrCloudStateBadInput
+	}
+	res, err := db.ExecContext(ctx, `INSERT INTO cloud_state_quarantine (account, stack, sealed, fence, reason, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		q.Account, q.Stack, q.Sealed, q.Fence, q.Reason, fmtLockTime(q.CreatedAt))
+	if err != nil {
+		return 0, fmt.Errorf("store: quarantine cloud state: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("store: quarantine cloud state id: %w", err)
+	}
+	return id, nil
+}
+
+// ListCloudStateQuarantine returns the unresolved rows of one stack, oldest first.
+func (db *DB) ListCloudStateQuarantine(ctx context.Context, account, stack string) ([]CloudStateQuarantine, error) {
+	rows, err := db.QueryContext(ctx, `SELECT id, sealed, fence, reason, created_at FROM cloud_state_quarantine
+		WHERE account = ? AND stack = ? AND resolved_at IS NULL ORDER BY id`, account, stack)
+	if err != nil {
+		return nil, fmt.Errorf("store: list cloud state quarantine: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []CloudStateQuarantine
+	for rows.Next() {
+		q := CloudStateQuarantine{Account: account, Stack: stack}
+		var created string
+		if err := rows.Scan(&q.ID, &q.Sealed, &q.Fence, &q.Reason, &created); err != nil {
+			return nil, fmt.Errorf("store: scan cloud state quarantine: %w", err)
+		}
+		q.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
+		out = append(out, q)
+	}
+	return out, rows.Err()
+}
+
+// ResolveCloudStateQuarantine marks one row recovered. The stack is part of the key so an id from
+// another stack can never clear this one. TODO: an admin only `levelrail stack cloud-state recover` calls this.
+func (db *DB) ResolveCloudStateQuarantine(ctx context.Context, account, stack string, id int64, now time.Time) error {
+	res, err := db.ExecContext(ctx, `UPDATE cloud_state_quarantine SET resolved_at = ? WHERE id = ? AND account = ? AND stack = ? AND resolved_at IS NULL`,
+		fmtLockTime(now), id, account, stack)
+	if err != nil {
+		return fmt.Errorf("store: resolve cloud state quarantine: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrCloudStateQuarantineNotFound
+	}
+	return nil
+}
