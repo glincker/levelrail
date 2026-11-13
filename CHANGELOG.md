@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.3](https://github.com/glincker/levelrail/compare/v1.0.2...v1.0.3) (2026-11-13)
+
+
+### Features
+
+* Levelrail v1.0.3 ([#1491](https://github.com/glincker/levelrail/issues/1491)) ([9e97909](https://github.com/glincker/levelrail/commit/9e9790937f7131170d71d178d9463747f62b7f6d))
+
+
+### Bug Fixes
+
+* **web:** raise the cli-reference bundle budget for the new CLI flags ([#1502](https://github.com/glincker/levelrail/issues/1502)) ([891fd6a](https://github.com/glincker/levelrail/commit/891fd6a7fc2bc08f41d08c2ec0e83969879413e1))
+
 ## [1.0.2](https://github.com/glincker/levelrail/compare/v1.0.1...v1.0.2) (2026-11-13)
 
 
