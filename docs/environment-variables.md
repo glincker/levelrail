@@ -74,6 +74,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |
+| `APP_IAC_V1_HASH_ACCEPTED` | [`iac.v1_hash_accepted`](/runtime-settings#security) | `true` |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
 | `APP_NODES_PATCH_ADOPT_LIMIT` | [`nodes.patch_adopt_limit`](/runtime-settings#security) | `20` |
 | `APP_NODES_PATCH_APPLY_TIMEOUT` | [`nodes.patch_apply_timeout`](/runtime-settings#security) | `30m` |
@@ -101,8 +102,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NETWORK` | [`security.build_network`](/runtime-settings#security) | `open` |
 | `APP_WEBHOOK_REPLAY_PROTECTION` | [`security.webhook_replay_protection`](/runtime-settings#security) | `true` |
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
+| `APP_STACK_DRIFT_TOKEN_TTL` | [`stacks.drift_rotation_minutes`](/runtime-settings#security) | `120` |
+| `APP_STACK_OIDC_TTL` | [`stacks.oidc_ttl`](/runtime-settings#security) | `15m` |
 | `APP_STACK_PRUNE_MAX_COUNT` | [`stacks.prune_max_count`](/runtime-settings#security) | `10` |
 | `APP_STACK_PRUNE_MAX_PERCENT` | [`stacks.prune_max_percent`](/runtime-settings#security) | `50` |
+| `APP_STACK_SOLO_SELF_APPROVE` | [`stacks.solo_self_approve`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
@@ -181,6 +185,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUN_MAX_CONCURRENT_PER_APP` | [`apps_run.max_concurrent_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_RUN_MAX_TIMEOUT_SECONDS` | [`apps_run.max_timeout_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_RUN_MEMORY_LIMIT_MB` | [`apps_run.memory_limit_mb`](/runtime-settings#deploys) | `0` |
+| `APP_SLEEP_MAX_WAITERS` | [`appsleep.max_waiters`](/runtime-settings#deploys) | `200` |
+| `APP_SLEEP_WAKE_WAIT_SECONDS` | [`appsleep.wake_wait_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_DEFERRED_STAGES` | [`boot.deferred_stages`](/runtime-settings#deploys) | `false` |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
@@ -246,6 +252,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_TRIGGER_PATTERN_MAX_LENGTH` | [`git.trigger_pattern_max_length`](/runtime-settings#deploys) | `128` |
 | `APP_GIT_TRIGGER_PATTERNS_MAX` | [`git.trigger_patterns_max`](/runtime-settings#deploys) | `32` |
 | `APP_GIT_TRIGGER_REF_MAX_BYTES` | [`git.trigger_ref_max_bytes`](/runtime-settings#deploys) | `1024` |
+| `APP_IAC_APPLY_ENABLED` | [`iac.apply_enabled`](/runtime-settings#deploys) | `true` |
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
@@ -280,7 +287,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUNTIME_TMPFS_MAX_BYTES` | [`runtime.tmpfs_max_bytes`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_BYTES_MAX` | [`runtime.ulimit_bytes_max`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
+| `APP_STACK_APPROVAL_TTL` | [`stacks.approval_ttl`](/runtime-settings#deploys) | `24h` |
+| `APP_STACK_DRIFT_INTERVAL` | [`stacks.drift_interval_seconds`](/runtime-settings#deploys) | `900` |
 | `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
+| `APP_STACK_LOCK_RENEW_FRACTION` | [`stacks.lock_renew_fraction`](/runtime-settings#deploys) | `3` |
+| `APP_STACK_LOCK_TTL` | [`stacks.lock_ttl`](/runtime-settings#deploys) | `10m` |
 | `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |
@@ -358,6 +369,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
+| `APP_STACK_DRIFT_SUMMARY_MAX` | [`stacks.drift_summary_max`](/runtime-settings#observability) | `50` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |
