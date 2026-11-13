@@ -1,0 +1,6 @@
+version: 1
+kind: Setting
+metadata:
+  name: heartbeat.job_max_attempts
+spec:
+  value: 5

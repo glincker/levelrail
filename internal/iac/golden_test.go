@@ -61,6 +61,9 @@ type goldenOptions struct {
 	Prune   bool              `json:"prune"`
 	Secrets map[string]string `json:"secrets"`
 	Ledger  *goldenLedger     `json:"ledger"`
+	// Nodes and Settings mount the node and runtime settings routes on the fake.
+	Nodes    []string `json:"nodes"`
+	Settings bool     `json:"settings"`
 }
 
 // goldenLedger runs the case as a stack apply with this ownership view.
@@ -124,6 +127,12 @@ func runGolden(t *testing.T, dir string) {
 	}
 
 	f := newFake()
+	if len(gopts.Nodes) > 0 {
+		addNodes(f, gopts.Nodes...)
+	}
+	if gopts.Settings {
+		addSettings(f)
+	}
 	if raw, err := os.ReadFile(filepath.Clean(filepath.Join(dir, "live.json"))); err == nil {
 		if err := loadLive(f, raw); err != nil {
 			t.Fatalf("live.json: %v", err)

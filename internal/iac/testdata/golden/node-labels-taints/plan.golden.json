@@ -1,0 +1,31 @@
+{
+  "changes": [
+    {
+      "kind": "Node",
+      "name": "worker-1",
+      "action": "update",
+      "fields": [
+        {
+          "path": "labels.zone",
+          "op": "add",
+          "new": "a"
+        },
+        {
+          "path": "taints.gpu:NoSchedule",
+          "op": "add",
+          "new": "true"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 1,
+    "delete": 0,
+    "noop": 0,
+    "error": 0
+  },
+  "hash": "v2:83bddee4fbf537051e3458fd7fad785ef26c1876157a6f48177eb0b48beac27e"
+}
