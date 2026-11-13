@@ -38,7 +38,7 @@ import { firstIndexOfGroup } from '@/lib/paletteJump'
 import { PalettePreview, PREVIEW_ID } from './palette/PalettePreview'
 import { usePreviewHasContent } from './palette/usePreviewHasContent'
 import { usePaletteDrag } from '../hooks/usePaletteDrag'
-import { usePinnedPages } from '../hooks/usePinnedPages'
+import { usePaletteBubbleLayout } from '../hooks/usePaletteBubbleLayout'
 import { usePaletteLanguage } from '../hooks/usePaletteLanguage'
 import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
 
@@ -97,7 +97,7 @@ export function CommandPalette({
   })
   const ps = usePaletteSearch(open)
   const navigate = useNavigate()
-  const { pinned } = usePinnedPages()
+  const layout = usePaletteBubbleLayout()
   const coreItems = usePaletteBaseItems(onShowShortcuts)
   const openLanguageStep = React.useCallback(() => {
     setStep('language')
@@ -256,11 +256,12 @@ export function CommandPalette({
   const bubbles = usePaletteBubbles({
     baseItems,
     recentKeys,
-    pinned,
+    pinned: layout.pinned,
     version: historyVersion,
     openPath,
     select,
   })
+  const bubbleRowRef = React.useRef<HTMLDivElement>(null)
   const panelOpen =
     panelForced ||
     step !== null ||
@@ -473,7 +474,13 @@ export function CommandPalette({
                   </button>
                 ) : null}
               </div>
-              <RecentBubbles bubbles={bubbles} query={ps.text} />
+              <RecentBubbles
+                bubbles={bubbles}
+                query={ps.text}
+                onReorder={layout.reorder}
+                onUnpin={layout.unpin}
+                rowRef={bubbleRowRef}
+              />
             </div>
             {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 opacity-0 transition-opacity duration-200 group-focus-within/pal:opacity-100 motion-reduce:transition-none">
@@ -509,6 +516,9 @@ export function CommandPalette({
           </p>
           <p aria-live="polite" className="sr-only">
             {drag.announcement}
+          </p>
+          <p aria-live="polite" className="sr-only">
+            {layout.announcement}
           </p>
           <p role="status" aria-live="polite" className="sr-only">
             {panelOpen && !loading

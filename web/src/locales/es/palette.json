@@ -242,7 +242,21 @@
     }
   },
   "bubbles": {
-    "label": "Recientes y sugeridos"
+    "label": "Recientes y sugeridos",
+    "hint": "Pulsa Espacio para levantar este enlace, las flechas para moverlo, Espacio para soltarlo y Escape para cancelar. Clic derecho o Mayús más F10 abre más acciones.",
+    "limit": "Límite de fijados alcanzado. Desfija un enlace primero.",
+    "pinned": "{{title}} fijado",
+    "unpinned": "{{title}} desfijado",
+    "notPinnable": "Solo se pueden fijar páginas y aplicaciones",
+    "moved": "{{title}} movido a la posición {{position}} de {{total}}",
+    "lifted": "{{title}} levantado, posición {{position}} de {{total}}. Usa las flechas para mover, Espacio para soltar y Escape para cancelar.",
+    "dropped": "{{title}} soltado en la posición {{position}} de {{total}}",
+    "cancelled": "Movimiento cancelado",
+    "menu": "Acciones del enlace rápido",
+    "unpin": "Desfijar",
+    "moveLeft": "Mover a la izquierda",
+    "moveRight": "Mover a la derecha",
+    "openNewTab": "Abrir en una pestaña nueva"
   },
   "mail": {
     "addMailbox": "Correo: Añadir buzón",

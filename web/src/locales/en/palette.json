@@ -242,7 +242,21 @@
     }
   },
   "bubbles": {
-    "label": "Quick links"
+    "label": "Quick links",
+    "hint": "Press Space to pick this link up, the arrow keys to move it, Space to drop it, Escape to cancel. Right-click or Shift plus F10 opens more actions.",
+    "limit": "Pin limit reached. Unpin a link first.",
+    "pinned": "Pinned {{title}}",
+    "unpinned": "Unpinned {{title}}",
+    "notPinnable": "Only pages and apps can be pinned",
+    "moved": "{{title}} moved to position {{position}} of {{total}}",
+    "lifted": "{{title}} picked up, position {{position}} of {{total}}. Use the arrow keys to move, Space to drop, Escape to cancel.",
+    "dropped": "{{title}} dropped at position {{position}} of {{total}}",
+    "cancelled": "Move cancelled",
+    "menu": "Quick link actions",
+    "unpin": "Unpin",
+    "moveLeft": "Move left",
+    "moveRight": "Move right",
+    "openNewTab": "Open in new tab"
   },
   "mail": {
     "addMailbox": "Mail: Add mailbox",

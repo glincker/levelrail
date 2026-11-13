@@ -29,3 +29,13 @@ export const PALETTE_MIN_VISIBLE_DIVISOR = envInt(
   env.VITE_PALETTE_MIN_VISIBLE_DIVISOR,
   3,
 )
+
+/** Pinned quick-link bubbles kept in local storage (only the first PALETTE_BUBBLE_MAX are shown). */
+export const PALETTE_PIN_MAX = envInt(env.VITE_PALETTE_PIN_MAX, 12)
+/** Pointer travel before a press on a bubble or result becomes a drag, so a click still opens. */
+export const PALETTE_DRAG_THRESHOLD_PX = envInt(
+  env.VITE_PALETTE_DRAG_THRESHOLD_PX,
+  4,
+)
+/** Press duration on a bubble that opens its context menu (touch and pen). */
+export const PALETTE_LONG_PRESS_MS = envInt(env.VITE_PALETTE_LONG_PRESS_MS, 500)
