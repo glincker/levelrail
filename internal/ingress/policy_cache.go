@@ -107,8 +107,8 @@ func bypassReason(r *http.Request, rule trafficpolicy.CacheRule) string {
 }
 
 // cacheKey never mixes hosts: the request host leads the key, then the
-// path and query (minus ignored params), every Vary header (plus
-// Accept-Encoding, which upstreams compress by) and any keyed cookies.
+// path and query (minus ignored params), every Vary header (plus the
+// negotiated Accept-Encoding variant, which upstreams compress by) and any keyed cookies.
 // It also returns the normalized URI the entry is stored and purged under.
 func cacheKey(host string, r *http.Request, rule trafficpolicy.CacheRule) (key, uri string) {
 	uri = normalizedURI(r, rule.IgnoreQueryParams)
@@ -116,7 +116,9 @@ func cacheKey(host string, r *http.Request, rule trafficpolicy.CacheRule) (key, 
 	b.WriteString(host)
 	b.WriteByte('\n')
 	b.WriteString(uri)
-	for _, h := range append([]string{"Accept-Encoding"}, rule.Vary...) {
+	b.WriteString("\nAccept-Encoding=")
+	b.WriteString(negotiatedEncoding(r.Header.Values("Accept-Encoding"), NewStaticEncodeHandler().Prefer))
+	for _, h := range rule.Vary {
 		b.WriteByte('\n')
 		b.WriteString(http.CanonicalHeaderKey(h))
 		b.WriteByte('=')
@@ -200,7 +202,7 @@ func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next cad
 	leader, waited := false, false
 	for {
 		if !noCache {
-			if e, fresh, stale := m.store.lookup(key); e != nil {
+			if e, fresh, stale := m.store.lookup(key); e != nil && entryAcceptable(e, r) {
 				outcome := cacheHit
 				if stale && !fresh {
 					outcome = cacheStale
@@ -224,7 +226,7 @@ func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next cad
 
 	now := m.store.now()
 	var old *cacheEntry
-	if e := m.store.peek(key); e != nil && !e.fresh(now) {
+	if e := m.store.peek(key); e != nil && !e.fresh(now) && entryAcceptable(e, r) {
 		old = e
 	}
 	guard := old != nil && old.servableOnError(now)

@@ -39,7 +39,7 @@ func TestNewRemoteRequest(t *testing.T) {
 			name:      "only the registry cache backend travels",
 			req:       Request{ContextDir: filepath.Join("tmp", "checkout"), Tag: "app:sha"},
 			cache:     CacheConfig{Dir: "/var/lib/cache", RegistryRef: "reg.example/cache:app", RegistryInsecure: true},
-			wantCache: CacheConfig{RegistryRef: "reg.example/cache:app", RegistryInsecure: true},
+			wantCache: CacheConfig{RegistryRef: "reg.example/cache/app:cache", RegistryInsecure: true},
 		},
 	}
 

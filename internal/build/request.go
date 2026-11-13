@@ -56,7 +56,12 @@ type Request struct {
 
 	// Network is the RUN step policy; the Client fills it from APP_BUILD_NETWORK.
 	Network NetworkMode
+
+	// CacheID names the app's own registry cache ref. Empty derives it from Tag.
+	CacheID string
 }
+
+func (r Request) cacheID() string { return SanitizeCacheID(r.CacheID, r.Tag) }
 
 // ErrContextDirRequired and ErrTagRequired are returned by Validate for
 // the two required fields, so callers can match on them if they need to

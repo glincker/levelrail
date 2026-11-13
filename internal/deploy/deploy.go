@@ -363,6 +363,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
 		Target:         req.Target,
+		CacheID:        railpackCacheID(ctx, req, tag),
 	}
 	if err := checkPreviewBuildSecrets(req.Preview, req.Service.Build.Secrets); err != nil {
 		cacheDone()

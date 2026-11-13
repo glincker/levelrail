@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -14,6 +13,8 @@ import (
 	bkclient "github.com/moby/buildkit/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
 // Runtime is the slice of docker.Runtime the supervisor needs.
@@ -233,7 +234,7 @@ func (s *Supervisor) writeConfig() error {
 	if err := ensureDir0700(s.cfg.ConfigDir); err != nil {
 		return fmt.Errorf("buildkitd: config dir: %w", err)
 	}
-	return os.WriteFile(filepath.Join(s.cfg.ConfigDir, "buildkitd.toml"), []byte(s.cfg.tomlBody()), 0o600)
+	return os.WriteFile(filepath.Join(s.cfg.ConfigDir, "buildkitd.toml"), []byte(s.cfg.tomlBody(s.diskTotal())), 0o600)
 }
 
 // spec has no network and no published ports. The socket directory and the
@@ -266,4 +267,17 @@ func (s *Supervisor) spec() docker.ContainerSpec {
 			{HostPath: s.cfg.ConfigDir, ContainerPath: "/etc/buildkit", ReadOnly: true},
 		},
 	}
+}
+
+// diskTotal is the size of the filesystem that sizes the GC budget, 0 when it cannot be read.
+func (s *Supervisor) diskTotal() int64 {
+	path := s.cfg.DiskPath
+	if path == "" {
+		path = s.cfg.ConfigDir
+	}
+	_, total, err := diskspace.Usage(path)
+	if err != nil {
+		return 0
+	}
+	return total
 }

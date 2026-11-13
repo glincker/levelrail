@@ -27,7 +27,6 @@ const (
 	// APP_BUILDKIT_IMAGE must supply a pinned reference until then.
 	DefaultDigest = ""
 
-	defaultGCKeepMB       = 10240
 	defaultGCKeepDuration = 168 * time.Hour
 	defaultHealthTimeout  = 5 * time.Second
 	defaultIdleStop       = 30 * time.Minute
@@ -59,9 +58,16 @@ var (
 
 // Config holds the supervisor settings, read from APP_BUILDKIT_* env.
 type Config struct {
-	Image         string
-	Snapshotter   string
+	Image       string
+	Snapshotter string
+	// GCKeepMB is the max used cap in MB (APP_BUILDKIT_GC_KEEP_MB); 0 sizes it from the disk.
 	GCKeepMB      int64
+	GCReservedMB  int64
+	GCMinFreePct  int64
+	GCSourceKeep  time.Duration
+	GCSourceMaxMB int64
+	// DiskPath is the path whose filesystem sizes the GC budget.
+	DiskPath      string
 	GCKeepFor     time.Duration
 	HealthTimeout time.Duration
 	IdleStop      time.Duration
@@ -91,7 +97,8 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 	cfg := Config{
 		Image:         DefaultImageRef,
 		Snapshotter:   "auto",
-		GCKeepMB:      defaultGCKeepMB,
+		GCSourceKeep:  defaultGCSourceKeep,
+		GCSourceMaxMB: defaultGCSourceMaxMB,
 		GCKeepFor:     defaultGCKeepDuration,
 		HealthTimeout: defaultHealthTimeout,
 		IdleStop:      defaultIdleStop,
@@ -123,11 +130,33 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 		}
 		cfg.GCKeepMB = n
 	}
+	ints := []struct {
+		key string
+		dst *int64
+		max int64
+	}{
+		{"APP_BUILDKIT_GC_RESERVED_MB", &cfg.GCReservedMB, 0},
+		{"APP_BUILDKIT_GC_MIN_FREE_PERCENT", &cfg.GCMinFreePct, 99},
+		{"APP_BUILDKIT_GC_SOURCE_MAX_MB", &cfg.GCSourceMaxMB, 0},
+	}
+	for _, i := range ints {
+		v := get(i.key)
+		if v == "" {
+			continue
+		}
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || n <= 0 || (i.max > 0 && n > i.max) {
+			return Config{}, fmt.Errorf("buildkitd: bad %s %q", i.key, v)
+		}
+		*i.dst = n
+	}
+	cfg.DiskPath = get("APP_BUILDKIT_GC_DISK_PATH")
 	durations := []struct {
 		key string
 		dst *time.Duration
 	}{
 		{"APP_BUILDKIT_GC_KEEP_DURATION", &cfg.GCKeepFor},
+		{"APP_BUILDKIT_GC_SOURCE_KEEP", &cfg.GCSourceKeep},
 		{"APP_BUILDKIT_HEALTH_TIMEOUT", &cfg.HealthTimeout},
 		{"APP_BUILDKIT_IDLE_STOP", &cfg.IdleStop},
 		{"APP_BUILDKIT_RESTART_BACKOFF", &cfg.RestartBackoff},
@@ -177,14 +206,14 @@ func CheckPinned(image string) error {
 }
 
 // tomlBody renders buildkitd.toml: the GC policy plus the snapshotter choice.
-func (c Config) tomlBody() string {
+// total is the byte size of the disk holding BuildKit state, 0 when unknown.
+func (c Config) tomlBody(total int64) string {
 	var b strings.Builder
 	b.WriteString("[worker.oci]\n  gc = true\n")
 	if c.Snapshotter != "auto" {
 		fmt.Fprintf(&b, "  snapshotter = %q\n", c.Snapshotter)
 	}
-	fmt.Fprintf(&b, "  [[worker.oci.gcpolicy]]\n    all = true\n    keepBytes = %d\n    keepDuration = %d\n",
-		c.GCKeepMB*1024*1024, int64(c.GCKeepFor.Seconds()))
+	b.WriteString(c.gcPolicyTOML(total))
 	return b.String()
 }
 

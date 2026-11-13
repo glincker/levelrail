@@ -88,7 +88,7 @@ func NewRemoteRequest(req Request, cache CacheConfig) (RemoteRequest, error) {
 		Target:         req.Target,
 		BuildArgs:      req.BuildArgs,
 		NoCache:        req.NoCache,
-		Cache:          CacheConfig{RegistryRef: cache.RegistryRef, RegistryInsecure: cache.RegistryInsecure},
+		Cache:          CacheConfig{RegistryRef: cache.ForApp(req.cacheID()).RegistryRef, RegistryInsecure: cache.RegistryInsecure},
 		Network:        req.Network,
 	}, nil
 }
