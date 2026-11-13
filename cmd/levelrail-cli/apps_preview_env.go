@@ -20,6 +20,10 @@ func runAppsPreviewEnv(prog string, args []string, stdout, stderr io.Writer, loo
 		return runAppsPreviewEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppsPreviewEnvClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "exclude":
+		return runAppsPreviewEnvScope(prog, args[1:], stdout, stderr, lookupEnv, true)
+	case "include":
+		return runAppsPreviewEnvScope(prog, args[1:], stdout, stderr, lookupEnv, false)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps preview-env subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsPreviewEnvUsage(prog))
@@ -31,6 +35,8 @@ func appsPreviewEnvUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps preview-env set <name> <key> --value VALUE [flags]   declare (or replace) a preview-specific env var override
   %[1]s apps preview-env clear <name> <key> [flags]                remove a preview-specific env var override
+  %[1]s apps preview-env exclude <name> <key> [flags]              keep an env var out of preview environments
+  %[1]s apps preview-env include <name> <key> [flags]              put an excluded env var back into previews
 
 Declares one env var to take a different value only when a preview
 environment is next created from app <name>, replacing whatever that key
@@ -91,5 +97,29 @@ func runAppsPreviewEnvClear(prog string, args []string, stdout, stderr io.Writer
 
 	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"cleared": true}, func() {
 		_, _ = fmt.Fprintf(stdout, "preview-env %q cleared for app %q\n", key, name)
+	})
+}
+
+func runAppsPreviewEnvScope(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), exclude bool) int {
+	verb := "include"
+	if exclude {
+		verb = "exclude"
+	}
+	label := "apps preview-env " + verb
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <name> <key> [flags]\n\nFlags:\n", prog, label)
+		fs.PrintDefaults()
+	}
+	cmd := twoArgCmd{prog: prog, cmdLabel: label, argsLabel: "an app name and an env var key"}
+	client, name, key, jsonOut, of, exitCode, ok := parseTwoArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, cmd, lookupEnv)
+	if !ok {
+		return exitCode
+	}
+	if err := client.SetAppPreviewEnvExclude(context.Background(), name, key, exclude); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s preview-env %q for app %q: %w", verb, key, name, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"excluded": exclude}, func() {
+		_, _ = fmt.Fprintf(stdout, "preview-env %q: %s for app %q\n", key, verb+"d", name)
 	})
 }

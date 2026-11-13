@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2120 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2122 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -409,6 +409,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/preflight", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreflightApp", Description: "Preflight checks (preflight.go): read-only probes of an existing app's stored config (AbilityRead, resource-scoped), or of a not yet created app described in the body (AbilityWrite, since the body names hosts the server will contact)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPreview", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutPreview", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/preview-env-exclude/{key}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppPreviewEnvExclude", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-env-exclude/{key}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppPreviewEnvExclude", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/preview-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPreviewPolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetPreviewPolicy", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/preview/capture", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCapturePreview", Description: ""},

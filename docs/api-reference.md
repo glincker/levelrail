@@ -778,6 +778,8 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/restart-schedule | AbilityDeploy | handleClearAppRestartSchedule |
 | PATCH | /api/v1/apps/{name}/build-hooks/{id} | AbilityWriteSensitive | handleUpdateBuildHook |
 | POST | /api/v1/apps/{name}/resume | AbilityDeploy | handleResumeApp |
+| PUT | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
+| DELETE | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

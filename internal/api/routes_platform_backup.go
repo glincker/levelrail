@@ -195,6 +195,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// the next time a preview environment is created from this app.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-env/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppPreviewEnvOverride))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/preview-env/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppPreviewEnvOverride))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-env-exclude/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppPreviewEnvExclude(true)))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/preview-env-exclude/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppPreviewEnvExclude(false)))
 	// Branch-scoped env var overrides (apps_branch_env.go): a narrower,
 	// pattern-matched sibling of PUT/DELETE .../preview-env just above,
 	// only applied when a preview's own branch matches. POST can carry a

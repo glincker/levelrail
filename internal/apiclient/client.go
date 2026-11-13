@@ -715,6 +715,16 @@ func (c *Client) ClearAppPreviewEnvOverride(ctx context.Context, name, key strin
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), nil, nil)
 }
 
+// SetAppPreviewEnvExclude calls PUT (exclude) or DELETE (include) on
+// /api/v1/apps/{name}/preview-env-exclude/{key}.
+func (c *Client) SetAppPreviewEnvExclude(ctx context.Context, name, key string, exclude bool) error {
+	method := http.MethodDelete
+	if exclude {
+		method = http.MethodPut
+	}
+	return c.do(ctx, method, "/api/v1/apps/"+PathEscape(name)+"/preview-env-exclude/"+PathEscape(key), nil, nil)
+}
+
 // ListAppBranchEnv calls GET /api/v1/apps/{name}/branch-env: every
 // branch-scoped env var override declared for name, across every
 // branch pattern.
