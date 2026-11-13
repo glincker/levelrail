@@ -1,0 +1,188 @@
+{
+  "title": "Formulários",
+  "description": "Colete envios dos formulários HTML do seu site estático. Cada formulário recebe um endpoint público para receber os envios.",
+  "loading": "Carregando formulários",
+  "loadError": "Não foi possível carregar os formulários.",
+  "retry": "Tentar novamente",
+  "new": "Novo formulário",
+  "create": {
+    "title": "Novo formulário",
+    "description": "Escolha um nome curto. Ele passa a fazer parte do endereço do endpoint e não pode ser alterado depois.",
+    "name": "Nome do formulário",
+    "namePlaceholder": "contato",
+    "submit": "Criar formulário",
+    "submitting": "Criando"
+  },
+  "empty": {
+    "title": "Nenhum formulário ainda",
+    "description": "Crie um formulário, desenhe os campos, cole o snippet no seu site e os envios chegam aqui.",
+    "cta": "Crie seu primeiro formulário"
+  },
+  "endpoint": "Endpoint",
+  "snippet": "Snippet HTML",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "copyFailed": "Não foi possível copiar",
+  "counts": "{{total}} envios, {{spam}} spam",
+  "settings": {
+    "title": "Configurações",
+    "redirect": "Redirecionar após o envio",
+    "redirectHint": "Os navegadores são enviados para cá após um envio. Deixe vazio para mostrar uma página simples de agradecimento.",
+    "honeypot": "Campo armadilha de spam",
+    "honeypotHint": "Um campo oculto que visitantes reais deixam vazio. Envios que o preenchem são mantidos como spam e nunca notificam você.",
+    "channels": "Notificar em novos envios",
+    "noChannels": "Nenhum canal de notificação foi configurado ainda. Adicione um em Alertas para ser avisado sobre novos envios.",
+    "save": "Salvar configurações",
+    "saving": "Salvando",
+    "saved": "Configurações do formulário salvas."
+  },
+  "delete": {
+    "button": "Excluir formulário",
+    "title": "Excluir este formulário?",
+    "description": "O endpoint deixa de aceitar envios imediatamente.",
+    "consequence": "Todos os envios armazenados deste formulário são excluídos e não podem ser recuperados.",
+    "confirm": "Excluir formulário",
+    "pending": "Excluindo"
+  },
+  "retention": "Os envios são excluídos após {{days}} dias. Apenas um hash com salt do endereço do remetente é armazenado, nunca o endereço.",
+  "inbox": {
+    "title": "Caixa de entrada",
+    "search": "Pesquisar envios",
+    "filterAll": "Todos",
+    "filterInbox": "Não é spam",
+    "filterSpam": "Spam",
+    "export": "Exportar CSV",
+    "loading": "Carregando envios",
+    "loadError": "Não foi possível carregar os envios.",
+    "emptyTitle": "Nenhum envio ainda",
+    "emptyDescription": "Envie para o endpoint acima, ou faça um teste a partir do seu site, e ele aparece aqui.",
+    "noMatchTitle": "Nada corresponde",
+    "noMatchDescription": "Tente outra pesquisa ou outro filtro.",
+    "spamBadge": "Spam",
+    "markSpam": "Marcar como spam",
+    "markNotSpam": "Não é spam",
+    "remove": "Excluir",
+    "removeConfirm": "Excluir este envio?",
+    "actionFailed": "Essa alteração não foi salva.",
+    "loadMore": "Carregar mais",
+    "reason": {
+      "honeypot": "Preencheu a armadilha de spam",
+      "too_many_links": "Links demais",
+      "empty": "Sem campos",
+      "manual": "Marcado por você"
+    },
+    "testBadge": "Teste"
+  },
+  "betaHint": "Beta: a captura de formulários funciona, mas o designer e os limites ainda estão mudando.",
+  "intro": "Sites estáticos não podem executar código de servidor. Formulários dá ao seu site um endpoint público que armazena os envios.",
+  "howItWorks": "Como funciona",
+  "hero": {
+    "alt": "Um visitante preenche um formulário no seu site e pressiona Enviar. O envio chega ao seu endpoint do Levelrail, aparece na caixa de entrada e dispara uma notificação.",
+    "caption": "Desenhe um formulário, cole-o no seu site estático e leia os envios aqui.",
+    "site": "Seu site",
+    "endpoint": "Endpoint",
+    "inbox": "Caixa de entrada",
+    "notice": "Novo envio"
+  },
+  "steps": {
+    "design": {
+      "title": "Desenhe seu formulário",
+      "body": "Escolha os campos, rótulos e a mensagem de sucesso."
+    },
+    "embed": {
+      "title": "Cole o snippet no seu site",
+      "body": "Copie o HTML ou o JavaScript para a sua página."
+    },
+    "read": {
+      "title": "Leia os envios aqui",
+      "body": "Seja avisado quando alguém enviar um."
+    }
+  },
+  "notStatic": {
+    "title": "Formulários são para sites estáticos",
+    "description": "Este app executa seu próprio código de servidor, então ele mesmo pode tratar envios de formulário. Formulários coleta envios de apps que fazem deploy como site estático.",
+    "back": "Voltar ao app"
+  },
+  "sections": {
+    "design": {
+      "title": "Design",
+      "help": "Escolha os campos que os visitantes preenchem e o que eles veem depois de enviar."
+    },
+    "embed": {
+      "title": "Incorporar",
+      "help": "Copie isto para o seu site estático. Ele acompanha o seu design conforme você edita."
+    },
+    "submissions": {
+      "title": "Envios",
+      "help": "Tudo o que os visitantes enviam chega aqui. Exporte como CSV quando quiser."
+    },
+    "settings": {
+      "title": "Configurações",
+      "help": "Para onde os visitantes vão depois, a proteção contra spam e quem é notificado."
+    }
+  },
+  "designer": {
+    "label": "Rótulo",
+    "name": "Nome do campo",
+    "type": "Tipo",
+    "types": {
+      "text": "Texto",
+      "email": "E-mail",
+      "textarea": "Texto longo",
+      "select": "Lista suspensa",
+      "checkbox": "Caixa de seleção",
+      "number": "Número",
+      "url": "Endereço web",
+      "hidden": "Oculto"
+    },
+    "placeholder": "Placeholder",
+    "minLength": "Comprimento mínimo",
+    "maxLength": "Comprimento máximo",
+    "options": "Opções",
+    "optionsHint": "Uma opção por linha.",
+    "default": "Valor",
+    "required": "Obrigatório",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "remove": "Remover campo",
+    "addField": "Adicionar campo",
+    "customize": "Personalizar campos",
+    "usingDefault": "Este formulário usa os campos padrão: nome, e-mail e mensagem. Personalize-os para criar o seu próprio.",
+    "success": "Mensagem de sucesso",
+    "successDefault": "Obrigado, seu envio foi recebido.",
+    "successLabel": "Após o envio",
+    "origins": "Sites permitidos (opcional)",
+    "originsHint": "Um endereço por linha, como https://example.com. Navegadores em outros sites são recusados. Vazio permite qualquer site.",
+    "preview": "Prévia ao vivo",
+    "send": "Enviar",
+    "save": "Salvar design",
+    "saving": "Salvando",
+    "saved": "Design do formulário salvo.",
+    "reset": "Voltar aos campos padrão"
+  },
+  "embed": {
+    "noPublicUrl": {
+      "title": "Nenhuma URL pública definida",
+      "body": "Nenhuma URL pública está definida, então este endpoint só funciona a partir desta máquina. Os visitantes do seu site no ar não conseguem alcançá-lo.",
+      "fix": "Definir a URL pública"
+    },
+    "variants": {
+      "html": "HTML",
+      "fetch": "JavaScript",
+      "minimal": "Mínimo"
+    },
+    "variantHint": {
+      "html": "Snippet HTML",
+      "fetch": "HTML com um script fetch (permanece na página)",
+      "minimal": "Marcação mínima (sem rótulos, traga seu próprio estilo)"
+    }
+  },
+  "test": {
+    "button": "Enviar um envio de teste",
+    "sending": "Enviando",
+    "sent": "Envio de teste {{id}} armazenado",
+    "ok": "Ele está marcado como teste na caixa de entrada abaixo.",
+    "flagged": "Foi marcado como spam.",
+    "failed": "Não foi possível enviar o teste."
+  }
+}

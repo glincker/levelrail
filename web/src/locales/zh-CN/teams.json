@@ -1,0 +1,137 @@
+{
+  "page": {
+    "title": "团队",
+    "description": "谁能查看和更改哪些项目。每个团队拥有自己的项目，以及这些项目的环境、应用和数据库。",
+    "create": "新建团队",
+    "createTitle": "创建团队",
+    "createName": "团队名称",
+    "createSubmit": "创建团队",
+    "created": "团队已创建",
+    "empty": "你还没有加入任何团队。请向团队管理员索取邀请链接。",
+    "pick": "团队",
+    "defaultTeam": "默认",
+    "defaultHint": "默认团队就是实例本身。实例管理员在“用户”页面和这里管理其成员。",
+    "eyebrow": "访问",
+    "help": "团队与角色指南",
+    "count_other": "{{count}} 个团队",
+    "banner": {
+      "title": "所有人都在默认团队中",
+      "body": "创建团队，可让一个小组拥有自己的项目、环境、应用和数据库，以及自己的所有者和成员。"
+    }
+  },
+  "roles": {
+    "owner": "所有者",
+    "admin": "管理员",
+    "developer": "开发者",
+    "viewer": "查看者",
+    "ownerHint": "拥有全部权限，包括删除团队和转让所有权。",
+    "adminHint": "可在任何地方部署，包括受保护的环境，并管理成员。",
+    "developerHint": "可以部署、编辑环境变量和读取日志，受保护的环境除外。",
+    "viewerHint": "可读取应用、数据库和日志。不能更改任何内容。",
+    "yourRole": "你的角色：{{role}}"
+  },
+  "members": {
+    "tableLabel": "团队成员",
+    "title": "成员",
+    "email": "邮箱",
+    "name": "姓名",
+    "role": "角色",
+    "actions": "操作",
+    "remove": "移除",
+    "removed": "成员已移除",
+    "roleChanged": "角色已更新",
+    "leave": "退出团队",
+    "left": "你已退出团队",
+    "transfer": "设为所有者",
+    "transferred": "所有权已转让。你现在是管理员。",
+    "roleLabel": "{{email}} 的角色"
+  },
+  "invites": {
+    "tableLabel": "团队邀请",
+    "statusHeader": "状态",
+    "title": "邀请",
+    "create": "邀请",
+    "email": "邮箱（可选）",
+    "emailHint": "留空则生成一次性链接，任何持有该链接的人都可以兑换。",
+    "role": "角色",
+    "expires": "过期时间（小时，可选）",
+    "submit": "创建邀请",
+    "created": "邀请已创建。请立即复制链接，之后不再显示。",
+    "copy": "复制链接",
+    "copied": "链接已复制",
+    "revoke": "撤销",
+    "revoked": "邀请已撤销",
+    "link": "链接邀请",
+    "empty": "还没有邀请。",
+    "status": {
+      "pending": "待处理",
+      "accepted": "已接受",
+      "revoked": "已撤销",
+      "expired": "已过期"
+    }
+  },
+  "events": {
+    "title": "团队审计记录",
+    "empty": "尚无成员变更记录。"
+  },
+  "switcher": {
+    "aria": "团队和项目",
+    "allTeams": "所有团队",
+    "allProjects": "所有项目",
+    "team": "团队",
+    "project": "项目"
+  },
+  "forbidden": {
+    "title": "你无权访问此处",
+    "body": "你当前的团队角色不允许此操作，或者它属于另一个团队。",
+    "switch": "切换团队",
+    "teams": "打开团队",
+    "home": "返回仪表盘"
+  },
+  "accept": {
+    "title": "加入团队",
+    "description": "你被邀请加入一个团队。",
+    "summary": "以{{role}}身份加入 {{team}}",
+    "signedInHint": "你已登录，因此该邀请会加入你当前的账户。",
+    "newAccountHint": "还没有账户？请在此创建。它仅属于此团队。",
+    "email": "邮箱",
+    "password": "密码",
+    "name": "显示名称（可选）",
+    "submit": "加入团队",
+    "joined": "你已加入团队",
+    "invalid": "此邀请无效、已过期、已撤销或已被使用。请向团队管理员索取新的邀请。",
+    "missing": "此链接中没有邀请令牌。"
+  },
+  "quota": {
+    "title": "配额",
+    "teamHint": "此团队名下所有内容的限制。会超出限制的更改将被拒绝，并显示限制值和当前用量。",
+    "projectHint": "此项目名下所有内容的限制，叠加在任何团队限制之上。",
+    "resources": {
+      "apps": "应用",
+      "databases": "数据库",
+      "memory": "预留内存（MB）",
+      "cpu": "预留 CPU（核）",
+      "previews": "预览环境"
+    },
+    "fields": {
+      "apps": "最大应用数",
+      "databases": "最大数据库数",
+      "memory": "最大内存（MB）",
+      "cpu": "最大 CPU（核）",
+      "previews": "最大预览数"
+    },
+    "usage": "{{used}} / {{limit}}",
+    "usageUnlimited": "已使用 {{used}}，无限制",
+    "full": "已达上限",
+    "nearLimit": "接近上限",
+    "editHint": "0 表示无限制。调低限制时，现有资源绝不会被停止。",
+    "save": "保存限制",
+    "clear": "移除所有限制",
+    "saved": "配额已保存",
+    "cleared": "配额限制已移除",
+    "readOnly": "只有团队管理员和所有者可以更改这些限制。"
+  },
+  "errors": {
+    "generic": "请求失败：{{message}}"
+  }
+}

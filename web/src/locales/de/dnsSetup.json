@@ -1,0 +1,167 @@
+{
+  "title": "DNS-Einrichtung",
+  "back": "Zurück",
+  "continue": "Weiter",
+  "loading": "Wird geladen",
+  "copied": "Kopiert",
+  "progress": "Schritt {{current}} von {{total}}",
+  "step": {
+    "pick": "Domain wählen",
+    "detect": "Ihr DNS-Host wird gesucht",
+    "review": "Records prüfen",
+    "verify": "Records kontrollieren"
+  },
+  "connectAction": "{{provider}} verbinden",
+  "openIn": "In {{provider}} öffnen",
+  "foundValue": "Gefunden: {{value}}",
+  "expectedValue": "Erwartet: {{value}}",
+  "keepMine": "Meinen behalten",
+  "replace": "Ersetzen",
+  "group": {
+    "receive": "E-Mails empfangen",
+    "trust": "Vertrauen",
+    "optional": "Optional",
+    "records": "Records"
+  },
+  "status": {
+    "live": "Aktiv",
+    "waiting": "Wartet",
+    "willAdd": "Wird hinzugefügt",
+    "different": "Abweichend",
+    "conflict": "Konflikt",
+    "unknown": "Unbekannt",
+    "found": "Gefunden"
+  },
+  "pick": {
+    "listLabel": "Domains in diesem System",
+    "source": {
+      "install": "Mail-Installation",
+      "mail": "Mail-Domain",
+      "app": "App",
+      "zone": "DNS-Zone"
+    },
+    "addAnother": "Weitere Domain hinzufügen",
+    "addLabel": "Domain",
+    "placeholder": "example.com",
+    "use": "Verwenden",
+    "invalid": "Geben Sie eine Domain wie example.com ein.",
+    "apexOffer": "{{apex}} für Adressen und {{host}} als Server verwenden",
+    "loadFailed": "Ihre Domains konnten nicht geladen werden."
+  },
+  "detect": {
+    "detecting": "DNS-Host wird erkannt",
+    "connected": "DNS wird bei {{provider}} gehostet. Verbunden.",
+    "notConnected": "DNS wird bei {{provider}} gehostet. Nicht verbunden.",
+    "unknown": "Wir konnten Ihren DNS-Host nicht erkennen. Sie können stattdessen die Records kopieren.",
+    "failed": "Die Erkennung ist fehlgeschlagen. Sie können die Records weiterhin kopieren.",
+    "domainConnect": "Freigabe mit einem Klick bei {{host}} verfügbar",
+    "without": "Ohne Verbindung fortfahren",
+    "demo": "Demodaten: demo.example ist eine Fake-Zone, daher kann kein echter DNS-Host gefunden werden. Geben Sie unten eine echte Domain ein, um die Erkennung zu testen (schreibgeschützte Abfragen). Um den Demomodus auszuschalten, starten Sie mit LOCAL_MAIL_DEMO=0 neu.",
+    "tryLabel": "Andere Domain testen",
+    "tryAction": "Erkennen"
+  },
+  "connect": {
+    "permissions": "Erstellen Sie ein Token mit Zone DNS Edit für diese Zone und Zone Read. Mehr wird nicht benötigt.",
+    "tokenLabel": "API-Token von {{provider}}",
+    "save": "Token speichern",
+    "saving": "Speichern",
+    "failed": "Das Token wurde nicht akzeptiert. Prüfen Sie seine Berechtigungen und versuchen Sie es erneut.",
+    "useSettings": "Fügen Sie die Zugangsdaten von {{provider}} in den Einstellungen hinzu oder kopieren Sie stattdessen die Records."
+  },
+  "review": {
+    "host": "Mail-Host",
+    "ip": "IPv4 des Servers",
+    "ipPlaceholder": "203.0.113.7",
+    "edit": "Mail-Host und Server bearbeiten",
+    "done": "Fertig",
+    "otherProvider": "Anderen Mail-Anbieter verwenden?",
+    "presetLabel": "Mail-Anbieter",
+    "selfHosted": "Dieser Server",
+    "planFailed": "Die Records konnten nicht gelesen werden. {{message}}",
+    "empty": "Für diese Domain gibt es nichts hinzuzufügen.",
+    "blocked": "Ein Record dieser Zone würde den Mail-Host verdecken. Beheben Sie das zuerst.",
+    "add_one": "{{count}} Record hinzufügen",
+    "add_other": "{{count}} Records hinzufügen",
+    "addDiff_one": "{{count}} hinzufügen, {{diff}} abweichenden prüfen",
+    "addDiff_other": "{{count}} hinzufügen, {{diff}} abweichende prüfen",
+    "applying": "Records werden hinzugefügt",
+    "copy": "Records kopieren",
+    "check": "Records kontrollieren",
+    "nothingDeleted": "Es wird nichts gelöscht.",
+    "confirmReplace_one": "Dies überschreibt {{count}} vorhandenen Record. Bestätigen Sie, um fortzufahren.",
+    "confirmReplace_other": "Dies überschreibt {{count}} vorhandene Records. Bestätigen Sie, um fortzufahren.",
+    "confirmButton_one": "Ja, {{count}} ersetzen und hinzufügen",
+    "confirmButton_other": "Ja, {{count}} ersetzen und hinzufügen",
+    "applyFailed": "Die Records wurden nicht hinzugefügt.",
+    "recordsTitle": "Zu erstellender DNS-Record"
+  },
+  "manual": {
+    "whereKnown": "Fügen Sie diese im DNS-Dashboard von {{provider}} ein.",
+    "whereUnknown": "Fügen Sie diese dort ein, wo das DNS Ihrer Domain verwaltet wird.",
+    "dashboard": "DNS-Dashboard",
+    "copyAll": "Alle kopieren",
+    "copyTable": "Als Tabelle kopieren",
+    "copyValue": "Wert von {{name}} kopieren",
+    "ttl": "TTL {{ttl}}",
+    "priority": "Priorität {{priority}}"
+  },
+  "verify": {
+    "undelegated": "Die Nameserver der Domain zeigen noch nicht auf diese Zone, daher werden diese Records nicht aufgelöst. {{reason}}",
+    "summary": "{{added}} hinzugefügt, {{same}} bereits vorhanden.",
+    "liveCount": "{{live}} von {{total}} aktiv",
+    "progress": "Records aktiv",
+    "checkedAgo": "vor {{seconds}} s geprüft",
+    "checkNow": "Jetzt prüfen",
+    "checking": "Wird geprüft",
+    "waiting": "Warten auf DNS, meist unter 5 Minuten.",
+    "stillWaiting": "Warten Sie noch? Prüfen Sie später erneut.",
+    "allLive": "Alle Records sind aktiv.",
+    "ptr": "Reverse-DNS (PTR) wird bei Ihrem Hosting-Anbieter gesetzt. Ausstehend.",
+    "checkAgain": "Erneut prüfen"
+  },
+  "toast": {
+    "applied_one": "{{count}} Record hinzugefügt",
+    "applied_other": "{{count}} Records hinzugefügt"
+  },
+  "summary": {
+    "label": "Zusammenfassung der Records",
+    "toAdd_one": "{{count}} Record hinzuzufügen",
+    "toAdd_other": "{{count}} Records hinzuzufügen",
+    "zone": "Zonendatei",
+    "table": "Tabelle",
+    "json": "JSON"
+  },
+  "mode": {
+    "label": "Art des Hinzufügens",
+    "auto": "Automatisch hinzufügen",
+    "myself": "Selbst hinzufügen"
+  },
+  "banner": {
+    "hosted": "DNS wird bei {{provider}} gehostet",
+    "unknown": "DNS-Host nicht erkannt",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden"
+  },
+  "table": {
+    "label": "DNS-Records",
+    "status": "Status",
+    "type": "Typ",
+    "name": "Name",
+    "value": "Wert",
+    "ttl": "TTL",
+    "expand": "Vollständigen Wert anzeigen",
+    "collapse": "Vollständigen Wert ausblenden",
+    "existing": "Vorhandener Record"
+  },
+  "options": {
+    "label": "Möglichkeiten, diese Records hinzuzufügen",
+    "approve": "Bei {{host}} freigeben (kein Token)",
+    "approving": "Wird geöffnet",
+    "approveHint": "Öffnet Ihren DNS-Host in einem neuen Tab. Sie geben dort frei, nichts wird gespeichert.",
+    "connectToken": "{{host}} mit einem Token verbinden",
+    "tokenHint": "Ein Token ermöglicht auch Live-Prüfungen und die verwaltete Record-Liste.",
+    "tokenCerts": "Es lässt auch das Zertifikat des Mail-Hosts automatisch erneuern.",
+    "failed": "Die Freigabe konnte nicht gestartet werden. Versuchen Sie stattdessen, sich mit einem Token zu verbinden.",
+    "connectLink": "Verbinden"
+  }
+}

@@ -1,0 +1,218 @@
+{
+  "title": "Ressources",
+  "description": "Chaque app, base de données, node, domaine, bucket et réseau privé dans une seule liste consultable. Étiquetez-les, enregistrez les vues que vous utilisez et voyez ce que coûte chaque tag.",
+  "search": {
+    "label": "Rechercher des ressources",
+    "placeholder": "Rechercher par nom, détail ou tag"
+  },
+  "kind": {
+    "all": "Toutes",
+    "app": "Apps",
+    "database": "Bases de données",
+    "node": "Nodes",
+    "domain": "Domaines",
+    "bucket": "Buckets",
+    "network": "Réseaux privés",
+    "appOne": "App",
+    "databaseOne": "Base de données",
+    "nodeOne": "Node",
+    "domainOne": "Domaine",
+    "bucketOne": "Bucket",
+    "networkOne": "Réseau privé"
+  },
+  "tags": {
+    "filter": "Tags",
+    "filterLabel": "Filtrer par tag, une ressource doit avoir tous les tags sélectionnés",
+    "none": "Aucun tag pour l'instant. Sélectionnez des ressources et utilisez Ajouter un tag pour créer le premier.",
+    "clear": "Effacer les tags"
+  },
+  "list": {
+    "label": "Ressources",
+    "name": "Nom",
+    "detail": "Détail",
+    "tags": "Tags",
+    "selectAll": "Sélectionner toutes les ressources affichées",
+    "selectOne": "Sélectionner {{name}}",
+    "shown": "{{shown}} sur {{total}} affichées",
+    "emptyTitle": "Aucune ressource ne correspond",
+    "emptyDescription": "Effacez la recherche ou le filtre de tags pour tout revoir.",
+    "emptyAction": "Effacer les filtres",
+    "errorTitle": "Impossible de charger les ressources",
+    "retry": "Réessayer"
+  },
+  "bulk": {
+    "selected_one": "{{count}} sélectionnée",
+    "selected_other": "{{count}} sélectionnées",
+    "selected_many": "{{count}} sélectionnées",
+    "addTag": "Ajouter un tag",
+    "removeTag": "Retirer un tag",
+    "clear": "Effacer la sélection"
+  },
+  "dialog": {
+    "addTitle": "Ajouter un tag à {{count}} ressources",
+    "removeTitle": "Retirer un tag de {{count}} ressources",
+    "description": "Prévisualisez d'abord le changement. Rien n'est écrit tant que vous ne l'appliquez pas.",
+    "tagLabel": "Tag",
+    "tagPlaceholder": "team:shop",
+    "tagHint": "Une clé ou clé:valeur en minuscules, par exemple env:prod. Utilisez-le pour regrouper les coûts.",
+    "preview": "Prévisualiser les changements",
+    "previewing": "Vérification...",
+    "apply": "Appliquer à {{count}}",
+    "applying": "Application...",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "summaryDry": "Aperçu : {{would}} changeraient, {{skipped}} déjà conformes, {{blocked}} bloquées.",
+    "summaryDone": "Terminé : {{done}} modifiées, {{skipped}} déjà conformes, {{blocked}} bloquées.",
+    "failed": "Le changement n'a pas pu être prévisualisé ou appliqué.",
+    "doneToast": "Tag {{tag}} mis à jour sur {{count}} ressources"
+  },
+  "appAction": {
+    "restart": "Redémarrer les apps",
+    "redeploy": "Redéployer les apps",
+    "restartTitle": "Redémarrer {{count}} apps",
+    "redeployTitle": "Redéployer {{count}} apps",
+    "restartDescription": "Prévisualisez les apps qui redémarreraient. Chaque app redémarre séparément, rien ne se passe tant que vous n'appliquez pas.",
+    "redeployDescription": "Prévisualisez les apps qui redéploieraient leur version actuelle. Rien ne se passe tant que vous n'appliquez pas.",
+    "summaryDry": "Aperçu : {{would}} s'exécuteraient, {{skipped}} ignorées, {{blocked}} bloquées.",
+    "summaryDone": "Terminé : {{done}} démarrées, {{skipped}} ignorées, {{blocked}} bloquées.",
+    "failed": "L'action n'a pas pu être prévisualisée ou appliquée.",
+    "restartToast": "Redémarrage de {{count}} apps",
+    "redeployToast": "Redéploiement de {{count}} apps"
+  },
+  "status": {
+    "ok": "Modifiée",
+    "would_apply": "Sera modifiée",
+    "skipped": "Déjà définie",
+    "denied": "Pas de permission",
+    "not_found": "Introuvable",
+    "error": "Échec"
+  },
+  "views": {
+    "button": "Vues enregistrées",
+    "label": "Vues enregistrées",
+    "empty": "Aucune vue enregistrée pour l'instant. Configurez une recherche et enregistrez-la ici.",
+    "saveTitle": "Enregistrer les filtres actuels",
+    "namePlaceholder": "Nom de la vue",
+    "save": "Enregistrer la vue",
+    "saved": "Vue {{name}} enregistrée",
+    "apply": "Ouvrir la vue {{name}}",
+    "delete": "Supprimer la vue {{name}}",
+    "deleted": "Vue supprimée"
+  },
+  "cost": {
+    "title": "Coût par tag",
+    "description": "Depuis le début du mois, une ressource avec plusieurs tags compte sous chacun.",
+    "open": "Ouvrir le rapport de coûts complet",
+    "empty": "Étiquetez quelques apps ou bases de données pour voir ici leur coût regroupé.",
+    "untagged": "Sans tag"
+  },
+  "palette": {
+    "open": "Ouvrir l'explorateur de ressources",
+    "openKeywords": "ressources tags explorateur rechercher tout",
+    "tagged": "Ressources avec le tag {{tag}}",
+    "view": "Vue enregistrée : {{name}}",
+    "bucket": "Bucket {{name}}",
+    "network": "Réseau privé {{name}}"
+  },
+  "scale": {
+    "title": "Mise à l'échelle",
+    "tag": "Après le déploiement",
+    "description": "Ce que cette app utilise en ce moment et comment lui donner plus de marge. Chaque chiffre ici est lu en direct depuis ce serveur.",
+    "replicas": "Réplicas",
+    "memoryLimit": "Limite de mémoire",
+    "noLimit": "Aucune limite définie",
+    "cpu": "CPU (app entière)",
+    "memory": "Mémoire (app entière)",
+    "unknown": "Pas encore signalé",
+    "autoscale": "Autoscaling",
+    "autoscaleOff": "Désactivé",
+    "autoscaleOn": "Activé, entre {{min}} et {{max}} réplicas",
+    "lastDecision": "Dernière décision : {{reason}} à {{at}}",
+    "noDecision": "Aucune décision enregistrée pour l'instant",
+    "replicaHealth": "Santé des réplicas",
+    "noReplicaHealth": "La santé par réplica apparaît ici dès qu'un load balancer est configuré pour cette app.",
+    "replicaRow": "Réplica {{n}}",
+    "state": {
+      "healthy": "Sain",
+      "unhealthy": "Défaillant",
+      "draining": "Drainage",
+      "disabled": "Désactivé",
+      "unknown": "Inconnu"
+    },
+    "guide": {
+      "title": "Que faire ensuite",
+      "resize": "Donnez plus de marge à chaque réplica : augmentez la limite de mémoire dans la section Ressources ci-dessus, puis redéployez. Augmentez-la quand la mémoire reste proche de la limite.",
+      "replicas": "Gérez plus de trafic : augmentez le nombre de réplicas dans les paramètres de déploiement. Chaque réplica est une copie de l'app qui partage la charge.",
+      "autoscale": "Laissez l'app suivre la charge : activez l'autoscaling ci-dessous et choisissez un minimum et un maximum. Il est désactivé tant que vous ne le configurez pas.",
+      "biggerHost": "Passez à un hôte plus gros quand le serveur lui-même manque de ressources : le CPU ou la mémoire reste élevé sur l'hôte après le redimensionnement, ou l'ajout de réplicas ne réduit plus la charge. Les réplicas d'un même serveur partagent ce serveur."
+    }
+  },
+  "replicaTable": {
+    "title": "Réplicas",
+    "replica": "Réplica",
+    "address": "Adresse",
+    "health": "Santé",
+    "connections": "Connexions",
+    "weight": "Poids",
+    "lastCheck": "Dernière vérification",
+    "drain": "Drainer",
+    "never": "Pas encore vérifié",
+    "replicaRow": "Réplica {{n}}",
+    "drainReplica": "Drainer le réplica {{n}}",
+    "drainFailed": "Impossible de modifier le réplica",
+    "state": {
+      "healthy": "Sain",
+      "unhealthy": "Défaillant",
+      "draining": "Drainage",
+      "disabled": "Désactivé",
+      "unknown": "Inconnu"
+    }
+  },
+  "nextCache": {
+    "title": "Cache partagé (Next.js)",
+    "hint": "Conservez le cache ISR et de données dans Redis pour que chaque réplica serve les mêmes pages.",
+    "toggle": "Partager le cache ISR et de données entre les réplicas",
+    "linked": "Base de données Redis liée : {{name}}",
+    "notLinked": "Aucune base de données Redis n'est liée à cette app. Le déploiement s'arrête tant qu'il n'y en a pas une de liée.",
+    "linkExisting": "Lier {{name}}",
+    "create": "Créer Redis",
+    "linkedToast": "{{name}} lié",
+    "saved": "Cache partagé enregistré",
+    "autoNote": "NEXT_BUILD_ID et l'URL du cache sont définis automatiquement au prochain déploiement.",
+    "suggest": "Cette app exécute {{count}} réplicas sans cache partagé. Activez-le pour qu'ils s'accordent sur les pages en cache.",
+    "redeploy": "Redéployer pour appliquer",
+    "noGit": "Redéployez depuis votre source git pour l'appliquer ; cette app n'en a pas.",
+    "started": "Redéploiement démarré pour {{name}}",
+    "errorTitle": "Impossible de mettre à jour le cache partagé"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "Protection contre le décalage de version",
+    "held": "Version précédente conservée, supprimée",
+    "noneHeld": "Aucune version précédente conservée",
+    "cache": "Cache partagé",
+    "redis": "Redis",
+    "off": "Désactivé",
+    "configure": "Configurer",
+    "vitals": "Web vitals",
+    "collecting": "Collecte en cours",
+    "notCollecting": "Pas de collecte",
+    "cron": "Jobs cron",
+    "cronCount_one": "{{count}} job",
+    "cronCount_other": "{{count}} jobs",
+    "cronCount_many": "{{count}} jobs",
+    "noCron": "Aucun",
+    "manage": "Gérer",
+    "advisor": {
+      "title": "Conseiller",
+      "empty": "Aucun problème trouvé",
+      "copy": "Copier la commande",
+      "copyFailed": "Impossible de copier",
+      "severity": {
+        "info": "Info",
+        "warn": "Avertissement",
+        "error": "Erreur"
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "Contextos de deploy",
+  "description": "Defina variáveis de ambiente e configurações de build estático por tipo de deploy. O que ficar vazio herda o padrão do app.",
+  "editor": {
+    "context": "Contexto",
+    "branchPattern": "Padrão de branch",
+    "branchPatternHint": "Nome exato ou um glob como release/*.",
+    "env": "Variáveis de ambiente",
+    "envHint": "Uma CHAVE=VALOR por linha. Use as substituições de variáveis por branch para segredos.",
+    "buildCommand": "Comando de build",
+    "publishDir": "Diretório de publicação",
+    "buildArgs": "Build args",
+    "buildArgsHint": "Uma CHAVE=VALOR por linha.",
+    "save": "Salvar contexto",
+    "saving": "Salvando",
+    "saved": "Contexto salvo.",
+    "saveError": "Não foi possível salvar o contexto.",
+    "clear": "Limpar",
+    "cleared": "Contexto limpo.",
+    "clearError": "Não foi possível limpar o contexto.",
+    "invalidLine": "A linha \"{{line}}\" deve ser CHAVE=VALOR.",
+    "loadError": "Não foi possível carregar os contextos salvos."
+  },
+  "contexts": {
+    "deploy-preview": "Preview de deploy (pull requests)",
+    "branch-deploy": "Deploy de branch",
+    "branch": "Uma branch específica"
+  },
+  "saved": {
+    "title": "Contextos salvos",
+    "empty": "Nenhuma substituição de contexto ainda. Todo deploy usa os padrões do app.",
+    "summary": "{{env}} variáveis de ambiente, {{args}} build args",
+    "edit": "Editar"
+  },
+  "effective": {
+    "title": "Configuração efetiva deste deploy",
+    "description": "Qual valor prevalece e de onde ele veio. Os segredos permanecem mascarados.",
+    "context": "Fazer deploy como",
+    "production": "Produção",
+    "branch": "Branch",
+    "branchPlaceholder": "release/1.2",
+    "env": "Variáveis de ambiente",
+    "buildCommand": "Comando de build",
+    "publishDir": "Diretório de publicação",
+    "buildArg": "Build arg {{name}}",
+    "none": "nenhum",
+    "empty": "Nenhuma variável de ambiente está definida para este deploy.",
+    "loadError": "Não foi possível carregar a configuração efetiva.",
+    "secret": "segredo",
+    "source": {
+      "app": "Padrão do app",
+      "preview-env": "Ambiente de preview",
+      "context": "Contexto",
+      "branch-context": "Contexto de branch",
+      "branch-env": "Substituição de branch"
+    }
+  }
+}

@@ -1,0 +1,346 @@
+{
+  "page": {
+    "title": "Políticas de acesso",
+    "description": "Regras Allow e Deny com escopo em um app, banco de dados ou ambiente. Um Deny sempre prevalece; um Allow pode conceder um acesso mais restrito que as permissões globais de um token.",
+    "createPolicy": "Criar política",
+    "tabs": {
+      "policies": "Políticas",
+      "access": "Quem tem acesso",
+      "simulator": "Simulador",
+      "analyzer": "Analisador"
+    },
+    "loadError": "Não foi possível carregar as políticas",
+    "retry": "Tentar novamente"
+  },
+  "risk": {
+    "read": "Leitura",
+    "write": "Altera coisas",
+    "sensitive": "Sensível",
+    "root": "Root"
+  },
+  "group": {
+    "view": "Ver",
+    "change": "Alterar",
+    "deploy": "Deploy",
+    "admin": "Administrar"
+  },
+  "list": {
+    "empty": {
+      "title": "Nenhuma política ainda",
+      "description": "Comece de um template ou monte uma regra por vez. Nada muda para ninguém até que uma política seja anexada."
+    },
+    "table": {
+      "name": "Política",
+      "rules": "Regras",
+      "appliesTo": "Aplica-se a",
+      "updated": "Atualizada",
+      "actions": "Ações"
+    },
+    "notAttached": "Não anexada",
+    "open": "Abrir",
+    "edit": "Editar",
+    "attach": "Anexar",
+    "delete": "Excluir",
+    "allow": "{{count}} Allow",
+    "deny": "{{count}} Deny",
+    "rules_one": "{{count}} regra",
+    "rules_many": "{{count}} regras",
+    "rules_other": "{{count}} regras",
+    "appliesToCount_one": "{{count}} principal",
+    "appliesToCount_many": "{{count}} principais",
+    "appliesToCount_other": "{{count}} principais"
+  },
+  "builder": {
+    "createTitle": "Criar política",
+    "editTitle": "Editar {{name}}",
+    "description": "Escolha o que é permitido ou negado, em quais recursos. O JSON à direita é gerado e é o que fica armazenado.",
+    "name": "Nome",
+    "namePlaceholder": "ex.: deployer-staging",
+    "nameRequired": "O nome é obrigatório",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Para que serve esta política",
+    "statement": "Regra {{n}}",
+    "addStatement": "Adicionar regra",
+    "removeStatement": "Remover a regra {{n}}",
+    "effect": {
+      "label": "Efeito",
+      "allow": "Allow",
+      "deny": "Deny",
+      "allowHint": "Concede estas permissões nos recursos abaixo.",
+      "denyHint": "Bloqueia estas permissões nos recursos abaixo, mesmo para um token que as possui."
+    },
+    "actions": {
+      "label": "Permissões",
+      "search": "Buscar permissões",
+      "all": "Todas as permissões",
+      "allHint": "Corresponde a qualquer permissão atual ou futura, root incluído.",
+      "required": "Escolha pelo menos uma permissão",
+      "noMatch": "Nenhuma permissão corresponde a essa busca.",
+      "selected": "{{count}} selecionadas"
+    },
+    "resources": {
+      "label": "Recursos",
+      "required": "Escolha pelo menos um recurso",
+      "add": "Adicionar recurso",
+      "kind": "Tipo",
+      "value": "Escolha um",
+      "search": "Buscar",
+      "noOptions": "Ainda não existe nada deste tipo.",
+      "remove": "Remover {{resource}}",
+      "kinds": {
+        "all": "Tudo",
+        "project": "Um projeto",
+        "environment": "Um ambiente",
+        "environment_kind": "Um tipo de ambiente",
+        "app": "Um app específico",
+        "database": "Um banco de dados específico",
+        "static_site": "Um site estático específico",
+        "pattern": "Um padrão de nome"
+      },
+      "patternPlaceholder": "app:web-*",
+      "patternHint": "Termina em * para corresponder a um prefixo, por exemplo app:web-*",
+      "projectNote": "Expande para os {{count}} ambientes do projeto ao salvar.",
+      "matchNone": "não corresponde a nada hoje",
+      "matchAll": "tudo",
+      "matchChecking": "verificando",
+      "matchApps_one": "{{count}} app",
+      "matchApps_many": "{{count}} apps",
+      "matchApps_other": "{{count}} apps",
+      "matchDatabases_one": "{{count}} banco de dados",
+      "matchDatabases_many": "{{count}} bancos de dados",
+      "matchDatabases_other": "{{count}} bancos de dados",
+      "matchStaticSites_one": "{{count}} site estático",
+      "matchStaticSites_many": "{{count}} sites estáticos",
+      "matchStaticSites_other": "{{count}} sites estáticos"
+    },
+    "conditions": {
+      "title": "Condições",
+      "description": "O avaliador ainda não tem um mecanismo de condições, então as regras se aplicam incondicionalmente. Defina o escopo por ambiente com os recursos acima.",
+      "planned": "Ainda não imposto",
+      "sourceIp": "IP ou CIDR de origem",
+      "timeWindow": "Janela de tempo e fuso horário",
+      "mfa": "MFA ou idade da sessão"
+    },
+    "json": {
+      "title": "Documento",
+      "advanced": "Editar JSON",
+      "advancedHint": "Editar aqui substitui as regras guiadas. Os erros de campo apontam para o caminho.",
+      "invalid": "Este não é um documento de política válido: {{reason}}",
+      "apply": "Usar este JSON",
+      "reset": "Voltar ao guiado"
+    },
+    "issues": {
+      "title": "Problemas",
+      "ok": "O documento é válido",
+      "checking": "Verificando"
+    },
+    "template": {
+      "title": "Começar de um template",
+      "pick": "Template",
+      "none": "Política em branco",
+      "use": "Preencher as regras",
+      "param": {
+        "environment": "Ambiente",
+        "app": "App",
+        "database": "Banco de dados",
+        "project": "Projeto"
+      },
+      "failed": "Não foi possível expandir o template"
+    },
+    "attach": {
+      "title": "Anexar ao salvar",
+      "description": "Opcional. Escolha quem recebe esta política imediatamente.",
+      "none": "Ninguém ainda"
+    },
+    "save": "Salvar política",
+    "saving": "Salvando",
+    "saved": "Política {{name}} salva",
+    "cancel": "Cancelar"
+  },
+  "impact": {
+    "title": "O que isto altera",
+    "checking": "Calculando o efeito",
+    "none": "Ninguém é afetado ainda.",
+    "noChange": "{{name}}: nenhuma mudança no acesso efetivo.",
+    "recentlyUsed": "Usada nos últimos 7 dias",
+    "guardBlocked": "Bloqueado: isto deixaria nenhum principal root capaz de gerenciar a plataforma.",
+    "showResources": "Mostrar recursos",
+    "tooManyHidden": "e mais",
+    "gains_one": "{{name}} ganha {{ability}} em {{count}} recurso",
+    "gains_many": "{{name}} ganha {{ability}} em {{count}} recursos",
+    "gains_other": "{{name}} ganha {{ability}} em {{count}} recursos",
+    "loses_one": "{{name}} perde {{ability}} em {{count}} recurso",
+    "loses_many": "{{name}} perde {{ability}} em {{count}} recursos",
+    "loses_other": "{{name}} perde {{ability}} em {{count}} recursos"
+  },
+  "versions": {
+    "title": "Histórico",
+    "empty": "Nenhuma versão salva ainda.",
+    "version": "Versão {{n}}",
+    "by": "por {{actor}}",
+    "unknownActor": "desconhecido",
+    "added": "Adicionada",
+    "removed": "Removida",
+    "noChange": "Nenhuma mudança de regra",
+    "initial": "Primeira versão salva"
+  },
+  "detail": {
+    "title": "Detalhes da política",
+    "rules": "Regras",
+    "appliesTo": "Aplica-se a",
+    "nobody": "Não anexada a ninguém. Não tem efeito até ser anexada.",
+    "findings": "Achados desta política",
+    "noFindings": "Nenhum achado para esta política.",
+    "detach": "Desanexar",
+    "close": "Fechar"
+  },
+  "access": {
+    "search": "Buscar usuários e tokens",
+    "filter": {
+      "all": "Todos",
+      "user": "Usuários",
+      "token": "Tokens"
+    },
+    "empty": {
+      "title": "Nenhum usuário ou token corresponde",
+      "description": "Limpe a busca ou troque o filtro."
+    },
+    "user": "Usuário",
+    "token": "Token",
+    "inactive": "Revogado ou expirado",
+    "pickOne": {
+      "title": "Escolha um usuário ou token",
+      "description": "Veja o que ele pode fazer e quais políticas moldam isso."
+    },
+    "attachedPolicies": "Políticas anexadas",
+    "noPolicies": "Nenhuma política anexada. Apenas as permissões próprias dele se aplicam.",
+    "attach": "Anexar política",
+    "bulkAttach": "Anexar aos tokens selecionados",
+    "selectedCount": "{{count}} selecionados",
+    "selectAllTokens": "Selecionar todos os tokens exibidos",
+    "clearSelection": "Limpar",
+    "flatAbilities": "Permissões",
+    "lastUsed": "Último uso {{when}}",
+    "neverUsed": "Nunca usado",
+    "policiesCount_one": "{{count}} política",
+    "policiesCount_many": "{{count}} políticas",
+    "policiesCount_other": "{{count}} políticas"
+  },
+  "attachDialog": {
+    "attachTitle": "Anexar política",
+    "detachTitle": "Desanexar política",
+    "description": "Revise o que muda e depois confirme. A alteração é gravada no log de auditoria.",
+    "policy": "Política",
+    "policyPick": "Escolha uma política",
+    "principals": "Quem",
+    "noPrincipals": "Escolha pelo menos um usuário ou token",
+    "confirmAttach": "Anexar",
+    "confirmDetach": "Desanexar",
+    "working": "Processando",
+    "failed": "Algumas alterações falharam: {{message}}",
+    "attached_one": "{{name}} anexada a {{count}} principal",
+    "attached_many": "{{name}} anexada a {{count}} principais",
+    "attached_other": "{{name}} anexada a {{count}} principais",
+    "detached_one": "{{name}} desanexada de {{count}} principal",
+    "detached_many": "{{name}} desanexada de {{count}} principais",
+    "detached_other": "{{name}} desanexada de {{count}} principais"
+  },
+  "effective": {
+    "title": "O que {{name}} pode fazer?",
+    "ability": "Permissão",
+    "scope": "Permitida em",
+    "viaPolicy": "Concedida por uma política",
+    "deniedByPolicy": "Bloqueada por uma política",
+    "all": "Todos os {{total}} recursos",
+    "some": "{{allowed}} de {{total}}",
+    "none": "Nenhum",
+    "noResources": "Nenhum app ou banco de dados ainda",
+    "restricted": "Este principal só enxerga os ambientes que lhe foram concedidos.",
+    "apps": "Apps",
+    "databases": "Bancos de dados"
+  },
+  "simulator": {
+    "title": "Este principal pode fazer isto?",
+    "description": "Executa o mesmo avaliador que protege cada requisição. Nada é alterado.",
+    "principal": "Principal",
+    "principalPick": "Escolha um usuário ou token",
+    "action": "Permissão",
+    "resource": "Recurso",
+    "resourcePick": "Escolha um app ou banco de dados",
+    "resourceCustom": "Ou digite um recurso",
+    "run": "Verificar",
+    "running": "Verificando",
+    "allowed": "Permitido",
+    "denied": "Negado",
+    "summary": "{{name}} {{verdict}} {{action}} em {{resource}}",
+    "verdictAllow": "pode",
+    "verdictDeny": "não pode",
+    "decidedBy": {
+      "explicit_deny": "Um Deny explícito em uma política anexada decidiu isto.",
+      "base_ability": "As permissões próprias do principal concedem isto, e nenhum Deny correspondeu.",
+      "explicit_allow": "Um Allow em uma política anexada concede isto.",
+      "no_grant": "Nada concede isto: nenhuma permissão e nenhuma declaração Allow correspondem.",
+      "hidden": "O recurso está fora dos ambientes que este principal pode ver, então a resposta é não encontrado.",
+      "inactive_principal": "Este token está revogado ou expirado, então toda requisição é recusada."
+    },
+    "decidingStatement": "Declaração decisiva",
+    "matched": "Todas as declarações que corresponderam",
+    "noneMatched": "Nenhuma declaração em nenhuma política anexada correspondeu.",
+    "policy": "Política {{name}}, regra {{n}}",
+    "environments": "Escopo de ambiente visto: {{list}}",
+    "failed": "Não foi possível executar a verificação",
+    "needsInput": "Escolha primeiro um principal e um recurso.",
+    "showEffective": "O que este principal pode fazer?"
+  },
+  "analyzer": {
+    "title": "Analisador de políticas",
+    "description": "Verificações estáticas em todas as políticas, anexos e tokens. Cada achado diz o que alterar.",
+    "score": "Pontuação {{score}} de 100",
+    "scoreLabel": "Pontuação de higiene de acesso",
+    "clean": {
+      "title": "Nenhum achado",
+      "description": "Nada nas suas políticas requer atenção."
+    },
+    "severity": {
+      "critical": "Crítica",
+      "high": "Alta",
+      "medium": "Média",
+      "low": "Baixa",
+      "info": "Nota"
+    },
+    "all": "Todas",
+    "fix": "Corrigir",
+    "openPolicy": "Abrir política",
+    "openPrincipal": "Ver acesso",
+    "rerun": "Executar novamente",
+    "count": "{{count}} achados"
+  },
+  "suggestions": {
+    "title": "Privilégio mínimo",
+    "description": "Tokens comparados com o que o log de auditoria mostra que eles usaram nos últimos {{days}} dias.",
+    "empty": "Todo token só tem permissões que usa.",
+    "granted": "Concedidas",
+    "suggested": "Sugeridas",
+    "unused": "Não usadas",
+    "status": {
+      "ok": "Em uso",
+      "narrow": "Restrito",
+      "idle": "Ocioso"
+    },
+    "revoke": "Revogar token",
+    "revoked": "Token {{name}} revogado",
+    "confirmTitle": "Revogar {{name}}?",
+    "confirmDescription": "Tudo o que usa este token para de funcionar. Isto não pode ser desfeito.",
+    "pending": "Revogando",
+    "note": "Requisições de leitura simples não são auditadas, então a leitura nunca é sinalizada como não usada."
+  },
+  "delete": {
+    "title": "Excluir {{name}}?",
+    "description": "Todos aqueles a quem ela está anexada perdem as regras dela. Isto não pode ser desfeito.",
+    "confirm": "Excluir política",
+    "deleted": "Política {{name}} excluída"
+  },
+  "errors": {
+    "generic": "A requisição falhou. Tente novamente."
+  }
+}

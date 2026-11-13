@@ -1,0 +1,131 @@
+{
+  "title": "Onde acessar este app",
+  "description": "O melhor endereço para abrir primeiro, depois outras formas de entrar.",
+  "actions": {
+    "copy": "Copiar {{what}}",
+    "copied": "Copiado",
+    "open": "Abrir {{what}}",
+    "test": "Testar",
+    "testing": "Testando",
+    "allowNetwork": "Permitir acesso pela rede",
+    "change": "Alterar porta ou exposição",
+    "openApp": "Abrir app",
+    "copyUrl": "Copiar endereço",
+    "recheck": "Verificar novamente",
+    "showDetails": "Mostrar detalhes",
+    "hideDetails": "Ocultar detalhes",
+    "openOnNetwork": "Abrir nesta rede (IP e porta)",
+    "addDomain": "Adicionar um domínio"
+  },
+  "allow": {
+    "title": "Permitir acesso pela rede?",
+    "description": "A porta é publicada em todas as interfaces e aberta no firewall do host, para que outros dispositivos possam acessar este app por HTTP simples.",
+    "confirm": "Permitir acesso pela rede",
+    "pending": "Aplicando",
+    "none": "Nada mudaria.",
+    "change": "{{what}}: {{from}} para {{to}}",
+    "plain_http": "HTTP simples: o tráfego não é criptografado e os portões de login configurados no domínio não se aplicam nesta porta.",
+    "recreates": "O container é recriado com as novas configurações.",
+    "done": "Acesso pela rede permitido",
+    "doneDescription": "A reconciliação roda em segundo plano."
+  },
+  "errors": {
+    "load": "Não foi possível carregar os endereços do app.",
+    "retry": "Tentar novamente"
+  },
+  "empty": "Nenhum endereço ainda. Faça o deploy do app para ter um.",
+  "badges": {
+    "attention": "{{count}} requerem atenção",
+    "port": "porta {{port}}",
+    "deployed": "Implantado",
+    "nodeOffline": "Node do host offline desde",
+    "previousHeld": "Release anterior retida, removida",
+    "previousHeldTitle": "Release anterior, retida até {{time}}. Ela permanece para que um rollback seja instantâneo."
+  },
+  "setup": {
+    "title": "Configuração recomendada",
+    "progress": "{{done}} de {{total}} concluídos",
+    "hide": "Ocultar para este app",
+    "show": "Mostrar a configuração recomendada"
+  },
+  "traffic": {
+    "hint": "Nenhum tráfego ainda. Os gráficos aparecem quando a primeira requisição chega."
+  },
+  "hero": {
+    "title": "Abra seu app",
+    "stopped": "O app não está rodando, então este endereço não responderá até ele iniciar.",
+    "fixTitle": "Este endereço ainda não responde de fora. Escolha uma forma de entrar:",
+    "fixHint": "Abrir nesta rede dá um IP e uma porta que funcionam na sua rede local sem um domínio. Um domínio torna o app acessível pela internet."
+  },
+  "status": {
+    "live": "No ar",
+    "down": "Sem resposta",
+    "unchecked": "Não verificado",
+    "checking": "Verificando",
+    "stopped": "Parado"
+  },
+  "security": {
+    "secure": "Seguro",
+    "selfSigned": "Certificado autoassinado: o navegador vai avisar",
+    "plain": "Não criptografado"
+  },
+  "scope": {
+    "internet": "Qualquer pessoa na internet",
+    "network": "Mesma rede ou VPN",
+    "server": "Somente este servidor",
+    "apps": "Outros apps neste servidor"
+  },
+  "dot": {
+    "ok": "Respondendo",
+    "down": "Sem resposta",
+    "unknown": "Ainda não verificado"
+  },
+  "others": {
+    "title": "Outras formas de entrar"
+  },
+  "advanced": {
+    "title": "Avançado: endereços para outros apps e este servidor",
+    "hint": "Necessário apenas ao conectar apps entre si ou ao trabalhar no próprio servidor.",
+    "noPublic": "Este servidor não tem endereço público, então o endereço da rede privada é o caminho de entrada.",
+    "autoDown": "O endereço de teste gratuito não respondeu a partir deste servidor. Ele precisa de DNS público e das portas 80 e 443 abertas, então o endereço acima é o que deve ser usado."
+  },
+  "id": {
+    "domain": "Domínio",
+    "public": "Endereço público",
+    "private": "Rede privada",
+    "loopback": "Este servidor",
+    "internal": "Outros apps",
+    "container": "Porta do container",
+    "host": "Porta do host"
+  },
+  "note": {
+    "container": "A porta em que o app escuta dentro do container.",
+    "host": "A porta publicada neste servidor para a porta do container.",
+    "hostStopped": "O app não está rodando, então nenhuma porta do host é publicada.",
+    "hostNone": "Nenhuma porta do host foi publicada ainda. Faça o deploy novamente para publicar uma.",
+    "local": "Funciona apenas quando você está logado neste servidor.",
+    "localNone": "Disponível quando o app estiver rodando.",
+    "private": "Funciona apenas a partir da mesma rede ou por uma VPN.",
+    "privateLocalhost": "Não acessível pela rede: a porta está vinculada ao localhost.",
+    "privateRemote": "Este app roda em outro node. Abra esse node para ver os endereços de rede dele.",
+    "public": "HTTP simples, qualquer pessoa que conheça o endereço pode acessá-lo.",
+    "domain": "Servido pelo proxy com TLS.",
+    "domainAuto": "Endereço automático. Adicione seu próprio domínio para um certificado confiável.",
+    "internal": "Outros apps neste servidor se conectam com este nome e porta, por exemplo http://{{address}}."
+  },
+  "test": {
+    "ok": "Respondeu em {{ms}} ms",
+    "failed": "O app não respondeu neste endereço. Ele ainda pode estar iniciando.",
+    "reason": {
+      "default": "O app não respondeu neste endereço. Ele ainda pode estar iniciando.",
+      "container_not_running": "O app não está rodando no momento.",
+      "container_not_listening": "O app não respondeu neste endereço. Ele ainda pode estar iniciando.",
+      "firewall_closed": "Este endereço está bloqueado, muito provavelmente por um firewall no servidor ou no provedor de hospedagem.",
+      "unreachable_from_host": "O proxy ainda não está respondendo neste endereço.",
+      "tls_not_issued": "O certificado ainda não é confiável, então os navegadores mostrarão um aviso.",
+      "proxy_route_missing": "O proxy ainda não tem uma rota para este endereço.",
+      "upstream_failing": "O proxy alcançou o servidor, mas o app por trás dele não está respondendo.",
+      "app_error": "O app respondeu com um erro."
+    }
+  }
+}

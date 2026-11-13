@@ -66,6 +66,8 @@ export interface PaletteItem {
   keepOpen?: boolean
   /** Ask for a confirm step before run (destructive server actions). */
   confirm?: boolean
+  /** Keep this item out of the recent pages and searches (synthetic action items). */
+  noHistory?: boolean
   /** Tab / Cmd+Enter action and the hint word shown for it. */
   secondary?: () => void
   secondaryHint?: string
@@ -86,6 +88,18 @@ export interface PalettePreviewData {
   primaryLabel?: string
   /** Small facts shown as chips: category, status, requirements. */
   facts?: string[]
+  /** Extra buttons in the preview, each with an Alt+letter shortcut. */
+  actions?: PreviewAction[]
+}
+
+export interface PreviewAction {
+  id: string
+  label: string
+  /** Letter pressed with Alt while this item is highlighted. */
+  shortcut: string
+  /** Route through the same confirm step as a destructive server action. */
+  confirm?: boolean
+  run: () => void
 }
 
 export interface RouteEntry {
@@ -122,6 +136,7 @@ export const GROUP_ORDER = [
   'DNS zones',
   'DNS records',
   'Actions',
+  'Languages',
 ] as const
 
 const nav = (

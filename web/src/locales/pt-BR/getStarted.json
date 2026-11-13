@@ -1,0 +1,259 @@
+{
+  "page": {
+    "title": "Primeiros passos",
+    "subtitle": "O caminho mais rápido de uma instalação nova até um primeiro app no ar, com backup e monitoramento.",
+    "loadError": "Não foi possível carregar o guia de configuração: {{message}}",
+    "retry": "Tentar novamente",
+    "rootOnly": "Somente um administrador pode alterar o guia de configuração. Você ainda pode seguir as etapas abaixo."
+  },
+  "summary": {
+    "ready": "{{percent}}% pronto para produção",
+    "steps": "{{done}} de {{total}} etapas concluídas",
+    "nextUp": "A seguir",
+    "allDoneTitle": "Tudo configurado",
+    "allDoneBody": "Todas as etapas foram concluídas ou ignoradas. Redefina o guia para rever suas escolhas.",
+    "serverAddress": "Endereço deste servidor: {{address}}",
+    "essentialTitle": "Publique seu primeiro app",
+    "essentialHelp": "Crie um app a partir de um link git ou de um template e depois abra-o no navegador."
+  },
+  "actions": {
+    "skip": "Ignorar",
+    "undo": "Desfazer",
+    "markDone": "Marcar como concluída",
+    "hide": "Ocultar por agora",
+    "show": "Mostrar o guia",
+    "reset": "Redefinir",
+    "resetConfirmTitle": "Redefinir o guia de configuração?",
+    "resetConfirmBody": "Isso limpa todas as etapas ignoradas e concluídas manualmente e mostra o guia novamente. Sua configuração não é alterada.",
+    "hidden": "O guia está oculto. Você pode trazê-lo de volta nesta página.",
+    "saveError": "Não foi possível atualizar o guia: {{message}}"
+  },
+  "meta": {
+    "minutes": "Cerca de {{count}} min",
+    "optional": "Opcional",
+    "progress": "{{done}} de {{total}}",
+    "blocked": "Faça \"{{step}}\" primeiro"
+  },
+  "state": {
+    "todo": "A fazer",
+    "in_progress": "Em andamento",
+    "done": "Concluída",
+    "skipped": "Ignorada",
+    "not_applicable": "Desnecessária"
+  },
+  "reason": {
+    "tls_terminated_upstream": "Seu proxy termina o TLS, então nenhum certificado é gerenciado aqui.",
+    "proxy_mode": "Servido pelo seu proxy reverso.",
+    "unavailable": "Não foi possível verificar isto agora.",
+    "http_only": "A URL do dashboard usa http simples. Mude para https.",
+    "no_alert_rule": "Você tem um canal, mas nenhuma regra de alerta. Crie uma regra para que o canal seja usado.",
+    "certificates_pending": "Aguardando a emissão dos certificados.",
+    "acme_disabled": "Os certificados automáticos estão desativados.",
+    "marked_done": "Marcada como concluída por um operador."
+  },
+  "steps": {
+    "secure_admin": {
+      "title": "Proteja a conta de administrador",
+      "what": "Adicione uma segunda verificação de login à conta que controla todos os deploys: um código de app autenticador (dois fatores) ou uma passkey (impressão digital, rosto ou PIN do dispositivo).",
+      "why": "Uma senha roubada, sozinha, não deveria bastar para acessar seus servidores.",
+      "cta": "Abrir segurança"
+    },
+    "sign_in_recovery": {
+      "title": "Configure um jeito de voltar a entrar",
+      "what": "Conecte um e-mail ou aprove novos logins a partir de um dispositivo em que você já confia, para conseguir voltar a entrar se perder a senha.",
+      "why": "Se você perder a senha ou a passkey, é assim que volta a entrar.",
+      "cta": "Abrir segurança"
+    },
+    "security_review": {
+      "title": "Revise os padrões de segurança",
+      "what": "Confira as proteções ativadas por padrão, como a proteção contra replay de webhooks e a auditoria de leituras sensíveis. Altere as que não combinarem com seu ambiente.",
+      "why": "Os padrões são seguros para a maioria das instalações. Uma revisão rápida garante que nada esteja desativado por acidente.",
+      "cta": "Revisar padrões"
+    },
+    "public_address": {
+      "title": "Defina o endereço do dashboard e ative o HTTPS",
+      "what": "Escolha o endereço web em que você abre este dashboard. A opção gratuita é um endereço https criado a partir do IP deste servidor, com certificado real e sem configurar DNS.",
+      "why": "Com o HTTPS ativado, entrar por HTTP simples deixa de funcionar, então faça isto cedo.",
+      "cta": "Ativar HTTPS"
+    },
+    "git_provider": {
+      "title": "Conecte uma origem git ou faça deploy de uma image",
+      "what": "Vincule GitHub, GitLab, Bitbucket ou Gitea para que um push faça o deploy do seu app. Se você faz deploy de uma image de container pronta, ignore esta etapa.",
+      "why": "Repositórios vinculados dão deploys automáticos e um histórico de deploys ligado aos commits.",
+      "cta": "Conectar git"
+    },
+    "first_app": {
+      "title": "Faça deploy do seu primeiro app",
+      "titleLive": "Seu primeiro app está em execução",
+      "what": "Crie um app a partir de um repositório, de uma image de container ou de um template. A plataforma faz o build, inicia o app e dá a ele um endereço https.",
+      "why": "Mostra que o ciclo de build, deploy e rollback funciona neste servidor.",
+      "cta": "Criar um app"
+    },
+    "app_domain": {
+      "title": "Coloque o app no seu domínio",
+      "what": "Associe seu próprio hostname ao app e aponte o registro DNS dele (a entrada no registrador do seu domínio) para este servidor.",
+      "why": "As pessoas acessam o app por nome, não por um endereço IP e uma porta.",
+      "cta": "Adicionar um domínio"
+    },
+    "dns": {
+      "title": "Conecte um provedor de DNS ou um proxy",
+      "what": "Deixe a plataforma editar os registros DNS por você via Cloudflare ou Route 53, ou rode-a atrás de um proxy reverso que você já tenha.",
+      "why": "Chega de copiar registros e certificados à mão.",
+      "cta": "Conectar DNS"
+    },
+    "tls": {
+      "title": "Verifique o certificado HTTPS do app",
+      "what": "Confirme que cada domínio serve um certificado em que os navegadores confiam e que ele se renova sozinho (TLS é a criptografia por trás do https).",
+      "why": "Os navegadores avisam sobre certificados inválidos, e uma falha silenciosa de renovação derruba o app.",
+      "cta": "Revisar certificados"
+    },
+    "backup_target": {
+      "title": "Adicione um destino de backup",
+      "what": "Envie os backups para um armazenamento fora deste servidor. Qualquer serviço compatível com S3 funciona, como AWS S3, Backblaze B2 ou Cloudflare R2.",
+      "why": "Um backup no mesmo disco não sobrevive ao disco.",
+      "cta": "Adicionar um destino"
+    },
+    "first_backup": {
+      "title": "Faça o primeiro backup",
+      "what": "Salve uma cópia do banco de dados da própria plataforma, que guarda a definição de todos os apps, para poder recuperá-lo.",
+      "why": "Se esse banco de dados for perdido, todas as definições de app também serão.",
+      "cta": "Criar um backup"
+    },
+    "verified_restore": {
+      "title": "Verifique uma restauração",
+      "what": "Execute uma verificação em um backup para provar que ele pode ser restaurado.",
+      "why": "Um backup não testado é uma esperança, não um backup.",
+      "cta": "Verificar um backup"
+    },
+    "notifications": {
+      "title": "Adicione um canal de notificação e uma regra de alerta",
+      "what": "Envie alertas por e-mail, Slack, Discord, Telegram ou webhook e depois crie uma regra de alerta que use o canal.",
+      "why": "Você fica sabendo de um crashloop ou de um certificado prestes a expirar antes dos seus usuários.",
+      "cta": "Adicionar um canal"
+    },
+    "teammate": {
+      "title": "Convide um colega de equipe",
+      "what": "Dê acesso a uma segunda pessoa para que a plataforma não dependa de um único login.",
+      "why": "Alguém pode assumir quando você estiver ausente. Ignore esta etapa em uma configuração solo.",
+      "cta": "Convidar alguém"
+    },
+    "upgrades": {
+      "title": "Escolha uma política de atualização",
+      "what": "Decida como a plataforma se atualiza: automaticamente em uma janela de tempo ou só quando você mandar.",
+      "why": "As correções de segurança chegam até você sem um reinício surpresa no meio do dia.",
+      "cta": "Escolher uma política"
+    }
+  },
+  "chip": {
+    "label": "Configuração {{percent}}% pronta",
+    "firstApp": "Primeiro app: {{done}} de {{total}}",
+    "cta": "Continuar configuração",
+    "open": "Abrir o guia de configuração"
+  },
+  "wizard": {
+    "continue": "Veja o que falta para produção no guia Primeiros passos"
+  },
+  "nav": {
+    "label": "Primeiros passos"
+  },
+  "hint": {
+    "line": "Parte da configuração: {{step}}.",
+    "cta": "Abrir o guia"
+  },
+  "sample": {
+    "cta": "Fazer deploy de um app de exemplo",
+    "creating": "Fazendo deploy...",
+    "created": "App de exemplo criado. Ele estará no ar em instantes.",
+    "exists": "Já existe um app de exemplo neste servidor.",
+    "error": "Não foi possível fazer deploy do app de exemplo: {{message}}",
+    "open": "Abrir app de exemplo"
+  },
+  "first": {
+    "title": "Faça deploy do seu primeiro app",
+    "titleLive": "Seu primeiro app está em execução",
+    "primary": "Escolha como fazer deploy",
+    "subtitle": "Escolha um caminho. Todos terminam com um app em execução e um link que você pode abrir.",
+    "sample": {
+      "title": "App de exemplo",
+      "description": "Um clique. Executa {{image}}, poucos megabytes, com health check em {{path}}.",
+      "cta": "Deploy do app de exemplo",
+      "creating": "Criando...",
+      "retry": "Tentar novamente"
+    },
+    "template": {
+      "title": "A partir de um template",
+      "description": "Escolha um serviço pronto do catálogo.",
+      "cta": "Explorar templates"
+    },
+    "repo": {
+      "title": "Seu próprio repo",
+      "description": "Faça o build a partir de um repositório. O nome do app vem do repo e o build é detectado.",
+      "cta": "Deploy de um repo"
+    },
+    "more": {
+      "import": "Vindo de outra plataforma? Importe",
+      "git": "Conecte o GitHub para fazer deploy a cada push"
+    },
+    "url": {
+      "preview": "Sem um domínio definido, o app recebe um endereço como {{url}}."
+    },
+    "status": {
+      "liveDetail": "{{name}} passou no health check e está atendendo tráfego.",
+      "noAddress": "Ainda não tem endereço público. Adicione um domínio na aba Domínios do app para acessá-lo pela internet.",
+      "failed": "{{name}} não está saudável",
+      "diagnosing": "Diagnosticando...",
+      "deploying": "Fazendo deploy de {{name}}",
+      "deployingDetail": "{{status}}. Baixando a image, iniciando o container e aguardando o health check.",
+      "expectedWait": "Pode levar até dois minutos enquanto o certificado é emitido.",
+      "slow": "Está demorando mais que o normal. Images grandes são lentas em uma conexão fraca. Os logs mostram o que está acontecendo.",
+      "certNote": "Seu navegador pode avisar sobre o certificado até o HTTPS ser ativado.",
+      "retry": "Tentar o deploy novamente",
+      "openApp": "Abrir app",
+      "viewLogs": "Ver logs",
+      "goLive": "Adicionar um domínio",
+      "done": "Ir para o dashboard"
+    }
+  },
+  "more": {
+    "title": "Prepare-se para produção",
+    "help": "Estes itens deixam o servidor mais seguro para usuários reais. Nenhum deles bloqueia seu primeiro deploy."
+  },
+  "strip": {
+    "title": "Coloque seu primeiro app no ar",
+    "live": "Seu app está no ar",
+    "open": "Abrir",
+    "addDomain": "Adicionar domínio",
+    "continue": "Continuar",
+    "deploy": "Deploy do app de exemplo",
+    "deploying": "Fazendo deploy...",
+    "review": "Revisar",
+    "gitUrl": "Ou faça deploy de uma URL Git",
+    "viewApp": "Ver app",
+    "steps": {
+      "server": {
+        "title": "Verifique o servidor",
+        "todo": "Verificando...",
+        "done": "Todas as verificações passaram",
+        "attention": "Precisa de atenção",
+        "failed": "Uma verificação falhou",
+        "working": "Verificando..."
+      },
+      "domain": {
+        "title": "Endereço",
+        "todo": "Um endereço gerado é usado",
+        "done": "Domínio definido",
+        "working": "Emitindo o certificado",
+        "failed": "O certificado falhou",
+        "attention": "Precisa de atenção"
+      },
+      "deploy": {
+        "title": "Deploy",
+        "todo": "App de exemplo ou uma URL Git",
+        "working": "Iniciando o app",
+        "done": "Em execução",
+        "failed": "O deploy falhou",
+        "attention": "Precisa de atenção"
+      }
+    }
+  }
+}

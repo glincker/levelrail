@@ -1,0 +1,1553 @@
+{
+  "deployNote": {
+    "queueLabel": "关于队列",
+    "queueBody": "同一应用的部署按顺序逐个运行。排在前面的部署完成或被取消后，这一个会自动开始。"
+  },
+  "statusReasons": {
+    "about": "此原因的含义",
+    "next": "下一步："
+  },
+  "nodeSelect": {
+    "auto": "自动（负载最低）",
+    "autoHint": "自动模式会把它放在负载最低的可用节点上。选择一个节点可将其固定在该节点。"
+  },
+  "draft": {
+    "message": "你有一份 {{time}} 保存的未提交草稿。",
+    "continue": "从上次中断处继续",
+    "startOver": "重新开始",
+    "dismiss": "忽略"
+  },
+  "deployHistory": {
+    "filters": {
+      "search": "搜索消息、提交、作者",
+      "branch": "分支",
+      "author": "作者",
+      "status": "状态",
+      "all": "全部（{{label}}）",
+      "clear": "清除筛选",
+      "noMatch": "没有符合这些筛选条件的部署",
+      "noMatchHint": "清除筛选即可查看所有部署。"
+    },
+    "visit": "访问",
+    "visitLabel": "访问 {{url}}",
+    "promote": "提升到生产环境",
+    "promoteHint": "将这个确切的构建设为线上版本，并按摘要固定",
+    "promoted": "已触发提升。",
+    "promotedPending": "提升正在等待审批。",
+    "promoteFailed": "无法提升。",
+    "deployNow": "立即部署",
+    "latest": "最新部署",
+    "earlier": "更早的部署",
+    "failedLog": "查看失败阶段日志",
+    "failedLogLabel": "查看 {{title}} 的失败阶段日志",
+    "watchLog": "观看",
+    "viewLogs": "日志",
+    "settingsLink": "部署设置",
+    "settingsLinkHint": "此应用的构建、运行、安全和自动化选项都集中在一处。",
+    "settingsLinkCta": "打开部署设置",
+    "rerunOf": "{{id}} 的重试",
+    "rerunOfLabel": "打开 {{id}} 的日志，即本次重新运行的部署",
+    "current": "当前",
+    "rollbackBadge": "回滚",
+    "outcomeFailed": "未提供服务"
+  },
+  "actions": {
+    "copy": "复制",
+    "copied": "已复制",
+    "retry": "重试",
+    "backToApps": "返回应用",
+    "viewOverview": "查看概览",
+    "viewApp": "查看应用",
+    "viewDatabase": "查看数据库",
+    "closeToast": "关闭通知"
+  },
+  "deployApprovalStatus": {
+    "all": "全部",
+    "pending": "待处理",
+    "approving": "应用中",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "expired": "已过期"
+  },
+  "tableLabels": {
+    "appServices": "应用服务",
+    "bindMounts": "绑定挂载",
+    "modelKeys": "API 密钥",
+    "agentTokens": "Agent 令牌",
+    "approvals": "部署审批",
+    "registryCredentials": "镜像仓库凭据",
+    "networkShares": "网络共享",
+    "deployNotifyTargets": "部署通知目标",
+    "statusComponents": "状态页组件",
+    "alertRules": "告警规则",
+    "alertSilences": "告警静默",
+    "maintenanceWindows": "维护窗口",
+    "featureFlags": "功能开关"
+  },
+  "healthScore": {
+    "title": "健康与就绪",
+    "notFound": "找不到“{{appName}}”。它可能已被删除，或属于你当前登录实例之外的另一个实例。",
+    "loadFailed": "无法加载健康与就绪信息。{{message}}",
+    "status": {
+      "pass": "就绪",
+      "warn": "待检查",
+      "fail": "需要处理"
+    },
+    "summary": "{{total}} 项检查中有 {{pass}} 项通过",
+    "allClear": "所有检查均已通过。无需你处理。",
+    "needsAction": "需要处理"
+  },
+  "logs": {
+    "previousContainerEnded": "上一个容器实例已结束",
+    "copyLineAria": "复制此日志行",
+    "copyLine": "复制行",
+    "copied": "已复制",
+    "lineCopied": "已复制该行"
+  },
+  "sessionLink": {
+    "signingIn": "正在为你登录...",
+    "invalid": "此登录链接无效或已过期。请重新申请一个。",
+    "backToSignIn": "返回登录"
+  },
+  "ssoAutoRedirect": {
+    "redirecting": "正在将你重定向到 {{provider}}...",
+    "cancel": "取消",
+    "cancelled": "已取消自动重定向。",
+    "passwordInstead": "改用密码登录"
+  },
+  "sessionEnded": {
+    "notice": "由于会话已结束（例如升级或重启之后），你已退出登录。请重新登录以继续。API 令牌不受影响。"
+  },
+  "loadMore": {
+    "showing": "显示 {{loaded}} / {{total}}",
+    "button": "加载更多"
+  },
+  "appsList": {
+    "quick": {
+      "open": "打开 {{domain}}",
+      "redeploy": "重新部署 {{name}}",
+      "logs": "{{name}} 的日志"
+    },
+    "title": "应用",
+    "tableLabel": "应用",
+    "colName": "名称",
+    "colNode": "节点",
+    "colTraffic": "流量 1小时",
+    "colP95": "p95",
+    "colErrors": "错误",
+    "colDeployed": "部署于",
+    "selectApp": "选择 {{name}}",
+    "count_other": "{{count}} 个应用",
+    "count_filtered_other": "{{total}} 个应用中的 {{count}} 个",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "newDatabase": "新建数据库",
+    "newApp": "新建应用",
+    "import": "导入",
+    "connectGit": "连接 Git",
+    "firstRun": {
+      "title": "部署你的第一个应用",
+      "subtitle": "选择一个起点。几分钟内你就会得到一个运行中的应用和一个链接。",
+      "template": {
+        "title": "从模板",
+        "body": "一键安装，例如 Postgres、n8n 或 Ghost。"
+      },
+      "git": {
+        "title": "从 Git 仓库",
+        "body": "构建并部署带有 Dockerfile 的仓库。"
+      },
+      "image": {
+        "title": "从容器镜像",
+        "body": "运行镜像仓库中的任意镜像。"
+      }
+    },
+    "emptyTitle": "还没有应用",
+    "emptyBody": "从 Git 仓库或容器镜像部署，或从其他平台导入应用。",
+    "noMatchTitle": "没有匹配的应用",
+    "noMatchBody": "没有应用符合当前的状态和搜索条件。清除筛选即可查看全部 {{total}} 个。",
+    "clearFilters": "清除筛选",
+    "errorBody": "无法加载应用列表。{{message}}",
+    "retry": "重试",
+    "banner": {
+      "description": "从 Git 链接、容器镜像或模板部署，然后在浏览器中打开。",
+      "compactDescription": "此服务器上运行的一切。",
+      "diagram": {
+        "git": "Git 分支",
+        "app": "应用",
+        "browser": "浏览器"
+      }
+    }
+  },
+  "appAnalysis": {
+    "confidence": "{{level}}置信度",
+    "causes": "疑似原因",
+    "hide": "隐藏报告",
+    "loadFailed": "无法加载此报告。",
+    "loading": "正在加载报告",
+    "recommendations": "建议",
+    "status": {
+      "complete": "完成",
+      "insufficient_data": "数据不足"
+    },
+    "saving": "每月约节省 ${{amount}}",
+    "timeline": "时间线",
+    "title": "分析",
+    "view": "查看报告",
+    "evidence": {
+      "title": "证据",
+      "metric": "指标",
+      "trend": "趋势",
+      "anomalies_other": "{{count}} 个异常",
+      "sizingChange": "{{current}} 调整为 {{suggested}}",
+      "logLevel": "{{level}}：{{lines}} 行，{{groups}} 组",
+      "restarts_other": "{{count}} 次重启",
+      "dimension": {
+        "memory": "内存",
+        "cpu": "CPU"
+      },
+      "trends": {
+        "flat": "平稳",
+        "none": "无数据",
+        "rising": "上升",
+        "falling": "下降"
+      }
+    }
+  },
+  "appReleases": {
+    "title": "版本",
+    "current": "当前"
+  },
+  "appResourceTree": {
+    "title": "资源",
+    "groups": {
+      "databases": "数据库",
+      "deployment": "部署",
+      "domains": "域名",
+      "env": "环境变量键",
+      "replicas": "副本",
+      "volumes": "卷"
+    }
+  },
+  "appSectionHelp": "阅读此页面的指南",
+  "appActions": {
+    "deploy": "部署",
+    "restart": "重启",
+    "restarting": "重启中...",
+    "more": "更多操作",
+    "redeploy": "重新部署当前版本",
+    "redeploying": "重新部署中...",
+    "start": "启动",
+    "stop": "停止",
+    "promote": "提升...",
+    "clone": "克隆...",
+    "delete": "删除...",
+    "wake": "立即唤醒"
+  },
+  "paletteAction": {
+    "restartTitle": "重启 {{name}}？",
+    "restartDescription": "运行中的容器将被全新的容器替换。",
+    "restartConsequence": "应用恢复期间，请求可能会短暂失败。",
+    "restartConfirm": "重启",
+    "stopTitle": "停止 {{name}}？",
+    "stopDescription": "在你再次启动之前，应用将停止提供流量服务。",
+    "stopConsequence": "配置、环境变量和域名会保留。",
+    "stopConfirm": "停止",
+    "rollbackTitle": "回滚 {{name}}？",
+    "rollbackDescription": "重新部署上一个版本：{{image}}。",
+    "rollbackConsequence": "上一个版本健康后，当前版本将停止提供服务。",
+    "rollbackConfirm": "回滚",
+    "rollbackNone": "{{name}} 没有可回滚的上一个版本。",
+    "rollbackFailed": "回滚失败",
+    "rollbackStarted": "正在回滚“{{name}}”。",
+    "pending": "处理中...",
+    "alreadyStopped": "{{name}} 已经停止。"
+  },
+  "unsavedGuard": {
+    "title": "放弃未保存的更改？",
+    "description": "你有尚未保存的修改。现在离开将丢失这些修改。",
+    "keep": "继续编辑",
+    "discard": "放弃"
+  },
+  "confirmDialog": {
+    "cancel": "取消",
+    "typePrompt": "输入 {{value}} 以确认"
+  },
+  "deleteApp": {
+    "trigger": "删除",
+    "title": "删除“{{name}}”？",
+    "description": "这会停止并移除该应用的容器，然后删除该应用。如果其节点无法访问，应用仍会被删除，清理会持续重试直到成功。此操作无法撤销。",
+    "cancel": "取消",
+    "confirm": "删除 {{name}}",
+    "deleting": "删除中...",
+    "deleted": "应用“{{name}}”已删除。",
+    "pendingTitle": "应用“{{name}}”已删除，清理待处理。",
+    "pendingDescription": "其容器尚未移除（{{reason}}）。清理会自动重试。"
+  },
+  "cascadeDelete": {
+    "label": "同时删除其中的所有内容",
+    "hint": "移除其中的每个应用和数据库及其容器。卷会保留。如果某项无法移除，其余内容不会丢失，你可以再次运行此操作。"
+  },
+  "loginHelp": {
+    "lockedOut": "被锁在外面了？在服务器上运行",
+    "emergencyDocs": "紧急访问"
+  },
+  "appTabs": {
+    "sections": "应用分区",
+    "pages": "{{section}}中的页面",
+    "showAll": "显示全部标签页（{{count}} 个已隐藏）",
+    "showLess": "隐藏不适用的标签页",
+    "groups": {
+      "deploy": "部署",
+      "traffic": "流量",
+      "config": "配置",
+      "observe": "观测"
+    },
+    "items": {
+      "containers": "容器"
+    },
+    "more": "更多",
+    "overview": "概览"
+  },
+  "recommended": {
+    "title": "推荐的下一步",
+    "dismiss": "忽略：{{title}}",
+    "more": "另外 {{count}} 项",
+    "less": "显示更少",
+    "failed_deploy": {
+      "title": "上一次部署失败",
+      "button": "查看构建日志"
+    },
+    "add_domain": {
+      "title": "还没有域名",
+      "button": "添加域名"
+    },
+    "enable_backups": {
+      "title": "有数据库没有备份计划",
+      "button": "开启备份"
+    },
+    "add_health_check": {
+      "title": "没有健康检查",
+      "button": "添加健康检查"
+    },
+    "enable_previews": {
+      "title": "你的拉取请求未开启预览",
+      "button": "启用预览"
+    }
+  },
+  "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "部署分区",
+        "deploys": "部署",
+        "timeline": "时间线",
+        "builds": "构建"
+      },
+      "platform": {
+        "label": "平台分区",
+        "overview": "概览",
+        "https": "HTTPS",
+        "ingress": "入口",
+        "addresses": "地址",
+        "dnsProviders": "DNS 提供商"
+      },
+      "cost": {
+        "label": "用量与成本分区",
+        "usage": "用量",
+        "costs": "成本分析"
+      }
+    },
+    "navTabs": {
+      "group": {
+        "apps": "应用分区",
+        "pipelines": "流水线分区",
+        "databases": "数据库分区",
+        "storage": "存储分区",
+        "domains": "域名分区",
+        "traffic": "流量分区",
+        "servers": "服务器分区",
+        "registry": "镜像仓库分区",
+        "cost": "用量与成本分区",
+        "alerts": "告警分区",
+        "security": "安全分区"
+      },
+      "tab": {
+        "apps": "应用",
+        "projects": "项目",
+        "templates": "模板",
+        "tags": "标签",
+        "variables": "变量",
+        "sources": "来源",
+        "pipelines": "流水线",
+        "approvals": "审批",
+        "databases": "数据库",
+        "backups": "备份",
+        "storage": "概览",
+        "assets": "资产",
+        "networkShares": "网络共享",
+        "domains": "域名",
+        "dns": "DNS",
+        "mail": "邮件",
+        "proxy": "代理",
+        "loadBalancers": "负载均衡器",
+        "cdn": "CDN",
+        "firewall": "防火墙",
+        "nodes": "服务器",
+        "privateNetworks": "专用网络",
+        "topology": "拓扑",
+        "certificates": "证书",
+        "channels": "渠道",
+        "status": "状态",
+        "alerts": "告警",
+        "providers": "云提供商",
+        "images": "镜像",
+        "registry": "镜像仓库",
+        "credentials": "凭据",
+        "usage": "用量",
+        "costs": "成本",
+        "advisor": "资源顾问",
+        "resources": "资源",
+        "security": "安全中心",
+        "iam": "IAM 策略",
+        "imageScanning": "镜像扫描",
+        "bootstrapScripts": "引导脚本",
+        "keys": "密钥与令牌",
+        "team": "团队",
+        "auditLog": "审计日志"
+      }
+    },
+    "pins": {
+      "group": "已固定",
+      "pin": "固定 {{label}}",
+      "limit": "已达到固定上限（{{max}}）。请先取消固定一项。"
+    },
+    "customize": {
+      "open": "自定义侧边栏"
+    },
+    "locked": {
+      "badge": "Beta",
+      "description": "这是一项 Beta 功能，目前已关闭。打开它即可前往 Beta 功能并启用。",
+      "paletteSubtitle": "已锁定的 Beta 功能。请在 Beta 功能中启用"
+    },
+    "skipToContent": "跳到内容",
+    "topBar": "顶部栏",
+    "toggleSidebar": "切换侧边栏",
+    "search": {
+      "label": "搜索或运行命令",
+      "placeholder": "搜索或跳转到..."
+    },
+    "dashboardTitle": "仪表盘",
+    "status": {
+      "ok": "一切正常",
+      "issues_other": "{{count}} 个问题",
+      "triggerLabel": "平台状态：{{label}}",
+      "title": "平台状态",
+      "healthy": "Docker、磁盘、节点和证书看起来都正常。",
+      "view": "查看",
+      "snooze": "稍后提醒",
+      "snoozeItem": "稍后提醒 {{title}}",
+      "snoozedCount": "{{count}} 项已暂缓",
+      "showAgain": "重新显示",
+      "insecureTitle": "仪表盘未使用 HTTPS",
+      "insecureDetail": "会话以未加密方式传输"
+    },
+    "snoozeFor": {
+      "1h": "1 小时",
+      "1d": "1 天",
+      "forever": "永久"
+    },
+    "theme": {
+      "label": "主题：{{theme}}",
+      "menu": "选择主题",
+      "heading": "主题",
+      "light": "浅色",
+      "dark": "深色",
+      "oled": "OLED 纯黑",
+      "system": "跟随系统"
+    },
+    "help": {
+      "label": "帮助",
+      "forPage": "此页面的帮助",
+      "getStarted": "开始使用",
+      "docs": "文档",
+      "troubleshooting": "故障排查",
+      "systemStatus": "Doctor",
+      "report": "报告问题",
+      "community": "向社区提问",
+      "suggest": "建议新功能"
+    },
+    "account": {
+      "controlPlane": "控制平面",
+      "updateAvailable": "有可用更新：{{version}}",
+      "updateAvailableShort": "有可用更新",
+      "signOut": "退出登录"
+    },
+    "breadcrumb": {
+      "label": "面包屑导航",
+      "home": "首页"
+    },
+    "navGroup": {
+      "home": "首页",
+      "primary": "首页",
+      "build": "构建",
+      "data": "数据",
+      "traffic": "网络",
+      "infrastructure": "基础设施",
+      "platform": "平台",
+      "access": "安全",
+      "ai": "AI"
+    },
+    "nav": {
+      "dashboard": "仪表盘",
+      "status": "状态",
+      "apps": "应用",
+      "deployments": "部署",
+      "projects": "项目",
+      "templates": "模板",
+      "tags": "标签",
+      "get-started": "开始使用",
+      "welcome": "首次运行设置",
+      "migrate": "迁移",
+      "databases": "数据库",
+      "backups": "备份",
+      "domains": "域名",
+      "dns": "DNS",
+      "proxy": "流量",
+      "loadbalancers": "负载均衡器",
+      "firewall": "防火墙",
+      "private-networks": "专用网络",
+      "nodes": "服务器",
+      "network": "拓扑",
+      "cdn": "CDN 与缓存",
+      "registry": "镜像仓库",
+      "registry-credentials": "凭据",
+      "network-shares": "网络共享",
+      "node-providers": "云提供商",
+      "iam-policies": "IAM 策略",
+      "models": "AI 模型",
+      "pipelines": "流水线",
+      "approvals": "部署审批",
+      "inbox": "收件箱",
+      "alerts": "告警",
+      "assistant": "AI 助手",
+      "settings": "设置",
+      "help": "帮助",
+      "functions": "函数",
+      "storage": "存储",
+      "assets": "资产",
+      "mail": "邮件",
+      "resource-advisor": "资源顾问",
+      "usage": "用量与成本",
+      "resources": "资源",
+      "security": "安全",
+      "console": "控制台"
+    },
+    "quickNav": {
+      "label": "快速导航（按住 L）"
+    },
+    "newApp": "新建应用",
+    "pageWidth": {
+      "compact": "紧凑宽度",
+      "comfortable": "舒适宽度",
+      "wide": "宽",
+      "full": "全宽",
+      "custom": "精确宽度"
+    },
+    "logoStatus": {
+      "healthy": "一切健康",
+      "update": "有可用更新",
+      "degraded": "性能下降：部分检查需要处理",
+      "incident": "事件：有健康检查失败",
+      "busy": "升级或重启正在进行",
+      "unknown": "状态未知"
+    },
+    "accountMenu": {
+      "account": "账户设置",
+      "feedback": "反馈",
+      "theme": "主题",
+      "changelog": "更新日志",
+      "help": "帮助",
+      "docs": "文档",
+      "allNormal": "所有系统正常",
+      "issues_other": "{{count}} 个问题需要处理"
+    },
+    "banner": {
+      "dismiss": "忽略",
+      "retryNow": "立即重试",
+      "offline": "无法连接控制平面。实时更新已暂停。",
+      "dockerDown": "无法访问 Docker。部署和重启将会失败。",
+      "viewNode": "查看节点",
+      "diskFull": "磁盘即将写满。",
+      "diskFullDetail": "磁盘即将写满，{{detail}}。"
+    },
+    "notifications": {
+      "title": "通知",
+      "unread": "通知：{{count}} 条未读",
+      "allRead": "通知：全部已读"
+    },
+    "whatsNew": {
+      "title": "新功能",
+      "unread": "新功能：{{count}} 条未读",
+      "allCaughtUp": "新功能：已全部查看",
+      "empty": "暂时没有发布说明。",
+      "loading": "正在加载发布说明...",
+      "error": "无法加载发布说明。",
+      "retry": "重试",
+      "markSeen": "全部标为已读",
+      "updateAvailable": "有可用更新：{{version}}",
+      "onLatest": "你使用的是最新版本",
+      "versionUnknown": "版本状态未知",
+      "allChangesGrouped": "所有更改",
+      "openFullNotes": "打开完整发布说明",
+      "update": "立即更新",
+      "releaseNotes": "发布说明",
+      "highlights": "亮点",
+      "allChanges": "所有更改（{{count}}）",
+      "toast": {
+        "title": "已更新到 {{version}}",
+        "body": "查看新增内容",
+        "open": "查看新增内容"
+      },
+      "groups": {
+        "apps": "应用",
+        "domains": "域名",
+        "storage": "存储",
+        "nextjs": "Next.js",
+        "other": "其他"
+      },
+      "cta": {
+        "domains": "打开域名",
+        "storage": "打开存储",
+        "apps": "打开应用",
+        "deployments": "打开部署",
+        "settings": "打开设置"
+      }
+    },
+    "navAttention": "{{count}} 项需要处理",
+    "headerMore": "更多顶部栏控件",
+    "headerUtilities": "更多：新功能、聊天、帮助和主题",
+    "chat": "聊天"
+  },
+  "cliConsole": {
+    "title": "控制台",
+    "description": "以你的身份运行 CLI。每条命令都会被审计。",
+    "navLabel": "控制台",
+    "terminalLabel": "CLI 控制台终端",
+    "pressEnter": "按 Enter 连接。需要重新确认。",
+    "connecting": "连接中...",
+    "connected": "已连接到 {{server}}。输入 help 列出命令。",
+    "disconnected": "已断开连接，按 Enter 重新连接",
+    "connectFailed": "无法连接，按 Enter 重试",
+    "connectFailedWith": "无法连接：{{message}}",
+    "reconnectHint": "按 Enter 重试",
+    "stepUpCancelled": "已取消确认。",
+    "exitCode": "退出码 {{code}}",
+    "genericError": "出了点问题。请重试。",
+    "unknownCommand": "未知命令：{{name}}",
+    "helpIntro": "可用命令（Tab 补全，help <command> 列出子命令）：",
+    "helpLocal": "另有：help、clear。Ctrl+C 取消正在运行的命令，Ctrl+L 清屏。",
+    "state": {
+      "idle": "未连接",
+      "connecting": "连接中",
+      "open": "已连接",
+      "closed": "已断开"
+    },
+    "quick": {
+      "title": "快捷操作",
+      "connectFirst": "连接控制台后即可查看快捷操作。",
+      "groups": {
+        "overview": "概览",
+        "apps": "应用",
+        "platform": "平台"
+      },
+      "params": {
+        "app": "应用",
+        "node": "节点",
+        "image": "要回滚到的镜像"
+      },
+      "pick": "选择...",
+      "willRun": "将运行",
+      "incomplete": "请填写上方字段",
+      "run": "运行",
+      "review": "检查",
+      "stop": "停止",
+      "selectedApp": "已选应用",
+      "clearSelected": "清除已选应用",
+      "confirmTitle": "运行此命令？",
+      "actions": {
+        "status": {
+          "label": "状态"
+        },
+        "version": {
+          "label": "版本"
+        },
+        "appsList": {
+          "label": "列出应用"
+        },
+        "deploysList": {
+          "label": "列出部署"
+        },
+        "nodesList": {
+          "label": "列出节点"
+        },
+        "databasesList": {
+          "label": "列出数据库"
+        },
+        "appStatus": {
+          "label": "应用状态"
+        },
+        "appLogs": {
+          "label": "应用日志"
+        },
+        "appDeploys": {
+          "label": "应用部署"
+        },
+        "nodeGet": {
+          "label": "节点详情"
+        },
+        "appRestart": {
+          "label": "重启应用"
+        },
+        "appRedeploy": {
+          "label": "重新部署应用"
+        },
+        "appRollback": {
+          "label": "回滚应用",
+          "consequence": "应用会被指回较旧的镜像，其容器将被替换。"
+        },
+        "systemRestart": {
+          "label": "重启平台",
+          "consequence": "控制平面将重启，在恢复之前仪表盘不可用。"
+        }
+      }
+    },
+    "dock": {
+      "offTitle": "控制台已关闭",
+      "offDescription": "CLI 控制台是一项 Beta 功能，默认关闭。管理员可以在设置的 Beta 功能中开启。"
+    }
+  },
+  "dock": {
+    "region": "助手面板",
+    "regionSide": "助手面板侧边栏",
+    "header": "面板标题栏",
+    "moveHint": "方向键移动面板，按住 Shift 加大步长，Home 重置位置。",
+    "toggle": "切换助手面板",
+    "toggleHint": "助手面板（Ctrl+J，Ctrl+Shift+M 切换布局）",
+    "launcher": "打开助手面板",
+    "launcherUnread": "打开助手面板，有新回复",
+    "unread": "新回复",
+    "close": "关闭面板",
+    "minimize": "最小化到启动器",
+    "maximize": "最大化面板",
+    "restore": "恢复面板大小",
+    "menu": "面板布局和选项",
+    "tabsLabel": "面板标签页",
+    "resizeWidth": "调整面板宽度",
+    "resizeHeight": "调整面板高度",
+    "sheetHandle": "向下拖动以最小化",
+    "mode": {
+      "float": "浮动窗口",
+      "bottom": "底部面板",
+      "side": "右侧面板"
+    },
+    "push": "推开页面内容",
+    "reset": "重置位置和大小",
+    "tabs": {
+      "aiChat": "AI 聊天",
+      "console": "控制台"
+    },
+    "ai": {
+      "notConfiguredTitle": "未配置 AI 提供商",
+      "notConfiguredDescription": "在设置中添加 BYOK API 密钥即可开始聊天。",
+      "configure": "配置 AI 助手",
+      "experimentalOffTitle": "AI 聊天已关闭",
+      "experimentalOffDescription": "AI 聊天是一项 Beta 功能，默认关闭。管理员可以在设置的 Beta 功能中开启，无需访问服务器。",
+      "enableInSettings": "在设置中开启"
+    }
+  },
+  "login": {
+    "signInTitle": "登录",
+    "signInHint": "输入你的凭据以继续。",
+    "setupTitle": "设置管理员账户",
+    "setupHint": "为此实例创建第一个账户。仅限第一个账户注册。",
+    "signInTab": "登录",
+    "setupTab": "设置管理员账户"
+  },
+  "localMode": {
+    "title": "这是一个本地实例",
+    "body": "这里的一切都保存在本机，只能从本机访问。数据目录：",
+    "resetUnavailable": "仅当实例通过 dev 命令启动时才可重置。",
+    "reset": "重置",
+    "failed": "无法开始重置。",
+    "dialog": {
+      "title": "重置此本地实例？",
+      "description": "所有应用、数据库记录、密钥和设置都会被删除，实例将从头开始。",
+      "consequence1": "已创建的容器会继续运行，直到你将其移除。",
+      "consequence2": "会生成新的管理员密码，并打印在运行 dev 命令的终端中。",
+      "confirm": "重置实例",
+      "resetting": "重置中...",
+      "cancel": "取消"
+    }
+  },
+  "controlPlaneRestart": {
+    "action": "重启控制平面",
+    "title": "重启控制平面？",
+    "description": "进程重启期间，仪表盘和 API 会离线几秒钟。运行中的应用和数据库会继续运行。",
+    "consequence1": "进行中的部署和日志流会中断，之后自动恢复。",
+    "consequence2": "已连接的节点会自行重新连接。",
+    "unsupported": "此处无法自动重启：没有任何机制会重新拉起该进程。",
+    "stopping": "重启中：控制平面正在关闭...",
+    "waiting": "重启中：正在等待控制平面恢复...",
+    "back": "控制平面已恢复在线。",
+    "timeout": "两分钟后控制平面仍未恢复。请检查服务器上的服务。",
+    "keepWaiting": "继续等待",
+    "dismiss": "忽略"
+  },
+  "foundation": {
+    "signIn": {
+      "eyebrowSignIn": "登录",
+      "eyebrowSetup": "首次运行",
+      "titleSignIn": "登录",
+      "titleSetup": "设置管理员账户",
+      "subtitleSignIn": "输入你的凭据以继续。",
+      "subtitleSetup": "为此实例创建第一个账户。仅限第一个账户注册。",
+      "tabSignIn": "登录",
+      "tabSetup": "设置管理员账户",
+      "or": "或",
+      "continueWith": "使用 {{provider}} 继续",
+      "sso": "SSO",
+      "errors": {
+        "generic": "登录失败。请重试。",
+        "provider_denied": "登录已取消。",
+        "invalid_state": "该登录链接已过期或已被使用。请重试。",
+        "exchange_failed": "通过提供商登录失败。请重试。",
+        "userinfo_failed": "无法从提供商读取你的账户信息。",
+        "domain_not_allowed": "登录仅限特定邮箱域名，而你的账户不在其中。",
+        "email_in_use": "已存在使用此邮箱的账户。请使用密码登录，然后在设置中关联此提供商。",
+        "already_linked": "该身份已关联到另一个用户。",
+        "rate_limited": "登录尝试次数过多。请等待一分钟后重试。",
+        "saml_unavailable": "单点登录目前不可用。请让管理员检查 SAML 连接。",
+        "saml_invalid": "无法验证你的身份提供商的响应。请重试，或让管理员检查 SAML 设置。",
+        "saml_replayed": "该登录响应已被使用。请重新开始登录。",
+        "sso_not_provisioned": "你的账户尚未在此处创建。请让管理员邀请你，或开启自动创建账户。",
+        "sso_no_role": "你的身份提供商组不授予此处的访问权限。请让管理员将你的某个组映射到一个角色。",
+        "sso_no_email": "你的身份提供商没有发送邮箱地址，因此无法匹配账户。",
+        "account_disabled": "此账户已被停用。请让管理员恢复访问。",
+        "sso_root_not_linkable": "此邮箱属于管理员账户，无法通过单点登录关联。请使用密码登录。"
+      },
+      "ssoEmail": "工作邮箱",
+      "ssoContinue": "使用 SSO 继续",
+      "ssoCheck": "继续",
+      "ssoContinueWith": "使用 SSO 继续（{{name}}）",
+      "ssoRouted": "你的组织通过 {{provider}} 登录。",
+      "ssoNoRoute": "该邮箱未设置单点登录。请使用密码或其他方式登录。"
+    },
+    "banner": {
+      "dismiss": "忽略"
+    },
+    "saveBar": {
+      "label": "未保存的更改",
+      "unsaved": "你有未保存的更改。",
+      "save": "保存更改",
+      "saving": "保存中...",
+      "discard": "放弃"
+    },
+    "table": {
+      "actions": "操作",
+      "select": "选择",
+      "rowActions": "{{name}} 的操作"
+    }
+  },
+  "confirmAction": {
+    "token": {
+      "trigger": "撤销",
+      "title": "撤销“{{name}}”？",
+      "consequence0": "使用此令牌的任何内容都会立即失去访问权限。",
+      "consequence1": "此操作无法撤销。",
+      "abilities": "能力：{{abilities}}",
+      "confirm": "撤销令牌",
+      "pending": "撤销中...",
+      "success": "令牌“{{name}}”已撤销。",
+      "devFixture": "开发固定数据令牌会在下次开发模式启动时重新写入，除非你将其从固定数据文件中移除。"
+    },
+    "alertRule": {
+      "trigger": "删除",
+      "title": "删除“{{name}}”？",
+      "confirm": "删除规则",
+      "pending": "删除中...",
+      "success": "告警规则“{{name}}”已删除。",
+      "consequence0": "该规则会立即停止评估和通知。",
+      "consequence1": "此操作无法撤销。"
+    },
+    "backupTarget": {
+      "trigger": "删除",
+      "title": "删除“{{name}}”？",
+      "confirm": "删除",
+      "pending": "删除中...",
+      "success": "备份目标“{{name}}”已删除。",
+      "consequence0": "与此存储桶的连接会被移除。",
+      "consequence1": "已备份在那里的内容不会被删除。",
+      "consequence2": "此操作无法撤销。",
+      "error": "无法删除“{{name}}”。"
+    },
+    "networkShare": {
+      "trigger": "删除",
+      "title": "删除“{{name}}”？",
+      "confirm": "删除",
+      "pending": "删除中...",
+      "success": "网络共享“{{name}}”已删除。",
+      "consequence0": "仍在挂载此共享的任何应用卷，在下次部署时将无法启动。",
+      "consequence1": "此操作无法撤销。",
+      "error": "无法删除“{{name}}”。"
+    },
+    "registryCredential": {
+      "trigger": "删除",
+      "title": "删除“{{name}}”？",
+      "confirm": "删除",
+      "pending": "删除中...",
+      "success": "镜像仓库凭据“{{name}}”已删除。",
+      "consequence0": "引用此凭据的任何服务，在下次部署时将无法拉取私有镜像。",
+      "consequence1": "此操作无法撤销。",
+      "error": "无法删除“{{name}}”。"
+    },
+    "model": {
+      "trigger": "删除",
+      "title": "删除“{{name}}”？",
+      "confirm": "删除",
+      "pending": "删除中...",
+      "success": "模型“{{name}}”已删除。",
+      "consequence0": "引擎容器会被移除，API 密钥将失效。",
+      "consequence1": "已下载的权重会保留，因此再次部署同一模型时不会重复下载。"
+    },
+    "featureFlag": {
+      "trigger": "删除",
+      "title": "删除“{{name}}”？",
+      "confirm": "删除开关",
+      "pending": "删除中...",
+      "success": "功能开关已删除。",
+      "consequence0": "该开关会立即停止解析。",
+      "consequence1": "仍在调用其评估端点的任何应用都会开始收到 404。",
+      "consequence2": "此操作无法撤销。"
+    }
+  },
+  "lockedOut": {
+    "link": "被锁在外面了？",
+    "title": "从服务器上重新登录",
+    "description": "这些命令在托管控制平面的机器上运行，需以可读取其数据目录的用户身份执行。这里的一切都不需要邮件或另一个已登录的浏览器。",
+    "copy": "复制命令",
+    "footer": "如果数据目录不是默认位置，请在命令前设置 APP_DATA_DIR。",
+    "routes": {
+      "password": {
+        "title": "重置管理员密码",
+        "body": "只显示一次新密码，让该账户在所有地方退出登录，并清除锁定。"
+      },
+      "token": {
+        "title": "获取短期 root 令牌",
+        "body": "用于在无法使用仪表盘时通过 CLI 修复设置。它会自动过期。"
+      },
+      "approve": {
+        "title": "批准等待中的登录",
+        "body": "使用请求 ID 以及新浏览器审批界面上显示的数字。"
+      }
+    }
+  },
+  "pages": {
+    "title": "页面",
+    "count_other": "{{count}} 个页面",
+    "noDomain": "无域名"
+  },
+  "gitAccess": {
+    "validate": "验证访问",
+    "validating": "验证中...",
+    "recheck": "再次检查",
+    "ok": "访问正常。",
+    "fix": "修复",
+    "checks": {
+      "repo_url": "仓库 URL",
+      "credential": "凭据",
+      "access": "仓库访问",
+      "connection": "连接",
+      "installation": "安装",
+      "credentials": "应用凭据"
+    }
+  },
+  "replicaNotice": {
+    "sameServer": "全部 {{replicas}} 个副本都运行在同一台服务器上。额外的副本会在该服务器上增加容量并分摊负载，但如果该服务器宕机，它们无法保护应用。",
+    "autoscaleOwned": "此应用的副本数由自动扩缩器设置。修改或移除自动扩缩策略后，才能手动设置副本数。"
+  },
+  "templateDefaults": {
+    "strategyReason": "由模板设置：{{reason}}",
+    "recreateDowntime": "重建策略会在新容器启动前停止旧容器，因此每次部署都有短暂的停机。就绪检查失败的部署会回滚到上一个镜像。",
+    "memoryNote": "此限制是模板推荐内存的两倍，以留出余量。可在此处编辑以更改。"
+  },
+  "pageLoading": {
+    "label": "正在加载页面"
+  },
+  "deployRetry": {
+    "retry": "重试部署",
+    "more": "更多重试方式",
+    "rebuild": "从源码重新构建",
+    "rebuildNoCache": "不使用缓存重新构建"
+  },
+  "deploySettings": {
+    "nav": {
+      "label": "部署设置分区"
+    },
+    "flow": {
+      "title": "你的部署如何运作",
+      "build": "构建",
+      "push": "推送",
+      "rollout": "发布",
+      "healthCheck": "健康检查",
+      "buildHint": "把你的源码变成镜像。",
+      "pushHint": "存储镜像，使任何节点都能运行它。",
+      "rolloutHint": "启动新副本并切换流量。",
+      "healthCheckHint": "在新版本保持上线之前，确认它是健康的。"
+    },
+    "recommended": "留空的字段使用平台默认值，以灰色显示在字段内。",
+    "groups": {
+      "build": {
+        "title": "构建",
+        "description": "源码如何变成镜像：钩子、缓存以及扫描内容。"
+      },
+      "run": {
+        "title": "运行",
+        "description": "新版本如何启动：端口、发布策略和部署前命令。"
+      },
+      "safety": {
+        "title": "安全",
+        "description": "如何保护线上流量：健康检查、回滚、金丝雀和冻结。"
+      },
+      "automation": {
+        "title": "自动化",
+        "description": "由什么自动为你部署：计划、预览、镜像更新和 CI。"
+      }
+    },
+    "cards": {
+      "buildHooks": "在构建过程中的指定时点运行你自己的命令，例如构建步骤之前或之后。",
+      "buildCache": "在构建之间复用未改变的层，使重复构建更快完成。",
+      "supplyChain": "扫描每个构建出的镜像中的已知漏洞，并可阻止有风险的发布。",
+      "secretScan": "在源码发布之前，检查其中是否有泄露的凭据。",
+      "port": "设置应用监听的端口，使流量到达正确的位置。",
+      "strategy": "选择新版本如何替换旧版本，以及运行多少个副本。",
+      "hooks": "在新版本启动之前运行命令，例如数据库迁移。",
+      "safety": "设置新版本必须保持健康多久，旧版本才会下线。",
+      "watch": "版本上线后持续监视，若表现变差则回滚。",
+      "autoRollback": "当出现崩溃循环告警时，重新部署上一个可用的镜像。",
+      "predeploySnapshot": "每次部署前备份关联的数据库，使回滚时也能恢复数据。",
+      "sloBurn": "部署后，当错误预算消耗过快时自动回滚。",
+      "canary": "在所有人获得新镜像之前，先把一小部分流量发送给它。",
+      "freeze": "在你选择的时间窗口（例如假期）内阻止自动部署。",
+      "scheduled": "把一次部署排入队列，在你选择的稍后时间运行。",
+      "cancelSuperseded": "当更新的部署到来时，取消排队中较旧的部署。",
+      "preview": "为每个拉取请求构建应用的临时副本。",
+      "imageAutoUpdate": "当你的标签有更新的镜像发布时自动重新部署。",
+      "badge": "显示可嵌入 README 的实时部署状态徽章。",
+      "githubActions": "允许 GitHub Actions 工作流部署此应用。",
+      "ciDeploy": "为你的 CI 系统提供用于部署此应用的令牌和命令。",
+      "rolloutPolicy": "限制滚动发布期间可额外增加或不可用的副本数量。"
+    },
+    "whatItDoes": "作用："
+  },
+  "cardSkeleton": {
+    "loading": "加载中"
+  },
+  "cancelSuperseded": {
+    "title": "替换已被取代的排队部署",
+    "infoLabel": "关于替换排队部署",
+    "infoBody": "只有仍在队列中等待的部署会被替换，且只会被同一分支更新的部署替换。已经开始构建的部署绝不会被自动取消。",
+    "enabled": "已启用",
+    "enabledHint": "当某个分支更新的提交在运行中的部署后面排队时，该分支较旧的排队部署会被标记为已被取代，而不是依次构建。",
+    "on": "已被取代的排队部署将被替换。",
+    "off": "排队部署将被保留。",
+    "saveFailed": "无法更新该设置。"
+  },
+  "codeBlock": {
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制失败",
+    "wrap": "换行",
+    "reveal": "显示",
+    "hide": "隐藏",
+    "region": "代码",
+    "commandRegion": "命令"
+  },
+  "banners": {
+    "loadBalancers": {
+      "title": "负载均衡器",
+      "description": "通过健康检查和平滑切换，把应用的流量分摊到各个副本。",
+      "compactDescription": "所有做流量均衡的应用，附带实时上游健康状态。",
+      "diagram": {
+        "browser": "浏览器",
+        "balancer": "均衡器",
+        "server": "服务器"
+      }
+    },
+    "projects": {
+      "title": "项目",
+      "description": "可选的标签，用于把应用与其数据库和缓存归为一组。它们的运行方式不会有任何变化。",
+      "compactDescription": "把相关应用和数据库分组的标签。",
+      "count_other": "{{count}} 个项目",
+      "diagram": {
+        "project": "项目",
+        "members": "应用和数据库"
+      }
+    }
+  },
+  "projectsPage": {
+    "list": {
+      "name": "名称",
+      "created": "创建时间"
+    },
+    "empty": {
+      "title": "还没有项目",
+      "description": "项目把应用与其数据库和缓存归为一组。创建一个即可开始整理。"
+    },
+    "error": {
+      "title": "无法加载项目",
+      "description": "{{error}}",
+      "retry": "重试"
+    }
+  },
+  "apiError": {
+    "recheckDocker": "重新检查 Docker",
+    "rechecking": "检查中...",
+    "fixing": "修复中...",
+    "fixFailed": "修复未生效。",
+    "requestId": "请求 ID：{{id}}",
+    "copyRequestId": "复制请求 ID",
+    "copied": "已复制",
+    "generic": "服务器遇到错误。请重试。",
+    "toastTitle": "操作未成功",
+    "friendly": {
+      "generic": {
+        "action": "请重试，如果仍然失败，请附上请求 ID。",
+        "title": "出了点问题"
+      },
+      "docker": {
+        "message": "无法在此主机上访问 Docker。",
+        "action": "启动 Docker，然后重新检查。",
+        "title": "Docker 未运行"
+      },
+      "unauthorized": {
+        "message": "你的会话已结束。",
+        "action": "请重新登录以继续。",
+        "title": "你已退出登录"
+      },
+      "forbidden": {
+        "message": "你的账户无权执行此操作。",
+        "action": "请让所有者或管理员授予访问权限。",
+        "title": "不允许"
+      },
+      "conflict": {
+        "message": "这与已存在的内容冲突。",
+        "action": "重命名它，或移除已有的那一个，然后重试。",
+        "title": "已存在"
+      },
+      "validation": {
+        "message": "部分值无效。",
+        "action": "检查各字段后重试。",
+        "title": "请检查详情"
+      },
+      "rateLimited": {
+        "message": "短时间内请求过多。",
+        "action": "请稍等片刻后重试。",
+        "title": "请求过多"
+      },
+      "diskFull": {
+        "message": "服务器磁盘空间已满。",
+        "action": "在设置的清理中释放空间，然后重试。",
+        "title": "磁盘空间不足"
+      },
+      "unreachable": {
+        "message": "控制平面没有响应。",
+        "action": "请等待几秒钟后重试。",
+        "title": "服务器无响应"
+      },
+      "network": {
+        "message": "无法连接到服务器。",
+        "action": "检查你的网络连接后重试。",
+        "title": "无法连接到服务器"
+      },
+      "missingAbility": {
+        "title": "缺少权限",
+        "message": "这需要 {{ability}} 能力。",
+        "action": "请使用具备该能力的令牌或角色，或联系管理员。"
+      },
+      "timeout": {
+        "title": "请求超时",
+        "message": "服务器响应时间过长。",
+        "action": "请稍等片刻后重试。"
+      },
+      "notFound": {
+        "title": "未找到",
+        "message": "该项目已不存在。",
+        "action": "刷新页面。它可能已被重命名或删除。"
+      },
+      "tooLarge": {
+        "title": "文件过大",
+        "message": "上传的内容超过了服务器接受的大小。",
+        "action": "请使用更小的文件后重试。"
+      },
+      "serverError": {
+        "title": "服务器错误",
+        "message": "服务器遇到错误。请重试。",
+        "action": "请稍后重试，如果仍然失败，请附上请求 ID。"
+      },
+      "needsConfirmation": {
+        "title": "需要确认",
+        "message": "此更改需要你先确认。",
+        "action": "查看警告，确认后重试。"
+      },
+      "domainTaken": {
+        "title": "域名已被使用",
+        "message": "另一个应用已在使用此域名。",
+        "action": "选择其他域名，或将其从另一个应用中移除。"
+      },
+      "emailTaken": {
+        "title": "邮箱已被使用",
+        "message": "该邮箱属于另一个账户。",
+        "action": "请使用其他邮箱地址。"
+      },
+      "stepUp": {
+        "title": "确认是你本人",
+        "message": "此操作需要重新进行身份验证。",
+        "action": "在提示时输入验证码或使用通行密钥，然后重试。"
+      },
+      "portConflict": {
+        "title": "端口已被发布",
+        "message": "另一个服务已发布此端口。",
+        "action": "选择一个空闲端口，然后重试。"
+      },
+      "emailNotConfigured": {
+        "title": "邮件尚未设置",
+        "message": "尚未配置邮件提供商。",
+        "action": "在设置的邮件中添加一个，然后重试。"
+      }
+    }
+  },
+  "notFound": {
+    "requested": "请求的内容：{{name}}",
+    "causes": "它可能已被重命名或删除，或者属于与顶部切换器中所选不同的项目或环境。",
+    "didYouMean": "你是不是想找",
+    "resources": {
+      "app": {
+        "title": "未找到应用",
+        "list": "返回应用",
+        "create": "部署新应用"
+      },
+      "database": {
+        "title": "未找到数据库",
+        "list": "返回数据库"
+      },
+      "domain": {
+        "title": "未找到域名",
+        "list": "返回域名"
+      },
+      "template": {
+        "title": "未找到模板",
+        "list": "返回模板"
+      },
+      "project": {
+        "title": "未找到项目",
+        "list": "返回项目"
+      },
+      "generic": {
+        "title": "未找到页面",
+        "list": "返回仪表盘"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "出了点问题",
+      "body": "此页面遇到了意外错误。重试通常能解决问题。如果问题持续出现，请复制详情并报告。",
+      "retry": "重试",
+      "home": "返回仪表盘"
+    },
+    "unreachable": {
+      "title": "无法连接控制平面",
+      "body": "服务器没有响应或返回了错误。你的应用仍在运行。请确认控制平面已启动，然后重试。",
+      "retry": "重试"
+    },
+    "details": "详情",
+    "copy": "复制详情",
+    "copied": "已复制",
+    "report": "报告问题",
+    "requestId": "请求 ID：{{id}}",
+    "detailsHeader": "错误报告"
+  },
+  "secretInput": {
+    "show": "显示值",
+    "hide": "隐藏值",
+    "existing": "已设置。留空则保留当前值。"
+  },
+  "lbTraffic": {
+    "title": "流量",
+    "empty": "暂无流量数据",
+    "emptyHint": "请求经过入口后才会显示速率。",
+    "rps": "{{value}} 请求/秒",
+    "errors": "{{value}} 个错误",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "{{dial}} 过去 {{minutes}} 分钟内的每秒请求数"
+  },
+  "formErrorSummary": {
+    "title_other": "{{count}} 个字段需要处理",
+    "name": "名称",
+    "engine": "引擎",
+    "version": "版本",
+    "envKey": "变量名，第 {{row}} 行",
+    "envValue": "变量值，第 {{row}} 行"
+  },
+  "appPower": {
+    "restartTitle": "重启 {{name}}？",
+    "restartDescription": "容器会被全新的容器替换，因此应用会短暂停机。",
+    "restartConsequenceRequests": "应用恢复期间，处理中的请求可能会失败。",
+    "restartConsequencePolicy": "如果它退出，重启策略会自动将其拉起。",
+    "restartConfirm": "重启",
+    "restartSkip": "重启时不再询问",
+    "stopTitle": "停止 {{name}}？",
+    "stopDescription": "在你再次启动之前，应用将停止提供流量服务。",
+    "stopConsequenceRequests": "处理中的请求会被丢弃。",
+    "stopConsequencePolicy": "重启策略不会将其拉起。配置、环境变量和域名会保留。",
+    "stopConfirm": "停止",
+    "pending": "处理中...",
+    "applying": "正在应用更改。",
+    "restarting": "重启中...",
+    "stillRestarting": "仍在重启...",
+    "stopping": "停止中...",
+    "restarted": "“{{name}}”已重启。",
+    "stopped": "“{{name}}”已停止。",
+    "restartFailed": "“{{name}}”未能恢复",
+    "stillRestartingToast": "“{{name}}”仍在重启",
+    "stillRestartingHint": "它尚未报告健康。请查看日志。",
+    "stillStoppingToast": "“{{name}}”仍在停止",
+    "viewLogs": "查看日志",
+    "starting": "正在启动“{{name}}”。"
+  },
+  "resourceLabels": {
+    "title": "标签",
+    "description": "用于分组和筛选的自由格式键值对。它们不会改变资源的运行方式。",
+    "empty": "还没有标签。",
+    "edit": "编辑标签",
+    "save": "保存标签",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "saved": "标签已保存",
+    "keyPlaceholder": "键",
+    "valuePlaceholder": "值",
+    "add": "添加标签",
+    "remove": "移除标签 {{key}}",
+    "duplicate": "每个键只能使用一次。",
+    "incomplete": "请同时填写键和值，或移除该行。",
+    "filterLabel": "按标签筛选",
+    "filterButton": "标签",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "filterInvalid": "无法读取该选择器。"
+  },
+  "pinnedDigest": {
+    "tip": "即使标签发生变化，审批也只会部署这个确切的镜像。",
+    "copy": "复制完整镜像摘要",
+    "copied": "镜像摘要已复制"
+  },
+  "visitors": {
+    "title": "访客",
+    "windowLabel": "时间窗口",
+    "window": {
+      "1h": "1小时",
+      "24h": "24小时",
+      "7d": "7天",
+      "30d": "30天"
+    },
+    "requests": "请求",
+    "visitorsLabel": "独立访客",
+    "visitorsHint": "独立访客，每次 {{period}} 隐私重置后重新计数。不是历史累计的独立访客数。",
+    "trend": "所选窗口内的请求量",
+    "statusLabel": "按类别统计的响应",
+    "details": "热门页面和来源",
+    "topPaths": "热门页面",
+    "topReferrers": "热门来源",
+    "none": "无记录",
+    "byDomain": "按域名",
+    "domainRow": "{{requests}} 次请求，{{visitors}} 位访客",
+    "partial": "数据从 {{when}} 开始，晚于此窗口，因此数字可能不完整。",
+    "empty": "此窗口内还没有请求。",
+    "loadError": "访客数据目前不可用。",
+    "retry": "重试",
+    "viewTraffic": "流量详情",
+    "section": "访客",
+    "domainLabel": "域名",
+    "allDomains": "所有域名",
+    "statusSplit": "状态分布",
+    "pathHeader": "页面",
+    "referrerHeader": "来源",
+    "countHeader": "请求",
+    "topPathsCaption": "此窗口内的前 10 个页面",
+    "topReferrersCaption": "此窗口内的前 10 个来源",
+    "unavailable": "访客数据需要边缘访问日志，而此安装未启用该功能。",
+    "chartHeading": "请求量随时间变化",
+    "exportCsv": "下载 CSV",
+    "exportEmpty": "此窗口内没有可导出的内容。"
+  },
+  "overviewHero": {
+    "addressInfo": "关于此地址",
+    "addTag": "添加标签...",
+    "addTagTitle": "添加标签",
+    "tagName": "标签名称",
+    "tagAdd": "添加标签",
+    "tagAdding": "添加中...",
+    "removeTag": "移除标签 {{name}}",
+    "retryDeploy": "重试部署",
+    "deploy": "部署",
+    "restart": "重启",
+    "openApp": "打开应用",
+    "stickyLabel": "应用标题栏"
+  },
+  "reportIssue": {
+    "title": "报告前请先检查",
+    "description": "这会在 GitHub 上打开一个预填的“{{template}}”表单。在你于那里提交之前，不会发送任何内容。",
+    "issueTitle": "标题",
+    "include": "包含 {{field}}",
+    "privacy": "只会发送此处列出的详情。不包含令牌、Cookie、环境变量值、邮箱或查询字符串。",
+    "count": "{{used}} 个字符，上限 {{max}}",
+    "cancel": "取消",
+    "open": "在 GitHub 上打开",
+    "templates": {
+      "bug_report": "缺陷报告",
+      "docs_problem": "文档问题",
+      "migration_problem": "迁移问题",
+      "feature_request": "功能请求",
+      "template_request": "模板请求"
+    },
+    "fields": {
+      "version": "仪表盘版本",
+      "component": "组件",
+      "actual": "发生了什么",
+      "context": "环境",
+      "page": "文档页面",
+      "problem": "哪里有问题或缺失了什么",
+      "failed": "什么失败了",
+      "config": "源配置",
+      "solution": "建议的行为",
+      "service": "服务名称",
+      "upstream": "上游链接",
+      "ports": "端口"
+    }
+  },
+  "kit": {
+    "jumpTo": "跳转到",
+    "onThisPage": "本页内容",
+    "retry": "重试"
+  },
+  "roleGate": {
+    "needsAdmin": "需要管理员",
+    "needsOperator": "需要操作员"
+  },
+  "overview": {
+    "connectGitSource": "连接 Git 源"
+  },
+  "a11y": {
+    "routeNotFound": {
+      "title": "未找到页面",
+      "body": "此地址没有对应的页面。它可能已被移动，或链接已过期。",
+      "suggestions": "名称相近的页面",
+      "home": "返回仪表盘"
+    },
+    "tables": {
+      "alertHistory": "告警历史",
+      "appExposure": "已暴露的端口",
+      "appReplicas": "应用副本",
+      "archiveFiles": "归档文件",
+      "dnsRecords": "DNS 记录",
+      "importEnv": "已导入的环境变量",
+      "investigationMetrics": "调查指标",
+      "investigationEvents": "调查事件",
+      "modelUsage": "模型用量",
+      "pipelineInsights": "流水线洞察",
+      "pipelineSlowSteps": "最慢的流水线步骤",
+      "splitTests": "拆分测试变体",
+      "statusWebhooks": "状态页 Webhook",
+      "myAccess": "我的访问权限",
+      "agentConnect": "Agent 连接",
+      "aiUsage": "AI 用量",
+      "appAnalysis": "应用分析",
+      "vitalsRoutes": "按路由统计的 Web Vitals",
+      "cleanupHistory": "清理历史",
+      "engineStats": "数据库引擎统计",
+      "buildReport": "构建报告",
+      "dnsDelegation": "DNS 委派",
+      "dnsPropagation": "DNS 传播结果",
+      "redirects": "重定向",
+      "serverAddresses": "服务器地址",
+      "exposure": "暴露情况",
+      "firewallPorts": "开放端口",
+      "functionKv": "函数键值条目",
+      "mailQueue": "邮件队列",
+      "importPlan": "导入计划",
+      "importPlanServices": "导入计划服务",
+      "nodePatches": "节点补丁",
+      "pluginPanel": "插件数据",
+      "plugins": "插件",
+      "trustedKeys": "受信任的签名密钥",
+      "findingChanges": "建议的更改",
+      "benchmarkCompare": "基准测试对比",
+      "benchmarkResults": "基准测试结果",
+      "benchmarkSteps": "基准测试步骤",
+      "benchmarkSamples": "基准测试样本",
+      "benchmarkRuns": "基准测试运行",
+      "trafficDiff": "流量变化预览",
+      "trafficTopPaths": "热门路径",
+      "trafficBreakdown": "流量明细",
+      "trafficErrors": "流量错误",
+      "firewallRules": "防火墙规则",
+      "mobileDevices": "移动设备"
+    }
+  },
+  "resourceNotes": {
+    "title": "描述和备注",
+    "hint": "记录所有者、用途和运行手册链接。支持 Markdown。",
+    "empty": "还没有描述或备注。",
+    "edit": "编辑备注",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "显示在列表中的一行摘要",
+    "notesLabel": "备注",
+    "notesPlaceholder": "所有者、用途、运行手册链接",
+    "preview": "预览",
+    "write": "编写",
+    "noSecrets": "所有能读取此资源的人都能读取其备注。切勿在此放置密钥。",
+    "save": "保存",
+    "cancel": "取消",
+    "saved": "备注已保存"
+  },
+  "copyCommand": {
+    "trigger": "将 {{name}} 复制为命令",
+    "title": "复制为命令",
+    "cli": "{{action}}：CLI 命令",
+    "api": "{{action}}：API 调用",
+    "copiedCli": "已复制 CLI 命令",
+    "copiedApi": "已复制 API 调用，请先设置令牌变量",
+    "actions": {
+      "app_restart": "重启",
+      "app_stop": "停止",
+      "app_start": "启动",
+      "app_scale": "扩缩",
+      "app_rollback": "回滚",
+      "deploy_rollback": "回滚到此部署",
+      "database_start": "启动",
+      "database_stop": "停止",
+      "database_backup": "立即备份",
+      "domain_check": "验证",
+      "domain_remove": "移除",
+      "cert_renew": "续期证书",
+      "job_run": "立即运行",
+      "node_cordon": "隔离调度",
+      "node_uncordon": "恢复调度"
+    }
+  },
+  "language": {
+    "browserDefault": "浏览器默认",
+    "change": "更改语言，当前：{{language}}",
+    "label": "语言",
+    "saveFailed": "无法保存您的语言设置。"
+  }
+}

@@ -1,0 +1,228 @@
+{
+  "title": "任务",
+  "description": "按 cron 计划运行命令，可在带有此应用环境变量、密钥、卷和网络的全新容器中运行，也可在其运行中的容器内运行。",
+  "unnamed": "未命名任务",
+  "specManaged": "app.yaml",
+  "specManagedHint": "在 app.yaml 中声明。请在那里更改；这里只能切换启用开关。",
+  "empty": {
+    "title": "还没有任务",
+    "description": "按计划运行迁移、预热缓存或发送报告。每次运行都会连同其输出保存在历史中。"
+  },
+  "columns": {
+    "job": "任务",
+    "schedule": "计划",
+    "mode": "模式",
+    "lastRun": "上次运行",
+    "nextRun": "下次运行",
+    "enabled": "已启用",
+    "actions": "操作"
+  },
+  "mode": {
+    "fresh": "全新容器",
+    "exec": "在运行中的容器内",
+    "http": "对应用发起 HTTP 调用"
+  },
+  "concurrency": {
+    "allow": "允许重叠",
+    "forbid": "仍在运行则跳过",
+    "replace": "取消并替换",
+    "queue": "排在其后",
+    "queue-one": "排队一个，跳过其余"
+  },
+  "concurrencyHint": {
+    "allow": "即使上一次运行尚未结束，也启动新的运行。",
+    "forbid": "如果上一次运行仍在进行，则跳过此次运行，并记录为已跳过。",
+    "replace": "取消仍在运行的上一次运行，然后启动此次运行。",
+    "queue": "等待上一次运行结束后再运行，使重叠的运行依次进行。",
+    "queue-one": "保留一次运行，等上一次结束后再运行；更多重叠的运行会被跳过。"
+  },
+  "preview": {
+    "title": "接下来的运行（{{zone}}）",
+    "invalid": "请输入有效的计划和时区，以预览接下来的运行。",
+    "none": "此计划永远不会运行。"
+  },
+  "status": {
+    "running": "运行中",
+    "success": "成功",
+    "failed": "失败",
+    "timeout": "已超时",
+    "container_not_running": "容器未运行",
+    "skipped_concurrency": "已跳过，上一次运行仍在进行",
+    "skipped_freeze": "已跳过，部署冻结生效中",
+    "replaced": "已被更新的运行替换",
+    "missed": "错过了计划时间",
+    "interrupted": "因重启而中断"
+  },
+  "trigger": {
+    "schedule": "计划",
+    "manual": "手动",
+    "api": "API"
+  },
+  "neverRun": "从未运行",
+  "failedInARow": "连续失败 {{count}} 次",
+  "missedInARow": "连续错过 {{count}} 次",
+  "localNode": "本地",
+  "run": {
+    "now": "立即运行",
+    "starting": "启动中...",
+    "started": "任务已启动。",
+    "startedWithId": "任务已启动（运行 {{id}}）。",
+    "running": "运行中..."
+  },
+  "toggle": {
+    "label": "启用 {{name}}"
+  },
+  "dialog": {
+    "createTrigger": "创建任务",
+    "createTitle": "创建任务",
+    "editTitle": "编辑任务",
+    "created": "任务已创建。",
+    "updated": "任务已更新。",
+    "saving": "保存中...",
+    "creating": "创建中...",
+    "save": "保存更改",
+    "create": "创建任务",
+    "edit": "编辑",
+    "name": "名称",
+    "nameHint": "可选。小写字母、数字、连字符和下划线。",
+    "namePlaceholder": "例如 nightly-migrate",
+    "nameInvalid": "请使用小写字母、数字、连字符或下划线。",
+    "wholeNumber": "必须是整数。",
+    "command": "命令",
+    "commandPlaceholder": "例如 rm -rf /tmp/cache/*",
+    "commandHint": "通过 shell（sh -c）运行，因此镜像需要有 shell。Levelrail 绝不会解析它。",
+    "commandRequired": "命令为必填项",
+    "modeLabel": "运行位置",
+    "modeHint": {
+      "fresh": "使用应用当前镜像创建的新容器，带有其环境变量、密钥、卷和网络。运行结束时会被移除。",
+      "exec": "在应用运行中的容器内。如果容器没有运行则会失败。",
+      "http": "通过 HTTP 调用应用上的某个路径。休眠的应用会先被唤醒，调用会等待它。任何 2xx 响应都视为成功。"
+    },
+    "http": {
+      "method": "方法",
+      "path": "路径",
+      "pathPlaceholder": "例如 /api/cron/digest",
+      "pathHint": "此应用上的路径，以 / 开头。调用会直接发送到应用，而不是经过其公开域名。",
+      "pathInvalid": "请以单个 / 开头。",
+      "body": "请求体",
+      "bodyHint": "可选。以 application/json 发送。",
+      "background": "后台任务",
+      "backgroundHint": "应用可以立即返回 202 并继续工作。控制平面会等待响应，最长不超过后台超时，并记录结果，因此无需任何人一直保持请求打开。",
+      "headers": "请求头",
+      "headersHint": "可选。每一行发送一个请求头，其值在任务运行时从应用的某个密钥中读取，因此密钥绝不会存储在任务中。",
+      "headerName": "请求头名称",
+      "headerSecret": "密钥名称",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "前缀",
+      "headerAdd": "添加请求头",
+      "headerRemove": "移除请求头"
+    },
+    "timezone": "时区",
+    "timezoneHint": "IANA 名称，例如 Europe/Berlin。计划按此时区解读，包括夏令时变化。",
+    "timezoneRequired": "时区为必填项",
+    "concurrencyLabel": "如果上一次运行仍在进行",
+    "enabled": "已启用",
+    "advanced": "超时、重试和限制",
+    "timeout": "超时（秒）",
+    "timeoutHint": "针对每次尝试。留空则使用控制平面默认值。",
+    "retries": "重试次数",
+    "retriesHint": "失败后额外的尝试次数，退避时间逐次翻倍。",
+    "backoff": "重试退避（秒）",
+    "catchUpLabel": "控制平面停机之后",
+    "catchUp": {
+      "skip": "跳过错过的运行，并记录为错过",
+      "run_once": "如果最近错过了运行，则运行一次"
+    },
+    "lookback": "补跑窗口（秒）",
+    "memory": "内存限制（MiB）",
+    "memoryHint": "仅限全新容器。留空则使用应用自身的限制。",
+    "cpu": "CPU 限制（毫核）",
+    "warnAfter": "超过多少秒后警告",
+    "warnAfterHint": "一次运行超过此时长后，触发运行时间过长的告警。0 表示停用。"
+  },
+  "delete": {
+    "trigger": "删除",
+    "title": "删除此任务？",
+    "description": "它的计划和运行历史将被移除。此操作无法撤销。",
+    "cancel": "取消",
+    "confirm": "删除任务",
+    "deleted": "任务已删除。"
+  },
+  "history": {
+    "title": "运行历史",
+    "description": "此应用所有任务最近的运行，按时间从新到旧排列。",
+    "filter": "状态",
+    "filterAll": "所有状态",
+    "empty": "还没有运行。使用“立即运行”启动一次。",
+    "emptyTitle": "没有运行",
+    "emptyFiltered": "没有此状态的运行。",
+    "columns": {
+      "started": "开始时间",
+      "job": "任务",
+      "status": "状态",
+      "trigger": "触发方式",
+      "duration": "耗时",
+      "exit": "退出码或 HTTP",
+      "attempts": "尝试次数",
+      "node": "节点"
+    },
+    "trendLabel": "最近 {{count}} 次已完成运行的耗时",
+    "trendCaption": "运行耗时，从旧到新，最慢 {{max}}",
+    "httpStatus": "HTTP {{code}}",
+    "viewLogs": "日志",
+    "logsTitle": "运行输出",
+    "logsEmpty": "此次运行没有产生输出。",
+    "logsLoading": "正在加载输出...",
+    "logsRedacted": "此输出中的密钥已被脱敏。",
+    "alertsHint": "通过“告警”，使用任务失败、错过运行或运行时间过长这几种类型，在任务失败、错过运行或运行过久时收到通知。",
+    "outputWithheld": "输出已隐藏。查看任务输出需要敏感信息读取权限。"
+  },
+  "historyKept": {
+    "label": "保留的历史（每个任务的运行次数）",
+    "save": "保存",
+    "note": "较早的运行会被自动移除。",
+    "invalid": "请输入 {{min}} 到 {{max}} 之间的整数。"
+  },
+  "nextRunNever": "永不",
+  "nextRunNeverHint": "此计划没有未来的运行",
+  "accessRule": "一次性运行和定时任务遵循控制台 exec 的访问规则：创建、编辑或运行任务需要此应用的 root 权限，并且已为其启用 exec。",
+  "guards": {
+    "title": "防护措施",
+    "description": "限制重叠、限定运行时间、在失败时告警，并限制保留的历史数量。这些设置会自动保存。",
+    "overlap": {
+      "allow": "允许重叠",
+      "skip": "仍在运行则跳过",
+      "queue-one": "排队一个，跳过其余",
+      "replace": "取消并替换",
+      "queue": "排在其后"
+    },
+    "overlapHint": {
+      "allow": "即使上一次运行尚未结束，也启动新的运行。",
+      "skip": "如果上一次运行仍在进行，则跳过此次运行，并记录为已跳过。",
+      "queue-one": "保留一次运行，等上一次结束后再运行；更多重叠的运行会被跳过。",
+      "replace": "取消仍在运行的上一次运行，然后启动此次运行。",
+      "queue": "等待上一次运行结束后再运行，使重叠的运行依次进行。"
+    },
+    "timeoutSeconds": "超时（秒）",
+    "keepRuns": "保留最近的运行数",
+    "keepDays": "保留天数",
+    "keepHint": "留空则使用控制平面默认值。",
+    "defaultPlaceholder": "默认",
+    "alertOnFailure": "失败时告警",
+    "alertOnFailureHint": "让此应用上的“任务失败”告警规则在此任务失败时通知你。",
+    "save": "保存防护措施",
+    "saved": "防护措施已保存",
+    "summary": {
+      "overlap": {
+        "skip": "跳过重叠",
+        "queue-one": "排队一个",
+        "replace": "替换重叠",
+        "queue": "重叠排队"
+      },
+      "timeout": "超时 {{seconds}} 秒",
+      "alerts": "失败时告警",
+      "keepRuns_other": "保留 {{count}} 次运行",
+      "keepDays_other": "保留 {{count}} 天"
+    }
+  }
+}

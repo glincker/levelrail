@@ -1,0 +1,671 @@
+{
+  "table": {
+    "label": "部署",
+    "deploy": "部署",
+    "status": "状态",
+    "app": "应用",
+    "environment": "环境",
+    "commit": "提交",
+    "branch": "分支",
+    "started": "开始时间",
+    "by": "操作者"
+  },
+  "autoRollback": {
+    "title": "崩溃循环时自动回滚",
+    "infoTipLabel": "关于崩溃循环时自动回滚",
+    "helpLabel": "自动回滚指南",
+    "enabledLabel": "自动重新部署上一个可用的镜像",
+    "description": "当此应用触发崩溃循环告警时,重新部署比正在崩溃循环的镜像更早的最近一次成功镜像。每次事件最多发生一次。如果没有更早的镜像,你只会收到告警。",
+    "switchAriaLabel": "已启用崩溃循环时自动回滚",
+    "toast": {
+      "enabled": "已启用崩溃循环时自动回滚。",
+      "disabled": "已禁用崩溃循环时自动回滚。",
+      "errorTitle": "无法更新自动回滚。"
+    }
+  },
+  "predeploySnapshot": {
+    "title": "部署前数据库快照",
+    "infoTipLabel": "关于部署前快照",
+    "helpLabel": "部署前快照指南",
+    "modeAriaLabel": "快照模式",
+    "targetAriaLabel": "快照的备份目标",
+    "targetAuto": "默认备份目标",
+    "unavailable": "此控制面不支持部署前快照。",
+    "modes": {
+      "off": "关闭",
+      "on": "开启",
+      "require": "必需"
+    },
+    "modeHints": {
+      "off": "部署前不会创建快照。",
+      "on": "先为关联的数据库创建快照。快照失败会被记录,部署仍会继续。",
+      "require": "先为关联的数据库创建快照。快照失败会阻止部署。"
+    },
+    "toast": {
+      "saved": "部署前快照设置已保存。",
+      "errorTitle": "无法保存快照设置。"
+    }
+  },
+  "rollbackWithData": {
+    "title": "连同数据回滚",
+    "description": "重新部署此次部署之前的版本,并从其之前刚创建的快照恢复数据库。",
+    "snapshotsLabel": "此次部署之前创建的快照",
+    "takenAt": "创建于",
+    "warning": "每个关联的数据库都会被恢复为一个新数据库,应用的关联会切换到这些副本。原始数据库不会被更改,但自此次部署以来写入的数据会留在其中。",
+    "loading": "正在查找快照...",
+    "reasonNoSnapshot": "此次部署之前没有创建可用的快照。",
+    "reasonProtected": "此应用位于受保护的环境中。请使用普通回滚,并手动恢复数据。",
+    "reasonLoadFailed": "无法加载此应用的快照。",
+    "cancel": "取消",
+    "confirm": "连同数据回滚",
+    "working": "正在回滚...",
+    "started": "正在连同数据回滚。",
+    "menuLabel": "连同数据回滚",
+    "menuHint": "撤销此次部署并恢复其部署前快照"
+  },
+  "autoRollbackSloBurn": {
+    "title": "SLO 消耗时自动回滚",
+    "infoTipLabel": "关于 SLO 消耗时自动回滚",
+    "helpLabel": "自动回滚指南",
+    "modeLabel": "模式",
+    "modeAriaLabel": "SLO 消耗时自动回滚的模式",
+    "defaultDescription": "选择当 SLO 消耗速率告警触发时,此应用如何响应。",
+    "modes": {
+      "off": {
+        "label": "关闭",
+        "description": "仅告警。从不自动执行操作。"
+      },
+      "auto": {
+        "label": "自动回滚",
+        "description": "立即回滚到比正在消耗错误预算的镜像更早的最近一次成功镜像。"
+      },
+      "dry_run": {
+        "label": "试运行",
+        "description": "记录本会回滚什么,但不进行部署。"
+      },
+      "pause_for_human": {
+        "label": "等待人工",
+        "description": "为回滚创建待处理的部署审批,而不是直接部署。由队友批准或拒绝。"
+      }
+    },
+    "toast": {
+      "modeSet": "SLO 消耗时自动回滚已设置为:{{mode}}。",
+      "errorTitle": "无法更新 SLO 消耗时自动回滚。"
+    }
+  },
+  "badgeSettings": {
+    "title": "部署状态徽章",
+    "infoTipLabel": "关于部署状态徽章",
+    "enabledLabel": "公开的 README 徽章",
+    "description": "提供一个小型公开 SVG,显示此应用最新部署的状态和发生时间。无需认证。如果部署状态不应公开,请保持关闭。",
+    "switchAriaLabel": "已启用部署状态徽章",
+    "embedLabel": "嵌入到你的 README",
+    "toast": {
+      "enabled": "已启用部署状态徽章。",
+      "disabled": "已禁用部署状态徽章。",
+      "errorTitle": "无法更新部署状态徽章。"
+    }
+  },
+  "releaseLine": {
+    "deployed": "已部署",
+    "from": "来自",
+    "source": {
+      "webhook": "一次 Git 推送",
+      "manual": "仪表盘",
+      "image": "一次镜像部署",
+      "compose": "模板或 compose 文件",
+      "promote": "一次提升",
+      "clone": "一次克隆",
+      "schedule": "一个计划",
+      "auto_rollback": "一次自动回滚",
+      "git_push": "一次向服务器的 Git 推送",
+      "poll": "一次轮询,因为错过了 webhook",
+      "upload": "从 CLI 上传的目录",
+      "restart": "一次重启",
+      "start": "启动已停止的应用",
+      "stop": "停止应用",
+      "pr_comment": "一条拉取请求评论"
+    }
+  },
+  "imageAutoUpdate": {
+    "title": "镜像变化时更新",
+    "infoTipLabel": "关于镜像自动更新",
+    "description": "按计划将此应用的镜像标签与其镜像仓库比对,当标签指向新的摘要时重新部署。从源码构建的应用、已停止的应用以及处于部署冻结中的应用会被跳过。向受保护环境的镜像仓库推送会改为提交一个部署审批。",
+    "enabledLabel": "标签移动时自动重新部署",
+    "switchAriaLabel": "已启用镜像自动更新",
+    "checkNow": "立即检查",
+    "checking": "正在检查...",
+    "lastCheck": "上次检查({{when}}):{{result}}",
+    "neverChecked": "尚未检查。",
+    "status": {
+      "updateAvailable": "此标签有更新的镜像可用。",
+      "upToDate": "镜像已是最新。",
+      "updateNow": "立即更新",
+      "archMismatch": "此镜像是为 {{image}} 构建的,但节点运行的是 {{node}}。它可能无法启动。"
+    },
+    "toast": {
+      "enabled": "已启用镜像自动更新。",
+      "disabled": "已禁用镜像自动更新。",
+      "errorTitle": "无法更新镜像自动更新。",
+      "checkFailed": "镜像检查失败。"
+    },
+    "window": {
+      "label": "仅在窗口内更新",
+      "switchAriaLabel": "将更新限制在窗口内",
+      "presetsLabel": "窗口预设",
+      "presets": {
+        "nightly": "每晚 03:00",
+        "weekends": "周末 03:00"
+      },
+      "cronLabel": "窗口开始(cron)",
+      "minutesLabel": "开放分钟数",
+      "save": "保存窗口",
+      "saved": "更新窗口已保存。",
+      "invalid": "请输入 cron 计划和至少 1 分钟的窗口长度。",
+      "waiting": "有更新的镜像正在等待下一个更新窗口。"
+    },
+    "webhookHelp": "镜像仓库推送 webhook:在推送时更新,而不是等待下一个间隔。",
+    "webhookSet": "已设置镜像仓库推送 webhook。创建新的会替换它。",
+    "webhookCreate": "创建 webhook URL",
+    "webhookRotate": "替换 webhook URL",
+    "webhookUrlLabel": "镜像仓库 webhook URL",
+    "webhookShownOnce": "请立即复制。之后不会再显示。请将其作为 webhook(POST)粘贴到你的镜像仓库中。该 URL 本身就是密钥。",
+    "signingSecretLabel": "GitHub webhook 密钥(仅显示一次)",
+    "providerHint": {
+      "dockerhub": "Docker Hub:仓库的 Webhooks,添加该 URL。Docker Hub 不发送摘要,因此会先解析标签。",
+      "ghcr": "GitHub(ghcr.io):设置、Webhooks,内容类型 application/json,事件 Packages,并使用上面的密钥。未签名的投递会被拒绝。",
+      "protected": "一次推送会为此应用自身的镜像和标签部署被推送的摘要。在受保护的环境中则会改为提交审批。"
+    }
+  },
+  "canary": {
+    "title": "金丝雀发布",
+    "infoTipLabel": "关于金丝雀发布",
+    "description": "在当前版本旁边运行新镜像,并向其发送一部分请求。当它看起来健康时提升它,或中止,所有流量仍留在当前版本上。未就绪的金丝雀不会获得流量。需要单副本的镜像应用。",
+    "imageLabel": "金丝雀镜像",
+    "imagePlaceholder": "registry/app:next",
+    "weightLabel": "流量 %",
+    "start": "开始金丝雀",
+    "running": "金丝雀 {{image}} 正在接收 {{weight}}% 的请求。",
+    "setWeight": "设置占比",
+    "promote": "提升",
+    "promoteNow": "立即提升",
+    "abort": "中止",
+    "stagesLabel": "阶段 %(可选)",
+    "stagesPlaceholder": "10,25,50,100",
+    "intervalLabel": "每阶段时长",
+    "maxErrorLabel": "最大错误率上升(百分点)",
+    "maxP95Label": "最大 p95 比值",
+    "stageLabel": "第 {{stage}} 阶段,共 {{count}} 个",
+    "stageWeights": "{{stages}} %",
+    "compareLabel": "金丝雀与稳定版本对比",
+    "canaryColumn": "金丝雀",
+    "stableColumn": "稳定版",
+    "requests": "本阶段请求数",
+    "errorRate": "错误率(5xx)",
+    "p95": "p95 延迟",
+    "next": "{{reason}}({{elapsed}} 秒 / {{interval}} 秒)。如果错误或延迟相对稳定版本上升,会自动回滚。",
+    "breaching": "已突破:{{reason}}。正在回滚。",
+    "waitingForTraffic": "等待金丝雀接收流量,之后才会评判此阶段。",
+    "outcome": {
+      "promoted": "上一个金丝雀已被提升",
+      "aborted": "上一个金丝雀已被中止",
+      "rolled_back": "上一个金丝雀已被自动回滚"
+    },
+    "outcomeDetail": "{{image}} {{reason}}",
+    "toast": {
+      "started": "金丝雀已开始。",
+      "weightSet": "流量占比已更新。",
+      "promoted": "金丝雀已提升,正在部署。",
+      "aborted": "金丝雀已移除。",
+      "errorTitle": "金丝雀操作失败"
+    }
+  },
+  "templateUpgrade": {
+    "badge": "有可用的模板更新",
+    "blocked": "需要手动步骤",
+    "apply": "升级",
+    "applying": "正在启动",
+    "capabilities": "授予额外的 Linux capability:{{caps}}。应用即表示接受它们。",
+    "confirmTitle": "升级到当前模板?",
+    "confirmBody": "风险:{{risk}}。需要一份最新的卷备份。新版本会被观察,如果出现崩溃循环或失败则自动回滚。",
+    "envCount_other": "{{count}} 项环境变量变更",
+    "volumeCount_other": "{{count}} 个卷",
+    "status": {
+      "unchanged": "无变化",
+      "changed": "已更改",
+      "added": "新服务",
+      "removed": "已移除"
+    },
+    "run": {
+      "watching": "正在升级,观察新版本",
+      "succeeded": "升级完成,应用健康",
+      "rolled_back": "升级失败并已回滚",
+      "rollback_failed": "升级失败,回滚被拒绝",
+      "refused": "升级被拒绝。没有任何更改。"
+    },
+    "risk": {
+      "none": "无变化",
+      "low": "低风险",
+      "medium": "中风险",
+      "high": "高风险"
+    }
+  },
+  "pendingChanges": {
+    "title": "等待重启的更改",
+    "detail": "{{count}} 项尚未应用",
+    "restart": "重启以应用",
+    "redeploy": "重新部署以应用",
+    "applying": "正在应用",
+    "failed": "无法应用更改"
+  },
+  "envCompare": {
+    "title": "与另一个应用比较环境变量",
+    "pick": "比较对象",
+    "none": "选择应用",
+    "onlyIn": "仅在 {{app}} 中:",
+    "differs": "不同:",
+    "secret": "(密钥)",
+    "secretOneSide": "(仅一侧为密钥)",
+    "summary": "{{count}} 个键相同。密钥值从不被读取。密钥仅按键匹配。",
+    "tableLabel": "环境变量差异",
+    "colKey": "键",
+    "colStatus": "状态",
+    "added": "仅此处有",
+    "removed": "仅对方有",
+    "changed": "已更改",
+    "missing": "未设置",
+    "secretMasked": "密钥值,已隐藏"
+  },
+  "appSleep": {
+    "title": "空闲休眠",
+    "infoTipLabel": "关于休眠的应用",
+    "description": "在一段时间没有请求后停止此应用,使其不占用内存或 CPU。对其域名的下一个请求会启动它,并显示一个会自行重试的简短唤醒页面。第一位访客需要等待冷启动。",
+    "enabledLabel": "空闲休眠",
+    "switchAriaLabel": "已启用空闲休眠",
+    "minutesLabel": "自定义分钟数({{min}} 到 {{max}})",
+    "save": "保存",
+    "asleep": "此应用处于休眠中。",
+    "wakeNow": "立即唤醒",
+    "toast": {
+      "enabled": "已启用空闲休眠。",
+      "disabled": "已禁用空闲休眠。",
+      "updated": "空闲时间已更新。",
+      "errorTitle": "休眠设置失败",
+      "holdUpdated": "函数模式已更新。",
+      "portWakeUpdated": "端口唤醒已更新。",
+      "ignoreUpdated": "忽略的路径已更新。"
+    },
+    "holdLabel": "唤醒期间暂存请求(函数模式)",
+    "holdHelp": "应用休眠时到达的请求会等待其启动,然后被重放,而不是显示唤醒页面。适用于 API 调用方。",
+    "holdAriaLabel": "唤醒期间暂存请求",
+    "badgeAsleep": "休眠中",
+    "fleetTitle": "休眠的应用",
+    "fleetSummary": "{{enabled}} 个应用中有 {{sleeping}} 个休眠",
+    "fleetEmpty": "暂无应用在空闲时休眠。可在应用的部署标签页中开启,以便在无人访问时释放内存。",
+    "sleepNow": "立即休眠",
+    "sleepNowHelp": "立即停止应用,而不是等待空闲时间。下一个请求会启动它。",
+    "fleetEmptyShort": "暂无休眠的应用",
+    "fleetReclaimedLabel": "未使用的内存",
+    "fleetBrowseApps": "选择应用",
+    "fleetAllAwake": "所有开启了休眠的应用目前都处于唤醒状态。",
+    "fleetMore": "另有 {{count}} 个处于休眠",
+    "fleetNoLimits": "这些应用没有内存限制,因此无法估算它们释放的内存。请为每个应用设置限制,即可在此查看。",
+    "status": {
+      "ready": "可以开启",
+      "blocked": "已阻止",
+      "awake": "已开启,唤醒中",
+      "sleeping": "正在休眠",
+      "waking": "正在唤醒"
+    },
+    "explain": {
+      "generic": "当一段时间没有人使用此应用时,它会被停止以释放内存和 CPU。下一位访客会再次启动它,并等待冷启动。"
+    },
+    "wakeTiming": {
+      "none": "尚未测量任何唤醒,因此无法估算唤醒需要多久。",
+      "typical": "通常约 {{typical}} 唤醒。",
+      "typicalWithP95": "通常约 {{typical}} 唤醒(p95 {{p95}})。",
+      "noneShort": "暂无唤醒数据",
+      "short": "约 {{typical}} 唤醒",
+      "shortWithP95": "约 {{typical}} 唤醒(p95 {{p95}})"
+    },
+    "frees": "休眠时可释放约 {{size}}",
+    "checklistLabel": "休眠资格",
+    "blockedPrefix": "阻止休眠:",
+    "warnPrefix": "警告:",
+    "whatThisMeans": "这意味着:",
+    "allClear": "没有任何内容阻止此应用休眠。",
+    "turnOn": "开启空闲休眠",
+    "turnOff": "关闭空闲休眠",
+    "turnOnHint": "在 {{minutes}} 分钟未使用后休眠。之后可以更改。",
+    "turnOnBlocked": "请先修复:{{titles}}",
+    "idleTitle": "空闲多久后休眠",
+    "presetMinutes_other": "{{count}} 分钟",
+    "activity": {
+      "lastRequest": "最近请求",
+      "lastNetwork": "最近网络活动",
+      "connections": "打开的连接数",
+      "sleepsIn": "休眠倒计时",
+      "notScheduled": "未安排",
+      "none": "暂无"
+    },
+    "countdown": {
+      "minutes_other": "{{count}} 分钟",
+      "seconds_other": "{{count}} 秒"
+    },
+    "portWake": {
+      "title": "已发布端口有流量时唤醒",
+      "help": "连接到端口 {{ports}} 会唤醒应用,因此即使固定了主机端口也可以休眠。",
+      "aria": "已发布端口有流量时唤醒"
+    },
+    "ignore": {
+      "title": "忽略的路径",
+      "help": "对这些路径的请求永远不会让应用保持唤醒:健康检查和可用性监控。",
+      "remove": "移除 {{path}}",
+      "addLabel": "要忽略的路径",
+      "add": "添加"
+    }
+  },
+  "releaseNotes": {
+    "title": "提交与发布说明",
+    "digest": "镜像摘要",
+    "digestSame": "两侧的镜像摘要相同。",
+    "noCommits": "这两次部署之间没有提交。",
+    "commitsCount_other": "这两次部署之间有 {{count}} 个提交",
+    "generate": "生成发布说明",
+    "generating": "正在生成...",
+    "copy": "复制 Markdown",
+    "copied": "发布说明已复制。",
+    "copyFailed": "无法复制到剪贴板。",
+    "loadFailed": "无法生成发布说明。",
+    "needsDeploy": "请选择两次记录了 Git 提交的部署,以生成发布说明。"
+  },
+  "githubActions": {
+    "title": "GitHub Actions 报告",
+    "infoTipLabel": "关于 GitHub Actions 报告",
+    "description": "当 Levelrail 部署 action 在你的工作流中运行时,它会在提交上记录一次 GitHub 部署和一次检查运行,使结果显示在拉取请求上。报告失败绝不会导致部署失败。",
+    "environmentLabel": "GitHub 环境名称",
+    "deploymentsLabel": "记录 GitHub 部署",
+    "checksLabel": "发布检查运行",
+    "snippetHint": "在你的工作流中使用 glincker/levelrail/integrations/github-action,或运行 levelrail-cli apps github-actions get {{app}}。",
+    "save": "保存",
+    "toast": {
+      "saved": "GitHub Actions 报告已保存。",
+      "errorTitle": "无法保存 GitHub Actions 报告。"
+    }
+  },
+  "ciDeploy": {
+    "title": "从 CI 部署",
+    "infoTipLabel": "关于从 CI 部署",
+    "description": "信任某个流水线和 ref,然后将设置粘贴到你的 CI 中。作业会用其身份(GitHub、GitLab 或 CircleCI)换取一个 15 分钟有效、只能部署此应用的令牌,因此不会存储任何长期有效的密钥。带有 [skip ci] 的提交不会部署。",
+    "noTrusts": "尚无信任可部署此应用的流水线。请在下方添加。",
+    "repositoryLabel": {
+      "github": "GitHub 仓库",
+      "gitlab": "GitLab 项目路径",
+      "circleci": "CircleCI 项目 ID"
+    },
+    "repositoryPlaceholder": {
+      "github": "owner/name",
+      "gitlab": "group/project",
+      "circleci": "项目设置 > 概览"
+    },
+    "refLabel": "允许的 ref",
+    "environmentLabel": {
+      "github": "环境",
+      "gitlab": "环境",
+      "circleci": "上下文 ID"
+    },
+    "environmentPlaceholder": {
+      "github": "任意环境",
+      "gitlab": "任意受保护的环境",
+      "circleci": "任意上下文"
+    },
+    "trust": "信任",
+    "removeTrust": "停止信任 {{repository}}",
+    "workflowTitle": "生成的工作流",
+    "copy": "复制工作流",
+    "needsAddress": "CI 令牌是针对仪表盘地址签发的,而目前尚未设置。",
+    "useThisAddress": "使用 {{origin}}",
+    "cliToggle": "通过 CLI 修复",
+    "toast": {
+      "trusted": "仓库已信任。",
+      "trustError": "无法添加信任。",
+      "removeError": "无法移除信任。",
+      "addressError": "无法保存仪表盘地址。",
+      "copied": "工作流已复制。",
+      "copyFailed": "无法复制到剪贴板。",
+      "trustedLoose": "已信任,规则较宽松。"
+    },
+    "providerLabel": "CI 提供方",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI"
+    },
+    "orgIdLabel": "CircleCI 组织 ID",
+    "orgIdPlaceholder": "组织设置 > 概览",
+    "issuerLabel": "自托管的颁发者",
+    "issuerPlaceholder": "https://gitlab.com",
+    "issuerNote": "对于 gitlab.com,颁发者请留空。只有 root 用户可以信任自托管的 GitLab 颁发者,因为运行它的人可以铸造令牌。",
+    "issuerShown": "颁发者 {{issuer}}",
+    "protectedOnly": "仅限受保护的分支和标签",
+    "unprotectedWarning": "此信任接受来自未受保护分支和标签的流水线。任何能推送匹配 ref 的开发者都可以部署。",
+    "snippetTitle": {
+      "github": "作业步骤",
+      "gitlab": "GitLab CI 作业",
+      "circleci": "CircleCI 作业步骤"
+    },
+    "snippetNote": "将 LEVELRAIL_API_URL 设为仪表盘地址。它是公开的,不是密钥。"
+  },
+  "buildHooks": {
+    "title": "构建钩子",
+    "infoTipLabel": "关于构建钩子",
+    "description": "构建钩子是一个保密 URL。向它发送 POST 请求(来自无头 CMS 或 cron 作业)即可构建并部署此应用的 Git 来源。可选的带有 title 和 body 的 JSON 请求体会作为 TRIGGER_TITLE 和 TRIGGER_BODY 构建参数传给构建。可选的来源 CIDR 允许列表会以 403 拒绝其他所有调用方,且不会触发任何构建。",
+    "empty": "暂无构建钩子。创建一个即可从外部触发构建。",
+    "defaultBranch": "应用的分支",
+    "neverTriggered": "从未触发",
+    "lastTriggered": "上次触发 {{when}}(共 {{count}} 次)。结果:{{result}}",
+    "nameLabel": "钩子名称",
+    "namePlaceholder": "例如:cms publish",
+    "branchLabel": "分支(可选)",
+    "branchPlaceholder": "默认为应用的分支",
+    "create": "创建钩子",
+    "rotate": "轮换",
+    "revoke": "撤销",
+    "confirmRevoke": "确认撤销",
+    "copy": "复制 URL",
+    "urlLabel": "构建钩子 URL",
+    "shownOnce": "{{name}} 的 URL。请立即复制。之后不会再显示。",
+    "allowLabel": "允许的来源(可选)",
+    "allowPlaceholder": "CIDR 或地址,以逗号分隔",
+    "allowAny": "任何来源都可以调用它。",
+    "allowList": "只有 {{cidrs}} 可以调用它。",
+    "lastUsed": "上次调用 {{when}}。",
+    "editAllow": "允许列表",
+    "saveAllow": "保存允许列表",
+    "cancel": "取消",
+    "allowAnyToggle": "允许任何来源",
+    "lastRefusal": "上次被拒绝的调用:{{reason}}",
+    "toast": {
+      "errorTitle": "构建钩子请求失败",
+      "copied": "URL 已复制。",
+      "copyFailed": "无法复制到剪贴板。",
+      "allowSaved": "允许列表已保存。"
+    }
+  },
+  "banner": {
+    "title": "部署",
+    "description": "所有应用的每个版本,在构建时实时更新,并支持一键回滚。部署一个应用后,它就会出现在这里。",
+    "compactDescription": "所有应用的版本,支持回滚。",
+    "diagram": {
+      "image": "镜像",
+      "server": "服务器",
+      "rollback": "回滚"
+    }
+  },
+  "rolloutPolicy": {
+    "title": "滚动更新预算",
+    "infoLabel": "关于滚动更新预算",
+    "infoBody": "值为数量或百分比,例如 1 或 25%。字段留空则使用服务器默认值。",
+    "hint": "新版本发布期间可以增加或不可用的副本数。与 app.yaml 中的 rollout 块相同。",
+    "max_surge": "最大超出",
+    "max_unavailable": "最大不可用",
+    "min_available": "最小可用",
+    "default": "默认",
+    "save": "保存",
+    "reset": "使用默认值",
+    "saved": "发布策略已保存。",
+    "resetDone": "发布策略已重置为默认值。",
+    "saveFailed": "无法更新发布策略。",
+    "placeholder": "例如 25% 或 1",
+    "format": "数量(1)或百分比(25%)",
+    "error": {
+      "format": "请使用整数或百分比,例如 1 或 25%。",
+      "percent": "百分比必须在 0% 到 100% 之间。",
+      "bothZero": "最大超出和最大不可用不能同时为 0,否则发布将永远无法推进。"
+    }
+  },
+  "page": {
+    "title": "部署",
+    "live": "实时",
+    "reconnecting": "正在重新连接",
+    "connecting": "正在连接",
+    "newCount": "{{count}} 个新的",
+    "loadFailed": "无法加载部署",
+    "retry": "重试",
+    "noMatch": "没有匹配的部署",
+    "noMatchHint": "请尝试移除某个筛选条件或扩大搜索范围。",
+    "clearFilters": "清除筛选",
+    "emptyTitle": "暂无部署",
+    "emptyDescription": "应用一旦构建并发布,部署就会显示在这里。",
+    "drawerFallbackTitle": "部署",
+    "drawerDescription": "{{app}} 的部署 {{id}}",
+    "drawerSearching": "正在查找此部署",
+    "drawerNotFoundTitle": "未找到部署",
+    "drawerNotFound": "未找到部署。它可能已被保留策略清理。",
+    "emptyAction": "部署应用"
+  },
+  "summary": {
+    "label": "部署摘要",
+    "unavailableTip": "无法加载摘要。下方列表仍可使用。",
+    "na": "不适用",
+    "inProgress": "进行中",
+    "inProgressTip": "当前正在构建的部署。{{queued}} 个排队中。",
+    "failureRate": "失败率(24 小时)",
+    "failureRateTip": "失败的部署占最近 24 小时内已完成部署的比例。",
+    "medianDuration": "中位时长",
+    "medianDurationTip": "最近 24 小时内已完成部署的中位耗时。",
+    "needsAttention": "需要处理",
+    "needsAttentionTip": "已暂缓的部署,以及与运行中版本不同的线上镜像。选择即可显示已暂缓的部署。",
+    "deploys14": "部署(14 天)",
+    "deploys14Tip": "最近 14 天每天开始的部署数。"
+  },
+  "filterBar": {
+    "searchPlaceholder": "搜索提交、sha 或应用",
+    "searchLabel": "搜索部署",
+    "activeFilters": "当前筛选条件",
+    "removeFilter": "移除筛选 {{text}}",
+    "clearAll": "全部清除"
+  },
+  "supersededPopover": {
+    "queue": "队列",
+    "autoCancelLabel": "自动取消被取代的",
+    "switchLabel": "自动取消 {{app}} 被取代的部署",
+    "updateFailed": "无法更新设置。",
+    "openSettings": "打开部署设置",
+    "title": "自动取消被取代的部署",
+    "description": "某个分支更新的排队部署会替换较旧的排队部署。已在运行的构建永远不会被取消。按应用设置。",
+    "noApps": "尚未加载任何应用。",
+    "appLabel": "应用"
+  },
+  "deployList": {
+    "shortcuts": "快捷键",
+    "addFilter": "添加筛选",
+    "filterBy": "筛选依据",
+    "findOrType": "查找或输入{{what}}",
+    "valueLabel": "{{what}}的值",
+    "enterToUse": "按 Enter 使用此值。",
+    "nothingLoaded": "尚未加载任何内容。",
+    "keys": {
+      "author": "作者",
+      "environment": "环境",
+      "status": "状态",
+      "app": "应用",
+      "branch": "分支",
+      "trigger": "触发方式"
+    },
+    "status": {
+      "building": "构建中",
+      "queued": "排队中",
+      "ready": "就绪",
+      "failed": "失败",
+      "canceled": "已取消",
+      "held": "已暂缓",
+      "awaiting_approval": "等待批准",
+      "rolled_back": "已回滚",
+      "superseded": "已被取代"
+    },
+    "trigger": {
+      "git push": "Git 推送",
+      "manual": "手动",
+      "rollback": "回滚",
+      "api": "API",
+      "preview": "预览",
+      "schedule": "计划",
+      "pipeline": "流水线"
+    },
+    "shortcutLabels": {
+      "search": "搜索",
+      "addFilter": "添加筛选",
+      "nextPrev": "下一个或上一个部署",
+      "open": "打开详情",
+      "close": "关闭详情",
+      "redeploy": "重新部署(会先询问)",
+      "rollback": "回滚到它(会先询问)",
+      "cancel": "取消正在运行的部署(会先询问)"
+    }
+  },
+  "ciTemplates": {
+    "title": "适用于你 CI 的流水线文件",
+    "infoTipLabel": "关于 CI 流水线文件",
+    "description": "选择你的 CI,即可获得此应用的现成流水线文件。GitHub、GitLab 和 CircleCI 使用短期的身份令牌,因此不会存储任何长期有效的内容。Jenkins 和 Buildkite 使用只能读取和部署的部署者令牌。",
+    "providerLabel": "CI 提供方",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI",
+      "jenkins": "Jenkins",
+      "buildkite": "Buildkite"
+    },
+    "saveAs": "在你的仓库中将其保存为 {{target}}。",
+    "needsDomain": "尚未设置仪表盘 URL。请在设置中设置,以便你的 CI 能访问此控制面。",
+    "oidcNote": "请先在从 CI 部署中添加受信任的流水线,这样你的 CI 中就不会存储任何令牌。",
+    "token": {
+      "create": "创建部署者令牌",
+      "label": "部署者令牌",
+      "shownOnce": "请立即复制。之后不会再显示。",
+      "errorTitle": "无法创建令牌。",
+      "helpScoped": "此文件读取已存储的令牌。该令牌限于此应用所在的项目,可以读取和部署该项目中的每个应用,但无法触及项目之外的任何内容。它只能:{{abilities}}。请将其作为密钥存储在你的 CI 中。",
+      "helpInstallWide": "此文件读取已存储的令牌。此应用不属于任何项目,因此该令牌可以部署此服务器上的任何应用,并且只能:{{abilities}}。建议优先使用 OIDC 流水线,或先将应用移入某个项目。",
+      "helpUnavailable": "此文件读取已存储的令牌。此服务器无法将令牌限定在应用所在的项目,因此该令牌可以部署此服务器上的任何应用,并且只能:{{abilities}}。建议优先使用 OIDC 流水线。",
+      "createInstallWide": "创建全安装范围的令牌",
+      "helpProjectMissing": "此文件读取已存储的令牌。该应用指定的项目已不存在,因此令牌无法限定在项目内,并可以部署此服务器上的任何应用。它只能:{{abilities}}。请先修复应用的项目,或优先使用 OIDC 流水线。"
+    },
+    "apiUrl": "在你的 CI 中将 LEVELRAIL_API_URL 设为 {{url}}。"
+  },
+  "approvalBanner": {
+    "approved": "已批准:{{app}} 现在指向 {{image}}。",
+    "approveError": "无法批准。",
+    "rejected": "部署审批已拒绝。",
+    "rejectError": "无法拒绝。",
+    "titleDeploy": "部署到",
+    "titlePromote": "提升到",
+    "awaiting": "正在等待批准。",
+    "requestedBy": "由 {{name}} 请求。此环境受保护:必须由另一位权限足够的用户批准后才会部署。",
+    "reject": "拒绝",
+    "approve": "批准",
+    "approving": "正在批准...",
+    "viewQueue": "查看队列",
+    "progress": "目前已有 {{required}} 位不同批准者中的 {{received}} 位。最后一位批准时部署才会运行。",
+    "recorded": "已记录批准:{{required}} 位不同批准者中的 {{received}} 位。"
+  }
+}

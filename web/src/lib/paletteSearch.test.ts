@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { rankItems, relatedFor, scoreToken } from './paletteSearch'
+import {
+  rankItems,
+  relatedFor,
+  scoreToken,
+  withinOneEdit,
+} from './paletteSearch'
 
 const items = [
   { key: 'nav-dashboard', label: 'Dashboard' },
@@ -72,5 +77,15 @@ describe('relatedFor', () => {
   it('stays quiet for unrelated text and one-letter input', () => {
     expect(relatedFor('zebra').keys).toEqual([])
     expect(relatedFor('d').keys).toEqual([])
+  })
+})
+
+describe('typo tolerance', () => {
+  it('matches one slipped letter on queries of four or more characters', () => {
+    expect(withinOneEdit('backpu', 'backup')).toBe(true)
+    expect(withinOneEdit('databse', 'database')).toBe(true)
+    expect(withinOneEdit('abc', 'xyz')).toBe(false)
+    expect(scoreToken('domians', 'Domains')).not.toBeNull()
+    expect(scoreToken('zzzz', 'Backups')).toBeNull()
   })
 })

@@ -1,0 +1,326 @@
+{
+  "page": {
+    "title": "访问策略",
+    "description": "作用于应用、数据库或环境的允许和拒绝规则。拒绝始终优先;允许可以授予比令牌全局权限更窄的访问。",
+    "createPolicy": "创建策略",
+    "tabs": {
+      "policies": "策略",
+      "access": "谁有访问权限",
+      "simulator": "模拟器",
+      "analyzer": "分析器"
+    },
+    "loadError": "无法加载策略",
+    "retry": "重试"
+  },
+  "risk": {
+    "read": "读取",
+    "write": "会更改内容",
+    "sensitive": "敏感",
+    "root": "Root"
+  },
+  "group": {
+    "view": "查看",
+    "change": "更改",
+    "deploy": "部署",
+    "admin": "管理"
+  },
+  "list": {
+    "empty": {
+      "title": "暂无策略",
+      "description": "从模板开始,或逐条规则构建。在策略被关联之前,不会对任何人产生影响。"
+    },
+    "table": {
+      "name": "策略",
+      "rules": "规则",
+      "appliesTo": "适用于",
+      "updated": "更新时间",
+      "actions": "操作"
+    },
+    "notAttached": "未关联",
+    "open": "打开",
+    "edit": "编辑",
+    "attach": "关联",
+    "delete": "删除",
+    "allow": "{{count}} 条允许",
+    "deny": "{{count}} 条拒绝",
+    "rules_other": "{{count}} 条规则",
+    "appliesToCount_other": "{{count}} 个主体"
+  },
+  "builder": {
+    "createTitle": "创建策略",
+    "editTitle": "编辑 {{name}}",
+    "description": "选择在哪些资源上允许或拒绝什么。右侧的 JSON 由系统生成,也是最终存储的内容。",
+    "name": "名称",
+    "namePlaceholder": "例如 deployer-staging",
+    "nameRequired": "名称为必填",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "此策略的用途",
+    "statement": "规则 {{n}}",
+    "addStatement": "添加规则",
+    "removeStatement": "移除规则 {{n}}",
+    "effect": {
+      "label": "效果",
+      "allow": "允许",
+      "deny": "拒绝",
+      "allowHint": "在下列资源上授予这些权限。",
+      "denyHint": "在下列资源上阻止这些权限,即使令牌拥有它们。"
+    },
+    "actions": {
+      "label": "权限",
+      "search": "搜索权限",
+      "all": "所有权限",
+      "allHint": "匹配当前或未来的任何权限,包括 root。",
+      "required": "请至少选择一项权限",
+      "noMatch": "没有匹配该搜索的权限。",
+      "selected": "已选择 {{count}} 项"
+    },
+    "resources": {
+      "label": "资源",
+      "required": "请至少选择一个资源",
+      "add": "添加资源",
+      "kind": "类型",
+      "value": "选择一项",
+      "search": "搜索",
+      "noOptions": "尚无此类型的内容。",
+      "remove": "移除 {{resource}}",
+      "kinds": {
+        "all": "所有内容",
+        "project": "某个项目",
+        "environment": "某个环境",
+        "environment_kind": "某类环境",
+        "app": "指定的应用",
+        "database": "指定的数据库",
+        "static_site": "指定的静态站点",
+        "pattern": "名称模式"
+      },
+      "patternPlaceholder": "app:web-*",
+      "patternHint": "以 * 结尾可匹配前缀,例如 app:web-*",
+      "projectNote": "保存时会展开为该项目的 {{count}} 个环境。",
+      "matchNone": "目前没有匹配项",
+      "matchAll": "所有内容",
+      "matchChecking": "正在检查",
+      "matchApps_other": "{{count}} 个应用",
+      "matchDatabases_other": "{{count}} 个数据库",
+      "matchStaticSites_other": "{{count}} 个静态站点"
+    },
+    "conditions": {
+      "title": "条件",
+      "description": "评估器尚无条件引擎,因此规则无条件适用。请使用上面的资源按环境限定范围。",
+      "planned": "尚未强制执行",
+      "sourceIp": "来源 IP 或 CIDR",
+      "timeWindow": "时间窗口和时区",
+      "mfa": "MFA 或会话时长"
+    },
+    "json": {
+      "title": "文档",
+      "advanced": "编辑 JSON",
+      "advancedHint": "在此编辑会替换引导式规则。字段错误会指向具体路径。",
+      "invalid": "这不是有效的策略文档:{{reason}}",
+      "apply": "使用此 JSON",
+      "reset": "返回引导模式"
+    },
+    "issues": {
+      "title": "问题",
+      "ok": "文档有效",
+      "checking": "正在检查"
+    },
+    "template": {
+      "title": "从模板开始",
+      "pick": "模板",
+      "none": "空白策略",
+      "use": "填入规则",
+      "param": {
+        "environment": "环境",
+        "app": "应用",
+        "database": "数据库",
+        "project": "项目"
+      },
+      "failed": "无法展开模板"
+    },
+    "attach": {
+      "title": "保存时关联",
+      "description": "可选。选择谁立即获得此策略。",
+      "none": "暂无人员"
+    },
+    "save": "保存策略",
+    "saving": "正在保存",
+    "saved": "策略 {{name}} 已保存",
+    "cancel": "取消"
+  },
+  "impact": {
+    "title": "此更改的影响",
+    "checking": "正在计算影响",
+    "none": "目前不影响任何人。",
+    "noChange": "{{name}}:有效访问权限没有变化。",
+    "recentlyUsed": "最近 7 天内使用过",
+    "guardBlocked": "已阻止:这会导致没有任何 root 主体能够管理平台。",
+    "showResources": "显示资源",
+    "tooManyHidden": "以及更多",
+    "gains_other": "{{name}} 在 {{count}} 个资源上获得 {{ability}}",
+    "loses_other": "{{name}} 在 {{count}} 个资源上失去 {{ability}}"
+  },
+  "versions": {
+    "title": "历史",
+    "empty": "暂无已保存的版本。",
+    "version": "版本 {{n}}",
+    "by": "由 {{actor}}",
+    "unknownActor": "未知",
+    "added": "已添加",
+    "removed": "已移除",
+    "noChange": "规则无变化",
+    "initial": "首次保存的版本"
+  },
+  "detail": {
+    "title": "策略详情",
+    "rules": "规则",
+    "appliesTo": "适用于",
+    "nobody": "未关联给任何人。在关联之前不会产生任何效果。",
+    "findings": "此策略的发现项",
+    "noFindings": "此策略没有发现项。",
+    "detach": "取消关联",
+    "close": "关闭"
+  },
+  "access": {
+    "search": "搜索用户和令牌",
+    "filter": {
+      "all": "所有人",
+      "user": "用户",
+      "token": "令牌"
+    },
+    "empty": {
+      "title": "没有匹配的用户或令牌",
+      "description": "请清除搜索或切换筛选。"
+    },
+    "user": "用户",
+    "token": "令牌",
+    "inactive": "已撤销或已过期",
+    "pickOne": {
+      "title": "选择用户或令牌",
+      "description": "查看它能做什么,以及哪些策略决定了这一点。"
+    },
+    "attachedPolicies": "已关联的策略",
+    "noPolicies": "未关联任何策略。仅适用其自身的权限。",
+    "attach": "关联策略",
+    "bulkAttach": "关联到所选令牌",
+    "selectedCount": "已选择 {{count}} 项",
+    "selectAllTokens": "选择所有显示的令牌",
+    "clearSelection": "清除",
+    "flatAbilities": "权限",
+    "lastUsed": "上次使用 {{when}}",
+    "neverUsed": "从未使用",
+    "policiesCount_other": "{{count}} 条策略"
+  },
+  "attachDialog": {
+    "attachTitle": "关联策略",
+    "detachTitle": "取消关联策略",
+    "description": "请查看会有什么变化,然后确认。更改会写入审计日志。",
+    "policy": "策略",
+    "policyPick": "选择策略",
+    "principals": "对象",
+    "noPrincipals": "请至少选择一个用户或令牌",
+    "confirmAttach": "关联",
+    "confirmDetach": "取消关联",
+    "working": "处理中",
+    "failed": "部分更改失败:{{message}}",
+    "attached_other": "已将 {{name}} 关联到 {{count}} 个主体",
+    "detached_other": "已将 {{name}} 从 {{count}} 个主体取消关联"
+  },
+  "effective": {
+    "title": "{{name}} 能做什么?",
+    "ability": "权限",
+    "scope": "允许范围",
+    "viaPolicy": "由策略授予",
+    "deniedByPolicy": "被策略阻止",
+    "all": "全部 {{total}} 个资源",
+    "some": "{{total}} 个中的 {{allowed}} 个",
+    "none": "无",
+    "noResources": "暂无应用或数据库",
+    "restricted": "此主体只能看到授予它的环境。",
+    "apps": "应用",
+    "databases": "数据库"
+  },
+  "simulator": {
+    "title": "此主体能做这件事吗?",
+    "description": "运行与保护每个请求相同的评估器。不会更改任何内容。",
+    "principal": "主体",
+    "principalPick": "选择用户或令牌",
+    "action": "权限",
+    "resource": "资源",
+    "resourcePick": "选择应用或数据库",
+    "resourceCustom": "或输入资源",
+    "run": "检查",
+    "running": "正在检查",
+    "allowed": "允许",
+    "denied": "拒绝",
+    "summary": "{{name}}{{verdict}}对 {{resource}} 执行 {{action}}",
+    "verdictAllow": "可以",
+    "verdictDeny": "不可以",
+    "decidedBy": {
+      "explicit_deny": "由已关联策略中的显式拒绝决定。",
+      "base_ability": "由主体自身的权限授予,且没有匹配的拒绝。",
+      "explicit_allow": "由已关联策略中的允许授予。",
+      "no_grant": "没有任何内容授予它:没有权限,也没有匹配的允许语句。",
+      "hidden": "该资源不在此主体可见的环境内,因此返回未找到。",
+      "inactive_principal": "此令牌已撤销或已过期,因此所有请求都会被拒绝。"
+    },
+    "decidingStatement": "决定性语句",
+    "matched": "所有匹配的语句",
+    "noneMatched": "任何已关联策略中都没有匹配的语句。",
+    "policy": "策略 {{name}},规则 {{n}}",
+    "environments": "可见的环境范围:{{list}}",
+    "failed": "无法运行检查",
+    "needsInput": "请先选择主体和资源。",
+    "showEffective": "此主体能做什么?"
+  },
+  "analyzer": {
+    "title": "策略分析器",
+    "description": "对每条策略、关联和令牌进行静态检查。每个发现项都会说明要更改什么。",
+    "score": "得分 {{score}} / 100",
+    "scoreLabel": "访问卫生得分",
+    "clean": {
+      "title": "没有发现项",
+      "description": "你的策略中没有需要处理的内容。"
+    },
+    "severity": {
+      "critical": "严重",
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "info": "备注"
+    },
+    "all": "全部",
+    "fix": "修复",
+    "openPolicy": "打开策略",
+    "openPrincipal": "查看访问权限",
+    "rerun": "再次运行",
+    "count": "{{count}} 个发现项"
+  },
+  "suggestions": {
+    "title": "最小权限",
+    "description": "将令牌与审计日志中显示其最近 {{days}} 天实际使用的权限进行比较。",
+    "empty": "每个令牌都只拥有它会用到的权限。",
+    "granted": "已授予",
+    "suggested": "建议",
+    "unused": "未使用",
+    "status": {
+      "ok": "使用中",
+      "narrow": "可收窄",
+      "idle": "闲置"
+    },
+    "revoke": "撤销令牌",
+    "revoked": "令牌 {{name}} 已撤销",
+    "confirmTitle": "撤销 {{name}}?",
+    "confirmDescription": "所有使用此令牌的内容都将停止工作。此操作无法撤销。",
+    "pending": "正在撤销",
+    "note": "普通的读取请求不会被审计,因此读取权限永远不会被标记为未使用。"
+  },
+  "delete": {
+    "title": "删除 {{name}}?",
+    "description": "所有关联到它的对象都会失去其规则。此操作无法撤销。",
+    "confirm": "删除策略",
+    "deleted": "策略 {{name}} 已删除"
+  },
+  "errors": {
+    "generic": "请求失败。请重试。"
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "defaults": {
+    "tab": "默认值",
+    "description": "默认开启的告警：按逐步升级的提前量提示证书到期、恢复演练失败、节点离线等。关闭某一项后会一直保持关闭；你的编辑绝不会被覆盖。",
+    "loadError": "无法加载默认告警。",
+    "reset": "重置为默认值",
+    "resetToast": "默认告警已重置",
+    "resetError": "无法重置默认告警。",
+    "emptyTitle": "没有默认告警",
+    "emptyBody": "默认告警会在首次启动时创建。你删除的任何告警都会保持删除状态。",
+    "toggleLabel": "启用 {{name}}",
+    "enabledToast": "{{name}} 已开启",
+    "disabledToast": "{{name}} 已关闭",
+    "toggleError": "无法更新 {{name}}。",
+    "firing": "触发中",
+    "severity": {
+      "info": "信息",
+      "warning": "警告",
+      "critical": "严重"
+    }
+  },
+  "tab": "收件箱",
+  "title": "告警收件箱",
+  "description": "送达给你的告警，按时间从新到旧排列。已静默、已分组和被限流的噪声会被隐藏。已读状态跟随你的账户。",
+  "loading": "正在加载收件箱",
+  "loadError": "无法加载收件箱。",
+  "retry": "重试",
+  "unreadOnly": "仅未读",
+  "markAllRead": "全部标为已读",
+  "markRead": "标为已读",
+  "markedAll": "收件箱已标为已读。",
+  "unreadCount_other": "{{count}} 条未读",
+  "empty": {
+    "title": "没有需要你处理的内容",
+    "body": "警告级别及以上的新触发和恢复会显示在这里。调低下方的最低严重级别可以看到更多。"
+  },
+  "event": {
+    "fired": "已触发",
+    "resolved": "已恢复",
+    "flapping": "反复波动",
+    "group": "分组告警"
+  },
+  "severity": {
+    "info": "信息",
+    "warning": "警告",
+    "critical": "严重"
+  },
+  "prefs": {
+    "title": "路由与每日摘要",
+    "minSeverity": "最低严重级别",
+    "mutedApps": "已静音的应用",
+    "mutedAppsHint": "以逗号分隔的应用名称，这些应用的告警不会进入你的收件箱。",
+    "digest": "每日摘要",
+    "digestHint": "过去 24 小时的一份摘要，通过通知渠道发送。",
+    "digestHour": "发送时间（UTC 小时）",
+    "digestChannel": "摘要渠道",
+    "noChannel": "请先创建通知渠道",
+    "save": "保存偏好",
+    "saved": "收件箱偏好已保存。",
+    "saveError": "无法保存偏好。",
+    "digestNeedsChannel": "请选择用于发送摘要的渠道。"
+  },
+  "bell": {
+    "link": "告警收件箱",
+    "unread_other": "{{count}} 条未读告警"
+  },
+  "page": {
+    "title": "收件箱",
+    "description": "需要你处理的告警、审批请求和失败项，每项都有一个操作。",
+    "kindFilter": "按类型筛选",
+    "showArchived": "已归档",
+    "listLabel": "收件箱项目",
+    "detailLabel": "收件箱项目",
+    "kind": {
+      "all": "全部",
+      "alert": "告警",
+      "approval": "审批",
+      "deploy": "失败的部署",
+      "upgrade": "失败的升级"
+    },
+    "approve": "批准",
+    "matchLabel": "等待中的浏览器上显示的数字",
+    "matchPlaceholder": "数字",
+    "deny": "拒绝",
+    "retry": "重试",
+    "fix": "修复",
+    "retryStarted": "正在重试 {{app}} 的部署。",
+    "actionError": "操作没有成功。请打开来源查看原因。",
+    "openSource": "打开来源",
+    "archive": "归档",
+    "restore": "恢复",
+    "keys": "快捷键：j 下一个，k 上一个，e 归档，# 删除，z 撤销。",
+    "emptyTitle": "没有需要你处理的内容",
+    "emptyBody": "新的告警、审批请求和失败的部署会显示在这里。可通过告警路由调整哪些内容会送达给你。",
+    "emptyAction": "查看告警设置",
+    "emptyArchivedTitle": "没有已归档的项目",
+    "emptyArchivedBody": "你用 e 归档的项目会保留在这里，直到被恢复。",
+    "badge": "收件箱：{{count}} 条未读",
+    "badgeNone": "收件箱",
+    "entry": {
+      "signInTitle": "来自 {{ip}} 的新浏览器登录",
+      "approvalTitle": "{{app}} 正在等待审批",
+      "approvalDetail": "{{action}} {{image}}，由 {{who}} 请求",
+      "deployTitle": "{{app}} 的部署失败",
+      "upgradeSucceeded": "已成功升级到 {{version}}",
+      "upgradeDetail": "已从 {{from}} 升级到 {{to}}"
+    },
+    "count_other": "{{count}} 项，{{unread}} 条未读",
+    "countMore_other": "{{count}}+ 项，{{unread}} 条未读",
+    "selectItem": "选择 {{title}}",
+    "selectGroup": "全选：{{title}}",
+    "group": {
+      "label": "{{title}}，x{{count}}",
+      "archive_other": "归档全部 {{count}} 项",
+      "delete_other": "删除全部 {{count}} 项"
+    },
+    "deleted_other": "已删除 {{count}} 项。",
+    "undo": "撤销",
+    "deleteError": "无法删除。没有移除任何内容。"
+  },
+  "certCard": {
+    "domain": "域名",
+    "issuer": "颁发者",
+    "timeLeft": "剩余时间",
+    "daysLeft_other": "{{count}} 天",
+    "expired": "已过期",
+    "why": "原因",
+    "renewNow": "立即续期",
+    "renewing": "续期中...",
+    "checkDns": "检查 DNS 并重试",
+    "renewRequested": "已为 {{domain}} 请求续期。",
+    "renewError": "无法为 {{domain}} 续期证书。",
+    "noChannel": "尚未连接通知渠道，因此此告警只会显示在这里和仪表盘上。",
+    "connectChannel": "连接通知渠道",
+    "alsoEmail": "同时给我发邮件",
+    "emailNoProvider": "请连接邮件提供商以启用此项。",
+    "emailNotVerified": "请验证你的邮箱地址以启用此项。",
+    "emailError": "无法更新邮件通知。"
+  },
+  "bulk": {
+    "label": "批量操作",
+    "selected_other": "已选择 {{count}} 项",
+    "selectAll": "全选",
+    "delete": "删除",
+    "deleteBlocked": "审批、失败的部署和失败的升级无法删除，只能归档。",
+    "clear": "清除选择"
+  },
+  "tidy": {
+    "menu": "整理",
+    "archiveRead": "归档所有已读",
+    "archiveResolved": "归档所有已解决",
+    "clearResolved": "清除已解决",
+    "deleteArchived": "删除所有已归档",
+    "confirm_other": "这会从你的收件箱中删除 {{count}} 项。告警历史会保留记录。",
+    "confirmAction": "删除",
+    "nothing": "没有需要整理的内容。",
+    "error": "无法整理收件箱。",
+    "done": {
+      "archiveRead_other": "已归档 {{count}} 项已读内容。",
+      "archiveResolved_other": "已归档 {{count}} 项已解决内容。",
+      "clearResolved_other": "已清除 {{count}} 项已解决内容。",
+      "deleteArchived_other": "已删除 {{count}} 项已归档内容。"
+    }
+  }
+}

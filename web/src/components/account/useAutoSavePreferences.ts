@@ -11,11 +11,23 @@ export function useAutoSavePreferences(saved: Preferences) {
   const { setTheme } = useTheme()
   const [draft, setDraft] = useState<Preferences>(saved)
 
+  // Another control (header, login) may change the language; follow it.
+  const [seenLanguage, setSeenLanguage] = useState(saved.language)
+  if (seenLanguage !== saved.language) {
+    setSeenLanguage(saved.language)
+    setDraft((d) => ({ ...d, language: saved.language }))
+  }
+
   // The theme is applied before the round trip so the page does not lag the click.
   const apply = (next: Preferences) => {
     setDraft(next)
     if (next.theme !== draft.theme && next.theme !== '') setTheme(next.theme)
-    save.mutate(next, {
+    const changes = Object.fromEntries(
+      Object.entries(next).filter(
+        ([k, v]) => v !== draft[k as keyof Preferences],
+      ),
+    ) as Partial<Preferences>
+    save.mutate(changes, {
       onError: (e) => {
         setDraft(saved)
         toast.add({

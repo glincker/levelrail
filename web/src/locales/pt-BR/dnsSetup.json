@@ -1,0 +1,173 @@
+{
+  "title": "Configuração de DNS",
+  "back": "Voltar",
+  "continue": "Continuar",
+  "loading": "Carregando",
+  "copied": "Copiado",
+  "progress": "Etapa {{current}} de {{total}}",
+  "step": {
+    "pick": "Escolha um domínio",
+    "detect": "Encontrando seu host de DNS",
+    "review": "Revisar registros",
+    "verify": "Verificar registros"
+  },
+  "connectAction": "Conectar {{provider}}",
+  "openIn": "Abrir em {{provider}}",
+  "foundValue": "Encontrado: {{value}}",
+  "expectedValue": "Esperado: {{value}}",
+  "keepMine": "Manter o meu",
+  "replace": "Substituir",
+  "group": {
+    "receive": "Receber e-mails",
+    "trust": "Confiança",
+    "optional": "Opcional",
+    "records": "Registros"
+  },
+  "status": {
+    "live": "Ativo",
+    "waiting": "Aguardando",
+    "willAdd": "Será adicionado",
+    "different": "Diferente",
+    "conflict": "Conflito",
+    "unknown": "Desconhecido",
+    "found": "Encontrado"
+  },
+  "pick": {
+    "listLabel": "Domínios neste sistema",
+    "source": {
+      "install": "Instalação de e-mail",
+      "mail": "Domínio de e-mail",
+      "app": "App",
+      "zone": "Zona DNS"
+    },
+    "addAnother": "Adicionar outro domínio",
+    "addLabel": "Domínio",
+    "placeholder": "example.com",
+    "use": "Usar",
+    "invalid": "Informe um domínio como example.com.",
+    "apexOffer": "Usar {{apex}} para endereços e {{host}} como servidor",
+    "loadFailed": "Não foi possível carregar seus domínios."
+  },
+  "detect": {
+    "detecting": "Detectando o host de DNS",
+    "connected": "O DNS está hospedado em {{provider}}. Conectado.",
+    "notConnected": "O DNS está hospedado em {{provider}}. Não conectado.",
+    "unknown": "Não foi possível detectar seu host de DNS. Você pode copiar os registros.",
+    "failed": "A detecção falhou. Você ainda pode copiar os registros.",
+    "domainConnect": "Aprovação com um clique disponível em {{host}}",
+    "without": "Continuar sem conectar",
+    "demo": "Dados de demonstração: demo.example é uma zona falsa, então nenhum host de DNS real pode ser encontrado. Digite um domínio real abaixo para testar a detecção (consultas somente leitura). Para desativar o modo de demonstração, reinicie com LOCAL_MAIL_DEMO=0.",
+    "tryLabel": "Tentar outro domínio",
+    "tryAction": "Detectar"
+  },
+  "connect": {
+    "permissions": "Crie um token com Zone DNS Edit nesta zona e Zone Read. Nada mais é necessário.",
+    "tokenLabel": "Token de API de {{provider}}",
+    "save": "Salvar token",
+    "saving": "Salvando",
+    "failed": "O token não foi aceito. Verifique as permissões dele e tente novamente.",
+    "useSettings": "Adicione as credenciais de {{provider}} nas configurações, ou copie os registros."
+  },
+  "review": {
+    "host": "Host de e-mail",
+    "ip": "IPv4 do servidor",
+    "ipPlaceholder": "203.0.113.7",
+    "edit": "Editar host de e-mail e servidor",
+    "done": "Concluído",
+    "otherProvider": "Usa outro provedor de e-mail?",
+    "presetLabel": "Provedor de e-mail",
+    "selfHosted": "Este servidor",
+    "planFailed": "Não foi possível ler os registros. {{message}}",
+    "empty": "Nada a adicionar para este domínio.",
+    "blocked": "Um registro nesta zona ocultaria o host de e-mail. Corrija-o primeiro.",
+    "add_one": "Adicionar {{count}} registro",
+    "add_many": "Adicionar {{count}} registros",
+    "add_other": "Adicionar {{count}} registros",
+    "addDiff_one": "Adicionar {{count}}, revisar {{diff}} diferente",
+    "addDiff_many": "Adicionar {{count}}, revisar {{diff}} diferente",
+    "addDiff_other": "Adicionar {{count}}, revisar {{diff}} diferente",
+    "applying": "Adicionando registros",
+    "copy": "Copiar registros",
+    "check": "Verificar registros",
+    "nothingDeleted": "Nada é excluído.",
+    "confirmReplace_one": "Isto sobrescreve {{count}} registro existente. Confirme para continuar.",
+    "confirmReplace_many": "Isto sobrescreve {{count}} registros existentes. Confirme para continuar.",
+    "confirmReplace_other": "Isto sobrescreve {{count}} registros existentes. Confirme para continuar.",
+    "confirmButton_one": "Sim, substituir {{count}} e adicionar",
+    "confirmButton_many": "Sim, substituir {{count}} e adicionar",
+    "confirmButton_other": "Sim, substituir {{count}} e adicionar",
+    "applyFailed": "Os registros não foram adicionados.",
+    "recordsTitle": "Registro DNS a criar"
+  },
+  "manual": {
+    "whereKnown": "Cole estes no painel de DNS de {{provider}}.",
+    "whereUnknown": "Cole estes onde o DNS do seu domínio é gerenciado.",
+    "dashboard": "Painel de DNS",
+    "copyAll": "Copiar tudo",
+    "copyTable": "Copiar como tabela",
+    "copyValue": "Copiar o valor de {{name}}",
+    "ttl": "TTL {{ttl}}",
+    "priority": "prioridade {{priority}}"
+  },
+  "verify": {
+    "undelegated": "Os nameservers do domínio ainda não apontam para esta zona, então estes registros não serão resolvidos. {{reason}}",
+    "summary": "{{added}} adicionados, {{same}} já existiam.",
+    "liveCount": "{{live}} de {{total}} ativos",
+    "progress": "Registros ativos",
+    "checkedAgo": "verificado há {{seconds}}s",
+    "checkNow": "Verificar agora",
+    "checking": "Verificando",
+    "waiting": "Aguardando o DNS, normalmente menos de 5 minutos.",
+    "stillWaiting": "Ainda esperando? Verifique novamente mais tarde.",
+    "allLive": "Todos os registros estão ativos.",
+    "ptr": "O DNS reverso (PTR) é definido no seu provedor de hospedagem. Pendente.",
+    "checkAgain": "Verificar novamente"
+  },
+  "toast": {
+    "applied_one": "{{count}} registro adicionado",
+    "applied_many": "{{count}} registros adicionados",
+    "applied_other": "{{count}} registros adicionados"
+  },
+  "summary": {
+    "label": "Resumo dos registros",
+    "toAdd_one": "{{count}} registro a adicionar",
+    "toAdd_many": "{{count}} registros a adicionar",
+    "toAdd_other": "{{count}} registros a adicionar",
+    "zone": "Arquivo de zona",
+    "table": "Tabela",
+    "json": "JSON"
+  },
+  "mode": {
+    "label": "Como adicionar",
+    "auto": "Adicionar automaticamente",
+    "myself": "Adicionar eu mesmo"
+  },
+  "banner": {
+    "hosted": "O DNS está hospedado em {{provider}}",
+    "unknown": "Host de DNS não detectado",
+    "connected": "Conectado",
+    "notConnected": "Não conectado"
+  },
+  "table": {
+    "label": "Registros DNS",
+    "status": "Status",
+    "type": "Tipo",
+    "name": "Nome",
+    "value": "Valor",
+    "ttl": "TTL",
+    "expand": "Mostrar valor completo",
+    "collapse": "Ocultar valor completo",
+    "existing": "Registro existente"
+  },
+  "options": {
+    "label": "Formas de adicionar estes registros",
+    "approve": "Aprovar em {{host}} (sem token)",
+    "approving": "Abrindo",
+    "approveHint": "Abre seu host de DNS em uma nova aba. Você aprova lá, nada é armazenado.",
+    "connectToken": "Conectar {{host}} com um token",
+    "tokenHint": "Um token também ativa verificações ao vivo e a lista de registros gerenciados.",
+    "tokenCerts": "Ele também permite que o certificado do host de e-mail seja renovado automaticamente.",
+    "failed": "Não foi possível iniciar a aprovação. Tente conectar com um token.",
+    "connectLink": "Conectar"
+  }
+}

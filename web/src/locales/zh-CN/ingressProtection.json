@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "信任 Cloudflare 提供的访客地址",
+    "helper": "从 CF-Connecting-IP 读取访客地址,但仅限来自 Cloudflare 公布网段的连接;来自其他位置的伪造请求头会被忽略。任何 Cloudflare 客户都可以通过自己的代理记录访问你的服务器,因此这并不能证明请求经过了你的站点。",
+    "ranges": "{{count}} 个网段({{source}}),每 {{interval}} 刷新一次。",
+    "source": {
+      "embedded": "随应用内置",
+      "fetched": "来自 Cloudflare"
+    },
+    "lastRefresh": "上次刷新:{{when}}。",
+    "neverRefreshed": "尚未刷新,使用内置列表。",
+    "lastError": "上次刷新错误:{{error}}",
+    "saved": "Cloudflare 客户端 IP 已开启",
+    "savedOff": "Cloudflare 客户端 IP 已关闭",
+    "failed": "无法更改 Cloudflare 客户端 IP 设置"
+  },
+  "fallbackCerts": {
+    "label": "自动地址的证书",
+    "helper": "急切模式在路由创建后立即申请证书;惰性模式在首次访问自动地址时才申请。你自己添加的域名始终为急切模式。",
+    "options": {
+      "eager": "急切",
+      "lazy": "惰性"
+    },
+    "source": {
+      "default": "默认",
+      "env": "由环境变量设置",
+      "saved": "已保存"
+    },
+    "envHint": "初始值来自 {{env}}。在此保存的值会覆盖它。",
+    "reset": "恢复默认",
+    "resetDone": "备用证书已恢复默认",
+    "saved": "备用证书模式已保存",
+    "failed": "无法更改备用证书模式"
+  }
+}

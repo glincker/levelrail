@@ -1,0 +1,361 @@
+{
+  "common": {
+    "cancel": "キャンセル"
+  },
+  "page": {
+    "title": "DNS",
+    "description": "DNSプロバイダーでの、ゾーン、レコード、ネームサーバーの委任、反映状況です。",
+    "help": "DNSのガイド",
+    "addZone": "ゾーンを追加",
+    "provider": "プロバイダー: {{provider}}",
+    "loadFailed": "DNSゾーンを読み込めませんでした"
+  },
+  "empty": {
+    "title": "DNSプロバイダーを接続",
+    "body": "ドメインのDNSプロバイダーでCloudflare、Route53、またはGoogle Cloud DNSを接続すると、同じ認証情報で、ここからゾーンとレコードを管理できます。",
+    "action": "ドメインを開く",
+    "noZonesTitle": "ゾーンはまだありません",
+    "noZonesBody": "所有しているドメインのゾーンを作成してから、レジストラをそのネームサーバーに向けてください。",
+    "noZonesAction": "ゾーンを追加"
+  },
+  "zones": {
+    "col": {
+      "name": "ゾーン",
+      "status": "ステータス",
+      "records": "レコード",
+      "nameServers": "ネームサーバー"
+    },
+    "private": "プライベート",
+    "unknown": "不明",
+    "notReported": "なし"
+  },
+  "wizard": {
+    "title": "ドメインをDNSに導入",
+    "titleFor": "{{zone}}のネームサーバー",
+    "progress": "導入のステップ",
+    "step": {
+      "domain": "ドメイン",
+      "nameservers": "ネームサーバー",
+      "import": "レコードのインポート",
+      "verify": "検証"
+    },
+    "lead": {
+      "domain": "どのレジストラのものでも、所有しているドメインのゾーンを作成します。",
+      "nameservers": "レジストラで、現在のものを置き換えて、まさにこれらのネームサーバーを設定してください。",
+      "import": "ネームサーバーを切り替えても何も壊れないよう、現在ドメインが提供しているレコードをコピーします。",
+      "verify": "ドメインが現在使っているネームサーバーを、パブリックリゾルバーに問い合わせます。"
+    },
+    "domain": "ドメイン",
+    "domainHint": "サブドメインではなく、example.comのような登録可能なドメインです。",
+    "create": "ゾーンを作成",
+    "creating": "作成中...",
+    "copyAll": "すべてコピー",
+    "copied": "コピーしました",
+    "registrarHint": "レジストラで、ドメインのネームサーバー設定を開き、カスタムネームサーバーを選んで、これらを貼り付けてください。古いものは削除してください。混在していると、応答が一貫しなくなります。",
+    "skipImport": "インポートをスキップ",
+    "next": "次へ",
+    "propagationHint": "通常、レジストリは1時間以内に変更を公開しますが、リゾルバーは古い応答を最大2日間保持することがあります。",
+    "openZone": "ゾーンを開く"
+  },
+  "delegation": {
+    "state": {
+      "delegated": "委任済み",
+      "partially_delegated": "一部委任済み",
+      "delegated_elsewhere": "別の場所に委任",
+      "not_delegated": "未委任"
+    },
+    "hint": {
+      "delegated": "問い合わせたすべてのリゾルバーが、このゾーンのネームサーバーを返します。",
+      "partially_delegated": "一部のリゾルバーは、まだ別のネームサーバーを返します。キャッシュの期限切れを待つか、レジストラで不要なサーバーを削除してください。",
+      "delegated_elsewhere": "ドメインは、まだ別のネームサーバーを指しています。レジストラで更新してください。",
+      "not_delegated": "このドメインのネームサーバーを返したリゾルバーはありません。ドメインが登録されていることと、ネームサーバーが設定されていることを確認してください。"
+    },
+    "verdict": {
+      "match": "一致",
+      "partial": "混在",
+      "elsewhere": "別の場所",
+      "none": "応答なし"
+    },
+    "col": {
+      "resolver": "リゾルバー",
+      "verdict": "判定",
+      "answer": "ネームサーバー"
+    },
+    "system": "このサーバー",
+    "noAnswer": "応答なし",
+    "elsewhere": "現在の向き先: {{servers}}",
+    "recheck": "再確認",
+    "checking": "確認中..."
+  },
+  "import": {
+    "title": "インポートとエクスポート",
+    "lead": "ゾーンファイルまたはJSONから、{{zone}}にレコードを取り込みます。計画を適用するまで、何も変更されません。",
+    "tabImport": "インポート",
+    "tabExport": "エクスポート",
+    "file": "ファイル",
+    "paste": "または貼り付け",
+    "formatHint": "BINDのゾーンファイル、またはこのページがエクスポートするJSONです。SOAとapexのNSはスキップされます。",
+    "replace": "置き換え: インポートにないレコードセットを削除",
+    "confirm": "置き換えを確認するため、{{zone}}と入力してください",
+    "preview": "プレビュー",
+    "apply": "適用",
+    "appliedToast_other": "{{count}}件の変更を適用しました",
+    "failedToast": "インポートに失敗しました",
+    "exportLead": "プロバイダーが管理するNSとSOAを除く、すべてのレコードセットをダウンロードします。",
+    "exportBind": "ゾーンファイル",
+    "exportJson": "JSON",
+    "discoverHint": "一般的な名前を、ドメインの現在のネームサーバーで検索しました。不要なものは、チェックを外してください。",
+    "extraNames": "検索する名前をさらに追加",
+    "extraPlaceholder": "vpn, portal, _acme-challenge",
+    "rescan": "検索",
+    "nothingFound": "現在のネームサーバーで、レコードは見つかりませんでした。",
+    "foundAt_other": "{{servers}}で、{{count}}件のレコードセットが見つかりました",
+    "keep": "{{name}} {{type}}をインポート",
+    "skip": "スキップ",
+    "importSelected_other": "{{count}}件のセットをインポート"
+  },
+  "plan": {
+    "summary": "作成{{create}}件、更新{{update}}件、削除{{delete}}件、変更なし{{unchanged}}件",
+    "action": {
+      "create": "作成",
+      "update": "更新",
+      "delete": "削除",
+      "unchanged": "同じ"
+    },
+    "blocked": "競合があるため、この計画は実行できません。修正してから、もう一度プレビューしてください。"
+  },
+  "records": {
+    "search": "名前または値を検索",
+    "typeFilter": "レコードの種類",
+    "allTypes": "すべての種類",
+    "count_other": "{{count}}件のレコードセット",
+    "add": "レコードを追加",
+    "clear": "フィルターを解除",
+    "emptyTitle": "レコードはまだありません",
+    "emptyBody": "レコードを追加するか、テンプレートを適用するか、ゾーンファイルをインポートしてください。",
+    "noMatch": "一致するレコードはありません",
+    "noMatchBody": "別の名前、値、種類をお試しください。",
+    "col": {
+      "name": "名前",
+      "type": "種類",
+      "ttl": "TTL",
+      "values": "値",
+      "flags": "ルーティング"
+    },
+    "auto": "自動",
+    "proxied": "プロキシ経由",
+    "routed": "{{routing}} {{id}}",
+    "managed": "管理対象",
+    "alias": "{{target}}へのエイリアス",
+    "edit": "{{name}} {{type}}を編集",
+    "delete": "{{name}} {{type}}を削除",
+    "deleteTitle": "{{name}} {{type}}を削除しますか?",
+    "deleteLead_other": "{{count}}件すべての値が、プロバイダー側で、ただちに削除されます。",
+    "confirmDelete": "削除"
+  },
+  "record": {
+    "addTitle": "レコードを追加",
+    "editTitle": "レコードを編集",
+    "lead": "保存すると、プロバイダー側の{{zone}}に、変更が書き込まれます。",
+    "name": "名前",
+    "type": "種類",
+    "ttl": "TTL",
+    "nameHint": "{{zone}}からの相対名です。apexには@、ワイルドカードには*を使います。",
+    "ttlAutoHint": "TTLが1の場合は、自動を意味します。",
+    "values": "値",
+    "addValue": "値を追加",
+    "removeValue": "値{{n}}を削除",
+    "partLabel": "{{part}} {{n}}",
+    "part": {
+      "address": "アドレス",
+      "target": "ターゲット",
+      "text": "テキスト",
+      "priority": "優先度",
+      "weight": "重み",
+      "port": "ポート",
+      "flags": "フラグ",
+      "tag": "タグ",
+      "caaValue": "値"
+    },
+    "placeholder": {
+      "address": "203.0.113.10",
+      "target": "host.example.com",
+      "text": "",
+      "priority": "10",
+      "weight": "5",
+      "port": "443",
+      "flags": "0",
+      "tag": "",
+      "caaValue": "letsencrypt.org"
+    },
+    "proxied": "Cloudflare経由のプロキシにする",
+    "routing": "ルーティングポリシー",
+    "routingPolicy": {
+      "simple": "シンプル",
+      "weighted": "加重",
+      "failover": "フェイルオーバー",
+      "multivalue": "複数値の応答"
+    },
+    "setIdentifier": "セット識別子",
+    "weight": "重み(0から255)",
+    "failover": "フェイルオーバーの役割",
+    "failoverPick": "役割を選択",
+    "primary": "プライマリ",
+    "secondary": "セカンダリ",
+    "healthCheck": "ヘルスチェック",
+    "noHealthCheck": "なし",
+    "save": "保存",
+    "saving": "保存中...",
+    "savedToast": "{{name}}を保存しました",
+    "failedToast": "レコードを保存できませんでした",
+    "warning": "警告付きで保存しました"
+  },
+  "validation": {
+    "name": "この名前は、有効なDNS名ではありません。ワイルドカードは、いちばん左のラベルにする必要があります。",
+    "noValues": "値を1つ以上追加してください。",
+    "ipv4": "Aレコードには、IPv4アドレスが必要です。",
+    "ipv6": "AAAAレコードには、IPv6アドレスが必要です。",
+    "host": "ターゲットは、ホスト名にしてください。",
+    "priority": "優先度は、0から65535の数値にしてください。",
+    "weight": "重みは、0から65535の数値にしてください。",
+    "port": "ポートは、0から65535の数値にしてください。",
+    "caaTag": "CAAのタグは、issue、issuewild、iodefのいずれかにしてください。",
+    "caaValue": "CAAの値は必須です。",
+    "textTooLong": "TXTのテキストは、4000文字までです。",
+    "cnameSingle": "CNAMEが持てるターゲットは、1つだけです。",
+    "apexNs": "apexのNSレコードは、プロバイダーが管理します。",
+    "ttl": "TTLは、30から604800秒の間にしてください。",
+    "proxiedType": "プロキシ経由にできるのは、A、AAAA、CNAMEのレコードのみです。",
+    "setIdentifier": "ルーティングされたレコードには、セット識別子が必要です。",
+    "routingWeight": "重みは、0から255の間にしてください。",
+    "failoverRole": "プライマリまたはセカンダリを選んでください。"
+  },
+  "templates": {
+    "title": "テンプレートを適用",
+    "lead": "一般的な設定を、レコードセットとして用意しました。同じ名前にある既存のTXTの値は維持されますが、2つ目のSPFまたはDMARCのレコードは除きます。",
+    "pick": "テンプレートを選択",
+    "failedToast": "テンプレートの適用に失敗しました"
+  },
+  "check": {
+    "name": "レコード名",
+    "type": "レコードの種類",
+    "run": "確認",
+    "checking": "確認中...",
+    "agree": "応答が一致しています",
+    "differ": "応答が異なります",
+    "zoneSays": "ゾーン: {{values}}",
+    "authoritative": "権威サーバー",
+    "ttlLeft": "{{ttl}}秒",
+    "noRecords": "レコードなし",
+    "mismatch": "ゾーンと異なります",
+    "col": {
+      "server": "サーバー",
+      "ttl": "残りのTTL",
+      "answer": "応答"
+    }
+  },
+  "health": {
+    "lead": "Route53のヘルスチェックが、フェイルオーバーまたは複数値のどのレコードが応答するかを決めます。",
+    "type": "種類",
+    "target": "ホストまたはIP",
+    "port": "ポート",
+    "path": "パス",
+    "create": "ヘルスチェックを追加",
+    "delete": "ヘルスチェック{{id}}を削除",
+    "empty": "ヘルスチェックはまだありません。",
+    "failedToast": "ヘルスチェックに失敗しました"
+  },
+  "zone": {
+    "loadFailed": "このゾーンを読み込めませんでした",
+    "nameservers": "ネームサーバー",
+    "templates": "テンプレート",
+    "importExport": "インポートとエクスポート",
+    "delete": "ゾーンを削除",
+    "deleteTitle": "{{zone}}を削除しますか?",
+    "deleteLead": "ゾーンとそのネームサーバーが、プロバイダー側で削除されます。ドメインがまだここに委任されている場合、名前解決ができなくなります。",
+    "deleteHasRecords_other": "このゾーンには、NSとSOA以外に、まだ{{count}}件のレコードセットがあります。必要になる可能性がある場合は、先にエクスポートしてください。",
+    "typeName": "確認のため{{zone}}と入力してください",
+    "force": "レコードも削除する",
+    "deletedToast": "{{zone}}を削除しました",
+    "deleteFailed": "ゾーンを削除できませんでした",
+    "recordsByType": "種類別のレコード",
+    "total_other": "合計{{count}}件のセット",
+    "lastChanged": "最終変更",
+    "by": "{{who}}による({{action}})",
+    "noChanges": "ここからの変更は、まだありません。",
+    "provider": "{{provider}}、{{status}}",
+    "tab": {
+      "records": "レコード",
+      "delegation": "委任",
+      "propagation": "反映状況",
+      "health": "ヘルスチェック"
+    }
+  },
+  "recordsControl": {
+    "recordType": "レコードの種類",
+    "recordName": "レコード名",
+    "namePlaceholder": "@またはサブドメイン",
+    "recordValue": "レコードの値",
+    "valuePlaceholder": "値",
+    "ttlSeconds": "TTL(秒)",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "editRecord": "レコードを編集",
+    "deleteRecord": "レコードを削除",
+    "deleteTitle": "このレコードを削除しますか?",
+    "deleteBody": "{{value}}を指す{{type}} {{name}}が、ゾーンから削除されます。この操作は元に戻せません。",
+    "deleting": "削除中...",
+    "delete": "削除",
+    "statusResolved": "解決済み",
+    "statusPending": "保留中",
+    "statusMismatch": "不一致",
+    "statusUnknown": "未検証",
+    "title": "DNSレコード",
+    "titleNoProvider": "DNSレコード: プロバイダーなし",
+    "count_other": "{{count}}件のDNSレコード",
+    "titleForZone": "{{zone}}のDNSレコード",
+    "closeAdd": "閉じる",
+    "noProvider": "レコード用のDNSプロバイダーが設定されていません。上でCloudflare DNS、Route53 DNS、またはGoogle Cloud DNSを有効にすると、このゾーンのレコードをここで一覧表示して編集できます。",
+    "noRecords": "レコードが見つかりません。",
+    "colType": "種類",
+    "colName": "名前",
+    "colValue": "値",
+    "colTtl": "TTL",
+    "colStatus": "ステータス",
+    "addRecord": "レコードを追加",
+    "connect": "{{provider}}を接続",
+    "nsHint": "このゾーンは、{{provider}}のネームサーバーを使っています。"
+  },
+  "banner": {
+    "description": "DNSプロバイダーを接続すると、ここでゾーンとレコードを管理でき、ネームサーバーの変更が反映された時点も確認できます。",
+    "diagram": {
+      "records": "レコード",
+      "server": "サーバー"
+    }
+  },
+  "providerGuide": {
+    "title": "{{provider}}でレコードを追加",
+    "where": {
+      "cloudflare": "Cloudflareのダッシュボードを開き、ドメインを選んで、DNS、Records、Add recordの順に進みます。",
+      "route53": "Route 53を開き、Hosted zonesでゾーンを選んで、Create recordに進みます。",
+      "digitalocean": "Networking、Domainsを開き、ドメインを選んで、Aレコードを追加します。",
+      "hetzner": "Hetzner DNS Consoleを開き、ゾーンを選んで、レコードを追加します。",
+      "namecheap": "Domain Listを開き、Manage、Advanced DNSの順に進んで、Add New Recordを選びます。",
+      "godaddy": "My Productsを開き、ドメインの横のDNSを選んで、Add New Recordを選びます。",
+      "porkbun": "Domain Managementを開き、ドメインのDNSを選んで、レコードを追加します。",
+      "google": "Google CloudのCloud DNSを開き、ゾーンを選んで、Add standardを選びます。",
+      "azure": "AzureポータルでDNSゾーンを開き、Record sets、Addの順に進みます。",
+      "ns1": "NS1のダッシュボードを開き、ゾーンを選んで、Add Recordを選びます。",
+      "desec": "deSECのダッシュボードを開き、ドメインを選んで、レコードセットを追加します。"
+    },
+    "record": "ホスト{{host}}、値{{value}}のAレコードを追加してください。TTLは300秒で問題ありません。",
+    "proxyOff": "証明書が発行されるまで、このレコードのオレンジ色の雲(プロキシ)をオフにしてください。",
+    "docs": "{{provider}}のDNSドキュメント"
+  },
+  "verification": {
+    "ok_other": "トークンが受け付けられました。{{count}}個のゾーンが表示されています。",
+    "failedTitle": "保存されているトークンでは、まだDNSを管理できません",
+    "missing": "不足している権限:",
+    "fix": "トークンを修正してください。プロバイダーのダッシュボードで編集し、上の権限を追加してから、ここに貼り付けて、もう一度保存します。"
+  }
+}

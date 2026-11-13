@@ -1,0 +1,352 @@
+{
+  "deploy": {
+    "trigger": "部署模型",
+    "title": "部署模型",
+    "description": "在 GPU 节点上运行推理引擎，并暴露一个由 API 密钥保护的、兼容 OpenAI 的端点。",
+    "sections": {
+      "basics": "运行什么",
+      "placement": "在哪里运行",
+      "advanced": "高级选项",
+      "advancedHint": "GPU、上下文长度、驻留方式、交换组和域名。默认值适合大多数模型。"
+    },
+    "fields": {
+      "name": "名称",
+      "nameHint": "小写字母、数字和连字符。会用于端点 URL。",
+      "namePlaceholder": "chat",
+      "engine": "引擎",
+      "model": "模型",
+      "modelHint": "引擎可以拉取的引用。可选择建议项，或粘贴你自己的。",
+      "modelSuggestions": "此引擎的建议项",
+      "node": "节点",
+      "localNode": "此主机",
+      "gpus": "GPU",
+      "gpusHint": "引擎可以使用多少块 GPU。“all”表示由引擎决定。",
+      "gpusPlaceholder": "all",
+      "context": "上下文长度",
+      "contextHint": "每个请求的最大 token 数。留空则使用引擎默认值。",
+      "contextPlaceholder": "引擎默认值",
+      "quantization": "量化",
+      "quantizationHint": "可选。例如 awq、gptq 或 fp8。",
+      "residency": "驻留方式",
+      "residencyAlways": "始终加载",
+      "residencyOnDemand": "按需",
+      "residencyHint": "按需表示引擎空闲时停止，并在第一个请求到来时启动。",
+      "idleMinutes": "空闲分钟数",
+      "idleMinutesHint": "没有请求时，引擎保持加载的时长。",
+      "idlePlaceholder": "平台默认值",
+      "swapGroup": "交换组",
+      "swapGroupHint": "同一块 GPU 上使用相同名称的模型轮流使用：唤醒其中一个会停止当前驻留的模型以释放显存。",
+      "swapGroupPlaceholder": "无",
+      "domain": "域名",
+      "domainHint": "在你自己的主机名上提供该端点。",
+      "domainPlaceholder": "llm.example.com",
+      "hfToken": "HuggingFace 令牌",
+      "hfTokenHint": "仅受限模型需要。加密存储，之后不再显示。"
+    },
+    "nodeOption": {
+      "freeVram": "共 {{total}}，可用 {{free}}",
+      "noGpu": "未上报 GPU",
+      "gpuCount_other": "{{count}} 块 GPU"
+    },
+    "summary": {
+      "ready": "将创建 {{name}}：{{engine}} 在 {{node}} 上提供 {{model}}。",
+      "incomplete": "请为模型命名并选择要运行的内容，以查看将创建什么。"
+    },
+    "errors": {
+      "name": "请使用小写字母、数字或连字符。",
+      "model": "请选择或输入模型引用。",
+      "gpus": "请输入“all”或正数。",
+      "context": "请输入正数 token 数。",
+      "idle": "请输入正数分钟数。",
+      "swapGroup": "请使用小写字母、数字或连字符。"
+    },
+    "actions": {
+      "cancel": "取消",
+      "deploy": "部署",
+      "deploying": "部署中..."
+    },
+    "toast": {
+      "title": "正在部署“{{name}}”。",
+      "description": "引擎正在下载并加载模型。"
+    }
+  },
+  "empty": {
+    "gpus": {
+      "title": "还没有 GPU 节点上报",
+      "description": "带有 NVIDIA GPU 和驱动的节点会连同其显存显示在这里。在 Ubuntu 节点上安装 NVIDIA 驱动和 nvidia-container-toolkit 后，一分钟内就会出现。"
+    },
+    "models": {
+      "title": "还没有部署模型",
+      "description": "在 GPU 节点上部署 Ollama、vLLM 或 llama.cpp，即可获得带独立 API 密钥、兼容 OpenAI 的端点。"
+    },
+    "cache": {
+      "title": "还没有缓存内容",
+      "description": "下载的模型权重保存在这里，使重新部署启动更快。部署一个模型即可填充。"
+    },
+    "sample": {
+      "modelName": "chat",
+      "engine": "Ollama",
+      "placement": "此主机",
+      "status": "就绪",
+      "gpuName": "NVIDIA GPU",
+      "vram": "24 GiB 显存",
+      "gpuLabel": "GPU 节点",
+      "modelLabel": "模型",
+      "cacheLabel": "缓存的权重"
+    }
+  },
+  "cpu": {
+    "switch": {
+      "legend": "在哪里运行模型",
+      "gpu": "在 GPU 节点上",
+      "gpuHint": "在 NVIDIA GPU 上运行 Ollama、vLLM 或 llama.cpp。最适合大模型。",
+      "cpu": "在 CPU 上运行",
+      "cpuHint": "在此服务器的 CPU 和 RAM 上运行小模型，并设有硬性限制。无需 GPU。"
+    },
+    "deploy": {
+      "description": "在此服务器的 CPU 上运行小模型，设有硬性的 CPU 和内存限制，并提供由 API 密钥保护、兼容 OpenAI 的端点。",
+      "pick": "选择模型",
+      "catalogNote": "精选列表，验证于 {{date}}。速度和内存为估算值。部署时，你的服务器会直接从 Hugging Face 下载权重。",
+      "useCustom": "使用其他 Hugging Face 仓库",
+      "customRepo": "仓库",
+      "customRepoHint": "GGUF 仓库，可附带量化后缀。",
+      "customFile": "GGUF 文件",
+      "customFileHint": "当量化后缀恰好对应一个文件时可不填。",
+      "unload": "空闲时卸载",
+      "unloadHint": "一段时间没有请求后停止引擎并释放其内存。下一个请求会再次启动它。",
+      "warnTitle": "此模型会与你的服务器共享资源",
+      "warn": "这会占用此服务器最多 {{cpus}} 个 CPU 和 {{memory}} 内存，以及约 {{disk}} 磁盘。其他应用仍享有优先权。",
+      "diskUnknown": "若干 GB",
+      "submit": "在 CPU 上部署",
+      "toast": "正在从 Hugging Face 下载权重，随后加载模型。"
+    },
+    "license": {
+      "title": "许可证未经审核",
+      "generic": "此仓库不在精选列表中，其许可证未经审核。你需自行负责遵守该许可证。",
+      "ack": "我已阅读许可证，并对使用此模型承担责任。",
+      "required": "请确认许可证以继续。"
+    },
+    "tier": {
+      "light": "轻量",
+      "default": "推荐",
+      "plus": "增强"
+    },
+    "verdict": {
+      "fits_comfortably": "绰绰有余",
+      "tight": "较紧张",
+      "wont_fit": "放不下",
+      "unknown": "未知"
+    },
+    "card": {
+      "size": "{{params}}B 参数，{{quant}}",
+      "licenseTitle": "许可证（SPDX）",
+      "embedding": "嵌入",
+      "resources": "下载 {{download}}，约需 {{ram}} 内存",
+      "estimate": "约每秒 {{range}} 个 token（估算）",
+      "noEstimate": "速度未知"
+    },
+    "limits": {
+      "cpu": "CPU 限制：{{value}}",
+      "cpuHint": "硬性上限。当其他应用需要 CPU 时，此模型的优先级较低。",
+      "memory": "内存限制：{{value}}",
+      "memoryHint": "硬性上限，且不使用 swap。至少始终保留 {{floor}} 给其他工作负载。"
+    },
+    "fit": {
+      "speed": "预期速度：每秒 {{range}} 个 token。这是估算值，请运行基准测试获取真实数字。",
+      "disk": "下载约需 {{size}} 磁盘空间。",
+      "useSuggested": "使用"
+    },
+    "download": {
+      "label": "正在下载权重",
+      "value": "{{done}} / {{total}}（{{percent}}%）"
+    },
+    "benchmark": {
+      "title": "基准测试",
+      "run": "运行基准测试",
+      "running": "测量中...",
+      "done": "基准测试已完成。",
+      "failed": "基准测试失败。",
+      "hint": "运行几个简短的提示词，并在达到时间限制后停止。它会使用你分配给此模型的 CPU，且绝不会自动运行。",
+      "notReady": "请先加载模型。基准测试绝不会启动已停止的模型。",
+      "measured": "实测生成",
+      "estimated": "估算",
+      "noEstimate": "无",
+      "prompt": "提示词处理",
+      "ttft": "首个 token 耗时",
+      "tps": "{{value}} 个 token/秒",
+      "ms": "{{value}} 毫秒",
+      "memory": "内存峰值 {{peak}}，上限 {{limit}}。",
+      "truncated": "已在时间限制处停止。",
+      "onlyEstimate": "估算每秒 {{range}} 个 token。尚未实测。",
+      "none": "尚未测量。"
+    },
+    "detail": {
+      "capsTitle": "资源限制",
+      "caps": "此模型最多可使用 {{cpus}} 个 CPU 和 {{memory}} 内存，不使用 swap，且优先级较低。如果服务器资源不足，会先停止此模型，再影响你的应用。",
+      "idleExplain": "空闲卸载：在按需驻留方式下，引擎会在空闲时间过后停止，并释放其内存和 CPU。已下载的权重保留在磁盘上，因此下一个请求只需等待模型重新加载。"
+    }
+  },
+  "residencyCard": {
+    "title": "驻留方式",
+    "alwaysLoaded": "始终加载",
+    "onDemand": "按需",
+    "stateAsleep": "空闲，引擎已停止",
+    "stateWaking": "唤醒中",
+    "stateLoaded": "已加载",
+    "aboutResidency": "关于驻留方式",
+    "aboutResidencyBody": "按需表示引擎在空闲时间过后停止并释放其显存，在第一个请求到来时启动，该请求会等待引擎加载（最长为 APP_MODEL_WAKE_WAIT，之后返回带 Retry-After 的 503）。Ollama 会永久保持模型加载，因此通过停止容器来卸载它。",
+    "mode": "模式",
+    "idleMinutes": "空闲分钟数",
+    "idlePlaceholder": "{{minutes}}（默认）",
+    "save": "保存",
+    "saved": "驻留方式已保存。",
+    "saveFailed": "无法保存驻留方式。",
+    "wakeNow": "立即唤醒",
+    "wakeFailed": "无法唤醒。",
+    "sleepNow": "立即休眠",
+    "sleepFailed": "无法休眠。",
+    "notUsed": "进入空闲后未被使用。",
+    "swapGroup": "交换组",
+    "aboutSwap": "关于交换组",
+    "aboutSwapBody": "同一节点或 GPU 上使用相同名称的模型不能同时驻留。唤醒其中一个时，会先停止该组当前驻留的模型以释放显存。",
+    "groupName": "组名称",
+    "groupNone": "无",
+    "swapSaved": "交换组已保存。",
+    "swapSaveFailed": "无法保存交换组。",
+    "sharesGpu": "与以下模型共用 GPU：",
+    "lastUsedPrefix": "最近使用",
+    "stopsAfter": "空闲 {{minutes}} 分钟后停止。"
+  },
+  "endpoint": {
+    "state": {
+      "unknown": "未检查",
+      "online": "在线",
+      "slow": "缓慢",
+      "unreachable": "休眠或无法访问",
+      "auth_failed": "凭据被拒绝",
+      "error": "错误"
+    },
+    "stateWithLatency": "{{state}}，{{ms}} 毫秒",
+    "recheck": "重新检查",
+    "testing": "检查中",
+    "recheckFailed": "无法重新检查该端点。",
+    "testResult": "连接测试结果",
+    "modelsFound_other": "发现 {{count}} 个模型",
+    "toast": {
+      "added": "端点 {{name}} 已注册。"
+    },
+    "add": {
+      "trigger": "添加端点",
+      "title": "添加推理端点",
+      "description": "使用你自己运行的模型服务器，例如 Ollama、LM Studio 或 Mac 上的 MLX 服务器。请求通过网关转发，并带有范围受限的密钥、限制和用量跟踪。",
+      "testConnection": "测试连接",
+      "submit": "注册端点",
+      "adding": "注册中",
+      "registerAnyway": "你仍然可以现在注册。Levelrail 会持续检查，并在它上线时告知你。"
+    },
+    "fields": {
+      "url": "服务器地址",
+      "urlHint": "从控制平面可访问，例如 WireGuard mesh 地址。",
+      "urlPlaceholder": "http://100.64.0.7:11434",
+      "apiType": "API 类型",
+      "name": "名称",
+      "nameHint": "可选。留空则取自地址。",
+      "namePlaceholder": "mac-mini",
+      "credential": "API 密钥",
+      "credentialHint": "可选。加密存储。",
+      "credentialPlaceholder": "如果服务器没有密钥则留空"
+    },
+    "apiType": {
+      "ollama": {
+        "label": "Ollama",
+        "hint": "模型列表取自 /api/tags。"
+      },
+      "openai": {
+        "label": "兼容 OpenAI",
+        "hint": "LM Studio、MLX、vLLM、llama.cpp 或云端 API。模型列表取自 /v1/models。"
+      }
+    },
+    "errors": {
+      "url": "请输入不含用户名或密码的 http 或 https 地址。",
+      "name": "请使用小写字母、数字或连字符。"
+    },
+    "health": {
+      "title": "健康状况",
+      "upstream": "服务器地址",
+      "apiType": "API 类型",
+      "lastChecked": "上次检查",
+      "privateOff": "此控制平面已关闭内部目标，因此只能访问公网 https 服务器。"
+    },
+    "models": {
+      "title": "服务器上的模型",
+      "none": "尚未列出任何模型。"
+    },
+    "credential": {
+      "title": "API 密钥",
+      "set": "已存储一个密钥，并随发往此端点的每个请求一同发送。",
+      "notSet": "未存储密钥。请求将不带凭据发送。",
+      "remove": "移除密钥",
+      "removed": "密钥已移除。",
+      "saveFailed": "无法更新密钥。"
+    },
+    "routing": {
+      "title": "回退",
+      "description": "默认关闭。开启后，当此端点宕机或比预算慢时，请求会转到另一个模型。",
+      "fallback": "回退到",
+      "off": "关闭",
+      "modelId": "回退端点上的模型 ID",
+      "modelIdPlaceholder": "与回退模型相同",
+      "budget": "延迟预算（秒）",
+      "budgetPlaceholder": "无预算",
+      "save": "保存",
+      "saved": "回退已保存。",
+      "saveFailed": "无法保存回退。",
+      "hint": "预算是指收到首个响应字节的耗时。没有预算时，只有错误和端点不可达才会触发回退。",
+      "used_other": "目前已使用 {{count}} 次。"
+    },
+    "fix": {
+      "saveAndCheck": "保存并检查",
+      "ollamaBind": "Ollama 默认只监听 localhost。请在服务器上将其绑定到网络地址：",
+      "check_port": {
+        "title": "该端口上没有响应",
+        "body": "请检查端口以及服务器是否在运行。Ollama 使用 11434，LM Studio 使用 1234。请选择匹配的 API 类型后再次测试。"
+      },
+      "check_network": {
+        "title": "服务器未在规定时间内响应",
+        "body": "这台机器可能处于休眠、已断网，或者防火墙可能阻止了此端口。请唤醒它，检查 mesh 或局域网连接以及防火墙，然后重新检查。"
+      },
+      "check_host": {
+        "title": "无法解析主机名",
+        "body": "请检查拼写，或使用你 WireGuard mesh 或局域网上的 IP 地址，然后再次测试。"
+      },
+      "use_other_address": {
+        "title": "该地址始终不被允许",
+        "body": "链路本地地址和云元数据地址不能用作推理端点。请改用这台机器的 mesh 或局域网地址。"
+      },
+      "enable_internal": {
+        "title": "内部目标已关闭",
+        "body": "此地址是私有地址。运维人员必须在控制平面上通过 {{env}} 允许内部目标，重启后再重新检查。"
+      },
+      "set_credential": {
+        "title": "服务器拒绝了该凭据",
+        "body": "请输入服务器的 API 密钥。它会加密存储，且只发送到此端点。"
+      },
+      "check_api_type": {
+        "title": "服务器的响应与此 API 类型不符",
+        "body": "请选择另一种 API 类型（Ollama 或兼容 OpenAI），然后再次测试。"
+      },
+      "use_http_or_trust": {
+        "title": "TLS 证书不受信任",
+        "body": "请使用受信任机构签发的证书，或使用你 mesh 上的私有 http 地址，然后重新检查。"
+      },
+      "pull_model": {
+        "title": "服务器上还没有模型",
+        "body": "请在服务器上拉取或加载一个模型，然后重新检查以列出它。"
+      },
+      "check_server": {
+        "title": "服务器报告了错误",
+        "body": "请查看服务器自身的日志，待其恢复正常后再重新检查。"
+      }
+    }
+  }
+}

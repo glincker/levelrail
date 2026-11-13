@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -113,6 +113,12 @@ function renderPalette() {
   )
 }
 
+// The results stay folded until Down is pressed, like Spotlight.
+async function openResults(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('combobox'))
+  await user.keyboard('{ArrowDown}')
+}
+
 function searchCalls(): string[] {
   return fetchMock.mock.calls
     .map((c) => c[0])
@@ -134,8 +140,45 @@ afterEach(() => {
 })
 
 describe('CommandPalette', () => {
-  it('keeps the footer outside the scrolling list so rows never sit under it', () => {
+  it('shows only the pill until the user types or presses Down', async () => {
+    const user = userEvent.setup()
     renderPalette()
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    expect(screen.queryByRole('listbox')).toBeNull()
+    await user.click(screen.getByRole('combobox'))
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    expect(onOpenChange).not.toHaveBeenCalledWith(false)
+  })
+
+  it('jumps to a quick link with Alt+digit by key code, whatever character it types', () => {
+    window.localStorage.setItem(
+      'palette.history',
+      JSON.stringify({
+        items: { 'nav-dashboard': { n: 4, t: Date.now() } },
+        next: {},
+      }),
+    )
+    renderPalette()
+    // Option+1 on a Mac types an inverted exclamation mark, so the code is what counts.
+    const ev = fireEvent.keyDown(screen.getByRole('combobox'), {
+      code: 'Digit1',
+      key: '¡',
+      altKey: true,
+    })
+    expect(ev).toBe(false)
+    expect(navigate).toHaveBeenCalledWith({ to: '/', params: undefined })
+  })
+
+  it('keeps the footer outside the scrolling list so rows never sit under it', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await openResults(user)
     const list = screen.getByRole('listbox')
     expect(list).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
     const panel = document.querySelector('[data-slot="command-palette-panel"]')
@@ -146,8 +189,10 @@ describe('CommandPalette', () => {
     expect(footer).toHaveClass('shrink-0')
     expect(list.contains(footer)).toBe(false)
   })
-  it('exposes combobox, listbox and option roles with hint chips', () => {
+  it('exposes combobox, listbox and option roles with hint chips', async () => {
+    const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     expect(screen.getByRole('combobox')).toBeInTheDocument()
     expect(screen.getByRole('listbox')).toBeInTheDocument()
     expect(
@@ -157,7 +202,9 @@ describe('CommandPalette', () => {
   })
 
   it('fires no list-all or search requests just by opening', async () => {
+    const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     await screen.findByRole('option', { name: /prod apis/ })
     const urls = fetchMock.mock.calls.map((c) => c[0])
     // Mail actions need the mail status and the caller's abilities, both cheap reads.
@@ -175,6 +222,7 @@ describe('CommandPalette', () => {
   it('navigates from a static action by clicking', async () => {
     const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     await user.click(screen.getByRole('option', { name: /Go to Status/ }))
     expect(navigate).toHaveBeenCalledWith({ to: '/status', params: undefined })
   })
@@ -182,13 +230,16 @@ describe('CommandPalette', () => {
   it('opens the assistant from the first suggestion with Enter', async () => {
     const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     await user.keyboard('{Enter}')
     expect(navigate).toHaveBeenCalledWith({ to: '/ai-assistant' })
   })
 
-  it('lists locked destinations while a beta feature is off', () => {
+  it('lists locked destinations while a beta feature is off', async () => {
     experimentalOn = []
+    const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     expect(
       screen.getByRole('option', { name: /Load balancers/ }),
     ).toHaveTextContent(/Locked beta feature/)
@@ -383,16 +434,32 @@ describe('CommandPalette', () => {
     ).toBeInTheDocument()
   })
 
-  it('suggests broadening when nothing matches', async () => {
+  it('offers to ask the assistant when nothing matches', async () => {
     const user = userEvent.setup()
     renderPalette()
     await user.type(screen.getByRole('combobox'), 'zzzzqq')
-    expect(await screen.findByText(/Try fewer words/)).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('option', { name: /Ask the assistant/ }),
+    )
+    expect(navigate).toHaveBeenCalledWith({ to: '/ai-assistant' })
+  })
+
+  it('lists the create group when typing new', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'new')
+    expect(
+      await screen.findByRole('option', { name: /Create database/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: /Add domain/ }),
+    ).toBeInTheDocument()
   })
 
   it('applies a saved search from the idle list and saves the current one', async () => {
     const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     await user.click(await screen.findByRole('option', { name: /prod apis/ }))
     expect(
       screen.getByRole('button', { name: 'Remove filter env:prod' }),
@@ -411,6 +478,7 @@ describe('CommandPalette', () => {
   it('records a selection as a recent destination', async () => {
     const user = userEvent.setup()
     renderPalette()
+    await openResults(user)
     await user.click(screen.getByRole('option', { name: /Go to Nodes/ }))
     expect(window.localStorage.getItem('palette.recent')).toBe(
       JSON.stringify(['action-nodes']),
@@ -490,7 +558,7 @@ describe('CommandPalette', () => {
     })
   })
 
-  it('recommends create and import when there are no apps yet', () => {
+  it('recommends create and import when there are no apps yet', async () => {
     const client = createTestQueryClient()
     client.setQueryData(appListQueryOptions().queryKey, [])
     render(
@@ -498,6 +566,7 @@ describe('CommandPalette', () => {
         <CommandPalette open onOpenChange={onOpenChange} />
       </QueryClientProvider>,
     )
+    await openResults(userEvent.setup())
     expect(
       screen.getByRole('option', { name: /Bring existing apps/ }),
     ).toHaveTextContent(/Bring existing apps/)

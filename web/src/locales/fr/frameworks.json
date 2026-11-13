@@ -1,0 +1,29 @@
+{
+  "title": "Préréglage de framework",
+  "description": "Choisissez votre framework pour renseigner le port, le health check et le stockage dont il a besoin.",
+  "detected": "Détecté depuis votre dépôt",
+  "detectedShort": "Détecté",
+  "loadFailed": "Impossible de charger les préréglages de framework.",
+  "port": "Port",
+  "healthPath": "Chemin de santé",
+  "buildType": "Build",
+  "outputMode": "Sortie",
+  "static": "Site statique, servi directement par le serveur web intégré",
+  "envHints": "Variables d'environnement à définir",
+  "required": "obligatoire",
+  "volumes": "Stockage persistant",
+  "mismatchTitle": "Les paramètres diffèrent du préréglage",
+  "mismatchBody": "Ce formulaire utilise le port {{port}} et le chemin de santé {{health}}. Les apps {{name}} utilisent normalement le port {{presetPort}} et {{presetHealth}}.",
+  "applyFix": "Utiliser les paramètres du préréglage",
+  "applied": "Paramètres du préréglage appliqués.",
+  "dockerfile": "Copier le Dockerfile optimisé",
+  "dockerfileCopied": "Dockerfile copié dans le presse-papiers.",
+  "dockerfileFailed": "Impossible de copier le Dockerfile.",
+  "outputModes": {
+    "server": "Serveur Node ou runtime",
+    "standalone": "Bundle de serveur autonome",
+    "static": "Fichiers statiques",
+    "jar": "Jar exécutable",
+    "binary": "Binaire unique"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "table": {
+    "label": "監査ログ",
+    "time": "日時",
+    "actor": "実行者",
+    "agent": "エージェント",
+    "client": "クライアント",
+    "ability": "権限",
+    "method": "メソッド",
+    "path": "パス",
+    "status": "ステータス"
+  },
+  "page": {
+    "description": "誰が何を変更したかの記録です。すべての書き込み、デプロイ、root権限のリクエストと、証明書の自動更新が、新しい順に並びます。読み取り専用のリクエストはここに記録されません。",
+    "title": "監査ログ",
+    "emptyTitle": "エントリが見つかりません",
+    "emptyFiltered": "これらのフィルターに一致するエントリはありません。",
+    "emptyNone": "監査対象のリクエストはまだ記録されていません。"
+  },
+  "labels": {
+    "certIssued": "証明書を発行しました",
+    "certRenewed": "証明書を更新しました",
+    "certRenewalRequested": "証明書の更新を要求しました",
+    "certUploaded": "証明書をアップロードしました",
+    "certRemoved": "証明書を削除しました",
+    "deviceLoginApproved": "CLIログインを承認しました",
+    "deviceLoginDenied": "CLIログインを拒否しました",
+    "deviceLoginExpired": "CLIログインの期限が切れました",
+    "deviceLoginDismissed": "CLIログインの通知を閉じました"
+  },
+  "integrity": {
+    "checking": "整合性を検証中",
+    "intact": "改ざん検知: 問題なし",
+    "intactDetail": "{{checked}}件のエントリと{{checkpoints}}件の署名付きチェックポイントを検証しました。",
+    "failed": "整合性チェックに失敗しました",
+    "failedDetail_other": "{{count}}件の問題が見つかりました。監査ログが編集または切り詰められた可能性があります。",
+    "unavailable": "整合性チェックは利用できません",
+    "recheck": "再確認"
+  },
+  "filters": {
+    "deviceLogin": "デバイスログイン",
+    "clearPath": "1件のログインリクエストを表示中。解除",
+    "clientLabel": "クライアントで絞り込み",
+    "allClients": "すべてのクライアント",
+    "searchPlaceholder": "実行者、パス、メソッド、アドレスを検索",
+    "searchLabel": "監査ログのエントリを検索",
+    "failedOnly": "失敗のみ",
+    "loading": "読み込み中...",
+    "loadOlder": "古いエントリを読み込む",
+    "rangeLabel": "期間で絞り込み",
+    "anyTime": "すべての期間",
+    "range": {
+      "1h": "過去1時間",
+      "24h": "過去24時間",
+      "7d": "過去7日間",
+      "30d": "過去30日間"
+    },
+    "methodLabel": "メソッドで絞り込み",
+    "anyMethod": "すべてのメソッド",
+    "actorLabel": "実行者で絞り込み",
+    "actorPlaceholder": "実行者名",
+    "exportCsv": "CSVをエクスポート(最新{{count}}行)"
+  },
+  "anchor": {
+    "title": "監査アンカー",
+    "off": "オフ",
+    "offHint": "監査チェーンの先頭は、外部にコピーされていません。",
+    "offLink": "アンカーWebhookを設定",
+    "exporting": "エクスポート中",
+    "lastExported": "最後にエクスポートしたシーケンス {{seq}}",
+    "at": "{{time}}",
+    "never": "エクスポートはまだありません",
+    "exported": "エクスポート済み",
+    "failed": "失敗",
+    "dropped": "破棄",
+    "queued": "待機中",
+    "lastError": "最後のエラー",
+    "lastErrorAt": "{{time}}"
+  },
+  "verify": {
+    "button": "チェーンを検証",
+    "title": "監査チェーンを検証",
+    "description": "すべてのハッシュリンクを再計算します。範囲を空欄にすると、ログ全体を検証します。",
+    "from": "開始エントリ",
+    "to": "終了エントリ",
+    "run": "検証",
+    "running": "検証中",
+    "failedToRun": "検証を実行できませんでした。",
+    "okSummary_other": "{{count}}行を検証しました。途切れはありません。",
+    "head": "チェーンの先頭: エントリ{{seq}}",
+    "firstBreak": "最初の途切れ: エントリ{{seq}}",
+    "failed": "チェーンの検証に失敗しました",
+    "problem": "エントリ{{seq}}: {{reason}}",
+    "rangeEnd": "範囲の終端: エントリ{{seq}}",
+    "outside_other": "この範囲に問題はありませんが、範囲外のチェーン全体に{{count}}件の問題があります。範囲を指定せずに検証してください。"
+  }
+}

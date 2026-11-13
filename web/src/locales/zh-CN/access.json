@@ -1,0 +1,69 @@
+{
+  "roles": {
+    "title": "角色",
+    "description": "可分配给成员的命名权限集合。内置角色固定不变;介于两者之间的需求可自行创建角色。",
+    "create": "创建角色",
+    "empty": {
+      "title": "未找到角色",
+      "description": "创建角色,为成员提供一组命名的权限。"
+    },
+    "table": {
+      "label": "角色",
+      "name": "名称",
+      "abilities": "权限",
+      "visibility": "可见范围",
+      "users": "用户",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "badge": {
+      "builtin": "内置",
+      "visibilityAll": "全部",
+      "visibilityGranted": "仅已授权的环境"
+    },
+    "form": {
+      "createTitle": "创建角色",
+      "editTitle": "编辑 {{name}}",
+      "description": "选择此角色拥有的权限,以及持有者可以看到的内容。",
+      "name": "名称",
+      "namePlaceholder": "例如 qa-reviewer",
+      "nameRequired": "名称为必填",
+      "descriptionLabel": "描述",
+      "visibility": "可见范围",
+      "visibilityAll": "权限允许的所有内容",
+      "visibilityGranted": "仅授予每个人的环境",
+      "visibilityGrantedHint": "仅限已授权环境的角色只能拥有读取权限。",
+      "abilitiesRequired": "请至少选择一项权限",
+      "cancel": "取消",
+      "save": "保存",
+      "saving": "正在保存..."
+    },
+    "deleteDialog": {
+      "title": "删除 {{name}}?",
+      "description": "之后将无法再把此角色分配给任何人。仍有成员被分配的角色无法删除。",
+      "inUse": "有 {{count}} 人持有此角色。请先重新分配。",
+      "cancel": "取消",
+      "confirm": "删除",
+      "deleting": "正在删除..."
+    },
+    "toast": {
+      "created": "角色 {{name}} 已创建。",
+      "updated": "角色 {{name}} 已更新。",
+      "deleted": "角色 {{name}} 已删除。"
+    }
+  },
+  "userRole": {
+    "trigger": "更改角色",
+    "title": "{{email}} 的角色",
+    "description": "选择角色会用该角色的权限替换此人当前的权限。",
+    "label": "角色",
+    "grantsTitle": "此人可以看到的环境",
+    "grantsHint": "具有仅授权可见角色的成员只能看到这些环境。",
+    "grantsEmpty": "尚无环境。",
+    "grantsLoading": "正在加载环境...",
+    "save": "保存",
+    "saving": "正在保存...",
+    "cancel": "取消",
+    "toast": "{{email}} 现在是 {{role}}。"
+  }
+}

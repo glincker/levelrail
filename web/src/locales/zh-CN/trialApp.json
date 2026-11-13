@@ -1,0 +1,53 @@
+{
+  "banner": {
+    "title": "试用部署",
+    "body": "为试用模板而部署。可以将其保留为正式应用,或在用完后停止并删除。在此之前,它会像其他应用一样持续运行。",
+    "keep": "保留此应用",
+    "delete": "停止并删除"
+  },
+  "dialog": {
+    "title": "将 {{name}} 保留为正式应用",
+    "description": "它将不再被标记为一次性试用,而是和其他应用一样显示,并包含同一应用的所有服务。不会重启,也不会删除任何内容。",
+    "checklistTitle": "正式应用应具备的内容",
+    "checklistHint": "现在或以后设置均可;每一项都会打开对应的设置页面。",
+    "cancel": "取消",
+    "confirm": "保留应用",
+    "keeping": "正在保留...",
+    "loading": "正在检查...",
+    "done": "已完成",
+    "todo": "未设置",
+    "items": {
+      "domain": {
+        "label": "自定义域名",
+        "done": "提供 {{domain}} 服务",
+        "todo": "目前只有自动生成的地址",
+        "action": "添加域名"
+      },
+      "backup": {
+        "label": "卷的备份计划",
+        "done": "{{total}} 个卷中已有 {{count}} 个设置了计划",
+        "todo": "没有卷设置了备份计划",
+        "none": "没有需要备份的卷",
+        "action": "设置备份计划"
+      },
+      "alert": {
+        "label": "告警规则",
+        "done": "{{count}} 条告警规则",
+        "todo": "出现故障时不会有任何通知",
+        "action": "添加告警规则"
+      },
+      "placement": {
+        "label": "项目和环境",
+        "done": "{{project}} / {{environment}}",
+        "projectOnly": "项目 {{project}},无环境",
+        "todo": "尚未归入项目",
+        "action": "选择归属位置"
+      }
+    }
+  },
+  "toast": {
+    "kept": "{{name}} 现已成为正式应用。",
+    "alreadyKept": "{{name}} 已经保留。",
+    "failed": "无法保留此应用。"
+  }
+}

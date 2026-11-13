@@ -1,0 +1,78 @@
+{
+  "page": {
+    "title": "私有网络",
+    "description": "将应用分组到具名的私有网络，并决定哪些应用可以相互通信。不同网络中的应用在规则允许之前无法相互访问。",
+    "back": "网络概览",
+    "apply": "立即重新应用",
+    "applied": "网络和规则已重新应用。",
+    "notApplied": "已保存，但强制执行未完成。请重新应用以重试。"
+  },
+  "map": {
+    "title": "谁能与谁通信",
+    "description": "绿线是允许的路径，红色虚线是被阻止的路径，琥珀色线表示与 Docker 上实际运行的状态不一致。",
+    "graphLabel": "应用及其之间路径的图",
+    "empty": "还没有可映射的应用",
+    "emptyHint": "创建一个应用，再把它加入私有网络，即可在这里查看其路径。",
+    "legendAllowed": "允许",
+    "legendBlocked": "已阻止",
+    "legendDrift": "需要重新应用"
+  },
+  "paths": {
+    "title": "路径",
+    "none": "你的应用之间的每条路径都已允许，或不在范围内。",
+    "pair": "{{a}} 和 {{b}}",
+    "allowedVia": "由网络 {{name}} 允许",
+    "allowedRule": "由规则允许",
+    "blocked": "已阻止，网络不同",
+    "drift": "策略与 Docker 不一致",
+    "crossNode": "跨节点，通过 mesh DNS 强制执行",
+    "fixAllow": "允许",
+    "fixReapply": "重新应用",
+    "allowed": "已为 {{a}} 和 {{b}} 创建允许规则。"
+  },
+  "networks": {
+    "title": "网络",
+    "empty": "还没有私有网络",
+    "emptyHint": "创建一个，并添加应该共享它的应用。",
+    "defaultDeny": "默认拒绝",
+    "defaultDenyHelp": "在规则允许某一对应用之前，成员之间无法相互访问。",
+    "members": "成员",
+    "noMembers": "没有成员",
+    "create": "创建网络",
+    "name": "名称",
+    "namePlaceholder": "backend",
+    "nameHelp": "小写字母、数字和连字符。",
+    "apps": "此网络中的应用",
+    "noApps": "还没有应用。",
+    "created": "网络 {{name}} 已创建。",
+    "delete": "删除",
+    "deleteTitle": "删除网络 {{name}}？",
+    "deleteBody": "除非有规则允许，否则其成员将无法再相互访问。",
+    "deleted": "网络已删除。",
+    "saveMembers": "保存成员"
+  },
+  "rules": {
+    "title": "允许规则",
+    "description": "规则可让两个应用跨网络边界相互访问。",
+    "empty": "还没有规则",
+    "from": "应用",
+    "to": "可访问",
+    "note": "备注",
+    "notePlaceholder": "为什么需要这条路径",
+    "add": "添加规则",
+    "remove": "移除",
+    "removed": "规则已移除。",
+    "pickApp": "选择应用"
+  },
+  "errors": {
+    "load": "无法加载私有网络。",
+    "unavailable": "此控制平面不提供私有网络。"
+  },
+  "banner": {
+    "description": "将应用分组到私有网络，并决定哪些应用可以相互通信。请在下方创建第一个网络。",
+    "diagram": {
+      "apps": "应用",
+      "mesh": "私有 mesh"
+    }
+  }
+}

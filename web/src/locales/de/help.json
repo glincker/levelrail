@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "pinned": "Angeheftet",
+    "recentlyViewed": "Zuletzt angesehen",
+    "troubleshooting": "Fehlerbehebung",
+    "allPages": "Alle Seiten",
+    "docsSite": "Dokumentationsseite"
+  },
+  "pin": {
+    "label": "Seite anheften",
+    "tooltip": "Diese Seite zu Ihren Favoriten anheften"
+  },
+  "unpin": {
+    "label": "Seite lösen",
+    "tooltip": "Diese Seite aus Ihren Favoriten entfernen"
+  },
+  "filter": {
+    "troubleshootingOnly": "Fehlerbehebung"
+  },
+  "toolbar": {
+    "export": "Exportieren",
+    "copyMarkdown": "Seite als Markdown kopieren",
+    "viewSourceGitHub": "Quelle auf GitHub ansehen",
+    "openDocsSite": "Auf der Dokumentationsseite öffnen",
+    "copied": "Kopiert"
+  },
+  "offlineNotice": {
+    "title": "Offline-Kopie",
+    "description": "Dies ist die in Ihren Server eingebaute Offline-Kopie für den Fall, dass Sie das Internet nicht erreichen. Die neueste Version dieser Seite finden Sie auf der Dokumentationsseite.",
+    "dismiss": "Schließen"
+  },
+  "toc": {
+    "title": "Auf dieser Seite"
+  },
+  "code": {
+    "copy": "Kopieren",
+    "copied": "Kopiert"
+  }
+}

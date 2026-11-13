@@ -1,0 +1,138 @@
+{
+  "title": "部署时间线",
+  "subtitle": "一次部署中发生的所有事情,按顺序排列。",
+  "pageTitle": "部署 {{id}}",
+  "app": "应用",
+  "back": "所有部署",
+  "open": "时间线",
+  "verdict": {
+    "running": "进行中",
+    "watching": "观察中",
+    "succeeded": "成功",
+    "failed": "失败",
+    "rolled_back": "已回滚",
+    "canceled": "已取消",
+    "queued": "排队中"
+  },
+  "connection": {
+    "connecting": "正在连接",
+    "live": "实时",
+    "ended": "回放",
+    "error": "正在重新连接"
+  },
+  "frozenNote": "此次部署结束时保存的回放。",
+  "list": {
+    "label": "部署事件,最早的在前",
+    "loading": "正在加载部署时间线",
+    "emptyTitle": "暂无事件",
+    "emptyBody": "随着部署的推进,事件会显示在这里。"
+  },
+  "announce": "{{title}}:{{status}}",
+  "status": {
+    "running": "运行中",
+    "ok": "完成",
+    "failed": "失败",
+    "warning": "警告",
+    "info": "信息"
+  },
+  "kind": {
+    "trigger": "触发",
+    "build": "构建",
+    "log": "构建输出",
+    "image_push": "镜像推送",
+    "hook": "钩子",
+    "step": "步骤",
+    "readiness": "就绪检查",
+    "cutover": "切换",
+    "watch": "部署后观察",
+    "rollback": "回滚",
+    "outcome": "结果",
+    "traffic_impact": "流量影响"
+  },
+  "codes": {
+    "trigger_git_push": "收到 Git 推送",
+    "trigger_webhook": "收到 Webhook",
+    "trigger_manual": "手动开始部署",
+    "trigger_image": "已请求镜像部署",
+    "trigger_compose": "已请求 Compose 部署",
+    "trigger_promote": "已请求提升",
+    "trigger_auto_rollback": "自动回滚已开始",
+    "trigger_restart": "已请求重启",
+    "trigger_queued": "排在另一次部署之后",
+    "build_detecting": "正在检测构建方式",
+    "build_building": "构建",
+    "build_failed": "构建失败",
+    "push": "镜像推送",
+    "readiness_probe": "就绪探针",
+    "watch_crashloop": "部署后出现崩溃循环",
+    "watch_oom": "部署后容器因内存被终止",
+    "watch_exited": "部署后容器退出",
+    "watch_error_rate": "部署后 5xx 比例上升",
+    "watch_latency": "部署后延迟变差",
+    "watch_stopped": "观察已被操作员停止",
+    "watch_cleared": "部署后观察已解除",
+    "rollback_auto": "自动回滚",
+    "rollback_no_target": "没有可用的回滚目标",
+    "outcome_succeeded": "部署完成",
+    "outcome_failed": "部署失败",
+    "outcome_rolled_back": "部署已回滚",
+    "outcome_canceled": "部署已取消",
+    "traffic_impact": "切换前后的流量影响"
+  },
+  "trigger": {
+    "rerun": "重新运行 {{id}}"
+  },
+  "logs": {
+    "summary_other": "构建输出,{{count}} 行",
+    "region": "构建输出行",
+    "dropped": "为保持回放精简,省略了更早的 {{count}} 行。"
+  },
+  "impact": {
+    "title": "切换前后的流量",
+    "before": "之前",
+    "after": "之后",
+    "rate": "每秒请求数",
+    "errors": "5xx 比例",
+    "p95": "p95 延迟",
+    "noTraffic": "此窗口内没有流量",
+    "open": "切换之后的窗口仍然开放,因此这些数值可能会变化。",
+    "window": "窗口为切换前后各 {{window}}。"
+  },
+  "phases": {
+    "title": "各阶段耗时",
+    "label": "每个阶段的时长",
+    "trigger": "触发",
+    "build": "构建",
+    "push": "推送",
+    "hooks": "钩子",
+    "deploy": "部署",
+    "readiness": "就绪检查",
+    "cutover": "切换",
+    "watch": "观察",
+    "outcome": "结果"
+  },
+  "compare": {
+    "label": "对比对象",
+    "none": "不对比",
+    "hint": "选择此应用的另一次部署,并排查看两条时间线。",
+    "loading": "正在加载对比",
+    "errorTitle": "无法加载对比",
+    "title": "并排对比",
+    "deployA": "此次部署",
+    "deployB": "对比的部署",
+    "phase": "阶段",
+    "delta": "差异",
+    "faster": "快 {{value}}",
+    "slower": "慢 {{value}}",
+    "same": "相同",
+    "missing": "未到达",
+    "onlyHere": "仅在此次部署中",
+    "onlyThere": "仅在对比的部署中",
+    "noDifferences": "两次部署产生了相同的信号。",
+    "columnLabel": "部署 {{id}} 的事件"
+  },
+  "error": {
+    "title": "无法加载此部署",
+    "notFound": "此部署不存在,或你无权读取其应用。"
+  }
+}

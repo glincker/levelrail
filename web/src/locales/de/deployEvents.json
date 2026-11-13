@@ -1,0 +1,139 @@
+{
+  "title": "Deploy-Zeitachse",
+  "subtitle": "Alles, was in einem Deploy geschah, der Reihe nach.",
+  "pageTitle": "Deploy {{id}}",
+  "app": "App",
+  "back": "Alle Deployments",
+  "open": "Zeitachse",
+  "verdict": {
+    "running": "In Arbeit",
+    "watching": "Wird beobachtet",
+    "succeeded": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "rolled_back": "Zurückgerollt",
+    "canceled": "Abgebrochen",
+    "queued": "In der Warteschlange"
+  },
+  "connection": {
+    "connecting": "Verbindet",
+    "live": "Live",
+    "ended": "Wiedergabe",
+    "error": "Verbindet neu"
+  },
+  "frozenNote": "Gespeicherte Wiedergabe von dem Zeitpunkt, als dieser Deploy abgeschlossen wurde.",
+  "list": {
+    "label": "Deploy-Ereignisse, die ältesten zuerst",
+    "loading": "Die Deploy-Zeitachse wird geladen",
+    "emptyTitle": "Noch keine Ereignisse",
+    "emptyBody": "Ereignisse erscheinen hier, während der Deploy voranschreitet."
+  },
+  "announce": "{{title}}: {{status}}",
+  "status": {
+    "running": "Läuft",
+    "ok": "Erledigt",
+    "failed": "Fehlgeschlagen",
+    "warning": "Warnung",
+    "info": "Info"
+  },
+  "kind": {
+    "trigger": "Auslöser",
+    "build": "Build",
+    "log": "Build-Ausgabe",
+    "image_push": "Image-Push",
+    "hook": "Hook",
+    "step": "Schritt",
+    "readiness": "Bereitschaft",
+    "cutover": "Umschaltung",
+    "watch": "Beobachtung nach dem Deploy",
+    "rollback": "Rollback",
+    "outcome": "Ergebnis",
+    "traffic_impact": "Traffic-Auswirkung"
+  },
+  "codes": {
+    "trigger_git_push": "Git-Push empfangen",
+    "trigger_webhook": "Webhook empfangen",
+    "trigger_manual": "Deploy manuell gestartet",
+    "trigger_image": "Image-Deploy angefordert",
+    "trigger_compose": "Compose-Deploy angefordert",
+    "trigger_promote": "Übernahme angefordert",
+    "trigger_auto_rollback": "Automatisches Rollback gestartet",
+    "trigger_restart": "Neustart angefordert",
+    "trigger_queued": "Hinter einem anderen Deploy eingereiht",
+    "build_detecting": "Build-Methode wird erkannt",
+    "build_building": "Build",
+    "build_failed": "Build fehlgeschlagen",
+    "push": "Image-Push",
+    "readiness_probe": "Readiness-Probe",
+    "watch_crashloop": "Crash-Loop nach dem Deploy",
+    "watch_oom": "Container nach dem Deploy wegen Speichermangels beendet",
+    "watch_exited": "Container nach dem Deploy beendet",
+    "watch_error_rate": "5xx-Rate nach dem Deploy gestiegen",
+    "watch_latency": "Latenz nach dem Deploy verschlechtert",
+    "watch_stopped": "Beobachtung von einem Operator gestoppt",
+    "watch_cleared": "Beobachtung nach dem Deploy beendet",
+    "rollback_auto": "Automatisches Rollback",
+    "rollback_no_target": "Kein Rollback-Ziel verfügbar",
+    "outcome_succeeded": "Deploy abgeschlossen",
+    "outcome_failed": "Deploy fehlgeschlagen",
+    "outcome_rolled_back": "Deploy zurückgerollt",
+    "outcome_canceled": "Deploy abgebrochen",
+    "traffic_impact": "Traffic-Auswirkung rund um die Umschaltung"
+  },
+  "trigger": {
+    "rerun": "Wiederholung von {{id}}"
+  },
+  "logs": {
+    "summary_one": "Build-Ausgabe, {{count}} Zeile",
+    "summary_other": "Build-Ausgabe, {{count}} Zeilen",
+    "region": "Zeilen der Build-Ausgabe",
+    "dropped": "{{count}} frühere Zeilen wurden ausgelassen, um die Wiedergabe klein zu halten."
+  },
+  "impact": {
+    "title": "Traffic rund um die Umschaltung",
+    "before": "Vorher",
+    "after": "Nachher",
+    "rate": "Anfragen pro Sekunde",
+    "errors": "5xx-Rate",
+    "p95": "p95-Latenz",
+    "noTraffic": "Kein Traffic in diesem Fenster",
+    "open": "Das Fenster nach der Umschaltung ist noch offen, daher können sich diese Zahlen ändern.",
+    "window": "Die Fenster betragen {{window}} auf jeder Seite der Umschaltung."
+  },
+  "phases": {
+    "title": "Zeit pro Phase",
+    "label": "Dauer jeder Phase",
+    "trigger": "Auslöser",
+    "build": "Build",
+    "push": "Push",
+    "hooks": "Hooks",
+    "deploy": "Deploy",
+    "readiness": "Bereitschaft",
+    "cutover": "Umschaltung",
+    "watch": "Beobachtung",
+    "outcome": "Ergebnis"
+  },
+  "compare": {
+    "label": "Vergleichen mit",
+    "none": "Kein Vergleich",
+    "hint": "Wählen Sie einen anderen Deploy dieser App, um beide Zeitachsen nebeneinander zu sehen.",
+    "loading": "Der Vergleich wird geladen",
+    "errorTitle": "Der Vergleich konnte nicht geladen werden",
+    "title": "Nebeneinander",
+    "deployA": "Dieser Deploy",
+    "deployB": "Verglichener Deploy",
+    "phase": "Phase",
+    "delta": "Unterschied",
+    "faster": "{{value}} schneller",
+    "slower": "{{value}} langsamer",
+    "same": "Gleich",
+    "missing": "Nicht erreicht",
+    "onlyHere": "Nur in diesem Deploy",
+    "onlyThere": "Nur im verglichenen Deploy",
+    "noDifferences": "Beide Deploys erzeugten dieselben Signale.",
+    "columnLabel": "Ereignisse von Deploy {{id}}"
+  },
+  "error": {
+    "title": "Dieser Deploy konnte nicht geladen werden",
+    "notFound": "Dieser Deploy existiert nicht oder Sie können seine App nicht lesen."
+  }
+}

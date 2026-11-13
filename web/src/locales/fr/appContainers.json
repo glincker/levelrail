@@ -1,0 +1,50 @@
+{
+  "title": "Conteneurs",
+  "count_one": "{{count}} réplica",
+  "count_other": "{{count}} réplicas",
+  "count_many": "{{count}} réplicas",
+  "loading": "Chargement des conteneurs",
+  "forbidden": "Vous n'avez pas la permission d'inspecter les conteneurs de cette app.",
+  "error": "Impossible de charger les conteneurs : {{message}}",
+  "empty": {
+    "title": "Aucun conteneur en cours d'exécution",
+    "description": "L'app est arrêtée ou en veille. État actuel : {{status}}."
+  },
+  "unavailable": "Indisponible",
+  "unavailableTip": "L'agent ne remonte pas ce champ pour les nodes distants.",
+  "none": "Aucun",
+  "copyId": "Copier l'id du conteneur",
+  "copied": "Copié",
+  "restarts_one": "{{count}} redémarrage",
+  "restarts_other": "{{count}} redémarrages",
+  "restarts_many": "{{count}} redémarrages",
+  "uptime": "Actif depuis {{duration}}",
+  "node": "Node",
+  "fields": {
+    "image": "Image",
+    "digest": "Digest",
+    "ports": "Ports",
+    "networks": "Réseaux",
+    "mounts": "Montages",
+    "limits": "Limites",
+    "cpu": "CPU",
+    "memory": "Mémoire",
+    "health": "Santé"
+  },
+  "state": {
+    "running": "En cours d'exécution",
+    "stopped": "Arrêté",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "Sain",
+    "unhealthy": "Défaillant",
+    "starting": "Démarrage",
+    "none": "Aucune vérification",
+    "streak": "{{count}} échecs consécutifs"
+  },
+  "readOnly": "ro",
+  "limitsValue": "{{cpu}} CPU, {{memory}}",
+  "noLimit": "Aucune limite",
+  "usage": "{{used}} sur {{limit}}"
+}

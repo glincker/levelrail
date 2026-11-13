@@ -1,0 +1,64 @@
+{
+  "title": "Erros",
+  "subtitle": "Erros que seu app reporta por qualquer SDK do Sentry, agrupados em issues e ligados ao deploy que os produziu.",
+  "setup": {
+    "title": "Enviar erros deste app",
+    "off": "O rastreamento de erros está desativado. Ative-o para obter um DSN para o seu SDK do Sentry.",
+    "on": "O rastreamento de erros está ativado. Defina SENTRY_DSN com o DSN que você recebeu ou gire-o para obter um novo.",
+    "enable": "Ativar rastreamento de erros",
+    "enabling": "Ativando...",
+    "rotate": "Girar DSN",
+    "disable": "Desativar",
+    "copy": "Copiar",
+    "dsnOnce": "Este DSN é exibido uma vez. Defina-o no app e faça um novo deploy. Girar faz o DSN antigo parar de funcionar.",
+    "endpoint": "Endpoint",
+    "enabledToast": "O rastreamento de erros está ativado.",
+    "disabledToast": "O rastreamento de erros está desativado. O SDK do app receberá respostas 401.",
+    "failed": "Não foi possível alterar o rastreamento de erros."
+  },
+  "filters": {
+    "status": "Status",
+    "all": "Todos",
+    "open": "Abertos",
+    "resolved": "Resolvidos",
+    "ignored": "Ignorados",
+    "window": "Janela",
+    "last1": "Última hora",
+    "last24": "Últimas 24 horas",
+    "last168": "Últimos 7 dias",
+    "last720": "Últimos 30 dias"
+  },
+  "list": {
+    "empty": "Nenhum erro nesta janela. Quando seu SDK reportar um, ele aparece aqui.",
+    "loadError": "Não foi possível carregar os erros: {{message}}",
+    "count": "{{count}} eventos",
+    "firstSeen": "Visto pela primeira vez",
+    "lastSeen": "Visto pela última vez",
+    "regressed": "Regressão",
+    "release": "Release {{release}}",
+    "deploy": "Deploy {{id}}",
+    "emptyTitle": "Nenhum erro",
+    "emptyOff": "O rastreamento de erros está desativado para este app, então nada é coletado. Ative-o para obter um DSN.",
+    "emptyAction": "Configurar rastreamento de erros"
+  },
+  "level": {
+    "fatal": "Fatal",
+    "error": "Erro",
+    "warning": "Aviso",
+    "info": "Info",
+    "debug": "Debug"
+  },
+  "detail": {
+    "loading": "Carregando issue...",
+    "stack": "Stack trace",
+    "noStack": "Este evento não trouxe stack trace.",
+    "latest": "Evento mais recente",
+    "samples": "{{count}} eventos armazenados",
+    "environment": "Ambiente {{environment}}",
+    "resolve": "Resolver",
+    "ignore": "Ignorar",
+    "reopen": "Reabrir",
+    "updated": "Issue atualizada.",
+    "updateFailed": "Não foi possível atualizar a issue."
+  }
+}

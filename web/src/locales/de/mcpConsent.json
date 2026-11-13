@@ -1,0 +1,62 @@
+{
+  "title": "{{client}} möchte diese Control Plane lesen",
+  "signedInAs": "Genehmigung als {{user}} auf {{host}}",
+  "instanceOnly": "Genehmigung auf {{host}}",
+  "redirectsTo": "Nach Ihrer Antwort kehrt Ihr Browser zurück zu",
+  "access": {
+    "none": "Ihr Konto besitzt keinen der angeforderten Zugriffe, daher kann nichts gewährt werden.",
+    "read": "Schreibgeschützter Zugriff auf Ihre Ressourcen. Secrets und sensible Werte bleiben verborgen.",
+    "sensitive": "Schreibgeschützter Zugriff, einschließlich sensibler Werte.",
+    "trimmed": "Ein Teil der Anfrage wird ausgelassen, weil Ihr Konto ihn nicht besitzt."
+  },
+  "facts": {
+    "never": "Er kann niemals etwas erstellen, ändern, deployen oder löschen.",
+    "permissions": "Er läuft als Sie, mit nicht mehr als Ihren eigenen Berechtigungen.",
+    "expiry": "Der Zugriff gilt {{access}} und verlängert sich bis zu {{refresh}}, sofern Sie ihn nicht widerrufen.",
+    "revoke": "Sie können den Client jederzeit unter Einstellungen, CLI-Zugriff entfernen."
+  },
+  "approve": "Genehmigen",
+  "deny": "Ablehnen",
+  "working": "In Arbeit",
+  "duration": {
+    "minutes_one": "{{count}} Minute",
+    "minutes_other": "{{count}} Minuten",
+    "hours_one": "{{count}} Stunde",
+    "hours_other": "{{count}} Stunden",
+    "days_one": "{{count}} Tag",
+    "days_other": "{{count}} Tage"
+  },
+  "errors": {
+    "missing": "Dieser Link enthält keine Autorisierungsanfrage. Starten Sie die Verbindung erneut in Ihrem KI-Client.",
+    "featureOff": "Das Verbinden von KI-Clients ist deaktiviert. Aktivieren Sie Remote-MCP unter Einstellungen, Beta-Funktionen.",
+    "gone": "Diese Anfrage ist abgelaufen oder wurde bereits beantwortet. Starten Sie die Verbindung erneut in Ihrem KI-Client.",
+    "unavailable": "Die Remote-MCP-Anmeldung ist auf dieser Control Plane nicht verfügbar.",
+    "load": "Diese Anfrage konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und laden Sie neu.",
+    "decide": "Ihre Antwort konnte nicht aufgezeichnet werden."
+  },
+  "clients": {
+    "title": "Verbundene KI-Clients",
+    "body": "Vorregistrierte Clients, die per Remote-MCP eine Verbindung anfordern dürfen.",
+    "add": "Client hinzufügen",
+    "name": "Name",
+    "uris": "Redirect-URIs",
+    "urisPlaceholder": "https://client.example/callback",
+    "create": "Erstellen",
+    "cancel": "Abbrechen",
+    "created": "Client erstellt",
+    "clientId": "Client-ID:",
+    "empty": "Keine vorregistrierten Clients.",
+    "loadError": "KI-Clients konnten nicht geladen werden.",
+    "remove": "{{name}} entfernen",
+    "confirmTitle": "{{name}} entfernen?",
+    "confirmBody": "Seine Zugriffstokens funktionieren sofort nicht mehr. Er kann später erneut hinzugefügt werden.",
+    "confirm": "Client entfernen",
+    "dismiss": "Schließen"
+  },
+  "scopes": {
+    "heading": "Gewährter Zugriff",
+    "read": "Ressourcen und ihren Status lesen",
+    "sensitive": "Sensible Werte lesen, etwa Inhalte von Secrets"
+  },
+  "approveSensitive": "Mit sensiblem Zugriff genehmigen"
+}

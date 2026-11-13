@@ -1,0 +1,391 @@
+{
+  "prefill": {
+    "loading": "{{slug}} wird geöffnet",
+    "notFoundTitle": "Vorlage nicht gefunden",
+    "notFoundDescription": "Diese Instanz hat keine Vorlage namens \"{{slug}}\". Sie ist möglicherweise falsch geschrieben oder fehlt im Katalog dieser Version.",
+    "errorTitle": "Die Vorlage konnte nicht geöffnet werden",
+    "browse": "Vorlagen durchsuchen"
+  },
+  "description": {
+    "label": "Hinweise zur Einrichtung"
+  },
+  "verified": {
+    "badge": "Verifiziert",
+    "hint": "Hat den letzten Live-Smoke-Test bestanden: Sie ist gestartet, und ihr Health-Check wurde bestanden.",
+    "filter": "Nur verifizierte"
+  },
+  "detail": {
+    "back": "Zurück zu den Vorlagen",
+    "ramRecommended": "~{{size}} RAM empfohlen",
+    "needsGpu": "Benötigt NVIDIA-GPU",
+    "facts": {
+      "title": "Fakten",
+      "images": "Docker-Images",
+      "docs": "Offizielle Dokumentation",
+      "docsLink": "Dokumentation öffnen",
+      "memory": "Empfohlener Arbeitsspeicher",
+      "ports": "Bereitgestellte Ports",
+      "volumes": "Volumes",
+      "registryLink": "{{image}} auf {{registry}}"
+    },
+    "deployed": {
+      "title": "Was deployt wird",
+      "description": "Jeder Dienst unten wird aus der Compose-Datei der Vorlage erstellt.",
+      "image": "Image",
+      "port": "Port {{port}}",
+      "roleMain": "Hauptdienst",
+      "roleSupport": "Unterstützender Dienst",
+      "dependsOn": "Startet nach {{names}}",
+      "loading": "Die Vorlage wird gelesen",
+      "unavailable": "Die Aufschlüsselung der Dienste ist für diese Vorlage derzeit nicht verfügbar. Sie können sie trotzdem deployen."
+    },
+    "env": {
+      "title": "Umgebungsvariablen",
+      "description": "Nur Namen. Werte werden beim Deployment festgelegt.",
+      "required": "Von Ihnen anzugeben",
+      "generated": "Für Sie erzeugt",
+      "optional": "Optional, hat einen Standardwert"
+    },
+    "related": {
+      "title": "Mehr in {{category}}"
+    },
+    "deploy": {
+      "title": "Diese Vorlage deployen",
+      "now": "Jetzt deployen",
+      "deploying": "Wird deployt...",
+      "configure": "Konfigurieren und deployen",
+      "trial": "Wird als Testinstanz deployt. Sie können sie jederzeit auf ihrer eigenen Seite stoppen und löschen.",
+      "configureHint": "Diese Vorlage benötigt einige Werte von Ihnen, bevor sie starten kann."
+    }
+  },
+  "page": {
+    "title": "Dienstvorlagen",
+    "description": "Fertige Apps und Datenbanken. Wählen Sie eine aus, um vor dem Deployen zu sehen, was Sie erhalten.",
+    "new": "Neu aus einer Vorlage"
+  },
+  "marketplace": {
+    "search": {
+      "label": "Vorlagen durchsuchen",
+      "placeholder": "{{count}} Vorlagen nach Name oder Beschreibung durchsuchen"
+    },
+    "sort": {
+      "label": "Sortieren",
+      "relevance": "Relevanz",
+      "name": "Name, A bis Z",
+      "memory": "Leichteste zuerst"
+    },
+    "density": {
+      "label": "Layout",
+      "comfortable": "Karten",
+      "compact": "Liste"
+    },
+    "count": "{{shown}} von {{total}} Vorlagen",
+    "categories": {
+      "label": "Vorlagenkategorien",
+      "filterLabel": "Vorlagen nach Kategorie filtern",
+      "all": "Alle Vorlagen",
+      "heading": "Kategorien"
+    },
+    "featured": {
+      "title": "Starterpakete",
+      "subtitle": "Funktionierende Stacks aus mehreren Diensten. Deployen Sie einen und tauschen Sie dann Ihre eigenen Images ein.",
+      "hide": "Starterpakete ausblenden",
+      "show": "Starterpakete anzeigen"
+    },
+    "card": {
+      "deploy": "Deployen",
+      "deployNeedsSetup": "Deployen (erfordert Einrichtung)",
+      "deploying": "Wird deployt...",
+      "ram": "~{{size}} RAM",
+      "ramLabel": "Empfohlener Arbeitsspeicher {{size}}",
+      "services": "{{count}} Dienste",
+      "gpu": "GPU erforderlich",
+      "details": "{{name}} ansehen",
+      "database": "Benötigt Datenbank",
+      "volume": "Behält Daten"
+    },
+    "empty": {
+      "title": "Keine passenden Vorlagen",
+      "filtered": "In {{category}} passt nichts zu \"{{query}}\". Versuchen Sie eine kürzere Suche oder eine andere Kategorie.",
+      "filteredNoQuery": "In {{category}} gibt es noch keine Vorlagen.",
+      "clear": "Filter zurücksetzen",
+      "catalogTitle": "Der Katalog ist leer",
+      "catalogDescription": "Derzeit sind keine Vorlagen verfügbar. Sie können einen neuen Dienst von Grund auf starten."
+    }
+  },
+  "requirements": {
+    "title": "Was dies benötigt und was Levelrail hinzufügt",
+    "level": {
+      "standard": "Standard",
+      "review": "Prüfen",
+      "elevated": "Erhöhter Zugriff"
+    },
+    "needsTitle": "Was dies benötigt",
+    "needsNone": "Nichts über einen Standard-Container hinaus.",
+    "addsTitle": "Was Levelrail hinzufügt",
+    "showAll": "Details anzeigen",
+    "hideAll": "Details ausblenden",
+    "services": "Dienste: {{services}}",
+    "elevatedWarning": "Diese Vorlage verlangt erhöhten Zugriff auf den Host. Levelrail gewährt ihn nie automatisch.",
+    "acknowledge": "Ich verstehe und akzeptiere den oben aufgeführten erhöhten Zugriff",
+    "acknowledgeRequired": "Bestätigen Sie den erhöhten Zugriff, um zu deployen.",
+    "finding": {
+      "privileged": "Läuft im privilegierten Modus, was dem Container nahezu Root-Zugriff auf den Host gibt",
+      "docker_socket": "Bindet den Docker-Socket ein, was Root auf dem Host entspricht",
+      "host_network": "Nutzt das Host-Netzwerk und umgeht das App-Netzwerk und den Ingress",
+      "host_namespace": "Teilt einen Host-Prozess-, IPC- oder Benutzer-Namespace",
+      "cap_add": "Fügt zusätzliche Linux-Capabilities hinzu",
+      "devices": "Reicht Host-Geräte in den Container durch",
+      "security_opt": "Ändert Sicherheitsoptionen des Containers",
+      "host_mount": "Bindet ein Verzeichnis vom Host ein",
+      "unpinned_image": "Das Image ist nicht an einen Versions-Tag fixiert, daher kann ein erneutes Deployment anderen Code laden",
+      "published_ports": "Veröffentlicht Ports direkt auf dem Host",
+      "required_secrets": "Sie müssen ein oder mehrere Secrets angeben, bevor deployt werden kann",
+      "generated_secrets": "Passwörter und Schlüssel werden beim Deployment erzeugt",
+      "no_healthcheck": "Kein Health-Check, daher wird ein Deployment daran beurteilt, ob der Prozess startet",
+      "persistent_data": "Speichert Daten in benannten Volumes",
+      "gpu": "Reserviert eine NVIDIA-GPU",
+      "unparsed": "Der Compose-Inhalt konnte nicht analysiert werden. Prüfen Sie ihn vor dem Deployen"
+    },
+    "protection": {
+      "https_ingress": "Automatisches HTTPS und ein Ingress-Schutz vor jeder Domain",
+      "secret_masking": "Secrets werden erzeugt, verschlüsselt gespeichert und in Logs und der Oberfläche verborgen",
+      "volume_backups": "Benannte Volumes lassen sich sichern und wiederherstellen",
+      "health_gated_deploy": "Deployments werden vom Health-Check abhängig gemacht, bevor der Traffic umschaltet",
+      "rollback": "Rollback auf die vorherige Revision in einem Schritt",
+      "exposure_report": "Der Exposure-Bericht zeigt, was von außen erreichbar ist",
+      "firewall": "Host-Firewall-Regeln für veröffentlichte Ports werden verwaltet"
+    }
+  },
+  "banner": {
+    "description": "Wählen Sie aus dem Katalog, legen Sie einige Werte fest, und die App läuft auf Ihrem eigenen Server.",
+    "diagram": {
+      "catalog": "Katalog",
+      "oneClick": "ein Klick",
+      "server": "Ihr Server"
+    }
+  },
+  "what": {
+    "title": "Was Sie erhalten",
+    "description_one": "Ein Dienst, bereit zum Ausführen.",
+    "description_other": "{{count}} Dienste, bereit, zusammen zu laufen.",
+    "url": "Webadresse",
+    "urlValue": "{{slug}}.<Domain Ihres Servers>",
+    "ports": "Ports",
+    "portsNone": "Kein Web-Port",
+    "resources": "Arbeitsspeicher und CPU",
+    "memory": "Etwa {{size}} Arbeitsspeicher",
+    "memoryNone": "Kein Arbeitsspeicher-Limit festgelegt",
+    "cpu": "{{count}} CPU-Limit",
+    "cpuShared": "geteilte CPU",
+    "volumes": "Speicher",
+    "volumesNone": "Kein persistenter Speicher",
+    "dependencies": "Abhängigkeiten",
+    "databaseCreated": "Eine {{engines}}-Datenbank wird für Sie erstellt",
+    "dependenciesNone": "Keine, läuft eigenständig",
+    "backups": "Backups",
+    "backupsVolumes": "Der Speicher lässt sich auf der Seite Backups sichern und wiederherstellen",
+    "backupsNone": "Nichts zu sichern"
+  },
+  "form": {
+    "title": "Einrichten und deployen",
+    "descriptionRequired": "Füllen Sie die erforderlichen Werte aus und deployen Sie dann. Alles andere hat einen sinnvollen Standard.",
+    "descriptionNone": "Nichts ist erforderlich. Deployen Sie jetzt oder passen Sie zuerst die optionalen Einstellungen an.",
+    "generated": {
+      "title": "Für Sie erzeugt",
+      "placeholder": "Wird beim Deployen erstellt",
+      "reveal": "Anzeigen",
+      "hide": "Verbergen",
+      "regenerate": "Neu erzeugen",
+      "hint": "Verschlüsselt gespeichert und bei jedem erneuten Deployment wiederverwendet."
+    },
+    "domain": {
+      "title": "Adresse",
+      "auto": "Automatische Adresse",
+      "custom": "Meine eigene Domain verwenden",
+      "autoHint": "Sie erhalten sofort eine funktionierende HTTPS-Adresse. Fügen Sie später Ihre eigene Domain hinzu, wenn Sie möchten.",
+      "customHint": "Richten Sie ihr DNS auf diesen Server, dann wird HTTPS für Sie eingerichtet.",
+      "none": "Diese Vorlage hat keine Webadresse zu konfigurieren.",
+      "label": "Domain für {{service}} (Port {{port}})",
+      "placeholder": "app.example.com",
+      "hint": "Optional. Leer lassen, um die automatische Adresse zu verwenden."
+    },
+    "optional": {
+      "title": "Optionale Einstellungen",
+      "count_one": "({{count}} Einstellung)",
+      "count_other": "({{count}} Einstellungen)"
+    },
+    "name": {
+      "label": "App-Name",
+      "hint": "Kleinbuchstaben, Ziffern und Bindestriche. Leer lassen, dann wählen wir einen."
+    },
+    "errors": {
+      "required": "{{field}} ist erforderlich",
+      "name": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche, beginnend mit einem Buchstaben.",
+      "domain": "Geben Sie eine gültige Domain wie app.example.com ein.",
+      "summary_one": "Korrigieren Sie {{count}} Feld, um fortzufahren.",
+      "summary_other": "Korrigieren Sie {{count}} Felder, um fortzufahren."
+    },
+    "summary": "{{name}} läuft als {{app}} unter {{address}}. {{generated}} Secrets werden für Sie erzeugt.",
+    "summaryAuto": "einer automatischen Adresse",
+    "deploy": "Deployen",
+    "deploying": "Wird deployt...",
+    "success": "{{app}} deployt",
+    "file": {
+      "secret": "Geheime Datei",
+      "mount": "In {{service}} unter {{path}} eingebunden",
+      "mode": "Modus {{mode}}"
+    }
+  },
+  "card": {
+    "ramRecommended": "~{{size}} RAM empfohlen",
+    "needsGpu": "Benötigt NVIDIA-GPU",
+    "deployNow": "Jetzt deployen",
+    "deployNowSetup": "Jetzt deployen (erfordert Einrichtung)",
+    "deploying": "Wird deployt...",
+    "searchPlaceholder": "Vorlagen durchsuchen...",
+    "searchLabel": "Vorlagen durchsuchen",
+    "noMatch": "Keine Vorlagen passen zu \"{{search}}\"."
+  },
+  "install": {
+    "title": "Was dies installiert",
+    "description_one": "Ein Dienst wird erstellt.",
+    "description_other": "{{count}} Dienste werden erstellt.",
+    "volumes": "Volumes",
+    "env": "Umgebungsvariablen",
+    "pin": {
+      "digest": "Per Digest fixiert",
+      "tag": "Versions-Tag",
+      "floating": "Floating-Tag"
+    },
+    "envKind": {
+      "generated": "erzeugt",
+      "required": "von Ihnen anzugeben",
+      "optional": "optional"
+    }
+  },
+  "trust": {
+    "digest_one": "{{count}} Image per Digest fixiert",
+    "digest_other": "{{count}} Images per Digest fixiert",
+    "digestHint": "Der genaue Inhalt des Images steht fest",
+    "tag_one": "{{count}} Image mit Versions-Tag",
+    "tag_other": "{{count}} Images mit Versions-Tag",
+    "tagHint": "Ein Versions-Tag kann upstream weiterhin neu gepusht werden",
+    "floating_one": "{{count}} Image mit Floating-Tag",
+    "floating_other": "{{count}} Images mit Floating-Tag",
+    "floatingHint": "Der Tag latest oder kein Tag. Das Image kann sich zwischen Deployments ändern"
+  },
+  "stackFile": {
+    "title": "Als Stack-Datei anzeigen",
+    "preview": "Vorschau der Compose-Datei, die diese Vorlage deployt",
+    "download": "Herunterladen",
+    "label": "Compose-Datei der Vorlage"
+  },
+  "result": {
+    "title": "{{name}} wird deployt",
+    "deployFailed": "Deployment fehlgeschlagen",
+    "address": "Adresse",
+    "addressPending": "Die Adresse erscheint, sobald die App läuft.",
+    "credentials": "Erzeugte Zugangsdaten",
+    "credentialsHint": "Für diese App erstellt. Werden nur auf Wunsch angezeigt und danach wieder verborgen.",
+    "noCredentials": "Diese Vorlage hat keine Zugangsdaten erzeugt.",
+    "reveal": "{{key}} anzeigen",
+    "hide": "{{key}} verbergen",
+    "copy": "{{key}} kopieren",
+    "copied": "Kopiert",
+    "hidesIn": "Wird in {{seconds}} s verborgen",
+    "revealDenied": "Das Anzeigen von Werten erfordert Inhaber- oder Admin-Zugriff oder ist für diese App ausgeschaltet.",
+    "openEnvironment": "Umgebung öffnen",
+    "nextSteps": "Nächste Schritte",
+    "openApp": "App öffnen",
+    "viewLogs": "Logs anzeigen",
+    "close": "Schließen",
+    "accessDetails": "Zugriffsdetails",
+    "toastDeployed": "\"{{name}}\" deployt",
+    "toastRunning_one": "{{count}} Dienst läuft jetzt.",
+    "toastRunning_other": "{{count}} Dienste laufen jetzt.",
+    "services_one": "{{count}} Dienst startet",
+    "services_other": "{{count}} Dienste starten"
+  },
+  "access": {
+    "title": "Zugriffsdetails",
+    "description": "Adresse, erzeugte Logins und Hinweise zur Einrichtung für diese App.",
+    "open": "Zugriffsdetails öffnen"
+  },
+  "wizard": {
+    "deployedUnder_one": "{{count}} Dienst unter \"{{app}}\" deployt.",
+    "deployedUnder_other": "{{count}} Dienste unter \"{{app}}\" deployt.",
+    "created": "Erstellt",
+    "view": "Anzeigen",
+    "done": "Fertig",
+    "back": "Zurück zu den Vorlagen",
+    "ramRecommended": "RAM empfohlen",
+    "documentation": "Dokumentation",
+    "name": "Name",
+    "namePlaceholder": "z. B. my-stack",
+    "nameHint": "Fasst jeden von dieser Vorlage definierten Dienst unter einem App-Namen zusammen.",
+    "composeHint": "Aus der Vorlage vorausgefüllt. Bearbeiten Sie sie vor dem Deployen, falls nötig.",
+    "deploying": "Wird deployt...",
+    "deploy": "Deployen"
+  },
+  "facts": {
+    "license": {
+      "title": "Lizenz: {{spdx}}",
+      "classes": {
+        "permissive": "Permissive Lizenz",
+        "copyleft": "Copyleft-Lizenz",
+        "network-copyleft": "Netzwerk-Copyleft-Lizenz",
+        "source-available": "Quelloffen einsehbar",
+        "proprietary": "Proprietär"
+      }
+    },
+    "verifiedOn": "Verifiziert auf {{arches}} mit Image-Tag {{tag}}",
+    "deprecated": "Veraltet",
+    "yanked": "Zurückgezogen",
+    "useInstead": "Verwenden Sie stattdessen {{id}}",
+    "filter": {
+      "license": "Lizenzklasse",
+      "anyLicense": "Beliebige Lizenz",
+      "arch": "Architektur",
+      "anyArch": "Beliebige Architektur"
+    },
+    "preview": {
+      "badge": "Vorschau",
+      "hint": "Noch nicht mit einer echten Engine getestet. Sie lässt sich trotzdem installieren, melden Sie bitte Probleme."
+    }
+  },
+  "importTemplate": {
+    "button": "Compose importieren",
+    "title": "Eine Vorlage importieren",
+    "description": "Fügen Sie eine Compose-Datei ein oder laden Sie sie, um sie als eigene Vorlage zu speichern. Es wird nichts deployt.",
+    "idLabel": "Vorlagen-ID",
+    "nameLabel": "Name",
+    "descriptionLabel": "Beschreibung (optional)",
+    "fileLabel": "Eine Compose-Datei laden",
+    "composeLabel": "Compose-Datei",
+    "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
+    "variablesLabel": "Variablen (optional, durch Komma getrennt)",
+    "variablesPlaceholder": "DB_PASSWORD, API_KEY",
+    "cancel": "Abbrechen",
+    "submit": "Vorlage importieren",
+    "submitting": "Wird importiert...",
+    "tooLarge": "Diese Datei ist für eine Vorlage zu groß.",
+    "success": "\"{{name}}\" als Vorlage importiert.",
+    "idInvalid": "Verwenden Sie 2 bis 63 Kleinbuchstaben, Ziffern oder Bindestriche.",
+    "nameRequired": "Ein Name ist erforderlich.",
+    "composeRequired": "Eine Compose-Datei ist erforderlich.",
+    "variablesInvalid": "Variablen müssen Namen in GROSSBUCHSTABEN sein."
+  },
+  "capabilities": {
+    "title": "Deklarierter Zugriff",
+    "tier": {
+      "review": "Prüfen",
+      "elevated": "Erhöht",
+      "privileged": "Privilegiert"
+    },
+    "class": {
+      "cap_add": "Fügt einem Container Linux-Capabilities hinzu.",
+      "net_admin": "Kann Netzwerkeinstellungen im Container ändern."
+    }
+  }
+}

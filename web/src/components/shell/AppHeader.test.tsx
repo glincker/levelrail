@@ -46,6 +46,9 @@ vi.mock('../ThemeProvider', () => ({
 }))
 vi.mock('../HelpMenu', () => ({ HelpMenu: () => null }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))
+vi.mock('../language/HeaderLanguageSelect', () => ({
+  HeaderLanguageSelect: () => <span data-testid="language-select" />,
+}))
 vi.mock('./NotificationCenter', () => ({ NotificationCenter: () => null }))
 vi.mock('../cli/CliStatusBadge', () => ({ CliStatusBadge: () => null }))
 vi.mock('../cli/CliModal', () => ({ CliModal: () => null }))
@@ -88,6 +91,11 @@ beforeEach(() => {
 })
 
 describe('AppHeader', () => {
+  it('places the language switcher in the bar and in the overflow tray', () => {
+    renderShell(<AppHeader onSearch={vi.fn()} />)
+    expect(screen.getAllByTestId('language-select').length).toBeGreaterThan(0)
+  })
+
   it('exposes the search trigger and attention chip with translated labels', () => {
     const onSearch = vi.fn()
     renderShell(<AppHeader onSearch={onSearch} />)

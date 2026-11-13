@@ -1,0 +1,199 @@
+{
+  "card": {
+    "title": "Kostenloses HTTPS, keine DNS-Einrichtung",
+    "description": "Liefern Sie dieses Dashboard und Ihre Apps über HTTPS mit einem echten Let's-Encrypt-Zertifikat aus. Beim Registrar ist nichts zu konfigurieren.",
+    "compactHint": "Solange es nicht aktiv ist, markieren Browser Ihre Adressen als nicht sicher.",
+    "setUp": "Einrichten",
+    "noPublicIp": "Die öffentliche IP-Adresse dieses Servers ist nicht bekannt, daher lässt sich kein DNS-freier Hostname bilden. Setzen Sie APP_PUBLIC_HOST auf die IP der Control Plane und starten Sie sie neu, oder verwenden Sie unten Ihre eigene Domain.",
+    "httpSignInNote": "Melden Sie sich danach über die HTTPS-Adresse an.",
+    "emailLabel": "E-Mail für Zertifikatshinweise",
+    "emailHelp": "Jedes Postfach, das Sie lesen, funktioniert. Zertifikate sind kostenlos und erneuern sich von selbst: Let's Encrypt schreibt Ihnen nur, wenn eines bald abläuft und nicht erneuert werden konnte.",
+    "stagingLabel": "Zuerst mit dem Let's-Encrypt-Staging testen",
+    "stagingHelp": "Staging-Zertifikate werden von Browsern nicht als vertrauenswürdig eingestuft, aber Staging hat keine nennenswerten Ratenlimits. Verwenden Sie es, um zu belegen, dass die Ports 80 und 443 erreichbar sind.",
+    "enable": "HTTPS aktivieren",
+    "enabling": "Zertifikat wird angefordert",
+    "retry": "Erneut versuchen",
+    "recheck": "Erneut prüfen",
+    "rechecking": "Wird geprüft",
+    "recheckHelp": "Wenn die Adresse noch nicht auf diesen Server zeigt, beheben Sie das dort, wo DNS oder die Firewall verwaltet wird, und prüfen Sie dann erneut. Hier muss sonst nichts geändert werden.",
+    "pending": "Ein Zertifikat für {{domain}} wird angefordert. Das dauert meist weniger als eine Minute.",
+    "issued": "HTTPS ist für {{domain}} aktiv.",
+    "issuedDetail": "Ausgestellt von {{issuer}}, läuft am {{date}} ab. Die Erneuerung erfolgt automatisch.",
+    "stagingIssued": "Dies ist ein Staging-Zertifikat, daher zeigen Browser eine Warnung. Schalten Sie Staging aus und führen Sie es erneut aus, um ein vertrauenswürdiges zu erhalten.",
+    "openDashboard": "Das Dashboard über HTTPS öffnen",
+    "dashboardUrlSaved": "Dashboard-URL auf {{url}} gesetzt.",
+    "dashboardUrlFailed": "Die Dashboard-URL konnte nicht gespeichert werden.",
+    "failedTitle": "Es konnte kein Zertifikat abgerufen werden",
+    "enableFailed": "HTTPS konnte nicht aktiviert werden.",
+    "preflightTitle": "Die Ports 80 oder 443 sind möglicherweise geschlossen",
+    "preflightBody": "Dieser Server konnte sich unter seiner öffentlichen Adresse nicht selbst auf Port {{ports}} erreichen. Let's Encrypt muss Port 80 (und für Erneuerungen 443) aus dem Internet erreichen. Öffnen Sie sie in Ihrer Cloud-Firewall oder führen Sie den Firewall-Schritt in der Einrichtung aus. Diese Prüfung kann hinter manchen Routern falsch sein, warten Sie daher auf das Zertifikat, bevor Sie etwas ändern."
+  },
+  "hint": {
+    "unreachable": "Let's Encrypt konnte diesen Server auf Port 80 nicht erreichen. Öffnen Sie die Ports 80 und 443 in Ihrer Firewall und in der Sicherheitsgruppe Ihres Cloud-Anbieters und versuchen Sie es dann erneut.",
+    "rate_limited": "Let's Encrypt begrenzt die Rate für diesen Hostnamen. Warten Sie vor einem neuen Versuch und verwenden Sie beim Debuggen Staging.",
+    "dns": "Der Hostname wurde nicht zu diesem Server aufgelöst. Prüfen Sie, ob die erkannte öffentliche IP korrekt ist.",
+    "caa": "Ein CAA-DNS-Eintrag verbietet Let's Encrypt die Ausstellung für diesen Hostnamen.",
+    "unknown": "Let's Encrypt hat die Anfrage abgelehnt. Die vollständige Antwort steht unten und im Log der Control Plane."
+  },
+  "fallback": {
+    "title": "Automatische App-Hostnamen",
+    "description": "Apps ohne Domain erhalten von einem kostenlosen Wildcard-DNS-Dienst mit automatischem TLS die Adresse https://<app>.<dashed-ip>.<provider>, sodass ein frisches Deployment ohne DNS erreichbar ist.",
+    "toggleLabel": "Apps ohne Domain einen automatischen Hostnamen geben",
+    "publicHost": "Serveradresse: {{host}} ({{source}})",
+    "noPublicHost": "Keine öffentliche Adresse erkannt. Setzen Sie APP_PUBLIC_HOST auf der Control Plane, um dies zu aktivieren.",
+    "saved": "Automatische Hostnamen aktualisiert.",
+    "saveFailed": "Die automatischen Hostnamen konnten nicht aktualisiert werden.",
+    "source": {
+      "env": "aus APP_PUBLIC_HOST",
+      "detected": "erkannt",
+      "disabled": "Erkennung deaktiviert",
+      "none": "nicht gefunden"
+    }
+  },
+  "dnsProvider": {
+    "defaultLabel": "Wildcard-DNS-Anbieter (Standard für alle Apps)",
+    "appLabel": "Wildcard-DNS-Anbieter für diese App",
+    "inherit": "Standard verwenden ({{provider}})",
+    "inheritNote": "Diese App folgt dem in Einstellungen, Domains gewählten Anbieter.",
+    "custom": "Eigene Basisdomain",
+    "customNote": "Verwenden Sie Ihren eigenen Wildcard-Eintrag, sodass Apps <app>.<Ihre Basisdomain> heißen.",
+    "baseLabel": "Basisdomain",
+    "basePlaceholder": "apps.example.com",
+    "baseHint": "Richten Sie *.{{domain}} mit einem A-Eintrag auf diesen Server und führen Sie dann Auflösung testen aus.",
+    "betaHint": "Kostenloser öffentlicher Dienst. Gut zum Testen, für Produktions-Traffic nicht empfohlen.",
+    "save": "Speichern",
+    "saved": "Wildcard-DNS-Anbieter aktualisiert.",
+    "saveFailed": "Der Wildcard-DNS-Anbieter konnte nicht aktualisiert werden.",
+    "test": "Auflösung testen",
+    "testing": "Wird getestet...",
+    "status": {
+      "ok": "Wird zu diesem Server aufgelöst",
+      "wrong_ip": "Wird zu einer anderen Adresse aufgelöst",
+      "not_resolving": "Wird nicht aufgelöst",
+      "unavailable": "Kann nicht getestet werden"
+    },
+    "fixHeading": "Behebung:",
+    "fixSwitch": "Zu {{provider}} wechseln",
+    "fixCustom": "Eigene Domain verwenden",
+    "digToggle": "Von Hand mit dig prüfen",
+    "confirmTitle": "Den automatischen Hostnamen ändern?",
+    "confirmBody": "Diese App ist unter {{host}} erreichbar.",
+    "confirmOldStops": "Der alte Hostname funktioniert nicht mehr, sobald der neue geroutet wird.",
+    "confirmNoDowntime": "Die Route wird ohne Ausfallzeit an Ort und Stelle aktualisiert. Lesezeichen und Webhooks, die den alten Hostnamen verwenden, müssen aktualisiert werden.",
+    "confirmAction": "Hostnamen ändern"
+  },
+  "domain": {
+    "automatic": "Automatisch"
+  },
+  "network": {
+    "off": "Automatische Hostnamen sind für diesen Server ausgeschaltet.",
+    "offAction": "Aktivieren",
+    "noPublicHost": "Für diesen Server ist keine öffentliche IP bekannt, daher lässt sich kein automatischer Hostname bilden. Setzen Sie APP_PUBLIC_HOST auf der Control Plane.",
+    "publishedPorts": "Veröffentlichte Ports",
+    "portMapping": "{{host}} → {{container}}"
+  },
+  "wizard": {
+    "ownDomainTitle": "Oder verwenden Sie Ihre eigene Domain",
+    "sslipReady": "HTTPS ist auf dem kostenlosen Hostnamen bereit. Sie können fortfahren oder zusätzlich Ihre eigene Domain einrichten."
+  },
+  "certTable": {
+    "internalBadge": "Interne CA",
+    "internalHint": "Von der eigenen, kurzlebigen CA dieses Servers signiert und automatisch erneuert. Browser zeigen eine Warnung, bis Sie HTTPS aktivieren.",
+    "internalRenews": "Wird automatisch erneuert",
+    "acmeBadge": "Let's Encrypt",
+    "custom": "Benutzerdefiniert",
+    "proxyBadge": "Ihr Proxy",
+    "proxyRenews": "Von Ihrem Proxy verwaltet, wird automatisch erneuert.",
+    "proxyUnknown": "Von Ihrem Proxy verwaltet. Noch nicht gesehen: Prüfen Sie die Route auf der Proxy-Seite.",
+    "proxyLink": "Die Proxy-Seite öffnen",
+    "getTrusted": "Ein vertrauenswürdiges Zertifikat abrufen",
+    "useOwn": "Mein eigenes Zertifikat verwenden"
+  },
+  "domainCert": {
+    "action": "Ein echtes Zertifikat abrufen",
+    "title": "Ein echtes Zertifikat für {{domain}} abrufen",
+    "intro": "Dies prüft, ob {{domain}} hierher zeigt und Let's Encrypt diesen Server erreichen kann, und fordert dann ein vertrauenswürdiges Zertifikat an. Bis dahin sehen Besucher eine Browserwarnung.",
+    "appliesToAll": "Öffentliche Zertifikate sind eine Servereinstellung: Wenn Sie sie aktivieren, gilt das für jede Domain auf diesem Server, und Erneuerungen erfolgen automatisch.",
+    "checking": "DNS, Port 80, CAA-Einträge, Ihre Kontakt-E-Mail und die Limits von Let's Encrypt werden geprüft",
+    "checkFailed": "Die Prüfungen konnten nicht ausgeführt werden.",
+    "recheck": "Erneut prüfen",
+    "emailLabel": "E-Mail für Zertifikatshinweise",
+    "emailHelp": "Standardmäßig Ihr Admin-Konto. Let's Encrypt schreibt nur, wenn ein Zertifikat bald abläuft und nicht erneuert werden konnte.",
+    "stagingLabel": "Zuerst mit dem Let's-Encrypt-Staging üben",
+    "stagingHelp": "Staging hat keine nennenswerten Limits, signiert aber mit einer Test-CA. Browser vertrauen dem Ergebnis nicht, führen Sie es daher anschließend ohne Staging erneut aus.",
+    "stagingWarning": "Staging-Zertifikate sind nicht vertrauenswürdig: Besucher sehen weiterhin eine Warnung.",
+    "ackPorts": "Ich weiß, dass die Ports 80 und 443 offen sind (dieser Server kann sich möglicherweise nicht selbst erreichen)",
+    "nextSafe": "Nächster sicherer Zeitpunkt für einen Versuch: {{date}}",
+    "next": "Nächster Schritt: {{fix}}",
+    "submit": "Ein echtes Zertifikat abrufen",
+    "requesting": "Wird angefordert",
+    "requestFailed": "Das Zertifikat konnte nicht angefordert werden.",
+    "item": {
+      "issuable": "Öffentlicher Name",
+      "upstream_proxy": "TLS-Zuständigkeit",
+      "dns": "DNS zeigt hierher",
+      "ports": "Port 80 erreichbar",
+      "caa": "CAA-Einträge",
+      "email": "Kontakt-E-Mail",
+      "rate_limit": "Limits von Let's Encrypt",
+      "staging": "Staging-CA",
+      "replaces_certificate": "Funktionierendes Zertifikat"
+    },
+    "state": {
+      "pass": "Bestanden",
+      "warn": "Prüfen",
+      "fail": "Blockiert",
+      "skipped": "Übersprungen"
+    },
+    "progress": {
+      "pendingTitle": "Challenge ausstehend",
+      "pendingBody": "Let's Encrypt prüft, ob Sie {{domain}} kontrollieren. Das dauert meist weniger als eine Minute.",
+      "issuedTitle": "Zertifikat ausgestellt",
+      "failedTitle": "Let's Encrypt hat das Zertifikat nicht ausgestellt",
+      "caSaid": "Die CA meldete",
+      "issuer": "Aussteller",
+      "expires": "Läuft ab",
+      "renews": "Erneuerung ab",
+      "tryAgain": "Erneut versuchen",
+      "close": "Schließen",
+      "stagingIssued": "Dies ist ein Staging-Zertifikat, daher zeigen Browser weiterhin eine Warnung. Führen Sie dies erneut ohne Staging aus, um ein vertrauenswürdiges zu erhalten."
+    },
+    "kind": {
+      "none": "Kein Zertifikat",
+      "internal": "Internes Zertifikat",
+      "staging": "Staging",
+      "letsencrypt": "Let's Encrypt",
+      "custom": "Hochgeladenes Zertifikat",
+      "proxy": "Proxy-Zertifikat",
+      "other": "Öffentliche CA"
+    },
+    "kindHint": {
+      "none": "Für diese Domain wurde noch kein Zertifikat ausgestellt.",
+      "internal": "Vom Server selbst signiert. Browser vertrauen ihm nicht und zeigen eine Warnung.",
+      "staging": "Von der Test-CA von Let's Encrypt signiert. Browser vertrauen ihm nicht.",
+      "letsencrypt": "Von Let's Encrypt signiert und automatisch erneuert.",
+      "custom": "Ein von Ihnen hochgeladenes Zertifikat. Es erneuert sich nicht von selbst.",
+      "proxy": "Vom Proxy vor diesem Server ausgestellt und erneuert.",
+      "other": "Von einer öffentlichen Zertifizierungsstelle signiert."
+    },
+    "badge": {
+      "days_one": "Noch {{count}} Tag",
+      "days_other": "Noch {{count}} Tage",
+      "expired": "abgelaufen",
+      "renewed": "Erneuert {{date}}",
+      "renewalFailed": "Letzte Erneuerung fehlgeschlagen {{date}}",
+      "retrying": "Neuer Versuch {{date}}"
+    }
+  },
+  "portEditor": {
+    "publishedPorts": "Zusätzliche veröffentlichte Ports",
+    "publishedPortsPlaceholder": "51820:51820/udp, 53/udp",
+    "publishedPortsHint": "HOST:CONTAINER/udp oder /tcp, durch Komma getrennt. Nur auf diesem Server veröffentlicht.",
+    "errors": {
+      "syntax": "\"{{entry}}\" ist kein Port, verwenden Sie HOST:CONTAINER/udp",
+      "protocol": "\"{{entry}}\": Das Protokoll muss tcp oder udp sein",
+      "range": "\"{{entry}}\": Ports müssen zwischen 1 und 65535 liegen",
+      "duplicate": "\"{{entry}}\" ist doppelt aufgeführt"
+    }
+  }
+}

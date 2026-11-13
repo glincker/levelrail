@@ -1,0 +1,190 @@
+{
+  "gate": {
+    "title": "Barrière de disponibilité et surveillance",
+    "rules": "Reçoit le trafic après {{passes}} validations de disponibilité consécutives et {{stable}} d'exécution sans redémarrage. La version précédente est drainée pendant {{drain}}, puis celle-ci est surveillée pendant {{watch}}.",
+    "pinned": "Épinglée comme cible de rollback {{ref}}, le nettoyage des images ne la supprimera donc jamais.",
+    "hidden_one": "{{count}} étape précédente n'est pas affichée.",
+    "hidden_other": "{{count}} étapes précédentes ne sont pas affichées.",
+    "hidden_many": "{{count}} étapes précédentes ne sont pas affichées.",
+    "empty": "Aucune étape de barrière enregistrée pour l'instant. Elles apparaissent dès que le nouveau conteneur démarre.",
+    "unavailable": "La chronologie de la barrière n'est pas disponible pour ce déploiement."
+  },
+  "phase": {
+    "readiness": "Disponibilité",
+    "stability": "Fenêtre de stabilité",
+    "cutover": "Bascule",
+    "drain": "Drainage",
+    "watch": "Surveillance post-déploiement",
+    "rollback": "Rollback",
+    "pin": "Épingle de rollback"
+  },
+  "stage": {
+    "pending": "En attente",
+    "gating": "Passage de la barrière",
+    "gate_failed": "Échec de la barrière",
+    "watching": "Sous surveillance",
+    "cleared": "Validé",
+    "watch_failed": "Surveillance déclenchée",
+    "rolled_back": "Rollback effectué",
+    "watch_stopped": "Surveillance arrêtée"
+  },
+  "settings": {
+    "title": "Sécurité du déploiement",
+    "infoTipLabel": "À propos de la sécurité du déploiement",
+    "description": "Une nouvelle version ne reçoit le trafic qu'après que sa sonde de disponibilité a réussi plusieurs fois de suite et qu'elle s'est exécutée pendant une fenêtre stable sans redémarrer ni être tuée pour manque de mémoire (OOM). La version précédente continue de servir les requêtes en cours pendant son drainage. Après la bascule, la version est surveillée, et une boucle de plantage, un kill OOM ou un pic de 5xx déclenche un rollback.",
+    "inheritHint": "Laissez un champ vide pour utiliser la valeur par défaut de la plateforme qui y est affichée.",
+    "unavailable": "Impossible de charger les paramètres de sécurité du déploiement.",
+    "save": "Enregistrer",
+    "reset": "Utiliser les valeurs par défaut de la plateforme",
+    "on": "activé",
+    "off": "désactivé",
+    "field": {
+      "success_threshold": {
+        "label": "Validations de disponibilité consécutives",
+        "hint": "Validations consécutives de la sonde de disponibilité avant que le trafic bascule."
+      },
+      "stable_window": {
+        "label": "Fenêtre de stabilité",
+        "hint": "Durée pendant laquelle le nouveau conteneur doit s'exécuter sans redémarrage ni kill OOM, p. ex. 10s."
+      },
+      "drain_timeout": {
+        "label": "Délai de drainage",
+        "hint": "Durée pendant laquelle la version précédente continue de servir après la bascule, p. ex. 15s."
+      },
+      "watch_window": {
+        "label": "Fenêtre de surveillance",
+        "hint": "Durée pendant laquelle une nouvelle version est surveillée après la bascule, p. ex. 10m."
+      },
+      "watch_latency_ratio": {
+        "label": "Multiple de latence p95 considéré comme une régression",
+        "hint": "Comparé à la version précédente. 0 désactive la vérification de latence."
+      },
+      "watch_max_restarts": {
+        "label": "Redémarrages qui déclenchent la surveillance",
+        "hint": "Redémarrages de conteneur dans la fenêtre de surveillance considérés comme une boucle de plantage."
+      },
+      "watch_error_rate": {
+        "label": "Part de 5xx qui déclenche la surveillance (%)",
+        "hint": "Part des requêtes ayant reçu un 5xx dans la fenêtre de surveillance."
+      },
+      "watch_min_requests": {
+        "label": "Requêtes avant que la part de 5xx compte",
+        "hint": "Une poignée de requêtes ne suffit pas pour juger une version."
+      }
+    },
+    "autoRollback": {
+      "label": "Rollback automatique quand la surveillance se déclenche",
+      "hint": "Défini pour cette app.",
+      "inherited": "Suit la valeur par défaut de la plateforme ({{value}})."
+    },
+    "toast": {
+      "saved": "Paramètres de sécurité du déploiement enregistrés.",
+      "error": "Impossible d'enregistrer les paramètres de sécurité du déploiement."
+    }
+  },
+  "autoRollback": {
+    "title": "Rollback automatique",
+    "infoTipLabel": "À propos du rollback automatique",
+    "description": "Après qu'une version a reçu le trafic, elle est surveillée pendant une fenêtre. Une boucle de plantage, un kill OOM ou un pic de 5xx est un signal fort. Une régression de latence p95 par rapport à la version précédente est un signal faible et ne déclenche jamais de rollback sauf si vous l'activez.",
+    "inheritHint": "Laissez un champ vide pour utiliser la valeur par défaut de la plateforme qui y est affichée.",
+    "mode": {
+      "label": "Mode",
+      "default": "Valeur par défaut de la plateforme ({{value}})",
+      "off": "Désactivé : ne pas surveiller",
+      "notify": "Notifier : alerte uniquement",
+      "auto": "Auto : alerte et rollback"
+    },
+    "soft": {
+      "label": "Permettre aussi à une régression de latence de déclencher un rollback",
+      "hint": "S'applique uniquement en mode auto. Sinon, une régression de latence envoie seulement une alerte.",
+      "inherited": "Suit la valeur par défaut de la plateforme ({{value}})."
+    },
+    "save": "Enregistrer",
+    "reset": "Utiliser les valeurs par défaut de la plateforme",
+    "toast": {
+      "saved": "Paramètres de rollback automatique enregistrés.",
+      "error": "Impossible d'enregistrer les paramètres de rollback automatique."
+    }
+  },
+  "watch": {
+    "watching": "Surveillance pendant {{window}} après la bascule, {{left}} restantes.",
+    "min": "{{count}} min",
+    "sec": "{{count}} s",
+    "progress": "Progression de la surveillance post-déploiement",
+    "tripped": "Surveillance déclenchée : {{message}} ({{reason}}).",
+    "rolledBack": "Rollback automatique effectué : {{message}} ({{reason}}).",
+    "stopped": "La surveillance a été arrêtée avant la fin de la fenêtre.",
+    "off": "La surveillance post-déploiement est désactivée pour cette app.",
+    "notice": "Attention : {{message}}",
+    "stop": "Arrêter la surveillance",
+    "stopped_toast": "Surveillance arrêtée.",
+    "stopError": "Impossible d'arrêter la surveillance.",
+    "rollbackNow": "Rollback maintenant",
+    "rollbackTitle": "Effectuer un rollback de cette version ?",
+    "rollbackDescription": "Le trafic revient vers la version précédente conservée.",
+    "rollbackConsequence": "La version précédente {{ref}} est redéployée via la même barrière de disponibilité.",
+    "rollbackConfirm": "Rollback",
+    "rollbackPending": "Rollback en cours",
+    "rollbackToast": "Rollback démarré.",
+    "rollbackError": "Impossible d'effectuer le rollback.",
+    "noTarget": "Aucune version antérieure conservée vers laquelle faire un rollback pour l'instant."
+  },
+  "targets": {
+    "title": "Cibles de rollback épinglées",
+    "empty": "Aucune version épinglée pour l'instant. Une version est épinglée lorsqu'elle reçoit le trafic.",
+    "emptyTitle": "Aucune version épinglée",
+    "live": "En ligne"
+  },
+  "publishLock": {
+    "lock": "Verrouiller la publication",
+    "unlock": "Déverrouiller la publication",
+    "bannerTitle": "La publication est verrouillée",
+    "bannerBody_one": "{{by}} l'a verrouillée. La version en ligne reste épinglée et {{count}} build est retenu.",
+    "bannerBody_other": "{{by}} l'a verrouillée. La version en ligne reste épinglée et {{count}} builds sont retenus.",
+    "bannerBody_many": "{{by}} l'a verrouillée. La version en ligne reste épinglée et {{count}} builds sont retenus.",
+    "reason": "Raison : {{reason}}",
+    "publish": "Publier",
+    "publishedToast": "Publié. Le build retenu passe en ligne.",
+    "rollbackLock": "Rollback et verrouillage",
+    "rollbackLockHint": "Redéploie cette version et retient tous les builds suivants",
+    "held": "Retenu, pas en ligne",
+    "error": "Impossible de modifier le verrou de publication."
+  },
+  "rolloutState": {
+    "title": "État du déploiement progressif",
+    "traffic": {
+      "held": "Trafic retenu",
+      "flipped": "Trafic basculé",
+      "reverted": "Trafic rétabli"
+    },
+    "holdLeft": "La rétention se termine dans {{time}}",
+    "flipped": "Basculé",
+    "reverted": "Rétabli",
+    "gateFailures_one": "{{count}} vérification de barrière échouée",
+    "gateFailures_other": "{{count}} vérifications de barrière échouées",
+    "gateFailures_many": "{{count}} vérifications de barrière échouées",
+    "canary": "Canary {{weight}} % (étape {{stage}} sur {{total}})",
+    "settings": "Paramètres de sécurité du déploiement"
+  },
+  "explain": {
+    "title": "Pourquoi cela a échoué",
+    "loading": "Chargement de l'explication de l'échec",
+    "cause": "Cause :",
+    "hint": "Étape suivante :",
+    "evidence": "Éléments de preuve",
+    "lastLogs": "Dernières lignes de log",
+    "rolledBack": "Rollback effectué",
+    "verdict": {
+      "failed": "Échec",
+      "rolled_back": "Rollback effectué"
+    }
+  },
+  "freezeBanner": {
+    "title": "Gel des déploiements actif",
+    "titleUntil": "Gel des déploiements actif jusqu'à {{when}}",
+    "body": "Un déploiement manuel passe désormais outre le gel. Indiquez pourquoi ; la raison est enregistrée sur le déploiement.",
+    "reasonLabel": "Raison de la dérogation au gel",
+    "reasonPlaceholder": "p. ex. correctif urgent pour un problème de sécurité"
+  },
+  "pullFresh": "Exiger une recherche récente dans le registre : échouer plutôt que de déployer l'image en cache si le registre est injoignable."
+}

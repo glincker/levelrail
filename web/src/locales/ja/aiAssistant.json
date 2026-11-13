@@ -1,0 +1,13 @@
+{
+  "toolCall": {
+    "noArguments": "引数なし。",
+    "rejected": "拒否済み",
+    "checked": "確認済み",
+    "approved": "承認済み",
+    "confirmationRequired": "確認が必要です",
+    "approve": "承認",
+    "reject": "拒否",
+    "actingAs": "{{user}}として実行",
+    "actingAsWithAbility": "{{user}}として{{abilities}}で実行"
+  }
+}

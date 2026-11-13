@@ -38,7 +38,7 @@ export function ModePills({
     <div
       role="group"
       aria-label={t('modes.pillsLabel')}
-      className="flex flex-wrap items-center gap-2 px-3 pt-3"
+      className="flex flex-wrap items-center gap-1.5"
     >
       {order.map((kind) => {
         const pill = PILLS[kind]
@@ -53,10 +53,10 @@ export function ModePills({
               onPick(kind, pill.prefix)
             }}
             className={cn(
-              'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
+              'flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5',
               on
                 ? 'border-transparent bg-foreground text-background'
-                : 'border-border bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground',
+                : 'border-border bg-background/60 text-muted-foreground hover:bg-foreground/10 hover:text-foreground',
             )}
           >
             {pill.icon}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { useChangeLanguage } from '../../hooks/useChangeLanguage'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import {
@@ -13,6 +14,7 @@ import {
   type MeOnboarding,
   type OnboardingUpdate,
 } from '../../queries/meOnboarding'
+import { LanguageStep } from './LanguageStep'
 import { FinishStep } from './FinishStep'
 import { ONBOARDING_STEPS, stepIndex } from './onboardingSteps'
 import { OnboardingShell } from './OnboardingShell'
@@ -46,7 +48,11 @@ function useOnboardingUpdate() {
 function ActiveFlow({ onboarding }: { onboarding: MeOnboarding }) {
   const { t } = useTranslation('onboarding')
   const { send, busy } = useOnboardingUpdate()
-  const [index, setIndex] = useState(() => stepIndex(onboarding.current_step))
+  const { language, save: saveLanguage } = useChangeLanguage()
+  // A new account starts at the language step; a resumed one returns to its stored step.
+  const [index, setIndex] = useState(() =>
+    onboarding.state === 'not_started' ? 0 : stepIndex(onboarding.current_step),
+  )
   const last = ONBOARDING_STEPS.length - 1
   const stepAt = (i: number) => ONBOARDING_STEPS[i] ?? ONBOARDING_STEPS[0]
 
@@ -55,12 +61,20 @@ function ActiveFlow({ onboarding }: { onboarding: MeOnboarding }) {
     send({ state: 'in_progress', current_step: stepAt(to) })
   }
 
+  const advance = () => {
+    if (index === last) send({ state: 'completed' }, true)
+    else {
+      if (index === 0) void saveLanguage(language)
+      go(index + 1)
+    }
+  }
+
   return (
     <OnboardingShell
       index={index}
       busy={busy}
       continueLabel={
-        index === 0
+        index === 1
           ? t('footer.start')
           : index === last
             ? t('footer.finish')
@@ -70,19 +84,17 @@ function ActiveFlow({ onboarding }: { onboarding: MeOnboarding }) {
       onSkip={() =>
         send({ state: 'snoozed', current_step: stepAt(index) }, true)
       }
-      onContinue={() => {
-        if (index === last) send({ state: 'completed' }, true)
-        else go(index + 1)
-      }}
+      onContinue={advance}
     >
-      {index === 0 ? (
+      {index === 0 ? <LanguageStep onAccept={advance} /> : null}
+      {index === 1 ? (
         <WelcomeStep
           busy={busy}
           onDismiss={() => send({ state: 'dismissed' }, true)}
         />
       ) : null}
-      {index === 1 ? <ProfileStep /> : null}
-      {index === 2 ? <PreferencesStep /> : null}
+      {index === 2 ? <ProfileStep /> : null}
+      {index === 3 ? <PreferencesStep /> : null}
       {index === last ? <FinishStep /> : null}
     </OnboardingShell>
   )

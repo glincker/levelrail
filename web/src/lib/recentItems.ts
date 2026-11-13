@@ -1,5 +1,7 @@
+import { PALETTE_RECENT_MAX } from './paletteConfig'
+
 const STORAGE_KEY = 'palette.recent'
-const MAX_RECENT = 5
+const MAX_RECENT = PALETTE_RECENT_MAX
 
 /** Reads recent palette item keys, newest first. Never throws. */
 export function loadRecentKeys(): string[] {
@@ -45,7 +47,14 @@ export function removeRecentKey(key: string): string[] {
 
 // Transient actions (run a restart, verify a domain) are not destinations,
 // so they never become a "recent" entry.
-const TRANSIENT_KEY_PREFIXES = ['app-action-', 'suggest-', 'domain-action-']
+const TRANSIENT_KEY_PREFIXES = [
+  'app-action-',
+  'suggest-',
+  'domain-action-',
+  'language-',
+  'action-language-',
+  'create-',
+]
 
 export function isRecentEligible(key: string): boolean {
   return !TRANSIENT_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))

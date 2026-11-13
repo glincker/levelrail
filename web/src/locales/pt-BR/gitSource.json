@@ -1,0 +1,289 @@
+{
+  "connect": {
+    "title": "Conectar origem Git",
+    "intro": "Associe um repositório a este app sem recriá-lo. Escolha um repositório do provedor ou cole uma URL pública, confira o build e depois vincule ou faça o deploy na hora.",
+    "planTitle": "O que muda",
+    "planLoading": "Verificando este app e o repositório...",
+    "current": {
+      "image": "Hoje este app roda a partir de uma imagem.",
+      "upload": "Hoje este app é servido a partir de arquivos enviados.",
+      "none": "Este app ainda não teve deploy.",
+      "git": "Este app já tem um repositório; vincular substitui o atual."
+    },
+    "keepsImage": "{{image}} continua servindo até o primeiro build ter sucesso e permanece no histórico de deploys para rollback.",
+    "keepsNothingRunning": "Nada está rodando ainda, o primeiro build inicia o app.",
+    "keptEnv_one": "{{count}} variável de ambiente mantida",
+    "keptEnv_many": "{{count}} variáveis de ambiente mantidas",
+    "keptEnv_other": "{{count}} variáveis de ambiente mantidas",
+    "keptSecrets_one": "{{count}} segredo mantido",
+    "keptSecrets_many": "{{count}} segredos mantidos",
+    "keptSecrets_other": "{{count}} segredos mantidos",
+    "keptDomains_one": "{{count}} domínio mantido",
+    "keptDomains_many": "{{count}} domínios mantidos",
+    "keptDomains_other": "{{count}} domínios mantidos",
+    "keptVolumes_one": "{{count}} volume mantido",
+    "keptVolumes_many": "{{count}} volumes mantidos",
+    "keptVolumes_other": "{{count}} volumes mantidos",
+    "warning": {
+      "group_member": "Este app faz parte de um grupo: somente este serviço faz o build a partir do repositório.",
+      "replaces_git_source": "O repositório atual e o segredo do webhook dele são substituídos.",
+      "uploads_stop": "Os envios posteriores pela CLI continuam funcionando, mas o próximo push os substitui por um build.",
+      "never_deployed": "Não há versão em execução para voltar até o primeiro build ter sucesso.",
+      "protected_environment": "Este app é protegido: os deploys passam por aprovação, então faça push no branch em vez de fazer o deploy agora."
+    },
+    "detectError": {
+      "not_found": "O repositório ou branch não foi encontrado. Confira a URL e o branch, ou adicione um token para um repositório privado.",
+      "access_denied": "O provedor recusou o acesso. Adicione um token de deploy ou instale o app neste repositório.",
+      "unreadable": "Não foi possível ler o repositório. Você ainda pode escolher o build manualmente.",
+      "ssh_not_detectable": "Uma URL SSH não pode ser lida antes de conectar. Conecte com uma chave de deploy, depois execute a detecção nas configurações de build, ou escolha o build manualmente.",
+      "unsupported_host": "Este host não pode ser lido antes de conectar. Escolha o build manualmente, ou conecte primeiro e execute a detecção nas configurações de build."
+    },
+    "buildType": {
+      "railpack": "detecção automática",
+      "dockerfile": "Dockerfile",
+      "static": "site estático"
+    },
+    "suggested": "Build sugerido: {{build}} em {{where}}",
+    "useSuggestion": "Usar estas configurações",
+    "pickRepoToDetect": "Escolha um repositório para detectar o build.",
+    "deployHint": "Faça o deploy do commit mais recente agora ou deixe vinculado e faça o deploy no próximo push.",
+    "deployNow": "Fazer deploy agora",
+    "deployStarted": "Build iniciado a partir de {{branch}}.",
+    "deployFailed": "Não foi possível iniciar o deploy.",
+    "deployRunning": "Fazendo o build. A versão atual continua servindo até o build ter sucesso.",
+    "viewDeploy": "Ver deploy"
+  },
+  "card": {
+    "title": "Origem Git",
+    "loading": "Carregando...",
+    "pickRepoFirst": "Escolha primeiro um repositório ou cole uma URL.",
+    "updated": "Origem Git atualizada.",
+    "saveFailed": "Não foi possível salvar a origem Git.",
+    "disconnected": "Origem Git desconectada.",
+    "disconnectFailed": "Não foi possível desconectar a origem Git.",
+    "needService": "Adicione pelo menos um serviço ou volte para serviço único.",
+    "rowsMissingName_one": "A linha {{rows}} está sem nome de serviço.",
+    "rowsMissingName_many": "As linhas {{rows}} estão sem nome de serviço.",
+    "rowsMissingName_other": "As linhas {{rows}} estão sem nome de serviço."
+  },
+  "triggers": {
+    "push": {
+      "label": "Todo push",
+      "description": "Faz deploy a cada push no branch de destino."
+    },
+    "release": {
+      "label": "Tags e releases",
+      "description": "Faz deploy somente em um push de tag ou (somente GitHub) em um release publicado. Pushes de branch nunca fazem deploy."
+    }
+  },
+  "buildPacks": {
+    "railpack": "Detecção automática (Railpack)",
+    "dockerfile": "Dockerfile",
+    "static": "Site estático"
+  },
+  "connected": {
+    "repository": "Repositório",
+    "branch": "Branch",
+    "deployTrigger": "Gatilho de deploy",
+    "deployToken": "Token de deploy",
+    "tokenConfigured": "Configurado",
+    "tokenNotSet": "Não definido (repositório público)",
+    "alsoDeploys": "Também faz deploy de",
+    "servicesFanout": "Fan-out de serviços",
+    "webhookUrl": "URL do webhook",
+    "webhookNote": "O segredo do webhook foi exibido uma única vez, no momento da conexão. Rotacione-o abaixo para gerar um novo, ou desconecte e reconecte para mudar também o repositório ou o branch.",
+    "edit": "Editar",
+    "disconnect": "Desconectar"
+  },
+  "justConnected": {
+    "autoRegistered": "Origem Git conectada. Um webhook de push foi registrado automaticamente, sem configuração manual.",
+    "secretOnce": "Este segredo do webhook não será exibido de novo. Cole os dois valores nas configurações de webhook do repositório agora.",
+    "webhookUrl": "URL do webhook",
+    "webhookSecret": "Segredo do webhook",
+    "secretHint": "Defina-o como o segredo de um webhook \"Push\" do GitHub apontando para a URL acima, com content type application/json.",
+    "done": "Concluído"
+  },
+  "copy": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "edit": {
+    "connectedTo": "Conectado atualmente a {{repo}} @ {{branch}}. Escolha outro repositório abaixo para redirecioná-lo, ou deixe como está para atualizar apenas as configurações de build.",
+    "connectIntro": "Conecte um repositório para que um push no branch de destino faça o deploy deste app automaticamente.",
+    "deployTrigger": "Gatilho de deploy",
+    "fanoutMode": "Fan-out de vários serviços",
+    "fanoutAdditional": "Serviços adicionais",
+    "fanoutServices": "Mapa de serviços",
+    "connect": "Conectar",
+    "save": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "buildPack": {
+    "label": "Build pack",
+    "autoDetect": "Detecção automática",
+    "dockerfile": "Dockerfile",
+    "static": "Site estático",
+    "autoDetectDescription": "Recomendado. O Levelrail detecta o seu framework a partir do repositório e faz o build automaticamente, sem precisar de Dockerfile.",
+    "dockerfilePath": "Caminho do Dockerfile (opcional)",
+    "staticDescription": "Servido diretamente pelo ingress Caddy embutido, sem container."
+  },
+  "services": {
+    "additionalLabel": "Serviços adicionais (opcional)",
+    "additionalDescription": "Também refaz o build destes serviços irmãos a partir do mesmo push, para um monorepo com mais de um serviço. Cada um precisa de um nome de serviço já existente e da própria configuração de build. Salvar com qualquer linha preenchida sempre usa a conexão direta de origem git, mesmo para um repositório de provedor escolhido, pois o registro automático de webhook ainda não oferece suporte a fan-out de monorepo.",
+    "mapLabel": "Serviços (estilo app.yaml)",
+    "mapDescription": "Todo push se divide em um build e deploy independentes por serviço, o mesmo fan-out POST .../deploy-spec usado por um deploy manual de vários serviços, em um único app chamado {{appName}}. Substitui o build de serviço único acima; cada chave de serviço vira um serviço real próprio chamado {{appName}}-[chave].",
+    "add": "Adicionar serviço",
+    "removeAdditional": "Remover serviço adicional",
+    "remove": "Remover serviço",
+    "duplicate": "Outra linha já usa este nome de serviço.",
+    "checking": "Verificando com o schema de spec do app...",
+    "serviceName": "Nome do serviço",
+    "buildType": "Tipo de build",
+    "buildPath": "Caminho do build",
+    "port": "Porta"
+  },
+  "network": {
+    "networking": "Rede",
+    "port": "Porta",
+    "portPlaceholder": "ex.: 3000",
+    "portHint": "A porta em que o seu app escuta dentro do container, por exemplo 3000 para um app Next.js típico.",
+    "domain": "Domínio (opcional)",
+    "domainDescription": "Roteado assim que o registro DNS dele apontar para cá. Um certificado TLS é emitido automaticamente, ou adicione isto depois na aba Domínios do app.",
+    "healthCheck": "Verificação de saúde",
+    "healthEnable": "Ativar uma verificação de saúde",
+    "healthPath": "Caminho",
+    "healthHint": "Verificada antes de direcionar o tráfego a um novo container, e para detectar depois um que tenha travado. Apps detectados pelo Railpack que não servem este caminho devem desligá-la."
+  },
+  "sshKey": {
+    "title": "Chave de deploy SSH",
+    "loading": "Carregando...",
+    "none": "Nenhuma chave ainda",
+    "fingerprint": "Fingerprint {{fingerprint}}",
+    "publicKey": "Chave pública",
+    "hint": "Adicione-a como uma chave de deploy somente leitura no host do repositório.",
+    "hostPinned": "Chave de host fixada {{fingerprint}}",
+    "hostKeyChoice": "Como fixar a chave de host",
+    "mode": {
+      "paste": "Colar a chave de host",
+      "tofu": "Confiar no primeiro uso"
+    },
+    "hostKeyLabel": "Chave de host",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "Confia em quem responder primeiro. Verifique depois o fingerprint exibido.",
+    "generate": "Gerar chave",
+    "saved": "Chave de deploy SSH salva.",
+    "removed": "Chave de deploy SSH removida.",
+    "rotate": "Rotacionar",
+    "rotateTitle": "Rotacionar a chave de deploy SSH?",
+    "rotateBody": "Uma nova chave substitui a atual. Adicione a nova chave pública no host do repositório, ou os fetches vão falhar.",
+    "rotateConfirm": "Rotacionar chave",
+    "remove": "Remover",
+    "removeTitle": "Remover a chave de deploy SSH?",
+    "removeBody": "Os fetches por SSH vão falhar até que uma nova chave seja gerada.",
+    "removeConfirm": "Remover chave",
+    "cancel": "Cancelar"
+  },
+  "dialog": {
+    "open": "Conectar origem Git",
+    "title": "Conectar uma origem Git",
+    "step": {
+      "source": "Etapa 1 de 3: escolha um provedor conectado ou cole a URL de um repositório e depois um branch.",
+      "review": "Etapa 2 de 3: revise o build detectado e o que o app mantém.",
+      "finish": "Etapa 3 de 3: o primeiro deploy a partir deste repositório."
+    },
+    "next": "Avançar",
+    "back": "Voltar",
+    "done": "Concluído",
+    "linkOnly": "Somente vincular",
+    "linked": "Repositório vinculado. Faça push no branch ou o deploy quando estiver pronto.",
+    "reading": "Lendo o repositório",
+    "pickService": "Qual serviço este repositório compila?",
+    "effect": {
+      "unchanged": "mantém a imagem atual",
+      "keeps_own_source": "mantém a própria origem Git",
+      "built_with_this_source": "também refeito a partir deste repositório"
+    },
+    "detected": "Build detectado: {{build}}",
+    "detectError": {
+      "not_found": "Repositório ou branch não encontrado.",
+      "access_denied": "Sem acesso a este repositório. Escolha-o a partir de um provedor conectado.",
+      "unreadable": "Não foi possível ler o repositório. Você ainda pode escolher o build manualmente.",
+      "ssh_not_detectable": "As URLs SSH são lidas depois de conectar.",
+      "unsupported_host": "Este host não pode ser lido antes de conectar."
+    },
+    "kept": "Mantidos: {{env}} variáveis de ambiente e segredos, {{domains}} domínios, {{volumes}} volumes.",
+    "protected": "Este app está em um ambiente protegido. Apenas vincule e depois faça push no branch para que o deploy passe por aprovação.",
+    "failingStep": "Falhou em: {{step}}",
+    "status": {
+      "queued": "Na fila",
+      "building": "Fazendo o build",
+      "ready": "No ar",
+      "failed": "Falhou",
+      "canceled": "Cancelado",
+      "held": "Retido",
+      "awaiting_approval": "Aguardando aprovação",
+      "rolled_back": "Rollback feito",
+      "superseded": "Substituído"
+    },
+    "connectionNeedsRead": "O seu acesso não pode usar a conexão escolhida para ler repositórios privados, então o repositório foi lido sem ela."
+  },
+  "inline": {
+    "title": "Fazer deploy a partir de um Dockerfile",
+    "hint": "Não precisa de repositório git. Cole um Dockerfile ou carregue um da sua máquina.",
+    "loadFile": "Carregar de um arquivo",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "Adicionar arquivo de contexto",
+    "filePath": "Caminho do arquivo de contexto {{n}}",
+    "fileContent": "Conteúdo do arquivo de contexto {{n}}",
+    "pathPlaceholder": "caminho/no/contexto.txt",
+    "removeFile": "Remover arquivo de contexto {{n}}",
+    "deploy": "Fazer deploy",
+    "started": "Build iniciado.",
+    "failed": "Não foi possível iniciar o build",
+    "deployId": "Deploy {{id}} iniciado."
+  },
+  "triggerPatterns": {
+    "title": "Padrões do gatilho de deploy",
+    "tagHelp": "O modo release faz deploy de todo push de tag hoje. Liste padrões de tag para fazer deploy somente das tags correspondentes, como v* para uma linha de releases.",
+    "branchHelp": "O modo push faz deploy dos pushes em {{branch}} hoje. Liste padrões de branch para fazer deploy dos branches correspondentes deste repositório, como main e release/*.",
+    "tagLabel": "Tags que fazem deploy",
+    "branchLabel": "Branches que fazem deploy",
+    "syntax": "Um padrão por linha ou separados por vírgula. * fica dentro de um segmento de caminho, ** atravessa /, ? é um caractere. Um padrão começando com ! exclui e sempre prevalece. Deixe vazio para manter o padrão. Os pushes ignorados mostram o motivo nas entregas de webhook.",
+    "save": "Salvar padrões",
+    "saving": "Salvando...",
+    "saved": "Padrões do gatilho salvos.",
+    "failed": "Não foi possível salvar os padrões do gatilho."
+  },
+  "fetchExtras": {
+    "title": "Submódulos e LFS",
+    "note": "Busca submódulos git (somente https) e objetos LFS antes de cada build. As credenciais vão apenas para o host do repositório.",
+    "submodules": "Buscar submódulos",
+    "lfs": "Buscar objetos LFS",
+    "saved": "Configurações de busca da origem salvas.",
+    "failed": "Não foi possível salvar as configurações de busca da origem"
+  },
+  "buildSettings": {
+    "title": "Configurações de build",
+    "description": "Opções salvas que todo build posterior usa. Salvar não inicia um deploy.",
+    "builder": "Builder",
+    "dockerfile": "Caminho do Dockerfile",
+    "target": "Estágio de destino",
+    "provider": "Provedor do Railpack",
+    "providerAuto": "Detectar automaticamente",
+    "noCache": "Ignorar o cache de camadas em builds de Dockerfile",
+    "needsGit": "Conecte uma origem git para alterar o builder ou o caminho do Dockerfile.",
+    "save": "Salvar configurações de build",
+    "saving": "Salvando...",
+    "saved": "Configurações de build salvas",
+    "failed": "Não foi possível salvar as configurações de build",
+    "errors": {
+      "tooLong": "Este valor é longo demais.",
+      "targetCharset": "Use letras, dígitos, pontos, sublinhados ou hifens, começando com uma letra ou dígito.",
+      "pathRelative": "Use um caminho dentro do repositório, sem .. nem barra inicial.",
+      "provider": "Escolha um provedor compatível."
+    },
+    "dockerfilePlaceholder": "Dockerfile",
+    "targetPlaceholder": "runtime"
+  }
+}

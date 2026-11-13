@@ -1,0 +1,32 @@
+{
+  "service": "サービス",
+  "title": "{{service}}のランタイムオプション",
+  "description": "このサービスで設定できるコンテナのオプションです。追加のケーパビリティやデバイスなど、それ以外はすべて対象外です。",
+  "tmpfs": {
+    "label": "Tmpfsマウント",
+    "hint": "1行に1つ、/path:size=64m の形式。最大{{max}}個。"
+  },
+  "ulimits": {
+    "label": "Ulimit",
+    "hint": "1行に1つ、name=soft:hard の形式。{{names}}のうち最大{{max}}個。"
+  },
+  "extraHosts": {
+    "label": "追加ホスト",
+    "hint": "1行に1つ、hostname:ip の形式。最大{{max}}個。"
+  },
+  "dns": { "label": "DNSサーバー", "hint": "1行に1つのIP。最大{{max}}個。" },
+  "sysctls": {
+    "label": "Sysctl",
+    "hint": "1行に1つ、key=value の形式。許可: {{names}}。"
+  },
+  "stopTimeout": { "label": "停止タイムアウト (秒)", "hint": "最大{{max}}。" },
+  "pids": { "label": "プロセス数の上限", "hint": "最大{{max}}。" },
+  "init": { "label": "Initプロセス", "hint": "PID 1として最小限のinitを実行します。" },
+  "badUlimit": "各行は name=soft または name=soft:hard の形式にしてください。",
+  "badSysctl": "各行は key=value の形式にしてください。",
+  "save": "保存",
+  "saving": "保存中",
+  "saved": "ランタイムオプションを保存しました",
+  "recreates": "保存するとコンテナが再作成されます。",
+  "readOnly": "ランタイムオプションを変更するには、機密情報の書き込み権限が必要です。"
+}

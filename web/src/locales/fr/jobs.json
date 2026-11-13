@@ -1,0 +1,232 @@
+{
+  "title": "Jobs",
+  "description": "Exécutez une commande selon un calendrier cron, dans un conteneur neuf avec les variables d'environnement, secrets, volumes et réseau de cette app, ou dans son conteneur en cours d'exécution.",
+  "unnamed": "Job sans nom",
+  "specManaged": "app.yaml",
+  "specManagedHint": "Déclaré dans app.yaml. Modifiez-le là-bas ; seul l'interrupteur d'activation peut être basculé ici.",
+  "empty": {
+    "title": "Aucun job pour l'instant",
+    "description": "Lancez une migration, préchauffez un cache ou envoyez un rapport selon un calendrier. Chaque exécution est conservée dans l'historique avec sa sortie."
+  },
+  "columns": {
+    "job": "Job",
+    "schedule": "Calendrier",
+    "mode": "Mode",
+    "lastRun": "Dernière exécution",
+    "nextRun": "Prochaine exécution",
+    "enabled": "Activé",
+    "actions": "Actions"
+  },
+  "mode": {
+    "fresh": "Conteneur neuf",
+    "exec": "Dans le conteneur en cours d'exécution",
+    "http": "Appel HTTP à l'app"
+  },
+  "concurrency": {
+    "allow": "Autoriser le chevauchement",
+    "forbid": "Ignorer si toujours en cours",
+    "replace": "Annuler et remplacer",
+    "queue": "Mettre en file derrière",
+    "queue-one": "En mettre une en file, ignorer les autres"
+  },
+  "concurrencyHint": {
+    "allow": "Démarre la nouvelle exécution même si la précédente n'est pas terminée.",
+    "forbid": "Ignore cette exécution si une précédente est encore en cours, enregistrée comme ignorée.",
+    "replace": "Annule l'exécution précédente encore en cours, puis démarre celle-ci.",
+    "queue": "Attend la fin de l'exécution précédente, puis s'exécute, de sorte que les exécutions qui se chevauchent s'enchaînent l'une après l'autre.",
+    "queue-one": "Retient une exécution jusqu'à la fin de la précédente ; les autres exécutions qui se chevauchent sont ignorées."
+  },
+  "preview": {
+    "title": "Prochaines exécutions ({{zone}})",
+    "invalid": "Saisissez un calendrier et un fuseau horaire valides pour prévisualiser les prochaines exécutions.",
+    "none": "Ce calendrier ne s'exécute jamais."
+  },
+  "status": {
+    "running": "En cours",
+    "success": "Réussie",
+    "failed": "Échec",
+    "timeout": "Délai dépassé",
+    "container_not_running": "Conteneur non démarré",
+    "skipped_concurrency": "Ignorée, exécution précédente toujours en cours",
+    "skipped_freeze": "Ignorée, gel des déploiements actif",
+    "replaced": "Remplacée par une exécution plus récente",
+    "missed": "A manqué son heure planifiée",
+    "interrupted": "Interrompue par un redémarrage"
+  },
+  "trigger": {
+    "schedule": "Calendrier",
+    "manual": "Manuel",
+    "api": "API"
+  },
+  "neverRun": "Jamais exécuté",
+  "failedInARow": "{{count}} échecs consécutifs",
+  "missedInARow": "{{count}} manquées consécutives",
+  "localNode": "local",
+  "run": {
+    "now": "Exécuter maintenant",
+    "starting": "Démarrage...",
+    "started": "Job démarré.",
+    "startedWithId": "Job démarré (exécution {{id}}).",
+    "running": "En cours..."
+  },
+  "toggle": {
+    "label": "Activer {{name}}"
+  },
+  "dialog": {
+    "createTrigger": "Créer un job",
+    "createTitle": "Créer un job",
+    "editTitle": "Modifier le job",
+    "created": "Job créé.",
+    "updated": "Job mis à jour.",
+    "saving": "Enregistrement...",
+    "creating": "Création...",
+    "save": "Enregistrer les modifications",
+    "create": "Créer le job",
+    "edit": "Modifier",
+    "name": "Nom",
+    "nameHint": "Facultatif. Lettres minuscules, chiffres, tirets et tirets bas.",
+    "namePlaceholder": "p. ex. nightly-migrate",
+    "nameInvalid": "Utilisez des lettres minuscules, des chiffres, des tirets ou des tirets bas.",
+    "wholeNumber": "Doit être un nombre entier.",
+    "command": "Commande",
+    "commandPlaceholder": "p. ex. rm -rf /tmp/cache/*",
+    "commandHint": "Exécutée via un shell (sh -c), l'image a donc besoin d'un shell. Levelrail ne l'interprète jamais.",
+    "commandRequired": "La commande est obligatoire",
+    "modeLabel": "Où il s'exécute",
+    "modeHint": {
+      "fresh": "Un nouveau conteneur à partir de l'image actuelle de l'app, avec ses variables d'environnement, secrets, volumes et réseau. Il est supprimé à la fin de l'exécution.",
+      "exec": "Dans le conteneur en cours d'exécution de l'app. Échoue si le conteneur n'est pas démarré.",
+      "http": "Appelle un chemin de l'app via HTTP. Une app en veille est d'abord réveillée et l'appel l'attend. Toute réponse 2xx est un succès."
+    },
+    "http": {
+      "method": "Méthode",
+      "path": "Chemin",
+      "pathPlaceholder": "p. ex. /api/cron/digest",
+      "pathHint": "Un chemin de cette app, commençant par /. L'appel va directement à l'app, pas via son domaine public.",
+      "pathInvalid": "Commencez par un seul /.",
+      "body": "Corps",
+      "bodyHint": "Facultatif. Envoyé en application/json.",
+      "background": "Job en arrière-plan",
+      "backgroundHint": "L'app peut répondre 202 immédiatement et continuer à travailler. Le control plane attend la réponse jusqu'au délai d'arrière-plan et enregistre le résultat, personne n'a donc à garder la requête ouverte.",
+      "headers": "En-têtes",
+      "headersHint": "Facultatif. Chaque ligne envoie un en-tête dont la valeur est lue dans l'un des secrets de l'app à l'exécution du job, le secret n'est donc jamais stocké dans le job.",
+      "headerName": "Nom de l'en-tête",
+      "headerSecret": "Nom du secret",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "Préfixe",
+      "headerAdd": "Ajouter un en-tête",
+      "headerRemove": "Supprimer l'en-tête"
+    },
+    "timezone": "Fuseau horaire",
+    "timezoneHint": "Nom IANA comme Europe/Berlin. Le calendrier est lu dans ce fuseau, y compris les changements d'heure d'été.",
+    "timezoneRequired": "Le fuseau horaire est obligatoire",
+    "concurrencyLabel": "Si une exécution précédente est toujours en cours",
+    "enabled": "Activé",
+    "advanced": "Délai d'expiration, nouvelles tentatives et limites",
+    "timeout": "Délai d'expiration (secondes)",
+    "timeoutHint": "Par tentative. Vide utilise la valeur par défaut du control plane.",
+    "retries": "Nouvelles tentatives",
+    "retriesHint": "Tentatives supplémentaires après un échec, avec un délai d'attente doublé à chaque fois.",
+    "backoff": "Délai entre tentatives (secondes)",
+    "catchUpLabel": "Après une indisponibilité du control plane",
+    "catchUp": {
+      "skip": "Ignorer les exécutions manquées, les enregistrer comme manquées",
+      "run_once": "Exécuter une fois si une exécution a été manquée récemment"
+    },
+    "lookback": "Fenêtre de rattrapage (secondes)",
+    "memory": "Limite de mémoire (Mio)",
+    "memoryHint": "Conteneur neuf uniquement. Vide utilise la limite propre de l'app.",
+    "cpu": "Limite de CPU (millicœurs)",
+    "warnAfter": "Avertir après (secondes)",
+    "warnAfterHint": "Déclenche l'alerte d'exécution trop longue dès qu'une exécution dépasse cette durée. 0 la désactive."
+  },
+  "delete": {
+    "trigger": "Supprimer",
+    "title": "Supprimer ce job ?",
+    "description": "Son calendrier et son historique d'exécutions sont supprimés. Cette action est irréversible.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer le job",
+    "deleted": "Job supprimé."
+  },
+  "history": {
+    "title": "Historique des exécutions",
+    "description": "Les exécutions les plus récentes de tous les jobs de cette app, de la plus récente à la plus ancienne.",
+    "filter": "Statut",
+    "filterAll": "Tous les statuts",
+    "empty": "Aucune exécution pour l'instant. Utilisez Exécuter maintenant pour en démarrer une.",
+    "emptyTitle": "Aucune exécution",
+    "emptyFiltered": "Aucune exécution avec ce statut.",
+    "columns": {
+      "started": "Début",
+      "job": "Job",
+      "status": "Statut",
+      "trigger": "Déclencheur",
+      "duration": "Durée",
+      "exit": "Sortie ou HTTP",
+      "attempts": "Tentatives",
+      "node": "Node"
+    },
+    "trendLabel": "Durées des {{count}} dernières exécutions terminées",
+    "trendCaption": "Durée des exécutions, de la plus ancienne à la plus récente, la plus lente {{max}}",
+    "httpStatus": "HTTP {{code}}",
+    "viewLogs": "Logs",
+    "logsTitle": "Sortie de l'exécution",
+    "logsEmpty": "Cette exécution n'a produit aucune sortie.",
+    "logsLoading": "Chargement de la sortie...",
+    "logsRedacted": "Les secrets sont masqués dans cette sortie.",
+    "alertsHint": "Soyez notifié quand un job échoue, manque des exécutions ou s'exécute trop longtemps avec Alertes, en utilisant les types échec de job, exécution manquée ou exécution trop longue.",
+    "outputWithheld": "La sortie est masquée. Consulter la sortie d'un job nécessite un accès en lecture aux données sensibles."
+  },
+  "historyKept": {
+    "label": "Historique conservé (exécutions par job)",
+    "save": "Enregistrer",
+    "note": "Les exécutions plus anciennes sont supprimées automatiquement.",
+    "invalid": "Saisissez un nombre entier de {{min}} à {{max}}."
+  },
+  "nextRunNever": "Jamais",
+  "nextRunNeverHint": "Ce calendrier n'a aucune exécution à venir",
+  "accessRule": "Les exécutions ponctuelles et les jobs planifiés suivent les règles d'accès exec de la console : créer, modifier ou exécuter un job nécessite un accès root sur cette app et exec activé pour elle.",
+  "guards": {
+    "title": "Garde-fous",
+    "description": "Limitez le chevauchement, plafonnez la durée d'exécution, recevez une alerte en cas d'échec et bornez la quantité d'historique conservée. Ces réglages s'enregistrent seuls.",
+    "overlap": {
+      "allow": "Autoriser le chevauchement",
+      "skip": "Ignorer si toujours en cours",
+      "queue-one": "En mettre une en file, ignorer les autres",
+      "replace": "Annuler et remplacer",
+      "queue": "Mettre en file derrière"
+    },
+    "overlapHint": {
+      "allow": "Démarre la nouvelle exécution même si la précédente n'est pas terminée.",
+      "skip": "Ignore cette exécution si une précédente est encore en cours, enregistrée comme ignorée.",
+      "queue-one": "Retient une exécution jusqu'à la fin de la précédente ; les autres exécutions qui se chevauchent sont ignorées.",
+      "replace": "Annule l'exécution précédente encore en cours, puis démarre celle-ci.",
+      "queue": "Attend la fin de l'exécution précédente, puis s'exécute, de sorte que les exécutions qui se chevauchent s'enchaînent l'une après l'autre."
+    },
+    "timeoutSeconds": "Délai d'expiration (secondes)",
+    "keepRuns": "Conserver les dernières exécutions",
+    "keepDays": "Conserver (jours)",
+    "keepHint": "Vide utilise la valeur par défaut du control plane.",
+    "defaultPlaceholder": "Par défaut",
+    "alertOnFailure": "Alerter en cas d'échec",
+    "alertOnFailureHint": "Permet à une règle d'alerte d'échec de job sur cette app de vous notifier quand ce job échoue.",
+    "save": "Enregistrer les garde-fous",
+    "saved": "Garde-fous enregistrés",
+    "summary": {
+      "overlap": {
+        "skip": "Ignore le chevauchement",
+        "queue-one": "En met une en file",
+        "replace": "Remplace le chevauchement",
+        "queue": "Met le chevauchement en file"
+      },
+      "timeout": "Délai {{seconds}} s",
+      "alerts": "Alerte en cas d'échec",
+      "keepRuns_one": "Conserve {{count}} exécution",
+      "keepRuns_other": "Conserve {{count}} exécutions",
+      "keepRuns_many": "Conserve {{count}} exécutions",
+      "keepDays_one": "Conserve {{count}} jour",
+      "keepDays_other": "Conserve {{count}} jours",
+      "keepDays_many": "Conserve {{count}} jours"
+    }
+  }
+}

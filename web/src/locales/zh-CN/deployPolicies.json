@@ -1,0 +1,83 @@
+{
+  "title": "部署策略",
+  "description": "每次部署前检查的防护规则,作用于组织、项目和环境范围。每条规则以最具体的范围为准。",
+  "notConfigured": "此控制面不支持部署策略。",
+  "rootOnly": "只有实例管理员可以更改部署策略。你仍然可以执行试运行。",
+  "scope": {
+    "label": "范围",
+    "org": "组织",
+    "project": "项目",
+    "environment": "环境",
+    "idLabel": "项目或环境 ID",
+    "idPlaceholder": "proj_123"
+  },
+  "mode": {
+    "off": "关闭",
+    "warn": "警告",
+    "enforce": "强制"
+  },
+  "modeLabel": "{{rule}} 的模式",
+  "valueLabel": "{{rule}} 的值",
+  "rules": {
+    "allowed_registries": {
+      "title": "允许的镜像仓库",
+      "hint": "以逗号分隔的主机,例如 ghcr.io, docker.io。",
+      "placeholder": "ghcr.io, docker.io"
+    },
+    "require_readiness_probe": {
+      "title": "要求就绪探针",
+      "hint": "应用部署前必须定义就绪探针。"
+    },
+    "max_memory_mb": {
+      "title": "内存上限(MB)",
+      "hint": "没有内存限制的应用视为超出上限。",
+      "placeholder": "2048"
+    },
+    "max_cpu": {
+      "title": "CPU 上限(核)",
+      "hint": "没有 CPU 限制的应用视为超出上限。",
+      "placeholder": "2"
+    },
+    "forbid_privileged": {
+      "title": "禁止特权容器",
+      "hint": "阻止请求特权模式的应用。"
+    },
+    "forbid_host_mounts": {
+      "title": "禁止宿主机绑定挂载",
+      "hint": "可选的、以逗号分隔的仍然允许的路径前缀。",
+      "placeholder": "/srv/data"
+    },
+    "required_labels": {
+      "title": "必需的标签",
+      "hint": "以逗号分隔的、每个应用都必须设置的标签键。",
+      "placeholder": "team, cost-center"
+    },
+    "max_replicas": {
+      "title": "副本数上限",
+      "hint": "单个应用最多可运行的副本数。",
+      "placeholder": "5"
+    }
+  },
+  "save": "保存策略",
+  "saved": "策略已保存",
+  "clear": "清除范围",
+  "cleared": "策略已清除",
+  "dryRun": "对当前应用试运行",
+  "dryRunHint": "预览上述规则的效果,但不保存。",
+  "stored": {
+    "title": "已保存的策略",
+    "empty": "暂无策略。请在上方添加规则并保存,或先试运行以查看哪些会失败。",
+    "edit": "编辑"
+  },
+  "result": {
+    "summary": "已检查 {{checked}} 个应用,{{failing}} 个将被阻止,{{warning}} 个有警告。",
+    "clean": "所有应用都通过了这些规则。",
+    "wouldFail": "将被阻止",
+    "warns": "仅警告",
+    "next": "下一步操作"
+  },
+  "errors": {
+    "idRequired": "请输入此范围的项目或环境 ID。",
+    "numberRequired": "{{rule}} 需要一个大于零的数字。"
+  }
+}

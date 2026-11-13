@@ -1,0 +1,28 @@
+{
+  "label": "相关页面",
+  "heading": "相关",
+  "links": {
+    "account": "账户",
+    "alertRules": "告警规则",
+    "backups": "备份",
+    "certificates": "证书",
+    "cliAccess": "CLI 访问",
+    "dataExport": "数据导出",
+    "dns": "DNS",
+    "domains": "域名",
+    "drReport": "恢复报告",
+    "environments": "环境",
+    "eventWebhooks": "事件 Webhook",
+    "firewall": "防火墙",
+    "mobileDevices": "移动设备",
+    "network": "网络",
+    "notificationChannels": "通知渠道",
+    "platformHttps": "平台 HTTPS",
+    "privateNetworks": "私有网络",
+    "security": "安全",
+    "sessionPolicy": "会话策略",
+    "tokens": "API 令牌",
+    "traffic": "流量",
+    "vault": "密钥库"
+  }
+}

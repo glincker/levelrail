@@ -1,0 +1,10 @@
+{
+  "label": "Utiliser le challenge DNS pour tous les hôtes",
+  "helper": "Pour les serveurs derrière un CGNAT ou dont le port 80 est fermé. Nécessite un fournisseur DNS connecté.",
+  "noProvider": "Aucun fournisseur DNS n'est connecté.",
+  "connectProvider": "En connecter un",
+  "enableFailed": "Impossible d'activer le challenge DNS",
+  "disableFailed": "Impossible de désactiver le challenge DNS",
+  "saved": "Le challenge DNS pour tous les hôtes est activé",
+  "savedOff": "Le challenge DNS pour tous les hôtes est désactivé"
+}

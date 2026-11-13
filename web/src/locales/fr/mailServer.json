@@ -1,0 +1,463 @@
+{
+  "title": "Mail",
+  "description": "Votre propre serveur de messagerie : boîtes aux lettres, DNS, sauvegardes.",
+  "eyebrow": "Expérimental",
+  "install": {
+    "title": "Installer un serveur de messagerie",
+    "body": "Deploie le modèle mox : SMTP, IMAP et webmail dans un seul container.",
+    "action": "Installer le serveur de messagerie"
+  },
+  "overview": {
+    "title": "Liste de contrôle de la configuration",
+    "hint": "Lancez un contrôle sur un domaine pour la remplir. Tout ce qui n'est pas contrôlé reste marqué comme tel.",
+    "label": "Liste de contrôle de la configuration mail pour {{domain}}"
+  },
+  "status": {
+    "pass": "Réussi",
+    "warn": "Nécessite votre attention",
+    "fail": "En échec",
+    "not_tested": "Non contrôlé"
+  },
+  "items": {
+    "server": "Serveur de messagerie installé",
+    "dns": "Enregistrement MX",
+    "spf": "SPF",
+    "dkim": "DKIM",
+    "dmarc": "DMARC",
+    "mta_sts": "MTA-STS",
+    "ptr": "DNS inverse (PTR)",
+    "port25": "Port 25 sortant"
+  },
+  "unknown": {
+    "server": "Statut indisponible.",
+    "ptr": "Défini par votre hébergeur. Cette page ne peut pas encore le lire."
+  },
+  "dns": {
+    "title": "DNS du domaine",
+    "domain": "Domaine",
+    "domainPlaceholder": "example.com",
+    "knownDomains": "Domaines de cette instance",
+    "preset": "Fournisseur de messagerie",
+    "selfHosted": "Auto-hébergé",
+    "mailHost": "Hôte mail",
+    "ipv4": "IPv4 du serveur",
+    "ipv4Placeholder": "Adresse publique",
+    "plan": "Prévisualiser les enregistrements",
+    "apply": "Appliquer {{count}} enregistrements",
+    "applying": "Application",
+    "check": "Contrôler",
+    "checking": "Contrôle en cours",
+    "planHash": "Plan {{hash}}",
+    "noChanges": "Rien à ajouter. Ces enregistrements existent déjà.",
+    "blocked": "Le plan est bloqué par des enregistrements existants. Corrigez-les d'abord chez votre fournisseur DNS.",
+    "applied": "{{count}} enregistrements appliqués",
+    "colAction": "Plan",
+    "colName": "Nom",
+    "colType": "Type",
+    "colValue": "Valeur",
+    "colLive": "Actif",
+    "tableLabel": "Enregistrements DNS de messagerie prévus",
+    "action": {
+      "add": "Ajouter",
+      "unchanged": "Inchangé",
+      "replace": "Remplacer",
+      "refused": "Refusé"
+    },
+    "error": "La requête a échoué : {{message}}"
+  },
+  "next": {
+    "title": "Prochaine étape",
+    "allSet": "La configuration semble complète",
+    "step": {
+      "install": "Installer le serveur de messagerie",
+      "fix": "Démarrer le container de messagerie",
+      "wait": "Attendre que le serveur de messagerie réponde",
+      "dns": "Ajouter vos enregistrements DNS",
+      "verify": "Contrôler à nouveau le DNS"
+    },
+    "tls": {
+      "self-signed": "TLS : auto-signé",
+      "provided": "TLS : certificat fourni",
+      "unknown": "TLS : inconnu"
+    },
+    "tlsSelfSigned": "Auto-signé : remplacez-le avant d'envoyer du vrai courrier.",
+    "copy": "Copier",
+    "copied": "Copié",
+    "cta": "Prévisualiser les enregistrements DNS",
+    "ctaBody": "Affiche les enregistrements dont ce domaine a besoin, sans rien modifier tant que vous n'appliquez pas.",
+    "doneLabel": "Étapes terminées",
+    "doneItem": {
+      "installed": "App de messagerie installée",
+      "running": "Container en marche",
+      "admin": "L'API d'administration répond"
+    }
+  },
+  "server": {
+    "installAction": "Installer",
+    "done": "En marche et répond",
+    "stopped": "Installé mais ne tourne pas"
+  },
+  "ports": {
+    "title": "Ports de messagerie",
+    "listLabel": "État de liaison et de pare-feu des ports de messagerie",
+    "open": "Ouvrir les ports de messagerie",
+    "opened": "Ports de messagerie ouverts",
+    "pending": "Ouverture",
+    "failed": "Impossible d'ouvrir les ports de messagerie",
+    "missing": "Cette app de messagerie ne publie pas les ports de messagerie. Redeployez-la d'abord depuis le modèle actuel.",
+    "webStays": "Le webmail et l'interface de compte gardent leur propre liaison ({{bind}}). Ouvrir les ports de messagerie ne les publie jamais.",
+    "confirmTitle": "Ouvrir les ports 25, 465, 587 et 993 ?",
+    "consequence": "Seuls ces quatre ports reçoivent une liaison publique et une règle d'autorisation du pare-feu de l'hôte. Le container est recréé.",
+    "certificate": "Utilisez un vrai certificat TLS, pas l'auto-signé, et gardez le serveur durci avant d'ouvrir les ports.",
+    "confirm": "Ouvrir les ports",
+    "bind": {
+      "public": "public",
+      "private": "privé",
+      "not_published": "non publié"
+    },
+    "firewall": {
+      "allowed": "le pare-feu autorise",
+      "blocked": "le pare-feu bloque",
+      "not_filtering": "le pare-feu ne filtre pas",
+      "unknown": "pare-feu inconnu"
+    }
+  },
+  "mailboxes": {
+    "title": "Boîtes aux lettres",
+    "failed": "La requête de messagerie a échoué.",
+    "noUser": "Aucun",
+    "needsWrite": "Nécessite la capacité write:sensitive.",
+    "needsRoot": "Seul un utilisateur root peut faire cela.",
+    "pendingWarning": "Le serveur de messagerie était injoignable, donc la suspension n'est pas encore appliquée. Elle s'applique au prochain appel de messagerie réussi.",
+    "status": {
+      "active": "Active",
+      "suspended": "Suspendue",
+      "pending": "Suspension en attente"
+    },
+    "col": {
+      "address": "Adresse",
+      "team": "Équipe",
+      "user": "Utilisateur lié",
+      "status": "Statut",
+      "created": "Créée",
+      "actions": "Actions"
+    },
+    "form": {
+      "localpart": "Nom",
+      "domain": "Domaine",
+      "linkedUser": "Utilisateur lié (facultatif)",
+      "noUser": "Aucun utilisateur lié",
+      "add": "Ajouter une boîte aux lettres",
+      "localpartHint": "jo"
+    },
+    "empty": {
+      "title": "Aucune boîte aux lettres pour l'instant",
+      "claim": "Réclamez un domaine ci-dessus, puis ajoutez la première boîte aux lettres.",
+      "add": "Ajoutez la première boîte aux lettres ci-dessus."
+    },
+    "suspend": "Suspendre",
+    "resume": "Reprendre",
+    "reset": "Réinitialiser le mot de passe",
+    "delete": "Supprimer",
+    "suspendFor": "Suspendre {{address}}",
+    "resumeFor": "Reprendre {{address}}",
+    "resetFor": "Réinitialiser le mot de passe de {{address}}",
+    "deleteFor": "Supprimer {{address}}",
+    "deleteTitle": "Supprimer {{address}} ?",
+    "deleteBody": "Saisissez l'adresse pour confirmer. La suspension est généralement le meilleur choix.",
+    "reveal": {
+      "title": "Mot de passe de {{address}}",
+      "label": "Mot de passe généré",
+      "copy": "Copier",
+      "copied": "Copié",
+      "once": "Affiché une seule fois. Il n'est pas stocké.",
+      "saved": "Je l'ai enregistré"
+    }
+  },
+  "aliases": {
+    "title": "Alias",
+    "needsMailbox": "Ajoutez d'abord une boîte aux lettres. Un alias doit pointer vers une boîte aux lettres.",
+    "empty": "Aucun alias pour l'instant.",
+    "listLabel": "Alias",
+    "to": "vers",
+    "remove": "Retirer",
+    "removeFor": "Retirer {{address}}",
+    "form": {
+      "alias": "Alias",
+      "target": "Transférer vers",
+      "add": "Ajouter un alias",
+      "aliasHint": "team"
+    }
+  },
+  "queue": {
+    "title": "File d'attente",
+    "count_one": "{{count}} message en attente",
+    "count_many": "{{count}} messages en attente",
+    "count_other": "{{count}} messages en attente",
+    "empty": "Rien n'attend d'être livré.",
+    "holdAll": "Tout suspendre",
+    "releaseAll": "Tout libérer",
+    "hold": "Suspendre",
+    "release": "Libérer",
+    "held": "Suspendu",
+    "holdFor": "Suspendre le message {{id}}",
+    "releaseFor": "Libérer le message {{id}}",
+    "col": {
+      "sender": "Expéditeur",
+      "domain": "Vers le domaine",
+      "attempts": "Tentatives",
+      "next": "Prochaine tentative",
+      "error": "Dernière erreur"
+    }
+  },
+  "domains": {
+    "domain": "Domaine",
+    "team": "Équipe",
+    "claim": "Réclamer le domaine",
+    "claimed": "Réclamé"
+  },
+  "hold": {
+    "title": "Restauration en cours, le courrier est suspendu",
+    "body": "Une restauration du courrier maintient cette app arrêtée. La plateforme ne la démarrera ni ne la modifiera tant que la restauration n'est pas terminée ou annulée. Suivez le job dans le panneau Sauvegarde."
+  },
+  "demo": {
+    "badge": "Données de démo",
+    "hint": "Mode démo local : rien ici n'est réel et rien n'atteint un fournisseur DNS ou un serveur de messagerie.",
+    "reset": "Réinitialiser la démo"
+  },
+  "backup": {
+    "title": "Sauvegarde",
+    "last": "Dernière sauvegarde",
+    "never": "Aucune sauvegarde pour l'instant",
+    "runNow": "Sauvegarder maintenant",
+    "running": "Sauvegarde en cours : {{step}}",
+    "restoring": "Restauration en cours : {{step}}",
+    "usage": "{{used}} utilisés sur {{cap}}",
+    "usageLabel": "Espace de sauvegarde utilisé",
+    "notEncrypted": "Les sauvegardes sont désactivées tant que le serveur n'a pas de clé de chiffrement, car elles contiendraient du courrier non chiffré.",
+    "failed": "Échec de la sauvegarde",
+    "jobFailed": "Le dernier job a échoué : {{error}}",
+    "verified": "Vérifiée",
+    "unverified": "Non vérifiée",
+    "empty": "Aucune sauvegarde stockée pour l'instant.",
+    "needsWrite": "Nécessite la permission de modifier les paramètres de messagerie.",
+    "col": {
+      "backup": "Sauvegarde",
+      "size": "Taille",
+      "mox": "Mox",
+      "where": "Emplacement",
+      "actions": "Actions"
+    },
+    "restore": "Restaurer",
+    "restoreFor": "Restaurer la sauvegarde {{id}}",
+    "steps": {
+      "version": "vérification de la version",
+      "backup": "export des données",
+      "verify": "vérification",
+      "copy": "copie",
+      "archive": "archivage",
+      "prune": "élagage des anciennes sauvegardes",
+      "extract": "décompression",
+      "stage": "préparation",
+      "stop": "arrêt de la messagerie",
+      "swap": "remplacement des données",
+      "start": "démarrage de la messagerie",
+      "wait": "attente de la messagerie"
+    },
+    "line": "Dernière sauvegarde {{when}}, {{size}}, {{state}}",
+    "verifiedLower": "vérifiée",
+    "unverifiedLower": "non vérifiée",
+    "capChip": "plafond de {{cap}}",
+    "destination": "Stockage",
+    "destinationOpen": "Ouvrir les paramètres de stockage des sauvegardes",
+    "history": "Historique",
+    "historyTitle": "Historique des sauvegardes",
+    "progressLabel": "Progression de la sauvegarde",
+    "actionsFor": "Actions pour la sauvegarde {{id}}"
+  },
+  "restore": {
+    "title": "Restaurer la sauvegarde {{id}}",
+    "checking": "Vérification de la sauvegarde...",
+    "summary": "{{files}} fichiers, {{size}}, créée avec mox {{mox}}.",
+    "warning": "Le courrier est interrompu pendant la restauration, et le courrier actuel est remplacé par cette sauvegarde.",
+    "confirmLabel": "Saisissez {{id}} pour confirmer",
+    "submit": "Restaurer maintenant",
+    "working": "Restauration...",
+    "conflict": "Cette sauvegarde ne peut pas être restaurée pour le moment : le mox en cours est plus ancien que la sauvegarde, ou un autre job est en cours.",
+    "failed": "Échec de la restauration",
+    "started": "Restauration démarrée"
+  },
+  "storage": {
+    "title": "Stockage des sauvegardes",
+    "kind": "Destination",
+    "local": "Dossier local",
+    "s3": "Bucket S3 ou R2",
+    "folder": "Dossier",
+    "cap": "Plafond d'espace",
+    "endpoint": "Endpoint",
+    "region": "Région",
+    "bucket": "Bucket",
+    "accessKey": "ID de clé d'accès",
+    "secret": "Clé secrète",
+    "secretHint": "Jamais réaffichée, saisissez-la à chaque enregistrement.",
+    "pathStyle": "URL de style chemin",
+    "save": "Enregistrer et contrôler",
+    "saving": "Contrôle...",
+    "recheck": "Revérifier",
+    "saved": "Stockage enregistré",
+    "checks": "Validation",
+    "pass": "réussi",
+    "fail": "échoué",
+    "step": {
+      "put": "Écriture",
+      "get": "Lecture",
+      "list": "Liste",
+      "delete": "Suppression"
+    },
+    "localOnly": "Dans cette version, les sauvegardes sont encore écrites dans le dossier local. Le bucket est seulement contrôlé et enregistré.",
+    "failed": "Échec du contrôle du stockage"
+  },
+  "systemEmail": {
+    "title": "E-mails système",
+    "intro": "Envoyez les invitations, réinitialisations de mot de passe, alertes et avis de la page de statut depuis noreply sur l'un de vos domaines, via ce serveur de messagerie.",
+    "domain": "Domaine de l'expéditeur",
+    "fromOption": "noreply@{{domain}}",
+    "replace": "Remplacer le fournisseur d'e-mail actuel (désactiver le remet en place)",
+    "enable": "Utiliser mon serveur de messagerie",
+    "disable": "Désactiver",
+    "rotate": "Renouveler le mot de passe",
+    "test": "Envoyer un test",
+    "active": "Envoi via {{addr}}.",
+    "replaced": "Activé, mais les paramètres d'e-mail ont été modifiés depuis. Désactivez pour rétablir le fournisseur précédent.",
+    "lastOk": "Le dernier test vers {{to}} a réussi : {{message}}",
+    "lastFail": "Le dernier test vers {{to}} a échoué : {{message}}",
+    "dns": "DNS : SPF {{spf}}, DKIM {{dkim}}, DMARC {{dmarc}}",
+    "dnsWarning": "Le courrier vers des destinataires externes ira dans les indésirables ou sera rejeté tant que SPF, DKIM et DMARC ne passent pas et que le DNS inverse (PTR) du serveur ne correspond pas à son hôte mail.",
+    "dnsLink": "Ouvrir le panneau DNS",
+    "needsRoot": "Seul un admin de l'instance peut modifier la destination des e-mails système.",
+    "noDomain": "Réclamez d'abord un domaine dans Boîtes aux lettres.",
+    "failed": "La requête d'e-mail système a échoué.",
+    "steps": "Étapes",
+    "step": {
+      "mailbox": "Boîte aux lettres",
+      "provider_saved": "Fournisseur enregistré",
+      "test_send_queued": "Envoi de test mis en file",
+      "delivered_to_local_queue": "Livré à la file du serveur de messagerie",
+      "provider_restored": "Fournisseur précédent rétabli",
+      "mailbox_suspended": "Boîte aux lettres suspendue",
+      "rotated": "Mot de passe renouvelé"
+    },
+    "switchLabel": "Envoyer les e-mails de Levelrail depuis {{from}}",
+    "settings": "Paramètres",
+    "statusOn": "Activé",
+    "statusOff": "Désactivé",
+    "statusReplaced": "Modifié depuis l'activation",
+    "replaceHelp": "Désactive le fournisseur que vous utilisez aujourd'hui. Désactiver le remet en place.",
+    "pinNote": "Épinglé : si les paramètres d'e-mail changent plus tard, cela apparaît comme modifié et Désactiver rétablit le fournisseur précédent.",
+    "noLast": "Pas encore testé",
+    "testShort": "Test",
+    "dnsReady": "Disponibilité du DNS",
+    "dnsRow": "{{name}} : {{value}}"
+  },
+  "tabs": {
+    "label": "Sections de messagerie",
+    "overview": "Vue d'ensemble",
+    "mailboxes": "Boîtes aux lettres",
+    "domains": "Domaines et DNS",
+    "backups": "Sauvegardes"
+  },
+  "shell": {
+    "running": "En marche",
+    "stopped": "Arrêté",
+    "waiting": "Démarrage",
+    "notInstalled": "Non installé",
+    "settings": "Paramètres",
+    "settingsTitle": "Paramètres de messagerie",
+    "queueChip": "File {{count}}",
+    "queueTitle": "File de livraison",
+    "addMailbox": "Ajouter une boîte aux lettres",
+    "statusLabel": "Statut du serveur de messagerie",
+    "skeleton": "Chargement du statut de la messagerie"
+  },
+  "webmail": {
+    "open": "Ouvrir le webmail",
+    "openFor": "Ouvrir le webmail pour {{address}}",
+    "disabled": "Associez un domaine à l'écouteur du webmail pour l'activer",
+    "settings": "Paramètres du domaine de l'app"
+  },
+  "ov": {
+    "allSet": "Tout est prêt",
+    "details": "Détails",
+    "hideDetails": "Masquer les détails",
+    "chips": {
+      "dns": "DNS {{pass}}/{{total}}",
+      "dnsNone": "DNS : pas encore contrôlé",
+      "backup": "Sauvegarde {{when}}",
+      "backupNone": "Aucune sauvegarde",
+      "queue": "{{count}} en file"
+    },
+    "statsLabel": "La messagerie en un coup d'œil",
+    "backupOpen": "Ouvrir les sauvegardes",
+    "checkDns": "Contrôler le DNS",
+    "checkFailed": "Échec du contrôle DNS"
+  },
+  "mbx": {
+    "search": "Rechercher des boîtes aux lettres",
+    "filter": "Filtrer par statut",
+    "all": "Toutes",
+    "active": "Actives",
+    "suspended": "Suspendues",
+    "system": "Système",
+    "add": {
+      "name": "Nom",
+      "hint": "nom",
+      "submit": "Créer",
+      "cancel": "Annuler",
+      "claims": "Réclame {{domain}} pour votre équipe par défaut",
+      "domainLabel": "Domaine",
+      "user": "Utilisateur lié (facultatif)",
+      "close": "Fermer"
+    },
+    "empty": "Aucune boîte aux lettres pour l'instant.",
+    "noMatch": "Aucune boîte aux lettres ne correspond.",
+    "list": "Boîtes aux lettres",
+    "actions": "Actions pour {{address}}",
+    "copy": "Copier l'adresse",
+    "copied": "Copié",
+    "details": "Détails",
+    "aliasesTitle": "Alias",
+    "addDomain": "Ajouter un domaine",
+    "domainChip": "Domaine {{domain}}",
+    "created": "Créée {{date}}",
+    "team": "Équipe {{team}}",
+    "user": "Lié : {{user}}",
+    "claimedDomains": "Domaines réclamés",
+    "noDomains": "Aucun domaine n'est encore réclamé. Il est réclamé quand vous ajoutez la première boîte aux lettres.",
+    "loading": "Chargement des boîtes aux lettres",
+    "notUp": "Disponible une fois le serveur de messagerie en marche.",
+    "storage": "Stockage des sauvegardes",
+    "viewOnly": "Vous pouvez voir les boîtes aux lettres mais pas les gérer",
+    "viewOnlyReason": "Votre rôle d'équipe ne permet pas de gérer la messagerie. Demandez l'accès à un admin ou propriétaire de l'équipe.",
+    "actionForbidden": "Votre rôle d'équipe ne permet pas cela. Demandez à un admin ou propriétaire de l'équipe de le faire ou de modifier votre rôle."
+  },
+  "cert": {
+    "title": "Certificat de messagerie",
+    "listLabel": "Certificat servi sur les ports de messagerie",
+    "host": "Hôte",
+    "source": "Source",
+    "issuer": "Émetteur",
+    "expires": "Expire",
+    "daysLeft_one": "{{count}} jour restant",
+    "daysLeft_many": "{{count}} jours restants",
+    "daysLeft_other": "{{count}} jours restants",
+    "serial": "Numéro de série",
+    "fingerprint": "SHA-256",
+    "selfSigned": "Auto-signé",
+    "notServed": "Aucun certificat n'est encore servi",
+    "probeError": "Échec de la sonde : {{message}}",
+    "obtain": "Obtenir un certificat",
+    "obtaining": "Demande en cours",
+    "obtained": "Certificat demandé",
+    "failed": "Impossible d'obtenir un certificat"
+  }
+}

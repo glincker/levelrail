@@ -1,0 +1,20 @@
+{
+  "title": "Geplanter Neustart",
+  "description": "Startet die App nach Zeitplan neu, um langsame Speicherlecks zu begrenzen. Es wird der normale Neustart verwendet, daher gelten die Regeln für Rollout und Unterbrechungen. Zwischen zwei Neustarts liegen mindestens {{min}}.",
+  "none": "Kein Neustart-Zeitplan.",
+  "current": "Neustart: {{schedule}} ({{zone}}). Nächster Neustart: {{next}}.",
+  "last": {
+    "started": "Letzte Ausführung {{at}}: gestartet.",
+    "succeeded": "Letzte Ausführung {{at}}: neu gestartet.",
+    "skipped": "Letzte Ausführung {{at}}: übersprungen, {{reason}}.",
+    "failed": "Letzte Ausführung {{at}}: fehlgeschlagen, nach einer Wartezeit erneut versucht."
+  },
+  "scheduleLabel": "Cron oder @every",
+  "timezoneLabel": "Zeitzone",
+  "save": "Zeitplan speichern",
+  "saved": "Neustart-Zeitplan gespeichert",
+  "cleared": "Neustart-Zeitplan entfernt",
+  "failed": "Änderung des Neustart-Zeitplans fehlgeschlagen",
+  "clear": "Zeitplan entfernen",
+  "hint": "Zum Beispiel 0 3 * * * oder @every 24h. Gestoppte Apps, geschützte Umgebungen, Freezes und laufende Deployments werden übersprungen, nie erzwungen."
+}

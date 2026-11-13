@@ -1,0 +1,58 @@
+{
+  "title": "部署上下文",
+  "description": "按部署类型设置环境变量和静态构建设置。留空的项会继承应用默认值。",
+  "editor": {
+    "context": "上下文",
+    "branchPattern": "分支模式",
+    "branchPatternHint": "精确名称或 glob,例如 release/*。",
+    "env": "环境变量",
+    "envHint": "每行一个 KEY=VALUE。密钥请使用分支环境变量覆盖。",
+    "buildCommand": "构建命令",
+    "publishDir": "发布目录",
+    "buildArgs": "构建参数",
+    "buildArgsHint": "每行一个 KEY=VALUE。",
+    "save": "保存上下文",
+    "saving": "正在保存",
+    "saved": "上下文已保存。",
+    "saveError": "无法保存上下文。",
+    "clear": "清除",
+    "cleared": "上下文已清除。",
+    "clearError": "无法清除上下文。",
+    "invalidLine": "行 \"{{line}}\" 必须为 KEY=VALUE。",
+    "loadError": "无法加载已保存的上下文。"
+  },
+  "contexts": {
+    "deploy-preview": "部署预览(拉取请求)",
+    "branch-deploy": "分支部署",
+    "branch": "指定分支"
+  },
+  "saved": {
+    "title": "已保存的上下文",
+    "empty": "暂无上下文覆盖。所有部署都使用应用默认值。",
+    "summary": "{{env}} 个环境变量,{{args}} 个构建参数",
+    "edit": "编辑"
+  },
+  "effective": {
+    "title": "此次部署的生效配置",
+    "description": "哪个值生效以及来自哪里。密钥保持遮蔽。",
+    "context": "部署为",
+    "production": "生产",
+    "branch": "分支",
+    "branchPlaceholder": "release/1.2",
+    "env": "环境变量",
+    "buildCommand": "构建命令",
+    "publishDir": "发布目录",
+    "buildArg": "构建参数 {{name}}",
+    "none": "无",
+    "empty": "此次部署未设置环境变量。",
+    "loadError": "无法加载生效配置。",
+    "secret": "密钥",
+    "source": {
+      "app": "应用默认值",
+      "preview-env": "预览环境",
+      "context": "上下文",
+      "branch-context": "分支上下文",
+      "branch-env": "分支覆盖"
+    }
+  }
+}

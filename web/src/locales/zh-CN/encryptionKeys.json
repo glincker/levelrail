@@ -1,0 +1,64 @@
+{
+  "master": {
+    "title": "主密钥",
+    "age_other": "已使用 {{count}} 天",
+    "never": "从未轮换"
+  },
+  "apps": {
+    "title": "应用数据密钥",
+    "empty": "尚无应用存储过密钥,因此没有可轮换的数据密钥。",
+    "age_other": "{{count}} 天",
+    "values_other": "{{count}} 个密钥",
+    "overdue": "已超限",
+    "current": "当前",
+    "rotate": "轮换密钥",
+    "rotateAll": "轮换所有密钥",
+    "neverRotated": "创建于 {{date}}",
+    "rotatedOn": "轮换于 {{date}}"
+  },
+  "lastRun": {
+    "title": "上次全部轮换的运行",
+    "progress": "{{total}} 个应用中已完成 {{done}} 个,{{failed}} 个失败",
+    "finished": "完成于 {{date}}",
+    "interrupted": "已中断。再次轮换所有密钥即可从中断处继续。"
+  },
+  "policy": {
+    "title": "密钥最长使用期限",
+    "description": "当密钥超过此期限时,通过你的通知渠道发送提醒。0 表示关闭提醒。",
+    "maxAge": "最长期限(天)",
+    "remindEvery": "每隔多少天重复提醒",
+    "save": "保存策略",
+    "saving": "正在保存",
+    "saved": "密钥期限策略已保存"
+  },
+  "hint": {
+    "fixMaster": "立即轮换",
+    "fixApp": "轮换此密钥",
+    "fixAll": "轮换所有密钥",
+    "fixPolicy": "每 90 天提醒我"
+  },
+  "confirm": {
+    "titleOne": "轮换 {{app}} 的数据密钥?",
+    "titleAll": "轮换所有应用的数据密钥?",
+    "descriptionOne": "将生成新密钥,并一次性重新加密此应用的所有密钥值。如果有任何失败,则不会发生任何更改。",
+    "descriptionAll": "每个应用会单独一步完成轮换。中途停止的运行可以从中断处继续。",
+    "consequenceReadable": "所有密钥值仍可读取,无需重启。",
+    "consequenceAudit": "此次轮换会记录在审计日志中。",
+    "action": "轮换",
+    "pending": "正在轮换",
+    "typed": "ROTATE"
+  },
+  "result": {
+    "single_other": "已轮换 {{app}} 的密钥,并重新加密了 {{count}} 个密钥值",
+    "all": "已轮换 {{rotated}} 个密钥,{{skipped}} 个已是最新",
+    "allFailed": "{{failed}} 个密钥无法轮换,保持不变:{{names}}",
+    "partial": "运行被中途打断。再次轮换所有密钥即可继续。"
+  },
+  "errors": {
+    "load": "无法加载加密密钥状态",
+    "rotate": "轮换失败"
+  },
+  "title": "加密密钥",
+  "description": "每个密钥值都使用其应用的数据密钥加密,而这些密钥由主密钥保护。定期轮换可限制任何单个密钥的使用时长。",
+  "guide": "密钥轮换指南"
+}

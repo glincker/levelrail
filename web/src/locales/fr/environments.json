@@ -1,0 +1,95 @@
+{
+  "kind": {
+    "dev": "Développement",
+    "test": "Test",
+    "uat": "Recette",
+    "production": "Production",
+    "preview": "Préproduction",
+    "custom": "Personnalisé"
+  },
+  "settings": {
+    "title": "Environnements",
+    "description": "Environnements à l'échelle de l'instance pour les apps et les bases de données. Marquez-en un comme protégé pour exiger l'approbation d'une seconde personne avant que quoi que ce soit n'y entre ou n'en sorte.",
+    "create": "Créer un environnement",
+    "empty": {
+      "title": "Aucun environnement pour l'instant",
+      "description": "Créez le premier pour commencer à regrouper les apps et les bases de données."
+    },
+    "columns": {
+      "name": "Nom",
+      "kind": "Type",
+      "protected": "Protégé",
+      "apps": "Apps",
+      "databases": "Bases de données",
+      "actions": "Actions"
+    },
+    "builtIn": "Intégré",
+    "scopeProject": "Projet",
+    "protectedToggle": "Protégé, {{name}}",
+    "protectedOn": "L'environnement \"{{name}}\" est désormais protégé.",
+    "protectedOff": "L'environnement \"{{name}}\" n'est plus protégé.",
+    "updateFailed": "Impossible de mettre à jour l'environnement.",
+    "edit": "Modifier",
+    "delete": "Supprimer"
+  },
+  "form": {
+    "createTitle": "Créer un environnement",
+    "editTitle": "Modifier l'environnement",
+    "description": "Donnez-lui un nom et choisissez le type qui décrit son rôle.",
+    "name": "Nom",
+    "namePlaceholder": "Staging EU",
+    "kind": "Type",
+    "protected": "Protégé",
+    "protectedHint": "Un déplacement vers ou depuis cet environnement attend l'approbation d'une autre personne.",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement",
+    "created": "Environnement \"{{name}}\" créé.",
+    "updated": "Environnement \"{{name}}\" mis à jour.",
+    "failed": "Impossible d'enregistrer l'environnement."
+  },
+  "delete": {
+    "title": "Supprimer \"{{name}}\"",
+    "description": "Cette action est irréversible.",
+    "inUse": "{{apps}} app(s) et {{databases}} base(s) de données sont étiquetées avec cet environnement. Choisissez où les déplacer avant de supprimer.",
+    "moveTo": "Les déplacer vers",
+    "moveToNone": "Choisir un environnement",
+    "cancel": "Annuler",
+    "confirm": "Supprimer l'environnement",
+    "deleting": "Suppression",
+    "deleted": "Environnement \"{{name}}\" supprimé.",
+    "failed": "Impossible de supprimer l'environnement.",
+    "reserved": "Les environnements intégrés ne peuvent pas être supprimés.",
+    "protectedBlock": "Un environnement protégé ne peut pas participer à un déplacement groupé. Retirez d'abord sa protection, ou déplacez les éléments un par un."
+  },
+  "switcher": {
+    "label": "Environnement",
+    "all": "Tous les environnements",
+    "aria": "Filtrer le tableau de bord par environnement"
+  },
+  "move": {
+    "trigger": "Modifier",
+    "title": "Déplacer \"{{name}}\" vers un environnement",
+    "description": "Choisissez l'environnement auquel cet élément appartient.",
+    "field": "Environnement",
+    "none": "Aucun environnement",
+    "current": "(actuel)",
+    "protectedNotice": "Ce déplacement touche l'environnement protégé \"{{environment}}\". Il ne s'appliquera pas immédiatement : il devient une approbation en attente qu'une autre personne doit valider.",
+    "confirmLabel": "Je comprends que cela nécessite une approbation",
+    "request": "Demander le déplacement",
+    "save": "Enregistrer",
+    "saving": "Enregistrement",
+    "cancel": "Annuler",
+    "moved": "\"{{name}}\" déplacé.",
+    "pending": "Le déplacement de \"{{name}}\" attend une approbation.",
+    "failed": "Impossible de déplacer \"{{name}}\".",
+    "frozen": "Un gel des déploiements est actif. Réessayez quand il se termine."
+  },
+  "picker": {
+    "aria": "Choisir le projet et l'environnement",
+    "allProjects": "Tous les projets",
+    "projects": "Projets",
+    "environments": "Environnements",
+    "allEnvironments": "Tous les environnements"
+  }
+}

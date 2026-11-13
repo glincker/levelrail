@@ -1,0 +1,42 @@
+{
+  "title": "Pipeline de logs",
+  "subtitle": "Règles appliquées dans l'ordre aux lignes de log de cette app avant leur stockage : regrouper les enregistrements multilignes, masquer les secrets, extraire des champs, ignorer le bruit.",
+  "rules": {
+    "title": "Règles",
+    "empty": "Aucune règle pour l'instant. Les logs sont stockés exactement tels que l'app les écrit. Ajoutez une règle pour commencer à les mettre en forme.",
+    "add": "Ajouter une règle",
+    "remove": "Supprimer la règle {{index}}",
+    "moveUp": "Monter la règle {{index}}",
+    "moveDown": "Descendre la règle {{index}}",
+    "kind": "Type",
+    "pattern": "Motif (regex)",
+    "replace": "Remplacer par",
+    "replacePlaceholder": "[MASQUÉ]",
+    "limit": "{{max}} règles au maximum.",
+    "multilineOnce": "Une seule règle multiligne est autorisée."
+  },
+  "kinds": {
+    "multiline": "Multiligne (le motif démarre un enregistrement)",
+    "redact": "Masquage (remplace les correspondances)",
+    "parse": "Analyse (les groupes nommés deviennent des champs)",
+    "drop": "Rejet (ignore les lignes correspondantes)"
+  },
+  "preview": {
+    "title": "Aperçu",
+    "samples": "Exemples de lignes de log, une par ligne",
+    "samplesPlaceholder": "2026-01-01 ERROR token=abc123 failed",
+    "empty": "Collez quelques lignes d'exemple pour voir ce que le pipeline stockerait.",
+    "dropped": "Ignorée",
+    "unchanged": "Inchangée",
+    "loading": "Mise à jour de l'aperçu",
+    "error": "Échec de l'aperçu : {{message}}"
+  },
+  "actions": {
+    "save": "Enregistrer le pipeline",
+    "clear": "Effacer le pipeline",
+    "savedToast": "Pipeline de logs enregistré",
+    "clearedToast": "Pipeline de logs effacé",
+    "failed": "Impossible de mettre à jour le pipeline de logs"
+  },
+  "loadError": "Impossible de charger le pipeline de logs : {{message}}"
+}

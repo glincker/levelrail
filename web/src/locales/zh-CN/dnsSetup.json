@@ -1,0 +1,161 @@
+{
+  "title": "DNS 设置",
+  "back": "上一步",
+  "continue": "继续",
+  "loading": "正在加载",
+  "copied": "已复制",
+  "progress": "第 {{current}} 步,共 {{total}} 步",
+  "step": {
+    "pick": "选择域名",
+    "detect": "查找你的 DNS 托管方",
+    "review": "查看记录",
+    "verify": "检查记录"
+  },
+  "connectAction": "连接 {{provider}}",
+  "openIn": "在 {{provider}} 中打开",
+  "foundValue": "找到:{{value}}",
+  "expectedValue": "期望:{{value}}",
+  "keepMine": "保留我的",
+  "replace": "替换",
+  "group": {
+    "receive": "接收邮件",
+    "trust": "信任",
+    "optional": "可选",
+    "records": "记录"
+  },
+  "status": {
+    "live": "已生效",
+    "waiting": "等待中",
+    "willAdd": "将添加",
+    "different": "不同",
+    "conflict": "冲突",
+    "unknown": "未知",
+    "found": "已找到"
+  },
+  "pick": {
+    "listLabel": "此系统中的域名",
+    "source": {
+      "install": "邮件安装",
+      "mail": "邮件域名",
+      "app": "应用",
+      "zone": "DNS 区域"
+    },
+    "addAnother": "添加另一个域名",
+    "addLabel": "域名",
+    "placeholder": "example.com",
+    "use": "使用",
+    "invalid": "请输入类似 example.com 的域名。",
+    "apexOffer": "使用 {{apex}} 作为地址,{{host}} 作为服务器",
+    "loadFailed": "无法加载你的域名。"
+  },
+  "detect": {
+    "detecting": "正在检测 DNS 托管方",
+    "connected": "DNS 托管在 {{provider}}。已连接。",
+    "notConnected": "DNS 托管在 {{provider}}。未连接。",
+    "unknown": "我们无法检测到你的 DNS 托管方。你可以改为复制记录。",
+    "failed": "检测失败。你仍然可以复制记录。",
+    "domainConnect": "{{host}} 提供一键批准",
+    "without": "不连接,继续",
+    "demo": "演示数据:demo.example 是一个虚构的区域,因此找不到真实的 DNS 托管方。请在下方输入真实域名来尝试检测(只读查询)。要关闭演示模式,请使用 LOCAL_MAIL_DEMO=0 重启。",
+    "tryLabel": "尝试另一个域名",
+    "tryAction": "检测"
+  },
+  "connect": {
+    "permissions": "创建一个对此区域具有 Zone DNS Edit 和 Zone Read 权限的令牌。不需要其他权限。",
+    "tokenLabel": "{{provider}} API 令牌",
+    "save": "保存令牌",
+    "saving": "正在保存",
+    "failed": "令牌未被接受。请检查其权限后重试。",
+    "useSettings": "请在设置中添加 {{provider}} 凭据,或改为复制记录。"
+  },
+  "review": {
+    "host": "邮件主机",
+    "ip": "服务器 IPv4",
+    "ipPlaceholder": "203.0.113.7",
+    "edit": "编辑邮件主机和服务器",
+    "done": "完成",
+    "otherProvider": "使用其他邮件服务商?",
+    "presetLabel": "邮件服务商",
+    "selfHosted": "此服务器",
+    "planFailed": "无法读取记录。{{message}}",
+    "empty": "此域名没有需要添加的内容。",
+    "blocked": "此区域上的某条记录会遮蔽邮件主机。请先修复它。",
+    "add_other": "添加 {{count}} 条记录",
+    "addDiff_other": "添加 {{count}} 条,检查 {{diff}} 条不同的",
+    "applying": "正在添加记录",
+    "copy": "复制记录",
+    "check": "检查记录",
+    "nothingDeleted": "不会删除任何内容。",
+    "confirmReplace_other": "这会覆盖 {{count}} 条现有记录。请确认以继续。",
+    "confirmButton_other": "是,替换 {{count}} 条并添加",
+    "applyFailed": "记录未被添加。",
+    "recordsTitle": "要创建的 DNS 记录"
+  },
+  "manual": {
+    "whereKnown": "将这些粘贴到 {{provider}} 的 DNS 控制台中。",
+    "whereUnknown": "将这些粘贴到管理你域名 DNS 的位置。",
+    "dashboard": "DNS 控制台",
+    "copyAll": "全部复制",
+    "copyTable": "复制为表格",
+    "copyValue": "复制 {{name}} 的值",
+    "ttl": "TTL {{ttl}}",
+    "priority": "优先级 {{priority}}"
+  },
+  "verify": {
+    "undelegated": "该域名的名称服务器尚未指向此区域,因此这些记录无法解析。{{reason}}",
+    "summary": "已添加 {{added}} 条,已存在 {{same}} 条。",
+    "liveCount": "{{total}} 条中 {{live}} 条已生效",
+    "progress": "已生效的记录",
+    "checkedAgo": "{{seconds}} 秒前检查",
+    "checkNow": "立即检查",
+    "checking": "正在检查",
+    "waiting": "正在等待 DNS 生效,通常不超过 5 分钟。",
+    "stillWaiting": "还在等待?请稍后再检查。",
+    "allLive": "所有记录均已生效。",
+    "ptr": "反向 DNS(PTR)需在你的托管服务商处设置。待处理。",
+    "checkAgain": "重新检查"
+  },
+  "toast": {
+    "applied_other": "已添加 {{count}} 条记录"
+  },
+  "summary": {
+    "label": "记录摘要",
+    "toAdd_other": "{{count}} 条记录待添加",
+    "zone": "区域文件",
+    "table": "表格",
+    "json": "JSON"
+  },
+  "mode": {
+    "label": "添加方式",
+    "auto": "自动添加",
+    "myself": "我自己添加"
+  },
+  "banner": {
+    "hosted": "DNS 托管在 {{provider}}",
+    "unknown": "未检测到 DNS 托管方",
+    "connected": "已连接",
+    "notConnected": "未连接"
+  },
+  "table": {
+    "label": "DNS 记录",
+    "status": "状态",
+    "type": "类型",
+    "name": "名称",
+    "value": "值",
+    "ttl": "TTL",
+    "expand": "显示完整值",
+    "collapse": "隐藏完整值",
+    "existing": "现有记录"
+  },
+  "options": {
+    "label": "添加这些记录的方式",
+    "approve": "在 {{host}} 批准(无需令牌)",
+    "approving": "正在打开",
+    "approveHint": "在新标签页中打开你的 DNS 托管方。你在那里批准,不会存储任何内容。",
+    "connectToken": "使用令牌连接 {{host}}",
+    "tokenHint": "令牌还可启用实时检查和托管的记录列表。",
+    "tokenCerts": "它还能让邮件主机证书自动续期。",
+    "failed": "无法开始批准。请尝试改用令牌连接。",
+    "connectLink": "连接"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "title": "Antes de atualizar",
+  "loading": "Verificando espaço em disco, backup e indisponibilidade",
+  "loadError": "Não foi possível verificar esta atualização: {{message}}",
+  "loadErrorNext": "Recarregue a página ou tente novamente em um minuto. Nada foi alterado.",
+  "retry": "Tentar novamente",
+  "change": {
+    "label": "O que muda",
+    "fromTo": "{{from}} para {{to}}",
+    "migrations_one": "1 migração de banco de dados",
+    "migrations_many": "{{count}} migrações de banco de dados",
+    "migrations_other": "{{count}} migrações de banco de dados",
+    "noMigrations": "Nenhuma migração de banco de dados",
+    "schema": "schema {{from}} para {{to}}",
+    "schemaNote": "({{schema}})",
+    "breaking_one": "1 mudança incompatível",
+    "breaking_many": "{{count}} mudanças incompatíveis",
+    "breaking_other": "{{count}} mudanças incompatíveis",
+    "noBreaking": "Nenhuma mudança incompatível"
+  },
+  "checks": {
+    "label": "Verificações",
+    "diskOk": "Disco OK: {{free}} livres, {{needed}} necessários",
+    "diskShort": "Disco insuficiente: {{free}} livres, {{needed}} necessários",
+    "diskUnknown": "Não foi possível medir o espaço livre em disco",
+    "backupAt": "O backup vai para {{dir}}",
+    "backupSkipped": "Backup ignorado, não haverá ponto de restauração",
+    "backupNone": "Nenhum backup pré-atualização está configurado"
+  },
+  "downtime": {
+    "label": "Indisponibilidade",
+    "estimate": "Cerca de {{seconds}} s offline enquanto o servidor reinicia",
+    "restart": "Reinício: {{behaviour}}"
+  },
+  "restore": {
+    "label": "Se algo der errado, restaure com",
+    "after": "Guarde este comando. Ele restaura o banco de dados ao estado anterior à atualização.",
+    "copyLabel": "Comando de restauração"
+  },
+  "blocked": {
+    "disk": "Espaço livre em disco insuficiente. Libere {{short}} ou mova o diretório de dados e depois recarregue.",
+    "plan": "Esta atualização não pode começar: {{reason}}",
+    "planUnknown": "O plano de atualização falhou. Recarregue a página ou execute a atualização pela linha de comando.",
+    "notes": "As notas de versão desta versão ainda não estão disponíveis. Tente novamente em breve."
+  },
+  "skip": {
+    "toggle": "Avançado",
+    "label": "Ignorar o backup pré-atualização",
+    "warning": "Nenhum ponto de restauração será criado. Se a atualização falhar, você não poderá voltar aos dados atuais.",
+    "hint": "O backup falhou. Corrija a causa e tente novamente, ou ignore-o por sua conta e risco."
+  },
+  "backupFailed": {
+    "title": "O backup pré-atualização falhou, então nada foi alterado",
+    "next": "Libere espaço em disco ou verifique se o diretório de backup é gravável e depois pressione Atualizar novamente. Você também pode ignorar o backup em Avançado."
+  }
+}

@@ -1,0 +1,463 @@
+{
+  "title": "E-mail",
+  "description": "Seu próprio servidor de e-mail: caixas de correio, DNS, backups.",
+  "eyebrow": "Experimental",
+  "install": {
+    "title": "Instalar um servidor de e-mail",
+    "body": "Faz o deploy do template mox: SMTP, IMAP e webmail em um único container.",
+    "action": "Instalar servidor de e-mail"
+  },
+  "overview": {
+    "title": "Checklist de configuração",
+    "hint": "Execute uma verificação em um domínio para preencher isto. Tudo que não foi verificado continua marcado como tal.",
+    "label": "Checklist de configuração de e-mail para {{domain}}"
+  },
+  "status": {
+    "pass": "Passando",
+    "warn": "Requer atenção",
+    "fail": "Falhando",
+    "not_tested": "Não verificado"
+  },
+  "items": {
+    "server": "Servidor de e-mail instalado",
+    "dns": "Registro MX",
+    "spf": "SPF",
+    "dkim": "DKIM",
+    "dmarc": "DMARC",
+    "mta_sts": "MTA-STS",
+    "ptr": "DNS reverso (PTR)",
+    "port25": "Porta 25 de saída"
+  },
+  "unknown": {
+    "server": "Status indisponível.",
+    "ptr": "Definido pelo seu provedor de hospedagem. Esta página ainda não consegue lê-lo."
+  },
+  "dns": {
+    "title": "DNS do domínio",
+    "domain": "Domínio",
+    "domainPlaceholder": "example.com",
+    "knownDomains": "Domínios nesta instância",
+    "preset": "Provedor de e-mail",
+    "selfHosted": "Hospedado por você",
+    "mailHost": "Host de e-mail",
+    "ipv4": "IPv4 do servidor",
+    "ipv4Placeholder": "Endereço público",
+    "plan": "Pré-visualizar registros",
+    "apply": "Aplicar {{count}} registros",
+    "applying": "Aplicando",
+    "check": "Verificar",
+    "checking": "Verificando",
+    "planHash": "Plano {{hash}}",
+    "noChanges": "Nada a adicionar. Estes registros já existem.",
+    "blocked": "O plano está bloqueado por registros existentes. Corrija-os primeiro no seu provedor de DNS.",
+    "applied": "{{count}} registros aplicados",
+    "colAction": "Plano",
+    "colName": "Nome",
+    "colType": "Tipo",
+    "colValue": "Valor",
+    "colLive": "Ativo",
+    "tableLabel": "Registros DNS de e-mail planejados",
+    "action": {
+      "add": "Adicionar",
+      "unchanged": "Sem alteração",
+      "replace": "Substituir",
+      "refused": "Recusado"
+    },
+    "error": "A requisição falhou: {{message}}"
+  },
+  "next": {
+    "title": "Próximo passo",
+    "allSet": "A configuração parece completa",
+    "step": {
+      "install": "Instale o servidor de e-mail",
+      "fix": "Inicie o container de e-mail",
+      "wait": "Aguarde o servidor de e-mail responder",
+      "dns": "Adicione seus registros DNS",
+      "verify": "Verifique o DNS novamente"
+    },
+    "tls": {
+      "self-signed": "TLS: autoassinado",
+      "provided": "TLS: certificado fornecido",
+      "unknown": "TLS: desconhecido"
+    },
+    "tlsSelfSigned": "Autoassinado: substitua antes de enviar e-mails reais.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "cta": "Pré-visualizar registros DNS",
+    "ctaBody": "Mostra os registros de que este domínio precisa, sem alterar nada até você aplicar.",
+    "doneLabel": "Etapas concluídas",
+    "doneItem": {
+      "installed": "App de e-mail instalado",
+      "running": "Container em execução",
+      "admin": "A API de admin responde"
+    }
+  },
+  "server": {
+    "installAction": "Instalar",
+    "done": "Em execução e respondendo",
+    "stopped": "Instalado, mas não está em execução"
+  },
+  "ports": {
+    "title": "Portas de e-mail",
+    "listLabel": "Estado de bind e firewall das portas de e-mail",
+    "open": "Abrir portas de e-mail",
+    "opened": "Portas de e-mail abertas",
+    "pending": "Abrindo",
+    "failed": "Não foi possível abrir as portas de e-mail",
+    "missing": "Este app de e-mail não publica as portas de e-mail. Faça o deploy dele novamente a partir do template atual primeiro.",
+    "webStays": "O webmail e a interface da conta mantêm o próprio bind ({{bind}}). Abrir as portas de e-mail nunca as publica.",
+    "confirmTitle": "Abrir as portas 25, 465, 587 e 993?",
+    "consequence": "Somente estas quatro portas recebem um bind público e uma regra de permissão no firewall do host. O container é recriado.",
+    "certificate": "Use um certificado TLS real, não o autoassinado, e mantenha o servidor reforçado antes de abrir as portas.",
+    "confirm": "Abrir as portas",
+    "bind": {
+      "public": "pública",
+      "private": "privada",
+      "not_published": "não publicada"
+    },
+    "firewall": {
+      "allowed": "o firewall permite",
+      "blocked": "o firewall bloqueia",
+      "not_filtering": "o firewall não está filtrando",
+      "unknown": "firewall desconhecido"
+    }
+  },
+  "mailboxes": {
+    "title": "Caixas de correio",
+    "failed": "A requisição de e-mail falhou.",
+    "noUser": "Nenhum",
+    "needsWrite": "Requer a permissão write:sensitive.",
+    "needsRoot": "Somente um usuário root pode fazer isto.",
+    "pendingWarning": "O servidor de e-mail estava inacessível, então a suspensão ainda não foi aplicada. Ela é aplicada na próxima chamada de e-mail bem-sucedida.",
+    "status": {
+      "active": "Ativa",
+      "suspended": "Suspensa",
+      "pending": "Suspensão pendente"
+    },
+    "col": {
+      "address": "Endereço",
+      "team": "Equipe",
+      "user": "Usuário vinculado",
+      "status": "Status",
+      "created": "Criada em",
+      "actions": "Ações"
+    },
+    "form": {
+      "localpart": "Nome",
+      "domain": "Domínio",
+      "linkedUser": "Usuário vinculado (opcional)",
+      "noUser": "Nenhum usuário vinculado",
+      "add": "Adicionar caixa de correio",
+      "localpartHint": "jo"
+    },
+    "empty": {
+      "title": "Nenhuma caixa de correio ainda",
+      "claim": "Reivindique um domínio acima e depois adicione a primeira caixa de correio.",
+      "add": "Adicione a primeira caixa de correio acima."
+    },
+    "suspend": "Suspender",
+    "resume": "Retomar",
+    "reset": "Redefinir senha",
+    "delete": "Excluir",
+    "suspendFor": "Suspender {{address}}",
+    "resumeFor": "Retomar {{address}}",
+    "resetFor": "Redefinir a senha de {{address}}",
+    "deleteFor": "Excluir {{address}}",
+    "deleteTitle": "Excluir {{address}}?",
+    "deleteBody": "Digite o endereço para confirmar. Suspender geralmente é a melhor escolha.",
+    "reveal": {
+      "title": "Senha de {{address}}",
+      "label": "Senha gerada",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "once": "Exibida uma vez. Não é armazenada.",
+      "saved": "Já salvei"
+    }
+  },
+  "aliases": {
+    "title": "Aliases",
+    "needsMailbox": "Adicione uma caixa de correio primeiro. Um alias precisa apontar para uma caixa de correio.",
+    "empty": "Nenhum alias ainda.",
+    "listLabel": "Aliases",
+    "to": "para",
+    "remove": "Remover",
+    "removeFor": "Remover {{address}}",
+    "form": {
+      "alias": "Alias",
+      "target": "Encaminhar para",
+      "add": "Adicionar alias",
+      "aliasHint": "equipe"
+    }
+  },
+  "queue": {
+    "title": "Fila",
+    "count_one": "{{count}} mensagem aguardando",
+    "count_many": "{{count}} mensagens aguardando",
+    "count_other": "{{count}} mensagens aguardando",
+    "empty": "Nada está aguardando entrega.",
+    "holdAll": "Reter todas",
+    "releaseAll": "Liberar todas",
+    "hold": "Reter",
+    "release": "Liberar",
+    "held": "Retida",
+    "holdFor": "Reter a mensagem {{id}}",
+    "releaseFor": "Liberar a mensagem {{id}}",
+    "col": {
+      "sender": "Remetente",
+      "domain": "Para o domínio",
+      "attempts": "Tentativas",
+      "next": "Próxima tentativa",
+      "error": "Último erro"
+    }
+  },
+  "domains": {
+    "domain": "Domínio",
+    "team": "Equipe",
+    "claim": "Reivindicar domínio",
+    "claimed": "Reivindicado"
+  },
+  "hold": {
+    "title": "Restauração em andamento, o e-mail está retido",
+    "body": "Uma restauração de e-mail mantém este app parado. A plataforma não o iniciará nem o alterará até a restauração terminar ou ser revertida. Acompanhe o job no painel de Backup."
+  },
+  "demo": {
+    "badge": "Dados de demonstração",
+    "hint": "Modo de demonstração local: nada aqui é real e nada chega a um provedor de DNS ou servidor de e-mail.",
+    "reset": "Redefinir demonstração"
+  },
+  "backup": {
+    "title": "Backup",
+    "last": "Último backup",
+    "never": "Nenhum backup ainda",
+    "runNow": "Fazer backup agora",
+    "running": "Fazendo backup: {{step}}",
+    "restoring": "Restaurando: {{step}}",
+    "usage": "{{used}} de {{cap}} usados",
+    "usageLabel": "Espaço de backup usado",
+    "notEncrypted": "Os backups ficam desativados até o servidor ter uma chave de criptografia, porque eles conteriam e-mails sem criptografia.",
+    "failed": "O backup falhou",
+    "jobFailed": "O último job falhou: {{error}}",
+    "verified": "Verificado",
+    "unverified": "Não verificado",
+    "empty": "Nenhum backup armazenado ainda.",
+    "needsWrite": "Requer permissão para alterar as configurações de e-mail.",
+    "col": {
+      "backup": "Backup",
+      "size": "Tamanho",
+      "mox": "Mox",
+      "where": "Onde",
+      "actions": "Ações"
+    },
+    "restore": "Restaurar",
+    "restoreFor": "Restaurar o backup {{id}}",
+    "steps": {
+      "version": "verificando a versão",
+      "backup": "exportando dados",
+      "verify": "verificando",
+      "copy": "copiando",
+      "archive": "arquivando",
+      "prune": "removendo backups antigos",
+      "extract": "descompactando",
+      "stage": "preparando",
+      "stop": "parando o e-mail",
+      "swap": "trocando os dados",
+      "start": "iniciando o e-mail",
+      "wait": "aguardando o e-mail"
+    },
+    "line": "Último backup {{when}}, {{size}}, {{state}}",
+    "verifiedLower": "verificado",
+    "unverifiedLower": "não verificado",
+    "capChip": "limite de {{cap}}",
+    "destination": "Armazenamento",
+    "destinationOpen": "Abrir as configurações de armazenamento de backup",
+    "history": "Histórico",
+    "historyTitle": "Histórico de backups",
+    "progressLabel": "Progresso do backup",
+    "actionsFor": "Ações do backup {{id}}"
+  },
+  "restore": {
+    "title": "Restaurar o backup {{id}}",
+    "checking": "Verificando o backup...",
+    "summary": "{{files}} arquivos, {{size}}, feito com o mox {{mox}}.",
+    "warning": "O e-mail fica fora do ar enquanto a restauração é executada, e o e-mail atual é substituído por este backup.",
+    "confirmLabel": "Digite {{id}} para confirmar",
+    "submit": "Restaurar agora",
+    "working": "Restaurando...",
+    "conflict": "Este backup não pode ser restaurado agora: o mox em execução é mais antigo que o backup, ou outro job está em execução.",
+    "failed": "A restauração falhou",
+    "started": "Restauração iniciada"
+  },
+  "storage": {
+    "title": "Armazenamento de backup",
+    "kind": "Destino",
+    "local": "Pasta local",
+    "s3": "Bucket S3 ou R2",
+    "folder": "Pasta",
+    "cap": "Limite de espaço",
+    "endpoint": "Endpoint",
+    "region": "Região",
+    "bucket": "Bucket",
+    "accessKey": "ID da chave de acesso",
+    "secret": "Chave secreta",
+    "secretHint": "Nunca é exibida novamente, informe-a a cada vez que salvar.",
+    "pathStyle": "URLs em estilo de caminho",
+    "save": "Salvar e verificar",
+    "saving": "Verificando...",
+    "recheck": "Verificar novamente",
+    "saved": "Armazenamento salvo",
+    "checks": "Validação",
+    "pass": "passou",
+    "fail": "falhou",
+    "step": {
+      "put": "Gravar",
+      "get": "Ler",
+      "list": "Listar",
+      "delete": "Excluir"
+    },
+    "localOnly": "Nesta release os backups ainda são gravados na pasta local. O bucket é apenas verificado e salvo.",
+    "failed": "A verificação do armazenamento falhou"
+  },
+  "systemEmail": {
+    "title": "E-mails do sistema",
+    "intro": "Envie convites, redefinições de senha, alertas e avisos da página de status a partir de noreply em um dos seus domínios, por este servidor de e-mail.",
+    "domain": "Domínio do remetente",
+    "fromOption": "noreply@{{domain}}",
+    "replace": "Substituir o provedor de e-mail atual (desativar o restaura)",
+    "enable": "Usar meu servidor de e-mail",
+    "disable": "Desativar",
+    "rotate": "Rotacionar senha",
+    "test": "Enviar teste",
+    "active": "Enviando por {{addr}}.",
+    "replaced": "Ativado, mas as configurações de e-mail foram alteradas desde então. Desative para restaurar o provedor anterior.",
+    "lastOk": "O último teste para {{to}} passou: {{message}}",
+    "lastFail": "O último teste para {{to}} falhou: {{message}}",
+    "dns": "DNS: SPF {{spf}}, DKIM {{dkim}}, DMARC {{dmarc}}",
+    "dnsWarning": "Os e-mails para destinatários externos cairão no spam ou serão rejeitados até que SPF, DKIM e DMARC passem e o DNS reverso (PTR) do servidor corresponda ao host de e-mail dele.",
+    "dnsLink": "Abrir o painel de DNS",
+    "needsRoot": "Somente um admin da instância pode alterar para onde vão os e-mails do sistema.",
+    "noDomain": "Reivindique um domínio primeiro em Caixas de correio.",
+    "failed": "A requisição de e-mail do sistema falhou.",
+    "steps": "Etapas",
+    "step": {
+      "mailbox": "Caixa de correio",
+      "provider_saved": "Provedor salvo",
+      "test_send_queued": "Envio de teste na fila",
+      "delivered_to_local_queue": "Entregue à fila do servidor de e-mail",
+      "provider_restored": "Provedor anterior restaurado",
+      "mailbox_suspended": "Caixa de correio suspensa",
+      "rotated": "Senha rotacionada"
+    },
+    "switchLabel": "Enviar os e-mails do Levelrail a partir de {{from}}",
+    "settings": "Configurações",
+    "statusOn": "Ativado",
+    "statusOff": "Desativado",
+    "statusReplaced": "Alterado desde a ativação",
+    "replaceHelp": "Desativa o provedor que você usa hoje. Desativar o restaura.",
+    "pinNote": "Fixado: se as configurações de e-mail mudarem depois, isto aparece como alterado e Desativar restaura o provedor anterior.",
+    "noLast": "Ainda não testado",
+    "testShort": "Testar",
+    "dnsReady": "Prontidão do DNS",
+    "dnsRow": "{{name}}: {{value}}"
+  },
+  "tabs": {
+    "label": "Seções de e-mail",
+    "overview": "Visão geral",
+    "mailboxes": "Caixas de correio",
+    "domains": "Domínios e DNS",
+    "backups": "Backups"
+  },
+  "shell": {
+    "running": "Em execução",
+    "stopped": "Parado",
+    "waiting": "Iniciando",
+    "notInstalled": "Não instalado",
+    "settings": "Configurações",
+    "settingsTitle": "Configurações de e-mail",
+    "queueChip": "Fila {{count}}",
+    "queueTitle": "Fila de entrega",
+    "addMailbox": "Adicionar caixa de correio",
+    "statusLabel": "Status do servidor de e-mail",
+    "skeleton": "Carregando o status do e-mail"
+  },
+  "webmail": {
+    "open": "Abrir webmail",
+    "openFor": "Abrir o webmail de {{address}}",
+    "disabled": "Anexe um domínio ao listener do webmail para ativar isto",
+    "settings": "Configurações de domínio do app"
+  },
+  "ov": {
+    "allSet": "Tudo pronto",
+    "details": "Detalhes",
+    "hideDetails": "Ocultar detalhes",
+    "chips": {
+      "dns": "DNS {{pass}}/{{total}}",
+      "dnsNone": "DNS: ainda não verificado",
+      "backup": "Backup {{when}}",
+      "backupNone": "Nenhum backup ainda",
+      "queue": "{{count}} na fila"
+    },
+    "statsLabel": "E-mail em resumo",
+    "backupOpen": "Abrir backups",
+    "checkDns": "Verificar DNS",
+    "checkFailed": "A verificação de DNS falhou"
+  },
+  "mbx": {
+    "search": "Buscar caixas de correio",
+    "filter": "Filtrar por status",
+    "all": "Todas",
+    "active": "Ativas",
+    "suspended": "Suspensas",
+    "system": "Do sistema",
+    "add": {
+      "name": "Nome",
+      "hint": "nome",
+      "submit": "Criar",
+      "cancel": "Cancelar",
+      "claims": "Reivindica {{domain}} para a sua equipe padrão",
+      "domainLabel": "Domínio",
+      "user": "Usuário vinculado (opcional)",
+      "close": "Fechar"
+    },
+    "empty": "Nenhuma caixa de correio ainda.",
+    "noMatch": "Nenhuma caixa de correio corresponde.",
+    "list": "Caixas de correio",
+    "actions": "Ações de {{address}}",
+    "copy": "Copiar endereço",
+    "copied": "Copiado",
+    "details": "Detalhes",
+    "aliasesTitle": "Aliases",
+    "addDomain": "Adicionar domínio",
+    "domainChip": "Domínio {{domain}}",
+    "created": "Criada em {{date}}",
+    "team": "Equipe {{team}}",
+    "user": "Vinculado: {{user}}",
+    "claimedDomains": "Domínios reivindicados",
+    "noDomains": "Nenhum domínio foi reivindicado ainda. Ele é reivindicado quando você adiciona a primeira caixa de correio.",
+    "loading": "Carregando caixas de correio",
+    "notUp": "Disponível quando o servidor de e-mail estiver em execução.",
+    "storage": "Armazenamento de backup",
+    "viewOnly": "Você pode ver as caixas de correio, mas não gerenciá-las",
+    "viewOnlyReason": "A função da sua equipe não permite gerenciar e-mail. Peça acesso a um admin ou proprietário da equipe.",
+    "actionForbidden": "A função da sua equipe não permite isto. Peça a um admin ou proprietário da equipe para fazê-lo ou para alterar a sua função."
+  },
+  "cert": {
+    "title": "Certificado de e-mail",
+    "listLabel": "Certificado servido nas portas de e-mail",
+    "host": "Host",
+    "source": "Origem",
+    "issuer": "Emissor",
+    "expires": "Expira",
+    "daysLeft_one": "{{count}} dia restante",
+    "daysLeft_many": "{{count}} dias restantes",
+    "daysLeft_other": "{{count}} dias restantes",
+    "serial": "Serial",
+    "fingerprint": "SHA-256",
+    "selfSigned": "Autoassinado",
+    "notServed": "Nenhum certificado é servido ainda",
+    "probeError": "A sondagem falhou: {{message}}",
+    "obtain": "Obter certificado",
+    "obtaining": "Solicitando",
+    "obtained": "Certificado solicitado",
+    "failed": "Não foi possível obter um certificado"
+  }
+}

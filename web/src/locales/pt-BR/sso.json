@@ -1,0 +1,301 @@
+{
+  "page": {
+    "eyebrow": "Segurança",
+    "title": "Login único",
+    "description": "Permita que as pessoas façam login pelo seu provedor de identidade com SAML 2.0, mapeie grupos do diretório para funções e decida se as senhas locais ainda funcionam.",
+    "connectedCount_one": "{{count}} conexão ativada",
+    "connectedCount_many": "{{count}} conexões ativadas",
+    "connectedCount_other": "{{count}} conexões ativadas",
+    "addConnection": "Adicionar conexão SAML",
+    "setupBanner": {
+      "title": "Termine a configuração primeiro",
+      "masterKey": "O SAML precisa da chave mestra do control plane para guardar a chave de assinatura dele. Configure a chave mestra e depois volte.",
+      "baseUrl": "O SAML precisa de uma URL do painel em https, porque os provedores de identidade enviam as respostas de login para ela. Defina uma em Configurações, Geral."
+    }
+  },
+  "list": {
+    "title": "Conexões SAML",
+    "description": "Cada conexão confia em um provedor de identidade. As conexões ativadas mostram um botão na página de login.",
+    "emptyTitle": "Nenhuma conexão SAML ainda",
+    "emptyBody": "Adicione uma para Okta, Entra ID, Keycloak ou qualquer provedor de identidade SAML 2.0.",
+    "configure": "Configurar",
+    "state": {
+      "enabled": "Ativada",
+      "disabled": "Desativada",
+      "incomplete": "Requer detalhes do IdP"
+    },
+    "jit": "Cria contas",
+    "certExpires": "O certificado expira {{date}}"
+  },
+  "form": {
+    "newTitle": "Nova conexão SAML",
+    "editTitle": "Configurar {{name}}",
+    "sheetDescription": "Forneça estes valores de provedor de serviço ao seu provedor de identidade e depois importe os metadados dele.",
+    "name": "Nome de exibição",
+    "nameHelp": "Exibido no botão de login, por exemplo o nome da empresa ou do IdP.",
+    "enabled": "Mostrar na página de login",
+    "sp": {
+      "title": "Detalhes do provedor de serviço",
+      "description": "Copie estes valores para o app SAML que você cria no seu provedor de identidade.",
+      "entityId": "ID da entidade (audience)",
+      "acsUrl": "URL do assertion consumer service",
+      "metadataUrl": "URL dos metadados",
+      "saveFirst": "Salve a conexão para obter as URLs dela.",
+      "copy": "Copiar {{label}}"
+    },
+    "import": {
+      "title": "Importar metadados do IdP",
+      "description": "Cole a URL ou o XML dos metadados do seu provedor de identidade. Isso preenche o ID da entidade, a URL de login e o certificado de assinatura, usando o mais novo válido hoje quando os metadados listam vários.",
+      "url": "URL dos metadados",
+      "xml": "XML dos metadados",
+      "button": "Importar metadados",
+      "done": "Metadados importados. Revise e ative a conexão."
+    },
+    "idp": {
+      "title": "Provedor de identidade",
+      "description": "Preenchido pela importação, ou informe manualmente. As respostas devem ser assinadas por este certificado.",
+      "entityId": "ID da entidade do IdP (issuer)",
+      "ssoUrl": "URL de login do IdP",
+      "certificates": "Certificado de assinatura (PEM)",
+      "certificatesHelp": "Um certificado. Quando o provedor de identidade rotacionar a chave dele, cole ou importe o novo certificado na troca."
+    },
+    "access": {
+      "title": "Contas e funções",
+      "description": "Decida quem pode fazer login e qual função recebe.",
+      "jit": "Criar contas no primeiro login",
+      "jitHelp": "Desativado: somente quem já tem uma conta aqui pode fazer login.",
+      "syncRoles": "Aplicar a função mapeada em todo login",
+      "syncRolesHelp": "As alterações de grupo no provedor de identidade entram em vigor no próximo login. Pessoas em nenhum grupo mapeado recebem a função padrão, ou são recusadas se não houver uma.",
+      "defaultRole": "Função padrão",
+      "defaultRoleNone": "Nenhuma: recusar pessoas em nenhum grupo mapeado",
+      "domains": "Domínios de e-mail permitidos",
+      "domainsHelp": "Obrigatório. Separados por vírgula, por exemplo example.com. Somente esses domínios podem fazer login, o que impede que contas externas correspondam às suas."
+    },
+    "attributes": {
+      "title": "Nomes dos atributos",
+      "description": "Deixe vazio para usar os nomes comuns de Okta, Entra ID e Keycloak.",
+      "email": "Atributo de e-mail",
+      "name": "Atributo do nome de exibição",
+      "groups": "Atributo de grupos"
+    },
+    "save": "Salvar conexão",
+    "saved": "Conexão salva",
+    "delete": "Excluir conexão",
+    "deleteTitle": "Excluir {{name}}?",
+    "deleteBody": "As pessoas vinculadas por esta conexão mantêm as contas, mas não podem mais fazer login com ela.",
+    "deleted": "Conexão excluída"
+  },
+  "mappings": {
+    "title": "Mapeamentos de grupo para função",
+    "description": "Quando alguém faz login, ou um grupo do diretório muda, o grupo correspondente de maior prioridade decide a função da pessoa. Os nomes de grupo são comparados sem diferenciar maiúsculas de minúsculas.",
+    "group": "Nome do grupo",
+    "role": "Função",
+    "priority": "Prioridade",
+    "add": "Adicionar mapeamento",
+    "remove": "Remover o mapeamento de {{group}}",
+    "empty": "Nenhum mapeamento. Todos recebem a função padrão da conexão.",
+    "save": "Salvar mapeamentos",
+    "saved": "Mapeamentos salvos"
+  },
+  "enforce": {
+    "title": "Exigir login único",
+    "description": "Recusa login por senha, passkey e código por e-mail para todos, exceto usuários root.",
+    "label": "Exigir SSO para usuários que não são root",
+    "breakGlass": "Os usuários root mantêm a senha como caminho de emergência, e o recover-admin no host ainda a redefine. Veja a documentação de acesso de emergência.",
+    "on": "O login único agora é obrigatório",
+    "off": "O login local voltou a ser permitido"
+  },
+  "spCert": {
+    "title": "Certificado do provedor de serviço",
+    "description": "Gerado no primeiro uso. Alguns provedores de identidade pedem para verificar requisições assinadas ou criptografar asserções.",
+    "none": "Indisponível até a chave mestra do control plane ser configurada."
+  },
+  "scim": {
+    "title": "Sincronização de diretório (SCIM)",
+    "description": "Permita que seu provedor de identidade crie, atualize e desative contas e grupos. Desativar alguém lá encerra as sessões dessa pessoa aqui na hora.",
+    "baseUrl": "URL base do SCIM",
+    "defaultRole": "Função para novos usuários do diretório",
+    "defaultRoleHelp": "Usada quando nenhum mapeamento de grupo corresponde. Com mapeamentos de grupo, as mudanças de grupo do diretório atualizam as funções na hora.",
+    "roleSaved": "Função padrão do diretório salva",
+    "tokens": "Tokens",
+    "tokenName": "Nome do token",
+    "tokenNamePlaceholder": "okta-provisioning",
+    "create": "Criar token",
+    "empty": "Nenhum token SCIM ainda. Crie um e cole no seu provedor de identidade.",
+    "rotate": "Rotacionar",
+    "revoke": "Revogar",
+    "revoked": "Revogado",
+    "neverUsed": "Nunca usado",
+    "lastUsed": "Último uso {{date}}",
+    "revokeTitle": "Revogar {{name}}?",
+    "revokeBody": "O provisionamento com este token para imediatamente.",
+    "revokedToast": "Token revogado",
+    "shownOnceTitle": "Copie o token agora",
+    "shownOnceBody": "Ele é exibido uma vez e armazenado apenas como hash. Cole-o nas configurações de SCIM do seu provedor de identidade.",
+    "done": "Concluído"
+  },
+  "policy": {
+    "eyebrow": "Segurança",
+    "title": "Política de sessão",
+    "description": "Regras por equipe contra as quais cada requisição é verificada: timeout de inatividade, idade máxima da sessão, redes permitidas e login com dois fatores obrigatório. Pessoas em várias equipes recebem a combinação mais rigorosa.",
+    "yourAddress": "Seu endereço: {{address}}",
+    "recoveryTitle": "Ficou sem acesso?",
+    "recoveryBody": "No host, execute levelrail access-policy-reset --yes para remover todas as políticas de sessão e depois faça login novamente. Salvar uma política que bloquearia o seu próprio endereço é recusado.",
+    "noPolicy": "Sem política",
+    "edit": "Editar política",
+    "idle": "Timeout de inatividade",
+    "idleHelp": "Encerra sessões sem uso por este tempo, por exemplo 30m. No mínimo 5m. Vazio desativa.",
+    "maxAge": "Idade máxima da sessão",
+    "maxAgeHelp": "Encerra sessões mais antigas que isto, por exemplo 12h. No mínimo 15m. Vazio desativa.",
+    "maxSessions": "Sessões simultâneas por pessoa",
+    "maxSessionsHelp": "O máximo de sessões completas que uma pessoa pode ter ao mesmo tempo, entre navegadores e dispositivos. 0 desativa o limite.",
+    "onLimit": "Quando o limite é atingido",
+    "onLimitEvict": "Encerrar a sessão mais antiga",
+    "onLimitReject": "Recusar o novo login",
+    "onLimitHelp": "Verificado na primeira requisição após o login ou a etapa de dois fatores, e depois a cada 30 segundos. As sessões acima do limite terminam com uma mensagem clara.",
+    "allowlist": "Redes permitidas",
+    "allowlistHelp": "Um endereço IP ou CIDR por linha. Aplica-se a sessões e tokens de API. Vazio permite qualquer endereço.",
+    "requireMfa": "Exigir login com dois fatores",
+    "requireMfaHelp": "Pessoas sem um app autenticador ou passkey só podem cadastrar um até fazê-lo. Logins SAML contam, já que o provedor de identidade cuida da MFA.",
+    "save": "Salvar política",
+    "saved": "Política de sessão salva",
+    "clear": "Remover política",
+    "cleared": "Política de sessão removida",
+    "sheetTitle": "Política de sessão de {{team}}",
+    "summaryIdle": "inatividade {{value}}",
+    "summaryMaxAge": "máx. {{value}}",
+    "summaryMfa": "MFA obrigatória",
+    "summarySessionsEvict_one": "{{count}} sessão, a mais antiga termina",
+    "summarySessionsEvict_many": "{{count}} sessões, a mais antiga termina",
+    "summarySessionsEvict_other": "{{count}} sessões, a mais antiga termina",
+    "summarySessionsReject_one": "{{count}} sessão, depois recusa",
+    "summarySessionsReject_many": "{{count}} sessões, depois recusa",
+    "summarySessionsReject_other": "{{count}} sessões, depois recusa",
+    "summaryAllow_one": "{{count}} rede",
+    "summaryAllow_many": "{{count}} redes",
+    "summaryAllow_other": "{{count}} redes"
+  },
+  "oidc": {
+    "title": "Login OAuth e OIDC",
+    "description": "Os mesmos controles do SAML para os provedores que você ativou em Configurações, Login OAuth: quais grupos recebem qual função, se um primeiro login cria uma conta e quais domínios de e-mail podem fazer login.",
+    "emptyTitle": "Nenhum provedor OAuth ou OIDC ainda",
+    "emptyBody": "Ative um provedor em Configurações, Login OAuth. Ele aparece aqui com a política de login dele.",
+    "syncBadge": "Sincroniza funções",
+    "state": {
+      "enabled": "Ativado",
+      "off": "Desativado"
+    },
+    "form": {
+      "title": "Política de login de {{name}}",
+      "sheetDescription": "Os mapeamentos de grupo para função são compartilhados com o SAML e a sincronização de diretório: edite-os no card de mapeamentos desta página.",
+      "access": {
+        "title": "Acesso",
+        "description": "Privilégio mínimo por padrão: pessoas desconhecidas são recusadas e ninguém recebe mais do que a função que você escolher aqui."
+      },
+      "jit": "Criar uma conta no primeiro login",
+      "jitHelp": "Desativado: quem não tem conta aqui é recusado, a menos que você o tenha convidado antes. Ativado: o primeiro login cria uma conta com a função mapeada ou a função padrão.",
+      "syncRoles": "Reaplicar a função mapeada em todo login",
+      "syncRolesHelp": "Desativado: uma função só é definida quando a conta é criada. Ativado: ela acompanha os grupos a cada login, e os rebaixamentos são gravados no log de auditoria. Os usuários root nunca são alterados.",
+      "defaultRole": "Função padrão",
+      "defaultRoleHelp": "Para pessoas às quais nenhum mapeamento corresponde. Uma função que contém root nunca é oferecida: uma declaração de login não pode concedê-la.",
+      "domains": "Domínios de e-mail permitidos",
+      "domainsHelp": "Separados por vírgula, por exemplo example.com. Somente esses domínios podem fazer login, e a página de login os envia para este provedor. Vazio permite qualquer domínio e desativa o roteamento.",
+      "groups": {
+        "title": "Grupos",
+        "description": "Onde este provedor informa em quais grupos uma pessoa está.",
+        "unsupported": "Este provedor não envia um token de ID verificado do qual ler os grupos, então todos recebem a função padrão. Use o provedor OpenID Connect genérico com o seu provedor de identidade para mapear grupos."
+      },
+      "groupsClaim": "Declaração de grupos",
+      "groupsClaimHelp": "A declaração do token de ID que lista os nomes dos grupos, por exemplo groups, roles ou realm_access.roles. Somente o token de ID assinado é lido.",
+      "save": "Salvar política",
+      "saved": "Política de login salva"
+    },
+    "test": {
+      "button": "Testar login",
+      "hint": "Um login de teste faz você entrar no provedor e mostra o que um login faria. Ele não cria conta, função nem sessão. Salve suas alterações primeiro.",
+      "allowed": "Este login seria permitido",
+      "refused": "Este login seria recusado",
+      "groups": "Grupos",
+      "noGroups": "nenhum",
+      "role": "Função",
+      "source": {
+        "mapping": "de um mapeamento de grupo",
+        "default": "a função padrão"
+      },
+      "account": "Conta",
+      "accountState": {
+        "linked": "já vinculada",
+        "existing_by_email": "conta existente encontrada pelo e-mail",
+        "new_account": "uma nova conta seria criada",
+        "not_provisioned": "nenhuma, e a criação de contas está desativada"
+      },
+      "issue": {
+        "no_groups_claim": "O token de ID não tem a declaração \"{{claim}}\", então todos recebem a função padrão. Adicione uma declaração de grupos ao token de ID no seu provedor de identidade.",
+        "wrong_claim_name": "O token de ID não tem a declaração \"{{claim}}\", mas traz uma lista chamada \"{{value}}\".",
+        "email_unverified": "O provedor não marcou este e-mail como verificado, então o login é recusado. Verifique o endereço no provedor.",
+        "domain_not_allowed": "Este domínio de e-mail não está na lista de permitidos.",
+        "not_provisioned": "Não existe conta para esta pessoa e a criação de contas está desativada.",
+        "role_grants_root": "A função que este login receberia contém root, ou não existe mais. Uma declaração nunca pode conceder root.",
+        "no_email": "O provedor não enviou um endereço de e-mail."
+      },
+      "fix": {
+        "set_groups_claim": "Usar {{value}} como declaração de grupos",
+        "add_domain": "Permitir {{value}}",
+        "enable_jit": "Ativar a criação de contas"
+      },
+      "fixManual": "Corrigir no provedor de identidade",
+      "fixed": "Política atualizada. Execute o teste novamente.",
+      "failedTitle": "O login de teste não terminou",
+      "failedBody": "O provedor ou o redirecionamento falhou (código {{code}}). Verifique o ID do cliente, o segredo do cliente e a URL de redirecionamento e tente novamente.",
+      "nothingCreated": "Nada foi criado: nenhuma conta, função ou sessão."
+    }
+  },
+  "saml": {
+    "test": {
+      "button": "Testar login",
+      "hint": "Abre o login real no seu provedor de identidade e mostra o que ele enviou e o que um login faria. Ele não cria conta, função nem sessão. Salve suas alterações primeiro.",
+      "allowed": "Este login seria permitido",
+      "refused": "Este login seria recusado",
+      "email": "E-mail",
+      "none": "nenhum",
+      "fixed": "Conexão atualizada. Execute o teste novamente.",
+      "fixManual": "Corrigir no provedor de identidade",
+      "failureCode": "Código: {{code}}",
+      "issue": {
+        "no_groups_claim": "A resposta não traz o atributo \"{{attribute}}\", então todos recebem a função padrão. Adicione uma declaração de atributo de grupo no seu provedor de identidade e defina o nome dela como atributo de grupos.",
+        "domain_not_allowed": "Este domínio de e-mail não é reivindicado pela conexão.",
+        "not_provisioned": "Não existe conta para esta pessoa e a criação de contas está desativada.",
+        "role_grants_root": "A função que este login receberia contém root, ou não existe mais. Uma declaração nunca pode conceder root.",
+        "no_email": "A resposta não trouxe um endereço de e-mail. Verifique o nome do atributo de e-mail e o formato do NameID.",
+        "wrong_claim_name": "A resposta não traz o atributo \"{{attribute}}\". Verifique o nome do atributo de grupos em relação ao que o provedor de identidade envia.",
+        "email_unverified": "O provedor de identidade não garantiu a validade deste endereço de e-mail."
+      },
+      "failure": {
+        "clock_skew": {
+          "title": "Desvio de relógio",
+          "step": "A asserção estava fora da janela de validade. Verifique se os relógios deste servidor e do provedor de identidade concordam em até três minutos (NTP) e tente novamente."
+        },
+        "audience_mismatch": {
+          "title": "Audience não corresponde",
+          "step": "O provedor de identidade endereçou outro provedor de serviço. Defina a audience dele (ID da entidade) como {{entityId}} e a URL de ACS como {{acs}}."
+        },
+        "signature_invalid": {
+          "title": "Assinatura inválida",
+          "step": "A asserção não está assinada pelo certificado registrado. Importe os metadados do provedor de identidade novamente e garanta que ele assine a asserção, e não apenas a resposta."
+        },
+        "request_mismatch": {
+          "title": "A resposta não corresponde à requisição",
+          "step": "A resposta respondeu a outra requisição ou destino. Inicie o teste novamente a partir desta página e verifique a URL de ACS {{acs}} no provedor de identidade."
+        },
+        "response_invalid": {
+          "title": "Resposta recusada",
+          "step": "Não foi possível verificar a resposta. Verifique os logs do provedor de identidade e depois importe os metadados dele novamente."
+        },
+        "saml_unavailable": {
+          "title": "O login não está disponível",
+          "step": "O SAML precisa de uma URL do painel em https e da chave mestra do control plane. Corrija os dois em Configurações, Geral e tente novamente."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "label": "DNS-Challenge für jeden Host verwenden",
+  "helper": "Für Server hinter CGNAT oder mit geschlossenem Port 80. Erfordert einen verbundenen DNS-Anbieter.",
+  "noProvider": "Es ist kein DNS-Anbieter verbunden.",
+  "connectProvider": "Einen verbinden",
+  "enableFailed": "DNS-Challenge konnte nicht aktiviert werden",
+  "disableFailed": "DNS-Challenge konnte nicht deaktiviert werden",
+  "saved": "DNS-Challenge für jeden Host ist aktiviert",
+  "savedOff": "DNS-Challenge für jeden Host ist deaktiviert"
+}

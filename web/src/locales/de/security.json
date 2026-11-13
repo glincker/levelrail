@@ -1,0 +1,438 @@
+{
+  "page": {
+    "title": "Sicherheitscenter",
+    "description": "Ihr Sicherheitswert, was Sie zuerst beheben sollten, und jede Sitzung und jedes Gerät, das diese Control Plane erreichen kann.",
+    "tabs": {
+      "checklist": "Checkliste",
+      "sessions": "Sitzungen und Geräte",
+      "policy": "Richtlinie",
+      "rotations": "Secret-Rotationen",
+      "compliance": "Compliance",
+      "exposure": "Exposition",
+      "advisories": "Sicherheitshinweise"
+    },
+    "loadError": "Das Sicherheitscenter konnte nicht geladen werden.",
+    "retry": "Erneut versuchen"
+  },
+  "score": {
+    "label": "Sicherheitswert",
+    "grade": "Note {{grade}}",
+    "generated": "Geprüft {{time}}",
+    "failing": "{{critical}} kritisch, {{high}} hoch, {{medium}} mittel, {{low}} niedrig",
+    "passing": "{{count}} Prüfungen bestanden",
+    "unknown": "{{count}} konnten nicht geprüft werden",
+    "recommended": "{{count}} empfohlene Schritte beeinflussen den Wert nicht, bis Sie eine App deployen",
+    "summaryOnly": "Nur Admins sehen die vollständige Checkliste. Bitten Sie einen Admin, die Punkte hinter diesem Wert zu prüfen."
+  },
+  "severity": {
+    "critical": "Kritisch",
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig"
+  },
+  "status": {
+    "pass": "Bestanden",
+    "fail": "Handlungsbedarf",
+    "recommended": "Empfohlen",
+    "unknown": "Unbekannt"
+  },
+  "supplyGate": {
+    "blockOnHigh": {
+      "label": "Bei hoch oder kritisch blockieren",
+      "summary": "Releases mit schwerwiegenden Befunden zurückhalten.",
+      "detail": "Ein Release mit einer hohen oder kritischen Schwachstelle geht nicht live. Das vorherige Release liefert weiter aus und der Deploy hält den Grund fest. Schlägt der Scanner selbst fehl, wird das Release erlaubt."
+    }
+  },
+  "reach": {
+    "title": "Was das Internet erreichen kann",
+    "description": "Jede Domain und jeder veröffentlichte Port pro App und Datenbank, mit einer Lösung für das, was nicht offen sein sollte. Die Lösungen nutzen dieselben Steuerungen wie die Seiten für Apps, Firewall und Datenbanken.",
+    "recheck": "Erneut prüfen",
+    "rechecking": "Wird geprüft",
+    "recheckError": "Erneute Prüfung nicht möglich.",
+    "loadError": "Der Expositionsbericht konnte nicht geladen werden.",
+    "rulesUnreadable": "Die Firewall-Regeln eines Nodes konnten nicht gelesen werden, daher kann ein eingeschränkter Port als offen erscheinen.",
+    "clean": "Nichts Riskantes ist erreichbar. {{count}} veröffentlichte Ports sind durch Firewall-Regeln eingeschränkt.",
+    "subjects": "Apps und Datenbanken",
+    "private": "Von außen nicht erreichbar",
+    "fixed": "Behoben. Der Bericht wurde erneut geprüft.",
+    "stillFailing": "Die Änderung wurde angewendet, aber der Befund besteht weiterhin.",
+    "applyError": "Die Lösung konnte nicht angewendet werden.",
+    "severity": {
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig",
+      "info": "Info"
+    },
+    "type": {
+      "app": "App",
+      "database": "Datenbank"
+    },
+    "kinds": {
+      "app_direct_port": {
+        "title": "{{name}} ist auf {{port}} offen",
+        "why": "Ein direkter Port umgeht TLS, Anmelde-Schranken und das Shield. Die Auslieferung über den Proxy schließt den Port.",
+        "fix": "Über den Proxy ausliefern"
+      },
+      "app_no_shield": {
+        "title": "{{name}} hat kein Shield auf {{domain}}",
+        "why": "Ohne Ratenlimits kann ein einzelner Client die gesamte Kapazität der App nutzen.",
+        "fix": "Empfohlenes Shield anwenden"
+      },
+      "database_public": {
+        "title": "Datenbank {{name}} ist auf {{port}} zum Internet hin offen",
+        "why": "Jeder, der den Port findet, kann versuchen, sich anzumelden. Beschränken Sie ihn auf bekannte Adressen oder machen Sie ihn privat.",
+        "fix": "Zugriff prüfen"
+      },
+      "port_exposed": {
+        "title": "{{container}} ist auf {{port}} offen",
+        "why": "Docker veröffentlicht Ports an der Host-Firewall vorbei, daher kann jeder diesen erreichen.",
+        "fix": "In der Firewall einschränken"
+      },
+      "docker_api": {
+        "title": "Die Docker-API ist auf {{port}} offen",
+        "why": "Jeder, der sie erreicht, kontrolliert jeden Container auf dem Server.",
+        "fix": "In der Firewall einschränken"
+      }
+    },
+    "confirm": {
+      "title": "Den direkten Port schließen?",
+      "description": "Die App wird mit demselben Image neu erstellt und ist danach nur noch über den Proxy erreichbar. Alles, was die direkte Adresse nutzt, funktioniert nicht mehr.",
+      "confirm": "Den Port schließen",
+      "pending": "Wird angewendet"
+    }
+  },
+  "checklist": {
+    "platform": "Plattform",
+    "account": "Ihr Konto",
+    "empty": "Noch nichts zu prüfen.",
+    "count": "{{count}} betroffen",
+    "showPassing": "Bestandene Prüfungen anzeigen",
+    "hidePassing": "Bestandene Prüfungen ausblenden",
+    "fix": "Beheben",
+    "open": "Öffnen",
+    "cli": "Über die CLI",
+    "applied": "Änderung angewendet.",
+    "applyError": "Die Änderung konnte nicht angewendet werden."
+  },
+  "items": {
+    "admin_without_mfa": {
+      "title": "Admins ohne Zwei-Faktor oder Passkey",
+      "pass": "Jeder Admin hat Zwei-Faktor oder einen Passkey",
+      "why": "Ein durchgesickertes Admin-Passwort allein würde volle Kontrolle über jede App und jedes Secret geben."
+    },
+    "account_flagged": {
+      "title": "Konten, die für ein neues Passwort markiert sind",
+      "pass": "Kein Konto ist für eine Passwort-Zurücksetzung markiert",
+      "why": "Jemand hat gemeldet, dass eine Anmeldung bei diesen Konten nicht von ihm stammte."
+    },
+    "recovery_codes_missing": {
+      "title": "Konten ohne verbleibende Wiederherstellungscodes",
+      "pass": "Jedes Zwei-Faktor-Konto hat Wiederherstellungscodes",
+      "why": "Der Verlust der Authenticator-App würde diese Konten ohne Rückweg aussperren."
+    },
+    "no_admin_passkey": {
+      "title": "Kein Admin hat einen Passkey",
+      "pass": "Admins haben {{count}} Passkey(s)",
+      "why": "Passkeys lassen sich im Gegensatz zu Passwörtern und Codes nicht phishen oder wiederverwenden."
+    },
+    "token_root": {
+      "title": "API-Tokens mit Root",
+      "pass": "Kein API-Token besitzt Root",
+      "why": "Ein Root-Token kann alles, was ein Admin kann, einschließlich der Erstellung weiterer Tokens."
+    },
+    "token_no_expiry": {
+      "title": "API-Tokens, die nie ablaufen",
+      "pass": "Jedes API-Token hat ein Ablaufdatum",
+      "why": "Ein Token ohne Ablauf funktioniert noch lange, nachdem sich niemand mehr an seine Existenz erinnert."
+    },
+    "token_signin_approve": {
+      "title": "API-Tokens, die Anmeldungen genehmigen können",
+      "pass": "Kein API-Token kann Anmeldungen genehmigen",
+      "why": "Ein solches Token kann Anmeldecodes offenlegen und neue Browser für seinen Inhaber genehmigen."
+    },
+    "token_unused": {
+      "title": "Lange ungenutzte API-Tokens",
+      "pass": "Keine lange ungenutzten API-Tokens",
+      "why": "Ungenutzte Tokens sind reines Risiko: Widerrufen Sie, was niemand mehr braucht."
+    },
+    "sessions_old": {
+      "title": "Alte Sitzungen sind weiterhin angemeldet",
+      "pass": "Keine alten Sitzungen",
+      "why": "Langlebige Sitzungen in vergessenen Browsern sind ein leichter Zugang."
+    },
+    "secret_reveal_allow": {
+      "title": "Secret-Werte können ohne Bestätigung angezeigt werden",
+      "pass": "Das Anzeigen eines Secret-Werts erfordert eine Bestätigung per Passwort oder Passkey",
+      "why": "Mit APP_SECRET_REVEAL=allow kann jeder mit read:sensitive oder einer gestohlenen Sitzung jeden Secret-Wert lesen. Setzen Sie es auf step_up."
+    },
+    "new_device_approval_off": {
+      "title": "Die Genehmigung neuer Browser ist aus",
+      "pass": "Die Genehmigung neuer Browser ist an",
+      "why": "Ohne sie meldet ein gestohlenes Passwort von überall an, ohne zweite Prüfung."
+    },
+    "approval_password_only": {
+      "title": "Nur Passwort-Anmeldungen brauchen die Genehmigung neuer Browser",
+      "pass": "Jede Anmeldemethode braucht die Genehmigung neuer Browser",
+      "why": "Anmeldungen per Passkey und OAuth von einem neuen Browser überspringen den Genehmigungsschritt heute."
+    },
+    "code_login_admins": {
+      "title": "Admins können sich mit einem Code anmelden",
+      "pass": "Admins können sich nicht mit einem Code anmelden",
+      "why": "Ein an eine offene Sitzung oder E-Mail gesendeter Code ist ein schwächerer Weg in ein Admin-Konto."
+    },
+    "public_exposure": {
+      "title": "Container-Ports, die zum Internet hin offen sind",
+      "pass": "Keine uneingeschränkten öffentlichen Ports",
+      "why": "Docker veröffentlicht Ports an der Host-Firewall vorbei, daher sind diese für jeden erreichbar."
+    },
+    "docker_api_exposed": {
+      "title": "Die Docker-API ist aus dem Internet erreichbar",
+      "pass": "Die Docker-API ist nicht exponiert",
+      "why": "Unauthentifizierter Zugriff auf die Docker-API bedeutet volle Kontrolle über den Server."
+    },
+    "offbox_backup_off": {
+      "title": "Externe Backups der Control Plane sind aus",
+      "pass": "Verschlüsselte externe Backups sind an",
+      "why": "Der Verlust dieses Rechners würde jede App-Definition, jedes Secret und jedes Zertifikat verlieren."
+    },
+    "offsite_backup_unencrypted": {
+      "title": "Backup-Ziele ohne Verschlüsselung",
+      "pass": "Jedes Backup-Ziel ist verschlüsselt",
+      "why": "Eine unverschlüsselt gespeicherte Kopie kann von jedem gelesen werden, der Zugang zu diesem Speicher erhält. Schalten Sie die Verschlüsselung in den Einstellungen des Backup-Ziels ein und führen Sie dann ein neues Backup aus."
+    },
+    "audit_anchor_off": {
+      "title": "Kein externer Anker für das Audit-Log konfiguriert",
+      "pass": "Ein externer Anker für das Audit-Log ist an",
+      "why": "Ohne eine Kopie des Kopfs der Audit-Kette außerhalb dieses Rechners kann jemand mit Root hier die Historie unbemerkt umschreiben und neu signieren."
+    },
+    "master_key_rotation": {
+      "title": "Der Master-Schlüssel fehlt oder seine Rotation ist überfällig",
+      "pass": "Der Master-Schlüssel wurde kürzlich rotiert",
+      "why": "Die Rotation des Master-Schlüssels begrenzt, was eine alte durchgesickerte Kopie entschlüsseln kann."
+    },
+    "secrets_old": {
+      "title": "Secrets, die älter sind als {{detail}}",
+      "pass": "Keine veralteten Secrets",
+      "why": "Alte Secrets sind wahrscheinlicher unterwegs irgendwo durchgesickert."
+    },
+    "tls_not_public": {
+      "title": "Domains ohne öffentlich vertrauenswürdiges Zertifikat",
+      "pass": "Jede Domain hat ein öffentliches Zertifikat",
+      "why": "Browser warnen bei diesen Domains, was Menschen darauf trainiert, Warnungen wegzuklicken."
+    },
+    "hsts_off": {
+      "title": "HSTS ist aus, obwohl echte Zertifikate vorhanden sind",
+      "pass": "HSTS ist an oder noch nicht nötig",
+      "why": "Ohne HSTS kann ein erster Besuch über unverschlüsseltes HTTP abgefangen und herabgestuft werden."
+    },
+    "domains_unshielded": {
+      "title": "Domains ohne Shield",
+      "pass": "Jede geroutete Domain hat ein Shield",
+      "why": "Ein Shield begrenzt Anfragen pro Besucher und weist missbräuchliche Bots ab, damit ein lauter Client die übrigen nicht aushungern kann."
+    },
+    "saml_open_domains": {
+      "title": "SAML-Verbindungen, die jede E-Mail-Domain akzeptieren",
+      "pass": "Jede aktivierte SAML-Verbindung beschränkt die Anmeldung auf Ihre Domains",
+      "why": "Ohne Liste erlaubter Domains kann jede Adresse, die Ihr Identitätsanbieter zusichert, zu einem Konto hier passen. Fügen Sie Ihre Domains in den Verbindungseinstellungen hinzu."
+    },
+    "microsoft_no_tenant": {
+      "title": "Die Microsoft-Anmeldung ist nicht an einen Tenant gebunden",
+      "pass": "Die Microsoft-Anmeldung ist aus oder an Ihren Tenant gebunden",
+      "why": "Beim gemeinsamen Tenant kann jedes Verzeichnis eine E-Mail-Adresse zusichern, daher werden daraus keine neuen Konten erstellt. Legen Sie Ihre Tenant-ID in den Einstellungen des Microsoft-Anbieters fest."
+    },
+    "agents_outdated": {
+      "title": "Node-Agents, die älter als die Mindestversion sind",
+      "pass": "Jeder Node-Agent ist aktuell",
+      "why": "Alte Agents verpassen Sicherheitskorrekturen, die die Control Plane bereits erwartet."
+    },
+    "login_anomalies": {
+      "title": "Häufungen fehlgeschlagener Anmeldungen",
+      "pass": "Keine Häufungen fehlgeschlagener Anmeldungen",
+      "why": "Viele falsche Passwörter in kurzer Zeit bedeuten meist, dass jemand rät."
+    },
+    "own_mfa": {
+      "title": "Ihr Konto hat weder Zwei-Faktor noch Passkey",
+      "pass": "Ihr Konto hat Zwei-Faktor oder einen Passkey",
+      "why": "Ihr Passwort allein genügt, um sich als Sie anzumelden."
+    },
+    "own_recovery_codes": {
+      "title": "Sie haben keine Wiederherstellungscodes mehr",
+      "pass": "Sie haben Wiederherstellungscodes",
+      "why": "Ohne sie sperrt Sie der Verlust Ihres Authenticators aus."
+    },
+    "own_account_flagged": {
+      "title": "Ihr Konto braucht ein neues Passwort",
+      "pass": "Ihr Konto ist nicht markiert",
+      "why": "Eine Anmeldung bei Ihrem Konto wurde als nicht von Ihnen stammend gemeldet."
+    },
+    "agent_token_unnamed": {
+      "title": "API-Tokens, die etwas ändern können, haben keinen Agent-Namen",
+      "pass": "Jedes Schreib- oder Deploy-Token ist benannt oder geprüft",
+      "why": "Ein Token ohne Agent-Namen unterliegt nicht der KI-Kontrolle, daher handelt ein KI-Tool, das es besitzt, ohne Modus- oder Umgebungslimits."
+    },
+    "ai_control_admin": {
+      "title": "Die KI-Kontrolle ist im Admin-Modus",
+      "pass": "Die KI-Kontrolle liegt unter dem Admin-Modus",
+      "why": "Der Admin-Modus lässt Agents Einstellungen und Zugriff ändern, nicht nur Apps. Der Betriebsmodus deckt alltägliche Deploys ab."
+    },
+    "agent_tokens_production": {
+      "title": "Agent-Tokens können die Produktion ändern",
+      "pass": "Kein Agent-Token kann die Produktion ändern",
+      "why": "Solange die KI-Kontrolle über Beobachten liegt, können Agent-Tokens, die schreiben oder deployen dürfen, weiterhin Routen erreichen, die der Produktionsschutz nicht abdeckt, etwa Apply und Umgebungen."
+    },
+    "prod_env_unprotected": {
+      "title": "Produktionsumgebungen ohne Schutz",
+      "pass": "Jede Produktionsumgebung ist geschützt",
+      "why": "Eine geschützte Umgebung verlangt eine Genehmigung, bevor Deploys, Rollbacks und Übernahmen sie erreichen."
+    },
+    "prod_apps_unguarded": {
+      "title": "Produktions-Apps ohne durchsetzende Deploy-Richtlinie",
+      "pass": "Jede Produktions-App hat eine durchsetzende Deploy-Richtlinie",
+      "why": "Eine Regel im Warnmodus meldet nur. Ohne eine Regel im Durchsetzungsmodus blockiert nichts einen riskanten Deploy in eine Produktions-App."
+    },
+    "audit_sink_none": {
+      "title": "Das Audit-Log wird nirgendwohin gesendet",
+      "pass": "Das Audit-Log wird an ein externes Ziel weitergeleitet",
+      "why": "Ein Audit-Stream außerhalb dieses Rechners bewahrt eine Aufzeichnung von Agent- und Deploy-Aktionen, auch wenn dieser Host verloren geht."
+    }
+  },
+  "actions": {
+    "set_policy": "Die empfohlene Richtlinie anwenden",
+    "disable_code_login_admins": "Code-Anmeldung für Admins ausschalten",
+    "review_sessions": "Sitzungen prüfen",
+    "enable_hsts": "HSTS aktivieren"
+  },
+  "hsts": {
+    "title": "HSTS einschalten",
+    "description": "Wir prüfen, dass jede öffentliche Domain ein öffentlich vertrauenswürdiges Zertifikat ausliefert, bevor dies eingeschaltet werden kann.",
+    "probing": "Zertifikate werden geprüft...",
+    "probeError": "Die Zertifikatsprüfung konnte nicht ausgeführt werden.",
+    "trusted": "Vertrauenswürdiges Zertifikat",
+    "notTrusted": "Selbstsigniert, intern oder über HTTPS nicht erreichbar",
+    "noDomains": "Es ist noch keine öffentliche Domain konfiguriert.",
+    "blocked": "HSTS bleibt aus, bis jede Domain besteht. Bei einem selbstsignierten Zertifikat würden Browser die Website ohne Weg an der Warnung vorbei ablehnen.",
+    "warning": "HSTS umfasst Subdomains und Browser merken es sich 180 Tage, daher lässt es sich für Besucher, die es bereits gesehen haben, nicht rückgängig machen.",
+    "recheck": "Erneut prüfen",
+    "confirm": "HSTS einschalten",
+    "enabled": "HSTS ist an",
+    "enableError": "HSTS konnte nicht eingeschaltet werden"
+  },
+  "sessions": {
+    "tableLabel": "Aktive Sitzungen",
+    "title": "Aktive Sitzungen",
+    "description": "Browser, die bei diesem Konto angemeldet sind. Der Standort ist das Netzwerk, zu dem die Adresse gehört, kein Ort.",
+    "viewing": "Angezeigtes Konto",
+    "self": "Ihr Konto",
+    "browser": "Browser",
+    "network": "Netzwerk",
+    "created": "Angemeldet",
+    "lastSeen": "Zuletzt aktiv",
+    "current": "Dieser Browser",
+    "revoke": "Abmelden",
+    "revokeAria": "Sitzung {{id}} abmelden",
+    "revoked": "Sitzung abgemeldet.",
+    "revokeError": "Diese Sitzung konnte nicht abgemeldet werden.",
+    "revokeOthers": "Alle anderen Sitzungen abmelden",
+    "revokeOthersAdmin": "Jede Sitzung dieses Kontos abmelden",
+    "revokeOthersDone": "{{count}} Sitzung(en) abgemeldet. Vertrauenswürdige Browser und wartende Anmeldungen wurden ebenfalls zurückgesetzt.",
+    "empty": "Keine aktiven Sitzungen.",
+    "devicesTitle": "Vertrauenswürdige Browser",
+    "devicesDescription": "Browser, die die Genehmigung neuer Browser überspringen. Entfernen Sie alle, die Sie nicht erkennen.",
+    "devicesEmpty": "Keine vertrauenswürdigen Browser.",
+    "deviceRemove": "Entfernen",
+    "deviceRemoved": "Browser entfernt.",
+    "tokensTitle": "API-Tokens",
+    "tokensDescription": "Tokens, die diesem Konto gehören, mit dem Zeitpunkt der letzten Verwendung.",
+    "tokensEmpty": "Keine API-Tokens.",
+    "neverUsed": "Nie verwendet",
+    "usedAgo": "Verwendet {{time}}",
+    "manageTokens": "Tokens verwalten",
+    "confirmTitle": "Andere Sitzungen abmelden?",
+    "confirmBody": "Jeder andere bei diesem Konto angemeldete Browser wird abgemeldet, und vertrauenswürdige Browser und wartende Anmeldungen werden zurückgesetzt.",
+    "confirm": "Sie abmelden",
+    "cancel": "Abbrechen"
+  },
+  "policy": {
+    "title": "Sicherheitsrichtlinie",
+    "description": "Plattformregeln für die Anmeldegenehmigung und API-Token-Hygiene. Änderungen gelten sofort.",
+    "adminOnly": "Nur Admins können die Sicherheitsrichtlinie ändern.",
+    "source": {
+      "saved": "Hier gespeichert",
+      "env": "Aus der Umgebung",
+      "default": "Standard"
+    },
+    "approvalScope": "Die Genehmigung neuer Browser gilt für",
+    "scopePasswordOnly": "Nur Passwort-Anmeldungen",
+    "scopeAllMethods": "Jede Anmeldemethode (Passwort, Passkey, OAuth)",
+    "approvalOff": "Die Genehmigung neuer Browser ist auf diesem Server ausgeschaltet, daher hat diese Einstellung keine Wirkung, bis sie wieder eingeschaltet wird.",
+    "maxLifetime": "Längste Lebensdauer von API-Tokens (Tage, 0 für kein Limit)",
+    "warnUnused": "Tokens markieren, die ungenutzt sind seit (Tage, 0 zum Beenden)",
+    "disableUnused": "Tokens deaktivieren, die ungenutzt sind seit (Tage, 0 zum Beenden)",
+    "disableHint": "Ein Token erhält zuerst einen Hinweis und wird {{days}} Tage später deaktiviert, sofern es nicht verwendet wird.",
+    "save": "Richtlinie speichern",
+    "saved": "Sicherheitsrichtlinie gespeichert.",
+    "saveError": "Die Sicherheitsrichtlinie konnte nicht gespeichert werden."
+  },
+  "account": {
+    "title": "Genehmigung für neue Browser bei meinem Konto verlangen",
+    "description": "Eine Ihrer angemeldeten Sitzungen bitten, jeden neuen Browser zu genehmigen, unabhängig von der Anmeldemethode.",
+    "on": "Genehmigung für jede Anmeldemethode Ihres Kontos erforderlich.",
+    "off": "Ihr Konto folgt der Plattformrichtlinie.",
+    "saveError": "Diese Einstellung konnte nicht geändert werden.",
+    "flagged": "Eine Anmeldung bei Ihrem Konto wurde als nicht von Ihnen stammend gemeldet. Ändern Sie jetzt Ihr Passwort; das hebt diese Warnung auf."
+  },
+  "alertPage": {
+    "title": "War diese Anmeldung nicht von Ihnen?",
+    "description": "Bestätigen Sie, um diesen Browser abzumelden, Ihre vertrauenswürdigen Browser zu vergessen und Ihr Konto für ein neues Passwort zu markieren.",
+    "confirm": "Das war ich nicht, abmelden",
+    "working": "Wird abgemeldet...",
+    "done": "Erledigt. Dieser Browser ist abgemeldet und Ihr Konto ist markiert. Melden Sie sich an und ändern Sie jetzt Ihr Passwort.",
+    "doneNoSession": "Erledigt. Diese Sitzung war bereits beendet. Ihr Konto ist markiert: Melden Sie sich an und ändern Sie jetzt Ihr Passwort.",
+    "signIn": "Zur Anmeldung",
+    "missing": "Diesem Link fehlt sein Token. Öffnen Sie den Link aus der E-Mail erneut.",
+    "error": "Dieser Link ist ungültig, bereits verwendet oder abgelaufen."
+  },
+  "advisories": {
+    "title": "Bekannte Sicherheitshinweise",
+    "off": "Es ist kein Hinweis-Feed konfiguriert. Setzen Sie APP_ADVISORY_FEED auf dem Server, um dies einzuschalten.",
+    "unsigned": "unsigniert",
+    "verified": "signiert, verifiziert",
+    "invalid": "Signatur ungültig",
+    "feed": "{{count}} Hinweise, {{signature}}",
+    "none": "Kein laufendes Image entspricht einem bekannten Hinweis.",
+    "summary_one": "{{count}} laufendes Image entspricht einem bekannten Hinweis",
+    "summary_other": "{{count}} laufende Images entsprechen einem bekannten Hinweis",
+    "fixedIn": "Behoben in {{version}}",
+    "reference": "Referenz",
+    "loadError": "Sicherheitshinweise konnten nicht geladen werden."
+  },
+  "imageScanning": {
+    "page": {
+      "title": "Image-Scanning",
+      "description": "Die Standard-Scanrichtlinie für die gesamte Instanz."
+    },
+    "scan": {
+      "label": "Images auf bekannte Schwachstellen scannen"
+    },
+    "gate": {
+      "label": "Deploy-Schranke",
+      "options": {
+        "off": "Aus",
+        "warn": "Nur warnen",
+        "block_on_critical": "Bei kritisch blockieren",
+        "block_on_high": "Bei hoch oder kritisch blockieren"
+      },
+      "needsScan": "Schalten Sie das Scanning ein, um eine andere Schranke als Aus zu verwenden."
+    },
+    "save": {
+      "action": "Richtlinie speichern",
+      "pending": "Speichern",
+      "done": "Richtlinie gespeichert."
+    },
+    "inherit": "Apps ohne eigene Richtlinie erben diese.",
+    "serverOff": "Das Schwachstellen-Scanning ist auf dieser Control Plane ausgeschaltet, daher hat die Richtlinie noch keine Wirkung.",
+    "rootOnly": "Nur ein Root-Konto kann diese Richtlinie ändern.",
+    "loading": "Die Richtlinie wird geladen",
+    "error": "Die Scanrichtlinie konnte nicht geladen werden."
+  }
+}

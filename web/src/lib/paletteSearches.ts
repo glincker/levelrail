@@ -1,5 +1,7 @@
+import { PALETTE_SEARCH_MAX } from './paletteConfig'
+
 const KEY = 'palette.recent-searches'
-const MAX = 8
+const MAX = PALETTE_SEARCH_MAX
 const MIN_LENGTH = 3
 
 export function loadRecentSearches(): string[] {

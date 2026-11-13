@@ -1,0 +1,363 @@
+{
+  "cancel": "取消",
+  "save": "保存",
+  "retry": "重试",
+  "page": {
+    "title": "防火墙",
+    "description": "在 Web 请求到达你的应用之前对其进行过滤。规则更改立即生效，无需重新部署。",
+    "sections": "防火墙分区",
+    "scope": "主机",
+    "allHosts": "所有主机",
+    "range": "时间范围",
+    "ranges": {
+      "1h": "过去 1 小时",
+      "6h": "过去 6 小时",
+      "24h": "过去一天"
+    },
+    "tabs": {
+      "overview": "概览",
+      "traffic": "流量",
+      "rules": "规则",
+      "ports": "端口",
+      "audit": "审计日志"
+    },
+    "hostPointer": "开放端口和主机防火墙位于“设置 > 防火墙”。",
+    "hostPointerLink": "打开“设置 > 防火墙”",
+    "help": "防火墙指南"
+  },
+  "ports": {
+    "loading": "正在加载端口",
+    "loadError": "无法加载已发布的端口。",
+    "reach": "可访问来源"
+  },
+  "outcome": {
+    "allowed": "已允许",
+    "denied": "已拒绝",
+    "challenged": "已质询",
+    "logged": "已记录",
+    "rate_limited": "已限流"
+  },
+  "action": {
+    "allow": "绕过",
+    "deny": "拒绝",
+    "challenge": "质询",
+    "log": "记录",
+    "rate_limit": "限流"
+  },
+  "actionHint": {
+    "allow": "跳过之后的所有规则、封禁和机器人检查。适用于受信任的客户端。",
+    "deny": "以 403 拒绝该请求。",
+    "challenge": "要求浏览器先完成一个简短的工作量证明，才能通过。",
+    "log": "统计该请求并放行。可用于在强制执行之前测试规则。",
+    "rate_limit": "每个客户端允许这么多匹配的请求通过，之后在窗口结束之前返回 429。"
+  },
+  "mode": {
+    "off": "关闭",
+    "log": "仅记录",
+    "challenge": "质询",
+    "block": "拦截"
+  },
+  "field": {
+    "path": "请求路径",
+    "host": "主机",
+    "method": "方法",
+    "header": "请求头",
+    "query": "查询参数",
+    "user_agent": "User agent",
+    "ip": "IP 地址或范围",
+    "country": "国家"
+  },
+  "op": {
+    "equals": "等于",
+    "starts_with": "开头为",
+    "contains": "包含",
+    "glob": "匹配模式",
+    "in_cidr": "在范围内",
+    "exists": "存在"
+  },
+  "placeholder": {
+    "path": "/api/users",
+    "host": "app.example.com",
+    "method": "POST",
+    "header": "值",
+    "query": "值",
+    "user_agent": "curl",
+    "ip": "203.0.113.0/24",
+    "country": "DE",
+    "paramName": "名称"
+  },
+  "rateLimit": {
+    "count": "允许的请求数",
+    "countUnit": "个请求，每",
+    "window": "窗口",
+    "windowUnit": "秒"
+  },
+  "reason": {
+    "rule": "一条规则",
+    "rate_rule": "一条限流规则",
+    "ban": "临时封禁",
+    "bot": "恶意机器人列表",
+    "ai_bot": "AI 爬虫列表",
+    "attack_mode": "遇袭模式",
+    "shield_rate": "域名速率限制",
+    "shield_concurrency": "域名连接数上限",
+    "shield_bot": "域名机器人列表",
+    "shield_body": "域名请求体大小限制"
+  },
+  "actions": {
+    "failed": "操作没有成功",
+    "blockIp": "拦截此 IP",
+    "allowIp": "始终允许此 IP",
+    "createRule": "据此创建规则",
+    "blocked": "已拦截 {{ip}}",
+    "allowed": "{{ip}} 现在绕过防火墙"
+  },
+  "lockout": {
+    "title": "这会把你自己拦在外面",
+    "description": "{{ip}} 是你当前使用的地址。拦截它会使你被锁在此控制平面之外，直到在服务器上移除该条目。",
+    "ruleDescription": "此规则匹配你当前使用的地址。保存它会使你被锁在此控制平面之外，直到在服务器上移除该规则。",
+    "confirm": "仍然拦截"
+  },
+  "error": {
+    "loadFailed": "无法加载防火墙。",
+    "forbiddenTitle": "你无法查看防火墙的这一部分",
+    "forbiddenHelp": "查看客户端地址需要 read:sensitive 权限。请让管理员将其添加到你的角色或令牌。"
+  },
+  "status": {
+    "activeTitle": "防火墙已生效",
+    "activeSubtitle": "所有系统正常",
+    "attackTitle": "遇袭模式已开启",
+    "attackUntil": "限制已收紧，直到 {{time}}",
+    "spikeTitle": "被拦截的流量激增",
+    "spikeSubtitle": "请查看“流量”标签页，或开启遇袭模式",
+    "attackMode": "遇袭模式",
+    "customRules": "已启用的规则",
+    "botProtection": "恶意机器人",
+    "aiBots": "AI 爬虫",
+    "on": "开",
+    "off": "关"
+  },
+  "chart": {
+    "legend": "按结果统计的请求",
+    "label": "{{range}}范围内按防火墙结果统计的请求",
+    "none": "无",
+    "empty": "此范围内尚未看到请求。流量到达某个主机后，计数就会出现。"
+  },
+  "alerts": {
+    "title": "告警",
+    "noneTitle": "没有活跃的告警",
+    "noneHelp": "如果被拦截或被质询的请求超过每分钟 {{threshold}} 个，这里会出现一条告警。",
+    "spikeTitle": "被拦截的流量激增",
+    "spikeHelp": "最近 {{minutes}} 分钟内，被拦截或被质询的请求为每分钟 {{rate}} 个（告警阈值 {{threshold}}）。",
+    "turnOn": "开启遇袭模式",
+    "attackOn": "遇袭模式已开启。结束于"
+  },
+  "topList": {
+    "actionsFor": "{{key}} 的操作",
+    "spark": "{{key}} 最近一小时的请求"
+  },
+  "traffic": {
+    "note": "排行榜为近似值，涵盖最近 {{minutes}} 分钟。它们只保存在内存中，因此控制平面重启时会重置。不显示国家、网络和客户端指纹。",
+    "lastHour": "最近 1 小时",
+    "ips": "热门 IP 地址",
+    "ipsEmpty": "最近一小时内没有看到请求。流量到达时，地址会出现在这里。",
+    "deniedIps": "被拒绝的 IP",
+    "deniedEmpty": "最近一小时内没有被拒绝、质询或限流的内容。",
+    "userAgents": "热门 user agent",
+    "userAgentsEmpty": "最近一小时内没有看到请求。",
+    "paths": "热门请求路径",
+    "pathsEmpty": "最近一小时内没有看到请求。",
+    "hosts": "热门主机",
+    "hostsEmpty": "最近一小时内没有看到请求。"
+  },
+  "bans": {
+    "title": "临时封禁",
+    "description": "持续被拒绝的客户端会被拦截一段时间。",
+    "retention": "在 {{window}} 内被拒绝 {{strikes}} 次的客户端会被封禁 {{duration}}。封禁保存在内存中，重启后结束。",
+    "emptyTitle": "没有活跃的封禁",
+    "emptyHelp": "持续被拒绝的客户端会在这里被自动封禁，并带有解除封禁的按钮。",
+    "loadFailed": "无法加载临时封禁。",
+    "ip": "IP 地址",
+    "reason": "原因",
+    "requests": "已拦截",
+    "started": "开始时间",
+    "ends": "结束时间",
+    "lift": "解除",
+    "liftFor": "解除对 {{ip}} 的封禁",
+    "lifted": "已解除对 {{ip}} 的封禁",
+    "search": "搜索封禁",
+    "searchPlaceholder": "搜索 IP 或原因",
+    "noMatch": "没有封禁匹配此搜索。",
+    "select": "选择 {{ip}}",
+    "selectAll": "选择所有封禁",
+    "selected_other": "已选择 {{count}} 项",
+    "liftSelected": "解除所选",
+    "liftedMany_other": "已解除 {{count}} 项封禁",
+    "liftManyFailed_other": "有 {{count}} 项封禁无法解除"
+  },
+  "rules": {
+    "title": "规则",
+    "manage": "管理",
+    "new": "新建规则",
+    "customTitle": "自定义规则",
+    "customHelp": "按此顺序检查。第一条允许、拒绝或质询的规则会结束检查。更改无需重新部署即可生效。",
+    "emptyTitle": "还没有自定义规则",
+    "emptyHelp": "添加规则，以拒绝、质询、记录或限流匹配某个路径、请求头、user agent 或地址的请求。",
+    "edit": "编辑",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "delete": "删除",
+    "deleteTitle": "删除 {{name}}？",
+    "deleteHelp": "它所匹配的流量将不再被过滤。此操作无法撤销。",
+    "enabledFor": "已启用：{{name}}",
+    "actionsFor": "{{name}} 的操作",
+    "hitsTitle": "控制平面启动以来的匹配次数",
+    "hitsSpark": "{{name}} 最近一小时的匹配次数"
+  },
+  "ipList": {
+    "blockTitle": "IP 拦截",
+    "blockHelp": "在所有主机上，或仅在上方选定的主机上，拒绝某个地址或范围。",
+    "bypassTitle": "始终允许",
+    "bypassHelp": "这些地址会跳过所有其他规则、封禁和机器人检查。",
+    "ipLabel": "IP 地址或 CIDR 范围",
+    "noteLabel": "备注",
+    "notePlaceholder": "原因（可选）",
+    "block": "拦截",
+    "bypass": "允许",
+    "required": "请输入 IP 地址或 CIDR 范围。",
+    "removeFor": "移除 {{ip}}",
+    "removed": "已移除 {{ip}}",
+    "blockEmptyTitle": "没有被拦截的地址",
+    "blockEmptyHelp": "在上方添加地址，或从“流量”标签页拦截一个。",
+    "bypassEmptyTitle": "没有始终允许的地址",
+    "bypassEmptyHelp": "添加你办公室或监控的地址，使规则永远不会把它们拦在外面。",
+    "scopeNote": "新条目仅适用于 {{scope}}。",
+    "allHostsNote": "新条目适用于所有主机。"
+  },
+  "bots": {
+    "title": "机器人管理",
+    "description": "将精选列表设置为记录、质询或拦截。质询会显示一个简短的浏览器检查。",
+    "badBots": "恶意机器人",
+    "badBotsHelp": "来自内置列表的爬虫和扫描器。请使用服务器上的机器人列表设置来编辑该列表。",
+    "aiBots": "AI 爬虫",
+    "aiBotsHelp": "为 AI 模型收集内容的爬虫。下面的列表是你可以编辑的数据。",
+    "editList": "编辑列表",
+    "customList_other": "{{count}} 个自定义条目",
+    "shippedList_other": "内置列表，{{count}} 个条目",
+    "bans": "自动封禁",
+    "bansHelp": "客户端持续被拒绝后，将其封禁一段时间。",
+    "bansDetail": "在 {{window}} 内被拒绝 {{strikes}} 次后，封禁客户端 {{duration}}。",
+    "saved": "机器人设置已保存",
+    "listTitle": "AI 爬虫列表",
+    "listHelp": "每行一个 user agent 子串，不区分大小写。清空所有内容并保存，即可回到内置列表。",
+    "listLabel": "AI 爬虫 user agent",
+    "listReset": "重置为内置列表",
+    "listCount_other": "{{count}} 个条目",
+    "listTooMany": "最多 {{max}} 个条目。",
+    "verifiedNote": "仅按 user agent 匹配。不验证爬虫身份，因此客户端可以假装成浏览器或知名机器人。"
+  },
+  "attack": {
+    "title": "危险区域",
+    "description": "会影响所有主机的所有访客的更改。它们会自行关闭。",
+    "switchTitle": "遇袭模式",
+    "switchHelp": "收紧所有主机上的速率和连接数限制，并拒绝恶意机器人列表。可选择对每位访客进行浏览器检查质询。",
+    "duration": "持续时间",
+    "minutes_other": "{{count}} 分钟",
+    "challenge": "对每位访客进行质询",
+    "turnOn": "开启遇袭模式",
+    "turnOff": "关闭",
+    "endsIn": "结束于",
+    "confirmTitle": "开启遇袭模式？",
+    "confirmHelp": "它会保持开启 {{minutes}} 分钟，除非你提前关闭。",
+    "consequenceLimits": "每个客户端的请求速率和连接数限制都会很低。",
+    "consequenceBots": "恶意机器人列表中的机器人会被拒绝。",
+    "consequenceChallenge": "每位访客都必须通过一个简短的浏览器检查，包括 API 客户端。",
+    "onToast": "遇袭模式已开启",
+    "offToast": "遇袭模式已关闭"
+  },
+  "limits": {
+    "title": "{{domain}} 的限制",
+    "description": "按域名设置的速率、连接数和请求体大小限制，以及机器人列表和白名单。这些在上面的防火墙规则之后运行。",
+    "unknownDomain": "此处没有配置该主机，因此它没有按域名设置的限制。"
+  },
+  "audit": {
+    "title": "防火墙更改",
+    "emptyTitle": "还没有防火墙更改",
+    "emptyHelp": "创建或更改规则、IP 条目、机器人处理方式或遇袭模式，都会连同操作者一起记录在这里。",
+    "actions": {
+      "rule_created": "规则已创建",
+      "rule_updated": "规则已更改",
+      "rule_deleted": "规则已删除",
+      "rules_reordered": "规则已重新排序",
+      "ip_blocked": "IP 已拦截",
+      "ip_allowed": "IP 已设为始终允许",
+      "ban_lifted": "封禁已解除",
+      "settings_changed": "机器人设置已更改",
+      "attack_mode_on": "已开启遇袭模式",
+      "attack_mode_off": "已关闭遇袭模式"
+    }
+  },
+  "editor": {
+    "newTitle": "新建防火墙规则",
+    "editTitle": "编辑防火墙规则",
+    "description": "当规则的所有条件都满足时才会匹配。规则按顺序检查，因此如需“或”的效果，请添加多条规则。",
+    "back": "所有规则",
+    "create": "创建规则",
+    "save": "保存规则",
+    "saving": "保存中",
+    "created": "规则已创建",
+    "updated": "规则已保存",
+    "missing": "此规则已不存在。",
+    "namePlaceholder": "拦截旧的管理路径",
+    "notePlaceholder": "此规则的用途",
+    "scope": "适用于",
+    "scopeHelp": "所有主机，或某一个主机。"
+  },
+  "validation": {
+    "nameRequired": "请为规则命名，最多 80 个字符。",
+    "noteTooLong": "描述请保持在 200 个字符以内。",
+    "actionRequired": "请选择规则的动作。",
+    "rateCount": "请输入 1 到 1,000,000 之间的整数请求数。",
+    "rateWindow": "请输入 1 到 3,600 之间的整数秒数。",
+    "paramName": "请输入由字母、数字、连字符或下划线组成的名称。",
+    "valueRequired": "请输入最多 256 个字符的值。",
+    "ipInvalid": "请输入 IP 地址或 CIDR 范围，例如 203.0.113.0/24。",
+    "methodInvalid": "请输入 HTTP 方法，例如 GET 或 POST。",
+    "countryInvalid": "请输入两位字母的国家代码，例如 DE。",
+    "pathSlash": "路径以 / 开头。",
+    "wildcards": "最多使用 8 个通配符。"
+  },
+  "banner": {
+    "diagram": {
+      "allowed": "已允许",
+      "blocked": "已拦截",
+      "server": "服务器"
+    }
+  },
+  "list": {
+    "selectAll": "选择所有显示的项目",
+    "selectRow": "选择 {{name}}",
+    "searchLabel": "搜索{{list}}",
+    "searchPlaceholder": "搜索名称、备注或匹配项",
+    "sortLabel": "排序方式",
+    "sort": {
+      "default": "规则顺序",
+      "name": "名称",
+      "hits": "命中最多",
+      "recent": "最近更改"
+    },
+    "barLabel": "批量操作",
+    "selected_other": "已选择 {{count}} 项",
+    "enable": "启用",
+    "disable": "停用",
+    "delete": "删除",
+    "clear": "清除",
+    "noMatch": "没有匹配此搜索的内容",
+    "enabledCount_other": "已启用 {{count}} 个条目",
+    "disabledCount_other": "已停用 {{count}} 个条目",
+    "deletedCount_other": "已删除 {{count}} 个条目",
+    "bulkFailed_other": "有 {{count}} 项更改失败",
+    "deleteTitle_other": "删除 {{count}} 个条目？",
+    "deleteHelp": "流量将不再被它们过滤。此操作无法撤销。"
+  }
+}

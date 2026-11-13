@@ -1,0 +1,97 @@
+{
+  "table": {
+    "label": "审计日志",
+    "time": "时间",
+    "actor": "操作者",
+    "agent": "Agent",
+    "client": "客户端",
+    "ability": "权限",
+    "method": "方法",
+    "path": "路径",
+    "status": "状态"
+  },
+  "page": {
+    "description": "谁更改了什么：每一次写入、部署或 root 级请求，以及自动证书续期，按时间从新到旧排列。只读请求不会记录在这里。",
+    "title": "审计日志",
+    "emptyTitle": "未找到条目",
+    "emptyFiltered": "没有条目匹配这些筛选条件。",
+    "emptyNone": "尚无被审计的请求记录。"
+  },
+  "labels": {
+    "certIssued": "已签发证书",
+    "certRenewed": "已续期证书",
+    "certRenewalRequested": "已请求证书续期",
+    "certUploaded": "已上传证书",
+    "certRemoved": "已移除证书",
+    "deviceLoginApproved": "已批准 CLI 登录",
+    "deviceLoginDenied": "已拒绝 CLI 登录",
+    "deviceLoginExpired": "CLI 登录已过期",
+    "deviceLoginDismissed": "已忽略 CLI 登录通知"
+  },
+  "integrity": {
+    "checking": "正在验证完整性",
+    "intact": "防篡改：完整",
+    "intactDetail": "已验证 {{checked}} 条记录和 {{checkpoints}} 个已签名的检查点。",
+    "failed": "完整性检查失败",
+    "failedDetail_other": "发现 {{count}} 个问题。审计日志可能已被编辑或截断。",
+    "unavailable": "完整性检查不可用",
+    "recheck": "重新检查"
+  },
+  "filters": {
+    "deviceLogin": "设备登录",
+    "clearPath": "正在显示一个登录请求。清除",
+    "clientLabel": "按客户端筛选",
+    "allClients": "所有客户端",
+    "searchPlaceholder": "搜索操作者、路径、方法、地址",
+    "searchLabel": "搜索审计日志条目",
+    "failedOnly": "仅失败",
+    "loading": "加载中...",
+    "loadOlder": "加载更早的条目",
+    "rangeLabel": "按时间范围筛选",
+    "anyTime": "任何时间",
+    "range": {
+      "1h": "最近 1 小时",
+      "24h": "最近 24 小时",
+      "7d": "最近 7 天",
+      "30d": "最近 30 天"
+    },
+    "methodLabel": "按方法筛选",
+    "anyMethod": "任何方法",
+    "actorLabel": "按操作者筛选",
+    "actorPlaceholder": "操作者名称",
+    "exportCsv": "导出 CSV（最近 {{count}} 行）"
+  },
+  "anchor": {
+    "title": "审计锚点",
+    "off": "关闭",
+    "offHint": "不会导出审计链头部的异地副本。",
+    "offLink": "设置锚点 Webhook",
+    "exporting": "导出中",
+    "lastExported": "上次导出的序号 {{seq}}",
+    "at": "于 {{time}}",
+    "never": "尚未导出任何内容",
+    "exported": "已导出",
+    "failed": "失败",
+    "dropped": "已丢弃",
+    "queued": "已排队",
+    "lastError": "最近错误",
+    "lastErrorAt": "于 {{time}}"
+  },
+  "verify": {
+    "button": "验证审计链",
+    "title": "验证审计链",
+    "description": "重新计算每个哈希链接。范围留空则检查整个日志。",
+    "from": "起始条目",
+    "to": "结束条目",
+    "run": "验证",
+    "running": "验证中",
+    "failedToRun": "验证无法运行。",
+    "okSummary_other": "已验证 {{count}} 行，没有断点。",
+    "head": "链头：条目 {{seq}}",
+    "firstBreak": "首个断点位于条目 {{seq}}",
+    "failed": "审计链验证失败",
+    "problem": "条目 {{seq}}：{{reason}}",
+    "rangeEnd": "范围结束于条目 {{seq}}",
+    "outside_other": "此范围是完整的，但整条链在范围之外有 {{count}} 个问题。请不指定范围再验证一次。"
+  }
+}

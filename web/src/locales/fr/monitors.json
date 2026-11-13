@@ -1,0 +1,152 @@
+{
+  "title": "Moniteurs de disponibilité",
+  "add": "Ajouter un moniteur",
+  "cancel": "Annuler",
+  "empty": "Aucun moniteur pour l'instant. Ajoutez-en un pour surveiller une URL, un port TCP, un job cron ou un certificat.",
+  "loadError": "Impossible de charger les moniteurs : {{message}}",
+  "columns": {
+    "name": "Nom",
+    "target": "Cible",
+    "state": "État",
+    "lastCheck": "Dernière vérification",
+    "uptime": "Disponibilité (24 h)"
+  },
+  "state": {
+    "up": "En ligne",
+    "suspect": "Suspect",
+    "down": "Hors service",
+    "recovering": "Rétablissement",
+    "degraded": "Dégradé",
+    "paused": "En pause",
+    "unknown": "Pas de données"
+  },
+  "notAvailable": "n/d",
+  "never": "jamais",
+  "form": {
+    "kind": "Type",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "heartbeat": "Heartbeat cron",
+    "tls": "Certificat TLS",
+    "grace": "Délai de grâce (s)",
+    "graceHint": "Attente supplémentaire après l'intervalle avant que le job soit considéré en retard. Vide utilise la valeur par défaut du serveur.",
+    "warnDays": "Avertir (jours)",
+    "critDays": "Critique (jours)",
+    "daysHint": "Dégradé sous le seuil d'avertissement, hors service sous le seuil critique. Vide utilise la valeur par défaut du serveur.",
+    "serverDefault": "par défaut",
+    "pingTitle": "Ajoutez ceci à votre job",
+    "pingHint": "Affiché une seule fois. Ajoutez /start avant le job et /fail en cas d'erreur. Renouvelez-le depuis la ligne ou la CLI s'il fuite.",
+    "copy": "Copier",
+    "copied": "Copié",
+    "done": "Terminé",
+    "url": "URL",
+    "host": "Hôte",
+    "port": "Port",
+    "name": "Nom",
+    "interval": "Toutes les (s)",
+    "timeout": "Délai d'expiration (ms)",
+    "statusLink": "Ouvrir des incidents sur la page de statut",
+    "statusLinkHint": "Ouvre un incident sur le composant de statut lié tant que ce moniteur est hors service, et le résout après rétablissement. Désactivé par défaut.",
+    "save": "Créer",
+    "saving": "Création...",
+    "created": "Moniteur {{name}} créé",
+    "error": "Impossible de créer le moniteur : {{message}}",
+    "urlPlaceholder": "https://example.com/health"
+  },
+  "delete": {
+    "action": "Supprimer {{name}}",
+    "title": "Supprimer le moniteur {{name}} ?",
+    "description": "Ses résultats et ses agrégats sont supprimés avec lui.",
+    "confirm": "Supprimer",
+    "pending": "Suppression...",
+    "done": "Moniteur {{name}} supprimé"
+  },
+  "pause": {
+    "action": "Mettre {{name}} en pause"
+  },
+  "resume": {
+    "action": "Reprendre {{name}}"
+  },
+  "rotate": {
+    "action": "Renouveler le token de {{name}}",
+    "title": "Renouveler l'URL de ping de {{name}} ?",
+    "description": "L'ancienne URL cesse de fonctionner immédiatement. La nouvelle n'est affichée qu'une fois, mettez donc votre job à jour juste après.",
+    "confirm": "Renouveler",
+    "pending": "Renouvellement..."
+  },
+  "incidents": {
+    "title": "Incidents",
+    "empty": "Aucun incident. Les pannes confirmées des moniteurs et les alertes promues apparaissent ici.",
+    "loadError": "Impossible de charger les incidents : {{message}}",
+    "refresh": "Actualiser",
+    "published": "Public",
+    "detailHint": "Chronologie interne et brouillon public",
+    "timeline": "Chronologie interne",
+    "ack": "Prendre en compte",
+    "resolve": "Résoudre",
+    "state": {
+      "triggered": "Déclenché",
+      "acknowledged": "Pris en compte",
+      "resolved": "Résolu"
+    },
+    "status": {
+      "investigating": "En cours d'analyse",
+      "identified": "Identifié",
+      "monitoring": "Sous surveillance",
+      "resolved": "Résolu"
+    },
+    "note": {
+      "label": "Ajouter une note (interne)",
+      "add": "Ajouter la note"
+    },
+    "draft": {
+      "title": "Brouillon de mise à jour publique",
+      "name": "Titre",
+      "status": "Statut",
+      "body": "Message",
+      "save": "Enregistrer le brouillon",
+      "saved": "Brouillon enregistré",
+      "prefillBody": "Nous analysons : {{title}}. Concerné : {{monitor}}.",
+      "unknownMonitor": "service"
+    },
+    "publish": {
+      "action": "Publier",
+      "confirmTitle": "Publier sur la page de statut publique ?",
+      "confirmBody": "Cela devient public immédiatement et ne peut pas être dépublié. Vérifiez le texte ci-dessous.",
+      "confirm": "Publier publiquement",
+      "pending": "Publication...",
+      "done": "Incident publié",
+      "already": "Publié. Postez les mises à jour publiques suivantes depuis les paramètres de la page de statut.",
+      "stale": "Cet incident a changé depuis son chargement. Actualisez et examinez à nouveau le brouillon.",
+      "changed": "Le brouillon a changé pendant la publication. Rien n'a été publié ; examinez-le à nouveau."
+    },
+    "postmortem": {
+      "title": "Postmortem",
+      "none": "Pas encore de postmortem. La rédaction renseigne la fenêtre d'impact et les alertes à partir de cet incident.",
+      "start": "Rédiger le postmortem",
+      "refresh": "Actualiser la fenêtre et les alertes",
+      "save": "Enregistrer",
+      "publish": "Publier le postmortem",
+      "pending": "Publication...",
+      "confirmTitle": "Publier ce postmortem ?",
+      "confirmBody": "La publication verrouille le postmortem. Personne ne pourra le modifier ensuite.",
+      "window": "Impact de {{start}} à {{end}}",
+      "ongoing": "non enregistré",
+      "alerts": "Alertes",
+      "noAlerts": "Aucune alerte n'a été enregistrée pour cet incident.",
+      "itemsHint": "Une action par ligne",
+      "publishedBy": "Publié {{at}} par {{by}}",
+      "state": {
+        "draft": "Brouillon",
+        "published": "Publié"
+      },
+      "fields": {
+        "summary": "Résumé",
+        "impact": "Impact",
+        "root_cause": "Cause racine",
+        "resolution": "Résolution",
+        "action_items": "Actions à mener"
+      }
+    }
+  }
+}

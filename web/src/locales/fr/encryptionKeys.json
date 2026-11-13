@@ -1,0 +1,72 @@
+{
+  "master": {
+    "title": "Clé maîtresse",
+    "age_one": "{{count}} jour d'ancienneté",
+    "age_many": "{{count}} jours d'ancienneté",
+    "age_other": "{{count}} jours d'ancienneté",
+    "never": "Jamais renouvelée"
+  },
+  "apps": {
+    "title": "Clés de données des apps",
+    "empty": "Aucune app n'a encore stocké de secret, il n'y a donc aucune clé de données à renouveler.",
+    "age_one": "{{count}} jour",
+    "age_many": "{{count}} jours",
+    "age_other": "{{count}} jours",
+    "values_one": "{{count}} secret",
+    "values_many": "{{count}} secrets",
+    "values_other": "{{count}} secrets",
+    "overdue": "Limite dépassée",
+    "current": "À jour",
+    "rotate": "Renouveler la clé",
+    "rotateAll": "Renouveler toutes les clés",
+    "neverRotated": "Créée le {{date}}",
+    "rotatedOn": "Renouvelée le {{date}}"
+  },
+  "lastRun": {
+    "title": "Dernière exécution de renouvellement global",
+    "progress": "{{done}} apps sur {{total}}, {{failed}} en échec",
+    "finished": "Terminée le {{date}}",
+    "interrupted": "Interrompue. Renouvelez à nouveau toutes les clés pour reprendre là où elle s'est arrêtée."
+  },
+  "policy": {
+    "title": "Âge maximal des clés",
+    "description": "Envoie un rappel via vos canaux de notification quand une clé est plus ancienne que cette valeur. 0 désactive les rappels.",
+    "maxAge": "Âge maximal en jours",
+    "remindEvery": "Répéter le rappel tous les (jours)",
+    "save": "Enregistrer la politique",
+    "saving": "Enregistrement",
+    "saved": "Politique d'âge des clés enregistrée"
+  },
+  "hint": {
+    "fixMaster": "Renouveler maintenant",
+    "fixApp": "Renouveler cette clé",
+    "fixAll": "Renouveler toutes les clés",
+    "fixPolicy": "Me rappeler tous les 90 jours"
+  },
+  "confirm": {
+    "titleOne": "Renouveler la clé de données de {{app}} ?",
+    "titleAll": "Renouveler toutes les clés de données des apps ?",
+    "descriptionOne": "Une nouvelle clé est générée et tous les secrets de cette app sont rechiffrés en une seule étape. Si quelque chose échoue, rien ne change.",
+    "descriptionAll": "Chaque app est renouvelée dans sa propre étape. Une exécution interrompue en cours de route reprend là où elle s'est arrêtée.",
+    "consequenceReadable": "Tous les secrets restent lisibles et aucun redémarrage n'est nécessaire.",
+    "consequenceAudit": "Le renouvellement est enregistré dans le journal d'audit.",
+    "action": "Renouveler",
+    "pending": "Renouvellement",
+    "typed": "RENOUVELER"
+  },
+  "result": {
+    "single_one": "Clé de {{app}} renouvelée et {{count}} secret rechiffré",
+    "single_many": "Clé de {{app}} renouvelée et {{count}} secrets rechiffrés",
+    "single_other": "Clé de {{app}} renouvelée et {{count}} secrets rechiffrés",
+    "all": "{{rotated}} clés renouvelées, {{skipped}} déjà à jour",
+    "allFailed": "{{failed}} clés n'ont pas pu être renouvelées et sont restées inchangées : {{names}}",
+    "partial": "L'exécution a été interrompue. Renouvelez à nouveau toutes les clés pour reprendre."
+  },
+  "errors": {
+    "load": "Impossible de charger l'état des clés de chiffrement",
+    "rotate": "Échec du renouvellement"
+  },
+  "title": "Clés de chiffrement",
+  "description": "Chaque secret est chiffré avec une clé de données propre à son app, et ces clés sont protégées par la clé maîtresse. Renouvelez-les pour limiter la durée d'utilisation de chaque clé.",
+  "guide": "Guide de renouvellement des clés"
+}

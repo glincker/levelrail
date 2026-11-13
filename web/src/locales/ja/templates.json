@@ -1,0 +1,381 @@
+{
+  "prefill": {
+    "loading": "{{slug}}を開いています",
+    "notFoundTitle": "テンプレートが見つかりません",
+    "notFoundDescription": "このインスタンスには、「{{slug}}」という名前のテンプレートがありません。綴りが間違っているか、このバージョンのカタログにない可能性があります。",
+    "errorTitle": "テンプレートを開けませんでした",
+    "browse": "テンプレートを見る"
+  },
+  "description": {
+    "label": "セットアップのメモ"
+  },
+  "verified": {
+    "badge": "検証済み",
+    "hint": "直近のライブスモークテストに合格しました。起動し、ヘルスチェックにも合格しています。",
+    "filter": "検証済みのみ"
+  },
+  "detail": {
+    "back": "テンプレートに戻る",
+    "ramRecommended": "RAM約{{size}}を推奨",
+    "needsGpu": "NVIDIA GPUが必要",
+    "facts": {
+      "title": "基本情報",
+      "images": "Dockerイメージ",
+      "docs": "公式ドキュメント",
+      "docsLink": "ドキュメントを開く",
+      "memory": "推奨メモリ",
+      "ports": "公開ポート",
+      "volumes": "ボリューム",
+      "registryLink": "{{registry}}の{{image}}"
+    },
+    "deployed": {
+      "title": "デプロイされる内容",
+      "description": "以下の各サービスは、テンプレートのComposeファイルから作成されます。",
+      "image": "イメージ",
+      "port": "ポート {{port}}",
+      "roleMain": "メインのサービス",
+      "roleSupport": "補助的なサービス",
+      "dependsOn": "{{names}}の後に起動",
+      "loading": "テンプレートを読み取り中",
+      "unavailable": "現在、このテンプレートのサービスの内訳は利用できません。デプロイは引き続き行えます。"
+    },
+    "env": {
+      "title": "環境変数",
+      "description": "名前のみです。値は、デプロイ時に設定します。",
+      "required": "入力が必要",
+      "generated": "自動で生成",
+      "optional": "任意、既定値あり"
+    },
+    "related": {
+      "title": "{{category}}のその他"
+    },
+    "deploy": {
+      "title": "このテンプレートをデプロイ",
+      "now": "今すぐデプロイ",
+      "deploying": "デプロイ中...",
+      "configure": "設定してデプロイ",
+      "trial": "お試し用のインスタンスとしてデプロイされます。そのインスタンスのページから、いつでも停止して削除できます。",
+      "configureHint": "このテンプレートは、起動する前に、いくつかの値の入力が必要です。"
+    }
+  },
+  "page": {
+    "title": "サービステンプレート",
+    "description": "既製のアプリとデータベースです。デプロイする前に、1つ選んで内容を確認できます。",
+    "new": "テンプレートから新規作成"
+  },
+  "marketplace": {
+    "search": {
+      "label": "テンプレートを検索",
+      "placeholder": "{{count}}個のテンプレートを、名前または説明で検索"
+    },
+    "sort": {
+      "label": "並べ替え",
+      "relevance": "関連度",
+      "name": "名前順(A から Z)",
+      "memory": "軽い順"
+    },
+    "density": {
+      "label": "レイアウト",
+      "comfortable": "カード",
+      "compact": "リスト"
+    },
+    "count": "{{total}}個のテンプレートのうち{{shown}}個",
+    "categories": {
+      "label": "テンプレートのカテゴリ",
+      "filterLabel": "カテゴリでテンプレートを絞り込み",
+      "all": "すべてのテンプレート",
+      "heading": "カテゴリ"
+    },
+    "featured": {
+      "title": "スターターキット",
+      "subtitle": "動作する複数サービスのスタックです。1つデプロイしてから、独自のイメージに差し替えてください。",
+      "hide": "スターターキットを隠す",
+      "show": "スターターキットを表示"
+    },
+    "card": {
+      "deploy": "デプロイ",
+      "deployNeedsSetup": "デプロイ(設定が必要)",
+      "deploying": "デプロイ中...",
+      "ram": "RAM約{{size}}",
+      "ramLabel": "推奨メモリ {{size}}",
+      "services": "{{count}}個のサービス",
+      "gpu": "GPUが必要",
+      "details": "{{name}}を見る",
+      "database": "データベースが必要",
+      "volume": "データを保持"
+    },
+    "empty": {
+      "title": "一致するテンプレートはありません",
+      "filtered": "{{category}}に、「{{query}}」に一致するものはありません。検索語を短くするか、別のカテゴリをお試しください。",
+      "filteredNoQuery": "{{category}}には、まだテンプレートがありません。",
+      "clear": "フィルターを解除",
+      "catalogTitle": "カタログは空です",
+      "catalogDescription": "現在、利用できるテンプレートはありません。新しいサービスをゼロから作成できます。"
+    }
+  },
+  "requirements": {
+    "title": "必要なものと、Levelrailが追加するもの",
+    "level": {
+      "standard": "標準",
+      "review": "要確認",
+      "elevated": "昇格されたアクセス"
+    },
+    "needsTitle": "必要なもの",
+    "needsNone": "標準のコンテナ以上に必要なものはありません。",
+    "addsTitle": "Levelrailが追加するもの",
+    "showAll": "詳細を表示",
+    "hideAll": "詳細を隠す",
+    "services": "サービス: {{services}}",
+    "elevatedWarning": "このテンプレートは、ホストへの昇格されたアクセスを求めています。Levelrailがこれを自動で許可することはありません。",
+    "acknowledge": "上に示された昇格されたアクセスを理解し、承諾します",
+    "acknowledgeRequired": "デプロイするには、昇格されたアクセスに同意してください。",
+    "finding": {
+      "privileged": "特権モードで動作し、コンテナにホストへのほぼroot相当のアクセスを与える",
+      "docker_socket": "Dockerソケットをマウントする。これはホストのroot権限に相当する",
+      "host_network": "ホストネットワークを使い、アプリのネットワークとイングレスを経由しない",
+      "host_namespace": "ホストのプロセス、IPC、またはユーザーの名前空間を共有する",
+      "cap_add": "追加のLinuxケイパビリティを付与する",
+      "devices": "ホストのデバイスをコンテナに渡す",
+      "security_opt": "コンテナのセキュリティオプションを変更する",
+      "host_mount": "ホストのディレクトリをマウントする",
+      "unpinned_image": "イメージがバージョンタグに固定されていないため、再デプロイで別のコードを取得する可能性がある",
+      "published_ports": "ホスト上で、直接ポートを公開する",
+      "required_secrets": "デプロイする前に、1つ以上のシークレットの入力が必要",
+      "generated_secrets": "パスワードとキーが、デプロイ時に生成される",
+      "no_healthcheck": "ヘルスチェックがないため、デプロイはプロセスの起動で判断される",
+      "persistent_data": "名前付きボリュームにデータを保存する",
+      "gpu": "NVIDIA GPUを確保する",
+      "unparsed": "Composeの本文を解析できませんでした。デプロイする前に確認してください"
+    },
+    "protection": {
+      "https_ingress": "すべてのドメインの前段に、自動のHTTPSとイングレスのシールドを配置",
+      "secret_masking": "シークレットは生成され、暗号化して保存され、ログとUIではマスクされる",
+      "volume_backups": "名前付きボリュームは、バックアップとリストアが可能",
+      "health_gated_deploy": "トラフィックを切り替える前に、ヘルスチェックでデプロイを制御",
+      "rollback": "1ステップで、前のリビジョンにロールバック",
+      "exposure_report": "外部から到達できるものを、公開状況レポートで確認",
+      "firewall": "公開ポートのホストファイアウォールのルールを管理"
+    }
+  },
+  "banner": {
+    "description": "カタログから選び、いくつかの値を設定すると、アプリが自分のサーバーで動きます。",
+    "diagram": {
+      "catalog": "カタログ",
+      "oneClick": "ワンクリック",
+      "server": "あなたのサーバー"
+    }
+  },
+  "what": {
+    "title": "得られるもの",
+    "description_other": "{{count}}個のサービスが、一緒に実行できる状態になります。",
+    "url": "Webアドレス",
+    "urlValue": "{{slug}}.<あなたのサーバーのドメイン>",
+    "ports": "ポート",
+    "portsNone": "Webポートなし",
+    "resources": "メモリとCPU",
+    "memory": "メモリ約{{size}}",
+    "memoryNone": "メモリ上限は設定されていません",
+    "cpu": "CPU上限 {{count}}",
+    "cpuShared": "共有CPU",
+    "volumes": "ストレージ",
+    "volumesNone": "永続ストレージなし",
+    "dependencies": "依存関係",
+    "databaseCreated": "{{engines}}データベースが作成されます",
+    "dependenciesNone": "なし。単独で動作します",
+    "backups": "バックアップ",
+    "backupsVolumes": "ストレージは、バックアップのページからバックアップとリストアができます",
+    "backupsNone": "バックアップするものはありません"
+  },
+  "form": {
+    "title": "設定してデプロイ",
+    "descriptionRequired": "必須の値を入力してから、デプロイしてください。そのほかには、適切な既定値があります。",
+    "descriptionNone": "必須のものはありません。今すぐデプロイするか、先に任意の設定を調整してください。",
+    "generated": {
+      "title": "自動で生成",
+      "placeholder": "デプロイ時に作成されます",
+      "reveal": "表示",
+      "hide": "隠す",
+      "regenerate": "再生成",
+      "hint": "暗号化して保存され、再デプロイのたびに再利用されます。"
+    },
+    "domain": {
+      "title": "アドレス",
+      "auto": "自動のアドレス",
+      "custom": "独自のドメインを使う",
+      "autoHint": "動作するHTTPSのアドレスが、すぐに得られます。必要なら、後から独自のドメインを追加できます。",
+      "customHint": "DNSをこのサーバーに向けると、HTTPSが自動で設定されます。",
+      "none": "このテンプレートには、設定するWebアドレスがありません。",
+      "label": "{{service}}のドメイン(ポート{{port}})",
+      "placeholder": "app.example.com",
+      "hint": "任意です。空欄にすると、自動のアドレスを使います。"
+    },
+    "optional": {
+      "title": "任意の設定",
+      "count_other": "({{count}}件の設定)"
+    },
+    "name": {
+      "label": "アプリ名",
+      "hint": "小文字、数字、ハイフンが使えます。空欄にすると、自動で決まります。"
+    },
+    "errors": {
+      "required": "{{field}}は必須です",
+      "name": "小文字、数字、ハイフンを使い、先頭は英字にしてください。",
+      "domain": "app.example.comのような、有効なドメインを入力してください。",
+      "summary_other": "続けるには、{{count}}件の項目を修正してください。"
+    },
+    "summary": "{{name}}は、{{app}}として{{address}}で動作します。シークレットが{{generated}}件、自動で生成されます。",
+    "summaryAuto": "自動のアドレス",
+    "deploy": "デプロイ",
+    "deploying": "デプロイ中...",
+    "success": "{{app}}をデプロイしました",
+    "file": {
+      "secret": "シークレットファイル",
+      "mount": "{{service}}の{{path}}にマウント",
+      "mode": "モード {{mode}}"
+    }
+  },
+  "card": {
+    "ramRecommended": "RAM約{{size}}を推奨",
+    "needsGpu": "NVIDIA GPUが必要",
+    "deployNow": "今すぐデプロイ",
+    "deployNowSetup": "今すぐデプロイ(設定が必要)",
+    "deploying": "デプロイ中...",
+    "searchPlaceholder": "テンプレートを検索...",
+    "searchLabel": "テンプレートを検索",
+    "noMatch": "「{{search}}」に一致するテンプレートはありません。"
+  },
+  "install": {
+    "title": "インストールされる内容",
+    "description_other": "{{count}}個のサービスが作成されます。",
+    "volumes": "ボリューム",
+    "env": "環境変数",
+    "pin": {
+      "digest": "ダイジェストで固定",
+      "tag": "バージョンタグ",
+      "floating": "可変のタグ"
+    },
+    "envKind": {
+      "generated": "自動生成",
+      "required": "入力が必要",
+      "optional": "任意"
+    }
+  },
+  "trust": {
+    "digest_other": "ダイジェストで固定されたイメージ{{count}}件",
+    "digestHint": "イメージの正確な内容が固定されています",
+    "tag_other": "バージョンタグのイメージ{{count}}件",
+    "tagHint": "バージョンタグは、上流で再プッシュされる可能性があります",
+    "floating_other": "可変のタグのイメージ{{count}}件",
+    "floatingHint": "latestタグ、またはタグなしです。デプロイのたびに、イメージが変わる可能性があります"
+  },
+  "stackFile": {
+    "title": "スタックファイルとして表示",
+    "preview": "このテンプレートがデプロイするComposeファイルのプレビュー",
+    "download": "ダウンロード",
+    "label": "テンプレートのComposeファイル"
+  },
+  "result": {
+    "title": "{{name}}をデプロイしています",
+    "deployFailed": "デプロイに失敗しました",
+    "address": "アドレス",
+    "addressPending": "アプリが実行されると、アドレスが表示されます。",
+    "credentials": "生成された認証情報",
+    "credentialsHint": "このアプリ用に作成されました。要求したときだけ表示され、その後は再び隠れます。",
+    "noCredentials": "このテンプレートでは、認証情報は生成されませんでした。",
+    "reveal": "{{key}}を表示",
+    "hide": "{{key}}を隠す",
+    "copy": "{{key}}をコピー",
+    "copied": "コピーしました",
+    "hidesIn": "{{seconds}}秒後に非表示",
+    "revealDenied": "値を表示するには、オーナーまたは管理者のアクセスが必要か、このアプリでは無効になっています。",
+    "openEnvironment": "環境変数を開く",
+    "nextSteps": "次のステップ",
+    "openApp": "アプリを開く",
+    "viewLogs": "ログを見る",
+    "close": "閉じる",
+    "accessDetails": "アクセスの詳細",
+    "toastDeployed": "「{{name}}」をデプロイしました",
+    "toastRunning_other": "{{count}}個のサービスが実行中です。",
+    "services_other": "{{count}}個のサービスを起動中"
+  },
+  "access": {
+    "title": "アクセスの詳細",
+    "description": "このアプリのアドレス、生成されたログイン情報、セットアップのメモです。",
+    "open": "アクセスの詳細を開く"
+  },
+  "wizard": {
+    "deployedUnder_other": "「{{app}}」の下に、{{count}}個のサービスをデプロイしました。",
+    "created": "作成済み",
+    "view": "見る",
+    "done": "完了",
+    "back": "テンプレートに戻る",
+    "ramRecommended": "推奨RAM",
+    "documentation": "ドキュメント",
+    "name": "名前",
+    "namePlaceholder": "例: my-stack",
+    "nameHint": "このテンプレートが定義するすべてのサービスを、1つのアプリ名の下にまとめます。",
+    "composeHint": "テンプレートから入力済みです。必要に応じて、デプロイする前に編集してください。",
+    "deploying": "デプロイ中...",
+    "deploy": "デプロイ"
+  },
+  "facts": {
+    "license": {
+      "title": "ライセンス: {{spdx}}",
+      "classes": {
+        "permissive": "寛容なライセンス",
+        "copyleft": "コピーレフトのライセンス",
+        "network-copyleft": "ネットワークコピーレフトのライセンス",
+        "source-available": "ソース公開",
+        "proprietary": "プロプライエタリ"
+      }
+    },
+    "verifiedOn": "{{arches}}で、イメージタグ{{tag}}を使って検証済み",
+    "deprecated": "非推奨",
+    "yanked": "取り下げ済み",
+    "useInstead": "代わりに{{id}}を使う",
+    "filter": {
+      "license": "ライセンスの種類",
+      "anyLicense": "すべてのライセンス",
+      "arch": "アーキテクチャ",
+      "anyArch": "すべてのアーキテクチャ"
+    },
+    "preview": {
+      "badge": "プレビュー",
+      "hint": "実際のエンジンでの実行テストは、まだ行われていません。インストールは可能です。問題があれば報告してください。"
+    }
+  },
+  "importTemplate": {
+    "button": "Composeをインポート",
+    "title": "テンプレートをインポート",
+    "description": "Composeファイルを貼り付けるか読み込んで、独自のテンプレートとして保存します。何もデプロイされません。",
+    "idLabel": "テンプレートID",
+    "nameLabel": "名前",
+    "descriptionLabel": "説明(任意)",
+    "fileLabel": "Composeファイルを読み込む",
+    "composeLabel": "Composeファイル",
+    "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
+    "variablesLabel": "変数(任意、カンマ区切り)",
+    "variablesPlaceholder": "DB_PASSWORD, API_KEY",
+    "cancel": "キャンセル",
+    "submit": "テンプレートをインポート",
+    "submitting": "インポート中...",
+    "tooLarge": "そのファイルは、テンプレートとしては大きすぎます。",
+    "success": "「{{name}}」をテンプレートとしてインポートしました。",
+    "idInvalid": "小文字、数字、ハイフンで、2から63文字にしてください。",
+    "nameRequired": "名前は必須です。",
+    "composeRequired": "Composeファイルは必須です。",
+    "variablesInvalid": "変数は、大文字の名前にしてください。"
+  },
+  "capabilities": {
+    "title": "宣言されたアクセス",
+    "tier": {
+      "review": "要確認",
+      "elevated": "昇格",
+      "privileged": "特権"
+    },
+    "class": {
+      "cap_add": "1つのコンテナに、Linuxケイパビリティを追加します。",
+      "net_admin": "コンテナ内のネットワーク設定を変更できます。"
+    }
+  }
+}

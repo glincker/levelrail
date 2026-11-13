@@ -1,0 +1,193 @@
+{
+  "common": {
+    "cancel": "キャンセル"
+  },
+  "grid": {
+    "label": "ダッシュボードのウィジェット",
+    "controls": "{{title}} の操作",
+    "moveEarlier": "{{title}} を前へ移動",
+    "moveLater": "{{title}} を後ろへ移動",
+    "size": "{{title}} のサイズを {{size}} にする",
+    "remove": "{{title}} を削除"
+  },
+  "widget": {
+    "type": {
+      "metric_chart": "メトリクスチャート",
+      "request_percentiles": "リクエストのレイテンシ",
+      "error_rate": "エラー率",
+      "log_tail": "ログテール",
+      "deploy_timeline": "デプロイのタイムライン",
+      "resource_counts": "リソース数",
+      "cost": "タグ別のコスト",
+      "alert_status": "アラートのステータス",
+      "node_capacity": "ノードの容量",
+      "link": "リンク",
+      "fleet_health": "フリートの状態",
+      "fleet_traffic": "フリートのトラフィック",
+      "top_apps": "上位のアプリ",
+      "deploy_activity": "デプロイのアクティビティ",
+      "fleet_capacity": "フリートの容量",
+      "attention": "要対応"
+    },
+    "noTraffic": "直近のウィンドウにリクエストはありません。",
+    "p95": "p95レイテンシ",
+    "reqPerSec": "1秒あたりのリクエスト数",
+    "errorShare": "リクエストに占める4xxと5xxの割合",
+    "noLogs": "この範囲にログ行はありません。",
+    "noDeploys": "最近のデプロイはありません。",
+    "count": {
+      "app": "アプリ",
+      "database": "データベース",
+      "node": "ノード",
+      "domain": "ドメイン"
+    },
+    "noCost": "コストデータはまだありません。タグ別の支出を表示するには、使用量とコストで料金を設定してください。",
+    "scopedCost": "選択したスコープの今月の支出",
+    "untagged": "タグなし",
+    "rulesEnabled": "件のアラートルールが有効",
+    "noRules": "このアプリにはアラートルールがまだありません。",
+    "unknown": "不明",
+    "capacity": {
+      "disk": "ディスク使用量",
+      "memory": "メモリ使用量"
+    }
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_usage_bytes": "メモリ",
+    "network_rx_bytes": "ネットワーク受信",
+    "network_tx_bytes": "ネットワーク送信",
+    "disk_read_bytes": "ディスク読み取り",
+    "disk_write_bytes": "ディスク書き込み",
+    "disk_used_bytes": "ディスク使用量",
+    "container_restart_count": "再起動"
+  },
+  "kind": {
+    "app": "アプリ",
+    "database": "データベース",
+    "node": "ノード"
+  },
+  "range": {
+    "15m": "直近15分",
+    "1h": "直近1時間",
+    "6h": "直近6時間",
+    "24h": "直近24時間",
+    "7d": "直近7日間",
+    "30d": "直近30日間"
+  },
+  "refresh": {
+    "0": "手動",
+    "15": "15秒ごと",
+    "30": "30秒ごと",
+    "60": "1分ごと",
+    "300": "5分ごと"
+  },
+  "toolbar": {
+    "range": "時間範囲",
+    "refresh": "自動更新",
+    "refreshNow": "更新",
+    "addWidget": "ウィジェットを追加",
+    "shared": "全員と共有",
+    "project": "プロジェクト",
+    "noProject": "プロジェクトなし",
+    "isDefault": "プロジェクトのデフォルト",
+    "save": "変更を保存",
+    "done": "編集を終了"
+  },
+  "add": {
+    "title": "ウィジェットを追加",
+    "description": "表示する内容と、その取得元を選択してください。",
+    "type": "ウィジェット",
+    "kind": "取得元",
+    "target": "リソース",
+    "targetPlaceholder": "リソースを選択",
+    "metric": "メトリクス",
+    "query": "ログフィルター",
+    "queryPlaceholder": "検索するテキスト(任意)",
+    "submit": "ウィジェットを追加",
+    "linkTitle": "タイトル",
+    "linkTitlePlaceholder": "ランブック",
+    "linkUrl": "アドレス"
+  },
+  "template": {
+    "label": "スターターダッシュボード",
+    "use": "このスターターを使用",
+    "pickApp": "{{name}} のアプリ",
+    "app-health": {
+      "name": "アプリの状態",
+      "description": "1つのアプリのCPU、メモリ、レイテンシ、エラー、アラート、デプロイ、ログ。"
+    },
+    "fleet-overview": {
+      "name": "フリートの概要",
+      "description": "運用しているアプリ、データベース、ノード、ドメインの数。"
+    },
+    "cost": {
+      "name": "コスト",
+      "description": "タグ別の月初来の支出と、その元となるリソース使用量。"
+    }
+  },
+  "empty": {
+    "widgetsTitle": "このダッシュボードは空です",
+    "widgetsBody": "編集をオンにしてウィジェットを追加すると、始められます。"
+  },
+  "toast": {
+    "saved": "ダッシュボードを保存しました",
+    "saveFailed": "ダッシュボードを保存できませんでした",
+    "imported": "{{name}} をインポートしました",
+    "importFailed": "ダッシュボードをインポートできませんでした",
+    "notJson": "そのファイルは有効なJSONではありません。",
+    "deleted": "ダッシュボードを削除しました",
+    "deleteFailed": "ダッシュボードを削除できませんでした",
+    "created": "{{name}} を作成しました",
+    "createFailed": "ダッシュボードを作成できませんでした"
+  },
+  "fleet": {
+    "loadFailed": "このデータを読み込めませんでした。",
+    "health": {
+      "empty": "アプリはまだありません。",
+      "barLabel": "実行中 {{running}}、失敗中 {{failing}}、停止中 {{stopped}}",
+      "running": "実行中",
+      "failing": "失敗中",
+      "stopped": "停止中",
+      "nodesOnline": "オンラインのノード"
+    },
+    "traffic": {
+      "notConfigured": "テレメトリーが構成されていません。",
+      "empty": "直近1時間にリクエストはありません。",
+      "requests": "リクエスト、直近1時間",
+      "errors": "5xxエラー",
+      "tooFew": "リクエストが少なすぎます",
+      "p95": "p95レイテンシ",
+      "spark": "全アプリの1秒あたりのリクエスト数"
+    },
+    "top": {
+      "sortBy": "並べ替え",
+      "cpu": "CPU",
+      "memory": "メモリ",
+      "requests": "リクエスト",
+      "empty": "ランク付けするものはまだありません。"
+    },
+    "deploys": {
+      "empty": "完了したデプロイはまだありません。",
+      "summary": "24時間で {{day}} 件、7日間で {{week}} 件(成功 {{ok}} 件、失敗 {{failed}} 件)",
+      "succeeded": "成功",
+      "failed": "失敗",
+      "sampled": "確認の必要性が高い {{count}} 件のアプリに基づきます。"
+    },
+    "capacity": {
+      "unavailable": "容量を利用できません。",
+      "empty": "容量を報告しているノードはまだありません。",
+      "cpu": "CPU",
+      "memory": "メモリ",
+      "disk": "ディスク"
+    },
+    "attention": {
+      "clear": "問題ありません。対応が必要なものはありません。",
+      "critical": "重大",
+      "warning": "警告",
+      "info": "お知らせ",
+      "viewAll": "ステータスを開く",
+      "more": "ステータスにさらに {{count}} 件"
+    }
+  }
+}

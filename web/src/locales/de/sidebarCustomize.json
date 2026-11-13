@@ -1,0 +1,20 @@
+{
+  "title": "Seitenleiste anpassen",
+  "description": "Gruppen und Seiten neu anordnen, ein- oder ausblenden. Ausgeblendete Seiten bleiben über die Suche erreichbar.",
+  "groups": "Gruppen der Seitenleiste",
+  "itemsIn": "Seiten in {{label}}",
+  "moveUp": "{{label}} nach oben verschieben",
+  "moveDown": "{{label}} nach unten verschieben",
+  "show": "{{label}} anzeigen",
+  "moved": "{{label}} auf Position {{position}} von {{total}} verschoben",
+  "currentPage": "Aktuelle Seite",
+  "currentGroup": "Enthält aktuelle Seite",
+  "reset": "Auf Standard zurücksetzen",
+  "resetDone": "Seitenleiste auf Standard zurückgesetzt",
+  "done": "Fertig",
+  "recent": {
+    "group": "Zuletzt",
+    "app": "App",
+    "database": "Datenbank"
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "title": "Deploy",
+  "description": "Eine neue Version dieser App deployen.",
+  "git": {
+    "headTitle": "Neuesten Commit auf {{branch}} deployen",
+    "deployHead": "Neuesten Commit deployen",
+    "deployBranch": "Head von {{branch}} deployen",
+    "starting": "Build wird gestartet",
+    "loading": "Commits werden geladen",
+    "useImage": "Stattdessen ein Image deployen",
+    "statusUpToDate": "Aktuell, {{sha}} ist live",
+    "statusAhead_one": "{{count}} Commit vor dem, was live ist",
+    "statusAhead_other": "{{count}} Commits vor dem, was live ist",
+    "statusAheadUnknown": "Neuer als das, was live ist, oder live von einem anderen Branch",
+    "statusNeverDeployed": "Noch kein Deploy dieser Quelle aufgezeichnet",
+    "recent": "Neueste Commits",
+    "deploy": "Deployen",
+    "deployCommit": "Commit {{sha}} deployen",
+    "redeploy": "Erneut deployen",
+    "branch": "Branch",
+    "branchOther": "Nicht der verbundene Branch. Push-Deploys folgen weiterhin {{branch}}.",
+    "byAuthor": "{{author}}, {{age}}",
+    "noMessage": "Keine Commit-Nachricht",
+    "refresh": "Commits aktualisieren",
+    "noCommits": "Dieser Branch hat noch keine Commits.",
+    "degraded": "Dieser Host stellt keine Commit-Liste bereit, daher wird nur der Head von {{branch}} angezeigt.",
+    "loadFailed": "Commits konnten nicht geladen werden",
+    "retry": "Erneut versuchen",
+    "connectedTo": "Verbundenes Repository",
+    "buildWith": "Baut mit",
+    "dockerfile": "Dockerfile {{path}}",
+    "contextDir": "aus {{dir}}",
+    "buildTypes": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Automatisch erkennen (Railpack)",
+      "static": "Statische Website",
+      "image": "Vorgebautes Image"
+    },
+    "status": {
+      "deployed": "Live",
+      "failed": "Fehlgeschlagen",
+      "running": "Wird gebaut",
+      "queued": "In der Warteschlange",
+      "held": "Zurückgehalten",
+      "succeeded": "Gebaut",
+      "canceled": "Abgebrochen",
+      "superseded": "Abgelöst"
+    },
+    "shortcuts": {
+      "title": "Kurzbefehle",
+      "redeployLast": "Letzten erfolgreichen erneut deployen",
+      "redeployLastHint": "{{image}} ohne Build erneut ausführen.",
+      "rollbackTo": "Auf vorherigen zurückrollen",
+      "rollbackToHint": "Zu {{image}} zurückkehren.",
+      "rollbackTitle": "Auf {{image}} zurückrollen?",
+      "rollbackDescription": "Die App führt wieder das vorherige erfolgreiche Image aus.",
+      "rollbackConsequence": "Das aktuelle Release liefert nicht mehr aus, sobald das vorherige gesund ist.",
+      "rollbackConfirm": "Zurückrollen",
+      "rollbackPending": "Wird zurückgerollt"
+    },
+    "toast": {
+      "started": "Deploy gestartet.",
+      "startedFor": "{{sha}} wird gebaut.",
+      "approval": "Der Deploy wartet auf Genehmigung.",
+      "failed": "Der Deploy konnte nicht gestartet werden."
+    },
+    "viewLogs": "Build-Logs ansehen"
+  },
+  "suggestions": {
+    "title": "Vorschläge",
+    "dismiss": "Vorschlag ausblenden",
+    "head_failed_to_build": {
+      "title": "Der Build von Commit {{sha}} ist fehlgeschlagen",
+      "detail": "Prüfen Sie das Build-Log, bevor Sie erneut deployen.",
+      "action": "Build-Log öffnen"
+    },
+    "webhook_signature_failing": {
+      "title": "Push-Webhooks werden abgelehnt",
+      "detail": "Die letzte Webhook-Zustellung hatte eine ungültige Signatur, daher werden Pushes nicht deployt.",
+      "action": "Quelleneinstellungen öffnen"
+    },
+    "fix_build_settings": {
+      "title": "Build-Einstellungen prüfen",
+      "detail": "Das sieht nach einem Monorepo aus, oder der letzte Build ist an der Build-Konfiguration gescheitert.",
+      "action": "Build-Einstellungen öffnen"
+    },
+    "webhook_not_received": {
+      "title": "Deploy bei Push aktivieren",
+      "detail": "Bei dieser App ist noch keine Webhook-Zustellung angekommen, daher deployen Pushes nicht von selbst.",
+      "action": "Webhook einrichten"
+    },
+    "release_trigger_only": {
+      "title": "Deploys erfolgen nur bei Releases",
+      "detail": "Neue Commits werden nicht automatisch deployt. Deployen Sie einen aus dieser Liste, wenn Sie bereit sind.",
+      "action": "Quelleneinstellungen öffnen"
+    },
+    "enable_previews": {
+      "title": "Jeden Pull Request als Vorschau anzeigen",
+      "detail": "Pull-Request-Ereignisse treffen ein. Vorschauen geben jedem eine Live-URL.",
+      "action": "Vorschauen aktivieren",
+      "done": "Vorschau-Umgebungen aktiviert."
+    },
+    "add_health_check": {
+      "title": "Health-Check hinzufügen",
+      "detail": "Ohne einen gilt ein Container, der startet, aber nichts ausliefert, weiterhin als gesund.",
+      "action": "Health-Einstellungen öffnen"
+    },
+    "add_deploy_notifications": {
+      "title": "Benachrichtigt werden, wenn Deploys enden",
+      "detail": "Niemand wird benachrichtigt, wenn diese App deployt wird oder fehlschlägt.",
+      "action": "Benachrichtigungen einrichten"
+    }
+  },
+  "approval": {
+    "protected": "{{environment}} ist eine geschützte Umgebung. Erneute Deploys und Rollbacks von Images hier warten auf die Genehmigung eines anderen Benutzers mit Deploy-Rechten.",
+    "ack": "Ich habe verstanden und möchte fortfahren."
+  },
+  "image": {
+    "current": "Aktuelles Image",
+    "imageLabel": "Image",
+    "placeholder": "registry.example.com/app:tag",
+    "suggestionsLabel": "Neueste Tags",
+    "deploy": "Image deployen",
+    "deploying": "Wird deployt",
+    "advanced": "Erweitert",
+    "connectInstead": "Stattdessen aus einem Git-Repository deployen",
+    "required": "Geben Sie eine Image-Referenz ein.",
+    "toast": {
+      "started": "Deploy gestartet.",
+      "approval": "Der Deploy wartet auf Genehmigung."
+    }
+  },
+  "connect": {
+    "title": "Wählen Sie, woher diese App deployt wird",
+    "repoTitle": "Repository verbinden",
+    "repoDescription": "Jeder Push kann bauen und deployen. Wählen Sie ein Repository eines verbundenen Anbieters oder fügen Sie eine URL ein.",
+    "connect": "Repository verbinden",
+    "connecting": "Wird verbunden",
+    "connected": "Repository verbunden.",
+    "failed": "Das Repository konnte nicht verbunden werden.",
+    "orImage": "Oder ein Container-Image deployen",
+    "imageDescription": "Verweisen Sie auf ein Image, das bereits gebaut und gepusht wurde."
+  },
+  "pending": {
+    "title": "Änderungen seit dem Live-Deploy",
+    "none": "Nichts unterscheidet sich vom Live-Deploy.",
+    "empty": "keine",
+    "loadFailed": "Die ausstehenden Änderungen konnten nicht geladen werden.",
+    "env": {
+      "added": "Env hinzugefügt",
+      "removed": "Env entfernt",
+      "changed": "Env geändert"
+    },
+    "field": {
+      "image": "Image",
+      "image_digest": "Image-Digest",
+      "commit_sha": "Commit",
+      "port": "Port",
+      "host_port": "Host-Port",
+      "bind_address": "Netzwerkschnittstelle",
+      "domains": "Domains",
+      "strategy": "Deploy-Strategie",
+      "replicas": "Replikate",
+      "volumes": "Volumes",
+      "labels": "Labels"
+    }
+  },
+  "schedule": {
+    "toggle": "Für später planen",
+    "whenLabel": "Deployen um",
+    "zone": "Zeiten gelten in Ihrer Zeitzone: {{zone}}",
+    "required": "Wählen Sie ein Datum und eine Uhrzeit.",
+    "invalid": "Dieses Datum und diese Uhrzeit sind ungültig.",
+    "past": "Wählen Sie eine Zeit in der Zukunft.",
+    "submit": "Deploy planen",
+    "submitting": "Wird geplant",
+    "toast": {
+      "created": "Deploy geplant.",
+      "failed": "Der Deploy konnte nicht geplant werden.",
+      "canceled": "Geplanter Deploy abgebrochen.",
+      "cancelFailed": "Der geplante Deploy konnte nicht abgebrochen werden."
+    },
+    "list": {
+      "title": "Geplante Deploys",
+      "description": "Einmalige Deploys, die auf ihre Ausführung warten. Wie jeder Deploy beachten sie Deploy-Freezes, Schranken und Genehmigungen.",
+      "empty": "Nichts geplant.",
+      "image": "Image {{image}}",
+      "ref": "Neuester Commit auf {{ref}}",
+      "runsAt": "Läuft {{when}}",
+      "cancel": "Abbrechen",
+      "canceling": "Wird abgebrochen",
+      "loadFailed": "Geplante Deploys konnten nicht geladen werden.",
+      "status": {
+        "pending": "Ausstehend",
+        "running": "Startet",
+        "fired": "Gestartet",
+        "pending_approval": "Wartet auf Genehmigung",
+        "skipped_freeze": "Übersprungen, Deploy-Freeze",
+        "missed": "Verpasst",
+        "canceled": "Abgebrochen",
+        "failed": "Fehlgeschlagen"
+      }
+    }
+  }
+}

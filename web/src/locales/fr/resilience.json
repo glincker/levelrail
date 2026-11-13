@@ -1,0 +1,165 @@
+{
+  "title": "Rapport de résilience",
+  "description": "Le dernier résultat mesuré de chaque scénario de panne, exécuté sur des containers locaux jetables. Seuls les chiffres mesurés sont affichés.",
+  "loadError": "Impossible de charger le rapport de résilience.",
+  "retry": "Revérifier",
+  "status": {
+    "passed": "Réussi",
+    "failed": "Échoué",
+    "skipped": "Ignoré"
+  },
+  "scenario": {
+    "kill-container": "Tuer le container qui sert sous trafic",
+    "daemon-unreachable": "API Docker injoignable pendant un deploy",
+    "control-plane-restart": "Redémarrage du plan de contrôle sous trafic",
+    "disk-pressure": "Volume temporaire saturé",
+    "oom-during-readiness": "Kill OOM pendant l'attente de disponibilité",
+    "ingress-steady": "Charge stable croissante via l'ingress",
+    "deploy-latency": "Latence de deploy de l'image jusqu'au service",
+    "rollout-under-traffic": "Deploy progressif de deux réplicas sous trafic",
+    "ingress-concurrency": "Débit de l'ingress à concurrence fixe",
+    "replica-failover": "Tuer un des deux réplicas sous trafic"
+  },
+  "metrics": {
+    "recovery": "Récupération",
+    "errors": "Requêtes en échec",
+    "ranAt": "Mesuré"
+  },
+  "notMeasured": "Pas encore mesuré",
+  "empty": {
+    "title": "Aucun résultat de chaos enregistré pour l'instant",
+    "body": "Exécutez les scénarios sur une machine avec Docker et enregistrez-les, et chaque résultat apparaît ici."
+  },
+  "disk": {
+    "title": "Protection de l'espace disque",
+    "description": "Espace libre sur le répertoire de données et le volume Docker. Sous le plancher critique, les deploys, pulls et sauvegardes sont refusés avant de pouvoir remplir le disque.",
+    "loadError": "Impossible de charger l'état du disque.",
+    "refusing": "Un volume est sous le plancher critique. Les deploys, pulls d'images et sauvegardes sont refusés tant que de l'espace n'est pas libéré.",
+    "freeAction": "Libérer de l'espace maintenant",
+    "freeing": "Nettoyage",
+    "free": "{{free}} libres sur {{total}}",
+    "thresholds": "Avertit sous {{low}} libres, refuse les opérations risquées sous {{critical}}. Définissez APP_DISK_LOW_FREE_MB et APP_DISK_CRITICAL_FREE_MB pour modifier cela.",
+    "volume": {
+      "data": "Données du plan de contrôle",
+      "docker": "Stockage Docker"
+    },
+    "level": {
+      "ok": "Sain",
+      "low": "Faible",
+      "critical": "Critique",
+      "unknown": "Inconnu"
+    },
+    "toast": {
+      "freed": "Nettoyage terminé, {{size}} récupérés",
+      "errorTitle": "Impossible de libérer de l'espace"
+    }
+  },
+  "cli": {
+    "summary": "Exécuter plutôt les scénarios depuis un terminal",
+    "note": "Nécessite une CLI compilée avec le tag chaoslive et un daemon Docker local."
+  },
+  "benchmarks": {
+    "title": "Benchmarks",
+    "description": "Fichiers de résultats de bench chaos run, conservés avec l'hôte et le build qui les ont produits afin que les exécutions puissent être affichées et comparées.",
+    "refresh": "Actualiser",
+    "loadError": "Impossible de charger les résultats de benchmark.",
+    "standingCaveat": {
+      "title": "Pas des chiffres de capacité de production",
+      "body": "Ces exécutions mesurent un générateur de charge et le plan de contrôle sur une seule machine. Sauf si l'hôte est un serveur Linux, ce ne sont PAS des chiffres de production Linux. Lisez les réserves de chaque exécution avant de citer un chiffre."
+    },
+    "caveatsTitle": "À lire d'abord",
+    "empty": {
+      "title": "Aucune exécution de benchmark enregistrée pour l'instant",
+      "body": "Exécutez les scénarios sur une machine avec Docker et téléversez le fichier de résultats, et chaque exécution apparaît ici."
+    },
+    "history": {
+      "title": "Historique des exécutions",
+      "keep": "Conserve les {{count}} exécutions les plus récentes.",
+      "nonLinux": "Certaines exécutions proviennent d'hôtes non Linux.",
+      "select": "Sélectionner pour comparer",
+      "selectRun": "Sélectionner l'exécution {{id}} pour comparer",
+      "when": "Mesuré",
+      "build": "Build",
+      "host": "Hôte",
+      "result": "Résultat",
+      "actions": "Actions",
+      "view": "Voir",
+      "compare": "Comparer la sélection",
+      "passed_one": "{{count}} réussi",
+      "passed_many": "{{count}} réussis",
+      "passed_other": "{{count}} réussis",
+      "failed_one": "{{count}} échoué",
+      "failed_many": "{{count}} échoués",
+      "failed_other": "{{count}} échoués",
+      "repeat_one": "{{count}} exécution chacun",
+      "repeat_many": "{{count}} exécutions chacun",
+      "repeat_other": "{{count}} exécutions chacun",
+      "deleteRun": "Supprimer l'exécution {{id}}"
+    },
+    "groups": {
+      "failover": "Basculement et récupération",
+      "deploy": "Deploy",
+      "rollout": "Déploiement progressif",
+      "throughput": "Débit"
+    },
+    "host": {
+      "title": "Hôte et build",
+      "platform": "Plateforme",
+      "kernel": "Noyau",
+      "cpu": "CPU et cœurs",
+      "memory": "Mémoire",
+      "docker": "Moteur Docker",
+      "load": "Charge moyenne",
+      "loadValue": "{{start}} au début, {{end}} à la fin",
+      "version": "Version",
+      "commit": "Commit",
+      "runs": "Exécutions par scénario",
+      "note": "Note",
+      "unknown": "inconnu"
+    },
+    "table": {
+      "scenario": "Scénario",
+      "run": "Exécution",
+      "status": "Statut",
+      "summary": "Ce qui s'est passé",
+      "metric": "Métrique",
+      "runN": "Exécution {{n}}"
+    },
+    "limits": {
+      "title": "Tableau des limites",
+      "question": "Question",
+      "status": "Statut"
+    },
+    "method": "Comment ces chiffres ont été relevés",
+    "chart": {
+      "aria": "{{title}}, requêtes par seconde selon la concurrence : {{summary}}"
+    },
+    "compare": {
+      "title": "Comparer",
+      "base": "Base",
+      "head": "Tête",
+      "runs_one": "{{count}} exécution",
+      "runs_many": "{{count}} exécutions",
+      "runs_other": "{{count}} exécutions",
+      "basis": "Chaque valeur est la médiane des exécutions de ce côté. Une variation inférieure à {{noise}} pour cent est considérée comme identique.",
+      "warningsTitle": "Prudence dans la lecture de cette comparaison",
+      "statusTitle": "Changements de résultat",
+      "to": "vers",
+      "delta": "Variation",
+      "verdict": "Verdict",
+      "oneSided": "un seul côté",
+      "direction": {
+        "better": "Meilleur",
+        "worse": "Pire",
+        "same": "Identique"
+      }
+    },
+    "confirmDelete": {
+      "title": "Supprimer cette exécution de benchmark ?",
+      "body": "L'exécution {{id}} est supprimée pour tout le monde. Le fichier de résultats que vous avez téléversé n'est pas affecté.",
+      "confirm": "Supprimer l'exécution"
+    },
+    "deleted": "Exécution supprimée",
+    "deleteFailed": "Impossible de supprimer l'exécution"
+  }
+}

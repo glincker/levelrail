@@ -1,0 +1,104 @@
+{
+  "card": {
+    "title": "Passkeys",
+    "description": "Entre com Touch ID, Windows Hello, seu celular ou uma chave de segurança em vez de uma senha.",
+    "statusEnabled_one": "O login com passkey está ativado, {{count}} passkey registrada",
+    "statusEnabled_many": "O login com passkey está ativado, {{count}} passkeys registradas",
+    "statusEnabled_other": "O login com passkey está ativado, {{count}} passkeys registradas",
+    "statusOff": "O login com passkey fica desativado até você adicionar uma passkey",
+    "retry": "Tentar novamente",
+    "add": "Adicionar uma passkey",
+    "test": "Testar login",
+    "testing": "Aguardando sua passkey...",
+    "testOk": "Passkey verificada. Nada mais foi alterado.",
+    "testFailedTitle": "O teste da passkey não passou"
+  },
+  "empty": {
+    "title": "Ainda não há passkeys",
+    "body": "As passkeys resistem a phishing, são mais rápidas que uma senha e ficam no seu dispositivo ou gerenciador de senhas. Adicione uma para entrar com um toque ou um olhar.",
+    "action": "Adicionar sua primeira passkey"
+  },
+  "nudge": {
+    "backupTitle": "Adicione uma segunda passkey como backup",
+    "backupBody": "Com apenas uma passkey, perder esse dispositivo significa recorrer à senha. Registre outro dispositivo ou uma chave de segurança.",
+    "backupAction": "Adicionar uma passkey de backup"
+  },
+  "row": {
+    "provider": "Passkey",
+    "synced": "Sincronizada",
+    "deviceBound": "Vinculada ao dispositivo",
+    "syncedHint": "Com backup feito pelo seu provedor de passkeys e disponível nos seus outros dispositivos.",
+    "deviceBoundHint": "Fica neste autenticador e não pode ser recuperada se você o perder.",
+    "added": "Adicionada",
+    "lastUsed": "Último uso",
+    "neverUsed": "Nunca usada",
+    "signIns_one": "{{count}} login",
+    "signIns_many": "{{count}} logins",
+    "signIns_other": "{{count}} logins",
+    "transport": {
+      "usb": "USB",
+      "nfc": "NFC",
+      "ble": "Bluetooth",
+      "internal": "Este dispositivo",
+      "hybrid": "Celular",
+      "smart-card": "Smart card"
+    },
+    "rename": "Renomear {{name}}",
+    "renameLabel": "Nome da passkey",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "renameFailed": "Não foi possível renomear esta passkey. Tente novamente.",
+    "remove": "Remover {{name}}"
+  },
+  "remove": {
+    "title": "Remover esta passkey?",
+    "description": "\"{{name}}\" não poderá mais entrar nesta conta.",
+    "lastWarning": "Esta é a sua única passkey. Confirme que você ainda consegue entrar com sua senha ou autenticação em dois fatores.",
+    "confirm": "Remover",
+    "pending": "Removendo...",
+    "blockedTitle": "Você ficaria sem acesso",
+    "blockedBody": "Este é o seu único modo de entrar. Adicione antes outra passkey, uma senha ou autenticação em dois fatores.",
+    "blockedAddPasskey": "Adicionar outra passkey",
+    "blockedFailed": "Não foi possível remover esta passkey. Tente novamente."
+  },
+  "addDialog": {
+    "title": "Adicionar uma passkey",
+    "description": "Dê um nome para reconhecê-la depois e siga a solicitação do seu navegador.",
+    "nameLabel": "Nome",
+    "stepName": "Dê um nome",
+    "stepPrompt": "Aprove no navegador",
+    "stepSaved": "Salva",
+    "continue": "Continuar",
+    "waiting": "Aguardando o navegador...",
+    "saving": "Salvando sua passkey...",
+    "cancel": "Cancelar",
+    "done": "Concluir",
+    "savedTitle": "Passkey adicionada",
+    "savedBody": "\"{{name}}\" está pronta para uso.",
+    "savedProvider": "Armazenada em {{provider}}",
+    "retry": "Tentar novamente",
+    "defaults": {
+      "mac": "Touch ID do MacBook",
+      "iphone": "iPhone",
+      "ipad": "iPad",
+      "windows": "Windows Hello",
+      "android": "Celular Android",
+      "linux": "Dispositivo Linux",
+      "generic": "Minha passkey"
+    }
+  },
+  "errors": {
+    "cancelled": "A solicitação da passkey foi fechada antes de terminar. Nada foi salvo.",
+    "timeout": "O navegador esperou demais pela sua passkey. Tente novamente quando estiver pronto.",
+    "alreadyRegistered": "Este autenticador já tem uma passkey para esta conta. Use outro dispositivo ou remova antes a passkey antiga.",
+    "unsupported": "Este navegador ou dispositivo não oferece suporte a passkeys. Tente outro navegador ou uma chave de segurança.",
+    "insecureOrigin": "As passkeys só funcionam no endereço exato configurado como URL do painel, via https. Abra o painel por esse endereço e tente novamente.",
+    "rejected": "O servidor não conseguiu verificar esta passkey. Tente novamente ou use outro autenticador.",
+    "rateLimited": "Muitas tentativas. Aguarde um minuto e tente novamente.",
+    "unavailable": "As passkeys ainda não estão configuradas neste servidor. Peça a um administrador que defina a URL do painel.",
+    "lastMethod": "Este é o seu único modo de entrar. Adicione antes outra passkey, uma senha ou autenticação em dois fatores.",
+    "network": "Não foi possível alcançar o servidor. Verifique sua conexão e tente novamente.",
+    "unknown": "A solicitação da passkey falhou. Tente novamente."
+  }
+}

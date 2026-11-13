@@ -2863,7 +2863,9 @@
     "comingSoon": "Aquí llegarán más opciones de notificación: plantillas de correo personalizadas, límite de velocidad de envío y control de frecuencia por alerta.",
     "description": "Los correos de alertas del backend y de restablecimiento de contraseña se envían por este medio. Desactivado por defecto; un plano de control iniciado con variables APP_SMTP_* sigue funcionando hasta que guarde esta configuración.",
     "helpLabel": "Ayuda de notificaciones por correo",
+    "backendLabel": "Motor",
     "resend": {
+      "label": "Resend",
       "apiKey": "Clave de API",
       "apiKeySet": "Ya hay una clave de API configurada. Déjela en blanco para conservarla.",
       "apiKeyUnset": "Todavía no hay una clave de API.",
@@ -2873,6 +2875,7 @@
     "saveSuccess": "Configuración de correo guardada.",
     "saving": "Guardando...",
     "ses": {
+      "label": "AWS SES",
       "accessKeyId": "ID de clave de acceso",
       "from": "Dirección de remitente",
       "region": "Región",
@@ -2881,6 +2884,7 @@
       "secretUnset": "Todavía no hay una clave secreta."
     },
     "smtp": {
+      "label": "SMTP",
       "from": "Dirección de remitente",
       "host": "Servidor",
       "password": "Contraseña",
@@ -2892,6 +2896,7 @@
     },
     "test": {
       "description": "Envía un correo real a través del backend guardado arriba, por el mismo camino que usan las alertas y los restablecimientos de contraseña.",
+      "placeholder": "you@yourdomain.com",
       "send": "Enviar correo de prueba",
       "sending": "Enviando...",
       "success": "Correo de prueba enviado a {{to}}.",
@@ -2960,38 +2965,47 @@
     "intro": "Elija su proveedor. Sus datos de conexión se rellenan, usted solo añade la credencial y el remitente.",
     "items": {
       "brevo": {
+        "name": "Brevo",
         "bestFor": "Cuentas de Brevo que envían a través del relé SMTP.",
         "credentialHint": "Cree una clave SMTP en su cuenta de Brevo. El usuario es su acceso a Brevo."
       },
       "gmail": {
+        "name": "Google Workspace or Gmail",
         "bestFor": "Correo de bajo volumen desde una cuenta de Google.",
         "credentialHint": "Use una contraseña de aplicación para la cuenta. Ponga como usuario la dirección completa de la cuenta."
       },
       "mailgun": {
+        "name": "Mailgun",
         "bestFor": "Envío desde un dominio verificado en Mailgun.",
         "credentialHint": "Copie una clave de API de envío del panel de Mailgun e introduzca después su dominio de envío."
       },
       "microsoft365": {
+        "name": "Microsoft 365",
         "bestFor": "Correo de bajo volumen desde un buzón de Microsoft 365.",
         "credentialHint": "Use la contraseña del buzón o una contraseña de aplicación. Ponga como usuario la dirección completa del buzón."
       },
       "postmark": {
+        "name": "Postmark",
         "bestFor": "Correo transaccional con una firma de remitente verificada.",
         "credentialHint": "Copie el token de API del servidor desde su servidor de Postmark."
       },
       "resend": {
+        "name": "Resend",
         "bestFor": "Envío sencillo por API con un dominio verificado.",
         "credentialHint": "Cree una clave de API en API Keys en el panel de Resend."
       },
       "sendgrid": {
+        "name": "SendGrid",
         "bestFor": "Cuentas existentes de SendGrid con autenticación de dominio.",
         "credentialHint": "Cree una clave de API con acceso Mail Send en Configuración, API Keys."
       },
       "ses": {
+        "name": "Amazon SES (API)",
         "bestFor": "Cuentas de AWS que quieren la API de SES con una clave IAM.",
         "credentialHint": "Use el secreto de una clave de acceso IAM con permiso para enviar con SES."
       },
       "ses_smtp": {
+        "name": "Amazon SES (SMTP)",
         "bestFor": "Cuentas de AWS que prefieren credenciales SMTP.",
         "credentialHint": "Cree credenciales SMTP en la consola de SES, en Configuración SMTP. No son sus claves IAM."
       },
@@ -3013,6 +3027,7 @@
     "envelopePlaceholder": "Opcional, por defecto la dirección de remitente",
     "mailgunMismatch": "{{domain}} no está bajo su dominio de Mailgun {{mailgun}}, así que Mailgun probablemente lo rechace.",
     "optional": "Opcional",
+    "fromPlaceholder": "noreply@your-domain.com",
     "title": "Identidad del remitente y límites",
     "useSuggestion": "Sugerido: {{value}}",
     "useSuggestionLabel": "Usar el valor sugerido {{value}}"
@@ -3026,6 +3041,7 @@
     "to": "Enviar a"
   },
   "firewallPage": {
+    "title": "Firewall",
     "description": "Reglas declarativas del firewall del host, aplicadas al firewall (ufw) de este nodo."
   },
   "firewallRules": {
@@ -3088,6 +3104,7 @@
       "domainLink": "Abrir la configuración de dominios",
       "helper": "Se guarda en la configuración de ingreso. Las opciones de ACME y correo se mantienen en la configuración de dominios.",
       "label": "Dominio principal",
+      "placeholder": "deploy.example.com",
       "save": "Guardar",
       "saveFailed": "No se pudo definir el dominio principal.",
       "saved": "Dominio principal definido.",
@@ -3107,6 +3124,7 @@
       "orgHelp": "La organización desde la que quiere desplegar. Necesita permiso para crear GitHub Apps en ella.",
       "orgInvalid": "Use el nombre de la organización: letras, números y guiones, hasta 39 caracteres.",
       "orgLogin": "Nombre de la organización",
+      "orgPlaceholder": "acme-inc",
       "organization": "Una organización",
       "personal": "Mi cuenta personal",
       "privateOrgHelp": "Privada: la App solo puede instalarse en esta organización. Permita que otras cuentas la instalen también en su cuenta personal u otras organizaciones.",
@@ -3120,11 +3138,13 @@
       "continue": "Continuar a GitHub",
       "description": "La página de confirmación de GitHub solo le permite cambiar el nombre de la App. Todo lo demás de abajo queda fijado antes de que su navegador salga de esta página.",
       "homepage": "Página principal",
+      "callback": "Callback",
       "instance": "Instancia de GitHub",
       "instanceHelp": "Déjelo en blanco para github.com. También funcionan las instancias autohospedadas de GitHub Enterprise Server, por ejemplo https://github.example.com.",
       "loadError": "No se pudo cargar una vista previa.",
       "permissions": "Permisos solicitados",
       "setup": "Configuración",
+      "webhook": "Webhook",
       "title": "Revise antes de conectar con GitHub",
       "webhookInactive": "declarado, todavía no activo"
     }
@@ -3180,6 +3200,7 @@
     "saved": "Heartbeat guardado",
     "title": "Heartbeat fuera del host",
     "url": "URL de ping",
+    "urlPlaceholder": "https://hc-ping.com/your-uuid",
     "urlHint": "De Healthchecks, Uptime Kuma push o similar. Se guarda cifrada y no se vuelve a mostrar.",
     "urlSet": "Haciendo ping a {{host}}. Pegue una URL nueva para reemplazarla."
   },
@@ -3273,6 +3294,8 @@
     "banner": {
       "description": "Describa proyectos, apps, dominios y bases de datos en YAML, revise el plan y después aplíquelo.",
       "diagram": {
+        "host": "host",
+        "docker": "Docker",
         "ingress": "ingreso"
       }
     },
@@ -3303,6 +3326,7 @@
     "resultTitle": "Resultado",
     "sourceHint": "Etiqueta las apps que crea esta aplicación para que la depuración pueda encontrarlas después.",
     "sourceLabel": "Origen",
+    "sourcePlaceholder": "infra-repo",
     "title": "Infraestructura como código",
     "upload": "Subir archivos",
     "yamlLabel": "YAML"
@@ -3328,6 +3352,7 @@
     "paramRequired": "{{name}} es obligatorio.",
     "previewTitle": "Documento de política",
     "templateLabel": "Plantilla",
+    "paramLabel": "{{name}}",
     "title": "Añadir una política desde una plantilla",
     "toastCreated": "Política \"{{name}}\" creada.",
     "toastCreatedAttached": "Política \"{{name}}\" creada y adjuntada.",
@@ -3482,7 +3507,13 @@
     "dialogDescription": "El token se cifra y se monta en las compilaciones como secreto de BuildKit.",
     "dialogTitle": "Añadir un registro de paquetes",
     "ecosystems": {
-      "go": "Proxy de Go"
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Proxy de Go",
+      "rubygems": "RubyGems"
     },
     "empty": "Todavía no hay registros de paquetes. Añada uno para que las compilaciones puedan instalar paquetes privados.",
     "heading": "Registros de paquetes para compilaciones",
@@ -3598,6 +3629,7 @@
     "users": "Usuarios"
   },
   "vaultPage": {
+    "title": "Vault",
     "description": "Resuelva en vivo el valor de una variable de entorno de app.yaml desde una instancia externa de HashiCorp Vault, como alternativa al almacenamiento de secretos cifrado por sobre de esta plataforma."
   },
   "appearancePage": {

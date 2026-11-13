@@ -12,14 +12,15 @@ import { ScopePicker } from '../environments/ScopePicker'
 import { CliModal } from '../cli/CliModal'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
 import { HeaderOverflow, HeaderUtilities } from './HeaderOverflow'
+import { HeaderLanguageSelect } from '../language/HeaderLanguageSelect'
 import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
+import { isMacPlatform } from '@/lib/platform'
 import { usePageTitle } from './pageTitleStore'
 import { useMainScrolled } from './useMainScrolled'
 
-const isMac =
-  typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
+const isMac = isMacPlatform()
 
 // Breakpoints are container queries on the header's own width, not the
 // viewport: the open sidebar takes 16rem, so a 768px window leaves ~512px.
@@ -96,6 +97,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
                 <NotificationCenter />
               </div>
             </div>
+            <HeaderLanguageSelect className="@max-md:hidden" />
             <HeaderUtilities />
             <HeaderOverflow />
           </div>

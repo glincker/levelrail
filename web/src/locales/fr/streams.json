@@ -1,0 +1,38 @@
+{
+  "tableLabel": "Ports redirigés",
+  "page": {
+    "title": "Streams",
+    "description": "Redirigez un port de l'hôte vers l'un des ports de conteneur de cette app, en TCP brut. L'UDP, la terminaison TLS et les listes d'accès ne sont pas encore pris en charge.",
+    "pendingNote": "Un stream ajouté à une app en cours d'exécution prend effet à son prochain redémarrage, qui a lieu automatiquement."
+  },
+  "table": {
+    "hostPort": "Port de l'hôte",
+    "containerPort": "Port du conteneur",
+    "protocol": "Protocole",
+    "created": "Ajouté",
+    "actions": "Actions"
+  },
+  "empty": {
+    "title": "Aucun stream configuré",
+    "description": "Ajoutez un stream pour rediriger un port de l'hôte vers l'un des ports de conteneur de cette app."
+  },
+  "add": {
+    "trigger": "Ajouter un stream",
+    "hostPortLabel": "Port de l'hôte",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "Port du conteneur",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "Protocole",
+    "submit": "Ajouter le stream",
+    "submitting": "Ajout..."
+  },
+  "remove": {
+    "trigger": "Supprimer",
+    "removing": "Suppression..."
+  },
+  "toast": {
+    "created": "Stream sur le port d'hôte {{hostPort}} créé.",
+    "removed": "Stream supprimé.",
+    "errorTitle": "Impossible d'enregistrer ce stream."
+  }
+}

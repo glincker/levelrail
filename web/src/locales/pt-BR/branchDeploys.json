@@ -1,0 +1,46 @@
+{
+  "title": "Deploys de branch",
+  "description": "Dê a uma branch sua própria URL estável, refeita a cada push. Removida quando a branch é excluída ou fica inativa.",
+  "settings": {
+    "mode": "Quais branches recebem um deploy",
+    "modeOff": "Nenhuma (desativado)",
+    "modeAll": "Todas as branches",
+    "modePatterns": "Somente as branches listadas",
+    "patterns": "Branches e padrões",
+    "patternsHint": "Um por linha. Use um nome exato ou um padrão como feature/* (um asterisco corresponde a quaisquer caracteres).",
+    "patternsPlaceholder": "staging\nfeature/*",
+    "productionNote": "A branch de produção ({{branch}}) nunca é listada aqui: ela faz deploy como o próprio app.",
+    "idleNote": "Um deploy de branch sem push por {{hours}} horas é removido.",
+    "save": "Salvar",
+    "saving": "Salvando",
+    "saved": "Configurações de deploy de branch salvas.",
+    "saveError": "Não foi possível salvar as configurações."
+  },
+  "list": {
+    "title": "Deploys de branch ativos",
+    "emptyTitle": "Ainda sem deploys de branch",
+    "emptyOff": "Ative os deploys de branch acima e depois faça push em uma branch correspondente.",
+    "emptyOn": "Faça push em uma branch correspondente e o deploy dela aparece aqui.",
+    "noUrl": "Sem URL (defina um domínio base de apps ou um domínio principal)",
+    "expires": "Removido se não houver novo push:",
+    "open": "Abrir",
+    "openLabel": "Abrir o deploy de {{branch}}",
+    "delete": "Excluir",
+    "deleteLabel": "Excluir o deploy de {{branch}}",
+    "loadError": "Não foi possível carregar os deploys de branch."
+  },
+  "status": {
+    "deploying": "Fazendo deploy",
+    "active": "Ativo",
+    "failed": "Falhou"
+  },
+  "deleteDialog": {
+    "title": "Excluir o deploy de {{branch}}?",
+    "description": "A URL dele deixa de funcionar. O próximo push na branch faz o deploy novamente.",
+    "consequence": "O deploy, seus containers e seu registro DNS são removidos.",
+    "confirm": "Excluir deploy",
+    "pending": "Excluindo",
+    "success": "Deploy de branch excluído.",
+    "error": "Não foi possível excluir o deploy de branch."
+  }
+}

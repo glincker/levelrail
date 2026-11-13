@@ -1,0 +1,686 @@
+{
+  "title": "Neue App",
+  "description": "Wählen Sie ein Repository oder eine andere Quelle. Wir lesen es über die API des Anbieters und schlagen eine Einrichtung zur Bestätigung vor. Es wird nichts geklont oder erstellt, bis Sie deployen.",
+  "steps": {
+    "label": "Schritte für eine neue App",
+    "source": "Woher sie stammt",
+    "findings": "Was wir gefunden haben",
+    "review": "Prüfen und deployen"
+  },
+  "nav": {
+    "back": "Zurück",
+    "review": "Prüfen"
+  },
+  "source": {
+    "analyzing": "Das Repository wird gelesen...",
+    "noProvider": {
+      "lead": "Es ist kein Git-Anbieter verbunden, und Sie brauchen auch keinen. Fügen Sie eine Repository-URL ein, wählen Sie eine Vorlage oder probieren Sie die Beispiel-App."
+    },
+    "privateRepo": "Wir konnten dieses Repository nicht lesen. Wenn es privat ist, verbinden Sie Ihren Git-Anbieter und wählen Sie es aus der Liste.",
+    "privateRepoConnect": "Einen Git-Anbieter verbinden",
+    "analyze": "Repository analysieren",
+    "repos": {
+      "listLabel": "Verbundene Repositorys",
+      "loading": "Ihre Repositorys werden geladen",
+      "noMatch": "Kein Repository passt zu \"{{query}}\". Fügen Sie seine vollständige URL ein, um es direkt zu verwenden.",
+      "private": "Privates Repository",
+      "pushed": "gepusht {{when}}",
+      "partial": "Einige verbundene Konten konnten nicht aufgelistet werden. Fügen Sie für alles Fehlende eine URL ein.",
+      "retry": "Erneut versuchen",
+      "refresh": "Repositorys aktualisieren",
+      "refreshing": "Wird aktualisiert...",
+      "emptyTitle": "Keine Repositorys gefunden",
+      "emptyBody": "Wir sehen in Ihren verbundenen Konten noch keine Repositorys. Aktualisieren Sie die Liste, nachdem Sie Zugriff gewährt haben, oder fügen Sie oben eine Repository-URL ein.",
+      "failedTitle": "Ihre Repositorys konnten nicht aufgelistet werden",
+      "failedBody": "Der Anbieter hat nicht geantwortet. Aktualisieren Sie, um es erneut zu versuchen, prüfen Sie die Verbindung in den Einstellungen oder fügen Sie oben eine Repository-URL ein."
+    },
+    "git": {
+      "title": "Aus Git importieren",
+      "connectTitle": "Einen Git-Anbieter verbinden",
+      "connectBody": "Verbinden Sie ein Konto, um aus Ihren Repositorys zu wählen, oder fügen Sie oben eine Repository-URL ein.",
+      "connect": "Verbinden",
+      "manageAll": "Git-Verbindungen verwalten",
+      "connectLabel": "{{provider}} verbinden",
+      "connected": "Verbunden",
+      "needsAddress": "Die GitHub-Anmeldung benötigt eine öffentliche Adresse für diesen Server.",
+      "useUrlInstead": "Stattdessen eine Repository-URL verwenden",
+      "manage": "Verbindungen verwalten",
+      "noProviderHint": "Öffentliche Repositorys lassen sich ohne Git-Anbieter deployen. Verbinden Sie unten einen für private Repositorys und Deployments bei Push."
+    },
+    "templates": {
+      "title": "Mit einer Vorlage starten",
+      "seeAll": "Alle {{count}} Vorlagen ansehen",
+      "browse": "Den Vorlagenkatalog durchsuchen",
+      "loading": "Vorlagen werden geladen",
+      "unavailable": "Die Vorlagenliste ist derzeit nicht verfügbar. Der vollständige Katalog ist einen Klick entfernt.",
+      "gridLabel": "Empfohlene Vorlagen",
+      "retry": "Erneut versuchen",
+      "search": "Vorlagen durchsuchen",
+      "categories": "Vorlagenkategorien",
+      "noMatch": "Keine Vorlage passt zu \"{{query}}\". Versuchen Sie ein anderes Wort oder durchsuchen Sie den vollständigen Katalog.",
+      "popular": "Beliebte Vorlagen",
+      "browseAll": "Alle {{count}} durchsuchen"
+    },
+    "errorManage": "Git-Verbindungen prüfen",
+    "find": {
+      "label": "Repository",
+      "placeholder": "Repositorys suchen oder eine Git-URL einfügen",
+      "hint": "Tippen Sie, um Ihre Repositorys zu filtern, oder fügen Sie eine GitHub-, GitLab-, Gitea- oder Bitbucket-URL ein (https, git@ oder ein /tree/branch-Link).",
+      "useUrl": "Diese URL verwenden",
+      "clear": "Zurücksetzen"
+    },
+    "choose": {
+      "label": "Wählen Sie, woher Ihre App stammt",
+      "git": {
+        "title": "Git-Repository",
+        "hint": "Eine URL einfügen oder ein Repository wählen"
+      },
+      "template": {
+        "title": "Vorlage",
+        "hint": "Eine fertige App selbst hosten"
+      },
+      "image": {
+        "title": "Container-Image",
+        "hint": "Auch Compose, docker run, Website"
+      },
+      "sample": {
+        "title": "Beispiel-App",
+        "hint": "Mit einem Klick ausprobieren"
+      }
+    },
+    "sample": {
+      "body": "Deployt eine kleine öffentliche Beispiel-App, damit Sie in Sekunden ein laufendes Deployment sehen."
+    }
+  },
+  "findings": {
+    "warnings": {
+      "nothing_detected": "Es wurde kein Dockerfile, keine Compose-Datei und kein bekanntes Framework gefunden. Wählen Sie den Build-Typ unter Erweitert.",
+      "read_budget": "Das Limit für gelesene Dateien wurde erreicht, daher fehlen möglicherweise einige Funde.",
+      "tree_truncated": "Dieses Repository ist groß, und seine Dateiliste wurde gekürzt.",
+      "monorepo_choose_app": "Dies sieht nach einem Monorepo mit mehreren Apps aus. Prüfen Sie unten das App-Verzeichnis.",
+      "directory_missing": "Dieses Verzeichnis existiert in diesem Branch nicht. Wählen Sie eines aus der Liste oben oder korrigieren Sie den Pfad.",
+      "port_unknown": "Es wurde kein lauschender Port erkannt. Legen Sie den Port fest, auf dem die App lauscht."
+    },
+    "app": {
+      "title": "App",
+      "name": "App-Name",
+      "domain": "Domain"
+    },
+    "build": {
+      "title": "Build und Ausführung",
+      "app": "App in diesem Repository",
+      "appHint": "Es wurden mehrere baubare Apps gefunden. Wählen Sie die, die deployt werden soll."
+    },
+    "port": {
+      "label": "Port, auf dem die App lauscht"
+    },
+    "health": {
+      "label": "Pfad des Health-Checks"
+    },
+    "databases": {
+      "title": "Datenbanken, die sie offenbar braucht",
+      "attach": "{{engine}} {{version}} erstellen und anhängen",
+      "name": "Datenbankname",
+      "envVar": "Verbindungsvariable"
+    },
+    "env": {
+      "title": "Umgebungsvariablen",
+      "none": "Das Repository deklariert keine Umgebungsvariablen.",
+      "required": "Erforderlich",
+      "secret": "Secret",
+      "provided": "Automatisch aus {{source}} ausgefüllt.",
+      "placeholder": "Einen Wert eingeben",
+      "hasDefault": "Leer lassen, um den eigenen Standard der App zu verwenden",
+      "source": "Gefunden in {{source}}",
+      "optional": "{{count}} optionale Variablen",
+      "noValues": "Aus dem Repository werden nur Variablennamen gelesen. Werte werden nie importiert."
+    },
+    "advanced": {
+      "title": "Erweiterte Optionen",
+      "buildType": "Build-Typ",
+      "dockerfile": "Dockerfile-Pfad",
+      "spa": "Single-Page-App-Modus",
+      "baseDirectory": "Verzeichnis des Build-Kontexts",
+      "validateDirectory": "Verzeichnis validieren",
+      "memory": "Arbeitsspeicher-Limit (MiB)",
+      "types": {
+        "railpack": "Automatisch erkennen (Railpack)",
+        "dockerfile": "Dockerfile",
+        "static": "Statische Website"
+      }
+    }
+  },
+  "review": {
+    "summary": "Dies erstellt {{name}} aus einem {{framework}}-Repository mit {{databases}} Datenbank(en), ausgeliefert unter {{domain}}, und startet seinen ersten Build.",
+    "noDomain": "noch keine Domain",
+    "changesLabel": "Was erstellt wird",
+    "willCreate": "Wird erstellt",
+    "kinds": {
+      "app": "App",
+      "source": "Repository",
+      "database": "Datenbank",
+      "domain": "Domain",
+      "env": "Umgebungsvariable"
+    },
+    "missingTitle": "Erforderliche Variablen sind leer",
+    "missingBody": "Gehen Sie zurück und füllen Sie aus: {{keys}}",
+    "deploy": "Deployen",
+    "deploying": "Wird erstellt und deployt...",
+    "failed": {
+      "generic": "Das Deployment wurde nicht abgeschlossen",
+      "database": "Die Datenbank konnte nicht erstellt werden",
+      "app": "Die App konnte nicht erstellt werden",
+      "connection": "Die Datenbank konnte nicht angehängt werden",
+      "source": "Das Repository konnte nicht verbunden werden",
+      "build": "Der Build konnte nicht gestartet werden"
+    },
+    "failedResume": "Der App-Datensatz existiert. Klicken Sie auf Deployen, um dort fortzufahren, wo es gestoppt hat."
+  },
+  "toast": {
+    "created": "\"{{name}}\" wird erstellt.",
+    "watching": "Der erste Build wird beobachtet."
+  },
+  "deployLink": {
+    "title": "Aus einem Link vorausgefüllt. Prüfen Sie vor dem Deployen",
+    "fromSource": "Ein Link von {{host}} hat dieses Formular ausgefüllt. Es wird nichts erstellt, bis Sie auf Deployen klicken.",
+    "fromUnknown": "Ein Link hat dieses Formular ausgefüllt. Es wird nichts erstellt, bis Sie auf Deployen klicken.",
+    "ignoredTitle": "Einige Link-Parameter wurden ignoriert",
+    "ignoredBody": "Diese fehlten oder waren ungültig: {{params}}.",
+    "name": "Name",
+    "image": "Image",
+    "port": "Port",
+    "portHint": "Der Port, auf dem die App in ihrem Container lauscht.",
+    "health": "Pfad des Health-Checks",
+    "healthHint": "Leer lassen, um den Health-Check zu überspringen.",
+    "envTitle": "Umgebungsvariablen",
+    "envHint": "Der Link nennt diese Variablen. Geben Sie Ihre eigenen Werte ein. Sie werden als Secrets gespeichert.",
+    "envValue": "Wert für {{key}}",
+    "deploy": "Deployen",
+    "deploying": "Wird erstellt...",
+    "missingImage": "Der Link enthielt kein gültiges Image. Wählen Sie unten, woher diese App stammt.",
+    "errors": {
+      "name": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche.",
+      "image": "Geben Sie ein Image wie ghcr.io/you/app:latest ein.",
+      "port": "Geben Sie einen Port von 1 bis 65535 ein.",
+      "health": "Der Pfad muss mit einem einzelnen Schrägstrich beginnen."
+    }
+  },
+  "detection": {
+    "title": "Wie wir dieses Repository gelesen haben",
+    "why": "Warum",
+    "whyFor": "Warum {{field}} erkannt wurde",
+    "fromFramework": "Standard für {{framework}}",
+    "framework": "Framework und Sprache",
+    "buildType": "Build-Typ",
+    "port": "Port",
+    "start": "Startbefehl",
+    "buildCommand": "Build-Befehl",
+    "output": "Ausgabeverzeichnis",
+    "runtime": "Runtime-Version",
+    "health": "Pfad des Health-Checks",
+    "confidence": {
+      "high": "Hohe Sicherheit",
+      "medium": "Mittlere Sicherheit",
+      "low": "Geringe Sicherheit"
+    },
+    "warnings": {
+      "no_lockfile": {
+        "text": "Es wurde kein Lockfile gefunden, daher sind Installationen nicht reproduzierbar.",
+        "fix": "Committen Sie Ihr Lockfile und analysieren Sie erneut."
+      },
+      "multiple_dockerfiles": {
+        "text": "Es wurden mehrere Dockerfiles gefunden.",
+        "fix": "Wählen Sie unter Erweitert das richtige aus, falls die Wahl falsch ist."
+      },
+      "malformed_manifest": {
+        "text": "Ein Manifest konnte nicht geparst werden, daher ist dies eine bestmögliche Vermutung.",
+        "fix": "Korrigieren Sie die JSON- oder TOML-Syntax und analysieren Sie erneut."
+      },
+      "dockerfile_no_expose": {
+        "text": "Das Dockerfile hat keine EXPOSE-Zeile.",
+        "fix": "Fügen Sie EXPOSE mit Ihrem Port hinzu oder legen Sie unten den Port fest."
+      },
+      "monorepo_no_root_app": {
+        "text": "Dies ist ein Monorepo ohne App in seinem Stamm.",
+        "fix": "Erstellen Sie unten eine App pro Paket."
+      },
+      "railpack_unsupported": {
+        "text": "Automatische Builds decken diese Sprache noch nicht ab.",
+        "fix": "Fügen Sie dem Repository ein Dockerfile hinzu und analysieren Sie erneut."
+      }
+    }
+  },
+  "starter": {
+    "open": "Starter-Konfigurationsdateien",
+    "title": "Starter-Vorlagen",
+    "description": "Wählen Sie einen Ausgangspunkt, beantworten Sie einige Fragen und erhalten Sie validierte Dateien zum Committen in Ihr Repository.",
+    "generate": "Dateien erzeugen",
+    "generating": "Wird erzeugt...",
+    "copy": "Kopieren",
+    "copied": "{{path}} kopiert",
+    "next": "Committen Sie diese Dateien in Ihr Repository und deployen Sie es dann im Schritt Woher sie stammt.",
+    "viaCli": "Stattdessen mit der CLI erzeugen",
+    "openHint": "Erzeugen Sie app.yaml zum Committen in Ihr Repository."
+  },
+  "packages": {
+    "title": "Workspace-Pakete",
+    "hint": "Dieses Repository enthält mehrere Pakete. Erstellen Sie eine App pro Paket. Jede wird aus ihrem eigenen Verzeichnis gebaut und nur bei Änderungen erneut deployt.",
+    "dockerfile": "Dockerfile",
+    "configure": "Dieses konfigurieren",
+    "creating": "Die App wird erstellt und ihr erster Build gestartet...",
+    "open": "Build von {{name}} öffnen",
+    "creatingAll": "Apps werden erstellt...",
+    "createSelected_one": "Eine App für das ausgewählte Paket erstellen",
+    "createSelected_other": "Eine App für jedes ausgewählte Paket erstellen ({{count}})",
+    "createSelected_zero": "Eine App für jedes ausgewählte Paket erstellen",
+    "envNote": "Erforderliche Umgebungsvariablen werden hier nicht abgefragt. Fügen Sie sie bei jeder App hinzu und deployen Sie dann erneut."
+  },
+  "plan": {
+    "title": "Importplan",
+    "hint": "Sehen Sie, welche App aus jedem Paket würde, bevor Sie etwas erstellen: Name, Port, Build-Art und was zu prüfen ist.",
+    "review": "Den Plan in der Vorschau anzeigen",
+    "loading": "Jedes Paket im Repository wird gelesen...",
+    "error": "Der Plan konnte nicht erstellt werden: {{message}}",
+    "retry": "Erneut versuchen",
+    "empty": "Es wurden keine Workspace-Pakete gefunden, daher gibt es nichts zu planen. Konfigurieren Sie dieses Repository unten als einzelne App.",
+    "summary_one": "{{count}} Paket, {{flagged}} mit Warnungen. Es wird nichts erstellt, bis Sie bestätigen.",
+    "summary_other": "{{count}} Pakete, {{flagged}} mit Warnungen. Es wird nichts erstellt, bis Sie bestätigen.",
+    "none": "Keine",
+    "columns": {
+      "name": "Name",
+      "directory": "Verzeichnis",
+      "port": "Port",
+      "build": "Build",
+      "dependsOn": "Hängt ab von",
+      "warnings": "Warnungen"
+    },
+    "kinds": {
+      "dockerfile": "Dockerfile",
+      "buildpack": "Buildpack",
+      "static": "Statische Website"
+    },
+    "warnings": {
+      "package_cap": "{{found}} Pakete gefunden, nur die ersten {{cap}} werden aufgelistet. Erhöhen Sie APP_WIZARD_MAX_PACKAGES auf dem Server, um mehr zu sehen.",
+      "no_workspace": "Es wurden keine Workspace-Pakete gefunden.",
+      "tree_truncated": "Die Dateiliste des Repositorys wurde gekürzt, daher fehlen möglicherweise einige Pakete.",
+      "no_dockerfile": "Hier gibt es kein Dockerfile. Der Build wird automatisch erkannt.",
+      "no_port": "Es wurde kein lauschender Port erkannt. Legen Sie ihn vor dem Erstellen fest.",
+      "duplicate_port": "Ein anderes Paket schlägt denselben Port vor. In getrennten Containern ist das in Ordnung.",
+      "duplicate_name": "Ein anderes Paket wird auf denselben Namen abgebildet, daher wurde ein Suffix hinzugefügt.",
+      "name_taken": "Eine App mit diesem Namen existiert bereits, daher wurde ein Suffix hinzugefügt.",
+      "detect_failed": "Dieses Paket konnte nicht analysiert werden."
+    },
+    "editor": {
+      "project": "Projekt",
+      "noProject": "Kein Projekt",
+      "environment": "Umgebung",
+      "noEnvironment": "Keine Umgebung",
+      "protectedEnv": "{{name}} (geschützt, hier nicht verfügbar)",
+      "deploy": "Den ersten Build jeder App starten",
+      "columns": {
+        "include": "Einbeziehen",
+        "env": "Umgebungsvariablen",
+        "status": "Status",
+        "detail": "Details"
+      },
+      "includeRow": "{{name}} einbeziehen",
+      "nameOf": "App-Name für {{directory}}",
+      "portOf": "Port für {{name}}",
+      "envButton_one": "{{count}} Variable",
+      "envButton_other": "{{count}} Variablen",
+      "envTitle": "Umgebungsvariablen für {{name}}",
+      "envHint": "Werte werden einmal gesendet, um die App zu erstellen. Setzen Sie ein Häkchen bei Secret, um einen Wert verschlüsselt zu speichern. Er wird nie wieder angezeigt.",
+      "envEmpty": "Noch keine Variablen.",
+      "envKey": "Name",
+      "envValue": "Wert",
+      "envSecret": "Secret",
+      "envRemove": "Variable entfernen",
+      "envAdd": "Variable hinzufügen",
+      "envDone": "Fertig",
+      "review_one": "{{count}} App vor dem Erstellen prüfen",
+      "review_other": "{{count}} Apps vor dem Erstellen prüfen",
+      "checking": "Wird geprüft...",
+      "reviewHint": "Es wird noch nichts erstellt. Die Prüfung listet zuerst jedes Problem auf.",
+      "dryRunSummary": "{{create}} Apps können erstellt werden. {{problems}} haben Probleme und werden übersprungen. Es wurde nichts erstellt.",
+      "create_one": "{{count}} App erstellen",
+      "create_other": "{{count}} Apps erstellen",
+      "creating": "Wird erstellt...",
+      "backToEdit": "Zurück zum Bearbeiten",
+      "resultsSummary": "{{created}} Apps erstellt, {{failed}} erfordern Aufmerksamkeit.",
+      "retryFailed_one": "{{count}} fehlgeschlagene App wiederholen",
+      "retryFailed_other": "{{count}} fehlgeschlagene Apps wiederholen",
+      "deployError": "(erster Build: {{message}})",
+      "error": "Die Importanfrage ist fehlgeschlagen: {{message}}",
+      "status": {
+        "created": "Erstellt",
+        "already_exists": "Existiert bereits",
+        "skipped_dependency": "Übersprungen",
+        "failed": "Fehlgeschlagen",
+        "would_create": "Bereit"
+      },
+      "confirm": {
+        "title_one": "{{count}} App erstellen?",
+        "title_other": "{{count}} Apps erstellen?",
+        "description": "Dies erstellt mehr als {{above}} Apps auf einmal. Prüfen Sie die Liste und bestätigen Sie dann.",
+        "confirm_one": "{{count}} App erstellen",
+        "confirm_other": "{{count}} Apps erstellen"
+      }
+    }
+  },
+  "fields": {
+    "basics": "Grundlagen",
+    "name": "Name",
+    "namePlaceholder": "z. B. marketing-site",
+    "image": "Image",
+    "imagePlaceholder": "z. B. ghcr.io/you/app:latest",
+    "imageHint": "Das auszuführende Image, einschließlich eines Tags. Noch kein Image? Wählen Sie in Schritt 1 die Git-Option, dann bauen wir eines.",
+    "networking": "Netzwerk",
+    "port": "Port",
+    "portPlaceholder": "z. B. 3000",
+    "portHint": "Der Port, auf dem Ihre App in ihrem Container lauscht, z. B. 3000 für eine typische Next.js-App.",
+    "healthCheck": "Health-Check",
+    "healthEnable": "Einen Health-Check aktivieren",
+    "healthPath": "Pfad",
+    "healthHint": "Wird geprüft, bevor der Traffic zu einem neuen Container wechselt, und um danach einen abgestürzten zu erkennen. Ändern Sie ihn oder schalten Sie ihn aus, wenn Ihre App diesen Pfad nicht ausliefert.",
+    "hideAdvanced": "Erweiterte Optionen ausblenden",
+    "showAdvanced": "Erweiterte Optionen anzeigen",
+    "strategy": "Deploy-Strategie",
+    "strategyDefault": "Standard (Blue-Green)",
+    "strategyRecreate": "Neu erstellen",
+    "strategyBlueGreen": "Blue-Green",
+    "strategyRolling": "Rolling",
+    "strategyHint": "Wie neue Versionen ausgerollt werden. Blue-Green startet die neue Version neben der alten und schaltet den Traffic um, sobald sie fehlerfrei ist.",
+    "replicas": "Replikate",
+    "replicasHint": "Wie viele Kopien Ihrer App gleichzeitig laufen. Leer lassen für eine.",
+    "creating": "Wird erstellt...",
+    "create": "App erstellen"
+  },
+  "upload": {
+    "title": "Von Ihrem Computer deployen",
+    "description": "Kein Git-Remote nötig. Der Ordner wird hochgeladen, gebaut und deployt.",
+    "note": "Führen Sie beides in Ihrem Projektordner aus. Dateien in .gitignore, node_modules und .env-Dateien werden nie hochgeladen.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "tokenName": "CLI-Deployment {{date}}",
+    "createToken": "Ein Deploy-Token erstellen",
+    "creating": "Wird erstellt...",
+    "tokenHint": "Gültig für {{days}} Tage. Kann Apps lesen, bearbeiten und deployen.",
+    "tokenOnce": "Kopieren Sie diese jetzt. Das Token wird nur einmal angezeigt und ist {{days}} Tage gültig.",
+    "hideToken": "Ich habe sie kopiert, ausblenden",
+    "createFailed": "Ein Token konnte nicht erstellt werden: {{reason}}",
+    "openTokens": "In den Einstellungen eines erstellen"
+  },
+  "drop": {
+    "cardTitle": "Per Ablegen eines Ordners veröffentlichen",
+    "cardDescription": "Legen Sie einen Ordner oder eine .zip-Datei einer gebauten Website ab, um das Live-Angebot zu ersetzen. _redirects, _headers und 404.html werden berücksichtigt, und Sie können über den Deployment-Verlauf zurückrollen.",
+    "zoneLabel": "Einen Website-Ordner oder eine Zip-Datei hier ablegen",
+    "dropHere": "Einen Ordner oder eine .zip-Datei hier ablegen",
+    "hint": "Ein Ordner mit index.html oder ein Zip davon. Ein einzelner Wrapper-Ordner im Zip wird für Sie entpackt.",
+    "chooseFolder": "Ordner wählen",
+    "chooseZip": ".zip wählen",
+    "empty": "In diesem Ablegen gibt es nichts zu veröffentlichen. Es war leer oder enthielt nur ignorierte Dateien wie .git und node_modules. Legen Sie den Ordner ab, der Ihre gebaute Website enthält.",
+    "noIndex": "Dieser Ordner hat oben keine index.html, daher zeigt der Stamm der Website ein 404. Wählen Sie den Ordner, der index.html enthält, falls das nicht gewünscht ist.",
+    "preview": {
+      "source": "Quelle",
+      "files": "Dateien",
+      "size": "Größe"
+    },
+    "nameLabel": "Website-Name",
+    "nameHint": "Kleinbuchstaben, Ziffern und Bindestriche. Aus dem Ordner- oder Dateinamen übernommen. Ändern Sie ihn nach Belieben.",
+    "publish": "Veröffentlichen",
+    "publishNew": "Erstellen und veröffentlichen",
+    "retry": "Erneut versuchen",
+    "clear": "Etwas anderes wählen",
+    "another": "Weiteres ablegen",
+    "stage": {
+      "packing": "Ihre Dateien werden gepackt...",
+      "creating": "Die Website wird erstellt...",
+      "uploading": "Wird hochgeladen...",
+      "publishing": "Wird veröffentlicht..."
+    },
+    "done": "Veröffentlicht. Verfolgen Sie das Deployment, um die Live-URL zu sehen.",
+    "doneNoIndex": "Veröffentlicht, aber das Zip hat auf oberster Ebene keine index.html, daher zeigt der Stamm der Website ein 404.",
+    "errors": {
+      "tooLarge": "Diese Website überschreitet die Upload-Limits. Entfernen Sie große Dateien, die Sie nicht brauchen, oder bitten Sie einen Admin, die Limits zu erhöhen.",
+      "rejected": "Der Upload wurde abgelehnt.",
+      "nameTaken": "Eine Website oder App mit diesem Namen existiert bereits. Ändern Sie oben den Namen und versuchen Sie es erneut.",
+      "network": "Der Upload wurde unterbrochen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      "tooManyFiles": "Dieser Ordner hat zu viele Dateien für ein Ablegen. Packen Sie stattdessen einen kleineren Build-Ausgabeordner als Zip.",
+      "generic": "Das Veröffentlichen ist fehlgeschlagen."
+    }
+  },
+  "uploadSource": {
+    "title": "Quelle: CLI-Upload",
+    "hash": "Archiv-Hash",
+    "files": "Dateien",
+    "redeploy": "Deployen Sie erneut aus dem Projektordner mit:"
+  },
+  "importDatabase": {
+    "title": "Benötigt eine Datenbank?",
+    "optional": "Optional",
+    "detected": "Dieses Repository scheint {{engine}} zu nutzen, daher wird es hier vorgeschlagen.",
+    "engines": "Datenbank-Engine",
+    "useExisting": "Eine bestehende verwenden",
+    "summary": "Erstellt eine {{engine}}-{{version}}-Datenbank und setzt {{envVar}} für diese App.",
+    "summaryBackups": "Erstellt eine {{engine}}-{{version}}-Datenbank mit täglichen Backups und setzt {{envVar}} für diese App.",
+    "name": "Datenbankname",
+    "nameFree": "Dieser Datenbankname ist verfügbar.",
+    "nameError": {
+      "required": "Geben Sie der Datenbank einen Namen.",
+      "format": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche.",
+      "taken": "Eine Datenbank mit diesem Namen existiert bereits."
+    },
+    "backups": "Täglich sichern",
+    "noDestination": "Tägliche Backups benötigen ein Backup-Ziel, und es ist noch keines eingerichtet.",
+    "existingLabel": "Bestehende Datenbank",
+    "existingPick": "Eine Datenbank wählen",
+    "existingNone": "Noch keine Datenbanken.",
+    "injected": "Der App hinzugefügte Variablen",
+    "from": "aus {{database}}"
+  },
+  "import": {
+    "loading": "Das Repository wird gelesen",
+    "urlInvalid": "Das sieht noch nicht nach einer Repository-URL aus.",
+    "summary": "Baut mit {{builder}} aus {{branch}} und deployt nach {{target}}",
+    "builders": {
+      "railpack": "Railpack",
+      "dockerfile": "Ihrem Dockerfile",
+      "static": "statischem Hosting",
+      "compose": "Docker Compose"
+    },
+    "card": {
+      "languages": "Sprachen",
+      "branch": "Branch",
+      "commitBy": "von {{author}}, {{when}}",
+      "visibility": {
+        "public": "Öffentlich",
+        "private": "Privat"
+      }
+    },
+    "detected": {
+      "line": "Erkannt: {{stack}}, baut mit {{builder}}, lauscht auf {{port}}",
+      "edit": "Bearbeiten",
+      "monorepo": "Es wurden mehrere Apps gefunden. {{dir}} wird deployt.",
+      "chooseApp": "App wählen"
+    },
+    "notice": {
+      "private_needs_account": "Dieses Repository scheint privat zu sein. Verbinden Sie ein Konto, das es sehen kann, oder verwenden Sie ein Deploy-Token.",
+      "invalid_url": "Das sieht noch nicht nach einer Repository-URL aus.",
+      "not_found": "Wir konnten dieses Repository nicht finden. Prüfen Sie die URL und versuchen Sie es erneut.",
+      "rate_limited": "Die Vorschau ist derzeit nicht verfügbar. Sie können trotzdem fortfahren.",
+      "unsupported_host": "Für diesen Host gibt es keine Vorschau. Sie können trotzdem fortfahren.",
+      "connect": "Ein Konto verbinden",
+      "useToken": "Ein Deploy-Token verwenden",
+      "tokenLabel": "Deploy-Token",
+      "tokenApply": "Vorschau",
+      "continue": "Fortfahren"
+    },
+    "form": {
+      "name": "App-Name",
+      "nameFree": "Dieser Name ist verfügbar.",
+      "nameError": {
+        "required": "Geben Sie der App einen Namen.",
+        "format": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche.",
+        "taken": "Eine App mit diesem Namen existiert bereits."
+      },
+      "env": "Umgebungsvariablen",
+      "envRequired": "Die App braucht diese Variable zum Starten.",
+      "addVar": "Variable hinzufügen",
+      "varName": "Variablenname",
+      "varValue": "Variablenwert",
+      "domain": "Adresse",
+      "freeAddress": "eine kostenlose Adresse",
+      "customDomain": "Eine eigene Domain verwenden",
+      "domainPlaceholder": "app.example.com",
+      "domainHint": "Richten Sie nach dem ersten Deployment einen CNAME auf diesen Server.",
+      "domainError": "Geben Sie eine Domain wie app.example.com ein.",
+      "advanced": "Erweitert",
+      "port": "Port",
+      "health": "Pfad des Health-Checks",
+      "memory": "Arbeitsspeicher (MB)",
+      "directory": "Verzeichnis",
+      "buildType": "Build-Typ",
+      "deploy": "Deployen",
+      "deploying": "Wird deployt..."
+    },
+    "pushOn": "Deployt bei jedem Push.",
+    "pushOff": "Pushes deployen nicht."
+  },
+  "deployOptions": {
+    "title": "Deploy-Optionen",
+    "beta": "Beta",
+    "push": {
+      "label": "Automatisch deployen, wenn ich auf {{branch}} pushe",
+      "on": "Ein Push auf diesen Branch baut und deployt die App. Der Webhook wird geprüft, nachdem die App erstellt wurde.",
+      "off": "Pushes deployen nicht. Nur ein Tag oder ein veröffentlichtes Release tut es."
+    },
+    "previews": {
+      "label": "Jeden Pull Request als Vorschau bereitstellen",
+      "hint": "Jeder Pull Request erhält eine eigene temporäre URL, die beim Schließen entfernt wird.",
+      "unsupported": "Vorschauen benötigen ein GitHub-, GitLab-, Bitbucket- oder Gitea-Repository."
+    },
+    "health": {
+      "label": "Pfad des Health-Checks",
+      "hint": "Eine neue Version muss hier mit 200 antworten, bevor sie Traffic erhält. Leer lassen, um den erkannten Pfad zu verwenden."
+    },
+    "jobs": {
+      "title": "Einen Hintergrund-Worker oder geplanten Job hinzufügen",
+      "hint": "Geplante Jobs rufen nach Zeitplan einen Pfad Ihrer App als HTTP-Anfragen auf. Es gibt keinen eigenen Worker-Prozesstyp, betreiben Sie daher einen langlebigen Worker als eigene App.",
+      "path": "Aufzurufender Pfad",
+      "schedule": "Zeitplan",
+      "cron": "Cron-Ausdruck",
+      "remove": "Diesen Job entfernen",
+      "add": "Einen geplanten Job hinzufügen",
+      "pathError": "Beginnen Sie den Pfad mit /, zum Beispiel /api/cron/cleanup.",
+      "cronError": "Dieser Cron-Ausdruck ist ungültig.",
+      "presets": {
+        "every5": "Alle 5 Minuten",
+        "hourly": "Stündlich",
+        "daily": "Täglich um 03:00 UTC",
+        "custom": "Eigener Cron"
+      }
+    },
+    "failed": {
+      "deployOnPush": "Deployment bei Push konnte nicht eingerichtet werden: {{reason}}.",
+      "previews": "Vorschauen konnten nicht aktiviert werden: {{reason}}.",
+      "job": "Der Job {{path}} wurde nicht erstellt: {{reason}}."
+    }
+  },
+  "gitSettings": {
+    "open": "Git-Einstellungen",
+    "accounts": "Verbundene Konten",
+    "none": "Es ist noch kein Git-Konto verbunden. Verbinden Sie eines, um aus Ihren Repositorys zu wählen.",
+    "loaded": "{{count}} Repositorys",
+    "failed": "konnte nicht aufgelistet werden",
+    "refreshFailed": "Aktualisieren nicht möglich: {{reason}}",
+    "defaults": "Standardwerte für diese App",
+    "pickFirst": "Wählen Sie ein Repository, um seinen Branch, das App-Verzeichnis und das Deployment bei Push festzulegen.",
+    "directory": "App-Verzeichnis",
+    "pushOn": "Jeder Push auf diesen Branch deployt."
+  },
+  "more": {
+    "title": "Weitere Wege zum Start",
+    "hide": "Schließen",
+    "image": {
+      "title": "Container-Image",
+      "hint": "Ein vorgefertigtes Image deployen."
+    },
+    "compose": {
+      "title": "Docker Compose",
+      "hint": "Eine Datei einfügen oder hochladen."
+    },
+    "run": {
+      "title": "docker run",
+      "hint": "Einen Befehl in eine App umwandeln."
+    },
+    "site": {
+      "title": "Statische Website",
+      "hint": "Einen Ordner oder ein Zip ablegen."
+    },
+    "computer": {
+      "title": "Von Ihrem Computer",
+      "hint": "Einen Ordner mit der CLI deployen."
+    }
+  },
+  "deployButton": {
+    "title": "Einen Deploy-to-Levelrail-Button zu Ihrer README hinzufügen",
+    "description": "Erstellen Sie einen Link, der dieses Formular auf dem eigenen Server des Lesers öffnet. Er enthält keine Secrets.",
+    "image": "Image",
+    "name": "App-Name (optional)",
+    "namePlaceholder": "my-app",
+    "port": "Port (optional)",
+    "health": "Pfad des Health-Checks (optional)",
+    "env": "Namen von Umgebungsvariablen (optional)",
+    "envHint": "Nur Namen, durch Komma oder Zeilenumbruch getrennt. Leser geben die Werte auf ihrem eigenen Server ein.",
+    "envError": "Verwenden Sie Namen in Großbuchstaben wie DATABASE_URL, ohne Werte, höchstens 50.",
+    "snippet": "Markdown-Snippet",
+    "copy": "Markdown kopieren",
+    "copied": "Kopiert"
+  },
+  "deployPage": {
+    "title": "Aus einem Link deployen",
+    "description": "Prüfen Sie, was der Link ausgefüllt hat, und fahren Sie dann fort. Es wird nichts erstellt, bis Sie auf Deployen klicken.",
+    "banner": "Aus einem Link vorausgefüllt. Prüfen Sie vor dem Deployen",
+    "bannerBody": "Prüfen Sie unten Repository, Branch und Name. Es wird nichts erstellt, bis Sie im letzten Schritt bestätigen.",
+    "ignoredTitle": "Einige Link-Parameter wurden ignoriert",
+    "ignoredBody": "Diese fehlten, waren unbekannt oder ungültig: {{params}}. Umgebungswerte und Secrets werden nie aus einem Link gelesen.",
+    "repo": "Repository",
+    "branch": "Branch",
+    "branchDefault": "Standard-Branch",
+    "name": "Vorgeschlagener Name",
+    "port": "Port",
+    "template": "Vorlage",
+    "templateName": "{{name}}",
+    "reviewRepo": "Analysieren und prüfen",
+    "reviewTemplate": "Vorlage öffnen",
+    "empty": "Dieser Link enthielt kein gültiges Repository und keine gültige Vorlage. Starten Sie selbst eine neue App.",
+    "startNew": "Eine neue App starten"
+  },
+  "deployLinkDialog": {
+    "action": "Einen Link für den Deploy-Button erhalten",
+    "title": "Link für den Deploy-Button",
+    "description": "Fügen Sie dies in eine README ein. Es öffnet dieses Dashboard mit vorausgefülltem Repository. Der Leser prüft und bestätigt weiterhin. Es sind keine Secrets enthalten.",
+    "repo": "Repository-URL",
+    "branch": "Branch (optional)",
+    "name": "App-Name (optional)",
+    "link": "Link",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "alt": "Auf {{brand}} deployen",
+    "errors": {
+      "repo": "Geben Sie eine HTTPS- oder SSH-Git-URL ohne Benutzername oder Passwort ein.",
+      "branch": "Verwenden Sie einen einfachen Branch- oder Tag-Namen.",
+      "name": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche."
+    }
+  },
+  "aside": {
+    "title": "Was Sie erhalten",
+    "detect": "Wir erkennen Stack und Ports aus Ihrem Code.",
+    "review": "Sie prüfen Plan und Einstellungen.",
+    "deploy": "Ein Klick deployt es mit Health-Checks.",
+    "address": "Apps erhalten eine Adresse unter {{domain}}.",
+    "label": "Was Sie erhalten und weitere Wege hinein"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "explain": {
+    "toggle": "说明",
+    "loading": "正在加载说明...",
+    "why": "为什么重要",
+    "next": "下一步",
+    "fix": "类型化修复"
+  },
+  "risk": {
+    "safe": "安全",
+    "restarts": "会重启服务",
+    "exposes": "会开放访问"
+  },
+  "kind": {
+    "auto": "一键修复",
+    "guided": "需要在服务器上操作一步",
+    "manual": "手动步骤"
+  },
+  "reversible": "可以撤销",
+  "irreversible": "无法撤销",
+  "willChange": "将更改的内容",
+  "cli": {
+    "summary": "通过 CLI 修复",
+    "hint": "更喜欢终端？请在服务器上运行此命令，然后点击重新检查。"
+  },
+  "learnMore": "了解更多",
+  "copy": "复制",
+  "copied": "已复制",
+  "apply": "立即修复",
+  "applying": "应用中...",
+  "recheck": "重新检查",
+  "rechecking": "检查中...",
+  "confirmTitle": "应用此修复？",
+  "confirmBody": "{{title}}。请先查看列出的更改。",
+  "paramLabel": "公网地址",
+  "paramPlaceholder": "IP 地址或主机名",
+  "triedAt": "已于 {{at}} 尝试，仍被阻塞，原因：{{why}}",
+  "rateLimited": "过去一小时内已多次应用。请稍候再试。",
+  "outcome": {
+    "fixed": "已修复。检查现已通过。",
+    "still_failing": "仍然失败：{{detail}}",
+    "cannot_fix_here": "无法在此处修复：{{detail}}",
+    "skipped": "无需处理：{{detail}}"
+  },
+  "settingsHealth": {
+    "title": "设置健康状况",
+    "loading": "正在检查此实例...",
+    "summary": "{{total}} 项检查中有 {{failing}} 项需要处理",
+    "allGood": "没有需要处理的内容。"
+  },
+  "blockers_other": "{{count}} 个阻塞项，{{dependent}} 项依赖它们",
+  "showDependent": "显示依赖项检查",
+  "hideDependent": "隐藏依赖项检查",
+  "stuck": {
+    "title": "为什么没有运行？",
+    "healthy": "已就绪，无需说明。",
+    "notReadyFor": "已有 {{duration}} 未就绪",
+    "notReadyYet": "未就绪",
+    "timeline": "状态时间线",
+    "noCauses": "暂时没有匹配的已知原因。请打开日志，然后重新检查。",
+    "confidenceHigh": "可能的原因",
+    "confidenceMedium": "或许的原因",
+    "evidence": "依据",
+    "recheck": "重新检查",
+    "retryDeploy": "重试部署",
+    "retrying": "重试中...",
+    "retryFailed": "重试失败：{{message}}",
+    "retryStarted": "部署已开始。",
+    "fixApplied": "修复已应用。",
+    "fixFailed": "修复失败：{{message}}",
+    "loadFailed": "无法加载诊断。",
+    "show": "显示详情",
+    "hide": "隐藏详情"
+  },
+  "runtime": {
+    "engine": "引擎",
+    "support": "支持程度",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "未知引擎"
+    },
+    "level": {
+      "supported": "已支持",
+      "best-effort": "尽力支持",
+      "unverified": "未验证"
+    }
+  },
+  "diagnosis": {
+    "title": "为什么无法工作",
+    "crashloop": "此应用不断崩溃",
+    "deployFailed": "最近一次部署失败",
+    "noCause": "暂时没有匹配的已知原因。请查看日志行，然后重新检查。",
+    "openLogs": "打开日志",
+    "openDeployLogs": "查看构建日志",
+    "copy": "复制日志行",
+    "copied": "已复制",
+    "lastLine": "最后一行：",
+    "sectionLog": "失败日志",
+    "sectionTimeline": "状态时间线",
+    "sectionOthers": "其他可能的原因（{{count}}）",
+    "showing": "显示共 {{total}} 行中的最后 {{shown}} 行。",
+    "linesLabel": "失败容器的最后几行日志",
+    "noLines": "没有为此次失败捕获到日志行。",
+    "openFullLogs": "打开完整日志",
+    "crashSummary": "最近 {{minutes}} 分钟内重启 {{count}} 次。"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "title": "オートスケーリング",
+  "description": "負荷の変化に応じて、設定した最小値と最大値の間でレプリカを増減します。スケールアップは素早く、スケールダウンはゆっくり行われ、すべての判断が理由とともに記録されます。",
+  "loading": "オートスケーリングを読み込み中",
+  "loadError": "このアプリのオートスケーリングを読み込めませんでした。",
+  "retry": "再試行",
+  "empty": {
+    "title": "オートスケーリングはオフです",
+    "body": "アプリは、手動で設定したレプリカ数を維持します。オートスケーリングをオンにすると、最小値と最大値の間で負荷に合わせて増減します。オンの間は、レプリカ数の手動編集は拒否されます。",
+    "action": "オートスケーリングを設定"
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_percent": "メモリ",
+    "requests_per_replica": "レプリカあたりのリクエスト数"
+  },
+  "reason": {
+    "Pending": "最初のチェックを待機中",
+    "WithinTarget": "目標内",
+    "ScaledUp": "スケールアップ済み",
+    "ScaledDown": "スケールダウン済み",
+    "MetricsUnavailable": "最新のメトリクスなし",
+    "CooldownActive": "クールダウン中",
+    "Stabilizing": "スケールダウンを確認中",
+    "NoCapacity": "空き容量なし",
+    "SpendCapPaused": "支出上限により保留",
+    "AtMaximum": "最大値に到達",
+    "AtMinimum": "最小値に到達",
+    "BoundsCorrected": "範囲内に補正",
+    "Suspended": "アプリは停止中",
+    "ScaleFailed": "スケールに失敗",
+    "Flapping": "フラッピング"
+  },
+  "blocked": {
+    "cooldown": "クールダウン",
+    "stabilization": "安定化期間",
+    "spend_cap": "支出上限",
+    "no_capacity": "空き容量なし",
+    "max_replicas": "最大レプリカ数",
+    "min_replicas": "最小レプリカ数",
+    "global_ceiling": "グローバル上限",
+    "step_limit": "ステップ上限",
+    "no_metrics": "メトリクスなし",
+    "suspended": "アプリは停止中"
+  },
+  "next": {
+    "no_capacity": "追加のレプリカを置ける余裕のあるノードがありません。ノードを追加するか、容量を空けるか、アプリのCPUとメモリの要求を下げてください。配置カードを参照してください。",
+    "spend_cap": "支出上限が適用されているため、レプリカは追加されません。予算を引き上げるか、月が替わるのを待ってください。",
+    "no_metrics": "メトリクスがないか古いため、レプリカ数は据え置かれています。アプリが動作していて、メトリクスが送信されていることを確認してください。",
+    "max_replicas": "負荷は最大値より多くのレプリカを求めています。アプリをさらに拡張する場合は、最大値を引き上げてください。",
+    "global_ceiling": "オペレーターが設定したグローバルなレプリカ上限が、このアプリを制限しています。より多く許可するには、コントロールプレーンのAPP_AUTOSCALE_MAX_REPLICASを引き上げてください。",
+    "flapping": "レプリカ数が増減を繰り返しています。詳細設定で、許容幅を広げるか、クールダウンを長くしてください。"
+  },
+  "stats": {
+    "replicas": "レプリカ",
+    "replicasValue": "現在{{current}}、目標{{desired}}",
+    "range": "範囲",
+    "rangeValue": "{{min}}から{{max}}",
+    "band": "これを上回るとスケールアップ、下回るとスケールダウン",
+    "bandValue": "+{{up}}%と-{{down}}%",
+    "metricValue": "{{target}}{{unit}}のうち{{value}}{{unit}}",
+    "metricUnknown": "不明"
+  },
+  "actions": {
+    "edit": "ポリシーを編集",
+    "remove": "ポリシーを削除"
+  },
+  "form": {
+    "min": "最小レプリカ数",
+    "minHelp": "これより少なくなることはありません。",
+    "max": "最大レプリカ数",
+    "maxHelp": "これより多くなることはありません。オペレーターのグローバル上限が優先されます。",
+    "metric": "スケールの基準",
+    "metricCpu": "CPU",
+    "metricCpuHelp": "アプリのCPU上限に対する、平均使用率(パーセント)です。",
+    "metricMemory": "メモリ",
+    "metricMemoryHelp": "アプリのメモリ上限に対する、平均使用率(パーセント)です。",
+    "metricRequests": "レプリカあたりのリクエスト数",
+    "metricRequestsHelp": "イングレスでの1秒あたりのリクエスト数を、レプリカ数で割った値です。",
+    "target": "目標値({{unit}})",
+    "perSecond": " req/s",
+    "targetHelp": "メトリクスを保つ値です。この値を明らかに上回るか下回る場合にのみ、レプリカ数が変わります。",
+    "advanced": "詳細設定",
+    "advancedHelp": "空欄にすると既定値を使います。クールダウンと安定化期間の単位は分です。",
+    "upTolerance": "目標をどれだけ上回るとスケールアップするか(パーセント)",
+    "downTolerance": "目標をどれだけ下回るとスケールダウンするか(パーセント)",
+    "upCooldown": "スケールアップの間隔(分)",
+    "downCooldown": "スケールダウン前の待機時間(分)",
+    "stabilization": "スケールダウンを確認する時間(分)",
+    "stepUp": "1回に追加する最大レプリカ数",
+    "stepDown": "1回に削除する最大レプリカ数",
+    "save": "ポリシーを保存",
+    "saving": "保存中",
+    "cancel": "キャンセル",
+    "error": {
+      "replicas": "レプリカ数は整数で、最大値が最小値以上になるように入力してください。",
+      "target": "0より大きい目標値を入力してください(CPUとメモリは100まで)。",
+      "advanced": "詳細設定を確認してください。整数を使い、時間は1秒以上にしてください。"
+    }
+  },
+  "remove": {
+    "title": "このポリシーを削除しますか?",
+    "description": "アプリは自動ではスケールしなくなります。",
+    "consequences": {
+      "replicas": "レプリカ数は、現在の数のままになります。",
+      "manual": "レプリカ数を再び手動で設定できるようになります。",
+      "history": "判断の履歴は保持されます。"
+    },
+    "confirm": "ポリシーを削除",
+    "pending": "削除中"
+  },
+  "history": {
+    "title": "最近の判断",
+    "empty": "判断はまだありません。スケールの変更と、据え置いた理由がここに表示されます。",
+    "loadError": "履歴を読み込めませんでした。",
+    "replicas": "{{from}}から{{to}}",
+    "blockedBy": "{{by}}により制限",
+    "kind": {
+      "scaled_up": "スケールアップ",
+      "scaled_down": "スケールダウン",
+      "held": "据え置き",
+      "failed": "スケールに失敗",
+      "configured": "ポリシーを変更",
+      "cleared": "ポリシーを削除"
+    }
+  },
+  "toast": {
+    "saved": "オートスケーリングを保存しました",
+    "removed": "オートスケーリングを削除しました"
+  }
+}

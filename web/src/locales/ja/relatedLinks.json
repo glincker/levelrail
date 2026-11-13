@@ -1,0 +1,28 @@
+{
+  "label": "関連ページ",
+  "heading": "関連",
+  "links": {
+    "account": "アカウント",
+    "alertRules": "アラートルール",
+    "backups": "バックアップ",
+    "certificates": "証明書",
+    "cliAccess": "CLIアクセス",
+    "dataExport": "データエクスポート",
+    "dns": "DNS",
+    "domains": "ドメイン",
+    "drReport": "復旧レポート",
+    "environments": "環境",
+    "eventWebhooks": "イベントWebhook",
+    "firewall": "ファイアウォール",
+    "mobileDevices": "モバイルデバイス",
+    "network": "ネットワーク",
+    "notificationChannels": "通知チャンネル",
+    "platformHttps": "プラットフォームHTTPS",
+    "privateNetworks": "プライベートネットワーク",
+    "security": "セキュリティ",
+    "sessionPolicy": "セッションポリシー",
+    "tokens": "APIトークン",
+    "traffic": "トラフィック",
+    "vault": "Vault"
+  }
+}

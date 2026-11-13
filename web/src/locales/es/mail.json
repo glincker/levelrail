@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "label": "Secciones del correo",
+    "delivery": "Entrega",
+    "templates": "Plantillas",
+    "audiences": "Audiencias",
+    "messages": "Mensajes"
+  },
+  "common": {
+    "loadError": "No se pudo cargar esta página.",
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "delete": "Eliminar",
+    "saving": "Guardando",
+    "people": "{{count}} personas"
+  },
+  "templates": {
+    "eyebrow": "Correo",
+    "title": "Plantillas de correo",
+    "description": "Cada correo que envía la plataforma, en un mismo diseño de marca. Edita el texto, previsualízalo con datos de ejemplo y restablece el valor por defecto cuando quieras.",
+    "kind": {
+      "system": "Cuenta y seguridad",
+      "announcement": "Anuncio"
+    },
+    "customized": "Personalizada",
+    "builtIn": "Integrada",
+    "edit": "Editar",
+    "listHeading": "Plantillas",
+    "layout": {
+      "title": "Diseño compartido",
+      "description": "El marco de todos los correos: una imagen de cabecera opcional y una línea de pie como tu dirección postal.",
+      "headerImage": "Dirección de la imagen de cabecera",
+      "headerImageHelp": "Una imagen https que se muestra encima del nombre de la marca. Déjala vacía para mostrar solo el nombre de la marca.",
+      "footer": "Texto del pie",
+      "footerHelp": "Se muestra debajo de cada correo. Aquí funcionan los tokens globales como {{examples}}.",
+      "save": "Guardar el diseño",
+      "saved": "Diseño guardado."
+    },
+    "editor": {
+      "back": "Todas las plantillas",
+      "subject": "Asunto",
+      "preheader": "Preencabezado",
+      "preheaderHelp": "La línea de vista previa que algunas bandejas de entrada muestran junto al asunto.",
+      "body": "Cuerpo",
+      "bodyHelp": "Las líneas en blanco inician un párrafo nuevo. Usa # para un encabezado, - para una lista, > para un recuadro destacado, **negrita**, [etiqueta](dirección) para enlaces y !button Etiqueta|dirección para un botón.",
+      "save": "Guardar la plantilla",
+      "saved": "Plantilla guardada.",
+      "reset": "Restablecer el valor por defecto",
+      "resetTitle": "¿Restablecer esta plantilla?",
+      "resetDescription": "Vuelve el texto integrado. Tus ediciones quedan en el historial de versiones.",
+      "resetDone": "Plantilla restablecida.",
+      "sendTest": "Enviarme una prueba",
+      "testSent": "Prueba enviada a {{email}}.",
+      "noProviderTitle": "No hay ningún proveedor de correo configurado",
+      "noProviderBody": "Configura primero un proveedor y luego envía una prueba.",
+      "fixProvider": "Abrir los ajustes de correo"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "description": "Selecciona un token para insertarlo en el cursor. Los tokens desconocidos se rechazan al guardar.",
+      "scope": {
+        "global": "En todas partes",
+        "recipient": "Sobre el destinatario",
+        "event": "Para este correo"
+      },
+      "insert": "Insertar {{name}}"
+    },
+    "preview": {
+      "title": "Vista previa",
+      "desktop": "Escritorio",
+      "mobile": "Móvil",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "frameTitle": "Vista previa del correo",
+      "plain": "Versión en texto plano",
+      "error": "La vista previa necesita una plantilla válida: {{message}}",
+      "deviceLabel": "Dispositivo de la vista previa",
+      "schemeLabel": "Esquema de color de la vista previa"
+    },
+    "history": {
+      "title": "Historial de versiones",
+      "description": "Las últimas 10 versiones guardadas.",
+      "empty": "Aún no hay versiones guardadas. El primer guardado crea una.",
+      "restore": "Restaurar",
+      "restored": "Versión restaurada.",
+      "version": "Versión {{version}}",
+      "by": "por {{who}}"
+    }
+  },
+  "audiences": {
+    "eyebrow": "Correo",
+    "title": "Audiencias",
+    "description": "Grupos guardados de personas a las que escribir. Las reglas eligen usuarios por rol, equipo, proyecto, dominio de inicio de sesión o inactividad, y puedes añadir direcciones extra a mano.",
+    "create": "Nueva audiencia",
+    "edit": "Editar",
+    "empty": {
+      "title": "Aún no hay audiencias",
+      "description": "Crea un grupo, como todos los administradores o todos los inactivos durante 90 días, y envíale un mensaje."
+    },
+    "columns": {
+      "name": "Audiencia",
+      "recipients": "Destinatarios",
+      "suppressed": "Dados de baja"
+    },
+    "dialog": {
+      "createTitle": "Nueva audiencia",
+      "editTitle": "Editar audiencia",
+      "name": "Nombre",
+      "description": "Descripción",
+      "rules": "Quién se incluye",
+      "everyone": "Todos los usuarios",
+      "roles": "Roles",
+      "teams": "Equipos",
+      "projects": "Proyectos (su equipo)",
+      "domains": "Dominios de correo de inicio de sesión",
+      "domainsHelp": "Uno por línea, por ejemplo example.com.",
+      "inactive": "Sin iniciar sesión desde hace (días)",
+      "inactiveHelp": "Acota la selección, o selecciona a todos los inactivos durante ese tiempo cuando no se elige nada más.",
+      "extra": "Direcciones extra",
+      "extraHelp": "Una por línea. Se añaden aunque no sean usuarios.",
+      "exclude": "No incluir nunca",
+      "excludeHelp": "Una dirección por línea.",
+      "save": "Guardar la audiencia",
+      "saved": "Audiencia guardada.",
+      "live": "{{deliverable}} lo recibirán, {{suppressed}} se dieron de baja.",
+      "liveSample": "Los primeros {{count}} destinatarios",
+      "noneChosen": "Elige al menos una regla para ver quién se incluye."
+    },
+    "role": {
+      "owner": "Propietario",
+      "admin": "Administrador",
+      "operator": "Operador",
+      "viewer": "Lector"
+    },
+    "deleteTitle": "¿Eliminar esta audiencia?",
+    "deleteDescription": "Los mensajes anteriores conservan su historial. Esto solo elimina las reglas guardadas.",
+    "deleted": "Audiencia eliminada.",
+    "suppressions": {
+      "title": "Lista de bajas",
+      "description": "A las personas de aquí se las omite en los anuncios. Los correos de seguridad y de la cuenta siempre llegan.",
+      "empty": "Nadie se ha dado de baja.",
+      "add": "Añadir dirección",
+      "addPlaceholder": "nombre@example.com",
+      "remove": "Quitar",
+      "reasonAdmin": "Añadida por un administrador",
+      "reasonUnsub": "Se dio de baja de un mensaje",
+      "added": "Dirección añadida a la lista de bajas."
+    }
+  },
+  "messages": {
+    "eyebrow": "Correo",
+    "title": "Mensajes",
+    "description": "Escribe a una audiencia o a personas elegidas. Los mensajes salen con el diseño guardado y un enlace de baja con un clic, con límite de frecuencia, y cada envío queda en el historial.",
+    "compose": "Nuevo mensaje",
+    "noProvider": {
+      "title": "El correo no está configurado",
+      "body": "Los mensajes necesitan un proveedor de correo. Configura uno, envía una prueba y vuelve.",
+      "fix": "Abrir los ajustes de correo"
+    },
+    "composer": {
+      "title": "Nuevo mensaje",
+      "template": "Empezar desde",
+      "subject": "Asunto",
+      "body": "Mensaje",
+      "bodyHelp": "Los tokens como {{example}} se rellenan por persona.",
+      "audience": "Audiencia",
+      "audiencePlaceholder": "Elige una audiencia",
+      "noAudience": "Sin audiencia",
+      "extra": "Destinatarios extra",
+      "extraHelp": "Una dirección por línea, opcional.",
+      "when": "Cuándo",
+      "now": "Enviar ahora",
+      "later": "Programar",
+      "review": "Revisar y enviar",
+      "sendTest": "Enviarme una prueba",
+      "preview": "Vista previa",
+      "tokens": "Insertar un token"
+    },
+    "confirm": {
+      "title": "¿Enviar este mensaje?",
+      "summary": "Se enviará un correo a {{deliverable}} personas, {{suppressed}} están omitidas.",
+      "capLeft": "Quedan {{count}} destinatarios en el límite de hoy.",
+      "schedule": "Empezará a las {{time}}.",
+      "send": "Enviar el mensaje",
+      "schedule_action": "Programar el mensaje",
+      "none": "Nadie recibiría este mensaje."
+    },
+    "sent": "Mensaje puesto en cola.",
+    "history": {
+      "title": "Historial",
+      "empty": {
+        "title": "Aún no hay mensajes",
+        "description": "Los mensajes enviados y programados aparecen aquí con sus recuentos de entrega."
+      },
+      "columns": {
+        "subject": "Asunto",
+        "status": "Estado",
+        "progress": "Entregados",
+        "when": "Creado"
+      },
+      "progress": "{{sent}} enviados, {{failed}} fallidos, {{suppressed}} omitidos de {{total}}",
+      "details": "Detalles",
+      "cancel": "Cancelar el envío",
+      "cancelTitle": "¿Detener este mensaje?",
+      "cancelDescription": "Las personas a las que aún no ha llegado no lo recibirán.",
+      "cancelled": "Mensaje cancelado.",
+      "recipients": "Destinatarios",
+      "recipientStatus": {
+        "pending": "En espera",
+        "sent": "Enviado",
+        "failed": "Fallido",
+        "suppressed": "Dado de baja",
+        "cancelled": "Cancelado"
+      }
+    },
+    "status": {
+      "scheduled": "Programado",
+      "sending": "Enviando",
+      "completed": "Completado",
+      "cancelled": "Cancelado",
+      "failed": "Fallido"
+    }
+  }
+}

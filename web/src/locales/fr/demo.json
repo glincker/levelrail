@@ -1,0 +1,63 @@
+{
+  "banner": {
+    "label": "Démo en lecture seule avec des données d'exemple",
+    "resets": "Réinitialisation {{time}}",
+    "install": "Installer",
+    "copyInstall": "Copier la commande d'installation",
+    "copied": "Copié",
+    "github": "GitHub",
+    "docs": "Documentation",
+    "tour": "Faire la visite"
+  },
+  "readOnly": {
+    "tooltip": "Lecture seule dans la démo. Installez {{brand}} pour l'essayer pour de vrai.",
+    "toastTitle": "Démo en lecture seule",
+    "toastBody": "Cette action n'est pas disponible dans la démo. Installez {{brand}} pour l'essayer pour de vrai."
+  },
+  "login": {
+    "title": "Explorer la démo",
+    "description": "Connectez-vous en tant que visiteur en lecture seule pour explorer une instance préremplie. Rien de ce que vous faites n'est enregistré.",
+    "button": "Explorer la démo",
+    "pending": "Démarrage de la démo",
+    "humanCheckFailed": "La vérification humaine a échoué. Rechargez la page et réessayez.",
+    "rateLimited": "Trop de sessions de démo depuis votre réseau. Patientez une minute et réessayez.",
+    "failed": "Impossible de démarrer la démo. Réessayez dans un instant.",
+    "credentials": "Ou connectez-vous avec {{username}} et {{password}}."
+  },
+  "unavailable": {
+    "title": "Indisponible dans la démo",
+    "terminal": "Le terminal et l'exécution de commandes lancent des commandes sur un vrai hôte, donc ils sont désactivés dans la démo.",
+    "database": "L'explorateur de base de données et la console SQL se connectent à une base de données réelle, donc ils sont désactivés dans la démo.",
+    "generic": "Cette fonction nécessite un vrai hôte, donc elle est désactivée dans la démo.",
+    "installHint": "Installez {{brand}} sur votre propre serveur pour l'utiliser.",
+    "install": "Voir comment installer"
+  },
+  "empty": {
+    "title": "Rien ici dans la démo",
+    "description": "Cette zone est volontairement vide dans les données de démo. Sur une vraie instance, elle se remplit au fil de votre utilisation de {{brand}}."
+  },
+  "tour": {
+    "step": "Étape {{current}} sur {{total}}",
+    "next": "Suivant",
+    "back": "Retour",
+    "done": "Terminé",
+    "skip": "Ignorer la visite",
+    "open": "Ouvrir cette page",
+    "apps": {
+      "title": "Vos apps",
+      "body": "Chaque app, son statut et son dernier deploy dans une seule liste. Ouvrez-en une pour voir ses logs, domaines et réglages."
+    },
+    "deploys": {
+      "title": "Historique des deploys et rollback",
+      "body": "Chaque deploy est enregistré avec sa source et son résultat. Toute version antérieure peut être restaurée par rollback en un clic."
+    },
+    "metrics": {
+      "title": "Métriques avec marqueurs de deploy",
+      "body": "Ouvrez une app et choisissez Métriques. Les deploys sont tracés sur les graphiques, pour voir quelle version a changé les chiffres."
+    },
+    "nodes": {
+      "title": "Nodes",
+      "body": "Voyez chaque serveur de votre flotte, sa capacité et ce qui y tourne."
+    }
+  }
+}

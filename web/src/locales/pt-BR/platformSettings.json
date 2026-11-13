@@ -1,0 +1,150 @@
+{
+  "breadcrumb": {
+    "settings": "Configurações",
+    "platform": "Plataforma",
+    "label": "Trilha de navegação"
+  },
+  "overview": {
+    "title": "Plataforma",
+    "description": "Onde este servidor está acessível e como ele obtém certificados. Cada bloco abre a própria página.",
+    "tilesLabel": "Status da plataforma",
+    "open": "Abrir",
+    "loading": "Verificando",
+    "https": {
+      "title": "HTTPS",
+      "off": "HTTPS não ativado",
+      "offLine": "O painel e seus apps são servidos sem um certificado confiável.",
+      "on": "HTTPS ativado",
+      "onLine": "Servindo {{domain}} por HTTPS.",
+      "enable": "Ativar HTTPS"
+    },
+    "ingress": {
+      "title": "Ingress",
+      "healthy": "Ingress saudável",
+      "healthyLine": "As portas 80 e 443 respondem em {{host}}.",
+      "healthyNoHost": "As portas 80 e 443 respondem.",
+      "attention": "O ingress requer atenção",
+      "attentionLine": "Abra a página para ver qual porta ou endereço é o problema."
+    },
+    "addresses": {
+      "title": "Endereços",
+      "set": "Endereço do painel definido",
+      "setLine": "{{url}}",
+      "unset": "Nenhum endereço do painel",
+      "unsetLine": "Defina o endereço público que as pessoas usam para acessar este painel."
+    },
+    "dns": {
+      "title": "Provedores de DNS",
+      "connected": "DNS: {{providers}} conectado",
+      "connectedLine": "Registros e certificados DNS-01 podem ser tratados para você.",
+      "none": "Nenhum provedor de DNS conectado",
+      "noneLine": "Conecte um para emitir certificados wildcard e criar registros."
+    },
+    "search": {
+      "label": "Buscar configurações",
+      "placeholder": "Buscar configurações da plataforma",
+      "hint": "Pressione / para buscar",
+      "results": "Resultados das configurações da plataforma",
+      "empty": "Nenhuma configuração da plataforma corresponde a \"{{query}}\".",
+      "count_one": "{{count}} configuração",
+      "count_many": "{{count}} configurações",
+      "count_other": "{{count}} configurações",
+      "go": "Abrir {{title}} na página {{page}}"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "Ative um certificado confiável para o painel e veja como está o certificado de cada domínio."
+    },
+    "ingress": {
+      "title": "Ingress",
+      "description": "Como o tráfego chega a este servidor: o proxy, as portas dele e um guia para rodar atrás do seu próprio proxy reverso."
+    },
+    "addresses": {
+      "title": "Endereços",
+      "description": "O endereço do painel, o domínio base dos apps, hostnames de fallback automáticos e a automação de DNS."
+    },
+    "dnsProviders": {
+      "title": "Provedores de DNS",
+      "description": "Conecte um provedor de DNS para que certificados e registros sejam tratados para você."
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "Ingress",
+    "addresses": "Endereços",
+    "dns-providers": "Provedores de DNS"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "Ativar HTTPS",
+      "description": "Emita um certificado confiável e sirva o painel por HTTPS."
+    },
+    "certificates": {
+      "title": "Resumo dos certificados",
+      "description": "Expiração e emissor de cada certificado, com um link para a central de certificados."
+    },
+    "ingressSettings": {
+      "title": "Configurações do ingress",
+      "description": "Domínio principal, e-mail ACME e HSTS."
+    },
+    "dns01": {
+      "title": "Desafio DNS para todos os hosts",
+      "description": "Use o desafio DNS-01 para todos os certificados, em servidores atrás de CGNAT ou com a porta 80 fechada."
+    },
+    "ddns": {
+      "title": "DNS dinâmico",
+      "description": "Mantenha um nome DNS apontado para o IP público deste servidor."
+    },
+    "ingressEdge": {
+      "title": "Edge do ingress",
+      "description": "O proxy embutido e as portas em que ele escuta."
+    },
+    "connectivity": {
+      "title": "Conectividade do ingress",
+      "description": "Se as portas 80 e 443 respondem no endereço deste servidor."
+    },
+    "reverseProxy": {
+      "title": "Guia de proxy reverso",
+      "description": "Rode esta plataforma atrás do seu próprio proxy reverso."
+    },
+    "dashboardUrl": {
+      "title": "Endereço do painel",
+      "description": "A URL pública usada em links, e-mails e webhooks."
+    },
+    "appsBaseDomain": {
+      "title": "Domínio base dos apps",
+      "description": "O domínio em que novos apps recebem um subdomínio."
+    },
+    "fallbackDomains": {
+      "title": "Domínios de fallback",
+      "description": "Hostnames automáticos para apps que ainda não têm domínio."
+    },
+    "domainAutomation": {
+      "title": "Automação de domínios",
+      "description": "Crie registros DNS automaticamente para novos domínios."
+    },
+    "cloudflareDns": {
+      "title": "DNS da Cloudflare",
+      "description": "Token de API para registros DNS e certificados DNS-01."
+    },
+    "route53Dns": {
+      "title": "DNS do Route 53",
+      "description": "Credenciais da AWS para registros de zonas hospedadas."
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "Conta de serviço para zonas do Cloud DNS."
+    }
+  },
+  "strip": {
+    "label": "Status da plataforma",
+    "httpsOff": "HTTPS não ativado",
+    "httpsOn": "HTTPS ativado",
+    "enable": "Ativar HTTPS",
+    "address": "Endereço do painel",
+    "addressUnset": "Não definido",
+    "manage": "Configurações da plataforma"
+  }
+}

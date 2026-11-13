@@ -1,0 +1,232 @@
+{
+  "title": "イメージ",
+  "subtitle": "ノード上のすべてのコンテナイメージです。サイズ、どのアプリやデプロイ由来か、安全に削除できるものを確認できます。",
+  "node": {
+    "label": "ノード",
+    "local": "このサーバー"
+  },
+  "tiles": {
+    "count": "イメージ",
+    "size": "使用ディスク容量",
+    "reclaimable": "解放可能",
+    "protected": "保持",
+    "review": "確認してクリーンアップ",
+    "countSplit": "プラットフォーム {{platform}} 件、その他 {{other}} 件",
+    "freeableSplit": "プラットフォームのイメージ {{platform}}、その他のイメージ {{other}}",
+    "keptSplit": "コンテナが使用中: {{used}}"
+  },
+  "columns": {
+    "image": "イメージ",
+    "size": "サイズ",
+    "apps": "使用元",
+    "status": "ステータス",
+    "created": "ビルド日時",
+    "actions": "操作"
+  },
+  "untagged": "タグなし",
+  "status": {
+    "removable": "削除可能",
+    "kept": "保持: {{reason}}"
+  },
+  "roles": {
+    "live": "稼働中",
+    "rollback_target": "ロールバック対象",
+    "recent": "最近のデプロイ",
+    "history": "以前のデプロイ"
+  },
+  "sources": {
+    "webhook": "Git push",
+    "manual": "手動デプロイ",
+    "image": "イメージのデプロイ",
+    "compose": "Compose",
+    "promote": "プロモート済み",
+    "auto_rollback": "自動ロールバック",
+    "git_push": "Git pushリモート",
+    "clone": "クローン",
+    "schedule": "スケジュール",
+    "pr_comment": "PRコメント",
+    "other": "デプロイ"
+  },
+  "cleanup": {
+    "button": "{{size}} を解放",
+    "nothing": "削除するものはありません",
+    "title": "未使用のイメージを削除",
+    "description": "これらのイメージは、稼働中でも、ロールバック対象でも、いずれかのアプリの最新 {{keep}} 件のデプロイのものでもなく、どのコンテナからも使用されていません。",
+    "consequences": "稼働中のイメージ、ロールバック対象、最近のデプロイは削除されません。削除したイメージは、アプリが必要とした場合に再度プルまたはリビルドされます。",
+    "confirm": "イメージを削除",
+    "pending": "削除中...",
+    "done": "{{count}} 件のイメージを削除し、{{size}} を解放しました。",
+    "partial": "{{count}} 件のイメージを削除できませんでした。",
+    "failed": "クリーンアップに失敗しました",
+    "preview": "クリーンアップをプレビュー中..."
+  },
+  "detail": {
+    "close": "閉じる",
+    "lineage": "系譜",
+    "lineageEmpty": "このプラットフォームのデプロイでこのイメージを使用したものはありません。",
+    "layers": "レイヤー",
+    "layersEmpty": "このイメージのレイヤーサイズは利用できません。",
+    "digest": "ダイジェスト",
+    "localBuild": "このサーバーでビルドされたため、レジストリのダイジェストはありません",
+    "promotedFrom": "{{app}} にプロモート済み",
+    "verify": "署名を検証",
+    "verifying": "検証中...",
+    "layerSize": "{{size}}({{percent}}%)"
+  },
+  "verify": {
+    "verified": "署名を検証しました",
+    "unsigned": "署名が見つかりません",
+    "failed": "署名の検証に失敗しました",
+    "not_configured": "署名キーが設定されていません",
+    "no_registry_digest": "ローカルでビルドされたため、検証するものはありません",
+    "fix": "コントロールプレーンの設定で公開鍵ファイルを指定してから、もう一度確認してください。"
+  },
+  "dockerDegraded": {
+    "message": "Dockerが応答していません。デプロイとコンテナは一時停止されています。",
+    "recheck": "再確認",
+    "rechecking": "確認中...",
+    "details": "Dockerの状態",
+    "dismiss": "Dockerが復旧するまで閉じる"
+  },
+  "dockerHealth": {
+    "title": "Dockerエンジン",
+    "recheck": "再確認",
+    "freeSpace": "空き容量を確保",
+    "summary": "{{platform}} 上の Docker {{version}}。{{total}} のうち {{reclaimable}} を解放できます。",
+    "status": {
+      "ok": "OK",
+      "warn": "要対応",
+      "fail": "失敗",
+      "unknown": "不明"
+    }
+  },
+  "lint": {
+    "title": "Dockerfileのチェック",
+    "help": "Dockerfileを貼り付けて、rootユーザー、固定されていないベースタグ、ヘルスチェックの欠如、シングルステージビルドをチェックします。",
+    "inputLabel": "Dockerfileの内容",
+    "placeholder": "FROM node:22-alpine",
+    "check": "チェック",
+    "applyFix": "安全な修正を適用",
+    "clean": "指摘事項はありません。",
+    "line": "{{line}} 行目:",
+    "severity": {
+      "warn": "警告",
+      "info": "ヒント"
+    },
+    "toast": {
+      "failed": "Dockerfileをチェックできませんでした。",
+      "fixed": "上のテキストに修正を適用しました。"
+    }
+  },
+  "policy": {
+    "title": "署名ポリシー",
+    "validate": "検証",
+    "validating": "検証中...",
+    "refLabel": "テストするイメージの参照",
+    "refPlaceholder": "任意: repo@sha256:... で1つのイメージを検証",
+    "error": "署名ポリシーを検証できませんでした。",
+    "valid": "署名ポリシーは正常に動作しています。",
+    "invalid": "署名ポリシーに対応が必要です。",
+    "fingerprint": "キー {{value}}。",
+    "sample": {
+      "verified": "サンプルイメージはあなたのキーで署名されています。",
+      "unsigned": "サンプルイメージには署名がありません。",
+      "failed": "サンプルイメージの検証に失敗しました。",
+      "not_configured": "公開鍵が設定されていません。",
+      "no_registry_digest": "サンプルには検証するレジストリのダイジェストがありません。"
+    },
+    "issues": {
+      "key_unreadable": "公開鍵ファイルを読み取れなかったため、署名チェックはオフです。キーのパスを修正して再起動してください。",
+      "enforce_without_key": "強制が要求されていますが、使用可能なキーがないため、何も強制されません。有効な公開鍵ファイルを設定してください。",
+      "key_without_enforcement": "キーは読み込まれていますが強制がオフのため、署名のないイメージもプロモートできます。",
+      "sample_failed": "サンプルイメージは、あなたのキーに対して検証に失敗しました。"
+    }
+  },
+  "signatures": {
+    "enforce": "プロモートには有効なイメージ署名が必要です。",
+    "off": "署名チェックはリクエストに応じて実行されます。"
+  },
+  "empty": {
+    "title": "このノードにイメージはありません",
+    "description": "最初のデプロイまたはビルドの後に、イメージがここに表示されます。"
+  },
+  "error": {
+    "title": "イメージを読み込めませんでした",
+    "retry": "再確認",
+    "unsupported": "このノードはまだイメージを報告していません。"
+  },
+  "banner": {
+    "description": "最初のデプロイまたはビルドの後に、イメージがここに表示されます。サイズ、使用しているアプリ、安全に削除できるかどうかを確認できます。",
+    "diagram": {
+      "layers": "レイヤー",
+      "node": "ノード"
+    }
+  },
+  "rootOnly": "イメージを削除できるのはrootアカウントのみです。閲覧と絞り込みは引き続き可能です。",
+  "badge": {
+    "other": "その他",
+    "inUse": "使用中"
+  },
+  "filters": {
+    "label": "イメージを絞り込み",
+    "all": "すべて",
+    "platform": "プラットフォーム",
+    "other": "その他",
+    "unused": "未使用",
+    "in_use": "使用中",
+    "search": "名前またはIDで検索",
+    "sort": "並べ替え",
+    "sortSize": "サイズの大きい順",
+    "sortAge": "新しい順",
+    "empty": "このビューに一致するイメージはありません。",
+    "reset": "すべてのイメージを表示"
+  },
+  "row": {
+    "notRemovable": "このイメージは削除できません",
+    "select": "{{name}} を選択",
+    "selectAll": "削除可能なイメージをすべて選択",
+    "remove": "削除",
+    "removeNamed": "{{name}} を削除"
+  },
+  "bar": {
+    "label": "選択したイメージ",
+    "summary_other": "{{count}} 件を選択、{{size}} を解放",
+    "clear": "クリア",
+    "remove": "選択したものを削除"
+  },
+  "remove": {
+    "title": "イメージを削除",
+    "description": "削除される内容を確認してください。確定するまで何も削除されません。",
+    "includeUnmanaged": "どのコンテナも使用していない他のイメージも削除する",
+    "previewing": "削除可能な項目を確認しています...",
+    "nothing": "ここに削除するものはありません。",
+    "listLabel": "削除するイメージ",
+    "total_other": "{{count}} 件のイメージ、{{size}} が解放されます",
+    "warning": "削除したイメージは、アプリが必要としたときに再度ダウンロードまたはリビルドされます。",
+    "confirm_other": "{{count}} 件のイメージを削除",
+    "removing": "削除中...",
+    "cancel": "キャンセル",
+    "done": "完了",
+    "resultRemoved_other": "{{count}} 件のイメージを削除し、{{size}} を解放しました。",
+    "resultFailed_other": "{{count}} 件のイメージを削除できませんでした:",
+    "announce_other": "{{count}} 件のイメージを削除しました。"
+  },
+  "retention": {
+    "title": "イメージの保持",
+    "description": "このアプリがロールバック用に保持する最近のデプロイイメージの数です。古いものは、次回のクリーンアップで削除されます。",
+    "keepLabel": "保持するイメージ数",
+    "hint": "0 はグローバル設定に従い、それ以外は {{min}} 以上を指定します。",
+    "preview": "削除対象をプレビュー",
+    "save": "保存",
+    "saved": "イメージの保持設定を保存しました",
+    "saveFailed": "イメージの保持設定を保存できませんでした",
+    "protected": "このアプリは保護された環境 {{env}} にあるため、少なくとも {{global}} 件のイメージが保持されます。",
+    "wouldRemove_other": "次回のクリーンアップで {{count}} 件のイメージが削除され、{{size}} が解放されます。",
+    "alwaysKept": "実行中のイメージ、ロールバック用に固定されたイメージ、直前に成功したリリース、他のアプリと共有しているイメージ、待機中または保留中のデプロイが必要とするイメージは、常に保持されます。",
+    "source": {
+      "app": "最新 {{count}} 件のデプロイイメージを保持します(このアプリで設定)。",
+      "app_default": "最新 {{count}} 件のデプロイイメージを保持します(アプリのデフォルト)。",
+      "global": "最新 {{count}} 件のデプロイイメージを保持します(グローバル設定、{{global}})。"
+    }
+  }
+}

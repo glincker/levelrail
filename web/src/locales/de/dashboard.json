@@ -1,0 +1,336 @@
+{
+  "needsAttention": {
+    "askAi": "KI fragen",
+    "review": "Prüfen",
+    "retryCopy": "Kopie wiederholen",
+    "openDatabase": "Datenbank öffnen"
+  },
+  "fleet": {
+    "reserved": {
+      "title": "Reserviert gegenüber genutzt",
+      "subtitle": "Konfigurierte Limits von {{active}} laufenden Apps und Datenbanken, Replikate eingeschlossen. {{suspended}} gestoppte sind ausgenommen.",
+      "cpu": "CPU",
+      "memory": "Speicher",
+      "cores_one": "Kern",
+      "cores_other": "Kerne",
+      "reserved": "Reserviert",
+      "used": "Jetzt genutzt",
+      "capacity": "Kapazität",
+      "unknown": "Nicht gemeldet",
+      "cpuCapacityScope": "Die CPU-Kapazität sind die Kerne des Nodes der Control Plane.",
+      "capacityPartial": "Kapazität von {{known}} von {{total}} Nodes gemeldet.",
+      "reservedBar": "{{resource}} reserviert",
+      "usedBar": "{{resource}} genutzt",
+      "verdict": {
+        "overCommitted": "Überbucht um {{amount}}",
+        "idle": "Reserviert, aber ungenutzt",
+        "headroom": "Gesunder Spielraum",
+        "noLimits": "Keine Limits gesetzt",
+        "unknownCapacity": "Kapazität nicht vollständig gemeldet"
+      },
+      "noLimit": {
+        "cpu_one": "{{count}} Container hat kein CPU-Limit und wird nicht mitgezählt.",
+        "cpu_other": "{{count}} Container haben kein CPU-Limit und werden nicht mitgezählt.",
+        "memory_one": "{{count}} Container hat kein Speicherlimit und wird nicht mitgezählt.",
+        "memory_other": "{{count}} Container haben kein Speicherlimit und werden nicht mitgezählt."
+      },
+      "breakdown": "Reserviert nach Gruppe",
+      "groupBy": "Gruppieren nach",
+      "by": {
+        "project": "Projekt",
+        "environment": "Umgebung"
+      },
+      "colReserved": "Reserviert",
+      "colUsed": "Genutzt",
+      "pairHint": "CPU-Kerne / Speicher.",
+      "unsetInGroup_one": "{{count}} ohne Limit",
+      "unsetInGroup_other": "{{count}} ohne Limits",
+      "noProject": "Kein Projekt",
+      "noEnvironment": "Keine Umgebung",
+      "topReservers": "Ressourcen mit den größten Reservierungen",
+      "noReservers": "Noch keine Ressource hat ein Limit gesetzt.",
+      "kind": {
+        "app": "App",
+        "database": "Datenbank"
+      }
+    },
+    "storage": {
+      "title": "Speicher",
+      "scope": "Volume-Größen betreffen den Node der Control Plane. Backup-Größen betreffen jeden Node.",
+      "databaseVolumes": "Datenbank-Volumes",
+      "appVolumes": "App-Volumes",
+      "unknownSizes_one": "{{count}} Volume-Größe unbekannt",
+      "unknownSizes_other": "{{count}} Volume-Größen unbekannt",
+      "backups": "Gespeicherte Backups",
+      "backupCount_one": "{{count}} Backup",
+      "backupCount_other": "{{count}} Backups",
+      "total": "Gesamt",
+      "totalHint": "Volumes plus Backups.",
+      "largestVolumes": "Größte Volumes",
+      "largestBackups": "Größte Backup-Sätze",
+      "noVolumes": "Keine Volume-Größen gemeldet.",
+      "notReported": "Größe nicht gemeldet.",
+      "noBackups": "Noch keine erfolgreichen Backups."
+    }
+  },
+  "status": {
+    "ok": "Alle Systeme normal",
+    "incidents_one": "{{count}} Vorfall",
+    "incidents_other": "{{count}} Vorfälle"
+  },
+  "tiles": {
+    "appsRunning": "Laufende Apps",
+    "requests": "Anfragen",
+    "errorRate": "Fehlerrate",
+    "noTraffic": "Kein Traffic",
+    "deploys24h": "Deploys 24 h",
+    "nodesOnline": "Nodes online",
+    "lastHour": "Letzte Stunde, alle Apps.",
+    "addDomain": "Domain hinzufügen",
+    "deployApp": "App deployen",
+    "idle": "Leerlauf"
+  },
+  "resources": {
+    "title": "Ressourcen",
+    "controlPlane": "Control Plane",
+    "cpu": "CPU",
+    "memory": "Speicher",
+    "disk": "Festplatte",
+    "cpuOfCores": "{{percent}}% von {{cores}} Kernen",
+    "cpuContainers": "{{percent}}% über alle Container",
+    "noReadings": "Von diesem Node liegen noch keine Host-Messwerte vor.",
+    "memoryBreakdown": "Speicheraufteilung",
+    "segment": {
+      "levelrail": "{{brand}}",
+      "apps": "Apps",
+      "databases": "Datenbanken",
+      "other": "Andere Container",
+      "system": "System",
+      "free": "Frei"
+    },
+    "segmentHelp": {
+      "levelrail": "Die Control Plane und der Node-Agent",
+      "apps": "Container Ihrer deployten Apps",
+      "databases": "Container Ihrer verwalteten Datenbanken",
+      "other": "Laufen auf diesem Server, werden aber nicht von {{brand}} verwaltet",
+      "system": "Kernel, Page-Cache und andere Prozesse",
+      "free": "Noch verfügbarer Speicher"
+    },
+    "notManaged": "Nicht von {{brand}} verwaltet",
+    "topConsumers": "Größte Verbraucher",
+    "sortBy": "Sortieren nach",
+    "sort": {
+      "memory": "Speicher",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "App",
+      "database": "Datenbank",
+      "other": "Container"
+    },
+    "requestTrend": "Anfragetrend von {{name}}",
+    "viewAll_one": "Alle {{count}} anzeigen",
+    "viewAll_other": "Alle {{count}} anzeigen",
+    "showLess": "Weniger anzeigen",
+    "databasesLine_one": "{{count}} Datenbank",
+    "databasesLine_other": "{{count}} Datenbanken"
+  },
+  "recommendations": {
+    "line_one": "{{count}} Empfehlung",
+    "line_other": "{{count}} Empfehlungen"
+  },
+  "usageDetails": {
+    "title": "Nutzungsdetails"
+  },
+  "hero": {
+    "title": "Dashboard"
+  },
+  "banners": {
+    "httpsTitle": "Dieses Dashboard läuft über unverschlüsseltes HTTP",
+    "httpsDetail": "Passwörter und Sitzungen werden unverschlüsselt übertragen. Aktivieren Sie HTTPS mit einem Klick, ohne DNS.",
+    "httpsAction": "HTTPS aktivieren",
+    "doctorTitle_one": "Doctor hat {{count}} Problem gefunden",
+    "doctorTitle_other": "Doctor hat {{count}} Probleme gefunden",
+    "doctorDetail": "Zu jedem gibt es eine Lösung oder einen nächsten Schritt.",
+    "doctorAction": "Doctor öffnen",
+    "nodesTitle_one": "{{count}} Node ist offline",
+    "nodesTitle_other": "{{count}} Nodes sind offline",
+    "nodesDetail": "Apps auf einem Offline-Node laufen weiter, können aber nicht geändert werden, und ihr Mesh-Ingress ist ausgefallen.",
+    "nodesAction": "Nodes anzeigen"
+  },
+  "nextSteps": {
+    "title": "Empfohlene nächste Schritte",
+    "seeAll": "Statusseite",
+    "continue": "Fortfahren",
+    "setupProgress": "Einrichtung zu {{percent}}% bereit",
+    "quiet": "Nichts braucht Sie. {{running}} von {{total}} Apps laufen, {{deploys}} Deploys in den letzten 24 Stunden.",
+    "group": {
+      "copy_one": "Datenkopie bei {{count}} Datenbank fehlgeschlagen",
+      "copy_other": "Datenkopie bei {{count}} Datenbanken fehlgeschlagen",
+      "show_one": "{{count}} anzeigen",
+      "show_other": "Alle {{count}} anzeigen",
+      "hide": "Ausblenden"
+    },
+    "review": "Prüfen"
+  },
+  "deploys": {
+    "title": "Letzte Deploys",
+    "empty": "Noch keine Deploys. Pushen Sie in ein verbundenes Repo, dann erscheinen sie hier.",
+    "emptyScoped": "Noch keine Deploys für die Apps in diesem Bereich.",
+    "status": {
+      "succeeded": "Deployt",
+      "failed": "Fehlgeschlagen",
+      "running": "Wird deployt",
+      "held": "Zurückgehalten",
+      "awaiting_approval": "Wartet auf Genehmigung",
+      "superseded": "Abgelöst",
+      "queued": "In der Warteschlange",
+      "canceled": "Abgebrochen",
+      "pending": "In der Warteschlange, bis der Node zurückkehrt"
+    }
+  },
+  "strip": {
+    "nodeOffline_one": "Node {{names}} ist offline",
+    "nodeOffline_other": "{{count}} Nodes offline: {{names}}",
+    "nodeOfflineSince": "seit",
+    "nodeOfflineView": "Node anzeigen",
+    "ok_one": "Alle {{count}} App in Ordnung",
+    "ok_other": "Alle {{count}} Apps in Ordnung",
+    "issues_one": "{{count}} Sache erfordert Aufmerksamkeit",
+    "issues_other": "{{count}} Dinge erfordern Aufmerksamkeit",
+    "causes_one": "{{count}} Problem aus {{causes}} Ursache",
+    "causes_other": "{{count}} Probleme aus {{causes}} Grundursachen",
+    "details": "Details",
+    "notices_one": "{{count}} Hinweis",
+    "notices_other": "{{count}} Hinweise",
+    "showSnoozed_one": "{{count}} zurückgestellten anzeigen",
+    "showSnoozed_other": "{{count}} zurückgestellte anzeigen"
+  },
+  "scope": {
+    "label": "Angezeigt: {{name}}",
+    "clear": "Bereich aufheben, alle Projekte anzeigen",
+    "allProjects": "Alle Projekte",
+    "instanceWide": "Alle Projekte",
+    "instanceWideHint": "Instanzweit. Nicht nach dem gewählten Projekt oder der gewählten Umgebung gefiltert."
+  },
+  "apps": {
+    "title": "Apps",
+    "search": "Apps suchen",
+    "none": "Keine Apps passen.",
+    "emptyScopedTitle": "Noch keine Apps in {{scope}}",
+    "emptyScopedBody": "Deployen Sie hier eine, dann erscheint sie in diesem Bereich, oder wechseln Sie zu allen Projekten, um alles zu sehen.",
+    "emptyScopedClear": "Alle Projekte anzeigen",
+    "viewAll": "Alle {{count}} anzeigen",
+    "view": {
+      "grid": "Rasteransicht",
+      "list": "Listenansicht"
+    }
+  },
+  "widgets": {
+    "attention": "Braucht Sie",
+    "apps": "Apps",
+    "activity": "Letzte Deploys",
+    "fleet": "Flotte",
+    "resources": "Ressourcen",
+    "advisor": "Ressourcenberater",
+    "alerts": "Letzte Alarme",
+    "usage": "Nutzungsdetails"
+  },
+  "customize": {
+    "edit": "Anpassen",
+    "done": "Fertig",
+    "reset": "Layout zurücksetzen",
+    "show": "{{name}} anzeigen",
+    "moveUp": "{{name}} nach oben verschieben",
+    "moveDown": "{{name}} nach unten verschieben",
+    "hide": "{{name}} ausblenden"
+  },
+  "newApp": {
+    "label": "Neue App",
+    "more": "Weitere Deploy-Möglichkeiten",
+    "items": {
+      "git": {
+        "title": "Aus einem Git-Repo",
+        "hint": "Bei jedem Push bauen und deployen"
+      },
+      "image": {
+        "title": "Aus einem Docker-Image",
+        "hint": "Ein vorgebautes Image pullen"
+      },
+      "template": {
+        "title": "Aus einer Vorlage",
+        "hint": "n8n, Uptime Kuma, MinIO und mehr"
+      },
+      "compose": {
+        "title": "Aus Docker Compose",
+        "hint": "Jeden Dienst einer Datei deployen"
+      },
+      "database": {
+        "title": "Eine Datenbank",
+        "hint": "Postgres, MySQL, Redis und mehr"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "Kopie nach {{name}} wiederholen",
+    "description": "Die vorherige Quelle ist eingetragen. Geben Sie das Passwort erneut ein. Es wird nie gespeichert. Verlangt die Quelle Verschlüsselung, wiederholt sich die Kopie automatisch mit TLS.",
+    "loading": "Der vorherige Versuch wird geladen...",
+    "missing": "Diese Datenbank hat keine Kopie zum Wiederholen."
+  },
+  "snooze": {
+    "label": "Einen Tag zurückstellen",
+    "done_one": "Für einen Tag zurückgestellt.",
+    "done_other": "{{count}} Einträge für einen Tag zurückgestellt.",
+    "undo": "Rückgängig"
+  },
+  "tabs": {
+    "label": "Dashboard-Ansichten",
+    "start": "Start",
+    "metrics": "Metriken",
+    "more": "Weitere Ansichten",
+    "hiddenSuffix": "{{name}} (ausgeblendet)",
+    "addTitle": "Neues Dashboard",
+    "addDescription": "Beginnen Sie mit einem fertigen Dashboard oder einem leeren.",
+    "empty": "Leeres Dashboard",
+    "metricsNote": "Flottenweite Summen. Passen Sie es an, um eine eigene Kopie zu erstellen.",
+    "customize": "Anpassen",
+    "emptyName": "Unbenanntes Dashboard",
+    "metricsEmptyTitle": "Noch keine Metriken",
+    "metricsEmptyBody": "Metriken erscheinen, sobald Ihre erste App läuft. Deployen Sie eine, um hier CPU, Speicher und Traffic zu sehen.",
+    "metricsEmptyAction": "Ihre erste App deployen"
+  },
+  "manage": {
+    "label": "Verwalten",
+    "new": "Neues Board",
+    "starter": "Neu aus einer Vorlage",
+    "import": "JSON importieren",
+    "importFile": "Dashboard-JSON-Datei",
+    "edit": "Board bearbeiten",
+    "doneEditing": "Bearbeitung beenden",
+    "rename": "Umbenennen",
+    "renameTitle": "Board umbenennen",
+    "name": "Name",
+    "export": "JSON exportieren",
+    "delete": "Löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteBody": "Das Board wird für jeden entfernt, der es sehen kann. Exportierte JSON-Dateien sind davon nicht betroffen.",
+    "cancel": "Abbrechen",
+    "save": "Speichern"
+  },
+  "updateStrip": {
+    "label": "Update verfügbar",
+    "to": "auf",
+    "behind_one": "{{count}} Release zurück",
+    "behind_other": "{{count}} Releases zurück",
+    "security": "Enthält eine Sicherheitskorrektur",
+    "whatsNew": "Was ist neu",
+    "update": "Aktualisieren",
+    "dismiss": "{{version}} bis zum nächsten Release ausblenden"
+  },
+  "restoreDue": {
+    "title": "Eine Wiederherstellung testen",
+    "body": "Sie haben ein Backup, aber noch keine Wiederherstellung getestet. Ein Backup, das Sie nie wiederhergestellt haben, ist eine Vermutung.",
+    "action": "Wiederherstellung testen",
+    "dismiss": "Ausblenden"
+  }
+}

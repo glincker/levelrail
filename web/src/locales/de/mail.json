@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "label": "E-Mail-Bereiche",
+    "delivery": "Zustellung",
+    "templates": "Vorlagen",
+    "audiences": "Zielgruppen",
+    "messages": "Nachrichten"
+  },
+  "common": {
+    "loadError": "Diese Seite konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "delete": "Löschen",
+    "saving": "Speichern",
+    "people": "{{count}} Personen"
+  },
+  "templates": {
+    "eyebrow": "E-Mail",
+    "title": "E-Mail-Vorlagen",
+    "description": "Jede E-Mail, die die Plattform sendet, in einem einheitlichen Layout. Bearbeiten Sie den Wortlaut, sehen Sie ihn mit Beispieldaten in der Vorschau und setzen Sie ihn jederzeit auf den Standard zurück.",
+    "kind": {
+      "system": "Konto und Sicherheit",
+      "announcement": "Ankündigung"
+    },
+    "customized": "Angepasst",
+    "builtIn": "Eingebaut",
+    "edit": "Bearbeiten",
+    "listHeading": "Vorlagen",
+    "layout": {
+      "title": "Gemeinsames Layout",
+      "description": "Der Rahmen um jede E-Mail: ein optionales Kopfbild und eine Fußzeile, etwa mit Ihrer Postadresse.",
+      "headerImage": "Adresse des Kopfbilds",
+      "headerImageHelp": "Ein https-Bild über dem Markennamen. Leer lassen, um nur den Markennamen anzuzeigen.",
+      "footer": "Fußzeilentext",
+      "footerHelp": "Wird unter jeder E-Mail angezeigt. Globale Tokens wie {{examples}} funktionieren hier.",
+      "save": "Layout speichern",
+      "saved": "Layout gespeichert."
+    },
+    "editor": {
+      "back": "Alle Vorlagen",
+      "subject": "Betreff",
+      "preheader": "Preheader",
+      "preheaderHelp": "Die Vorschauzeile, die manche Posteingänge neben dem Betreff anzeigen.",
+      "body": "Inhalt",
+      "bodyHelp": "Leerzeilen beginnen einen neuen Absatz. Verwenden Sie # für eine Überschrift, - für eine Liste, > für einen Hinweis, **fett**, [Bezeichnung](Adresse) für Links und !button Bezeichnung|Adresse für einen Button.",
+      "save": "Vorlage speichern",
+      "saved": "Vorlage gespeichert.",
+      "reset": "Auf Standard zurücksetzen",
+      "resetTitle": "Diese Vorlage zurücksetzen?",
+      "resetDescription": "Der eingebaute Wortlaut kehrt zurück. Ihre Änderungen bleiben im Versionsverlauf.",
+      "resetDone": "Vorlage zurückgesetzt.",
+      "sendTest": "Einen Test an mich senden",
+      "testSent": "Test an {{email}} gesendet.",
+      "noProviderTitle": "Es ist kein E-Mail-Anbieter eingerichtet",
+      "noProviderBody": "Richten Sie zuerst einen Anbieter ein und senden Sie dann einen Test.",
+      "fixProvider": "E-Mail-Einstellungen öffnen"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "description": "Wählen Sie ein Token, um es an der Cursorposition einzufügen. Unbekannte Tokens werden beim Speichern abgelehnt.",
+      "scope": {
+        "global": "Überall",
+        "recipient": "Über den Empfänger",
+        "event": "Für diese E-Mail"
+      },
+      "insert": "{{name}} einfügen"
+    },
+    "preview": {
+      "title": "Vorschau",
+      "desktop": "Desktop",
+      "mobile": "Mobil",
+      "light": "Hell",
+      "dark": "Dunkel",
+      "frameTitle": "E-Mail-Vorschau",
+      "plain": "Nur-Text-Version",
+      "error": "Die Vorschau benötigt eine gültige Vorlage: {{message}}",
+      "deviceLabel": "Vorschau-Gerät",
+      "schemeLabel": "Farbschema der Vorschau"
+    },
+    "history": {
+      "title": "Versionsverlauf",
+      "description": "Die letzten 10 gespeicherten Versionen.",
+      "empty": "Noch keine gespeicherten Versionen. Das erste Speichern erzeugt eine.",
+      "restore": "Wiederherstellen",
+      "restored": "Version wiederhergestellt.",
+      "version": "Version {{version}}",
+      "by": "von {{who}}"
+    }
+  },
+  "audiences": {
+    "eyebrow": "E-Mail",
+    "title": "Zielgruppen",
+    "description": "Gespeicherte Personengruppen, an die Sie schreiben. Regeln wählen Benutzer nach Rolle, Team, Projekt, Anmelde-Domain oder Inaktivität aus, und Sie können von Hand zusätzliche Adressen hinzufügen.",
+    "create": "Neue Zielgruppe",
+    "edit": "Bearbeiten",
+    "empty": {
+      "title": "Noch keine Zielgruppen",
+      "description": "Erstellen Sie eine Gruppe wie alle Admins oder alle seit 90 Tagen Inaktiven und senden Sie ihr dann eine Nachricht."
+    },
+    "columns": {
+      "name": "Zielgruppe",
+      "recipients": "Empfänger",
+      "suppressed": "Abgemeldet"
+    },
+    "dialog": {
+      "createTitle": "Neue Zielgruppe",
+      "editTitle": "Zielgruppe bearbeiten",
+      "name": "Name",
+      "description": "Beschreibung",
+      "rules": "Wer eingeschlossen ist",
+      "everyone": "Jeder Benutzer",
+      "roles": "Rollen",
+      "teams": "Teams",
+      "projects": "Projekte (ihr Team)",
+      "domains": "E-Mail-Domains der Anmeldung",
+      "domainsHelp": "Eine pro Zeile, zum Beispiel example.com.",
+      "inactive": "Nicht angemeldet seit (Tage)",
+      "inactiveHelp": "Grenzt die Auswahl ein oder wählt jeden aus, der so lange inaktiv ist, wenn nichts anderes gewählt ist.",
+      "extra": "Zusätzliche Adressen",
+      "extraHelp": "Eine pro Zeile. Werden auch hinzugefügt, wenn sie keine Benutzer sind.",
+      "exclude": "Nie einschließen",
+      "excludeHelp": "Eine Adresse pro Zeile.",
+      "save": "Zielgruppe speichern",
+      "saved": "Zielgruppe gespeichert.",
+      "live": "{{deliverable}} erhalten sie, {{suppressed}} haben sich abgemeldet.",
+      "liveSample": "Die ersten {{count}} Empfänger",
+      "noneChosen": "Wählen Sie mindestens eine Regel, um zu sehen, wer eingeschlossen ist."
+    },
+    "role": {
+      "owner": "Inhaber",
+      "admin": "Admin",
+      "operator": "Operator",
+      "viewer": "Betrachter"
+    },
+    "deleteTitle": "Diese Zielgruppe löschen?",
+    "deleteDescription": "Frühere Nachrichten behalten ihren Verlauf. Dies entfernt nur die gespeicherten Regeln.",
+    "deleted": "Zielgruppe gelöscht.",
+    "suppressions": {
+      "title": "Abmeldeliste",
+      "description": "Personen hier werden bei Ankündigungen übersprungen. Sicherheits- und Konto-E-Mails kommen immer an.",
+      "empty": "Niemand hat sich abgemeldet.",
+      "add": "Adresse hinzufügen",
+      "addPlaceholder": "name@example.com",
+      "remove": "Entfernen",
+      "reasonAdmin": "Von einem Administrator hinzugefügt",
+      "reasonUnsub": "Von einer Nachricht abgemeldet",
+      "added": "Adresse zur Abmeldeliste hinzugefügt."
+    }
+  },
+  "messages": {
+    "eyebrow": "E-Mail",
+    "title": "Nachrichten",
+    "description": "Schreiben Sie an eine Zielgruppe oder an ausgewählte Personen. Nachrichten gehen im gespeicherten Layout mit einem Abmeldelink per Klick hinaus, ratenbegrenzt, und jeder Versand steht im Verlauf.",
+    "compose": "Neue Nachricht",
+    "noProvider": {
+      "title": "E-Mail ist nicht eingerichtet",
+      "body": "Nachrichten benötigen einen E-Mail-Anbieter. Richten Sie einen ein, senden Sie einen Test und kommen Sie dann zurück.",
+      "fix": "E-Mail-Einstellungen öffnen"
+    },
+    "composer": {
+      "title": "Neue Nachricht",
+      "template": "Beginnen mit",
+      "subject": "Betreff",
+      "body": "Nachricht",
+      "bodyHelp": "Tokens wie {{example}} werden pro Person ausgefüllt.",
+      "audience": "Zielgruppe",
+      "audiencePlaceholder": "Zielgruppe wählen",
+      "noAudience": "Keine Zielgruppe",
+      "extra": "Zusätzliche Empfänger",
+      "extraHelp": "Eine Adresse pro Zeile, optional.",
+      "when": "Wann",
+      "now": "Jetzt senden",
+      "later": "Planen",
+      "review": "Prüfen und senden",
+      "sendTest": "Einen Test an mich senden",
+      "preview": "Vorschau",
+      "tokens": "Ein Token einfügen"
+    },
+    "confirm": {
+      "title": "Diese Nachricht senden?",
+      "summary": "Dies sendet eine E-Mail an {{deliverable}} Personen, {{suppressed}} sind unterdrückt.",
+      "capLeft": "Im heutigen Limit verbleiben {{count}} Empfänger.",
+      "schedule": "Sie beginnt um {{time}}.",
+      "send": "Nachricht senden",
+      "schedule_action": "Nachricht planen",
+      "none": "Niemand würde diese Nachricht erhalten."
+    },
+    "sent": "Nachricht eingereiht.",
+    "history": {
+      "title": "Verlauf",
+      "empty": {
+        "title": "Noch keine Nachrichten",
+        "description": "Gesendete und geplante Nachrichten erscheinen hier mit Zustellzahlen."
+      },
+      "columns": {
+        "subject": "Betreff",
+        "status": "Status",
+        "progress": "Zugestellt",
+        "when": "Erstellt"
+      },
+      "progress": "{{sent}} gesendet, {{failed}} fehlgeschlagen, {{suppressed}} übersprungen von {{total}}",
+      "details": "Details",
+      "cancel": "Versand abbrechen",
+      "cancelTitle": "Diese Nachricht stoppen?",
+      "cancelDescription": "Personen, die noch nicht erreicht wurden, erhalten sie nicht.",
+      "cancelled": "Nachricht abgebrochen.",
+      "recipients": "Empfänger",
+      "recipientStatus": {
+        "pending": "Wartet",
+        "sent": "Gesendet",
+        "failed": "Fehlgeschlagen",
+        "suppressed": "Abgemeldet",
+        "cancelled": "Abgebrochen"
+      }
+    },
+    "status": {
+      "scheduled": "Geplant",
+      "sending": "Wird gesendet",
+      "completed": "Abgeschlossen",
+      "cancelled": "Abgebrochen",
+      "failed": "Fehlgeschlagen"
+    }
+  }
+}

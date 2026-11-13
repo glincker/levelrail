@@ -1,0 +1,188 @@
+{
+  "title": "表单",
+  "description": "收集你静态站点上 HTML 表单的提交内容。每个表单都会获得一个可供提交的公开端点。",
+  "loading": "正在加载表单",
+  "loadError": "无法加载表单。",
+  "retry": "重试",
+  "new": "新建表单",
+  "create": {
+    "title": "新建表单",
+    "description": "请选择一个简短的名称。它会成为端点地址的一部分，之后无法更改。",
+    "name": "表单名称",
+    "namePlaceholder": "contact",
+    "submit": "创建表单",
+    "submitting": "创建中"
+  },
+  "empty": {
+    "title": "还没有表单",
+    "description": "创建表单、设计字段，把代码片段粘贴到你的站点中，提交内容就会出现在这里。",
+    "cta": "创建你的第一个表单"
+  },
+  "endpoint": "端点",
+  "snippet": "HTML 代码片段",
+  "copy": "复制",
+  "copied": "已复制",
+  "copyFailed": "无法复制",
+  "counts": "{{total}} 条提交，{{spam}} 条垃圾信息",
+  "settings": {
+    "title": "设置",
+    "redirect": "提交后重定向",
+    "redirectHint": "浏览器在提交后会被送到这里。留空则显示一个简单的感谢页面。",
+    "honeypot": "垃圾信息陷阱字段",
+    "honeypotHint": "真实访客会留空的隐藏字段。填写了该字段的提交会被当作垃圾信息保留，且绝不会通知你。",
+    "channels": "有新提交时通知",
+    "noChannels": "尚未设置通知渠道。请在“告警”下添加一个，以便收到新提交的通知。",
+    "save": "保存设置",
+    "saving": "保存中",
+    "saved": "表单设置已保存。"
+  },
+  "delete": {
+    "button": "删除表单",
+    "title": "删除此表单？",
+    "description": "端点会立即停止接受提交。",
+    "consequence": "此表单已存储的所有提交内容都将被删除，且无法恢复。",
+    "confirm": "删除表单",
+    "pending": "删除中"
+  },
+  "retention": "提交内容会在 {{days}} 天后删除。只存储发送者地址的加盐哈希，绝不存储地址本身。",
+  "inbox": {
+    "title": "收件箱",
+    "search": "搜索提交内容",
+    "filterAll": "全部",
+    "filterInbox": "非垃圾信息",
+    "filterSpam": "垃圾信息",
+    "export": "导出 CSV",
+    "loading": "正在加载提交内容",
+    "loadError": "无法加载提交内容。",
+    "emptyTitle": "还没有提交内容",
+    "emptyDescription": "向上方的端点提交内容，或从你的站点发送一次测试，它就会出现在这里。",
+    "noMatchTitle": "没有匹配项",
+    "noMatchDescription": "请尝试其他搜索或筛选条件。",
+    "spamBadge": "垃圾信息",
+    "markSpam": "标记为垃圾信息",
+    "markNotSpam": "不是垃圾信息",
+    "remove": "删除",
+    "removeConfirm": "删除此提交？",
+    "actionFailed": "该更改未能保存。",
+    "loadMore": "加载更多",
+    "reason": {
+      "honeypot": "填写了垃圾信息陷阱",
+      "too_many_links": "链接过多",
+      "empty": "没有字段",
+      "manual": "由你标记"
+    },
+    "testBadge": "测试"
+  },
+  "betaHint": "Beta：表单收集功能可用，但其设计器和限制仍在变化。",
+  "intro": "静态站点无法运行服务端代码。表单功能为你的站点提供一个存储提交内容的公开端点。",
+  "howItWorks": "工作原理",
+  "hero": {
+    "alt": "访客在你的站点上填写表单并点击发送。提交内容传送到你的 Levelrail 端点，出现在收件箱中，并触发一条通知。",
+    "caption": "设计表单，粘贴到你的静态站点，然后在这里查看提交内容。",
+    "site": "你的站点",
+    "endpoint": "端点",
+    "inbox": "收件箱",
+    "notice": "新提交"
+  },
+  "steps": {
+    "design": {
+      "title": "设计你的表单",
+      "body": "选择字段、标签和成功消息。"
+    },
+    "embed": {
+      "title": "把代码片段粘贴到你的站点",
+      "body": "将 HTML 或 JavaScript 复制到你的页面中。"
+    },
+    "read": {
+      "title": "在这里查看提交内容",
+      "body": "有人提交时收到通知。"
+    }
+  },
+  "notStatic": {
+    "title": "表单适用于静态站点",
+    "description": "此应用运行自己的服务端代码，因此可以自行处理表单提交。表单功能为以静态站点方式部署的应用收集提交内容。",
+    "back": "返回应用"
+  },
+  "sections": {
+    "design": {
+      "title": "设计",
+      "help": "选择访客要填写的字段，以及发送后他们看到的内容。"
+    },
+    "embed": {
+      "title": "嵌入",
+      "help": "将此内容复制到你的静态站点。它会随你的编辑同步更新。"
+    },
+    "submissions": {
+      "title": "提交内容",
+      "help": "访客发送的所有内容都会出现在这里。随时可以导出为 CSV。"
+    },
+    "settings": {
+      "title": "设置",
+      "help": "访客之后前往的页面、垃圾信息防护，以及谁会收到通知。"
+    }
+  },
+  "designer": {
+    "label": "标签",
+    "name": "字段名称",
+    "type": "类型",
+    "types": {
+      "text": "文本",
+      "email": "邮箱",
+      "textarea": "长文本",
+      "select": "下拉菜单",
+      "checkbox": "复选框",
+      "number": "数字",
+      "url": "网址",
+      "hidden": "隐藏"
+    },
+    "placeholder": "占位文字",
+    "minLength": "最小长度",
+    "maxLength": "最大长度",
+    "options": "选项",
+    "optionsHint": "每行一个选项。",
+    "default": "值",
+    "required": "必填",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "remove": "移除字段",
+    "addField": "添加字段",
+    "customize": "自定义字段",
+    "usingDefault": "此表单使用默认字段：姓名、邮箱和留言。自定义它们即可设计你自己的表单。",
+    "success": "成功消息",
+    "successDefault": "谢谢，我们已收到你的提交。",
+    "successLabel": "发送之后",
+    "origins": "允许的站点（可选）",
+    "originsHint": "每行一个地址，例如 https://example.com。来自其他站点的浏览器会被拒绝。留空则允许任何站点。",
+    "preview": "实时预览",
+    "send": "发送",
+    "save": "保存设计",
+    "saving": "保存中",
+    "saved": "表单设计已保存。",
+    "reset": "恢复默认字段"
+  },
+  "embed": {
+    "noPublicUrl": {
+      "title": "未设置公开 URL",
+      "body": "未设置公开 URL，此端点只能在本机使用。你线上站点的访客无法访问它。",
+      "fix": "设置公开 URL"
+    },
+    "variants": {
+      "html": "HTML",
+      "fetch": "JavaScript",
+      "minimal": "精简"
+    },
+    "variantHint": {
+      "html": "HTML 代码片段",
+      "fetch": "带 fetch 脚本的 HTML（停留在当前页面）",
+      "minimal": "精简标记（无标签，需自行添加样式）"
+    }
+  },
+  "test": {
+    "button": "发送测试提交",
+    "sending": "发送中",
+    "sent": "测试提交 {{id}} 已存储",
+    "ok": "它在下方收件箱中被标记为测试。",
+    "flagged": "它被标记为垃圾信息。",
+    "failed": "无法发送测试。"
+  }
+}

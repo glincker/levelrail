@@ -1,0 +1,361 @@
+{
+  "title": "関数",
+  "description": "アイドル中は費用がかからない、小さなハンドラーです。関数は静かな期間が続くとスリープし、次のリクエストで起動して、応答を待ちます。",
+  "triggers": {
+    "title": "トリガー",
+    "pick": "関数",
+    "error": "トリガーを読み込めませんでした: {{message}}",
+    "queue": "非同期キュー: 待機中{{queued}}件、実行中{{running}}件、デッドレター{{dead}}件。",
+    "webhook": {
+      "title": "署名付きWebhook",
+      "path": "Webhookの転送先のパス",
+      "enable": "Webhookを有効にする",
+      "disable": "オフにする",
+      "rotate": "シークレットをローテーション",
+      "on": "呼び出しはキューに入り、{{path}}に転送されます。{{seconds}}秒より古い署名は拒否されます。",
+      "secretOnce": "署名シークレットです。1度しか表示されないため、今すぐコピーしてください。",
+      "signing": "X-Signature-Timestamp(UNIX秒)と、X-Signature: sha256=HMAC-SHA256(シークレット, タイムスタンプ + ドット + 本文) を送信してください。"
+    },
+    "schedules": {
+      "title": "スケジュール",
+      "none": "この関数を呼び出すスケジュールのHTTPジョブは、ありません。",
+      "manage": "スケジュールは、アプリのジョブタブで管理します"
+    },
+    "dead": {
+      "title": "デッドレター",
+      "description": "リトライ回数を使い切った非同期の呼び出しです。「再試行」で、キューに戻せます。",
+      "empty": "デッドレターになった呼び出しはありません。",
+      "error": "デッドレターを読み込めませんでした: {{message}}",
+      "detail": "{{max}}回中{{attempts}}回試行、HTTP {{code}} {{error}}",
+      "retry": "再試行",
+      "discard": "破棄"
+    }
+  },
+  "window": {
+    "label": "統計の期間",
+    "1h": "過去1時間",
+    "24h": "過去24時間",
+    "7d": "過去7日間"
+  },
+  "list": {
+    "name": "関数",
+    "state": "状態",
+    "calls": "呼び出し",
+    "p95": "p95の所要時間",
+    "errors": "サーバーエラー",
+    "idle": "スリープまでの時間",
+    "idleValue": "{{minutes}}分",
+    "asleep": "スリープ中",
+    "awake": "稼働中",
+    "visit": "URLを開く",
+    "error": "関数を読み込めませんでした: {{message}}",
+    "retry": "再試行"
+  },
+  "empty": {
+    "title": "関数はまだありません",
+    "body": "下でランタイムを選び、ハンドラーをリポジトリにプッシュしてデプロイしてください。リクエストで起動する、ライブのURLが割り当てられます。"
+  },
+  "deploy": {
+    "open": "関数をデプロイ",
+    "title": "関数をデプロイ",
+    "description": "実行するものを選び、コードを指定して、公開します。各ステップには、適切な既定値があります。",
+    "cancel": "キャンセル",
+    "back": "戻る",
+    "next": "続ける",
+    "submit": "デプロイ",
+    "submitting": "デプロイ中",
+    "stepLabel": "ステップ{{current}}/{{total}}",
+    "steps": {
+      "template": "実行するもの",
+      "source": "コードの場所",
+      "details": "詳細"
+    },
+    "started": "{{name}}のビルドを開始しました。ビルドが完了すると公開されます。",
+    "failed": "{{name}}をデプロイできませんでした: {{message}}",
+    "template": {
+      "heading": "何を実行しますか?",
+      "groupStarters": "スターターのハンドラー",
+      "groupIdeas": "出発点となるアイデア",
+      "groupOwn": "自分のものを持ち込む"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "起動が速い、Goの小さなHTTPハンドラーです。"
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "Node.jsの10行のハンドラーです。"
+      },
+      "python": {
+        "title": "Python",
+        "body": "Pythonの小さなハンドラーです。"
+      },
+      "webhook": {
+        "title": "Webhookレシーバー",
+        "body": "ほかのサービスからのイベントを受け取り、処理します。"
+      },
+      "scheduled": {
+        "title": "スケジュールジョブのランナー",
+        "body": "スケジュールに呼び出されるたびに、タスクを実行します。"
+      },
+      "form": {
+        "title": "フォームからメール",
+        "body": "フォームの投稿を、メールに変換します。"
+      },
+      "shortener": {
+        "title": "URL短縮",
+        "body": "短いパスを、長いリンクに対応付けます。"
+      },
+      "chatbot": {
+        "title": "チャットボット",
+        "body": "チャットプラットフォームのメッセージに応答します。"
+      },
+      "repo": {
+        "title": "自分のリポジトリを使う",
+        "body": "すでにGitにあるハンドラーをデプロイします。"
+      },
+      "image": {
+        "title": "コンテナイメージを使う",
+        "body": "レジストリにあるビルド済みのイメージを実行します。"
+      }
+    },
+    "source": {
+      "headingRepo": "コードはどこにありますか?",
+      "headingImage": "どのコンテナイメージですか?",
+      "starterTitle": "最初に使うスターターコード",
+      "starterBody": "これらのファイルを新しいリポジトリにコピーしてプッシュし、下でそのリポジトリを選んでください。",
+      "utilityBody": "完成した、テスト済みのハンドラーです。ファイルを新しいリポジトリにコピーしてプッシュし、下でそのリポジトリを選んでください。",
+      "utilityEnv": "読み取る環境変数",
+      "utilityRequired": "必須",
+      "utilityKv": "キーバリューストアを使います。デプロイ後に、関数のキーバリューストアのタブを開いて、有効にしてください。",
+      "utilityCli": "またはターミナルから",
+      "search": "リポジトリを検索",
+      "loading": "リポジトリを読み込み中",
+      "recent": "最近更新された順",
+      "noRepos": "リポジトリが見つかりません。設定でGitプロバイダーを接続するか、代わりにURLを貼り付けてください。",
+      "reposError": "リポジトリを読み込めませんでした: {{message}}",
+      "pasteInstead": "代わりにURLを貼り付ける",
+      "pickInstead": "自分のリポジトリから選ぶ",
+      "repoUrl": "リポジトリのURL",
+      "repoUrlPlaceholder": "https://github.com/you/hello",
+      "ref": "ブランチ",
+      "refHint": "既定では、リポジトリのメインブランチです。",
+      "directory": "ハンドラーのディレクトリ",
+      "directoryHint": "ハンドラーがリポジトリのルートにある場合は、空欄のままにしてください。",
+      "detected": "{{framework}}を検出しました。Railpackがビルドします。",
+      "detecting": "リポジトリを確認中",
+      "image": "イメージ",
+      "imagePlaceholder": "ghcr.io/you/hello:1.0",
+      "imageHint": ":1.0のようなタグを含めてください。タグがない場合は、latestタグが使われます。",
+      "private": "プライベート"
+    },
+    "details": {
+      "name": "名前",
+      "nameHint": "小文字、数字、ハイフンが使えます。URLの一部になります。",
+      "nameChecking": "使用可否を確認中",
+      "nameFree": "{{name}}は使用できます。",
+      "idle": "スリープまでの時間",
+      "idleOption": {
+        "5": "5分",
+        "10": "10分",
+        "60": "1時間",
+        "1440": "1日",
+        "custom": "カスタム"
+      },
+      "customIdle": "分",
+      "idleHint": "静かな関数は、リソースを節約するためにスリープします。次のリクエストで起動しますが、コールドスタートと呼ばれる、短い遅延が加わります。",
+      "route": "パスで配信(任意)",
+      "routeHint": "いずれかのドメインでも応答させます(例: example.com/hello)。",
+      "routeDomain": "ドメイン",
+      "routeNone": "パスを追加しない",
+      "routePath": "パス",
+      "previewFunction": "関数のURL",
+      "previewRoute": "パスのURL",
+      "previewPending": "ビルドが完了すると割り当てられます",
+      "advanced": "詳細設定",
+      "port": "ポート",
+      "portHint": "ハンドラーが待ち受けるポートです。PORT変数として渡されます。"
+    },
+    "summary": {
+      "title": "デプロイの準備ができました",
+      "buildRailpack": "Railpackでビルドし",
+      "buildImage": "イメージをそのまま実行し",
+      "text": "{{build}}、{{sleep}}後にスリープし、{{url}}で到達できるようになります。",
+      "sleepMinutes": "{{count}}分",
+      "sleepHour": "1時間",
+      "sleepDay": "1日",
+      "urlPending": "ビルド完了時に割り当てられるURL"
+    },
+    "result": {
+      "title": "{{name}}をデプロイ中",
+      "building": "関数をビルドして起動しています。通常は1、2分かかります。",
+      "live": "{{name}}が公開されました。",
+      "failed": "ビルドに失敗しました。関数を開いて、ビルドログを確認してください。",
+      "urlLabel": "関数のURL",
+      "waitingUrl": "準備ができ次第、ここにURLが表示されます。",
+      "copy": "URLをコピー",
+      "copied": "コピーしました",
+      "open": "関数を開く",
+      "done": "閉じる"
+    },
+    "validation": {
+      "repoRequired": "リポジトリを選ぶか、そのURLを貼り付けてください。",
+      "repoInvalid": "https://で始まる、完全なURLを入力してください。",
+      "imageRequired": "実行するイメージを入力してください。",
+      "imageInvalid": "イメージ名に空白を含めることはできません。",
+      "nameRequired": "関数に名前を付けてください。",
+      "nameInvalid": "小文字、数字、ハイフンを使い、先頭と末尾は英字か数字にしてください。",
+      "nameTooLong": "URLに収まる長さに、名前を短くしてください。",
+      "nameTaken": "その名前は、すでに別のアプリで使われています。別の名前を選んでください。",
+      "portInvalid": "1から65535のポートを入力してください。",
+      "idleInvalid": "許可されている最小値以上の、整数の分数を入力してください。",
+      "domainRequired": "パス用のドメインを選んでください。",
+      "pathInvalid": "英字、数字、ハイフン、ドットを使った、/helloのようなパスを使ってください。"
+    },
+    "name": "名前",
+    "repo": "リポジトリのURL",
+    "ref": "ブランチ、タグ、またはコミット",
+    "directory": "ハンドラーのディレクトリ(任意)",
+    "directoryHint": "ハンドラーがリポジトリのルートにある場合は、空欄のままにしてください。",
+    "routeDomain": "ドメインでも配信",
+    "routePath": "パスのプレフィックス",
+    "routeHint": "任意です。すでにアプリに接続されているドメインと、/helloのようなパスを指定すると、この関数がドメイン/helloで配信されます。プレフィックスは、リクエストがハンドラーに届く前に取り除かれます。",
+    "port": "ポート",
+    "idle": "アイドル後にスリープするまでの分数"
+  },
+  "templates": {
+    "title": "スターターのハンドラー",
+    "description": "各スターターは、約10行の完成したハンドラーです。RailpackがDockerfileなしでビルドし、PORT変数で待ち受けます。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "cliLabel": "またはターミナルから",
+    "error": "スターターのハンドラーを読み込めませんでした: {{message}}"
+  },
+  "kv": {
+    "loading": "キーを読み込み中",
+    "error": "キーバリューストアを読み込めませんでした: {{message}}",
+    "usage": "キー{{maxKeys}}件中{{keys}}件、{{maxBytes}}バイト中{{bytes}}バイトを使用",
+    "disabled": "この関数では、ストアがオフです。有効にすると、関数にKV_URLとKV_TOKENが渡され、それらとともに再起動します。",
+    "enable": "ストアを有効にする",
+    "rotate": "トークンをローテーション",
+    "tokenIssued": "トークンを発行しました。関数は、新しいKV_TOKENで再起動します。",
+    "add": "キーを追加",
+    "empty": "キーはまだありません。",
+    "prefixLabel": "プレフィックスで絞り込み",
+    "keyLabel": "キー",
+    "valueLabel": "値",
+    "ttlLabel": "有効期限(秒)",
+    "ttlPlaceholder": "なし",
+    "save": "キーを保存",
+    "saved": "キーを保存しました",
+    "cancel": "キャンセル",
+    "edit": "編集",
+    "delete": "削除",
+    "deleteTitle": "{{key}}を削除しますか?",
+    "deleteBody": "関数は、この値をただちに失います。",
+    "loadFailed": "値を読み込めませんでした",
+    "binary": "(バイナリ)",
+    "never": "なし",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "キー",
+      "value": "値",
+      "size": "サイズ",
+      "expires": "有効期限",
+      "actions": "操作"
+    }
+  },
+  "detail": {
+    "back": "すべての関数",
+    "notFound": "この関数が見つかりません。削除されたか、スリープが解除されなくなった可能性があります。",
+    "seconds": "{{count}}秒",
+    "tabs": {
+      "overview": "概要",
+      "settings": "設定",
+      "environment": "環境変数とシークレット",
+      "versions": "バージョン",
+      "kv": "キーバリューストア"
+    },
+    "overview": {
+      "title": "ステータス",
+      "image": "イメージ",
+      "openApp": "アプリとして開く"
+    },
+    "settings": {
+      "port": "ポート",
+      "timeout": "リクエストのタイムアウト(秒)",
+      "concurrency": "最大同時実行数",
+      "limitsTitle": "リクエストの制限",
+      "limitsHelp": "スリープ中の関数の起動をリクエストが待っている間に適用されます。0はサーバーの既定値を使います。同時実行数の制限を超えたリクエストには、Retry-After付きの429が返ります。",
+      "timeoutHelp": "コールドスタートの最長の待ち時間で、最大{{max}}秒です。現在は{{effective}}秒です(0は、適応型の既定値を意味します)。",
+      "concurrencyHelp": "同時に保留するリクエスト数で、最大{{max}}です。現在は{{effective}}です(0は、制限なしを意味します)。",
+      "save": "制限を保存",
+      "saved": "制限を保存しました",
+      "saveFailed": "制限を保存できませんでした"
+    },
+    "versions": {
+      "title": "バージョン",
+      "help": "以前のデプロイにロールバックするか、固定します。固定すると、ロールバックして公開をロックするため、ロックを解除するまで、新しいビルドは保留されます。",
+      "empty": "デプロイはまだありません。",
+      "live": "稼働中",
+      "rollback": "ロールバック",
+      "pin": "このバージョンを固定",
+      "done": "バージョンの変更を開始しました",
+      "failed": "バージョンの変更に失敗しました"
+    }
+  },
+  "observe": {
+    "title": "呼び出しとテストコンソール",
+    "pick": "関数",
+    "tabCalls": "最近の呼び出し",
+    "tabTest": "テストコンソール",
+    "time": "日時",
+    "request": "リクエスト",
+    "status": "ステータス",
+    "duration": "所要時間",
+    "cold": "コールドスタート",
+    "coldYes": "コールドスタート",
+    "coldNo": "ウォーム",
+    "sizes": "入力 / 出力",
+    "logs": "ログ",
+    "openLogs": "ログ",
+    "replay": "再送",
+    "replayed": "再送しました。応答: {{status}}",
+    "replayFailed": "再送に失敗しました: {{message}}",
+    "loadError": "呼び出しを読み込めませんでした: {{message}}",
+    "emptyTitle": "記録された呼び出しはまだありません",
+    "emptyBody": "コントロールプレーンがメモリ上に保持している間、呼び出しがここに表示されます。テストコンソールから送信してみてください。",
+    "tableLabel": "{{name}}の最近の呼び出し",
+    "captureLabel": "テスト呼び出しの入力を保持して、再送できるようにする",
+    "captureHint": "既定ではオフです。保持されるのは、テストコンソールまたはCLIから送信された呼び出しのみで、ほかのトラフィックは保持されません。認証情報のヘッダーは除外されます。"
+  },
+  "console": {
+    "method": "メソッド",
+    "path": "パス",
+    "headers": "ヘッダー",
+    "headersPlaceholder": "Name: value、1行に1件",
+    "body": "本文",
+    "bodyPlaceholder": "JSONまたはプレーンテキスト",
+    "send": "送信",
+    "sending": "送信中",
+    "wakeHint": "関数がスリープ中の場合は、先に起動するのを待ちます。",
+    "failed": "呼び出しに失敗しました: {{message}}",
+    "result": "レスポンス",
+    "warm": "ウォーム",
+    "stored": "再送用に入力を保存しました",
+    "truncated": "本文がサイズの上限で切り詰められました。"
+  },
+  "banner": {
+    "title": "関数",
+    "description": "アイドル中は費用がかからない、小さなハンドラーです。静かな期間が続くとスリープし、次のリクエストで起動します。",
+    "diagram": {
+      "browser": "ブラウザー",
+      "request": "リクエスト",
+      "function": "関数",
+      "response": "レスポンス",
+      "coldStart": "コールドスタートは約1秒",
+      "sleeps": "アイドル時にスリープ"
+    }
+  }
+}

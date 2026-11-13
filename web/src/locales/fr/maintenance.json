@@ -1,0 +1,171 @@
+{
+  "title": "Maintenance planifiée",
+  "description": "Annoncez une indisponibilité prévue sur le tableau de bord et la page de statut publique, et suspendez éventuellement les deploys automatiques pendant celle-ci.",
+  "notConfigured": "La maintenance planifiée n'est pas disponible sur ce plan de contrôle.",
+  "schedule": "Planifier une maintenance",
+  "cancel": "Annuler la fenêtre",
+  "until": "jusqu'à",
+  "freezeBadge": "Deploys suspendus",
+  "empty": {
+    "title": "Aucune maintenance prévue",
+    "description": "Planifiez une fenêtre avant de mettre quelque chose hors ligne pour que les utilisateurs la voient à l'avance."
+  },
+  "state": {
+    "scheduled": "Planifiée",
+    "active": "En cours",
+    "ended": "Terminée"
+  },
+  "scope": {
+    "all": "Concerne tout",
+    "project": "Concerne le projet {{target}}",
+    "app": "Concerne l'app {{target}}"
+  },
+  "scopeName": {
+    "all": "Tout",
+    "project": "Un projet",
+    "app": "Une app"
+  },
+  "banner": {
+    "active": "Maintenance en cours : {{title}}, jusqu'à {{end}}.",
+    "upcoming": "Maintenance planifiée : {{title}}, de {{start}} à {{end}}.",
+    "freeze": "Les deploys automatiques sont suspendus pendant la fenêtre.",
+    "more": "{{count}} autres fenêtres de maintenance sont planifiées."
+  },
+  "form": {
+    "title": "Planifier une maintenance",
+    "description": "Les heures sont dans le fuseau horaire de votre navigateur ({{zone}}).",
+    "name": "Titre",
+    "namePlaceholder": "Mise à niveau du stockage de la base de données",
+    "message": "Message (facultatif)",
+    "start": "Début",
+    "end": "Fin",
+    "scope": "Portée",
+    "target": "Cible",
+    "targetPlaceholder": {
+      "project": "ID du projet",
+      "app": "Nom de l'app"
+    },
+    "lead": "Annoncer avant le début (minutes)",
+    "leadHint": "Envoyé une fois via vos canaux de notification. Utilisez 0 pour aucune annonce.",
+    "freeze": "Suspendre les deploys automatiques pendant la fenêtre",
+    "badRange": "La fin doit être postérieure au début.",
+    "cancel": "Annuler",
+    "submit": "Planifier"
+  },
+  "domainBanner": {
+    "title": "Le mode maintenance est activé pour {{domain}}",
+    "titleNotEnforced": "La maintenance est enregistrée pour {{domain}} mais n'est pas appliquée",
+    "body": "Les visiteurs voient la page de maintenance et rien d'autre : scripts, styles et images ne sont pas servis. L'app continue de tourner et un deploy ne met pas fin à la maintenance.",
+    "bodyNotEnforced": "Les visiteurs peuvent encore atteindre l'app : il n'est pas prouvé que le proxy placé devant ce domaine envoie son trafic vers l'ingress intégré. Ouvrez Gérer pour les détails.",
+    "manage": "Gérer",
+    "end": "Terminer la maintenance",
+    "ending": "Fin en cours...",
+    "ended": "Maintenance terminée pour {{domain}}",
+    "more_one": "{{count}} autre domaine est en mode maintenance.",
+    "more_many": "{{count}} autres domaines sont en mode maintenance.",
+    "more_other": "{{count}} autres domaines sont en mode maintenance.",
+    "elapsed": "Activée depuis {{time}}.",
+    "endsAt": "Se termine {{date}}.",
+    "autoOff": "Se désactive d'elle-même à {{date}}.",
+    "noEnd": "Aucune fin automatique : elle reste active jusqu'à ce que vous y mettiez fin.",
+    "long": "C'est plus long que prévu."
+  },
+  "confirm": {
+    "title": "Mettre {{domain}} en maintenance ?",
+    "description": "Les visiteurs n'atteindront plus l'app tant que vous n'aurez pas mis fin à la maintenance. Vérifiez d'abord la page ci-dessous.",
+    "visitors": "Les visiteurs reçoivent une page de maintenance 503 avec un en-tête Retry-After, sur chaque URL de ce domaine.",
+    "assets": "Les scripts, styles, images et appels d'API ne sont pas servis non plus, donc la page ne peut rien charger depuis l'app.",
+    "running": "Le container continue de tourner et n'est pas redémarré.",
+    "deploys": "Un deploy pendant la maintenance se termine et la maintenance reste active jusqu'à ce que vous y mettiez fin.",
+    "alerts": "Les alertes d'indisponibilité, de DNS, de certificat et d'erreur ou de latence des requêtes de cette app sont mises en sourdine jusqu'à la fin de la maintenance. Les alertes de CPU, mémoire, disque, redémarrage et crash se déclenchent toujours.",
+    "endsAt": "Elle se termine automatiquement le {{date}}.",
+    "autoOff": "Elle se désactive d'elle-même après {{hours}} heures.",
+    "noEnd": "Elle n'a pas de fin automatique. Définissez une heure de fin ou une durée maximale pour qu'elle ne reste pas activée indéfiniment.",
+    "confirm": "Activer la maintenance",
+    "pending": "Activation..."
+  },
+  "preview": {
+    "title": "Aperçu de la page vue par les visiteurs",
+    "caption": "Aperçu : statut {{status}}, Retry-After {{retry}} secondes",
+    "frameTitle": "Aperçu de la page de maintenance",
+    "failed": "Impossible de charger l'aperçu."
+  },
+  "appBanner": {
+    "title_one": "La maintenance est activée pour {{count}} domaine de cette app",
+    "title_many": "La maintenance est activée pour {{count}} des {{total}} domaines de cette app",
+    "title_other": "La maintenance est activée pour {{count}} des {{total}} domaines de cette app",
+    "body": "Les visiteurs reçoivent la page de maintenance sur ces domaines. Les alertes d'indisponibilité, de DNS, de certificat et d'erreur ou de latence des requêtes sont en sourdine, tandis que les alertes de CPU, mémoire, disque, redémarrage et crash se déclenchent toujours. Un deploy se termine sans mettre fin à la maintenance.",
+    "end": "Terminer pour tous les domaines",
+    "ending": "Fin en cours...",
+    "ended": "Maintenance terminée pour tous les domaines de cette app"
+  },
+  "appToggle": {
+    "title": "Maintenance pour tous les domaines",
+    "description": "Activez ou désactivez la maintenance pour tous les domaines de cette app en une fois. Elle s'applique à tous ou à aucun.",
+    "on": "Activée pour {{active}} domaines sur {{total}}",
+    "off": "Désactivée",
+    "enable": "Activer pour tous les domaines",
+    "enabling": "Activation...",
+    "disable": "Terminer pour tous les domaines",
+    "disabling": "Fin en cours...",
+    "saved": "La maintenance est activée pour tous les domaines de cette app",
+    "failed": "Rien n'a été modifié. {{message}}",
+    "noDomains": "Ajoutez un domaine à cette app avant d'activer la maintenance."
+  },
+  "deployNotice": {
+    "text": "Cette app est en maintenance. Le deploy se terminera et la maintenance restera active.",
+    "tooltip": "Cette app est en maintenance. Le deploy se terminera et la maintenance restera active."
+  },
+  "silence": {
+    "createdByMaintenance": "Créée par la maintenance (alertes d'indisponibilité, de DNS, de certificat et de requêtes uniquement)",
+    "endsWithMaintenance": "Se termine quand la maintenance de {{domain}} se termine",
+    "matchApp": "app",
+    "matchRule": "règle",
+    "matchNode": "node",
+    "matchKind": "type",
+    "matchSeverity": "gravité",
+    "matchMetric": "métrique",
+    "newSilence": "Nouvelle mise en sourdine",
+    "dialogDescription": "Les alertes correspondantes continuent d'être évaluées et apparaissent dans l'historique comme mises en sourdine, mais ne notifient pas. Chaque filtre renseigné doit correspondre.",
+    "apps": "Apps",
+    "appsPlaceholder": "web, worker",
+    "nodes": "Nodes",
+    "nodesPlaceholder": "edge-1",
+    "kinds": "Types de règles",
+    "kindsPlaceholder": "threshold, crashloop",
+    "severity": "Gravité",
+    "severityLevel": {
+      "info": "info",
+      "warning": "avertissement",
+      "critical": "critique"
+    },
+    "duration": "Durée",
+    "reason": "Motif",
+    "reasonPlaceholder": "migration de base de données planifiée",
+    "cancel": "Annuler",
+    "creating": "Création...",
+    "create": "Créer la mise en sourdine",
+    "errorNoMatcher": "Choisissez au moins une app, un node, un type ou une gravité à faire correspondre.",
+    "errorDuration": "La durée doit ressembler à 30m, 4h ou 24h.",
+    "silencedFor": "Mise en sourdine pour {{duration}}.",
+    "ended": "Mise en sourdine terminée.",
+    "endNow": "Terminer maintenant",
+    "colStatus": "Statut",
+    "colMatches": "Correspond à",
+    "colUntil": "Jusqu'à",
+    "colCreatedBy": "Créée par",
+    "status": {
+      "active": "active",
+      "pending": "en attente",
+      "expired": "expirée"
+    },
+    "showExpired": "Afficher les expirées",
+    "sectionLabel": "Mises en sourdine",
+    "emptyTitle": "Aucune mise en sourdine active",
+    "emptyDescription": "Mettez une alerte en sourdine depuis sa ligne, ou créez une mise en sourdine ici pour un changement planifié."
+  },
+  "effects": {
+    "alertsSilenced": "Alertes d'indisponibilité, de DNS, de certificat et de requêtes en sourdine",
+    "statusOngoing": "Page de statut : en cours"
+  }
+}

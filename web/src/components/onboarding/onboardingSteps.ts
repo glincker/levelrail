@@ -1,4 +1,5 @@
 export const ONBOARDING_STEPS = [
+  'language',
   'welcome',
   'profile',
   'preferences',

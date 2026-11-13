@@ -1,0 +1,39 @@
+{
+  "listLabel": "Versions disponibles",
+  "toggle": "Afficher les versions disponibles",
+  "group": {
+    "recommended": "Recommandées",
+    "stable": "Stables",
+    "lts": "Support à long terme",
+    "prerelease": "Préversions",
+    "eol": "Fin de vie"
+  },
+  "badge": {
+    "stable": "Stable",
+    "lts": "LTS",
+    "rc": "RC",
+    "beta": "Bêta",
+    "eolSoon": "Fin de vie proche",
+    "eol": "Fin de vie"
+  },
+  "eolOn": "terminée le {{date}}",
+  "eolSoonOn": "se termine le {{date}}",
+  "showPrerelease": "Afficher les préversions",
+  "sourceLabel": "Source :",
+  "origin": {
+    "live": "Données en direct, vérifiées {{when}}",
+    "published": "Catalogue publié, mis à jour {{when}}",
+    "direct": "Construit à partir des registres, mis à jour {{when}}",
+    "embedded": "Catalogue intégré, mis à jour {{when}}"
+  },
+  "unknownAge": "à un moment inconnu",
+  "freshness": {
+    "aging": "Le catalogue vieillit, vérifiez maintenant",
+    "stale": "Ce catalogue est obsolète. Recherchez de nouvelles versions."
+  },
+  "check": "Rechercher de nouvelles versions",
+  "checking": "Vérification...",
+  "checkedJustNow": "Vérifié à l'instant.",
+  "checkFailed": "Impossible de rechercher de nouvelles versions : {{error}} La liste précédente reste affichée.",
+  "checkDone": "Liste des versions mise à jour."
+}

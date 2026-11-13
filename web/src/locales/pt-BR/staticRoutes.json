@@ -1,0 +1,96 @@
+{
+  "title": "Regras de roteamento",
+  "description": "Redirecionamentos, rewrites e cabeçalhos com os quais este site foi publicado. Eles vêm dos arquivos _redirects e _headers no diretório publicado e do app.yaml, e só mudam quando você faz deploy.",
+  "loadFailed": "Não foi possível carregar as regras de roteamento.",
+  "retry": "Tentar novamente",
+  "notStatic": {
+    "title": "Este app não é um site estático",
+    "description": "As regras de roteamento se aplicam a apps criados com build.type: static. Apps de container usam os controles de tráfego na página Domínios."
+  },
+  "notPublished": {
+    "title": "Publicado antes de as regras de roteamento existirem",
+    "description": "Faça o deploy deste site novamente para ativar _redirects, _headers e as opções de SPA, URLs limpas e 404. Nada é perdido: o site continua servindo seus arquivos como antes."
+  },
+  "options": {
+    "title": "Opções de entrega",
+    "spa": "Fallback de aplicativo de página única",
+    "cleanUrls": "URLs limpas",
+    "trailingSlash": "Barra final",
+    "notFound": "Página 404",
+    "on": "Ativado",
+    "off": "Desativado",
+    "slashOff": "Manter como solicitado",
+    "slashAdd": "Sempre adicionar",
+    "slashRemove": "Sempre remover",
+    "defaultNotFound": "404.html quando presente"
+  },
+  "precedence": {
+    "title": "Ordem de avaliação",
+    "body": "As regras são executadas primeiro, em ordem, e a primeira correspondência vence. Uma regra é ignorada quando existe um arquivo no caminho solicitado, a menos que seja forçada com !. Depois os arquivos são servidos, depois o fallback de aplicativo de página única, depois a página 404."
+  },
+  "rules": {
+    "title": "Redirecionamentos e rewrites",
+    "label": "Regras de redirecionamento e rewrite",
+    "from": "De",
+    "to": "Para",
+    "status": "Status",
+    "source": "Definido em",
+    "forced": "forçada",
+    "kindRewrite": "rewrite",
+    "kindRedirect": "redirecionamento",
+    "kindPage": "página",
+    "empty": {
+      "title": "Nenhuma regra de redirecionamento ou rewrite",
+      "description": "Adicione um arquivo _redirects ao diretório publicado, ou uma lista routes ao app.yaml, e faça o deploy."
+    }
+  },
+  "headers": {
+    "title": "Cabeçalhos de resposta",
+    "label": "Regras de cabeçalho",
+    "path": "Caminho",
+    "set": "Define",
+    "remove": "Remove",
+    "source": "Definido em",
+    "empty": {
+      "title": "Nenhuma regra de cabeçalho",
+      "description": "Adicione um arquivo _headers ao diretório publicado, ou uma lista headers ao app.yaml, e faça o deploy."
+    }
+  },
+  "problems": {
+    "title": "Problemas encontrados quando este deploy foi publicado",
+    "description": "Estas linhas foram ignoradas e não são aplicadas. Corrija-as no seu repositório e faça o deploy novamente.",
+    "line": "linha {{line}}",
+    "none": "Nenhum problema encontrado."
+  },
+  "test": {
+    "title": "Testar uma URL",
+    "description": "Execute uma requisição pelas regras e arquivos ativos e veja qual deles a responde.",
+    "pathLabel": "Caminho",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "Query string",
+    "queryPlaceholder": "id=42",
+    "run": "Testar",
+    "running": "Testando",
+    "result": "Resultado",
+    "redirectTo": "Redireciona para {{target}}",
+    "serves": "Serve {{file}}",
+    "plain": "Resposta simples sem página",
+    "matchedRule": "Regra: {{rule}}",
+    "noRule": "Nenhuma regra correspondeu, respondido pelos arquivos e opções",
+    "trace": "Etapas",
+    "headersApplied": "Cabeçalhos adicionados",
+    "invalidPath": "Informe um caminho que comece com /",
+    "failed": "Não foi possível executar o teste."
+  },
+  "lint": {
+    "title": "Verificar regras antes do deploy",
+    "description": "Cole o conteúdo de um arquivo _redirects ou _headers para ver como ele é interpretado. Nada é implantado.",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "Verificar",
+    "running": "Verificando",
+    "ok": "{{rules}} regras e {{headers}} blocos de cabeçalho interpretados sem problemas.",
+    "withProblems": "{{rules}} regras e {{headers}} blocos de cabeçalho interpretados, {{problems}} linhas ignoradas.",
+    "failed": "Não foi possível executar a verificação."
+  }
+}

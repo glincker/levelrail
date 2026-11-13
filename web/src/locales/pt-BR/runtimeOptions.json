@@ -1,0 +1,32 @@
+{
+  "service": "Serviço",
+  "title": "Opções de runtime para {{service}}",
+  "description": "Opções de container que este serviço pode definir. Todo o resto, como capabilities extras ou dispositivos, fica fora de alcance.",
+  "tmpfs": {
+    "label": "Montagens tmpfs",
+    "hint": "Uma por linha, /caminho:size=64m. Até {{max}}."
+  },
+  "ulimits": {
+    "label": "Ulimits",
+    "hint": "Um por linha, nome=soft:hard. Até {{max}} de {{names}}."
+  },
+  "extraHosts": {
+    "label": "Hosts extras",
+    "hint": "Um por linha, hostname:ip. Até {{max}}."
+  },
+  "dns": { "label": "Servidores DNS", "hint": "Um IP por linha. Até {{max}}." },
+  "sysctls": {
+    "label": "Sysctls",
+    "hint": "Um por linha, chave=valor. Permitidos: {{names}}."
+  },
+  "stopTimeout": { "label": "Timeout de parada (s)", "hint": "Até {{max}}." },
+  "pids": { "label": "Limite de processos", "hint": "Até {{max}}." },
+  "init": { "label": "Processo init", "hint": "Executa um init mínimo como PID 1." },
+  "badUlimit": "Use nome=soft ou nome=soft:hard em cada linha.",
+  "badSysctl": "Use chave=valor em cada linha.",
+  "save": "Salvar",
+  "saving": "Salvando",
+  "saved": "Opções de runtime salvas",
+  "recreates": "Salvar recria o container.",
+  "readOnly": "Você precisa da permissão de escrita sensível para alterar as opções de runtime."
+}

@@ -1,0 +1,71 @@
+{
+  "title": "スリープ履歴",
+  "description": "このアプリがスリープした時刻、起動のきっかけ、起動にかかった時間です。直近7日間を下に表示しています。",
+  "loading": "スリープ履歴を読み込み中",
+  "loadError": "スリープ履歴を読み込めませんでした。",
+  "retry": "再試行",
+  "asleepNow": "{{since}} からスリープ中",
+  "awakeNow": "稼働中",
+  "timelineLabel": "直近7日間の稼働とスリープ",
+  "timelineStart": "7日前",
+  "timelineEnd": "現在",
+  "legend": {
+    "asleep": "スリープ中",
+    "awake": "稼働中"
+  },
+  "stats": {
+    "asleep7d": "スリープ時間、7日間",
+    "asleep30d": "スリープ時間、30日間",
+    "wakes7d": "起動回数、7日間",
+    "avgLatency": "平均起動時間",
+    "p95Latency": "起動が遅い上位5%",
+    "lastSlept": "最後にスリープした時刻",
+    "lastWoke": "最後に起動した時刻",
+    "memorySaved": "節約したメモリ、30日間",
+    "memorySavedValue": "{{value}} GiB時間",
+    "none": "まだありません"
+  },
+  "events": {
+    "title": "イベント",
+    "empty": "まだ何も記録されていません。アプリがスリープまたは起動すると、ここにイベントが表示されます。",
+    "emptyTitle": "スリープイベントはありません",
+    "kind": {
+      "slept": "スリープしました",
+      "woke": "起動しました",
+      "enabled": "アイドル時のスリープをオンにしました",
+      "disabled": "アイドル時のスリープをオフにしました",
+      "wake_failed": "起動に失敗しました"
+    },
+    "reason": {
+      "idle_timeout": "アイドルタイムアウト",
+      "manual": "手動",
+      "request": "リクエスト",
+      "schedule": "スケジュール",
+      "deploy": "デプロイ",
+      "api": "API",
+      "port": "公開ポートへのトラフィック"
+    },
+    "columns": {
+      "when": "日時",
+      "event": "イベント",
+      "reason": "理由",
+      "measure": "継続時間 / レイテンシ",
+      "detail": "詳細"
+    },
+    "sleptFor": "{{duration}} スリープ",
+    "readyIn": "{{duration}} で準備完了",
+    "idleAfter": "アイドル {{minutes}} 分後",
+    "fromSource": "{{source}} から",
+    "byActor": "実行者: {{actor}}"
+  },
+  "disabled": {
+    "title": "アイドル時のスリープはオフです",
+    "body": "オンにすると、誰も使用していない間はこのアプリを停止し、スリープと起動の時刻をここで確認できます。",
+    "action": "アイドル時のスリープをオンにする",
+    "toastError": "アイドル時のスリープをオンにできませんでした"
+  },
+  "badge": {
+    "title": "スリープ中です。次のリクエストで起動します",
+    "asleepFor": "{{duration}} スリープ中"
+  }
+}

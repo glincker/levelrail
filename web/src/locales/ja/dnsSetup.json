@@ -1,0 +1,161 @@
+{
+  "title": "DNSセットアップ",
+  "back": "戻る",
+  "continue": "続ける",
+  "loading": "読み込み中",
+  "copied": "コピーしました",
+  "progress": "ステップ {{current}} / {{total}}",
+  "step": {
+    "pick": "ドメインを選択",
+    "detect": "DNSホストを検出中",
+    "review": "レコードを確認",
+    "verify": "レコードを検証"
+  },
+  "connectAction": "{{provider}} に接続",
+  "openIn": "{{provider}} で開く",
+  "foundValue": "検出: {{value}}",
+  "expectedValue": "期待値: {{value}}",
+  "keepMine": "現在のものを維持",
+  "replace": "置き換え",
+  "group": {
+    "receive": "メール受信",
+    "trust": "信頼",
+    "optional": "任意",
+    "records": "レコード"
+  },
+  "status": {
+    "live": "反映済み",
+    "waiting": "待機中",
+    "willAdd": "追加予定",
+    "different": "相違あり",
+    "conflict": "競合",
+    "unknown": "不明",
+    "found": "検出済み"
+  },
+  "pick": {
+    "listLabel": "このシステム内のドメイン",
+    "source": {
+      "install": "メールのインストール",
+      "mail": "メールドメイン",
+      "app": "アプリ",
+      "zone": "DNSゾーン"
+    },
+    "addAnother": "別のドメインを追加",
+    "addLabel": "ドメイン",
+    "placeholder": "example.com",
+    "use": "使用",
+    "invalid": "example.com の形式でドメインを入力してください。",
+    "apexOffer": "アドレスには {{apex}}、サーバーには {{host}} を使用",
+    "loadFailed": "ドメインを読み込めませんでした。"
+  },
+  "detect": {
+    "detecting": "DNSホストを検出中",
+    "connected": "DNSは {{provider}} でホストされています。接続済みです。",
+    "notConnected": "DNSは {{provider}} でホストされています。未接続です。",
+    "unknown": "DNSホストを検出できませんでした。代わりにレコードをコピーできます。",
+    "failed": "検出に失敗しました。レコードのコピーは引き続き可能です。",
+    "domainConnect": "{{host}} でワンクリック承認が利用できます",
+    "without": "接続せずに続ける",
+    "demo": "デモデータ: demo.example は架空のゾーンのため、実際のDNSホストは見つかりません。検出を試すには、下に実在するドメインを入力してください(読み取り専用の参照)。デモモードをオフにするには、LOCAL_MAIL_DEMO=0 を指定して再起動してください。",
+    "tryLabel": "別のドメインを試す",
+    "tryAction": "検出"
+  },
+  "connect": {
+    "permissions": "このゾーンに対するZone DNS EditとZone Readの権限を持つトークンを作成してください。それ以外は不要です。",
+    "tokenLabel": "{{provider}} のAPIトークン",
+    "save": "トークンを保存",
+    "saving": "保存中",
+    "failed": "トークンが受け付けられませんでした。権限を確認して、もう一度お試しください。",
+    "useSettings": "設定で {{provider}} の認証情報を追加するか、代わりにレコードをコピーしてください。"
+  },
+  "review": {
+    "host": "メールホスト",
+    "ip": "サーバーのIPv4",
+    "ipPlaceholder": "203.0.113.7",
+    "edit": "メールホストとサーバーを編集",
+    "done": "完了",
+    "otherProvider": "別のメールプロバイダーを使用していますか?",
+    "presetLabel": "メールプロバイダー",
+    "selfHosted": "このサーバー",
+    "planFailed": "レコードを読み取れませんでした。{{message}}",
+    "empty": "このドメインに追加するものはありません。",
+    "blocked": "このゾーン上のレコードがメールホストを隠してしまいます。先に修正してください。",
+    "add_other": "{{count}} 件のレコードを追加",
+    "addDiff_other": "{{count}} 件を追加し、相違のある {{diff}} 件を確認",
+    "applying": "レコードを追加中",
+    "copy": "レコードをコピー",
+    "check": "レコードを検証",
+    "nothingDeleted": "削除されるものはありません。",
+    "confirmReplace_other": "既存の {{count}} 件のレコードが上書きされます。続行するには確認してください。",
+    "confirmButton_other": "はい、{{count}} 件を置き換えて追加します",
+    "applyFailed": "レコードは追加されませんでした。",
+    "recordsTitle": "作成するDNSレコード"
+  },
+  "manual": {
+    "whereKnown": "これらを {{provider}} のDNSダッシュボードに貼り付けてください。",
+    "whereUnknown": "これらを、ドメインのDNSを管理している場所に貼り付けてください。",
+    "dashboard": "DNSダッシュボード",
+    "copyAll": "すべてコピー",
+    "copyTable": "表としてコピー",
+    "copyValue": "{{name}} の値をコピー",
+    "ttl": "TTL {{ttl}}",
+    "priority": "優先度 {{priority}}"
+  },
+  "verify": {
+    "undelegated": "ドメインのネームサーバーがまだこのゾーンを指していないため、これらのレコードは解決されません。{{reason}}",
+    "summary": "{{added}} 件を追加しました。すでに存在: {{same}} 件。",
+    "liveCount": "{{total}} 件中 {{live}} 件が反映済み",
+    "progress": "反映済みのレコード",
+    "checkedAgo": "{{seconds}}秒前に確認",
+    "checkNow": "今すぐ確認",
+    "checking": "確認中",
+    "waiting": "DNSの反映を待っています。通常は5分以内です。",
+    "stillWaiting": "まだ待っていますか?後でもう一度確認してください。",
+    "allLive": "すべてのレコードが反映されました。",
+    "ptr": "逆引きDNS(PTR)はホスティングプロバイダーで設定します。保留中です。",
+    "checkAgain": "再確認"
+  },
+  "toast": {
+    "applied_other": "{{count}} 件のレコードを追加しました"
+  },
+  "summary": {
+    "label": "レコードの概要",
+    "toAdd_other": "追加するレコード {{count}} 件",
+    "zone": "ゾーンファイル",
+    "table": "表",
+    "json": "JSON"
+  },
+  "mode": {
+    "label": "追加方法",
+    "auto": "自動で追加",
+    "myself": "自分で追加"
+  },
+  "banner": {
+    "hosted": "DNSは {{provider}} でホストされています",
+    "unknown": "DNSホストが検出されませんでした",
+    "connected": "接続済み",
+    "notConnected": "未接続"
+  },
+  "table": {
+    "label": "DNSレコード",
+    "status": "ステータス",
+    "type": "種類",
+    "name": "名前",
+    "value": "値",
+    "ttl": "TTL",
+    "expand": "値の全体を表示",
+    "collapse": "値の全体を隠す",
+    "existing": "既存のレコード"
+  },
+  "options": {
+    "label": "これらのレコードの追加方法",
+    "approve": "{{host}} で承認(トークン不要)",
+    "approving": "開いています",
+    "approveHint": "DNSホストを新しいタブで開きます。承認はそこで行い、何も保存されません。",
+    "connectToken": "トークンで {{host}} に接続",
+    "tokenHint": "トークンを使うと、ライブチェックと管理対象のレコード一覧も利用できます。",
+    "tokenCerts": "メールホストの証明書も自動更新できるようになります。",
+    "failed": "承認を開始できませんでした。代わりにトークンで接続してみてください。",
+    "connectLink": "接続"
+  }
+}

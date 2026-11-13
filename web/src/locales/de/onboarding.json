@@ -1,0 +1,93 @@
+{
+  "page": {
+    "title": "Dashboard einrichten",
+    "description": "Ein paar schnelle Entscheidungen. Überspringen Sie, was Sie möchten, und kommen Sie später zurück."
+  },
+  "rail": {
+    "label": "Einrichtungsschritte",
+    "progress": "Schritt {{current}} von {{total}}: {{name}}",
+    "done": "erledigt"
+  },
+  "steps": {
+    "welcome": {
+      "label": "Willkommen",
+      "title": "Willkommen bei Levelrail",
+      "description": "Sie betreiben Apps auf diesem Server. Levelrail kümmert sich um sie."
+    },
+    "profile": {
+      "label": "Profil",
+      "title": "Ihr Profil",
+      "description": "Wie Ihr Name und Ihr Bild für Ihr Team erscheinen."
+    },
+    "preferences": {
+      "label": "Einstellungen",
+      "title": "Wie Levelrail für Sie aussieht",
+      "description": "Änderungen gelten sofort. Sie können all dies später in den Einstellungen ändern."
+    },
+    "finish": {
+      "label": "Abschluss",
+      "title": "Sie sind eingerichtet",
+      "description": "Ihre Auswahl ist gespeichert. Zwei gute nächste Anlaufstellen."
+    },
+    "language": {
+      "description": "Wählen Sie die Sprache für das Dashboard. Die Seite ändert sich bei Ihrer Auswahl.",
+      "label": "Sprache",
+      "title": "Wählen Sie Ihre Sprache"
+    }
+  },
+  "footer": {
+    "back": "Zurück",
+    "skip": "Vorerst überspringen",
+    "continue": "Weiter",
+    "start": "Starten",
+    "finish": "Abschließen"
+  },
+  "welcome": {
+    "deploy": "Deployen Sie Apps aus einem Repo, einem Image oder einer Vorlage.",
+    "protect": "Levelrail richtet HTTPS ein, erstellt Backups und meldet sich, wenn etwas ausfällt.",
+    "time": "Die Einrichtung dauert etwa 5 Minuten. Jeder Schritt kann übersprungen werden.",
+    "dismiss": "Nicht mehr anzeigen"
+  },
+  "profile": {
+    "section": "Profil",
+    "name": "Anzeigename",
+    "nameHint": "Bis zu {{max}} Zeichen.",
+    "avatar": "Avatar",
+    "avatarHint": "Initialen auf einer aus Ihrem Konto gewählten Farbe. Eigene Farben folgen.",
+    "gravatar": "Gravatar verwenden",
+    "gravatarHint": "Lädt Ihr Bild von gravatar.com, daher kontaktiert Ihr Browser den Dienst. Standardmäßig aus."
+  },
+  "preferences": {
+    "section": "Einstellungen"
+  },
+  "finish": {
+    "deploy": "Ihre erste App deployen",
+    "guide": "Der Einrichtungsanleitung für HTTPS, Backups und Alarme folgen",
+    "open": "Öffnen"
+  },
+  "card": {
+    "title": "Dashboard einrichten",
+    "body": "Wählen Sie Ihren Namen, Ihr Aussehen und Ihre Sprache. Das dauert etwa 5 Minuten.",
+    "start": "Starten",
+    "resumeTitle": "Einrichtung abschließen",
+    "resumeBody": "Sie haben bei Schritt {{current}} von {{total}} aufgehört.",
+    "resume": "Fortfahren",
+    "dismiss": "Nicht mehr anzeigen"
+  },
+  "closed": {
+    "body": "Die Einrichtung ist abgeschlossen. Sie können sie jederzeit erneut ausführen.",
+    "restart": "Einrichtung erneut ausführen",
+    "dashboard": "Zum Dashboard"
+  },
+  "unavailable": {
+    "body": "Die geführte Einrichtung ist auf diesem Server nicht verfügbar."
+  },
+  "errors": {
+    "save": "Ihr Fortschritt konnte nicht gespeichert werden. Versuchen Sie es erneut.",
+    "transition": "Dieser Schritt ist im Moment nicht erlaubt. Laden Sie die Seite neu und versuchen Sie es erneut."
+  },
+  "language": {
+    "hint": "Drücken Sie die Eingabetaste, um fortzufahren. Sie können dies jederzeit in der Kopfzeile oder in den Einstellungen ändern.",
+    "label": "Sprache"
+  }
+}

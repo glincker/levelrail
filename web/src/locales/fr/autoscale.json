@@ -1,0 +1,131 @@
+{
+  "title": "Autoscaling",
+  "description": "Ajoute et retire des réplicas selon la charge, entre un minimum et un maximum que vous définissez. La montée en charge est rapide, la descente est lente, et chaque décision est enregistrée avec sa raison.",
+  "loading": "Chargement de l'autoscaling",
+  "loadError": "Impossible de charger l'autoscaling de cette app.",
+  "retry": "Réessayer",
+  "empty": {
+    "title": "L'autoscaling est désactivé",
+    "body": "L'app conserve le nombre de réplicas que vous avez défini manuellement. Activez l'autoscaling pour suivre la charge entre un minimum et un maximum. Les modifications manuelles de réplicas sont refusées tant qu'il est activé.",
+    "action": "Configurer l'autoscaling"
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_percent": "Mémoire",
+    "requests_per_replica": "Requêtes par réplica"
+  },
+  "reason": {
+    "Pending": "En attente de la première vérification",
+    "WithinTarget": "Dans la cible",
+    "ScaledUp": "Montée en charge",
+    "ScaledDown": "Descente en charge",
+    "MetricsUnavailable": "Pas de métriques récentes",
+    "CooldownActive": "Période de repos",
+    "Stabilizing": "Confirmation de la descente en charge",
+    "NoCapacity": "Pas de capacité",
+    "SpendCapPaused": "Retenu par le plafond de dépenses",
+    "AtMaximum": "Au maximum",
+    "AtMinimum": "Au minimum",
+    "BoundsCorrected": "Ramené dans la plage",
+    "Suspended": "App arrêtée",
+    "ScaleFailed": "Échec de la mise à l'échelle",
+    "Flapping": "Oscillation"
+  },
+  "blocked": {
+    "cooldown": "période de repos",
+    "stabilization": "fenêtre de stabilisation",
+    "spend_cap": "plafond de dépenses",
+    "no_capacity": "pas de capacité",
+    "max_replicas": "maximum de réplicas",
+    "min_replicas": "minimum de réplicas",
+    "global_ceiling": "plafond global",
+    "step_limit": "limite de pas",
+    "no_metrics": "pas de métriques",
+    "suspended": "app arrêtée"
+  },
+  "next": {
+    "no_capacity": "Aucun node n'a la place pour un réplica supplémentaire. Ajoutez un node, libérez de la capacité ou réduisez la demande de CPU et de mémoire de l'app. Voir la carte Placement.",
+    "spend_cap": "Un plafond de dépenses est en vigueur, aucun réplica n'est donc ajouté. Augmentez le budget ou attendez la réinitialisation du mois.",
+    "no_metrics": "La métrique est absente ou périmée, le nombre de réplicas est donc maintenu. Vérifiez que l'app s'exécute et que ses métriques remontent.",
+    "max_replicas": "La charge demande plus de réplicas que le maximum ne l'autorise. Augmentez le maximum si l'app doit grandir davantage.",
+    "global_ceiling": "Le plafond global de réplicas de l'opérateur limite cette app. Augmentez APP_AUTOSCALE_MAX_REPLICAS sur le control plane pour en autoriser davantage.",
+    "flapping": "Le nombre change sans cesse de direction. Élargissez les tolérances ou allongez les périodes de repos dans Avancé."
+  },
+  "stats": {
+    "replicas": "Réplicas",
+    "replicasValue": "{{current}} actuellement, {{desired}} souhaités",
+    "range": "Plage",
+    "rangeValue": "{{min}} à {{max}}",
+    "band": "Monter au-dessus, descendre en dessous",
+    "bandValue": "+{{up}} % et -{{down}} %",
+    "metricValue": "{{value}}{{unit}} sur {{target}}{{unit}}",
+    "metricUnknown": "Inconnu"
+  },
+  "actions": {
+    "edit": "Modifier la politique",
+    "remove": "Supprimer la politique"
+  },
+  "form": {
+    "min": "Réplicas minimum",
+    "minHelp": "Jamais moins que ce nombre.",
+    "max": "Réplicas maximum",
+    "maxHelp": "Jamais plus que ce nombre. Plafonné par le plafond global de l'opérateur.",
+    "metric": "Mettre à l'échelle selon",
+    "metricCpu": "CPU",
+    "metricCpuHelp": "Utilisation moyenne en pourcentage de la limite de CPU de l'app.",
+    "metricMemory": "Mémoire",
+    "metricMemoryHelp": "Utilisation moyenne en pourcentage de la limite de mémoire de l'app.",
+    "metricRequests": "Requêtes par réplica",
+    "metricRequestsHelp": "Requêtes par seconde à l'ingress, divisées par le nombre de réplicas.",
+    "target": "Cible ({{unit}})",
+    "perSecond": " req/s",
+    "targetHelp": "La valeur à laquelle maintenir la métrique. Les réplicas ne changent que lorsqu'elle est nettement au-dessus ou en dessous.",
+    "advanced": "Avancé",
+    "advancedHelp": "Laissez un champ vide pour utiliser sa valeur par défaut. Les périodes de repos et la fenêtre de stabilisation sont en minutes.",
+    "upTolerance": "Monter en charge au-dessus de la cible de (pourcent)",
+    "downTolerance": "Descendre en charge sous la cible de (pourcent)",
+    "upCooldown": "Attente entre deux montées en charge (minutes)",
+    "downCooldown": "Attente avant une descente en charge (minutes)",
+    "stabilization": "Confirmer une descente en charge pendant (minutes)",
+    "stepUp": "Maximum de réplicas ajoutés à la fois",
+    "stepDown": "Maximum de réplicas retirés à la fois",
+    "save": "Enregistrer la politique",
+    "saving": "Enregistrement",
+    "cancel": "Annuler",
+    "error": {
+      "replicas": "Saisissez des nombres entiers de réplicas, avec un maximum au moins égal au minimum.",
+      "target": "Saisissez une cible supérieure à zéro (jusqu'à 100 pour le CPU et la mémoire).",
+      "advanced": "Vérifiez les champs avancés : utilisez des nombres entiers, et des minutes d'au moins 1 seconde."
+    }
+  },
+  "remove": {
+    "title": "Supprimer cette politique ?",
+    "description": "L'app cesse de se mettre à l'échelle seule.",
+    "consequences": {
+      "replicas": "Le nombre de réplicas reste à sa valeur actuelle.",
+      "manual": "Vous pouvez à nouveau définir les réplicas manuellement.",
+      "history": "L'historique des décisions est conservé."
+    },
+    "confirm": "Supprimer la politique",
+    "pending": "Suppression"
+  },
+  "history": {
+    "title": "Décisions récentes",
+    "empty": "Aucune décision pour l'instant. Les changements d'échelle et les raisons de maintien sont listés ici.",
+    "loadError": "Impossible de charger l'historique.",
+    "replicas": "{{from}} vers {{to}}",
+    "blockedBy": "limité par {{by}}",
+    "kind": {
+      "scaled_up": "Montée en charge",
+      "scaled_down": "Descente en charge",
+      "held": "Maintenu",
+      "failed": "Échec de la mise à l'échelle",
+      "configured": "Politique modifiée",
+      "cleared": "Politique supprimée"
+    }
+  },
+  "toast": {
+    "saved": "Autoscaling enregistré",
+    "removed": "Autoscaling supprimé"
+  }
+}

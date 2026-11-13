@@ -1,0 +1,52 @@
+{
+  "title": "Traces",
+  "subtitle": "Spans que seu app envia via OpenTelemetry, armazenados neste node durante a janela de retenção de logs.",
+  "setup": {
+    "title": "Enviar traces deste app",
+    "off": "O tracing está desativado. Ative para obter uma chave de ingestão e as variáveis de ambiente do seu SDK OpenTelemetry.",
+    "on": "O tracing está ativado. Aponte o exportador OTLP/HTTP do seu SDK para este plano de controle.",
+    "enable": "Ativar tracing",
+    "enabling": "Ativando...",
+    "rotate": "Rotacionar chave",
+    "disable": "Desativar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "keyOnce": "Esta chave é mostrada uma única vez. Defina-as no app e refaça o deploy. Rotacionar faz a chave antiga parar de funcionar.",
+    "env": "Ambiente",
+    "endpoint": "Endpoint",
+    "protocolNote": "Use OTLP sobre HTTP, protobuf ou JSON. gRPC não é aceito aqui.",
+    "enabledToast": "O tracing está ativado.",
+    "disabledToast": "O tracing está desativado. O exportador do app receberá respostas 401.",
+    "failed": "Não foi possível alterar o tracing."
+  },
+  "filters": {
+    "window": "Janela",
+    "last15": "Últimos 15 minutos",
+    "last60": "Última hora",
+    "last360": "Últimas 6 horas",
+    "last1440": "Últimas 24 horas",
+    "errorsOnly": "Somente erros",
+    "minMs": "Mais lento que (ms)"
+  },
+  "list": {
+    "empty": "Ainda sem traces nesta janela. Envie uma requisição pelo app ou amplie a janela.",
+    "loadError": "Não foi possível carregar os traces: {{message}}",
+    "root": "Requisição",
+    "started": "Iniciado",
+    "duration": "Duração",
+    "spans": "Spans",
+    "errors": "Erros",
+    "emptyTitle": "Ainda sem traces",
+    "emptyOff": "O tracing está desativado para este app, então nada é coletado. Ative para obter uma chave de ingestão.",
+    "emptyAction": "Configurar tracing"
+  },
+  "detail": {
+    "title": "Trace {{id}}",
+    "loading": "Carregando trace...",
+    "close": "Fechar",
+    "ofTotal": "de {{total}}",
+    "error": "Erro",
+    "attributes": "Atributos",
+    "none": "Sem atributos."
+  }
+}

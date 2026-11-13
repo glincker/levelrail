@@ -1,0 +1,34 @@
+{
+  "title": "磁盘用量趋势",
+  "range": {
+    "label": "范围",
+    "days": "{{count}} 天"
+  },
+  "chart": {
+    "label": "过去 {{days}} 天的已用磁盘空间。使用方向键查看每一天。"
+  },
+  "tooltip": {
+    "used": "已用",
+    "free": "可用",
+    "images": "镜像",
+    "containers": "容器",
+    "volumes": "卷",
+    "buildCache": "构建缓存"
+  },
+  "forecast": {
+    "full_other": "按当前速度约 {{count}} 天后写满",
+    "needsDays": "积累 {{count}} 天数据后会显示写满日期。",
+    "flat": "用量持平或在减少，因此没有写满日期。",
+    "legend": "预测"
+  },
+  "legend": {
+    "used": "已用"
+  },
+  "states": {
+    "loading": "正在加载磁盘历史",
+    "collecting": "正在收集数据，两天后会出现首个趋势。",
+    "unavailable": "此服务器未保存磁盘历史，因此没有可显示的趋势。",
+    "error": "无法加载磁盘历史。",
+    "retry": "重试"
+  }
+}

@@ -1,0 +1,860 @@
+{
+  "title": "Después de la importación: datos y cambio de producción",
+  "description": "Las bases de datos y los volúmenes importados empiezan vacíos. Copia los datos, comprueba que es seguro cambiar cada dominio y luego cambia el DNS. El origen sigue sirviendo hasta que lo hagas.",
+  "data": {
+    "title": "Copiar los datos de la base de datos",
+    "description": "Transmite un volcado de la base de datos de origen a la gestionada y compara el número de filas. Repetirlo reemplaza el contenido del destino, así que una copia fallida se puede reintentar sin riesgo.",
+    "empty": "Aún no hay bases de datos gestionadas. Importa primero desde una plataforma.",
+    "emptyTitle": "No hay bases de datos gestionadas",
+    "copy": "Copiar los datos",
+    "cancel": "Cancelar",
+    "start": "Iniciar la copia",
+    "starting": "Iniciando",
+    "loadError": "No se pudo cargar el estado de la copia de la base de datos.",
+    "startError": "No se pudo iniciar la copia",
+    "tablesChecked": "{{count}} tablas comprobadas, {{bad}} difieren",
+    "differs": "{{name}}: origen {{source}}, destino {{target}}",
+    "passwordHelp": "Se mantiene en memoria durante la copia y nunca se guarda.",
+    "fields": {
+      "host": "Host de origen",
+      "port": "Puerto",
+      "user": "Usuario",
+      "password": "Contraseña",
+      "database": "Nombre de la base de datos",
+      "authDatabase": "Base de datos de autenticación (MongoDB)",
+      "tls": "Exigir TLS hacia el origen"
+    },
+    "status": {
+      "pending": "Sin copiar",
+      "copying": "Copiando",
+      "verified": "Verificada",
+      "failed": "Fallida",
+      "unsupported": "No admitida"
+    }
+  },
+  "volumes": {
+    "title": "Copiar los volúmenes",
+    "description": "El plano de control no mueve el contenido de los volúmenes, porque eso requiere root en el host de origen. Esto muestra los comandos que debes ejecutar en este nodo.",
+    "source": "Inicio de sesión SSH de origen",
+    "sourcePlaceholder": "root@old-server.example.com",
+    "show": "Mostrar los comandos",
+    "loading": "Creando los comandos",
+    "none": "Ninguna app importada tiene un volumen persistente ni un bind mount.",
+    "copyCommand": "Copiar el comando",
+    "loadError": "No se pudieron crear los comandos"
+  },
+  "cutover": {
+    "title": "Comprobación del cambio de producción",
+    "description": "Para cada dominio importado: si la app está saludable aquí, cuánto tiempo guardan los clientes en caché la dirección anterior y adónde apunta ahora el DNS. No se cambia nada por ti.",
+    "targetIp": "IP pública de este nodo",
+    "targetIpHelp": "Se detecta cuando se deja vacío.",
+    "check": "Ejecutar la comprobación",
+    "verify": "Verificar tras el cambio",
+    "running": "Comprobando",
+    "noDomains": "Ninguna app importada tiene un dominio que comprobar.",
+    "loadError": "No se pudo ejecutar la comprobación",
+    "thisNode": "Este nodo: {{ips}}",
+    "change": "Define {{type}} {{name}} como {{value}} (TTL {{ttl}})",
+    "replaces": "Reemplaza {{what}}",
+    "verdict": {
+      "go": "Adelante",
+      "wait": "Esperar",
+      "no-go": "No proceder",
+      "switched": "Cambiado"
+    },
+    "phase": {
+      "pre-switch": "Antes del cambio",
+      "post-switch": "Después del cambio"
+    }
+  },
+  "hub": {
+    "title": "Migrar un servidor de bases de datos",
+    "description": "Mueve todas las bases de datos de un servidor de origen en una única ejecución guiada. El origen solo se lee. No se escribe nada en él ni se elimina nada, y verificas cada base de datos antes de cambiar nada.",
+    "newMigration": "Iniciar una nueva migración",
+    "forget": "Olvidar este plan",
+    "forgetHelp": "Elimina el plan y la contraseña guardada en memoria. Las bases de datos ya creadas aquí se conservan.",
+    "resume": "Sesión de {{host}}",
+    "steps": {
+      "connect": "Conectar",
+      "inventory": "Inventario",
+      "preflight": "Comprobación previa",
+      "copy": "Copiar",
+      "verify": "Verificar",
+      "cutover": "Cambio de producción"
+    },
+    "safeToSkip": {
+      "title": "Qué se puede omitir sin riesgo",
+      "never": "Nunca omitas la comprobación del recuento por tabla tras cada copia. Demuestra que los datos llegaron.",
+      "volumes": "Volúmenes: se pueden omitir si ninguna de tus apps guarda archivos en un volumen.",
+      "cutover": "Comprobación del cambio de producción: se puede omitir si cambias las apps a mano y las compruebas tú mismo.",
+      "warnings": "Puedes continuar tras leer las advertencias. Los bloqueos no."
+    },
+    "connect": {
+      "title": "Conectar con el servidor de origen",
+      "description": "Introduce la dirección del servidor y un usuario que pueda leer todas las bases de datos que quieras mover. La contraseña se mantiene en memoria solo durante esta sesión. Nunca se guarda ni se registra.",
+      "engine": "Motor",
+      "host": "Host",
+      "port": "Puerto",
+      "portHelp": "El valor por defecto del motor cuando está vacío.",
+      "user": "Usuario",
+      "password": "Contraseña",
+      "tls": "Exigir TLS hacia el origen",
+      "submit": "Leer el servidor",
+      "submitting": "Leyendo el servidor",
+      "error": "No se pudo leer el servidor de origen",
+      "readOnly": "Solo se ejecutan sentencias de solo lectura y herramientas de volcado contra el origen.",
+      "advanced": "Copiar una sola base de datos importada en su lugar",
+      "local": "Contenedor de base de datos en este nodo",
+      "localNone": "Otro servidor (introduce host y puerto)",
+      "localHelp": "Lee el contenedor por su propia red de Docker. Una dirección de host de la misma máquina no es accesible desde el ayudante porque Docker aísla las redes.",
+      "localProblem": "{{name}} ({{problem}})"
+    },
+    "inventory": {
+      "title": "Bases de datos del servidor",
+      "summary": "{{count}} bases de datos, {{size}} en total. Versión del servidor {{version}}, {{free}} libres en el nodo de destino.",
+      "empty": "El servidor no tiene bases de datos que este usuario pueda leer. Revisa los permisos del usuario e inténtalo de nuevo.",
+      "columns": {
+        "select": "Copiar",
+        "source": "Base de datos de origen",
+        "size": "Tamaño",
+        "tables": "Tablas",
+        "extensions": "Extensiones",
+        "target": "Nombre de la nueva base de datos"
+      },
+      "selectAll": "Seleccionar todas las bases de datos",
+      "selectOne": "Copiar {{name}}",
+      "targetLabel": "Nombre de la nueva base de datos para {{name}}",
+      "next": "Continuar con la comprobación previa",
+      "noneSelected": "Selecciona al menos una base de datos para continuar."
+    },
+    "preflight": {
+      "title": "Comprobación previa",
+      "description": "Aún no se ha escrito nada. Estas comprobaciones se ejecutan antes de crear ninguna base de datos.",
+      "blocked": "Bloqueada",
+      "warning": "Advertencia",
+      "ok": "Lista",
+      "required": "Se necesitan unos {{required}} con margen de seguridad, hay {{free}} libres. Tiempo estimado {{time}}.",
+      "passwordTitle": "Se necesita la contraseña de origen",
+      "passwordHelp": "La contraseña ya no se mantiene en memoria. Introdúcela de nuevo. Se usa solo en esta ejecución.",
+      "start": "Copiar {{count}} bases de datos",
+      "starting": "Iniciando",
+      "fixBlocked": "Corrige o deselecciona las bases de datos bloqueadas para continuar.",
+      "back": "Volver al inventario",
+      "startError": "No se pudo iniciar la copia",
+      "reachTitle": "Accesibilidad",
+      "reach": "El ayudante llega al origen por la red {{network}}."
+    },
+    "copy": {
+      "title": "Copiar",
+      "description": "Las bases de datos se copian en paralelo. Que una falle nunca detiene a las demás, y repetir una copia es seguro.",
+      "running": "Copiando, {{done}} de {{total}} terminadas",
+      "idle": "No se está ejecutando nada.",
+      "retry": "Reintentar las fallidas",
+      "continue": "Continuar con la verificación",
+      "empty": "Aún no se ha iniciado ninguna copia. Inícialo desde el paso de comprobación previa.",
+      "status": {
+        "pending": "En espera",
+        "copying": "Copiando",
+        "verified": "Verificada",
+        "failed": "Fallida"
+      }
+    },
+    "verify": {
+      "title": "Verificar",
+      "description": "Se comparó el recuento de filas de cada tabla del origen con la copia. Solo las coincidencias exactas se marcan como verificadas.",
+      "tables": "{{count}} tablas coinciden",
+      "differs": "{{name}}: origen {{source}}, copia {{target}}",
+      "receipt": "Descargar el recibo (JSON)",
+      "receiptHelp": "Un registro de que cada base de datos está verificada y de que el origen no se tocó. No contiene secretos.",
+      "source": "Origen sin tocar",
+      "next": "Continuar con el cambio de producción",
+      "noneVerified": "Aún no hay ninguna base de datos verificada. Corrige los fallos de arriba y reintenta."
+    },
+    "cutover": {
+      "title": "Cambia tus apps",
+      "description": "Apunta cada app a su nueva base de datos y luego ejecuta la comprobación del cambio de producción. No se cambia nada por ti.",
+      "connection": "Conexión de {{name}}",
+      "reference": "En las conexiones de una app, referénciala como {{ref}} y la plataforma rellena los valores.",
+      "reveal": "Mostrar el secreto",
+      "revealing": "Mostrando",
+      "hide": "Ocultar el secreto",
+      "revealNote": "Mostrarlo queda registrado en el registro de auditoría.",
+      "loadError": "No se pudieron cargar los detalles de la conexión",
+      "revealError": "No se pudo mostrar el secreto"
+    },
+    "loadError": "No se pudo cargar el plan de migración."
+  },
+  "appImport": {
+    "title": "Asistente de migración",
+    "description": "Planifica, prepara, verifica y cambia cada aplicación una a una, desde Coolify, Dokploy, CapRover o un servidor antiguo. Tu instancia anterior solo se lee. Nada en ella se detiene, edita ni elimina.",
+    "loadError": "No se pudo cargar la sesión de importación.",
+    "newImport": "Iniciar una nueva importación",
+    "forget": "Olvidar esta sesión",
+    "forgetHelp": "Olvida el plan y el progreso. Las apps ya preparadas aquí se conservan. Usa antes Revertir para eliminarlas.",
+    "resume": "Importando desde {{url}}",
+    "back": "Atrás",
+    "steps": {
+      "connect": "Conectar",
+      "inventory": "Inventario",
+      "preflight": "Comprobación previa",
+      "stage": "Preparar",
+      "images": "Mover imágenes",
+      "verify": "Compilar y verificar",
+      "volumes": "Volúmenes",
+      "cutover": "Cambio de producción",
+      "takeover": "Tomar los puertos",
+      "retire": "Seguro para eliminar"
+    },
+    "safe": {
+      "title": "Qué hace y qué no hace esto",
+      "readOnly": "Solo se envían peticiones de lectura a la plataforma anterior. La credencial se mantiene en memoria durante esta sesión y nunca se guarda.",
+      "staged": "Las apps preparadas se crean detenidas y sin enrutar, con las variables de entorno y los secretos importados cifrados.",
+      "volumes": "Los datos de los volúmenes nunca se copian por ti. Obtienes el comando exacto de cada volumen y lo confirmas tú.",
+      "dns": "El DNS nunca se cambia por ti. Cambias cada dominio cuando estés satisfecho y puedes volver atrás en cualquier momento."
+    },
+    "verdict": {
+      "ready": "Lista",
+      "ready-with-notes": "Lista con notas",
+      "needs-attention": "Requiere atención",
+      "unsupported": "No admitida"
+    },
+    "state": {
+      "planned": "Planificada",
+      "staged": "Preparada",
+      "building": "Compilando",
+      "verified": "Verificada",
+      "verify-failed": "Falló la verificación",
+      "stage-failed": "Falló la preparación",
+      "routed": "Enrutada",
+      "rolled-back": "Revertida"
+    },
+    "connect": {
+      "title": "Conectar con {{name}}",
+      "reconnectTitle": "Introduce el token de nuevo",
+      "description": "Usa un token de API de solo lectura. Añade el permiso read:sensitive si quieres importar los valores de los secretos. En caso contrario llegan vacíos y se marcan.",
+      "url": "URL de {{name}}",
+      "token": "Token de API",
+      "tokenHelp": "Se mantiene en memoria solo durante esta sesión y se envía en el cuerpo de la petición. Nunca se guarda ni se registra.",
+      "network": "Opciones de red privada",
+      "loopback": "El origen está en esta máquina (loopback)",
+      "private": "El origen está en una red privada",
+      "insecure": "Omitir la verificación TLS (certificado autofirmado)",
+      "networkHelp": "El plano de control también necesita el ajuste APP_IMPORT_ALLOW_LOOPBACK o APP_IMPORT_ALLOW_PRIVATE_NETWORKS correspondiente antes de que se respeten.",
+      "readOnly": "Leer el inventario no crea nada aquí.",
+      "error": "No se pudo leer el origen",
+      "submit": "Leer el inventario",
+      "submitting": "Leyendo...",
+      "dockerTitle": "Reclamar contenedores de un host de Docker",
+      "snapshotHelp": "Contiene variables de entorno, incluidos secretos. Se mantiene en memoria solo durante esta sesión y se envía en el cuerpo de la petición. Nunca se guarda ni se registra.",
+      "snapshotFile": "O cárgalo desde un archivo",
+      "mode": {
+        "api": "API de la plataforma",
+        "docker": "Instantánea de Docker",
+        "compose": "Archivo Compose",
+        "dokku": "Volcado de env de Dokku",
+        "ssh": "Conectar por SSH"
+      },
+      "fileDescription": {
+        "docker": "No hace falta ningún token de API. Pega la salida del comando de abajo, ejecutado en el servidor antiguo. Lee los ajustes de los contenedores y las variables de entorno, y no cambia nada allí.",
+        "compose": "Pega un archivo docker-compose. Cada servicio con una imagen se convierte en una app, y las imágenes de bases de datos pasan a ser bases de datos gestionadas. No se contacta con nada.",
+        "dokku": "Pega el entorno de una app de Dokku. Solo se leen sus variables, así que define la imagen, el puerto y los dominios tras planificar. No se contacta con nada."
+      },
+      "fileCommand": {
+        "docker": "docker inspect $(docker ps -aq)",
+        "compose": "cat docker-compose.yml",
+        "dokku": "dokku config:export APP"
+      },
+      "fileLabel": {
+        "docker": "Salida de docker inspect",
+        "compose": "Archivo Compose",
+        "dokku": "Volcado del entorno"
+      },
+      "appName": "Nombre de la app de Dokku",
+      "platform": "Plataforma de origen",
+      "platformName": {
+        "coolify": "Coolify",
+        "dokploy": "Dokploy",
+        "caprover": "CapRover"
+      },
+      "tokenFor": {
+        "coolify": "Token de API",
+        "dokploy": "Clave de API",
+        "caprover": "Contraseña"
+      },
+      "test": "Probar la conexión",
+      "testing": "Probando...",
+      "testOk": "Conectado a {{name}}. Se encontraron {{apps}} app(s), {{databases}} base(s) de datos, {{volumes}} volumen(es), {{domains}} dominio(s) y {{crons}} cron job(s). {{unsupported}} no se pueden importar.",
+      "testServers": "Servidores: {{list}}",
+      "testFailure": {
+        "credentials": "El origen rechazó la credencial. Revisa el token o la contraseña y sus permisos.",
+        "blocked": "Esta dirección no está permitida. Usa las opciones de red privada de abajo si el origen está en tu propia red.",
+        "unreachable": "El origen no respondió. Revisa la URL y el puerto, y si este servidor puede acceder a él."
+      }
+    },
+    "inventory": {
+      "title": "Aplicaciones encontradas",
+      "description": "Elige qué mover. Cada app muestra a qué se corresponde aquí y qué necesita tu atención.",
+      "selectOne": "Seleccionar {{name}}",
+      "selectAll": "Seleccionar todas las importables",
+      "selectNone": "No seleccionar ninguna",
+      "empty": "No se encontró ninguna aplicación en el origen.",
+      "noProject": "Sin proyecto",
+      "showMore": "Mostrar {{count}} más",
+      "continue": "Continuar con {{count}} app(s)",
+      "pickOne": "Selecciona al menos una app para continuar.",
+      "stale": "El token ya no se mantiene, así que estos veredictos son de la última lectura. Introdúcelo de nuevo para actualizarlos.",
+      "maps": {
+        "dockerfile": "Compilación con Dockerfile",
+        "railpack": "Compilación con Railpack",
+        "static": "Sitio estático",
+        "image": "Imagen"
+      },
+      "port": "puerto {{port}}",
+      "health": "salud {{path}}",
+      "memory": "límite {{size}}",
+      "server": "servidor {{name}}",
+      "env": "{{plain}} variables normales y {{secret}} secretas",
+      "domains": "Dominios: {{list}}",
+      "volume": "Volumen {{path}} ({{size}})",
+      "sizeUnknown": "el origen no informa del tamaño",
+      "dbMoved": "usa {{name}}, ya movida a {{target}}",
+      "dbNotMoved": "usa {{name}}, aún no movida aquí",
+      "next": "Siguiente: {{action}}",
+      "source": {
+        "git": "Git",
+        "image": "Imagen",
+        "compose": "Compose",
+        "service": "Servicio de un clic",
+        "unknown": "Desconocido"
+      },
+      "crons": "{{count}} cron job(s)"
+    },
+    "preflight": {
+      "title": "Comprobación previa y asignación",
+      "description": "Aún no se ha escrito nada. Revisa los conflictos de nombres y dominios, asigna los nombres de host antiguos de las bases de datos a su nuevo lugar y lee los cambios exactos.",
+      "needsToken": "El token ya no se mantiene. Introdúcelo de nuevo para evaluar los valores del entorno.",
+      "mappingTitle": "Asignación de nombres de host",
+      "mappingHelp": "Los valores del entorno que mencionan un nombre de host interno antiguo se reescriben al nuevo cuando se prepara la app. No se reescribe nada que no esté listado aquí.",
+      "suggested": "Sugerido a partir de las bases de datos que ya moviste",
+      "use": "Usar",
+      "remove": "Quitar",
+      "from": "Nombre de host antiguo",
+      "to": "Nombre de host nuevo",
+      "add": "Añadir asignación",
+      "save": "Guardar la asignación",
+      "saving": "Guardando...",
+      "collision": "Cuando un nombre ya está en uso:",
+      "collisionMode": {
+        "suffix": "Añadir un sufijo numérico",
+        "skip": "Omitir la app"
+      },
+      "passed": "{{count}} comprobación(es) superada(s).",
+      "check": {
+        "name": "Nombre",
+        "domains": "Dominios",
+        "env-keys": "Nombres de variables",
+        "db-hosts": "Nombres de host de bases de datos",
+        "secrets": "Secretos",
+        "build": "Método de compilación",
+        "disk": "Disco"
+      },
+      "diff": "Valores que reescribe una asignación",
+      "diffHelp": "Las contraseñas dentro de las cadenas de conexión se enmascaran. Solo cambia el nombre de host, así que actualiza el usuario y la contraseña si la nueva base de datos usa credenciales distintas.",
+      "secret": "secreto",
+      "continue": "Continuar con la preparación",
+      "blocked": "{{count}} comprobación(es) bloqueante(s)"
+    },
+    "run": {
+      "stageTitle": "Preparar las apps",
+      "verifyTitle": "Compilar y verificar",
+      "stageDescription": "Crea aquí cada app seleccionada, detenida y sin enrutar. Volver a ejecutarlo reanuda donde se detuvo un fallo y nunca duplica una app.",
+      "verifyDescription": "Arranca cada app, la compila o la descarga, espera su propia comprobación de salud y la detiene de nuevo hasta el cambio de producción. Que una app falle nunca bloquea a las demás.",
+      "needsToken": "El token ya no se mantiene. Vuelve a la comprobación previa e introdúcelo de nuevo para preparar.",
+      "importedAs": "importada como {{name}}",
+      "openApp": "Abrir la app",
+      "openLogs": "Logs",
+      "verifyOne": "Verificar",
+      "verifyAgain": "Verificar de nuevo",
+      "verifyAll": "Verificar todas",
+      "working": "Trabajando...",
+      "resume": "Reanudar la preparación",
+      "stage": "Preparar las apps",
+      "rollback": "Revertir",
+      "rollbackConfirm": "¿Eliminar todas las apps que creó esta importación?",
+      "rollbackYes": "Eliminarlas",
+      "cancel": "Cancelar",
+      "stageNote": "Revertir solo elimina las apps que creó esta importación. Los volúmenes se conservan en disco.",
+      "verifyNote": "Verificar arranca la app brevemente. Si ejecuta jobs en segundo plano, trabajan contra la base de datos con la que está configurada.",
+      "toVerify": "Continuar con la verificación",
+      "toVolumes": "Continuar con los volúmenes",
+      "retry": "Reintentar",
+      "interrupted": "Interrumpida por un reinicio. Verifícala de nuevo.",
+      "progressTitle": "Progreso en vivo",
+      "progress": "{{done}} de {{total}} hechas, {{failed}} fallidas",
+      "failedHelp": "Un elemento fallido nunca bloquea a los demás. Reinténtalo solo, o corrige el motivo y vuelve a ejecutar el paso."
+    },
+    "volumes": {
+      "title": "Volúmenes persistentes",
+      "description": "Copia cada volumen con el comando de abajo y luego márcalo. Ejecútalo una vez mientras el origen está en vivo y otra vez justo antes del cambio.",
+      "none": "Ninguna de las apps seleccionadas tiene un volumen persistente.",
+      "source": "Servidor de origen (usuario@host)",
+      "sourcePlaceholder": "root@coolify.example.com",
+      "show": "Mostrar los comandos",
+      "confirm": "Copiado {{path}}",
+      "command": "Comando de copia del volumen",
+      "continue": "Continuar con el cambio de producción",
+      "pending": "{{count}} volumen(es) aún sin confirmar"
+    },
+    "cutover": {
+      "title": "Cambio de producción",
+      "description": "Por app: baja el TTL, activa el enrutamiento aquí, cambia el registro DNS y luego ejecuta la comprobación posterior al cambio.",
+      "keepSource": "Mantén el origen en ejecución hasta que estés satisfecho.",
+      "keepSourceBody": "Nada de aquí detiene ni cambia nada en la instancia antigua. Para volver atrás, apunta de nuevo el registro DNS al origen.",
+      "routed": "Enrutamiento activado",
+      "notRouted": "Sin enrutar",
+      "volumesPending": "{{count}} volumen(es) sin confirmar",
+      "disableRouting": "Desactivar el enrutamiento",
+      "enableRouting": "Activar el enrutamiento",
+      "enableAnyway": "Activar el enrutamiento de todos modos",
+      "none": "Aún no hay ninguna app verificada con un dominio.",
+      "receipt": "Descargar el recibo",
+      "receiptNote": "Un registro JSON de lo que se importó y de lo que queda manual. No contiene secretos.",
+      "guide": {
+        "open": "Cambio de producción guiado",
+        "close": "Cerrar",
+        "title": "Cambio de producción de {{app}}",
+        "recheck": "Volver a comprobar",
+        "safety": "No se toca nada en la plataforma de origen. Un cambio se puede revertir, y una verificación fallida lo revierte automáticamente.",
+        "status": {
+          "pass": "Superada",
+          "warn": "Advertencia",
+          "block": "Bloqueada"
+        },
+        "verdict": {
+          "ready": "Lista",
+          "warnings": "Lista con advertencias",
+          "blocked": "Bloqueada"
+        },
+        "method": {
+          "dns": "Proveedor de DNS",
+          "proxy": "Ruta de proxy gestionada",
+          "manual": "Registro manual",
+          "none": "Ya apunta aquí"
+        },
+        "domainLine": "{{domain}}: cambiado mediante {{method}}, ahora {{current}}",
+        "copyRecord": "Copiar el registro",
+        "dryRun": "Simulacro",
+        "typeToConfirm": "Escribe {{app}} para cambiar",
+        "acceptWarnings": "Continuar a pesar de las advertencias",
+        "switch": "Cambiar el tráfico",
+        "rollback": "Revertir",
+        "confirmDns": "He cambiado el registro",
+        "manualRecord": "Define {{type}} {{domain}} como {{value}} y luego pulsa el botón",
+        "liveHint": "El tráfico está en vivo aquí y verificado a través del nombre público. Mantén el origen en ejecución durante un ciclo completo de tráfico.",
+        "noRuns": "Aún no hay ninguna ejecución. Un simulacro arranca la app, la sondea a través del ingress de este nodo y la detiene de nuevo sin cambiar ningún registro.",
+        "mode": {
+          "dry_run": "Simulacro",
+          "switch": "Cambio"
+        },
+        "state": {
+          "planning": "Planificando",
+          "ready": "Lista",
+          "starting": "Arrancando",
+          "verifying": "Verificando",
+          "switching": "Cambiando",
+          "live": "En vivo",
+          "rolled_back": "Revertida",
+          "failed": "Fallida"
+        },
+        "step": {
+          "readiness": "Disponibilidad",
+          "route": "Arranque",
+          "healthy": "Saludable",
+          "ingress_probe": "Sonda del ingress",
+          "dns_preview": "Vista previa",
+          "switch": "Cambio",
+          "post_verify": "Verificación",
+          "cleanup": "Detención",
+          "rollback": "Restauración",
+          "manual_dns": "DNS manual"
+        }
+      },
+      "next": "Siguiente: tomar los puertos"
+    },
+    "images": {
+      "title": "Mover las imágenes compiladas en el host de origen",
+      "description": "Estas apps ejecutan una imagen que se compiló en el servidor antiguo y no existe en ningún registro. El plano de control ejecuta docker save en el origen por SSH, carga el stream en este nodo y comprueba el ID de cada imagen con la instantánea. No se ejecuta nada más en el origen.",
+      "none": "Ninguna app seleccionada usa una imagen compilada en el host de origen. Continúa con la verificación.",
+      "unsupported": "Este plano de control no tiene un runtime de nodo en el que cargar imágenes.",
+      "loadError": "No se pudo cargar la lista de imágenes.",
+      "ssh": "Inicio de sesión SSH de origen",
+      "sshPlaceholder": "root@old-server.example.com",
+      "sshHelp": "usuario@host o usuario@host:puerto. El inicio de sesión debe poder ejecutar docker. La clave del host se acepta en el primer uso y se fija.",
+      "key": "Clave privada",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "keyHeld": "Hay una clave en memoria para esta sesión, déjalo vacío para reutilizarla",
+      "keyHelp": "Se mantiene en memoria solo durante esta sesión, nunca se guarda ni se registra.",
+      "passphrase": "Frase de contraseña de la clave (opcional)",
+      "agent": "Usar el agente SSH del propio plano de control en lugar de una clave",
+      "move": "Mover las imágenes",
+      "retry": "Mover las imágenes restantes",
+      "cancel": "Cancelar",
+      "running": "Moviendo imágenes desde {{source}}",
+      "continue": "Continuar con la verificación",
+      "pending": "{{count}} imagen(es) aún no están en este nodo",
+      "ids": "Origen {{source}}, cargada {{loaded}}",
+      "sourceId": "Imagen de origen {{source}}",
+      "noSourceId": "La instantánea no tiene ID de imagen, así que no se puede verificar la carga.",
+      "state": {
+        "pending": "Sin mover",
+        "running": "Moviendo",
+        "verified": "Verificada",
+        "loaded": "Cargada, sin verificar",
+        "failed": "Fallida",
+        "cancelled": "Cancelada"
+      },
+      "viaTunnel": "Las imágenes se transmiten por la misma conexión SSH, solo lectura. No se ejecuta nada en el servidor antiguo y no hace falta ningún inicio de sesión adicional."
+    },
+    "ssh": {
+      "description": "Importa desde un servidor antiguo de Coolify, Dokploy, CapRover o Dokku con solo un inicio de sesión SSH. Sin token de plataforma ni agente. SSH se usa solo para llegar al socket de Docker y solo se envían peticiones de lectura: nunca se ejecuta nada en el servidor antiguo.",
+      "host": "Dirección del servidor",
+      "port": "Puerto SSH",
+      "user": "Usuario SSH",
+      "passphrase": "Frase de contraseña de la clave",
+      "key": "Clave privada",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "keyFile": "O carga la clave privada desde un archivo",
+      "keyHelp": "Se mantiene en memoria solo durante esta sesión y se envía en el cuerpo de la petición. Nunca se guarda ni se registra. Quien tenga esta clave puede actuar como ese usuario en el servidor antiguo, así que usa una clave que puedas eliminar después.",
+      "advanced": "Contraseña, ruta del socket de Docker y opciones de red",
+      "password": "Contraseña (en lugar de una clave)",
+      "socket": "Ruta del socket de Docker en el servidor antiguo",
+      "test": "Probar la conexión",
+      "testing": "Probando",
+      "recheck": "Volver a comprobar",
+      "readOnlyNote": "Solo lectura: lista contenedores, volúmenes e imágenes.",
+      "storedConfig": "Las variables de entorno y los ajustes proceden de los contenedores en ejecución. No se lee la configuración almacenada de la propia plataforma antigua (la base de datos de Coolify, la carpeta de datos de CapRover, la carpeta de apps de Dokku).",
+      "hostKey": {
+        "title": "Confirma la identidad del servidor",
+        "read": "Leer la clave del host",
+        "reading": "Leyendo",
+        "help": "Lee la huella que presenta el servidor y confirma que es la misma que informa el servidor antiguo. Una huella incorrecta o cambiada detiene la conexión.",
+        "list": "Claves de host que presenta el servidor",
+        "fingerprint": "Huella de la clave del host",
+        "confirm": "Esta huella coincide con mi servidor antiguo",
+        "compare": "Compárala con la huella del servidor antiguo",
+        "compareCommand": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
+        "insecure": "Omitir la verificación de la clave del host (no es seguro)",
+        "insecureTitle": "La verificación de la clave del host está desactivada",
+        "insecureBody": "Cualquiera entre este servidor y el antiguo podría leer lo que se envía, incluida la clave. Confirma la huella en su lugar. Esta sesión se marca como no verificada en todas partes.",
+        "placeholder": "SHA256:..."
+      },
+      "ok": {
+        "title": "Conectado",
+        "reads": "Solo lectura: lista contenedores, volúmenes e imágenes.",
+        "counts": "Docker {{version}}: {{containers}} contenedores ({{running}} en ejecución), {{volumes}} volúmenes, {{images}} imágenes."
+      },
+      "fix": {
+        "viaCli": "Arreglar con la CLI",
+        "auth_failed": {
+          "title": "Se rechazó el inicio de sesión",
+          "body": "Revisa la clave privada, su frase de contraseña y el nombre de usuario, y vuelve a comprobar."
+        },
+        "host_key_mismatch": {
+          "title": "La clave del host no coincide",
+          "body": "El servidor presentó una clave de host distinta de la que confirmaste. Si esperabas el cambio, confía en la nueva huella y confírmala de nuevo.",
+          "trust": "Confiar en {{fingerprint}}"
+        },
+        "host_key_required": {
+          "title": "Confirma primero la clave del host",
+          "body": "Lee la huella del servidor y confírmala antes de conectar."
+        },
+        "socket_permission": {
+          "title": "El usuario no puede usar el socket de Docker",
+          "body": "Añade el usuario SSH al grupo docker en el servidor antiguo, vuelve a iniciar sesión y luego vuelve a comprobar.",
+          "command": "sudo usermod -aG docker USER"
+        },
+        "socket_path": {
+          "title": "No hay ningún socket de Docker en esa ruta",
+          "body": "Elige la ruta correcta del socket o introdúcela en las opciones avanzadas.",
+          "try": "Probar {{path}}"
+        },
+        "socket_forbidden": {
+          "title": "El servidor bloquea el reenvío de sockets",
+          "body": "El sshd del servidor antiguo rechaza el reenvío a un socket Unix para este inicio de sesión. Permite el reenvío stream local para este usuario y luego vuelve a comprobar."
+        },
+        "unreachable": {
+          "title": "No se pudo acceder al servidor",
+          "body": "Revisa la dirección y el puerto, y que este servidor pueda acceder a él, y luego vuelve a comprobar."
+        },
+        "blocked_address": {
+          "title": "Esa dirección no está permitida",
+          "body": "Las direcciones de red privada están bloqueadas salvo que el operador del plano de control las permita. Las direcciones de metadatos de la nube nunca están permitidas.",
+          "allow": "Permitir direcciones privadas"
+        },
+        "other": {
+          "title": "Falló la conexión",
+          "body": "Mira el mensaje de abajo y luego vuelve a comprobar."
+        }
+      },
+      "volumes": {
+        "title": "Copiar por SSH",
+        "description": "Los volúmenes de los contenedores en ejecución se transmiten por la conexión SSH, solo lectura en el servidor antiguo, hasta {{size}} cada uno. Los contenedores detenidos y los bind mounts necesitan los comandos de abajo.",
+        "reconnect": "El inicio de sesión SSH solo se mantiene en memoria. Vuelve a conectar el origen para copiar volúmenes.",
+        "copy": "Copiar los volúmenes por SSH",
+        "again": "Copiar de nuevo",
+        "running": "Copiando",
+        "done": "{{files}} archivos, {{size}}",
+        "leftOut": "Omitido: {{entry}}",
+        "fallback": "Vuelve a ejecutar la copia justo antes del cambio de DNS para captar los últimos cambios.",
+        "state": {
+          "pending": "En espera",
+          "running": "Copiando",
+          "copied": "Copiado",
+          "failed": "Fallido",
+          "skipped": "Usa el comando"
+        }
+      }
+    },
+    "exit": {
+      "title": "Informe de salida",
+      "help": "En qué se convierte cada recurso, qué sigue necesitándote, el orden del cambio de DNS y la lista de verificación del cambio de producción. Solo lectura.",
+      "show": "Mostrar el informe de salida",
+      "recheck": "Volver a comprobar",
+      "next": "Siguiente:",
+      "ready": "Todos los recursos están importados y ninguno necesita acción. Ejecuta la comprobación de seguro para eliminar antes de quitar nada.",
+      "wavesTitle": "Orden del cambio de DNS",
+      "checklistTitle": "Lista de verificación del cambio de producción",
+      "outcome": {
+        "imported": "Importado",
+        "manual": "Requiere acción manual",
+        "skipped": "Omitido"
+      },
+      "mode": {
+        "dry-run": "Plan",
+        "verify": "Verificación"
+      }
+    },
+    "probe": {
+      "dns": "Comprobar el DNS ahora",
+      "http": "Comprobar que la app responde aquí",
+      "checking": "Comprobando...",
+      "help": "La comprobación de respuesta llega directamente a este servidor con el nombre de dominio, así que funciona antes de que el DNS se haya movido.",
+      "ok": "Superada",
+      "failed": "Fallida"
+    },
+    "retire": {
+      "title": "¿Es seguro eliminar la instancia antigua?",
+      "description": "Esto solo se pone en verde cuando todas las comprobaciones de abajo pasan con evidencia de esta migración. Hasta entonces, mantén la instancia antigua en ejecución como respaldo.",
+      "run": "Ejecutar las comprobaciones en vivo",
+      "running": "Comprobando...",
+      "targetIp": "IP pública de este servidor",
+      "safeTitle": "Se superaron todas las puertas",
+      "safeBody": "Detén primero la instancia antigua y mantenla detenida unos días. Elimínala solo después, y conserva sus copias de seguridad.",
+      "notSafeTitle": "Aún no es seguro eliminarla",
+      "notSafeBody": "{{count}} puerta(s) siguen abiertas. No se ha cambiado nada en la instancia antigua.",
+      "confirm": "Lo he hecho",
+      "status": {
+        "pass": "Superada",
+        "fail": "Fallida",
+        "pending": "Sin comprobar",
+        "manual": "Te necesita"
+      },
+      "next": "Siguiente:",
+      "fallbackTitle": "Si algo sale mal",
+      "gate": {
+        "staged": "Apps compiladas y saludables aquí",
+        "leftovers": "Recursos que el importador no pudo mover",
+        "volumes": "Volúmenes copiados",
+        "databases": "Copias de bases de datos verificadas",
+        "routed": "Apps sirviendo sus dominios aquí",
+        "dns": "El DNS apunta a este servidor",
+        "responds": "Las apps responden desde este servidor",
+        "source-backup": "Copia de seguridad de la instancia antigua",
+        "traffic-cycle": "Ciclo completo de tráfico completado"
+      },
+      "back": "Atrás",
+      "open": "Continuar con la comprobación de seguro para eliminar"
+    }
+  },
+  "platformImport": {
+    "tokenApi": "Token de API",
+    "tokenKey": "Clave de API",
+    "tokenPassword": "Contraseña de inicio de sesión",
+    "tokenAccess": "Token de acceso",
+    "teamId": "ID del equipo (opcional)",
+    "teamIdPlaceholder": "team_... o slug del equipo, vacío para tu cuenta personal",
+    "vercelUrlPlaceholder": "Déjalo vacío para usar la API pública de Vercel",
+    "requestFailed": "Falló la petición",
+    "summaryTitle": "Resumen de la importación",
+    "summaryCounts": "{{created}} creados, {{failed}} fallidos, {{already}} ya importados.",
+    "retryHint": "Vuelve a ejecutar la importación para reintentar lo que falló. Los elementos terminados se omiten.",
+    "dataNotMigrated": "Los datos no se migran",
+    "another": "Iniciar otra importación",
+    "reviewTitle": "Revisa qué se importará",
+    "nothingFound": "No se encontró nada en el origen. Revisa la URL y que la credencial pueda ver tus proyectos.",
+    "importFailed": "Falló la importación",
+    "importing": "Importando...",
+    "importSelected": "Importar {{count}} seleccionados",
+    "back": "Atrás",
+    "connectTitle": "Conectar la plataforma de origen",
+    "connectIntro": "Lee las apps, las bases de datos y los ajustes de la otra plataforma sin cambiarla. La credencial se envía a este plano de control una vez por paso y nunca se guarda.",
+    "platform": "Plataforma",
+    "sourceUrl": "URL de origen",
+    "herokuUrlPlaceholder": "Déjalo vacío para usar la API pública de Heroku",
+    "skipTakenLabel": "Omitir los nombres ya en uso",
+    "skipTaken": "Omitir los recursos cuyo nombre ya está en uso (por defecto se renombran)",
+    "privateLabel": "El origen está en una red privada",
+    "private": "El origen está en una red privada (requiere la autorización del plano de control)",
+    "insecureLabel": "Omitir la verificación TLS",
+    "insecure": "Omitir la verificación TLS (origen autofirmado)",
+    "readFailed": "No se pudo leer el origen",
+    "reading": "Leyendo el origen...",
+    "discover": "Descubrir",
+    "extras": {
+      "title": "Copias de seguridad y canales de alertas",
+      "target": "Destino de copias de seguridad {{name}}",
+      "schedule": "Programación de copias de seguridad de {{name}}",
+      "channel": "Canal de alertas {{name}}",
+      "hasKeys": "claves en el origen",
+      "noKeys": "sin claves en el origen",
+      "hasSecret": "token en el origen",
+      "noSecret": "sin token en el origen",
+      "retain_one": "conservar {{count}}",
+      "retain_other": "conservar {{count}}",
+      "paused": "en pausa",
+      "running": "en ejecución",
+      "enabled": "activado",
+      "disabled": "desactivado",
+      "includeCredentials": "Incluir las credenciales",
+      "includeCredentialsWarning": "Copia las claves de almacenamiento y los tokens de los canales del origen a esta instancia. Se envían directamente a las llamadas de creación y nunca se muestran aquí.",
+      "enableSchedules": "Mantener las programaciones de copias de seguridad en ejecución",
+      "enableSchedulesWarning": "Desactivado: las programaciones importadas se crean en pausa. Activado: las programaciones que se ejecutaban en el origen empiezan a ejecutarse aquí.",
+      "enableChannels": "Crear los canales de alertas activados",
+      "enableChannelsWarning": "Desactivado: los canales importados se crean desactivados. Activado: los canales activados reciben de inmediato los avisos generales.",
+      "importOnly": "Importar solo las copias de seguridad y los canales",
+      "undoButton_one": "Deshacer {{count}} elemento importado",
+      "undoButton_other": "Deshacer {{count}} elementos importados",
+      "undoFailed": "Falló el deshacer",
+      "undoItem": "{{name}}: {{action}}",
+      "undo": {
+        "removed": "eliminado",
+        "skipped": "dejado en su sitio",
+        "failed": "fallido"
+      },
+      "state": {
+        "would_create": "Se creará",
+        "needs_secret": "Necesita credenciales",
+        "created": "Creado",
+        "exists": "Ya existe",
+        "pending": "Pendiente",
+        "skipped": "Omitido",
+        "review": "Revisar",
+        "failed": "Fallido",
+        "unsupported": "No admitido"
+      }
+    }
+  },
+  "importPlan": {
+    "anonymousVolume": "(anónimo)",
+    "importingToast": "Importando \"{{name}}\".",
+    "watching": "Ahora se vigila el log de compilación.",
+    "appearsShortly": "Aparecerá en la lista de apps en breve.",
+    "readFirst": "Lee esto antes de desplegar",
+    "appName": "Nombre de la app",
+    "nameInvalid": "Usa solo letras minúsculas, números y guiones.",
+    "containerPort": "Puerto del contenedor",
+    "portInvalid": "Introduce el puerto en el que escucha la app.",
+    "domainSuggestion": "Dominio sugerido: {{domain}}. Añade dominios reales desde la pestaña Dominios de la app una vez creada.",
+    "why": "Por qué: {{reason}}",
+    "health": "Comprobación de salud: GET {{path}}",
+    "needsApproval": "Requiere la aprobación de root",
+    "nothing": "No se encontró nada que desplegar en esta entrada.",
+    "required": "Obligatorio antes de desplegar: {{keys}}",
+    "back": "Atrás",
+    "deploying": "Desplegando...",
+    "deploy": "Desplegar"
+  },
+  "takeover": {
+    "title": "Tomar los puertos de este servidor",
+    "description": "Mueve los puertos 80 y 443 del proxy de tu plataforma anterior al ingress propio de este servidor, con una vía de vuelta registrada. Hazlo al final, cuando todas las apps estén preparadas, verificadas y con sus datos copiados.",
+    "rootOnly": "Solo la cuenta root puede tomar los puertos. Puedes leer la comprobación previa, pero el botón Ejecutar sigue desactivado.",
+    "loadError": "No se pudo leer la comprobación previa.",
+    "recheck": "Volver a comprobar",
+    "rechecking": "Comprobando",
+    "ports": "Ahora escucha en {{from}}, después en {{to}}.",
+    "verdict": {
+      "ready": "Lista",
+      "warnings": "Lista con advertencias",
+      "blocked": "Bloqueada",
+      "done": "Hecha"
+    },
+    "status": {
+      "pass": "Superada",
+      "warn": "Advertencia",
+      "block": "Bloqueada"
+    },
+    "domainsTitle": "Dominios que servirá este servidor",
+    "healthy": "Saludable",
+    "unhealthy": "No saludable",
+    "dns": {
+      "ok": "DNS aquí",
+      "elsewhere": "DNS en otro sitio",
+      "unresolved": "Sin DNS"
+    },
+    "cert": {
+      "custom": "Certificado subido",
+      "acme": "Emitido en el primer uso"
+    },
+    "stepsTitle": "Qué hace la ejecución",
+    "rollbackTitle": "Cómo se deshace",
+    "acceptUnmanaged": "Acepto que los dominios listados arriba quedan fuera de línea cuando el proxy antiguo se detenga.",
+    "alreadyDone": "Este servidor ya escucha en los puertos 80 y 443. No queda nada por hacer.",
+    "copyCommand": "Copiar el comando",
+    "copied": "Copiado",
+    "runTitle": "Ejecución de la toma de puertos",
+    "state": {
+      "preparing": "Preparando",
+      "applying": "Reiniciando",
+      "verifying": "Verificando",
+      "done": "Hecha",
+      "rolling_back": "Revirtiendo",
+      "rolled_back": "Revertida",
+      "failed": "Requiere atención"
+    },
+    "step": {
+      "rollback_record": "Vía de vuelta registrada",
+      "stop_old_proxy": "Proxy antiguo detenido",
+      "tls_settings": "TLS gestionado aquí",
+      "listen_addresses": "Nuevas direcciones guardadas",
+      "restart": "Reinicio",
+      "verify": "Verificación por HTTPS",
+      "rollback": "Rollback"
+    },
+    "hint": {
+      "applying": "El plano de control se está reiniciando. Esta página se reconecta sola.",
+      "verifying": "Comprobando todos los dominios. Si esto no tiene éxito en {{seconds}} segundos, se revierte solo.",
+      "done": "Este servidor ahora sirve los puertos 80 y 443. El contenedor del proxy antiguo está detenido, no eliminado. Puedes revertir en cualquier momento.",
+      "rolling_back": "Restaurando las direcciones anteriores y arrancando de nuevo el proxy antiguo.",
+      "rolled_back": "Las direcciones anteriores están de vuelta y el proxy antiguo vuelve a estar en ejecución.",
+      "failed": "Algo no terminó. Lee el mensaje de arriba, corrígelo y vuelve a comprobar."
+    },
+    "run": {
+      "button": "Tomar los puertos",
+      "note": "Una verificación fallida se revierte sola tras {{seconds}} segundos.",
+      "dialogTitle": "¿Tomar los puertos 80 y 443?",
+      "dialogDescription": "Los visitantes notan una breve pausa mientras el proxy se detiene y este servidor empieza a responder.",
+      "consequenceStop": "El contenedor del proxy antiguo se detiene, no se elimina.",
+      "consequenceRestart": "El plano de control se reinicia una vez para escuchar en los puertos nuevos.",
+      "consequenceRollback": "Si algún dominio falla la verificación, la toma de puertos se revierte sola.",
+      "confirm": "Tomar",
+      "pending": "Iniciando"
+    },
+    "rollback": {
+      "button": "Revertir",
+      "title": "¿Revertir la toma de puertos?",
+      "description": "Las direcciones de escucha y los ajustes de TLS anteriores vuelven tras un reinicio y el proxy antiguo arranca de nuevo.",
+      "confirm": "Revertir",
+      "pending": "Revirtiendo"
+    }
+  }
+}

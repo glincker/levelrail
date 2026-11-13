@@ -1,0 +1,359 @@
+{
+  "title": "安全与运行时",
+  "description": "防护默认开启。可在此处、通过 CLI 或 API 更改;已保存的值优先于环境变量,环境变量又优先于默认值。",
+  "loadError": "无法加载运行时设置:{{message}}",
+  "retry": "重试",
+  "empty": {
+    "title": "未注册任何运行时设置",
+    "body": "此版本在这里还没有可配置的内容。更新控制面后请刷新。"
+  },
+  "readOnly": "只有管理员可以更改这些设置。你仍可以查看当前值。",
+  "categories": {
+    "security": "安全",
+    "networking": "网络",
+    "deploys": "部署",
+    "observability": "可观测性",
+    "experimental": "实验性",
+    "retention": "数据保留"
+  },
+  "source": {
+    "default": "默认",
+    "env": "由环境变量设置",
+    "saved": "已保存"
+  },
+  "badges": {
+    "restart": "需要重启",
+    "weakens": "削弱安全性",
+    "security": "安全设置"
+  },
+  "options": {
+    "open": "开放(无限制)",
+    "none": "无(RUN 步骤没有网络)",
+    "block-private": "阻止私有网段(暂不可强制执行)",
+    "read_only": "只读",
+    "read_write": "读写"
+  },
+  "items": {
+    "buildNetwork": {
+      "title": "构建网络",
+      "description": "构建中 RUN 步骤使用的网络:open、none 或 block-private(保留项:在能够强制执行之前,构建会失败)。每次构建时读取。"
+    },
+    "placementScoreMode": {
+      "title": "放置评分模式",
+      "description": "新工作负载如何选择节点:spread 让每个节点保留尽可能多的余量,binpack 填充仍能容纳的最满的节点。每次放置时读取。"
+    },
+    "mcpDefaultTokenScope": {
+      "title": "默认令牌范围",
+      "description": "未显式指定权限创建的新令牌所用的范围:read_only 或 read_write。现有令牌保持其范围。"
+    },
+    "lowFreeMb": {
+      "title": "磁盘不足阈值",
+      "description": "数据卷或 Docker 卷的可用空间(MiB)低于此值时,磁盘保护会发出磁盘不足警告和告警(64 到 1048576)。严重阈值高于此值时会被限制为此值。"
+    },
+    "criticalFreeMb": {
+      "title": "磁盘严重不足阈值",
+      "description": "可用空间(MiB)低于此值时,构建、镜像拉取和备份会被拒绝,并释放磁盘保留区(16 到 1048576)。高于不足阈值的值会被视为与其相等。"
+    },
+    "reserveMb": {
+      "title": "磁盘保留区大小",
+      "description": "保留在数据目录中的占位文件大小(MiB),使 SQLite 在磁盘写满时仍能提交;低于严重阈值时会释放它(0 到 4096,0 表示关闭保留区)。"
+    },
+    "metricsRetention": {
+      "title": "原始指标保留期",
+      "description": "原始容器指标样本在被清理任务删除之前保留多久,从 1h 到 8760h;更旧的数据仍保留在更粗粒度的汇总层级中。"
+    },
+    "logsRetention": {
+      "title": "日志、追踪和错误保留期",
+      "description": "已存储的应用日志、追踪和错误事件在被每小时清理删除之前保留多久,从 1h 到 8760h;下一次清理会使用更改后的值。"
+    },
+    "logBudgetMb": {
+      "title": "每个应用的默认日志预算",
+      "description": "每个应用在清理裁剪其最旧行之前可使用的日志存储大小(MiB);0 表示不限,否则为 16 到 10485760。单个应用的预算会覆盖它。"
+    },
+    "rawRetention": {
+      "title": "监控原始结果保留期",
+      "description": "每次可用性监控检查结果在被清理任务删除之前保留多久,从 1h 到 8760h;每小时汇总按各自的窗口保留。"
+    },
+    "webhookReplayProtection": {
+      "title": "Webhook 重放保护",
+      "description": "忽略在重放窗口内已投递过的已签名 Git webhook 请求体。"
+    },
+    "webhookReplayWindow": {
+      "title": "Webhook 重放窗口",
+      "description": "相同的已签名 webhook 请求体会被记住多久。"
+    },
+    "auditSensitiveReads": {
+      "title": "审计敏感读取",
+      "description": "当日志、环境变量导出和其他敏感数据被读取时,记录一条审计条目。"
+    },
+    "bindBlockCredentialDirs": {
+      "title": "在绑定挂载中阻止凭据目录",
+      "description": "拒绝对 .ssh、.aws、.kube 及类似凭据目录的绑定挂载。"
+    },
+    "bindAllowedRoots": {
+      "title": "允许的绑定挂载根目录",
+      "description": "不为空时,绑定挂载必须位于这些目录之一内。"
+    },
+    "statusTimeout": {
+      "title": "游戏状态 ping 超时",
+      "description": "游戏服务器状态 ping 等待游戏端口响应多久后才报告其离线。低于 200ms 的值会被提高到 200ms。"
+    },
+    "statusCache": {
+      "title": "游戏状态缓存时间",
+      "description": "一次游戏服务器状态响应被复用多久,使众多仪表盘和 CLI 调用在这段时间内最多 ping 游戏端口一次。0s 表示关闭缓存。"
+    },
+    "trustLoopbackForwardedHeaders": {
+      "title": "信任来自回环地址的转发头",
+      "description": "当请求来自此主机时,信任 X-Forwarded-For。当没有任何本地内容代理到控制面时请关闭。"
+    },
+    "caSwitchRetryBase": {
+      "title": "CA 切换重试延迟",
+      "description": "重试加载失败的证书颁发机构切换之前的首次等待时间;每次失败后翻倍,直到上限。"
+    },
+    "caSwitchRetryMax": {
+      "title": "CA 切换最大重试延迟",
+      "description": "失败的证书颁发机构切换两次重试之间等待时间的上限。"
+    },
+    "sessionTtl": {
+      "title": "桌面应用会话有效期",
+      "description": "签发给桌面应用的仪表盘会话在必须重新交换令牌之前保持有效多久。"
+    },
+    "revokedTokenDays": {
+      "title": "多少天后删除已撤销的 API 令牌",
+      "description": "已撤销的 API 令牌在被清理移除之前保留在列表中的天数。0 表示永久保留。"
+    },
+    "expiredTokenDays": {
+      "title": "多少天后删除已过期的 API 令牌",
+      "description": "已过期的 API 令牌在被清理移除之前保留在列表中的天数。0 表示永久保留。"
+    },
+    "jobMaxAttempts": {
+      "title": "作业 ping 尝试次数",
+      "description": "单个作业的心跳 ping 在放弃之前尝试多少次。"
+    },
+    "jobBackoffBase": {
+      "title": "作业 ping 重试延迟",
+      "description": "重试失败的作业 ping 之前的首次等待时间;每次重试翻倍,直到上限。"
+    },
+    "jobBackoffMax": {
+      "title": "作业 ping 最大重试延迟",
+      "description": "作业 ping 两次重试之间等待时间的上限。"
+    },
+    "jobQueue": {
+      "title": "作业 ping 队列大小",
+      "description": "在新的 ping 被丢弃之前,最多有多少个作业 ping 可以等待发送。更改会立即生效。"
+    },
+    "rateLimitReadRpm": {
+      "title": "API 读取速率限制",
+      "description": "每个 API 令牌、已登录用户或客户端地址每分钟允许的读取请求数。超出预算的请求会收到带 Retry-After 头的 HTTP 429。最小为 60,以保证仪表盘可用;更改会立即生效,并保留每个调用方当前的预算。限制无法关闭:环境变量值为 0 或低于最小值时会被提高到最小值(旧版本将 0 视为关闭)。"
+    },
+    "rateLimitWriteRpm": {
+      "title": "API 写入速率限制",
+      "description": "每个 API 令牌、已登录用户或客户端地址每分钟允许的写入和部署请求数。超出预算的请求会收到带 Retry-After 头的 HTTP 429。最小为 20,以免操作员把自己锁在外面;更改会立即生效。限制无法关闭:环境变量值为 0 或低于最小值时会被提高到最小值(旧版本将 0 视为关闭)。"
+    },
+    "rateLimitRedeemRpm": {
+      "title": "密码重置和邀请兑换速率限制",
+      "description": "单个客户端地址每分钟允许的密码重置和接受邀请请求数。超出预算的请求会收到 HTTP 429。最小为 3;更改会立即生效。限制无法关闭:环境变量值为 0 或低于最小值时会被提高到最小值(旧版本将 0 视为关闭)。"
+    },
+    "engineRateLimitPerIp": {
+      "title": "按地址的登录速率限制",
+      "description": "单个客户端地址每分钟允许的凭据请求(登录、密码重置、MFA)数,超出后会收到 HTTP 429。这会减缓撞库攻击;无法关闭,最小为 10,以便管理员仍能登录。低于 10 的环境变量值会被提高到 10。需要重启,因为认证库持有该预算。"
+    },
+    "engineRateLimitPerEmail": {
+      "title": "按账户的登录速率限制",
+      "description": "来自任意地址的单个账户名每分钟允许的凭据请求数,超出后会收到 HTTP 429。这会减缓针对性的密码猜测;无法关闭,最小为 10,以便所有者仍能登录。低于 10 的环境变量值会被提高到 10。需要重启,因为认证库持有该预算。"
+    },
+    "maxBodyBytes": {
+      "title": "API 请求体大小限制",
+      "description": "API 在运行任何处理器之前读取的最大 JSON 请求体(字节);更大的请求体会被截断,请求以 HTTP 413 失败。源码上传、git 推送和资产上传有各自的限制。范围为 1 MiB 到 1 GiB;更改在下一个请求生效。"
+    },
+    "uploadMaxBytes": {
+      "title": "资产上传大小限制",
+      "description": "直接上传或预签名上传接受的单个资产对象的最大大小(字节);更大的上传会被以 HTTP 413 拒绝。范围为 1 MiB 到 1 TiB;直接上传不受 API 请求体大小限制约束,只受此限制约束。更改在下一次上传生效。"
+    },
+    "maxConcurrent": {
+      "title": "并发部署数",
+      "description": "所有应用同时最多可运行多少个部署;多出的部署在队列中等待,并在有一个完成时开始。0 表示无限制。更改在下一次队列决策时生效。"
+    },
+    "dependsOnTimeout": {
+      "title": "Compose 依赖等待时间",
+      "description": "compose 服务等待 depends_on 依赖启动、通过健康检查或以 0 退出多久,超时后部署会失败并指明该依赖,范围从 5s 到 1h;更改在下一次协调时生效。"
+    },
+    "interval": {
+      "title": "清理间隔",
+      "description": "计划清理多久检查一次每种数据类型。最小为 15 分钟。"
+    },
+    "enabled": {
+      "title": "按计划运行清理",
+      "description": "完全关闭计划清理。手动清理仍然有效。"
+    },
+    "memoryLimitMb": {
+      "title": "构建内存限制",
+      "description": "单个构建可使用的内存(MiB)(256 到 1048576)。0 表示自动:主机内存的 60%,至少 512,并始终为控制面留出保留量(APP_BUILD_MEMORY_PERCENT 和 APP_BUILD_MEMORY_RESERVE_MB 可调整该公式)。该上限同时限制 swap,Node 构建会获得匹配的 --max-old-space-size。更改在下一次构建生效;运行中的构建保持其限制。构建限制中已保存的单个应用或全局值仍然优先。"
+    },
+    "auditLogDays": {
+      "title": "审计日志条目保留",
+      "description": "审计日志条目在被清理移除之前保留的天数。登录和策略条目遵循各自更长的窗口。0 表示全部保留。"
+    },
+    "auditSecurityDays": {
+      "title": "安全审计条目保留",
+      "description": "登录、二次验证、令牌和策略审计条目保留的天数。不会短于常规窗口。0 表示永久保留。"
+    },
+    "emailLogDays": {
+      "title": "邮件投递日志保留",
+      "description": "邮件投递日志行保留的天数。0 表示永久保留。"
+    },
+    "webhookDeliveryDays": {
+      "title": "入站 webhook 投递保留",
+      "description": "为排查问题而保留已接收的 Git webhook 投递的天数。0 表示永久保留。"
+    },
+    "eventWebhookDays": {
+      "title": "事件 webhook 投递保留",
+      "description": "已完成的出站事件 webhook 投递保留的天数。0 表示永久保留。"
+    },
+    "alertHistoryDays": {
+      "title": "告警历史保留",
+      "description": "告警历史条目保留的天数。0 表示永久保留。"
+    },
+    "containersRestartPolicy": {
+      "title": "容器重启策略",
+      "description": "长时间运行的应用容器的 Docker 重启策略,使应用在主机重启或 Docker 重启后恢复运行。适用于下次部署或重建时创建的容器;现有容器保持其旧策略。"
+    },
+    "backupLocalRoot": {
+      "title": "本地备份根目录",
+      "description": "控制面上用于限定本地备份目标的绝对目录。留空则使用数据目录下的 backups/。下一次备份或恢复会使用更改后的值;目标路径仍相对于它,且不能超出它。"
+    },
+    "outboundTimeout": {
+      "title": "出站请求超时",
+      "description": "控制面发出的出站 HTTP 请求(云元数据、模型探测、升级检查)在被取消之前最多可耗时多久。下一个请求会使用更改后的值。"
+    },
+    "bootRechecks": {
+      "title": "启动重新检查延迟",
+      "description": "启动后的偏移量,以冒号分隔(例如 3s:10s),控制面会在这些时间点运行额外的协调,以便在主机重启后 Docker 较晚发布端口时修复路由。每个偏移量至少 1s。启动时读取。"
+    },
+    "bootEventRecheck": {
+      "title": "首个事件后的启动重新检查",
+      "description": "在第一个 Docker 事件之后多久,控制面再运行一次协调,范围从 1s 到 1h。启动时读取。"
+    },
+    "bootDeferredStages": {
+      "title": "推迟非关键启动阶段",
+      "description": "在 HTTP 监听器启动之后再启动心跳、动态 DNS、监控和磁盘历史,使仪表盘更快响应。GET /readyz 会列出仍待处理的阶段。启动时读取。"
+    },
+    "metricsScrapeEnabled": {
+      "title": "Prometheus 抓取端点",
+      "description": "为只读令牌在 /metrics 以 Prometheus 文本格式提供应用、数据库和节点指标。关闭时,该端点返回 404。"
+    },
+    "envApplyOnSet": {
+      "title": "设置时应用环境变量变更",
+      "description": "开启后,env set 和 env import 会重启应用,使新值到达运行中的容器,就像传入了 --apply 一样。传入 --no-apply 可让某次更改保持待定。默认关闭;更改在下一条命令生效。"
+    },
+    "maxReplicasPerService": {
+      "title": "每个服务的副本数上限",
+      "description": "创建、更新或扩缩应用时,API 对单个服务接受的最大副本数;更大的数量会被以 HTTP 400 拒绝。范围为 1 到 1000;更改在下一个请求生效,运行中的应用保持其副本数。"
+    },
+    "containersInspectTimeout": {
+      "title": "容器检查超时",
+      "description": "应用容器视图等待节点实时检查(健康、重启、网络、挂载)多久,范围从 1s 到 2m。超时后视图仍会响应,但这些字段会标记为不可用。下一个请求会使用更改后的值。"
+    }
+  },
+  "row": {
+    "defaultHint": "默认:{{value}}",
+    "updatedBy": "由 {{actor}} 保存",
+    "on": "开",
+    "off": "关",
+    "listLabel": "{{title}},每行一项",
+    "listPlaceholder": "/srv/apps",
+    "save": "保存",
+    "saving": "正在保存",
+    "reset": "恢复默认",
+    "resetting": "正在重置",
+    "invalid": "请输入整数。",
+    "envCopy": "复制 {{env}}",
+    "envHint": "环境变量:{{env}}"
+  },
+  "toast": {
+    "saved": "{{title}} 已保存。",
+    "reset": "{{title}} 已恢复默认值。",
+    "saveError": "无法保存 {{title}}:{{message}}",
+    "resetError": "无法重置 {{title}}:{{message}}"
+  },
+  "restart": {
+    "title_other": "需要重启才能应用 {{count}} 项更改",
+    "body": "需要重启的设置,其已保存的值会在控制面下次启动时生效。运行中的应用继续提供服务。",
+    "now": "立即重启",
+    "confirmTitle": "重启控制面?",
+    "confirmBody": "仪表盘和 API 会短暂不可用。运行中的应用继续提供流量。",
+    "unsupported": "此安装无法自行重启。请自行重启控制面进程,然后重新检查。",
+    "recheck": "重新检查",
+    "error": "无法重启:{{message}}"
+  },
+  "confirm": {
+    "title": "降低此项防护?",
+    "body": "{{title}} 保护着此安装。更改会连同你的名字一起记录在审计日志中。",
+    "consequence": "任何依赖它的内容在你重新开启之前都会暴露。",
+    "action": "降低防护",
+    "cancel": "保持防护"
+  },
+  "onboarding": {
+    "title": "查看你的安全默认设置",
+    "intro": "这些防护默认开启。可以保持原样,也可以现在更改其中任何一项。你之后可以在设置中再次查看。",
+    "safeDefault": "安全默认值:{{value}}",
+    "ack": "看起来不错",
+    "acking": "正在保存",
+    "ackError": "无法保存你的审阅:{{message}}",
+    "openSettings": "打开所有安全设置"
+  },
+  "values": {
+    "true": "开",
+    "false": "关",
+    "empty": "无"
+  },
+  "retention": {
+    "never": "从不删除",
+    "days_other": "{{count}} 天",
+    "year": "1 年",
+    "hours_other": "{{count}} 小时"
+  },
+  "overview": {
+    "title": "数据保留",
+    "intro": "每种历史数据保留多久。令牌窗口可在这里和设置的 API 令牌中更改;其余通过环境变量或各自的页面设置。",
+    "open": "打开",
+    "policy": "由清理策略设置",
+    "items": {
+      "revokedTokens": "已撤销的 API 令牌",
+      "expiredTokens": "已过期的 API 令牌",
+      "auditLog": "审计日志",
+      "emailLog": "邮件日志",
+      "eventWebhooks": "事件 webhook 投递",
+      "webhookDeliveries": "Git webhook 投递",
+      "alertHistory": "告警历史",
+      "inboxArchive": "已归档的收件箱项",
+      "deployAttempts": "旧的部署尝试",
+      "metricsAndLogs": "指标和日志",
+      "pipelineArtifacts": "流水线制品"
+    }
+  },
+  "toolbar": {
+    "searchLabel": "搜索设置",
+    "searchPlaceholder": "搜索设置",
+    "changedOnly": "与默认值不同",
+    "clear": "清除筛选",
+    "count": "{{shown}} / {{total}}",
+    "jumpLabel": "跳转到分类",
+    "noMatchTitle": "没有匹配的设置",
+    "noMatchBody": "请尝试更短的搜索词,或清除筛选以查看所有设置。",
+    "allCategories": "所有分类"
+  },
+  "prometheus": {
+    "title": "Prometheus 抓取",
+    "description": "创建只读令牌,并让 Prometheus 指向 /metrics。",
+    "toggle": "指标抓取端点",
+    "create": "创建抓取令牌",
+    "creating": "正在创建...",
+    "tokenOnce": "请立即复制此令牌。它只显示一次,之后无法再获取。",
+    "tokenLabel": "抓取令牌",
+    "configLabel": "抓取作业",
+    "dismiss": "完成,隐藏令牌",
+    "error": "无法创建令牌:{{message}}",
+    "saveError": "无法保存:{{message}}"
+  }
+}

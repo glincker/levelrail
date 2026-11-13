@@ -1,0 +1,503 @@
+{
+  "health": {
+    "title": "Santé des sauvegardes",
+    "description": "Chaque base de données et volume d'app sauvegardé, regroupé par app. Une sauvegarde ne compte que lorsqu'une restauration a été prouvée fonctionnelle.",
+    "loadFailed": "Impossible de charger la santé des sauvegardes : {{error}}",
+    "empty": "Aucune ressource sauvegardée pour l'instant. Planifiez ou déclenchez une sauvegarde depuis la page d'une base de données ou d'un volume d'app.",
+    "databasesGroup": "Bases de données",
+    "appGroup": "App {{name}}",
+    "columns": {
+      "resource": "Ressource",
+      "state": "État",
+      "lastBackup": "Dernière sauvegarde",
+      "lastRestore": "Dernière restauration vérifiée",
+      "size": "Taille",
+      "nextRun": "Prochaine exécution",
+      "actions": "Actions"
+    },
+    "state": {
+      "healthy": "Saine",
+      "warning": "Nécessite votre attention",
+      "failing": "En échec",
+      "unverified": "Non vérifiée",
+      "unprotected": "Aucune sauvegarde"
+    },
+    "never": "Jamais vérifiée",
+    "none": "Aucune pour l'instant",
+    "notScheduled": "Non planifiée",
+    "encrypted": "Chiffrée",
+    "notEncrypted": "Non chiffrée",
+    "backups": "{{count}} sauvegardes",
+    "restoreProven": "Restauration prouvée {{when}}",
+    "drillFailed": "Le dernier test a échoué",
+    "runDrill": "Prouver la restauration",
+    "drillStarted": "Test de restauration démarré",
+    "drillStartedDescription": "Il restaure dans une ressource temporaire, la valide puis la détruit. Les résultats apparaissent dans l'historique des tests.",
+    "drillFailedToast": "Impossible de démarrer le test de restauration",
+    "restore": "Restaurer",
+    "restoreDatabase": "Options de restauration",
+    "policy": "Politique"
+  },
+  "encryption": {
+    "on": "Les nouvelles sauvegardes de volumes sont compressées et chiffrées sur ce serveur avant l'envoi. Clé publique : {{key}}",
+    "off": "Les nouvelles sauvegardes de volumes sont compressées mais non chiffrées. Toute personne ayant accès au bucket peut les lire.",
+    "keyHint": "Conservez une copie du fichier de clé (APP_BACKUP_ENCRYPTION_KEY_FILE, par défaut backup-encryption.key dans le répertoire de données) en dehors de ce serveur, sinon les sauvegardes chiffrées ne pourront pas être restaurées après un sinistre.",
+    "column": "Chiffrement",
+    "badge": "Chiffrée"
+  },
+  "protection": {
+    "title": "Protection du bucket",
+    "check": "Vérifier les buckets",
+    "checking": "Vérification...",
+    "checkFailed": "Impossible de sonder les buckets de sauvegarde",
+    "locked": "Le verrouillage d'objets est activé",
+    "versioned": "Le versionnage est activé",
+    "open": "Toute personne disposant de la clé peut supprimer des sauvegardes",
+    "probeError": "Impossible d'inspecter ce bucket : {{error}}",
+    "target": "Cible {{id}}"
+  },
+  "restoreWizard": {
+    "title": "Restaurer {{app}}/{{volume}}",
+    "description": "Les restaurations vont toujours dans un nouveau volume. Le volume existant n'est jamais écrasé.",
+    "stepBackup": "Choisir une sauvegarde",
+    "stepDestination": "Choisir où",
+    "stepConfirm": "Confirmer",
+    "backup": "Sauvegarde",
+    "noBackups": "Il n'existe aucune sauvegarde réussie de ce volume à restaurer.",
+    "destination": "Destination",
+    "sameApp": "Un nouveau volume à côté de l'original",
+    "otherApp": "Un nouveau volume pour une autre app",
+    "targetApp": "Nom de l'app",
+    "targetAppHint": "Le volume est nommé de sorte que le déploiement de cette app monte les données restaurées.",
+    "node": "Node",
+    "sameNode": "Même node que l'app",
+    "newName": "Nom du volume",
+    "newNameHint": "Laissez vide pour en générer un.",
+    "summary": "Restaurer la sauvegarde {{backup}} dans un nouveau volume {{name}} sur {{node}}.",
+    "generatedName": "un nom généré",
+    "next": "Suivant",
+    "back": "Retour",
+    "start": "Démarrer la restauration",
+    "cancel": "Annuler",
+    "started": "Restauration dans {{name}}",
+    "startedDescription": "Suivez la progression dans l'historique des restaurations de ce volume.",
+    "failed": "Impossible de démarrer la restauration"
+  },
+  "policy": {
+    "title": "Politique de sauvegarde pour {{app}}/{{volume}}",
+    "description": "Les nombres de rétention conservent la sauvegarde la plus récente de chacun des N derniers jours, semaines et mois. Les hooks s'exécutent dans le conteneur de l'app.",
+    "daily": "Conserver les quotidiennes",
+    "weekly": "Conserver les hebdomadaires",
+    "monthly": "Conserver les mensuelles",
+    "retentionHint": "0 désactive une tranche. Les nombres se combinent avec les limites propres du calendrier (dernières à conserver et âge).",
+    "preHook": "Commande avant la sauvegarde",
+    "preHookHint": "Une sortie non nulle fait échouer la sauvegarde, de sorte qu'un volume incohérent n'est jamais archivé.",
+    "hooksHidden": "Les commandes de hook sont masquées car leur modification nécessite la permission write:sensitive.",
+    "postHook": "Commande après la sauvegarde",
+    "pause": "Mettre l'app en pause pendant le flux de l'archive",
+    "pauseHint": "Fige tous les processus du conteneur pour que les fichiers ne puissent pas changer pendant l'archivage. L'app est indisponible jusqu'à la fin de l'envoi.",
+    "save": "Enregistrer la politique",
+    "saved": "Politique de sauvegarde enregistrée",
+    "failed": "Impossible d'enregistrer la politique de sauvegarde",
+    "loadFailed": "Impossible de charger la politique de sauvegarde : {{error}}"
+  },
+  "drills": {
+    "title": "Tests de restauration",
+    "description": "Restaurations planifiées et manuelles dans des ressources temporaires. Un test en échec déclenche l'alerte restore_drill_failed.",
+    "empty": "Aucun test n'a encore été exécuté. Les tests s'exécutent automatiquement une fois par semaine par défaut.",
+    "loadFailed": "Impossible de charger les tests : {{error}}",
+    "columns": {
+      "resource": "Ressource",
+      "trigger": "Déclencheur",
+      "result": "Résultat",
+      "checks": "Vérifications",
+      "took": "Durée",
+      "started": "Début"
+    },
+    "status": {
+      "running": "En cours",
+      "passed": "Réussi",
+      "failed": "Échec"
+    },
+    "trigger": {
+      "manual": "Manuel",
+      "scheduled": "Planifié"
+    },
+    "check": {
+      "object": "Objet présent",
+      "checksum": "Somme de contrôle",
+      "restore": "Restauré",
+      "content": "Contenu"
+    },
+    "stage": "Échec à l'étape {{stage}}",
+    "files": "{{count}} fichiers",
+    "tables": "{{count}} tables",
+    "shortDescription": "Les restaurations dans des ressources temporaires prouvent qu'une sauvegarde fonctionne.",
+    "showAll": "Afficher les {{count}}",
+    "showLess": "Afficher moins"
+  },
+  "history": {
+    "title": "Toutes les tentatives de sauvegarde",
+    "description": "Chaque tentative sur toutes les bases de données et tous les volumes d'apps, de la plus récente à la plus ancienne."
+  },
+  "page": {
+    "title": "Sauvegardes",
+    "helpLabel": "Guide des sauvegardes et du stockage",
+    "description": "Ce qui est protégé, ce qui ne l'est pas, et un seul endroit pour y remédier.",
+    "loadFailed": "Impossible de charger la couverture des sauvegardes : {{error}}",
+    "loadFailedHint": "Vérifiez que le serveur est joignable, puis réessayez.",
+    "retry": "Réessayer",
+    "noResourcesTitle": "Rien à sauvegarder pour l'instant",
+    "noResourcesDescription": "Les bases de données et les volumes d'apps apparaissent ici dès que vous les créez.",
+    "manageTargets": "Gérer les cibles de sauvegarde"
+  },
+  "summary": {
+    "protected": "{{protected}} ressources sur {{total}} protégées",
+    "headline": {
+      "empty": "Aucune base de données ni volume d'app pour l'instant.",
+      "allVerified": "Chaque ressource est sauvegardée et une restauration a été prouvée.",
+      "someUnprotected_one": "{{count}} ressource n'a pas de calendrier de sauvegarde.",
+      "someUnprotected_other": "{{count}} ressources n'ont pas de calendrier de sauvegarde.",
+      "someUnprotected_many": "{{count}} ressources n'ont pas de calendrier de sauvegarde.",
+      "failing": "Les sauvegardes échouent pour {{failing}} d'entre elles. Corrigez-les d'abord.",
+      "unverified": "Sauvegardées, mais une restauration n'a pas encore été prouvée pour chaque ressource."
+    },
+    "protectEverything": "Tout protéger",
+    "lastVerified": "Dernière restauration vérifiée",
+    "nextRun": "Prochaine exécution",
+    "storage": "Stockage utilisé"
+  },
+  "coverage": {
+    "state": {
+      "verified": "Protégée et vérifiée",
+      "unverified": "Protégée, non vérifiée",
+      "never_ran": "Planifiée, jamais exécutée",
+      "failing": "Sauvegardes en échec",
+      "unprotected": "Non protégée"
+    },
+    "lastBackup": "Dernière sauvegarde",
+    "lastRestore": "Restauration vérifiée",
+    "nextRun": "Prochaine exécution",
+    "size": "Taille"
+  },
+  "row": {
+    "kind": {
+      "database": "Base de données",
+      "volume": "Volume"
+    },
+    "scratch": "Temporaire",
+    "protect": "Protéger",
+    "protected": "{{name}} est maintenant planifiée",
+    "protectFailed": "Impossible de protéger {{name}}",
+    "backupNow": "Sauvegarder maintenant",
+    "backupStarted": "Sauvegarde de {{name}} démarrée",
+    "backupFailed": "Impossible de démarrer une sauvegarde de {{name}}"
+  },
+  "target": {
+    "formLabel": "Connecter une destination de sauvegarde",
+    "providerLabel": "Fournisseur",
+    "connected": "Destination \"{{name}}\" connectée",
+    "connect": "Connecter la destination",
+    "connecting": "Connexion...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "Sans frais de sortie réseau"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "Stockage froid économique"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "Tarification forfaitaire par To"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "Région et clés"
+      },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "Interopérabilité S3, clés HMAC"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "Stockage compatible S3 avec un CDN"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "Hébergé en UE, faible coût"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "Stockage d'objets en UE"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "Compatible S3, régions UE"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "Régions mondiales"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "Votre propre serveur S3"
+      },
+      "local": {
+        "name": "Disque local",
+        "hint": "Même machine, pas sûr"
+      }
+    },
+    "localRootHint": "Stocké sous {{root}}. Saisissez un dossier à l'intérieur.",
+    "localWarning": "Les sauvegardes stockées sur le disque de cette machine sont perdues avec elle. Elles protègent contre un mauvais déploiement ou une table supprimée, pas contre un disque mort, un ransomware ou un serveur supprimé. Utilisez-les pour essayer, puis ajoutez une destination hors site.",
+    "field": {
+      "name": "Nom",
+      "bucket": "Bucket",
+      "region": "Région",
+      "endpoint": "Point de terminaison",
+      "accessKeyId": "ID de clé d'accès",
+      "secretAccessKey": "Clé d'accès secrète"
+    },
+    "placeholder": {
+      "name": "p. ex. offsite-backups"
+    },
+    "missing": "{{field}} est obligatoire."
+  },
+  "protectAll": {
+    "title": "Tout protéger",
+    "description": "Planifiez une sauvegarde pour chaque ressource qui n'en a pas. Rien ne change tant que vous n'appliquez pas.",
+    "destination": "Destination",
+    "addDestination": "Ajouter une autre destination",
+    "schedule": "Calendrier et rétention",
+    "choice": {
+      "daily": "Tous les jours à 03:00",
+      "sixHours": "Toutes les 6 heures",
+      "weekly": "Chaque semaine, le dimanche à 03:00"
+    },
+    "cron": "Calendrier cron",
+    "retain": "Sauvegardes à conserver",
+    "includeScratch_one": "Protéger aussi {{count}} ressource temporaire (aperçus et canaries)",
+    "includeScratch_other": "Protéger aussi {{count}} ressources temporaires (aperçus et canaries)",
+    "includeScratch_many": "Protéger aussi {{count}} ressources temporaires (aperçus et canaries)",
+    "plan": "Ce qui va changer",
+    "planning": "Calcul du plan...",
+    "nothingToDo": "Chaque ressource a déjà un calendrier.",
+    "kind": {
+      "database": "Base de données",
+      "volume": "Volume"
+    },
+    "cancel": "Annuler",
+    "applying": "Application...",
+    "apply_one": "Protéger {{count}} ressource",
+    "apply_other": "Protéger {{count}} ressources",
+    "apply_many": "Protéger {{count}} ressources",
+    "done_one": "{{count}} ressource planifiée",
+    "done_other": "{{count}} ressources planifiées",
+    "done_many": "{{count}} ressources planifiées",
+    "someFailed_one": "{{count}} n'a pas pu être planifiée.",
+    "someFailed_other": "{{count}} n'ont pas pu être planifiées.",
+    "someFailed_many": "{{count}} n'ont pas pu être planifiées."
+  },
+  "safety": {
+    "title": "Chiffrement et sécurité du bucket",
+    "encrypted": "Chiffrée",
+    "notEncrypted": "Non chiffrée",
+    "copied": "Clé publique copiée",
+    "copyFailed": "Impossible de copier la clé publique",
+    "keyDetails": "Détails de la clé et stockage hors serveur",
+    "keyHint": "Conservez la clé privée (APP_BACKUP_ENCRYPTION_KEY_FILE, par défaut backup-encryption.key dans le répertoire de données) dans un gestionnaire de mots de passe ou sur une autre machine. Sans elle, les sauvegardes chiffrées ne peuvent pas être restaurées après un sinistre.",
+    "copyKey": "Copier la clé publique",
+    "keyNotStored": "Vous n'avez pas confirmé que la clé privée est stockée en dehors de ce serveur. Si ce serveur est perdu, ces sauvegardes le sont aussi.",
+    "ack": "Je l'ai stockée hors de ce serveur",
+    "ackFailed": "Impossible d'enregistrer la confirmation",
+    "later": "Me le rappeler plus tard"
+  },
+  "orphans": {
+    "title": "Données orphelines",
+    "description": "Données conservées après la suppression de leur base de données ou de leur app. Supprimer une base de données ne supprime jamais ses données d'elle-même, rien ici n'est donc supprimé tant que vous ne les récupérez pas.",
+    "empty": "Aucune donnée orpheline. Chaque volume appartient à une base de données ou une app qui existe encore.",
+    "loadFailed": "Impossible de lister les données orphelines : {{error}}",
+    "large": "Les données orphelines utilisent {{size}}. Examinez-les et récupérez ce dont vous n'avez plus besoin.",
+    "role": {
+      "data": "Volume de données",
+      "certificates": "Certificats",
+      "wal archive": "Archive WAL",
+      "volume": "Volume"
+    },
+    "kind": {
+      "database": "Base de données",
+      "volume": "Volume d'app",
+      "app": "App"
+    },
+    "sizeUnknown": "taille inconnue",
+    "age_one": "{{count}} jour",
+    "age_other": "{{count}} jours",
+    "age_many": "{{count}} jours",
+    "noBackup": "Aucune sauvegarde",
+    "hasBackup_one": "{{count}} sauvegarde",
+    "hasBackup_other": "{{count}} sauvegardes",
+    "hasBackup_many": "{{count}} sauvegardes",
+    "inspect": "Inspecter",
+    "reclaim": "Récupérer",
+    "volume": "Volume",
+    "belongedTo": "Appartenait à",
+    "created": "Créé",
+    "lastBackup": "Dernière sauvegarde",
+    "noBackupDetail": "Il n'existe aucune sauvegarde de ces données",
+    "confirmTitle": "Récupérer les données de \"{{name}}\" ?",
+    "confirmDescription": "Le volume est supprimé de ce serveur. Cette action est irréversible.",
+    "confirmNoBackup": "Il n'existe aucune sauvegarde de ces données. Elles seront définitivement perdues.",
+    "confirmHasBackup_one": "{{count}} sauvegarde reste dans votre destination.",
+    "confirmHasBackup_other": "{{count}} sauvegardes restent dans votre destination.",
+    "confirmHasBackup_many": "{{count}} sauvegardes restent dans votre destination.",
+    "confirmAction": "Supprimer ces données",
+    "reclaiming": "Suppression...",
+    "reclaimed": "{{size}} récupérés"
+  },
+  "deleteData": {
+    "label": "Supprimer aussi les données",
+    "databaseHint": "Supprime le volume de données avec la base de données. Sans cela, le volume est conservé et listé sous Données orphelines dans la page Sauvegardes.",
+    "appHint": "Supprime les volumes de l'app avec l'app. Sans cela, ils sont conservés et listés sous Données orphelines dans la page Sauvegardes.",
+    "warning": "Les données sont détruites et ne peuvent pas être récupérées sauf s'il existe une sauvegarde."
+  },
+  "firstRun": {
+    "title": "Configurer les sauvegardes",
+    "description": "Connectez un endroit sûr pour conserver les sauvegardes, et chaque base de données et volume d'app pourra être protégé à partir de là.",
+    "descriptionWithResources_one": "{{count}} ressource n'a pas de sauvegarde. Connectez un endroit sûr pour la conserver, puis protégez-la en une étape.",
+    "descriptionWithResources_other": "{{count}} ressources n'ont pas de sauvegarde. Connectez un endroit sûr pour les conserver, puis protégez-les toutes en une étape.",
+    "descriptionWithResources_many": "{{count}} ressources n'ont pas de sauvegarde. Connectez un endroit sûr pour les conserver, puis protégez-les toutes en une étape.",
+    "step": {
+      "destination": {
+        "title": "Ajouter une destination",
+        "hint": "Un bucket compatible S3"
+      },
+      "schedule": {
+        "title": "Choisir un calendrier",
+        "hint": "Quotidien est une valeur par défaut raisonnable"
+      },
+      "verify": {
+        "title": "Prouver une restauration",
+        "hint": "Une sauvegarde compte une fois qu'elle se restaure"
+      }
+    }
+  },
+  "activity": {
+    "title": "Activité récente",
+    "subtitle": "Chaque tentative, de la plus récente à la plus ancienne",
+    "empty": "Aucune sauvegarde n'a encore été exécutée.",
+    "loadFailed": "Impossible de charger les sauvegardes plus anciennes",
+    "deletedTarget": "Cible supprimée",
+    "kind": "Type",
+    "resource": "Ressource",
+    "status": "Statut",
+    "target": "Cible",
+    "size": "Taille",
+    "started": "Début",
+    "verification": "Vérification",
+    "actions": "Actions",
+    "loading": "Chargement...",
+    "loadOlder": "Charger les entrées plus anciennes"
+  },
+  "baseSchedule": {
+    "title": "Calendrier des sauvegardes de base",
+    "description": "Effectuez les sauvegardes de base avec leur propre cron, indépendamment du calendrier des dumps. Laissez vide pour en effectuer une après chaque dump planifié.",
+    "cronLabel": "Expression cron",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "ID de la cible de sauvegarde",
+    "targetPlaceholder": "Par défaut, la cible de sauvegarde de la base de données",
+    "save": "Enregistrer le calendrier",
+    "saving": "Enregistrement...",
+    "saved": "Calendrier des sauvegardes de base enregistré."
+  },
+  "tables": {
+    "restores": "Restaurations",
+    "cloneDatabases": "Bases de données restaurées comme nouvelles",
+    "cloneVolumes": "Volumes restaurés comme nouveaux",
+    "pipelineRuns": "Exécutions de pipeline",
+    "activity": "Activité des sauvegardes",
+    "snapshots": "Sauvegardes",
+    "pitrBackups": "Sauvegardes de base",
+    "pitrRestores": "Restaurations à un instant précis"
+  },
+  "suggestion": {
+    "title": "Sauvegarder cette base de données",
+    "description": "Une destination est connectée, mais cette base de données n'a pas de calendrier. Suggestion : {{schedule}}, en conservant les {{retain}} dernières.",
+    "apply": "Utiliser la suggestion",
+    "applied": "Sauvegardes planifiées",
+    "failed": "Impossible de planifier les sauvegardes"
+  },
+  "banner": {
+    "description": "Protégez les bases de données et les volumes avec des sauvegardes planifiées vers un stockage que vous contrôlez, puis prouvez qu'elles se restaurent.",
+    "diagram": {
+      "database": "base de données",
+      "storage": "stockage",
+      "schedule": "calendrier"
+    }
+  },
+  "volumeFiles": {
+    "title": "Fichiers",
+    "volume": "Volume",
+    "up": "Dossier parent",
+    "upload": "Importer un fichier",
+    "loading": "Chargement des fichiers",
+    "empty": "Ce répertoire est vide.",
+    "emptyHint": "Les fichiers que l'app écrit dans ce volume apparaissent ici.",
+    "truncated": "Liste tronquée. Ouvrez un sous-répertoire pour voir le reste.",
+    "download": "Télécharger {{name}}",
+    "delete": "Supprimer {{name}}",
+    "confirm": "Confirmer"
+  },
+  "composeDb": {
+    "title": "Sauvegardes de bases de données",
+    "description": "Services de bases de données détectés dans cette app Compose.",
+    "loadFailed": "Impossible de charger les services de bases de données : {{error}}",
+    "notScheduled": "Non planifiée",
+    "scheduledSummary": "{{schedule}}, {{retention}}",
+    "paused": "En pause",
+    "target": "Cible",
+    "targetPlaceholder": "Choisir une cible",
+    "enabled": "Activée",
+    "retain": "Conserver les dernières",
+    "retainDays": "Âge max. (jours)",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "remove": "Supprimer",
+    "removing": "Suppression...",
+    "backUpNow": "Sauvegarder maintenant",
+    "starting": "Démarrage...",
+    "noTargets": "Aucune cible de sauvegarde pour l'instant.",
+    "connectTarget": "Connecter un bucket dans les Paramètres",
+    "saved": "Calendrier de sauvegarde enregistré.",
+    "saveFailed": "Impossible d'enregistrer le calendrier de sauvegarde.",
+    "removed": "Calendrier de sauvegarde supprimé.",
+    "removeFailed": "Impossible de supprimer le calendrier de sauvegarde.",
+    "started": "Sauvegarde démarrée.",
+    "startFailed": "Impossible de démarrer la sauvegarde.",
+    "removeTitle": "Supprimer le calendrier de sauvegarde de {{service}} ?",
+    "removeDescription": "Les sauvegardes planifiées s'arrêtent. Les sauvegardes existantes sont conservées.",
+    "runs": "Exécutions récentes",
+    "runsHide": "Masquer les exécutions",
+    "noRuns": "Aucune sauvegarde pour l'instant.",
+    "runsFailed": "Impossible de charger les exécutions : {{error}}",
+    "status": {
+      "running": "En cours",
+      "succeeded": "Réussie",
+      "failed": "Échec"
+    },
+    "restore": "Restaurer",
+    "restoreNeedsRoot": "Seul un admin peut restaurer une sauvegarde de base de données.",
+    "restoreTitle": "Restaurer {{service}} depuis cette sauvegarde",
+    "restoreWarning": "Cela remplace sur place la base de données en production. Un dump de sécurité des données actuelles est d'abord effectué et apparaît dans l'historique des exécutions.",
+    "restoreEngine": "Moteur",
+    "restoreObject": "Objet de sauvegarde",
+    "restoreSize": "Taille",
+    "restoreLoading": "Vérification de la sauvegarde...",
+    "restorePhraseLabel": "Saisissez {{phrase}} pour confirmer",
+    "restoreConfirm": "Remplacer la base de données",
+    "restoreStarting": "Démarrage...",
+    "restoreCancel": "Annuler",
+    "restoreClose": "Fermer",
+    "restoreAccepted": "Restauration démarrée. Dump de sécurité : {{id}}. Elle s'exécute en arrière-plan, consultez donc l'historique des exécutions et le journal d'audit pour le résultat."
+  }
+}

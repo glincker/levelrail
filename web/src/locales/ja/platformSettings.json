@@ -1,0 +1,148 @@
+{
+  "breadcrumb": {
+    "settings": "設定",
+    "platform": "プラットフォーム",
+    "label": "パンくずリスト"
+  },
+  "overview": {
+    "title": "プラットフォーム",
+    "description": "このサーバーに到達できる場所と、証明書の取得方法です。各タイルから専用のページを開けます。",
+    "tilesLabel": "プラットフォームのステータス",
+    "open": "開く",
+    "loading": "確認中",
+    "https": {
+      "title": "HTTPS",
+      "off": "HTTPSは有効になっていません",
+      "offLine": "ダッシュボードとアプリは、信頼された証明書なしで配信されています。",
+      "on": "HTTPSは有効です",
+      "onLine": "{{domain}} をHTTPSで配信しています。",
+      "enable": "HTTPSを有効化"
+    },
+    "ingress": {
+      "title": "イングレス",
+      "healthy": "イングレスは正常です",
+      "healthyLine": "{{host}} のポート80と443が応答しています。",
+      "healthyNoHost": "ポート80と443が応答しています。",
+      "attention": "イングレスに対応が必要です",
+      "attentionLine": "ページを開いて、問題のあるポートまたはアドレスを確認してください。"
+    },
+    "addresses": {
+      "title": "アドレス",
+      "set": "ダッシュボードのアドレスが設定されています",
+      "setLine": "{{url}}",
+      "unset": "ダッシュボードのアドレスがありません",
+      "unsetLine": "このダッシュボードにアクセスするための公開アドレスを設定してください。"
+    },
+    "dns": {
+      "title": "DNSプロバイダー",
+      "connected": "DNS: {{providers}} に接続済み",
+      "connectedLine": "レコードとDNS-01証明書を自動で処理できます。",
+      "none": "DNSプロバイダーが接続されていません",
+      "noneLine": "ワイルドカード証明書の発行とレコードの作成のために、プロバイダーを接続してください。"
+    },
+    "search": {
+      "label": "設定を検索",
+      "placeholder": "プラットフォーム設定を検索",
+      "hint": "/ キーで検索",
+      "results": "プラットフォーム設定の検索結果",
+      "empty": "「{{query}}」に一致するプラットフォーム設定はありません。",
+      "count_other": "{{count}} 件の設定",
+      "go": "{{page}}ページの{{title}}を開く"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "ダッシュボードの信頼された証明書を有効にし、各ドメインの証明書の状態を確認します。"
+    },
+    "ingress": {
+      "title": "イングレス",
+      "description": "トラフィックがこのサーバーに届く仕組みです。プロキシ、そのポート、独自のリバースプロキシの背後で運用するためのガイドを扱います。"
+    },
+    "addresses": {
+      "title": "アドレス",
+      "description": "ダッシュボードのアドレス、アプリのベースドメイン、自動フォールバックホスト名、DNS自動化を設定します。"
+    },
+    "dnsProviders": {
+      "title": "DNSプロバイダー",
+      "description": "DNSプロバイダーを接続すると、証明書とレコードを自動で処理できます。"
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "イングレス",
+    "addresses": "アドレス",
+    "dns-providers": "DNSプロバイダー"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "HTTPSを有効化",
+      "description": "信頼された証明書を発行し、ダッシュボードをHTTPSで配信します。"
+    },
+    "certificates": {
+      "title": "証明書の概要",
+      "description": "すべての証明書の有効期限と発行元を表示し、証明書センターへのリンクを提供します。"
+    },
+    "ingressSettings": {
+      "title": "イングレス設定",
+      "description": "プライマリドメイン、ACMEメール、HSTS。"
+    },
+    "dns01": {
+      "title": "すべてのホストでDNSチャレンジを使用",
+      "description": "CGNATの背後にあるサーバーや、ポート80が閉じているサーバー向けに、すべての証明書でDNS-01チャレンジを使用します。"
+    },
+    "ddns": {
+      "title": "ダイナミックDNS",
+      "description": "DNS名をこのサーバーのパブリックIPに向け続けます。"
+    },
+    "ingressEdge": {
+      "title": "イングレスエッジ",
+      "description": "組み込みプロキシと、待ち受けるポート。"
+    },
+    "connectivity": {
+      "title": "イングレスの接続性",
+      "description": "このサーバーのアドレスでポート80と443が応答しているかどうか。"
+    },
+    "reverseProxy": {
+      "title": "リバースプロキシガイド",
+      "description": "独自のリバースプロキシの背後でこのプラットフォームを運用します。"
+    },
+    "dashboardUrl": {
+      "title": "ダッシュボードのアドレス",
+      "description": "リンク、メール、Webhookで使用される公開URL。"
+    },
+    "appsBaseDomain": {
+      "title": "アプリのベースドメイン",
+      "description": "新しいアプリにサブドメインを割り当てるドメイン。"
+    },
+    "fallbackDomains": {
+      "title": "フォールバックドメイン",
+      "description": "まだドメインを持たないアプリ向けの自動ホスト名。"
+    },
+    "domainAutomation": {
+      "title": "ドメイン自動化",
+      "description": "新しいドメインのDNSレコードを自動的に作成します。"
+    },
+    "cloudflareDns": {
+      "title": "Cloudflare DNS",
+      "description": "DNSレコードとDNS-01証明書用のAPIトークン。"
+    },
+    "route53Dns": {
+      "title": "Route 53 DNS",
+      "description": "ホストゾーンのレコード用のAWS認証情報。"
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "Cloud DNSゾーン用のサービスアカウント。"
+    }
+  },
+  "strip": {
+    "label": "プラットフォームのステータス",
+    "httpsOff": "HTTPSは有効になっていません",
+    "httpsOn": "HTTPSは有効です",
+    "enable": "HTTPSを有効化",
+    "address": "ダッシュボードのアドレス",
+    "addressUnset": "未設定",
+    "manage": "プラットフォーム設定"
+  }
+}

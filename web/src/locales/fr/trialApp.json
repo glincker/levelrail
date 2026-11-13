@@ -1,0 +1,53 @@
+{
+  "banner": {
+    "title": "Deploy d'essai",
+    "body": "Deployée pour essayer le modèle. Conservez-la comme app permanente, ou arrêtez-la et supprimez-la quand vous avez terminé. D'ici là, elle continue de tourner comme n'importe quelle autre app.",
+    "keep": "Conserver cette app",
+    "delete": "Arrêter et supprimer"
+  },
+  "dialog": {
+    "title": "Conserver {{name}} comme app permanente",
+    "description": "Elle cesse d'être signalée comme un essai jetable et s'affiche comme toute autre app, avec tous les services de la même app. Rien ne redémarre et rien n'est supprimé.",
+    "checklistTitle": "Ce qu'une app permanente devrait avoir",
+    "checklistHint": "Configurez-les maintenant ou plus tard ; chacun ouvre l'écran qui s'en charge.",
+    "cancel": "Annuler",
+    "confirm": "Conserver l'app",
+    "keeping": "Conservation...",
+    "loading": "Contrôle...",
+    "done": "Fait",
+    "todo": "Non configuré",
+    "items": {
+      "domain": {
+        "label": "Un domaine personnalisé",
+        "done": "Sert {{domain}}",
+        "todo": "Seulement l'adresse générée pour l'instant",
+        "action": "Ajouter un domaine"
+      },
+      "backup": {
+        "label": "Une planification de sauvegarde pour ses volumes",
+        "done": "{{count}} volumes sur {{total}} planifiés",
+        "todo": "Aucun volume n'a de planification de sauvegarde",
+        "none": "Aucun volume à sauvegarder",
+        "action": "Planifier les sauvegardes"
+      },
+      "alert": {
+        "label": "Une règle d'alerte",
+        "done": "{{count}} règles d'alerte",
+        "todo": "Rien ne vous prévient quand elle tombe en panne",
+        "action": "Ajouter une règle d'alerte"
+      },
+      "placement": {
+        "label": "Un projet et un environnement",
+        "done": "{{project}} / {{environment}}",
+        "projectOnly": "Projet {{project}}, sans environnement",
+        "todo": "Pas encore dans un projet",
+        "action": "Choisir où elle se trouve"
+      }
+    }
+  },
+  "toast": {
+    "kept": "{{name}} est désormais une app permanente.",
+    "alreadyKept": "{{name}} était déjà conservée.",
+    "failed": "Impossible de conserver l'app."
+  }
+}

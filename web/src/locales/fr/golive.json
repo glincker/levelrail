@@ -1,0 +1,68 @@
+{
+  "title": "Mise en ligne",
+  "pageTitle": "Mise en ligne : {{name}}",
+  "intro": "Une seule liste de contrôle pour passer de votre app en cours d'exécution à https sur votre domaine. Chaque étape indique ce qui a été trouvé et l'unique chose à faire ensuite.",
+  "domainLabel": "Domaine",
+  "noDomain": "Pas encore de domaine. Les premières étapes fonctionnent sans.",
+  "loading": "Vérification de votre configuration",
+  "loadFailed": "Impossible de charger la liste de contrôle : {{message}}",
+  "retry": "Réessayer",
+  "recheck": "Vérifier à nouveau",
+  "liveBanner": "En ligne : {{url}}",
+  "openSite": "Ouvrir {{url}}",
+  "state": {
+    "not_live": "Hors ligne",
+    "waiting_dns": "En attente du DNS",
+    "waiting_certificate": "En attente du certificat",
+    "live": "En ligne",
+    "needs_attention": "Nécessite votre attention"
+  },
+  "status": {
+    "ok": "Terminé",
+    "warn": "Avertissement",
+    "fail": "Action requise",
+    "pending": "En attente",
+    "unknown": "Inconnu"
+  },
+  "announce": "{{title}} : {{status}}",
+  "nextCheck": "Prochaine vérification {{time}}",
+  "copy": "Copier",
+  "copied": "Copié",
+  "copyValue": "Copier {{label}}",
+  "blocked": "Pas encore disponible : {{reason}}",
+  "actionFailed": "L'action a échoué : {{message}}",
+  "scope": {
+    "control_plane_host": "Vérifié depuis ce serveur. Cela ne prouve pas que l'ensemble d'Internet peut l'atteindre. Un certificat Let's Encrypt en est la preuve, car Let's Encrypt a validé le domaine depuis l'extérieur."
+  },
+  "records": "Enregistrements à créer",
+  "provider": {
+    "title": "Étapes du pare-feu {{name}}",
+    "ports": "Ouvrez ces ports entrants",
+    "docs": "Ouvrir le guide {{name}}",
+    "portRule": "{{port}}/{{protocol}} depuis {{source}}"
+  },
+  "fix": {
+    "title": "Ouvrir les ports 80 et 443 ?",
+    "description": "Cela modifie le pare-feu de l'hôte. Seuls ces ports sont ouverts, aucune autre règle n'est touchée et un pare-feu désactivé reste désactivé.",
+    "willRun": "Va exécuter : {{command}}",
+    "undo": "Annuler avec : {{command}}",
+    "notPersistent": "La règle est perdue au redémarrage, sauf si vous enregistrez vos règles de pare-feu.",
+    "confirm": "Ouvrir les ports",
+    "pending": "Ouverture",
+    "refused": "Pas automatique : {{reason}}"
+  },
+  "timeline": {
+    "title": "Activité",
+    "empty": "Rien ne s'est encore passé.",
+    "scheduled": "Planifié"
+  },
+  "badge": {
+    "link": "Ouvrir la liste de contrôle de mise en ligne pour {{domain}}"
+  },
+  "cta": {
+    "title": "Votre app est en cours d'exécution : mettez-la en ligne sur votre domaine",
+    "body": "Pointez un domaine vers elle et obtenez un certificat automatique, avec un statut en direct à chaque étape.",
+    "button": "Mettre en ligne"
+  },
+  "diagnoseLink": "Ouvrir la liste de contrôle de mise en ligne"
+}

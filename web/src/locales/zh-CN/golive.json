@@ -1,0 +1,68 @@
+{
+  "title": "上线",
+  "pageTitle": "上线：{{name}}",
+  "intro": "从运行中的应用到你域名上的 https，只需一份清单。每一步都会显示检查结果和接下来要做的那一件事。",
+  "domainLabel": "域名",
+  "noDomain": "还没有域名。前几步无需域名即可完成。",
+  "loading": "正在检查你的配置",
+  "loadFailed": "无法加载清单：{{message}}",
+  "retry": "重试",
+  "recheck": "重新检查",
+  "liveBanner": "已上线：{{url}}",
+  "openSite": "打开 {{url}}",
+  "state": {
+    "not_live": "未上线",
+    "waiting_dns": "等待 DNS",
+    "waiting_certificate": "等待证书",
+    "live": "已上线",
+    "needs_attention": "需要处理"
+  },
+  "status": {
+    "ok": "完成",
+    "warn": "警告",
+    "fail": "需要操作",
+    "pending": "等待中",
+    "unknown": "未知"
+  },
+  "announce": "{{title}}：{{status}}",
+  "nextCheck": "下次检查 {{time}}",
+  "copy": "复制",
+  "copied": "已复制",
+  "copyValue": "复制{{label}}",
+  "blocked": "暂不可用：{{reason}}",
+  "actionFailed": "操作失败：{{message}}",
+  "scope": {
+    "control_plane_host": "此检查在本服务器上进行，无法证明更广泛的互联网能够访问到它。Let's Encrypt 证书才是这一证明，因为 Let's Encrypt 是从外部验证的域名。"
+  },
+  "records": "需要创建的记录",
+  "provider": {
+    "title": "{{name}} 防火墙步骤",
+    "ports": "开放这些入站端口",
+    "docs": "打开 {{name}} 指南",
+    "portRule": "{{port}}/{{protocol}}，来源 {{source}}"
+  },
+  "fix": {
+    "title": "开放 80 和 443 端口？",
+    "description": "这会更改主机防火墙。只会开放这两个端口，不会改动其他规则，已停用的防火墙仍保持停用。",
+    "willRun": "将运行：{{command}}",
+    "undo": "撤销命令：{{command}}",
+    "notPersistent": "除非保存防火墙规则，否则该规则会在重启后丢失。",
+    "confirm": "开放端口",
+    "pending": "开放中",
+    "refused": "无法自动处理：{{reason}}"
+  },
+  "timeline": {
+    "title": "活动",
+    "empty": "还没有任何活动。",
+    "scheduled": "已计划"
+  },
+  "badge": {
+    "link": "打开 {{domain}} 的上线清单"
+  },
+  "cta": {
+    "title": "你的应用已在运行：让它在你的域名上线",
+    "body": "将域名指向它并获取自动证书，每一步都有实时状态。",
+    "button": "上线"
+  },
+  "diagnoseLink": "打开上线清单"
+}

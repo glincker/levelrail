@@ -1,0 +1,68 @@
+{
+  "master": {
+    "title": "Master-Schlüssel",
+    "age_one": "{{count}} Tag alt",
+    "age_other": "{{count}} Tage alt",
+    "never": "Nie rotiert"
+  },
+  "apps": {
+    "title": "Datenschlüssel der Apps",
+    "empty": "Noch keine App hat ein Secret gespeichert, daher gibt es keine Datenschlüssel zu rotieren.",
+    "age_one": "{{count}} Tag",
+    "age_other": "{{count}} Tage",
+    "values_one": "{{count}} Secret",
+    "values_other": "{{count}} Secrets",
+    "overdue": "Limit überschritten",
+    "current": "Aktuell",
+    "rotate": "Schlüssel rotieren",
+    "rotateAll": "Alle Schlüssel rotieren",
+    "neverRotated": "Erstellt {{date}}",
+    "rotatedOn": "Rotiert {{date}}"
+  },
+  "lastRun": {
+    "title": "Letzter Durchlauf von Alle rotieren",
+    "progress": "{{done}} von {{total}} Apps, {{failed}} fehlgeschlagen",
+    "finished": "Beendet {{date}}",
+    "interrupted": "Unterbrochen. Rotieren Sie alle Schlüssel erneut, um dort fortzufahren, wo es gestoppt hat."
+  },
+  "policy": {
+    "title": "Maximales Schlüsselalter",
+    "description": "Sendet eine Erinnerung über Ihre Benachrichtigungskanäle, wenn ein Schlüssel älter ist. 0 schaltet Erinnerungen aus.",
+    "maxAge": "Maximales Alter in Tagen",
+    "remindEvery": "Erinnerung wiederholen alle (Tage)",
+    "save": "Richtlinie speichern",
+    "saving": "Speichern",
+    "saved": "Richtlinie für das Schlüsselalter gespeichert"
+  },
+  "hint": {
+    "fixMaster": "Jetzt rotieren",
+    "fixApp": "Diesen Schlüssel rotieren",
+    "fixAll": "Alle Schlüssel rotieren",
+    "fixPolicy": "Alle 90 Tage erinnern"
+  },
+  "confirm": {
+    "titleOne": "Datenschlüssel für {{app}} rotieren?",
+    "titleAll": "Alle App-Datenschlüssel rotieren?",
+    "descriptionOne": "Es wird ein neuer Schlüssel erzeugt und jedes Secret dieser App in einem Schritt neu verschlüsselt. Schlägt etwas fehl, ändert sich nichts.",
+    "descriptionAll": "Jede App wird in einem eigenen Schritt rotiert. Ein Durchlauf, der mittendrin stoppt, setzt dort fort, wo er aufgehört hat.",
+    "consequenceReadable": "Alle Secrets bleiben lesbar und es ist kein Neustart nötig.",
+    "consequenceAudit": "Die Rotation wird im Audit-Log aufgezeichnet.",
+    "action": "Rotieren",
+    "pending": "Wird rotiert",
+    "typed": "ROTIEREN"
+  },
+  "result": {
+    "single_one": "Schlüssel für {{app}} rotiert und {{count}} Secret neu verschlüsselt",
+    "single_other": "Schlüssel für {{app}} rotiert und {{count}} Secrets neu verschlüsselt",
+    "all": "{{rotated}} Schlüssel rotiert, {{skipped}} bereits aktuell",
+    "allFailed": "{{failed}} Schlüssel konnten nicht rotiert werden und blieben unverändert: {{names}}",
+    "partial": "Der Durchlauf wurde abgebrochen. Rotieren Sie alle Schlüssel erneut, um fortzufahren."
+  },
+  "errors": {
+    "load": "Der Status der Verschlüsselungsschlüssel konnte nicht geladen werden",
+    "rotate": "Rotation fehlgeschlagen"
+  },
+  "title": "Verschlüsselungsschlüssel",
+  "description": "Jedes Secret wird mit einem Datenschlüssel seiner App verschlüsselt, und diese Schlüssel werden vom Master-Schlüssel geschützt. Rotieren Sie sie, um zu begrenzen, wie lange ein einzelner Schlüssel im Einsatz ist.",
+  "guide": "Anleitung zur Schlüsselrotation"
+}

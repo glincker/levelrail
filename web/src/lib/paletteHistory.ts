@@ -1,8 +1,9 @@
+import { PALETTE_HISTORY_MAX } from './paletteConfig'
 // Local-only palette history: how often and how recently each destination is opened, and what tends
 // to follow what. It never leaves this browser; clearHistory() wipes it.
 const KEY = 'palette.history'
 const HALF_LIFE_MS = 14 * 24 * 60 * 60 * 1000
-const MAX_ITEMS = 200
+const MAX_ITEMS = PALETTE_HISTORY_MAX
 
 interface History {
   items: Record<string, { n: number; t: number }>

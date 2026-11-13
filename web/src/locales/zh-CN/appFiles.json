@@ -1,0 +1,47 @@
+{
+  "title": "文件",
+  "description": "启动时写入容器的内联配置文件。密钥文件保存后将不再显示。",
+  "empty": "尚无内联文件。",
+  "emptyHint": "添加文件，部署时会将其挂载到应用中。",
+  "add": "添加文件",
+  "edit": "编辑 {{path}}",
+  "delete": "删除 {{path}}",
+  "redacted": "已脱敏",
+  "secretBadge": "密钥",
+  "size": "{{count}} 字节",
+  "loadError": "无法加载文件。",
+  "dialog": {
+    "addTitle": "添加文件",
+    "editTitle": "编辑文件",
+    "description": "作为一个文件保存在应用容器内。",
+    "path": "路径",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "权限模式",
+    "modePlaceholder": "0644",
+    "content": "内容",
+    "contentRedactedHint": "此文件是密钥。输入新内容即可替换。",
+    "secret": "密钥文件",
+    "secretHelp": "密钥内容保存后将不再显示。",
+    "restart": "立即重启以应用",
+    "cancel": "取消",
+    "save": "保存文件",
+    "saving": "保存中..."
+  },
+  "validation": {
+    "path": "路径必须是绝对路径。",
+    "mode": "权限模式必须是八进制，例如 0644。"
+  },
+  "deleteDialog": {
+    "title": "删除文件？",
+    "description": "{{path}} 将从应用中移除。",
+    "restart": "立即重启以应用",
+    "confirm": "删除",
+    "deleting": "删除中..."
+  },
+  "toast": {
+    "saved": "文件已保存。",
+    "saveFailed": "无法保存文件。",
+    "deleted": "文件已删除。",
+    "deleteFailed": "无法删除文件。"
+  }
+}

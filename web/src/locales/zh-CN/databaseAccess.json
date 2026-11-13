@@ -1,0 +1,341 @@
+{
+  "nav": {
+    "access": "访问",
+    "network": "网络"
+  },
+  "access": {
+    "title": "访问",
+    "description": "谁可以登录此数据库,以及此平台上谁可以管理它。",
+    "unsupportedTitle": "用户管理仅适用于 PostgreSQL",
+    "unsupportedBody": "此引擎尚无托管的数据库用户。下方的平台访问仍然适用。",
+    "notRunningTitle": "数据库未运行",
+    "notRunningBody": "用户从运行中的数据库读取。请先启动它,才能列出、创建或更改登录。",
+    "loadFailed": "无法读取此数据库的用户:{{error}}"
+  },
+  "users": {
+    "tableLabel": "数据库用户",
+    "title": "数据库用户",
+    "description": "数据库本身的登录。你的应用继续使用平台自己的凭据,因此这里的用户永远不会影响它们。",
+    "create": "创建用户",
+    "emptyTitle": "暂无额外用户",
+    "emptyBody": "为队友或报表工具创建只读登录,而不是共享主密码。",
+    "columns": {
+      "name": "用户",
+      "access": "访问权限",
+      "status": "状态",
+      "connections": "连接数",
+      "expires": "过期时间",
+      "actions": "操作"
+    },
+    "kind": {
+      "platform": "平台管理员",
+      "temp": "临时",
+      "user": "托管",
+      "system": "其他"
+    },
+    "preset": {
+      "read_only": "只读",
+      "read_write": "读写",
+      "owner": "此数据库的所有者"
+    },
+    "presetHint": {
+      "read_only": "可以读取每张表。即使工具尝试写入也会被拒绝。",
+      "read_write": "可以读取和更改行。不能更改 schema。",
+      "owner": "完全控制这一个数据库,包括 schema。没有服务器级权限。"
+    },
+    "status": {
+      "active": "可登录",
+      "disabled": "已禁用",
+      "expired": "已过期"
+    },
+    "connectionLimit": "上限 {{count}}",
+    "unlimited": "无上限",
+    "never": "从不",
+    "protectedNote": "平台角色,无法在此更改",
+    "rotate": "轮换密码",
+    "disable": "禁用",
+    "enable": "启用",
+    "delete": "删除",
+    "rotateToast": "密码已轮换。打开的会话已结束。",
+    "disableToast": "{{name}} 无法再登录。",
+    "enableToast": "{{name}} 可以再次登录。",
+    "deleteToast": "{{name}} 已删除。",
+    "failedToast": "无法更改用户",
+    "deleteTitle": "删除 {{name}}?",
+    "deleteBody": "该登录将被移除,其会话结束。它创建的任何内容都会保留,并移交给管理员角色。",
+    "deleteConfirm": "删除用户",
+    "cancel": "取消",
+    "rotateRestarted": "已重启以获取新凭据:{{apps}}。"
+  },
+  "create": {
+    "title": "创建数据库用户",
+    "description": "密码由系统生成并只显示一次。它不会被存储,因此请在关闭前复制。",
+    "name": "用户名",
+    "nameHint": "小写字母、数字和下划线,以字母开头。",
+    "preset": "访问权限",
+    "limit": "连接数上限",
+    "limitHint": "防止某个工具占用所有连接。",
+    "expiry": "登录过期",
+    "expiryNever": "从不",
+    "expiry7": "7 天后",
+    "expiry30": "30 天后",
+    "expiry90": "90 天后",
+    "submit": "创建用户",
+    "submitting": "正在创建",
+    "failedToast": "无法创建用户"
+  },
+  "credential": {
+    "title": "请立即复制",
+    "description": "此密码只显示一次,且不会存储在任何地方。如果丢失,请轮换密码。",
+    "username": "用户",
+    "password": "密码",
+    "fromApps": "来自此平台上的应用",
+    "fromOutside": "来自你的机器",
+    "expires": "{{when}} 过期",
+    "copy": "复制",
+    "copied": "已复制",
+    "done": "我已复制",
+    "tlsNote": "此连接字符串要求使用 TLS。"
+  },
+  "temp": {
+    "tableLabel": "临时登录",
+    "title": "临时凭据",
+    "description": "为开发者或一次性作业提供的短期登录。它会过期并自动移除,即使此控制面重启也一样。",
+    "preset": "访问权限",
+    "lifetime": "有效期",
+    "minutes_other": "{{count}} 分钟",
+    "hours_other": "{{count}} 小时",
+    "issue": "获取临时凭据",
+    "issuing": "正在签发",
+    "issuedToast": "临时登录已签发",
+    "clampedNote": "有效期已被调整到允许的 {{min}} 至 {{max}} 分钟范围内。",
+    "failedToast": "无法签发临时登录",
+    "activeTitle": "有效的临时登录",
+    "emptyActive": "目前没有。",
+    "columns": {
+      "role": "登录",
+      "access": "访问权限",
+      "by": "签发者",
+      "expires": "过期时间",
+      "actions": ""
+    },
+    "revoke": "立即撤销",
+    "revokedToast": "临时登录已撤销",
+    "expiresIn": "{{when}} 后",
+    "expiredWaiting": "已过期,正在移除"
+  },
+  "who": {
+    "tableLabel": "谁可以访问",
+    "title": "谁可以管理此数据库",
+    "description": "此平台上对此数据库拥有权限的人员和令牌,来自他们自己的权限以及 IAM 策略。",
+    "grant": "授予访问权限",
+    "policies": "打开 IAM 策略",
+    "emptyTitle": "没有人通过策略获得访问权限",
+    "emptyBody": "只有拥有平台级权限的用户和令牌才能管理此数据库。",
+    "columns": {
+      "who": "对象",
+      "abilities": "权限",
+      "via": "来源",
+      "actions": ""
+    },
+    "type": {
+      "user": "用户",
+      "token": "令牌"
+    },
+    "policiesTitle": "提到此数据库的策略",
+    "scopedOne": "仅限此数据库",
+    "scopedWide": "范围大于此数据库",
+    "attached": "已关联 {{count}} 条"
+  },
+  "grant": {
+    "title": "授予对此数据库的访问权限",
+    "description": "应用一条仅限于这一个数据库的策略。平台上的其他内容不受影响。",
+    "principalType": "对象",
+    "user": "用户",
+    "token": "API 令牌",
+    "principal": "选择一项",
+    "template": "访问级别",
+    "templates": {
+      "database-read-only": "只读控制台",
+      "database-operator": "操作员",
+      "database-owner": "所有者"
+    },
+    "templateHint": {
+      "database-read-only": "可以查看数据库并读取其数据。任何更改都会被拒绝。",
+      "database-operator": "读取数据并执行操作:备份、停止和启动。不包括用户、恢复或写入控制台。",
+      "database-owner": "此数据库上的一切,包括用户、凭据和网络规则。"
+    },
+    "previewTitle": "将应用此策略",
+    "preview": "预览",
+    "apply": "应用策略",
+    "appliedToast": "访问权限已授予",
+    "failedToast": "无法授予访问权限"
+  },
+  "network": {
+    "title": "网络",
+    "description": "此数据库如何被访问、允许谁进入,以及其可达范围有多大。",
+    "readOnlyNotice": "你拥有只读访问权限。更改数据库的网络暴露需要对此数据库的 root 访问权限。",
+    "loadFailed": "无法读取此数据库的网络:{{error}}"
+  },
+  "reach": {
+    "tableLabel": "已连接的客户端",
+    "title": "可达性",
+    "verdict": {
+      "stopped": "数据库未运行,因此任何内容都无法访问它。",
+      "privateNone": "私有:没有应用引用它,也没有发布端口。",
+      "privateOne": "私有:只有 1 个应用可以访问它。",
+      "privateMany": "私有:只有这 {{count}} 个应用可以访问它。",
+      "restricted": "已在端口 {{port}} 上发布,限制为允许的来源。",
+      "exposed": "已在端口 {{port}} 上暴露到互联网。",
+      "hostOnly": "已在端口 {{port}} 上发布,但只有主机本身可以访问它。",
+      "unknown": "已在端口 {{port}} 上发布。无法读取防火墙,因此暴露情况未知。"
+    },
+    "internal": "内部地址",
+    "networks": "Docker 网络",
+    "networkKind": {
+      "default-bridge": "默认网桥",
+      "app": "应用网络",
+      "other": "网络"
+    },
+    "published": "已发布的端口",
+    "notPublished": "未发布。只有位于共享 Docker 网络上的容器才能连接。",
+    "bind": "绑定到 {{bind}}",
+    "clients": "连接的应用",
+    "noClients": "没有应用引用此数据库。",
+    "columns": {
+      "app": "应用",
+      "via": "来源",
+      "project": "项目",
+      "environment": "环境",
+      "scope": "在范围内"
+    },
+    "inScope": "是",
+    "outOfScope": "否,已分离",
+    "makePrivate": "设为私有",
+    "makePrivateTitle": "停止发布此端口?",
+    "makePrivateBody": "数据库容器会被替换为不带已发布端口的版本,并移除针对它的所有规则。平台上的应用继续工作。你机器上的工具将失去直接访问。",
+    "makePrivateConfirm": "设为私有",
+    "madePrivateToast": "该端口不再发布",
+    "failedToast": "无法更改暴露方式",
+    "bridgeCaveat": "此主机上 Docker 默认网桥中的容器仍可通过地址访问此数据库。范围限制的是平台关联哪些应用,而不是谁共享默认网桥。"
+  },
+  "rules": {
+    "title": "允许的来源",
+    "description": "只有这些地址可以连接到已发布的端口。规则存在于主机防火墙中并带有标记,以便干净地移除。",
+    "noPort": "没有发布任何端口,因此没有可限制的内容。请从概览中发布端口以便从你的机器连接,然后在这里锁定它。",
+    "empty": "无限制。任何能路由到已发布端口的人都可以连接。",
+    "source": "来源 IP 或 CIDR",
+    "description_": "描述",
+    "descriptionPlaceholder": "办公室、笔记本电脑、CI runner",
+    "add": "添加来源",
+    "remove": "移除",
+    "localContainers": "同时允许此主机上的容器",
+    "preview": "预览规则",
+    "apply": "应用规则",
+    "clear": "移除限制",
+    "clearedToast": "限制已移除",
+    "appliedToast": "规则已应用",
+    "failedToast": "无法应用规则",
+    "previewTitle": "具体规则",
+    "effect": "将发生的变化",
+    "confirm": "我明白哪些内容会被丢弃",
+    "driftMissing": "防火墙中缺失:{{sources}}。再次应用规则以恢复它们。",
+    "driftExtra": "防火墙还允许:{{sources}}。这些不是在此处设置的。",
+    "cannot": "无法应用规则:{{reason}}"
+  },
+  "scope": {
+    "title": "网络范围",
+    "description": "限制平台将哪些应用关联到此数据库。默认保持现有行为。",
+    "options": {
+      "platform": "整个平台",
+      "project": "仅同一项目",
+      "environment": "仅同一环境"
+    },
+    "hint": {
+      "platform": "任何引用此数据库的应用都可以访问它。",
+      "project": "仅限数据库所在项目中的应用。其他应用会被分离。",
+      "environment": "仅限数据库所在环境中的应用。其他应用会被分离。"
+    },
+    "placement": "此数据库位于项目 {{project}} 和环境 {{environment}}。",
+    "unplaced": "未设置",
+    "check": "检查影响",
+    "apply": "应用范围",
+    "applyAnyway_other": "应用并分离 {{count}} 个应用",
+    "dryRunTitle": "此范围的影响",
+    "noneLost": "每个引用此数据库的应用都保留访问权限。",
+    "lost_other": "有 {{count}} 个应用将失去访问权限。它们会在下一次协调时被分离,并在其状态中显示原因。",
+    "appliedToast": "范围已更新",
+    "failedToast": "无法更改范围"
+  },
+  "tls": {
+    "title": "要求 TLS",
+    "description": "拒绝未加密的连接。此平台生成的连接字符串已经请求 TLS。",
+    "unsupported": "此引擎没有 TLS 要求设置。",
+    "notEnabled": "此数据库尚未启用 TLS。",
+    "redis": "此引擎在开启 TLS 后只接受 TLS 连接。",
+    "required": "必需",
+    "optional": "可选",
+    "drift": "服务器与已保存的设置不一致。请再次切换以重新对齐。",
+    "warning": "配置了 sslmode=disable 的客户端将被拒绝。",
+    "updatedToast": "TLS 要求已更新",
+    "failedToast": "无法更改 TLS 要求",
+    "serverTitle": "加密连接",
+    "serverHint": "在数据库服务器上开启或关闭 TLS。关闭会移除证书,数据库会重启以应用更改。",
+    "switchedToast": "TLS 设置已保存,数据库将重启",
+    "switchFailedToast": "无法更改 TLS",
+    "status": "服务器 TLS:{{state}}",
+    "on": "开",
+    "off": "关",
+    "recheck": "重新检查"
+  },
+  "reveal": {
+    "title": "显示密码",
+    "description": "按请求一次性显示生成的所有者密码。此操作会被审计,并在 30 秒后自动隐藏。",
+    "show": "显示",
+    "hide": "隐藏",
+    "autoHide": "30 秒后自动隐藏。",
+    "failed": "无法显示密码"
+  },
+  "rotation": {
+    "title": "所有者密码",
+    "description": "你的应用用来访问此数据库的密码。轮换它会更改数据库中的密码,用真实登录进行检查,然后更新所有使用它的应用。",
+    "rotate": "轮换密码",
+    "unsupportedTitle": "此引擎不支持轮换",
+    "unsupportedBody": "此引擎运行时没有平台可更改的所有者密码,因此这里没有可轮换的内容。",
+    "age_other": "密码已于 {{count}} 天前更改。",
+    "ageUnknown": "尚未记录任何密码更改。",
+    "state": {
+      "idle": "已稳定",
+      "pending": "稳定中",
+      "failed": "上次尝试已回滚"
+    },
+    "pendingBody": "轮换仍在稳定中。它会在一小时内自行完成,在此之前旧密码仍然有效。",
+    "failedBody": "上次轮换已回滚,仍在使用旧密码。原因:{{reason}}。你可以再次轮换。",
+    "reason": {
+      "verify_failed": "数据库拒绝了新密码",
+      "apply_failed": "数据库无法应用新密码",
+      "reference_update_failed": "无法更新已存储的凭据",
+      "unresolved": "两个密码都无法确认",
+      "interrupted": "轮换在数据库更改之前被中断",
+      "unknown": "未知"
+    },
+    "failed": "无法轮换密码",
+    "done_other": "密码已轮换。{{count}} 个应用已重启。",
+    "willRestart_other": "这 {{count}} 个应用将重启以获取新密码:{{apps}}。",
+    "noRestart": "没有运行中的应用使用此数据库,因此不会重启任何内容。",
+    "verifies": "新密码会通过真实登录进行检查。如果失败,会恢复旧密码,其他内容不会改变。",
+    "suspended": "已停止的应用会在启动时获取新密码:{{apps}}。",
+    "loading": "正在检查哪些应用使用此数据库。",
+    "previewFailed": "无法检查哪些应用会重启。",
+    "confirmTitle": "轮换所有者密码?",
+    "confirmDescription": "应用在切换到新密码时会短暂重启。此更改会记录在审计日志中,但不含密码。",
+    "confirmAction": "轮换密码",
+    "confirmPending": "正在轮换",
+    "scheduleLabel": "每隔多少天轮换",
+    "schedule": "保存计划",
+    "scheduleSaving": "正在保存",
+    "scheduleSaved": "轮换计划已保存",
+    "scheduleNext": "每 {{days}} 天自动轮换。下次在 {{date}}。",
+    "scheduleOff": "自动轮换已关闭。输入天数即可开启。"
+  }
+}

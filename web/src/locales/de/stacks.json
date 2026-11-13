@@ -1,0 +1,245 @@
+{
+  "title": "Stacks",
+  "description": "Deklarative Ressourcensätze mit einem Revisionsverlauf, den Sie vergleichen, pinnen und zurückrollen können.",
+  "empty": {
+    "title": "Noch keine Stacks",
+    "description": "Wenden Sie über die CLI ein Manifest auf einen Stack an, dann erscheint er hier mit seinen Revisionen."
+  },
+  "loadFailed": "Stacks konnten nicht geladen werden.",
+  "columns": {
+    "scope": "Geltungsbereich",
+    "name": "Stack",
+    "project": "Projekt",
+    "revision": "Neueste",
+    "status": "Status",
+    "flags": "Markierungen",
+    "created": "Erstellt"
+  },
+  "status": {
+    "pending_approval": "Wartet auf Genehmigung",
+    "applying": "Wird angewendet",
+    "applied": "Angewendet",
+    "partial": "Teilweise",
+    "failed": "Fehlgeschlagen",
+    "superseded": "Abgelöst",
+    "rejected": "Abgelehnt",
+    "none": "Keine Revisionen"
+  },
+  "scope": {
+    "project": "Projekt",
+    "install": "Installation",
+    "projectTip": "Gehört zu einem Projekt",
+    "installTip": "Umfasst die gesamte Installation"
+  },
+  "flags": {
+    "locked": "Gesperrt",
+    "lockedTip": "Gehalten von {{holder}} bei Revision {{revision}}",
+    "pinned": "Auf r{{revision}} gepinnt",
+    "driftLock": "Drift sperrt",
+    "driftWarn": "Drift warnt",
+    "approval": "Genehmigung nötig",
+    "prune": "Bereinigen erlaubt"
+  },
+  "detail": {
+    "back": "Alle Stacks",
+    "revisionShort": "r{{number}}",
+    "inProject": "Projekt {{project}}",
+    "createdBy": "Erstellt von {{name}}",
+    "lockedBanner": "Gesperrt von {{holder}} für Revision {{revision}} bis {{until}}.",
+    "pinnedBanner": "Auf Revision {{revision}} gepinnt. Neue Anwendungen werden abgelehnt, bis Sie sie lösen.",
+    "resources": "{{count}} verwaltete Ressourcen",
+    "loadFailed": "Dieser Stack konnte nicht geladen werden."
+  },
+  "actions": {
+    "pin": "Pinnen",
+    "unpin": "Lösen",
+    "unlock": "Entsperren",
+    "delete": "Löschen",
+    "rollback": "Zurückrollen",
+    "view": "Ansehen",
+    "diff": "Vergleichen",
+    "viewRev": "Revision {{number}} ansehen",
+    "diffRev": "Revision {{number}} vergleichen",
+    "rollbackRev": "Auf Revision {{number}} zurückrollen",
+    "pinRev": "Revision {{number}} pinnen",
+    "unpinRev": "Revision {{number}} lösen",
+    "pinned": "Auf Revision {{revision}} gepinnt",
+    "unpinned": "Stack gelöst",
+    "unlocked": "Stack entsperrt",
+    "failed": "Aktion fehlgeschlagen",
+    "approveRev": "Revision {{number}} genehmigen",
+    "rejectRev": "Revision {{number}} ablehnen"
+  },
+  "history": {
+    "title": "Revisionen",
+    "empty": "Noch keine Revisionen.",
+    "columns": {
+      "number": "Rev",
+      "status": "Status",
+      "actor": "Von",
+      "source": "Quelle",
+      "when": "Wann"
+    },
+    "rollbackOf": "Rollback von r{{number}}",
+    "pinnedMark": "Gepinnt",
+    "ariaLabel": "Stack-Revisionen"
+  },
+  "revision": {
+    "title": "Revision {{number}}",
+    "files": "Gerenderte Dateien",
+    "noFiles": "Für diese Revision sind keine Dateien gespeichert.",
+    "plan": "Plan",
+    "result": "Ergebnis",
+    "noPlan": "Es wurde kein Plan aufgezeichnet.",
+    "noResult": "Noch kein Ergebnis.",
+    "resultCounts": "{{applied}} angewendet, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+    "resultFailedItem": "{{kind}} {{name}}: {{reason}}",
+    "resultNoReason": "kein Grund angegeben",
+    "summary": "{{create}} erstellen, {{update}} aktualisieren, {{delete}} löschen, {{noop}} unverändert, {{error}} Fehler",
+    "hash": "Plan-Hash {{hash}}",
+    "close": "Schließen",
+    "git": "Commit {{sha}}",
+    "ciRun": "CI-Lauf",
+    "loadFailed": "Diese Revision konnte nicht geladen werden."
+  },
+  "diff": {
+    "title": "Änderungen",
+    "against": "r{{number}} vergleichen mit",
+    "live": "Live-Zustand",
+    "revisionOption": "Revision {{number}}",
+    "empty": "Keine Unterschiede.",
+    "loadFailed": "Der Vergleich konnte nicht berechnet werden.",
+    "action": {
+      "create": "Erstellen",
+      "update": "Aktualisieren",
+      "delete": "Löschen",
+      "noop": "Unverändert",
+      "error": "Fehler",
+      "added": "Hinzugefügt",
+      "removed": "Entfernt",
+      "changed": "Geändert"
+    },
+    "was": "war",
+    "now": "jetzt"
+  },
+  "rollback": {
+    "title": "Auf Revision {{number}} zurückrollen?",
+    "description": "Dies wendet die Dateien von Revision {{number}} als neue Revision auf {{name}} an.",
+    "secretsNote": "Secrets werden nicht zurückgerollt. Die aktuellen Secret-Werte bleiben, wie sie sind.",
+    "dataNote": "Daten werden nicht zurückgerollt. Datenbanken und Volumes behalten ihren aktuellen Inhalt.",
+    "confirm": "Zurückrollen",
+    "pending": "Wird zurückgerollt",
+    "done": "Auf Revision {{number}} zurückgerollt",
+    "doneStatus": "Neue Revision {{number}} endete als {{status}}",
+    "failed": "Rollback fehlgeschlagen",
+    "pendingApproval": "Revision {{number}} wartet auf Genehmigung. Es wurde noch nichts zurückgerollt."
+  },
+  "delete": {
+    "title": "Stack {{name}} löschen?",
+    "description": "Wählen Sie, was mit den Ressourcen geschieht, die der Stack verwaltet.",
+    "forget": "Den Stack vergessen",
+    "forgetHint": "Den Stack und seinen Verlauf entfernen. Ressourcen laufen unverwaltet weiter.",
+    "destroy": "Ressourcen zerstören",
+    "destroyHint": "Die vom Stack verwalteten Apps und Datenbanken löschen, dann den Stack.",
+    "confirm": "Stack löschen",
+    "pending": "Wird gelöscht",
+    "done": "Stack {{name}} gelöscht",
+    "failed": "Löschen fehlgeschlagen"
+  },
+  "settings": {
+    "title": "Stack-Einstellungen",
+    "allowPrune": "Bereinigen erlauben",
+    "allowPruneHint": "Eine Anwendung darf Ressourcen löschen, die aus dem Manifest verschwunden sind.",
+    "requireApproval": "Genehmigung verlangen",
+    "requireApprovalHint": "Anwendungen warten darauf, dass eine Person sie genehmigt.",
+    "driftPolicy": "Drift-Richtlinie",
+    "driftWarn": "Warnen",
+    "driftLock": "Sperren",
+    "driftHint": "Sperren stoppt Anwendungen, solange der Live-Zustand vom Stack abweicht.",
+    "rootOnly": "Nur ein Admin kann diese ändern.",
+    "saved": "Stack-Einstellungen gespeichert",
+    "failed": "Die Einstellungen konnten nicht gespeichert werden"
+  },
+  "badge": {
+    "managedBy": "Verwaltet vom Stack {{name}}",
+    "short": "Stack {{name}}"
+  },
+  "appPanel": {
+    "title": "Vom Stack verwaltet",
+    "revision": "Revision {{number}}",
+    "lock": "Sperrmodus",
+    "hint": "Bearbeiten Sie dies in Git. Hier vorgenommene Änderungen können überschrieben oder blockiert werden.",
+    "docs": "Stacks-Dokumentation"
+  },
+  "managedNotice": {
+    "warn": "Verwaltet vom Stack {{name}}. Manuelle Änderungen können zurückgesetzt oder als Drift gemeldet werden.",
+    "lock": "Verwaltet vom Stack {{name}}, der seine Ressourcen sperrt. Manuelle Änderungen können abgelehnt oder zurückgesetzt werden."
+  },
+  "drift": {
+    "badge": "Abgewichen ({{count}})",
+    "title": "Drift: {{count}} Ressourcen weichen vom Stack ab",
+    "revision": "gegenüber r{{number}}",
+    "checkedAt": "Geprüft {{when}}",
+    "noValues": "Es werden nur Feldpfade angezeigt. Werte werden nie gespeichert.",
+    "action": {
+      "changed": "Geändert",
+      "missing": "Fehlt",
+      "owner_changed": "Inhaber geändert"
+    }
+  },
+  "approval": {
+    "expires": "Läuft ab {{when}}",
+    "approveTitle": "Revision {{number}} genehmigen?",
+    "approveDescription": "Dies wendet den gespeicherten Plan auf {{name}} an. Ein anderer Admin hat ihn angefordert.",
+    "approveDescriptionOwn": "Sie haben diese Revision angefordert, daher muss ein anderer Admin sie für {{name}} genehmigen.",
+    "secretsNote": "Secrets werden nie gespeichert. Geben Sie jetzt alle an, die das Manifest braucht. Sie werden einmal gesendet und nicht aufbewahrt.",
+    "secretName": "Secret-Name",
+    "secretValue": "Secret-Wert",
+    "addSecret": "Secret hinzufügen",
+    "removeSecret": "Secret entfernen",
+    "approve": "Genehmigen",
+    "approving": "Wird genehmigt",
+    "approved": "Revision {{number}} genehmigt",
+    "approvedStatus": "Beendet als {{status}}",
+    "stale": "Der Plan hat sich nach der Prüfung geändert. Fordern Sie die Genehmigung erneut an.",
+    "expired": "Diese Genehmigungsanfrage ist abgelaufen. Fordern Sie die Genehmigung erneut an.",
+    "rejectTitle": "Revision {{number}} ablehnen?",
+    "rejectDescription": "Auf {{name}} wird nichts angewendet und die Anfrage wird geschlossen.",
+    "reason": "Grund (optional)",
+    "reject": "Ablehnen",
+    "rejecting": "Wird abgelehnt",
+    "rejected": "Revision {{number}} abgelehnt"
+  },
+  "templates": {
+    "title": "Stack-Vorlagen",
+    "description": "Startpakete für gängige Stacks. Füllen Sie die Variablen aus, sehen Sie die Dateien in der Vorschau an und kopieren Sie die Befehle.",
+    "loadFailed": "Stack-Vorlagen konnten nicht geladen werden.",
+    "empty": {
+      "title": "Keine Stack-Vorlagen",
+      "description": "Dieser Build hat keine Startpakete."
+    },
+    "open": "Vorlage {{name}} öffnen",
+    "secretCount_one": "{{count}} Secret",
+    "secretCount_other": "{{count}} Secrets",
+    "drawerDescription": "Vorlage wird geladen.",
+    "var": {
+      "name": "Name",
+      "domain": "Domain",
+      "image": "Image"
+    },
+    "issues": "Die gerenderten Dateien haben Probleme",
+    "files": "Gerenderte Dateien",
+    "copyAll": "Alle kopieren",
+    "copied": "Kopiert",
+    "downloadAll": "Alle herunterladen",
+    "secrets": {
+      "title": "Secrets, die Sie angeben müssen",
+      "hint": "Nur Namen. Exportieren Sie jedes als Umgebungsvariable, bevor Sie anwenden.",
+      "none": "Dieses Paket braucht keine Secrets."
+    },
+    "cli": {
+      "title": "Über die CLI anwenden",
+      "hint": "Schreibt die Dateien in einen neuen Ordner und wendet sie dann als Stack an. Das Anwenden über das Dashboard ist noch nicht verfügbar."
+    }
+  }
+}

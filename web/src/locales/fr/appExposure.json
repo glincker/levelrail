@@ -1,0 +1,100 @@
+{
+  "title": "Ports et exposition",
+  "description": "Modifiez le port sur lequel cette app écoute et choisissez comment elle peut être jointe. Plusieurs apps peuvent utiliser le même port de conteneur : chacune reçoit son propre port d'hôte.",
+  "containerPort": "Port du conteneur",
+  "containerPortHelp": "Le port sur lequel l'app écoute à l'intérieur de son conteneur.",
+  "mode": {
+    "label": "Exposition",
+    "proxied": "Via le proxy",
+    "proxiedHelp": "Joignable par son domaine, ou par le nom d'hôte automatique, sur les ports 80 et 443. Les autres apps la joignent par son nom. Aucun port d'hôte n'est ouvert.",
+    "direct": "IP et port directs",
+    "directHelp": "Également publiée sur un port d'hôte et ouverte dans le pare-feu de l'hôte, pour que vous puissiez tester l'app à l'adresse du serveur. C'est du HTTP simple, qui contourne TLS et les barrières d'authentification."
+  },
+  "hostPort": "Port de l'hôte",
+  "hostPortHelp": "Laissez vide pour choisir automatiquement un port libre entre {{lo}} et {{hi}}.",
+  "preview": "Prévisualiser les changements",
+  "previewing": "Vérification",
+  "apply": "Appliquer",
+  "applying": "Application en cours",
+  "revert": "Revenir au proxy uniquement",
+  "reset": "Annuler",
+  "nothingToChange": "Rien ne changerait.",
+  "willChange": "Cela va modifier",
+  "recreates": "Le conteneur est recréé avec les nouveaux paramètres. L'image n'est ni reconstruite ni récupérée à nouveau.",
+  "remoteNode": "Cette app s'exécute sur un autre node. Les ports d'hôte directs ne sont disponibles que pour les apps du node propre au control plane.",
+  "plainHttpWarning": "HTTP simple : le trafic n'est pas chiffré et l'authentification basique ou les barrières de connexion configurées sur le domaine ne s'appliquent pas sur ce port.",
+  "applied": "Exposition mise à jour",
+  "appliedDescription": "La réconciliation s'exécute en arrière-plan.",
+  "change": {
+    "container_port": "Port du conteneur",
+    "host_port": "Port de l'hôte",
+    "bind_address": "Adresse de liaison",
+    "firewall": "Règle de pare-feu"
+  },
+  "values": {
+    "automatic": "automatique",
+    "open": "ouvert",
+    "closed": "fermé"
+  },
+  "urls": {
+    "title": "Où elle répond",
+    "domain": "Domaine",
+    "fallback": "Nom d'hôte automatique",
+    "direct": "IP et port directs",
+    "none": "Pas encore d'URL publique. Ajoutez un domaine, activez les noms d'hôte automatiques ou utilisez l'IP et le port directs.",
+    "noneTitle": "Aucune URL publique",
+    "internal": "Les autres apps de ce serveur la joignent par son nom d'app sur le port {{port}}."
+  },
+  "check": {
+    "button": "Tester d'ici",
+    "running": "Test en cours",
+    "scope": "Sondé depuis l'hôte du control plane. Cela ne prouve pas que le port est ouvert à tout Internet.",
+    "ok": "Joignable",
+    "status": "HTTP {{status}} en {{ms}} ms",
+    "failures": {
+      "container_not_running": "Le conteneur n'est pas en cours d'exécution, il n'y a donc rien à joindre. Démarrez ou redéployez l'app.",
+      "container_not_listening": "Le conteneur est actif mais rien ne répond sur son port publié. L'app n'écoute peut-être pas sur le port du conteneur ci-dessus, ou elle démarre encore.",
+      "firewall_closed": "L'adresse du serveur ne répond pas sur ce port. Le pare-feu de l'hôte ou le groupe de sécurité de votre fournisseur cloud est probablement fermé.",
+      "unreachable_from_host": "L'ingress n'a pas répondu depuis ce serveur. Vérifiez que les ports 80 et 443 sont bien servis.",
+      "tls_not_issued": "Le certificat n'est pas encore approuvé. L'ingress sert un certificat temporaire et réessaie auprès de l'AC publique lors de son cycle de renouvellement.",
+      "proxy_route_missing": "Le proxy a répondu mais n'a aucune route pour ce nom d'hôte. Vérifiez que le domaine est rattaché à cette app.",
+      "upstream_failing": "Le proxy a une route mais l'app derrière ne répond pas.",
+      "app_error": "L'app a répondu avec une erreur serveur.",
+      "request_failed": "La requête ne s'est pas terminée."
+    },
+    "fixFirewall": "Ouvrir les paramètres du pare-feu",
+    "fixCertificates": "Ouvrir les domaines et certificats"
+  },
+  "inUse": {
+    "title": "Ports d'hôte utilisés sur ce node",
+    "port": "Port",
+    "heldBy": "Occupé par",
+    "empty": "Aucun port d'hôte n'est épinglé ou publié par des apps ou le control plane.",
+    "emptyTitle": "Aucun port d'hôte épinglé",
+    "control": "Control plane : {{name}}",
+    "app": "App {{name}}",
+    "stream": "Stream de {{name}}"
+  },
+  "errors": {
+    "load": "Impossible de charger les paramètres d'exposition.",
+    "invalidPort": "Saisissez un nombre entier de 1 à 65535."
+  },
+  "tunnel": {
+    "title": "Joindre un port privé",
+    "description": "Ouvre un port local qui fait un tunnel vers cette app sans la publier. Nécessite la CLI connectée avec un token d'opérateur.",
+    "portLabel": "Port du conteneur {{port}}",
+    "copy": "Copier la commande de tunnel pour le port {{port}}",
+    "copied": "Copié"
+  },
+  "game": {
+    "title": "Serveur de jeu",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "players": "{{online}}/{{max}} joueurs",
+    "latency": "{{ms}} ms",
+    "copy": "Copier l'adresse de connexion",
+    "copied": "Copié",
+    "notExposed": "Pas encore public : publiez le port pour obtenir une adresse de connexion.",
+    "noPublicHost": "Rejoignez sur le port {{port}} à l'adresse publique de ce serveur."
+  }
+}

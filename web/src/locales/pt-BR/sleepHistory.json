@@ -1,0 +1,71 @@
+{
+  "title": "Histórico de hibernação",
+  "description": "Quando este app hibernou, o que o despertou e quanto tempo levou para acordar. Os últimos 7 dias são desenhados abaixo.",
+  "loading": "Carregando o histórico de hibernação",
+  "loadError": "Não foi possível carregar o histórico de hibernação.",
+  "retry": "Tentar novamente",
+  "asleepNow": "Hibernando desde {{since}}",
+  "awakeNow": "Ativo",
+  "timelineLabel": "Ativo e hibernando nos últimos 7 dias",
+  "timelineStart": "7 dias atrás",
+  "timelineEnd": "Agora",
+  "legend": {
+    "asleep": "Hibernando",
+    "awake": "Ativo"
+  },
+  "stats": {
+    "asleep7d": "Hibernando, 7 dias",
+    "asleep30d": "Hibernando, 30 dias",
+    "wakes7d": "Despertares, 7 dias",
+    "avgLatency": "Despertar médio",
+    "p95Latency": "5% de despertares mais lentos",
+    "lastSlept": "Última hibernação",
+    "lastWoke": "Último despertar",
+    "memorySaved": "Memória economizada, 30 dias",
+    "memorySavedValue": "{{value}} GiB-horas",
+    "none": "Nenhum ainda"
+  },
+  "events": {
+    "title": "Eventos",
+    "empty": "Nada registrado ainda. Os eventos aparecem aqui quando o app hiberna ou desperta.",
+    "emptyTitle": "Nenhum evento de hibernação",
+    "kind": {
+      "slept": "Entrou em hibernação",
+      "woke": "Acordou",
+      "enabled": "Hibernar quando inativo ativado",
+      "disabled": "Hibernar quando inativo desativado",
+      "wake_failed": "Falha ao acordar"
+    },
+    "reason": {
+      "idle_timeout": "Timeout de inatividade",
+      "manual": "Manual",
+      "request": "Requisição",
+      "schedule": "Agendamento",
+      "deploy": "Deploy",
+      "api": "API",
+      "port": "Tráfego em uma porta publicada"
+    },
+    "columns": {
+      "when": "Quando",
+      "event": "Evento",
+      "reason": "Motivo",
+      "measure": "Duração / latência",
+      "detail": "Detalhe"
+    },
+    "sleptFor": "Hibernou por {{duration}}",
+    "readyIn": "Pronto em {{duration}}",
+    "idleAfter": "Após {{minutes}} min de inatividade",
+    "fromSource": "de {{source}}",
+    "byActor": "por {{actor}}"
+  },
+  "disabled": {
+    "title": "Hibernar quando inativo está desativado",
+    "body": "Ative para parar este app enquanto ninguém o usa e ver aqui quando ele hibernou e despertou.",
+    "action": "Ativar hibernar quando inativo",
+    "toastError": "Não foi possível ativar hibernar quando inativo"
+  },
+  "badge": {
+    "title": "Hibernando, desperta na próxima requisição",
+    "asleepFor": "Hibernando há {{duration}}"
+  }
+}

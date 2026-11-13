@@ -1,0 +1,7 @@
+{
+  "label": "Réplique continue",
+  "summary": "toutes les {{seconds}} s, dernier envoi {{age}} ({{kb}} Ko, {{ms}} ms)",
+  "neverShipped": "toutes les {{seconds}} s, rien d'envoyé pour l'instant",
+  "pending": "modifications en attente depuis {{age}}",
+  "error": "échec du dernier envoi : {{message}}"
+}

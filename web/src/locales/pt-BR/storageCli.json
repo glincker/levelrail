@@ -1,0 +1,39 @@
+{
+  "title": "Executar em um terminal",
+  "description": "As mesmas ferramentas de armazenamento pela linha de comando. Veja a prévia primeiro e depois aplique.",
+  "tabsLabel": "Grupos de comandos",
+  "tabs": {
+    "usage": "Ver uso",
+    "clean": "Limpar com segurança",
+    "automate": "Automatizar"
+  },
+  "server": "Os comandos rodam em {{server}}. Entre primeiro com o comando de conexão do guia da CLI.",
+  "role": {
+    "viewer": "Visualizador",
+    "admin": "Admin"
+  },
+  "yourRole": "Seu papel: {{role}}",
+  "needsAdmin": "Exige admin",
+  "needsSensitive": "Exige também o escopo write:sensitive",
+  "dryRunFirst": "Simulação primeiro: as prévias vêm antes da etapa de aplicação em cada grupo, e nada é removido até você executar o comando de aplicação.",
+  "whyNoSystemPrune": "system-prune não está listado de propósito: ele remove volumes não usados, que podem conter dados de que você ainda precisa.",
+  "blockLabel": "Comando: {{command}}",
+  "commands": {
+    "doctorDisk": "Saúde do disco e espaço livre neste servidor",
+    "imagesList": "Imagens e quanto cada uma custa",
+    "janitorStatus": "Última execução do janitor e a política ativa",
+    "buildsCache": "Tamanho do cache de build e o que uma limpeza liberaria",
+    "buildCacheShow": "Cache de build compartilhado entre todos os apps",
+    "volumesOrphaned": "Volumes que nenhum app usa mais",
+    "containersOrphans": "Containers deixados por apps removidos",
+    "janitorDryRun": "Pré-visualizar o que o janitor removeria",
+    "janitorRun": "Executar o janitor depois de conferir a prévia",
+    "imagesGcPreview": "Pré-visualizar quais imagens antigas seriam removidas",
+    "imagesGcApply": "Remover as imagens listadas na prévia",
+    "imagesPruneDry": "Pré-visualizar imagens não gerenciadas que nenhum app possui",
+    "buildsCacheApply": "Limpar o cache de build após a prévia",
+    "volumesCleanup": "Remover apenas os volumes órfãos que você nomear",
+    "containersReap": "Remover containers deixados por apps removidos",
+    "janitorPolicy": "Ativar a limpeza automática com uma idade de cache de build e um orçamento de espaço livre"
+  }
+}

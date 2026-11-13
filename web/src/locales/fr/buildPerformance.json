@@ -1,0 +1,95 @@
+{
+  "trend": {
+    "title": "Performances de build",
+    "loadError": "Impossible de charger les statistiques de build.",
+    "empty": "Aucun build enregistré pour l'instant. Les statistiques apparaissent après le prochain build.",
+    "p50": "Build médian",
+    "p95": "5 % les plus lents (p95)",
+    "cacheHit": "Succès du cache",
+    "failures": "Échec ou délai dépassé",
+    "none": "n/d",
+    "chartLabel_one": "Durée du dernier build",
+    "chartLabel_other": "Durées des {{count}} derniers builds, du plus ancien au plus récent",
+    "chartLabel_many": "Durées des {{count}} derniers builds, du plus ancien au plus récent",
+    "footnote_one": "Basé sur le dernier build. Les durées ne comptent que les builds réussis.",
+    "footnote_other": "Basé sur les {{count}} derniers builds. Les durées ne comptent que les builds réussis.",
+    "footnote_many": "Basé sur les {{count}} derniers builds. Les durées ne comptent que les builds réussis.",
+    "skewed_one": "1 build avait une durée négative (décalage d'horloge) et est exclu des durées.",
+    "skewed_other": "{{count}} builds avaient une durée négative (décalage d'horloge) et sont exclus des durées.",
+    "skewed_many": "{{count}} builds avaient une durée négative (décalage d'horloge) et sont exclus des durées."
+  },
+  "speed": {
+    "title": "Accélérer les builds",
+    "saved": "Le cache a économisé environ {{saved}} sur {{count}} builds (build à froid {{cold}}, build en cache {{warm}}).",
+    "none": "Aucune accélération à suggérer.",
+    "loadError": "Impossible de charger les suggestions d'accélération des builds.",
+    "fixing": "Application...",
+    "fixed": "Cache de build activé.",
+    "fixError": "Impossible d'appliquer la correction",
+    "fix": {
+      "auto": "Activer le cache",
+      "guided": "Configurer le cache"
+    },
+    "findings": {
+      "cache_disabled": {
+        "title": "Le cache de build distant est désactivé",
+        "body": "Une destination de cache est configurée mais désactivée, donc chaque build repart de zéro."
+      },
+      "cache_unconfigured": {
+        "title": "Aucun cache de build distant n'est configuré",
+        "body": "La plupart des étapes de build sont réexécutées à chaque fois. Choisissez une destination de stockage pour que les étapes soient réutilisées entre les builds et les nodes."
+      },
+      "low_cache_hit": {
+        "title": "Peu d'étapes de build sont réutilisées",
+        "body": "Placez les étapes qui changent rarement en premier dans le Dockerfile (copiez le lockfile et installez les dépendances avant de copier les sources), et ajoutez un .dockerignore pour node_modules, .git et la sortie de build afin que des fichiers sans rapport n'invalident pas les couches."
+      },
+      "slower_recently": {
+        "title": "Les builds sont devenus plus lents récemment",
+        "body": "Le build médian récent est au moins 30 % plus lent que le précédent. Comparez les derniers déploiements pour repérer de nouvelles dépendances, un contexte de build plus volumineux ou un cache qui n'est plus sollicité."
+      }
+    }
+  },
+  "settings": {
+    "title": "Performances de build",
+    "description": "Limitez la durée d'un build, le CPU et la mémoire qu'il peut utiliser, et le nombre de builds simultanés. Les builds supplémentaires attendent dans une file.",
+    "loadError": "Impossible de charger les limites de build.",
+    "timeoutLabel": "Délai d'expiration du build (minutes)",
+    "timeoutHelp": "Un build qui dépasse cette durée est arrêté et marqué comme expiré. 0 signifie aucune limite.",
+    "concurrentLabel": "Builds simultanés",
+    "concurrentHelp": "Les builds au-delà de ce nombre attendent une place libre. 0 signifie aucune limite.",
+    "defaultsNote": "Les valeurs par défaut proviennent de APP_BUILD_TIMEOUT, APP_BUILD_MAX_CONCURRENT, APP_BUILD_MEMORY_MB et APP_BUILD_CPU_MILLIS : {{timeout}} minutes, {{concurrent}} builds, {{memory}} Mo, {{cpu}} cœurs.",
+    "overridden": "Remplacé",
+    "save": "Enregistrer les limites",
+    "reset": "Utiliser les valeurs par défaut",
+    "saved": "Limites de build enregistrées.",
+    "resetDone": "Limites de build rétablies aux valeurs par défaut.",
+    "rootOnly": "Seul un compte root peut modifier les limites de build.",
+    "memoryLabel": "Mémoire de build (Mo)",
+    "memoryHelp": "Un build qui utilise plus que cela est tué et marqué comme ayant dépassé sa limite de mémoire. 0 signifie aucune limite.",
+    "cpuLabel": "CPU de build (cœurs)",
+    "cpuHelp": "Plafonne le CPU qu'un build peut utiliser, par exemple 1.5. 0 signifie aucune limite."
+  },
+  "limits": {
+    "title": "Limites de build",
+    "description": "Plafonds pour cette app uniquement. Les valeurs non définies suivent les valeurs par défaut du control plane.",
+    "loadError": "Impossible de charger les limites de build.",
+    "timeoutLabel": "Délai d'expiration (minutes)",
+    "memoryLabel": "Mémoire (Mo)",
+    "cpuLabel": "CPU (cœurs)",
+    "unlimited": "Aucune limite",
+    "globalNote": "Valeurs par défaut du control plane : {{timeout}} minutes, {{memory}} Mo, {{cpu}} cœurs. 0 signifie aucune limite.",
+    "overridden": "Remplacé",
+    "save": "Enregistrer les limites",
+    "saved": "Limites de build enregistrées.",
+    "reset": "Utiliser les valeurs par défaut",
+    "resetDone": "Limites de build rétablies aux valeurs par défaut.",
+    "rootOnly": "Seul un compte root peut modifier les limites de build.",
+    "hit": {
+      "memory_limit": "Le dernier build a été tué pour avoir utilisé plus de {{value}} Mo.",
+      "timeout": "Le dernier build a été arrêté après {{value}} minutes."
+    },
+    "raiseMemory": "Augmenter la mémoire à {{value}} Mo",
+    "raiseTimeout": "Augmenter le délai à {{value}} minutes",
+    "raised": "Limite augmentée. Relancez le déploiement."
+  }
+}

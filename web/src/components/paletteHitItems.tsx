@@ -110,11 +110,37 @@ export function hitToItem(hit: SearchHit, ctx: HitItemContext): PaletteItem {
   }
   if (hit.kind === 'app') {
     const name = refName(hit.ref)
+    const open = (tab: string) => () =>
+      navigate({ to: `/apps/${encodeURIComponent(name)}/${tab}` })
     return {
       ...base,
-      secondary: () =>
-        navigate({ to: `/apps/${encodeURIComponent(name)}/logs` }),
+      secondary: open('logs'),
       secondaryHint: t('hint.logs'),
+      preview: {
+        ...base.preview,
+        kind: 'app',
+        actions: [
+          {
+            id: 'logs',
+            label: t('preview.logs'),
+            shortcut: 'L',
+            run: open('logs'),
+          },
+          {
+            id: 'deploys',
+            label: t('preview.deploys'),
+            shortcut: 'D',
+            run: open('deploys'),
+          },
+          {
+            id: 'restart',
+            label: t('preview.restart'),
+            shortcut: 'R',
+            confirm: true,
+            run: () => ctx.restartApp(name),
+          },
+        ],
+      },
     }
   }
   return { ...base, ...newTabSecondary(hit, t) }

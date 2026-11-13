@@ -1,0 +1,53 @@
+{
+  "label": "存储策略",
+  "needsAdmin": "需要管理员权限",
+  "applied": "已应用",
+  "save": "保存",
+  "saving": "正在保存",
+  "cancel": "取消",
+  "close": "关闭",
+  "range": "保存时服务器会检查允许的范围。",
+  "invalid": "请输入大于零的整数。",
+  "invalidGb": "请输入大于零的 GB 数。",
+  "cleanup": {
+    "title": "自动清理",
+    "on": "开",
+    "off": "关",
+    "dryRun": "开,试运行",
+    "what": "在可用空间不足时移除未使用的容器、镜像和构建缓存。试运行只会报告将要移除的内容。",
+    "enabled": "自动清理",
+    "dryRunField": "仅试运行",
+    "budget": "可用空间低于此值时开始清理",
+    "budgetUnit": "% 的磁盘可用",
+    "budgetValue": "可用空间低于 {{percent}}%"
+  },
+  "keepImages": {
+    "title": "每个应用保留的最近镜像数",
+    "value_other": "每个应用 {{count}} 个镜像",
+    "field": "保留的镜像数",
+    "unit": "个镜像/应用",
+    "what": "镜像清理会移除每个应用较旧的镜像。正在使用的镜像和回滚固定的镜像始终保留。"
+  },
+  "cacheAge": {
+    "title": "构建缓存最长保留时间",
+    "hours_other": "{{count}} 小时",
+    "days_other": "{{count}} 天",
+    "field": "最长保留时间",
+    "unit": "小时",
+    "what": "超过此时间的构建缓存会被自动清理移除。"
+  },
+  "lowDisk": {
+    "title": "磁盘不足警告",
+    "value": "可用空间低于 {{gb}} GB",
+    "field": "低于此值时警告",
+    "unit": "GB 可用",
+    "what": "可用空间低于此值时发出磁盘不足警告和告警。"
+  },
+  "criticalDisk": {
+    "title": "磁盘严重不足阈值",
+    "value": "可用空间低于 {{gb}} GB",
+    "field": "低于此值为严重",
+    "unit": "GB 可用",
+    "what": "可用空间低于此值时,构建、镜像拉取和备份将被拒绝。"
+  }
+}

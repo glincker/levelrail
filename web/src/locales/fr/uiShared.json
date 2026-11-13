@@ -1,0 +1,85 @@
+{
+  "saveStatus": {
+    "saving": "Enregistrement",
+    "saved": "Enregistré",
+    "error": "Échec de l'enregistrement"
+  },
+  "breadcrumb": {
+    "label": "Fil d'Ariane"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "status": "Page {{page}} sur {{count}}",
+    "previous": "Page précédente",
+    "next": "Page suivante"
+  },
+  "stepper": {
+    "decrease": "Diminuer",
+    "increase": "Augmenter"
+  },
+  "chip": {
+    "remove": "Retirer {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "Plage de temps",
+    "refresh": "Actualiser"
+  },
+  "logToolbar": {
+    "level": "Niveau de log",
+    "levels": {
+      "all": "Tous",
+      "errors": "Erreurs",
+      "warnings": "Avertissements",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "filterPlaceholder": "Filtrer les lignes",
+    "filterLabel": "Filtrer les lignes de log",
+    "jumpToError": "Aller à la première erreur",
+    "copy": "Copier",
+    "copied": "Copié",
+    "copiedAnnounce": "Copié dans le presse-papiers",
+    "download": "Télécharger",
+    "shownOf": "{{shown}} lignes sur {{total}}"
+  },
+  "filterChips": {
+    "group": "Filtres actifs",
+    "clearAll": "Effacer tous les filtres",
+    "showing": "{{shown}} affichés sur {{total}}",
+    "emptyTitle": "Rien ne correspond à ces filtres",
+    "emptyBody": "Les {{total}} éléments sont toujours là. Retirez un filtre ou effacez-les tous.",
+    "status": "Statut : {{value}}",
+    "search": "Recherche : {{value}}",
+    "tag": "Tag : {{value}}",
+    "environment": "Environnement : {{value}}",
+    "engine": "Moteur : {{value}}",
+    "labels": "Libellés : {{value}}"
+  },
+  "listKeys": {
+    "title": "Raccourcis clavier",
+    "down": "ligne suivante",
+    "up": "ligne précédente",
+    "select": "sélectionner la ligne",
+    "open": "ouvrir la ligne",
+    "filter": "placer le focus sur le filtre",
+    "hint": "afficher ou masquer ceci",
+    "close": "Masquer les raccourcis clavier"
+  },
+  "guidedEmpty": {
+    "viaCli": "Ou faites-le depuis la CLI",
+    "cliLabel": "Commande CLI"
+  },
+  "savedViews": {
+    "button": "Vues",
+    "label": "Vues enregistrées",
+    "empty": "Aucune vue enregistrée pour l'instant.",
+    "apply": "Appliquer la vue {{name}}",
+    "delete": "Supprimer la vue {{name}}",
+    "deleted": "Vue supprimée",
+    "saved": "Vue {{name}} enregistrée",
+    "namePlaceholder": "Enregistrer les filtres actuels sous",
+    "shareTeam": "Partager avec mon équipe",
+    "teamBadge": "Équipe",
+    "save": "Enregistrer la vue"
+  }
+}

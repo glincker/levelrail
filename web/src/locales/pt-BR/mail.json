@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "label": "Seções de e-mail",
+    "delivery": "Entrega",
+    "templates": "Templates",
+    "audiences": "Públicos",
+    "messages": "Mensagens"
+  },
+  "common": {
+    "loadError": "Não foi possível carregar esta página.",
+    "retry": "Tentar novamente",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "saving": "Salvando",
+    "people": "{{count}} pessoas"
+  },
+  "templates": {
+    "eyebrow": "E-mail",
+    "title": "Templates de e-mail",
+    "description": "Todo e-mail que a plataforma envia, em um único layout com a sua marca. Edite o texto, pré-visualize com dados de exemplo e restaure o padrão a qualquer momento.",
+    "kind": {
+      "system": "Conta e segurança",
+      "announcement": "Comunicado"
+    },
+    "customized": "Personalizado",
+    "builtIn": "Integrado",
+    "edit": "Editar",
+    "listHeading": "Templates",
+    "layout": {
+      "title": "Layout compartilhado",
+      "description": "A moldura de todo e-mail: uma imagem de cabeçalho opcional e uma linha de rodapé, como seu endereço postal.",
+      "headerImage": "Endereço da imagem de cabeçalho",
+      "headerImageHelp": "Uma imagem https exibida acima do nome da marca. Deixe vazio para mostrar apenas o nome da marca.",
+      "footer": "Texto do rodapé",
+      "footerHelp": "Exibido abaixo de todo e-mail. Tokens globais como {{examples}} funcionam aqui.",
+      "save": "Salvar layout",
+      "saved": "Layout salvo."
+    },
+    "editor": {
+      "back": "Todos os templates",
+      "subject": "Assunto",
+      "preheader": "Preheader",
+      "preheaderHelp": "A linha de pré-visualização que alguns clientes de e-mail mostram ao lado do assunto.",
+      "body": "Corpo",
+      "bodyHelp": "Linhas em branco iniciam um novo parágrafo. Use # para um título, - para uma lista, > para um destaque, **negrito**, [rótulo](endereço) para links e !button Rótulo|endereço para um botão.",
+      "save": "Salvar template",
+      "saved": "Template salvo.",
+      "reset": "Restaurar padrão",
+      "resetTitle": "Restaurar este template?",
+      "resetDescription": "O texto integrado volta. Suas edições permanecem no histórico de versões.",
+      "resetDone": "Template restaurado.",
+      "sendTest": "Enviar um teste para mim",
+      "testSent": "Teste enviado para {{email}}.",
+      "noProviderTitle": "Nenhum provedor de e-mail configurado",
+      "noProviderBody": "Configure um provedor primeiro e depois envie um teste.",
+      "fixProvider": "Abrir configurações de e-mail"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "description": "Selecione um token para inseri-lo no cursor. Tokens desconhecidos são rejeitados ao salvar.",
+      "scope": {
+        "global": "Em todo lugar",
+        "recipient": "Sobre o destinatário",
+        "event": "Para este e-mail"
+      },
+      "insert": "Inserir {{name}}"
+    },
+    "preview": {
+      "title": "Pré-visualização",
+      "desktop": "Desktop",
+      "mobile": "Celular",
+      "light": "Claro",
+      "dark": "Escuro",
+      "frameTitle": "Pré-visualização do e-mail",
+      "plain": "Versão em texto simples",
+      "error": "A pré-visualização precisa de um template válido: {{message}}",
+      "deviceLabel": "Dispositivo da pré-visualização",
+      "schemeLabel": "Esquema de cores da pré-visualização"
+    },
+    "history": {
+      "title": "Histórico de versões",
+      "description": "As últimas 10 versões salvas.",
+      "empty": "Nenhuma versão salva ainda. O primeiro salvamento cria uma.",
+      "restore": "Restaurar",
+      "restored": "Versão restaurada.",
+      "version": "Versão {{version}}",
+      "by": "por {{who}}"
+    }
+  },
+  "audiences": {
+    "eyebrow": "E-mail",
+    "title": "Públicos",
+    "description": "Grupos salvos de pessoas para quem escrever. As regras escolhem usuários por função, equipe, projeto, domínio de login ou inatividade, e você pode adicionar endereços extras manualmente.",
+    "create": "Novo público",
+    "edit": "Editar",
+    "empty": {
+      "title": "Nenhum público ainda",
+      "description": "Crie um grupo, como todos os admins ou todos os inativos há 90 dias, e depois envie uma mensagem para ele."
+    },
+    "columns": {
+      "name": "Público",
+      "recipients": "Destinatários",
+      "suppressed": "Optaram por sair"
+    },
+    "dialog": {
+      "createTitle": "Novo público",
+      "editTitle": "Editar público",
+      "name": "Nome",
+      "description": "Descrição",
+      "rules": "Quem está incluído",
+      "everyone": "Todos os usuários",
+      "roles": "Funções",
+      "teams": "Equipes",
+      "projects": "Projetos (a equipe deles)",
+      "domains": "Domínios de e-mail de login",
+      "domainsHelp": "Um por linha, por exemplo example.com.",
+      "inactive": "Sem fazer login há (dias)",
+      "inactiveHelp": "Restringe a seleção, ou seleciona todos os inativos por esse tempo quando nada mais é escolhido.",
+      "extra": "Endereços extras",
+      "extraHelp": "Um por linha. Adicionados mesmo que não sejam usuários.",
+      "exclude": "Nunca incluir",
+      "excludeHelp": "Um endereço por linha.",
+      "save": "Salvar público",
+      "saved": "Público salvo.",
+      "live": "{{deliverable}} vão receber, {{suppressed}} optaram por sair.",
+      "liveSample": "Primeiros {{count}} destinatários",
+      "noneChosen": "Escolha pelo menos uma regra para ver quem está incluído."
+    },
+    "role": {
+      "owner": "Proprietário",
+      "admin": "Admin",
+      "operator": "Operador",
+      "viewer": "Visualizador"
+    },
+    "deleteTitle": "Excluir este público?",
+    "deleteDescription": "As mensagens anteriores mantêm o histórico. Isto remove apenas as regras salvas.",
+    "deleted": "Público excluído.",
+    "suppressions": {
+      "title": "Lista de quem optou por sair",
+      "description": "As pessoas aqui são ignoradas pelos comunicados. E-mails de segurança e de conta sempre chegam.",
+      "empty": "Ninguém optou por sair.",
+      "add": "Adicionar endereço",
+      "addPlaceholder": "nome@example.com",
+      "remove": "Remover",
+      "reasonAdmin": "Adicionado por um administrador",
+      "reasonUnsub": "Cancelou a inscrição em uma mensagem",
+      "added": "Endereço adicionado à lista de quem optou por sair."
+    }
+  },
+  "messages": {
+    "eyebrow": "E-mail",
+    "title": "Mensagens",
+    "description": "Escreva para um público ou para pessoas escolhidas. As mensagens saem no layout salvo com um link de cancelamento de inscrição com um clique, com limite de taxa, e cada envio fica no histórico.",
+    "compose": "Nova mensagem",
+    "noProvider": {
+      "title": "O e-mail não está configurado",
+      "body": "As mensagens precisam de um provedor de e-mail. Configure um, envie um teste e volte aqui.",
+      "fix": "Abrir configurações de e-mail"
+    },
+    "composer": {
+      "title": "Nova mensagem",
+      "template": "Começar de",
+      "subject": "Assunto",
+      "body": "Mensagem",
+      "bodyHelp": "Tokens como {{example}} são preenchidos para cada pessoa.",
+      "audience": "Público",
+      "audiencePlaceholder": "Escolha um público",
+      "noAudience": "Sem público",
+      "extra": "Destinatários extras",
+      "extraHelp": "Um endereço por linha, opcional.",
+      "when": "Quando",
+      "now": "Enviar agora",
+      "later": "Agendar",
+      "review": "Revisar e enviar",
+      "sendTest": "Enviar um teste para mim",
+      "preview": "Pré-visualizar",
+      "tokens": "Inserir um token"
+    },
+    "confirm": {
+      "title": "Enviar esta mensagem?",
+      "summary": "Isto enviará e-mail para {{deliverable}} pessoas, {{suppressed}} estão suprimidas.",
+      "capLeft": "{{count}} destinatários restantes no limite de hoje.",
+      "schedule": "Começará em {{time}}.",
+      "send": "Enviar mensagem",
+      "schedule_action": "Agendar mensagem",
+      "none": "Ninguém receberia esta mensagem."
+    },
+    "sent": "Mensagem na fila.",
+    "history": {
+      "title": "Histórico",
+      "empty": {
+        "title": "Nenhuma mensagem ainda",
+        "description": "As mensagens enviadas e agendadas aparecem aqui com as contagens de entrega."
+      },
+      "columns": {
+        "subject": "Assunto",
+        "status": "Status",
+        "progress": "Entregues",
+        "when": "Criada"
+      },
+      "progress": "{{sent}} enviadas, {{failed}} com falha, {{suppressed}} ignoradas de {{total}}",
+      "details": "Detalhes",
+      "cancel": "Cancelar envio",
+      "cancelTitle": "Interromper esta mensagem?",
+      "cancelDescription": "As pessoas que ainda não foram alcançadas não a receberão.",
+      "cancelled": "Mensagem cancelada.",
+      "recipients": "Destinatários",
+      "recipientStatus": {
+        "pending": "Aguardando",
+        "sent": "Enviada",
+        "failed": "Falhou",
+        "suppressed": "Optou por sair",
+        "cancelled": "Cancelada"
+      }
+    },
+    "status": {
+      "scheduled": "Agendada",
+      "sending": "Enviando",
+      "completed": "Concluída",
+      "cancelled": "Cancelada",
+      "failed": "Falhou"
+    }
+  }
+}

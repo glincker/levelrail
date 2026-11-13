@@ -1,0 +1,361 @@
+{
+  "title": "Functions",
+  "description": "De petits handlers qui ne coûtent rien au repos. Une function se met en veille après une période d'inactivité, et la requête suivante la réveille et attend la réponse.",
+  "triggers": {
+    "title": "Déclencheurs",
+    "pick": "Function",
+    "error": "Impossible de charger les déclencheurs : {{message}}",
+    "queue": "File asynchrone : {{queued}} en attente, {{running}} en cours, {{dead}} en file morte.",
+    "webhook": {
+      "title": "Webhook signé",
+      "path": "Chemin vers lequel le webhook redirige",
+      "enable": "Activer le webhook",
+      "disable": "Désactiver",
+      "rotate": "Renouveler le secret",
+      "on": "Les appels sont mis en file et redirigés vers {{path}}. Les signatures de plus de {{seconds}} secondes sont rejetées.",
+      "secretOnce": "Secret de signature. Il n'est affiché qu'une fois, copiez-le maintenant.",
+      "signing": "Envoyez X-Signature-Timestamp (secondes unix) et X-Signature: sha256=HMAC-SHA256(secret, timestamp + point + body)."
+    },
+    "schedules": {
+      "title": "Planifications",
+      "none": "Aucun job HTTP planifié n'appelle cette function.",
+      "manage": "Gérez les planifications dans l'onglet Jobs de l'app"
+    },
+    "dead": {
+      "title": "Dead letters",
+      "description": "Appels asynchrones qui ont épuisé leurs tentatives. Réessayer en remet un dans la file.",
+      "empty": "Aucun appel en file morte.",
+      "error": "Impossible de charger les dead letters : {{message}}",
+      "detail": "{{attempts}} tentatives sur {{max}}, HTTP {{code}} {{error}}",
+      "retry": "Réessayer",
+      "discard": "Abandonner"
+    }
+  },
+  "window": {
+    "label": "Fenêtre des statistiques",
+    "1h": "Dernière heure",
+    "24h": "24 dernières heures",
+    "7d": "7 derniers jours"
+  },
+  "list": {
+    "name": "Function",
+    "state": "État",
+    "calls": "Appels",
+    "p95": "Durée p95",
+    "errors": "Erreurs serveur",
+    "idle": "Veille après",
+    "idleValue": "{{minutes}} min",
+    "asleep": "En veille",
+    "awake": "Éveillée",
+    "visit": "Ouvrir l'URL",
+    "error": "Impossible de charger les functions : {{message}}",
+    "retry": "Réessayer"
+  },
+  "empty": {
+    "title": "Aucune function pour l'instant",
+    "body": "Choisissez un runtime ci-dessous, poussez le handler vers un dépôt et déployez-le. Il obtient une URL en ligne qui se réveille à la demande."
+  },
+  "deploy": {
+    "open": "Déployer une function",
+    "title": "Déployer une function",
+    "description": "Choisissez ce qu'il faut exécuter, indiquez le code et passez en ligne. Chaque étape a une valeur par défaut raisonnable.",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "next": "Continuer",
+    "submit": "Déployer",
+    "submitting": "Déploiement",
+    "stepLabel": "Étape {{current}} sur {{total}}",
+    "steps": {
+      "template": "Quoi exécuter",
+      "source": "Où se trouve le code",
+      "details": "Détails"
+    },
+    "started": "Build démarré pour {{name}}. Elle passe en ligne à la fin du build.",
+    "failed": "Impossible de déployer {{name}} : {{message}}",
+    "template": {
+      "heading": "Que voulez-vous exécuter ?",
+      "groupStarters": "Handlers de démarrage",
+      "groupIdeas": "Idées pour démarrer",
+      "groupOwn": "Apportez le vôtre"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "Un petit handler HTTP en Go, rapide à démarrer."
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "Un handler de dix lignes en Node.js."
+      },
+      "python": {
+        "title": "Python",
+        "body": "Un petit handler en Python."
+      },
+      "webhook": {
+        "title": "Récepteur de webhook",
+        "body": "Accepte des événements d'autres services et agit en conséquence."
+      },
+      "scheduled": {
+        "title": "Exécuteur de jobs planifiés",
+        "body": "Exécute une tâche chaque fois qu'une planification l'appelle."
+      },
+      "form": {
+        "title": "Formulaire vers e-mail",
+        "body": "Transforme l'envoi d'un formulaire en e-mail."
+      },
+      "shortener": {
+        "title": "Raccourcisseur d'URL",
+        "body": "Associe des chemins courts à des liens longs."
+      },
+      "chatbot": {
+        "title": "Bot de chat",
+        "body": "Répond aux messages des plateformes de chat."
+      },
+      "repo": {
+        "title": "Utiliser mon propre dépôt",
+        "body": "Déployez un handler que vous avez déjà dans git."
+      },
+      "image": {
+        "title": "Utiliser une image de conteneur",
+        "body": "Exécutez une image prédéfinie provenant d'un registre."
+      }
+    },
+    "source": {
+      "headingRepo": "Où se trouve le code ?",
+      "headingImage": "Quelle image de conteneur ?",
+      "starterTitle": "Code de démarrage pour commencer",
+      "starterBody": "Copiez ces fichiers dans un nouveau dépôt et poussez-le. Choisissez ensuite ce dépôt ci-dessous.",
+      "utilityBody": "Un handler complet et testé. Copiez les fichiers dans un nouveau dépôt et poussez-le, puis choisissez ce dépôt ci-dessous.",
+      "utilityEnv": "Variables d'environnement qu'il lit",
+      "utilityRequired": "obligatoire",
+      "utilityKv": "Utilise le magasin clé-valeur : après le déploiement, ouvrez l'onglet Magasin clé-valeur de la function et activez-le.",
+      "utilityCli": "Ou depuis un terminal",
+      "search": "Rechercher dans vos dépôts",
+      "loading": "Chargement des dépôts",
+      "recent": "Les plus récemment mis à jour en premier",
+      "noRepos": "Aucun dépôt trouvé. Connectez un fournisseur git dans les Paramètres, ou collez une URL à la place.",
+      "reposError": "Impossible de charger les dépôts : {{message}}",
+      "pasteInstead": "Coller une URL à la place",
+      "pickInstead": "Choisir parmi mes dépôts",
+      "repoUrl": "URL du dépôt",
+      "repoUrlPlaceholder": "https://github.com/you/hello",
+      "ref": "Branche",
+      "refHint": "Par défaut, la branche principale du dépôt.",
+      "directory": "Répertoire du handler",
+      "directoryHint": "Laissez vide quand le handler est à la racine du dépôt.",
+      "detected": "{{framework}} détecté. Railpack le construira.",
+      "detecting": "Vérification du dépôt",
+      "image": "Image",
+      "imagePlaceholder": "ghcr.io/you/hello:1.0",
+      "imageHint": "Incluez un tag comme :1.0. Sans tag, le tag latest est utilisé.",
+      "private": "Privé"
+    },
+    "details": {
+      "name": "Nom",
+      "nameHint": "Lettres minuscules, chiffres et tirets. Il fait partie de l'URL.",
+      "nameChecking": "Vérification de la disponibilité",
+      "nameFree": "{{name}} est disponible.",
+      "idle": "Veille après",
+      "idleOption": {
+        "5": "5 minutes",
+        "10": "10 minutes",
+        "60": "1 heure",
+        "1440": "1 jour",
+        "custom": "Personnalisé"
+      },
+      "customIdle": "Minutes",
+      "idleHint": "Une function inactive se met en veille pour économiser des ressources. La requête suivante la réveille, ce qui ajoute un court délai appelé démarrage à froid.",
+      "route": "Servir sur un chemin (facultatif)",
+      "routeHint": "Répond aussi sur l'un de vos domaines, par exemple example.com/hello.",
+      "routeDomain": "Domaine",
+      "routeNone": "Ne pas ajouter de chemin",
+      "routePath": "Chemin",
+      "previewFunction": "URL de la function",
+      "previewRoute": "URL du chemin",
+      "previewPending": "Attribuée à la fin du build",
+      "advanced": "Paramètres avancés",
+      "port": "Port",
+      "portHint": "Le port sur lequel votre handler écoute. Il le reçoit via la variable PORT."
+    },
+    "summary": {
+      "title": "Prêt à déployer",
+      "buildRailpack": "construire avec Railpack",
+      "buildImage": "exécuter l'image telle quelle",
+      "text": "Cela va {{build}}, se mettre en veille après {{sleep}}, et être joignable à {{url}}.",
+      "sleepMinutes": "{{count}} minutes",
+      "sleepHour": "1 heure",
+      "sleepDay": "1 jour",
+      "urlPending": "une URL attribuée à la fin du build"
+    },
+    "result": {
+      "title": "Déploiement de {{name}}",
+      "building": "Build et démarrage de votre function. Cela prend généralement une minute ou deux.",
+      "live": "{{name}} est en ligne.",
+      "failed": "Le build a échoué. Ouvrez la function pour lire le log de build.",
+      "urlLabel": "URL de la function",
+      "waitingUrl": "L'URL apparaît ici dès qu'elle est prête.",
+      "copy": "Copier l'URL",
+      "copied": "Copié",
+      "open": "Ouvrir la function",
+      "done": "Fermer"
+    },
+    "validation": {
+      "repoRequired": "Choisissez un dépôt ou collez son URL.",
+      "repoInvalid": "Saisissez une URL complète commençant par https://.",
+      "imageRequired": "Saisissez l'image à exécuter.",
+      "imageInvalid": "Les noms d'image ne peuvent pas contenir d'espaces.",
+      "nameRequired": "Donnez un nom à la function.",
+      "nameInvalid": "Utilisez des lettres minuscules, des chiffres et des tirets, en commençant et en terminant par une lettre ou un chiffre.",
+      "nameTooLong": "Gardez un nom assez court pour tenir dans une URL.",
+      "nameTaken": "Ce nom est déjà utilisé par une autre app. Choisissez-en un autre.",
+      "portInvalid": "Saisissez un port entre 1 et 65535.",
+      "idleInvalid": "Saisissez un nombre entier de minutes, au moins égal au minimum autorisé.",
+      "domainRequired": "Choisissez un domaine pour le chemin.",
+      "pathInvalid": "Utilisez un chemin comme /hello avec des lettres, des chiffres, des tirets ou des points."
+    },
+    "name": "Nom",
+    "repo": "URL du dépôt",
+    "ref": "Branche, tag ou commit",
+    "directory": "Répertoire du handler (facultatif)",
+    "directoryHint": "Laissez vide quand le handler est à la racine du dépôt.",
+    "routeDomain": "Servir aussi sur le domaine",
+    "routePath": "Préfixe de chemin",
+    "routeHint": "Facultatif. Un domaine déjà rattaché à une app, plus un chemin comme /hello, sert cette function à domaine/hello. Le préfixe est retiré avant que la requête n'atteigne le handler.",
+    "port": "Port",
+    "idle": "Veille après (minutes d'inactivité)"
+  },
+  "templates": {
+    "title": "Handlers de démarrage",
+    "description": "Chaque handler de démarrage est un handler complet d'une dizaine de lignes. Railpack le construit sans Dockerfile et il écoute sur la variable PORT.",
+    "copy": "Copier",
+    "copied": "Copié",
+    "cliLabel": "Ou depuis le terminal",
+    "error": "Impossible de charger les handlers de démarrage : {{message}}"
+  },
+  "kv": {
+    "loading": "Chargement des clés",
+    "error": "Impossible de charger le magasin clé-valeur : {{message}}",
+    "usage": "{{keys}} clés sur {{maxKeys}}, {{bytes}} octets sur {{maxBytes}} utilisés",
+    "disabled": "Le magasin est désactivé pour cette function. Activez-le pour lui fournir KV_URL et KV_TOKEN ; elle redémarre avec eux.",
+    "enable": "Activer le magasin",
+    "rotate": "Renouveler le token",
+    "tokenIssued": "Token émis. La function redémarre avec le nouveau KV_TOKEN.",
+    "add": "Ajouter une clé",
+    "empty": "Aucune clé pour l'instant.",
+    "prefixLabel": "Filtrer par préfixe",
+    "keyLabel": "Clé",
+    "valueLabel": "Valeur",
+    "ttlLabel": "Expire après (secondes)",
+    "ttlPlaceholder": "Jamais",
+    "save": "Enregistrer la clé",
+    "saved": "Clé enregistrée",
+    "cancel": "Annuler",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer {{key}} ?",
+    "deleteBody": "La function perd cette valeur immédiatement.",
+    "loadFailed": "Impossible de charger la valeur",
+    "binary": "(binaire)",
+    "never": "Jamais",
+    "bytes": "{{count}} o",
+    "columns": {
+      "key": "Clé",
+      "value": "Valeur",
+      "size": "Taille",
+      "expires": "Expire",
+      "actions": "Actions"
+    }
+  },
+  "detail": {
+    "back": "Toutes les functions",
+    "notFound": "Cette function est introuvable. Elle a peut-être été supprimée ou a cessé de dormir.",
+    "seconds": "{{count}} s",
+    "tabs": {
+      "overview": "Vue d'ensemble",
+      "settings": "Paramètres",
+      "environment": "Environnement et secrets",
+      "versions": "Versions",
+      "kv": "Magasin clé-valeur"
+    },
+    "overview": {
+      "title": "Statut",
+      "image": "Image",
+      "openApp": "Ouvrir comme app"
+    },
+    "settings": {
+      "port": "Port",
+      "timeout": "Délai d'expiration des requêtes (secondes)",
+      "concurrency": "Concurrence maximale",
+      "limitsTitle": "Limites des requêtes",
+      "limitsHelp": "S'appliquent pendant qu'une requête attend le démarrage d'une function en veille. 0 utilise la valeur par défaut du serveur. Une requête au-delà de la limite de concurrence reçoit un 429 avec Retry-After.",
+      "timeoutHelp": "Attente maximale pour un démarrage à froid, au plus {{max}} s. Actuellement {{effective}} s (0 signifie la valeur adaptative par défaut).",
+      "concurrencyHelp": "Requêtes retenues simultanément, au plus {{max}}. Actuellement {{effective}} (0 signifie aucune limite).",
+      "save": "Enregistrer les limites",
+      "saved": "Limites enregistrées",
+      "saveFailed": "Impossible d'enregistrer les limites"
+    },
+    "versions": {
+      "title": "Versions",
+      "help": "Revenez à un déploiement antérieur, ou épinglez-le : l'épinglage fait un rollback et verrouille la publication, de sorte que les nouveaux builds restent retenus jusqu'au déverrouillage.",
+      "empty": "Aucun déploiement pour l'instant.",
+      "live": "En ligne",
+      "rollback": "Rollback",
+      "pin": "Épingler cette version",
+      "done": "Changement de version démarré",
+      "failed": "Échec du changement de version"
+    }
+  },
+  "observe": {
+    "title": "Appels et console de test",
+    "pick": "Function",
+    "tabCalls": "Appels récents",
+    "tabTest": "Console de test",
+    "time": "Heure",
+    "request": "Requête",
+    "status": "Statut",
+    "duration": "Durée",
+    "cold": "Démarrage à froid",
+    "coldYes": "Démarrage à froid",
+    "coldNo": "Chaud",
+    "sizes": "Entrée / sortie",
+    "logs": "Logs",
+    "openLogs": "Logs",
+    "replay": "Rejouer",
+    "replayed": "Rejoué, réponse {{status}}",
+    "replayFailed": "Échec de la relecture : {{message}}",
+    "loadError": "Impossible de charger les appels : {{message}}",
+    "emptyTitle": "Aucun appel enregistré pour l'instant",
+    "emptyBody": "Les appels apparaissent ici tant que le control plane les garde en mémoire. Envoyez-en un depuis la console de test.",
+    "tableLabel": "Appels récents de {{name}}",
+    "captureLabel": "Conserver l'entrée des appels de test pour pouvoir les rejouer",
+    "captureHint": "Désactivé par défaut. Seuls les appels envoyés depuis la console de test ou la CLI sont conservés, jamais le reste du trafic. Les en-têtes d'identifiants sont supprimés."
+  },
+  "console": {
+    "method": "Méthode",
+    "path": "Chemin",
+    "headers": "En-têtes",
+    "headersPlaceholder": "Nom: valeur, un par ligne",
+    "body": "Corps",
+    "bodyPlaceholder": "JSON ou texte brut",
+    "send": "Envoyer",
+    "sending": "Envoi",
+    "wakeHint": "Si la function est en veille, cela attend d'abord son réveil.",
+    "failed": "L'appel a échoué : {{message}}",
+    "result": "Réponse",
+    "warm": "Chaud",
+    "stored": "Entrée stockée pour relecture",
+    "truncated": "Le corps a été coupé à la limite de taille."
+  },
+  "banner": {
+    "title": "Functions",
+    "description": "De petits handlers qui ne coûtent rien au repos. Ils se mettent en veille après une période d'inactivité et se réveillent à la requête suivante.",
+    "diagram": {
+      "browser": "navigateur",
+      "request": "requête",
+      "function": "function",
+      "response": "réponse",
+      "coldStart": "démarrage à froid d'environ 1 s",
+      "sleeps": "veille au repos"
+    }
+  }
+}

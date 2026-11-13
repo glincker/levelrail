@@ -1,0 +1,97 @@
+{
+  "title": "Funciones beta",
+  "description": "Todas las funciones que aún se están poniendo a prueba. Activa una aquí; si se conecta al arrancar, reinicia desde la misma tarjeta para aplicarla.",
+  "groups": {
+    "beta": "Beta",
+    "experimental": "Experimental"
+  },
+  "banner": {
+    "title": "{{name}} es una función beta",
+    "body": "Actívala para continuar.",
+    "bodyRestart": "Actívala y luego reinicia para aplicarla.",
+    "ready": "{{name}} está activada.",
+    "takeMeThere": "Llévame allí",
+    "unknown": "Este servidor no conoce esa función."
+  },
+  "state": {
+    "on": "Activada",
+    "off": "Desactivada",
+    "onByEnv": "Activada por el ajuste del servidor",
+    "onBySetting": "Activada desde Ajustes"
+  },
+  "toggle": {
+    "label": "Activar {{name}}",
+    "on": "{{name}} activada",
+    "off": "{{name}} desactivada",
+    "error": "No se pudo cambiar {{name}}: {{message}}",
+    "lockedByEnv": "Activada por el ajuste del servidor, así que no se puede desactivar aquí."
+  },
+  "env": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "line": "Línea de ajuste",
+    "systemd": "systemd",
+    "docker": "Docker"
+  },
+  "docs": "Leer la documentación",
+  "error": "No se pudieron cargar las funciones beta: {{message}}",
+  "readOnly": "Solo un administrador puede activar o desactivar las funciones beta.",
+  "restart": {
+    "needed": "Guardado. Reinicia para aplicar este cambio. Los despliegues y los streams de logs en curso se interrumpen y se reanudan después.",
+    "now": "Reiniciar ahora",
+    "unsupported": "Esta instalación no puede reiniciarse sola porque no se detectó ningún supervisor de procesos. Reinicia el plano de control y vuelve a comprobar.",
+    "recheck": "Volver a comprobar",
+    "manual": "Reinicia desde el servidor",
+    "askAdmin": "Guardado. Un administrador debe reiniciar el plano de control para aplicarlo."
+  },
+  "options": {
+    "open": "Usar la CLI o la configuración del servidor",
+    "title": "Activar {{name}} de otra forma",
+    "description": "El interruptor de la tarjeta hace lo mismo. Usa esto si prefieres la línea de comandos o gestionas el servidor con configuración.",
+    "cli": "CLI",
+    "cliLine": "Comando de la CLI",
+    "cliRestartLine": "Comando de la CLI con reinicio",
+    "server": "Configuración del servidor",
+    "reload": "Recargar systemd",
+    "restartUnit": "Reiniciar la unidad",
+    "recreate": "Recrear el contenedor",
+    "restartNote": "Esta función se conecta al arrancar el servidor, así que un reinicio la aplica."
+  },
+  "profile": {
+    "title": "Perfil del servidor",
+    "description": "Decide qué partes opcionales del servidor arrancan. Cambiar de perfil nunca elimina datos. La mayor parte se conecta al arrancar, así que un reinicio aplica el cambio.",
+    "names": {
+      "minimal": "Mínimo",
+      "standard": "Estándar",
+      "suite": "Suite"
+    },
+    "summary": {
+      "minimal": "Un servidor lo más ligero posible. No se ejecuta nada que no hayas pedido.",
+      "standard": "La instalación por defecto. Todo lo que necesita un equipo pequeño.",
+      "suite": "Estándar más la malla, los plugins y todas las funciones experimentales."
+    },
+    "facts": {
+      "meshOn": "Malla activada",
+      "meshOff": "Malla desactivada",
+      "pluginsOn": "Plugins activados",
+      "pluginsOff": "Plugins desactivados",
+      "experimentalOn": "Todas las funciones experimentales activadas",
+      "experimentalOff": "Funciones experimentales desactivadas",
+      "retention": "Métricas y logs conservados {{days}} días",
+      "loopbackAgent": "Listener del agente en loopback hasta que se registre un nodo",
+      "lazyLoops": "Los bucles de copia de seguridad arrancan cuando se programa una copia",
+      "recommendations": "Copia de seguridad y rotación de claves se muestran como recomendaciones, no como elementos de la puntuación",
+      "sbom": "SBOM de compilación activados"
+    },
+    "current": "Actual",
+    "use": "Usar este perfil",
+    "confirm": "Confirmar y aplicar",
+    "saved": "Perfil {{name}} guardado",
+    "error": "No se pudo cambiar el perfil: {{message}}",
+    "recommended": "Esta máquina tiene poca memoria. El perfil {{name}} es el más ligero.",
+    "pinned": "Definido por el servidor",
+    "pinnedHelp": "{{env}} está definida en el servidor, así que decide el perfil. Quítala allí para elegir desde esta página.",
+    "neverDeletes": "Bajar de perfil detiene bucles y oculta rutas, pero nunca elimina filas. Se rechazan los cambios que dejarían huérfanos nodos registrados o plugins activados.",
+    "readOnly": "Solo un administrador puede cambiar el perfil del servidor."
+  }
+}

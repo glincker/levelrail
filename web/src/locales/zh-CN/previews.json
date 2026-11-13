@@ -1,0 +1,146 @@
+{
+  "title": "预览",
+  "extend": {
+    "button": "延长",
+    "label": "延长拉取请求 {{number}} 的预览",
+    "hours": "延长 {{hours}} 小时",
+    "success": "PR #{{number}} 的预览现将于 {{when}} 过期。",
+    "error": "无法延长预览。"
+  },
+  "row": {
+    "extended": "已延长",
+    "logs": "构建日志",
+    "logsLabel": "打开拉取请求 {{number}} 预览的日志",
+    "gateOn": "已开启基本认证",
+    "gateOff": "公开",
+    "gateNeedsPassword": "门禁需要密码",
+    "gateTipLabel": "关于预览门禁",
+    "gateTip": "此预览是否位于基本认证之后。请在生命周期、资源与暴露下更改应用级设置。"
+  },
+  "approve": {
+    "button": "批准预览",
+    "title": "批准 PR #{{number}} 的预览?",
+    "fromRepo": "此拉取请求来自 {{repo}},而不是此应用自己的仓库。",
+    "anotherRepo": "另一个仓库",
+    "warning": "批准后会在你的服务器上运行该 fork 的代码。请先阅读变更。只会部署这一个提交;该 fork 的新推送需要再次批准。",
+    "shareSecrets": "同时提供此应用的环境变量和密钥",
+    "shareSecretsHint": "默认关闭。仅当你信任作者时才开启:该代码可以读取并发出每一个值。",
+    "cancel": "取消",
+    "confirm": "批准并部署",
+    "deploying": "PR #{{number}} 的预览正在部署。",
+    "error": "无法批准预览。"
+  },
+  "lifecycle": {
+    "title": "生命周期、资源与暴露",
+    "description": "应用保留多少个预览、每个预览多大、能访问哪些数据,以及谁能看到它们。",
+    "unavailable": "此控制面不支持预览设置。",
+    "loading": "正在加载预览设置",
+    "save": "保存设置",
+    "saved": "预览设置已保存。",
+    "saveError": "无法保存预览设置。",
+    "maxPreviews": "此应用最多同时存在的预览数",
+    "maxPreviewsHint": "0 表示使用平台上限({{cap}})。",
+    "memory": "每个预览的内存",
+    "memoryHint": "平台默认值为 {{value}}。预览获得的资源不会超过应用本身。",
+    "cpu": "每个预览的 CPU",
+    "cpuHint": "平台默认值为 {{value}}。0 表示使用它。",
+    "idle": "空闲多少分钟后休眠",
+    "idleHint": "0 表示使用平台默认值({{value}} 分钟)。休眠的预览会在下一次请求时唤醒。",
+    "database": {
+      "label": "数据库",
+      "hint": "除非你选择共享,否则预览永远不会连接到生产数据。",
+      "none": "无:预览不会获得任何数据库凭据",
+      "shared": "共享:使用生产数据库(有风险)",
+      "fresh": "全新:同一引擎的空数据库",
+      "seed": "种子:指定数据库最新备份的副本",
+      "seedName": "种子数据库",
+      "seedHint": "留空则使用应用关联的数据库。",
+      "sharedWarning": "每个预览,包括未经审查的分支,都可以读取和修改生产数据。"
+    },
+    "exposure": {
+      "heading": "谁能看到预览",
+      "forkSecrets": "为 fork 预览提供应用的环境变量和密钥",
+      "forkSecretsHint": "默认关闭。fork 预览完全不会获得任何环境变量。",
+      "forkSecretsWarning": "任何能从 fork 发起拉取请求的人,都可以运行读取这些值的代码。",
+      "indexing": "允许搜索引擎索引预览 URL",
+      "indexingHint": "默认关闭:预览会发送 X-Robots-Tag noindex,并提供全部禁止的 robots.txt。",
+      "gate": "预览要求基本认证",
+      "gateHint": "此应用的所有预览共用一个用户名和密码。",
+      "gateUsername": "用户名",
+      "gatePassword": "密码",
+      "gatePasswordSet": "已设置密码。留空则保留。",
+      "gateNeedsPassword": "设置用户名和密码后才能开启门禁。"
+    }
+  },
+  "prEnv": {
+    "button": "环境变量覆盖",
+    "help": "仅为此拉取请求的预览设置值。它们优先于应用自己的环境变量,并在下次部署(推送一个提交)时生效。它们会随预览一起移除。",
+    "empty": "此拉取请求没有覆盖项。",
+    "emptyHint": "在此设置的覆盖项仅适用于此拉取请求的预览。",
+    "hidden": "已隐藏",
+    "remove": "移除覆盖项 {{key}}",
+    "key": "环境变量",
+    "value": "值",
+    "secret": "加密存储(密钥)。之后不会再显示,包括在拉取请求评论中。",
+    "save": "保存",
+    "saving": "正在保存...",
+    "saved": "PR #{{number}} 的覆盖项已保存。将在下次部署时生效。"
+  },
+  "prCommands": {
+    "title": "拉取请求命令",
+    "description": "允许对仓库有写权限的人在拉取请求评论中运行 /levelrail redeploy、rollback、status 和 preview redeploy。冻结、审批和部署策略仍然适用。请在仓库 webhook 中添加 Issue comments 事件。",
+    "enabledLabel": "已启用拉取请求评论命令",
+    "forksTitle": "允许在来自 fork 的拉取请求上使用命令",
+    "forksDescription": "除非你启用,否则关闭。来自 fork 的拉取请求可能来自任何人。",
+    "forksLabel": "已对 fork 拉取请求启用拉取请求评论命令",
+    "toast": {
+      "enabled": "已启用拉取请求评论命令。",
+      "disabled": "已禁用拉取请求评论命令。",
+      "forksEnabled": "已对 fork 拉取请求启用命令。",
+      "forksDisabled": "已对 fork 拉取请求禁用命令。",
+      "errorTitle": "无法更新拉取请求评论命令。"
+    }
+  },
+  "ttl": {
+    "label": "预览生命周期(小时)",
+    "save": "保存",
+    "note": "适用于所有应用。0 表示保留启动时的默认值。单个应用的覆盖项仍然优先。",
+    "invalid": "请输入 0 到 {{max}} 之间的整数。"
+  },
+  "migrate": {
+    "command": "迁移命令",
+    "commandPlaceholder": "npm run migrate",
+    "commandHint": "在每个预览启动前运行一次。留空则清除。目前仅当预览数据库策略为无时才可用。",
+    "strategyBlocked": "预览数据库策略为 {{strategy}} 时不可用。请将其设为无以使用迁移命令。",
+    "timeout": "迁移超时(秒)",
+    "timeoutDefault": "0 表示使用默认的 {{seconds}} 秒。",
+    "imageTag": "镜像标签模板",
+    "imageTagHint": "请至少使用 {{placeholders}} 中的一个。留空则清除。",
+    "imageTagInvalid": "请至少添加一个占位符,使每个拉取请求都有自己的标签。",
+    "imageTagExample": "PR #{{number}}:{{tag}}",
+    "save": "保存",
+    "saved": "预览设置已保存。",
+    "error": "无法更新预览设置。"
+  },
+  "pushOnlyProvider": "此仓库来自 Azure DevOps,它只在推送时部署。不支持拉取请求预览。",
+  "previewMode": {
+    "groupLabel": "部署预览模式",
+    "default": "{{label}}(默认)",
+    "about": "关于{{label}}预览",
+    "off": {
+      "label": "关闭",
+      "summary": "不生成预览。",
+      "cost": "部署后不运行任何内容,也不存储任何内容。"
+    },
+    "metadata": {
+      "label": "元数据",
+      "summary": "无需浏览器。几乎没有成本。",
+      "cost": "每次部署后向应用发出一个小请求,读取其标题和社交图片(og:image)。无需浏览器、容器,也无需下载浏览器镜像。每次部署可能会下载一张最大 2 MB 的社交图片。没有社交图片时,预览为文字卡片。需要登录的页面会被跳过。"
+    },
+    "screenshot": {
+      "label": "截图",
+      "summary": "每次部署运行约 10 秒的浏览器。",
+      "cost": "每次部署后运行约 10 秒的浏览器容器,并显示真实页面。浏览器镜像约 143 MB,只下载一次,闲置时会被再次移除。"
+    }
+  }
+}

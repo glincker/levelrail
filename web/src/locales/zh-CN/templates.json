@@ -1,0 +1,381 @@
+{
+  "prefill": {
+    "loading": "正在打开 {{slug}}",
+    "notFoundTitle": "未找到模板",
+    "notFoundDescription": "此实例中没有名为“{{slug}}”的模板。可能拼写有误，或者此版本的目录中没有它。",
+    "errorTitle": "无法打开模板",
+    "browse": "浏览模板"
+  },
+  "description": {
+    "label": "设置说明"
+  },
+  "verified": {
+    "badge": "已验证",
+    "hint": "通过了最近一次真实冒烟测试：它已启动，且健康检查通过。",
+    "filter": "仅已验证"
+  },
+  "detail": {
+    "back": "返回模板",
+    "ramRecommended": "建议约 {{size}} RAM",
+    "needsGpu": "需要 NVIDIA GPU",
+    "facts": {
+      "title": "概况",
+      "images": "Docker 镜像",
+      "docs": "官方文档",
+      "docsLink": "打开文档",
+      "memory": "建议内存",
+      "ports": "暴露的端口",
+      "volumes": "卷",
+      "registryLink": "{{registry}} 上的 {{image}}"
+    },
+    "deployed": {
+      "title": "将部署的内容",
+      "description": "下面的每个服务都由模板的 compose 文件创建。",
+      "image": "镜像",
+      "port": "端口 {{port}}",
+      "roleMain": "主服务",
+      "roleSupport": "辅助服务",
+      "dependsOn": "在 {{names}} 之后启动",
+      "loading": "正在读取模板",
+      "unavailable": "目前无法提供此模板的服务明细。你仍然可以部署它。"
+    },
+    "env": {
+      "title": "环境变量",
+      "description": "仅显示名称。值在部署时设置。",
+      "required": "由你提供",
+      "generated": "为你生成",
+      "optional": "可选，有默认值"
+    },
+    "related": {
+      "title": "{{category}}中的更多模板"
+    },
+    "deploy": {
+      "title": "部署此模板",
+      "now": "立即部署",
+      "deploying": "部署中...",
+      "configure": "配置并部署",
+      "trial": "以试用实例的方式部署。你可以随时在它自己的页面中停止并删除它。",
+      "configureHint": "此模板需要你提供几个值才能启动。"
+    }
+  },
+  "page": {
+    "title": "服务模板",
+    "description": "现成的应用和数据库。部署之前，先选一个查看你会得到什么。",
+    "new": "从模板新建"
+  },
+  "marketplace": {
+    "search": {
+      "label": "搜索模板",
+      "placeholder": "按名称或描述搜索 {{count}} 个模板"
+    },
+    "sort": {
+      "label": "排序",
+      "relevance": "相关度",
+      "name": "名称，A 到 Z",
+      "memory": "最轻量优先"
+    },
+    "density": {
+      "label": "布局",
+      "comfortable": "卡片",
+      "compact": "列表"
+    },
+    "count": "{{shown}} / {{total}} 个模板",
+    "categories": {
+      "label": "模板分类",
+      "filterLabel": "按分类筛选模板",
+      "all": "所有模板",
+      "heading": "分类"
+    },
+    "featured": {
+      "title": "入门套件",
+      "subtitle": "可直接运行的多服务栈。部署一个，然后换上你自己的镜像。",
+      "hide": "隐藏入门套件",
+      "show": "显示入门套件"
+    },
+    "card": {
+      "deploy": "部署",
+      "deployNeedsSetup": "部署（需要设置）",
+      "deploying": "部署中...",
+      "ram": "约 {{size}} RAM",
+      "ramLabel": "建议内存 {{size}}",
+      "services": "{{count}} 个服务",
+      "gpu": "需要 GPU",
+      "details": "查看 {{name}}",
+      "database": "需要数据库",
+      "volume": "保留数据"
+    },
+    "empty": {
+      "title": "没有匹配的模板",
+      "filtered": "{{category}}中没有匹配“{{query}}”的内容。请尝试更短的搜索词或其他分类。",
+      "filteredNoQuery": "{{category}}中还没有模板。",
+      "clear": "清除筛选",
+      "catalogTitle": "目录为空",
+      "catalogDescription": "目前没有可用的模板。你可以从零开始创建新服务。"
+    }
+  },
+  "requirements": {
+    "title": "此模板的需求，以及 Levelrail 会添加什么",
+    "level": {
+      "standard": "标准",
+      "review": "需审阅",
+      "elevated": "提权访问"
+    },
+    "needsTitle": "此模板的需求",
+    "needsNone": "除标准容器之外没有其他需求。",
+    "addsTitle": "Levelrail 会添加什么",
+    "showAll": "显示详情",
+    "hideAll": "隐藏详情",
+    "services": "服务：{{services}}",
+    "elevatedWarning": "此模板请求对主机的提权访问。Levelrail 绝不会自动授予。",
+    "acknowledge": "我了解并接受上面列出的提权访问",
+    "acknowledgeRequired": "部署前请确认提权访问。",
+    "finding": {
+      "privileged": "以特权模式运行，这会让容器获得近乎 root 的主机访问权限",
+      "docker_socket": "挂载了 Docker socket，这等同于主机上的 root 权限",
+      "host_network": "使用主机网络，绕过应用网络和入口",
+      "host_namespace": "共享主机的进程、IPC 或用户命名空间",
+      "cap_add": "添加额外的 Linux capability",
+      "devices": "将主机设备传入容器",
+      "security_opt": "更改容器安全选项",
+      "host_mount": "挂载主机上的目录",
+      "unpinned_image": "镜像未固定到版本标签，因此重新部署可能拉取到不同的代码",
+      "published_ports": "直接在主机上发布端口",
+      "required_secrets": "必须先提供一个或多个密钥才能部署",
+      "generated_secrets": "密码和密钥在部署时生成",
+      "no_healthcheck": "没有健康检查，因此部署只根据进程是否启动来判断",
+      "persistent_data": "将数据存储在命名卷中",
+      "gpu": "预留一块 NVIDIA GPU",
+      "unparsed": "无法分析 Compose 内容。部署之前请先审阅"
+    },
+    "protection": {
+      "https_ingress": "每个域名前都有自动 HTTPS 和入口防护",
+      "secret_masking": "密钥会生成、加密存储，并在日志和界面中被遮蔽",
+      "volume_backups": "命名卷可以备份和恢复",
+      "health_gated_deploy": "部署以健康检查为门槛，通过后才切换流量",
+      "rollback": "一步回滚到上一个修订版",
+      "exposure_report": "暴露报告显示从外部可以访问到什么",
+      "firewall": "为已发布的端口管理主机防火墙规则"
+    }
+  },
+  "banner": {
+    "description": "从目录中选择，设置几个值，应用就会在你自己的服务器上运行。",
+    "diagram": {
+      "catalog": "目录",
+      "oneClick": "一键",
+      "server": "你的服务器"
+    }
+  },
+  "what": {
+    "title": "你将得到什么",
+    "description_other": "{{count}} 个服务，可一起运行。",
+    "url": "网址",
+    "urlValue": "{{slug}}.<你的服务器域名>",
+    "ports": "端口",
+    "portsNone": "没有 Web 端口",
+    "resources": "内存和 CPU",
+    "memory": "约 {{size}} 内存",
+    "memoryNone": "未设置内存限制",
+    "cpu": "{{count}} 个 CPU 限制",
+    "cpuShared": "共享 CPU",
+    "volumes": "存储",
+    "volumesNone": "没有持久化存储",
+    "dependencies": "依赖项",
+    "databaseCreated": "会为你创建一个 {{engines}} 数据库",
+    "dependenciesNone": "无，独立运行",
+    "backups": "备份",
+    "backupsVolumes": "存储可以在“备份”页面进行备份和恢复",
+    "backupsNone": "没有需要备份的内容"
+  },
+  "form": {
+    "title": "设置并部署",
+    "descriptionRequired": "填写必填的值，然后部署。其他内容都有合理的默认值。",
+    "descriptionNone": "没有必填项。可以直接部署，也可以先调整可选设置。",
+    "generated": {
+      "title": "为你生成",
+      "placeholder": "部署时创建",
+      "reveal": "显示",
+      "hide": "隐藏",
+      "regenerate": "重新生成",
+      "hint": "加密存储，并在每次重新部署时复用。"
+    },
+    "domain": {
+      "title": "地址",
+      "auto": "自动地址",
+      "custom": "使用我自己的域名",
+      "autoHint": "你会立即获得一个可用的 HTTPS 地址。之后如有需要，可以再添加你自己的域名。",
+      "customHint": "将其 DNS 指向此服务器，即可为你设置好 HTTPS。",
+      "none": "此模板没有需要配置的网址。",
+      "label": "{{service}} 的域名（端口 {{port}}）",
+      "placeholder": "app.example.com",
+      "hint": "可选。留空则使用自动地址。"
+    },
+    "optional": {
+      "title": "可选设置",
+      "count_other": "（{{count}} 项设置）"
+    },
+    "name": {
+      "label": "应用名称",
+      "hint": "小写字母、数字和连字符。留空则由我们选择一个。"
+    },
+    "errors": {
+      "required": "{{field}}为必填项",
+      "name": "请使用小写字母、数字和连字符，并以字母开头。",
+      "domain": "请输入有效的域名，例如 app.example.com。",
+      "summary_other": "请修正 {{count}} 个字段后继续。"
+    },
+    "summary": "{{name}} 将以 {{app}} 的名称运行在 {{address}}。会为你生成 {{generated}} 个密钥。",
+    "summaryAuto": "一个自动地址",
+    "deploy": "部署",
+    "deploying": "部署中...",
+    "success": "已部署 {{app}}",
+    "file": {
+      "secret": "密钥文件",
+      "mount": "挂载在 {{service}} 的 {{path}}",
+      "mode": "权限模式 {{mode}}"
+    }
+  },
+  "card": {
+    "ramRecommended": "建议约 {{size}} RAM",
+    "needsGpu": "需要 NVIDIA GPU",
+    "deployNow": "立即部署",
+    "deployNowSetup": "立即部署（需要设置）",
+    "deploying": "部署中...",
+    "searchPlaceholder": "搜索模板...",
+    "searchLabel": "搜索模板",
+    "noMatch": "没有模板匹配“{{search}}”。"
+  },
+  "install": {
+    "title": "将安装的内容",
+    "description_other": "将创建 {{count}} 个服务。",
+    "volumes": "卷",
+    "env": "环境变量",
+    "pin": {
+      "digest": "按摘要固定",
+      "tag": "版本标签",
+      "floating": "浮动标签"
+    },
+    "envKind": {
+      "generated": "已生成",
+      "required": "由你提供",
+      "optional": "可选"
+    }
+  },
+  "trust": {
+    "digest_other": "{{count}} 个镜像按摘要固定",
+    "digestHint": "镜像的确切内容是固定的",
+    "tag_other": "{{count}} 个镜像使用版本标签",
+    "tagHint": "版本标签仍可能在上游被重新推送",
+    "floating_other": "{{count}} 个镜像使用浮动标签",
+    "floatingHint": "latest 标签或没有标签。镜像在两次部署之间可能发生变化"
+  },
+  "stackFile": {
+    "title": "以栈文件查看",
+    "preview": "此模板部署的 compose 文件预览",
+    "download": "下载",
+    "label": "模板 compose 文件"
+  },
+  "result": {
+    "title": "{{name}} 正在部署",
+    "deployFailed": "部署失败",
+    "address": "地址",
+    "addressPending": "应用运行后会显示地址。",
+    "credentials": "已生成的凭据",
+    "credentialsHint": "为此应用创建。仅在你需要时显示，之后会再次隐藏。",
+    "noCredentials": "此模板没有生成任何凭据。",
+    "reveal": "显示 {{key}}",
+    "hide": "隐藏 {{key}}",
+    "copy": "复制 {{key}}",
+    "copied": "已复制",
+    "hidesIn": "{{seconds}} 秒后隐藏",
+    "revealDenied": "显示这些值需要所有者或管理员权限，或者此应用已关闭该功能。",
+    "openEnvironment": "打开环境",
+    "nextSteps": "后续步骤",
+    "openApp": "打开应用",
+    "viewLogs": "查看日志",
+    "close": "关闭",
+    "accessDetails": "访问详情",
+    "toastDeployed": "“{{name}}”已部署",
+    "toastRunning_other": "现已运行 {{count}} 个服务。",
+    "services_other": "{{count}} 个服务正在启动"
+  },
+  "access": {
+    "title": "访问详情",
+    "description": "此应用的地址、生成的登录信息和设置说明。",
+    "open": "打开访问详情"
+  },
+  "wizard": {
+    "deployedUnder_other": "已在“{{app}}”下部署 {{count}} 个服务。",
+    "created": "已创建",
+    "view": "查看",
+    "done": "完成",
+    "back": "返回模板",
+    "ramRecommended": "建议 RAM",
+    "documentation": "文档",
+    "name": "名称",
+    "namePlaceholder": "例如 my-stack",
+    "nameHint": "将此模板定义的所有服务归入同一个应用名称之下。",
+    "composeHint": "已根据模板预填。如有需要，可在部署前编辑。",
+    "deploying": "部署中...",
+    "deploy": "部署"
+  },
+  "facts": {
+    "license": {
+      "title": "许可证：{{spdx}}",
+      "classes": {
+        "permissive": "宽松许可证",
+        "copyleft": "Copyleft 许可证",
+        "network-copyleft": "网络 Copyleft 许可证",
+        "source-available": "源码可见",
+        "proprietary": "专有"
+      }
+    },
+    "verifiedOn": "已在 {{arches}} 上使用镜像标签 {{tag}} 验证",
+    "deprecated": "已弃用",
+    "yanked": "已撤回",
+    "useInstead": "请改用 {{id}}",
+    "filter": {
+      "license": "许可证类别",
+      "anyLicense": "任何许可证",
+      "arch": "架构",
+      "anyArch": "任何架构"
+    },
+    "preview": {
+      "badge": "预览",
+      "hint": "尚未在真实引擎上测试。仍可安装，请反馈问题。"
+    }
+  },
+  "importTemplate": {
+    "button": "导入 compose",
+    "title": "导入模板",
+    "description": "粘贴或加载 compose 文件，将其保存为你自己的模板。不会部署任何内容。",
+    "idLabel": "模板 ID",
+    "nameLabel": "名称",
+    "descriptionLabel": "描述（可选）",
+    "fileLabel": "加载 compose 文件",
+    "composeLabel": "Compose 文件",
+    "composePlaceholder": "services:\n  web:\n    image: nginx:1.27",
+    "variablesLabel": "变量（可选，逗号分隔）",
+    "variablesPlaceholder": "DB_PASSWORD, API_KEY",
+    "cancel": "取消",
+    "submit": "导入模板",
+    "submitting": "导入中...",
+    "tooLarge": "该文件对于模板来说太大了。",
+    "success": "已将“{{name}}”导入为模板。",
+    "idInvalid": "请使用 2 到 63 个小写字母、数字或连字符。",
+    "nameRequired": "名称为必填项。",
+    "composeRequired": "需要提供 compose 文件。",
+    "variablesInvalid": "变量必须是大写名称（UPPER_CASE）。"
+  },
+  "capabilities": {
+    "title": "声明的访问权限",
+    "tier": {
+      "review": "需审阅",
+      "elevated": "提权",
+      "privileged": "特权"
+    },
+    "class": {
+      "cap_add": "为一个容器添加 Linux capability。",
+      "net_admin": "可以更改容器内的网络设置。"
+    }
+  }
+}

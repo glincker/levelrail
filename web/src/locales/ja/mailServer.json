@@ -1,0 +1,459 @@
+{
+  "title": "メール",
+  "description": "独自のメールサーバー: メールボックス、DNS、バックアップ。",
+  "eyebrow": "実験的",
+  "install": {
+    "title": "メールサーバーをインストール",
+    "body": "moxテンプレートをデプロイします。SMTP、IMAP、Webメールを1つのコンテナで提供します。",
+    "action": "メールサーバーをインストール"
+  },
+  "overview": {
+    "title": "セットアップチェックリスト",
+    "hint": "ドメインのチェックを実行すると、ここに反映されます。チェックしていない項目は、そのまま未チェックと表示されます。",
+    "label": "{{domain}} のメールセットアップチェックリスト"
+  },
+  "status": {
+    "pass": "合格",
+    "warn": "要対応",
+    "fail": "不合格",
+    "not_tested": "未チェック"
+  },
+  "items": {
+    "server": "メールサーバーのインストール",
+    "dns": "MXレコード",
+    "spf": "SPF",
+    "dkim": "DKIM",
+    "dmarc": "DMARC",
+    "mta_sts": "MTA-STS",
+    "ptr": "逆引きDNS(PTR)",
+    "port25": "ポート25の送信"
+  },
+  "unknown": {
+    "server": "ステータスを取得できません。",
+    "ptr": "ホスティングプロバイダーが設定します。このページではまだ読み取れません。"
+  },
+  "dns": {
+    "title": "ドメインのDNS",
+    "domain": "ドメイン",
+    "domainPlaceholder": "example.com",
+    "knownDomains": "このインスタンスのドメイン",
+    "preset": "メールプロバイダー",
+    "selfHosted": "セルフホスト",
+    "mailHost": "メールホスト",
+    "ipv4": "サーバーのIPv4",
+    "ipv4Placeholder": "パブリックアドレス",
+    "plan": "レコードをプレビュー",
+    "apply": "{{count}} 件のレコードを適用",
+    "applying": "適用中",
+    "check": "チェック",
+    "checking": "チェック中",
+    "planHash": "プラン {{hash}}",
+    "noChanges": "追加するものはありません。これらのレコードはすでに存在します。",
+    "blocked": "既存のレコードによりプランがブロックされています。先にDNSプロバイダーで修正してください。",
+    "applied": "{{count}} 件のレコードを適用しました",
+    "colAction": "プラン",
+    "colName": "名前",
+    "colType": "種類",
+    "colValue": "値",
+    "colLive": "現在",
+    "tableLabel": "予定されているメールのDNSレコード",
+    "action": {
+      "add": "追加",
+      "unchanged": "変更なし",
+      "replace": "置き換え",
+      "refused": "拒否"
+    },
+    "error": "リクエストに失敗しました: {{message}}"
+  },
+  "next": {
+    "title": "次のステップ",
+    "allSet": "セットアップは完了しているようです",
+    "step": {
+      "install": "メールサーバーをインストールする",
+      "fix": "メールコンテナを起動する",
+      "wait": "メールサーバーが応答するまで待つ",
+      "dns": "DNSレコードを追加する",
+      "verify": "DNSをもう一度チェックする"
+    },
+    "tls": {
+      "self-signed": "TLS: 自己署名",
+      "provided": "TLS: 提供された証明書",
+      "unknown": "TLS: 不明"
+    },
+    "tlsSelfSigned": "自己署名です。実際のメールを送信する前に置き換えてください。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "cta": "DNSレコードをプレビュー",
+    "ctaBody": "このドメインに必要なレコードを表示します。適用するまで何も変更されません。",
+    "doneLabel": "完了したステップ",
+    "doneItem": {
+      "installed": "メールアプリをインストール済み",
+      "running": "コンテナが実行中",
+      "admin": "管理APIが応答しています"
+    }
+  },
+  "server": {
+    "installAction": "インストール",
+    "done": "実行中で応答しています",
+    "stopped": "インストール済みですが、実行されていません"
+  },
+  "ports": {
+    "title": "メールポート",
+    "listLabel": "メールポートのバインドとファイアウォールの状態",
+    "open": "メールポートを開く",
+    "opened": "メールポートは開いています",
+    "pending": "開いています",
+    "failed": "メールポートを開けませんでした",
+    "missing": "このメールアプリはメールポートを公開していません。先に現在のテンプレートから再デプロイしてください。",
+    "webStays": "Webメールとアカウントのユーザーインターフェースは、それぞれのバインド({{bind}})を維持します。メールポートを開いても、これらが公開されることはありません。",
+    "confirmTitle": "ポート25、465、587、993を開きますか?",
+    "consequence": "これら4つのポートのみに、パブリックバインドとホストのファイアウォール許可ルールが設定されます。コンテナは再作成されます。",
+    "certificate": "ポートを開く前に、自己署名ではない正規のTLS証明書を使用し、サーバーを堅牢化してください。",
+    "confirm": "ポートを開く",
+    "bind": {
+      "public": "パブリック",
+      "private": "プライベート",
+      "not_published": "非公開"
+    },
+    "firewall": {
+      "allowed": "ファイアウォールが許可",
+      "blocked": "ファイアウォールがブロック",
+      "not_filtering": "ファイアウォールはフィルタリングしていません",
+      "unknown": "ファイアウォールの状態は不明"
+    }
+  },
+  "mailboxes": {
+    "title": "メールボックス",
+    "failed": "メールのリクエストに失敗しました。",
+    "noUser": "なし",
+    "needsWrite": "write:sensitive 権限が必要です。",
+    "needsRoot": "この操作はrootユーザーのみ実行できます。",
+    "pendingWarning": "メールサーバーに到達できなかったため、停止はまだ適用されていません。次にメールの呼び出しが成功したときに適用されます。",
+    "status": {
+      "active": "有効",
+      "suspended": "停止中",
+      "pending": "停止の保留中"
+    },
+    "col": {
+      "address": "アドレス",
+      "team": "チーム",
+      "user": "リンクされたユーザー",
+      "status": "ステータス",
+      "created": "作成日",
+      "actions": "操作"
+    },
+    "form": {
+      "localpart": "名前",
+      "domain": "ドメイン",
+      "linkedUser": "リンクするユーザー(任意)",
+      "noUser": "リンクされたユーザーなし",
+      "add": "メールボックスを追加",
+      "localpartHint": "jo"
+    },
+    "empty": {
+      "title": "メールボックスはまだありません",
+      "claim": "上でドメインを登録してから、最初のメールボックスを追加してください。",
+      "add": "上で最初のメールボックスを追加してください。"
+    },
+    "suspend": "停止",
+    "resume": "再開",
+    "reset": "パスワードをリセット",
+    "delete": "削除",
+    "suspendFor": "{{address}} を停止",
+    "resumeFor": "{{address}} を再開",
+    "resetFor": "{{address}} のパスワードをリセット",
+    "deleteFor": "{{address}} を削除",
+    "deleteTitle": "{{address}} を削除しますか?",
+    "deleteBody": "確認のためアドレスを入力してください。通常は、停止のほうが適切な選択です。",
+    "reveal": {
+      "title": "{{address}} のパスワード",
+      "label": "生成されたパスワード",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "once": "一度だけ表示されます。保存はされません。",
+      "saved": "保存しました"
+    }
+  },
+  "aliases": {
+    "title": "エイリアス",
+    "needsMailbox": "先にメールボックスを追加してください。エイリアスはメールボックスを指す必要があります。",
+    "empty": "エイリアスはまだありません。",
+    "listLabel": "エイリアス",
+    "to": "宛先",
+    "remove": "削除",
+    "removeFor": "{{address}} を削除",
+    "form": {
+      "alias": "エイリアス",
+      "target": "転送先",
+      "add": "エイリアスを追加",
+      "aliasHint": "team"
+    }
+  },
+  "queue": {
+    "title": "キュー",
+    "count_other": "{{count}} 件のメッセージが待機中",
+    "empty": "配信待ちのものはありません。",
+    "holdAll": "すべて保留",
+    "releaseAll": "すべて解放",
+    "hold": "保留",
+    "release": "解放",
+    "held": "保留中",
+    "holdFor": "メッセージ {{id}} を保留",
+    "releaseFor": "メッセージ {{id}} を解放",
+    "col": {
+      "sender": "送信者",
+      "domain": "宛先ドメイン",
+      "attempts": "試行回数",
+      "next": "次回の試行",
+      "error": "最後のエラー"
+    }
+  },
+  "domains": {
+    "domain": "ドメイン",
+    "team": "チーム",
+    "claim": "ドメインを登録",
+    "claimed": "登録済み"
+  },
+  "hold": {
+    "title": "リストアを実行中のため、メールは保留されています",
+    "body": "メールのリストアにより、このアプリは停止されたままになります。リストアが完了するかロールバックされるまで、プラットフォームはアプリを起動も変更もしません。バックアップパネルでジョブの状況を確認してください。"
+  },
+  "demo": {
+    "badge": "デモデータ",
+    "hint": "ローカルのデモモードです。ここにあるものはすべて実在せず、DNSプロバイダーやメールサーバーには何も送信されません。",
+    "reset": "デモをリセット"
+  },
+  "backup": {
+    "title": "バックアップ",
+    "last": "最後のバックアップ",
+    "never": "バックアップはまだありません",
+    "runNow": "今すぐバックアップ",
+    "running": "バックアップ中: {{step}}",
+    "restoring": "リストア中: {{step}}",
+    "usage": "{{cap}} 中 {{used}} を使用",
+    "usageLabel": "使用中のバックアップ容量",
+    "notEncrypted": "バックアップには暗号化されていないメールが含まれてしまうため、サーバーに暗号化キーが設定されるまでオフになっています。",
+    "failed": "バックアップに失敗しました",
+    "jobFailed": "最後のジョブが失敗しました: {{error}}",
+    "verified": "検証済み",
+    "unverified": "未検証",
+    "empty": "保存されたバックアップはまだありません。",
+    "needsWrite": "メール設定を変更する権限が必要です。",
+    "col": {
+      "backup": "バックアップ",
+      "size": "サイズ",
+      "mox": "Mox",
+      "where": "保存先",
+      "actions": "操作"
+    },
+    "restore": "リストア",
+    "restoreFor": "バックアップ {{id}} をリストア",
+    "steps": {
+      "version": "バージョンを確認中",
+      "backup": "データをダンプ中",
+      "verify": "検証中",
+      "copy": "コピー中",
+      "archive": "アーカイブ中",
+      "prune": "古いバックアップを整理中",
+      "extract": "展開中",
+      "stage": "ステージング中",
+      "stop": "メールを停止中",
+      "swap": "データを入れ替え中",
+      "start": "メールを起動中",
+      "wait": "メールを待機中"
+    },
+    "line": "最後のバックアップ {{when}}、{{size}}、{{state}}",
+    "verifiedLower": "検証済み",
+    "unverifiedLower": "未検証",
+    "capChip": "上限 {{cap}}",
+    "destination": "ストレージ",
+    "destinationOpen": "バックアップストレージの設定を開く",
+    "history": "履歴",
+    "historyTitle": "バックアップ履歴",
+    "progressLabel": "バックアップの進捗",
+    "actionsFor": "バックアップ {{id}} の操作"
+  },
+  "restore": {
+    "title": "バックアップ {{id}} をリストア",
+    "checking": "バックアップを確認しています...",
+    "summary": "{{files}} 個のファイル、{{size}}、mox {{mox}} で作成。",
+    "warning": "リストアの実行中はメールが停止し、現在のメールはこのバックアップで置き換えられます。",
+    "confirmLabel": "確認のため {{id}} と入力してください",
+    "submit": "今すぐリストア",
+    "working": "リストア中...",
+    "conflict": "このバックアップは現在リストアできません。実行中のmoxがバックアップより古いか、別のジョブが実行中です。",
+    "failed": "リストアに失敗しました",
+    "started": "リストアを開始しました"
+  },
+  "storage": {
+    "title": "バックアップストレージ",
+    "kind": "保存先",
+    "local": "ローカルフォルダー",
+    "s3": "S3またはR2バケット",
+    "folder": "フォルダー",
+    "cap": "容量の上限",
+    "endpoint": "エンドポイント",
+    "region": "リージョン",
+    "bucket": "バケット",
+    "accessKey": "アクセスキーID",
+    "secret": "シークレットキー",
+    "secretHint": "再表示されません。保存のたびに入力してください。",
+    "pathStyle": "パス形式のURL",
+    "save": "保存してチェック",
+    "saving": "チェック中...",
+    "recheck": "再チェック",
+    "saved": "ストレージを保存しました",
+    "checks": "検証",
+    "pass": "合格",
+    "fail": "不合格",
+    "step": {
+      "put": "書き込み",
+      "get": "読み取り",
+      "list": "一覧",
+      "delete": "削除"
+    },
+    "localOnly": "このリリースでは、バックアップは引き続きローカルフォルダーに書き込まれます。バケットはチェックと保存のみ行われます。",
+    "failed": "ストレージのチェックに失敗しました"
+  },
+  "systemEmail": {
+    "title": "システムメール",
+    "intro": "招待、パスワードリセット、アラート、ステータスページの通知を、このメールサーバー経由で、お使いのドメインのnoreplyアドレスから送信します。",
+    "domain": "送信元ドメイン",
+    "fromOption": "noreply@{{domain}}",
+    "replace": "現在のメールプロバイダーを置き換える(無効にすると元に戻ります)",
+    "enable": "自分のメールサーバーを使用",
+    "disable": "無効化",
+    "rotate": "パスワードをローテーション",
+    "test": "テストを送信",
+    "active": "{{addr}} 経由で送信しています。",
+    "replaced": "有効ですが、その後メール設定が変更されました。以前のプロバイダーに戻すには無効にしてください。",
+    "lastOk": "{{to}} への最後のテストは成功しました: {{message}}",
+    "lastFail": "{{to}} への最後のテストは失敗しました: {{message}}",
+    "dns": "DNS: SPF {{spf}}、DKIM {{dkim}}、DMARC {{dmarc}}",
+    "dnsWarning": "SPF、DKIM、DMARCが合格し、サーバーの逆引きDNS(PTR)がメールホストと一致するまで、外部の宛先へのメールは迷惑メールになるか、拒否されます。",
+    "dnsLink": "DNSパネルを開く",
+    "needsRoot": "システムメールの送信先を変更できるのは、インスタンス管理者のみです。",
+    "noDomain": "先にメールボックスでドメインを登録してください。",
+    "failed": "システムメールのリクエストに失敗しました。",
+    "steps": "ステップ",
+    "step": {
+      "mailbox": "メールボックス",
+      "provider_saved": "プロバイダーを保存しました",
+      "test_send_queued": "テスト送信を待機中",
+      "delivered_to_local_queue": "メールサーバーのキューに配信しました",
+      "provider_restored": "以前のプロバイダーを復元しました",
+      "mailbox_suspended": "メールボックスを停止しました",
+      "rotated": "パスワードをローテーションしました"
+    },
+    "switchLabel": "Levelrailのメールを {{from}} から送信する",
+    "settings": "設定",
+    "statusOn": "オン",
+    "statusOff": "オフ",
+    "statusReplaced": "有効化後に変更されました",
+    "replaceHelp": "現在使用しているプロバイダーをオフにします。無効にすると元に戻ります。",
+    "pinNote": "固定済み: 後でメール設定が変更されると、変更済みと表示され、無効にすると以前のプロバイダーに戻ります。",
+    "noLast": "まだテストされていません",
+    "testShort": "テスト",
+    "dnsReady": "DNSの準備状況",
+    "dnsRow": "{{name}}: {{value}}"
+  },
+  "tabs": {
+    "label": "メールのセクション",
+    "overview": "概要",
+    "mailboxes": "メールボックス",
+    "domains": "ドメインとDNS",
+    "backups": "バックアップ"
+  },
+  "shell": {
+    "running": "実行中",
+    "stopped": "停止中",
+    "waiting": "起動中",
+    "notInstalled": "未インストール",
+    "settings": "設定",
+    "settingsTitle": "メール設定",
+    "queueChip": "キュー {{count}}",
+    "queueTitle": "配信キュー",
+    "addMailbox": "メールボックスを追加",
+    "statusLabel": "メールサーバーのステータス",
+    "skeleton": "メールのステータスを読み込み中"
+  },
+  "webmail": {
+    "open": "Webメールを開く",
+    "openFor": "{{address}} のWebメールを開く",
+    "disabled": "これを有効にするには、Webメールのリスナーにドメインを割り当ててください",
+    "settings": "アプリのドメイン設定"
+  },
+  "ov": {
+    "allSet": "準備完了",
+    "details": "詳細",
+    "hideDetails": "詳細を隠す",
+    "chips": {
+      "dns": "DNS {{pass}}/{{total}}",
+      "dnsNone": "DNS: まだチェックされていません",
+      "backup": "バックアップ {{when}}",
+      "backupNone": "バックアップはまだありません",
+      "queue": "{{count}} 件が待機中"
+    },
+    "statsLabel": "メールの概要",
+    "backupOpen": "バックアップを開く",
+    "checkDns": "DNSをチェック",
+    "checkFailed": "DNSのチェックに失敗しました"
+  },
+  "mbx": {
+    "search": "メールボックスを検索",
+    "filter": "ステータスで絞り込み",
+    "all": "すべて",
+    "active": "有効",
+    "suspended": "停止中",
+    "system": "システム",
+    "add": {
+      "name": "名前",
+      "hint": "name",
+      "submit": "作成",
+      "cancel": "キャンセル",
+      "claims": "デフォルトのチームに {{domain}} を登録します",
+      "domainLabel": "ドメイン",
+      "user": "リンクするユーザー(任意)",
+      "close": "閉じる"
+    },
+    "empty": "メールボックスはまだありません。",
+    "noMatch": "一致するメールボックスはありません。",
+    "list": "メールボックス",
+    "actions": "{{address}} の操作",
+    "copy": "アドレスをコピー",
+    "copied": "コピーしました",
+    "details": "詳細",
+    "aliasesTitle": "エイリアス",
+    "addDomain": "ドメインを追加",
+    "domainChip": "ドメイン {{domain}}",
+    "created": "作成日: {{date}}",
+    "team": "チーム {{team}}",
+    "user": "リンク先: {{user}}",
+    "claimedDomains": "登録済みのドメイン",
+    "noDomains": "登録済みのドメインはまだありません。最初のメールボックスを追加すると登録されます。",
+    "loading": "メールボックスを読み込み中",
+    "notUp": "メールサーバーが実行されると利用できます。",
+    "storage": "バックアップストレージ",
+    "viewOnly": "メールボックスは表示できますが、管理はできません",
+    "viewOnlyReason": "チームでのロールではメールを管理できません。チームの管理者またはオーナーにアクセスを依頼してください。",
+    "actionForbidden": "チームでのロールではこの操作はできません。チームの管理者またはオーナーに、操作の実行またはロールの変更を依頼してください。"
+  },
+  "cert": {
+    "title": "メール証明書",
+    "listLabel": "メールポートで提供される証明書",
+    "host": "ホスト",
+    "source": "ソース",
+    "issuer": "発行者",
+    "expires": "有効期限",
+    "daysLeft_other": "残り {{count}} 日",
+    "serial": "シリアル",
+    "fingerprint": "SHA-256",
+    "selfSigned": "自己署名",
+    "notServed": "証明書はまだ提供されていません",
+    "probeError": "プローブに失敗しました: {{message}}",
+    "obtain": "証明書を取得",
+    "obtaining": "リクエスト中",
+    "obtained": "証明書をリクエストしました",
+    "failed": "証明書を取得できませんでした"
+  }
+}

@@ -1,0 +1,1815 @@
+{
+  "readOnlyNotice": "閲覧専用のアクセス権です。これらの設定を変更するには、管理者にデプロイ権限を依頼してください。",
+  "authGate": {
+    "badgeOn": "認証ゲート有効",
+    "badgeOff": "認証ゲートなし",
+    "setUp": "認証ゲートを追加",
+    "manage": "管理",
+    "hide": "隠す",
+    "description": "すべてのリクエストは、まず認証サービスで確認されます。2xx が返れば通過し、それ以外(ログインページへのリダイレクトなど)は訪問者にそのまま返されます。訪問者が送信した下記ヘッダーのコピーは常に削除されるため、なりすましはできません。",
+    "enabled": "ゲートを有効にする",
+    "urlLabel": "認証サービスの URL",
+    "urlHelp": "http または https。ユーザー名とパスワードは不要です。内部アドレスも使えます。",
+    "checkPathLabel": "確認パス",
+    "copyHeadersLabel": "アプリに渡すヘッダー",
+    "copyHeadersHelp": "カンマ区切りで最大 16 個。認証レスポンスが 2xx の場合のみコピーされます。",
+    "timeoutLabel": "タイムアウト(秒)",
+    "timeoutHelp": "空欄にするとサーバーの既定値({{seconds}} 秒)を使います。認証サービスが停止しているか遅い場合、訪問者にはエラーが表示され、アプリには到達しません。",
+    "save": "保存",
+    "saving": "保存中...",
+    "remove": "認証ゲートを削除",
+    "removing": "削除中...",
+    "errors": {
+      "urlRequired": "認証サービスの URL を入力してください。",
+      "timeout": "タイムアウトは整数の秒数で指定してください。"
+    },
+    "providerLabel": "訪問者を確認する方法",
+    "providerExternal": "自前の認証サービス",
+    "providerBuiltin": "{{name}} のサインイン",
+    "builtinHelp": "訪問者は {{name}} アカウント(パスキーと二要素認証を含む)でサインインし、下記の人だけが通過できます。アプリには X-User、X-Email、X-Name が渡されます。",
+    "builtinUnavailable": "先にプラットフォームのプライマリドメインを設定してください。訪問者はサインインのためにダッシュボードへ誘導されます。",
+    "allowLabel": "許可する人",
+    "allowHelp": "ユーザーはメールアドレス、チームは名前、ロールは名前で指定します。",
+    "allowEmpty": "ユーザー、チーム、ロールを少なくとも 1 つ追加するまで、誰もアクセスできません。",
+    "allowKindLabel": "ルールの種類",
+    "allowKind": {
+      "user": "ユーザー",
+      "team": "チーム",
+      "role": "ロール"
+    },
+    "allowPlaceholder": {
+      "user": "person@example.com",
+      "team": "チーム名",
+      "role": "ロール名"
+    },
+    "allowAdd": "追加",
+    "allowRemove": "{{label}} を削除",
+    "liveSessions_other": "{{count}} 人の訪問者がサインイン中",
+    "revokeSessions": "すべての訪問者をサインアウト",
+    "revoking": "サインアウト中...",
+    "revoked": "{{count}} 人の訪問者をサインアウトしました。",
+    "extraHeadersLabel": "アプリに渡す追加ヘッダー",
+    "accessLog": {
+      "title": "アクセスログ",
+      "show": "アクセスログを表示",
+      "hide": "アクセスログを隠す",
+      "rangeLabel": "期間",
+      "range": {
+        "1h": "過去 1 時間",
+        "24h": "過去 24 時間",
+        "7d": "過去 7 日間"
+      },
+      "empty": "この期間にサインインの記録はありません。",
+      "loadError": "アクセスログを読み込めませんでした。",
+      "anonymous": "未サインイン",
+      "columns": {
+        "time": "時刻",
+        "user": "ユーザー",
+        "decision": "判定",
+        "reason": "理由",
+        "ip": "IP",
+        "count": "リクエスト数"
+      },
+      "decision": {
+        "allowed": "許可",
+        "denied": "拒否",
+        "login_redirect": "サインインへ誘導",
+        "token_issued": "サインインリンク発行",
+        "token_exchange": "サインイン済み",
+        "session_revoked": "セッション終了"
+      }
+    }
+  },
+  "wizard": {
+    "open": "ガイド付きセットアップ",
+    "close": "ガイドを閉じる",
+    "title": "ドメインを順番に追加",
+    "description": "ドメインをこのアプリに向けて、信頼された証明書を取得します。各ステップで実際の状態を確認し、最後のステップまで何も保存されません。",
+    "step": {
+      "domain": "ドメイン",
+      "dns": "DNS レコード",
+      "port": "コンテナのポート",
+      "certificate": "証明書"
+    },
+    "domain": {
+      "label": "ドメイン",
+      "placeholder": "app.example.com",
+      "invalid": "有効なドメインを入力してください(例: app.example.com)。",
+      "environmentLabel": "環境",
+      "environmentDefault": "既定(独自の設定がないすべての環境)",
+      "wwwPreset": "{{www}} も振り分け、{{apex}} にリダイレクトする",
+      "apexPreset": "{{apex}} も振り分け、{{www}} にリダイレクトする"
+    },
+    "dns": {
+      "propagation": "DNS の変更は通常数分で反映されますが、レコードの TTL によっては数時間かかることがあります。このページは自動で再確認するため、開いたままで構いません。",
+      "needDomain": "追加するレコードを確認するには、上にドメインを入力してください。"
+    }
+  },
+  "port": {
+    "description": "Ingress は、リクエストをコンテナ内のポート {{port}} に転送します。",
+    "listening": "確認済み: コンテナはポート {{port}} で待ち受けています。",
+    "otherPort": "コンテナはポート {{port}} ではなく {{ports}} で待ち受けています。ポートが一致するまでリクエストは失敗します。",
+    "useListening": "ポート {{port}} を使う",
+    "notListening": "実行中のコンテナ内で、ポート {{port}} を待ち受けているものはまだありません。アプリが起動し、127.0.0.1 ではなく 0.0.0.0 にバインドしていることを確認してください。",
+    "unknown": "未確認: アプリがまだ実行されていないか、exec アクセスが無効です。設定済みのポートはポート {{port}} です。",
+    "execDisabled": "ダッシュボードが待ち受けポートを確認できるように、このアプリの exec アクセスを有効にしてください。",
+    "notRunning": "アプリが実行されていないため、ポートをまだ確認できません。",
+    "recheck": "再確認",
+    "saved": "ポートを更新しました。"
+  },
+  "certificate": {
+    "http01": "HTTP-01: ドメインがここに解決されると、証明書が自動的にリクエストされます。ポート 80 と 443 にインターネットからこのサーバーへ到達できる必要があります。",
+    "dns01Private": "HTTP-01 は使えません: このサーバーのアドレス({{host}})がプライベートのため、認証局はポート 80 に到達できません。*.example.com のようなワイルドカードドメインで DNS-01 を使ってください。",
+    "dns01Wildcard": "ワイルドカードドメインは DNS-01 で検証されるため、DNS プロバイダーの接続が必要です。",
+    "upstreamProxy": "このサーバーの前段にあるリバースプロキシが証明書を取得・更新します。ドメインをこのサーバーに向け、プロキシがここへ振り分けるようにしてください。",
+    "providerActive": "DNS-01 プロバイダー: {{provider}}。ワイルドカードドメインの証明書はこれを通じて発行されます。",
+    "providerNone": "DNS-01 プロバイダーはまだ接続されていません。",
+    "setupStep": "次のステップ: ドメインページで Cloudflare、Route53、または Google Cloud DNS を接続し、ゾーンのワイルドカードドメインを追加してください。",
+    "openDomains": "ドメイン設定を開く",
+    "connectivity": "このサーバーへの到達性",
+    "portOpen": "ポート {{port}} は応答しています",
+    "portClosed": "ポート {{port}} は応答していません",
+    "connectivityNote": "これはコントロールプレーンからアドレスをテストします。ポートがインターネット全体に開いていることは証明できませんが、ここで閉じているポートは、ほぼ確実に外からも閉じています。",
+    "stagingNote": "ステージング証明書はアプリごとではなく、プラットフォーム全体の設定です。レート制限なしでテストするには、先にドメイン設定で Let's Encrypt のステージングを有効にしてください。"
+  },
+  "save": {
+    "submit": "ドメインを追加",
+    "submitting": "追加中...",
+    "done": "{{domain}} を追加しました。",
+    "redirectDone": "{{from}} は {{to}} にリダイレクトされるようになりました。",
+    "failed": "ドメインを追加できませんでした。"
+  },
+  "googleCloudDns": {
+    "title": "Google Cloud DNS",
+    "description": "Cloud DNS を通じてレコードを管理し、ワイルドカード証明書(DNS-01)を発行します。DNS 管理者ロールを持つサービスアカウントの JSON キーを貼り付けてください。Cloudflare や Route53 も有効な場合は、そちらが優先されます。API のローカルなモックに対してのみテストされています。",
+    "enabledHint": "DNS レコードとワイルドカード証明書に Cloud DNS を使います。",
+    "enabledLabel": "Google Cloud DNS を有効にする",
+    "project": "プロジェクト",
+    "clientEmail": "サービスアカウント",
+    "keyLabel": "サービスアカウントの JSON キー",
+    "keyPlaceholder": "JSON キーファイルの内容を貼り付けてください",
+    "keyPlaceholderSaved": "保存済みのキーを置き換えるには、新しいキーを貼り付けてください",
+    "keySaved": "キーは保存されています。保持するにはこのまま空欄にしてください。",
+    "keyNone": "保存されたキーはまだありません。",
+    "keyRequired": "Google Cloud DNS を有効にするには、サービスアカウントの JSON キーが必要です。",
+    "save": "保存",
+    "saving": "保存中...",
+    "test": "テスト",
+    "testing": "テスト中...",
+    "testOk": "接続しました。管理対象ゾーンが {{count}} 件見つかりました: {{zones}}",
+    "testFailed": "ゾーンを一覧できませんでした: {{error}}",
+    "disconnect": "接続解除",
+    "saved": "Google Cloud DNS の設定を保存しました。",
+    "disconnected": "Google Cloud DNS の接続を解除しました。"
+  },
+  "provider": {
+    "label": "DNS-01 プロバイダー",
+    "cloudflare": "Cloudflare",
+    "route53": "Route53",
+    "googleclouddns": "Google Cloud DNS",
+    "none": "なし",
+    "noneHint": "ワイルドカードドメインとプライベートアドレスのサーバーには必要です。"
+  },
+  "proxyManaged": {
+    "badge": "プロキシが管理",
+    "line": "証明書はプロキシが管理しています(発行元 {{issuer}}、有効期限 {{date}}、自動更新)",
+    "lineNoIssuer": "証明書はプロキシが管理しています(有効期限 {{date}}、自動更新)",
+    "unknown": "証明書はプロキシが管理しています。このサーバーはまだ確認できていません。プロキシページでルートを検証してください。",
+    "link": "プロキシページを開く"
+  },
+  "acme": {
+    "title": "証明書のリクエストに失敗しました",
+    "renewalTitle": "証明書の更新に失敗しました",
+    "caError": "認証局からの応答",
+    "action": {
+      "open_port_80": "次のステップ: ポート 80 と 443 をインターネットに開放してください。ファイアウォール、ルーターのポート転送、クラウドのセキュリティグループを確認し、次の試行を待ちます。",
+      "fix_dns": "次のステップ: ドメインの A または AAAA レコードをこのサーバーに向け、DNS の反映を待ってください。",
+      "wait_rate_limit": "次のステップ: 待ってから再試行してください。認証局がこのホスト名をレート制限しており、失敗した試行は制限にカウントされます。",
+      "fix_caa": "次のステップ: CAA レコードを削除または編集して、認証局を許可してください。",
+      "other_proxy": "このサーバーのポート 80 には別のサービスが応答しています。おそらく Traefik や nginx などのリバースプロキシです。そのプロキシに証明書を発行させてこのドメインを Levelrail に振り分ける(既存のプロキシの背後で実行を参照)か、Levelrail にポート 80 と 443 を割り当ててください。",
+      "check_logs": "次のステップ: ingress のログで、認証局の完全なレスポンスを確認してください。"
+    }
+  },
+  "environmentTabs": {
+    "label": "環境",
+    "default": "既定",
+    "defaultHint": "独自のドメインセットを持たない環境で使われます。",
+    "routingNow": "現在の振り分け",
+    "active": "有効",
+    "activeHint": "このアプリはこの環境でタグ付けされているため、このセットが ingress の振り分け対象です。",
+    "inactiveHint": "現在は振り分けされていません。このアプリがこの環境に移動されると振り分けが始まります。",
+    "empty": "この環境にはドメインがありません。そこでは既定のセットが使われます。",
+    "addLabel": "この環境にドメインを追加",
+    "add": "追加",
+    "remove": "{{domain}} を削除",
+    "saved": "環境のドメインを保存しました。",
+    "failed": "環境のドメインを保存できませんでした。",
+    "loadFailed": "環境のドメインセットを読み込めませんでした。"
+  },
+  "clone": {
+    "copyDomains": "新しいホスト名でドメインをコピー",
+    "copyDomainsHint": "ホスト名は 1 つのアプリにしか属せないため、コピーされるすべてのホスト名が書き換えられます。",
+    "mode": {
+      "prefix": "プレフィックスを追加",
+      "replace": "親ドメインを置き換え"
+    },
+    "prefix": "プレフィックス",
+    "prefixPlaceholder": "uat.",
+    "find": "このドメインを置き換える",
+    "findPlaceholder": "example.com",
+    "replace": "置き換え後",
+    "replacePlaceholder": "uat.example.com"
+  },
+  "connectivityCard": {
+    "title": "到達性",
+    "description": "このサーバーのアドレスでポート 80 と 443 が応答するか、およびどの DNS-01 プロバイダーが接続されているかを示します。",
+    "check": "今すぐ確認",
+    "noHost": "公開アドレスが不明です。コントロールプレーンで APP_PUBLIC_HOST を設定してください。",
+    "private": "このサーバーはプライベートアドレス上にあります。ここでは HTTP-01 は使えないため、ワイルドカードドメインで DNS-01 を使ってください。",
+    "closed": "ポート 80 または 443 が応答していません。ファイアウォールで開放するか、ルーターから転送してください。",
+    "ok": "このサーバーでポート 80 と 443 が応答しています。"
+  },
+  "searchVisibility": {
+    "hiddenBadge": "検索エンジンから非表示",
+    "visibleBadge": "検索エンジンに公開",
+    "hide": "検索エンジンから隠す",
+    "show": "インデックスを許可",
+    "hiddenHelp": "{{domain}} はすべてのレスポンスで noindex ヘッダーを送信し、すべて拒否する robots.txt を返します。これは行儀のよいクローラーが尊重するリクエストであり、アクセス制御ではありません。人の立ち入りを防ぐには Basic 認証を使ってください。",
+    "visibleHelp": "検索エンジンがこのドメインをインデックスできます。コンソール、ステージング、社内ツールを検索結果に出さないよう、隠してください。"
+  },
+  "reverseProxy": {
+    "title": "ダッシュボードを既存のプロキシの背後に置く",
+    "description": "このサーバーのポート 80 と 443 は、すでに別のものが使用しています。ダッシュボードに使うドメインを入力し、そのプロキシ用の設定をそのままコピーしてください。",
+    "holder": "ポート {{port}} は {{container}}({{image}})が公開しています。",
+    "none": "このサーバーでポート 80 や 443 を公開しているものは他にないため、Levelrail 自身の ingress がダッシュボードを直接配信できます。",
+    "domain": "ダッシュボードのドメイン",
+    "domainPlaceholder": "console.example.com",
+    "proxy": "プロキシ",
+    "build": "設定を表示",
+    "verify": "動作を確認",
+    "steps": "手順",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "reachable": "到達可能: このドメインでダッシュボードが配信されています。",
+    "notReachable": "まだ到達できません。",
+    "error": "設定を作成できませんでした"
+  },
+  "page": {
+    "title": "ドメイン",
+    "description": "アプリに振り分けられているすべてのドメインです。",
+    "helpLabel": "ドメインと ingress のガイド",
+    "add": "ドメインを追加",
+    "count_other": "{{count}} 件のドメイン",
+    "search": "ドメインを絞り込む",
+    "tableLabel": "ドメイン",
+    "noMatch": "「{{query}}」に一致するドメインはありません",
+    "noMatchBody": "スペルを確認するか、絞り込みを解除してください。",
+    "clearSearch": "絞り込みを解除",
+    "col": {
+      "domain": "ドメイン",
+      "app": "アプリ",
+      "dns": "DNS",
+      "certificate": "証明書",
+      "environment": "環境",
+      "expires": "有効期限",
+      "visibility": "検索"
+    },
+    "empty": {
+      "noAppsTitle": "振り分けるアプリがまだありません",
+      "noAppsBody": "ドメインはトラフィックをアプリに振り分けます。まずアプリをデプロイしてください。",
+      "noAppsAction": "アプリをデプロイ",
+      "title": "ドメインはまだありません",
+      "body": "ドメインを 1 つ以上追加し、アプリに向けてください。",
+      "action": "ドメインを追加"
+    },
+    "error": {
+      "title": "ドメインを読み込めませんでした",
+      "retry": "再試行"
+    },
+    "dns": {
+      "connected": "接続済み",
+      "not_resolving": "解決されません",
+      "resolves_elsewhere": "別の宛先を指しています",
+      "unconfigured": "不明",
+      "checking": "確認中",
+      "notResolvingHint": "DNS レコードがまだ見つかりません。",
+      "elsewhereHint": "別の宛先に解決されます: {{hosts}}。",
+      "elsewhereHintNoHosts": "別の宛先に解決されます。",
+      "privateHint": "このサーバーはプライベートアドレス上にあるため、証明書を発行できるのは DNS-01 だけです。",
+      "propagating": "反映中"
+    },
+    "cert": {
+      "none": "証明書はまだありません",
+      "internal": "内部",
+      "failed": "リクエスト失敗",
+      "renewsAuto": "自動更新",
+      "renewsProxy": "プロキシ経由で自動更新",
+      "renewsManual": "アップロードした証明書: 期限切れの前に更新してください",
+      "daysLeft_other": "残り {{count}} 日",
+      "expiresToday": "本日期限切れ",
+      "expiredAgo_other": "{{count}} 日前に期限切れ"
+    },
+    "visibility": {
+      "toggle": "{{domain}} の検索エンジンによるインデックスを許可",
+      "visible": "表示",
+      "hidden": "非表示",
+      "failed": "{{domain}} の検索表示を変更できませんでした。"
+    },
+    "row": {
+      "actions": "{{domain}} の操作",
+      "manage": "アプリで管理",
+      "open": "{{domain}} を新しいタブで開く",
+      "dnsRecord": "DNS レコードを表示",
+      "diagnose": "診断",
+      "copy": "ドメインをコピー",
+      "copied": "ドメインをコピーしました",
+      "recheck": "DNS を再確認",
+      "automatic": "自動",
+      "wildcard": "ワイルドカード",
+      "wildcardHint": "このドメイン配下のすべての単一ラベルに一致します。他のアプリの完全一致ドメインが優先されます。",
+      "details": "ドメイン設定",
+      "setPrimary": "プライマリに設定",
+      "move": "別のアプリへ移動",
+      "park": "接続解除(パーク)",
+      "delete": "ドメインを削除",
+      "primary": "プライマリ"
+    },
+    "flag": {
+      "waf": "WAF 有効",
+      "redirect": "リダイレクト設定済み",
+      "maintenance": "メンテナンスモード中",
+      "basicAuth": "Basic 認証設定済み"
+    },
+    "dnsDialog": {
+      "title": "{{domain}} の DNS レコード",
+      "close": "閉じる"
+    },
+    "platform": {
+      "title": "プラットフォーム設定",
+      "summary": "Ingress、HTTPS、ダッシュボードのアドレス、DNS プロバイダー。",
+      "httpsOff": "HTTPS は無効です",
+      "toggle": "プラットフォーム設定を表示"
+    },
+    "addDialog": {
+      "title": "ドメインを追加",
+      "description": "アプリを選び、振り分けるドメインを列挙してください。",
+      "app": "アプリ",
+      "appPlaceholder": "アプリを選択",
+      "domains": "ドメイン",
+      "domainsPlaceholder": "app.example.com\nwww.example.com",
+      "domainsHint": "1 行に 1 つ、またはカンマ区切りで入力します。",
+      "ready_other": "{{count}} 件のドメインを追加できます",
+      "errors": {
+        "invalid": "有効なホスト名ではありません",
+        "duplicate": "重複しています",
+        "claimedHere": "このアプリに追加済みです",
+        "claimedOther": "すでに {{app}} に振り分けられています",
+        "empty": "ドメインを 1 つ以上入力してください",
+        "appRequired": "アプリを選択してください"
+      },
+      "submit_other": "{{count}} 件のドメインを追加",
+      "submitting": "追加中...",
+      "noApps": "アプリがまだありません。アプリをデプロイしてから、ドメインを追加してください。",
+      "resultsTitle": "公開中",
+      "resultsBody": "以下の各ドメインに進捗が表示されます。DNS プロバイダーが接続されている場合、レコードは自動で作成されます。",
+      "added": "追加済み",
+      "failed": "追加されませんでした",
+      "verify": "すべて検証",
+      "verifying": "確認中...",
+      "retryFailed": "失敗したものを再試行",
+      "showRecord": "レコードを表示",
+      "hideRecord": "レコードを隠す",
+      "done": "完了",
+      "summary": "{{ok}} 件を追加、{{failed}} 件は追加されませんでした。"
+    },
+    "fix": {
+      "useAcme": "自動証明書を使う",
+      "acmeDone": "{{domain}} は自動証明書を使うようになりました。",
+      "uploadAgain": "再アップロード",
+      "setPassword": "パスワードを設定",
+      "connectDns": "DNS プロバイダーを接続",
+      "checkTarget": "宛先を確認",
+      "checkApp": "アプリを開く"
+    },
+    "issue": {
+      "custom_cert_unresolved": "アップロードした証明書は使用されず、代わりに自動発行されます。もう一度アップロードしてください。",
+      "basic_auth_unresolved": "振り分けられていません: Basic 認証のパスワードを読み取れませんでした。もう一度設定してください。",
+      "dns01_unavailable": "ワイルドカード証明書には DNS プロバイダーが必要です。DNS 設定で有効にしてください。",
+      "target_unavailable": "振り分けられていません: 宛先が利用できません。"
+    }
+  },
+  "proxyPicker": {
+    "title": "プロキシ",
+    "description": "ポート 80 と 443 に応答するプロキシを選びます。管理対象のプロバイダーは、ルートファイルの書き込みとリロードが自動で行われます。手動のプロバイダーでは、自分で追加する設定が表示されます。",
+    "choose": "プロキシプロバイダー",
+    "loadFailed": "プロキシの状態を読み取れませんでした。",
+    "retry": "再確認",
+    "detected": "検出済み",
+    "provider": {
+      "embedded": "内蔵 Caddy",
+      "traefik": "Traefik",
+      "nginx": "nginx",
+      "caddy": "Caddy(外部)",
+      "haproxy": "HAProxy"
+    },
+    "mode": {
+      "builtin": "内蔵",
+      "managed": "管理対象",
+      "manual": "手動"
+    },
+    "embeddedBody": "Levelrail 自身の ingress がポート 80 と 443 を配信し、証明書を処理します。他のプロキシには何も書き込まれません。",
+    "useEmbedded": "内蔵 ingress を使う",
+    "usingEmbedded": "内蔵 ingress を使用中",
+    "embeddedDone": "振り分けは内蔵 ingress を使うようになりました。プロキシに書き込まれたルートファイルは削除されました。",
+    "embeddedFailed": "内蔵 ingress に切り替えられませんでした。",
+    "notDetected": "このサーバー上でこのプロキシが見つかりませんでした。ポート 80 と 443 を公開した状態で起動し、再確認してください。",
+    "manualBody": "Levelrail は {{proxy}} を変更しません。ドライランでドメイン用の設定が表示されるので、手動で追加してから再確認してください。",
+    "managedBody": "Levelrail はドメインごとに 1 つのルートファイルを {{proxy}} に書き込み、検証し、プロキシをリロードして、各ドメインを HTTPS で確認します。",
+    "dryRun": "ドライラン",
+    "dryRunning": "確認中...",
+    "apply": "適用して検証",
+    "applying": "適用中...",
+    "recheck": "再確認",
+    "applyDone": "ルートを適用しました。プロキシが反映するのを待っています。",
+    "applyFailed": "ルートを適用できませんでした。",
+    "dryRunFailed": "ドライランで問題が見つかりました。",
+    "manualNoApply": "手動のプロバイダーは自動で適用されません。",
+    "changes": {
+      "title": "変更される内容",
+      "none": "変更はありません。ルートはすでに設定されています。",
+      "manualTitle": "これをプロキシに追加してください"
+    },
+    "inputs": {
+      "dir": "このサーバー上のルートディレクトリ",
+      "dirHint": "プロキシがルートファイルを読み込むフォルダーです。検出できませんでした。",
+      "certDir": "プロキシコンテナ内の証明書ディレクトリ",
+      "certDirHint": "例: /etc/letsencrypt/live。検出できませんでした。"
+    },
+    "rejected": {
+      "title": "プロキシが新しいルートを拒否しました",
+      "body": "何も保持されていません。ファイルはロールバックされ、プロキシは以前の内容で動作を続けます。下記の問題を修正してから、もう一度お試しください。"
+    },
+    "rootOnly": "プロキシを変更するには、root アカウントまたはトークンが必要です。",
+    "applyWaiting": "このサーバーで {{proxy}} が見つかり次第、「適用して検証」が使えるようになります。上でインストールするか、実行後に再確認してください。",
+    "fixViaCli": "CLI で修正"
+  },
+  "proxyMissing": {
+    "title": "{{proxy}} はこのサーバーでまだ実行されていません",
+    "looked": "Levelrail は、ポート 80 または 443 を公開し、{{proxy}} のイメージを使う実行中のコンテナを探しましたが、見つかりませんでした。",
+    "foundOther": "Levelrail はポート 80 と 443 で {{proxy}} のコンテナを探しましたが、代わりに {{other}} が見つかりました。",
+    "refusedTitle": "何も変更されていません",
+    "installed": "プロキシを起動しました。検出内容を確認しています。",
+    "installFailed": "プロキシを起動できませんでした。",
+    "install": {
+      "title": "{{proxy}} をインストールして起動する",
+      "body": "Levelrail が公式の {{proxy}} コンテナを、ポート 80 と 443 を公開した状態で起動します。先に正確な計画が表示されます。",
+      "unsupported": "自動インストールは Traefik のみ利用できます。{{proxy}} には自分で用意する証明書が必要なため、自分で起動するか、別の選択肢を選んでください。",
+      "action": "{{proxy}} をインストールして起動する"
+    },
+    "builtin": {
+      "title": "内蔵 Caddy に戻す",
+      "body": "このコントロールプレーンに同梱の ingress に切り替え直します。ドメインと設定は保持されます。",
+      "action": "内蔵 Caddy を使う"
+    },
+    "elsewhere": {
+      "title": "別の場所で実行されています",
+      "body": "プロキシは別のホスト上、または別の名前で動いています。到達方法を入力してから、再確認してください。",
+      "action": "手動で入力",
+      "hide": "入力欄を隠す"
+    },
+    "plan": {
+      "title": "実行される内容",
+      "image": "イメージ",
+      "container": "コンテナ",
+      "ports": "ポート",
+      "restart": "再起動ポリシー",
+      "mount": "マウント",
+      "file": "{{path}} に書き込み",
+      "safety": "作成されるのはこのコンテナだけです。すでに実行中のコンテナが停止・削除されることはなく、2 回実行しても 2 つ目は作成されません。",
+      "confirm": "確認して起動",
+      "installing": "起動中...",
+      "cancel": "キャンセル"
+    },
+    "manual": {
+      "body": "これらの既定値は標準的な構成に合わせています。サーバーと異なる部分を変更してください。",
+      "save": "この値を保存",
+      "saved": "プロキシの値を保存しました。再確認して検出してください。",
+      "saveFailed": "プロキシの値を保存できませんでした。",
+      "fields": {
+        "container": "コンテナ名",
+        "dynamic_dir": "このサーバー上のルートディレクトリ",
+        "entrypoint_http": "HTTP エントリポイント",
+        "entrypoint_https": "HTTPS エントリポイント",
+        "cert_resolver": "証明書リゾルバー",
+        "upstream_host": "アップストリームホスト"
+      },
+      "hints": {
+        "container": "プロキシコンテナの名前です。",
+        "dynamic_dir": "プロキシがルートファイルを読み込むフォルダーです。",
+        "entrypoint_http": "ポート 80 で待ち受けるエントリポイントです。",
+        "entrypoint_https": "ポート 443 で待ち受けるエントリポイントです。",
+        "cert_resolver": "プロキシが証明書を発行しない場合は空欄にしてください。",
+        "upstream_host": "プロキシがこのサーバーに到達する方法です(例: host.docker.internal)。"
+      },
+      "errors": {
+        "name": "英字、数字、ドット、ハイフン、アンダースコアを使ってください。",
+        "absolute": "/ で始まる絶対パスを入力してください。",
+        "path": "パスにスペースや .. は使えません。",
+        "host": "http:// を含まないホスト名またはアドレスを入力してください。"
+      }
+    }
+  },
+  "proxySetup": {
+    "title": "このドメインを公開する",
+    "description": "プロキシがすでにポート 80 と 443 を使用しています。Levelrail は必要なルートを書き込み、トラフィックと証明書が届くことを確認します。",
+    "unavailable": "このサーバーのバージョンでは、プロキシ連携を利用できません。",
+    "loadFailed": "プロキシの状態を読み取れませんでした。次の更新時に再試行されます。",
+    "steps": {
+      "detect": "プロキシを探す",
+      "tls_upstream": "HTTPS をプロキシに任せる",
+      "routes": "ルートを書き込む",
+      "dns": "DNS をこのサーバーに向ける",
+      "verify": "トラフィックと証明書を確認"
+    },
+    "stepState": {
+      "done": "完了",
+      "todo": "未対応",
+      "blocked": "ブロック中",
+      "error": "エラー",
+      "waiting": "待機中"
+    },
+    "waitingDetail": "プロキシが見つかるまで待機中",
+    "setup": "振り分けを設定",
+    "settingUp": "設定中...",
+    "setupDone": "ルートを書き込みました。プロキシが反映するのを待っています。",
+    "setupFailed": "振り分けを設定できませんでした。",
+    "confirm": {
+      "title": "プロキシにルートを書き込みますか?",
+      "directory": "Levelrail はドメインごとに 1 つのルートファイルを {{dir}} に書き込みます。プロキシはそのディレクトリを自動で読み込み、他には何も変更されません。",
+      "directoryUnknown": "ディレクトリが検出されませんでした。先に不足している項目を修正してください。",
+      "domainsLabel": "ルートが作成されるドメイン",
+      "noDomains": "ドメインはまだありません。ダッシュボードにドメインがある場合のみ、ダッシュボードのルートが書き込まれます。",
+      "submit": "ルートを書き込む",
+      "cancel": "キャンセル"
+    },
+    "domains": {
+      "title": "ドメイン",
+      "target": {
+        "app": "アプリ {{app}}",
+        "dashboard": "ダッシュボード"
+      },
+      "state": {
+        "todo": "未設定",
+        "handled": "プロキシが処理",
+        "waiting": "証明書を待機中",
+        "live": "公開中",
+        "error": "エラー"
+      },
+      "certificate": {
+        "expired": "{{issuer}}、{{date}} に期限切れ",
+        "pending": "プロキシの既定の証明書、発行待ち",
+        "valid": "{{issuer}}、{{date}} まで有効",
+        "untrusted": "{{issuer}}、信頼されていません、{{date}} まで有効"
+      },
+      "checked": "{{time}} に確認",
+      "neverChecked": "未確認",
+      "verify": "検証",
+      "verifying": "検証中...",
+      "verifyLive": "{{domain}} は公開されています。",
+      "verifyNotLive": "{{domain}} はまだ公開されていません。",
+      "verifyFailed": "{{domain}} を検証できませんでした。",
+      "lastError": "直近の問題: {{error}}",
+      "makeLive": "このドメインを公開する",
+      "summary": {
+        "ready": "証明書の準備完了",
+        "waiting": "プロキシが証明書を取得するのを待機中",
+        "waitingSince": "プロキシが証明書を取得するのを待機中({{time}} から)",
+        "default": "プロキシは既定の証明書を提供しています。証明書を取得できませんでした",
+        "unwired": "ルートが接続されていません",
+        "unreachable": "ルートが応答していません"
+      },
+      "retry": "証明書のリクエストを再試行",
+      "retrying": "再試行中...",
+      "retryFailed": "{{domain}} を再試行できませんでした。",
+      "copy": "コピー",
+      "copied": "コピーしました"
+    },
+    "facts": {
+      "title": "Levelrail が検出した内容",
+      "detectedBadge": "検出済み",
+      "proxy": "プロキシ",
+      "container": "コンテナ",
+      "image": "イメージ",
+      "ports": "公開ポート",
+      "directory": "ルートディレクトリ",
+      "entrypointHttp": "HTTP エントリポイント",
+      "entrypointHttps": "HTTPS エントリポイント",
+      "resolver": "証明書リゾルバー",
+      "upstream": "アップストリームホスト",
+      "notFound": "見つかりません",
+      "missingTitle": "まだセットアップを続行できません",
+      "missingBody": "Levelrail はプロキシからこれらを読み取れませんでした。プロキシに追加するか、プロキシ設定で入力してから、更新してください。",
+      "kind": {
+        "traefik": "Traefik",
+        "nginx": "nginx",
+        "caddy": "Caddy",
+        "haproxy": "HAProxy",
+        "none": "なし"
+      }
+    },
+    "none": {
+      "title": "既存のプロキシが検出されませんでした",
+      "body": "Levelrail から見えない場所でプロキシが動いている場合は、手動ガイドに従って手動で設定してください。",
+      "guide": "手動ガイドを開く"
+    },
+    "handledByProxy": "プロキシが処理",
+    "byo": {
+      "disclosure": "自分の証明書を持っています",
+      "hint": "証明書を購入した場合のみ必要です。それ以外は、証明書は自動で発行されます。",
+      "uploaded": "持ち込み証明書",
+      "applied": "使用中",
+      "pending": "保留中",
+      "applyIssue": "アップロードした証明書は保存されていますが、使用されていません: {{issue}}",
+      "masterKeyFix": "暗号化設定を確認",
+      "expires": "有効期限 {{date}}",
+      "certLabel": "証明書(PEM)",
+      "keyLabel": "秘密鍵(PEM)",
+      "replaceHint": "アップロード済みの証明書を完全に置き換えます。部分的な更新はできません。",
+      "newHint": "次の reconcile パスから、このドメインでは自動発行の代わりに使われます。",
+      "bothRequired": "証明書と秘密鍵の両方が必要です。",
+      "uploadedToast": "{{domain}} の証明書をアップロードしました。",
+      "uploadFailed": "証明書のアップロードに失敗しました。",
+      "upload": "アップロード",
+      "uploading": "アップロード中...",
+      "revert": "自動 TLS に戻す",
+      "revertTitle": "{{domain}} を自動 TLS に戻しますか?",
+      "revertBody": "アップロードした証明書は直ちに破棄されます。自動発行がこのドメインに届かない場合、新しい証明書をアップロードまたは発行するまで HTTPS が機能しなくなります。",
+      "cancel": "キャンセル",
+      "revertConfirm": "戻す",
+      "reverting": "戻しています...",
+      "revertedToast": "{{domain}} を自動 TLS に戻しました。",
+      "revertFailed": "自動 TLS に戻せませんでした。",
+      "automatic": "自動 TLS",
+      "add": "証明書を追加",
+      "replace": "置き換え",
+      "close": "閉じる"
+    }
+  },
+  "ingressUpstream": {
+    "bannerTitle": "HTTPS はプロキシが処理します",
+    "bannerBody": "このインスタンスは証明書をリクエストしません。ドメインをプロキシのホストに向けると、プロキシが TLS を終端し、この ingress に転送します。",
+    "trustedProxiesMissing": "信頼するプロキシの範囲(APP_INGRESS_TRUSTED_PROXIES)が設定されていないため、転送されたプロトコルとホストのヘッダーは無視されます。",
+    "switchLabel": "TLS は前段のプロキシが終端します",
+    "switchHelp": "Traefik、nginx、Caddy がポート 80 と 443 を使用している場合に有効にします。このインスタンスは ACME を実行せず、公開ポートでリンクを生成します。",
+    "acmeSkipped": "プロキシが HTTPS を処理している間、証明書の発行は保存されますがスキップされます。",
+    "portLabel": "公開 HTTPS ポート",
+    "portHelp": "Traefik や nginx などのプロキシがこの ingress に転送する場合は、リンクが正しく動くように、クライアントが使うポート(通常は 443)を入力してください。",
+    "portInvalid": "0 から 65535 のポートを入力するか、空欄にしてください。"
+  },
+  "acmeBlocked": {
+    "title": "ここでは正規の証明書を発行できません",
+    "body": "認証局はポート 80 と 443 を確認しますが、この ingress は {{http}} と {{https}} で待ち受けています。Traefik や nginx などのプロキシがそれらのポートを使っている場合は、このドメインの HTTPS をプロキシに任せ、ここで正規の証明書をオフにしてください。そうでなければ、Levelrail にポート 80 と 443 を割り当てるか、DNS-01 プロバイダーを使ってください。",
+    "turnOff": "HTTPS をプロキシに任せる",
+    "turningOff": "オフにしています..."
+  },
+  "dnsCheck": {
+    "checking": "確認中...",
+    "checkedAt": "{{time}} に確認",
+    "noAnswer": "応答なし",
+    "propagatingHelp": "パブリック DNS はすでにこのドメインをこのサーバーに向けています。一部のリゾルバーはまだ追いついていません。上の一覧で、どれがいつ再試行すべきかを確認できます。",
+    "notFoundHelp": "どのリゾルバーにもこのレコードはまだありません。DNS プロバイダーでレコード(タイプ、名前、値)を確認し、数分待ってください。",
+    "ttl": "(ttl {{seconds}} 秒)",
+    "groups": {
+      "authoritative": "権威ネームサーバー(正の情報源)",
+      "public": "パブリックリゾルバー",
+      "local": "このサーバーのリゾルバー"
+    },
+    "verdict": {
+      "dns_ready": "DNS の準備完了",
+      "public_ready": "パブリック DNS の準備完了",
+      "not_found": "レコードが見つかりません",
+      "points_elsewhere": "別の宛先を指しています",
+      "unknown": "未確認"
+    },
+    "retryAt": "このサーバーのリゾルバーは {{time}} に再試行できます。",
+    "countdown": "(残り {{left}})",
+    "flushIntro": "このサーバーの DNS キャッシュを今すぐクリアするには、ホストで次を実行してください:",
+    "copyFlush": "フラッシュコマンドをコピー",
+    "hints": {
+      "local_stale": "権威サーバーでは DNS は正しい状態です。このサーバー自身のリゾルバーが古い応答を保持しているだけで、他にブロックされているものはありません。",
+      "local_stale_long": "このサーバー自身のリゾルバーが、想定より長く古い応答を保持しています。DNS は正しいため、訪問者と証明書には影響しません。キャッシュをフラッシュするか、リゾルバーを再起動してください。",
+      "was_cloudflare_proxy": "このドメインはこれまで Cloudflare のプロキシ経由でした。DNS が直接サーバーを指すようになったため、訪問者はサーバーに直接到達します(オリジンの IP はもう隠されません)。",
+      "waiting": "レコードはまだ権威サーバーに現れていません。新しいレコードは通常数分で表示されます。",
+      "check_zone": "レコードが正しい DNS ゾーンにあり、綴りが完全に一致していることを確認してください。",
+      "check_aaaa": "別の宛先を指す AAAA レコードがないことを確認してください。",
+      "check_cname": "apex が、プロバイダーによって別のアドレスにフラット化される CNAME になっていないことを確認してください。",
+      "check_nameservers": "別の DNS プロバイダーが権威になっていないことを確認してください。レジストラのネームサーバーは、このレコードを保持しているものでなければなりません。"
+    },
+    "certPending": "証明書を待機中",
+    "recheck": "DNS を再確認"
+  },
+  "goLive": {
+    "loading": "進捗を確認中...",
+    "steps": {
+      "dns": "DNS レコード",
+      "counterpart": "www と apex のペア",
+      "redirect": "正規リダイレクト",
+      "proxy_route": "プロキシのルート",
+      "force_https": "HTTPS を強制",
+      "propagation": "DNS の反映",
+      "certificate": "証明書",
+      "http": "サイトの応答"
+    },
+    "state": {
+      "done": "完了",
+      "pending": "実行予定",
+      "skipped": "スキップ",
+      "failed": "失敗",
+      "manual": "手動ステップ",
+      "conflict": "競合"
+    },
+    "text": {
+      "dnsDone": "{{provider}} に DNS レコードを作成しました",
+      "propagatingSeen": "DNS の反映を待機中({{resolver}} では確認できています)",
+      "propagatingWaiting": "レコードが DNS に現れるのを待機中",
+      "certDone": "{{issuer}} が証明書を発行、{{date}} まで有効",
+      "skipped": "スキップ: {{reason}}"
+    },
+    "cloudflareBadge": "Cloudflare で作成",
+    "proxiedWarning": "このレコードは Cloudflare のプロキシ経由です。SSL/TLS モードを Full (strict) に設定しないと、訪問者がリダイレクトループに陥る可能性があります。",
+    "conflictHint": "この名前には別のレコードがすでに存在するため、そのままにしました。削除するか、置き換えを有効にしてドメインを追加し直してください。",
+    "connectCloudflare": "DNS プロバイダーが接続されていないため、レコードは自分で追加してください。",
+    "connectCloudflareAction": "自動化するには Cloudflare を接続してください。",
+    "openLive": "公開サイトを開く"
+  },
+  "baseDomain": {
+    "title": "アプリのベースドメイン",
+    "description": "ドメインのない新しいアプリには app-name.base-domain が割り当てられ、その DNS レコードが自動で作成されます。",
+    "label": "ベースドメイン",
+    "save": "保存",
+    "saved": "アプリのベースドメインを保存しました",
+    "invalid": "apps.example.com のようなホスト名を入力してください。",
+    "zoneChecking": "DNS プロバイダーでゾーンを探しています...",
+    "zoneFound": "{{provider}} でゾーン {{zone}} が見つかりました",
+    "zoneNotFound": "DNS プロバイダーにこの名前のゾーンがありません。先にこれを管理するプロバイダーを接続してください。",
+    "noProvider": "DNS プロバイダーはまだ接続されていません。",
+    "noProviderAction": "下で Cloudflare、Route53、または Google Cloud DNS を接続してください。",
+    "backfillHelp": "既存のアプリは現在のアドレスのままです。ドメインのないアプリに {{base}} のアドレスを割り当てます:",
+    "backfillPreview": "既存のアプリをプレビュー",
+    "backfillApply_other": "{{count}} 件のアプリに適用",
+    "backfillNone": "すべてのアプリにすでにドメインがあります。"
+  },
+  "automation": {
+    "title": "ドメインの自動化",
+    "description": "アプリにドメインを追加したときに自動で行われる処理です。",
+    "saved": "ドメインの自動化を保存しました",
+    "previewList": "予定されているステップ",
+    "previewLabel": "次のドメインを追加したときの動作",
+    "previewRun": "計画を表示",
+    "previewNeedsApp": "計画をプレビューするには、先にアプリを作成してください。",
+    "previewTitle": "{{domain}} を追加すると:",
+    "historyTitle": "自動化の履歴",
+    "historyEmpty": "自動実行はまだありません。",
+    "auditLink": "監査ログを開く",
+    "undo": "元に戻す",
+    "undone": "元に戻しました",
+    "undoDone": "元に戻しました: その実行で作成されたものだけが削除されました",
+    "toggles": {
+      "auto_dns": {
+        "label": "DNS レコードを作成",
+        "help": "接続済みの DNS プロバイダーが必要です。既存のレコードは上書きされません。"
+      },
+      "auto_proxy_route": {
+        "label": "プロキシのルートを作成",
+        "help": "その連携が有効な場合、管理対象プロキシがドメインを振り分けるまで待機します。"
+      },
+      "force_https": {
+        "label": "HTTPS を強制",
+        "help": "証明書の準備ができたら、訪問者を安全なアドレスに誘導します。"
+      },
+      "attach_www_counterpart": {
+        "label": "www または apex のペアを追加",
+        "help": "example.com を追加すると www.example.com も追加され、逆も同様です。"
+      },
+      "wildcard_for_base_domain": {
+        "label": "ベースドメインのワイルドカードレコード",
+        "help": "1 つのレコードで、アプリのベースドメイン配下のすべてのアプリをカバーします。"
+      },
+      "verify_after": {
+        "label": "追加後に検証",
+        "help": "DNS、証明書、サイトを確認し、各ステップを報告します。"
+      }
+    },
+    "www": {
+      "label": "www ポリシー",
+      "off": "両方のアドレスをそのままにする",
+      "redirect_to_apex": "www を apex にリダイレクト",
+      "redirect_to_www": "apex を www にリダイレクト",
+      "help": "ペアとなるホストが必要で、リダイレクトを選ぶと自動的に追加されます。"
+    },
+    "dnsWriter": {
+      "label": "DNS レコードの書き込み方法",
+      "builtIn": "内蔵クライアント",
+      "plugin": "{{name}} プラグイン",
+      "help": "ドメインを修正するときに DNS レコードを追加するものを選びます。先にプラグインページでプラグインをテストしてください。",
+      "managePlugins": "DNS プラグインを管理",
+      "saved": "DNS レコードの書き込み方法を保存しました"
+    }
+  },
+  "standalone": {
+    "modeLabel": "このドメインで何を配信しますか?",
+    "modeApp": "アプリに振り分け",
+    "modeProxy": "ポートまたは URL にプロキシ",
+    "title": "ドメインをプロキシする",
+    "editTitle": "{{domain}} を編集",
+    "description": "このサーバーの任意のポート、ネットワーク上のアドレス、外部 URL、別のアプリのポート、またはコンテナからドメインを配信します。アプリは不要です。",
+    "domain": "ドメイン",
+    "domainPlaceholder": "tools.example.com",
+    "target": "宛先",
+    "targetMode": {
+      "port": "このサーバーのポート",
+      "address": "アドレス",
+      "url": "URL",
+      "app": "アプリのポート",
+      "container": "コンテナ"
+    },
+    "port": "ポート",
+    "portPlaceholder": "3000",
+    "listening": "このサーバーで待ち受け中",
+    "listeningNone": "待ち受け中のポートが検出されませんでした。サービスが使うポートを入力してください。",
+    "controlPort": "{{label}}",
+    "address": "ホストとポート",
+    "addressPlaceholder": "10.0.0.5:8080 または db.internal:5000",
+    "addressHint": "プライベートネットワークまたはメッシュ上の IP またはホスト名と、そのポートです。",
+    "url": "URL",
+    "urlPlaceholder": "https://backend.example.org",
+    "urlHint": "TLS と Host ヘッダーは URL に従います。パスはプレフィックスになります。",
+    "app": "アプリ",
+    "appPlaceholder": "アプリを選択",
+    "appPort": "コンテナのポート",
+    "appPortHint": "空欄の場合はアプリのメインポート({{port}})を使います。",
+    "container": "コンテナ",
+    "containerPlaceholder": "実行中のコンテナを選択",
+    "containerPort": "コンテナのポート",
+    "noContainers": "実行中のコンテナが見つかりません。",
+    "preview": "プレビュー",
+    "previewEmpty": "宛先を選ぶと、トラフィックの行き先が表示されます。",
+    "advanced": "詳細オプション",
+    "upstreamTls": "宛先に TLS で接続する",
+    "verifyTls": "宛先の証明書を検証する",
+    "verifyTlsHint": "自己署名証明書の場合はオフにしてください。",
+    "serverName": "TLS サーバー名",
+    "serverNamePlaceholder": "backend.internal",
+    "hostHeader": "Host ヘッダー",
+    "hostPreserve": "訪問者のホストを維持",
+    "hostUpstream": "宛先のホストを使う",
+    "hostCustom": "カスタム",
+    "hostCustomPlaceholder": "internal.example.com",
+    "websocket": "WebSocket を許可",
+    "connectTimeout": "接続タイムアウト(秒)",
+    "readTimeout": "読み取りタイムアウト(秒)",
+    "timeoutHint": "0 で既定値のままにします。",
+    "stripPrefix": "パスのプレフィックスを除去",
+    "stripPrefixPlaceholder": "/app",
+    "descriptionField": "メモ",
+    "checking": "宛先を確認中...",
+    "confirmTitle": "このサーバーは内部の宛先に接続します",
+    "confirmCheck": "理解しました。このドメインの公開トラフィックをそこへ振り分けます。",
+    "submit": "ドメインを追加",
+    "save": "変更を保存",
+    "saving": "保存中...",
+    "added": "{{domain}} は {{target}} にプロキシされるようになりました",
+    "updated": "{{domain}} を更新しました",
+    "removed": "{{domain}} を削除しました",
+    "removeFailed": "{{domain}} を削除できませんでした",
+    "resultTitle": "公開する",
+    "resultBody": "下の DNS レコードを作成すると、証明書が自動で発行されます。",
+    "unlinked": "未リンク",
+    "unlinkedHint": "どのアプリにもリンクされていません。トラフィックはこの宛先にプロキシされます。",
+    "edit": "宛先を編集",
+    "remove": "ドメインを削除",
+    "removeTitle": "{{domain}} を削除しますか?",
+    "removeBody": "{{target}} へのルートは、次の ingress パスで削除されます。認証、WAF、リダイレクトなどの設定も一緒に削除されます。",
+    "removeConfirm": "削除",
+    "removing": "削除中...",
+    "pageDescription": "{{target}} にプロキシされる {{domain}} のトラフィック制御です。変更は次の ingress パスで適用されます。",
+    "proxiesTo": "プロキシ先",
+    "doneLabel": "完了"
+  },
+  "serverAddress": {
+    "title": "サーバーのアドレス",
+    "description": "ドメインの DNS レコードをこのサーバーに向けます。",
+    "ipv4": "IPv4",
+    "ipv6": "IPv6",
+    "none": "検出されませんでした",
+    "copy": "{{value}} をコピー",
+    "copied": "コピーしました",
+    "source": {
+      "override": "手動で設定",
+      "detected": "検出済み",
+      "env": "設定から",
+      "none": "不明"
+    },
+    "nat": "このアドレスはここのどのネットワークインターフェースにもないため、サーバーは NAT またはクラウドのアドレスマッピングの背後にあります。ポート 80 と 443 をそこに転送してください。",
+    "upstream": "前段のプロキシが TLS を終端します。DNS はこのサーバーではなく、そのプロキシに向けてください。",
+    "noneDetected": "公開アドレスが検出されませんでした。DNS の確認とレコードが正しくなるよう、下で設定してください。",
+    "override": "アドレスを手動で設定",
+    "overrideHint": "ロードバランサーの背後にある場合や、検出が誤っている場合に使います。",
+    "save": "アドレスを保存",
+    "clear": "検出を使う",
+    "saved": "サーバーのアドレスを保存しました",
+    "saveFailed": "アドレスを保存できませんでした",
+    "recordsTitle": "作成する DNS レコード",
+    "recordType": "タイプ",
+    "recordName": "名前",
+    "recordValue": "値",
+    "orInstead": "または代わりに",
+    "recordsNone": "作成するレコードを確認するには、公開アドレスを設定してください。",
+    "dnsStatus": "DNS の状態"
+  },
+  "enforcement": {
+    "savedNotEnforced": "保存済み、未適用",
+    "proxy": {
+      "traefik": "Traefik",
+      "external": "お使いのプロキシ"
+    },
+    "reason": {
+      "route_unverified": "{{proxy}} が {{domain}} を振り分けていますが、{{proxy}} がリクエストを内蔵 ingress に渡していることを、このサーバーは確認できていません。設定は保存されていますが、訪問者に適用されない可能性があります。ルートを検証して、もう一度確認してください。",
+      "proxy_unmanaged": "{{proxy}} は、このサーバーが管理していない設定で {{domain}} の TLS を終端しているため、リクエストが内蔵 ingress に届くことを確認できません。設定は保存されていますが、適用済みとは報告されません。",
+      "not_routed": "{{domain}} はまだ振り分けられていないため、設定は保存されていますが、何も適用されていません。"
+    },
+    "proxyPage": "プロキシページを開く",
+    "docs": "プロキシの背後で動作する制御",
+    "flagTitle": "{{label}}(保存済み、未適用)"
+  },
+  "maintenance": {
+    "on": "メンテナンスモード中",
+    "off": "メンテナンス中ではありません",
+    "enable": "メンテナンスモードを有効にする",
+    "enabling": "有効にしています...",
+    "end": "メンテナンスを終了",
+    "ending": "終了中...",
+    "activeHint": "{{domain}} の訪問者には、固定のメンテナンスページが表示されます。コンテナは実行され続け、ここで停止や再起動されることはありません。",
+    "options": "ページとスケジュール",
+    "hideOptions": "隠す",
+    "ends": "{{date}} に終了",
+    "bypassCount_other": "{{count}} 件のアドレスがこのページを回避します",
+    "healthOpen": "レディネスパスへの稼働監視プローブは引き続きアプリに到達します",
+    "saved": "メンテナンス設定を保存しました",
+    "form": {
+      "title": "ページタイトル",
+      "titlePlaceholder": "メンテナンス中です",
+      "message": "メッセージ",
+      "messagePlaceholder": "このサイトは一時的にご利用いただけません。しばらくしてからもう一度お試しください。",
+      "plainText": "プレーンテキストです。訪問者には書式なしでそのまま表示されます。",
+      "until": "自動的に終了する日時",
+      "untilHelp": "任意です。ステータスページにも表示される、予定されたメンテナンスの項目が作成されます。",
+      "retryAfter": "再試行までの時間(分)",
+      "retryAfterHelp": "Retry-After として送信され、クライアントやクローラーがいつ戻るべきかを知らせます。既定は 5 です。",
+      "bypass": "引き続きアプリに到達できるアドレス",
+      "bypassHelp": "IP アドレスまたは CIDR 範囲を 1 行に 1 つ、最大 32 件。停止中にサイトを確認するには、自分のアドレスを使ってください。",
+      "healthBypass": "稼働監視プローブがレディネスパスに到達できるようにする",
+      "enable": "これらの設定でメンテナンスを有効にする",
+      "save": "設定を保存",
+      "maxHours": "自動的にオフにするまでの時間(時間)",
+      "maxHoursDefault": "終了時刻が未設定の場合に使われます。サーバーの既定値({{hours}} 時間)にするには空欄、制限なしにするには 0 にしてください。",
+      "maxHoursNone": "終了時刻が未設定の場合の安全策です。制限なしにするには空欄にするか、時間を入力してください。",
+      "maxHoursUntil": "不要です。上の終了時刻でメンテナンスはすでに終了します。"
+    },
+    "autoOffAt": "{{date}} に自動でオフになります",
+    "noAutoOff": "自動終了はありません。終了するまでオンのままです"
+  },
+  "shieldRecommended": {
+    "title": "不正利用の防止",
+    "description": "1 人の訪問者がこのアプリに与えるコストを制限します。すでに制限があるドメインは変更されません。",
+    "blockBots": "既知の悪質なボットと AI スクレイパーも拒否する",
+    "preview_button": "プレビュー",
+    "apply": "推奨の制限を有効にする",
+    "preview": "訪問者ごとに 1 分あたり {{rate}} リクエスト、同時 {{concurrent}} 件が、{{count}} 件のドメインに設定されます。",
+    "skipped": "{{count}} 件のドメインにはすでに制限があるため、そのままです。",
+    "applied": "{{count}} 件のドメインで推奨の制限を有効にしました。",
+    "blockedProxy": "このサーバーの前段にプロキシがあり、訪問者のアドレスが隠れているため、訪問者ごとの制限はすべての人に適用されてしまいます。先に信頼するプロキシのリストを設定してください。"
+  },
+  "edge": {
+    "title": "リクエスト制限と信頼するプロキシ",
+    "description": "リクエストサイズと低速クライアントの上限、および訪問者アドレスの報告を信頼する、このサーバー前段のプロキシを設定します。",
+    "proxy": {
+      "none": "プロキシなし",
+      "cloudflare": "Cloudflare",
+      "coolify": "Coolify",
+      "traefik": "Traefik",
+      "proxy": "リバースプロキシ"
+    },
+    "fix": {
+      "title": "このサーバーの前段に {{proxy}} を検出しました",
+      "body": "プロキシが信頼されるまで、訪問者のアドレスと転送ヘッダーは無視されるため、訪問者ごとの制限はすべての人に適用されてしまいます。",
+      "rangesRotate": "このプロキシは時間とともに変わるパブリックアドレスを使います。単一のアドレスではなく、公開されている範囲を信頼してください。",
+      "manual": "自動的に信頼しても安全なアドレスはありません。下にプロキシのアドレスを入力してください。",
+      "apply": "{{value}} を信頼する",
+      "recheck": "再確認",
+      "done": "信頼するプロキシを保存しました。制限は実際の訪問者のアドレスを参照するようになりました。"
+    },
+    "trusted": {
+      "label": "信頼するプロキシ",
+      "help": "カンマ区切りのアドレス、CIDR 範囲、または private_ranges。何も信頼しない場合は空欄にしてください。"
+    },
+    "limits": {
+      "body": "リクエストボディの上限",
+      "header": "リクエストヘッダーの上限",
+      "readHeader": "ヘッダー読み取りのタイムアウト",
+      "idle": "アイドル接続のタイムアウト",
+      "help": "表示されている既定値を使うには空欄にしてください。"
+    },
+    "unit": {
+      "mib": "MiB",
+      "kib": "KiB",
+      "seconds": "秒"
+    },
+    "envLocked": "コントロールプレーンの環境変数で設定されており、そちらが優先されます。",
+    "badNumber": "数字のみを入力するか、既定値を使うには空欄にしてください。",
+    "save": "制限を保存",
+    "saving": "保存中...",
+    "saved": "エッジ設定を保存しました。",
+    "loadFailed": "エッジ設定を読み込めませんでした。"
+  },
+  "diagnose": {
+    "title": "{{domain}} を診断",
+    "description": "DNS、ポート、証明書、直近の証明書エラーを確認し、問題ごとに対処法を示します。",
+    "running_other": "確認中... これまでに {{count}} 件の結果",
+    "status": {
+      "healthy": "すべて問題ありません。",
+      "warnings": "動作していますが、修正した方がよい点があります。",
+      "problems": "このドメインが動作しない原因があります。"
+    },
+    "propagation": {
+      "settled": "DNS は安定しました",
+      "propagating": "DNS を反映中",
+      "waiting": "DNS を待機中"
+    },
+    "nextCheck": "約 {{seconds}} 秒後に再確認します。",
+    "recheck": "再確認",
+    "tryAgain": "再試行",
+    "applying": "適用中...",
+    "applied": "{{label}}: 完了しました。再確認しています。",
+    "fromTerminal": "ターミナルから",
+    "copyCommand": "コマンドをコピー",
+    "evidence_other": "根拠({{count}} 行)",
+    "steps": "手順",
+    "open": "{{label}} を開く",
+    "copyRecord": "{{name}} の {{type}} レコードをコピー",
+    "nothingToFix": "修正する項目はありません。",
+    "showPassed": "ほかの {{count}} 件のチェックを表示",
+    "hidePassed": "ほかのチェックを隠す",
+    "notFound": "このドメインはまだアプリに関連付けられていません。先にアプリに追加してから診断してください。",
+    "failed": "診断を実行できませんでした: {{message}}"
+  },
+  "appLimits": {
+    "title": "リクエストサイズの上限",
+    "description": "このアプリが受け付けるリクエストボディの大きさを制限します。ヘッダーサイズとタイムアウトはサーバー全体に適用されます。",
+    "body": "リクエストボディの上限",
+    "help": "空欄の場合はサーバーの値({{instance}} MiB)を使います。",
+    "invalid": "0 より大きいサイズを入力するか、空欄にしてください。",
+    "save": "上限を保存",
+    "reset": "サーバーの値を使う",
+    "saved": "リクエストサイズの上限を保存しました。"
+  },
+  "banner": {
+    "description": "独自のウェブアドレスをアプリに向けます。HTTPS 証明書は自動で設定されます。",
+    "diagram": {
+      "domain": "app.example.com",
+      "certificate": "証明書",
+      "server": "サーバー",
+      "browser": "ブラウザー"
+    },
+    "noAppsAction": "新規アプリ"
+  },
+  "editor": {
+    "title": "ドメイン",
+    "descriptionBefore": "ingress レイヤー経由でこのアプリに振り分けられているドメインです。プラットフォーム全体の ACME とプライマリドメインの設定は、次の場所にあります: ",
+    "descriptionLink": "ドメイン",
+    "descriptionAfter": "。",
+    "dnsHintLink": "DNS レコードタイプの解説",
+    "dnsHint": "A レコードをこのサーバーの IP アドレスに(または CNAME をそのホスト名に)向けてください。解決されると、TLS 証明書が自動的に発行されます。",
+    "empty": "ドメインは設定されていません。",
+    "inputLabel": "ドメイン",
+    "inputPlaceholder": "app.example.com",
+    "remove": "ドメインを削除",
+    "tlsLabel": "TLS 証明書:",
+    "provisioning": "プロビジョニング中",
+    "add": "ドメインを追加",
+    "save": "ドメインを保存",
+    "saving": "保存中...",
+    "saved": "ドメインを保存しました。",
+    "errors": {
+      "required": "ドメインは必須です",
+      "invalid": "有効なドメインを入力してください(例: app.example.com)"
+    }
+  },
+  "stepper": {
+    "title": "ドメインのセットアップ手順",
+    "step": {
+      "domain": "ドメイン",
+      "records": "DNS レコード",
+      "check": "公開の確認",
+      "port": "コンテナのポート",
+      "certificate": "証明書"
+    },
+    "port": {
+      "next": "ポートは正しいので、続行"
+    },
+    "domain": {
+      "label": "ドメイン",
+      "placeholder": "app.example.com",
+      "add": "追加して続行",
+      "invalid": "有効なドメインを入力してください(例: app.example.com)",
+      "offerPair": "{{other}} も必要ですか? 後でここにリダイレクトできます。",
+      "useOther": "{{other}} を使う",
+      "wildcard": "ワイルドカードドメインは、証明書を DNS 経由で証明するため、DNS プロバイダーの接続が必要です。"
+    },
+    "records": {
+      "providerLabel": "DNS はどこでホストされていますか?",
+      "next": "レコードを追加しました"
+    },
+    "provider": {
+      "cloudflare": "Cloudflare",
+      "route53": "Route 53",
+      "namecheap": "Namecheap",
+      "other": "その他"
+    },
+    "hint": {
+      "cloudflare": "Cloudflare で DNS、続いてレコードを開きます。証明書が発行されるまで、プロキシを DNS のみ(グレーの雲)にしてください。",
+      "route53": "Route 53 でホストゾーンを開き、TTL を 300 以下にしてレコードを作成します。",
+      "namecheap": "Namecheap で Advanced DNS を開き、レコードを追加します。ホストにはサブドメインのみを入力します。",
+      "namecheapApex": "apex ドメインのホストには @ を使ってください。",
+      "other": "このドメインの DNS を管理している場所(通常はレジストラ)でレコードを追加してください。名前は完全な形で表示されています。"
+    },
+    "check": {
+      "expected": "期待値",
+      "resolved": "解決結果",
+      "none": "まだありません",
+      "recheck": "再確認",
+      "next": "続行",
+      "propagation": "新しいレコードは通常数分で表示されますが、数時間かかることもあります。自動で再確認します。",
+      "capped": "自動確認を停止しました。DNS の変更が行き渡るまで待ってから、「再確認」を押してください。"
+    },
+    "cert": {
+      "pending": "証明書を待機中",
+      "issued": "証明書を発行しました",
+      "failed": "証明書の発行に失敗しました",
+      "off": "このドメインでは証明書が無効です",
+      "reason": "理由",
+      "logs": "ログを開く"
+    }
+  },
+  "statusBar": {
+    "label": "ドメインの状態",
+    "httpsOn": "HTTPS 有効",
+    "httpsOff": "HTTPS は無効です",
+    "address": "サーバー",
+    "fixAddress": "修正: アドレスを確認",
+    "details": "アドレスの詳細",
+    "enableHttps": "HTTPS を有効にする",
+    "parked": "{{count}} 件パーク中",
+    "addressLabel": "サーバーのアドレス",
+    "httpsLabel": "HTTPS",
+    "portsLabel": "ポートの確認",
+    "unknown": "未確認"
+  },
+  "cutover": {
+    "title": "切り替えチェックリスト",
+    "loading": "このサーバーを確認中...",
+    "error": "切り替えチェックリストを読み込めませんでした。",
+    "eta": "約 {{minutes}} 分",
+    "getCertificate": "DNS を切り替える前に証明書を取得",
+    "revertChallenge": "このドメインを HTTP-01 に戻す",
+    "dns01ThisDomain": "このドメインだけが証明書に DNS-01 を使います。このサーバーの他のドメインは、それぞれのチャレンジを維持します。",
+    "noProvider": "DNS プロバイダーが接続されていないため、HTTP-01 は切り替え後にのみ機能します。事前にレコードの TTL を {{ttl}} 秒に下げるか、Cloudflare、Route53、または Google Cloud DNS を接続してください。",
+    "runbook": "証明書の手順書",
+    "guide": "ダウンタイムなしでドメインを移行する",
+    "ready": "切り替え可能: {{domain}} について、このサーバーでアプリが応答しています({{cert}})",
+    "notReady": "切り替えの準備ができていません: {{domain}} について、このサーバーでアプリがまだ応答していません",
+    "certReady": "証明書は準備完了で、ダウンタイムは発生しない見込みです",
+    "certPending": "証明書は保留中",
+    "proxied": "この名前は Cloudflare のプロキシ経由です。切り替えは、プロキシのオン・オフにかかわらず機能します。",
+    "proxyDocs": "Cloudflare プロキシのドキュメント",
+    "risk": {
+      "none": "ダウンタイムは発生しない見込みです",
+      "likely": "ダウンタイムが発生する可能性が高いです",
+      "unknown": "ダウンタイムのリスクは不明です"
+    },
+    "state": {
+      "pass": "合格",
+      "wait": "待機中",
+      "fail": "失敗",
+      "skip": "不要"
+    },
+    "steps": {
+      "app": "アプリがこのサーバーで応答する",
+      "certificate": "証明書の準備ができている",
+      "current_dns": "現在の DNS と TTL",
+      "switch_dns": "DNS をこのサーバーに切り替える",
+      "authoritative": "権威サーバーから検証済み",
+      "live": "実際の名前でエンドツーエンドに検証済み"
+    },
+    "verify": {
+      "loading": "公開中の名前を確認中...",
+      "error": "公開中の名前を確認できませんでした。",
+      "recheck": "再確認",
+      "verdict": {
+        "PASS": "準備完了",
+        "WARN": "警告あり",
+        "FAIL": "失敗"
+      }
+    }
+  },
+  "lifecycle": {
+    "pending": "処理中...",
+    "park": {
+      "title": "{{domain}} をパークしますか?",
+      "body": "{{app}} はこのドメインの配信を停止します。ドメインは DNS と証明書の状態とともに「パーク中」グループに登録されたままになり、後で任意のアプリに接続できます。",
+      "keepsDnsCert": "DNS レコードと自動証明書の状態も保持されます。",
+      "confirm": "ドメインをパーク",
+      "done": "{{domain}} をパークしました",
+      "savesSettings": "パークすると、このドメイン固有の設定(WAF とレート制限、独自の証明書、Basic 認証、認証ゲート、メンテナンス、リダイレクト、エラーページ、検索表示、トラフィックポリシー)が、パーク中のドメインとともに保存されます。接続し直すと復元されます。",
+      "staticNoSettings": "静的サイトにはドメインごとの設定がないため、パーク中のドメインとともに保存されるものはありません。"
+    },
+    "move": {
+      "title": "{{domain}} を移動",
+      "body": "このドメインを {{app}} から別のアプリに移動します。最初に衝突チェックが実行されます。",
+      "keepsSettings": "移動してもドメイン固有の設定は保持されます。WAF、独自の証明書、Basic 認証も一緒に移動します。",
+      "target": "移動先",
+      "check": "確認して移動",
+      "confirm": "移動を確定",
+      "needsConfirm": "このドメインのトラフィックの所有者が変わります。続行するには確定してください。",
+      "done": "{{domain}} を {{app}} に移動しました",
+      "dropsSettings": "静的サイトに移動すると、このドメイン固有の設定は破棄されます。DNS と証明書の状態は保持されます。",
+      "dropsWarning": "静的サイトにはドメインごとの設定がありません。このドメインの WAF、独自の証明書、Basic 認証などの設定は破棄されます。"
+    },
+    "delete": {
+      "title": "{{domain}} を削除しますか?",
+      "body": "{{app}} からこのドメインを完全に削除します。確認のため、ドメイン名を入力してください。",
+      "confirm": "削除",
+      "done": "{{domain}} を削除しました",
+      "dropsSettings": "削除すると、このドメイン固有の設定が破棄されます。WAF とレート制限、独自の証明書、Basic 認証が失われます。"
+    },
+    "attach": {
+      "title": "{{domain}} を接続",
+      "body": "このパーク中のドメインを配信するアプリを選択してください。",
+      "confirm": "接続",
+      "done": "{{domain}} を {{app}} に接続しました",
+      "settingsLegend": "保存済みの設定",
+      "restore": "保存済みの設定を復元(既定)",
+      "startFresh": "新規に開始し、設定を破棄",
+      "restored": "復元しました: {{kinds}}",
+      "kinds": {
+        "domain_waf": "WAF",
+        "gate_access_rules": "レート制限",
+        "domain_tls_cert": "証明書",
+        "domain_basic_auth": "Basic 認証",
+        "domain_auth_gate": "認証ゲート",
+        "domain_maintenance": "メンテナンス",
+        "domain_redirect": "リダイレクト",
+        "domain_error_page": "エラーページ",
+        "domain_search_visibility": "検索表示",
+        "domain_traffic_policies": "トラフィックポリシー"
+      },
+      "dropsWarning": "静的サイトにはドメインごとの設定がありません。このドメインの保存済みの設定は、復元されずに破棄されます。"
+    },
+    "deleteParked": {
+      "title": "パーク中のドメイン {{domain}} を削除しますか?",
+      "body": "このドメインと、パーク中の DNS と証明書の状態を削除します。確認のため、ドメイン名を入力してください。"
+    },
+    "environment": {
+      "label": "環境",
+      "default": "既定のリスト"
+    },
+    "target": {
+      "apps": "アプリ",
+      "staticSites": "静的サイト"
+    }
+  },
+  "parked": {
+    "title": "パーク中",
+    "hint": "登録済みですが、どのアプリにも振り分けられていません。再び配信するには、アプリに接続してください。",
+    "from": "{{app}} からパーク",
+    "attach": "接続",
+    "delete": "{{domain}} を削除",
+    "settingsSaved": "設定を保存済み",
+    "dns": {
+      "pointing": "DNS が向いています",
+      "not_pointing": "DNS が向いていません",
+      "unknown": "DNS 不明"
+    },
+    "tls": {
+      "pending": "証明書は保留中",
+      "none": "証明書なし"
+    },
+    "fromEnvironment": "{{app}}({{environment}})からパーク",
+    "staticSite": "静的サイト"
+  },
+  "detail": {
+    "description": "{{app}} 上のこのドメインの設定です。",
+    "allSettings": "すべての設定",
+    "routing": "ルーティング",
+    "security": "セキュリティ",
+    "pages": "ページ",
+    "seo": "SEO",
+    "tls": "TLS",
+    "breadcrumb": "パンくずリスト",
+    "back": "ドメイン",
+    "openDomain": "{{domain}} のページを開く",
+    "state": {
+      "live": "公開中",
+      "waitingDns": "DNS を待機中",
+      "wrongDns": "DNS が別の宛先を指しています",
+      "certFailed": "証明書の対応が必要です",
+      "issuing": "証明書を発行中",
+      "starting": "まもなく公開"
+    },
+    "resolvers": {
+      "label": "サーバーごとの DNS 応答",
+      "authoritative": "お使いの DNS ホスト",
+      "state": {
+        "ok": "正しい",
+        "pending": "まだ応答なし",
+        "wrong": "値が誤り"
+      }
+    },
+    "provider": {
+      "generic": "このレコードは、ドメインの DNS を管理している場所(通常はレジストラまたはホスティングプロバイダー)で追加してください。",
+      "cloudflare": "DNS は Cloudflare にあるようです。そこでレコードを追加し、証明書が発行されるまでオレンジ色の雲をオフにしてください。",
+      "route53": "DNS は Amazon Route 53 にあるようです。このドメインのホストゾーンでレコードを追加してください。",
+      "godaddy": "DNS は GoDaddy にあるようです。このドメインの DNS レコードにレコードを追加してください。",
+      "namecheap": "DNS は Namecheap にあるようです。Advanced DNS でレコードを追加してください。",
+      "google": "DNS は Google Cloud DNS にあるようです。このドメインのゾーンでレコードを追加してください。",
+      "open": "{{name}} の DNS を開く",
+      "name": {
+        "cloudflare": "Cloudflare",
+        "route53": "Route 53",
+        "godaddy": "GoDaddy",
+        "namecheap": "Namecheap",
+        "google": "Google"
+      }
+    },
+    "recordType": "レコードタイプ",
+    "field": {
+      "type": "タイプ",
+      "name": "名前",
+      "value": "値"
+    },
+    "wrongValue": "{{found}} を指しています。正しくは {{should}} です。",
+    "sendAdmin": "DNS 管理者に送る",
+    "adminCopied": "メッセージをコピーしました",
+    "adminMessage": "お疲れさまです。{{domain}} が当社のサーバーに届くよう、次の DNS レコードを追加してください。\n\nタイプ: {{type}}\n名前: {{domain}}\n値: {{value}}\n\n反映まで数分かかることがあります。よろしくお願いします。",
+    "timeline": {
+      "label": "証明書の進捗",
+      "dns": "DNS がここを指している",
+      "requested": "証明書をリクエスト済み",
+      "issued": "証明書を発行済み",
+      "expires": "有効期限",
+      "done": "完了",
+      "todo": "まだです"
+    },
+    "testIt": "テストする",
+    "redirect": "リダイレクトと www",
+    "danger": {
+      "title": "危険な操作",
+      "body": "このドメインを別のアプリに移動、パーク、または削除します。不在の間、訪問者はこのアドレスを使えなくなります。"
+    }
+  },
+  "waf": {
+    "add": "WAF / レート制限を追加",
+    "edit": "編集",
+    "close": "閉じる",
+    "summaryWaf": "WAF: {{mode}}",
+    "summaryWafOff": "WAF オフ",
+    "summaryRate": "レート制限 {{rps}}/秒、バースト {{burst}}",
+    "summaryRateOff": "レート制限なし",
+    "badgeOn": "WAF/レート制限 有効",
+    "badgeOff": "保護されていません",
+    "helpLabel": "WAF とレート制限のガイド",
+    "wafLabel": "OWASP Coraza WAF",
+    "modeLabel": "モード",
+    "modeDetect": "検知(ログのみ、最初はこちらを推奨)",
+    "modeBlock": "ブロック(一致するリクエストを拒否)",
+    "helpDetect": "OWASP CRS ルールに一致するリクエストはログに記録されるだけで、拒否されません。誤検知がないかログを確認したら、ブロックに切り替えてください。",
+    "helpBlock": "OWASP CRS ルールに一致するリクエストは、エラーで拒否されます。",
+    "rpsLabel": "レート制限(IP ごとの 1 秒あたりのリクエスト数)",
+    "rpsPlaceholder": "0(無効)",
+    "rpsHelp": "0 にすると、このドメインのレート制限を無効にします。",
+    "burstLabel": "バースト許容量",
+    "burstPlaceholder": "0(追加のバーストなし)",
+    "burstHelp": "上の持続レートを超えて 1 秒間に許可されるリクエスト数です。厳密な上限にするには 0 のままにしてください。",
+    "save": "保存",
+    "saving": "保存中...",
+    "turnOff": "オフにする",
+    "removing": "削除中..."
+  },
+  "bulk": {
+    "barLabel": "一括操作",
+    "selected_other": "{{count}} 件を選択中",
+    "clear": "クリア",
+    "selectAll": "絞り込んだドメインをすべて選択",
+    "select": "選択",
+    "selectRow": "{{domain}} を選択",
+    "blockedAutomatic": "自動のホスト名はパークも移動もできません",
+    "blockedStandalone": "単独のドメインはパークも移動もできません",
+    "park": "パーク",
+    "move": "アプリへ移動",
+    "attach": "接続",
+    "delete": "削除",
+    "title": {
+      "park": "{{count}} 件のドメインをパーク",
+      "move": "{{count}} 件のドメインを移動",
+      "attach": "パーク中の {{count}} 件のドメインを接続",
+      "delete_parked": "パーク中の {{count}} 件のドメインを削除"
+    },
+    "body": {
+      "park": "各ドメインはアプリによる配信が停止され、「パーク中」グループに移動します。",
+      "move": "これらのドメインの移動先を選択してください。最初に衝突チェックが実行されます。",
+      "attach": "これらのパーク中のドメインを配信するアプリまたは静的サイトを選択してください。",
+      "delete_parked": "これらのドメインと、パーク中の DNS と証明書の状態を削除します。この操作は取り消せません。"
+    },
+    "confirm": {
+      "park": "{{count}} 件をパーク",
+      "move": "{{count}} 件を確認して移動",
+      "attach": "{{count}} 件を接続",
+      "delete_parked": "{{count}} 件を削除"
+    },
+    "attachTo": "接続先",
+    "parkKeeps": "設定はパーク中の各ドメインとともに保存され、DNS と証明書の状態も保持されます。",
+    "discard": "新規に開始し、保存済みの設定を破棄",
+    "previewLabel": "実行される内容",
+    "preview": {
+      "park": "{{app}} からパーク",
+      "move": "{{from}} から {{to}} へ移動",
+      "attach": "{{app}} に接続",
+      "delete": "パーク中のドメインを削除",
+      "noop": "すでにその状態のため、スキップしました"
+    },
+    "resultsLabel": "結果",
+    "col": {
+      "domain": "ドメイン",
+      "result": "結果"
+    },
+    "status": {
+      "ok": "完了",
+      "failed": "失敗",
+      "needsConfirmation": "確認が必要",
+      "failedGeneric": "失敗",
+      "needsConfirmationBody": "このドメインのトラフィックの所有者が変わります。続行するには確定してください。",
+      "okBody": "完了"
+    },
+    "summary": "{{ok}} 件完了、{{failed}} 件失敗、{{waiting}} 件は確認が必要です",
+    "confirmThese_other": "これら {{count}} 件を確定",
+    "cancel": "キャンセル",
+    "done": "閉じる"
+  },
+  "retention": {
+    "title": "自動クリーンアップ",
+    "summaryOff": "オフです。パーク中のドメインは、削除するまで保持されます。",
+    "summaryOn": "パーク中のドメインを {{days}} 日後に削除します。現在対象: {{due}}。次回の実行: {{next}}",
+    "preview": "プレビュー",
+    "turnOn": "オンにする",
+    "turnOff": "オフにする",
+    "turnOnDays": "{{count}} 日でオンにする",
+    "close": "閉じる",
+    "previewTitle": "自動クリーンアップをプレビュー",
+    "previewBody": "保持期間によって削除されるパーク中のドメインを確認します。",
+    "daysLabel": "保持期間",
+    "days_other": "{{count}} 日",
+    "custom": "カスタム",
+    "customLabel": "カスタムの日数",
+    "estimate": "パーク中のリストからの推定です。クリーンアップをオンにすると、正確なリストが表示されます。",
+    "exact": "保存された設定に対する、サーバーからの正確なリストです。",
+    "dueNow_other": "{{count}} 件のドメインが今すぐ削除されます。",
+    "age_other": "{{count}} 日前にパーク",
+    "batchNote": "1 時間ごとの実行で削除されるのは、古いものから最大 {{limit}} 件です。残りは以降の実行で削除されます。",
+    "confirmTitle_other": "パーク中のドメインを {{count}} 日後に削除しますか?",
+    "confirmBody": "現在 {{due}} 件が対象で、最初の実行で {{first}} 件が削除されます(バッチ上限 {{limit}})。",
+    "consequenceDns": "削除されるのは、パーク中の登録だけです。DNS レコードと証明書には触れません。",
+    "consequenceBatch": "1 時間ごとの実行で削除されるのは、古いものから最大 {{limit}} 件のドメインです。",
+    "offTitle": "自動クリーンアップをオフにしますか?",
+    "offBody": "パーク中のドメインは、削除するまで保持されます。オフにしても何も削除されません。",
+    "savedOn_other": "自動クリーンアップをオンにしました: {{count}} 日",
+    "savedOff": "自動クリーンアップをオフにしました",
+    "saveFailed": "設定を保存できませんでした"
+  },
+  "reachability": {
+    "title": "到達性",
+    "loading": "ポートを確認中",
+    "recheck": "再確認",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "forbidden": "到達性チェックを表示するには、読み取り権限が必要です。",
+    "errorTitle": "到達性チェックを実行できませんでした",
+    "errorBody": "サーバーが応答しませんでした。しばらくしてからもう一度お試しください。",
+    "dialbackError": "インターネットからのチェックに失敗しました: {{error}}",
+    "firewall": "ローカルファイアウォール: {{state}}",
+    "dialbackOn": "インターネットからのチェックはオンです。ヘルパーサービスが、このサーバーのパブリック IP と開放ポートに外部から接続します。",
+    "dialbackOff": "インターネットからのチェックはオフのため、ローカルのチェックのみ実行されました。オンにすると、このサーバーのパブリック IP とポートの一覧が、doctor.reachability_dialback_url に設定した URL に送信されます。",
+    "settingLink": "ランタイム設定を開く",
+    "pillOk": "ポートは到達可能に見えます",
+    "pillWarn": "ポートの対応が必要です",
+    "openChecklist": "チェックリストを開く",
+    "listening": {
+      "yes": "待ち受け中",
+      "no": "待ち受けていません"
+    },
+    "external": {
+      "not_checked": "外部からは未確認",
+      "reachable": "インターネットから到達可能",
+      "unreachable": "インターネットからブロック",
+      "unknown": "外部からは不明"
+    },
+    "ports": {
+      "dashboard": "ダッシュボード",
+      "http": "HTTP",
+      "https": "HTTPS"
+    }
+  },
+  "watch": {
+    "state": {
+      "waiting_dns": "DNS を待機中",
+      "propagating": "DNS を反映中",
+      "waiting_certificate": "証明書を待機中",
+      "stalled": "停滞中、確認が必要です"
+    },
+    "nextInSeconds_other": "{{count}} 秒後に再確認します",
+    "nextInMinutes_other": "{{count}} 分後に再確認します"
+  },
+  "rollback": {
+    "button": "この変更をロールバック",
+    "confirmTitle": "この DNS の変更をロールバックしますか?",
+    "confirm": "ロールバック",
+    "pending": "ロールバック中...",
+    "minutesLeft_other": "あと {{count}} 分間ロールバックできます",
+    "hoursLeft_other": "あと {{count}} 時間ロールバックできます",
+    "closed": "ロールバック可能な期間は終了しました",
+    "undone": "すでにロールバック済みです",
+    "consequenceRemove": "この変更で追加されたレコードは削除されます。",
+    "consequenceRestore": "この変更で置き換えられたレコードは、元の値に戻ります。",
+    "consequenceSkip": "その後に編集されたレコードはそのままにします。",
+    "outcomes": "ロールバックの結果",
+    "skipped": "その後に変更されたため、そのままにしました"
+  },
+  "firstRun": {
+    "label": "最初のステップ",
+    "step": "ステップ {{n}}",
+    "done": "完了",
+    "current": "次へ",
+    "deploy": {
+      "title": "アプリをデプロイ",
+      "body": "ドメインはアプリを指すため、先にアプリをデプロイしてください。"
+    },
+    "domain": {
+      "title": "ドメインを追加",
+      "body": "独自のウェブアドレスをアプリに向けます。",
+      "action": "ドメインを追加"
+    },
+    "https": {
+      "title": "HTTPS を有効にする",
+      "body": "HTTPS を有効にすると、証明書が自動で発行されます。"
+    }
+  },
+  "tabs": {
+    "label": "ドメインと関連項目",
+    "domains": "ドメイン",
+    "certificates": "証明書",
+    "dns": "DNS"
+  },
+  "www": {
+    "title": "www アドレス",
+    "help": "1 つのリダイレクトで、{{domain}} と www.{{domain}} の両方が動作するようにします。",
+    "choiceLabel": "どうしますか",
+    "choice": {
+      "apex": "www の訪問者を {{domain}} に送る",
+      "www": "{{domain}} の訪問者を www.{{domain}} に送る",
+      "both": "両方を配信し、リダイレクトしない",
+      "apexOnly": "メインのアドレスのみ"
+    },
+    "loading": "DNS レコードを読み取り中",
+    "error": "DNS の計画を読み取れませんでした: {{message}}",
+    "retry": "再確認",
+    "records": "DNS レコード",
+    "col": {
+      "type": "タイプ",
+      "name": "名前",
+      "value": "値",
+      "now": "現在"
+    },
+    "outcome": {
+      "created": "追加されます",
+      "updated": "変更されます",
+      "unchanged": "すでに正しい状態です",
+      "conflict": "別のレコードが存在します"
+    },
+    "copy": "{{value}} をコピー",
+    "copied": "コピーしました",
+    "redirect": "{{from}} は {{to}} にリダイレクトされます。",
+    "noProvider": "このドメインには DNS プロバイダーが接続されていません。DNS を管理している場所でこれらのレコードを追加してから、再確認してください。",
+    "replaceWarning": "別のレコードがすでに存在します。適用すると置き換えられます。",
+    "apply": "自動で適用する",
+    "applyReplace": "置き換えて適用",
+    "applying": "適用中",
+    "applyError": "適用できませんでした: {{message}}",
+    "applied": "完了しました。両方のアドレスが設定されました。",
+    "partial": "一部のレコードは適用されませんでした。",
+    "result": {
+      "created": "追加済み",
+      "updated": "変更済み",
+      "unchanged": "すでに正しい状態です",
+      "conflict": "そのままにしました",
+      "failed": "失敗",
+      "not_attempted": "未実行"
+    },
+    "redirectApplied": "リダイレクトは有効です。",
+    "connectTitle": "www をこのアプリに接続",
+    "connectPointsHere": "www.{{domain}} はすでにこのサーバーを指していますが、このアプリには接続されていません。接続して、www の訪問者を {{domain}} に送ります。",
+    "connectNeedsDns": "www.{{domain}} はまだこのアプリに接続されていません。DNS を管理している場所でこの CNAME を追加してから、再確認してください。",
+    "connectButton": "www を接続してリダイレクト",
+    "connecting": "接続中",
+    "otherOptions": "別のオプションを選ぶ",
+    "connectedRedirect": "www は {{domain}} にリダイレクトされます",
+    "connectedNoRedirect": "www はこのアプリに接続されています",
+    "connectDone": "www をこのアプリに接続しました。",
+    "state": {
+      "already_correct": "設定済み",
+      "missing": "未設定"
+    }
+  },
+  "moreOptions": {
+    "title": "その他のオプション",
+    "activeLabel": "有効なオプション",
+    "access": "アクセス",
+    "routing": "ルーティング",
+    "protection": "保護と仕上げ",
+    "chip": {
+      "basicAuth": "Basic 認証",
+      "authGate": "サインインゲート",
+      "redirect": "リダイレクト",
+      "maintenance": "メンテナンス",
+      "waf": "WAF / レート制限",
+      "errorPages": "カスタムエラーページ",
+      "hidden": "検索から非表示",
+      "ownCert": "独自の証明書"
+    },
+    "links": {
+      "allSettings": "すべての設定",
+      "diagnose": "診断",
+      "deploys": "アプリが実行されていません。デプロイを確認してください"
+    }
+  },
+  "readiness": {
+    "title": "ドメインの準備状況",
+    "checkNow": "今すぐ確認",
+    "countdown": "{{seconds}} 秒後に再確認します",
+    "allDone": "すべて完了です。これ以上の確認は不要です。",
+    "step": {
+      "dns": "DNS がここを指している",
+      "cert": "証明書を発行済み",
+      "site": "サイトが応答している"
+    },
+    "say": {
+      "dns": {
+        "done": "ドメインはこのサーバーを指しています。",
+        "progress": "DNS を待機中です。上に表示されたレコードを追加してください。",
+        "blocked": "ドメインが別の宛先を指しています。上に表示されたレコードを修正してください。",
+        "waiting": "DNS を待機中です。"
+      },
+      "cert": {
+        "done": "証明書の準備ができました。",
+        "progress": "証明書を発行中です。通常 1 分もかかりません。",
+        "blocked": "発行に失敗しました。下の対処法を確認してください。",
+        "waiting": "DNS がここを指すと開始します。"
+      },
+      "site": {
+        "done": "サイトは HTTPS で応答しています。",
+        "progress": "サイトが応答するのを待機中です。",
+        "blocked": "サイトが応答していません。下を確認してください。",
+        "waiting": "証明書の準備ができると開始します。"
+      }
+    },
+    "ttl": "DNS の変更がすべての人に届くまで、最大 {{time}} かかることがあります。",
+    "unit": {
+      "s_other": "{{count}} 秒",
+      "m_other": "{{count}} 分",
+      "h_other": "{{count}} 時間"
+    },
+    "localLag": "パブリック DNS はすでに正しい状態です。このサーバー自身のリゾルバーは少し遅れる場合がありますが、サイトには影響しません。",
+    "issuing": "証明書を発行中です。このページは自動で更新されます。",
+    "issueFailed": "証明書を発行できませんでした。レコードがここを指していて、ポート 80 が開いていることを確認し、「今すぐ確認」を押してください。",
+    "route": {
+      "404": "ルートは 404 を返しています。サーバーには到達できますが、このドメインをまだ認識していません。",
+      "503": "ルートは 503 を返しています。サーバーには到達できますが、その背後のアプリが準備できていないか、このドメインに接続されていません。",
+      "5xx": "ルートはサーバーエラーを返しています。サーバーには到達できますが、その背後のアプリが失敗しています。アプリのログを確認してください。"
+    },
+    "diagnose": "なぜ応答しないのですか?"
+  },
+  "addWizard": {
+    "progress": "ステップ {{current}} / {{total}}",
+    "stepNames": {
+      "1": "ドメイン",
+      "2": "ここに向ける",
+      "3": "公開中"
+    },
+    "back": "戻る",
+    "next": "続行",
+    "advanced": "詳細: 複数のドメインを一度に追加",
+    "backToWizard": "ガイド付きセットアップに戻る",
+    "step1": {
+      "title": "どのドメインとどのアプリですか?",
+      "domainLabel": "あなたのドメイン",
+      "domainPlaceholder": "example.com",
+      "appLabel": "アプリ",
+      "appPlaceholder": "アプリを選択",
+      "kindApex": "これはメインドメインです。最後のステップで、www も接続することをおすすめします。",
+      "kindSubdomain": "これはサブドメインで、レコードが 1 つ必要です。",
+      "kindWww": "これは www アドレスです。",
+      "adding": "追加中..."
+    },
+    "errors": {
+      "empty": "取得したドメインを入力してください(例: example.com)。",
+      "invalid": "ドメインの形式ではないようです。英字、数字、ドットを使ってください(例: example.com)。",
+      "wildcard": "*.example.com のようなワイルドカードには、詳細フォームが必要です。下のリンクを使うか、単一のドメインを入力してください。",
+      "claimedHere": "このアプリはすでにそのドメインを使っています。別のドメインを選ぶか、一覧から開いてください。",
+      "claimedOther": "アプリ {{app}} がすでにそのドメインを使っています。先にそこから削除するか、別のドメインを選んでください。",
+      "noApp": "このドメインで開くアプリを選択してください。",
+      "addFailed": "ドメインを追加できませんでした: {{message}}。名前を確認して、もう一度お試しください。"
+    },
+    "step2": {
+      "title": "ドメインをここに向ける",
+      "intro": "{{domain}} を取得した場所で、このレコードを追加してください。訪問者をあなたのサーバーに送るよう、インターネットに伝えます。",
+      "type": "タイプ",
+      "name": "名前",
+      "value": "値",
+      "copy": "{{label}} をコピー",
+      "copied": "{{label}} をコピーしました",
+      "loading": "サーバーのアドレスを調べています...",
+      "noRecords": "このサーバーのパブリックアドレスが見つかりませんでした。ドメイン設定を開いてサーバーのアドレスを設定してから、戻ってきてください。",
+      "providerOn": "DNS プロバイダーが接続されているため、このレコードを代わりに追加できます。",
+      "providerOff": "DNS プロバイダーが接続されていません。レジストラで手動でレコードを追加してから、続行してください。コピーには 1 分ほどかかります。こちらでは何も変更されません。",
+      "apply": "レコードを追加する",
+      "applying": "追加中...",
+      "applied": "レコードを追加しました。反映まで数分かかることがあります。",
+      "applyFailed": "レコードを追加できませんでした: {{message}}。上の値で手動で追加するか、プロバイダーの接続を確認してください。",
+      "continue": "追加しました、続行"
+    },
+    "step3": {
+      "title": "公開中",
+      "waiting": "自動で再確認します。このページは開いたままで構いません。",
+      "doneTitle": "{{domain}} は公開されています",
+      "doneBody": "訪問者は HTTPS でサイトを開けます。",
+      "open": "https://{{domain}} を開く",
+      "addAnother": "もう 1 つ追加",
+      "finishLater": "後で完了する",
+      "wwwTitle": "www も接続",
+      "wwwBody": "訪問者はよく www を入力します。ワンクリックで接続し、{{domain}} に送ります。"
+    }
+  },
+  "limits": {
+    "title": "トラフィック制限",
+    "configured": "設定済み",
+    "default": "既定",
+    "bodyLabel": "最大アップロード(MB)",
+    "readLabel": "読み取りタイムアウト(秒)",
+    "writeLabel": "書き込みタイムアウト(秒)",
+    "bodyHint": "空欄 = 制限なし。{{min}} から {{max}} MB。",
+    "timeoutHint": "空欄 = 既定値。最大 {{max}} 秒。",
+    "save": "保存",
+    "reset": "既定値に戻す",
+    "saved": "トラフィック制限を保存しました",
+    "resetDone": "トラフィック制限をリセットしました",
+    "note": "次の ingress reconcile で適用されます。"
+  },
+  "tuning": {
+    "title": "プロキシのチューニング",
+    "custom": "カスタム",
+    "save": "プリセットを適用",
+    "saved": "プロキシのチューニングを保存しました",
+    "note": "次の ingress reconcile で適用されます。タイムアウトは {{max}} 秒未満、ストリームは {{stream}} 秒未満に保たれます。",
+    "preset": {
+      "default": {
+        "label": "既定",
+        "hint": "Ingress の既定値、チューニングなし"
+      },
+      "api": {
+        "label": "API",
+        "hint": "圧縮テキスト、応答まで 1 分"
+      },
+      "uploads": {
+        "label": "長時間アップロード",
+        "hint": "低速なアップロードとジョブに 5 分"
+      },
+      "streaming": {
+        "label": "ライブストリーム",
+        "hint": "Server-Sent Events、各チャンクを即座に送信"
+      },
+      "websocket": {
+        "label": "WebSocket",
+        "hint": "リロード後も維持される長寿命のソケット"
+      }
+    },
+    "notApplied": "Ingress がこのチューニングを拒否したため、ドメインは既定値で動作しています。別のプリセットを選ぶか、リセットしてください。"
+  }
+}

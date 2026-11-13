@@ -1,0 +1,46 @@
+{
+  "title": "Branch-Deployments",
+  "description": "Geben Sie einem Branch eine eigene, stabile URL, die bei jedem Push neu gebaut wird. Wird entfernt, wenn der Branch gelöscht wird oder inaktiv bleibt.",
+  "settings": {
+    "mode": "Welche Branches ein Deployment erhalten",
+    "modeOff": "Keine (aus)",
+    "modeAll": "Jeder Branch",
+    "modePatterns": "Nur aufgelistete Branches",
+    "patterns": "Branches und Muster",
+    "patternsHint": "Einer pro Zeile. Verwenden Sie einen exakten Namen oder ein Muster wie feature/* (ein Stern steht für beliebige Zeichen).",
+    "patternsPlaceholder": "staging\nfeature/*",
+    "productionNote": "Der Produktions-Branch ({{branch}}) wird hier nie aufgeführt: Er wird als die App selbst deployt.",
+    "idleNote": "Ein Branch-Deployment ohne Push seit {{hours}} Stunden wird entfernt.",
+    "save": "Speichern",
+    "saving": "Wird gespeichert",
+    "saved": "Einstellungen für Branch-Deployments gespeichert.",
+    "saveError": "Die Einstellungen konnten nicht gespeichert werden."
+  },
+  "list": {
+    "title": "Aktive Branch-Deployments",
+    "emptyTitle": "Noch keine Branch-Deployments",
+    "emptyOff": "Aktivieren Sie oben Branch-Deployments und pushen Sie dann auf einen passenden Branch.",
+    "emptyOn": "Pushen Sie auf einen passenden Branch, dann erscheint sein Deployment hier.",
+    "noUrl": "Keine URL (legen Sie eine Basisdomain für Apps oder eine primäre Domain fest)",
+    "expires": "Wird entfernt, wenn kein neuer Push erfolgt:",
+    "open": "Öffnen",
+    "openLabel": "Deployment von {{branch}} öffnen",
+    "delete": "Löschen",
+    "deleteLabel": "Deployment von {{branch}} löschen",
+    "loadError": "Branch-Deployments konnten nicht geladen werden."
+  },
+  "status": {
+    "deploying": "Wird deployt",
+    "active": "Aktiv",
+    "failed": "Fehlgeschlagen"
+  },
+  "deleteDialog": {
+    "title": "Deployment von {{branch}} löschen?",
+    "description": "Seine URL funktioniert nicht mehr. Der nächste Push auf den Branch deployt ihn erneut.",
+    "consequence": "Das Deployment, seine Container und sein DNS-Eintrag werden entfernt.",
+    "confirm": "Deployment löschen",
+    "pending": "Wird gelöscht",
+    "success": "Branch-Deployment gelöscht.",
+    "error": "Das Branch-Deployment konnte nicht gelöscht werden."
+  }
+}

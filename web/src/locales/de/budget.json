@@ -1,0 +1,174 @@
+{
+  "title": "Budget",
+  "description": "Begrenzen Sie den monatlichen Egress und die Kosten dieser App. Sie werden gewarnt, während die Nutzung steigt, und die App kann gedrosselt oder pausiert werden, wenn das Limit erreicht ist. Die Zähler werden am Ersten jedes Monats (UTC) zurückgesetzt.",
+  "loading": "Budget wird geladen",
+  "loadError": "Das Budget dieser App konnte nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "empty": {
+    "title": "Kein Budget festgelegt",
+    "body": "Ohne Budget kann starker Traffic Egress und Kosten ohne Warnung in die Höhe treiben. Legen Sie ein Limit fest, um Alarme bei 50, 80 und 100 Prozent zu erhalten.",
+    "action": "Budget festlegen"
+  },
+  "status": {
+    "resets": "Wird zurückgesetzt {{date}}",
+    "month": "Monat {{period}}"
+  },
+  "reason": {
+    "WithinBudget": "Im Budget",
+    "ThresholdReached": "Alarmstufe erreicht",
+    "LimitReachedAlertOnly": "Limit erreicht, nur Alarm",
+    "Throttled": "Gedrosselt",
+    "Paused": "Pausiert",
+    "EnforcementPending": "Wird angewendet",
+    "DeploysBlocked": "Neue Deploys blockiert"
+  },
+  "usage": {
+    "egress": "Egress",
+    "cost": "Kosten",
+    "ofLimit": "{{used}} von {{limit}}",
+    "costOfLimit": "{{used}} von {{limit}}",
+    "notPriced": "Es sind keine Preise konfiguriert, daher zeigen die Kosten null und ihre Obergrenze kann nicht auslösen. Legen Sie Preise auf der Seite Nutzung und Kosten fest."
+  },
+  "summary": {
+    "alerts": "Alarme bei {{levels}}",
+    "action": {
+      "none": "Bei 100 Prozent: nur Alarm, die App liefert weiter aus",
+      "throttle": "Bei 100 Prozent: Jeder Client ist auf {{rps}} Anfragen pro Sekunde begrenzt",
+      "pause": "Bei 100 Prozent: Die App wird mit einer Wartungsantwort pausiert"
+    },
+    "guard": {
+      "alert": "Deploys werden von diesem Budget nie blockiert",
+      "block_deploys": "Bei 100 Prozent: Neue Deploys werden bis zum nächsten Monat, einem höheren Limit oder einer Root-Überschreibung abgelehnt"
+    }
+  },
+  "actions": {
+    "edit": "Budget bearbeiten",
+    "remove": "Budget entfernen",
+    "preview": "Eine Pause in der Vorschau ansehen"
+  },
+  "form": {
+    "egress": "Monatliches Egress-Limit (GiB)",
+    "egressHelp": "Vom Ingress ausgelieferte HTTP-Antwort-Bytes. Leer lassen für kein Egress-Limit.",
+    "cost": "Monatliche Kostenobergrenze",
+    "costHelp": "Verwendet die Preise der Seite Nutzung und Kosten. Leer lassen für keine Kostenobergrenze.",
+    "thresholds": "Alarmstufen (Prozent)",
+    "thresholdsHelp": "Kommagetrennt, 1 bis 100. Standard 50, 80, 100.",
+    "action": "Wenn das Limit erreicht ist",
+    "actionNone": "Nur Alarm",
+    "actionNoneHelp": "Die App liefert weiter aus.",
+    "actionThrottle": "Drosseln",
+    "actionThrottleHelp": "Begrenzt jeden Client auf eine Anzahl Anfragen pro Sekunde. Das bremst starke Aufrufer, ist aber keine Bandbreitenbegrenzung.",
+    "actionPause": "Pausieren",
+    "actionPauseHelp": "Liefert eine Wartungsantwort bis zum nächsten Monat oder bis Sie das Limit erhöhen.",
+    "rps": "Anfragen pro Sekunde pro Client",
+    "save": "Budget speichern",
+    "saving": "Speichern",
+    "cancel": "Abbrechen",
+    "needLimit": "Legen Sie ein Egress-Limit, eine Kostenobergrenze oder beides fest.",
+    "badNumber": "Geben Sie eine Zahl ab null ein.",
+    "badThresholds": "Verwenden Sie ganze Prozentwerte von 1 bis 100, durch Kommas getrennt."
+  },
+  "remove": {
+    "title": "Dieses Budget entfernen?",
+    "description": "Die App wird nicht mehr begrenzt und es gibt keine Alarme mehr.",
+    "consequences": {
+      "lift": "Eine geltende Drosselung oder Pause wird aufgehoben.",
+      "history": "Der Verlauf der Ereignisse bleibt erhalten."
+    },
+    "confirm": "Budget entfernen",
+    "pending": "Wird entfernt"
+  },
+  "history": {
+    "title": "Verlauf",
+    "empty": "Es ist noch nichts passiert. Alarme, Drosselungen, Pausen und monatliche Zurücksetzungen werden hier aufgelistet.",
+    "loadError": "Der Verlauf konnte nicht geladen werden.",
+    "kind": {
+      "threshold": "Alarmstufe erreicht",
+      "enforced": "Aktion angewendet",
+      "released": "Aktion aufgehoben",
+      "rollover": "Monatsrücksetzung",
+      "configured": "Budget geändert",
+      "cleared": "Budget entfernt"
+    }
+  },
+  "toast": {
+    "saved": "Budget gespeichert",
+    "removed": "Budget entfernt",
+    "errorTitle": "Budget-Anfrage fehlgeschlagen",
+    "overridden": "Deploys für kurze Zeit erlaubt"
+  },
+  "forecast": {
+    "projected": "Voraussichtlich {{value}} bis Monatsende",
+    "overLimit": "(über dem Limit)"
+  },
+  "guard": {
+    "legend": "Deploys am Limit",
+    "alert": {
+      "label": "Weiter deployen",
+      "help": "Das Erreichen des Limits löst nur einen Alarm aus und wendet die obige Aktion an."
+    },
+    "block_deploys": {
+      "label": "Neue Deploys blockieren",
+      "help": "Neue Deploys bei 100 Prozent ablehnen. Das laufende Release liefert weiter aus. Ein Root-Benutzer kann überschreiben."
+    },
+    "blocked": "Neue Deploys dieser App werden bis zum nächsten Monat, bis das Limit erhöht wird oder bis ein Root-Benutzer sie erlaubt, abgelehnt.",
+    "overridden": "Deploys sind durch eine Überschreibung bis {{time}} erlaubt: {{reason}}",
+    "override": "Deploys erlauben"
+  },
+  "override": {
+    "title": "Deploys für kurze Zeit erlauben?",
+    "description": "Eine Root-Überschreibung lässt neue Deploys durch, während das Limit erreicht bleibt. Sie läuft von selbst ab.",
+    "audited": "Ihr Name und Ihr Grund werden im Budget-Verlauf aufgezeichnet.",
+    "expires": "Die Überschreibung endet nach einem kurzen Zeitfenster, danach gilt die Sperre wieder.",
+    "reason": "Grund",
+    "reasonPlaceholder": "Warum dieser Deploy nicht warten kann",
+    "confirm": "Deploys erlauben",
+    "pending": "Wird erlaubt"
+  },
+  "preview": {
+    "title": "Was eine Pause bewirken würde",
+    "description": "Eine Vorschau darauf, jede App im Geltungsbereich bis zum Monatsende zu stoppen. Es wird nichts geändert.",
+    "noApps": "Keine Apps im Geltungsbereich.",
+    "replicas_one": "{{count}} Replikat",
+    "replicas_other": "{{count}} Replikate",
+    "saves": "spart etwa {{value}}",
+    "total": "{{replicas}} Replikate würden stoppen und über die verbleibenden {{days}} Tage etwa {{value}} sparen.",
+    "noChanges": "Eine echte Pause ist noch nicht verfügbar. Diese Vorschau ändert nichts.",
+    "close": "Schließen"
+  },
+  "alertRule": {
+    "name": "Alarme für die Ausgabengrenze",
+    "create": "Benachrichtigen",
+    "creating": "Wird erstellt",
+    "created": "Alarmregel erstellt. Hängen Sie einen Benachrichtigungskanal an, um sie zu erhalten."
+  },
+  "project": {
+    "title": "Ausgaben",
+    "description": "Eine monatliche Kostengrenze für jede App in diesem Projekt, mit Prognose und optionaler Deploy-Sperre.",
+    "empty": {
+      "title": "Keine Ausgabengrenze für dieses Projekt",
+      "body": "Legen Sie einen Monatsbetrag fest, um Alarme zu erhalten, während das Projekt Geld ausgibt, und, wenn Sie möchten, neue Deploys am Limit zu blockieren.",
+      "action": "Ausgabengrenze festlegen"
+    },
+    "form": {
+      "amount": "Monatsbetrag ({{currency}})",
+      "save": "Ausgabengrenze speichern",
+      "saving": "Speichern",
+      "cancel": "Abbrechen",
+      "badAmount": "Geben Sie einen Betrag über null ein."
+    },
+    "summary": "{{spent}} von {{limit}} in diesem Monat",
+    "level": {
+      "over": "Über dem Limit",
+      "warn": "Alarmstufe erreicht",
+      "forecast": "Läuft auf Überschreitung zu",
+      "ok": "Im Budget"
+    },
+    "edit": "Bearbeiten",
+    "remove": "Entfernen",
+    "saved": "Ausgabengrenze gespeichert",
+    "removed": "Ausgabengrenze entfernt",
+    "loadError": "Die Ausgabengrenze des Projekts konnte nicht geladen werden.",
+    "resets": "Wird zurückgesetzt {{date}}"
+  }
+}

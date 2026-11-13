@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "title": "证书额度",
+    "usage": "最近 {{days}} 天内 {{issued}} / {{warn}} 张证书",
+    "meterLabel": "最近 {{days}} 天内签发的证书",
+    "status": {
+      "ok": "额度内",
+      "near": "接近上限",
+      "over": "已超出上限"
+    },
+    "body": {
+      "ok": "距离告警阈值还有充足空间。",
+      "near": "自动地址会消耗共享的 Let's Encrypt 额度。部署大量新应用前请留意。",
+      "over": "自动地址会消耗共享的 Let's Encrypt 额度。在时间窗口过去之前,速率限制可能导致首次部署失败。"
+    },
+    "threshold": "告警阈值",
+    "thresholdHelp": "实时生效。仅告警,不会阻止任何操作。",
+    "save": "保存",
+    "saving": "正在保存",
+    "saved": "已保存",
+    "saveFailed": "无法保存",
+    "invalid": "请输入不小于 1 的整数。",
+    "doctor": "打开健康检查",
+    "loadError": "无法加载证书额度。",
+    "retry": "重试"
+  },
+  "autoHost": {
+    "title": "使用自动地址的应用",
+    "help": "关闭后会移除该应用的自动地址及其证书。自定义域名不受影响。",
+    "search": "搜索应用",
+    "empty": "暂无应用。创建应用后默认会获得自动地址。",
+    "noMatch": "没有应用匹配你的搜索。",
+    "name": "应用",
+    "address": "地址",
+    "on": "开",
+    "off": "关",
+    "toggle": "{{name}} 的自动地址",
+    "loadError": "无法加载应用。",
+    "retry": "重试",
+    "showing": "显示 {{shown}} / {{total}}",
+    "more": "显示更多"
+  }
+}

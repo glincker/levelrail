@@ -1,0 +1,43 @@
+{
+  "page": {
+    "title": "Tráfico",
+    "description": "Cada dominio enrutado por el ingress integrado de este plano de control, qué nodo lo sirve realmente y si se puede acceder a él."
+  },
+  "table": {
+    "label": "Dominios enrutados",
+    "domain": "Dominio",
+    "app": "App",
+    "node": "Nodo",
+    "reachable": "Accesible",
+    "port": "Puerto",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "Accesible",
+    "no": "Inaccesible"
+  },
+  "unreachableBanner_one": "1 dominio es inaccesible: su app se ejecuta en otro nodo y el ingress de este plano de control no tiene una ruta usable por la malla de WireGuard hasta él. Revisa el estado de la malla en la página de Red.",
+  "unreachableBanner_other": "{{count}} dominios son inaccesibles: sus apps se ejecutan en otros nodos y el ingress de este plano de control no tiene una ruta usable por la malla de WireGuard hasta ellos. Revisa el estado de la malla en la página de Red.",
+  "fix": {
+    "explanation": "La ruta por la malla de WireGuard hasta el nodo de esta app no es usable, así que el ingress integrado no puede alcanzarla. Arregla la malla o devuelve la app a este nodo.",
+    "moveHere": "Mover a este nodo"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "Personalizado"
+  },
+  "empty": {
+    "title": "Aún no hay dominios enrutados",
+    "description": "Conecta un dominio desde la pestaña Dominios de una app para ver aquí su ruta de tráfico."
+  },
+  "automaticDomain": {
+    "badge": "Automático",
+    "betaHint": "Dirección de prueba gratuita de un servicio público de DNS comodín. Solo funciona mientras ese servicio se resuelva en tu red. Añade tu propio dominio para producción.",
+    "hint": "Asignado por Levelrail a partir de la IP de este servidor para que la app funcione sin configurar DNS. Añade abajo tu propio dominio para reemplazarlo.",
+    "open": "Abrir",
+    "tlsNote": "Esta URL automática usa un certificado autofirmado hasta que se active HTTPS en Dominios. El http simple recibe una redirección 308 hacia ella."
+  },
+  "banner": {
+    "description": "Los dominios enrutados por este plano de control aparecerán aquí, con el nodo que sirve cada uno y si se puede acceder a él."
+  }
+}

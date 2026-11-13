@@ -1,0 +1,39 @@
+{
+  "listLabel": "利用可能なバージョン",
+  "toggle": "利用可能なバージョンを表示",
+  "group": {
+    "recommended": "推奨",
+    "stable": "安定版",
+    "lts": "長期サポート",
+    "prerelease": "プレリリース",
+    "eol": "サポート終了"
+  },
+  "badge": {
+    "stable": "安定版",
+    "lts": "LTS",
+    "rc": "RC",
+    "beta": "ベータ",
+    "eolSoon": "まもなくEOL",
+    "eol": "EOL"
+  },
+  "eolOn": "{{date}}に終了",
+  "eolSoonOn": "{{date}}に終了予定",
+  "showPrerelease": "プレリリースを表示",
+  "sourceLabel": "ソース:",
+  "origin": {
+    "live": "ライブデータ、{{when}}に確認",
+    "published": "公開カタログ、{{when}}に更新",
+    "direct": "レジストリから生成、{{when}}に更新",
+    "embedded": "組み込みカタログ、{{when}}に更新"
+  },
+  "unknownAge": "不明な時点",
+  "freshness": {
+    "aging": "カタログが古くなってきています。今すぐ確認してください",
+    "stale": "このカタログは古くなっています。新しいバージョンを確認してください。"
+  },
+  "check": "新しいバージョンを確認",
+  "checking": "確認中...",
+  "checkedJustNow": "たった今確認しました。",
+  "checkFailed": "新しいバージョンを確認できませんでした: {{error}} 前回の一覧を引き続き表示しています。",
+  "checkDone": "バージョン一覧を更新しました。"
+}
