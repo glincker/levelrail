@@ -10,6 +10,7 @@ type Node struct {
 // Tree mirrors every CLI dispatch switch; the CLI's drift test keeps them in sync.
 var Tree = map[string]*Node{
 	"deploy":         nil,
+	"docs":           nil,
 	"up":             nil,
 	"open":           nil,
 	"next":           {Subs: map[string]*Node{"doctor": nil}},
