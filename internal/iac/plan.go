@@ -67,6 +67,8 @@ type item struct {
 	Change
 	res  *Resource
 	exec func(ctx context.Context, x *executor) error
+	// cloudType is the provider type of a cloud item, for policy checks only.
+	cloudType string
 }
 
 type planner struct {
@@ -98,6 +100,7 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 	if opts.Prune {
 		p.planPrune()
 	}
+	p.applyCloudPolicy()
 	sortItems(p.items)
 	plan := Plan{Source: opts.Source, Prune: opts.Prune, Changes: make([]Change, len(p.items))}
 	for i, it := range p.items {
@@ -215,6 +218,8 @@ func (p *planner) planResource(r *Resource) {
 		p.planPipeline(r)
 	case KindAlertRule:
 		p.planAlert(r)
+	case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
+		p.planCloud(r)
 	}
 }
 

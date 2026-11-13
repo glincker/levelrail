@@ -53,6 +53,8 @@ type hashItem struct {
 	Code          string `json:"code,omitempty"`
 	DesiredDigest string `json:"desired"`
 	LiveDigest    string `json:"live"`
+	// Cloud is set for cloud items only so other plans keep their hash.
+	Cloud string `json:"cloud,omitempty"`
 }
 
 type hashBody struct {
@@ -85,11 +87,15 @@ func planHashV2(stack string, prune bool, changes []Change, secretNames []string
 	body := hashBody{SchemaVersion: planHashSchema, Stack: stack, Prune: prune, SecretNames: append([]string{}, secretNames...)}
 	sort.Strings(body.SecretNames)
 	for _, c := range changes {
-		body.Items = append(body.Items, hashItem{
+		hi := hashItem{
 			Key: c.Key(), Action: c.Action, Code: c.Code,
 			DesiredDigest: digestFields(c.Fields, false),
 			LiveDigest:    digestFields(c.Fields, true),
-		})
+		}
+		if isCloudKind(c.Kind) {
+			hi.Cloud = cloudDigest(c)
+		}
+		body.Items = append(body.Items, hi)
 	}
 	sort.Slice(body.Items, func(i, j int) bool { return body.Items[i].Key < body.Items[j].Key })
 	raw, _ := json.Marshal(body)
@@ -107,3 +113,14 @@ func planHashV1(changes []Change) string {
 
 // PlanHashV1 recomputes the v1 hash of a plan's changes.
 func PlanHashV1(p Plan) string { return planHashV1(p.Changes) }
+
+// cloudDigest covers the masked content and the verdict of a cloud item, so a
+// refusal or a changed visible attribute changes the hash without raw secrets.
+func cloudDigest(c Change) string {
+	raw, _ := json.Marshal(struct {
+		R string
+		F []FieldChange
+	}{c.Reason, c.Fields})
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
