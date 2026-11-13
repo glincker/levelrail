@@ -1,4 +1,7 @@
-# Proof automation
+---
+title: "Proof automation"
+description: "scripts/proof posts one sticky comment with script-generated evidence on a PR or ticket."
+---
 
 `scripts/proof` posts one sticky comment on a PR or ticket with evidence that
 a script produced. It is a generated record, not a write-up.

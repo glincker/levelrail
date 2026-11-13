@@ -1,4 +1,7 @@
-# Next.js shared cache for multiple replicas
+---
+title: "Next.js shared cache for multiple replicas"
+description: "Share the ISR page and data cache between Next.js replicas so revalidation reaches all of them."
+---
 
 With two or more replicas of a Next.js app, each replica keeps its own ISR page cache and data cache. Replicas then serve different stale content, and `revalidateTag` or `revalidatePath` only reaches the replica that handled the call. The package `@levelrail/next-cache-handler` moves both caches into Redis so every replica reads and invalidates the same entries.
 

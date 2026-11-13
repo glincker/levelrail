@@ -1,4 +1,7 @@
-# Next.js image cache volume
+---
+title: "Next.js image cache volume"
+description: "Keep optimised Next.js images across deploys and replicas with an opt-in cache volume."
+---
 
 Next.js writes optimised images to `.next/cache/images` inside the container. Without a volume every deploy and every new replica starts cold and re-optimises each image. Opt in and Levelrail mounts a per app volume at that path.
 

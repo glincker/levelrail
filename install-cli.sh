@@ -319,9 +319,8 @@ main() {
 	esac
 
 	log ""
-	log "Next: point it at your running instance and log in."
-	log "  export APP_API_URL=https://your-dashboard-domain"
-	log "  ${BINARY_NAME} auth login --device"
+	log "Next: log in (the dashboard's Connect your CLI card prints this line; add --profile NAME for a second server)."
+	log "  ${BINARY_NAME} login --api-url https://your-dashboard-domain --code <XXXX-XXXX>"
 }
 
 main

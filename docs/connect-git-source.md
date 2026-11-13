@@ -1,4 +1,7 @@
-# Connect a Git source to an existing app
+---
+title: "Connect a Git source to an existing app"
+description: "Switch an image, upload or CLI app to building from a Git repository without recreating it."
+---
 
 An app deployed from an image, an upload or the CLI can switch to building from a Git repository without being recreated. Env vars, secrets, domains, volumes and replicas stay. The running image keeps serving until the first build succeeds, and it stays in deploy history for rollback.
 

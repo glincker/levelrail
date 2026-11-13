@@ -109,7 +109,7 @@ The Live tab never blocks on a slow browser: when it falls behind, lines are ski
 ## Safety
 
 - Saved queries respect app visibility: a query scoped to an app you cannot see is never listed, and only the owner (or a root user) can change or delete a shared one.
-- Samples in alerts, signature reports and downloads mask `password=`, `token=`, `api_key=`, bearer tokens, URL passwords and common key shapes. The live viewer shows lines as stored.
+- Samples in alerts, signature reports and downloads mask `password=`, `token=`, `api_key=`, bearer tokens, URL passwords and common key shapes. The live viewer masks the values of stored secrets in each line before it sends it (the same masker that covers deploy and build logs). That masker only knows secrets saved in the secrets store: a plain environment variable that is not a secret, a value under 8 characters, a value past the `APP_SECRETMASK_MAX_VALUES` cap, or a value the app transforms (a hash, a truncated copy) is not masked, so a log line that prints one stays readable. See [Environment and secrets](/environment-and-secrets).
 - Rule and signature reads are capped by the variables above, so a noisy app cannot make a rule slow the control plane.
 
 ## Troubleshooting

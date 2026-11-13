@@ -101,6 +101,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [UDP published ports](/udp-ports): Publish a UDP port from a compose service directly on the host, with the accepted syntax, safety rules, errors and what is not supported yet.
 - [New app wizard](/new-app-wizard): How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
 - [Importing apps](/importing-apps): Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
+- [Connect a Git source to an existing app](/connect-git-source): Switch an image, upload or CLI app to building from a Git repository without recreating it.
 - [Static pages](/pages): Deploy static HTML sites directly from git with no container, served by the embedded ingress with full TLS and domain routing.
 - [Static site routing rules](/static-routing): Redirects, rewrites, response headers, single page app fallback, a custom 404 page and clean URLs for a static site, published with each deploy.
 - [Deploy safety](/deploy-safety): What stands between a deploy trigger and serving: readiness gate, drain, pinned rollback targets, post-deploy watch with auto rollback, and freeze windows.
@@ -128,9 +129,13 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploy previews](/deploy-previews): Deploy thumbnails in three tiers, from free page metadata to a real screenshot in a short-lived browser container, with costs, cleanup and settings.
 - [Framework presets](/frameworks): Deploy Next.js, Go, React/Vite, Spring Boot and eight more frameworks with the right port, health path, storage and env hints already filled in.
 - [Deploy a Next.js app](/nextjs): How to run a Next.js app on Levelrail today: the standalone output, build time variables, the cache volume, health checks, and what to know before you run more than one replica.
+- [Next.js image cache volume](/nextjs-image-cache): Keep optimised Next.js images across deploys and replicas with an opt-in cache volume.
+- [Next.js shared cache for multiple replicas](/nextjs-shared-cache): Share the ISR page and data cache between Next.js replicas so revalidation reaches all of them.
+- [Next.js skew protection, deploy side](/nextjs-skew-protection): What the deploy side does so a browser tab on an old Next.js build keeps working after a cutover.
 - [Deploy URLs](/deploy-urls): Every recent successful deploy keeps its own address, so you can open and compare a past deployment without rolling back.
 - [Deploy links and badge](/deploy-link): Put a Deploy with button in your README. A visitor enters their own server once and lands on a create-app form with your image, port and env names prefilled.
 - [Deploy timeline](/deploy-timeline): The fleet deploy timeline shows every deploy across your apps as bars on one time axis, with live updates, filters, a hover card and a matching CLI command.
+- [Deploy receipts](/deploy-receipts): A downloadable record of one deploy, with the commit, image digest, who asked, who approved and which gates ran.
 - [Preview environments per pull request](/previews): Per pull request preview environments on your own servers, with their own domain and DNS record, safe data and secret defaults, a TTL and cap, and idle sleep.
 - [Chat-interactive deploy approvals](/chat-deploy-approvals): Approve or deny a protected-environment deploy directly from the Slack or Discord notification, without opening the dashboard.
 - [Supply chain visibility](/supply-chain): A software bill of materials per Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can block a release. Costs, limits.
@@ -262,6 +267,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Tags](/tags): Label apps with tags such as team:payments, then filter the dashboard, CLI and API by them.
 - [Resource console](/resource-console): Search every app, database, node, domain, bucket and private network in one list, tag them in bulk with a preview, save views, and see cost grouped by tag.
 - [Command palette](/command-palette): Keyboard-first command palette and shortcuts for navigating the dashboard and running quick app actions.
+- [Keyboard shortcuts](/keyboard): Single-key shortcuts for the dashboard lists and the deployments page.
 - [Cost estimate](/cost-estimate): How the app cost estimate of what this would cost elsewhere is calculated, its assumptions, and the env vars that correct the reference rates for your region.
 - [Usage and cost](/usage-and-cost): Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, budgets with alerts and CSV export.
 - [Cost explorer and budgets](/cost-explorer): Explore cost by app, project, tag, node or kind, see a month end forecast, and set budgets that alert at thresholds or pause and throttle apps.
@@ -275,6 +281,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Chaos test coverage](/chaos-coverage): Which failure scenarios have a test, what each test asserts, and whether it runs under -short with a fake Docker client or live against a real daemon.
 - [Observability: metrics, logs, and alerts](/observability): Node-local metrics, logs, and alerts with federated queries, no central ingestion.
 - [Traffic observability: rate, errors and duration](/traffic-observability): Per app and per replica request rate, error rate and p50/p95/p99 latency measured at the ingress, with slow request samples and SLO error-budget burn.
+- [Prometheus scrape endpoint](/prometheus-scrape): Scrape app, database, node and deploy metrics from GET /metrics with a read token.
+- [Web vitals](/web-vitals): Collect real user LCP, INP, CLS, TTFB and FCP for an app without a vendor SDK.
 - [Public status page](/status-page): An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
 - [Monitors](/monitors): Experimental http, tcp, heartbeat and tls uptime monitors with a bounded result history and hourly rollups, off unless APP_MONITORS_ENABLED is set.
 - [External monitoring](/external-monitoring): Watch Levelrail from outside the server with the built-in public status page and the off-host heartbeat ping, and know which one answers which question.
@@ -318,6 +326,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrate on the same server](/migrate-same-server): Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, then take over ports 80 and 443.
 - [Move a domain with no downtime](/move-a-domain-with-no-downtime): Test a domain on its new Levelrail server before touching DNS, get its certificate ahead of time, then switch with a checklist that shows each step.
 - [migrate-over-ssh](/migrate-over-ssh)
+- [Migrate a project from Vercel](/migrate-from-vercel): Move one Vercel project with levelrail-cli import vercel in seven printed steps.
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A runbook for moving a Vercel Next.js app to Levelrail: inventory, concept mapping, a DNS cutover and rollback plan, gaps with no equivalent and a shadow run.
 - [Migrating a static site from Netlify](/migrating-from-netlify): A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, forms, a DNS cutover and gaps.
 - [Migrating a service from Cloud Run](/migrating-from-cloud-run): A runbook for moving a Google Cloud Run service to Levelrail: concept mapping, deploying the same image, secrets, Cloud SQL, domains, jobs and what you give up.
@@ -335,6 +344,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Leave anytime](/leave-anytime): Export an app as plain Docker Compose plus an env template, so moving off Levelrail never needs Levelrail.
 - [Stacks and GitOps](/stacks): Keep apps, databases and domains in git as a stack, review each change as a plan in the pull request, apply on merge, and roll back to any earlier revision.
 - [Resource advisor (beta)](/resource-advisor): The beta resource advisor suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes database settings from local telemetry.
+- [Cloud connections (preview)](/cloud-connections): Store named cloud account connections on your own control plane, reference credentials from your own vault, and run read-only health checks. Preview, off by default.
 - [CLI console (beta)](/cli-console): The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a command allowlist and an audit row per line.
 - [Feature flags](/feature-flags): Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 - [Log archive](/log-archive): Ship container logs to storage as compressed NDJSON on a schedule.
@@ -431,6 +441,9 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
 - [Which guard catches what](/contributing-guards): For contributors. The repo-wide guard tests and scripts, what each one fails on, which command runs it, and how to fix the failure.
+- [change-tracking](/change-tracking): How to commit, describe and label changes so the release history stays readable as the repo grows.
+- [Proof automation](/proof-automation): scripts/proof posts one sticky comment with script-generated evidence on a PR or ticket.
+- [Stress testing a local control plane](/stress-testing): Boot a scratch control plane, load it and judge the run against budgets with levelrail-stress.
 - [First-hour smoke test](/first-hour-smoke-test): Run the install-to-rollback journey in a Docker container to prove the first hour works, and wire it into a nightly job.
 - [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.

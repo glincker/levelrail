@@ -1,4 +1,7 @@
-# Stress testing a local control plane
+---
+title: "Stress testing a local control plane"
+description: "Boot a scratch control plane, load it and judge the run against budgets with levelrail-stress."
+---
 
 `levelrail-stress` is a developer tool that boots its own control plane on a scratch data directory and free loopback ports, loads it, and judges the run against budgets you keep in a profile file. It never touches a running install.
 

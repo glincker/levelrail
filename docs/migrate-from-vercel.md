@@ -1,4 +1,7 @@
-# Migrate a project from Vercel
+---
+title: "Migrate a project from Vercel"
+description: "Move one Vercel project with levelrail-cli import vercel in seven printed steps."
+---
 
 `levelrail-cli import vercel [dir]` moves one project in seven printed steps.
 It needs only your Levelrail credentials. It never changes DNS and never

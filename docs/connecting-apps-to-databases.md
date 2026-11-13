@@ -26,7 +26,7 @@ Open the app's detail page, find the **Connections** card, and choose **Connect 
 </Tab>
 </Tabs>
 
-`field` defaults to `url` (the full connection string). The other resolvable fields are `host`, `port`, `username`, `password`, and `database`. They are validated per engine the same way the older attachment flow validates them: Redis, KeyDB, and Dragonfly do not support `username` or `database`.
+`field` defaults to `url` (the full connection string). The other resolvable fields are `host`, `port`, `username`, `password`, and `database`. They are validated per engine the same way the older attachment flow validates them: Redis, Valkey, KeyDB, and Dragonfly do not support `username` or `database`. `password` works for Redis, Valkey, and KeyDB (it resolves to an empty value while the database has no password set) and is refused for Dragonfly. `tls_ca` is available for Postgres, Redis, Valkey, and KeyDB, `tls_port` for Redis, Valkey, and KeyDB, and `direct_url` only for Postgres.
 
 `env_var` defaults to `<DATABASE>_DATABASE_URL` for the `url` field, or `<DATABASE>_DB_<FIELD>` otherwise (for example `MAIN_DB_HOST`). A numeric suffix is appended if that name is already taken by another env var, secret, vault ref, connection, or the legacy attachment. Pass `--env-var` to pick your own name. Connecting again with the same `env_var` replaces that entry.
 
