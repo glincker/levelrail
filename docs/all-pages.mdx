@@ -331,6 +331,18 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrating a static site from Netlify](/migrating-from-netlify): A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, forms, a DNS cutover and gaps.
 - [Migrating a service from Cloud Run](/migrating-from-cloud-run): A runbook for moving a Google Cloud Run service to Levelrail: concept mapping, deploying the same image, secrets, Cloud SQL, domains, jobs and what you give up.
 
+### Infrastructure as code
+
+- [IaC quickstart](/iac/index): Describe an app and a database as YAML, preview the change, apply it, and export what exists. Five minutes.
+- [IaC templates](/iac/templates): Copy a working Infrastructure as code starting point, one file per scenario, each checked against the schema in CI.
+- [How IaC apply works](/iac/how-it-works): How files become a plan, an approved revision and a ledger of owned resources, and how prune and drift use that ledger. One page, one diagram.
+- [IaC in CI](/iac/ci): Plan on every pull request and apply on merge, with the CLI or the stack Action. Copy blocks for GitHub Actions and notes for any other CI.
+- [IaC resource kinds](/iac/resources): Each resource kind with a worked example and the rules that do not fit a field table. The field list itself is the generated reference.
+- [IaC reference](/iac/reference): Every resource kind, its fields, types and which are required. Generated from the JSON Schema.
+- [IaC error codes](/iac/errors): Every stable error code an apply, plan or stack call can return, what it means and how to fix it. Generated from the code list.
+- [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
+- [Stacks and GitOps](/stacks): Keep apps, databases and domains in git as a stack, review each change as a plan in the pull request, apply on merge, and roll back to any earlier revision.
+
 ### Beta and experimental
 
 - [AI assistant integration: levelrail-mcp](/ai-assistant): Run levelrail-mcp over stdio for a local client or over the network for a remote MCP assistant, and how to scope the API token it uses.
@@ -340,9 +352,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [In-app AI assistant chat](/ai-assistant-chat): The in-app AI assistant with your own key for Anthropic, OpenAI compatible, Gemini or self-hosted models, behind the ai-chat experimental flag.
 - [AI models](/ai-models): Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, behind an OpenAI-compatible endpoint.
 - [Load balancing across replicas](/load-balancing): Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status and config export.
-- [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
 - [Leave anytime](/leave-anytime): Export an app as plain Docker Compose plus an env template, so moving off Levelrail never needs Levelrail.
-- [Stacks and GitOps](/stacks): Keep apps, databases and domains in git as a stack, review each change as a plan in the pull request, apply on merge, and roll back to any earlier revision.
 - [Resource advisor (beta)](/resource-advisor): The beta resource advisor suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes database settings from local telemetry.
 - [Cloud connections (preview)](/cloud-connections): Store named cloud account connections on your own control plane, reference credentials from your own vault, and run read-only health checks. Preview, off by default.
 - [CLI console (beta)](/cli-console): The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a command allowlist and an audit row per line.

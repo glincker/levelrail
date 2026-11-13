@@ -267,10 +267,7 @@ To point at a secret that is already in the store, add `existing: true`: `{ secr
 
 ## GitHub Action
 
-The stack action in `integrations/github-action/stack` runs the loop for you. On a pull request it runs a plan and posts one comment per stack. On merge it runs an apply.
-
-- Pass the same `secrets` list to the plan step and the apply step. The plan hash covers secret names, so a plan without them has a different hash.
-- In apply mode, exit code 2 means the revision awaits approval. It does not mean a change. The step reports the status `pending_approval`.
+The stack Action in `integrations/github-action/stack` plans on pull requests and applies on merge. The workflow, the secrets rule and the exit 2 meaning in apply mode are on [IaC in CI](/iac/ci).
 
 ## Status
 

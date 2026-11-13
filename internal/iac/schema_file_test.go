@@ -101,11 +101,15 @@ func exampleVarSets(t *testing.T, dir string) []map[string]string {
 }
 
 func TestDocsExamplesValidate(t *testing.T) {
-	raw, err := os.ReadFile("../../docs/platform-as-code.md")
-	if err != nil {
-		t.Fatal(err)
+	var all []byte
+	for _, f := range []string{"platform-as-code.md", "iac/resources.md", "stacks.md"} {
+		raw, err := os.ReadFile("../../docs/" + f) //nolint:gosec // fixed docs path
+		if err != nil {
+			t.Fatal(err)
+		}
+		all = append(all, raw...)
 	}
-	blocks := regexp.MustCompile("(?s)```yaml\n(version: 1\n.*?)```").FindAllStringSubmatch(string(raw), -1)
+	blocks := regexp.MustCompile("(?s)```yaml\n(version: 1\n.*?)```").FindAllStringSubmatch(string(all), -1)
 	if len(blocks) < 8 {
 		t.Fatalf("found %d resource examples, expected the kind references and examples", len(blocks))
 	}

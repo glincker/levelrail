@@ -44,9 +44,11 @@ provider "levelrail" {
 | `levelrail_database` | A managed database and its project | database name |
 | `levelrail_environment_variables` | Variables shared by a project or an environment | `project/<id>` or `environment/<id>` |
 | `levelrail_status_page` | The public status page settings: `enabled`, `title`, `description`, `custom_domain` (one per control plane) | any value, for example `status-page` |
+| `levelrail_app_secret` | One secret value for an app (write only: the API never returns values, so only a missing key shows as drift; the value is kept in state) | `app/key` |
+| `levelrail_alert_rule` | An alert rule on one app (threshold or crash loop) | `app/rule_id` |
 | `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
 
-Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token.
+Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values.
 
 ## Complete example
 
@@ -112,11 +114,11 @@ output "node_count" {
 
 ## What is not covered
 
-- App secrets and vault-backed variables (`secret_env`, `vault_env`): values would land in Terraform state, so use the secrets API or the CLI.
+- Vault-backed variables (`vault_env`) and bulk secret import. Single secret values can be set with `levelrail_app_secret`, but they land in Terraform state, so protect the state.
 - Volumes, bind mounts, resource limits, health checks, hooks, labels, commands and egress policy on apps.
 - Git and build sources, deploys and rollbacks (these are actions, not state).
 - Per-domain settings such as TLS certificates, redirects, headers, WAF, caching and auth gates.
-- Nodes (read only through the data source), load balancers, alerts, pipelines, notification channels, backups, teams, users, roles and tokens.
+- Nodes (read only through the data source), load balancers, pipelines, notification channels, backups, teams, users, roles and tokens.
 - Database users, backup schedules, public access and upgrades.
 
 For several of these, [Platform as code](platform-as-code.md) covers them through the CLI.
