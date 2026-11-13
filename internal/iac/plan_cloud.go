@@ -38,6 +38,18 @@ type CloudPlanner interface {
 	PlanCloud(r CloudResource) (CloudDiff, error)
 }
 
+// CloudOutcome is the answer for one document of a stack plan.
+type CloudOutcome struct {
+	Diff CloudDiff
+	Err  error
+}
+
+// CloudStackPlanner plans every cloud document of one stack together, so documents that
+// refer to each other land in one module. The outcomes line up with the input order.
+type CloudStackPlanner interface {
+	PlanCloudStack(stack string, rs []CloudResource) []CloudOutcome
+}
+
 // CloudChange is one entry handed to a PolicyChecker.
 type CloudChange struct {
 	Address string
@@ -126,14 +138,45 @@ func maskAttr(a CloudAttr) FieldChange {
 	return f
 }
 
-// planCloud maps one cloud document to a plan item. It never skips silently.
+// planCloud maps one cloud document to a plan item. It never skips silently. A stack
+// planner defers the document so the whole stack is planned once in flushCloudStack.
 func (p *planner) planCloud(r *Resource) {
 	planner, _ := cloudDeps()
 	if planner == nil {
 		p.failCode(r, CodeUnavailable, "%s", cloudUnconfiguredReason)
 		return
 	}
+	if _, ok := planner.(CloudStackPlanner); ok {
+		p.cloudStack = append(p.cloudStack, r)
+		return
+	}
 	diff, err := planner.PlanCloud(CloudResource{Kind: r.Kind, Name: r.Name, Spec: r.Fields})
+	p.addCloudItem(r, diff, err)
+}
+
+// flushCloudStack plans the deferred cloud documents as one stack named by the apply source.
+func (p *planner) flushCloudStack() {
+	planner, _ := cloudDeps()
+	sp, ok := planner.(CloudStackPlanner)
+	if !ok || len(p.cloudStack) == 0 {
+		return
+	}
+	in := make([]CloudResource, len(p.cloudStack))
+	for i, r := range p.cloudStack {
+		in[i] = CloudResource{Kind: r.Kind, Name: r.Name, Spec: r.Fields}
+	}
+	out := sp.PlanCloudStack(p.opts.Source, in)
+	for i, r := range p.cloudStack {
+		if i >= len(out) {
+			p.failCode(r, CodeItemFailed, "cloud planner returned no answer")
+			continue
+		}
+		p.addCloudItem(r, out[i].Diff, out[i].Err)
+	}
+	p.cloudStack = nil
+}
+
+func (p *planner) addCloudItem(r *Resource, diff CloudDiff, err error) {
 	if err != nil {
 		p.failCode(r, CodeItemFailed, "cloud planner failed: %v", err)
 		return
@@ -167,6 +210,7 @@ func (p *planner) planCloud(r *Resource) {
 
 // applyCloudPolicy turns policy refusals into failed items with the frozen codes.
 func (p *planner) applyCloudPolicy() {
+	p.flushCloudStack()
 	_, chk := cloudDeps()
 	if chk == nil {
 		return

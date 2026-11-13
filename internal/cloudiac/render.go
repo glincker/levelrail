@@ -20,10 +20,11 @@ type NetworkSpec struct {
 	IngressPorts []int
 }
 
-// BucketSpec is an object storage bucket. Buckets are protected from
-// destroy unless Unprotected is set.
+// BucketSpec is an object storage bucket in its object storage namespace.
+// Buckets are protected from destroy unless Unprotected is set.
 type BucketSpec struct {
 	Name        string
+	Namespace   string
 	Unprotected bool
 }
 
@@ -38,13 +39,12 @@ type InstanceSpec struct {
 	ImageOCID          string
 }
 
-// OCISpec is the typed input for one OCI module. Provider credentials are
-// not part of it; the engine supplies them per step.
+// OCISpec is every cloud resource of one stack, rendered as one module so references
+// resolve inside it. Provider credentials are not part of it; the engine supplies them per step.
 type OCISpec struct {
 	Name            string
 	Region          string
 	CompartmentOCID string
-	Namespace       string
 	Networks        []NetworkSpec
 	Buckets         []BucketSpec
 	Instances       []InstanceSpec
@@ -71,7 +71,7 @@ func RenderOCI(s OCISpec) (ModuleSpec, error) {
 	for _, b := range s.Buckets {
 		body := obj{
 			"compartment_id": "${var.compartment_ocid}",
-			"namespace":      "${var.object_namespace}",
+			"namespace":      b.Namespace,
 			"name":           b.Name,
 			"access_type":    "NoPublicAccess",
 		}
@@ -96,10 +96,6 @@ func RenderOCI(s OCISpec) (ModuleSpec, error) {
 		"compartment_ocid": obj{"type": "string"},
 	}
 	values := map[string]string{"region": s.Region, "compartment_ocid": s.CompartmentOCID}
-	if len(s.Buckets) > 0 {
-		vars["object_namespace"] = obj{"type": "string"}
-		values["object_namespace"] = s.Namespace
-	}
 	doc := obj{
 		"terraform": obj{"required_providers": obj{"oci": obj{"source": "oracle/oci"}}},
 		"variable":  vars,
@@ -170,9 +166,6 @@ func validateOCI(s OCISpec) error {
 	if s.Region == "" || s.CompartmentOCID == "" {
 		return fmt.Errorf("region and compartment are required")
 	}
-	if len(s.Buckets) > 0 && s.Namespace == "" {
-		return fmt.Errorf("object storage namespace is required for buckets")
-	}
 	seen := map[string]bool{}
 	claim := func(kind, name string) error {
 		if !nameRe.MatchString(name) {
@@ -203,6 +196,9 @@ func validateOCI(s OCISpec) error {
 	for _, b := range s.Buckets {
 		if err := claim("bucket", b.Name); err != nil {
 			return err
+		}
+		if b.Namespace == "" {
+			return fmt.Errorf("CloudBucket %q needs spec.namespace, the object storage namespace of the account", b.Name)
 		}
 	}
 	for _, i := range s.Instances {

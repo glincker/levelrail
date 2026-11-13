@@ -540,7 +540,7 @@ func setupCloudEngine(ctx context.Context, db *store.DB, sm *secrets.Manager, rs
 	base := cloudRunBase(engineDir)
 	cfg := cloudiac.SettingsConfig(cloudiac.TofuConfig{WorkBase: base, Live: cloudiac.LiveSandbox(get, runtimeName)}, get)
 	eng := cloudiac.NewTofuEngine(cfg, deps)
-	planner := cloudiac.CloudPlannerAdapter{Engine: eng, Accounts: accounts, Networks: &cloudiac.NetworkMemo{}}
+	planner := cloudiac.CloudPlannerAdapter{Engine: eng, Accounts: accounts}
 	cloudiac.InstallInto(true, planner, cloudiac.PolicyAdapter{Policy: cfg.Policy})
 }
 

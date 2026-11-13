@@ -42,6 +42,9 @@ type KeyDeriver interface {
 type StateDB interface {
 	GetCloudState(ctx context.Context, account, stack string) (store.CloudState, error)
 	PutCloudState(ctx context.Context, lock store.CloudStateLock, expectVersion int64, sealed []byte, now time.Time) (int64, error)
+	PutCloudPlan(ctx context.Context, p store.CloudPlan) error
+	GetCloudPlan(ctx context.Context, account, stack string) (store.CloudPlan, error)
+	DeleteCloudPlan(ctx context.Context, account, stack, hash string) error
 }
 
 // StateStore seals state before it reaches the DB. It never logs and has no method that serves state over an API.
@@ -73,7 +76,7 @@ func (s *StateStore) Load(ctx context.Context, account, stack string) ([]byte, i
 	if err != nil {
 		return nil, 0, err
 	}
-	pt, err := openState(kek, account, stack, rec.Sealed)
+	pt, err := openLayers(kek, "key", "state", account, stack, rec.Sealed)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -92,7 +95,7 @@ func (s *StateStore) Save(ctx context.Context, lock store.CloudStateLock, expect
 	if err != nil {
 		return 0, err
 	}
-	blob, err := sealState(kek, lock.Account, lock.Stack, state)
+	blob, err := sealLayers(kek, "key", "state", lock.Account, lock.Stack, state)
 	if err != nil {
 		return 0, err
 	}
@@ -111,17 +114,18 @@ func stateAAD(layer, account, stack string) []byte {
 	return []byte("levelrail-cloud-state-v1\x00" + layer + "\x00" + account + "\x00" + stack)
 }
 
-func sealState(kek []byte, account, stack string, plaintext []byte) ([]byte, error) {
+// sealLayers seals under distinct AAD layers per blob kind, so a sealed plan can never open as state.
+func sealLayers(kek []byte, keyLayer, bodyLayer, account, stack string, plaintext []byte) ([]byte, error) {
 	rk := make([]byte, recordKeyLen)
 	if _, err := rand.Read(rk); err != nil {
 		return nil, err
 	}
 	defer clear(rk)
-	wrapped, err := gcmSeal(kek, rk, stateAAD("key", account, stack))
+	wrapped, err := gcmSeal(kek, rk, stateAAD(keyLayer, account, stack))
 	if err != nil {
 		return nil, err
 	}
-	body, err := gcmSeal(rk, plaintext, stateAAD("state", account, stack))
+	body, err := gcmSeal(rk, plaintext, stateAAD(bodyLayer, account, stack))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +136,7 @@ func sealState(kek []byte, account, stack string, plaintext []byte) ([]byte, err
 	return append(out, body...), nil
 }
 
-func openState(kek []byte, account, stack string, blob []byte) ([]byte, error) {
+func openLayers(kek []byte, keyLayer, bodyLayer, account, stack string, blob []byte) ([]byte, error) {
 	if len(blob) < len(stateMagic)+2 || string(blob[:len(stateMagic)]) != string(stateMagic) {
 		return nil, ErrStateTampered
 	}
@@ -142,12 +146,12 @@ func openState(kek []byte, account, stack string, blob []byte) ([]byte, error) {
 	if n > len(rest) {
 		return nil, ErrStateTampered
 	}
-	rk, err := gcmOpen(kek, rest[:n], stateAAD("key", account, stack))
+	rk, err := gcmOpen(kek, rest[:n], stateAAD(keyLayer, account, stack))
 	if err != nil || len(rk) != recordKeyLen {
 		return nil, ErrStateTampered
 	}
 	defer clear(rk)
-	pt, err := gcmOpen(rk, rest[n:], stateAAD("state", account, stack))
+	pt, err := gcmOpen(rk, rest[n:], stateAAD(bodyLayer, account, stack))
 	if err != nil {
 		return nil, ErrStateTampered
 	}

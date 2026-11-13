@@ -86,6 +86,17 @@
         "compartment_id": "${var.compartment_ocid}",
         "display_name": "lr-net"
       }
+    },
+    "oci_objectstorage_bucket": {
+      "backups": {
+        "access_type": "NoPublicAccess",
+        "compartment_id": "${var.compartment_ocid}",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "name": "backups",
+        "namespace": "lrns"
+      }
     }
   },
   "terraform": {

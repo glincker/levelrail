@@ -29,11 +29,28 @@ type fakeRunner struct {
 	fail     string
 	calls    []string
 	credSeen bool
+	// applyState is the state the fake apply leaves behind; onApply runs first.
+	applyState []byte
+	onApply    func()
 }
 
 func (f *fakeRunner) Run(_ context.Context, spec SandboxSpec) (RunOutput, error) {
 	sub := spec.Args[1]
 	f.calls = append(f.calls, sub)
+	for _, m := range spec.Mounts {
+		if m.Target != SandboxStateDir {
+			continue
+		}
+		switch {
+		case sub == "plan":
+			_ = os.WriteFile(filepath.Join(m.Source, planFile), []byte("fake saved plan "+strings.Join(spec.Args, " ")), 0o600)
+		case sub == "apply" && f.applyState != nil:
+			if f.onApply != nil {
+				f.onApply()
+			}
+			_ = os.WriteFile(filepath.Join(m.Source, tofuStateFile), f.applyState, 0o600)
+		}
+	}
 	for _, m := range spec.Mounts {
 		if m.Target == SandboxCredentialDir+"/credential" {
 			if _, err := os.Stat(filepath.Join(m.Source, cloudconn.OracleKeyFileName)); err == nil {
@@ -117,11 +134,12 @@ func newHarness(t *testing.T, prices map[string]int64, limit int64) *harness {
 	cfg := TofuConfig{
 		Runtime: "docker", Image: "cgr.example/static@sha256:" + strings.Repeat("a", 64), User: "65532:65532",
 		WorkBase: work, Network: np,
-		Limits:  SandboxLimits{MemoryMB: 512, CPUs: 1, Pids: 128, WorkTmpMB: 64, StateTmpMB: 16},
-		Timeout: func() time.Duration { return time.Minute },
-		Policy:  func() Policy { return NewPolicy(1, false) },
-		Cost:    func() CostPolicy { return NewCostPolicy(limit, true) },
-		Prices:  StaticPrices{Date: "2026-11-01", Prices: prices},
+		Limits:     SandboxLimits{MemoryMB: 512, CPUs: 1, Pids: 128, WorkTmpMB: 64, StateTmpMB: 16},
+		Timeout:    func() time.Duration { return time.Minute },
+		PlanMaxAge: func() time.Duration { return time.Hour },
+		Policy:     func() Policy { return NewPolicy(1, false) },
+		Cost:       func() CostPolicy { return NewCostPolicy(limit, true) },
+		Prices:     StaticPrices{Date: "2026-11-01", Prices: prices},
 	}
 	eng := NewTofuEngine(cfg, TofuDeps{Runner: r, Binary: fakeBinary{bin}, Locks: db, State: ss, Creds: fakeCreds{cred}})
 	return &harness{eng: eng, db: db, state: ss, work: work, runner: r, pem: pemKey}
@@ -266,13 +284,10 @@ func TestTofuPlanCostRefusal(t *testing.T) {
 	}
 }
 
-func TestTofuApplyDestroyNotImplemented(t *testing.T) {
+func TestTofuUnconfiguredRefuses(t *testing.T) {
 	e := NewTofuEngine(TofuConfig{}, TofuDeps{})
-	if _, err := e.Apply(context.Background(), testModule(), CredentialHandle{}); !errors.Is(err, ErrNotImplemented) {
+	if _, err := e.Apply(context.Background(), ApplyRequest{Spec: testModule(), PlanHash: "x"}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("apply err = %v", err)
-	}
-	if _, err := e.Destroy(context.Background(), testModule(), CredentialHandle{}); !errors.Is(err, ErrNotImplemented) {
-		t.Fatalf("destroy err = %v", err)
 	}
 	if _, err := e.Plan(context.Background(), testModule(), CredentialHandle{ID: "a"}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("unconfigured plan err = %v", err)

@@ -21,9 +21,16 @@ const (
 	KeyCloudEnginePids            = "cloud.engine_pids"
 	KeyCloudEngineRunMinFreeMB    = "cloud.engine_run_min_free_mb"
 	KeyCloudEngineTmpMB           = "cloud.engine_tmp_mb"
+	KeyCloudPlanMaxAgeMinutes     = "cloud.plan_max_age_minutes"
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyCloudPlanMaxAgeMinutes, Category: CategoryDeploys, Kind: KindInt, Default: "60", Env: "APP_CLOUD_PLAN_MAX_AGE_MINUTES", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(1, 1440),
+		Title:       "Cloud plan approval window",
+		Description: "Minutes a saved cloud plan stays applicable, from 1 to 1440. An older plan is refused and must be planned again. The next apply uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyCloudMaxDestroys, Category: CategoryDeploys, Kind: KindInt, Default: "0", Env: "APP_CLOUD_MAX_DESTROYS", Apply: ApplyLive,
 		CheckValue:  intRangeCheck(0, 10000),

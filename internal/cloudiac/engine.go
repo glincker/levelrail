@@ -42,6 +42,14 @@ type Result struct {
 	Changes []Change
 	Outputs map[string]string
 	Log     string
+	// PlanHash names the saved plan a plan produced or an apply ran.
+	PlanHash string
+	// StateVersion is the stored state version after the step.
+	StateVersion int64
+	// Partial means the apply failed but the state it reached was stored.
+	Partial bool
+	// Diverged means the new state could not be stored under the fence.
+	Diverged bool
 }
 
 // ErrorKind classifies a step failure so callers can react without parsing text.
@@ -74,6 +82,6 @@ var ErrNotConfigured = errors.New("cloudiac: no engine configured")
 // Engine runs provisioning steps. Other engines can implement it later.
 type Engine interface {
 	Plan(ctx context.Context, spec ModuleSpec, cred CredentialHandle) (Result, error)
-	Apply(ctx context.Context, spec ModuleSpec, cred CredentialHandle) (Result, error)
-	Destroy(ctx context.Context, spec ModuleSpec, cred CredentialHandle) (Result, error)
+	Apply(ctx context.Context, req ApplyRequest) (Result, error)
+	Destroy(ctx context.Context, req ApplyRequest) (Result, error)
 }

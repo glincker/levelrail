@@ -14,9 +14,9 @@ var update = flag.Bool("update", false, "rewrite golden files")
 
 func fullSpec() OCISpec {
 	return OCISpec{
-		Name: "lr-test", Region: "us-phoenix-1", CompartmentOCID: "ocid1.compartment.oc1..example", Namespace: "ns",
+		Name: "lr-test", Region: "us-phoenix-1", CompartmentOCID: "ocid1.compartment.oc1..example",
 		Networks:  []NetworkSpec{{Name: "lr-net", CIDR: "10.30.0.0/16", IngressPorts: []int{443, 80}}},
-		Buckets:   []BucketSpec{{Name: "lr-data"}, {Name: "lr-scratch", Unprotected: true}},
+		Buckets:   []BucketSpec{{Name: "lr-data", Namespace: "ns"}, {Name: "lr-scratch", Namespace: "ns", Unprotected: true}},
 		Instances: []InstanceSpec{{Name: "worker-1", Network: "lr-net", Shape: "VM.Standard.A1.Flex", OCPUs: 1, MemoryGB: 6, AvailabilityDomain: "AD-1", ImageOCID: "ocid1.image.oc1..example"}},
 	}
 }
@@ -24,7 +24,7 @@ func fullSpec() OCISpec {
 func TestRenderOCIGolden(t *testing.T) {
 	cases := map[string]OCISpec{
 		"network_only": {Name: "net", Region: "us-phoenix-1", CompartmentOCID: "c", Networks: []NetworkSpec{{Name: "n1", CIDR: "10.0.0.0/24", IngressPorts: []int{22}}}},
-		"bucket_only":  {Name: "bkt", Region: "us-phoenix-1", CompartmentOCID: "c", Namespace: "ns", Buckets: []BucketSpec{{Name: "data"}}},
+		"bucket_only":  {Name: "bkt", Region: "us-phoenix-1", CompartmentOCID: "c", Buckets: []BucketSpec{{Name: "data", Namespace: "ns"}}},
 		"full":         fullSpec(),
 	}
 	for name, spec := range cases {
@@ -82,7 +82,7 @@ func TestRenderOCIInvalid(t *testing.T) {
 		"hcl injection":    mut(func(s *OCISpec) { s.Buckets[0].Name = `x" { }` }),
 		"unknown network":  mut(func(s *OCISpec) { s.Instances[0].Network = "ghost" }),
 		"duplicate bucket": mut(func(s *OCISpec) { s.Buckets[1].Name = s.Buckets[0].Name }),
-		"no namespace":     mut(func(s *OCISpec) { s.Namespace = "" }),
+		"no namespace":     mut(func(s *OCISpec) { s.Buckets[0].Namespace = "" }),
 		"no image":         mut(func(s *OCISpec) { s.Instances[0].ImageOCID = "" }),
 	}
 	for name, spec := range cases {

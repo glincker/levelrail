@@ -65,24 +65,24 @@ func TestStateSealRoundTripNeverPlaintextAtRest(t *testing.T) {
 
 func TestStateSealDetectsTampering(t *testing.T) {
 	kek := bytes.Repeat([]byte{3}, 32)
-	blob, err := sealState(kek, "acct", "net", []byte("state body"))
+	blob, err := sealLayers(kek, "key", "state", "acct", "net", []byte("state body"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := openState(kek, "acct", "net", blob); err != nil {
+	if _, err := openLayers(kek, "key", "state", "acct", "net", blob); err != nil {
 		t.Fatalf("clean open: %v", err)
 	}
 	for i := range blob {
 		bad := bytes.Clone(blob)
 		bad[i] ^= 0x01
-		if _, err := openState(kek, "acct", "net", bad); !errors.Is(err, ErrStateTampered) {
+		if _, err := openLayers(kek, "key", "state", "acct", "net", bad); !errors.Is(err, ErrStateTampered) {
 			t.Fatalf("flip at byte %d not detected: %v", i, err)
 		}
 	}
-	if _, err := openState(kek, "acct", "other", blob); !errors.Is(err, ErrStateTampered) {
+	if _, err := openLayers(kek, "key", "state", "acct", "other", blob); !errors.Is(err, ErrStateTampered) {
 		t.Fatalf("blob moved to another stack err = %v", err)
 	}
-	if _, err := openState(kek, "acct", "net", blob[:len(blob)-1]); !errors.Is(err, ErrStateTampered) {
+	if _, err := openLayers(kek, "key", "state", "acct", "net", blob[:len(blob)-1]); !errors.Is(err, ErrStateTampered) {
 		t.Fatalf("truncated err = %v", err)
 	}
 }

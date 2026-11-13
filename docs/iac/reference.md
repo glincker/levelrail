@@ -57,6 +57,7 @@ No fields.
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `spec.account` | string | yes | Name of the CloudAccount. |
+| `spec.namespace` | string | no | Object storage namespace of the account. Planning a bucket without it fails. |
 | `spec.region` | string | no | Overrides the account region. |
 | `spec.versioning` | boolean | no |  |
 

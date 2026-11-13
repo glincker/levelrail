@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/iac"
@@ -29,92 +29,160 @@ type DetailedPlanner interface {
 	PlanDetailed(ctx context.Context, spec ModuleSpec, cred CredentialHandle) (PlanResult, error)
 }
 
-// CloudPlannerAdapter implements iac.CloudPlanner on top of the engine, one stack per document.
+// CloudPlannerAdapter implements iac.CloudStackPlanner: every cloud document of one Levelrail
+// stack and account is rendered into one module with one sealed state.
 type CloudPlannerAdapter struct {
 	Engine   DetailedPlanner
 	Accounts AccountResolver
-	// Networks remembers planned CloudNetwork documents so an instance can be rendered with its network.
-	Networks *NetworkMemo
 }
 
-// NetworkMemo keeps the CloudNetwork specs seen in the current process, keyed by account and name.
-type NetworkMemo struct {
-	mu sync.Mutex
-	m  map[string]NetworkSpec
-}
+var (
+	_ iac.CloudPlanner      = CloudPlannerAdapter{}
+	_ iac.CloudStackPlanner = CloudPlannerAdapter{}
+)
 
-// Remember stores a network spec for later instance planning.
-func (n *NetworkMemo) Remember(account string, ns NetworkSpec) {
-	if n == nil {
-		return
-	}
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	if n.m == nil {
-		n.m = map[string]NetworkSpec{}
-	}
-	n.m[account+"/"+ns.Name] = ns
-}
+// DefaultStack names the module when an apply source carries no name.
+const DefaultStack = "default"
 
-// Lookup returns the remembered network of an account.
-func (n *NetworkMemo) Lookup(account, name string) (NetworkSpec, bool) {
-	if n == nil {
-		return NetworkSpec{}, false
-	}
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	ns, ok := n.m[account+"/"+name]
-	return ns, ok
-}
-
-var _ iac.CloudPlanner = CloudPlannerAdapter{}
-
-// PlanCloud renders the document, plans it and folds the changes into one diff.
+// PlanCloud plans one document as a stack of its own; apply uses PlanCloudStack.
 func (a CloudPlannerAdapter) PlanCloud(r iac.CloudResource) (iac.CloudDiff, error) {
-	if r.Kind == iac.KindCloudAccount {
-		return iac.CloudDiff{Action: "noop"}, nil
+	out := a.PlanCloudStack(DefaultStack, []iac.CloudResource{r})
+	return out[0].Diff, out[0].Err
+}
+
+// PlanCloudStack groups the documents by account, plans one module per group and splits
+// the changes back to the documents by resource address.
+func (a CloudPlannerAdapter) PlanCloudStack(stack string, rs []iac.CloudResource) []iac.CloudOutcome {
+	out := make([]iac.CloudOutcome, len(rs))
+	groups := map[string][]int{}
+	var order []string
+	for i, r := range rs {
+		if r.Kind == iac.KindCloudAccount {
+			out[i].Diff = iac.CloudDiff{Action: "noop"}
+			continue
+		}
+		acct, _ := r.Spec["account"].(string)
+		if acct == "" {
+			out[i].Err = fmt.Errorf("spec.account is required")
+			continue
+		}
+		if _, ok := groups[acct]; !ok {
+			order = append(order, acct)
+		}
+		groups[acct] = append(groups[acct], i)
 	}
+	for _, acct := range order {
+		idx := groups[acct]
+		diffs, err := a.planGroup(StackName(stack), acct, rs, idx)
+		for n, i := range idx {
+			if err != nil {
+				out[i].Err = err
+				continue
+			}
+			out[i].Diff = diffs[n]
+		}
+	}
+	return out
+}
+
+// StackName maps an apply source to a module name; the state key is the account plus this name.
+func StackName(source string) string {
+	b := []byte(strings.ToLower(source))
+	for i, c := range b {
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+			b[i] = '-'
+		}
+	}
+	n := strings.Trim(string(b), "-")
+	if n == "" {
+		return DefaultStack
+	}
+	if n[0] < 'a' {
+		n = "s-" + n
+	}
+	if len(n) > 63 {
+		n = strings.TrimRight(n[:63], "-")
+	}
+	return n
+}
+
+func (a CloudPlannerAdapter) planGroup(stack, acct string, rs []iac.CloudResource, idx []int) ([]iac.CloudDiff, error) {
 	if a.Engine == nil || a.Accounts == nil {
-		return iac.CloudDiff{}, ErrNotConfigured
+		return nil, ErrNotConfigured
 	}
 	ctx := context.Background()
-	acct, _ := r.Spec["account"].(string)
-	if acct == "" {
-		return iac.CloudDiff{}, fmt.Errorf("spec.account is required")
-	}
 	info, err := a.Accounts.ResolveAccount(ctx, acct)
 	if err != nil {
-		return iac.CloudDiff{}, err
+		return nil, err
 	}
-	oci := OCISpec{Name: kindStack(r.Kind) + "-" + r.Name, Region: info.Region,
-		CompartmentOCID: info.CompartmentOCID, Namespace: info.Namespace}
-	switch r.Kind {
-	case iac.KindCloudNetwork:
-		cidr, _ := r.Spec["cidr"].(string)
-		ns := NetworkSpec{Name: r.Name, CIDR: cidr, IngressPorts: ingressPorts(r.Spec["ingress"])}
-		oci.Networks = []NetworkSpec{ns}
-		a.Networks.Remember(acct, ns)
-	case iac.KindCloudBucket:
-		oci.Buckets = []BucketSpec{{Name: r.Name}}
-	case iac.KindCloudInstance:
-		inst, ns, err := a.instanceSpec(acct, r)
-		if err != nil {
-			return iac.CloudDiff{}, err
+	oci := OCISpec{Name: stack, Region: info.Region, CompartmentOCID: info.CompartmentOCID}
+	owner := map[string]int{}
+	for n, i := range idx {
+		r := rs[i]
+		switch r.Kind {
+		case iac.KindCloudNetwork:
+			cidr, _ := r.Spec["cidr"].(string)
+			oci.Networks = append(oci.Networks, NetworkSpec{Name: r.Name, CIDR: cidr, IngressPorts: ingressPorts(r.Spec["ingress"])})
+			owner["network/"+tfName(r.Name)] = n
+		case iac.KindCloudBucket:
+			ns, _ := r.Spec["namespace"].(string)
+			if ns == "" {
+				return nil, fmt.Errorf("CloudBucket %q needs spec.namespace, the object storage namespace of the account", r.Name)
+			}
+			oci.Buckets = append(oci.Buckets, BucketSpec{Name: r.Name, Namespace: ns})
+			owner["bucket/"+tfName(r.Name)] = n
+		case iac.KindCloudInstance:
+			inst, err := instanceSpec(r)
+			if err != nil {
+				return nil, err
+			}
+			oci.Instances = append(oci.Instances, inst)
+			owner["instance/"+tfName(r.Name)] = n
+		default:
+			return nil, fmt.Errorf("%s planning is not available yet", r.Kind)
 		}
-		// ADR 080: an instance references its network by name and is planned in one module with it.
-		oci.Networks, oci.Instances = []NetworkSpec{ns}, []InstanceSpec{inst}
-	default:
-		return iac.CloudDiff{}, fmt.Errorf("%s planning is not available yet", r.Kind)
+	}
+	for _, inst := range oci.Instances {
+		if _, ok := owner["network/"+tfName(inst.Network)]; !ok {
+			return nil, fmt.Errorf("CloudInstance %q: CloudNetwork %q must be declared in the same stack and account", inst.Name, inst.Network)
+		}
 	}
 	mod, err := RenderOCI(oci)
 	if err != nil {
-		return iac.CloudDiff{}, err
+		return nil, err
 	}
 	pr, err := a.Engine.PlanDetailed(ctx, mod, info.Credential)
 	if err != nil {
-		return iac.CloudDiff{}, err
+		return nil, err
 	}
-	return foldDiff(pr), nil
+	split := make([]PlanResult, len(idx))
+	for _, c := range pr.Changes {
+		n, ok := owner[addressOwner(c)]
+		if !ok {
+			// Removing a resource from a stack is a destroy; it never rides along with an apply.
+			return nil, fmt.Errorf("the plan changes %s, which no document in stack %q declares; use destroy to remove it", c.Address, stack)
+		}
+		split[n].Changes = append(split[n].Changes, c)
+	}
+	diffs := make([]iac.CloudDiff, len(idx))
+	for n := range idx {
+		diffs[n] = foldDiff(split[n])
+	}
+	return diffs, nil
+}
+
+// addressOwner maps a module address to the document kind and name that rendered it.
+func addressOwner(c PlanChange) string {
+	_, name, _ := strings.Cut(c.Address, ".")
+	switch c.Type {
+	case "oci_core_vcn", "oci_core_internet_gateway", "oci_core_route_table", "oci_core_security_list", "oci_core_subnet":
+		return "network/" + name
+	case "oci_objectstorage_bucket":
+		return "bucket/" + name
+	case "oci_core_instance":
+		return "instance/" + name
+	}
+	return ""
 }
 
 // Default flexible shapes per architecture; spec.shape.name overrides them.
@@ -123,14 +191,10 @@ const (
 	shapeX86 = "VM.Standard.E5.Flex"
 )
 
-func (a CloudPlannerAdapter) instanceSpec(acct string, r iac.CloudResource) (InstanceSpec, NetworkSpec, error) {
+func instanceSpec(r iac.CloudResource) (InstanceSpec, error) {
 	netName, _ := r.Spec["network"].(string)
 	if netName == "" {
-		return InstanceSpec{}, NetworkSpec{}, fmt.Errorf("spec.network is required")
-	}
-	ns, ok := a.Networks.Lookup(acct, netName)
-	if !ok {
-		return InstanceSpec{}, NetworkSpec{}, fmt.Errorf("CloudNetwork %q must be declared in the same apply, before the instance", netName)
+		return InstanceSpec{}, fmt.Errorf("CloudInstance %q: spec.network is required", r.Name)
 	}
 	shape, _ := r.Spec["shape"].(map[string]any)
 	cpu, _ := anyInt(shape["cpu"])
@@ -145,19 +209,7 @@ func (a CloudPlannerAdapter) instanceSpec(acct string, r iac.CloudResource) (Ins
 	ad, _ := r.Spec["availabilityDomain"].(string)
 	img, _ := r.Spec["image"].(string)
 	return InstanceSpec{Name: r.Name, Network: netName, Shape: name, OCPUs: cpu, MemoryGB: mem,
-		AvailabilityDomain: ad, ImageOCID: img}, ns, nil
-}
-
-func kindStack(k iac.Kind) string {
-	switch k {
-	case iac.KindCloudInstance:
-		return "inst"
-	case iac.KindCloudNetwork:
-		return "net"
-	case iac.KindCloudBucket:
-		return "bucket"
-	}
-	return "res"
+		AvailabilityDomain: ad, ImageOCID: img}, nil
 }
 
 func ingressPorts(v any) []int {
@@ -270,6 +322,12 @@ func SettingsConfig(cfg TofuConfig, get func() SettingsReader) TofuConfig {
 	cfg.Timeout = func() time.Duration {
 		if s := read(); s != nil {
 			return time.Duration(s.Int(ctx, runtimesettings.KeyCloudEngineTimeoutSeconds)) * time.Second
+		}
+		return 0
+	}
+	cfg.PlanMaxAge = func() time.Duration {
+		if s := read(); s != nil {
+			return time.Duration(s.Int(ctx, runtimesettings.KeyCloudPlanMaxAgeMinutes)) * time.Minute
 		}
 		return 0
 	}

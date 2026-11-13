@@ -489,6 +489,11 @@
           "minLength": 1,
           "type": "string"
         },
+        "namespace": {
+          "description": "Object storage namespace of the account. Planning a bucket without it fails.",
+          "minLength": 1,
+          "type": "string"
+        },
         "region": {
           "description": "Overrides the account region.",
           "minLength": 1,

@@ -77,6 +77,8 @@ type planner struct {
 	opts  Options
 	byKey map[string]*Resource
 	items []*item
+	// cloudStack holds cloud documents planned together as one stack.
+	cloudStack []*Resource
 }
 
 // PlanFor computes the plan for resources against live state.

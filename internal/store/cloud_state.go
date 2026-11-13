@@ -230,3 +230,57 @@ func (db *DB) PutCloudState(ctx context.Context, lock CloudStateLock, expectVers
 	}
 	return next, nil
 }
+
+// ErrCloudPlanNotFound means the stack has no saved plan.
+var ErrCloudPlanNotFound = errors.New("store: cloud plan not found")
+
+// CloudPlan is the saved plan of one stack. Sealed is ciphertext; Hash is the digest of the plan bytes.
+type CloudPlan struct {
+	Account   string
+	Stack     string
+	Hash      string
+	Sealed    []byte
+	CreatedAt time.Time
+}
+
+// PutCloudPlan replaces the saved plan of a stack, so only the newest plan can ever be applied.
+func (db *DB) PutCloudPlan(ctx context.Context, p CloudPlan) error {
+	if !cloudStateKeyValid(p.Account, p.Stack) || p.Hash == "" || len(p.Sealed) == 0 {
+		return ErrCloudStateBadInput
+	}
+	_, err := db.ExecContext(ctx, `INSERT INTO cloud_plans (account, stack, hash, sealed, created_at) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT (account, stack) DO UPDATE SET hash = excluded.hash, sealed = excluded.sealed, created_at = excluded.created_at`,
+		p.Account, p.Stack, p.Hash, p.Sealed, fmtLockTime(p.CreatedAt))
+	if err != nil {
+		return fmt.Errorf("store: put cloud plan: %w", err)
+	}
+	return nil
+}
+
+// GetCloudPlan returns the saved plan or ErrCloudPlanNotFound.
+func (db *DB) GetCloudPlan(ctx context.Context, account, stack string) (CloudPlan, error) {
+	p := CloudPlan{Account: account, Stack: stack}
+	var created string
+	err := db.QueryRowContext(ctx, "SELECT hash, sealed, created_at FROM cloud_plans WHERE account = ? AND stack = ?", account, stack).
+		Scan(&p.Hash, &p.Sealed, &created)
+	if errors.Is(err, sql.ErrNoRows) {
+		return CloudPlan{}, ErrCloudPlanNotFound
+	}
+	if err != nil {
+		return CloudPlan{}, fmt.Errorf("store: get cloud plan: %w", err)
+	}
+	p.CreatedAt, err = time.Parse(time.RFC3339Nano, created)
+	if err != nil {
+		return CloudPlan{}, fmt.Errorf("store: cloud plan time: %w", err)
+	}
+	return p, nil
+}
+
+// DeleteCloudPlan removes the saved plan of a stack only if it still has this hash.
+func (db *DB) DeleteCloudPlan(ctx context.Context, account, stack, hash string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM cloud_plans WHERE account = ? AND stack = ? AND hash = ?", account, stack, hash)
+	if err != nil {
+		return fmt.Errorf("store: delete cloud plan: %w", err)
+	}
+	return nil
+}

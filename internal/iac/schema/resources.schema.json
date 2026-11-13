@@ -194,6 +194,7 @@
       "properties": {
         "account": { "description": "Name of the CloudAccount.", "type": "string", "minLength": 1 },
         "region": { "description": "Overrides the account region.", "type": "string", "minLength": 1 },
+        "namespace": { "description": "Object storage namespace of the account. Planning a bucket without it fails.", "type": "string", "minLength": 1 },
         "versioning": { "type": "boolean" }
       }
     },

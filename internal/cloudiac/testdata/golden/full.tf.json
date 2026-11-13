@@ -103,13 +103,13 @@
           "prevent_destroy": true
         },
         "name": "lr-data",
-        "namespace": "${var.object_namespace}"
+        "namespace": "ns"
       },
       "lr_scratch": {
         "access_type": "NoPublicAccess",
         "compartment_id": "${var.compartment_ocid}",
         "name": "lr-scratch",
-        "namespace": "${var.object_namespace}"
+        "namespace": "ns"
       }
     }
   },
@@ -122,9 +122,6 @@
   },
   "variable": {
     "compartment_ocid": {
-      "type": "string"
-    },
-    "object_namespace": {
       "type": "string"
     },
     "region": {

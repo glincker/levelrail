@@ -13,7 +13,7 @@
           "prevent_destroy": true
         },
         "name": "data",
-        "namespace": "${var.object_namespace}"
+        "namespace": "ns"
       }
     }
   },
@@ -26,9 +26,6 @@
   },
   "variable": {
     "compartment_ocid": {
-      "type": "string"
-    },
-    "object_namespace": {
       "type": "string"
     },
     "region": {

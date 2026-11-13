@@ -2,7 +2,6 @@ package cloudiac
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"os"
@@ -167,11 +166,14 @@ func TestSensitiveValuesFromPlan(t *testing.T) {
 }
 
 // capturePlanner records the module the adapter renders.
-type capturePlanner struct{ mod ModuleSpec }
+type capturePlanner struct {
+	mod ModuleSpec
+	res PlanResult
+}
 
 func (c *capturePlanner) PlanDetailed(_ context.Context, spec ModuleSpec, _ CredentialHandle) (PlanResult, error) {
 	c.mod = spec
-	return PlanResult{}, nil
+	return c.res, nil
 }
 
 type staticAccounts struct{}
@@ -181,34 +183,39 @@ func (staticAccounts) ResolveAccount(context.Context, string) (AccountInfo, erro
 		Credential: CredentialHandle{ID: "oci-test"}}, nil
 }
 
-func TestInstancePlannedWithNetworkGolden(t *testing.T) {
+func TestStackPlannedAsOneModuleGolden(t *testing.T) {
 	cp := &capturePlanner{}
-	a := CloudPlannerAdapter{Engine: cp, Accounts: staticAccounts{}, Networks: &NetworkMemo{}}
+	a := CloudPlannerAdapter{Engine: cp, Accounts: staticAccounts{}}
 	inst := iac.CloudResource{Kind: iac.KindCloudInstance, Name: "worker-1", Spec: map[string]any{
 		"account": "oci-test", "network": "lr-net", "availabilityDomain": "AD-1", "image": "ocid1.image.oc1..aaaaaaaaimageunique01",
 		"shape": map[string]any{"cpu": 1, "memoryGB": 6, "arch": "arm64"},
 	}}
-	if _, err := a.PlanCloud(inst); err == nil || !strings.Contains(err.Error(), "lr-net") {
-		t.Fatalf("instance without its network must fail clearly, got %v", err)
-	}
 	net := iac.CloudResource{Kind: iac.KindCloudNetwork, Name: "lr-net", Spec: map[string]any{
 		"account": "oci-test", "cidr": "10.30.0.0/16", "ingress": []any{map[string]any{"port": 443}},
 	}}
-	if _, err := a.PlanCloud(net); err != nil {
-		t.Fatal(err)
+	bucket := iac.CloudResource{Kind: iac.KindCloudBucket, Name: "backups", Spec: map[string]any{"account": "oci-test"}}
+	if out := a.PlanCloudStack("prod", []iac.CloudResource{inst}); out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "lr-net") {
+		t.Fatalf("instance without its network must fail clearly, got %v", out[0].Err)
 	}
-	if _, err := a.PlanCloud(inst); err != nil {
-		t.Fatal(err)
+	if out := a.PlanCloudStack("prod", []iac.CloudResource{bucket}); out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "spec.namespace") {
+		t.Fatalf("bucket without namespace must name the field, got %v", out[0].Err)
 	}
-	if cp.mod.Name != "inst-worker-1" {
+	bucket.Spec["namespace"] = "lrns"
+	acct := iac.CloudResource{Kind: iac.KindCloudAccount, Name: "oci-test"}
+	out := a.PlanCloudStack("Prod Stack", []iac.CloudResource{inst, acct, net, bucket})
+	for i, o := range out {
+		if o.Err != nil || o.Diff.Action != "noop" {
+			t.Fatalf("outcome %d = %+v", i, o)
+		}
+	}
+	if cp.mod.Name != "prod-stack" {
 		t.Fatalf("stack name %q", cp.mod.Name)
 	}
 	got := cp.mod.Files[MainFile]
-	var doc map[string]any
-	if err := json.Unmarshal(got, &doc); err != nil {
-		t.Fatal(err)
+	if !strings.Contains(string(got), "${oci_core_subnet.lr_net.id}") {
+		t.Fatal("instance does not reference its network inside the module")
 	}
-	golden := filepath.Join("testdata", "instance_network.golden.json")
+	golden := filepath.Join("testdata", "stack_module.golden.json")
 	if *updateGolden {
 		if err := os.WriteFile(golden, got, 0o600); err != nil {
 			t.Fatal(err)
@@ -221,7 +228,22 @@ func TestInstancePlannedWithNetworkGolden(t *testing.T) {
 	if string(want) != string(got) {
 		t.Fatalf("module drifted from golden\n got: %s", got)
 	}
-	if _, err := (CloudPlannerAdapter{Engine: cp, Accounts: staticAccounts{}}).PlanCloud(iac.CloudResource{Kind: iac.KindCloudAccount}); err != nil {
-		t.Fatal(err)
+}
+
+func TestStackPlanSplitsChangesAndRefusesOrphans(t *testing.T) {
+	cp := &capturePlanner{res: PlanResult{Changes: []PlanChange{
+		{Address: "oci_core_vcn.lr_net", Type: "oci_core_vcn", Action: ActionCreate},
+		{Address: "oci_objectstorage_bucket.backups", Type: "oci_objectstorage_bucket", Action: ActionUpdate},
+	}}}
+	a := CloudPlannerAdapter{Engine: cp, Accounts: staticAccounts{}}
+	net := iac.CloudResource{Kind: iac.KindCloudNetwork, Name: "lr-net", Spec: map[string]any{"account": "oci-test", "cidr": "10.30.0.0/16"}}
+	bucket := iac.CloudResource{Kind: iac.KindCloudBucket, Name: "backups", Spec: map[string]any{"account": "oci-test", "namespace": "lrns"}}
+	out := a.PlanCloudStack("prod", []iac.CloudResource{net, bucket})
+	if out[0].Diff.Action != ActionCreate || out[1].Diff.Action != ActionUpdate {
+		t.Fatalf("outcomes = %+v", out)
+	}
+	out = a.PlanCloudStack("prod", []iac.CloudResource{net})
+	if out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "destroy") {
+		t.Fatalf("orphan change must refuse, got %+v", out[0])
 	}
 }
