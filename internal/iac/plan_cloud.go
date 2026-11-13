@@ -50,6 +50,20 @@ type CloudStackPlanner interface {
 	PlanCloudStack(stack string, rs []CloudResource) []CloudOutcome
 }
 
+// CloudReadiness is optional on a planner: false means it has no engine yet,
+// so even record-only kinds such as CloudAccount must not report unchanged.
+type CloudReadiness interface {
+	CloudReady() bool
+}
+
+func cloudPlannerReady(p CloudPlanner) bool {
+	if p == nil {
+		return false
+	}
+	rd, ok := p.(CloudReadiness)
+	return !ok || rd.CloudReady()
+}
+
 // CloudChange is one entry handed to a PolicyChecker.
 type CloudChange struct {
 	Address string
@@ -142,7 +156,7 @@ func maskAttr(a CloudAttr) FieldChange {
 // planner defers the document so the whole stack is planned once in flushCloudStack.
 func (p *planner) planCloud(r *Resource) {
 	planner, _ := cloudDeps()
-	if planner == nil {
+	if !cloudPlannerReady(planner) {
 		p.failCode(r, CodeUnavailable, "%s", cloudUnconfiguredReason)
 		return
 	}

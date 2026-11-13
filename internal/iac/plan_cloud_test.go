@@ -124,3 +124,30 @@ func TestCloudPlanHashIgnoredByNonCloud(t *testing.T) {
 		t.Fatal("unstable")
 	}
 }
+
+type notReadyPlanner struct{ fakeCloudPlanner }
+
+func (notReadyPlanner) CloudReady() bool { return false }
+
+func TestCloudPlanNotReadyPlannerFailsAccountToo(t *testing.T) {
+	res := cloudPlanSetup(t)
+	SetCloudPlanner(notReadyPlanner{fakeCloudPlanner{diffs: map[Kind]CloudDiff{KindCloudAccount: {Action: "noop"}, KindCloudBucket: {Action: "create"}}}})
+	plan := PlanFor(newState(), res, Options{})
+	if plan.Summary.Error != 2 || plan.Summary.Noop != 0 {
+		t.Fatalf("want 2 failed items, got %+v", plan.Summary)
+	}
+	for _, c := range plan.Changes {
+		if c.Code != CodeUnavailable || c.Reason != "cloud planner not configured" {
+			t.Fatalf("item %+v", c)
+		}
+	}
+}
+
+func TestCloudPlanReadyPlannerKeepsAccountNoop(t *testing.T) {
+	res := cloudPlanSetup(t)
+	SetCloudPlanner(fakeCloudPlanner{diffs: map[Kind]CloudDiff{KindCloudAccount: {Action: "noop"}, KindCloudBucket: {Action: "create"}}})
+	plan := PlanFor(newState(), res, Options{})
+	if plan.Summary.Error != 0 || plan.Summary.Noop != 1 {
+		t.Fatalf("got %+v", plan.Summary)
+	}
+}
