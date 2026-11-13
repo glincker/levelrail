@@ -17,6 +17,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/erroringest"
 	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -29,10 +30,6 @@ const (
 
 	envErrorIngestPerMin    = "APP_ERROR_INGEST_PER_MIN"
 	envErrorEventsPerIssue  = "APP_ERROR_EVENTS_PER_ISSUE"
-	envErrorDedupHours      = "APP_ERROR_DEDUP_HOURS"
-	envErrorDedupMax        = "APP_ERROR_DEDUP_MAX"
-	defaultErrorDedupHours  = 168
-	defaultErrorDedupMax    = 50000
 	defaultErrorIngestRate  = 600
 	deployIDCacheTTL        = 10 * time.Second
 	errorIngestSecretName   = "key"
@@ -293,8 +290,9 @@ func (rt *Router) ingestSentry(w http.ResponseWriter, r *http.Request, legacy bo
 	deployID := rt.currentDeployID(r.Context(), app, now)
 	keep := envPositiveInt(envErrorEventsPerIssue, telemetry.DefaultErrorEventsPerIssue)
 	rt.applyCheckIns(r.Context(), app, checkIns)
-	window := time.Duration(envPositiveInt(envErrorDedupHours, defaultErrorDedupHours)) * time.Hour
-	maxSeen := envPositiveInt(envErrorDedupMax, defaultErrorDedupMax)
+	set := rt.changesSettings()
+	window := time.Duration(set.Limit(r.Context(), runtimesettings.KeyErrorsDedupHours)) * time.Hour
+	maxSeen := set.Limit(r.Context(), runtimesettings.KeyErrorsDedupMax)
 	for _, ev := range events {
 		// Retried envelopes repeat event ids; count each one once.
 		if !rt.errTrack.firstSeen(app, ev.EventID, now, window, maxSeen) {

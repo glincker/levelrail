@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -31,9 +32,15 @@ func newErrorRouter(t *testing.T) (*Router, *store.DB, *telemetry.DB) {
 	return NewRouter(logger, testBrand(), db, WithSecretSetter(sec), WithErrorStore(tel)), db, tel
 }
 
+// sentryEventID differs per message because retried event ids are deduped.
+func sentryEventID(msg string) string {
+	return fmt.Sprintf("aaaabbbbccccddddeeeeffff0000%04x", crc32.ChecksumIEEE([]byte(msg))&0xffff)
+}
+
 func sentryEnvelope(msg string) []byte {
-	ev := fmt.Sprintf(`{"event_id":"aaaabbbbccccddddeeeeffff00001111","level":"error","message":%q,"release":"v9"}`, msg)
-	return []byte(`{"event_id":"aaaabbbbccccddddeeeeffff00001111"}` + "\n" +
+	id := sentryEventID(msg)
+	ev := fmt.Sprintf(`{"event_id":%q,"level":"error","message":%q,"release":"v9"}`, id, msg)
+	return []byte(fmt.Sprintf(`{"event_id":%q}`, id) + "\n" +
 		fmt.Sprintf(`{"type":"event","length":%d}`, len(ev)) + "\n" + ev + "\n")
 }
 
@@ -81,7 +88,7 @@ func TestSentryIngestAuthLimitAndIssues(t *testing.T) {
 		t.Fatalf("wrong key = %d, want 401", w.Code)
 	}
 	w := post(key, sentryEnvelope("user 1 not found"), false)
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"id":"aaaabbbbccccddddeeeeffff00001111"`) {
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"id":"`+sentryEventID("user 1 not found")+`"`) {
 		t.Fatalf("ok = %d %s", w.Code, w.Body)
 	}
 	if w := post(key, sentryEnvelope("user 2 not found"), true); w.Code != http.StatusOK {

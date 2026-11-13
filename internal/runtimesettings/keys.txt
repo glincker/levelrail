@@ -389,3 +389,5 @@ otlp.ingest_enabled
 otlp.ingest_max_body_bytes
 otlp.ingest_max_line_bytes
 otlp.ingest_max_records
+errors.dedup_hours
+errors.dedup_max
