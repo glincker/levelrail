@@ -49,7 +49,11 @@ export function useBubbleReorder({
   const [announcement, setAnnouncement] = React.useState('')
   const shown = draft ?? bubbles
 
-  const say = (key: string, list: readonly Bubble[], id: string) => {
+  const say = (
+    key: string,
+    list: readonly Bubble[],
+    id: 'bubbles.moved' | 'bubbles.lifted' | 'bubbles.dropped',
+  ) => {
     const b = list.find((x) => x.key === key)
     setAnnouncement(
       t(id, {
