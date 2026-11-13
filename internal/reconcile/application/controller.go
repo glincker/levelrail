@@ -1130,6 +1130,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if !justDeployed {
+		if held, restarts := c.dockerRestartLoop(ctx, target, state); held {
+			return replicaOutcome{reason: reasonQuarantined}, errors.New(deploysafety.QuarantineMessage(target, restarts))
+		}
 		c.restartBackoff.observeRunning(target, time.Now())
 		defers := c.defersReadiness(desired)
 		if defers {

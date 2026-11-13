@@ -348,6 +348,25 @@ func (c *Controller) parkFailedCandidate(ctx context.Context, state *docker.Cont
 	_ = c.stopContainer(ctx, state.ID)
 }
 
+// dockerRestartLoop quarantines a running container that Docker's own restart policy keeps cycling,
+// stopping it and turning that policy off so the daemon cannot bring it back.
+func (c *Controller) dockerRestartLoop(ctx context.Context, name string, state *docker.ContainerState) (bool, int) {
+	inspector, ok := c.runtime.(docker.ExitStateInspector)
+	if !ok {
+		return false, 0
+	}
+	es, err := inspector.InspectExitState(ctx, name)
+	if err != nil || es == nil {
+		return false, 0
+	}
+	if !c.restartBackoff.ObserveDockerRestarts(name, es.RestartCount, time.Now()) {
+		return false, 0
+	}
+	c.parkFailedCandidate(ctx, state)
+	_, restarts := c.restartBackoff.Quarantined(name)
+	return true, restarts
+}
+
 // requiredSecretError is a declared required secret with no stored value.
 type requiredSecretError struct{ name string }
 

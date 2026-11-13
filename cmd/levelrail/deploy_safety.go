@@ -187,12 +187,14 @@ const (
 	restartBackoffResetEnv = "APP_RESTART_BACKOFF_RESET"
 	restartQuarantineEnv   = "APP_RESTART_QUARANTINE_AFTER"
 	restartJitterEnv       = "APP_RESTART_BACKOFF_JITTER"
+	restartDockerWindowEnv = "APP_RESTART_QUARANTINE_WINDOW"
 
 	defaultRestartBackoffBase  = 5 * time.Second
 	defaultRestartBackoffMax   = 2 * time.Minute
 	defaultRestartBackoffReset = 10 * time.Minute
 	defaultRestartQuarantine   = 8
 	defaultRestartJitter       = 0.2
+	defaultRestartDockerWindow = 10 * time.Minute
 )
 
 // newRestartBackoff builds the shared crash restart backoff from env;
@@ -204,5 +206,6 @@ func newRestartBackoff(logger *slog.Logger) *application.RestartBackoff {
 		envDurationOr(logger, restartBackoffResetEnv, defaultRestartBackoffReset),
 	)
 	b.SetBreaker(envIntOr(restartQuarantineEnv, defaultRestartQuarantine), envFloatOr(restartJitterEnv, defaultRestartJitter))
+	b.SetDockerWindow(envDurationOr(logger, restartDockerWindowEnv, defaultRestartDockerWindow))
 	return b
 }

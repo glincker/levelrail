@@ -43,6 +43,75 @@ type RestartBackoff struct {
 	jitter float64
 	rnd    func() float64
 	sink   QuarantineSink
+	// dockerWindow is how far back Docker's own restarts count toward the breaker.
+	dockerWindow time.Duration
+	docker       map[string]*dockerTrack
+}
+
+// dockerTrack follows one container's Docker RestartCount between passes.
+type dockerTrack struct {
+	last  int
+	times []time.Time
+}
+
+// SetDockerWindow sets the window in which Docker-policy restarts count toward quarantine, 0 disables that path.
+func (b *RestartBackoff) SetDockerWindow(d time.Duration) {
+	if b == nil {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.dockerWindow = d
+}
+
+// ObserveDockerRestarts feeds a running container's Docker RestartCount and reports true when
+// it crossed the quarantine threshold inside the window. The first sight only sets a baseline.
+func (b *RestartBackoff) ObserveDockerRestarts(name string, count int, now time.Time) bool {
+	if b == nil {
+		return false
+	}
+	b.mu.Lock()
+	if b.quarantineAfter <= 0 || b.dockerWindow <= 0 {
+		b.mu.Unlock()
+		return false
+	}
+	t, ok := b.docker[name]
+	if !ok {
+		if b.docker == nil {
+			b.docker = make(map[string]*dockerTrack)
+		}
+		b.docker[name] = &dockerTrack{last: count}
+		b.mu.Unlock()
+		return false
+	}
+	for i := t.last; i < count; i++ {
+		t.times = append(t.times, now)
+	}
+	t.last = count
+	kept := t.times[:0]
+	for _, ts := range t.times {
+		if now.Sub(ts) < b.dockerWindow {
+			kept = append(kept, ts)
+		}
+	}
+	t.times = kept
+	if len(kept) < b.quarantineAfter {
+		b.mu.Unlock()
+		return false
+	}
+	e := b.entries[name]
+	if e == nil {
+		e = &backoffEntry{}
+		b.entries[name] = e
+	}
+	e.restarts, e.lastStart, e.quarantined = len(kept), now, true
+	delete(b.docker, name)
+	sink := b.sink
+	b.mu.Unlock()
+	if sink != nil {
+		sink.Held(name, len(kept), now)
+	}
+	return true
 }
 
 // QuarantineSink is told when the breaker holds or releases a container, so the
@@ -108,6 +177,11 @@ func (b *RestartBackoff) Resume(serviceName string) int {
 		if e.quarantined && ownsContainer(serviceName, name) {
 			delete(b.entries, name)
 			released = append(released, name)
+		}
+	}
+	for name := range b.docker {
+		if ownsContainer(serviceName, name) {
+			delete(b.docker, name)
 		}
 	}
 	sink := b.sink
@@ -227,6 +301,11 @@ func (b *RestartBackoff) retain(serviceName string, names []string) {
 			if e.quarantined {
 				released = append(released, name)
 			}
+		}
+	}
+	for name := range b.docker {
+		if !keep[name] && ownsContainer(serviceName, name) {
+			delete(b.docker, name)
 		}
 	}
 	sink := b.sink
