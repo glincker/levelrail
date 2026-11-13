@@ -1,8 +1,26 @@
 import type { BackendModule, ReadCallback } from 'i18next'
 
-// Fixed dir/extension lets Vite split each locales/*/*.json into its own chunk.
+type Loader = () => Promise<{
+  load: (namespace: string) => Promise<{ default: object }>
+}>
+
+// A new language adds one module in ./loaders and one line here (a test fails if either is missing).
+const loaders: Record<string, Loader> = {
+  en: () => import('./loaders/en'),
+  es: () => import('./loaders/es'),
+  de: () => import('./loaders/de'),
+  fr: () => import('./loaders/fr'),
+  'pt-BR': () => import('./loaders/pt-BR'),
+  ja: () => import('./loaders/ja'),
+  'zh-CN': () => import('./loaders/zh-CN'),
+}
+
+export const LOADER_LANGUAGES = Object.keys(loaders)
+
 function importNamespace(language: string, namespace: string) {
-  return import(`../locales/${language}/${namespace}.json`)
+  const loader = loaders[language]
+  if (!loader) return Promise.reject(new Error(`no loader for ${language}`))
+  return loader().then((m) => m.load(namespace))
 }
 
 export const lazyBackend: BackendModule = {
