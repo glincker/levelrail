@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/glincker/levelrail/compare/v1.0.1...v1.0.2) (2026-11-13)
+
+
+### Features
+
+* Levelrail v1.0.2 ([f666db1](https://github.com/glincker/levelrail/commit/f666db1f934f4055a6e325660797cec44d63dd2d))
+
 ## [1.0.1](https://github.com/glincker/levelrail/compare/v0.9.6...v1.0.1) (2026-11-12)
 
 
