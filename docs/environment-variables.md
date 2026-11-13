@@ -67,6 +67,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
+| `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
@@ -204,7 +205,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
 | `APP_CLOUD_ENGINE_TIMEOUT_SECONDS` | [`cloud.engine_timeout_seconds`](/runtime-settings#deploys) | `1800` |
+| `APP_CLOUD_FETCH_MAX_MB` | [`cloud.fetch_max_mb`](/runtime-settings#deploys) | `256` |
+| `APP_CLOUD_FETCH_MIN_FREE_MB` | [`cloud.fetch_min_free_mb`](/runtime-settings#deploys) | `4096` |
+| `APP_CLOUD_FETCH_TIMEOUT_SECONDS` | [`cloud.fetch_timeout_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_CLOUD_MAX_DESTROYS` | [`cloud.max_destroys`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_STATE_MAX_KB` | [`cloud.state_max_kb`](/runtime-settings#deploys) | `1024` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_COMPOSE_REPO_DEPLOY_TIMEOUT` | [`compose.repo_deploy_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_COMPOSE_REPO_FILE_MAX_BYTES` | [`compose.repo_file_max_bytes`](/runtime-settings#deploys) | `524288` |

@@ -41,15 +41,16 @@ var tofuDigests = map[string]map[string]string{
 
 // Fetch errors. Every one is a hard stop: there is no retry with another URL.
 var (
-	ErrFetchConfig         = errors.New("cloudiac: fetch is not configured")
-	ErrUnpinnedVersion     = errors.New("cloudiac: OpenTofu version has no compiled checksum")
-	ErrUnsupportedPlatform = errors.New("cloudiac: no compiled checksum for this platform")
-	ErrPlaceholderDigest   = errors.New("cloudiac: compiled checksum is a placeholder, refusing to run")
-	ErrSignatureUnverified = errors.New("cloudiac: release signature verification is not available")
-	ErrLowDisk             = errors.New("cloudiac: not enough free disk for the OpenTofu download")
-	ErrTooLarge            = errors.New("cloudiac: OpenTofu download exceeds the size cap")
-	ErrChecksumMismatch    = errors.New("cloudiac: OpenTofu checksum mismatch")
-	ErrBadArchive          = errors.New("cloudiac: OpenTofu archive is malformed")
+	ErrFetchConfig          = errors.New("cloudiac: fetch is not configured")
+	ErrUnpinnedVersion      = errors.New("cloudiac: OpenTofu version has no compiled checksum")
+	ErrUnsupportedPlatform  = errors.New("cloudiac: no compiled checksum for this platform")
+	ErrPlaceholderDigest    = errors.New("cloudiac: compiled checksum is a placeholder, refusing to run")
+	ErrSignatureUnverified  = errors.New("cloudiac: release signature verification is not available")
+	ErrLowDisk              = errors.New("cloudiac: not enough free disk for the OpenTofu download")
+	ErrTooLarge             = errors.New("cloudiac: OpenTofu download exceeds the size cap")
+	ErrChecksumMismatch     = errors.New("cloudiac: OpenTofu checksum mismatch")
+	ErrBadArchive           = errors.New("cloudiac: OpenTofu archive is malformed")
+	ErrFreeSpaceUnsupported = errors.New("cloudiac: free space probe is not supported on this platform")
 )
 
 // SignatureVerifier checks the release signature of a downloaded archive.
@@ -72,6 +73,23 @@ type FetchConfig struct {
 	// AllowChecksumOnly accepts a release without a signature check. Default off.
 	AllowChecksumOnly bool
 	GOOS, GOARCH      string
+}
+
+// FetchLimits are the runtime settings that bound a fetch; NewFetcher refuses zero values.
+type FetchLimits struct {
+	MaxMB, MinFreeMB, TimeoutSeconds int
+	AllowChecksumOnly                bool
+}
+
+// ApplyLimits copies the runtime settings into the config and installs the platform free space probe.
+func (c *FetchConfig) ApplyLimits(l FetchLimits) {
+	c.MaxBytes = int64(l.MaxMB) << 20
+	c.MinFreeBytes = int64(l.MinFreeMB) << 20
+	c.Timeout = time.Duration(l.TimeoutSeconds) * time.Second
+	c.AllowChecksumOnly = l.AllowChecksumOnly
+	if c.FreeBytes == nil {
+		c.FreeBytes = FreeBytes
+	}
 }
 
 // Fetcher downloads and caches the pinned OpenTofu binary. It does no I/O until Ensure.
@@ -148,7 +166,6 @@ func (f *Fetcher) Ensure(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if f.cfg.Verifier == nil && !f.cfg.AllowChecksumOnly {
-		// TODO: verify the cosign signature with the embedded trust root; until then refuse.
 		return "", ErrSignatureUnverified
 	}
 	dir := f.binDir()

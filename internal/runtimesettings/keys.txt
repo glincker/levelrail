@@ -391,3 +391,8 @@ otlp.ingest_max_line_bytes
 otlp.ingest_max_records
 errors.dedup_hours
 errors.dedup_max
+cloud.fetch_max_mb
+cloud.fetch_min_free_mb
+cloud.fetch_timeout_seconds
+cloud.allow_checksum_only
+cloud.state_max_kb

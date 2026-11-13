@@ -7,6 +7,11 @@ const (
 	KeyCloudRequireFullEstimate   = "cloud.require_full_estimate"
 	KeyCloudEngineTimeoutSeconds  = "cloud.engine_timeout_seconds"
 	KeyCloudDefaultMonthlyCostLim = "cloud.default_monthly_cost_limit"
+	KeyCloudFetchMaxMB            = "cloud.fetch_max_mb"
+	KeyCloudFetchMinFreeMB        = "cloud.fetch_min_free_mb"
+	KeyCloudFetchTimeoutSeconds   = "cloud.fetch_timeout_seconds"
+	KeyCloudAllowChecksumOnly     = "cloud.allow_checksum_only"
+	KeyCloudStateMaxKB            = "cloud.state_max_kb"
 )
 
 func init() {
@@ -39,5 +44,35 @@ func init() {
 		CheckValue:  intRangeCheck(0, 1000000000),
 		Title:       "Default monthly cloud cost limit",
 		Description: "Monthly spend limit in whole currency units for a cloud account that has none of its own. 0 means a limit must be set per account. The next plan uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudFetchMaxMB, Category: CategoryDeploys, Kind: KindInt, Default: "256", Env: "APP_CLOUD_FETCH_MAX_MB", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(16, 1024),
+		Title:       "OpenTofu download size cap",
+		Description: "Largest OpenTofu archive or binary the control plane downloads, in MB from 16 to 1024. A larger download is refused. The next fetch uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudFetchMinFreeMB, Category: CategoryDeploys, Kind: KindInt, Default: "4096", Env: "APP_CLOUD_FETCH_MIN_FREE_MB", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(0, 1048576),
+		Title:       "Free disk kept during the OpenTofu download",
+		Description: "Free disk in MB that must remain after the OpenTofu download, from 0 to 1048576. The fetch is refused when the data disk has less. The next fetch uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudFetchTimeoutSeconds, Category: CategoryDeploys, Kind: KindInt, Default: "300", Env: "APP_CLOUD_FETCH_TIMEOUT_SECONDS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(10, 3600),
+		Title:       "OpenTofu download timeout",
+		Description: "Seconds the OpenTofu download may take, from 10 to 3600. The next fetch uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudAllowChecksumOnly, Category: CategorySecurity, Kind: KindBool, Default: "false", Env: "APP_CLOUD_ALLOW_CHECKSUM_ONLY", Apply: ApplyLive,
+		Risk: RiskWeakensSecurity, TrueIsWeaker: true,
+		Title:       "Accept OpenTofu without a signature check",
+		Description: "Run an OpenTofu download that matches the compiled checksum even when its release signature was not verified. Off refuses it. The next fetch uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudStateMaxKB, Category: CategoryDeploys, Kind: KindInt, Default: "1024", Env: "APP_CLOUD_STATE_MAX_KB", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(64, 65536),
+		Title:       "Cloud state size cap",
+		Description: "Largest cloud state one stack may store, in KB from 64 to 65536. A larger state is refused. The next save uses a changed value.",
 	})
 }
