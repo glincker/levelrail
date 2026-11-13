@@ -14,7 +14,7 @@ func TestIaCErrorCodes(t *testing.T) {
 	bad := "version: 1\nkind: App\nmetadata: {name: web}\nspec:\n  service:\n    build: {type: image, image: x}\n    port: 80\n    prot: 1\n"
 	var out iacErrorBody
 	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apply/plan", iacRequestBody(t, bad, nil)), &out)
-	if code != http.StatusUnprocessableEntity || out.Code != codeIaCInvalidDocument || out.Error == "" || len(out.Issues) == 0 {
+	if code != http.StatusUnprocessableEntity || out.Code != iac.CodeInvalidDocument || out.Error == "" || len(out.Issues) == 0 {
 		t.Fatalf("invalid document: %d %+v", code, out)
 	}
 	for _, is := range out.Issues {
@@ -22,15 +22,15 @@ func TestIaCErrorCodes(t *testing.T) {
 			t.Fatalf("issue lacks path, code or message: %+v", is)
 		}
 	}
+	if out.Issues[0].Code != iac.CodeSchemaUnknownField {
+		t.Fatalf("issue code = %q", out.Issues[0].Code)
+	}
 	out = iacErrorBody{}
 	code = iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apply", iacRequestBody(t, iacTestDocs, map[string]any{"prune": true})), &out)
-	if code != http.StatusBadRequest || out.Code != codeIaCInvalidRequest || len(out.Issues) != 0 {
+	if code != http.StatusBadRequest || out.Code != iac.CodeInvalidRequest || len(out.Issues) != 0 {
 		t.Fatalf("prune without source: %d %+v", code, out)
 	}
-	if got := iacIssueCode("Additional property prot is not allowed"); got != iac.CodeSchemaUnknownField {
-		t.Fatalf("code = %q", got)
-	}
-	if strings.Contains(codeIaCInvalidRequest, " ") {
+	if strings.Contains(iac.CodeInvalidRequest, " ") {
 		t.Fatal("codes must be stable tokens")
 	}
 }

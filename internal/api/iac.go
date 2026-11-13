@@ -82,19 +82,19 @@ func (rt *Router) iacDoer(r *http.Request) iac.Doer {
 func decodeIaCRequest(w http.ResponseWriter, r *http.Request) (iacRequest, bool) {
 	var req iacRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&req); err != nil {
-		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "invalid request body: "+err.Error(), nil)
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return req, false
 	}
 	if len(req.Files) == 0 || len(req.Files) > maxIaCFiles {
-		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
 		return req, false
 	}
 	if req.Source != "" && !iacSourceRe.MatchString(req.Source) {
-		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "source may hold letters, digits, dots, underscores and hyphens, up to 48 characters", nil)
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "source may hold letters, digits, dots, underscores and hyphens, up to 48 characters", nil)
 		return req, false
 	}
 	if req.Prune && req.Source == "" {
-		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "prune needs a source: only resources this source created are ever deleted", nil)
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "prune needs a source: only resources this source created are ever deleted", nil)
 		return req, false
 	}
 	return req, true

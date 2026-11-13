@@ -39,6 +39,8 @@ const (
 	CodeStackSourceSync          = "stack_source_sync"
 	CodePruneGuard               = "prune_guard"
 	CodeApplyDisabled            = "apply_disabled"
+	CodeInvalidRequest           = "invalid_request"
+	CodeInvalidDocument          = "invalid_document"
 )
 
 // AllCodes lists every frozen code, for docs and guard tests.
@@ -48,4 +50,5 @@ var AllCodes = []string{
 	CodeRefProjectMissing, CodeRefEnvironmentMissing, CodeRefAppMissing, CodeRefSecretMissing,
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
+	CodeInvalidRequest, CodeInvalidDocument,
 }
