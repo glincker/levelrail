@@ -262,3 +262,20 @@ func TestStoreRejects(t *testing.T) {
 		t.Fatal("rejected upload was stored")
 	}
 }
+
+func TestExtractCreatesTraversableDirs(t *testing.T) {
+	arc := packTree(t, map[string]string{"src/deep/x.txt": "hello"})
+	dest := t.TempDir()
+	if _, err := Extract(bytes.NewReader(arc), dest, Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range []string{"src", "src/deep"} {
+		info, err := os.Stat(filepath.Join(dest, d))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := info.Mode().Perm() & 0o055; got != 0o055 {
+			t.Fatalf("%s mode = %v, want group and other read+exec", d, info.Mode().Perm())
+		}
+	}
+}

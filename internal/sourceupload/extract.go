@@ -103,7 +103,7 @@ func walk(r io.Reader, dest string, lim Limits) (Stats, error) {
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if dest != "" {
-				if err := os.MkdirAll(filepath.Join(dest, filepath.FromSlash(name)), 0o750); err != nil {
+				if err := mkBuildDirs(dest, name); err != nil {
 					return st, fmt.Errorf("sourceupload: create directory %q: %w", name, err)
 				}
 			}
@@ -126,6 +126,27 @@ func walk(r io.Reader, dest string, lim Limits) (Stats, error) {
 	}
 }
 
+// buildDirPerm keeps extracted directories traversable by a non-root USER in the build image.
+const buildDirPerm = 0o755 //nolint:gosec // build context, not secrets
+
+// mkBuildDirs creates rel under dest and chmods each level, because MkdirAll honours a restrictive umask.
+func mkBuildDirs(dest, rel string) error {
+	cur := dest
+	for _, part := range strings.Split(rel, "/") {
+		if part == "" || part == "." {
+			continue
+		}
+		cur = filepath.Join(cur, part)
+		if err := os.MkdirAll(cur, buildDirPerm); err != nil {
+			return err
+		}
+		if err := os.Chmod(cur, buildDirPerm); err != nil { //nolint:gosec // build context, not secrets
+			return err
+		}
+	}
+	return nil
+}
+
 // copyEntry reads exactly size bytes (a stream that outruns its header fails) and writes them when dest is set.
 func copyEntry(tr *tar.Reader, dest, name string, size, mode int64) (int64, error) {
 	src := io.LimitReader(tr, size+1)
@@ -137,7 +158,7 @@ func copyEntry(tr *tar.Reader, dest, name string, size, mode int64) (int64, erro
 		return n, sizeCheck(name, n, size)
 	}
 	target := filepath.Join(dest, filepath.FromSlash(name))
-	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
+	if err := mkBuildDirs(dest, path.Dir(name)); err != nil {
 		return 0, fmt.Errorf("sourceupload: create parent of %q: %w", name, err)
 	}
 	perm := os.FileMode(0o644)
