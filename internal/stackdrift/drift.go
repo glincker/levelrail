@@ -80,6 +80,61 @@ type Checker struct {
 	Now         func() time.Time
 	// StartDelay is the wait before the first pass after boot.
 	StartDelay time.Duration
+	// Interval and SummaryMax read live settings each cycle; nil falls back to env.
+	Interval   func(ctx context.Context) time.Duration
+	SummaryMax func(ctx context.Context) int
+	// Tick is how often RunLive re-reads the interval; zero means DefaultTick.
+	Tick time.Duration
+}
+
+// DefaultTick keeps the loop cheap while off but quick to notice a setting change.
+const DefaultTick = 30 * time.Second
+
+func (c *Checker) summaryMax(ctx context.Context) int {
+	if c.SummaryMax != nil {
+		if n := c.SummaryMax(ctx); n > 0 {
+			return n
+		}
+	}
+	return summaryMaxFromEnv()
+}
+
+// RunLive checks on the live interval until ctx ends. It wakes on a fixed tick
+// and re-reads the interval, so turning the setting on or off needs no restart.
+func (c *Checker) RunLive(ctx context.Context) {
+	tick := c.Tick
+	if tick <= 0 {
+		tick = DefaultTick
+	}
+	interval := c.Interval
+	if interval == nil {
+		interval = func(context.Context) time.Duration { return IntervalFromEnv() }
+	}
+	var next time.Time
+	t := time.NewTicker(tick)
+	defer t.Stop()
+	for {
+		now := time.Now()
+		if d := interval(ctx); d <= 0 {
+			next = time.Time{}
+		} else {
+			if next.IsZero() {
+				next = now.Add(c.StartDelay)
+			}
+			if next.After(now.Add(d)) {
+				next = now.Add(d)
+			}
+			if !now.Before(next) {
+				c.CheckAll(ctx)
+				next = time.Now().Add(d)
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
 }
 
 func (c *Checker) now() time.Time {
@@ -203,7 +258,7 @@ func (c *Checker) checkStack(ctx context.Context, live iac.Doer, s store.StackRe
 			c.logger().Warn("stack drift: live read denied, resource not checked", slog.String("stack", s.Name), slog.String("resource", ch.Key()))
 		}
 	}
-	items := Summarize(plan, summaryMaxFromEnv())
+	items := Summarize(plan, c.summaryMax(ctx))
 	status := store.StackDriftNone
 	if len(items) > 0 {
 		status = store.StackDriftDrifted

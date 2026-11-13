@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -387,4 +389,61 @@ func TestDriftNodeTaintChangedByHand(t *testing.T) {
 	if strings.Contains(string(raw), "secret-ish") {
 		t.Fatalf("summary leaks a value: %s", raw)
 	}
+}
+
+// lockedStore guards the recorded map, which RunLive writes from its goroutine.
+type lockedStore struct {
+	*fakeStore
+	mu sync.Mutex
+}
+
+func (l *lockedStore) SetStackDrift(ctx context.Context, d store.StackDrift) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.fakeStore.SetStackDrift(ctx, d)
+}
+
+func (l *lockedStore) summaryLen() (int, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	d, ok := l.recorded["id-web"]
+	return len(d.Summary), ok
+}
+
+func TestRunLive_HonorsLiveIntervalAndCap(t *testing.T) {
+	fs := newStore("web")
+	appDoc := "version: 1\nkind: App\nmetadata: {name: web}\nspec:\n  project: shop\n  service:\n    build: {type: image, image: \"nginx:1.26-alpine\"}\n    port: 80\n"
+	raw, _ := json.Marshal([]renderedFile{{Name: "a.yaml", Content: projectDoc}, {Name: "b.yaml", Content: appDoc}})
+	fs.revs["id-web"][1].RenderedDocs = raw
+	ls := &lockedStore{fakeStore: fs}
+	var interval, limit atomic.Int64
+	limit.Store(1)
+	c := checker(t, fs, &fakeLive{t: t})
+	c.Store = ls
+	c.Tick = 5 * time.Millisecond
+	c.Interval = func(context.Context) time.Duration { return time.Duration(interval.Load()) }
+	c.SummaryMax = func(context.Context) int { return int(limit.Load()) }
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() { c.RunLive(ctx); close(done) }()
+	defer func() { cancel(); <-done }()
+
+	time.Sleep(50 * time.Millisecond)
+	if _, ok := ls.summaryLen(); ok {
+		t.Fatal("loop checked while interval was 0")
+	}
+	interval.Store(int64(10 * time.Millisecond))
+	waitFor(t, func() bool { n, ok := ls.summaryLen(); return ok && n == 1 })
+	limit.Store(50)
+	waitFor(t, func() bool { n, _ := ls.summaryLen(); return n == 2 })
+}
+
+func waitFor(t *testing.T, ok func() bool) {
+	t.Helper()
+	for end := time.Now().Add(2 * time.Second); time.Now().Before(end); time.Sleep(5 * time.Millisecond) {
+		if ok() {
+			return
+		}
+	}
+	t.Fatal("condition not met")
 }
