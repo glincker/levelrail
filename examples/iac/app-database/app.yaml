@@ -1,0 +1,22 @@
+version: 1
+kind: Project
+metadata: { name: demo }
+---
+version: 1
+kind: Database
+metadata: { name: main-db }
+spec:
+  engine: postgres
+  version: "16"
+  project: demo
+---
+version: 1
+kind: App
+metadata: { name: api }
+spec:
+  project: demo
+  service:
+    build: { type: image, image: "ghcr.io/acme/api:1.0.0" }
+    port: 3000
+    env:
+      DATABASE_URL: { from: { database: main-db, field: url } }

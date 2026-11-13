@@ -1,0 +1,13 @@
+version: 1
+kind: Project
+metadata: { name: demo }
+---
+version: 1
+kind: App
+metadata: { name: web }
+spec:
+  project: demo
+  service:
+    build: { type: image, image: "nginx:1.27" }
+    port: 80
+    replicas: 1
