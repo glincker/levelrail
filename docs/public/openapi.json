@@ -148427,7 +148427,7 @@
     },
     "/api/v1/stacks/{name}/revisions/{n}/approve": {
       "post": {
-        "description": "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off.\n\nRequires the `root` ability.",
+        "description": "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off. confirm_stack: typed stack name, required for solo admin self approval.\n\nRequires the `root` ability.",
         "operationId": "handleStackApprove",
         "parameters": [
           {

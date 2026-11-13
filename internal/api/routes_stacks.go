@@ -28,7 +28,7 @@ func (rt *Router) registerStackRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/stacks/{name}/revisions/{n}/diff", rt.requireAbilityForResource(AbilityRead, stackResourceFromPath, rt.handleStackDiff))
 	// Apply the documents of revision n as a new revision. History is not rewritten. Honors Idempotency-Key. 503 apply_disabled while the kill switch is off.
 	mux.HandleFunc("POST /api/v1/stacks/{name}/revisions/{n}/rollback", rt.requireAbilityForResource(AbilityWrite, stackResourceFromPath, rt.idempotent(rt.handleStackRollback)))
-	// Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off.
+	// Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off. confirm_stack: typed stack name, required for solo admin self approval.
 	mux.HandleFunc("POST /api/v1/stacks/{name}/revisions/{n}/approve", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.idempotent(rt.handleStackApprove)))
 	// Reject a revision awaiting approval, with an optional reason. Root only.
 	mux.HandleFunc("POST /api/v1/stacks/{name}/revisions/{n}/reject", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleStackReject))
