@@ -202,7 +202,9 @@ export function CommandPalette({
         return
       }
       setPending(null)
-      if (item.searchRef) {
+      if (item.noHistory) {
+        // Action items record nothing: they are not destinations.
+      } else if (item.searchRef) {
         void recordSearchUse(item.searchRef)
         if (ps.serverQuery !== '') {
           setRecentSearches(pushRecentSearch(ps.serverQuery))
@@ -232,6 +234,7 @@ export function CommandPalette({
           key: `${item.key}:${action.id}`,
           label: `${action.label}: ${item.label}`,
           confirm: true,
+          noHistory: true,
           searchRef: undefined,
           run: action.run,
         })

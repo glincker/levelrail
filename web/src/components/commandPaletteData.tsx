@@ -66,6 +66,8 @@ export interface PaletteItem {
   keepOpen?: boolean
   /** Ask for a confirm step before run (destructive server actions). */
   confirm?: boolean
+  /** Keep this item out of the recent pages and searches (synthetic action items). */
+  noHistory?: boolean
   /** Tab / Cmd+Enter action and the hint word shown for it. */
   secondary?: () => void
   secondaryHint?: string

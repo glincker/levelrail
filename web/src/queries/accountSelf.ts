@@ -1,3 +1,4 @@
+import { getStoredUsername } from '../lib/authStore'
 import {
   infiniteQueryOptions,
   queryOptions,
@@ -130,7 +131,12 @@ export function useSavePreferences() {
   const qc = useQueryClient()
   return useMutation<Preferences, AccountApiError, Partial<Preferences>>({
     mutationFn: (changes) => {
+      // A save queued behind a slow one must not land on a different account after a sign-out.
+      const owner = getStoredUsername()
       const run = async () => {
+        if (getStoredUsername() !== owner) {
+          throw new Error('The signed-in account changed before this save ran.')
+        }
         const base = await qc.ensureQueryData(preferencesQueryOptions())
         const saved = await send<Preferences>(
           'PUT',
