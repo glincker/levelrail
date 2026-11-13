@@ -97,6 +97,9 @@ func TestHandleUseGitHubRepoAsSource_Success(t *testing.T) {
 	if strings.Contains(body, `"webhook_error"`) {
 		t.Errorf("body = %s, want no webhook_error on success", body)
 	}
+	if strings.Contains(body, `"webhook_secret"`) {
+		t.Errorf("body = %s, want no webhook_secret when the app registered the hook itself", body)
+	}
 
 	saved, err := db.GetGitSource(context.Background(), "web")
 	if err != nil {

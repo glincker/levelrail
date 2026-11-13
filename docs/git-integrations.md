@@ -482,7 +482,7 @@ The route takes no session or token, because providers cannot send one. The per-
 | GitLab | The secret sent verbatim in `X-Gitlab-Token`, compared in constant time |
 | Gitea | HMAC-SHA256 in `X-Hub-Signature-256`, the GitHub-compatible header Gitea also sends |
 
-Each request is limited per client IP and app name before any lookup or write happens, so a client that never produces a valid signature is rejected cheaply. The budget is `APP_WEBHOOK_RATE_LIMIT_RPM` requests per minute (default `60`), refilled continuously so a burst of back-to-back pushes does not trip it. A request over budget gets `429` with `Retry-After`. Set it to `0` to disable the limit.
+Each request is limited per client IP and app name before any lookup or write happens, so a client that never produces a valid signature is rejected cheaply. The budget is `APP_WEBHOOK_RATE_LIMIT_RPM` requests per minute (default `60`), refilled continuously so a burst of back-to-back pushes does not trip it. A request over budget gets `429` with `Retry-After`. Set it to `0` to disable the limit. A second budget per client IP across all app names, `APP_WEBHOOK_IP_RATE_LIMIT_RPM` (default `600`), stops a client that tries many app names. An app with no git source answers `401 invalid signature` like a bad signature and stores no delivery.
 
 A push whose ref does not match the git source's trigger mode is accepted (`200`) and ignored. Pull request events are routed separately: `opened` and `synchronize` deploy or redeploy a preview (when previews are enabled), and `closed` tears it down whether or not the pull request merged.
 

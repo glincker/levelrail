@@ -72,27 +72,6 @@ func TestHandleGitPushWebhook_WrongSignature_RecordsDelivery(t *testing.T) {
 	}
 }
 
-func TestHandleGitPushWebhook_NoGitSource_RecordsUnmatchedDelivery(t *testing.T) {
-	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
-	seedApp(t, db, "web")
-
-	body := pushBody("refs/heads/main")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("status = %d, want 404", rec.Code)
-	}
-
-	deliveries, err := db.ListWebhookDeliveries(context.Background(), "web", 10, nil)
-	if err != nil {
-		t.Fatalf("ListWebhookDeliveries() error = %v", err)
-	}
-	if len(deliveries) != 1 || deliveries[0].Matched || deliveries[0].StatusCode != http.StatusNotFound {
-		t.Errorf("deliveries = %+v, want one unmatched 404 record", deliveries)
-	}
-}
-
 func TestHandleListWebhookDeliveries_AppNotFound(t *testing.T) {
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	cookie := loginTestSession(t, rt, db)

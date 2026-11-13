@@ -1700,7 +1700,7 @@ func TestController_Reconcile_PublicAccess_BindAddress_PublicIsExplicitOptIn(t *
 		Name: "main", Engine: store.EngineRedis, Version: "7",
 		PubliclyAccessible: true, PublicPort: 16379, PublicBindAddress: "public",
 	}
-	c := New("main", &fakeStore{db: desired}, rt)
+	c := New("main", &fakeStore{db: desired}, rt, WithRedisCredentials(&RedisCredentials{Password: "pw"}))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -1723,7 +1723,7 @@ func TestController_Reconcile_PublicAccess_BindAddress_InvalidFailsReconcile(t *
 		Name: "main", Engine: store.EngineRedis, Version: "7",
 		PubliclyAccessible: true, PublicPort: 16379, PublicBindAddress: "not-a-value",
 	}
-	c := New("main", &fakeStore{db: desired}, rt)
+	c := New("main", &fakeStore{db: desired}, rt, WithRedisCredentials(&RedisCredentials{Password: "pw"}))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {

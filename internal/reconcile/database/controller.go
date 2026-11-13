@@ -480,6 +480,11 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		return credentialsBlockedResult(), nil
 	}
 
+	if desired.PubliclyAccessible && RefusesPublicBind(desired.Engine, c.redisPassword() != "", desired.PublicBindAddress) {
+		err := fmt.Errorf("%s has no password, so it is only published on the host's loopback address", desired.Engine)
+		return notReady("UnauthenticatedExposureRefused", err), nil
+	}
+
 	switch desired.Engine {
 	case store.EngineRedis:
 		command, containerPort := redisServerArgs(c.tls, c.tlsOptional, c.redisPassword(), redisServerBin)

@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -110,6 +111,19 @@ func (rt *Router) handleSetDatabasePublicAccess(w http.ResponseWriter, r *http.R
 	}
 	if desired.Engine == store.EngineMemcached && bindAddress != bindaddr.Default {
 		writeError(w, http.StatusBadRequest, "memcached has no authentication: it can only be exposed on the host's loopback address")
+		return
+	}
+
+	hasPassword := false
+	if database.SupportsRedisPassword(desired.Engine) && rt.secrets != nil {
+		hasPassword, err = rt.secrets.Exists(r.Context(), name, database.RedisPasswordEnvKey)
+		if err != nil {
+			rt.internalError(w, "api: set database public access: check password failed", err, slog.String("name", name))
+			return
+		}
+	}
+	if database.RefusesPublicBind(desired.Engine, hasPassword, bindAddress) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("%s has no password, so it can only be exposed on the host's loopback address: use bind_address private and reach it through an SSH tunnel or the private network", desired.Engine))
 		return
 	}
 

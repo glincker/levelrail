@@ -716,6 +716,11 @@ func webhookRateLimitRPM(logger *slog.Logger) int {
 	return apiRateLimitRPM(logger, "APP_WEBHOOK_RATE_LIMIT_RPM", defaultWebhookRateLimitRPM)
 }
 
+// Keyed on the client address alone, so a caller cannot dodge it by varying the app name.
+func webhookIPRateLimitRPM(logger *slog.Logger) int {
+	return apiRateLimitRPM(logger, "APP_WEBHOOK_IP_RATE_LIMIT_RPM", defaultWebhookIPRateLimitRPM)
+}
+
 func apiRateLimitRPM(logger *slog.Logger, envVar string, fallback int) int {
 	raw := os.Getenv(envVar)
 	if raw == "" {

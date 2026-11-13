@@ -110,3 +110,25 @@ func TestParseMemcachedStats(t *testing.T) {
 		t.Fatal("a cut-off answer must be an error")
 	}
 }
+
+func TestController_Reconcile_PasswordlessCacheRefusesPublicBind(t *testing.T) {
+	for _, engine := range []string{store.EngineRedis, store.EngineValkey, store.EngineKeyDB, store.EngineDragonfly} {
+		for _, bind := range []string{bindaddr.Public, "10.0.0.5", "0.0.0.0"} {
+			rt := newFakeRuntime()
+			desired := &store.DesiredDatabase{Name: "cache", Engine: engine, Version: "7", PubliclyAccessible: true, PublicPort: 21211, PublicBindAddress: bind}
+			res, err := New("cache", &fakeStore{db: desired}, rt).Reconcile(context.Background())
+			if err != nil || conditionOf(t, res).Reason != "UnauthenticatedExposureRefused" || rt.createCalls != 0 {
+				t.Fatalf("%s bind %q: res = %+v err = %v creates = %d", engine, bind, res, err, rt.createCalls)
+			}
+		}
+	}
+}
+
+func TestController_Reconcile_PasswordProtectedCacheMayBePublic(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7", PubliclyAccessible: true, PublicPort: 21211, PublicBindAddress: bindaddr.Public}
+	c := New("cache", &fakeStore{db: desired}, rt, WithRedisCredentials(&RedisCredentials{Password: "pw"}))
+	if res, err := c.Reconcile(context.Background()); err != nil || conditionOf(t, res).Reason == "UnauthenticatedExposureRefused" || rt.createCalls == 0 {
+		t.Fatalf("res = %+v err = %v creates = %d", res, err, rt.createCalls)
+	}
+}

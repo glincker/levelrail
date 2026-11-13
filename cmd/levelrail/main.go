@@ -118,6 +118,9 @@ const (
 	// Well above any real git provider's delivery cadence; only a client hammering this route hits it.
 	defaultWebhookRateLimitRPM = 60
 
+	// Per client address across all app names, so it sits above the per-app budget.
+	defaultWebhookIPRateLimitRPM = 600
+
 	// defaultTokenRedeemRateLimitRPM is the per-IP budget for reset-password
 	// and invite-accept when APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM is unset.
 	defaultTokenRedeemRateLimitRPM = 10

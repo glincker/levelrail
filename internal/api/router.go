@@ -435,6 +435,8 @@ type Router struct {
 	// nil is valid, the same "unset means unthrottled" shape apiRateLimit
 	// above establishes. Set via WithWebhookRateLimit.
 	webhookRateLimit *apiRateLimiter
+	// webhookIPRateLimit is the same route's per-client-IP budget across all app names. nil means unthrottled.
+	webhookIPRateLimit *apiRateLimiter
 	// tokenRedeemRateLimit throttles the unauthenticated token-redeeming
 	// routes (reset-password, invite accept) per client IP. nil means unthrottled.
 	tokenRedeemRateLimit *apiRateLimiter
