@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/cloudiac"
 	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
@@ -242,6 +243,7 @@ func (s *bootState) wireRouter() {
 	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	setupIaCPlanHashKey(secretsManager)
+	setupCloudEngine(ctx, db, secretsManager, apiRouter.RuntimeSettings)
 	apiRouter.SetNodeHostReports(hostReports)
 	apiRouter.SetNodeOnboarding(s.onboardingReports, nodepreflight.ConfigFromEnv(os.LookupEnv))
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
@@ -502,3 +504,26 @@ func setupIaCPlanHashKey(sm *secrets.Manager) {
 }
 
 const iacPlanHashKeyPurpose = "iac-plan-hash"
+
+// setupCloudEngine installs the cloud planner only with the experimental flag on.
+// The binary source, credentials and accounts are wired later, so plans fail as not configured.
+func setupCloudEngine(ctx context.Context, db *store.DB, sm *secrets.Manager, rs func() *runtimesettings.Service) {
+	if !experimental.Enabled(experimental.Cloud) {
+		return
+	}
+	get := func() cloudiac.SettingsReader {
+		if s := rs(); s != nil {
+			return s
+		}
+		return nil
+	}
+	deps := cloudiac.TofuDeps{Runner: cloudiac.ExecRunner{}, Locks: db}
+	if s := rs(); s != nil {
+		if st, err := cloudiac.NewStateStore(db, sm, int64(s.Int(ctx, runtimesettings.KeyCloudStateMaxKB))*1024); err == nil {
+			deps.State = st
+		}
+	}
+	cfg := cloudiac.SettingsConfig(cloudiac.TofuConfig{}, get)
+	eng := cloudiac.NewTofuEngine(cfg, deps)
+	cloudiac.InstallInto(true, cloudiac.CloudPlannerAdapter{Engine: eng}, cloudiac.PolicyAdapter{Policy: cfg.Policy})
+}

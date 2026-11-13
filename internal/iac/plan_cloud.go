@@ -78,6 +78,12 @@ func SetCloudPolicy(c PolicyChecker) {
 	cloudMu.Unlock()
 }
 
+// CloudPlannerInstalled reports whether a planner and a policy checker are both set.
+func CloudPlannerInstalled() bool {
+	p, c := cloudDeps()
+	return p != nil && c != nil
+}
+
 func cloudDeps() (CloudPlanner, PolicyChecker) {
 	cloudMu.RLock()
 	defer cloudMu.RUnlock()
