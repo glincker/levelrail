@@ -378,3 +378,5 @@ volumes.transfer_max_concurrent
 volumes.transfer_spool_dir
 volumes.transfer_timeout
 volumes.usage_alert_percent
+appsleep.max_waiters
+appsleep.wake_wait_seconds
