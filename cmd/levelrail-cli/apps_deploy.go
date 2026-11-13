@@ -47,7 +47,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	var confirm, diff bool
 	var extra deployExtraFlags
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
-	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
+	bindConfirmFlag(fs, &confirm, cfg.confirmHelp)
 	fs.BoolVar(&diff, "diff", false, "show what this deploy would change (config, env keys, image) against the last successful deploy and exit without deploying")
 	fs.StringVar(&idemKey, "idempotency-key", "", "override the derived Idempotency-Key so a retried run is applied once")
 	extra.register(fs)
@@ -232,11 +232,12 @@ To go back to a recorded release instead of an image tag, use
 "%[1]s apps rollback <name> --release <id>" (ids from "%[1]s releases list").
 
 If the app is tagged with a protected environment, this fails unless
---confirm is set or you type "yes" at the interactive prompt.
+--confirm (or --yes) is set or you type "yes" at the interactive prompt.
 
 Flags:
   --image string          image reference to deploy, e.g. registry.example.com/org/app:tag (required)
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
+  --yes, -y                  same as --confirm
   --commit string            build and deploy this commit of the app's connected git source
   --latest                   build and deploy the newest commit of the connected branch (with --branch to pick another)
   --from-cache               rebuild from the source cache without contacting the git host, for a git host outage

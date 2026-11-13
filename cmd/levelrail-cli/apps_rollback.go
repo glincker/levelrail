@@ -121,11 +121,12 @@ Exit 0 only means the server accepted the request; check "%[1]s apps
 status <name>" to confirm the rollback landed.
 
 If the app is tagged with a protected environment, this fails unless
---confirm is set or you type "yes" at the interactive prompt.
+--confirm (or --yes) is set or you type "yes" at the interactive prompt.
 
 Flags:
   --image string          older, already-built image reference to roll back to (default: the previous successful deploy)
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
+  --yes, -y                  same as --confirm
   --release string           roll back to this release id of the app, from "releases list" (server needs APP_RELEASE_BINDINGS=on)
   --with-data                restore the pre-deploy database snapshot into new databases, swap the app's links and roll back the code (--deploy ID picks the deploy to undo)
   --diff                     show what this rollback would change against the last successful deploy, then exit without rolling back

@@ -61,6 +61,9 @@ export function deriveHeroStatus(input: HeroStatusInput): HeroStatus {
   if (summary.label === 'Reconciling') {
     return { tone: 'info', label: 'Starting up', live: true }
   }
+  if (summary.label === 'Not deployed') {
+    return { tone: 'neutral', label: 'Not deployed', live: false }
+  }
   if (summary.label === 'No status yet') {
     return { tone: 'neutral', label: 'Waiting for first status', live: false }
   }

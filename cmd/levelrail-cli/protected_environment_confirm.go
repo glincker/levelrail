@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,13 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
+
+// bindConfirmFlag registers --confirm plus its --yes/-y aliases, so scripts that pass --yes to "deploy" work on the apps deploy family too.
+func bindConfirmFlag(fs *flag.FlagSet, confirm *bool, help string) {
+	fs.BoolVar(confirm, "confirm", false, help)
+	fs.BoolVar(confirm, "yes", false, "same as --confirm")
+	fs.BoolVar(confirm, "y", false, "same as --confirm")
+}
 
 // A 409 from these endpoints only ever means the protected-environment gate, so the status alone identifies it.
 func protectedEnvironmentError(err error) (*apiclient.APIError, bool) {

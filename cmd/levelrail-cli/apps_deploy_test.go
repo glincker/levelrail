@@ -108,6 +108,18 @@ func TestRun_AppsDeploy_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing.T
 	}
 }
 
+func TestRun_AppsDeploy_ProtectedEnvironment_YesAliasesSkipPrompt(t *testing.T) {
+	for _, flagName := range []string{"--yes", "-y"} {
+		srv, calls := protectedEnvironmentDeployServer(t)
+		var stdout, stderr bytes.Buffer
+		got := runAppsDeploy("levelrail-cli-test", []string{"web", "--image", "levelrail/web:2", flagName, "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
+		srv.Close()
+		if got != exitOK || *calls != 1 {
+			t.Errorf("%s: exit = %d calls = %d, want exit %d and 1 call (stderr=%q)", flagName, got, *calls, exitOK, stderr.String())
+		}
+	}
+}
+
 func TestRun_AppsDeploy_ProtectedEnvironment_InteractivePromptConfirms(t *testing.T) {
 	srv, calls := protectedEnvironmentDeployServer(t)
 	defer srv.Close()

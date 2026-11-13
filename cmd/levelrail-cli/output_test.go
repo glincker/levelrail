@@ -137,10 +137,10 @@ func TestPrintAppsTable(t *testing.T) {
 	buf.Reset()
 	printAppsTable(&buf, []appResource{
 		{Name: "web", Image: "levelrail/web:1", Port: 3000},
-		{Name: "worker", Image: "levelrail/worker:1", Port: 4000, NodeID: "node-1"},
+		{Name: "worker", Image: "levelrail/worker:1", Port: 4000, NodeID: "node-1", Status: &appStatusSummary{Label: "Not deployed", Variant: "muted"}},
 	})
 	out := buf.String()
-	for _, want := range []string{"NAME", "web", "levelrail/web:1", "3000", "(local)", "worker", "node-1"} {
+	for _, want := range []string{"NAME", "STATUS", "Not deployed", "web", "levelrail/web:1", "3000", "(local)", "worker", "node-1"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("table output missing %q; got:\n%s", want, out)
 		}

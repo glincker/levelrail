@@ -63,9 +63,16 @@ describe('summarizeAppStatus', () => {
     expect(result).toEqual({ label: 'Healthy', variant: 'success' })
   })
 
-  it('still reports reconciling for a genuinely pending unknown condition', () => {
+  it('reports not deployed for an app awaiting its first build', () => {
     const result = summarizeAppStatus([
       condition({ Status: 'Unknown', Reason: 'AwaitingFirstBuild' }),
+    ])
+    expect(result).toEqual({ label: 'Not deployed', variant: 'muted' })
+  })
+
+  it('still reports reconciling for a genuinely pending unknown condition', () => {
+    const result = summarizeAppStatus([
+      condition({ Status: 'Unknown', Reason: 'PullingImage' }),
     ])
     expect(result).toEqual({ label: 'Reconciling', variant: 'muted' })
   })

@@ -27,7 +27,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.StringVar(&target, "target", "", "target app name, when more than one app in --to belongs to the same project")
 	fs.BoolVar(&preview, "preview", false, "show what promoting would change, without applying it")
 	fs.BoolVar(&preview, "dry-run", false, "alias for --preview")
-	fs.BoolVar(&confirm, "confirm", false, "confirm promoting into a protected environment; omit to be prompted interactively if needed")
+	bindConfirmFlag(fs, &confirm, "confirm promoting into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPromoteUsage(prog)) }
 
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps promote", "app name"}, lookupEnv)
@@ -153,6 +153,7 @@ Flags:
   --to string             destination environment ID (required)
   --target string        target app name, to disambiguate multiple apps in --to
   --confirm                  confirm promoting into a protected environment, skipping the interactive prompt
+  --yes, -y                  same as --confirm
   --override-freeze          promote even though a deploy freeze window is active
   --override-reason string   required with --override-freeze, recorded on the deploy
   --include-env              also apply added and removed plain env keys (values never overwrite the target)

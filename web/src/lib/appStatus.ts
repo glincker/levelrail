@@ -37,6 +37,13 @@ export function summarizeAppStatus(
   ) {
     return { label: 'Healthy', variant: 'success' }
   }
+  if (
+    conditions.some(
+      (c) => c.Status === 'Unknown' && c.Reason === 'AwaitingFirstBuild',
+    )
+  ) {
+    return { label: 'Not deployed', variant: 'muted' }
+  }
   return { label: 'Reconciling', variant: 'muted' }
 }
 

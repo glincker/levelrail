@@ -12,6 +12,8 @@ import (
 type AppStatusSummary struct {
 	Label   string `json:"label"`
 	Variant string `json:"variant"`
+	// Message is a short hint, set for states like Not deployed.
+	Message string `json:"message,omitempty"`
 }
 
 // AppGroupResource mirrors internal/api's appGroupResource

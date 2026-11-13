@@ -63,9 +63,16 @@ func TestSummarizeAppConditions(t *testing.T) {
 			want: appStatusSummary{Label: "Healthy", Variant: "success"},
 		},
 		{
-			name: "a genuinely pending unknown condition still reconciles",
+			name: "an app awaiting its first build is not deployed",
 			conditions: []reconcile.Condition{
 				{Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "AwaitingFirstBuild"},
+			},
+			want: appStatusSummary{Label: "Not deployed", Variant: "muted", Reason: "AwaitingFirstBuild", Message: notDeployedHint},
+		},
+		{
+			name: "a genuinely pending unknown condition still reconciles",
+			conditions: []reconcile.Condition{
+				{Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "PullingImage"},
 			},
 			want: appStatusSummary{Label: "Reconciling", Variant: "muted"},
 		},

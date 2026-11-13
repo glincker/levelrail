@@ -203,7 +203,7 @@ Read-only root filesystems are opt-in. `security.read_only_rootfs` in `app.yaml`
 
 ## Docker API guard
 
-The control plane and each agent reach Docker through an in-process allowlisting proxy that refuses privileged containers, host namespaces, unsafe capabilities and protected host mounts. It ships in `enforce` mode, with `APP_DOCKER_GUARD=audit` and `off` as overrides. See [Docker access and the API guard](/docker-access) for the endpoint list, every rule, and its limits.
+The control plane and each agent reach Docker through an in-process allowlisting proxy that refuses privileged containers, host namespaces, unsafe capabilities and protected host mounts. It ships in `audit` mode (log and record what a rule would deny), with `APP_DOCKER_GUARD=enforce` and `off` as overrides. See [Docker access and the API guard](/docker-access) for the endpoint list, every rule, and its limits.
 
 ## Rootless and Podman
 

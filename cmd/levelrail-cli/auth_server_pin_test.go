@@ -30,8 +30,9 @@ func TestCheckLoginServer_RefusesPinnedProfileWithoutReauth(t *testing.T) {
 	}
 
 	var stderr bytes.Buffer
-	if _, err := checkLoginServer("cli", "default", srv.URL, false, &stderr); err == nil || !strings.Contains(err.Error(), "--reauth") {
-		t.Fatalf("err = %v, want refusal naming --reauth", err)
+	_, err := checkLoginServer("cli", "default", srv.URL, false, &stderr)
+	if err == nil || !strings.HasPrefix(err.Error(), "fix: cli auth login --reauth --profile default") {
+		t.Fatalf("err = %v, want the exact fix command first", err)
 	}
 	info, err := checkLoginServer("cli", "default", srv.URL, true, &stderr)
 	if err != nil || info == nil || !strings.Contains(stderr.String(), "cccc-dddd") {

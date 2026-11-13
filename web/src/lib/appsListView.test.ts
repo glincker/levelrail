@@ -45,6 +45,10 @@ describe('status buckets', () => {
     ])
   })
 
+  it('keeps a staged app out of the deploying bucket', () => {
+    expect(statusBucket(app('f', 'muted', 'Not deployed'))).toBe('stopped')
+  })
+
   it('counts every bucket', () => {
     expect(countBuckets(APPS)).toEqual({
       running: 2,

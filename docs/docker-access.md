@@ -12,8 +12,8 @@ Levelrail narrows this with an in-process Docker API guard. Each process starts 
 
 | `APP_DOCKER_GUARD` | Behavior |
 | --- | --- |
-| `audit` | Everything is forwarded. A request a rule would deny is logged and written to the audit log as `docker_guard.would_deny`. |
-| `enforce` (default) | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
+| `audit` (default) | Everything is forwarded. A request a rule would deny is logged and written to the audit log as `docker_guard.would_deny`. |
+| `enforce` | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
 | `off` | No proxy. Clients dial the daemon directly, as before the guard existed. |
 
 `audit` is the default so an upgrade can't break a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
@@ -31,7 +31,7 @@ The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` a
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_DOCKER_GUARD` | `enforce` | `off`, `audit` or `enforce`. Overrides the setting saved from the dashboard. |
+| `APP_DOCKER_GUARD` | `audit` | `off`, `audit` or `enforce`. Overrides the setting saved from the dashboard. |
 | `APP_DOCKER_GUARD_SOCKET` | `<data dir>/guard/docker-guard.sock` | Where the proxy listens. Its directory must be `0700`; the socket is `0600`. |
 | `APP_DOCKER_GUARD_ALLOW_HOST_NETWORK` | `false` | Lets a container declared with host networking through `network_host`. |
 | `APP_DOCKER_GUARD_MAX_BODY_BYTES` | `4194304` | Largest create, update, exec or volume body the guard reads. Larger is denied. |
