@@ -235,6 +235,9 @@ type stackPlanResponse struct {
 	Plan        *iac.Plan   `json:"plan,omitempty"`
 	Issues      []iac.Issue `json:"issues,omitempty"`
 	Warnings    []string    `json:"warnings,omitempty"`
+	// Error and Code appear only on a refused request, like every other IaC error.
+	Error string `json:"error,omitempty"`
+	Code  string `json:"code,omitempty"`
 }
 
 type stackApplyResponse struct {
@@ -242,6 +245,8 @@ type stackApplyResponse struct {
 	Revision *stackRevisionSummary `json:"revision,omitempty"`
 	Result   *iac.ApplyResult      `json:"result,omitempty"`
 	Issues   []iac.Issue           `json:"issues,omitempty"`
+	Error    string                `json:"error,omitempty"`
+	Code     string                `json:"code,omitempty"`
 	Replayed bool                  `json:"replayed,omitempty"`
 	// Noop answers 200 when nothing changed: Revision is the existing latest one.
 	Noop     bool     `json:"noop,omitempty"`
@@ -706,7 +711,7 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 	res, opts, issues := req.iac(name, project, prune).build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		resp.Issues = issues
+		resp.Issues, resp.Error, resp.Code = codedIssues(issues), issuesMessage(issues), iac.CodeInvalidDocument
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}
@@ -786,7 +791,7 @@ func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss 
 	}
 	res, _, issues := req.iac(name, project, false).build()
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: name, Issues: issues})
+		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(name, issues))
 		return store.StackRecord{}, false
 	}
 	if len(res) == 0 {
@@ -837,7 +842,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	res, opts, issues := req.iac(stack.Name, project, req.Prune).build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: stack.Name, Issues: issues})
+		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(stack.Name, issues))
 		return
 	}
 	// A stack apply is a write path for every app it declares.
@@ -1275,4 +1280,25 @@ func (rt *Router) stackNoop(ctx context.Context, ss StackStore, run stackRun, re
 		return store.StackRevisionRecord{}, false
 	}
 	return latest, true
+}
+
+// codedIssues fills the invalid_document fallback so every issue carries a code.
+func codedIssues(in []iac.Issue) []iac.Issue {
+	out := make([]iac.Issue, len(in))
+	for i, is := range in {
+		if is.Code == "" {
+			is.Code = iac.CodeInvalidDocument
+		}
+		out[i] = is
+	}
+	return out
+}
+
+func issuesMessage(in []iac.Issue) string {
+	return "the documents have " + strconv.Itoa(len(in)) + " problem(s)"
+}
+
+// invalidStackApply keeps the stack field for clients and adds the coded envelope.
+func invalidStackApply(stack string, issues []iac.Issue) stackApplyResponse {
+	return stackApplyResponse{Stack: stack, Issues: codedIssues(issues), Error: issuesMessage(issues), Code: iac.CodeInvalidDocument}
 }

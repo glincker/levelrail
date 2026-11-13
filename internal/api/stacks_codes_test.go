@@ -92,3 +92,27 @@ func TestIaCApplyEnabled(t *testing.T) {
 		t.Fatalf("apply after re-enable = %d", code)
 	}
 }
+
+func TestStackValidationCodes(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	if code, _ := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.2.3"), nil); code != http.StatusOK {
+		t.Fatalf("seed apply: %d", code)
+	}
+	bad := "kind: Project\nmetadata: {name: shop}\nspec: {}\n---\nversion: 1\nkind: Nope\nmetadata: {name: x, project: shop}\nspec: {}\n"
+	for _, c := range []struct{ name, stack, verb string }{
+		{"plan existing", "shop-prod", "plan"},
+		{"apply existing", "shop-prod", "apply"},
+		{"apply new", "fresh-one", "apply"},
+	} {
+		var out stackApplyResponse
+		got := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/"+c.stack+"/"+c.verb, stackBody(t, bad, nil)), &out)
+		if got != http.StatusUnprocessableEntity || out.Code != iac.CodeInvalidDocument || out.Error == "" || out.Stack != c.stack || len(out.Issues) == 0 {
+			t.Fatalf("%s: %d %+v", c.name, got, out)
+		}
+		for _, is := range out.Issues {
+			if is.Code == "" {
+				t.Fatalf("%s: issue without code %+v", c.name, is)
+			}
+		}
+	}
+}
