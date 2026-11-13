@@ -195,6 +195,13 @@ func TestRestartSchedule_RecreatedAppDoesNotInherit(t *testing.T) {
 	}
 }
 
+// backoffTestNow is mid-day UTC so the retry is never capped by the 03:00 cron
+// the seeded schedule fires at, whatever time the suite runs.
+func backoffTestNow() time.Time {
+	n := time.Now().UTC()
+	return time.Date(n.Year(), n.Month(), n.Day(), 12, 0, 0, 0, time.UTC)
+}
+
 type failingRestartStore struct{ *store.DB }
 
 func (failingRestartStore) RestartService(context.Context, string) error {
@@ -207,7 +214,7 @@ func TestRestartSchedule_FailureBacksOff(t *testing.T) {
 	rt.apps = failingRestartStore{db}
 	ctx := context.Background()
 	seedApp(t, db, "web")
-	now := time.Now().UTC().Truncate(time.Second)
+	now := backoffTestNow()
 	seedDueRestart(t, db, "web", now)
 	if _, err := rt.SweepAppRestartSchedules(ctx, now); err == nil {
 		t.Fatal("failed restart reported no error")
@@ -279,7 +286,7 @@ func TestRestartSchedule_PolicyReadErrorBacksOffNotRestart(t *testing.T) {
 	rt.apps = failingPolicyStore{db}
 	ctx := context.Background()
 	seedApp(t, db, "web")
-	now := time.Now().UTC().Truncate(time.Second)
+	now := backoffTestNow()
 	seedDueRestart(t, db, "web", now)
 	before := restartNonce(t, db)
 	if _, err := rt.SweepAppRestartSchedules(ctx, now); err == nil {
