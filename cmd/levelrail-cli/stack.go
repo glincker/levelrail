@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -678,7 +679,7 @@ func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
 	f.expectedHash = fs.String("expected-plan-hash", "", "refuse to apply when the plan no longer has this hash")
 	f.noDeploy = fs.Bool("no-deploy", false, "do not restart running apps to apply env changes")
 	f.continueOnError = fs.Bool("continue-on-error", false, "keep applying after an item fails")
-	f.idemKey = fs.String("idempotency-key", "", "make a retry return the stored revision (default: derived from the CI run and the files)")
+	f.idemKey = fs.String("idempotency-key", "", "make a retry return the stored revision (default: the CI run when set, else random per run)")
 	f.yes = fs.Bool("yes", false, "do not ask for confirmation")
 	return f
 }
@@ -734,11 +735,8 @@ Flags:
 			return rc
 		}
 	}
-	req.IdempotencyKey = *rf.idemKey
-	if req.IdempotencyKey == "" {
-		req.IdempotencyKey = idempotencyKey(lookupEnv, time.Now(), "stack-apply", name, filesDigest(req.Files), req.ExpectedPlanHash)
-	}
-	res, raw, err := c.client.ApplyStack(ctx, name, req)
+	req.IdempotencyKey = stackIdemKey(*rf.idemKey, lookupEnv, "stack-apply", name, filesDigest(req.Files), req.ExpectedPlanHash)
+	res, raw, err := c.client.ApplyStack(apiclient.WithIdempotencyKey(ctx, req.IdempotencyKey), name, req)
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -831,11 +829,8 @@ Flags:`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagS
 	}
 	var req apiclient.StackRequest
 	rf.fill(&req, secrets, lookupEnv)
-	req.IdempotencyKey = *rf.idemKey
-	if req.IdempotencyKey == "" {
-		req.IdempotencyKey = idempotencyKey(lookupEnv, time.Now(), "stack-rollback", pos[0], strconv.Itoa(n))
-	}
-	res, raw, err := c.client.RollbackStack(context.Background(), pos[0], n, req)
+	req.IdempotencyKey = stackIdemKey(*rf.idemKey, lookupEnv, "stack-rollback", pos[0], strconv.Itoa(n))
+	res, raw, err := c.client.RollbackStack(apiclient.WithIdempotencyKey(context.Background(), req.IdempotencyKey), pos[0], n, req)
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -844,7 +839,7 @@ Flags:`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagS
 
 func stackApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var mf *stackManifestFlags
-	var expected *string
+	var expected, idemKey *string
 	c, code, ok := parseCLICall(prog, "stack approve", stackCmdUsage(prog, "approve", "<name> <n> [flags]", `
 Approves a revision that is awaiting approval and applies it. Needs root, and
 the requester cannot approve their own revision. Secrets are never stored with
@@ -853,9 +848,11 @@ a pending revision, so pass them again here.
 Flags:
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --expected-plan-hash H   refuse (409) when the pending revision has another plan hash
+  --idempotency-key K      a retry with the same key returns the stored result (default: random per run)
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, false)
 		expected = fs.String("expected-plan-hash", "", "refuse when the pending revision has another plan hash")
+		idemKey = fs.String("idempotency-key", "", "a retry with the same key returns the stored result")
 	})
 	if !ok {
 		return code
@@ -873,7 +870,8 @@ Flags:
 		return iacFail(c, err)
 	}
 	c = redactCall(c, secrets)
-	res, raw, err := c.client.ApproveStack(context.Background(), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected})
+	key := stackIdemKey(*idemKey, lookupEnv, "stack-approve", pos[0], strconv.Itoa(n))
+	res, raw, err := c.client.ApproveStack(apiclient.WithIdempotencyKey(context.Background(), key), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected})
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -906,6 +904,24 @@ Flags:
 		return iacFail(c, err)
 	}
 	return c.render(raw, func() { _, _ = fmt.Fprintf(c.stdout, "rejected revision %d of stack %s\n", n, pos[0]) })
+}
+
+// stackIdemKey picks the Idempotency-Key: the flag, else the CI run derived key so a
+// re-run job dedupes, else a random one per invocation.
+func stackIdemKey(flagVal string, lookup func(string) (string, bool), op string, parts ...string) string {
+	if flagVal != "" {
+		return flagVal
+	}
+	for _, k := range []string{"GITHUB_RUN_ID", "CI_PIPELINE_ID"} {
+		if v, _ := lookup(k); strings.TrimSpace(v) != "" {
+			return idempotencyKey(lookup, time.Now(), op, parts...)
+		}
+	}
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return idempotencyKey(lookup, time.Now(), op, parts...)
+	}
+	return hex.EncodeToString(b[:])
 }
 
 func filesDigest(files []apiclient.IaCFile) string {
