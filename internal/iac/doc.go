@@ -60,6 +60,8 @@ type Issue struct {
 	Path    string `json:"path,omitempty"`
 	Line    int    `json:"line"`
 	Message string `json:"message"`
+	// Code is a frozen machine code when the issue has one.
+	Code string `json:"code,omitempty"`
 }
 
 func (i Issue) String() string {

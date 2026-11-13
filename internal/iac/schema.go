@@ -165,13 +165,18 @@ func schemaIssues(d *Document) ([]Issue, error) {
 	walk = func(u jsonschema.OutputUnit) {
 		if u.Error != nil && len(u.Errors) == 0 {
 			path := strings.Trim(strings.ReplaceAll(u.InstanceLocation, "/", "."), ".")
-			msg := u.Error.String()
+			msg, code := u.Error.String(), ""
 			if m := extraPropRe.FindStringSubmatch(msg); m != nil {
 				path += "." + m[1]
+				msg = fmt.Sprintf("unknown field %q: it is not part of the %s schema; check the spelling or remove it", m[1], d.Kind)
+				code = CodeSchemaUnknownField
+			} else if path == "version" {
+				msg = fmt.Sprintf("schema version is not supported: this server reads version %d only; set version: %d", SchemaVersion, SchemaVersion)
+				code = CodeSchemaVersionUnsupported
 			}
 			if !seen[path+"|"+msg] {
 				seen[path+"|"+msg] = true
-				issues = append(issues, Issue{File: d.File, Path: path, Line: lineFor(d.Root, strings.Split(path, ".")), Message: msg})
+				issues = append(issues, Issue{File: d.File, Path: path, Line: lineFor(d.Root, strings.Split(path, ".")), Message: msg, Code: code})
 			}
 		}
 		for _, c := range u.Errors {
