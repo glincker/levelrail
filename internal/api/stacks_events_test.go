@@ -70,3 +70,15 @@ func TestStackEventPayloadHasNoValues(t *testing.T) {
 		}
 	}
 }
+
+func (c *captureEvents) count(typ string) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	n := 0
+	for _, e := range c.got {
+		if e.Type == typ {
+			n++
+		}
+	}
+	return n
+}

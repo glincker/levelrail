@@ -225,3 +225,43 @@ func TestStackDrift_StartupRevokesStaleTokensAndTTLComesFromEnv(t *testing.T) {
 		t.Fatalf("token life = %s, want about 30m", left)
 	}
 }
+
+func TestStackDrift_EmitsDriftedEventOnceAndNamesOnly(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	sink := &captureEvents{}
+	rt.SetEventWebhooks(sink)
+	if code, out := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.2.3"), nil); code != http.StatusOK || out.Revision == nil {
+		t.Fatalf("apply = %d", code)
+	}
+	c := &stackdrift.Checker{Store: rt.StackDriftStore(db), Live: rt.StackDriftLive, ProjectName: rt.StackProjectName, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	c.CheckAll(t.Context())
+	if n := sink.count("stacks.drifted"); n != 0 {
+		t.Fatalf("clean pass emitted %d drift events", n)
+	}
+	svc, err := db.GetDesiredService(t.Context(), "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.Image = "ghcr.io/acme/web:9.9.9-live"
+	if err := db.SaveDesiredService(t.Context(), *svc); err != nil {
+		t.Fatal(err)
+	}
+	c.CheckAll(t.Context())
+	c.CheckAll(t.Context())
+	if n := sink.count("stacks.drifted"); n != 1 {
+		t.Fatalf("drift events = %d, want 1", n)
+	}
+	if raw := sink.json(t); strings.Contains(raw, "9.9.9-live") {
+		t.Fatalf("drift event holds a value: %s", raw)
+	}
+}
+
+func TestStackDrift_SettingsComeFromRegistry(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	if got := rt.StackDriftInterval(t.Context()); got != 15*time.Minute {
+		t.Fatalf("default interval = %s", got)
+	}
+	if got := rt.StackDriftSummaryMax(t.Context()); got != 50 {
+		t.Fatalf("default summary max = %d", got)
+	}
+}
