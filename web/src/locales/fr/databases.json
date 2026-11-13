@@ -1118,5 +1118,30 @@
     "failed": "Impossible de mettre à jour les paramètres",
     "note": "Videz un champ pour revenir à la valeur par défaut du moteur.",
     "pendingNote": "L'application redémarre la base de données. Un démarrage après un arrêt l'applique aussi."
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "Mot de passe",
+    "tlsMode": {
+      "required": "Obligatoire",
+      "optional": "Facultatif (TLS et non chiffré)",
+      "off": "Désactivé"
+    },
+    "authMode": {
+      "auto": "En générer un",
+      "none": "Aucun"
+    }
+  },
+  "cacheConnect": {
+    "title": "Connexion",
+    "host": "Hôte",
+    "port": "Port",
+    "tlsPort": "Port TLS",
+    "tlsRequired": "TLS obligatoire",
+    "tlsOptional": "TLS facultatif",
+    "makeOptional": "Autoriser aussi le non chiffré",
+    "optionalHint": "Propose TLS à côté du port privé non chiffré pour que les anciens clients puissent encore se connecter. La base de données redémarre.",
+    "optionalToast": "TLS est maintenant facultatif, la base de données va redémarrer",
+    "optionalFailed": "Impossible de changer TLS"
   }
 }

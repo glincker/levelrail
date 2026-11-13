@@ -1104,5 +1104,30 @@
     "failed": "Parameter konnten nicht aktualisiert werden",
     "note": "Leeren Sie ein Feld, um zum Engine-Standard zurückzukehren.",
     "pendingNote": "Das Anwenden startet die Datenbank neu. Ein Start nach einem Stopp wendet es ebenfalls an."
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "Passwort",
+    "tlsMode": {
+      "required": "Erforderlich",
+      "optional": "Optional (TLS und unverschlüsselt)",
+      "off": "Aus"
+    },
+    "authMode": {
+      "auto": "Eines erzeugen",
+      "none": "Keins"
+    }
+  },
+  "cacheConnect": {
+    "title": "Verbinden",
+    "host": "Host",
+    "port": "Port",
+    "tlsPort": "TLS-Port",
+    "tlsRequired": "TLS erforderlich",
+    "tlsOptional": "TLS optional",
+    "makeOptional": "Auch unverschlüsselt zulassen",
+    "optionalHint": "TLS neben dem unverschlüsselten privaten Port anbieten, damit ältere Clients sich weiter verbinden können. Die Datenbank startet neu.",
+    "optionalToast": "TLS ist jetzt optional, die Datenbank wird neu gestartet",
+    "optionalFailed": "TLS konnte nicht umgestellt werden"
   }
 }

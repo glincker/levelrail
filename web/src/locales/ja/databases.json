@@ -1090,5 +1090,30 @@
     "failed": "パラメーターを更新できませんでした",
     "note": "フィールドをクリアすると、エンジンの既定値に戻ります。",
     "pendingNote": "適用するとデータベースが再起動します。停止後の起動でも適用されます。"
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "パスワード",
+    "tlsMode": {
+      "required": "必須",
+      "optional": "任意(TLSと平文)",
+      "off": "オフ"
+    },
+    "authMode": {
+      "auto": "自動生成",
+      "none": "なし"
+    }
+  },
+  "cacheConnect": {
+    "title": "接続",
+    "host": "ホスト",
+    "port": "ポート",
+    "tlsPort": "TLSポート",
+    "tlsRequired": "TLS必須",
+    "tlsOptional": "TLS任意",
+    "makeOptional": "平文も許可する",
+    "optionalHint": "プライベートの平文ポートと並べてTLSを提供し、古いクライアントも接続できるようにします。データベースが再起動します。",
+    "optionalToast": "TLSが任意になりました。データベースが再起動します",
+    "optionalFailed": "TLSを切り替えられませんでした"
   }
 }

@@ -1104,5 +1104,30 @@
     "failed": "No se pudieron actualizar los parámetros",
     "note": "Vacía un campo para volver al valor del motor.",
     "pendingNote": "Aplicar reinicia la base de datos. Iniciarla después de detenerla también lo aplica."
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "Contraseña",
+    "tlsMode": {
+      "required": "Obligatorio",
+      "optional": "Opcional (TLS y sin cifrar)",
+      "off": "Desactivado"
+    },
+    "authMode": {
+      "auto": "Generar una",
+      "none": "Ninguna"
+    }
+  },
+  "cacheConnect": {
+    "title": "Conectar",
+    "host": "Host",
+    "port": "Puerto",
+    "tlsPort": "Puerto TLS",
+    "tlsRequired": "TLS obligatorio",
+    "tlsOptional": "TLS opcional",
+    "makeOptional": "Permitir también sin cifrar",
+    "optionalHint": "Ofrece TLS junto al puerto privado sin cifrar para que los clientes antiguos puedan seguir conectándose. La base de datos se reinicia.",
+    "optionalToast": "TLS ahora es opcional, la base de datos se reiniciará",
+    "optionalFailed": "No se pudo cambiar TLS"
   }
 }

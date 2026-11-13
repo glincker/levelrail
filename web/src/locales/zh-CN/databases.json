@@ -1090,5 +1090,30 @@
     "failed": "无法更新参数",
     "note": "清空字段即可恢复为引擎默认值。",
     "pendingNote": "应用会重启数据库。停止后再启动也会应用它。"
+  },
+  "cacheCreate": {
+    "tls": "TLS",
+    "auth": "密码",
+    "tlsMode": {
+      "required": "必需",
+      "optional": "可选(TLS 和明文)",
+      "off": "关闭"
+    },
+    "authMode": {
+      "auto": "自动生成",
+      "none": "无"
+    }
+  },
+  "cacheConnect": {
+    "title": "连接",
+    "host": "主机",
+    "port": "端口",
+    "tlsPort": "TLS 端口",
+    "tlsRequired": "必须使用 TLS",
+    "tlsOptional": "TLS 可选",
+    "makeOptional": "同时允许明文",
+    "optionalHint": "在私有明文端口旁同时提供 TLS,让旧客户端仍可连接。数据库会重启。",
+    "optionalToast": "TLS 现在为可选,数据库将重启",
+    "optionalFailed": "无法切换 TLS"
   }
 }
