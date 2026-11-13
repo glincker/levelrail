@@ -82,19 +82,19 @@ func (rt *Router) iacDoer(r *http.Request) iac.Doer {
 func decodeIaCRequest(w http.ResponseWriter, r *http.Request) (iacRequest, bool) {
 	var req iacRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return req, false
 	}
 	if len(req.Files) == 0 || len(req.Files) > maxIaCFiles {
-		writeError(w, http.StatusBadRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries")
+		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
 		return req, false
 	}
 	if req.Source != "" && !iacSourceRe.MatchString(req.Source) {
-		writeError(w, http.StatusBadRequest, "source may hold letters, digits, dots, underscores and hyphens, up to 48 characters")
+		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "source may hold letters, digits, dots, underscores and hyphens, up to 48 characters", nil)
 		return req, false
 	}
 	if req.Prune && req.Source == "" {
-		writeError(w, http.StatusBadRequest, "prune needs a source: only resources this source created are ever deleted")
+		writeIaCError(w, http.StatusBadRequest, codeIaCInvalidRequest, "prune needs a source: only resources this source created are ever deleted", nil)
 		return req, false
 	}
 	return req, true
@@ -128,7 +128,7 @@ func (rt *Router) handleIaCPlan(w http.ResponseWriter, r *http.Request) {
 	res, opts, issues := req.build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
+		writeIaCInvalid(w, issues)
 		return
 	}
 	st, err := iac.Load(r.Context(), rt.iacDoer(r), res, opts)
@@ -148,7 +148,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 	res, opts, issues := req.build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, iacApplyResponse{Issues: issues})
+		writeIaCInvalid(w, issues)
 		return
 	}
 	expected := req.ExpectedPlanHash
@@ -163,7 +163,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 		}
 		plan := iac.PlanFor(st, res, opts)
 		if expected != "" && expected != plan.Hash {
-			writeError(w, http.StatusConflict, iac.ErrPlanChanged.Error())
+			writeIaCError(w, http.StatusConflict, iac.CodePlanStale, iac.ErrPlanChanged.Error(), nil)
 			return
 		}
 		if !rt.refuseStackOwned(w, r, ss, res, plan) {
@@ -174,7 +174,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 	}
 	out, err := iac.Apply(r.Context(), rt.iacDoer(r), res, opts, expected)
 	if errors.Is(err, iac.ErrPlanChanged) {
-		writeError(w, http.StatusConflict, err.Error())
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
 		return
 	}
 	if err != nil {
@@ -193,7 +193,7 @@ func (rt *Router) refuseStackSource(w http.ResponseWriter, r *http.Request, ss S
 	for _, name := range []string{source, strings.ToLower(source)} {
 		_, err := ss.GetStackByName(r.Context(), name)
 		if err == nil {
-			writeError(w, http.StatusConflict, fmt.Sprintf("source %q is a stack; change its resources through /api/v1/stacks/%s/apply", source, name))
+			writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("source %q is a stack; change its resources through /api/v1/stacks/%s/apply", source, name), nil)
 			return false
 		}
 		if !errors.Is(err, store.ErrStackNotFound) {
@@ -238,7 +238,7 @@ func (rt *Router) refuseStackOwned(w http.ResponseWriter, r *http.Request, ss St
 		}
 	}
 	if len(owned) > 0 {
-		writeError(w, http.StatusConflict, fmt.Sprintf("these resources belong to a stack and change only through the stack API: %s", strings.Join(owned, ", ")))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("these resources belong to a stack and change only through the stack API: %s", strings.Join(owned, ", ")), nil)
 		return false
 	}
 	return true
@@ -250,7 +250,7 @@ func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {
 	if opts.Settings {
 		abilities, aerr := rt.callerAbilities(r)
 		if aerr != nil || !hasAbilityExactRoot(abilities) {
-			writeError(w, http.StatusForbidden, "exporting settings needs a root caller")
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "exporting settings needs a root caller", nil)
 			return
 		}
 	}
@@ -258,7 +258,7 @@ func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var se *iac.StatusError
 		if errors.As(err, &se) && se.Status >= 400 && se.Status < 500 {
-			writeError(w, se.Status, se.Message)
+			writeIaCError(w, se.Status, iacStatusCode(se.Status), se.Message, nil)
 			return
 		}
 		rt.internalError(w, "api: iac export failed", err)
