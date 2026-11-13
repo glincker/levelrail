@@ -25,6 +25,7 @@ import (
 const (
 	auditStackApprovalRequested = "stack.approval_requested"
 	auditStackApprove           = "stack.approve"
+	auditStackSoloSelfApprove   = "stack.solo_self_approve"
 	auditStackReject            = "stack.reject"
 
 	defaultStackApprovalTTL = 24 * time.Hour
@@ -69,6 +70,8 @@ type stackPendingMeta struct {
 type stackApproveRequest struct {
 	Secrets          map[string]string `json:"secrets,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	// ConfirmStack is the stack name typed to allow a sole root user to approve their own change.
+	ConfirmStack string `json:"confirm_stack,omitempty"`
 }
 
 type stackRejectRequest struct {
@@ -289,8 +292,11 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		rev.RequesterUserID = owner
 	}
 	if !distinctApprover(caller, rev) {
-		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
-		return
+		if !rt.soloSelfApprove(r.Context(), caller, rev, s.Name, body.ConfirmStack) {
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
+			return
+		}
+		rt.auditStack(r, auditStackSoloSelfApprove, map[string]any{"stack": s.Name, "revision": rev.Number, "plan_hash": rev.PlanHash})
 	}
 	if body.ExpectedPlanHash != "" && body.ExpectedPlanHash != rev.PlanHash {
 		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, "the plan changed since it was reviewed; re-plan and request approval again", nil)
@@ -414,4 +420,17 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 	rev.FinishedAt = &now
 	rt.auditStack(r, auditStackReject, map[string]any{"stack": s.Name, "revision": n, "plan_hash": rev.PlanHash, "requested_by": rev.Actor, "reason": body.Reason})
 	writeJSON(w, http.StatusOK, stackRejectResponse{Stack: s.Name, Revision: rt.summarizeRevision(r.Context(), rev), Reason: body.Reason})
+}
+
+// soloSelfApprove lets the only root user approve their own change, and only
+// when the setting is on and the stack name was typed to confirm it.
+func (rt *Router) soloSelfApprove(ctx context.Context, caller stackCaller, rev store.StackRevisionRecord, stack, confirm string) bool {
+	if rt.runtimeSettings == nil || rt.roles == nil || !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyStacksSoloSelfApprove) {
+		return false
+	}
+	if caller.userID == "" || caller.userID != rev.RequesterUserID || confirm != stack {
+		return false
+	}
+	others, err := rt.roles.CountRootUsersExcept(ctx, caller.userID)
+	return err == nil && others == 0
 }
