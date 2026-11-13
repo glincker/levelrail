@@ -181,3 +181,23 @@ func schemaIssues(d *Document) ([]Issue, error) {
 	walk(*ve.DetailedOutput())
 	return issues, nil
 }
+
+// Kind stability levels published in the schema as x-stability.
+const (
+	StabilityStable = "stable"
+	StabilityBeta   = "beta"
+)
+
+// KindStability returns the declared stability of a kind; an unlisted kind is stable.
+func KindStability(k Kind) string {
+	var own struct {
+		Stability map[string]string `json:"x-stability"`
+	}
+	if err := json.Unmarshal(resourcesSchema, &own); err != nil {
+		return StabilityStable
+	}
+	if v, ok := own.Stability[string(k)]; ok {
+		return v
+	}
+	return StabilityStable
+}

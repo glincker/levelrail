@@ -78,6 +78,9 @@
       "name": "ci",
       "scope": "web",
       "action": "error",
+      "warnings": [
+        "Pipeline is a beta kind: its fields may change in a minor release"
+      ],
       "reason": "ledger conflict: app web is owned by stack shop-staging; a Pipeline on it belongs in that stack",
       "code": "item_failed",
       "file": "docs.yaml",

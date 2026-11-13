@@ -137,6 +137,9 @@
           "new": "least_conn"
         }
       ],
+      "warnings": [
+        "LoadBalancer is a beta kind: its fields may change in a minor release"
+      ],
       "file": "docs.yaml",
       "line": 19
     },
@@ -156,6 +159,9 @@
           "op": "add",
           "new": "version: 1 ..."
         }
+      ],
+      "warnings": [
+        "Pipeline is a beta kind: its fields may change in a minor release"
       ],
       "file": "docs.yaml",
       "line": 6
@@ -201,6 +207,9 @@
           "op": "add",
           "new": "threshold"
         }
+      ],
+      "warnings": [
+        "AlertRule is a beta kind: its fields may change in a minor release"
       ],
       "file": "docs.yaml",
       "line": 1

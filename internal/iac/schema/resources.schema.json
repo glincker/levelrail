@@ -5,6 +5,11 @@
   "description": "One document of a multi-document resource file read by apply. The $defs of the app.yaml schema are merged in unchanged, so a service under App.spec.service follows exactly the app.yaml service rules.",
   "type": "object",
   "required": ["version", "kind", "metadata"],
+  "x-stability": {
+    "Project": "stable", "Environment": "stable", "Tag": "stable", "Node": "stable", "Setting": "stable",
+    "Database": "stable", "App": "stable", "Domain": "stable",
+    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta"
+  },
   "properties": {
     "version": { "const": 1 },
     "kind": { "enum": ["Project", "Environment", "Tag", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },

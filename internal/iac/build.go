@@ -87,6 +87,9 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 		r := buildOne(d, opts, sink)
 		checkPlaceholders(r, sink)
 		if r != nil && len(sink.issues) == 0 {
+			if w := betaWarning(r.Kind); w != "" {
+				r.Warnings = append(r.Warnings, w)
+			}
 			out = append(out, r)
 		}
 		issues = append(issues, sink.issues...)

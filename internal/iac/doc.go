@@ -202,3 +202,11 @@ func lineFor(root *yaml.Node, segs []string) int {
 	}
 	return line
 }
+
+// betaWarning is the plan warning for a kind whose schema may still change.
+func betaWarning(k Kind) string {
+	if KindStability(k) != StabilityBeta {
+		return ""
+	}
+	return fmt.Sprintf("%s is a beta kind: its fields may change in a minor release", k)
+}

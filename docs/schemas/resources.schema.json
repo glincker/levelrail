@@ -2454,5 +2454,18 @@
     "metadata"
   ],
   "title": "Platform resource document",
-  "type": "object"
+  "type": "object",
+  "x-stability": {
+    "AlertRule": "beta",
+    "App": "stable",
+    "Database": "stable",
+    "Domain": "stable",
+    "Environment": "stable",
+    "LoadBalancer": "beta",
+    "Node": "stable",
+    "Pipeline": "beta",
+    "Project": "stable",
+    "Setting": "stable",
+    "Tag": "stable"
+  }
 }
