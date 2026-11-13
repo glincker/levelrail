@@ -1318,6 +1318,8 @@ Subcommands: clear, set
 Usage:
   levelrail-cli apps preview-env set <name> <key> --value VALUE [flags]   declare (or replace) a preview-specific env var override
   levelrail-cli apps preview-env clear <name> <key> [flags]                remove a preview-specific env var override
+  levelrail-cli apps preview-env exclude <name> <key> [flags]              keep an env var out of preview environments
+  levelrail-cli apps preview-env include <name> <key> [flags]              put an excluded env var back into previews
 
 Declares one env var to take a different value only when a preview
 environment is next created from app <name>, replacing whatever that key

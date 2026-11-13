@@ -123511,6 +123511,110 @@
         "x-required-ability": "read"
       }
     },
+    "/api/v1/otlp/v1/logs": {
+      "post": {
+        "description": "No authentication required.",
+        "operationId": "handleOTLPLogs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "OTLP Logs",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/otlp/v1/metrics": {
+      "post": {
+        "description": "No authentication required.",
+        "operationId": "handleOTLPMetrics",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "OTLP Metrics",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
     "/api/v1/otlp/v1/traces": {
       "post": {
         "description": "Log drain (apps_log_drain.go): forwards an app's container logs to an external HTTP or syslog sink, additive to the existing node-local store. AbilityWriteSensitive for write/clear, the same tier as storage above (both configure where data leaves this control plane to); AbilityRead for the GET.\n\nNo authentication required.",

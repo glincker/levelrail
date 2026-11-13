@@ -385,3 +385,7 @@ cloud.allow_protected_delete
 cloud.require_full_estimate
 cloud.engine_timeout_seconds
 cloud.default_monthly_cost_limit
+otlp.ingest_enabled
+otlp.ingest_max_body_bytes
+otlp.ingest_max_line_bytes
+otlp.ingest_max_records

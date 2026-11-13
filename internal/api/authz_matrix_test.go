@@ -94,6 +94,8 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/hooks/deploy/{id}/{token}":         "authenticated by the per-hook secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
+	"POST /api/v1/otlp/v1/logs":                      "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
+	"POST /api/v1/otlp/v1/metrics":                   "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
 	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",
 	"POST /api/v1/sentry/api/{project}/store/":       "legacy Sentry store endpoint, same DSN key auth and per-app rate limit as the envelope route",
 	"OPTIONS /api/v1/sentry/api/{project}/envelope/": "CORS preflight for browser Sentry SDKs, answers headers only",

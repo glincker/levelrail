@@ -37,6 +37,8 @@ func (rt *Router) registerAuditRoutes(mux *http.ServeMux) {
 	// tier as storage above (both configure where data leaves this
 	// control plane to); AbilityRead for the GET.
 	mux.HandleFunc("POST /api/v1/otlp/v1/traces", rt.handleOTLPTraces)
+	mux.HandleFunc("POST /api/v1/otlp/v1/logs", rt.handleOTLPLogs)
+	mux.HandleFunc("POST /api/v1/otlp/v1/metrics", rt.handleOTLPMetrics)
 	mux.HandleFunc("GET /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTracing))
 	mux.HandleFunc("POST /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleEnableTracing))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDisableTracing))

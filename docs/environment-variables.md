@@ -67,6 +67,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
+| `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
+| `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
@@ -200,6 +202,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
+| `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_ENGINE_TIMEOUT_SECONDS` | [`cloud.engine_timeout_seconds`](/runtime-settings#deploys) | `1800` |
+| `APP_CLOUD_MAX_DESTROYS` | [`cloud.max_destroys`](/runtime-settings#deploys) | `0` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_COMPOSE_REPO_DEPLOY_TIMEOUT` | [`compose.repo_deploy_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_COMPOSE_REPO_FILE_MAX_BYTES` | [`compose.repo_file_max_bytes`](/runtime-settings#deploys) | `524288` |
@@ -365,6 +370,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
+| `APP_OTLP_INGEST_ENABLED` | [`otlp.ingest_enabled`](/runtime-settings#observability) | `false` |
+| `APP_OTLP_INGEST_MAX_BODY_BYTES` | [`otlp.ingest_max_body_bytes`](/runtime-settings#observability) | `4194304` |
+| `APP_OTLP_INGEST_MAX_LINE_BYTES` | [`otlp.ingest_max_line_bytes`](/runtime-settings#observability) | `8192` |
+| `APP_OTLP_INGEST_MAX_RECORDS` | [`otlp.ingest_max_records`](/runtime-settings#observability) | `5000` |
 | `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2122 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2124 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1606,6 +1606,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/openapi.json", Ability: "AbilityRead", Group: "Other", Handler: "handleOpenAPISpec", Description: "Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx): AbilityRead, same tier as system/status, since this is the API surface's own shape, not resource data."},
+	{Method: "POST", Path: "/api/v1/otlp/v1/logs", Ability: "Public", Group: "Other", Handler: "handleOTLPLogs", Description: ""},
+	{Method: "POST", Path: "/api/v1/otlp/v1/metrics", Ability: "Public", Group: "Other", Handler: "handleOTLPMetrics", Description: ""},
 	{Method: "POST", Path: "/api/v1/otlp/v1/traces", Ability: "Public", Group: "Other", Handler: "handleOTLPTraces", Description: "Log drain (apps_log_drain.go): forwards an app's container logs to an external HTTP or syslog sink, additive to the existing node-local store. AbilityWriteSensitive for write/clear, the same tier as storage above (both configure where data leaves this control plane to); AbilityRead for the GET."},
 	{Method: "GET", Path: "/api/v1/package-registries", Ability: "AbilityRead", Group: "Other", Handler: "handleListPackageRegistries", Description: "Private package registries for builds: secrets mounted into Dockerfile builds, never returned by any route."},
 	{Method: "POST", Path: "/api/v1/package-registries", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreatePackageRegistry", Description: ""},

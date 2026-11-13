@@ -2346,6 +2346,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/incidents/{id}/postmortem/draft | AbilityWrite | handleDraftIncidentPostmortem |
 | PUT | /api/v1/incidents/{id}/postmortem | AbilityWrite | handleSaveIncidentPostmortem |
 | POST | /api/v1/incidents/{id}/postmortem/publish | AbilityWrite | handlePublishIncidentPostmortem |
+| POST | /api/v1/otlp/v1/logs | Public | handleOTLPLogs |
+| POST | /api/v1/otlp/v1/metrics | Public | handleOTLPMetrics |
 | POST | /mcp | Public |  |
 
 ## See also
