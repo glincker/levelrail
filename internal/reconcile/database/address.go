@@ -160,11 +160,16 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "password":
+		if SupportsRedisPassword(engine) {
+			return true
+		}
 		_, ok := PasswordSecretKey(engine)
 		return ok
-	case "tls_ca":
+	case "tls_ca", "ca":
 		// The server certificate is self-signed, so it is its own trust anchor.
 		return SupportsTLS(engine)
+	case "tls_port":
+		return SupportsTLS(engine) && engine != store.EnginePostgres
 	case "direct_url":
 		// Always bypasses the pooler, for migrations and session features.
 		return engine == store.EnginePostgres

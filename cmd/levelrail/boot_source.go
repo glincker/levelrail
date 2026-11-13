@@ -517,10 +517,15 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineRedis, store.EngineValkey, store.EngineKeyDB:
-		// Redis and Valkey need no credentials to reconcile at all (this package's
-		// own doc comment), so TLS is the only per-engine option it ever
-		// gets here.
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
+		creds, err := redisCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("holding redis for this reconcile pass, password unreadable",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+			opts = append(opts, database.WithRedisCredentialsBlocked())
+		} else if creds != nil {
+			opts = append(opts, database.WithRedisCredentials(creds))
+		}
 	case store.EngineMySQL:
 		creds, err := mysqlCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
@@ -570,6 +575,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 
 // Logs and skips on a transient error, like the other credential options.
 func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName, engine string) []database.Option {
+	optional := false
 	if engine != store.EnginePostgres {
 		mode, err := deps.db.GetDatabaseTLSMode(ctx, dbName)
 		if err != nil {
@@ -578,6 +584,9 @@ func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName, engine 
 		}
 		if !store.DatabaseTLSEffective(engine, mode) {
 			return []database.Option{database.WithTLSDisabled()}
+		}
+		if mode == store.DatabaseTLSModeOptional {
+			optional = true
 		}
 	}
 	material, err := tlsMaterialFor(ctx, deps.secretsManager, dbName)
@@ -589,7 +598,11 @@ func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName, engine 
 	if material == nil {
 		return nil
 	}
-	return []database.Option{database.WithTLS(material)}
+	opts := []database.Option{database.WithTLS(material)}
+	if optional {
+		opts = append(opts, database.WithTLSOptional())
+	}
+	return opts
 }
 
 // An empty nodeID means local. A disconnected node returns agent.ErrNodeNotRegistered, which callers skip for this pass.

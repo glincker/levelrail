@@ -16,6 +16,12 @@ var conventionalEnvPrefix = map[string]string{
 // no such convention or field is not supported for it.
 func ConventionalEnvVar(engine, field string) string {
 	prefix, ok := conventionalEnvPrefix[engine]
+	if !ok && store.IsRedisFamily(engine) {
+		prefix, ok = "REDIS", true
+		if engine == store.EngineValkey {
+			prefix = "VALKEY"
+		}
+	}
 	if !ok || !SupportsField(engine, field) {
 		return ""
 	}
@@ -27,7 +33,14 @@ func ConventionalEnvVar(engine, field string) string {
 		}
 		return prefix + "_URL"
 	case "password":
+		if store.IsRedisFamily(engine) {
+			return prefix + "_PASSWORD"
+		}
 		return prefix + "_API_KEY"
+	case "tls_port":
+		return prefix + "_TLS_PORT"
+	case "tls_ca", "ca":
+		return prefix + "_CA"
 	case "host":
 		return prefix + "_HOST"
 	case "port":

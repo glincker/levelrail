@@ -230,15 +230,23 @@ func runDatabasesNetworkScope(prog string, args []string, stdout, stderr io.Writ
 }
 
 func runDatabasesNetworkTLS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var require, optional, enable, disable bool
+	var require, optional, enable, disable, allowPlain bool
 	c, code, ok := parseDBAccess(prog, "databases network tls", "databases network tls <database> --require|--optional|--enable|--disable [flags]", args, 1, "a database name", stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.BoolVar(&require, "require", false, "refuse connections that do not use TLS")
 		fs.BoolVar(&optional, "optional", false, "accept connections with or without TLS")
 		fs.BoolVar(&enable, "enable", false, "turn server TLS on (MySQL, MariaDB, Redis)")
 		fs.BoolVar(&disable, "disable", false, "turn server TLS off (MySQL, MariaDB, Redis)")
+		fs.BoolVar(&allowPlain, "allow-plain", false, "Redis, Valkey, KeyDB: serve TLS next to the plain private port")
 	})
 	if !ok {
 		return code
+	}
+	if allowPlain {
+		out, err := c.client.SetDatabaseTLSOptional(context.Background(), c.rest[0])
+		if err != nil {
+			return c.fail(fmt.Errorf("switch tls of database %q: %w", c.rest[0], err))
+		}
+		return c.result(out, func() { _, _ = fmt.Fprintf(stdout, "tls mode: %s\n", out.Mode) })
 	}
 	if enable != disable {
 		if require || optional {

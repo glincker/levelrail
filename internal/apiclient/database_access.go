@@ -355,6 +355,13 @@ func (c *Client) SetDatabaseTLSEnabled(ctx context.Context, name string, enabled
 	return out, err
 }
 
+// SetDatabaseTLSOptional calls PUT /api/v1/databases/{name}/tls with mode optional: TLS next to the plain port.
+func (c *Client) SetDatabaseTLSOptional(ctx context.Context, name string) (DatabaseTLSToggle, error) {
+	var out DatabaseTLSToggle
+	err := c.do(ctx, http.MethodPut, dbPath(name, "/tls"), map[string]any{"enabled": true, "mode": "optional"}, &out)
+	return out, err
+}
+
 // MakeDatabasePrivate calls POST /api/v1/databases/{name}/network/make-private.
 func (c *Client) MakeDatabasePrivate(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodPost, dbPath(name, "/network/make-private"), nil, nil)

@@ -64,6 +64,10 @@ type databaseResource struct {
 	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled is computed on read and not settable, since TLS activates automatically at creation.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// TLS and Auth are request-only create options for Redis, Valkey and KeyDB:
+	// tls is required, optional or off, auth is auto (generate a sealed password) or none.
+	TLS  string `json:"tls,omitempty"`
+	Auth string `json:"auth,omitempty"`
 	// PoolerEnabled is response-only; set it via POST and DELETE .../pooler.
 	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
 	// PoolerPoolSize and PoolerMaxClientConn are response-only per-database overrides.
@@ -283,6 +287,10 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusBadRequest, err.Error())
 		return false
 	}
+	if err := validateCacheAccess(req.Engine, req.TLS, req.Auth); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return false
+	}
 	if choice, ok := validExistingVolume(req.ExistingVolume); ok {
 		req.ExistingVolume = choice
 	} else {
@@ -336,6 +344,10 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	defer quotaRelease()
 
+	if !rt.applyCacheAccessAtCreate(w, r, req) {
+		return false
+	}
+	req.TLS, req.Auth = "", ""
 	if err := rt.insertDesiredDatabase(r.Context(), req.toDesiredDatabase()); err != nil {
 		if errors.Is(err, store.ErrDatabaseExists) {
 			writeError(w, http.StatusConflict, "a database with this name already exists")

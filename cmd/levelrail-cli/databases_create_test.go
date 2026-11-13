@@ -151,3 +151,19 @@ func TestRunDatabasesCreate_PositionalNameGetsHint(t *testing.T) {
 		t.Fatalf("exit = %d stderr = %q, want a --name hint", got, stderr.String())
 	}
 }
+
+func TestPlanDatabaseCreateCacheAccess(t *testing.T) {
+	plan, err := planDatabaseCreate(createDatabaseFlags{name: "c", engine: "redis", version: "7", tls: "optional", auth: "auto"})
+	if err != nil || plan.TLS != "optional" || plan.Auth != "auto" {
+		t.Fatalf("plan = %+v, %v", plan, err)
+	}
+	for _, f := range []createDatabaseFlags{
+		{name: "c", engine: "postgres", version: "16", auth: "auto"},
+		{name: "c", engine: "redis", version: "7", tls: "maybe"},
+		{name: "c", engine: "redis", version: "7", auth: "yes"},
+	} {
+		if _, err := planDatabaseCreate(f); err == nil {
+			t.Fatalf("%+v: want a validation error", f)
+		}
+	}
+}

@@ -12,6 +12,8 @@ const (
 	DatabaseTLSModeDefault = "default"
 	DatabaseTLSModeOn      = "on"
 	DatabaseTLSModeOff     = "off"
+	// DatabaseTLSModeOptional serves TLS next to the plain port, for Redis-family engines.
+	DatabaseTLSModeOptional = "optional"
 )
 
 // GetDatabaseTLSMode returns a database's TLS mode, or default when none was set.
@@ -30,9 +32,9 @@ func (db *DB) GetDatabaseTLSMode(ctx context.Context, database string) (string, 
 // SetDatabaseTLSMode stores a database's TLS mode.
 func (db *DB) SetDatabaseTLSMode(ctx context.Context, database, mode string) error {
 	switch mode {
-	case DatabaseTLSModeDefault, DatabaseTLSModeOn, DatabaseTLSModeOff:
+	case DatabaseTLSModeDefault, DatabaseTLSModeOn, DatabaseTLSModeOff, DatabaseTLSModeOptional:
 	default:
-		return fmt.Errorf("store: database tls mode %q is not default, on or off", mode)
+		return fmt.Errorf("store: database tls mode %q is not default, on, optional or off", mode)
 	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO database_tls_settings (database_name, mode, updated_at)
@@ -48,7 +50,7 @@ func (db *DB) SetDatabaseTLSMode(ctx context.Context, database, mode string) err
 // DatabaseTLSEffective reports whether a database of engine runs TLS under mode.
 func DatabaseTLSEffective(engine, mode string) bool {
 	switch mode {
-	case DatabaseTLSModeOn:
+	case DatabaseTLSModeOn, DatabaseTLSModeOptional:
 		return true
 	case DatabaseTLSModeOff:
 		return false

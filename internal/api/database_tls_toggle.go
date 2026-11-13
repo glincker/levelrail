@@ -22,6 +22,8 @@ type databaseTLSValueDeleter interface {
 
 type databaseTLSToggleRequest struct {
 	Enabled bool `json:"enabled"`
+	// Mode "optional" serves TLS next to the plain port (Redis, Valkey, KeyDB) and implies enabled.
+	Mode string `json:"mode,omitempty"`
 }
 
 type databaseTLSToggleResponse struct {
@@ -69,9 +71,23 @@ func (rt *Router) handleSetDatabaseTLSEnabled(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadRequest, "TLS can be switched for MySQL, MariaDB, MongoDB, Redis, Valkey and KeyDB databases only")
 		return
 	}
+	if req.Mode != "" && req.Mode != store.DatabaseTLSModeOptional {
+		writeError(w, http.StatusBadRequest, "mode must be optional, or omit it and use enabled")
+		return
+	}
+	if req.Mode == store.DatabaseTLSModeOptional {
+		if !database.SupportsRedisPassword(d.Engine) {
+			writeError(w, http.StatusBadRequest, "optional TLS is available for Redis, Valkey and KeyDB databases only")
+			return
+		}
+		req.Enabled = true
+	}
 	mode := store.DatabaseTLSModeOff
 	if req.Enabled {
 		mode = store.DatabaseTLSModeOn
+		if req.Mode == store.DatabaseTLSModeOptional {
+			mode = store.DatabaseTLSModeOptional
+		}
 	}
 	if !req.Enabled {
 		del, canDelete := rt.secrets.(databaseTLSValueDeleter)

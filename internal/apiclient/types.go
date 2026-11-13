@@ -1704,6 +1704,10 @@ type DatabaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// TLS and Auth are request-only create options for Redis, Valkey and KeyDB:
+	// tls is required, optional or off; auth is auto or none.
+	TLS  string `json:"tls,omitempty"`
+	Auth string `json:"auth,omitempty"`
 	// AutoPlaced mirrors internal/api's databaseResource.AutoPlaced: see
 	// AppResource's identically-named field doc comment.
 	AutoPlaced bool `json:"auto_placed,omitempty"`

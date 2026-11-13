@@ -551,3 +551,39 @@ func TestController_Reconcile_DatabaseEnv_Memcached_ServerList(t *testing.T) {
 	c, rt := newDatabaseEnvController(desired, dbStore, nil)
 	reconcileAndAssertEnv(t, c, rt, map[string]string{"MEMCACHED_SERVERS": "db-cache:11211"})
 }
+
+func TestController_Reconcile_DatabaseEnv_RedisPasswordAndHost(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"cache": {Name: "cache", Engine: store.EngineRedis},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"REDIS_URL":      {Database: "cache", Field: "url"},
+			"REDIS_PASSWORD": {Database: "cache", Field: "password"},
+			"REDIS_PORT":     {Database: "cache", Field: "port"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"cache/" + database.RedisPasswordEnvKey: "s3cret",
+	})
+
+	reconcileAndAssertEnv(t, c, rt, map[string]string{
+		"REDIS_URL":      "redis://:s3cret@db-cache:6379",
+		"REDIS_PASSWORD": "s3cret",
+		"REDIS_PORT":     "6379",
+	})
+}
+
+func TestController_Reconcile_DatabaseEnv_RedisPasswordEmptyWhenUnset(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"cache": {Name: "cache", Engine: store.EngineRedis},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{"REDIS_PASSWORD": {Database: "cache", Field: "password"}},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, nil)
+
+	reconcileAndAssertEnv(t, c, rt, map[string]string{"REDIS_PASSWORD": ""})
+}
