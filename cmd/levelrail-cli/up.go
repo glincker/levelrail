@@ -150,6 +150,9 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 				_, _ = fmt.Fprintf(stdout, "%s\n", result.URL)
 			}
 			printUpWaitVerdict(stderr, &result)
+			if result.Status == apiclient.DeployOutcomeHealthy {
+				printGitSourceHint(ctx, client, prog, result.App, gitSrc.detectedGit, lookupEnv, stderr)
+			}
 			return
 		}
 		if result.URL != "" {

@@ -8,13 +8,13 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -1194,22 +1194,17 @@ func toPublishedPorts(in []spec.PublishedPort) []publishedPort {
 	return out
 }
 
-// scpRepoURL matches host:path remotes such as git@github.com:org/repo.
-var scpRepoURL = regexp.MustCompile(`^(?:[A-Za-z0-9._-]+@)?([A-Za-z0-9.-]+\.[A-Za-z]{2,}):([^/\s][^\s]*)$`)
-
 // normalizeRepoURL turns ssh://, git:// and host:path remotes into the https
-// form the git-source API accepts; anything else is returned unchanged.
+// form the git-source API accepts, keeping a ".git" suffix the remote had;
+// http(s) and unreadable input are returned unchanged.
 func normalizeRepoURL(raw string) string {
 	s := strings.TrimSpace(raw)
-	if m := scpRepoURL.FindStringSubmatch(s); m != nil && !strings.Contains(s, "://") {
-		return "https://" + m[1] + "/" + m[2]
-	}
-	if !strings.HasPrefix(s, "ssh://") && !strings.HasPrefix(s, "git://") {
+	r, err := reporef.Parse(s)
+	if err != nil || r.IsHTTP() {
 		return raw
 	}
-	u, err := url.Parse(s)
-	if err != nil || u.Hostname() == "" {
-		return raw
+	if strings.HasSuffix(s, ".git") {
+		return r.CloneURL() + ".git"
 	}
-	return "https://" + u.Hostname() + u.EscapedPath()
+	return r.CloneURL()
 }

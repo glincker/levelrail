@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
@@ -68,33 +68,9 @@ func webhookDeliveryID(h http.Header) string {
 	return ""
 }
 
-// repoIdentity reduces a repository URL or "owner/name" to a lowercase
-// path without scheme, host, credentials, ".git" suffix or trailing slash,
-// so https, ssh and scp-style forms and nested GitLab groups compare equal.
-func repoIdentity(raw string) string {
-	s := strings.TrimSpace(raw)
-	if s == "" {
-		return ""
-	}
-	if i := strings.Index(s, "://"); i >= 0 {
-		if u, err := url.Parse(s); err == nil {
-			s = u.Path
-		} else {
-			s = s[i+3:]
-			if j := strings.Index(s, "/"); j >= 0 {
-				s = s[j:]
-			}
-		}
-	} else if at := strings.Index(s, "@"); at >= 0 {
-		s = s[at+1:]
-		if c := strings.Index(s, ":"); c >= 0 {
-			s = s[c+1:]
-		}
-	}
-	s = strings.Trim(s, "/")
-	s = strings.TrimSuffix(s, ".git")
-	return strings.ToLower(strings.Trim(s, "/"))
-}
+// repoIdentity is reporef.Identity: https, ssh, scp and "owner/name" forms of
+// one repository, nested GitLab groups included, compare equal.
+func repoIdentity(raw string) string { return reporef.Identity(raw) }
 
 // pushRepoMatches reports whether the push is for the repository tracked.
 // A payload that names no repository is treated as a match, since there

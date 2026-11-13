@@ -95,8 +95,10 @@ type AppPlan struct {
 	GitBranch   string            `json:"git_branch,omitempty"`
 	BuildMethod string            `json:"build_method,omitempty"`
 	BuildPath   string            `json:"build_path,omitempty"`
-	Crons       []CronPlan        `json:"crons,omitempty"`
-	Policy      DomainPolicy      `json:"-"`
+	// BaseDirectory is the build context, relative to the repository root.
+	BaseDirectory string       `json:"base_directory,omitempty"`
+	Crons         []CronPlan   `json:"crons,omitempty"`
+	Policy        DomainPolicy `json:"-"`
 	// UnreadSecrets names secret variables the source would not reveal.
 	UnreadSecrets []string `json:"-"`
 }
@@ -289,7 +291,7 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 	item.Target = name
 	plan := AppPlan{SourceID: a.SourceID, SourceName: a.Name, Name: name, Port: a.Port, Replicas: a.Replicas,
 		Domains: a.Domains, MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs, Project: a.Project, Environment: a.Environment,
-		GitURL: a.GitURL, GitBranch: a.GitBranch, BuildMethod: a.BuildMethod, BuildPath: a.BuildPath,
+		GitURL: a.GitURL, GitBranch: a.GitBranch, BuildMethod: a.BuildMethod, BuildPath: a.BuildPath, BaseDirectory: a.Build.BaseDirectory,
 		Labels: map[string]string{LabelSourceID: key, LabelSourcePlatform: string(platform), LabelSourceName: a.Name}}
 	attention := func(reason, manual string) {
 		item.Status = StatusNeedsAttention

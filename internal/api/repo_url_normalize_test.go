@@ -8,6 +8,8 @@ func TestNormalizePastedRepoURL(t *testing.T) {
 		{"https://github.com/acme/shop.git/", "https://github.com/acme/shop", "", ""},
 		{"git@github.com:acme/shop.git", "https://github.com/acme/shop", "", ""},
 		{"ssh://git@gitlab.com/acme/shop.git", "https://gitlab.com/acme/shop", "", ""},
+		{"ssh://git@git.example.com:2222/acme/shop.git", "https://git.example.com/acme/shop", "", ""},
+		{"git@gitlab.com:group/sub/shop.git", "https://gitlab.com/group/sub/shop", "", ""},
 		{"https://github.com/acme/shop/tree/dev/apps/web?tab=1", "https://github.com/acme/shop", "dev", "apps/web"},
 		{"https://gitea.example.com/acme/shop#readme", "https://gitea.example.com/acme/shop", "", ""},
 	}
