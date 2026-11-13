@@ -319,6 +319,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "config":
 		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mcp":
+		return runMCP(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docs":
 		return runDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
@@ -565,6 +567,7 @@ Usage:
   %[1]s edit app <name> [--yes]                                edit the app document in $EDITOR and apply it
   %[1]s port-forward <app|db/name> [LOCAL:]REMOTE              friendly alias over the app and database tunnels
   %[1]s cp <app/volume:path> <local>                           copy a file to or from an app volume
+  %[1]s mcp add <client> [--yes] [--dry-run]                  add the MCP server to a client config, token by env reference
   %[1]s docs [--format markdown|json] [--out-dir DIR]        dump the command tree with help text, offline
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
