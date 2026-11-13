@@ -93,6 +93,7 @@ func (p NetworkPolicy) Denies(addr string) bool {
 }
 
 // SandboxLimits bound one step. Values come from runtime settings; zero refuses.
+// WorkTmpMB is the free space the run directory filesystem must have; StateTmpMB sizes /tmp.
 type SandboxLimits struct {
 	MemoryMB   int
 	CPUs       float64
@@ -111,12 +112,14 @@ type CredentialFile struct {
 
 // SandboxInput describes one step. Nothing in it may carry a secret value.
 type SandboxInput struct {
-	Runtime    string
-	Image      string
-	User       string
-	Name       string
-	Step       Step
-	ModuleDir  string
+	Runtime   string
+	Image     string
+	User      string
+	Name      string
+	Step      Step
+	ModuleDir string
+	// RunDir is the private per-run host directory; its work and state subdirs are shared by every step.
+	RunDir     string
 	TofuBinary string
 	PluginDir  string
 	Credential CredentialFile
@@ -125,10 +128,11 @@ type SandboxInput struct {
 	Env        map[string]string
 }
 
-// Mount is a read-only bind mount.
+// Mount is a bind mount, read-only unless ReadWrite is set for the run directory.
 type Mount struct {
-	Source string
-	Target string
+	Source    string
+	Target    string
+	ReadWrite bool
 }
 
 // Tmpfs is an in-memory mount private to the step.
@@ -213,6 +217,12 @@ func BuildSandboxSpec(in SandboxInput) (SandboxSpec, error) {
 	}
 	credTarget := SandboxCredentialDir + "/credential"
 	mounts = append(mounts, Mount{Source: in.Credential.HostPath, Target: credTarget})
+	if err := checkRunDir(in.RunDir, in.ModuleDir, in.Credential.HostPath); err != nil {
+		return SandboxSpec{}, err
+	}
+	mounts = append(mounts,
+		Mount{Source: filepath.Join(in.RunDir, RunWorkSubdir), Target: SandboxWorkDir, ReadWrite: true},
+		Mount{Source: filepath.Join(in.RunDir, RunStateSubdir), Target: SandboxStateDir, ReadWrite: true})
 	for _, m := range mounts {
 		if err := checkMountSource(m.Source); err != nil {
 			return SandboxSpec{}, err
@@ -254,8 +264,6 @@ func BuildSandboxSpec(in SandboxInput) (SandboxSpec, error) {
 		NetworkFlags: in.Network.RunFlags(),
 		Mounts:       mounts,
 		Tmpfs: []Tmpfs{
-			{Target: SandboxWorkDir, Options: "rw,nosuid,nodev,size=" + strconv.Itoa(l.WorkTmpMB) + "m" + owner},
-			{Target: SandboxStateDir, Options: "rw,noexec,nosuid,nodev,size=" + strconv.Itoa(l.StateTmpMB) + "m" + owner},
 			{Target: "/tmp", Options: "rw,noexec,nosuid,nodev,size=" + strconv.Itoa(l.StateTmpMB) + "m" + owner},
 		},
 		Env:        env,
@@ -263,6 +271,23 @@ func BuildSandboxSpec(in SandboxInput) (SandboxSpec, error) {
 		Entrypoint: SandboxTofuPath,
 		Args:       args,
 	}, nil
+}
+
+// checkRunDir keeps the writable run dir apart from the read-only module and credential mounts,
+// so a step can never gain write access to either through an overlapping path.
+func checkRunDir(run, module, cred string) error {
+	if run == "" || !filepath.IsAbs(run) || filepath.Clean(run) != run || run == "/" {
+		return fmt.Errorf("%w: run dir must be a clean absolute path", ErrSandboxSpec)
+	}
+	for _, other := range []string{module, cred} {
+		if other == "" {
+			continue
+		}
+		if other == run || strings.HasPrefix(other, run+"/") || strings.HasPrefix(run, other+"/") {
+			return fmt.Errorf("%w: run dir must not overlap the module or credential mounts", ErrSandboxSpec)
+		}
+	}
+	return nil
 }
 
 // checkMountSource refuses relative paths, the host root and any container runtime socket.
@@ -324,7 +349,11 @@ func (s SandboxSpec) Argv() []string {
 	)
 	argv = append(argv, s.NetworkFlags...)
 	for _, m := range s.Mounts {
-		argv = append(argv, "--mount=type=bind,source="+m.Source+",target="+m.Target+",readonly")
+		flag := "--mount=type=bind,source=" + m.Source + ",target=" + m.Target
+		if !m.ReadWrite {
+			flag += ",readonly"
+		}
+		argv = append(argv, flag)
 	}
 	for _, t := range s.Tmpfs {
 		argv = append(argv, "--tmpfs="+t.Target+":"+t.Options)

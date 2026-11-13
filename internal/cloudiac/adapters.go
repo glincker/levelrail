@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/iac"
@@ -32,6 +33,38 @@ type DetailedPlanner interface {
 type CloudPlannerAdapter struct {
 	Engine   DetailedPlanner
 	Accounts AccountResolver
+	// Networks remembers planned CloudNetwork documents so an instance can be rendered with its network.
+	Networks *NetworkMemo
+}
+
+// NetworkMemo keeps the CloudNetwork specs seen in the current process, keyed by account and name.
+type NetworkMemo struct {
+	mu sync.Mutex
+	m  map[string]NetworkSpec
+}
+
+// Remember stores a network spec for later instance planning.
+func (n *NetworkMemo) Remember(account string, ns NetworkSpec) {
+	if n == nil {
+		return
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.m == nil {
+		n.m = map[string]NetworkSpec{}
+	}
+	n.m[account+"/"+ns.Name] = ns
+}
+
+// Lookup returns the remembered network of an account.
+func (n *NetworkMemo) Lookup(account, name string) (NetworkSpec, bool) {
+	if n == nil {
+		return NetworkSpec{}, false
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	ns, ok := n.m[account+"/"+name]
+	return ns, ok
 }
 
 var _ iac.CloudPlanner = CloudPlannerAdapter{}
@@ -58,9 +91,18 @@ func (a CloudPlannerAdapter) PlanCloud(r iac.CloudResource) (iac.CloudDiff, erro
 	switch r.Kind {
 	case iac.KindCloudNetwork:
 		cidr, _ := r.Spec["cidr"].(string)
-		oci.Networks = []NetworkSpec{{Name: r.Name, CIDR: cidr, IngressPorts: ingressPorts(r.Spec["ingress"])}}
+		ns := NetworkSpec{Name: r.Name, CIDR: cidr, IngressPorts: ingressPorts(r.Spec["ingress"])}
+		oci.Networks = []NetworkSpec{ns}
+		a.Networks.Remember(acct, ns)
 	case iac.KindCloudBucket:
 		oci.Buckets = []BucketSpec{{Name: r.Name}}
+	case iac.KindCloudInstance:
+		inst, ns, err := a.instanceSpec(acct, r)
+		if err != nil {
+			return iac.CloudDiff{}, err
+		}
+		// ADR 080: an instance references its network by name and is planned in one module with it.
+		oci.Networks, oci.Instances = []NetworkSpec{ns}, []InstanceSpec{inst}
 	default:
 		return iac.CloudDiff{}, fmt.Errorf("%s planning is not available yet", r.Kind)
 	}
@@ -75,8 +117,41 @@ func (a CloudPlannerAdapter) PlanCloud(r iac.CloudResource) (iac.CloudDiff, erro
 	return foldDiff(pr), nil
 }
 
+// Default flexible shapes per architecture; spec.shape.name overrides them.
+const (
+	shapeARM = "VM.Standard.A1.Flex"
+	shapeX86 = "VM.Standard.E5.Flex"
+)
+
+func (a CloudPlannerAdapter) instanceSpec(acct string, r iac.CloudResource) (InstanceSpec, NetworkSpec, error) {
+	netName, _ := r.Spec["network"].(string)
+	if netName == "" {
+		return InstanceSpec{}, NetworkSpec{}, fmt.Errorf("spec.network is required")
+	}
+	ns, ok := a.Networks.Lookup(acct, netName)
+	if !ok {
+		return InstanceSpec{}, NetworkSpec{}, fmt.Errorf("CloudNetwork %q must be declared in the same apply, before the instance", netName)
+	}
+	shape, _ := r.Spec["shape"].(map[string]any)
+	cpu, _ := anyInt(shape["cpu"])
+	mem, _ := anyInt(shape["memoryGB"])
+	name, _ := shape["name"].(string)
+	if name == "" {
+		name = shapeX86
+		if arch, _ := shape["arch"].(string); arch == "arm64" {
+			name = shapeARM
+		}
+	}
+	ad, _ := r.Spec["availabilityDomain"].(string)
+	img, _ := r.Spec["image"].(string)
+	return InstanceSpec{Name: r.Name, Network: netName, Shape: name, OCPUs: cpu, MemoryGB: mem,
+		AvailabilityDomain: ad, ImageOCID: img}, ns, nil
+}
+
 func kindStack(k iac.Kind) string {
 	switch k {
+	case iac.KindCloudInstance:
+		return "inst"
 	case iac.KindCloudNetwork:
 		return "net"
 	case iac.KindCloudBucket:
@@ -90,18 +165,26 @@ func ingressPorts(v any) []int {
 	var out []int
 	for _, x := range list {
 		m, _ := x.(map[string]any)
-		switch p := m["port"].(type) {
-		case int:
+		if p, ok := anyInt(m["port"]); ok {
 			out = append(out, p)
-		case int64:
-			out = append(out, int(p))
-		case uint64:
-			out = append(out, int(p)) //nolint:gosec // RenderOCI rejects out of range ports
-		case float64:
-			out = append(out, int(p))
 		}
 	}
 	return out
+}
+
+// anyInt reads a decoded YAML or JSON number; RenderOCI range checks the result.
+func anyInt(v any) (int, bool) {
+	switch p := v.(type) {
+	case int:
+		return p, true
+	case int64:
+		return int(p), true
+	case uint64:
+		return int(p), true //nolint:gosec // range checked by RenderOCI
+	case float64:
+		return int(p), true
+	}
+	return 0, false
 }
 
 // actionRank orders actions so the most destructive one names the diff.

@@ -58,15 +58,18 @@ type TofuConfig struct {
 	Image     string
 	User      string
 	PluginDir string
-	// WorkBase is a host tmpfs; module, state and credential files live there only during a run.
+	// WorkBase holds the private run dirs; prefer a tmpfs, since the plaintext state and plan
+	// sit there for the run. A disk backed base is allowed but reported as a plan warning.
 	WorkBase string
-	Holder   string
-	Network  NetworkPolicy
-	Limits   SandboxLimits
-	Timeout  func() time.Duration
-	Policy   func() Policy
-	Cost     func() CostPolicy
-	Prices   PriceTable
+	// Live refreshes the sandbox knobs from runtime settings at the start of every run.
+	Live    func(TofuConfig) TofuConfig
+	Holder  string
+	Network NetworkPolicy
+	Limits  SandboxLimits
+	Timeout func() time.Duration
+	Policy  func() Policy
+	Cost    func() CostPolicy
+	Prices  PriceTable
 	// ExistingSpend reports the account's current monthly micros; nil means zero.
 	ExistingSpend func(ctx context.Context, account string) int64
 }
@@ -109,8 +112,9 @@ type PlanChange struct {
 
 // PlanResult is the typed plan with its cost verdict.
 type PlanResult struct {
-	Changes []PlanChange
-	Cost    CostEstimate
+	Changes  []PlanChange
+	Cost     CostEstimate
+	Warnings []string
 }
 
 // Summary is a one line count that never carries values.
@@ -129,7 +133,7 @@ func (e *TofuEngine) Plan(ctx context.Context, spec ModuleSpec, cred CredentialH
 	if err != nil {
 		return Result{}, err
 	}
-	res := Result{Step: StepPlan, Log: pr.Summary()}
+	res := Result{Step: StepPlan, Log: strings.Join(append([]string{pr.Summary()}, pr.Warnings...), "\n")}
 	for _, c := range pr.Changes {
 		res.Changes = append(res.Changes, Change{Address: c.Address, Action: c.Action})
 	}
@@ -154,15 +158,18 @@ func planErr(kind ErrorKind, msg string, err error) error {
 // The account is the credential handle id and the stack is the module name.
 func (e *TofuEngine) PlanDetailed(ctx context.Context, spec ModuleSpec, cred CredentialHandle) (_ PlanResult, err error) {
 	d := e.deps
-	if d.Runner == nil || d.Binary == nil || d.Locks == nil || d.State == nil || d.Creds == nil ||
-		e.cfg.Timeout == nil || e.cfg.Policy == nil || e.cfg.Cost == nil || e.cfg.Prices == nil || e.cfg.WorkBase == "" {
-		return PlanResult{}, planErr(ErrInternal, "the cloud engine is not fully configured", ErrNotConfigured)
+	cfg := e.cfg
+	if cfg.Live != nil {
+		cfg = cfg.Live(cfg)
+	}
+	if err := cfg.missing(d); err != nil {
+		return PlanResult{}, err
 	}
 	account, stack := cred.ID, spec.Name
 	if account == "" || stack == "" || len(spec.Files) == 0 {
 		return PlanResult{}, planErr(ErrInvalidSpec, "account, stack and module files are required", nil)
 	}
-	timeout := e.cfg.Timeout()
+	timeout := cfg.Timeout()
 	if timeout <= 0 {
 		return PlanResult{}, planErr(ErrInternal, "engine timeout is not set", ErrNotConfigured)
 	}
@@ -173,7 +180,7 @@ func (e *TofuEngine) PlanDetailed(ctx context.Context, spec ModuleSpec, cred Cre
 	if err != nil {
 		return PlanResult{}, planErr(ErrInternal, "OpenTofu binary is not available: "+err.Error(), err)
 	}
-	holder := e.cfg.Holder
+	holder := cfg.Holder
 	if holder == "" {
 		holder = "levelrail-plan"
 	}
@@ -194,28 +201,38 @@ func (e *TofuEngine) PlanDetailed(ctx context.Context, spec ModuleSpec, cred Cre
 	if err != nil {
 		return PlanResult{}, planErr(ErrCredential, "credential could not be resolved", err)
 	}
-	work, err := os.MkdirTemp(e.cfg.WorkBase, "tofu-")
+	run, err := NewRunDir(cfg.WorkBase, cfg.User)
 	if err != nil {
-		return PlanResult{}, planErr(ErrInternal, "work dir: "+err.Error(), err)
+		return PlanResult{}, planErr(ErrInternal, "run dir: "+err.Error(), err)
 	}
-	defer func() { _ = os.RemoveAll(work) }()
-	moduleDir := filepath.Join(work, "module")
+	defer run.Cleanup()
+	var warnings []string
+	if !run.OnTmpfs {
+		warnings = append(warnings, "warning: the cloud run directory is not on tmpfs, so the plaintext state touched disk during the run")
+	}
+	if free, ferr := FreeBytes(run.Root); ferr == nil && free < int64(cfg.Limits.WorkTmpMB)<<20 {
+		return PlanResult{}, planErr(ErrInternal, "not enough free space for the cloud run directory", ErrLowDisk)
+	}
+	moduleDir := run.ModuleDir()
 	if err := writeModule(moduleDir, spec.Files, state); err != nil {
 		return PlanResult{}, planErr(ErrInvalidSpec, err.Error(), err)
 	}
 	credMount := SandboxCredentialDir + "/credential"
-	files, err := cloudconn.MaterializeOracle(work, credMount, oc)
+	files, err := cloudconn.MaterializeOracle(run.Root, credMount, oc)
 	if err != nil {
 		return PlanResult{}, planErr(ErrCredential, "credential could not be prepared", err)
 	}
 	defer func() { _ = files.Close() }()
-	redact := func(s string) string { return RedactLog(files.Redact(s), string(state)) }
+	sensitive := SensitiveValues(state)
+	redact := func(s string) string {
+		return RedactStepOutput(s, stderrTailSize, files.Redact, sensitive, state)
+	}
 
 	sb, err := BuildSandboxSpec(SandboxInput{
-		Runtime: e.cfg.Runtime, Image: e.cfg.Image, User: e.cfg.User, Step: StepPlan,
-		ModuleDir: moduleDir, TofuBinary: bin, PluginDir: e.cfg.PluginDir,
+		Runtime: cfg.Runtime, Image: cfg.Image, User: cfg.User, Step: StepPlan,
+		ModuleDir: moduleDir, RunDir: run.Shared(), TofuBinary: bin, PluginDir: cfg.PluginDir,
 		Credential: CredentialFile{HostPath: files.Dir(), EnvName: credEnvName},
-		Network:    e.cfg.Network, Limits: e.cfg.Limits,
+		Network:    cfg.Network, Limits: cfg.Limits,
 		Env: map[string]string{"OCI_CONFIG_FILE": credMount + "/" + cloudconn.OracleConfigFileName},
 	})
 	if err != nil {
@@ -233,6 +250,9 @@ func (e *TofuEngine) PlanDetailed(ctx context.Context, spec ModuleSpec, cred Cre
 		step.Args = args
 		out, rerr := d.Runner.Run(ctx, step)
 		if rerr != nil {
+			if i == len(steps)-1 {
+				sensitive = append(sensitive, SensitiveValues(out.Stdout)...)
+			}
 			return PlanResult{}, stepFailure(ctx, args[1], out, rerr, redact)
 		}
 		if i == len(steps)-1 {
@@ -246,36 +266,61 @@ func (e *TofuEngine) PlanDetailed(ctx context.Context, spec ModuleSpec, cred Cre
 	if err != nil {
 		return PlanResult{}, planErr(ErrProvider, "plan output could not be read", err)
 	}
-	return e.judge(ctx, account, changes)
+	pr, err := e.judge(ctx, cfg, account, changes)
+	pr.Warnings = warnings
+	return pr, err
+}
+
+// missing names the first unset piece, so an operator knows which setting to fill.
+func (c TofuConfig) missing(d TofuDeps) error {
+	need := func(msg string) error { return planErr(ErrInternal, msg, ErrNotConfigured) }
+	switch {
+	case c.Image == "":
+		return need("the cloud engine is not configured: set the runtime setting cloud.engine_image to a digest pinned image")
+	case c.Network.Network == "":
+		return need("the cloud engine is not configured: set cloud.engine_network and cloud.engine_deny_addresses")
+	case c.Runtime == "":
+		return need("the cloud engine is not configured: no docker or podman runtime was found")
+	case d.Binary == nil:
+		return need("the cloud engine is not configured: the OpenTofu binary source is missing")
+	case d.Creds == nil:
+		return need("the cloud engine is not configured: no cloud credential resolver")
+	case d.State == nil:
+		return need("the cloud engine is not configured: the cloud state store is unavailable")
+	case d.Runner == nil || d.Locks == nil || c.Timeout == nil || c.Policy == nil || c.Cost == nil || c.Prices == nil || c.WorkBase == "":
+		return need("the cloud engine is not fully configured")
+	}
+	return nil
 }
 
 func stepFailure(ctx context.Context, name string, out RunOutput, err error, redact func(string) string) error {
 	if ctx.Err() != nil {
 		return planErr(ErrCanceled, name+" stopped: "+ctx.Err().Error(), ctx.Err())
 	}
-	tail := string(out.Stderr)
-	if len(tail) > stderrTailSize {
-		tail = tail[len(tail)-stderrTailSize:]
+	// Redact the whole capped stream before tailing, so the cut cannot split a secret.
+	full := out.Stderr
+	if limit := maxOutputBytes(); int64(len(full)) > limit {
+		full = full[int64(len(full))-limit:]
 	}
 	msg := name + " failed"
-	if t := strings.TrimSpace(redact(tail)); t != "" {
+	if t := redact(string(full)); t != "" {
 		msg += ": " + t
 	}
 	return planErr(ErrProvider, msg, errors.New(redact(err.Error())))
 }
 
 // judge applies the change set policy and the cost limit before a plan is returned.
-func (e *TofuEngine) judge(ctx context.Context, account string, changes []PlanChange) (PlanResult, error) {
+func (e *TofuEngine) judge(ctx context.Context, cfg TofuConfig, account string, changes []PlanChange) (PlanResult, error) {
 	rc := make([]ResourceChange, 0, len(changes))
 	for _, c := range changes {
 		rc = append(rc, ResourceChange{Address: c.Address, Type: c.Type, Action: c.Action})
 	}
 	var existing int64
-	if e.cfg.ExistingSpend != nil {
-		existing = e.cfg.ExistingSpend(ctx, account)
+	if cfg.ExistingSpend != nil {
+		existing = cfg.ExistingSpend(ctx, account)
 	}
-	est := e.cfg.Cost().Estimate(e.cfg.Prices, rc, existing)
-	refusals := append(e.cfg.Policy().Check(rc), est.Refusals...)
+	est := cfg.Cost().Estimate(cfg.Prices, rc, existing)
+	refusals := append(cfg.Policy().Check(rc), est.Refusals...)
 	res := PlanResult{Changes: changes, Cost: est}
 	if len(refusals) > 0 {
 		codes := make([]string, 0, len(refusals))

@@ -69,6 +69,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
 | `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
+| `APP_CLOUD_ENGINE_DENY_ADDRESSES` | [`cloud.engine_deny_addresses`](/runtime-settings#security) | empty |
+| `APP_CLOUD_ENGINE_IMAGE` | [`cloud.engine_image`](/runtime-settings#security) | empty |
+| `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
+| `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
@@ -204,7 +208,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_ENGINE_CPUS` | [`cloud.engine_cpus`](/runtime-settings#deploys) | `1` |
+| `APP_CLOUD_ENGINE_MEMORY_MB` | [`cloud.engine_memory_mb`](/runtime-settings#deploys) | `1024` |
+| `APP_CLOUD_ENGINE_PIDS` | [`cloud.engine_pids`](/runtime-settings#deploys) | `256` |
+| `APP_CLOUD_ENGINE_RUN_MIN_FREE_MB` | [`cloud.engine_run_min_free_mb`](/runtime-settings#deploys) | `512` |
 | `APP_CLOUD_ENGINE_TIMEOUT_SECONDS` | [`cloud.engine_timeout_seconds`](/runtime-settings#deploys) | `1800` |
+| `APP_CLOUD_ENGINE_TMP_MB` | [`cloud.engine_tmp_mb`](/runtime-settings#deploys) | `64` |
 | `APP_CLOUD_FETCH_MAX_MB` | [`cloud.fetch_max_mb`](/runtime-settings#deploys) | `256` |
 | `APP_CLOUD_FETCH_MIN_FREE_MB` | [`cloud.fetch_min_free_mb`](/runtime-settings#deploys) | `4096` |
 | `APP_CLOUD_FETCH_TIMEOUT_SECONDS` | [`cloud.fetch_timeout_seconds`](/runtime-settings#deploys) | `300` |

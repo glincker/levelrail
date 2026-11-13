@@ -22,6 +22,7 @@ func sandboxInput(t *testing.T) SandboxInput {
 		Name:       "lr-step-1",
 		Step:       StepPlan,
 		ModuleDir:  "/var/lib/levelrail/cloudiac/runs/r1/module",
+		RunDir:     "/var/lib/levelrail/cloudiac/runs/r1/shared",
 		TofuBinary: "/var/lib/levelrail/cloudiac/tofu/1.13.2/linux_amd64/tofu",
 		PluginDir:  "/var/lib/levelrail/cloudiac/plugins",
 		Credential: CredentialFile{HostPath: "/run/user/1000/lr-cred-r1/credential", EnvName: "OCI_CLI_KEY_FILE"},
@@ -47,8 +48,8 @@ func TestSandboxSpecFlags(t *testing.T) {
 		"--mount=type=bind,source=/var/lib/levelrail/cloudiac/tofu/1.13.2/linux_amd64/tofu,target=/opt/tofu/tofu,readonly",
 		"--mount=type=bind,source=/var/lib/levelrail/cloudiac/plugins,target=/opt/tofu/plugins,readonly",
 		"--mount=type=bind,source=/run/user/1000/lr-cred-r1/credential,target=/run/lr-cred/credential,readonly",
-		"--tmpfs=/work:rw,nosuid,nodev,size=512m,uid=65532,gid=65532,mode=0700",
-		"--tmpfs=/state:rw,noexec,nosuid,nodev,size=64m,uid=65532,gid=65532,mode=0700",
+		"--mount=type=bind,source=/var/lib/levelrail/cloudiac/runs/r1/shared/work,target=/work",
+		"--mount=type=bind,source=/var/lib/levelrail/cloudiac/runs/r1/shared/state,target=/state",
 		"--tmpfs=/tmp:rw,noexec,nosuid,nodev,size=64m,uid=65532,gid=65532,mode=0700",
 		"--env=HOME=/work", "--env=TF_DATA_DIR=/work/.tofu", "--env=TF_IN_AUTOMATION=1", "--env=TF_INPUT=0",
 		"--env=OCI_CLI_KEY_FILE=/run/lr-cred/credential", "--env=TF_PLUGIN_CACHE_DIR=/opt/tofu/plugins",
@@ -106,6 +107,10 @@ func TestSandboxRefusesUnsafeInput(t *testing.T) {
 		"tf env override":   func(in *SandboxInput) { in.Env = map[string]string{"TF_CLI_ARGS": "-auto-approve"} },
 		"bad cred env":      func(in *SandboxInput) { in.Credential.EnvName = "a=b" },
 		"no credential":     func(in *SandboxInput) { in.Credential.HostPath = "" },
+		"no run dir":        func(in *SandboxInput) { in.RunDir = "" },
+		"run dir over cred": func(in *SandboxInput) { in.RunDir = "/run/user/1000/lr-cred-r1" },
+		"run dir in module": func(in *SandboxInput) { in.RunDir = in.ModuleDir + "/shared" },
+		"run dir in etc":    func(in *SandboxInput) { in.RunDir = "/etc/lr" },
 	}
 	for name, mut := range cases {
 		t.Run(name, func(t *testing.T) {

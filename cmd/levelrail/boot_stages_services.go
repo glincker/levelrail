@@ -9,12 +9,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/cloudiac"
 	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -243,7 +245,7 @@ func (s *bootState) wireRouter() {
 	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	setupIaCPlanHashKey(secretsManager)
-	setupCloudEngine(ctx, db, secretsManager, apiRouter.RuntimeSettings)
+	setupCloudEngine(ctx, db, secretsManager, apiRouter.RuntimeSettings, agentDataDir)
 	apiRouter.SetNodeHostReports(hostReports)
 	apiRouter.SetNodeOnboarding(s.onboardingReports, nodepreflight.ConfigFromEnv(os.LookupEnv))
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
@@ -506,8 +508,8 @@ func setupIaCPlanHashKey(sm *secrets.Manager) {
 const iacPlanHashKeyPurpose = "iac-plan-hash"
 
 // setupCloudEngine installs the cloud planner only with the experimental flag on.
-// The binary source, credentials and accounts are wired later, so plans fail as not configured.
-func setupCloudEngine(ctx context.Context, db *store.DB, sm *secrets.Manager, rs func() *runtimesettings.Service) {
+// Image, network and limits are read per run, so empty settings fail plans as not configured.
+func setupCloudEngine(ctx context.Context, db *store.DB, sm *secrets.Manager, rs func() *runtimesettings.Service, dataDir string) {
 	if !experimental.Enabled(experimental.Cloud) {
 		return
 	}
@@ -517,13 +519,43 @@ func setupCloudEngine(ctx context.Context, db *store.DB, sm *secrets.Manager, rs
 		}
 		return nil
 	}
-	deps := cloudiac.TofuDeps{Runner: cloudiac.ExecRunner{}, Locks: db}
+	accounts := cloudiac.ConnectionAccounts{Conns: &cloudconn.Service{Rows: db, Providers: cloudconn.DefaultRegistry()}}
+	if sm != nil {
+		accounts.Sealed = sm
+	}
+	deps := cloudiac.TofuDeps{Runner: cloudiac.ExecRunner{}, Locks: db, Creds: accounts}
 	if s := rs(); s != nil {
 		if st, err := cloudiac.NewStateStore(db, sm, int64(s.Int(ctx, runtimesettings.KeyCloudStateMaxKB))*1024); err == nil {
 			deps.State = st
 		}
 	}
-	cfg := cloudiac.SettingsConfig(cloudiac.TofuConfig{}, get)
+	engineDir := filepath.Join(dataDir, "cloudiac")
+	if filepath.IsAbs(engineDir) {
+		deps.Binary = &cloudiac.LiveFetcher{Base: cloudiac.FetchConfig{DataDir: engineDir}, Limits: cloudiac.FetchLimitsFrom(get)}
+	}
+	runtimeName := "docker"
+	if docker.DetectRuntimeSocket(os.LookupEnv).Kind == docker.RuntimeKindPodman {
+		runtimeName = "podman"
+	}
+	base := cloudRunBase(engineDir)
+	cfg := cloudiac.SettingsConfig(cloudiac.TofuConfig{WorkBase: base, Live: cloudiac.LiveSandbox(get, runtimeName)}, get)
 	eng := cloudiac.NewTofuEngine(cfg, deps)
-	cloudiac.InstallInto(true, cloudiac.CloudPlannerAdapter{Engine: eng}, cloudiac.PolicyAdapter{Policy: cfg.Policy})
+	planner := cloudiac.CloudPlannerAdapter{Engine: eng, Accounts: accounts, Networks: &cloudiac.NetworkMemo{}}
+	cloudiac.InstallInto(true, planner, cloudiac.PolicyAdapter{Policy: cfg.Policy})
+}
+
+// cloudRunBase prefers a tmpfs under /run so plaintext state never reaches disk; it falls back
+// to the data dir, and each plan then reports that its run dir was disk backed.
+func cloudRunBase(engineDir string) string {
+	if fi, err := os.Stat("/run"); err == nil && fi.IsDir() {
+		dir := "/run/levelrail-cloud"
+		if os.MkdirAll(dir, 0o700) == nil && os.Chmod(dir, 0o700) == nil { //nolint:gosec // a directory needs the search bit
+			return dir
+		}
+	}
+	dir := filepath.Join(engineDir, "runs")
+	if !filepath.IsAbs(dir) || os.MkdirAll(dir, 0o700) != nil {
+		return ""
+	}
+	return dir
 }

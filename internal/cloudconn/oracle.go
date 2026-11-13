@@ -522,3 +522,28 @@ func PolicyStatements(compartment, group string) ([]string, error) {
 	}
 	return out, nil
 }
+
+// SealedReader reads back a value SealOracleSecret stored; secrets.Manager satisfies it.
+type SealedReader interface {
+	Resolve(ctx context.Context, namespace, key string) (string, error)
+}
+
+// OpenOracleSealed opens the sealed bundle a static oracle connection references.
+// The returned error never carries the bundle or the reference value.
+func OpenOracleSealed(ctx context.Context, r SealedReader, c Connection) (OracleCredential, error) {
+	if r == nil {
+		return OracleCredential{}, invalid("no sealed secret store")
+	}
+	if c.Provider != ProviderOracle || c.AuthMethod != AuthStatic {
+		return OracleCredential{}, invalid("connection is not a static oracle connection")
+	}
+	ns, key, ok := strings.Cut(c.CredentialRef, "/")
+	if !ok || !namespaceRe.MatchString(ns) || !namespaceRe.MatchString(key) {
+		return OracleCredential{}, invalid("connection has no sealed credential reference")
+	}
+	raw, err := r.Resolve(ctx, ns, key)
+	if err != nil {
+		return OracleCredential{}, errors.New("cloudconn: sealed oracle credential could not be read")
+	}
+	return OracleFromTarget(Target{Connection: c, Credential: secretsource.NewValue([]byte(raw), "")})
+}

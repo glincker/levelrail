@@ -12,6 +12,15 @@ const (
 	KeyCloudFetchTimeoutSeconds   = "cloud.fetch_timeout_seconds"
 	KeyCloudAllowChecksumOnly     = "cloud.allow_checksum_only"
 	KeyCloudStateMaxKB            = "cloud.state_max_kb"
+	KeyCloudEngineImage           = "cloud.engine_image"
+	KeyCloudEngineUser            = "cloud.engine_user"
+	KeyCloudEngineNetwork         = "cloud.engine_network"
+	KeyCloudEngineDenyAddrs       = "cloud.engine_deny_addresses"
+	KeyCloudEngineMemoryMB        = "cloud.engine_memory_mb"
+	KeyCloudEngineCPUs            = "cloud.engine_cpus"
+	KeyCloudEnginePids            = "cloud.engine_pids"
+	KeyCloudEngineRunMinFreeMB    = "cloud.engine_run_min_free_mb"
+	KeyCloudEngineTmpMB           = "cloud.engine_tmp_mb"
 )
 
 func init() {
@@ -74,5 +83,55 @@ func init() {
 		CheckValue:  intRangeCheck(64, 65536),
 		Title:       "Cloud state size cap",
 		Description: "Largest cloud state one stack may store, in KB from 64 to 65536. A larger state is refused. The next save uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineImage, Category: CategorySecurity, Kind: KindString, Default: "", Env: "APP_CLOUD_ENGINE_IMAGE", Apply: ApplyLive,
+		Title:       "Cloud engine step image",
+		Description: "Container image each cloud engine step runs in, pinned as name@sha256:digest. Empty means the engine is not configured and every cloud plan fails with a clear message. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineUser, Category: CategorySecurity, Kind: KindString, Default: "65532:65532", Env: "APP_CLOUD_ENGINE_USER", Apply: ApplyLive,
+		Title:       "Cloud engine step user",
+		Description: "Numeric non-root uid:gid the cloud engine step runs as. The private run directory is handed to this user for the run. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineNetwork, Category: CategorySecurity, Kind: KindString, Default: "", Env: "APP_CLOUD_ENGINE_NETWORK", Apply: ApplyLive,
+		Title:       "Cloud engine step network",
+		Description: "Name of a dedicated, pre-created container network for cloud engine steps, firewalled from the deny list. Empty means the engine is not configured. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineDenyAddrs, Category: CategorySecurity, Kind: KindString, Default: "", Env: "APP_CLOUD_ENGINE_DENY_ADDRESSES", Apply: ApplyLive,
+		Title:       "Control plane addresses denied to cloud steps",
+		Description: "Comma separated addresses or CIDRs of the control plane that cloud engine steps must never reach, added to the builtin loopback and metadata deny list. Empty means the engine is not configured. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineMemoryMB, Category: CategoryDeploys, Kind: KindInt, Default: "1024", Env: "APP_CLOUD_ENGINE_MEMORY_MB", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(128, 65536),
+		Title:       "Cloud engine step memory",
+		Description: "Memory limit in MB for one cloud engine step, from 128 to 65536. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineCPUs, Category: CategoryDeploys, Kind: KindInt, Default: "1", Env: "APP_CLOUD_ENGINE_CPUS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(1, 64),
+		Title:       "Cloud engine step CPUs",
+		Description: "CPU limit for one cloud engine step, from 1 to 64. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEnginePids, Category: CategoryDeploys, Kind: KindInt, Default: "256", Env: "APP_CLOUD_ENGINE_PIDS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(32, 32768),
+		Title:       "Cloud engine step process limit",
+		Description: "Process limit for one cloud engine step, from 32 to 32768. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineRunMinFreeMB, Category: CategoryDeploys, Kind: KindInt, Default: "512", Env: "APP_CLOUD_ENGINE_RUN_MIN_FREE_MB", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(16, 1048576),
+		Title:       "Free space for a cloud engine run",
+		Description: "Free MB the private run directory filesystem must have before a cloud run starts, from 16 to 1048576. The next run uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudEngineTmpMB, Category: CategoryDeploys, Kind: KindInt, Default: "64", Env: "APP_CLOUD_ENGINE_TMP_MB", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(16, 4096),
+		Title:       "Cloud engine step scratch size",
+		Description: "Size in MB of the in-memory /tmp of one cloud engine step, from 16 to 4096. The next run uses a changed value.",
 	})
 }
