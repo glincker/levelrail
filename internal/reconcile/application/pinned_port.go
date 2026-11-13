@@ -323,8 +323,8 @@ func (c *Controller) abortHandoff(ctx context.Context, target string, released [
 	if len(released) == 0 {
 		// Stopped, not removed: a failed candidate must not stay Up, and the
 		// exited container keeps its output for the log collector.
-		if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil && state.Running {
-			_ = c.stopContainer(ctx, state.ID)
+		if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil {
+			c.parkFailedCandidate(ctx, state)
 		}
 		return cause
 	}
@@ -337,6 +337,15 @@ func (c *Controller) abortHandoff(ctx context.Context, target string, released [
 		return fmt.Errorf("%w (and the previous release could not be restored: %w)", cause, err)
 	}
 	return fmt.Errorf("%w (previous release restored, retrying after %s)", cause, c.effectivePinnedPortRetry())
+}
+
+// parkFailedCandidate stops a failed candidate and turns its Docker restart policy off, so a
+// policy of unless-stopped or always cannot bring it back between passes or after a daemon restart.
+func (c *Controller) parkFailedCandidate(ctx context.Context, state *docker.ContainerState) {
+	if syncer, ok := c.runtime.(docker.RestartPolicySyncer); ok {
+		_, _ = syncer.SyncRestartPolicy(ctx, state.ID, "no")
+	}
+	_ = c.stopContainer(ctx, state.ID)
 }
 
 // requiredSecretError is a declared required secret with no stored value.

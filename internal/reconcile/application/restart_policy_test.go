@@ -135,3 +135,23 @@ func TestRestartPolicy_SweepOffWhenSettingIsNo(t *testing.T) {
 		t.Fatalf("policy update calls = %d, want 0", rt.updates)
 	}
 }
+
+// A candidate that fails readiness while Docker's own policy keeps restarting it must be parked:
+// stopped and with its restart policy off.
+func TestRestartPolicy_FailedCandidateIsParked(t *testing.T) {
+	rt := &policyRuntime{fakeRuntime: newFakeRuntime(0), policies: map[string]string{}}
+	rt.seed("web-5222ac0e", true)
+	st, _ := rt.InspectByName(context.Background(), "web-5222ac0e")
+	rt.policies[st.ID] = "unless-stopped"
+	c := New("web", &fakeStore{svc: &store.DesiredService{Name: "web", Image: "img:v1"}}, rt)
+
+	c.parkFailedCandidate(context.Background(), st)
+
+	if rt.policies[st.ID] != "no" {
+		t.Fatalf("restart policy = %q, want no", rt.policies[st.ID])
+	}
+	after, _ := rt.InspectByName(context.Background(), "web-5222ac0e")
+	if after == nil || after.Running {
+		t.Fatalf("candidate = %+v, want stopped", after)
+	}
+}
