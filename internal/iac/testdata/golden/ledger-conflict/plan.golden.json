@@ -16,6 +16,7 @@
       "name": "frontend",
       "action": "error",
       "reason": "ledger conflict: Tag/frontend already exists and no stack owns it; pass adopt to bring it into stack shop-prod",
+      "code": "item_failed",
       "file": "docs.yaml",
       "line": 5
     },
@@ -68,6 +69,7 @@
       "name": "web",
       "action": "error",
       "reason": "ledger conflict: App/web is owned by stack shop-staging; change it there or release it first",
+      "code": "item_failed",
       "file": "docs.yaml",
       "line": 9
     },
@@ -77,6 +79,7 @@
       "scope": "web",
       "action": "error",
       "reason": "ledger conflict: app web is owned by stack shop-staging; a Pipeline on it belongs in that stack",
+      "code": "item_failed",
       "file": "docs.yaml",
       "line": 20
     }
@@ -88,5 +91,5 @@
     "noop": 1,
     "error": 3
   },
-  "hash": "a868b220c49c59ce"
+  "hash": "1e8ef921c8d41c20"
 }

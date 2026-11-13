@@ -13,13 +13,15 @@
       "kind": "App",
       "name": "a2",
       "action": "error",
-      "reason": "mass prune guard: this prune would delete 2 of the 3 resources stack shop-prod owns (limits: 10 items, 50%); pass allow_mass_prune to confirm"
+      "reason": "mass prune guard: this prune would delete 2 of the 3 resources stack shop-prod owns (limits: 10 items, 50%); pass allow_mass_prune to confirm",
+      "code": "item_failed"
     },
     {
       "kind": "App",
       "name": "a3",
       "action": "error",
-      "reason": "mass prune guard: this prune would delete 2 of the 3 resources stack shop-prod owns (limits: 10 items, 50%); pass allow_mass_prune to confirm"
+      "reason": "mass prune guard: this prune would delete 2 of the 3 resources stack shop-prod owns (limits: 10 items, 50%); pass allow_mass_prune to confirm",
+      "code": "item_failed"
     }
   ],
   "summary": {
@@ -29,5 +31,5 @@
     "noop": 1,
     "error": 2
   },
-  "hash": "6566504eb10ee6e6"
+  "hash": "9c36f32762280ab5"
 }

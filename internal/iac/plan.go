@@ -31,6 +31,8 @@ type Change struct {
 	Kept     []FieldChange `json:"kept,omitempty"`
 	Warnings []string      `json:"warnings,omitempty"`
 	Reason   string        `json:"reason,omitempty"`
+	// Code is the frozen machine code of a failed item; empty otherwise.
+	Code string `json:"code,omitempty"`
 	// DependsOn lists the resources this item reads from, applied first.
 	DependsOn []string `json:"dependsOn,omitempty"`
 	Denied    bool     `json:"denied,omitempty"`
@@ -102,6 +104,9 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 	sortItems(p.items)
 	plan := Plan{Source: opts.Source, Prune: opts.Prune, Changes: make([]Change, len(p.items))}
 	for i, it := range p.items {
+		if it.Action == ActionError && it.Code == "" {
+			it.Code = CodeItemFailed
+		}
 		plan.Changes[i] = it.Change
 		switch it.Action {
 		case ActionCreate:
@@ -152,7 +157,12 @@ func (p *planner) add(r *Resource, action Action, fields, kept []FieldChange, ex
 }
 
 func (p *planner) fail(r *Resource, format string, args ...any) {
+	p.failCode(r, CodeItemFailed, format, args...)
+}
+
+func (p *planner) failCode(r *Resource, code, format string, args ...any) {
 	it := p.add(r, ActionError, nil, nil, nil)
+	it.Code = code
 	it.Reason = fmt.Sprintf(format, args...)
 }
 
@@ -160,8 +170,10 @@ func (p *planner) deniedItem(r *Resource, key string) bool {
 	if err, ok := p.st.denied[key]; ok {
 		it := p.add(r, ActionError, nil, nil, nil)
 		if IsUnavailable(err) {
+			it.Code = CodeUnavailable
 			it.Reason = "not available on this control plane: " + err.Error()
 		} else {
+			it.Code = CodePermissionDenied
 			it.Reason = "not permitted: " + err.Error()
 			it.Denied = true
 		}

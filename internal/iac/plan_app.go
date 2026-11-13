@@ -70,14 +70,14 @@ func (p *planner) planApp(r *Resource) {
 	conns := desiredConns(f)
 	live, exists := p.st.apps[r.Name]
 	if _, denied := p.st.denied["jobs/"+r.Name]; denied && jobs != nil {
-		p.fail(r, "the jobs of app %s cannot be read: %v", r.Name, p.st.denied["jobs/"+r.Name])
+		p.failCode(r, CodeReadFailed, "the jobs of app %s cannot be read: %v", r.Name, p.st.denied["jobs/"+r.Name])
 		return
 	}
 	var setSecrets []string
 	for _, n := range r.SecretRefs {
 		if slices.Contains(r.ExistingSecrets, n) {
 			if !exists || !live.secrets[n] {
-				p.fail(r, "secretRef %s is marked existing, but app %s has no secret named %s in the store", n, r.Name, n)
+				p.failCode(r, CodeRefSecretMissing, "secretRef %s is marked existing, but app %s has no secret named %s in the store", n, r.Name, n)
 				return
 			}
 			continue
@@ -188,7 +188,7 @@ func livePlacement(live, want any) any {
 
 func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
 	if proj := stringField(f, "project"); proj != "" && !p.projectKnown(proj) {
-		p.fail(r, "project %q does not exist and is not declared in the files", proj)
+		p.failCode(r, CodeRefProjectMissing, "project %q does not exist and is not declared in the files", proj)
 		return false
 	}
 	env := stringField(f, "environment")
@@ -199,7 +199,7 @@ func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
 	_, live := p.st.envs[envKey(proj, env)]
 	_, declared := p.byKey[resourceKey(KindEnvironment, proj, env)]
 	if !live && !declared {
-		p.fail(r, "environment %q does not exist in project %q and is not declared in the files", env, proj)
+		p.failCode(r, CodeRefEnvironmentMissing, "environment %q does not exist in project %q and is not declared in the files", env, proj)
 		return false
 	}
 	return true
@@ -240,7 +240,7 @@ func (p *planner) refuseProtectedPrune(r *Resource) bool {
 	if r.Kind != KindApp || !p.st.protected[r.Name] {
 		return false
 	}
-	p.fail(r, "app %s is protected and cannot be pruned; unprotect it or declare it in the files", r.Name)
+	p.failCode(r, CodeProtectedResource, "app %s is protected and cannot be pruned; unprotect it or declare it in the files", r.Name)
 	return true
 }
 
