@@ -2,6 +2,7 @@ package cloudiac
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -36,10 +37,56 @@ type CloudPlannerAdapter struct {
 	Accounts AccountResolver
 }
 
+// SavedPlanRunner runs an approved saved plan; TofuEngine implements it.
+type SavedPlanRunner interface {
+	Apply(ctx context.Context, req ApplyRequest) (Result, error)
+	Destroy(ctx context.Context, req ApplyRequest) (Result, error)
+}
+
 var (
 	_ iac.CloudPlanner      = CloudPlannerAdapter{}
 	_ iac.CloudStackPlanner = CloudPlannerAdapter{}
+	_ iac.CloudReadiness    = CloudPlannerAdapter{}
+	_ iac.CloudApplier      = CloudPlannerAdapter{}
 )
+
+// CloudReady reports false until both the engine and the account resolver are set, so
+// even record-only kinds fail as unavailable instead of reporting unchanged.
+func (a CloudPlannerAdapter) CloudReady() bool { return a.Engine != nil && a.Accounts != nil }
+
+// ApplyCloud re-renders the account group of the target exactly as planned and runs the
+// saved plan the approval names; the engine refuses any other hash.
+func (a CloudPlannerAdapter) ApplyCloud(ctx context.Context, req iac.CloudApplyRequest) (iac.CloudApplyResult, error) {
+	runner, ok := a.Engine.(SavedPlanRunner)
+	if !ok || a.Accounts == nil {
+		return iac.CloudApplyResult{}, ErrNotConfigured
+	}
+	acct, _ := req.Target.Spec["account"].(string)
+	var idx []int
+	for i, r := range req.Group {
+		if g, _ := r.Spec["account"].(string); r.Kind != iac.KindCloudAccount && g == acct {
+			idx = append(idx, i)
+		}
+	}
+	if acct == "" || len(idx) == 0 {
+		return iac.CloudApplyResult{}, fmt.Errorf("no cloud documents for account %q", acct)
+	}
+	mod, info, _, err := a.renderGroup(ctx, StackName(req.Stack), acct, req.Group, idx)
+	if err != nil {
+		return iac.CloudApplyResult{}, err
+	}
+	ar := ApplyRequest{Spec: mod, Cred: info.Credential, PlanHash: req.PlanHash, ConfirmDestroy: req.Destroy}
+	run := runner.Apply
+	if req.Destroy {
+		run = runner.Destroy
+	}
+	res, err := run(ctx, ar)
+	out := iac.CloudApplyResult{Diverged: res.Diverged}
+	if q := (*StateQuarantine)(nil); errors.As(err, &q) {
+		out.Diverged, out.QuarantineID = true, q.ID
+	}
+	return out, err
+}
 
 // DefaultStack names the module when an apply source carries no name.
 const DefaultStack = "default"
@@ -111,43 +158,7 @@ func (a CloudPlannerAdapter) planGroup(stack, acct string, rs []iac.CloudResourc
 		return nil, ErrNotConfigured
 	}
 	ctx := context.Background()
-	info, err := a.Accounts.ResolveAccount(ctx, acct)
-	if err != nil {
-		return nil, err
-	}
-	oci := OCISpec{Name: stack, Region: info.Region, CompartmentOCID: info.CompartmentOCID}
-	owner := map[string]int{}
-	for n, i := range idx {
-		r := rs[i]
-		switch r.Kind {
-		case iac.KindCloudNetwork:
-			cidr, _ := r.Spec["cidr"].(string)
-			oci.Networks = append(oci.Networks, NetworkSpec{Name: r.Name, CIDR: cidr, IngressPorts: ingressPorts(r.Spec["ingress"])})
-			owner["network/"+tfName(r.Name)] = n
-		case iac.KindCloudBucket:
-			ns, _ := r.Spec["namespace"].(string)
-			if ns == "" {
-				return nil, fmt.Errorf("CloudBucket %q needs spec.namespace, the object storage namespace of the account", r.Name)
-			}
-			oci.Buckets = append(oci.Buckets, BucketSpec{Name: r.Name, Namespace: ns})
-			owner["bucket/"+tfName(r.Name)] = n
-		case iac.KindCloudInstance:
-			inst, err := instanceSpec(r)
-			if err != nil {
-				return nil, err
-			}
-			oci.Instances = append(oci.Instances, inst)
-			owner["instance/"+tfName(r.Name)] = n
-		default:
-			return nil, fmt.Errorf("%s planning is not available yet", r.Kind)
-		}
-	}
-	for _, inst := range oci.Instances {
-		if _, ok := owner["network/"+tfName(inst.Network)]; !ok {
-			return nil, fmt.Errorf("CloudInstance %q: CloudNetwork %q must be declared in the same stack and account", inst.Name, inst.Network)
-		}
-	}
-	mod, err := RenderOCI(oci)
+	mod, info, owner, err := a.renderGroup(ctx, stack, acct, rs, idx)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +178,52 @@ func (a CloudPlannerAdapter) planGroup(stack, acct string, rs []iac.CloudResourc
 	diffs := make([]iac.CloudDiff, len(idx))
 	for n := range idx {
 		diffs[n] = foldDiff(split[n])
+		diffs[n].PlanHash = pr.Hash
 	}
 	return diffs, nil
+}
+
+// renderGroup renders one account group into a module; plan and apply share it so the
+// module an approved plan runs against is the one it was made from.
+func (a CloudPlannerAdapter) renderGroup(ctx context.Context, stack, acct string, rs []iac.CloudResource, idx []int) (ModuleSpec, AccountInfo, map[string]int, error) {
+	info, err := a.Accounts.ResolveAccount(ctx, acct)
+	if err != nil {
+		return ModuleSpec{}, info, nil, err
+	}
+	oci := OCISpec{Name: stack, Region: info.Region, CompartmentOCID: info.CompartmentOCID}
+	owner := map[string]int{}
+	for n, i := range idx {
+		r := rs[i]
+		switch r.Kind {
+		case iac.KindCloudNetwork:
+			cidr, _ := r.Spec["cidr"].(string)
+			oci.Networks = append(oci.Networks, NetworkSpec{Name: r.Name, CIDR: cidr, IngressPorts: ingressPorts(r.Spec["ingress"])})
+			owner["network/"+tfName(r.Name)] = n
+		case iac.KindCloudBucket:
+			ns, _ := r.Spec["namespace"].(string)
+			if ns == "" {
+				return ModuleSpec{}, info, nil, fmt.Errorf("CloudBucket %q needs spec.namespace, the object storage namespace of the account", r.Name)
+			}
+			oci.Buckets = append(oci.Buckets, BucketSpec{Name: r.Name, Namespace: ns})
+			owner["bucket/"+tfName(r.Name)] = n
+		case iac.KindCloudInstance:
+			inst, err := instanceSpec(r)
+			if err != nil {
+				return ModuleSpec{}, info, nil, err
+			}
+			oci.Instances = append(oci.Instances, inst)
+			owner["instance/"+tfName(r.Name)] = n
+		default:
+			return ModuleSpec{}, info, nil, fmt.Errorf("%s planning is not available yet", r.Kind)
+		}
+	}
+	for _, inst := range oci.Instances {
+		if _, ok := owner["network/"+tfName(inst.Network)]; !ok {
+			return ModuleSpec{}, info, nil, fmt.Errorf("CloudInstance %q: CloudNetwork %q must be declared in the same stack and account", inst.Name, inst.Network)
+		}
+	}
+	mod, err := RenderOCI(oci)
+	return mod, info, owner, err
 }
 
 // addressOwner maps a module address to the document kind and name that rendered it.

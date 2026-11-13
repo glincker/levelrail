@@ -37,6 +37,8 @@ type Change struct {
 	LiveID string `json:"-"`
 	File   string `json:"file,omitempty"`
 	Line   int    `json:"line,omitempty"`
+	// CloudPlanHash names the sealed engine plan a cloud item runs; approval binds to it.
+	CloudPlanHash string `json:"cloudPlanHash,omitempty"`
 }
 
 // Key is the change's stable identity.
@@ -69,6 +71,8 @@ type item struct {
 	exec func(ctx context.Context, x *executor) error
 	// cloudType is the provider type of a cloud item, for policy checks only.
 	cloudType string
+	// pinned marks a cloud item taken from an approved plan; policy was judged at plan time.
+	pinned bool
 }
 
 type planner struct {
@@ -79,6 +83,8 @@ type planner struct {
 	items []*item
 	// cloudStack holds cloud documents planned together as one stack.
 	cloudStack []*Resource
+	// cloudRuns runs each approved engine plan once, however many items share it.
+	cloudRuns map[string]*cloudRun
 }
 
 // PlanFor computes the plan for resources against live state.

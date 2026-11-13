@@ -72,6 +72,8 @@ type stackApproveRequest struct {
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
 	// ConfirmStack is the stack name typed to allow a sole root user to approve their own change.
 	ConfirmStack string `json:"confirm_stack,omitempty"`
+	// ConfirmDestroy is the stack name typed to let the approved plan delete cloud resources.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 type stackRejectRequest struct {
@@ -291,12 +293,20 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		}
 		rev.RequesterUserID = owner
 	}
+	cloudPlan, isCloud := revisionCloudPlan(rev)
 	if !distinctApprover(caller, rev) {
 		if !rt.soloSelfApprove(r.Context(), caller, rev, s.Name, body.ConfirmStack) {
 			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
 			return
 		}
-		rt.auditStack(r, auditStackSoloSelfApprove, map[string]any{"stack": s.Name, "revision": rev.Number, "plan_hash": rev.PlanHash})
+		detail := map[string]any{"stack": s.Name, "revision": rev.Number, "plan_hash": rev.PlanHash}
+		if isCloud {
+			detail["kind"] = "cloud"
+		}
+		rt.auditStack(r, auditStackSoloSelfApprove, detail)
+	}
+	if isCloud && rt.cloudApprovalTooOld(r.Context(), w, rev) {
+		return
 	}
 	if body.ExpectedPlanHash != "" && body.ExpectedPlanHash != rev.PlanHash {
 		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, "the plan changed since it was reviewed; re-plan and request approval again", nil)
@@ -316,7 +326,8 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		NoDeploy: meta.NoDeploy, ContinueOnError: meta.ContinueOnError, AllowWeaken: meta.AllowWeaken, ExpectedPlanHash: rev.PlanHash,
 		GitRepo: rev.GitRepo, GitRef: rev.GitRef, GitSHA: rev.GitSHA, CIRunURL: rev.CIRunURL,
 	}
-	run := stackRun{stack: s, req: req, rollbackOf: rev.RollbackOf, action: auditStackApprove, pending: &rev}
+	run := stackRun{stack: s, req: req, rollbackOf: rev.RollbackOf, action: auditStackApprove, pending: &rev,
+		cloud: cloudApprovalOf(cloudPlan, body.ConfirmDestroy != "" && body.ConfirmDestroy == s.Name)}
 	if rev.RollbackOf > 0 {
 		run.warnings = []string{rollbackWarning}
 	}

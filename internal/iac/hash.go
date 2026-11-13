@@ -120,7 +120,8 @@ func cloudDigest(c Change) string {
 	raw, _ := json.Marshal(struct {
 		R string
 		F []FieldChange
-	}{c.Reason, c.Fields})
+		H string `json:",omitempty"`
+	}{c.Reason, c.Fields, c.CloudPlanHash})
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }

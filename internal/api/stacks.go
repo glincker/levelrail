@@ -745,6 +745,8 @@ type stackRun struct {
 	pending *store.StackRevisionRecord
 	// hashChecked means a first apply already compared expected_plan_hash before creating anything.
 	hashChecked bool
+	// cloud pins the approved cloud plan of a pending revision; nil refuses cloud writes.
+	cloud *iac.CloudApproval
 }
 
 func newHolder(c stackCaller) string {
@@ -870,6 +872,9 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	project := rt.projectName(ctx, stack.ProjectID)
 	res, opts, issues := req.iac(stack.Name, project, req.Prune).build()
 	opts = rt.belowRootOpts(r, opts)
+	if run.pending != nil {
+		opts.Cloud = run.cloud
+	}
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(stack.Name, issues))
 		return
@@ -956,6 +961,9 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.writeStackError(w, run.action, err)
 		return
 	}
+	if refuseUnapprovedCloud(w, run, plan) {
+		return
+	}
 	rev, ok := rt.startStackRevision(ctx, w, ss, run, caller, plan)
 	if !ok {
 		return
@@ -974,6 +982,8 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		stackBeforeApply()
 	}
 	applyCtx := iac.WithStackScope(leaseCtx, iac.StackScope{StackID: stack.ID, StackName: stack.Name, Revision: rev.Number})
+	cloudReport := &iac.CloudReport{}
+	applyCtx = iac.WithCloudReport(applyCtx, cloudReport)
 	out, aerr := iac.Apply(applyCtx, doer, res, opts, plan.Hash)
 	leaseLost := stopLease()
 	status := store.StackRevFailed
@@ -1004,7 +1014,9 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "status": status, "rollback_of": run.rollbackOf,
 		"counts": map[string]int{"create": plan.Summary.Create, "update": plan.Summary.Update, "delete": plan.Summary.Delete, "noop": plan.Summary.Noop, "error": plan.Summary.Error},
 	})
-	rt.emitStackOutcome(ctx, run, caller.name, plan, rev.Number, status, aerr)
+	if !rt.emitCloudDiverged(ctx, stack.Name, caller.name, rev.Number, cloudReport.Runs()) {
+		rt.emitStackOutcome(ctx, run, caller.name, plan, rev.Number, status, aerr)
+	}
 	if leaseLost {
 		writeIaCError(w, http.StatusConflict, iac.CodeStackLocked, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again", nil)
 		return

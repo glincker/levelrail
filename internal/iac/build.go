@@ -37,6 +37,8 @@ type Options struct {
 	NoDeploy bool
 	// ContinueOnError keeps applying after an item fails.
 	ContinueOnError bool
+	// Cloud is the approved cloud plan; without it every cloud write is refused.
+	Cloud *CloudApproval
 }
 
 var (

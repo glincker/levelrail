@@ -3,6 +3,7 @@ package iac
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -30,6 +31,8 @@ type CloudDiff struct {
 	// Type is the provider resource type, used by policy checks only.
 	Type  string
 	Attrs []CloudAttr
+	// PlanHash is the sealed engine plan this diff came from.
+	PlanHash string
 }
 
 // CloudPlanner computes the proposed change for a cloud document. The engine
@@ -116,7 +119,80 @@ func cloudDeps() (CloudPlanner, PolicyChecker) {
 	return cloudPlanner, cloudPolicy
 }
 
-var errCloudApply = errors.New("cloud apply is not available yet")
+// Frozen codes of the cloud apply path.
+const (
+	CodeApprovalRequired    = "approval_required"
+	CodeDestroyNotConfirmed = "destroy_not_confirmed"
+	CodeCloudPlanExpired    = "cloud_plan_expired"
+	CodeStateDiverged       = "state_diverged"
+)
+
+var (
+	errCloudApprovalRequired = errors.New(CodeApprovalRequired + ": cloud changes apply only from an approved revision")
+	errCloudDestroyConfirm   = errors.New(CodeDestroyNotConfirmed + ": a cloud delete needs confirm_destroy typed with the stack name")
+	errCloudNoApplier        = errors.New(CodeUnavailable + ": the cloud engine cannot apply on this server")
+)
+
+// IsCloudKind reports whether a kind is provisioned through the cloud engine.
+func IsCloudKind(k Kind) bool { return isCloudKind(k) }
+
+// CloudApproval is the approved plan an apply runs. Pins map an item key to the approved
+// change, so apply never re-plans and so never replaces the saved engine plan.
+type CloudApproval struct {
+	Pins           map[string]Change
+	ConfirmDestroy bool
+}
+
+// CloudApplyRequest asks the engine to run one approved saved plan of a stack.
+type CloudApplyRequest struct {
+	Stack    string
+	Target   CloudResource
+	Group    []CloudResource
+	PlanHash string
+	Destroy  bool
+}
+
+// CloudApplyResult reports a state the engine could not store; it never carries state.
+type CloudApplyResult struct {
+	Diverged     bool
+	QuarantineID int64
+}
+
+// CloudApplier runs a saved engine plan; a planner with an engine implements it.
+type CloudApplier interface {
+	ApplyCloud(ctx context.Context, req CloudApplyRequest) (CloudApplyResult, error)
+}
+
+// CloudRun is one engine run of an apply, for events: names and ids only.
+type CloudRun struct {
+	PlanHash     string
+	Items        []string
+	Diverged     bool
+	QuarantineID int64
+	Failed       bool
+}
+
+// CloudReport collects the engine runs of one apply.
+type CloudReport struct {
+	mu   sync.Mutex
+	runs []CloudRun
+}
+
+// Runs returns a copy of the recorded runs.
+func (r *CloudReport) Runs() []CloudRun {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]CloudRun(nil), r.runs...)
+}
+
+type cloudReportKey struct{}
+
+// WithCloudReport makes an apply record its engine runs into rep.
+func WithCloudReport(ctx context.Context, rep *CloudReport) context.Context {
+	return context.WithValue(ctx, cloudReportKey{}, rep)
+}
+
+type cloudRun struct{ err error }
 
 // secretKeyHints are substrings that mark an attribute path as secret.
 var secretKeyHints = []string{"password", "secret", "token", "private", "credential", "apikey", "api_key", "passphrase", "key_material", "user_data"}
@@ -158,6 +234,10 @@ func (p *planner) planCloud(r *Resource) {
 	planner, _ := cloudDeps()
 	if !cloudPlannerReady(planner) {
 		p.failCode(r, CodeUnavailable, "%s", cloudUnconfiguredReason)
+		return
+	}
+	if p.opts.Cloud != nil {
+		p.pinCloud(r)
 		return
 	}
 	if _, ok := planner.(CloudStackPlanner); ok {
@@ -214,12 +294,88 @@ func (p *planner) addCloudItem(r *Resource, diff CloudDiff, err error) {
 		fields = append(fields, maskAttr(a))
 	}
 	sort.Slice(fields, func(i, j int) bool { return fields[i].Path < fields[j].Path })
-	var exec func(ctx context.Context, x *executor) error
-	if action != ActionNoop {
-		exec = func(context.Context, *executor) error { return errCloudApply }
-	}
-	it := p.add(r, action, fields, nil, exec)
+	it := p.add(r, action, fields, nil, nil)
 	it.cloudType = diff.Type
+	if action != ActionNoop {
+		it.CloudPlanHash = diff.PlanHash
+		it.exec = p.cloudExec(it)
+	}
+}
+
+// pinCloud takes the item from the approved plan; a document absent from it is refused.
+func (p *planner) pinCloud(r *Resource) {
+	c, ok := p.opts.Cloud.Pins[r.Key()]
+	if !ok {
+		p.failCode(r, CodeApprovalRequired, "%s is not in the approved plan; plan and request approval again", r.Key())
+		return
+	}
+	fields := c.Fields
+	if fields == nil && c.Action != ActionError {
+		// A stored plan drops an empty field list; the hash saw an empty, not a nil, list.
+		fields = []FieldChange{}
+	}
+	it := p.add(r, c.Action, fields, nil, nil)
+	it.pinned, it.Code, it.Reason = true, c.Code, c.Reason
+	if c.Action != ActionNoop && c.Action != ActionError {
+		it.CloudPlanHash = c.CloudPlanHash
+		it.exec = p.cloudExec(it)
+	}
+}
+
+// cloudExec runs the approved engine plan of the item once per plan hash. Without an
+// approval, a hash or a typed destroy confirmation it refuses before the engine is called.
+func (p *planner) cloudExec(it *item) func(ctx context.Context, x *executor) error {
+	return func(ctx context.Context, _ *executor) error {
+		ap := p.opts.Cloud
+		if ap == nil || it.CloudPlanHash == "" {
+			return errCloudApprovalRequired
+		}
+		var names []string
+		destroy, anyDelete := true, false
+		for _, o := range p.items {
+			if o.CloudPlanHash != it.CloudPlanHash || o.exec == nil {
+				continue
+			}
+			names = append(names, string(o.Kind)+"/"+o.Name)
+			anyDelete = anyDelete || o.Action == ActionDelete
+			destroy = destroy && o.Action == ActionDelete
+		}
+		if anyDelete && !ap.ConfirmDestroy {
+			return errCloudDestroyConfirm
+		}
+		if p.cloudRuns == nil {
+			p.cloudRuns = map[string]*cloudRun{}
+		}
+		if run, ok := p.cloudRuns[it.CloudPlanHash]; ok {
+			return run.err
+		}
+		run := &cloudRun{}
+		p.cloudRuns[it.CloudPlanHash] = run
+		planner, _ := cloudDeps()
+		ap2, ok := planner.(CloudApplier)
+		if !ok || !cloudPlannerReady(planner) {
+			run.err = errCloudNoApplier
+			return run.err
+		}
+		var group []CloudResource
+		for _, r := range p.res {
+			if isCloudKind(r.Kind) {
+				group = append(group, CloudResource{Kind: r.Kind, Name: r.Name, Spec: r.Fields})
+			}
+		}
+		res, err := ap2.ApplyCloud(ctx, CloudApplyRequest{Stack: p.opts.Source, Group: group, PlanHash: it.CloudPlanHash, Destroy: destroy,
+			Target: CloudResource{Kind: it.Kind, Name: it.Name, Spec: it.res.Fields}})
+		if rep, _ := ctx.Value(cloudReportKey{}).(*CloudReport); rep != nil {
+			rep.mu.Lock()
+			rep.runs = append(rep.runs, CloudRun{PlanHash: it.CloudPlanHash, Items: names, Diverged: res.Diverged, QuarantineID: res.QuarantineID, Failed: err != nil})
+			rep.mu.Unlock()
+		}
+		if res.Diverged {
+			err = fmt.Errorf("%s: the cloud state could not be stored and was quarantined as %d: %w", CodeStateDiverged, res.QuarantineID, errors.Join(err))
+		}
+		run.err = err
+		return err
+	}
 }
 
 // applyCloudPolicy turns policy refusals into failed items with the frozen codes.
@@ -232,7 +388,7 @@ func (p *planner) applyCloudPolicy() {
 	var changes []CloudChange
 	byAddr := map[string]*item{}
 	for _, it := range p.items {
-		if !isCloudKind(it.Kind) || it.Action == ActionError {
+		if !isCloudKind(it.Kind) || it.Action == ActionError || it.pinned {
 			continue
 		}
 		act := string(it.Action)
