@@ -1,5 +1,6 @@
 // Command geniacref writes docs/iac/reference.md from the published IaC JSON
-// Schema, so the field reference cannot drift from the parser.
+// Schema and docs/iac/errors.md from the frozen error codes, so neither can
+// drift from the code.
 //
 // Usage (repo root): go run ./scripts/geniacref [-check]
 // With -check it exits non-zero when the committed page differs.
@@ -28,20 +29,31 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	page, err := render(raw)
+	ref, err := render(raw)
 	if err != nil {
 		fatal(err)
 	}
-	if *check {
-		cur, err := os.ReadFile(pagePath)
-		if err != nil || !bytes.Equal(cur, page) {
-			fmt.Fprintln(os.Stderr, pagePath+" is stale, run: go run ./scripts/geniacref")
-			os.Exit(1)
-		}
-		return
-	}
-	if err := os.WriteFile(pagePath, page, 0o600); err != nil {
+	errs, err := renderErrors(iac.AllCodes)
+	if err != nil {
 		fatal(err)
+	}
+	pages := map[string][]byte{pagePath: ref, errorsPagePath: errs}
+	stale := false
+	for path, page := range pages {
+		if *check {
+			cur, err := os.ReadFile(path) //nolint:gosec // fixed docs path
+			if err != nil || !bytes.Equal(cur, page) {
+				fmt.Fprintln(os.Stderr, path+" is stale, run: go run ./scripts/geniacref")
+				stale = true
+			}
+			continue
+		}
+		if err := os.WriteFile(path, page, 0o600); err != nil {
+			fatal(err)
+		}
+	}
+	if stale {
+		os.Exit(1)
 	}
 }
 
