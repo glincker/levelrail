@@ -308,6 +308,8 @@ func (rt *Router) writeStackError(w http.ResponseWriter, what string, err error)
 	switch {
 	case errors.Is(err, store.ErrStackNotFound), errors.Is(err, store.ErrStackRevisionNotFound):
 		writeIaCError(w, http.StatusNotFound, errorCodeForStatus(http.StatusNotFound), err.Error(), nil)
+	case errors.Is(err, iac.ErrPlanHashVersion):
+		writeIaCError(w, http.StatusConflict, iac.CodePlanHashVersion, err.Error(), nil)
 	case errors.Is(err, iac.ErrPlanChanged):
 		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
 	case errors.Is(err, iac.ErrStackLocked), errors.Is(err, iac.ErrStackPinned):
@@ -902,8 +904,8 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.writeStackError(w, run.action, fmt.Errorf("%w: it exceeds the mass-prune guard (APP_STACK_PRUNE_MAX_PERCENT, APP_STACK_PRUNE_MAX_COUNT); plan to review, then pass allow_mass_prune", iac.ErrPruneNotAllowed))
 		return
 	}
-	if req.ExpectedPlanHash != "" && req.ExpectedPlanHash != plan.Hash {
-		rt.writeStackError(w, run.action, iac.ErrPlanChanged)
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, plan); err != nil {
+		rt.writeStackError(w, run.action, err)
 		return
 	}
 	rev, ok := rt.startStackRevision(ctx, w, ss, run, caller, plan)

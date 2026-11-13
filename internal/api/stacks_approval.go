@@ -136,8 +136,8 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 		rt.writeStackError(w, run.action, fmt.Errorf("%w: it exceeds the mass-prune guard; plan to review, then pass allow_mass_prune", iac.ErrPruneNotAllowed))
 		return
 	}
-	if req.ExpectedPlanHash != "" && req.ExpectedPlanHash != plan.Hash {
-		rt.writeStackError(w, run.action, iac.ErrPlanChanged)
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, plan); err != nil {
+		rt.writeStackError(w, run.action, err)
 		return
 	}
 	caller := rt.stackCaller(r)

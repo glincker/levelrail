@@ -162,8 +162,10 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		plan := iac.PlanFor(st, res, opts)
-		if expected != "" && expected != plan.Hash {
-			writeIaCError(w, http.StatusConflict, iac.CodePlanStale, iac.ErrPlanChanged.Error(), nil)
+		if err := iac.CheckPlanHash(expected, plan); err != nil {
+			if !writePlanHashError(w, err) {
+				rt.internalError(w, "api: iac apply failed", err)
+			}
 			return
 		}
 		if !rt.refuseStackOwned(w, r, ss, res, plan) {
@@ -173,8 +175,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 		expected = plan.Hash
 	}
 	out, err := iac.Apply(r.Context(), rt.iacDoer(r), res, opts, expected)
-	if errors.Is(err, iac.ErrPlanChanged) {
-		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
+	if writePlanHashError(w, err) {
 		return
 	}
 	if err != nil {

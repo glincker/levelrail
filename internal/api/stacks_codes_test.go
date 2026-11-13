@@ -32,3 +32,34 @@ func TestStackErrorCodes(t *testing.T) {
 		}
 	}
 }
+
+func TestPlanHashVersionCodes(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	var plan iacPlanResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/plan", stackBody(t, stackTestDocs("ghcr.io/acme/web:1.2.3"), nil)), &plan); code != http.StatusOK || plan.Plan == nil {
+		t.Fatalf("plan: %d", code)
+	}
+	on := true
+	iac.SetV1HashAcceptedSource(func() bool { return on })
+	t.Cleanup(func() { iac.SetV1HashAcceptedSource(nil) })
+	apply := func(hash string, out *iacErrorBody) int {
+		body := stackBody(t, stackTestDocs("ghcr.io/acme/web:1.2.3"), map[string]any{"expected_plan_hash": hash})
+		return iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/apply", body), out)
+	}
+	var out iacErrorBody
+	if code := apply("deadbeefdeadbeef", &out); code != http.StatusConflict || out.Code != iac.CodePlanStale {
+		t.Fatalf("v1 mismatch on = %d %+v", code, out)
+	}
+	if code := apply("v2:wrong", &out); code != http.StatusConflict || out.Code != iac.CodePlanStale {
+		t.Fatalf("v2 mismatch = %d %+v", code, out)
+	}
+	on = false
+	out = iacErrorBody{}
+	if code := apply("deadbeefdeadbeef", &out); code != http.StatusConflict || out.Code != iac.CodePlanHashVersion {
+		t.Fatalf("v1 off = %d %+v", code, out)
+	}
+	on = true
+	if code := apply(iac.PlanHashV1(*plan.Plan), &iacErrorBody{}); code != http.StatusOK {
+		t.Fatalf("v1 hash accepted = %d", code)
+	}
+}

@@ -254,8 +254,7 @@ func (s *v2Server) applyMerged(w http.ResponseWriter, r *http.Request, fs v2Fiel
 		return
 	}
 	result, err := iac.Apply(ctx, s.rt.iacDoer(r), res, opts, plan.Hash)
-	if errors.Is(err, iac.ErrPlanChanged) {
-		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
+	if writePlanHashError(w, err) {
 		return
 	}
 	if err != nil {

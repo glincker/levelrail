@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -44,6 +45,19 @@ func iacIssuesOf(in []iac.Issue) []iacErrorIssue {
 // writeIaCInvalid answers a document that failed to parse or validate.
 func writeIaCInvalid(w http.ResponseWriter, in []iac.Issue) {
 	writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidDocument, "the documents have "+strconv.Itoa(len(in))+" problem(s)", iacIssuesOf(in))
+}
+
+// writePlanHashError answers a failed plan hash check and reports whether it did.
+func writePlanHashError(w http.ResponseWriter, err error) bool {
+	switch {
+	case errors.Is(err, iac.ErrPlanHashVersion):
+		writeIaCError(w, http.StatusConflict, iac.CodePlanHashVersion, err.Error(), nil)
+	case errors.Is(err, iac.ErrPlanChanged):
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
+	default:
+		return false
+	}
+	return true
 }
 
 // iacStatusCode maps a passed-through REST status to a frozen code.
