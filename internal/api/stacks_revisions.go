@@ -64,7 +64,7 @@ func (rt *Router) handleStackRevisions(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]stackRevisionSummary, 0, len(revs))
 	for _, v := range revs {
-		out = append(out, summarizeRevision(v))
+		out = append(out, rt.summarizeRevision(r.Context(), v))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"stack": s.Name, "pinned_revision": s.PinnedRevision, "revisions": out})
 }
@@ -100,7 +100,7 @@ func (rt *Router) handleStackRevision(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: stack revision documents unreadable", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, stackRevisionDetail{stackRevisionSummary: summarizeRevision(v), Files: files, Plan: v.PlanJSON, Result: v.ResultJSON})
+	writeJSON(w, http.StatusOK, stackRevisionDetail{stackRevisionSummary: rt.summarizeRevision(r.Context(), v), Files: files, Plan: v.PlanJSON, Result: v.ResultJSON})
 }
 
 // stackResources parses stored documents into resources keyed by identity.
@@ -273,6 +273,9 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) handleStackRollback(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
 		return

@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -26,8 +25,9 @@ import (
 )
 
 const (
-	defaultStackLockTTL = 10 * time.Minute
-	stackCIPrefix       = "ci:"
+	defaultStackLockTTL       = 10 * time.Minute
+	defaultStackRenewFraction = 3
+	stackCIPrefix             = "ci:"
 )
 
 // Audit action names for stack verbs.
@@ -84,11 +84,10 @@ func (rt *Router) stackStore() StackStore {
 func stackResourceFromPath(r *http.Request) string { return "stack:" + r.PathValue("name") }
 
 // stackLockRenewEvery is how often an apply renews its lease: the TTL divided
-// by APP_STACK_LOCK_RENEW_FRACTION (default 3), so one missed tick is survivable.
-func stackLockRenewEvery(ttl time.Duration) time.Duration {
-	fraction := 3
-	if n, err := strconv.Atoi(os.Getenv("APP_STACK_LOCK_RENEW_FRACTION")); err == nil && n >= 2 {
-		fraction = n
+// by the stacks.lock_renew_fraction setting (default 3), so one missed tick is survivable.
+func stackLockRenewEvery(ttl time.Duration, fraction int) time.Duration {
+	if fraction < 2 {
+		fraction = defaultStackRenewFraction
 	}
 	return ttl / time.Duration(fraction)
 }
@@ -98,13 +97,13 @@ var errStackLeaseLost = errors.New("the stack lease was lost during apply; anoth
 
 // keepStackLease renews the lease until stop is called and cancels the
 // returned context when a renewal finds the lease gone.
-func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, ttl time.Duration) (context.Context, func() bool) {
+func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, ttl time.Duration, fraction int) (context.Context, func() bool) {
 	lctx, cancel := context.WithCancelCause(ctx)
 	done := make(chan struct{})
 	finished := make(chan struct{})
 	go func() {
 		defer close(finished)
-		t := time.NewTicker(stackLockRenewEvery(ttl))
+		t := time.NewTicker(stackLockRenewEvery(ttl, fraction))
 		defer t.Stop()
 		for {
 			select {
@@ -132,11 +131,23 @@ func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, 
 // stackBeforeApply is a test seam that runs right before iac.Apply.
 var stackBeforeApply func()
 
-func stackLockTTL() time.Duration {
-	if d, err := time.ParseDuration(os.Getenv("APP_STACK_LOCK_TTL")); err == nil && d > 0 {
-		return d
+// stackLockTTL reads the live lease length; the registry seeds it from env.
+func (rt *Router) stackLockTTL(ctx context.Context) time.Duration {
+	if rt.runtimeSettings != nil {
+		if d := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyStackLockTTL); d > 0 {
+			return d
+		}
 	}
 	return defaultStackLockTTL
+}
+
+func (rt *Router) stackLockRenewFraction(ctx context.Context) int {
+	if rt.runtimeSettings != nil {
+		if n := rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackLockRenewFraction); n >= 2 {
+			return n
+		}
+	}
+	return defaultStackRenewFraction
 }
 
 func (rt *Router) stackHistoryLimit(ctx context.Context) int {
@@ -273,7 +284,7 @@ type stackDeleteResponse struct {
 
 func fmtStackTime(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 
-func summarizeRevision(v store.StackRevisionRecord) stackRevisionSummary {
+func (rt *Router) summarizeRevision(ctx context.Context, v store.StackRevisionRecord) stackRevisionSummary {
 	out := stackRevisionSummary{
 		Number: v.Number, Status: v.Status, PlanHash: v.PlanHash, RollbackOf: v.RollbackOf, IdempotencyKey: v.IdempotencyKey,
 		Actor: v.Actor, TokenID: v.TokenID, GitRepo: v.GitRepo, GitRef: v.GitRef, GitSHA: v.GitSHA, CIRunURL: v.CIRunURL,
@@ -283,7 +294,7 @@ func summarizeRevision(v store.StackRevisionRecord) stackRevisionSummary {
 		out.FinishedAt = fmtStackTime(*v.FinishedAt)
 	}
 	if v.Status == store.StackRevPendingApproval {
-		out.ExpiresAt = fmtStackTime(approvalExpiry(v))
+		out.ExpiresAt = fmtStackTime(rt.approvalExpiry(ctx, v))
 	}
 	out.Rejected = v.Status == store.StackRevFailed && revisionRejected(v.ResultJSON)
 	return out
@@ -736,6 +747,9 @@ func newHolder(c stackCaller) string {
 }
 
 func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
 		return
@@ -834,7 +848,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	}
 	if req.IdempotencyKey != "" {
 		if prev, found := rt.findStackRevisionByKey(ctx, ss, stack.ID, req.IdempotencyKey); found {
-			s := summarizeRevision(prev)
+			s := rt.summarizeRevision(ctx, prev)
 			writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 			return
 		}
@@ -842,7 +856,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 
 	if run.pending == nil {
 		if cur, same := rt.stackNoop(ctx, ss, run, res, opts, project, rt.iacDoer(r)); same {
-			s := summarizeRevision(cur)
+			s := rt.summarizeRevision(ctx, cur)
 			writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Noop: true, Warnings: run.warnings})
 			return
 		}
@@ -860,7 +874,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		next = revs[0].Number + 1
 	}
 	holder := newHolder(caller)
-	if _, err := ss.AcquireStackLock(ctx, stack.ID, holder, next, stackLockTTL(), time.Now()); err != nil {
+	if _, err := ss.AcquireStackLock(ctx, stack.ID, holder, next, rt.stackLockTTL(ctx), time.Now()); err != nil {
 		rt.writeStackError(w, run.action, err)
 		return
 	}
@@ -913,12 +927,12 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		return
 	}
 	if rev.Replayed {
-		s := summarizeRevision(rev)
+		s := rt.summarizeRevision(ctx, rev)
 		writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 		return
 	}
 
-	leaseCtx, stopLease := keepStackLease(lctx, ss, stack.ID, holder, stackLockTTL())
+	leaseCtx, stopLease := keepStackLease(lctx, ss, stack.ID, holder, rt.stackLockTTL(ctx), rt.stackLockRenewFraction(ctx))
 	if stackBeforeApply != nil {
 		stackBeforeApply()
 	}
@@ -964,7 +978,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	rev.Status = status
 	now := time.Now()
 	rev.FinishedAt = &now
-	s := summarizeRevision(rev)
+	s := rt.summarizeRevision(ctx, rev)
 	writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Result: &out, Warnings: warnings})
 }
 
@@ -1160,7 +1174,7 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	holder := newHolder(caller)
-	if _, err := ss.AcquireStackLock(r.Context(), s.ID, holder, s.PinnedRevision, stackLockTTL(), time.Now()); err != nil {
+	if _, err := ss.AcquireStackLock(r.Context(), s.ID, holder, s.PinnedRevision, rt.stackLockTTL(r.Context()), time.Now()); err != nil {
 		rt.writeStackError(w, "delete", err)
 		return
 	}

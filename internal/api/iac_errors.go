@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // iacErrorIssue is one located problem. File and line stay so existing
@@ -45,6 +47,20 @@ func iacIssuesOf(in []iac.Issue) []iacErrorIssue {
 // writeIaCInvalid answers a document that failed to parse or validate.
 func writeIaCInvalid(w http.ResponseWriter, in []iac.Issue) {
 	writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidDocument, "the documents have "+strconv.Itoa(len(in))+" problem(s)", iacIssuesOf(in))
+}
+
+// iacApplyEnabled reads the live kill switch; an unset service means enabled.
+func (rt *Router) iacApplyEnabled(ctx context.Context) bool {
+	return rt.runtimeSettings == nil || rt.runtimeSettings.Bool(ctx, runtimesettings.KeyIaCApplyEnabled)
+}
+
+// refuseApplyDisabled answers 503 and returns false while the kill switch is off.
+func (rt *Router) refuseApplyDisabled(w http.ResponseWriter, r *http.Request) bool {
+	if rt.iacApplyEnabled(r.Context()) {
+		return true
+	}
+	writeIaCError(w, http.StatusServiceUnavailable, iac.CodeApplyDisabled, "applying is turned off on this server (setting iac.apply_enabled); plans and reads still work", nil)
+	return false
 }
 
 // writePlanHashError answers a failed plan hash check and reports whether it did.

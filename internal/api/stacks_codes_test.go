@@ -1,10 +1,12 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 func TestStackErrorCodes(t *testing.T) {
@@ -61,5 +63,32 @@ func TestPlanHashVersionCodes(t *testing.T) {
 	on = true
 	if code := apply(iac.PlanHashV1(*plan.Plan), &iacErrorBody{}); code != http.StatusOK {
 		t.Fatalf("v1 hash accepted = %d", code)
+	}
+}
+
+func TestIaCApplyEnabled(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	if rt.runtimeSettings == nil {
+		t.Fatal("no runtime settings service")
+	}
+	if _, err := rt.runtimeSettings.Set(t.Context(), runtimesettings.KeyIaCApplyEnabled, json.RawMessage(`false`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	stackBodyDocs := stackBody(t, stackTestDocs("ghcr.io/acme/web:1.2.3"), nil)
+	for _, path := range []string{"/api/v1/stacks/shop-prod/apply", "/api/v1/apply", "/api/v1/stacks/shop-prod/revisions/1/approve", "/api/v1/stacks/shop-prod/revisions/1/rollback"} {
+		var out iacErrorBody
+		if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, path, stackBodyDocs), &out); code != http.StatusServiceUnavailable || out.Code != iac.CodeApplyDisabled {
+			t.Errorf("%s = %d %+v", path, code, out)
+		}
+	}
+	var plan iacPlanResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/plan", stackBodyDocs), &plan); code != http.StatusOK {
+		t.Fatalf("plan stays available: %d", code)
+	}
+	if _, err := rt.runtimeSettings.Set(t.Context(), runtimesettings.KeyIaCApplyEnabled, json.RawMessage(`true`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.2.3"), nil); code != http.StatusOK {
+		t.Fatalf("apply after re-enable = %d", code)
 	}
 }

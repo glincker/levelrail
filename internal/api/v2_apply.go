@@ -158,6 +158,9 @@ func (s *v2Server) handleApply(kind string) http.HandlerFunc {
 		if !ok {
 			return
 		}
+		if !p.dryRun && !s.rt.refuseApplyDisabled(w, r) {
+			return
+		}
 		// One apply at a time keeps the version check and the write together.
 		s.applyMu.Lock()
 		defer s.applyMu.Unlock()

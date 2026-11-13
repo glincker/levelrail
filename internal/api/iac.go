@@ -141,6 +141,9 @@ func (rt *Router) handleIaCPlan(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	req, ok := decodeIaCRequest(w, r)
 	if !ok {
 		return

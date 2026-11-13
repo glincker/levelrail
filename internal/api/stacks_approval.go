@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -30,9 +30,11 @@ const (
 	defaultStackApprovalTTL = 24 * time.Hour
 )
 
-func stackApprovalTTL() time.Duration {
-	if d, err := time.ParseDuration(os.Getenv("APP_STACK_APPROVAL_TTL")); err == nil && d > 0 {
-		return d
+func (rt *Router) stackApprovalTTL(ctx context.Context) time.Duration {
+	if rt.runtimeSettings != nil {
+		if d := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyStackApprovalTTL); d > 0 {
+			return d
+		}
 	}
 	return defaultStackApprovalTTL
 }
@@ -79,12 +81,12 @@ type stackRejectResponse struct {
 	Reason   string               `json:"reason,omitempty"`
 }
 
-func approvalExpiry(v store.StackRevisionRecord) time.Time {
-	return v.CreatedAt.Add(stackApprovalTTL())
+func (rt *Router) approvalExpiry(ctx context.Context, v store.StackRevisionRecord) time.Time {
+	return v.CreatedAt.Add(rt.stackApprovalTTL(ctx))
 }
 
-func approvalExpired(v store.StackRevisionRecord, now time.Time) bool {
-	return v.Status == store.StackRevPendingApproval && !now.Before(approvalExpiry(v))
+func (rt *Router) approvalExpired(ctx context.Context, v store.StackRevisionRecord, now time.Time) bool {
+	return v.Status == store.StackRevPendingApproval && !now.Before(rt.approvalExpiry(ctx, v))
 }
 
 func expiredResult() []byte {
@@ -101,7 +103,7 @@ func (rt *Router) expireStackApprovals(ctx context.Context, ss StackStore, s sto
 	}
 	now := time.Now()
 	for _, v := range revs {
-		if approvalExpired(v, now) {
+		if rt.approvalExpired(ctx, v, now) {
 			_, _ = failPending(context.WithoutCancel(ctx), ss, s.ID, v.Number, expiredResult(), now)
 		}
 	}
@@ -153,7 +155,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 		return
 	}
 	if rev.Replayed {
-		s := summarizeRevision(rev)
+		s := rt.summarizeRevision(ctx, rev)
 		writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 		return
 	}
@@ -169,9 +171,9 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	if req.AllowWeaken {
 		warnings = append(warnings, "this revision weakens a security protection (allow_weaken); only a human root session can approve it")
 	}
-	s := summarizeRevision(rev)
+	s := rt.summarizeRevision(ctx, rev)
 	writeJSON(w, http.StatusAccepted, stackApplyResponse{
-		Stack: stack.Name, Revision: &s, Plan: &plan, PendingApproval: true, ExpiresAt: fmtStackTime(approvalExpiry(rev)),
+		Stack: stack.Name, Revision: &s, Plan: &plan, PendingApproval: true, ExpiresAt: fmtStackTime(rt.approvalExpiry(ctx, rev)),
 		Warnings: warnings,
 	})
 }
@@ -223,7 +225,7 @@ func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss
 		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", v.Number, v.Status), nil)
 		return false
 	}
-	if approvalExpired(v, time.Now()) {
+	if rt.approvalExpired(ctx, v, time.Now()) {
 		_, _ = failPending(context.WithoutCancel(ctx), ss, stack.ID, v.Number, expiredResult(), time.Now())
 		writeIaCError(w, http.StatusGone, iac.CodePlanStale, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number), nil)
 		return false
@@ -241,6 +243,9 @@ func decodeOptionalJSON(w http.ResponseWriter, r *http.Request, out any) bool {
 }
 
 func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
 		return
@@ -407,5 +412,5 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	rev.FinishedAt = &now
 	rt.auditStack(r, auditStackReject, map[string]any{"stack": s.Name, "revision": n, "plan_hash": rev.PlanHash, "requested_by": rev.Actor, "reason": body.Reason})
-	writeJSON(w, http.StatusOK, stackRejectResponse{Stack: s.Name, Revision: summarizeRevision(rev), Reason: body.Reason})
+	writeJSON(w, http.StatusOK, stackRejectResponse{Stack: s.Name, Revision: rt.summarizeRevision(r.Context(), rev), Reason: body.Reason})
 }
