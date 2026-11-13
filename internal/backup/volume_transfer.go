@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -42,6 +43,11 @@ type VolumeTransfer struct {
 type TransferStats struct {
 	Entries int64 `json:"entries"`
 	Bytes   int64 `json:"bytes"`
+	// Warning is set when the volume root may not be writable by the app's user.
+	Warning string `json:"warning,omitempty"`
+
+	rootUID, rootGID int
+	hasRoot          bool
 }
 
 // ExportStream is a tar.gz of a volume that removes its helper container on Close.
@@ -145,6 +151,9 @@ type ImportOptions struct {
 	// BeforeMount runs after the archive is staged and just before the volume
 	// is mounted, so the caller can re-check that the owning app is still stopped.
 	BeforeMount func(ctx context.Context) error
+	// RuntimeUser is the app's configured uid[:gid]; it owns the volume root
+	// when the archive carries no root entry. Empty or non-numeric leaves it.
+	RuntimeUser string
 }
 
 // Import unpacks a tar.gz into a volume. The whole archive is validated and
@@ -208,7 +217,56 @@ func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.R
 	if err != nil {
 		return TransferStats{}, fmt.Errorf("backup: import into volume %q: %w", volume, err)
 	}
+	stats.Warning = t.fixRootOwner(ctx, id, stats, opts.RuntimeUser)
 	return stats, nil
+}
+
+// parseUIDGID reads a numeric "uid[:gid]"; names cannot be resolved without the image.
+func parseUIDGID(user string) (uid, gid int, ok bool) {
+	a, b, hasGID := strings.Cut(strings.TrimSpace(user), ":")
+	u, err := strconv.Atoi(a)
+	if err != nil || u < 0 {
+		return 0, 0, false
+	}
+	g := u
+	if hasGID {
+		if g, err = strconv.Atoi(b); err != nil || g < 0 {
+			return 0, 0, false
+		}
+	}
+	return u, g, true
+}
+
+// fixRootOwner gives the volume root to the archive's root owner or the app user, so a
+// non-root image can write at the root. It returns a warning when that user still cannot.
+func (t *VolumeTransfer) fixRootOwner(ctx context.Context, id string, st TransferStats, runtimeUser string) string {
+	ruid, _, haveRuntime := parseUIDGID(runtimeUser)
+	uid, gid, ok := st.rootUID, st.rootGID, st.hasRoot
+	if !ok {
+		uid, gid, ok = parseUIDGID(runtimeUser)
+	}
+	if ok {
+		if _, err := t.execOutput(ctx, id, []string{"chown", fmt.Sprintf("%d:%d", uid, gid), volumeMountPath}); err != nil {
+			return "could not set the volume root owner; the app user may not be able to write at the volume root"
+		}
+	}
+	if !haveRuntime || ruid == 0 {
+		return ""
+	}
+	out, err := t.execOutput(ctx, id, []string{"stat", "-c", "%u %a", volumeMountPath})
+	if err != nil {
+		return ""
+	}
+	f := strings.Fields(out)
+	if len(f) != 2 {
+		return ""
+	}
+	owner, _ := strconv.Atoi(f[0])
+	mode, _ := strconv.ParseUint(f[1], 8, 32)
+	if owner != ruid && mode&0o002 == 0 {
+		return fmt.Sprintf("the volume root is owned by uid %d but the app runs as uid %d, so it cannot write there", owner, ruid)
+	}
+	return ""
 }
 
 // SpoolFilePrefix names staged import archives so a startup sweep can find leftovers.
@@ -298,6 +356,9 @@ func sanitizeArchiveCtx(ctx context.Context, src io.Reader, dst io.Writer, maxBy
 			return st, err
 		}
 		if name == "." {
+			if hdr.Typeflag == tar.TypeDir {
+				st.rootUID, st.rootGID, st.hasRoot = hdr.Uid, hdr.Gid, true
+			}
 			continue
 		}
 		if err := checkEntry(hdr, name, state); err != nil {

@@ -24,8 +24,9 @@ const (
 )
 
 type volumeImportResource struct {
-	Entries int64 `json:"entries"`
-	Bytes   int64 `json:"bytes"`
+	Entries int64  `json:"entries"`
+	Bytes   int64  `json:"bytes"`
+	Warning string `json:"warning,omitempty"`
 }
 
 func (rt *Router) transferLimits(ctx context.Context) (maxBytes int64, timeout time.Duration) {
@@ -174,7 +175,7 @@ func (rt *Router) handleImportVolume(w http.ResponseWriter, r *http.Request) {
 
 	body := http.MaxBytesReader(w, r.Body, maxBytes)
 	stats, err := (&backup.VolumeTransfer{Runtime: nodeRuntime}).Import(ctx, dockerVolume, body, backup.ImportOptions{
-		MaxBytes: maxBytes, Overwrite: overwrite, SpoolDir: spoolDir,
+		MaxBytes: maxBytes, Overwrite: overwrite, SpoolDir: spoolDir, RuntimeUser: svc.User,
 		BeforeMount: func(ctx context.Context) error { return rt.recheckImportTarget(ctx, app, vol, dockerVolume) },
 	})
 	if err != nil {
@@ -186,7 +187,7 @@ func (rt *Router) handleImportVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.auditVolumeTransfer(r, AuditActionVolumeImport, app, vol, stats, http.StatusOK)
-	writeJSON(w, http.StatusOK, volumeImportResource{Entries: stats.Entries, Bytes: stats.Bytes})
+	writeJSON(w, http.StatusOK, volumeImportResource{Entries: stats.Entries, Bytes: stats.Bytes, Warning: stats.Warning})
 }
 
 // transferSpoolDir is where uploads are staged: a folder under the data dir, not the shared temp dir.

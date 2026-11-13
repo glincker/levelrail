@@ -12,8 +12,9 @@ import (
 
 // VolumeImportResult counts what an import unpacked.
 type VolumeImportResult struct {
-	Entries int64 `json:"entries"`
-	Bytes   int64 `json:"bytes"`
+	Entries int64  `json:"entries"`
+	Bytes   int64  `json:"bytes"`
+	Warning string `json:"warning,omitempty"`
 }
 
 func volumeTransferPath(app, volume, verb string) string {
