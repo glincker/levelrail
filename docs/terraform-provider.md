@@ -10,6 +10,27 @@ The provider drives the same REST API as the dashboard and CLI, with your own to
 **Not published yet.** The provider is built from source for now. Publishing to the Terraform and OpenTofu registries is a later step, so there is no `terraform init` download yet.
 </Warning>
 
+## Installing from source today and from the registry later
+
+The provider is not on the Terraform or OpenTofu registry yet, so `terraform init` cannot download it. Build it and point the CLI at the binary with `dev_overrides`:
+
+```bash
+cd integrations/terraform-provider
+go build -o ~/go/bin/terraform-provider-levelrail .
+```
+
+```hcl
+# ~/.terraformrc (or the file named by TF_CLI_CONFIG_FILE)
+provider_installation {
+  dev_overrides {
+    "glincker/levelrail" = "/home/you/go/bin"
+  }
+  direct {}
+}
+```
+
+With `dev_overrides` skip `terraform init` for this provider and run `plan` and `apply` directly. When the registry release exists, the `source = "registry.terraform.io/glincker/levelrail"` address in the example above will work without the override. The release plan is in `integrations/terraform-provider/release/README.md`.
+
 ## Where the name lives
 
 Everything that carries the product name is in one file, `integrations/terraform-provider/internal/provider/brand.go`: the resource prefix, the registry address, and the environment variable names. A rename is that one edit plus the module path in `integrations/terraform-provider/go.mod`. Resource type names are built from the prefix at runtime, so no other Go file repeats it.
