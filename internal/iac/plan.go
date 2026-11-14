@@ -64,6 +64,8 @@ type Plan struct {
 	Changes []Change `json:"changes"`
 	Summary Summary  `json:"summary"`
 	Hash    string   `json:"hash"`
+	// Warnings are plan-wide notes; the hash never reads them.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Pending reports whether applying would change anything.
@@ -131,6 +133,12 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 			plan.Summary.Noop++
 		case ActionError:
 			plan.Summary.Error++
+		}
+	}
+	for _, v := range opts.Secrets {
+		if v != "" && len(v) < MinSecretMatchLen {
+			plan.Warnings = append(plan.Warnings, ShortSecretWarning)
+			break
 		}
 	}
 	plan.Hash = planHashV2(opts.Source, opts.Prune, plan.Changes, planSecretNames(p.items))

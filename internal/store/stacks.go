@@ -352,6 +352,9 @@ func gunzipBytes(b []byte) ([]byte, error) {
 	return io.ReadAll(zr)
 }
 
+// minSecretMatchLen mirrors iac.MinSecretMatchLen: shorter values would match ordinary text.
+const minSecretMatchLen = 4
+
 // leakedStackSecret mirrors iac.LeakedSecret, sorted so the reported name is stable.
 func leakedStackSecret(secrets map[string]string, docs ...[]byte) (string, bool) {
 	names := make([]string, 0, len(secrets))
@@ -361,7 +364,7 @@ func leakedStackSecret(secrets map[string]string, docs ...[]byte) (string, bool)
 	sort.Strings(names)
 	for _, n := range names {
 		v := secrets[n]
-		if v == "" {
+		if len(v) < minSecretMatchLen {
 			continue
 		}
 		// Rendered docs and plans are JSON, so also look for the escaped form.
