@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -20,6 +21,9 @@ type controlPlaneProvider struct{ version string }
 type providerModel struct {
 	URL   types.String `tfsdk:"url"`
 	Token types.String `tfsdk:"token"`
+
+	MaxRetries   types.Int64 `tfsdk:"max_retries"`
+	RetryWaitMax types.Int64 `tfsdk:"retry_wait_max_seconds"`
 }
 
 // New returns the provider factory used by main and the tests.
@@ -45,6 +49,14 @@ func (p *controlPlaneProvider) Schema(_ context.Context, _ provider.SchemaReques
 				Sensitive:   true,
 				Description: "API token. Falls back to the " + EnvToken + " environment variable.",
 			},
+			"max_retries": schema.Int64Attribute{
+				Optional:    true,
+				Description: "Times a safe request is retried on 429, 5xx or a connection reset (GET, PUT, DELETE, HEAD, and POST only with an Idempotency-Key). Default 4, 0 turns retries off.",
+			},
+			"retry_wait_max_seconds": schema.Int64Attribute{
+				Optional:    true,
+				Description: "Longest pause between two attempts in seconds, which also caps a server Retry-After. Default 30.",
+			},
 		},
 	}
 }
@@ -55,7 +67,7 @@ func (p *controlPlaneProvider) Configure(ctx context.Context, req provider.Confi
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if cfg.URL.IsUnknown() || cfg.Token.IsUnknown() {
+	if cfg.URL.IsUnknown() || cfg.Token.IsUnknown() || cfg.MaxRetries.IsUnknown() || cfg.RetryWaitMax.IsUnknown() {
 		resp.Diagnostics.AddError("Unknown provider configuration", "url and token must be known at plan time.")
 		return
 	}
@@ -79,6 +91,14 @@ func (p *controlPlaneProvider) Configure(ctx context.Context, req provider.Confi
 		return
 	}
 	c := NewClient(url, token)
+	retries, waitMax := defaultMaxRetries, defaultRetryWaitMax
+	if !cfg.MaxRetries.IsNull() {
+		retries = int(cfg.MaxRetries.ValueInt64())
+	}
+	if !cfg.RetryWaitMax.IsNull() {
+		waitMax = time.Duration(cfg.RetryWaitMax.ValueInt64()) * time.Second
+	}
+	c.withRetry(retries, waitMax)
 	resp.ResourceData = c
 	resp.DataSourceData = c
 }
