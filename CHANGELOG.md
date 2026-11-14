@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/glincker/levelrail/compare/v1.1.1...v1.1.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* keep report details, cap the error report and fall back safely for unknown providers ([#1515](https://github.com/glincker/levelrail/issues/1515)) ([7b4f5fd](https://github.com/glincker/levelrail/commit/7b4f5fd38c7b619b13bc5b4c39b23b3a4985224c))
+
 ## [1.1.1](https://github.com/glincker/levelrail/compare/v1.1.0...v1.1.1) (2026-11-14)
 
 
