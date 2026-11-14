@@ -42,6 +42,8 @@ const (
 	CodeApplyDisabled            = "apply_disabled"
 	CodeInvalidRequest           = "invalid_request"
 	CodeInvalidDocument          = "invalid_document"
+	// CodeInvalidName means a resource name breaks the rule the API enforces at creation.
+	CodeInvalidName = "invalid_name"
 )
 
 // Compose reference codes (ADR 081).
@@ -107,7 +109,7 @@ var AllCodes = []string{
 	CodeRefProjectMissing, CodeRefEnvironmentMissing, CodeRefAppMissing, CodeRefSecretMissing,
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
-	CodeInvalidRequest, CodeInvalidDocument,
+	CodeInvalidRequest, CodeInvalidDocument, CodeInvalidName,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,

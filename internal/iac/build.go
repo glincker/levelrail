@@ -49,6 +49,9 @@ type Options struct {
 	ConfirmDestroy bool
 }
 
+// maxEnvironmentNameLen mirrors the API limit on environment names.
+const maxEnvironmentNameLen = 64
+
 var (
 	appNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 	envKeyRe  = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
@@ -81,6 +84,10 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 		if d.Root == nil || d.Root.Kind != yaml.MappingNode {
 			continue
 		}
+		// Before the schema pass so a bad name is reported alongside other issues.
+		ns := &issueSink{d: d}
+		checkResourceName(d, ns)
+		issues = append(issues, ns.issues...)
 		if isCloudKind(d.Kind) && !cloudEnabled() {
 			issues = append(issues, cloudDisabledIssue(d))
 			continue
@@ -184,6 +191,21 @@ func sortIssues(in []Issue) []Issue {
 	return in
 }
 
+// checkResourceName applies the API's own name rules at build time, so a
+// document the API would refuse at creation never reaches a plan.
+func checkResourceName(d *Document, s *issueSink) {
+	switch d.Kind {
+	case KindApp, KindDatabase:
+		if err := spec.ValidateServiceName(d.Name); err != nil {
+			s.atCode(CodeInvalidName, "metadata.name", "%s", err.Error())
+		}
+	case KindEnvironment:
+		if len(d.Name) > maxEnvironmentNameLen {
+			s.atCode(CodeInvalidName, "metadata.name", "name must be at most %d characters", maxEnvironmentNameLen)
+		}
+	}
+}
+
 func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 	r := &Resource{Kind: d.Kind, Name: d.Name, Doc: d}
 	switch d.Kind {
@@ -233,9 +255,6 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			} `yaml:"pooler"`
 		}
 		decodeSpec(d, &sp, s)
-		if !appNameRe.MatchString(d.Name) {
-			s.at("metadata.name", "database names are lowercase letters, digits and hyphens, starting with a letter")
-		}
 		r.Fields = map[string]any{"engine": sp.Engine}
 		putIf(r.Fields, "version", sp.Version)
 		putIf(r.Fields, "project", sp.Project)
@@ -415,9 +434,6 @@ func buildAlert(d *Document, s *issueSink) *Resource {
 }
 
 func buildApp(d *Document, opts Options, s *issueSink) *Resource {
-	if !appNameRe.MatchString(d.Name) {
-		s.at("metadata.name", "app names are lowercase letters, digits and hyphens, starting with a letter")
-	}
 	var sp struct {
 		Project     string   `yaml:"project"`
 		Environment string   `yaml:"environment"`

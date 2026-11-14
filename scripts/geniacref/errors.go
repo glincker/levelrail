@@ -30,6 +30,7 @@ var codeDocs = map[string]codeDoc{
 	iac.CodeOwnershipConflict:          {"The resource is already owned by a different stack or source.", "Apply it from the stack or source that owns it, or release it there first."},
 	iac.CodePlanStale:                  {"The live state changed after the plan was made, so the plan no longer matches.", "Run the plan again and apply the new one."},
 	iac.CodeStackLocked:                {"The resource belongs to a stack with drift policy `lock`, so manual changes are refused (HTTP 409).", "Change the manifest and apply it, or ask an administrator. See [Drift](/stacks#drift)."},
+	iac.CodeInvalidName:                {"A resource name breaks the rule the API enforces: lowercase letters, digits and hyphens, starting with a letter, at most 63 characters (64 for an Environment).", "Rename the resource in metadata.name."},
 	iac.CodeStackSourceSync:            {"The stack is synced from a source, so a direct apply is refused.", "Change the source, not the stack."},
 	iac.CodePruneGuard:                 {"Prune was refused because it would delete more of the stack than the prune guard allows without confirmation.", "Check the plan, then confirm with `allow_mass_prune` if the deletions are intended."},
 	iac.CodePlanHashVersion:            {"The submitted plan hash has the old unkeyed shape, which this control plane no longer accepts.", "Run the plan again to get a current hash."},

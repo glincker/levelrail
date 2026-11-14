@@ -32,6 +32,7 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `apply_disabled` | Apply is switched off for this control plane or stack. | Ask an administrator to enable it. |
 | `invalid_request` | The request itself is malformed, for example a missing or unreadable field. | Fix the request and send it again. |
 | `invalid_document` | A document failed validation. | Read the issue lines; each names the file, line and field. |
+| `invalid_name` | A resource name breaks the rule the API enforces: lowercase letters, digits and hyphens, starting with a letter, at most 63 characters (64 for an Environment). | Rename the resource in metadata.name. |
 | `approval_pending` | A cloud plan would replace the saved engine plan of a revision awaiting approval. | Approve or reject the named revision first, or plan with supersede=true to retire it. |
 | `plan_superseded` | A later plan replaced the saved engine plan this approval named. | Plan again and request a new approval. |
 | `interrupted` | The control plane stopped while the plan job ran. | Plan again. |
