@@ -234,3 +234,36 @@ func TestStackReviewedHashFirstApplyWithTokens(t *testing.T) {
 		})
 	}
 }
+
+func TestStackReviewedHashFirstApplyNewStackNewProject(t *testing.T) {
+	proj := "version: 1\nkind: Project\nmetadata: {name: pr2}\n---\n"
+	app := "version: 1\nkind: App\nmetadata: {name: web2}\nspec:\n  service:\n    build: {type: image, image: \"ghcr.io/acme/web:1.2.3\"}\n    port: 3000\n    env:\n      LOG_LEVEL: info\n"
+	appInProject := strings.Replace(app, "spec:\n", "spec:\n  project: pr2\n", 1)
+	cases := map[string]struct {
+		docs  string
+		extra map[string]any
+	}{
+		"doc only":          {proj + app, nil},
+		"doc and field":     {proj + app, map[string]any{"project": "pr2"}},
+		"doc with app ref":  {proj + appInProject, map[string]any{"project": "pr2"}},
+		"secrets no_deploy": {proj + appInProject, map[string]any{"project": "pr2", "no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "x"}}},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			var plan stackPlanResponse
+			if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/plan", stackBody(t, c.docs, c.extra)), &plan); code != http.StatusOK || plan.Plan == nil {
+				t.Fatalf("plan = %d", code)
+			}
+			extra := map[string]any{"expected_plan_hash": plan.Plan.Hash}
+			for k, v := range c.extra {
+				extra[k] = v
+			}
+			var out stackApplyResponse
+			if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/apply", stackBody(t, c.docs, extra)), &out); code != http.StatusOK || out.Revision == nil {
+				t.Fatalf("apply = %d %+v", code, out)
+			}
+		})
+	}
+}
