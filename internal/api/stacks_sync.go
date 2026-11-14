@@ -171,7 +171,11 @@ func (rt *Router) stackSyncPlan(ctx context.Context, rec store.StackSyncRecord, 
 	if len(issues) > 0 {
 		return iac.Plan{}, &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: "documents do not validate"}
 	}
-	if ce := syncProjectDropped(req, project, len(res)); ce != nil {
+	maxNames := 0
+	if rt.runtimeSettings != nil {
+		maxNames = rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackDriftSummaryMax)
+	}
+	if ce := syncProjectDropped(req, project, len(res), maxNames); ce != nil {
 		return iac.Plan{}, ce
 	}
 	if resourcesHaveCloud(res) {
@@ -519,9 +523,11 @@ func syncApplyRequest(rec store.StackSyncRecord, files []stacksync.File, commit 
 
 // syncProjectDropped makes an empty plan loud when the project filter removed
 // every document, instead of letting the sync report "create 0".
-func syncProjectDropped(req stackRequest, project string, resources int) *stacksync.CodedError {
+func syncProjectDropped(req stackRequest, project string, resources, maxNames int) *stacksync.CodedError {
 	if project == "" || resources > 0 || len(stackFileDocs(req)) == 0 {
 		return nil
 	}
-	return &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: emptyStackReason(req, project)}
+	// Detail is what status, --json and the CLI show; kind/name pairs only, no values.
+	msg := emptyStackReasonMax(req, project, maxNames)
+	return &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: msg, Detail: msg}
 }
