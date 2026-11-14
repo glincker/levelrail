@@ -639,8 +639,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	// A deploy or restart that landed mid-pass owns the next verdict. Publishing
 	// this one would stamp the old release's outcome on the new attempt; the
 	// nudge that deploy sent already queues the next pass.
-	if now, gerr := c.store.GetDesiredService(ctx, c.serviceName); gerr == nil && now != nil &&
-		desiredChanged(started, now) {
+	now, gerr := c.store.GetDesiredService(ctx, c.serviceName)
+	if errors.Is(gerr, store.ErrServiceNotFound) {
+		// Deleted mid-pass: the delete's teardown may have run before this pass created containers, so remove them here.
+		if terr := c.Teardown(ctx); terr != nil {
+			return notReady("TeardownAfterDeleteFailed", terr), fmt.Errorf("application/%s: teardown after delete: %w", c.serviceName, terr)
+		}
+		return reconcile.Result{}, nil
+	}
+	if gerr == nil && now != nil && desiredChanged(started, now) {
 		return reconcile.Result{}, nil
 	}
 	return result, rerr
