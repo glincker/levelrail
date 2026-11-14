@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../lib/apiError'
+import { errorReport } from '../lib/errorReport'
 import { renderInRouter } from '../test/renderInRouter'
 import { RouteErrorFallback } from './RouteErrorFallback'
 
@@ -46,5 +47,34 @@ describe('RouteErrorFallback', () => {
     expect(screen.getByText('Details')).toBeTruthy()
     expect(screen.getByText('boom internals')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+  })
+})
+
+describe('RouteErrorFallback crash screen', () => {
+  it('announces the error and focuses the heading', async () => {
+    await mount(new Error('boom'))
+    const heading = await screen.findByRole('heading', {
+      name: 'Something went wrong',
+    })
+    expect(screen.getByRole('alert')).toBeTruthy()
+    expect(document.activeElement).toBe(heading)
+    expect(screen.getByRole('button', { name: /Report an issue/ })).toBeTruthy()
+  })
+})
+
+describe('errorReport', () => {
+  it('is small, has the context and carries no secrets', () => {
+    const err = new Error('failed with token=abc123secretvalue')
+    err.stack = Array.from(
+      { length: 40 },
+      (_, i) => `at fn${i} (x.js:${i})`,
+    ).join('\n')
+    const text = errorReport(err, 'Error report', '1.1.0')
+    expect(text).toContain('version: 1.1.0')
+    expect(text).toContain('route:')
+    expect(text).toContain('browser:')
+    expect(text).not.toContain('abc123secretvalue')
+    expect(text).not.toContain('fn20')
+    expect(text.length).toBeLessThan(1500)
   })
 })
