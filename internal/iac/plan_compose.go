@@ -88,8 +88,9 @@ func (p *planner) planComposeApp(r *Resource) {
 		p.failCode(r, CodeReadFailed, "the compose history of app %s cannot be read: %v", r.Name, err)
 		return
 	}
-	exec := func(ctx context.Context, x *executor) error { return x.deployCompose(ctx, r) }
 	live := p.st.compose[r.Name]
+	first := live == nil
+	exec := func(ctx context.Context, x *executor) error { return x.deployCompose(ctx, r, first) }
 	if live == nil {
 		it := p.add(r, ActionCreate, []FieldChange{{Path: "compose.digest", Op: OpAdd, New: shortDigest(r.ComposeDigest)}}, nil, exec)
 		it.Services = composeRows(in.images, nil)
@@ -220,42 +221,107 @@ func composeRows(want map[string]string, live []string) []ComposeServiceRow {
 }
 
 // deployCompose sends the attachment through the compose deploy endpoint,
-// refusing when the bytes no longer match the digest the plan approved.
-func (x *executor) deployCompose(ctx context.Context, r *Resource) error {
+// refusing when the bytes no longer match the digest the plan approved. A
+// first deploy that fails afterwards is removed so nothing runs unowned.
+func (x *executor) deployCompose(ctx context.Context, r *Resource, first bool) error {
 	in := r.compose
 	data, ok := x.opts.Attachments[in.path]
 	if !ok || composeDigest(data, in.profiles, in.names) != r.ComposeDigest {
 		return fmt.Errorf("%s: compose file %s changed after the plan; plan again", CodePlanStale, in.path)
 	}
-	app := "/api/v1/apps/" + esc(r.Name)
-	target := app + "/compose"
+	target := "/api/v1/apps/" + esc(r.Name) + "/compose"
 	if len(in.profiles) > 0 {
 		target += "?profiles=" + url.QueryEscape(strings.Join(in.profiles, ","))
 	}
-	if err := x.do(ctx, http.MethodPost, target, ComposeBody{Data: data, Env: maps.Clone(in.env)}, nil); err != nil {
+	var out struct {
+		Services []struct {
+			Name string `json:"name"`
+		} `json:"services"`
+	}
+	if err := x.do(ctx, http.MethodPost, target, ComposeBody{Data: data, Env: maps.Clone(in.env)}, &out); err != nil {
 		return err
 	}
-	if proj := stringField(r.Fields, "project"); proj != "" {
-		pid, err := x.projectID(proj)
-		if err != nil {
+	members := make([]string, 0, len(out.Services))
+	for _, s := range out.Services {
+		members = append(members, s.Name)
+	}
+	err := x.bindCompose(ctx, r, members)
+	if err == nil {
+		return nil
+	}
+	if !first {
+		return fmt.Errorf("%s: %w; the redeployed services are kept, plan again to see the drift", CodeComposeApplyFailed, err)
+	}
+	if derr := RemoveCompose(ctx, x.d, r.Name); derr != nil {
+		return fmt.Errorf("%s: %w; removing the services this apply deployed also failed: %w", CodeComposeApplyFailed, err, derr)
+	}
+	return fmt.Errorf("%s: %w; the services this apply deployed were removed", CodeComposeApplyFailed, err)
+}
+
+// bindCompose applies project, environment and tags to every member service:
+// the per app routes key off service names, the compose App name has no row.
+func (x *executor) bindCompose(ctx context.Context, r *Resource, members []string) error {
+	var pid, eid string
+	proj, env := stringField(r.Fields, "project"), stringField(r.Fields, "environment")
+	if proj != "" {
+		var err error
+		if pid, err = x.projectID(proj); err != nil {
 			return err
 		}
-		if err := x.do(ctx, http.MethodPut, app+"/project", map[string]string{"project_id": pid}, nil); err != nil {
-			return err
-		}
-		if env := stringField(r.Fields, "environment"); env != "" {
-			eid, err := x.environmentID(proj, env)
-			if err != nil {
+		if env != "" {
+			if eid, err = x.environmentID(proj, env); err != nil {
 				return err
 			}
+		}
+	}
+	tags := stringList(r.Fields["tags"])
+	for _, m := range members {
+		app := "/api/v1/apps/" + esc(m)
+		if pid != "" {
+			if err := x.do(ctx, http.MethodPut, app+"/project", map[string]string{"project_id": pid}, nil); err != nil {
+				return fmt.Errorf("set project of service %s: %w", m, err)
+			}
+		}
+		if eid != "" {
 			if err := x.do(ctx, http.MethodPut, app+"/environment", map[string]string{"environment_id": eid}, nil); err != nil {
-				return err
+				return fmt.Errorf("set environment of service %s: %w", m, err)
 			}
 		}
+		var live *wireApp
+		if la, ok := x.st.apps[m]; ok {
+			live = &la.wire
+		}
+		if err := x.syncTags(ctx, app, tags, live, false); err != nil {
+			return fmt.Errorf("service %s: %w", m, err)
+		}
 	}
-	var live *wireApp
-	if la, ok := x.st.apps[r.Name]; ok {
-		live = &la.wire
+	return nil
+}
+
+// RemoveCompose tears a compose App down through its delete path. It never
+// asks for volumes=true, so named volumes are kept.
+func RemoveCompose(ctx context.Context, d Doer, name string) error {
+	err := d.Do(ctx, http.MethodDelete, "/api/v1/apps/"+esc(name)+"/compose", nil, nil)
+	if IsNotFound(err) {
+		return nil
 	}
-	return x.syncTags(ctx, r.Name, stringList(r.Fields["tags"]), live, false)
+	return err
+}
+
+// ComposeCreated lists the compose Apps an apply deployed for the first time,
+// so a caller that cannot record their ownership can remove them.
+func ComposeCreated(res []*Resource, out ApplyResult) []string {
+	compose := map[string]bool{}
+	for _, r := range res {
+		if r.compose != nil {
+			compose[r.Key()] = true
+		}
+	}
+	var names []string
+	for _, it := range out.Results {
+		if it.Kind == KindApp && it.Action == ActionCreate && it.Status == StatusApplied && compose[it.Key()] {
+			names = append(names, it.Name)
+		}
+	}
+	return names
 }

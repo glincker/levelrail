@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/compose"
 )
 
 const execDoc = "version: 1\nkind: App\nmetadata: {name: shop}\nspec:\n  compose:\n    path: compose/shop.yaml\n"
@@ -32,6 +34,29 @@ func (f *fakeCP) composeRoutes() {
 		}
 		revs := f.composeRevs[m[1]]
 		f.composeRevs[m[1]] = append(revs, map[string]any{"revision": len(revs) + 1, "compose": string(f.lastCompose.Data), "profiles": profiles})
+		// Like the server: one app row per service, named <app>-<service>, none for the App itself.
+		var services []any
+		if cf, err := compose.Parse(f.lastCompose.Data); err == nil {
+			for _, svc := range sortedKeys(cf.Services) {
+				name := m[1] + "-" + svc
+				if f.apps[name] == nil {
+					f.apps[name] = map[string]any{"name": name}
+				}
+				services = append(services, map[string]any{"name": name})
+			}
+		}
+		return map[string]any{"app_id": m[1], "services": services}, nil
+	})
+	f.route("DELETE", `/api/v1/apps/([^/?]+)/compose(?:\?.*)?`, func(m []string, _ map[string]any) (any, error) {
+		if _, ok := f.composeRevs[m[1]]; !ok {
+			return nil, errNotFound
+		}
+		delete(f.composeRevs, m[1])
+		for name := range f.apps {
+			if strings.HasPrefix(name, m[1]+"-") {
+				delete(f.apps, name)
+			}
+		}
 		return map[string]any{"app_id": m[1]}, nil
 	})
 	f.route("GET", `/api/v1/apps/([^/]+)/compose/revisions`, func(m []string, _ map[string]any) (any, error) {

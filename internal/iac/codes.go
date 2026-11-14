@@ -68,6 +68,8 @@ const (
 	CodeComposeVarMissing = "compose_var_missing"
 	// CodeComposeNoDeployUnsupported means no_deploy was asked for a compose App, which deploys on save.
 	CodeComposeNoDeployUnsupported = "compose_no_deploy_unsupported"
+	// CodeComposeApplyFailed means a step after a compose deploy failed; a first deploy is removed again.
+	CodeComposeApplyFailed = "compose_apply_failed"
 )
 
 // Async cloud plan job and approval race codes.
@@ -114,6 +116,6 @@ var AllCodes = []string{
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
 	CodeComposeModeConflict, CodeComposeUnsupportedKey, CodeComposeRejected, CodeComposeSecretLiteral,
-	CodeComposeVarMissing, CodeComposeNoDeployUnsupported,
+	CodeComposeVarMissing, CodeComposeNoDeployUnsupported, CodeComposeApplyFailed,
 	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed,
 }
