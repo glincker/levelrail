@@ -37,11 +37,12 @@ func (r *environmentResource) Schema(_ context.Context, _ resource.SchemaRequest
 		Description: "An environment (for example staging) inside a project.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
+				Description:   "Identifier assigned by the provider.",
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"project_id": schema.StringAttribute{Required: true, PlanModifiers: replace},
-			"name":       schema.StringAttribute{Required: true, PlanModifiers: replace},
+			"project_id": schema.StringAttribute{Description: "ID of the owning project.", Required: true, PlanModifiers: replace},
+			"name":       schema.StringAttribute{Description: "Name of the resource.", Required: true, PlanModifiers: replace},
 			"protected": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,

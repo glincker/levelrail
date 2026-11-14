@@ -36,10 +36,11 @@ func (d *appSecretsDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 	resp.Schema = schema.Schema{
 		Description: "Secret key metadata of one app (names, lock and age). Values are never exposed.",
 		Attributes: map[string]schema.Attribute{
-			"id":  schema.StringAttribute{Computed: true},
-			"app": schema.StringAttribute{Required: true},
+			"id":  schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true},
+			"app": schema.StringAttribute{Description: "Name of the app.", Required: true},
 			"secrets": schema.ListNestedAttribute{
-				Computed: true,
+				Description: "Secret key names with lock state and age, never values.",
+				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 					"key":        schema.StringAttribute{Computed: true},
 					"locked":     schema.BoolAttribute{Computed: true},

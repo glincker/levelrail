@@ -37,10 +37,11 @@ func (r *envVarsResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		Description: "Variables shared by every app of a project or an environment. Only the keys listed here are managed.",
 		Attributes: map[string]schema.Attribute{
-			"id":       schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"id":       schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"scope":    schema.StringAttribute{Required: true, PlanModifiers: replace, Description: "project or environment."},
 			"scope_id": schema.StringAttribute{Required: true, PlanModifiers: replace, Description: "ID of the project or environment."},
 			"variables": schema.MapAttribute{
+				Description: "Map of variable names to values managed by this resource.",
 				Required:    true,
 				Sensitive:   true,
 				ElementType: types.StringType,

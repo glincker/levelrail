@@ -123,6 +123,9 @@ type wireDatabase struct {
 	Engine    string `json:"engine"`
 	Version   string `json:"version"`
 	ProjectID string `json:"project_id"`
+	Pooler    bool   `json:"pooler_enabled"`
+	PoolSize  int64  `json:"pooler_pool_size"`
+	MaxConn   int64  `json:"pooler_max_client_conn"`
 }
 
 type wireApp struct {
@@ -135,6 +138,27 @@ type wireApp struct {
 	Domains     []string          `json:"domains"`
 	Env         map[string]string `json:"env"`
 	ProjectID   string            `json:"project_id"`
+	Command     []string          `json:"command"`
+	Labels      map[string]string `json:"labels"`
+	Resources   struct {
+		MemoryBytes int64 `json:"memory_bytes"`
+		NanoCPUs    int64 `json:"nano_cpus"`
+	} `json:"resources"`
+	Health struct {
+		Restart   string `json:"restart"`
+		Readiness *struct {
+			Path string `json:"path"`
+		} `json:"readiness"`
+		Liveness *struct {
+			Path string `json:"path"`
+		} `json:"liveness"`
+	} `json:"health"`
+	PublishedPorts []struct {
+		ContainerPort int64  `json:"container_port"`
+		HostPort      int64  `json:"host_port"`
+		Protocol      string `json:"protocol"`
+		Bind          string `json:"bind"`
+	} `json:"published_ports"`
 }
 
 type wireNode struct {

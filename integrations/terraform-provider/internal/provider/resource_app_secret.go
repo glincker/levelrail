@@ -48,10 +48,10 @@ func (r *appSecretResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Description: "A secret value stored for one app. The API never returns values, so drift in the value itself cannot be detected; only a missing key is.",
 		Attributes: map[string]schema.Attribute{
-			"id":    schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"app":   schema.StringAttribute{Required: true, PlanModifiers: replace},
-			"key":   schema.StringAttribute{Required: true, PlanModifiers: replace},
-			"value": schema.StringAttribute{Required: true, Sensitive: true},
+			"id":    schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"app":   schema.StringAttribute{Description: "Name of the app.", Required: true, PlanModifiers: replace},
+			"key":   schema.StringAttribute{Description: "Secret key name.", Required: true, PlanModifiers: replace},
+			"value": schema.StringAttribute{Description: "Secret value. Stored in state, so protect the state.", Required: true, Sensitive: true},
 		},
 	}
 }

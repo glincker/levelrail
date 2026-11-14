@@ -41,9 +41,10 @@ func (d *appsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		Description: "Every app the token can see.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{Computed: true},
+			"id": schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true},
 			"apps": schema.ListNestedAttribute{
-				Computed: true,
+				Description: "Every app on the control plane.",
+				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 					"name":       schema.StringAttribute{Computed: true},
 					"image":      schema.StringAttribute{Computed: true},
@@ -106,9 +107,10 @@ func (d *nodesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Description: "Every node of the fleet. Listing nodes needs a root token.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{Computed: true},
+			"id": schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true},
 			"nodes": schema.ListNestedAttribute{
-				Computed: true,
+				Description: "Every node in the fleet.",
+				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 					"id":          schema.StringAttribute{Computed: true},
 					"name":        schema.StringAttribute{Computed: true},
