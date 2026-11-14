@@ -2363,9 +2363,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/incidents/{id}/postmortem/publish | AbilityWrite | handlePublishIncidentPostmortem |
 | POST | /api/v1/otlp/v1/logs | Public | handleOTLPLogs |
 | POST | /api/v1/otlp/v1/metrics | Public | handleOTLPMetrics |
-| POST | /mcp | Public |  |
 | POST | /api/v1/hooks/stacks/{name}/sync | Public | handleStackSyncWebhook |
 | POST | /api/v1/hooks/stacks/{name}/refresh | Public | handleStackSyncRefreshWebhook |
+| POST | /mcp | Public |  |
 
 ## See also
 
