@@ -3567,7 +3567,8 @@
     "dialogTitle": "Export {{name}} as code",
     "dialogDescription": "The resource file for this one resource. Secret values are never included.",
     "loading": "Exporting...",
-    "empty": "Nothing to export."
+    "empty": "Nothing to export.",
+    "studioButton": "Export current as template"
   },
   "iacPlan": {
     "summary": "{{create}} to create, {{update}} to update, {{delete}} to delete, {{noop}} unchanged",
@@ -3933,6 +3934,16 @@
     "beta": "Beta",
     "codeDoc": "Error code {{code}}, open the reference",
     "applyDisabled": "Apply is switched off on this instance. Plans still work.",
-    "replan": "Plan again"
+    "replan": "Plan again",
+    "viewLabel": "Editor view",
+    "viewYaml": "YAML",
+    "viewForm": "Form",
+    "formLoading": "Loading the form",
+    "multiDoc": "This text has more than one document. The form shows the first one read only. Edit as YAML to change any of them.",
+    "parseLine": "This document does not parse (line {{line}}).",
+    "editAsYaml": "Edit as YAML",
+    "exportedNote": "Exported from live state. Secrets are never included, they are exported as references.",
+    "copyYaml": "Copy YAML",
+    "copied": "Copied"
   }
 }

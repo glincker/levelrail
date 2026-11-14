@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { RefreshCwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import {
+  ClipboardCopyGlassIcon,
+  RefreshCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -19,10 +23,57 @@ import { IacTemplateStrip } from './IacTemplateStrip'
 const PLAN_DEBOUNCE_MS = 600
 const HASH_PREFIX_LEN = 8
 const studioName = 'studio.yaml'
+const VIEW_KEY = 'levelrail.iacStudio.view'
+const IacStudioForm = lazy(() => import('./IacStudioForm'))
 
-export function IacStudio() {
+type StudioView = 'yaml' | 'form'
+
+export interface StudioSeed {
+  id: number
+  text: string
+  exported?: boolean
+}
+
+function readView(): StudioView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'form' ? 'form' : 'yaml'
+  } catch {
+    return 'yaml'
+  }
+}
+
+function writeView(v: StudioView) {
+  try {
+    localStorage.setItem(VIEW_KEY, v)
+  } catch {
+    // Storage can be blocked; the choice just does not persist.
+  }
+}
+
+export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
   const { t } = useTranslation('settings')
-  const [yaml, setYaml] = useState('')
+  const [yaml, setYaml] = useState(seed?.text ?? '')
+  const [seedId, setSeedId] = useState(seed?.id)
+  const [view, setView] = useState<StudioView>(readView)
+  const [copied, setCopied] = useState(false)
+  if (seed && seed.id !== seedId) {
+    setSeedId(seed.id)
+    setYaml(seed.text)
+    setView('yaml')
+  }
+  const pickView = (v: StudioView) => {
+    setView(v)
+    writeView(v)
+  }
+  async function copyYaml() {
+    try {
+      await navigator.clipboard.writeText(yaml)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
   const debounced = useDebouncedValue(yaml, PLAN_DEBOUNCE_MS)
   const planIac = usePlanIac()
   const applyIac = useApplyIac()
@@ -72,22 +123,70 @@ export function IacStudio() {
   return (
     <div className="space-y-4">
       <IacTemplateStrip onUse={setYaml} />
-      <div className="flex gap-2">
-        <pre
-          aria-hidden="true"
-          className="max-h-96 min-h-48 overflow-hidden rounded-md border bg-muted/40 px-2 py-2 text-right font-mono text-xs leading-[1.625] text-muted-foreground select-none"
-        >
-          {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
-        </pre>
-        <Textarea
-          aria-label={t('iacStudio.editor')}
-          value={yaml}
-          onChange={(e) => setYaml(e.target.value)}
-          spellCheck={false}
-          placeholder={t('iacStudio.placeholder')}
-          className="max-h-96 min-h-48 flex-1 font-mono text-xs leading-[1.625]"
-        />
+      {seed?.exported && seed.id === seedId ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2 text-xs text-muted-foreground">
+          <span>{t('iacStudio.exportedNote')}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void copyYaml()}
+          >
+            <ClipboardCopyGlassIcon size="1.4em" aria-hidden="true" />
+            {copied ? t('iacStudio.copied') : t('iacStudio.copyYaml')}
+          </Button>
+        </div>
+      ) : null}
+      <div
+        role="group"
+        aria-label={t('iacStudio.viewLabel')}
+        className="inline-flex rounded-md border p-0.5"
+      >
+        {(['yaml', 'form'] as const).map((v) => (
+          <Button
+            key={v}
+            type="button"
+            size="sm"
+            variant={view === v ? 'secondary' : 'ghost'}
+            aria-pressed={view === v}
+            onClick={() => pickView(v)}
+          >
+            {t(v === 'yaml' ? 'iacStudio.viewYaml' : 'iacStudio.viewForm')}
+          </Button>
+        ))}
       </div>
+      {view === 'form' ? (
+        <Suspense
+          fallback={
+            <p role="status" className="text-sm text-muted-foreground">
+              {t('iacStudio.formLoading')}
+            </p>
+          }
+        >
+          <IacStudioForm
+            text={yaml}
+            onChange={setYaml}
+            onEditYaml={() => pickView('yaml')}
+          />
+        </Suspense>
+      ) : (
+        <div className="flex gap-2">
+          <pre
+            aria-hidden="true"
+            className="max-h-96 min-h-48 overflow-hidden rounded-md border bg-muted/40 px-2 py-2 text-right font-mono text-xs leading-[1.625] text-muted-foreground select-none"
+          >
+            {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
+          </pre>
+          <Textarea
+            aria-label={t('iacStudio.editor')}
+            value={yaml}
+            onChange={(e) => setYaml(e.target.value)}
+            spellCheck={false}
+            placeholder={t('iacStudio.placeholder')}
+            className="max-h-96 min-h-48 flex-1 font-mono text-xs leading-[1.625]"
+          />
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">
         {t('iacStudio.cloudNote')}
       </p>
