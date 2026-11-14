@@ -169,9 +169,9 @@ func TestStackReviewedHashFirstApply(t *testing.T) {
 	docs := iacTestDocs + "      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}\n---\nversion: 1\nkind: Environment\nmetadata: {name: staging}\nspec: {project: shop}\n"
 	variants := map[string]map[string]any{
 		"plain":     nil,
-		"secrets":   {"secrets": map[string]string{"DB_PASSWORD": "s3cret"}},
+		"secrets":   {"secrets": map[string]string{"DB_PASSWORD": "s3cret-value-9876"}},
 		"no_deploy": {"no_deploy": true},
-		"both":      {"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret"}},
+		"both":      {"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret-value-9876"}},
 		"project":   {"project": "shop"},
 		"vars":      {"vars": map[string]string{"X": "1"}},
 	}
@@ -204,7 +204,7 @@ func TestStackReviewedHashFirstApplyBesideAnotherStack(t *testing.T) {
 		t.Fatalf("first stack = %d", code)
 	}
 	docs := strings.NewReplacer("shop", "shop2", "frontend", "frontend2", "web", "web2", "app.example.com", "app2.example.com").Replace(iacTestDocs)
-	extra := map[string]any{"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret"}}
+	extra := map[string]any{"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret-value-9876"}}
 	var plan stackPlanResponse
 	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/plan", stackBody(t, docs, extra)), &plan); code != http.StatusOK || plan.Plan == nil {
 		t.Fatalf("plan = %d", code)
@@ -246,7 +246,7 @@ func TestStackReviewedHashFirstApplyNewStackNewProject(t *testing.T) {
 		"doc only":          {proj + app, nil},
 		"doc and field":     {proj + app, map[string]any{"project": "pr2"}},
 		"doc with app ref":  {proj + appInProject, map[string]any{"project": "pr2"}},
-		"secrets no_deploy": {proj + appInProject, map[string]any{"project": "pr2", "no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "x"}}},
+		"secrets no_deploy": {proj + appInProject, map[string]any{"project": "pr2", "no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "late-secret-value-1234"}}},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -269,12 +269,14 @@ func TestStackReviewedHashFirstApplyNewStackNewProject(t *testing.T) {
 }
 
 func TestStackBootstrapLateFailureLeavesNothing(t *testing.T) {
-	leak := map[string]any{"secrets": map[string]string{"DB_PASSWORD": "x"}}
+	// The document must embed the value or the plaintext guard has nothing to match.
+	leak := map[string]any{"secrets": map[string]string{"DB_PASSWORD": "late-secret-value-1234"}}
+	leakyDocs := strings.Replace(iacTestDocs, "LOG_LEVEL: info", "LOG_LEVEL: late-secret-value-1234", 1)
 
 	t.Run("new stack and new project", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		cookie := loginTestSession(t, rt, db)
-		code, body := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late1/apply", stackBody(t, iacTestDocs, leak)))
+		code, body := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late1/apply", stackBody(t, leakyDocs, leak)))
 		if code != http.StatusUnprocessableEntity || !strings.Contains(body, "secret value") {
 			t.Fatalf("apply = %d %s", code, body)
 		}
@@ -292,7 +294,7 @@ func TestStackBootstrapLateFailureLeavesNothing(t *testing.T) {
 		if err := db.SaveProject(t.Context(), store.Project{ID: "p-shop", Name: "shop", CreatedAt: "2026-10-25T00:00:00Z"}); err != nil {
 			t.Fatal(err)
 		}
-		code, _ := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late2/apply", stackBody(t, iacTestDocs, leak)))
+		code, _ := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late2/apply", stackBody(t, leakyDocs, leak)))
 		if code != http.StatusUnprocessableEntity {
 			t.Fatalf("apply = %d", code)
 		}
