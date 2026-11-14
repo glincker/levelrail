@@ -71,6 +71,9 @@ func NewOracleSecret(userOCID, fingerprint string, pemKey []byte) OracleSecret {
 	return OracleSecret{UserOCID: userOCID, Fingerprint: fingerprint, key: append([]byte(nil), pemKey...)}
 }
 
+// KeyPEM returns a copy of the key for one upload; the caller wipes it after use.
+func (s OracleSecret) KeyPEM() []byte { return append([]byte(nil), s.key...) }
+
 // String masks the key.
 func (s OracleSecret) String() string {
 	return fmt.Sprintf("OracleSecret{user=%s fingerprint=%s key=%s}", s.UserOCID, s.Fingerprint, secretsource.Mask)

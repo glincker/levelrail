@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/secretsource"
 )
@@ -94,7 +95,7 @@ func defaultOCIConnectDeps(prog string, lookupEnv func(string) (string, bool)) o
 		runner:   execRunner{},
 		lookPath: exec.LookPath,
 		sink: func(apiURL, profile string) ociCredentialSink {
-			return apiOCISink{prog: prog, apiURL: apiURL, profile: profile, lookupEnv: lookupEnv}
+			return apiOCISink{prog: prog, apiURL: apiURL, profile: profile, lookupEnv: lookupEnv, out: os.Stdout}
 		},
 		stdin:  os.Stdin,
 		genKey: func() (*rsa.PrivateKey, error) { return rsa.GenerateKey(rand.Reader, ociKeyBits()) },
@@ -102,26 +103,40 @@ func defaultOCIConnectDeps(prog string, lookupEnv func(string) (string, bool)) o
 	}
 }
 
-// errOCISealedUpload is returned until the control plane can seal an uploaded OCI key;
-// it fires before any cloud resource is created.
-var errOCISealedUpload = errors.New("this control plane cannot store an uploaded OCI key yet; run with the default dry run to review the plan")
-
 // apiOCISink talks to the control plane with the CLI's normal profile.
 type apiOCISink struct {
 	prog, apiURL, profile string
 	lookupEnv             func(string) (string, bool)
+	out                   io.Writer
 }
 
-func (s apiOCISink) Ready(context.Context) error {
-	base := resolveAPIURL(s.apiURL, s.lookupEnv, s.prog, resolveProfile(s.profile, s.lookupEnv))
+func (s apiOCISink) base() string {
+	return resolveAPIURL(s.apiURL, s.lookupEnv, s.prog, resolveProfile(s.profile, s.lookupEnv))
+}
+
+// Ready runs before any cloud resource is created, so a bad transport stops the flow early.
+func (s apiOCISink) Ready(context.Context) error { return secureTransport(s.base()) }
+
+// Store uploads the bundle once; the key copy is wiped when the call returns.
+func (s apiOCISink) Store(ctx context.Context, name string, cred cloudconn.OracleCredential) error {
+	base := s.base()
 	if err := secureTransport(base); err != nil {
 		return err
 	}
-	return errOCISealedUpload
-}
-
-func (s apiOCISink) Store(ctx context.Context, _ string, _ cloudconn.OracleCredential) error {
-	return s.Ready(ctx)
+	profile := resolveProfile(s.profile, s.lookupEnv)
+	key := cred.Secret.KeyPEM()
+	defer clear(key)
+	got, err := NewClient(base, resolveToken("", s.lookupEnv, s.prog, profile)).CreateOracleConnection(ctx, apiclient.OracleConnectionRequest{
+		Name: name, TenancyOCID: cred.TenancyOCID, Region: cred.Region, CompartmentOCID: cred.CompartmentOCID,
+		UserOCID: cred.Secret.UserOCID, Fingerprint: cred.Secret.Fingerprint,
+	}, key)
+	if err != nil {
+		return err
+	}
+	if s.out != nil {
+		_, _ = fmt.Fprintf(s.out, "Stored connection %s (key fingerprint %s...)\n", got.Name, got.FingerprintPrefix)
+	}
+	return nil
 }
 
 // secureTransport refuses to send a key over plain http unless the API is on this machine.

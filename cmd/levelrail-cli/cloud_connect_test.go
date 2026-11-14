@@ -251,7 +251,7 @@ func TestCloudConnectOCIExpiredSession(t *testing.T) {
 
 func TestCloudConnectOCISinkNotReadyCreatesNothing(t *testing.T) {
 	r := &fakeOCIRunner{t: t}
-	code, _, errOut := runConnect(t, ociTestDeps(t, r, &fakeOCISink{notReady: errOCISealedUpload}, nil), "--region", "us-phoenix-1", "--yes")
+	code, _, errOut := runConnect(t, ociTestDeps(t, r, &fakeOCISink{notReady: errors.New("api not ready")}, nil), "--region", "us-phoenix-1", "--yes")
 	if code == exitOK || !strings.Contains(errOut, "Nothing was created") {
 		t.Fatalf("code %d: %s", code, errOut)
 	}
