@@ -1393,6 +1393,10 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		}
 		derr := doer.Do(r.Context(), http.MethodDelete, path, nil, nil)
 		var se *iac.StatusError
+		if !isDB && derr != nil && errors.As(derr, &se) && se.Status == http.StatusNotFound {
+			// A compose App has no app row of its own, so tear it down through the compose path (which honors protection).
+			derr = iac.RemoveCompose(r.Context(), doer, e.LiveID)
+		}
 		if derr != nil && (!errors.As(derr, &se) || se.Status != http.StatusNotFound) {
 			resp.Failed = append(resp.Failed, label+": "+derr.Error())
 			continue

@@ -337,6 +337,29 @@ func TestStackDestroyRemovesLedgerApps(t *testing.T) {
 	}
 }
 
+func TestStackDestroyRemovesComposeMembers(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/stack/compose", stackV1, http.StatusOK)
+	st, err := db.GetStackByName(t.Context(), "shop-prod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertStackResource(t.Context(), store.StackLedgerEntry{StackID: st.ID, Kind: string(iac.KindApp), Key: "stack", LiveID: "stack", SinceRevision: 1}); err != nil {
+		t.Fatal(err)
+	}
+	svcs, err := db.ListServicesByApp(t.Context(), "stack")
+	if err != nil || len(svcs) == 0 {
+		t.Fatalf("compose members = %v %v", svcs, err)
+	}
+	var out stackDeleteResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/stacks/shop-prod?mode=destroy", ""), &out); code != http.StatusOK || len(out.Destroyed) != 1 {
+		t.Fatalf("destroy = %d %+v", code, out)
+	}
+	if left, _ := db.ListServicesByApp(t.Context(), "stack"); len(left) != 0 {
+		t.Fatalf("destroy left compose members: %v", left)
+	}
+}
+
 func TestStackPlanForMissingStackAndPruneGate(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
