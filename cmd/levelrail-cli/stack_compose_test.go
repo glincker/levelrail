@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -120,3 +122,28 @@ func TestStackPlan_HintsConfirmDestroy(t *testing.T) {
 }
 
 func newStackServer(f *stackFake) *httptest.Server { return httptest.NewServer(f.handler()) }
+
+func TestIaCFail_PrintsDocumentIssues(t *testing.T) {
+	var issues []map[string]any
+	for i := 1; i <= 22; i++ {
+		issues = append(issues, map[string]any{"file": "app.yaml", "path": "spec.port", "line": i, "code": "invalid_document", "message": "bad port"})
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": "the documents have 22 problem(s)", "code": "invalid_document", "issues": issues})
+	}))
+	defer srv.Close()
+	dir := composeStackDir(t)
+	code, _, errOut := runIaC([]string{"apply", "-f", dir, "--dry-run", "--api-url", srv.URL}, nil)
+	if code == exitOK {
+		t.Fatal("want a failure")
+	}
+	if !strings.Contains(errOut, "app.yaml:1 spec.port invalid_document bad port") || !strings.Contains(errOut, "... and 2 more") || strings.Contains(errOut, "app.yaml:21 ") {
+		t.Fatalf("stderr = %q", errOut)
+	}
+	_, jsonOut, jsonErr := runIaC([]string{"apply", "-f", dir, "--dry-run", "--json", "--api-url", srv.URL}, nil)
+	if strings.Contains(jsonErr, "spec.port invalid_document") || strings.Contains(jsonOut, "... and") {
+		t.Fatalf("json mode changed: %q %q", jsonOut, jsonErr)
+	}
+}

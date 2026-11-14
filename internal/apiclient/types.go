@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/iac"
 )
 
 // ServiceResources mirrors internal/api's appResource.Resources field
@@ -4798,6 +4800,8 @@ type apiErrorBody struct {
 	Fix       json.RawMessage `json:"fix,omitempty"`
 	// MissingVariables lists unset required compose variables (names and messages only).
 	MissingVariables []MissingVariable `json:"missing_variables,omitempty"`
+	// Issues are the located document problems of a 422.
+	Issues []iac.Issue `json:"issues,omitempty"`
 }
 
 // MissingVariable is one required compose variable with no value.
@@ -4846,6 +4850,8 @@ type APIError struct {
 	Fix       string
 	// MissingVariables is set on a deploy refused for unset required variables.
 	MissingVariables []MissingVariable
+	// Issues are the located document problems of a 422, empty otherwise.
+	Issues []iac.Issue
 }
 
 // Error renders the server message, appending a retry hint when RetryAfter is set.

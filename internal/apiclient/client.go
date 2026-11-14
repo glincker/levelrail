@@ -200,7 +200,7 @@ func decodeResponse(resp *http.Response, out any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var coded apiErrorBody
 		_ = json.Unmarshal(data, &coded)
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText(), MissingVariables: coded.MissingVariables}
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText(), MissingVariables: coded.MissingVariables, Issues: coded.Issues}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
