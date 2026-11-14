@@ -69,6 +69,8 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runImportCutover(prog, args[1:], stdout, stderr, lookupEnv)
 		case "vercel":
 			return runImportVercel(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+		case "compose-ref":
+			return runImportComposeRef(prog, args[1:], stdout, stderr, lookupEnv)
 		case "takeover":
 			return runImportTakeover(prog, args[1:], stdout, stderr, lookupEnv)
 		}
