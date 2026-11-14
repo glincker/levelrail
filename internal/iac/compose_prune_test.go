@@ -152,3 +152,41 @@ func countWrites(writes []string, want string) int {
 	}
 	return n
 }
+
+// A Tag still in the files must plan a noop when only its sibling compose App is dropped.
+func TestComposePruneKeepsDeclaredTag(t *testing.T) {
+	f, _ := composePruneSetup(t, false)
+	f.ensureTag("keep")
+	l := NewLedger("s1", "web", "", []LedgerEntry{
+		{StackID: "s1", Kind: KindApp, Key: "App/shop", LiveID: "shop"},
+		{StackID: "s1", Kind: KindTag, Key: "Tag/keep", LiveID: "keep"},
+	})
+	l.AllowMassPrune = true
+	ctx := WithLedger(context.Background(), l)
+	res, issues := buildCompose(t, "version: 1\nkind: Tag\nmetadata: {name: keep}\n", nil)
+	if len(issues) > 0 {
+		t.Fatal(issues)
+	}
+	opts := Options{Prune: true, ConfirmDestroy: true}
+	st, err := Load(ctx, f, res, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := PlanFor(st, res, opts)
+	for _, c := range p.Changes {
+		if c.Kind == KindTag && c.Action != ActionNoop {
+			t.Fatalf("a declared tag must be a noop, got %+v", c)
+		}
+		if c.Kind == KindApp && c.Action != ActionDelete {
+			t.Fatalf("the dropped compose app must plan a delete: %+v", c)
+		}
+	}
+	if _, err := Apply(ctx, f, res, opts, p.Hash); err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range f.writes {
+		if strings.Contains(w, "/tags/") {
+			t.Fatalf("a tag write happened: %v", f.writes)
+		}
+	}
+}
