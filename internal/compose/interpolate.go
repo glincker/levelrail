@@ -9,6 +9,9 @@ import (
 // literal "$" it stands for is never re-read as the start of a token.
 const dollarSentinel = "\x00$\x00"
 
+// unsetVarFormat is parsed back by InterpolateDeclared to name a missing variable.
+const unsetVarFormat = "variable %s is not set, left as written"
+
 func unescapeDollar(s string) string {
 	if !strings.Contains(s, dollarSentinel) {
 		return s
@@ -122,7 +125,7 @@ func expandVar(name, rest string, vars map[string]string, warn func(string), dep
 		if set {
 			return val, nil
 		}
-		warn(fmt.Sprintf("variable %s is not set, left as written", name))
+		warn(fmt.Sprintf(unsetVarFormat, name))
 		return "${" + name + "}", nil
 	}
 	op, arg := rest[:1], rest[1:]
