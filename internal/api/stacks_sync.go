@@ -121,7 +121,10 @@ func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord)
 	fctx = sourcecache.WithMaxMirrorBytes(fctx, rt.stackSyncLimits(ctx).MaxRepoBytes)
 	// Only the sync path is needed: try a shallow sparse clone before the full mirror.
 	if strings.HasPrefix(url, "https://") {
-		co, serr := rt.sourceCache.SparseCheckout(fctx, url, rec.Config.Branch, rec.Config.Path, token, rt.stackSyncLimits(ctx).MaxRepoBytes)
+		// Its own sub-deadline leaves the mirror fallback the rest of the fetch time.
+		sctx, scancel := sparseDeadline(fctx, rt.stackSyncLimits(ctx).FetchTimeout)
+		co, serr := rt.sourceCache.SparseCheckout(sctx, url, rec.Config.Branch, rec.Config.Path, token, rt.stackSyncLimits(ctx).MaxRepoBytes)
+		scancel()
 		if serr == nil {
 			return co.Dir, co.Commit, co.Cleanup, nil
 		}
@@ -137,6 +140,19 @@ func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord)
 		return "", "", nil, &stacksync.CodedError{Code: iac.CodeSyncRepoUnreachable, Msg: "fetch failed"}
 	}
 	return dir, commit, cleanup, nil
+}
+
+// sparseDeadline gives the sparse attempt half of the time left, or half the
+// configured fetch timeout when the context has no deadline.
+func sparseDeadline(ctx context.Context, fetchTimeout time.Duration) (context.Context, context.CancelFunc) {
+	left := fetchTimeout
+	if dl, ok := ctx.Deadline(); ok {
+		left = time.Until(dl)
+	}
+	if left <= 0 {
+		return context.WithCancel(ctx)
+	}
+	return context.WithTimeout(ctx, left/2)
 }
 
 func sameRepo(a, b string) bool {
