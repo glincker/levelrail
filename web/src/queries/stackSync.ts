@@ -132,3 +132,28 @@ export function useRotateStackSyncSecret(name: string) {
       qc.invalidateQueries({ queryKey: stackSyncKeys.detail(name) }),
   })
 }
+
+// GET /api/v1/apps/git-sources: the apps with a git connection, used to pick a credential_ref.
+export interface GitSourceOption {
+  service_name: string
+  repo_url: string
+}
+
+export const gitSourceOptionsQueryOptions = queryOptions({
+  queryKey: [...stackKeys.all, 'sync', 'git-source-options'] as const,
+  queryFn: () =>
+    request<GitSourceOption[]>(
+      '/api/v1/apps/git-sources',
+      undefined,
+      'load git connections',
+    ),
+  retry: false,
+})
+
+// Host of an https, ssh:// or scp style git URL, lower cased; '' when none.
+export function repoHost(url: string): string {
+  const m = /^(?:[a-z][a-z0-9+.-]*:\/\/)?(?:[^@/\s]*@)?([^/:\s]+)/i.exec(
+    url.trim(),
+  )
+  return m?.[1]?.toLowerCase() ?? ''
+}

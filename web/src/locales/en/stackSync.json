@@ -37,9 +37,9 @@
     "repoUrl": "Repository URL",
     "branch": "Branch",
     "path": "Path",
-    "credential": "Credential (app:NAME)",
+    "credential": "Credential",
     "credentialPlaceholder": "app:NAME",
-    "credentialHint": "The name of an app connection. Token values are never shown.",
+    "credentialHint": "Apps connected to this repository host. Token values are never shown.",
     "interval": "Interval (seconds)",
     "webhookOnly": "Webhook only",
     "webhookOnlyHint": "No polling, a push to the repository starts a run.",
@@ -56,7 +56,12 @@
     "save": "Save",
     "saving": "Saving",
     "saved": "Sync settings saved",
-    "saveFailed": "Could not save the sync settings"
+    "saveFailed": "Could not save the sync settings",
+    "credentialAdvanced": "Credential (advanced: app:NAME)",
+    "advanced": "Advanced",
+    "credentialEnterRepo": "Enter the repo URL first",
+    "credentialNone": "No connected app for this host",
+    "credentialNoneSelected": "No credential"
   },
   "approval": {
     "required": "This stack requires approval. A sync that finds changes creates a pending approval and never approves itself."

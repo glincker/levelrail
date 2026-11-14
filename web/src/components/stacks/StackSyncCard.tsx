@@ -20,12 +20,15 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { IacCodeBadge } from '../iac/IacCodeBadge'
 import { ApiError } from '../../lib/apiError'
 import { formatRelativeTime } from '../../lib/relativeTime'
 import {
+  gitSourceOptionsQueryOptions,
+  repoHost,
   stackSyncQueryOptions,
   usePutStackSync,
   useRefreshStackSync,
@@ -133,6 +136,89 @@ function Field({
           onChange(e.target.value)
         }}
       />
+    </div>
+  )
+}
+
+// A select of the apps whose git connection is on the entered repo's host; free text stays under Advanced.
+function CredentialField({
+  repoUrl,
+  value,
+  onChange,
+  disabled,
+}: Readonly<{
+  repoUrl: string
+  value: string
+  onChange: (v: string) => void
+  disabled: boolean
+}>) {
+  const { t } = useTranslation('stackSync')
+  const id = useId()
+  const [advanced, setAdvanced] = useState(false)
+  const sources = useQuery({
+    ...gitSourceOptionsQueryOptions,
+    enabled: !disabled,
+  })
+  const host = repoHost(repoUrl)
+  const names = (Array.isArray(sources.data) ? sources.data : [])
+    .filter((s) => host !== '' && repoHost(s.repo_url) === host)
+    .map((s) => s.service_name)
+  const current = value.replace(/^app:/, '')
+  if (current !== '' && !names.includes(current)) names.push(current)
+  const empty = host === '' ? 'enterRepo' : names.length === 0 ? 'none' : null
+
+  return (
+    <div className="min-w-0 space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={id} className="text-xs">
+          {advanced ? t('form.credentialAdvanced') : t('form.credential')}
+        </Label>
+        <Button
+          type="button"
+          variant="link"
+          size="xs"
+          aria-pressed={advanced}
+          onClick={() => {
+            setAdvanced((a) => !a)
+          }}
+        >
+          {t('form.advanced')}
+        </Button>
+      </div>
+      {advanced ? (
+        <Input
+          id={id}
+          value={value}
+          placeholder={t('form.credentialPlaceholder')}
+          disabled={disabled}
+          onChange={(e) => {
+            onChange(e.target.value)
+          }}
+        />
+      ) : (
+        <NativeSelect
+          id={id}
+          className="w-full"
+          value={current === '' ? '' : current}
+          disabled={disabled || (empty === 'enterRepo' && current === '')}
+          onChange={(e) => {
+            onChange(e.target.value === '' ? '' : `app:${e.target.value}`)
+          }}
+        >
+          <option value="">
+            {empty === 'enterRepo'
+              ? t('form.credentialEnterRepo')
+              : empty === 'none'
+                ? t('form.credentialNone')
+                : t('form.credentialNoneSelected')}
+          </option>
+          {names.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </NativeSelect>
+      )}
     </div>
   )
 }
@@ -493,10 +579,9 @@ function SyncForm({
       </div>
       <div className="grid gap-2 sm:grid-cols-4">
         <div className="sm:col-span-2">
-          <Field
-            label={t('form.credential')}
+          <CredentialField
+            repoUrl={cfg.repo_url}
             value={cfg.credential_ref ?? ''}
-            placeholder={t('form.credentialPlaceholder')}
             disabled={off}
             onChange={(v) => {
               set('credential_ref', v)

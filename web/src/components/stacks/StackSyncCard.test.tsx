@@ -153,6 +153,44 @@ describe('StackSyncCard', () => {
     ).toBe(false)
   })
 
+  it('offers only apps on the repo host and sends the chosen ref', async () => {
+    const fn = mock(
+      { config: { ...cfg, enabled: false }, webhook_secret_set: false },
+      (u, init) =>
+        u.endsWith('/apps/git-sources')
+          ? jsonResponse([
+              { service_name: 'api', repo_url: 'https://git.example.com/a/b' },
+              { service_name: 'other', repo_url: 'https://elsewhere.io/x/y' },
+            ])
+          : init?.method === 'PUT'
+            ? jsonResponse({ config: cfg, webhook_secret_set: false })
+            : undefined,
+    )
+    renderCard()
+    const select = await screen.findByLabelText('Credential')
+    await screen.findByRole('option', { name: 'api' })
+    expect(screen.queryByRole('option', { name: 'other' })).toBeNull()
+    fireEvent.change(select, { target: { value: 'api' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(fn.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true)
+    })
+    const put = fn.mock.calls.find(([, i]) => i?.method === 'PUT')
+    const sent = JSON.parse(put?.[1]?.body as string) as Record<string, unknown>
+    expect(sent.credential_ref).toBe('app:api')
+  })
+
+  it('asks for the repo URL first and keeps a text fallback under advanced', async () => {
+    mock({
+      config: { ...cfg, repo_url: '', enabled: false },
+      webhook_secret_set: false,
+    })
+    renderCard()
+    expect(await screen.findByText('Enter the repo URL first')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
+    expect(screen.getByPlaceholderText('app:NAME')).toBeTruthy()
+  })
+
   it('shows the rotated secret once and removes it from the DOM after close', async () => {
     mock({ config: cfg, webhook_secret_set: false }, (u, init) =>
       u.endsWith('/rotate') && init?.method === 'POST'
