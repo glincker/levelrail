@@ -214,7 +214,9 @@ async function connectSource(
       break
     case 'gitlab':
     case 'bitbucket':
+    case 'bitbucket_server':
     case 'gitea':
+    case 'forgejo':
     case 'azure_devops':
       await connectRepoAsSource(ref.connectionId, { ...base, repo: ref.repo })
       break

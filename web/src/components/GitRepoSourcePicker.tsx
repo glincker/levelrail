@@ -25,7 +25,14 @@ import {
 // flows. Tab bodies live in GitRepoSourceRows.tsx /
 // GitRepoSimpleProviderRows.tsx, split to stay under the 500-line cap.
 export type GitRepoSourceProvider =
-  'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops' | 'manual'
+  | 'github'
+  | 'gitlab'
+  | 'bitbucket'
+  | 'bitbucket_server'
+  | 'gitea'
+  | 'forgejo'
+  | 'azure_devops'
+  | 'manual'
 
 // providerRef carries what each provider's "use as source" endpoint needs
 // beyond a plain clone URL (owner+repo, or a connection id plus project id or owner/name).
@@ -39,7 +46,13 @@ export interface GitRepoSourceValue {
   providerRef?:
     | { kind: 'github'; owner: string; repo: string }
     | {
-        kind: 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops'
+        kind:
+          | 'gitlab'
+          | 'bitbucket'
+          | 'bitbucket_server'
+          | 'gitea'
+          | 'forgejo'
+          | 'azure_devops'
         /** The connected account the repository was picked from. */
         connectionId: string
         /** A project id for GitLab, owner/name for Bitbucket and Gitea. */

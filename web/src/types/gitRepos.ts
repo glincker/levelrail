@@ -1,7 +1,14 @@
 // Wire types for GET /api/v1/git/repos (internal/api/git_repo_list.go).
 
+// Mirrors internal/api connectionGitProviders plus github; a Go test keeps them in step.
 export type GitRepoProvider =
-  'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops'
+  | 'github'
+  | 'gitlab'
+  | 'bitbucket'
+  | 'bitbucket_server'
+  | 'gitea'
+  | 'forgejo'
+  | 'azure_devops'
 
 export type GitRepoMode = 'include' | 'exclude' | 'only'
 
