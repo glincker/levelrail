@@ -38,6 +38,23 @@ resource "levelrail_cron_job" "nightly" {
   retry_backoff_seconds = 30
 }
 
+resource "levelrail_cron_job" "warm_cache" {
+  app      = levelrail_app.web.name
+  name     = "warm-cache"
+  schedule = "*/10 * * * *"
+  http = {
+    path   = "/internal/warm"
+    method = "POST"
+    headers = [
+      { name = "Authorization", secret_ref = "CRON_TOKEN", prefix = "Bearer " },
+    ]
+  }
+}
+
+data "levelrail_cron_jobs" "web" {
+  app = levelrail_app.web.name
+}
+
 data "levelrail_apps" "all" {}
 
 data "levelrail_app_secrets" "web" {

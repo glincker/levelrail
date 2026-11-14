@@ -30,6 +30,12 @@ func (f *fakeJobAPI) handler(w http.ResponseWriter, r *http.Request) {
 	}
 	id := strings.TrimPrefix(rest, "/")
 	switch {
+	case r.Method == http.MethodGet && id == "":
+		out := make([]wireCronJob, 0, len(f.jobs))
+		for _, j := range f.jobs {
+			out = append(out, j)
+		}
+		_ = json.NewEncoder(w).Encode(out)
 	case r.Method == http.MethodPost && id == "":
 		var in wireCronJob
 		_ = json.NewDecoder(r.Body).Decode(&in)
@@ -139,4 +145,49 @@ func TestCronJobWireRoundTrip(t *testing.T) {
 	if m.ID.ValueString() != "web/j9" || ruleIDOf(m.ID) != "j9" || m.wire().Command[0] != "a" {
 		t.Fatalf("round trip lost data: %+v", m)
 	}
+}
+
+const cronJobHTTPConfig = `
+resource "%[1]s_cron_job" "warm" {
+  app      = "web"
+  name     = "warm"
+  schedule = "*/10 * * * *"
+  http = {
+    path    = "/internal/warm"
+    method  = "POST"
+    headers = [{ name = "Authorization", secret_ref = "TOK", prefix = "Bearer " }]
+  }
+}
+
+data "%[1]s_cron_jobs" "web" {
+  app        = "web"
+  depends_on = [%[1]s_cron_job.warm]
+}
+`
+
+// TestAccCronJobHTTP drives an http job and the listing data source through the real provider server.
+func TestAccCronJobHTTP(t *testing.T) {
+	api := &fakeJobAPI{jobs: map[string]wireCronJob{}}
+	srv := httptest.NewServer(http.HandlerFunc(api.handler))
+	t.Cleanup(srv.Close)
+	t.Setenv(EnvURL, srv.URL)
+	t.Setenv(EnvToken, "tok")
+
+	addr := TypeName + "_cron_job.warm"
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(cronJobHTTPConfig, TypeName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "mode", "http"),
+					resource.TestCheckResourceAttr(addr, "http.method", "POST"),
+					resource.TestCheckResourceAttr(addr, "http.headers.0.secret_ref", "TOK"),
+					resource.TestCheckNoResourceAttr(addr, "command.0"),
+					resource.TestCheckResourceAttr("data."+TypeName+"_cron_jobs.web", "jobs.0.http_path", "/internal/warm"),
+				),
+			},
+			{ResourceName: addr, ImportState: true, ImportStateId: "web/j1", ImportStateVerify: true},
+		},
+	})
 }

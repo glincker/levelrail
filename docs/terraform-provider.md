@@ -67,12 +67,12 @@ provider "levelrail" {
 | `levelrail_status_page` | The public status page settings: `enabled`, `title`, `description`, `custom_domain` (one per control plane) | any value, for example `status-page` |
 | `levelrail_app_secret` | One secret value for an app (write only: the API never returns values, so only a missing key shows as drift; the value is kept in state) | `app/key` |
 | `levelrail_alert_rule` | An alert rule on one app (threshold or crash loop) | `app/rule_id` |
-| `levelrail_cron_job` | A scheduled command of one app (the CronJob kind): `schedule`, `timezone`, `command`, `mode`, `concurrency_policy`, `catch_up`, timeout and retries | `app/job_id` |
+| `levelrail_cron_job` | A scheduled command of one app (the CronJob kind): `schedule`, `timezone`, `command` or an `http` block (path, method, body, headers by `secret_ref`), `mode`, `concurrency_policy`, `catch_up`, timeout and retries | `app/job_id` |
 | `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
 | `levelrail_setting` | One runtime setting (`key`, `value`); destroy resets it to the default | setting key |
 | `levelrail_node_labels` | Labels and taints on an existing node, by name | node name or ID |
 
-Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values.
+Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values. `levelrail_cron_jobs` lists every scheduled job of one app, with the path and method of http jobs.
 
 ## Coverage
 
@@ -88,12 +88,12 @@ Gap analysis of what each resource exposes against what the REST API and the IaC
 | `levelrail_environment_variables` | keys at a project or environment scope | vault-backed variables |
 | `levelrail_app_secret` | one secret value | bulk import |
 | `levelrail_alert_rule` | threshold and crash loop rules on an app | notification channel management |
-| `levelrail_cron_job` | command jobs on an app | HTTP jobs, resource limits and heartbeat URLs |
+| `levelrail_cron_job` | command and http jobs on an app | resource limits and heartbeat URLs |
 | `levelrail_status_page` | enabled, title, description, custom domain | incidents |
 | `levelrail_status_component` | kind, target, name, order | none |
 | `levelrail_setting` | key and value of any setting that is not marked sensitive | sensitive settings (credentials), which are refused so they never reach state |
 | `levelrail_node_labels` | labels and taints of an existing node | creating or deleting nodes, drains, region, workloads |
-| Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets` | listings | filters |
+| Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets`, `levelrail_cron_jobs` | listings | filters |
 
 Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists, sets and maps on `levelrail_app` (command, labels, published ports, volumes, tags, exec probes, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
 
