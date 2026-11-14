@@ -211,6 +211,24 @@ func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
 		p.failCode(r, CodeRefEnvironmentMissing, "environment %q does not exist in project %q and is not declared in the files", env, proj)
 		return false
 	}
+	return !p.refuseProtectedEnvBind(r, proj, env)
+}
+
+// refuseProtectedEnvBind fails the plan when an App would be bound into a protected
+// environment, because the bind endpoint demands a confirm flag plan and apply cannot carry.
+func (p *planner) refuseProtectedEnvBind(r *Resource, proj, env string) bool {
+	live, liveOK := p.st.envs[envKey(proj, env)]
+	protected := liveOK && live.Protected
+	if d, ok := p.byKey[resourceKey(KindEnvironment, proj, env)]; ok {
+		protected, _ = d.Fields["protected"].(bool)
+	}
+	if !protected {
+		return false
+	}
+	if app, ok := p.st.apps[r.Name]; ok && liveOK && app.wire.EnvironmentID == live.ID {
+		return false
+	}
+	p.failCode(r, CodeEnvironmentProtected, "IaC binding into a protected environment is unsupported: environment %q is protected; unprotect it or deploy through the normal approval path", env)
 	return true
 }
 

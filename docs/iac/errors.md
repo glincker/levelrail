@@ -59,3 +59,4 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `sync_secret_in_repo` | A synced document holds a literal secret value. The status names the file and line, never the value. | Replace the literal with a secretRef, set the value with the secrets API, then rotate the leaked credential. |
 | `sync_disk_low` | Free disk was below stacks.sync_min_free_mb, so the sync fetched nothing. | Free disk on the control plane data volume or lower the setting. |
 | `sync_apply_failed` | A sync apply was refused or failed and the stack was left unchanged. | Run the stack plan on the same commit; check the stack lock, protected apps and the apply setting. |
+| `environment_protected` | An App or compose App would be bound into a protected environment. IaC plan and apply carry no confirm flag, so the bind would be refused at apply. | Unprotect the environment, or deploy into it through the normal approval path. |

@@ -110,6 +110,9 @@ const (
 	CodeSyncApplyFailed = "sync_apply_failed"
 )
 
+// CodeEnvironmentProtected means an App would be bound into a protected environment, which IaC cannot confirm.
+const CodeEnvironmentProtected = "environment_protected"
+
 // AllCodes lists every frozen code, for docs and guard tests.
 var AllCodes = []string{
 	CodeItemFailed, CodePermissionDenied, CodeUnavailable, CodeReadFailed,
@@ -124,5 +127,5 @@ var AllCodes = []string{
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
 	CodeComposeModeConflict, CodeComposeUnsupportedKey, CodeComposeRejected, CodeComposeSecretLiteral,
 	CodeComposeVarMissing, CodeComposeNoDeployUnsupported, CodeComposeApplyFailed,
-	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed,
+	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed, CodeEnvironmentProtected,
 }

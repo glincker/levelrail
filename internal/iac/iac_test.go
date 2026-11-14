@@ -19,7 +19,7 @@ spec:
 version: 1
 kind: Environment
 metadata: {name: production}
-spec: {project: shop, protected: true}
+spec: {project: shop}
 ---
 version: 1
 kind: Tag

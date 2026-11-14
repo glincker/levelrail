@@ -12,13 +12,6 @@
       "name": "production",
       "scope": "shop",
       "action": "create",
-      "fields": [
-        {
-          "path": "protected",
-          "op": "add",
-          "new": "true"
-        }
-      ],
       "file": "docs.yaml",
       "line": 50
     },
@@ -222,5 +215,5 @@
     "noop": 0,
     "error": 0
   },
-  "hash": "v2:5418b581279056f5b672c269d647f64394a707e9ad86b8b6e99475fa293cadb2"
+  "hash": "v2:12f13b7706842d97745ae774ee70fe615a04b3bf4304d233366a8c6cbc312172"
 }
