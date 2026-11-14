@@ -93,6 +93,15 @@ func (rt *Router) stackSyncLimits(ctx context.Context) stacksync.Limits {
 	}
 }
 
+// stackSyncSparseWatch is the size check cadence, clamped like the setting.
+func (rt *Router) stackSyncSparseWatch(ctx context.Context) time.Duration {
+	ms := 500
+	if rt.runtimeSettings != nil {
+		ms = rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackSyncSparseWatchMS)
+	}
+	return time.Duration(min(max(ms, 50), 5000)) * time.Millisecond
+}
+
 // stackSyncFetch reuses the app git fetcher. A credential ref only lends an
 // app's key or token to the exact repository that app is connected to.
 func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord) (string, string, func(), error) {
@@ -123,7 +132,7 @@ func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord)
 	if strings.HasPrefix(url, "https://") {
 		// Its own sub-deadline leaves the mirror fallback the rest of the fetch time.
 		sctx, scancel := sparseDeadline(fctx, rt.stackSyncLimits(ctx).FetchTimeout)
-		co, serr := rt.sourceCache.SparseCheckout(sctx, url, rec.Config.Branch, rec.Config.Path, token, rt.stackSyncLimits(ctx).MaxRepoBytes)
+		co, serr := rt.sourceCache.SparseCheckout(sctx, url, rec.Config.Branch, rec.Config.Path, token, rt.stackSyncLimits(ctx).MaxRepoBytes, rt.stackSyncSparseWatch(ctx))
 		scancel()
 		if serr == nil {
 			return co.Dir, co.Commit, co.Cleanup, nil

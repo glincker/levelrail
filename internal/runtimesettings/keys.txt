@@ -369,6 +369,7 @@ stacks.sync_max_repo_mb
 stacks.sync_min_free_mb
 stacks.sync_min_interval_seconds
 stacks.sync_refresh_min_seconds
+stacks.sync_sparse_watch_ms
 stacks.sync_tick_seconds
 stacks.sync_webhook_max_body_kb
 storage.critical_free_percent

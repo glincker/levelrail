@@ -11,6 +11,7 @@ const (
 	KeyStackSyncRefreshMinSecs  = "stacks.sync_refresh_min_seconds"
 	KeyStackSyncMinFreeMB       = "stacks.sync_min_free_mb"
 	KeyStackSyncWebhookMaxKB    = "stacks.sync_webhook_max_body_kb"
+	KeyStackSyncSparseWatchMS   = "stacks.sync_sparse_watch_ms"
 )
 
 func init() {
@@ -38,4 +39,6 @@ func init() {
 		"Free disk in MB a stack sync needs before it fetches, from 0 (no check) to 1048576. Below it the sync fails with sync_disk_low and fetches nothing. The next sync uses a changed value.")
 	syncInt(KeyStackSyncWebhookMaxKB, "64", "APP_STACK_SYNC_WEBHOOK_MAX_BODY_KB", 1, 25600, "Stack sync webhook body cap",
 		"Largest push webhook body in KB the stack sync webhook reads, from 1 to 25600. A larger body is refused with 413 before it is read. The next delivery uses a changed value.")
+	syncInt(KeyStackSyncSparseWatchMS, "500", "APP_SYNC_SPARSE_WATCH_INTERVAL", 50, 5000, "Stack sync size check interval",
+		"Milliseconds between size checks of a checkout while a stack sync fetches it, from 50 to 5000. The next sync uses a changed value.")
 }

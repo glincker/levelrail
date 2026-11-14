@@ -1,3 +1,5 @@
+//go:build !windows
+
 package sourcecache
 
 import (
@@ -7,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestSparseCheckoutFetchesOnlyThePath(t *testing.T) {
@@ -38,7 +41,7 @@ func TestSparseCheckoutFetchesOnlyThePath(t *testing.T) {
 	t.Cleanup(func() { sparseProtocols = old })
 
 	c := New(Config{Dir: t.TempDir()}, nil)
-	co, err := c.SparseCheckout(context.Background(), "file://"+src, "main", "stack", "", 1<<20)
+	co, err := c.SparseCheckout(context.Background(), "file://"+src, "main", "stack", "", 1<<20, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +55,7 @@ func TestSparseCheckoutFetchesOnlyThePath(t *testing.T) {
 	if co.Commit == "" {
 		t.Fatal("no commit")
 	}
-	if _, err := c.SparseCheckout(context.Background(), "file://"+src, "main", "stack", "", 10); !errors.Is(err, ErrOverBudget) {
+	if _, err := c.SparseCheckout(context.Background(), "file://"+src, "main", "stack", "", 10, 50*time.Millisecond); !errors.Is(err, ErrOverBudget) {
 		t.Fatalf("want ErrOverBudget, got %v", err)
 	}
 }

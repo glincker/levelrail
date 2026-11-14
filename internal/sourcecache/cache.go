@@ -155,6 +155,7 @@ func New(cfg Config, log *slog.Logger) *Cache {
 	c.sleep = sleepCtx
 	c.probeFn = defaultProbe
 	c.export = exportWorktree
+	sparseSweepOnce.Do(func() { SweepSparseTemp(sparseSweepAge()) })
 	return c
 }
 
