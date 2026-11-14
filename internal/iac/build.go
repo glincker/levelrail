@@ -480,7 +480,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 		return nil
 	}
 
-	f := appFields{Image: svc.Build.Image, Port: svc.Port, HostPort: svc.HostPort, BindAddress: svc.EffectiveBindAddress(),
+	f := appFields{Image: svc.Build.Image, RegistryCredential: svc.Build.RegistryCredential, Port: svc.Port, HostPort: svc.HostPort, BindAddress: svc.EffectiveBindAddress(),
 		Replicas: svc.EffectiveReplicas(), Strategy: svc.EffectiveStrategy(), Domains: sortedUnique(svc.Domains), Env: nonEmptyMap(env),
 		SecretEnv: sortedUnique(secrets), Labels: nonEmptyMap(svc.Labels), Command: svc.Command, Project: sp.Project, Environment: sp.Environment,
 		Tags: sortedUnique(sp.Tags), Connections: nonEmptyMap(conns), SecretRefs: nonEmptyMap(refs)}
@@ -559,9 +559,6 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 	if svc.Resources != nil && svc.Resources.GPU != nil {
 		s.at(p+"resources.gpu", "GPU requests are not supported by apply yet")
-	}
-	if svc.Build.RegistryCredential != "" {
-		s.at(p+"build.registryCredential", "registry credentials are not supported by apply yet")
 	}
 }
 

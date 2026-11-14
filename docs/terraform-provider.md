@@ -82,7 +82,7 @@ Gap analysis of what each resource exposes against what the REST API and the IaC
 | --- | --- | --- |
 | `levelrail_project` | name | shared env (use `levelrail_environment_variables`) |
 | `levelrail_environment` | project, name, protected | environment env (use `levelrail_environment_variables`) |
-| `levelrail_app` | image, port, replicas, strategy, bind address, env, project, command, labels, memory (`memory_mb`) and CPU (`cpus`) limits, restart policy, readiness and liveness probes (path, exec or TCP), published ports, named volumes, tags | bind mounts, hooks, probe timings, egress, GPU, tolerations, affinity, database env references, files (they can hold secrets and have no stable read-back of their content) |
+| `levelrail_app` | image, registry credential name, port, replicas, strategy, bind address, env, project, command, labels, memory (`memory_mb`) and CPU (`cpus`) limits, restart policy, readiness and liveness probes (path, exec or TCP), published ports, named volumes, tags | bind mounts, hooks, probe timings, egress, GPU, tolerations, affinity, database env references, files (they can hold secrets and have no stable read-back of their content) |
 | `levelrail_domain` | app, host | TLS, redirects, headers, WAF, caching, auth gates (not in the IaC Domain schema yet) |
 | `levelrail_database` | engine, version, project, pooler settings | backup schedules, placement, public access (not in the IaC Database schema yet), users |
 | `levelrail_environment_variables` | keys at a project or environment scope | vault-backed variables |

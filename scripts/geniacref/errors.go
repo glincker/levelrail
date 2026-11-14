@@ -25,6 +25,7 @@ var codeDocs = map[string]codeDoc{
 	iac.CodeRefEnvironmentMissing:      {"A resource names an environment that does not exist in the project and is not declared in the files.", "Add an `Environment` document or fix the name."},
 	iac.CodeRefAppMissing:              {"A resource names an app that does not exist and is not declared in the files.", "Add the `App` document or fix the name."},
 	iac.CodeRefSecretMissing:           {"A `secretRef` marked `existing: true` points at a secret the app does not have.", "Create the secret first, or drop `existing: true` and pass the value with `--secret`."},
+	iac.CodeRegistryCredentialNotFound: {"An App names a `build.registryCredential` that does not exist on the control plane. Registry credentials are not managed as code.", "Create the credential first with `registry-credentials create`, or fix the name."},
 	iac.CodeSchemaUnknownField:         {"A document has a field that is not part of its kind's schema.", "Check the spelling against the [reference](/iac/reference), or remove the field."},
 	iac.CodeSchemaVersionUnsupported:   {"The document `version` is not one this control plane reads.", "Set `version: 1`."},
 	iac.CodeOwnershipConflict:          {"The resource is already owned by a different stack or source.", "Apply it from the stack or source that owns it, or release it there first."},

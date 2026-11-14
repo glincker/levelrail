@@ -39,6 +39,8 @@ resource "levelrail_app" "web" {
 
   tags = ["team:shop"]
 
+  registry_credential = "ghcr-pull"
+
   labels = {
     team = "shop"
   }

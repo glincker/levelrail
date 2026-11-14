@@ -61,3 +61,4 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `sync_disk_low` | Free disk was below stacks.sync_min_free_mb, so the sync fetched nothing. | Free disk on the control plane data volume or lower the setting. |
 | `sync_apply_failed` | A sync apply was refused or failed and the stack was left unchanged. | Run the stack plan on the same commit; check the stack lock, protected apps and the apply setting. |
 | `environment_protected` | An App or compose App would be bound into a protected environment. IaC plan and apply carry no confirm flag, so the bind would be refused at apply. | Unprotect the environment, or deploy into it through the normal approval path. |
+| `registry_credential_not_found` | An App names a `build.registryCredential` that does not exist on the control plane. Registry credentials are not managed as code. | Create the credential first with `registry-credentials create`, or fix the name. |

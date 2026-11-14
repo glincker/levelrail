@@ -24,6 +24,7 @@ type fakeCP struct {
 	envs      map[string]map[string]any
 	envVars   map[string]map[string]any
 	tags      map[string]map[string]any
+	creds     []string
 	dbs       map[string]map[string]any
 	apps      map[string]map[string]any
 	secrets   map[string]map[string]bool
@@ -143,6 +144,13 @@ func (f *fakeCP) buildRoutes() []fakeRoute {
 	})
 	f.route("GET", `/api/v1/environments/([^/]+)/env`, func(m []string, _ map[string]any) (any, error) { return f.envVars["e/"+m[1]], nil })
 	f.route("PUT", `/api/v1/environments/([^/]+)/env`, func(m []string, b map[string]any) (any, error) { f.envVars["e/"+m[1]] = b; return b, nil })
+	f.route("GET", `/api/v1/registry-credentials`, func(_ []string, _ map[string]any) (any, error) {
+		out := []map[string]any{}
+		for _, n := range f.creds {
+			out = append(out, map[string]any{"id": "rc-" + n, "name": n})
+		}
+		return out, nil
+	})
 	f.route("GET", `/api/v1/tags`, func(_ []string, _ map[string]any) (any, error) { return list(f.tags), nil })
 	f.route("POST", `/api/v1/tags`, func(_ []string, b map[string]any) (any, error) { return f.ensureTag(b["name"].(string)), nil })
 	f.route("GET", `/api/v1/tags/([^/]+)/apps`, func(m []string, _ map[string]any) (any, error) {

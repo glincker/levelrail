@@ -27,6 +27,8 @@ const (
 	CodeRefEnvironmentMissing = "ref_environment_missing"
 	CodeRefAppMissing         = "ref_app_missing"
 	CodeRefSecretMissing      = "ref_secret_missing"
+	// CodeRegistryCredentialNotFound means an App names a registry credential the control plane does not have.
+	CodeRegistryCredentialNotFound = "registry_credential_not_found" //nolint:gosec // error code name, not a credential
 )
 
 // Document and request codes, set outside planning (schema, stacks, apply).
@@ -130,4 +132,5 @@ var AllCodes = []string{
 	CodeComposeModeConflict, CodeComposeUnsupportedKey, CodeComposeRejected, CodeComposeSecretLiteral,
 	CodeComposeVarMissing, CodeComposeNoDeployUnsupported, CodeComposeApplyFailed,
 	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed, CodeEnvironmentProtected,
+	CodeRegistryCredentialNotFound,
 }

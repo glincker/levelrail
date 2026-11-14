@@ -124,7 +124,20 @@ func (rt *Router) appOut(ctx context.Context, svc store.DesiredService) appResou
 	res := toAppResourceRaw(svc)
 	rt.placementResolver(ctx).stampApp(&res)
 	rt.redactAppResponse(ctx, &res, svc)
+	res.RegistryCredential = rt.registryCredentialName(ctx, svc.RegistryCredentialID)
 	return res
+}
+
+// registryCredentialName returns the credential's name for the app response; a lookup failure leaves it unset.
+func (rt *Router) registryCredentialName(ctx context.Context, id string) string {
+	if id == "" || rt.registryCredentials == nil {
+		return ""
+	}
+	cred, err := rt.registryCredentials.GetRegistryCredential(ctx, id)
+	if err != nil {
+		return ""
+	}
+	return cred.Name
 }
 
 // redactAppResponse masks res's env fields from svc using name's settings,

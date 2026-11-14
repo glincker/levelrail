@@ -212,3 +212,23 @@ func TestAppSchemaDescribesAndDeprecates(t *testing.T) {
 		}
 	}
 }
+
+func TestRegistryCredentialBodyAndReadBack(t *testing.T) {
+	m := nullModel()
+	if _, ok := m.body(nil, true)["registry_credential"]; ok {
+		t.Fatal("unset registry_credential must not be sent")
+	}
+	m.RegistryCredential = strVal("ghcr-pull")
+	if got := m.body(nil, true)["registry_credential"]; got != "ghcr-pull" {
+		t.Fatalf("body registry_credential = %v", got)
+	}
+	m.fromWire(wireApp{Image: "img", RegistryCredential: "other"})
+	if m.RegistryCredential.ValueString() != "other" {
+		t.Fatalf("drift not read back: %q", m.RegistryCredential.ValueString())
+	}
+	n := nullModel()
+	n.fromWire(wireApp{Image: "img", RegistryCredential: "other"})
+	if !n.RegistryCredential.IsNull() {
+		t.Fatal("unmanaged attribute must stay null")
+	}
+}

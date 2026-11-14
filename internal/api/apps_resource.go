@@ -16,7 +16,7 @@ import (
 type appResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	// RegistryCredential names a stored registry credential, accepted on create only; every later pull uses it.
+	// RegistryCredential names a stored registry credential, set on create, replaced or cleared on update when sent, and echoed on read.
 	RegistryCredential string `json:"registry_credential,omitempty"`
 	// ImageDigest is the content Image is pinned to, or a build's local
 	// image ID; empty for a legacy unpinned tag.

@@ -105,6 +105,13 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// always writes this column.
 	desired.Egress = existing.Egress
 	preserveUnsentAppFields(&desired, *existing, req, imageChanged)
+	if sent["registry_credential"] {
+		credentialID, credOK := rt.resolveCreateRegistryCredential(w, r, req.RegistryCredential)
+		if !credOK {
+			return
+		}
+		desired.RegistryCredentialID = credentialID
+	}
 	deploy.EnsureNextCacheLink(&desired)
 	deploy.EnsureNextCacheCALink(r.Context(), &desired, rt.databases)
 	if imageChanged {

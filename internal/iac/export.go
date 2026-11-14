@@ -58,8 +58,9 @@ type outMeta struct {
 }
 
 type outBuild struct {
-	Type  string `yaml:"type"`
-	Image string `yaml:"image"`
+	Type               string `yaml:"type"`
+	Image              string `yaml:"image"`
+	RegistryCredential string `yaml:"registryCredential,omitempty"`
 }
 
 type outService struct {
@@ -264,7 +265,7 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 		return err
 	}
 	f := appFromWire(a, idNames{e.st})
-	svc := outService{Build: outBuild{Type: spec.BuildImage, Image: f.Image}, Domains: f.Domains, Port: f.Port, HostPort: f.HostPort,
+	svc := outService{Build: outBuild{Type: spec.BuildImage, Image: f.Image, RegistryCredential: f.RegistryCredential}, Domains: f.Domains, Port: f.Port, HostPort: f.HostPort,
 		Health: f.Health, Resources: f.Resources, Security: f.Security, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command, Restart: f.Restart}
 	if f.PublishedPorts != nil {
 		svc.PublishedPorts = *f.PublishedPorts

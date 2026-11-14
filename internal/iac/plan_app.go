@@ -196,6 +196,9 @@ func livePlacement(live, want any) any {
 }
 
 func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
+	if !p.checkRegistryCredential(r, f) {
+		return false
+	}
 	if proj := stringField(f, "project"); proj != "" && !p.projectKnown(proj) {
 		p.failCode(r, CodeRefProjectMissing, "project %q does not exist and is not declared in the files", proj)
 		return false
@@ -302,4 +305,21 @@ func withDefaultTag(ref string) string {
 		return ref + ":latest"
 	}
 	return ref
+}
+
+// checkRegistryCredential fails the plan for a credential name the control plane does not list.
+func (p *planner) checkRegistryCredential(r *Resource, f map[string]any) bool {
+	name := stringField(f, "registryCredential")
+	if name == "" {
+		return true
+	}
+	if err, denied := p.st.denied[keyRegistryList]; denied {
+		p.failCode(r, CodeReadFailed, "registry credentials cannot be read to check %q: %v", name, err)
+		return false
+	}
+	if !p.st.credentials[name] {
+		p.failCode(r, CodeRegistryCredentialNotFound, "registry credential %q does not exist; create it with registry-credentials create first", name)
+		return false
+	}
+	return true
 }

@@ -40,6 +40,7 @@ func decodeAppUpdate(w http.ResponseWriter, r *http.Request, req *appResource) (
 var appUpdateFields = []string{
 	"image", "port", "host_port", "published_ports", "bind_address", "domains", "env",
 	"resources", "health", "hooks", "strategy", "replicas", "next_cache", "next_image_cache", "labels", "command", "tolerations", "affinity",
+	"registry_credential",
 }
 
 // mergeOmittedAppFields fills every settable field the body left out with

@@ -60,7 +60,7 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	// RegistryCredential names a stored registry credential, sent on create only.
+	// RegistryCredential names a stored registry credential, set on create, replaced or cleared on update.
 	RegistryCredential string `json:"registry_credential,omitempty"`
 	// RequireRefWarnings lists literal secrets held in an environment that requires references; names only.
 	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
