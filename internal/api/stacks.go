@@ -10,9 +10,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -174,6 +177,10 @@ type stackRequest struct {
 	IdempotencyKey   string            `json:"idempotency_key,omitempty"`
 	// AllowWeaken lets Setting documents weaken a protection; human root sessions only.
 	AllowWeaken bool `json:"allow_weaken,omitempty"`
+	// Attachments are referenced compose files; they are stored among the files of the revision.
+	Attachments map[string]string `json:"attachments,omitempty"`
+	// ConfirmDestroy is the stack name typed to let a prune delete compose apps.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 type stackLockResource struct {
@@ -452,6 +459,10 @@ func decodeStackRequest(w http.ResponseWriter, r *http.Request, filesOptional bo
 		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return req, false
 	}
+	for _, n := range slices.Sorted(maps.Keys(req.Attachments)) {
+		req.Files = append(req.Files, iacFile{Name: n, Content: req.Attachments[n]})
+	}
+	req.Attachments = nil
 	if !filesOptional && (len(req.Files) == 0 || len(req.Files) > maxIaCFiles) {
 		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
 		return req, false
@@ -470,13 +481,55 @@ func (req stackRequest) iac(stack, project string, prune bool) iacRequest {
 	return iacRequest{
 		Files: req.Files, Source: stack, Project: project, Prune: prune, Vars: req.Vars, Secrets: req.Secrets,
 		NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError,
+		confirmDestroy: req.ConfirmDestroy != "" && req.ConfirmDestroy == stack,
 	}
 }
 
+// stackComposeEnv reads the compose env digests of the stack's last applied
+// revision, so unchanged declared env plans as a noop. Nil when none applies.
+func stackComposeEnv(ctx context.Context, ss StackStore, stackID, project string, res []*iac.Resource) map[string]string {
+	if !slices.ContainsFunc(res, func(r *iac.Resource) bool { return r.ComposeDigest != "" }) {
+		return nil
+	}
+	revs, err := ss.ListStackRevisions(ctx, stackID, 0)
+	if err != nil {
+		return nil
+	}
+	for _, v := range revs {
+		if v.Status != store.StackRevApplied {
+			continue
+		}
+		rev, err := ss.GetStackRevision(ctx, stackID, v.Number)
+		if err != nil {
+			return nil
+		}
+		files, err := decodeRenderedFiles(rev.RenderedDocs)
+		if err != nil {
+			return nil
+		}
+		srcs := make([]iac.Source, len(files))
+		for i, f := range files {
+			srcs[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
+		}
+		return iac.ComposeEnvDigests(srcs, project)
+	}
+	return nil
+}
+
 // renderStackFiles substitutes ${{ env.NAME }} so a revision replays without vars.
+// Referenced compose files are stored as received, so their digest holds.
 func renderStackFiles(files []iacFile, vars map[string]string) []iacFile {
+	srcs := make([]iac.Source, len(files))
+	for i, f := range files {
+		srcs[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
+	}
+	refs := iac.ComposeRefPaths(srcs)
 	out := make([]iacFile, len(files))
 	for i, f := range files {
+		if slices.Contains(refs, path.Clean(f.Name)) {
+			out[i] = f
+			continue
+		}
 		content := stackEnvRe.ReplaceAllStringFunc(f.Content, func(m string) string {
 			if v, ok := vars[stackEnvRe.FindStringSubmatch(m)[1]]; ok {
 				return v
@@ -710,6 +763,9 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 	}
 	res, opts, issues := req.iac(name, project, prune).build()
 	opts = rt.belowRootOpts(r, opts)
+	if resp.StackExists {
+		opts.ComposeEnvApplied = stackComposeEnv(r.Context(), ss, stack.ID, project, res)
+	}
 	if len(issues) > 0 {
 		resp.Issues, resp.Error, resp.Code = codedIssues(issues), issuesMessage(issues), iac.CodeInvalidDocument
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
@@ -923,6 +979,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	if run.pending != nil {
 		opts.Cloud = run.cloud
 	}
+	opts.ComposeEnvApplied = stackComposeEnv(ctx, ss, stack.ID, project, res)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(stack.Name, issues))
 		return

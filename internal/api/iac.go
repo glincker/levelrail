@@ -46,6 +46,8 @@ type iacRequest struct {
 	ContinueOnError  bool              `json:"continue_on_error,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
 	Attachments      map[string]string `json:"attachments,omitempty"`
+	// confirmDestroy is derived server side from a stack request, never decoded.
+	confirmDestroy bool
 }
 
 type iacPlanResponse struct {
@@ -106,11 +108,22 @@ func (req iacRequest) build() ([]*iac.Resource, iac.Options, []iac.Issue) {
 	for i, f := range req.Files {
 		sources[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
 	}
-	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError}
-	if len(req.Attachments) > 0 {
-		opts.Attachments = make(map[string][]byte, len(req.Attachments))
+	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError, ConfirmDestroy: req.confirmDestroy}
+	// Stack revisions keep referenced compose files among the files, so every replay splits them the same way.
+	sources, split, issues := iac.SplitComposeRefs(sources)
+	if len(issues) > 0 {
+		return nil, opts, issues
+	}
+	if len(req.Attachments) > 0 || len(split) > 0 {
+		opts.Attachments = make(map[string][]byte, len(req.Attachments)+len(split))
 		for n, c := range req.Attachments {
 			opts.Attachments[n] = []byte(c)
+		}
+		for n, c := range split {
+			if prev, dup := opts.Attachments[n]; dup && !bytes.Equal(prev, c) {
+				return nil, opts, []iac.Issue{{File: n, Code: iac.CodeInvalidRequest, Message: "compose file " + n + " is sent twice with different content"}}
+			}
+			opts.Attachments[n] = c
 		}
 	}
 	docs, issues := iac.ParseDocuments(sources)

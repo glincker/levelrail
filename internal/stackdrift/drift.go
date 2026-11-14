@@ -278,6 +278,14 @@ func build(raw []byte, stack, project string) ([]*iac.Resource, iac.Options, err
 		srcs[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
 	}
 	opts := iac.Options{Source: stack, Project: project}
+	// Referenced compose files ride in the revision files; the env digests are
+	// what that revision applied, so only an out of band change shows as drift.
+	srcs, att, issues := iac.SplitComposeRefs(srcs)
+	if len(issues) > 0 {
+		return nil, opts, errors.New("revision documents no longer validate: " + issues[0].Message)
+	}
+	opts.Attachments = att
+	opts.ComposeEnvApplied = iac.ComposeEnvDigests(srcs, project)
 	docs, issues := iac.ParseDocuments(srcs)
 	if len(issues) == 0 {
 		if project != "" {

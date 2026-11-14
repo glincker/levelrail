@@ -41,6 +41,12 @@ type Options struct {
 	Cloud *CloudApproval
 	// Attachments holds referenced compose files by cleaned relative path.
 	Attachments map[string][]byte
+	// ComposeEnvApplied maps a compose App to the env digest its stack last
+	// applied, since a compose revision never stores env values.
+	ComposeEnvApplied map[string]string
+	// ConfirmDestroy is set server side when the caller typed the stack name;
+	// a prune never removes a compose App without it.
+	ConfirmDestroy bool
 }
 
 var (

@@ -400,6 +400,11 @@ func (l loader) loadLedger(ctx context.Context, lg *Ledger, res []*Resource) err
 			err = l.envsOf(ctx, scope)
 		case KindLoadBalancer:
 			err = l.lb(ctx, name)
+		case KindApp:
+			// A compose App has no app row of its own name, only member services.
+			if _, plain := l.st.apps[name]; !plain {
+				err = l.composeOf(ctx, name)
+			}
 		case KindPipeline:
 			err = l.pipelinesOf(ctx, scope)
 		case KindAlertRule:
@@ -450,6 +455,18 @@ func (p *planner) planLedgerPrune() {
 		}
 		if p.deniedItem(r, pruneReadKey(kind, scope, name, e.LiveID)) {
 			continue
+		}
+		if kind == KindApp {
+			if err, denied := p.st.denied["compose/"+name]; denied {
+				p.failCode(r, CodeReadFailed, "the compose history of app %s cannot be read, so it is not pruned: %v", name, err)
+				continue
+			}
+			if lc, plain := p.st.compose[name], p.st.apps[name] != nil; lc != nil && !plain {
+				if it := p.planComposePrune(r, lc); it != nil {
+					deletes = append(deletes, it)
+				}
+				continue
+			}
 		}
 		exec, live := p.pruneExec(kind, scope, name, e.LiveID)
 		it := p.add(r, ActionDelete, nil, nil, exec)

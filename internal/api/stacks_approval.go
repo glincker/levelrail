@@ -72,7 +72,7 @@ type stackApproveRequest struct {
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
 	// ConfirmStack is the stack name typed to allow a sole root user to approve their own change.
 	ConfirmStack string `json:"confirm_stack,omitempty"`
-	// ConfirmDestroy is the stack name typed to let the approved plan delete cloud resources.
+	// ConfirmDestroy is the stack name typed to let the approved plan delete cloud resources or compose apps.
 	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
@@ -339,7 +339,9 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	req := stackRequest{
 		Files: files, Secrets: body.Secrets, Prune: meta.Prune, AllowMassPrune: meta.AllowMassPrune, Adopt: meta.Adopt,
 		NoDeploy: meta.NoDeploy, ContinueOnError: meta.ContinueOnError, AllowWeaken: meta.AllowWeaken, ExpectedPlanHash: rev.PlanHash,
-		GitRepo: rev.GitRepo, GitRef: rev.GitRef, GitSHA: rev.GitSHA, CIRunURL: rev.CIRunURL,
+		// The approver types it again, as for cloud deletes; without it the compose delete plan no longer matches.
+		ConfirmDestroy: body.ConfirmDestroy,
+		GitRepo:        rev.GitRepo, GitRef: rev.GitRef, GitSHA: rev.GitSHA, CIRunURL: rev.CIRunURL,
 	}
 	run := stackRun{stack: s, req: req, rollbackOf: rev.RollbackOf, action: auditStackApprove, pending: &rev,
 		cloud: cloudApprovalOf(cloudPlan, body.ConfirmDestroy != "" && body.ConfirmDestroy == s.Name)}

@@ -2,6 +2,10 @@ package iac
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -96,13 +100,97 @@ func (p *planner) planComposeApp(r *Resource) {
 		return
 	}
 	have := composeDigest(live.body, live.profiles, in.names)
-	// Env values are not stored with the revision, so declared env redeploys every apply until drift lands.
-	if have == r.ComposeDigest && len(in.env) == 0 {
+	envNow := composeEnvDigest(in.env)
+	applied, known := p.opts.ComposeEnvApplied[r.Name]
+	// Without a record of the last applied env (a plain apply), declared env redeploys every time.
+	envSame := envNow == "" || (known && applied == envNow)
+	if have == r.ComposeDigest && envSame {
 		p.add(r, ActionNoop, nil, nil, nil)
 		return
 	}
-	it := p.add(r, ActionUpdate, []FieldChange{{Path: "compose.digest", Op: OpChange, Old: shortDigest(have), New: shortDigest(r.ComposeDigest)}}, nil, exec)
+	var changes []FieldChange
+	if have != r.ComposeDigest {
+		changes = append(changes, FieldChange{Path: "compose.digest", Op: OpChange, Old: shortDigest(have), New: shortDigest(r.ComposeDigest)})
+	}
+	if !envSame {
+		old := "unknown"
+		if known && applied != "" {
+			old = shortEnvDigest(applied)
+		}
+		changes = append(changes, FieldChange{Path: "compose.env", Op: OpChange, Old: old, New: shortEnvDigest(envNow)})
+	}
+	it := p.add(r, ActionUpdate, changes, nil, exec)
 	it.Services = composeRows(in.images, live.services)
+}
+
+// composeEnvDigest keys the sorted NAME=value pairs with the install hash key,
+// so a low entropy value cannot be guessed back from the digest.
+func composeEnvDigest(env map[string]string) string {
+	if len(env) == 0 {
+		return ""
+	}
+	mac := hmac.New(sha256.New, currentHashKey())
+	for _, k := range sortedKeys(env) {
+		mac.Write([]byte(k + "=" + env[k] + "\x00"))
+	}
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func shortEnvDigest(d string) string {
+	if len(d) > 12 {
+		return "hmac:" + d[:12]
+	}
+	return d
+}
+
+// ComposeEnvDigests returns the env digest of every compose App the files
+// declare, so a stack can record what its last applied revision set.
+func ComposeEnvDigests(files []Source, project string) map[string]string {
+	docs, att, issues := SplitComposeRefs(files)
+	if len(issues) > 0 {
+		return nil
+	}
+	parsed, issues := ParseDocuments(docs)
+	if len(issues) > 0 {
+		return nil
+	}
+	if project != "" {
+		parsed = FilterProject(parsed, project)
+	}
+	res, issues := Build(parsed, Options{Attachments: att})
+	if len(issues) > 0 {
+		return nil
+	}
+	out := map[string]string{}
+	for _, r := range res {
+		if r.compose != nil {
+			out[r.Name] = composeEnvDigest(r.compose.env)
+		}
+	}
+	return out
+}
+
+// planComposePrune deletes a compose App the stack owns and the files dropped.
+// It needs the typed confirmation, and the teardown keeps named volumes.
+func (p *planner) planComposePrune(r *Resource, live *liveCompose) *item {
+	name, stack := r.Name, p.st.ledger.StackName
+	if !p.opts.ConfirmDestroy {
+		it := p.add(r, ActionError, nil, nil, nil)
+		it.Code = CodeDestroyNotConfirmed
+		it.Reason = fmt.Sprintf("compose app %s is owned by stack %s and absent from the files; deleting it removes %d services, so send confirm_destroy with the stack name", name, stack, len(live.services))
+		it.Services = composeRows(nil, live.services)
+		return nil
+	}
+	it := p.add(r, ActionDelete, nil, nil, func(ctx context.Context, x *executor) error {
+		if !x.opts.ConfirmDestroy {
+			return errors.New(CodeDestroyNotConfirmed + ": a compose app delete needs confirm_destroy typed with the stack name")
+		}
+		// No volumes=true: named volumes outlive the app unless removed on purpose.
+		return x.do(ctx, http.MethodDelete, "/api/v1/apps/"+esc(name)+"/compose", nil, nil)
+	})
+	it.Reason = "compose app owned by stack " + stack + " and absent from the files; every service is removed, named volumes are kept"
+	it.Services = composeRows(nil, live.services)
+	return it
 }
 
 func shortDigest(d string) string {

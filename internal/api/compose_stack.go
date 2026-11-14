@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -75,14 +77,16 @@ type composeServiceStatus struct {
 }
 
 type composeStackResource struct {
-	AppID      string                 `json:"app_id"`
-	Phase      string                 `json:"phase"`
-	Revision   int                    `json:"revision,omitempty"`
-	DeployedAt string                 `json:"deployed_at,omitempty"`
-	Source     string                 `json:"source,omitempty"`
-	TemplateID string                 `json:"template_id,omitempty"`
-	Profiles   []string               `json:"profiles,omitempty"`
-	Services   []composeServiceStatus `json:"services"`
+	AppID      string   `json:"app_id"`
+	Phase      string   `json:"phase"`
+	Revision   int      `json:"revision,omitempty"`
+	DeployedAt string   `json:"deployed_at,omitempty"`
+	Source     string   `json:"source,omitempty"`
+	TemplateID string   `json:"template_id,omitempty"`
+	Profiles   []string `json:"profiles,omitempty"`
+	// ComposeDigest is sha256 of the latest revision body as received, computed on read.
+	ComposeDigest string                 `json:"compose_digest,omitempty"`
+	Services      []composeServiceStatus `json:"services"`
 }
 
 func (rt *Router) composeRevisionStore() ComposeRevisionStore {
@@ -183,6 +187,8 @@ func (rt *Router) loadComposeStack(w http.ResponseWriter, r *http.Request, appID
 		if rev, err := revs.GetComposeRevision(r.Context(), appID, 0); err == nil {
 			out.Revision, out.Source, out.TemplateID, out.Profiles = rev.Revision, rev.Source, rev.TemplateID, rev.Profiles
 			out.DeployedAt = rev.CreatedAt.UTC().Format(time.RFC3339)
+			sum := sha256.Sum256([]byte(rev.Compose))
+			out.ComposeDigest = "sha256:" + hex.EncodeToString(sum[:])
 		}
 	}
 	return out, services, true
@@ -317,6 +323,10 @@ func (rt *Router) handleRedeployCompose(w http.ResponseWriter, r *http.Request) 
 // ?volumes=true, which additionally needs AbilityWriteSensitive.
 func (rt *Router) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 	appID := r.PathValue("name")
+	// Same guard as DELETE /apps/{name}: protection must stop a whole compose teardown too.
+	if rt.refuseIfProtected(w, r, appID) {
+		return
+	}
 	removeVolumes := r.URL.Query().Get("volumes") == "true"
 	if removeVolumes && !rt.callerHasAbility(r, AbilityWriteSensitive) {
 		writeError(w, http.StatusForbidden, "removing volumes deletes data and requires the write-sensitive ability")
