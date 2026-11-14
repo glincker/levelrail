@@ -453,6 +453,7 @@
               "iac/cloud-connect",
               "iac/resources",
               "iac/cron-and-alerts",
+              "iac/importers",
               "iac/compose",
               "iac/reference",
               "iac/errors",
