@@ -111,16 +111,18 @@ describe('StackSyncCard', () => {
   })
 
   it('shows the cooldown message after a 429 refresh', async () => {
-    mock({ config: cfg, webhook_secret_set: true }, (u, init) =>
-      u.endsWith('/refresh') && init?.method === 'POST'
-        ? new Response(
-            JSON.stringify({ error: 'a sync refresh ran recently' }),
-            {
-              status: 429,
-              headers: { 'Content-Type': 'application/json' },
-            },
-          )
-        : undefined,
+    mock(
+      { config: cfg, webhook_secret_set: true, refresh_cooldown_seconds: 45 },
+      (u, init) =>
+        u.endsWith('/refresh') && init?.method === 'POST'
+          ? new Response(
+              JSON.stringify({ error: 'a sync refresh ran recently' }),
+              {
+                status: 429,
+                headers: { 'Content-Type': 'application/json' },
+              },
+            )
+          : undefined,
     )
     renderCard()
     fireEvent.click(await screen.findByRole('button', { name: /Refresh now/ }))
@@ -130,6 +132,25 @@ describe('StackSyncCard', () => {
         .getByRole('button', { name: /Refresh now/ })
         .hasAttribute('disabled'),
     ).toBe(true)
+  })
+
+  it('keeps refresh enabled after a 429 when the server sent no cooldown', async () => {
+    mock({ config: cfg, webhook_secret_set: true }, (u, init) =>
+      u.endsWith('/refresh') && init?.method === 'POST'
+        ? new Response(JSON.stringify({ error: 'ran recently' }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        : undefined,
+    )
+    renderCard()
+    fireEvent.click(await screen.findByRole('button', { name: /Refresh now/ }))
+    expect(await screen.findByText(/ran recently/)).toBeTruthy()
+    expect(
+      screen
+        .getByRole('button', { name: /Refresh now/ })
+        .hasAttribute('disabled'),
+    ).toBe(false)
   })
 
   it('shows the rotated secret once and removes it from the DOM after close', async () => {

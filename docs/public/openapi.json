@@ -149274,7 +149274,7 @@
     },
     "/api/v1/stacks/{name}/sync": {
       "get": {
-        "description": "Show the git sync settings of a stack and its latest result: commit, plan hash, counts, pending and a code on failure, plus webhook_secret_set (a bool, never the secret). Never repository content or credentials.\n\nRequires the `read` ability.",
+        "description": "Show the git sync settings of a stack and its latest result: commit, plan hash, counts, pending and a code on failure, plus webhook_secret_set (a bool, never the secret) and refresh_cooldown_seconds (the refresh cooldown). Never repository content or credentials.\n\nRequires the `read` ability.",
         "operationId": "handleGetStackSync",
         "parameters": [
           {
@@ -149343,7 +149343,7 @@
             ]
           }
         ],
-        "summary": "Show the git sync settings of a stack and its latest result: commit, plan hash, counts, pending and a code on failure, plus webhook_secret_set (a bool, never the secret).",
+        "summary": "Show the git sync settings of a stack and its latest result: commit, plan hash, counts, pending and a code on failure, plus webhook_secret_set (a bool, never the secret) and refresh_cooldown_seconds (the refresh cooldown).",
         "tags": [
           "IaC Stacks"
         ],

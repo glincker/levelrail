@@ -42,7 +42,7 @@ func TestStackSyncRoutesAuthz(t *testing.T) {
 	if rec := call(rootCookie, http.MethodPut, "/api/v1/stacks/infra/sync", cfg); rec.Code != http.StatusOK {
 		t.Fatalf("root put = %d %s", rec.Code, rec.Body.String())
 	}
-	if rec := call(readCookie, http.MethodGet, "/api/v1/stacks/infra/sync", ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"enabled":false`) {
+	if rec := call(readCookie, http.MethodGet, "/api/v1/stacks/infra/sync", ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"enabled":false`) || !strings.Contains(rec.Body.String(), `"refresh_cooldown_seconds":`) {
 		t.Fatalf("reader get = %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := call(rootCookie, http.MethodPost, "/api/v1/stacks/infra/sync/refresh", ""); rec.Code != http.StatusConflict {

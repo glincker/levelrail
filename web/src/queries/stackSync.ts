@@ -38,6 +38,8 @@ export interface StackSyncInfo {
   config: StackSyncConfig | null
   webhook_secret_set: boolean
   status?: StackSyncStatus
+  // Server refresh cooldown; absent on an older control plane.
+  refresh_cooldown_seconds?: number
 }
 
 export interface StackSyncSecret {

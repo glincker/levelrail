@@ -51,10 +51,6 @@ function isKnownCode(c: string): c is KnownCode {
   return (KNOWN_CODES as readonly string[]).includes(c)
 }
 
-// Mirrors the server refresh cooldown default; the server message is still shown.
-const COOLDOWN_MS =
-  (Number(import.meta.env.VITE_SYNC_REFRESH_COOLDOWN_SECS) || 30) * 1000
-
 const COPIED_MS = 1500
 const EMPTY: StackSyncConfig = {
   repo_url: '',
@@ -227,20 +223,26 @@ function StatusRow({
 function RefreshButton({
   name,
   disabled,
-}: Readonly<{ name: string; disabled: boolean }>) {
+  cooldownSeconds,
+}: Readonly<{
+  name: string
+  disabled: boolean
+  cooldownSeconds?: number
+}>) {
   const { t } = useTranslation('stackSync')
   const refresh = useRefreshStackSync(name)
   const [cooling, setCooling] = useState<string | null>(null)
 
   useEffect(() => {
-    if (cooling === null) return
+    // Without a server value the button stays enabled and the 429 message is the only guard.
+    if (cooling === null || !cooldownSeconds) return
     const id = setTimeout(() => {
       setCooling(null)
-    }, COOLDOWN_MS)
+    }, cooldownSeconds * 1000)
     return () => {
       clearTimeout(id)
     }
-  }, [cooling])
+  }, [cooling, cooldownSeconds])
 
   function run() {
     refresh.mutate(undefined, {
@@ -263,7 +265,11 @@ function RefreshButton({
       <Button
         variant="outline"
         size="sm"
-        disabled={disabled || refresh.isPending || cooling !== null}
+        disabled={
+          disabled ||
+          refresh.isPending ||
+          (cooling !== null && Boolean(cooldownSeconds))
+        }
         title={t('refresh.hint')}
         onClick={run}
       >
@@ -600,6 +606,7 @@ export function StackSyncCard({
         <RefreshButton
           name={name}
           disabled={!isRoot || !info.config?.enabled}
+          cooldownSeconds={info.refresh_cooldown_seconds}
         />
       </div>
       <StatusRow info={info} onViewPlan={onViewPlan} />

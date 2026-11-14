@@ -202,6 +202,16 @@ type stackSyncResource struct {
 	// WebhookSecretSet says whether a secret is stored, never its value.
 	WebhookSecretSet bool                   `json:"webhook_secret_set"`
 	Status           *stackSyncStatusOutput `json:"status,omitempty"`
+	// RefreshCooldownSeconds is the server cooldown of the refresh route, so the UI never guesses it.
+	RefreshCooldownSeconds int `json:"refresh_cooldown_seconds"`
+}
+
+// stackSyncRefreshCooldown is the one place the refresh cooldown is read.
+func (rt *Router) stackSyncRefreshCooldown(ctx context.Context) time.Duration {
+	if rt.runtimeSettings == nil {
+		return 30 * time.Second
+	}
+	return time.Duration(rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackSyncRefreshMinSecs)) * time.Second
 }
 
 // stackSyncSecretDeleter is the optional delete side of the sealed store.
@@ -291,6 +301,7 @@ func (rt *Router) handleGetStackSync(w http.ResponseWriter, r *http.Request) {
 	}
 	out := toStackSyncResource(rec, found)
 	out.WebhookSecretSet = rt.stackSyncWebhookSecretSet(r.Context(), stack.ID)
+	out.RefreshCooldownSeconds = int(rt.stackSyncRefreshCooldown(r.Context()) / time.Second)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -345,6 +356,7 @@ func (rt *Router) handlePutStackSync(w http.ResponseWriter, r *http.Request) {
 	}
 	out := toStackSyncResource(rec, found)
 	out.WebhookSecretSet = rt.stackSyncWebhookSecretSet(r.Context(), stack.ID)
+	out.RefreshCooldownSeconds = int(rt.stackSyncRefreshCooldown(r.Context()) / time.Second)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -364,10 +376,7 @@ func (rt *Router) handleRefreshStackSync(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	state := rt.stackSyncState()
-	cooldown := 30 * time.Second
-	if rt.runtimeSettings != nil {
-		cooldown = time.Duration(rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyStackSyncRefreshMinSecs)) * time.Second
-	}
+	cooldown := rt.stackSyncRefreshCooldown(r.Context())
 	state.mu.Lock()
 	if last, seen := state.refresh[stack.ID]; seen && time.Since(last) < cooldown {
 		state.mu.Unlock()
