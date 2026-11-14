@@ -4869,6 +4869,9 @@ type AppStatusEntry struct {
 	Status struct {
 		Label   string `json:"label"`
 		Variant string `json:"variant"`
+		// Reason and Message name the first failing condition, empty when healthy.
+		Reason  string `json:"reason,omitempty"`
+		Message string `json:"message,omitempty"`
 	} `json:"status"`
 }
 

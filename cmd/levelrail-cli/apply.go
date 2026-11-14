@@ -39,6 +39,7 @@ type applyFlags struct {
 	values          stringListFlag
 	allowEnv        stringListFlag
 	serverSide      serverSideFlags
+	wait            *applyWaitFlags
 }
 
 func applyUsage(prog, name string) string {
@@ -71,7 +72,7 @@ Flags:
                        looking names (AWS_*, *TOKEN*, *SECRET*, *_KEY*) need their exact name.
   --no-deploy          do not restart running apps to apply env changes
   --continue-on-error  keep applying after an item fails
-%[3]s`, prog, name, commonFlagsHelp)
+%[4]s%[3]s`, prog, name, commonFlagsHelp, applyWaitHelp)
 }
 
 func bindApplyFlags(fs *flag.FlagSet, diff bool) *applyFlags {
@@ -96,6 +97,7 @@ func bindApplyFlags(fs *flag.FlagSet, diff bool) *applyFlags {
 	fs.Var(f.vars, "var", "NAME=VALUE for a ${{ env.NAME }} placeholder")
 	fs.Var(&f.varFiles, "var-file", "file of KEY=VALUE lines for placeholders (repeatable)")
 	fs.Var(&f.values, "values", "flat YAML file of placeholder values (repeatable, later wins)")
+	f.wait = bindApplyWaitFlags(fs)
 	fs.Var(&f.allowEnv, "allow-env", "NAME[,NAME] or PREFIX* that placeholders may read from the environment")
 	return f
 }
@@ -113,6 +115,9 @@ func runApplyKind(prog, name string, diff bool, args []string, stdout, stderr io
 	c, code, ok := parseCLICall(prog, name, applyUsage(prog, name), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { af = bindApplyFlags(fs, diff) })
 	if !ok {
 		return code
+	}
+	if *af.wait.on && *af.serverSide.on {
+		return iacFail(c, newValidationError("--wait is not supported with --server-side"))
 	}
 	if *af.serverSide.on && !diff {
 		return runServerSideApply(c, prog, af, af.serverSide)
@@ -153,12 +158,20 @@ func runApplyKind(prog, name string, diff bool, args []string, stdout, stderr io
 	if err != nil {
 		return iacFail(c, err)
 	}
-	if c.jsonOut {
-		_ = c.render(res, func() {})
-	} else {
-		printApplyResult(stdout, res)
+	var waited []appWaitResult
+	if *af.wait.on && res.OK() {
+		waited = waitForApps(ctx, c, af.wait, lookupEnv, appsToWaitFor(res))
 	}
-	if !res.OK() {
+	switch {
+	case c.jsonOut && *af.wait.on:
+		_ = c.render(waitedApply{Result: res, Wait: waited}, func() {})
+	case c.jsonOut:
+		_ = c.render(res, func() {})
+	default:
+		printApplyResult(stdout, res)
+		printWaitResults(stdout, waited)
+	}
+	if !res.OK() || waitFailed(waited) {
 		return iacExitError
 	}
 	return exitOK

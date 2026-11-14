@@ -708,6 +708,7 @@ type stackRunFlags struct {
 	idemKey         *string
 	yes             *bool
 	job             *stackJobFlags
+	wait            *applyWaitFlags
 }
 
 func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
@@ -736,7 +737,7 @@ const stackRunFlagsHelp = `
   --continue-on-error      keep applying after an item fails
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --idempotency-key K      a retry with the same key returns the stored revision
-  --yes                    do not ask for confirmation` + stackJobFlagsHelp + `
+  --yes                    do not ask for confirmation` + stackJobFlagsHelp + applyWaitHelp + `
 `
 
 func stackApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -750,6 +751,7 @@ Flags:
   --confirm-destroy S      stack name typed to allow deleting compose apps and cloud resources in this run; --yes does not imply it
   -f PATH, --project P, --prune, --allow-weaken, --allow-mass-prune, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		rf = bindStackRunFlags(fs, true)
+		rf.wait = bindApplyWaitFlags(fs)
 		bindConfirmDestroy(fs, rf.stackManifestFlags)
 	})
 	if !ok {
@@ -781,7 +783,10 @@ Flags:
 	if err != nil {
 		return iacFail(c, err)
 	}
-	return finishStackRun(c, raw, res, "applied")
+	if !*rf.wait.on {
+		return finishStackRun(c, raw, res, "applied")
+	}
+	return finishStackWait(ctx, c, rf.wait, lookupEnv, res)
 }
 
 // stackConfirmPlan prints the plan and asks. It pins the apply to the plan the
@@ -826,6 +831,10 @@ func finishStackRun(c cliCall, raw json.RawMessage, res apiclient.StackApplyResp
 	if rc != exitOK {
 		return rc
 	}
+	return stackRunExit(c, res)
+}
+
+func stackRunExit(c cliCall, res apiclient.StackApplyResponse) int {
 	if res.Revision == nil {
 		return iacExitError
 	}

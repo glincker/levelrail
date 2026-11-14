@@ -26,7 +26,7 @@ The plan carries a hash. The CLI, dashboard and MCP send it back so an apply pro
 
 ## Approve and apply
 
-Apply runs each item through the existing endpoint and is safe to repeat: a re-run plans again and does only what is missing. The first failed item stops the run unless `--continue-on-error` is set. A stack can require approval, in which case an apply is stored as a pending revision until another administrator approves it. In apply mode, exit 2 then means "awaiting approval". Details: [Stacks](/stacks#approvals).
+Apply runs each item through the existing endpoint and is safe to repeat: a re-run plans again and does only what is missing. The first failed item stops the run unless `--continue-on-error` is set. `--wait` (on `apply` and `stack apply`) then polls the apps the run wrote until each is running or failed, prints the failure reason per app and exits 1 when any failed; without it a pull error shows up later as `Attention needed`. A stack can require approval, in which case an apply is stored as a pending revision until another administrator approves it. In apply mode, exit 2 then means "awaiting approval". Details: [Stacks](/stacks#approvals).
 
 ## Ledger and prune
 
