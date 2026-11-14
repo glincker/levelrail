@@ -1572,6 +1572,8 @@ Declarative plan, apply, export, stacks, revisions, approvals and CI trusts.
 | POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
 | POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
 | GET | /api/v1/stacks/{name}/plan-jobs/{id} | AbilityRead | handleStackPlanJob |
+| GET | /api/v1/stacks/{name}/cloud-state/quarantine | AbilityRoot | handleListCloudStateQuarantine |
+| POST | /api/v1/stacks/{name}/cloud-state/quarantine/{id}/resolve | AbilityRoot | handleResolveCloudStateQuarantine |
 
 ## Other
 

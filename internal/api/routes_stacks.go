@@ -46,6 +46,10 @@ func (rt *Router) registerStackRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/stacks/{name}/oidc-trusts", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleListStackTrusts))
 	// Remove a CI OIDC trust. Root only.
 	mux.HandleFunc("DELETE /api/v1/stacks/{name}/oidc-trusts/{id}", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleDeleteStackTrust))
+	// List unresolved quarantined cloud state of a stack: id, account, reason, fence, created_at, never the state. Root only.
+	mux.HandleFunc("GET /api/v1/stacks/{name}/cloud-state/quarantine", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleListCloudStateQuarantine))
+	// Clear one quarantine row after the state was reconciled by hand; confirm is the typed stack name. It only lifts the block on further cloud runs. Root only, audited.
+	mux.HandleFunc("POST /api/v1/stacks/{name}/cloud-state/quarantine/{id}/resolve", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleResolveCloudStateQuarantine))
 	mux.HandleFunc("GET /api/v1/stack-templates", rt.requireAbility(AbilityRead, rt.handleListStackTemplates))
 	mux.HandleFunc("GET /api/v1/stack-templates/{id}", rt.requireAbility(AbilityRead, rt.handleGetStackTemplate))
 	mux.HandleFunc("POST /api/v1/stack-templates/{id}/render", rt.requireAbility(AbilityWrite, rt.handleRenderStackTemplate))

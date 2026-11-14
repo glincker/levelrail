@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2125 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2127 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -901,6 +901,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/stacks/{name}", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleGetStack", Description: "Show one stack with its settings, pinned revision and latest status."},
 	{Method: "PATCH", Path: "/api/v1/stacks/{name}", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleUpdateStackSettings", Description: "Change stack settings: prune, drift check and approval requirement. Root only."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/apply", Ability: "AbilityWrite", Group: "IaC Stacks", Handler: "handleStackApply", Description: "Apply the documents as a new revision. Send an Idempotency-Key so a retry returns the stored revision. Pass expected_plan_hash to refuse a stale plan with 409 (plan_hash_version when the hash is the old shape). 503 apply_disabled while the kill switch is off. Error codes: docs/iac/errors.md."},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/cloud-state/quarantine", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleListCloudStateQuarantine", Description: "List unresolved quarantined cloud state of a stack: id, account, reason, fence, created_at, never the state. Root only."},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/cloud-state/quarantine/{id}/resolve", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleResolveCloudStateQuarantine", Description: "Clear one quarantine row after the state was reconciled by hand; confirm is the typed stack name. It only lifts the block on further cloud runs. Root only, audited."},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/oidc-trusts", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleListStackTrusts", Description: "List the CI OIDC trusts of a stack. Root only."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/oidc-trusts", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleCreateStackTrust", Description: "Trust a CI OIDC issuer and subject to apply this stack without a long lived token. Root only."},
 	{Method: "DELETE", Path: "/api/v1/stacks/{name}/oidc-trusts/{id}", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleDeleteStackTrust", Description: "Remove a CI OIDC trust. Root only."},

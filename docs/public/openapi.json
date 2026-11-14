@@ -147756,6 +147756,181 @@
         "x-required-ability": "write"
       }
     },
+    "/api/v1/stacks/{name}/cloud-state/quarantine": {
+      "get": {
+        "description": "List unresolved quarantined cloud state of a stack: id, account, reason, fence, created_at, never the state. Root only.\n\nRequires the `root` ability.",
+        "operationId": "handleListCloudStateQuarantine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "List unresolved quarantined cloud state of a stack: id, account, reason, fence, created_at, never the state.",
+        "tags": [
+          "IaC Stacks"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/stacks/{name}/cloud-state/quarantine/{id}/resolve": {
+      "post": {
+        "description": "Clear one quarantine row after the state was reconciled by hand; confirm is the typed stack name. It only lifts the block on further cloud runs. Root only, audited.\n\nRequires the `root` ability.",
+        "operationId": "handleResolveCloudStateQuarantine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Clear one quarantine row after the state was reconciled by hand; confirm is the typed stack name.",
+        "tags": [
+          "IaC Stacks"
+        ],
+        "x-required-ability": "root"
+      }
+    },
     "/api/v1/stacks/{name}/oidc-trusts": {
       "get": {
         "description": "List the CI OIDC trusts of a stack. Root only.\n\nRequires the `root` ability.",
