@@ -212,17 +212,18 @@ spec:
 
 ## Importing compose projects
 
-`levelrail-cli import compose-ref [dir]` scans a directory for `docker-compose*.yml`, `compose*.yaml` and similar files and prints reviewable documents for every image based service. It is read only: nothing is written unless you pass `--write DIR`, and existing files are kept unless you also pass `--force`. The output is checked with the same loader `stack plan` uses before it is printed or written.
+`levelrail-cli import compose-ref [dir]` scans a directory for `docker-compose*.yml`, `compose*.yaml` and similar files. It is read only: nothing is written unless you pass `--write DIR`, and existing files are kept unless you also pass `--force`. The output is checked with the same loader `stack plan` uses before it is printed or written. It has two modes.
 
 ```bash
-levelrail-cli import compose-ref ./myproject --stack shop            # dry run, prints the documents
+levelrail-cli import compose-ref ./myproject --stack shop                       # convert: one App per image service
 levelrail-cli import compose-ref ./myproject --stack shop --write ./stacks/shop
-levelrail-cli stack plan shop -f ./stacks/shop
+levelrail-cli import compose-ref ./myproject --reference --write ./myproject    # reference: one App per compose file
 ```
 
-- Environment values are never read into the output. Every variable becomes a secret name listed in `SECRETS.md`; `env_file` contents are not read either.
-- A service with a `build:` context is skipped with a note, because apply runs prebuilt images. Build and push an image, then add an App for it.
-- Volumes, profiles, and command overrides are listed in `MIGRATION.md`, not emitted.
+- **Reference** (`--reference`): one App per compose file with `spec.compose.path`. The file is never copied, so there is one definition. See [Compose projects as code](/iac/compose). Needs the beta setting `iac.compose_refs`.
+- **Convert** (default): prints Apps for every image based service. The compose file and the documents are then two definitions of the same app: keep one.
+- Environment values are never read into the output. In convert mode every variable becomes a secret name listed in `SECRETS.md`; `env_file` contents are not read either.
+- In convert mode a service with a `build:` context is skipped with a note, because apply runs prebuilt images. Volumes, profiles, and command overrides are listed in `MIGRATION.md`, not emitted.
 - Scanning stops at `LEVELRAIL_IMPORT_COMPOSE_MAX_DEPTH` folders (default 4), skips files over `LEVELRAIL_IMPORT_COMPOSE_MAX_BYTES` (default 1 MiB), and never follows symlinks.
 
-This converts image services into App documents, so the compose file and the documents are two definitions of the same app: keep one. Referencing the compose file in place (`spec.compose`) is not available yet, because the apply path has no way to carry compose content. Discovery by the `com.docker.compose.project` container label is also not available yet.
+Discovery by the `com.docker.compose.project` container label is not available yet.

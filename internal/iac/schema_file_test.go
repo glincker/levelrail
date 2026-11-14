@@ -46,9 +46,17 @@ func TestIaCExamples(t *testing.T) {
 		t.Fatal("no yaml blocks found in docs/iac")
 	}
 	files := 0
+	SetComposeSource(func() ComposeLimits {
+		return ComposeLimits{Enabled: true, MaxFileBytes: 256 << 10, MaxFiles: 20, MaxTotalBytes: 2048 << 10}
+	})
+	t.Cleanup(func() { SetComposeSource(func() ComposeLimits { return ComposeLimits{} }) })
+	attachments := exampleComposeAttachments(t)
 	err := filepath.WalkDir("../../examples/iac", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || filepath.Ext(path) != ".yaml" {
 			return err
+		}
+		if _, isAttachment := attachments[filepath.ToSlash(path)]; isAttachment {
+			return nil
 		}
 		raw, err := os.ReadFile(path) //nolint:gosec // walked examples path
 		if err != nil {
@@ -56,7 +64,7 @@ func TestIaCExamples(t *testing.T) {
 		}
 		files++
 		for _, vars := range exampleVarSets(t, filepath.Dir(path)) {
-			validateYAMLWith(t, path, raw, Options{Vars: vars})
+			validateYAMLWith(t, path, raw, Options{Vars: vars, Attachments: exampleAttachmentsFor(attachments, path)})
 		}
 		return nil
 	})
@@ -146,4 +154,45 @@ func TestPublishedSchemaFileIsCurrent(t *testing.T) {
 	if string(got) != string(want) {
 		t.Fatal("docs/schemas/resources.schema.json is stale; run: IAC_UPDATE_SCHEMA=1 go test -run TestPublishedSchemaFileIsCurrent ./internal/iac/")
 	}
+}
+
+// exampleComposeAttachments finds the compose files that example documents
+// reference, keyed by their walked path, so the walk skips them as documents.
+func exampleComposeAttachments(t *testing.T) map[string][]byte {
+	t.Helper()
+	out := map[string][]byte{}
+	roots, _ := filepath.Glob("../../examples/iac/*")
+	for _, root := range roots {
+		var srcs []Source
+		_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() || filepath.Ext(p) != ".yaml" {
+				return err
+			}
+			raw, rerr := os.ReadFile(p) //nolint:gosec // walked examples path
+			if rerr != nil {
+				t.Fatal(rerr)
+			}
+			rel, _ := filepath.Rel(root, p)
+			srcs = append(srcs, Source{Name: filepath.ToSlash(rel), Data: raw})
+			return nil
+		})
+		_, atts, _ := SplitComposeRefs(srcs)
+		for rel, data := range atts {
+			out[filepath.ToSlash(filepath.Join(root, rel))] = data
+		}
+	}
+	return out
+}
+
+// exampleAttachmentsFor returns the attachments of the example folder that holds path.
+func exampleAttachmentsFor(all map[string][]byte, path string) map[string][]byte {
+	rest := strings.TrimPrefix(filepath.ToSlash(path), "../../examples/iac/")
+	root := "../../examples/iac/" + strings.SplitN(rest, "/", 2)[0] + "/"
+	out := map[string][]byte{}
+	for k, v := range all {
+		if strings.HasPrefix(k, root) {
+			out[strings.TrimPrefix(k, root)] = v
+		}
+	}
+	return out
 }

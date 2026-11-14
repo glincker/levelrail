@@ -254,7 +254,7 @@ func finishReferenceWrite(prog string, o platformimport.EmitOptions, f composeRe
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
 	next := []string{
-		"turn on the runtime setting iac.compose_refs (beta, off by default) in Settings or through the settings API",
+		fmt.Sprintf("%s settings runtime set iac.compose_refs true   (beta, off by default)", prog),
 		fmt.Sprintf("%s apply -f %s --dry-run", prog, f.write),
 		fmt.Sprintf("%s apply -f %s --yes", prog, f.write),
 		fmt.Sprintf("%s stack adopt-from-export %s -f %s   (when the project already runs on Levelrail)", prog, o.Stack, f.write),

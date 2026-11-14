@@ -1,0 +1,13 @@
+services:
+  web:
+    image: nginx:1.27
+    ports: ["8080:80"]
+    environment:
+      SHOP_TITLE: ${SHOP_TITLE}
+    depends_on: [cache]
+  cache:
+    image: redis:7
+    volumes:
+      - cache-data:/data
+volumes:
+  cache-data: {}

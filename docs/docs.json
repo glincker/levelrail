@@ -452,6 +452,7 @@
               "iac/git-sync",
               "iac/cloud-connect",
               "iac/resources",
+              "iac/compose",
               "iac/reference",
               "iac/errors",
               "platform-as-code",
