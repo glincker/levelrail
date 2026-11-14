@@ -123,6 +123,8 @@ type emitDoc struct {
 	Kind     string   `yaml:"kind"`
 	Metadata emitMeta `yaml:"metadata"`
 	Spec     any      `yaml:"spec"`
+	// guidance emits the document as comments: the schema needs a port, the source named none.
+	guidance string
 }
 
 type emitMeta struct {
@@ -255,6 +257,10 @@ func EmitStack(in EmitInput, o EmitOptions) ([]EmitFile, error) {
 		}
 		a.Secrets = secrets
 		appDocs = append(appDocs, doc)
+		if doc.guidance != "" {
+			notes = append(notes, fmt.Sprintf("app %s has no port in the source, it is commented out in %s until you set port or published_ports", a.Name, EmitAppsFile))
+			continue
+		}
 		for _, h := range sortedUniqueStrings(a.Domains) {
 			if prev, dup := owner[h]; dup {
 				notes = append(notes, fmt.Sprintf("domain %s is claimed by %s and %s, it is emitted for %s only", h, prev, a.Name, prev))
@@ -321,6 +327,10 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 	if a.Port == 0 {
 		a.Notes = append(a.Notes, "the source names no port, none is invented: set port (HTTP) or published_ports (other protocols) before applying")
 	}
+	guidance := ""
+	if a.Port == 0 {
+		guidance = "no port in the source, so this App is commented out to keep the stack valid. Uncomment it and set port (HTTP) or published_ports (other protocols), then apply."
+	}
 	svc := emitSvc{Build: emitBuild{Type: "image", Image: image}, Port: a.Port, Replicas: a.Replicas, Command: a.Command}
 	if a.MemoryBytes > 0 || a.NanoCPUs > 0 || a.Memory != "" {
 		r := &emitResources{CPU: float64(a.NanoCPUs) / 1e9, Memory: a.Memory}
@@ -384,20 +394,33 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 	}
 	sort.SliceStable(svc.Jobs, func(i, j int) bool { return svc.Jobs[i].Name < svc.Jobs[j].Name })
 	spec := emitAppSpec{Project: firstNonEmpty(a.Project, o.Project), Environment: firstNonEmpty(a.Environment, o.Environment), Service: svc}
-	return emitDoc{Version: 1, Kind: "App", Metadata: emitMeta{Name: a.Name}, Spec: spec}, out, nil
+	return emitDoc{Version: 1, Kind: "App", Metadata: emitMeta{Name: a.Name}, Spec: spec, guidance: guidance}, out, nil
 }
 
 func marshalDocs(docs []emitDoc) ([]byte, error) {
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	for _, d := range docs {
+	for i, d := range docs {
+		var one bytes.Buffer
+		enc := yaml.NewEncoder(&one)
+		enc.SetIndent(2)
 		if err := enc.Encode(d); err != nil {
 			return nil, fmt.Errorf("platformimport: encode %s %s: %w", d.Kind, d.Metadata.Name, err)
 		}
-	}
-	if err := enc.Close(); err != nil {
-		return nil, fmt.Errorf("platformimport: encode documents: %w", err)
+		if err := enc.Close(); err != nil {
+			return nil, fmt.Errorf("platformimport: encode %s %s: %w", d.Kind, d.Metadata.Name, err)
+		}
+		if i > 0 {
+			buf.WriteString("---\n")
+		}
+		if d.guidance == "" {
+			buf.Write(one.Bytes())
+			continue
+		}
+		// A comment block the loader ignores: the schema needs a port the source never named.
+		buf.WriteString("# " + d.guidance + "\n")
+		for _, line := range strings.Split(strings.TrimRight(one.String(), "\n"), "\n") {
+			buf.WriteString("# " + line + "\n")
+		}
 	}
 	return buf.Bytes(), nil
 }
