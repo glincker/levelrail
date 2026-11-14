@@ -26,6 +26,18 @@ resource "levelrail_alert_rule" "web_crashloop" {
   restart_count_threshold = 3
 }
 
+resource "levelrail_cron_job" "nightly" {
+  app                   = levelrail_app.web.name
+  name                  = "nightly"
+  schedule              = "0 3 * * *"
+  timezone              = "Europe/Berlin"
+  command               = ["node", "scripts/nightly.js"]
+  concurrency_policy    = "forbid"
+  timeout_seconds       = 600
+  max_retries           = 2
+  retry_backoff_seconds = 30
+}
+
 data "levelrail_apps" "all" {}
 
 data "levelrail_app_secrets" "web" {
