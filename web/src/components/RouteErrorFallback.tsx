@@ -1,4 +1,4 @@
-import { useContext, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams, useRouter } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -21,27 +21,16 @@ import { LazyReportIssueDialog } from './LazyReportIssueDialog'
 import { ForbiddenState } from './teams/ForbiddenState'
 import { NotFoundState, type NotFoundResource } from './NotFoundState'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { errorReport } from '@/lib/errorReport'
+import { updatesQueryOptions } from '@/queries/updates'
 
-// Plain text for a bug report: no tokens or headers, only what the user sees.
-function errorReport(error: unknown, header: string): string {
-  const api = error instanceof ApiError ? error : undefined
-  return [
-    header,
-    `message: ${routeErrorMessage(error)}`,
-    api ? `status: ${api.status}` : null,
-    api?.code ? `code: ${api.code}` : null,
-    api?.requestId ? `request_id: ${api.requestId}` : null,
-    `url: ${window.location.pathname}`,
-    `time: ${new Date().toISOString()}`,
-  ]
-    .filter((l): l is string => l !== null)
-    .join('\n')
-}
+const DEFAULT_SUPPORT_URL = 'https://github.com/glincker/levelrail'
 
 function CopyDetailsButton({ error }: { error: unknown }) {
   const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
+  const updates = useQuery({ ...updatesQueryOptions(), retry: false })
   return (
     <Button
       type="button"
@@ -49,7 +38,13 @@ function CopyDetailsButton({ error }: { error: unknown }) {
       size="sm"
       onClick={() => {
         void navigator.clipboard
-          .writeText(errorReport(error, t('routeError.detailsHeader')))
+          .writeText(
+            errorReport(
+              error,
+              t('routeError.detailsHeader'),
+              updates.data?.current_version,
+            ),
+          )
           .then(() => {
             setCopied(true)
           })
@@ -70,7 +65,6 @@ function ReportLink({ error }: { error: unknown }) {
   const { t } = useTranslation('common')
   const brand = useContext(BrandContext)
   const [open, setOpen] = useState(false)
-  if (!brand?.SupportURL) return null
   return (
     <>
       <Button
@@ -88,7 +82,7 @@ function ReportLink({ error }: { error: unknown }) {
         open={open}
         onOpenChange={setOpen}
         source="error"
-        supportUrl={brand.SupportURL}
+        supportUrl={brand?.SupportURL || DEFAULT_SUPPORT_URL}
         errorMessage={routeErrorMessage(error)}
         requestId={error instanceof ApiError ? error.requestId : undefined}
       />
@@ -124,13 +118,26 @@ function ErrorCard({
   title: string
   children: ReactNode
 }) {
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    heading.current?.focus()
+  }, [])
   return (
-    <div className="flex min-h-[40vh] items-center justify-center p-4">
+    <div
+      role="alert"
+      className="flex min-h-[40vh] items-center justify-center p-4"
+    >
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center gap-2">
             {icon}
-            <CardTitle>{title}</CardTitle>
+            <h2
+              ref={heading}
+              tabIndex={-1}
+              className="font-heading text-base font-medium leading-snug outline-none"
+            >
+              {title}
+            </h2>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">{children}</CardContent>

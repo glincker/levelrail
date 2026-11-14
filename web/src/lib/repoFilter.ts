@@ -6,9 +6,9 @@ export function filterRepos(
   query: string,
   urlCandidate: string | null,
 ): NormalizedRepoOption[] {
-  const sorted = [...repos].sort((a, b) =>
-    (b.pushedAt ?? '').localeCompare(a.pushedAt ?? ''),
-  )
+  const sorted = repos
+    .filter((r) => r && typeof r.cloneUrl === 'string')
+    .sort((a, b) => (b.pushedAt ?? '').localeCompare(a.pushedAt ?? ''))
   if (urlCandidate) {
     const want = normalizeRepoUrl(urlCandidate)
     return sorted.filter((r) => normalizeRepoUrl(r.cloneUrl) === want)
@@ -17,7 +17,7 @@ export function filterRepos(
   if (q === '') return sorted
   return sorted.filter(
     (r) =>
-      r.displayPath.toLowerCase().includes(q) ||
+      (r.displayPath ?? '').toLowerCase().includes(q) ||
       (r.language ?? '').toLowerCase().includes(q),
   )
 }
