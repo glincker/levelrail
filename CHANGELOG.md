@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/glincker/levelrail/compare/v1.1.0...v1.1.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* handle forgejo and bitbucket server repositories in the new app wizard ([#1512](https://github.com/glincker/levelrail/issues/1512)) ([e0699b9](https://github.com/glincker/levelrail/commit/e0699b942d782486f7ea0884d37a18eb6382e71f)), closes [#1500](https://github.com/glincker/levelrail/issues/1500)
+
 ## [1.1.0](https://github.com/glincker/levelrail/compare/v1.0.3...v1.1.0) (2026-11-14)
 
 
