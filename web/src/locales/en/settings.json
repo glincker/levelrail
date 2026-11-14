@@ -3662,6 +3662,10 @@
         "message": "The alert rule lacks a metric, comparator or threshold.",
         "fix": "Set all three, with a comparator of >, <, >= or <=."
       },
+      "registry_credential_not_found": {
+        "message": "A build names a registry credential that does not exist on the control plane.",
+        "fix": "Create the credential first with registry-credentials create, or fix the name."
+      },
       "environment_protected": {
         "message": "An app would be bound into a protected environment.",
         "fix": "Unprotect the environment, or deploy through the normal approval path."

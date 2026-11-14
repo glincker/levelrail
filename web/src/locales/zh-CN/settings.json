@@ -2611,6 +2611,10 @@
         "message": "告警规则缺少指标、比较符或阈值。",
         "fix": "三者都要设置，比较符为 >、<、>= 或 <=。"
       },
+      "registry_credential_not_found": {
+        "message": "构建引用了控制平面上不存在的镜像仓库凭据。",
+        "fix": "请先用 registry-credentials create 创建该凭据，或修正名称。"
+      },
       "environment_protected": {
         "message": "应用将被绑定到受保护的环境。",
         "fix": "取消环境保护，或通过正常审批流程部署。"

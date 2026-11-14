@@ -3350,6 +3350,10 @@
         "message": "A la regla de alerta le falta métrica, comparador o umbral.",
         "fix": "Define los tres, con un comparador >, <, >= o <=."
       },
+      "registry_credential_not_found": {
+        "message": "Un build nombra una credencial de registro que no existe en el plano de control.",
+        "fix": "Crea primero la credencial con registry-credentials create, o corrige el nombre."
+      },
       "environment_protected": {
         "message": "Una app se vincularía a un entorno protegido.",
         "fix": "Desprotege el entorno o despliega por la vía normal de aprobación."

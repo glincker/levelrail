@@ -51,6 +51,7 @@ const CODES = [
   'sync_disk_low',
   'sync_apply_failed',
   'environment_protected',
+  'registry_credential_not_found',
 ] as const
 
 export const IAC_CODE_KEYS: Readonly<Record<string, string>> =
