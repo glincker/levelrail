@@ -119,6 +119,16 @@ func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord)
 	}
 	// The mirror may hold history the checkout does not: cap it at the repo cap too.
 	fctx = sourcecache.WithMaxMirrorBytes(fctx, rt.stackSyncLimits(ctx).MaxRepoBytes)
+	// Only the sync path is needed: try a shallow sparse clone before the full mirror.
+	if strings.HasPrefix(url, "https://") {
+		co, serr := rt.sourceCache.SparseCheckout(fctx, url, rec.Config.Branch, rec.Config.Path, token, rt.stackSyncLimits(ctx).MaxRepoBytes)
+		if serr == nil {
+			return co.Dir, co.Commit, co.Cleanup, nil
+		}
+		if errors.Is(serr, sourcecache.ErrOverBudget) {
+			return "", "", nil, &stacksync.CodedError{Code: iac.CodeSyncLimitsExceeded, Msg: "repository is larger than the size limit"}
+		}
+	}
 	dir, commit, cleanup, err := rt.gitCheckout(fctx, url, rec.Config.Branch, token)
 	if errors.Is(err, sourcecache.ErrOverBudget) {
 		return "", "", nil, &stacksync.CodedError{Code: iac.CodeSyncLimitsExceeded, Msg: "repository is larger than the size limit"}
