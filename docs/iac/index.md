@@ -62,12 +62,15 @@ levelrail-cli export --project demo -o infra/
 
 ## 5. Move it into a stack
 
-A stack gives you a reviewed plan, numbered revisions and rollback.
+A stack gives you a reviewed plan, numbered revisions and rollback. A stack refuses resources that a plain `apply` already created, because no stack owns them. Start the stack with fresh names. The first stack apply creates the stack, so there is no separate create step.
 
 ```bash
-levelrail-cli stack create demo-prod --project demo
-levelrail-cli stack plan demo-prod -f infra/
-levelrail-cli stack apply demo-prod -f infra/ --yes
+mkdir stack-infra
+sed 's/demo/demo-stack/g; s/web/web-stack/g; s/main-db/stack-db/g' infra/app.yaml > stack-infra/app.yaml
+levelrail-cli stack plan demo-prod -f stack-infra/
+levelrail-cli stack apply demo-prod -f stack-infra/ --yes
 ```
+
+To bring the resources from step 2 into a stack instead, delete them first. The REST stack apply also accepts `adopt: true`, which claims existing resources, but the CLI has no flag for it.
 
 Next: [IaC reference](/iac/reference), [Platform as code](/platform-as-code), [Stacks and GitOps](/stacks).

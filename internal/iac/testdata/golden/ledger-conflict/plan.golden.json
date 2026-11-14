@@ -15,7 +15,7 @@
       "kind": "Tag",
       "name": "frontend",
       "action": "error",
-      "reason": "ledger conflict: Tag/frontend already exists and no stack owns it; pass adopt to bring it into stack shop-prod",
+      "reason": "ledger conflict: Tag/frontend already exists and no stack owns it; delete it first or give it a new name, or send adopt: true in the REST stack apply to bring it into stack shop-prod",
       "code": "item_failed",
       "file": "docs.yaml",
       "line": 5

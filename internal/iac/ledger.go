@@ -281,7 +281,7 @@ func (p *planner) ledgerGate(r *Resource) bool {
 	if l.Adopt || p.scopeClaim(r) {
 		return false
 	}
-	p.conflict(r, "%s already exists and no stack owns it; pass adopt to bring it into stack %s", key, l.StackName)
+	p.conflict(r, "%s already exists and no stack owns it; delete it first or give it a new name, or send adopt: true in the REST stack apply to bring it into stack %s", key, l.StackName)
 	return true
 }
 
