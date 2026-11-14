@@ -41,16 +41,16 @@ var tofuDigests = map[string]map[string]string{
 
 // Fetch errors. Every one is a hard stop: there is no retry with another URL.
 var (
-	ErrFetchConfig          = errors.New("cloudiac: fetch is not configured")
-	ErrUnpinnedVersion      = errors.New("cloudiac: OpenTofu version has no compiled checksum")
-	ErrUnsupportedPlatform  = errors.New("cloudiac: no compiled checksum for this platform")
-	ErrPlaceholderDigest    = errors.New("cloudiac: compiled checksum is a placeholder, refusing to run")
-	ErrSignatureUnverified  = errors.New("cloudiac: release signature verification is not available")
-	ErrLowDisk              = errors.New("cloudiac: not enough free disk for the OpenTofu download")
-	ErrTooLarge             = errors.New("cloudiac: OpenTofu download exceeds the size cap")
-	ErrChecksumMismatch     = errors.New("cloudiac: OpenTofu checksum mismatch")
-	ErrBadArchive           = errors.New("cloudiac: OpenTofu archive is malformed")
-	ErrFreeSpaceUnsupported = errors.New("cloudiac: free space probe is not supported on this platform")
+	ErrFetchConfig          error = &unavailableError{msg: "cloudiac: fetch is not configured, check the cloud.fetch_* settings"}
+	ErrUnpinnedVersion            = errors.New("cloudiac: OpenTofu version has no compiled checksum")
+	ErrUnsupportedPlatform        = errors.New("cloudiac: no compiled checksum for this platform")
+	ErrPlaceholderDigest          = errors.New("cloudiac: compiled checksum is a placeholder, refusing to run")
+	ErrSignatureUnverified        = errors.New("cloudiac: release signature verification is not available")
+	ErrLowDisk                    = errors.New("cloudiac: not enough free disk for the OpenTofu download")
+	ErrTooLarge                   = errors.New("cloudiac: OpenTofu download exceeds the size cap")
+	ErrChecksumMismatch           = errors.New("cloudiac: OpenTofu checksum mismatch")
+	ErrBadArchive                 = errors.New("cloudiac: OpenTofu archive is malformed")
+	ErrFreeSpaceUnsupported       = errors.New("cloudiac: free space probe is not supported on this platform")
 )
 
 // SignatureVerifier checks the release signature of a downloaded archive.

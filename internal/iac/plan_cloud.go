@@ -11,6 +11,10 @@ import (
 
 const cloudUnconfiguredReason = "cloud planner not configured"
 
+// ErrCloudUnavailable marks a planner error caused by missing configuration (a stored
+// connection, an engine setting, a binary source); the item fails as unavailable.
+var ErrCloudUnavailable = errors.New("cloud provisioning is not configured")
+
 // CloudAttr is one attribute of a proposed cloud change.
 type CloudAttr struct {
 	Path      string
@@ -271,6 +275,10 @@ func (p *planner) flushCloudStack() {
 }
 
 func (p *planner) addCloudItem(r *Resource, diff CloudDiff, err error) {
+	if errors.Is(err, ErrCloudUnavailable) {
+		p.failCode(r, CodeUnavailable, "%v", err)
+		return
+	}
 	if err != nil {
 		p.failCode(r, CodeItemFailed, "cloud planner failed: %v", err)
 		return

@@ -8,8 +8,20 @@ import (
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
+
+// unavailableError is a missing-configuration failure; errors.Is matches iac.ErrCloudUnavailable
+// so the planner reports the code unavailable.
+type unavailableError struct{ msg string }
+
+func (e *unavailableError) Error() string        { return e.msg }
+func (e *unavailableError) Is(target error) bool { return target == iac.ErrCloudUnavailable }
+
+func unavailablef(format string, args ...any) error {
+	return &unavailableError{msg: fmt.Sprintf(format, args...)}
+}
 
 // ConnectionGetter loads a stored cloud connection by name; *cloudconn.Service implements it.
 type ConnectionGetter interface {
@@ -35,10 +47,10 @@ func (c ConnectionAccounts) ResolveAccount(ctx context.Context, name string) (Ac
 	}
 	conn, err := c.Conns.Get(ctx, name)
 	if err != nil {
-		return AccountInfo{}, fmt.Errorf("cloud account %q has no stored connection", name)
+		return AccountInfo{}, unavailablef("no stored cloud connection named %q", name)
 	}
 	if conn.Provider != cloudconn.ProviderOracle {
-		return AccountInfo{}, fmt.Errorf("cloud account %q is not an oracle connection", name)
+		return AccountInfo{}, unavailablef("cloud connection %q is not an oracle connection", name)
 	}
 	return AccountInfo{Region: conn.Config.Region, CompartmentOCID: conn.Config.Compartment,
 		Credential: CredentialHandle{ID: conn.Name}}, nil

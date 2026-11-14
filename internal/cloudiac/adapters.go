@@ -105,7 +105,14 @@ func (a CloudPlannerAdapter) PlanCloudStack(stack string, rs []iac.CloudResource
 	var order []string
 	for i, r := range rs {
 		if r.Kind == iac.KindCloudAccount {
-			out[i].Diff = iac.CloudDiff{Action: "noop"}
+			// An account is a reference, so it stays a no-op once its connection resolves.
+			if a.Accounts == nil {
+				out[i].Err = ErrNotConfigured
+			} else if _, err := a.Accounts.ResolveAccount(context.Background(), r.Name); err != nil {
+				out[i].Err = err
+			} else {
+				out[i].Diff = iac.CloudDiff{Action: "noop"}
+			}
 			continue
 		}
 		acct, _ := r.Spec["account"].(string)

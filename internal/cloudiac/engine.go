@@ -2,7 +2,6 @@ package cloudiac
 
 import (
 	"context"
-	"errors"
 )
 
 // Step names one engine operation.
@@ -77,7 +76,7 @@ func (e *Error) Error() string { return string(e.Step) + ": " + string(e.Kind) +
 func (e *Error) Unwrap() error { return e.Err }
 
 // ErrNotConfigured is returned when no engine implementation is wired in.
-var ErrNotConfigured = errors.New("cloudiac: no engine configured")
+var ErrNotConfigured error = &unavailableError{msg: "cloudiac: no engine configured"}
 
 // Engine runs provisioning steps. Other engines can implement it later.
 type Engine interface {

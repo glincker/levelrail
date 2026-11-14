@@ -3,6 +3,7 @@ package iac
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -149,5 +150,25 @@ func TestCloudPlanReadyPlannerKeepsAccountNoop(t *testing.T) {
 	plan := PlanFor(newState(), res, Options{})
 	if plan.Summary.Error != 0 || plan.Summary.Noop != 1 {
 		t.Fatalf("got %+v", plan.Summary)
+	}
+}
+
+type unavailablePlanner struct{ fakeCloudPlanner }
+
+func (unavailablePlanner) PlanCloud(CloudResource) (CloudDiff, error) {
+	return CloudDiff{}, fmt.Errorf("%w: no stored cloud connection named %q", ErrCloudUnavailable, "oci-test")
+}
+
+func TestCloudPlanMissingConnectionIsUnavailable(t *testing.T) {
+	res := cloudPlanSetup(t)
+	SetCloudPlanner(unavailablePlanner{})
+	plan := PlanFor(newState(), res, Options{})
+	if plan.Summary.Error != 2 {
+		t.Fatalf("want 2 failed items, got %+v", plan.Summary)
+	}
+	for _, c := range plan.Changes {
+		if c.Code != CodeUnavailable || !strings.Contains(c.Reason, "oci-test") {
+			t.Fatalf("item %+v", c)
+		}
 	}
 }
