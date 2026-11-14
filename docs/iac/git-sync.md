@@ -11,41 +11,41 @@ A stack can read its documents from a git branch. Levelrail fetches the branch, 
 Create the stack as usual, then point it at a repository:
 
 ```bash
-curl -X PUT https://cp.example.com/api/v1/stacks/infra/sync \
-  -H "Authorization: Bearer $LEVELRAIL_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "repo_url": "https://github.com/acme/infra.git",
-    "branch": "main",
-    "path": "stacks/infra",
-    "credential_ref": "app:web",
-    "interval_seconds": 300,
-    "webhook_only": false,
-    "enabled": true,
-    "apply": false,
-    "prune": false,
-    "deploy": false
-  }'
+levelrail stack sync set infra \
+  --repo https://github.com/acme/infra.git \
+  --branch main \
+  --path stacks/infra \
+  --credential-ref app:web \
+  --interval 300 \
+  --enable
 ```
+
+Apply, prune and deploy stay off unless you pass `--apply`, `--prune` and `--deploy`. The command refuses `--prune` or `--deploy` without `--apply`, and it prints a reminder for every one that is off. Check the result any time:
+
+```bash
+levelrail stack sync status infra
+levelrail stack sync refresh infra   # fetch and plan once now
+```
+
+Every command takes `--json`. The REST calls behind them are `GET` and `PUT /api/v1/stacks/{name}/sync`, where `apply`, `prune` and `deploy` must each be sent as true or false.
 
 | Field | Meaning |
 | --- | --- |
-| `branch` | The only branch that triggers a sync. Pushes to any other branch are ignored. |
-| `path` | Folder inside the repository that holds the stack documents. It must stay inside the checkout. |
-| `credential_ref` | A connected app (`app:<name>`) whose git credential reads a private repository. Never a token value. |
-| `webhook_only` | `true` stops the interval poll for this stack: only the webhook and a manual refresh trigger it. |
-| `apply` | Off: a sync only plans and reports pending changes. On: a sync hands a pending plan to the normal apply path, so `require_approval` still asks a human. |
-| `prune` | Needs `apply`. Lets the apply remove resources that left the documents. |
-| `deploy` | Needs `apply`. Lets the apply roll out apps whose spec changed. A webhook never deploys on its own: this flag decides. |
+| `--branch` | The only branch that triggers a sync. Pushes to any other branch are ignored. |
+| `--path` | Folder inside the repository that holds the stack documents. It must stay inside the checkout. |
+| `--credential-ref` | A connected app (`app:<name>`) whose git credential reads a private repository. Never a token value. |
+| `--webhook-only` | `true` stops the interval poll for this stack: only the webhook and a manual refresh trigger it. |
+| `--apply` | Off: a sync only plans and reports pending changes. On: a sync hands a pending plan to the normal apply path, so `require_approval` still asks a human. |
+| `--prune` | Needs `--apply`. Lets the apply remove resources that left the documents. |
+| `--deploy` | Needs `--apply`. Lets the apply roll out apps whose spec changed. A webhook never deploys on its own: this flag decides. |
 
 ## 2. Rotate the webhook secret
 
 ```bash
-curl -X POST https://cp.example.com/api/v1/stacks/infra/sync/webhook-secret/rotate \
-  -H "Authorization: Bearer $LEVELRAIL_TOKEN"
+levelrail stack sync webhook-secret rotate infra
 ```
 
-The answer holds `secret`, `sync_url` and `refresh_url`. The secret is shown this once, stored sealed, and no GET returns it. Rotating again replaces it, and deliveries signed with the old one stop working. Root or a stack admin can rotate, and each rotation is in the audit log.
+The command prints the `secret`, `sync_url` and `refresh_url` (with `--json` as an object with those three keys) and warns on stderr that the secret is not shown again. It is stored sealed and no GET returns it; `levelrail stack sync status infra` only says whether one is set. Rotating again replaces it. Deleting the stack removes it; turning the sync off keeps it, and deliveries signed with the old one stop working. Root or a stack admin can rotate, and each rotation is in the audit log.
 
 ## 3. Add the webhook
 
@@ -80,4 +80,4 @@ The webhook answers at once and never waits for the fetch. Only the ref and the 
 - A fetch is refused with `sync_disk_low` while free disk is below `stacks.sync_min_free_mb`.
 - Repository size, file count and file size are capped by the `stacks.sync_*` runtime settings.
 
-See the [error codes](/iac/errors) for every code a sync can report, and `GET /api/v1/stacks/{name}/sync` for the latest commit, plan hash and counts.
+See the [error codes](/iac/errors) for every code a sync can report, and `levelrail stack sync status <stack>` for the latest commit, plan hash and counts.

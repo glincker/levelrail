@@ -57,6 +57,7 @@ Commands:
   drift <name>                          declared versus live drift; exit 2 when drifted, 0 when clean
   settings <name> [flags]               show or change --allow-prune, --drift, --require-approval (root only)
   trust add|list|remove <name> ...      OIDC trusts so CI needs no stored token (root only)
+  sync status|set|refresh|webhook-secret rotate <stack> ...   git sync of a stack
   cloud-state list|recover <name> ...   list or clear quarantined cloud state (root only)
 
 Run '%[1]s stack <command> --help' for the flags of a command.
@@ -117,6 +118,8 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runStackCloudState(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
 		return runStackTrust(prog, rest, stdout, stderr, lookupEnv)
+	case "sync":
+		return runStackSync(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s stack: unknown command %q\n\n%s", prog, args[0], stackUsage(prog))
 	return exitUsage
