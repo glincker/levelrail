@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 )
@@ -349,5 +350,22 @@ func TestCloudConnectOCIJSONRefusesPromptAndReportsErrors(t *testing.T) {
 	code, out, _ = runConnect(t, deps, "--name", "Bad Name", "--json")
 	if code != exitValidation || json.Unmarshal([]byte(out), &e) != nil || e.Error == "" {
 		t.Fatalf("bad name: %d %s", code, out)
+	}
+}
+
+func TestCloudConnectOCITimeoutFromEnv(t *testing.T) {
+	for _, tc := range []struct {
+		env  string
+		want time.Duration
+	}{
+		{"", defaultOCICommandTimeout},
+		{"abc", defaultOCICommandTimeout},
+		{"-5", defaultOCICommandTimeout},
+		{" 30 ", 30 * time.Second},
+	} {
+		t.Setenv("APP_CLOUD_CONNECT_TIMEOUT_SECONDS", tc.env)
+		if got := ociCommandTimeout(); got != tc.want {
+			t.Errorf("env %q: timeout = %s, want %s", tc.env, got, tc.want)
+		}
 	}
 }

@@ -155,11 +155,14 @@ func ociKeyBits() int {
 	return 2048
 }
 
+// defaultOCICommandTimeout bounds one oci call when APP_CLOUD_CONNECT_TIMEOUT_SECONDS is unset or invalid.
+const defaultOCICommandTimeout = 120 * time.Second
+
 func ociCommandTimeout() time.Duration {
 	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_CLOUD_CONNECT_TIMEOUT_SECONDS"))); err == nil && v > 0 {
 		return time.Duration(v) * time.Second
 	}
-	return 120 * time.Second
+	return defaultOCICommandTimeout
 }
 
 var jwtLikeRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)

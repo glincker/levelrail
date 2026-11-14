@@ -1061,6 +1061,9 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_API_TOKEN` | computed | API token the CLI uses when no --token flag or profile token is given. CLI. |
 | `APP_AUDIT_ANCHOR_FETCH_TIMEOUT` | ``30s`` | Time limit for the CLI to fetch an audit anchor. CLI. |
 | `APP_CLI_PROVISION_POLL_INTERVAL` | ``1s`` | How often the CLI polls a database provision for progress. CLI. |
+| `APP_CLOUD_CONNECT_TIMEOUT_SECONDS` | `120` | Seconds one `oci` call may take during `levelrail-cli cloud connect oci`. Integer above zero; anything else uses the default. CLI. |
+| `APP_CLOUD_ENGINE_STOP_GRACE_SECONDS` | `5` | Seconds a cancelled cloud engine step gets after the interrupt before its runtime client is killed and the container removed. Control plane. |
+| `APP_CLOUD_ENGINE_REMOVE_TIMEOUT_SECONDS` | `15` | Seconds the best effort container removal after a cancelled cloud engine step may take. Control plane. |
 | `APP_CLI_PROVISION_WAIT_TIMEOUT` | ``15m`` | How long the CLI waits for a database provision before it gives up. CLI. |
 | `APP_DEPLOY_CERT_WAIT` | ``2m`` | How long the deploy command waits for the certificate to become ready. CLI. |
 | `APP_UPLOAD_MAX_BYTES` | computed | Largest deploy upload the CLI sends, in bytes. CLI. |
