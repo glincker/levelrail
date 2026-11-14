@@ -32,7 +32,8 @@ var composeRefSkipDirs = map[string]bool{".git": true, "node_modules": true, "ve
 
 type composeRefFlags struct {
 	stack, project, environment, write string
-	force, jsonOut                     bool
+	profiles                           string
+	force, jsonOut, reference          bool
 }
 
 // composeScan is the read only result of walking a directory.
@@ -55,11 +56,14 @@ type composeRefFile struct {
 
 func composeRefUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s import compose-ref [dir] [--stack NAME] [--project NAME] [--environment NAME] [--write DIR [--force]] [--json]
+  %[1]s import compose-ref [dir] [--reference [--profiles a,b]] [--stack NAME] [--project NAME] [--environment NAME] [--write DIR [--force]] [--json]
 
 Scans dir (default .) for docker-compose*.yml, compose*.yaml and friends and prints
 reviewable Levelrail documents for every image based service. Read only: nothing is
 written unless --write DIR is given, and existing files are kept without --force.
+With --reference, one App per compose file points at it with spec.compose.path (the file is never
+copied; --write DIR must be the folder that holds the compose files, no parent-folder paths). Files strict
+mode would refuse (bind mounts, build, env_file, include) are reported with their codes and skipped.
 Environment values are never read into the output: each variable becomes a secret
 name listed in SECRETS.md. Services with a build context are skipped with a note.
 Limits: %[2]s (default %[3]d) and %[4]s (default %[5]d bytes per file).
@@ -76,6 +80,8 @@ func runImportComposeRef(prog string, args []string, stdout, stderr io.Writer, l
 	fset.StringVar(&f.environment, "environment", "", "environment name for the Stack document")
 	fset.StringVar(&f.write, "write", "", "write the documents into this directory instead of printing them")
 	fset.BoolVar(&f.force, "force", false, "overwrite existing files in --write")
+	fset.BoolVar(&f.reference, "reference", false, "emit one App per compose file that references it in place (spec.compose) instead of converting services")
+	fset.StringVar(&f.profiles, "profiles", "", "with --reference, compose profiles to enable (comma separated)")
 	fset.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
 	dir := "."
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -100,6 +106,9 @@ func runImportComposeRef(prog string, args []string, stdout, stderr io.Writer, l
 	}
 	if len(scan.Files) == 0 {
 		return reportError(stdout, stderr, f.jsonOut, newValidationError("no compose files found under %s", dir))
+	}
+	if f.reference {
+		return runComposeReference(prog, f, dir, scan, stdout, stderr)
 	}
 	stack := f.stack
 	if stack == "" {
@@ -148,6 +157,15 @@ func printComposeRef(stdout, stderr io.Writer, stack string, files []platformimp
 	}
 	for _, ef := range files {
 		_, _ = fmt.Fprintf(stdout, "# ---- %s ----\n%s\n", ef.Name, ef.Content)
+	}
+	hasNotes := false
+	for _, ef := range files {
+		hasNotes = hasNotes || ef.Name == platformimport.EmitNotesFile
+	}
+	if !hasNotes {
+		for _, n := range notes {
+			_, _ = fmt.Fprintf(stdout, "# NOTE %s\n", n)
+		}
 	}
 	_, _ = fmt.Fprintln(stdout, "# Dry run: nothing was written. Pass --write DIR to save these files.")
 	return exitOK

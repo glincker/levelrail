@@ -53,6 +53,7 @@ Commands:
   unpin <name>                          remove the pin
   unlock <name>                         release a stuck apply lease (root only)
   delete <name> [--mode forget|destroy] stop managing a stack, or also delete its resources
+  adopt-from-export <stack> -f DIR      write the live compose revision next to its referencing App, verify an empty plan
   drift <name>                          declared versus live drift; exit 2 when drifted, 0 when clean
   settings <name> [flags]               show or change --allow-prune, --drift, --require-approval (root only)
   trust add|list|remove <name> ...      OIDC trusts so CI needs no stored token (root only)
@@ -106,6 +107,8 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return stackSimple(prog, "unlock", rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return stackDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "adopt-from-export":
+		return stackAdoptFromExport(prog, rest, stdout, stderr, lookupEnv)
 	case "drift":
 		return stackDrift(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
