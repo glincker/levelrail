@@ -17,6 +17,7 @@ func cloudUsage(prog string) string {
   %[1]s cloud connection update NAME [--auth METHOD] [config flags] [--credential-ref REF] [--team ID]
   %[1]s cloud connection delete NAME [flags]
   %[1]s cloud connection test NAME [flags]
+  %[1]s cloud connect oci [flags]   guided setup of a scoped OCI credential (dry run by default)
 
 Preview. Cloud connections are off until the runtime setting cloud.connections_enabled
 is on. A connection stores non-secret settings and a credential reference only
@@ -37,6 +38,8 @@ func runCloud(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, cloudUsage(prog))
 		return exitOK
+	case "connect":
+		return runCloudConnect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "connection":
 		return runCloudConnection(prog, args[1:], stdout, stderr, lookupEnv)
 	}

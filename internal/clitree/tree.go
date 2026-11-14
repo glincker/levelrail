@@ -382,6 +382,7 @@ var Tree = map[string]*Node{
 	"costs":                    {Subs: map[string]*Node{"explore": nil, "budgets": {Subs: map[string]*Node{"list": nil, "create": nil, "set": nil, "delete": nil}}}},
 	"spend":                    {Subs: map[string]*Node{"caps": {Subs: map[string]*Node{"list": nil, "status": nil, "set": nil, "rm": nil, "dry-run": nil, "override": nil}}}},
 	"usage":                    {Subs: map[string]*Node{"report": nil, "settings": {Subs: map[string]*Node{"set": nil}}, "budgets": {Subs: map[string]*Node{"set": nil, "delete": nil}}}},
+	"cloud":                    {Subs: map[string]*Node{"connect": {Subs: map[string]*Node{"oci": nil}}, "connection": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil}}}},
 	"doctor":                   {Subs: map[string]*Node{"--cloud": nil, "cloud": nil, "disk": nil, "explain": nil, "paths": nil, "reachability": nil}},
 	"resilience":               {Subs: map[string]*Node{"check": nil}},
 	"go-live":                  nil,
