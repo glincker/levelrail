@@ -411,3 +411,23 @@ func TestStackPlan_ExplicitPruneFlagBeatsStackDocument(t *testing.T) {
 		})
 	}
 }
+
+func TestStackPlan_AllowMassPruneFlagIsSent(t *testing.T) {
+	dir := stackTestDir(t)
+	for _, tc := range []struct {
+		args []string
+		want bool
+	}{{nil, false}, {[]string{"--allow-mass-prune"}, true}} {
+		f := &stackFake{t: t, plan: pendingPlan()}
+		srv := httptest.NewServer(f.handler())
+		args := append([]string{"stack", "plan", "shop", "-f", dir, "--api-url", srv.URL}, tc.args...)
+		code, out, _ := runIaC(args, nil)
+		srv.Close()
+		if code != exitOK {
+			t.Fatalf("exit = %d\n%s", code, out)
+		}
+		if got := f.requests["/api/v1/stacks/shop/plan"].AllowMassPrune; got != tc.want {
+			t.Errorf("AllowMassPrune = %v, want %v", got, tc.want)
+		}
+	}
+}
