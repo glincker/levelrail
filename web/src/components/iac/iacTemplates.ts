@@ -3,8 +3,10 @@ export function joinTemplateFiles(files: { content: string }[]): string {
   return files.map((f) => f.content.trimEnd()).join('\n---\n') + '\n'
 }
 
+export type LocalIacTemplateId = 'cron-job'
+
 export interface LocalIacTemplate {
-  id: string
+  id: LocalIacTemplateId
   kinds: string[]
   yaml: string
 }

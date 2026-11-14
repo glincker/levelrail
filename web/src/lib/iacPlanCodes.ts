@@ -55,3 +55,10 @@ const CODES = [
 
 export const IAC_CODE_KEYS: Readonly<Record<string, string>> =
   Object.fromEntries(CODES.map((c) => [c, `iacPlan.codes.${c}`]))
+
+export type IacPlanCode = (typeof CODES)[number]
+
+// Narrowing keeps t() keys a literal union, so a missing locale entry fails tsc.
+export function isIacPlanCode(code: string): code is IacPlanCode {
+  return (CODES as readonly string[]).includes(code)
+}

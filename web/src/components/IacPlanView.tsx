@@ -7,7 +7,7 @@ import type {
 } from '../queries/iac'
 import { CodeBlock } from '@/components/ui/code-block'
 import { labelOf } from '../lib/labelOf'
-import { IAC_CODE_KEYS } from '../lib/iacPlanCodes'
+import { isIacPlanCode } from '../lib/iacPlanCodes'
 import { IacCodeBadge } from './iac/IacCodeBadge'
 
 const actionStyle: Record<string, string> = {
@@ -61,17 +61,17 @@ export function IacSummaryLine({ plan }: { plan: IacPlan }) {
 
 function CodeHint({ code }: { code: string }) {
   const { t } = useTranslation('settings')
-  const base = labelOf(IAC_CODE_KEYS, code)
-  // An unknown code resolves to itself, so only the raw badge shows.
-  const known = base !== code
+  // An unknown code shows only the raw badge.
   return (
     <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
       <IacCodeBadge code={code} />
-      {known ? (
+      {isIacPlanCode(code) ? (
         <>
-          <span className="text-foreground">{t(`${base}.message`)}</span>
+          <span className="text-foreground">
+            {t(`iacPlan.codes.${code}.message`)}
+          </span>
           <span className="text-muted-foreground">
-            {t('iacPlan.fix', { hint: t(`${base}.fix`) })}
+            {t('iacPlan.fix', { hint: t(`iacPlan.codes.${code}.fix`) })}
           </span>
         </>
       ) : null}
