@@ -379,6 +379,15 @@ export function BrandIcon({
   ...props
 }: BrandIconProps) {
   const Logo = (mono ? MONO_LOGOS[name] : undefined) ?? DEFAULT_LOGOS[name]
+  // A name from the wire that this build has no mark for renders blank, not a crash.
+  if (!Logo) {
+    return (
+      <span
+        aria-hidden="true"
+        className={`inline-block ${props.className ?? ''}`}
+      />
+    )
+  }
   return (
     <Suspense
       fallback={
