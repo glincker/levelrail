@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { errorReport } from '@/lib/errorReport'
 import { updatesQueryOptions } from '@/queries/updates'
 
-const DEFAULT_SUPPORT_URL = 'https://github.com/glincker/levelrail'
+const DEFAULT_SUPPORT_URL = 'https://github.com/glincker/levelrail/issues'
 
 function CopyDetailsButton({ error }: { error: unknown }) {
   const { t } = useTranslation('common')

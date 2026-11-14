@@ -87,6 +87,23 @@ describe('buildIssueUrl', () => {
       'https://example.test/support',
     )
   })
+  it('maps a bare github repo url to its issues page', () => {
+    const u = buildIssueUrl(draft, 'https://github.com/acme/app', 100000)
+    expect(u.startsWith('https://github.com/acme/app/issues/new?')).toBe(true)
+    const g = buildIssueUrl(draft, 'https://github.com/acme/app.git/', 1500)
+    expect(g.startsWith('https://github.com/acme/app/issues/new?')).toBe(true)
+    expect(g.length).toBeLessThanOrEqual(1500)
+  })
+  it('keeps title and details for a repository homepage under the cap', () => {
+    const u = buildIssueUrl(
+      draft,
+      'https://github.com/glincker/levelrail',
+      2000,
+    )
+    expect(u).toContain('/issues/new?template=bug_report.yml')
+    expect(u).toContain('title=bug%3A%20a%20%26%20b')
+    expect(u.length).toBeLessThanOrEqual(2000)
+  })
   it('reads the limit from env with a safe default', () => {
     expect(issueUrlMaxChars('3000')).toBe(3000)
     expect(issueUrlMaxChars('nope')).toBe(6000)
