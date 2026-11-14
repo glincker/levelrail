@@ -45,6 +45,7 @@ type iacRequest struct {
 	NoDeploy         bool              `json:"no_deploy,omitempty"`
 	ContinueOnError  bool              `json:"continue_on_error,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	Attachments      map[string]string `json:"attachments,omitempty"`
 }
 
 type iacPlanResponse struct {
@@ -106,6 +107,12 @@ func (req iacRequest) build() ([]*iac.Resource, iac.Options, []iac.Issue) {
 		sources[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
 	}
 	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError}
+	if len(req.Attachments) > 0 {
+		opts.Attachments = make(map[string][]byte, len(req.Attachments))
+		for n, c := range req.Attachments {
+			opts.Attachments[n] = []byte(c)
+		}
+	}
 	docs, issues := iac.ParseDocuments(sources)
 	if len(issues) > 0 {
 		return nil, opts, issues

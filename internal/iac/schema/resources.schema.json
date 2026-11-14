@@ -86,13 +86,25 @@
     },
     "appSpec": {
       "type": "object",
-      "required": ["service"],
+      "anyOf": [{ "required": ["service"] }, { "required": ["compose"] }],
       "additionalProperties": false,
       "properties": {
         "project": { "description": "Name of the project the app belongs to.", "type": "string", "minLength": 1 },
         "environment": { "description": "Name of the environment the app deploys to.", "type": "string", "minLength": 1 },
         "tags": { "description": "Tags attached to the app.", "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
-        "service": { "description": "The service definition, same fields as an app.yaml service.", "$ref": "#/$defs/service" }
+        "service": { "description": "The service definition, same fields as an app.yaml service.", "$ref": "#/$defs/service" },
+        "compose": {
+          "description": "Run the app from a compose file kept next to the documents. Beta, off unless iac.compose_refs is on. Not combined with service.",
+          "x-stability": "beta",
+          "type": "object",
+          "required": ["path"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "description": "Relative path of the compose file, below the folder you apply.", "type": "string", "minLength": 1, "maxLength": 512 },
+            "profiles": { "description": "Compose profiles to enable.", "type": "array", "maxItems": 32, "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$", "maxLength": 64 } },
+            "env": { "description": "Values for ${VAR} in the compose file: literals, ${{ env.NAME }} or secretRef.", "type": "object", "maxProperties": 128 }
+          }
+        }
       }
     },
     "cloudAccountSpec": {

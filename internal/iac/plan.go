@@ -39,6 +39,8 @@ type Change struct {
 	Line   int    `json:"line,omitempty"`
 	// CloudPlanHash names the sealed engine plan a cloud item runs; approval binds to it.
 	CloudPlanHash string `json:"cloudPlanHash,omitempty"`
+	// ComposeDigest covers a compose App's file bytes and inputs; it never leaves the process.
+	ComposeDigest string `json:"-"`
 }
 
 // Key is the change's stable identity.
@@ -168,7 +170,7 @@ func sortItems(items []*item) {
 }
 
 func (p *planner) add(r *Resource, action Action, fields, kept []FieldChange, exec func(ctx context.Context, x *executor) error) *item {
-	it := &item{res: r, exec: exec, Change: Change{Kind: r.Kind, Name: r.Name, Scope: r.Scope, Action: action, Fields: fields, Kept: kept, Warnings: r.Warnings}}
+	it := &item{res: r, exec: exec, Change: Change{Kind: r.Kind, Name: r.Name, Scope: r.Scope, Action: action, Fields: fields, Kept: kept, Warnings: r.Warnings, ComposeDigest: r.ComposeDigest}}
 	if r.Doc != nil {
 		it.File, it.Line = r.Doc.File, r.Doc.Line
 	}

@@ -275,6 +275,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_TRIGGER_PATTERNS_MAX` | [`git.trigger_patterns_max`](/runtime-settings#deploys) | `32` |
 | `APP_GIT_TRIGGER_REF_MAX_BYTES` | [`git.trigger_ref_max_bytes`](/runtime-settings#deploys) | `1024` |
 | `APP_IAC_APPLY_ENABLED` | [`iac.apply_enabled`](/runtime-settings#deploys) | `true` |
+| `APP_IAC_COMPOSE_MAX_FILE_KB` | [`iac.compose_max_file_kb`](/runtime-settings#deploys) | `256` |
+| `APP_IAC_COMPOSE_MAX_FILES` | [`iac.compose_max_files`](/runtime-settings#deploys) | `20` |
+| `APP_IAC_COMPOSE_MAX_TOTAL_KB` | [`iac.compose_max_total_kb`](/runtime-settings#deploys) | `2048` |
+| `APP_IAC_COMPOSE_REFS` | [`iac.compose_refs`](/runtime-settings#deploys) | `false` |
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |

@@ -53,6 +53,8 @@ var coverageMatrix = []CoverageRow{
 		Probe: "version: 1\nkind: App\nmetadata: {name: a}\nspec:\n  service:\n    build: {type: dockerfile}\n    port: 80\n"},
 	{Kind: KindApp, Feature: "egress policies", Status: CoverageNotYet, Reason: "egress policies are not supported by apply yet",
 		Probe: appProbe("    egress: {mode: allowlist}\n")},
+	{Kind: KindApp, Feature: "compose reference (beta, off by default)", Status: CoverageNotYet, Code: CodeUnavailable, Reason: "compose references are not enabled",
+		Probe: "version: 1\nkind: App\nmetadata: {name: a}\nspec:\n  compose:\n    path: compose/a.yaml\n"},
 	{Kind: KindApp, Feature: "GPU requests", Status: CoverageNotYet, Reason: "GPU requests are not supported by apply yet",
 		Probe: appProbe("    resources: {gpu: {count: 1}}\n")},
 	{Kind: KindApp, Feature: "registry credentials", Status: CoverageNotYet, Reason: "registry credentials are not supported by apply yet",

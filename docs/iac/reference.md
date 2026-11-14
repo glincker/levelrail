@@ -88,9 +88,10 @@ No fields.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
+| `spec.compose` | object | no | Run the app from a compose file kept next to the documents. Beta, off unless iac.compose_refs is on. Not combined with service. |
 | `spec.environment` | string | no | Name of the environment the app deploys to. |
 | `spec.project` | string | no | Name of the project the app belongs to. |
-| `spec.service` | object | yes | The service definition, same fields as an app.yaml service. |
+| `spec.service` | object | no | The service definition, same fields as an app.yaml service. |
 | `spec.tags` | list of string | no | Tags attached to the app. |
 
 `spec.service` fields:

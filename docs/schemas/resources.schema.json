@@ -135,7 +135,51 @@
     },
     "appSpec": {
       "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "service"
+          ]
+        },
+        {
+          "required": [
+            "compose"
+          ]
+        }
+      ],
       "properties": {
+        "compose": {
+          "additionalProperties": false,
+          "description": "Run the app from a compose file kept next to the documents. Beta, off unless iac.compose_refs is on. Not combined with service.",
+          "properties": {
+            "env": {
+              "description": "Values for ${VAR} in the compose file: literals, ${{ env.NAME }} or secretRef.",
+              "maxProperties": 128,
+              "type": "object"
+            },
+            "path": {
+              "description": "Relative path of the compose file, below the folder you apply.",
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "profiles": {
+              "description": "Compose profiles to enable.",
+              "items": {
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+                "type": "string"
+              },
+              "maxItems": 32,
+              "type": "array"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object",
+          "x-stability": "beta"
+        },
         "environment": {
           "description": "Name of the environment the app deploys to.",
           "minLength": 1,
@@ -160,9 +204,6 @@
           "type": "array"
         }
       },
-      "required": [
-        "service"
-      ],
       "type": "object"
     },
     "autoscale": {

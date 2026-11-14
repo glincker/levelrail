@@ -44,6 +44,20 @@ const (
 	CodeInvalidDocument          = "invalid_document"
 )
 
+// Compose reference codes (ADR 081).
+const (
+	// CodeComposePathInvalid means spec.compose.path is not a clean relative path.
+	CodeComposePathInvalid = "compose_path_invalid"
+	// CodeComposeRefMissing means a referenced compose file was not sent with the request.
+	CodeComposeRefMissing = "compose_ref_missing"
+	// CodeComposeTooLarge means a compose file or the attachment total is over its cap.
+	CodeComposeTooLarge = "compose_too_large"
+	// CodeComposeTooManyFiles means the request holds more compose files than the cap.
+	CodeComposeTooManyFiles = "compose_too_many_files"
+	// CodeComposeModeConflict means an App sets both spec.compose and spec.service.
+	CodeComposeModeConflict = "compose_mode_conflict"
+)
+
 // Async cloud plan job and approval race codes.
 const (
 	// CodeApprovalPending means a cloud plan would replace the saved engine plan of a pending approval.
@@ -80,4 +94,6 @@ var AllCodes = []string{
 	CodeInvalidRequest, CodeInvalidDocument,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
+	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
+	CodeComposeModeConflict,
 }

@@ -24,6 +24,8 @@ type Resource struct {
 	// ExistingSecrets are SecretRefs that must already be in the store.
 	ExistingSecrets []string
 	Warnings        []string
+	// ComposeDigest is set for compose Apps and feeds the plan hash.
+	ComposeDigest string
 }
 
 // Key is the stable identity used in plans: kind plus scope plus name.

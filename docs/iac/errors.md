@@ -41,3 +41,8 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `sync_path_invalid` | The sync path leaves the checkout, points into .git, or holds a symlink. | Use a relative path with no .. and no symlinks. |
 | `sync_limits_exceeded` | The repository or the files under the sync path passed a size or file count limit. | Trim the path, or raise stacks.sync_max_repo_mb, stacks.sync_max_files or stacks.sync_max_file_kb. |
 | `sync_plan_failed` | The documents under the sync path did not validate or could not be planned. | Run the CLI plan on the same commit to see each issue. |
+| `compose_path_invalid` | `spec.compose.path` is absolute, holds `..`, a backslash or a NUL byte, or points through a symlink. | Use a relative path inside the folder you apply, such as `compose/shop.yaml`. |
+| `compose_ref_missing` | An App references a compose file that was not sent with the request. | Apply from the folder that holds the file with a current CLI, and check the path. |
+| `compose_too_large` | A compose file, or all compose files together, is over the size cap. | Split the project or raise `iac.compose_max_file_kb` or `iac.compose_max_total_kb`. |
+| `compose_too_many_files` | The request holds more compose files than the cap. | Apply fewer compose Apps at once or raise `iac.compose_max_files`. |
+| `compose_mode_conflict` | An App sets both `spec.compose` and `spec.service`. | Keep one: `spec.compose` for a compose project, `spec.service` for a single service. |

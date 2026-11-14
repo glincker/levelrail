@@ -39,6 +39,8 @@ type Options struct {
 	ContinueOnError bool
 	// Cloud is the approved cloud plan; without it every cloud write is refused.
 	Cloud *CloudApproval
+	// Attachments holds referenced compose files by cleaned relative path.
+	Attachments map[string][]byte
 }
 
 var (
@@ -51,6 +53,11 @@ type issueSink struct {
 	issues []Issue
 }
 
+func (s *issueSink) atCode(code, path, format string, args ...any) {
+	s.at(path, format, args...)
+	s.issues[len(s.issues)-1].Code = code
+}
+
 func (s *issueSink) at(path, format string, args ...any) {
 	s.issues = append(s.issues, Issue{File: s.d.File, Path: path, Line: lineFor(s.d.Root, strings.Split(path, ".")), Message: fmt.Sprintf(format, args...)})
 }
@@ -60,6 +67,9 @@ func (s *issueSink) at(path, format string, args ...any) {
 // exists, so nothing is planned from a partly valid input.
 func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 	var issues []Issue
+	if lim := composeLimits(); lim.Enabled && len(opts.Attachments) > 0 {
+		issues = append(issues, checkComposeAttachments(opts.Attachments, lim)...)
+	}
 	docs = append([]*Document(nil), docs...)
 	for i, d := range docs {
 		if d.Root == nil || d.Root.Kind != yaml.MappingNode {
@@ -409,6 +419,9 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	decodeSpec(d, &sp, s)
 	svcNode := mapValue(d.SpecNode, "service")
+	if cn := mapValue(d.SpecNode, "compose"); cn != nil {
+		return buildComposeApp(d, cn, svcNode != nil, sp.Project, sp.Environment, sp.Tags, opts, s)
+	}
 	env, secrets, conns, existing, refs := appEnv(svcNode, s, opts)
 
 	trimmed := *svcNode
@@ -520,6 +533,11 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 
 // appEnv returns literals, stored secret names, database connections, existing secret names and secret connection references.
 func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string, map[string]string) {
+	return appEnvAt(svcNode, "spec.service.env.", s, opts)
+}
+
+// appEnvAt reads the env map of a node whose issue paths start with prefix.
+func appEnvAt(svcNode *yaml.Node, prefix string, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string, map[string]string) {
 	envNode := mapValue(svcNode, "env")
 	if envNode == nil {
 		return nil, nil, nil, nil, nil
@@ -530,7 +548,7 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 	var secrets, existing []string
 	for i := 0; i+1 < len(envNode.Content); i += 2 {
 		k, vn := envNode.Content[i].Value, envNode.Content[i+1]
-		path := "spec.service.env." + k
+		path := prefix + k
 		if !envKeyRe.MatchString(k) {
 			s.at(path, "env names are letters, digits and underscores, not starting with a digit")
 			continue

@@ -55,6 +55,8 @@ type hashItem struct {
 	LiveDigest    string `json:"live"`
 	// Cloud is set for cloud items only so other plans keep their hash.
 	Cloud string `json:"cloud,omitempty"`
+	// Compose is set for compose Apps only, for the same reason as Cloud.
+	Compose string `json:"compose,omitempty"`
 }
 
 type hashBody struct {
@@ -95,6 +97,7 @@ func planHashV2(stack string, prune bool, changes []Change, secretNames []string
 		if isCloudKind(c.Kind) {
 			hi.Cloud = cloudDigest(c)
 		}
+		hi.Compose = c.ComposeDigest
 		body.Items = append(body.Items, hi)
 	}
 	sort.Slice(body.Items, func(i, j int) bool { return body.Items[i].Key < body.Items[j].Key })

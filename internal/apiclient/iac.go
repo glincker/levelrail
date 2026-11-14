@@ -30,6 +30,8 @@ type IaCRequest struct {
 	NoDeploy         bool              `json:"no_deploy,omitempty"`
 	ContinueOnError  bool              `json:"continue_on_error,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	// Attachments holds referenced compose files by relative path; they are never parsed as documents.
+	Attachments map[string]string `json:"attachments,omitempty"`
 }
 
 // IaCIssuesError carries the line numbered validation issues of a 422.

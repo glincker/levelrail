@@ -188,6 +188,10 @@ heartbeat.job_max_attempts
 heartbeat.job_queue
 iac.plan_value_max
 iac.apply_enabled
+iac.compose_max_file_kb
+iac.compose_max_files
+iac.compose_max_total_kb
+iac.compose_refs
 iac.v1_hash_accepted
 images.keep_per_app
 images.prune_schedule
