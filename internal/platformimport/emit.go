@@ -319,8 +319,7 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 		image = strings.TrimRight(o.ImageRepo, "/") + "/" + a.Name + ":latest"
 	}
 	if a.Port == 0 {
-		a.Port = 80
-		a.Notes = append(a.Notes, "the source names no port, 80 is assumed: set the port the image listens on")
+		a.Notes = append(a.Notes, "the source names no port, none is invented: set port (HTTP) or published_ports (other protocols) before applying")
 	}
 	svc := emitSvc{Build: emitBuild{Type: "image", Image: image}, Port: a.Port, Replicas: a.Replicas, Command: a.Command}
 	if a.MemoryBytes > 0 || a.NanoCPUs > 0 || a.Memory != "" {
