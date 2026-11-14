@@ -217,7 +217,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_FETCH_MAX_MB` | [`cloud.fetch_max_mb`](/runtime-settings#deploys) | `256` |
 | `APP_CLOUD_FETCH_MIN_FREE_MB` | [`cloud.fetch_min_free_mb`](/runtime-settings#deploys) | `4096` |
 | `APP_CLOUD_FETCH_TIMEOUT_SECONDS` | [`cloud.fetch_timeout_seconds`](/runtime-settings#deploys) | `300` |
+| `APP_CLOUD_MAX_CONCURRENT_PLANS` | [`cloud.max_concurrent_plans`](/runtime-settings#deploys) | `2` |
 | `APP_CLOUD_MAX_DESTROYS` | [`cloud.max_destroys`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_PLAN_JOB_RETENTION_HOURS` | [`cloud.plan_job_retention_hours`](/runtime-settings#deploys) | `24` |
 | `APP_CLOUD_PLAN_MAX_AGE_MINUTES` | [`cloud.plan_max_age_minutes`](/runtime-settings#deploys) | `60` |
 | `APP_CLOUD_STATE_MAX_KB` | [`cloud.state_max_kb`](/runtime-settings#deploys) | `1024` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |

@@ -227,6 +227,10 @@ func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss
 		writeIaCError(w, http.StatusGone, iac.CodePlanStale, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number), nil)
 		return false
 	}
+	if revisionSuperseded(v) {
+		writePlanSuperseded(w, v.Number)
+		return false
+	}
 	if v.Status != store.StackRevPendingApproval {
 		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", v.Number, v.Status), nil)
 		return false
@@ -307,6 +311,17 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	}
 	if isCloud && rt.cloudApprovalTooOld(r.Context(), w, rev) {
 		return
+	}
+	if isCloud {
+		replaced, err := rt.cloudPlanReplaced(r.Context(), ss, s, rev, cloudPlan)
+		if err != nil {
+			rt.writeStackError(w, "approve", err)
+			return
+		}
+		if replaced {
+			writePlanSuperseded(w, rev.Number)
+			return
+		}
 	}
 	if body.ExpectedPlanHash != "" && body.ExpectedPlanHash != rev.PlanHash {
 		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, "the plan changed since it was reviewed; re-plan and request approval again", nil)

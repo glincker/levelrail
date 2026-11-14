@@ -35,6 +35,11 @@ var codeDocs = map[string]codeDoc{
 	iac.CodePlanHashVersion:          {"The submitted plan hash has the old unkeyed shape, which this control plane no longer accepts.", "Run the plan again to get a current hash."},
 	iac.CodeInvalidRequest:           {"The request itself is malformed, for example a missing or unreadable field.", "Fix the request and send it again."},
 	iac.CodeInvalidDocument:          {"A document failed validation.", "Read the issue lines; each names the file, line and field."},
+	iac.CodeApprovalPending:          {"A cloud plan would replace the saved engine plan of a revision awaiting approval.", "Approve or reject the named revision first, or plan with supersede=true to retire it."},
+	iac.CodePlanSuperseded:           {"A later plan replaced the saved engine plan this approval named.", "Plan again and request a new approval."},
+	iac.CodeInterrupted:              {"The control plane stopped while the plan job ran.", "Plan again."},
+	iac.CodePlanJobNotFound:          {"No plan job with this id exists for the stack, or it was removed after the retention window.", "Check the job id, or plan again."},
+	iac.CodePlanTimeout:              {"The plan job ran past cloud.engine_timeout_seconds.", "Plan again, or raise cloud.engine_timeout_seconds."},
 	iac.CodeApplyDisabled:            {"Apply is switched off for this control plane or stack.", "Ask an administrator to enable it."},
 }
 

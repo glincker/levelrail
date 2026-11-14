@@ -1571,6 +1571,7 @@ Declarative plan, apply, export, stacks, revisions, approvals and CI trusts.
 | GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
 | POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
 | POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
+| GET | /api/v1/stacks/{name}/plan-jobs/{id} | AbilityRead | handleStackPlanJob |
 
 ## Other
 

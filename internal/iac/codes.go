@@ -44,6 +44,20 @@ const (
 	CodeInvalidDocument          = "invalid_document"
 )
 
+// Async cloud plan job and approval race codes.
+const (
+	// CodeApprovalPending means a cloud plan would replace the saved engine plan of a pending approval.
+	CodeApprovalPending = "approval_pending"
+	// CodePlanSuperseded means a later plan replaced the saved engine plan an approval named.
+	CodePlanSuperseded = "plan_superseded"
+	// CodeInterrupted means the control plane stopped while the plan job ran.
+	CodeInterrupted = "interrupted"
+	// CodePlanJobNotFound means no plan job has this id for the stack, or it was pruned.
+	CodePlanJobNotFound = "plan_job_not_found"
+	// CodePlanTimeout means the plan job ran past cloud.engine_timeout_seconds.
+	CodePlanTimeout = "plan_timeout"
+)
+
 // AllCodes lists every frozen code, for docs and guard tests.
 var AllCodes = []string{
 	CodeItemFailed, CodePermissionDenied, CodeUnavailable, CodeReadFailed,
@@ -52,4 +66,5 @@ var AllCodes = []string{
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument,
+	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 }

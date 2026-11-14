@@ -719,6 +719,10 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
 		return
 	}
+	if resourcesHaveCloud(res) {
+		rt.startCloudPlanJob(w, r, ss, planJobInput{stack: stack, exists: resp.StackExists, name: name, project: project, res: res, opts: opts, req: req, resp: resp})
+		return
+	}
 	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, stack.Scope, res, req)
 	if err != nil {
 		rt.writeStackError(w, "plan", err)

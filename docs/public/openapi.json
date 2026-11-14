@@ -148174,7 +148174,7 @@
     },
     "/api/v1/stacks/{name}/plan": {
       "post": {
-        "description": "Plan only: diff the submitted documents against live state and return the plan and its plan_hash. Persists nothing. Error codes: docs/iac/errors.md.\n\nRequires the `read` ability.",
+        "description": "Plan only: diff the submitted documents against live state and return the plan and its plan_hash. Persists nothing. With cloud kinds the plan runs as a job: 202 with the job id and poll_url. 409 approval_pending names a revision awaiting approval whose saved engine plan the new plan would replace; pass supersede=true to retire it. Error codes: docs/iac/errors.md.\n\nRequires the `read` ability.",
         "operationId": "handleStackPlan",
         "parameters": [
           {
@@ -148255,6 +148255,92 @@
           }
         ],
         "summary": "Plan only: diff the submitted documents against live state and return the plan and its plan_hash.",
+        "tags": [
+          "IaC Stacks"
+        ],
+        "x-required-ability": "read"
+      }
+    },
+    "/api/v1/stacks/{name}/plan-jobs/{id}": {
+      "get": {
+        "description": "Poll an async cloud plan job: status queued, running, done, failed or expired, the plan once done, and a code on failure (interrupted, plan_timeout, approval_pending). 404 plan_job_not_found after retention.\n\nRequires the `read` ability.",
+        "operationId": "handleStackPlanJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Poll an async cloud plan job: status queued, running, done, failed or expired, the plan once done, and a code on failure (interrupted, plan_timeout, approval_pending).",
         "tags": [
           "IaC Stacks"
         ],
@@ -148427,7 +148513,7 @@
     },
     "/api/v1/stacks/{name}/revisions/{n}/approve": {
       "post": {
-        "description": "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off. confirm_stack: typed stack name, required for solo admin self approval.\n\nRequires the `root` ability.",
+        "description": "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved, 409 plan_superseded when a later plan replaced the saved engine plan. 503 apply_disabled while the kill switch is off. confirm_stack: typed stack name, required for solo admin self approval.\n\nRequires the `root` ability.",
         "operationId": "handleStackApprove",
         "parameters": [
           {

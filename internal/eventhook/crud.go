@@ -24,6 +24,7 @@ var knownEventTypes = []string{
 	"cleanup.run", "cleanup.failed",
 	"stacks.applied", "stacks.approval_requested", "stacks.approved",
 	"stacks.rolled_back", "stacks.drifted", "stacks.apply_failed",
+	"stacks.plan_started", "stacks.plan_finished",
 }
 
 // TypeForRequest names the event for one audited mutation: the audit action

@@ -32,3 +32,8 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `apply_disabled` | Apply is switched off for this control plane or stack. | Ask an administrator to enable it. |
 | `invalid_request` | The request itself is malformed, for example a missing or unreadable field. | Fix the request and send it again. |
 | `invalid_document` | A document failed validation. | Read the issue lines; each names the file, line and field. |
+| `approval_pending` | A cloud plan would replace the saved engine plan of a revision awaiting approval. | Approve or reject the named revision first, or plan with supersede=true to retire it. |
+| `plan_superseded` | A later plan replaced the saved engine plan this approval named. | Plan again and request a new approval. |
+| `interrupted` | The control plane stopped while the plan job ran. | Plan again. |
+| `plan_job_not_found` | No plan job with this id exists for the stack, or it was removed after the retention window. | Check the job id, or plan again. |
+| `plan_timeout` | The plan job ran past cloud.engine_timeout_seconds. | Plan again, or raise cloud.engine_timeout_seconds. |

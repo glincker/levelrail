@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2124 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2125 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -906,10 +906,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/stacks/{name}/oidc-trusts/{id}", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleDeleteStackTrust", Description: "Remove a CI OIDC trust. Root only."},
 	{Method: "DELETE", Path: "/api/v1/stacks/{name}/pin", Ability: "AbilityWrite", Group: "IaC Stacks", Handler: "handleStackUnpin", Description: "Remove the revision pin from the stack."},
 	{Method: "PUT", Path: "/api/v1/stacks/{name}/pin", Ability: "AbilityWrite", Group: "IaC Stacks", Handler: "handleStackPin", Description: "Pin the stack to a revision number."},
-	{Method: "POST", Path: "/api/v1/stacks/{name}/plan", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackPlan", Description: "Plan only: diff the submitted documents against live state and return the plan and its plan_hash. Persists nothing. Error codes: docs/iac/errors.md."},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/plan", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackPlan", Description: "Plan only: diff the submitted documents against live state and return the plan and its plan_hash. Persists nothing. With cloud kinds the plan runs as a job: 202 with the job id and poll_url. 409 approval_pending names a revision awaiting approval whose saved engine plan the new plan would replace; pass supersede=true to retire it. Error codes: docs/iac/errors.md."},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/plan-jobs/{id}", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackPlanJob", Description: "Poll an async cloud plan job: status queued, running, done, failed or expired, the plan once done, and a code on failure (interrupted, plan_timeout, approval_pending). 404 plan_job_not_found after retention."},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackRevisions", Description: "List revisions, newest first, with status, actor, git metadata and plan hash."},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackRevision", Description: "Show one revision with its documents and the result of its apply."},
-	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/approve", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleStackApprove", Description: "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved. 503 apply_disabled while the kill switch is off. confirm_stack: typed stack name, required for solo admin self approval."},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/approve", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleStackApprove", Description: "Approve a revision awaiting approval and apply it. Root only, never the requester. Honors Idempotency-Key. 409 plan_hash_version or a hash mismatch when the plan moved, 409 plan_superseded when a later plan replaced the saved engine plan. 503 apply_disabled while the kill switch is off. confirm_stack: typed stack name, required for solo admin self approval."},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}/diff", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackDiff", Description: "Diff a revision against the previous one, or against another with the against query."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/reject", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleStackReject", Description: "Reject a revision awaiting approval, with an optional reason. Root only."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/rollback", Ability: "AbilityWrite", Group: "IaC Stacks", Handler: "handleStackRollback", Description: "Apply the documents of revision n as a new revision. History is not rewritten. Honors Idempotency-Key. 503 apply_disabled while the kill switch is off."},

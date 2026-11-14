@@ -406,3 +406,5 @@ cloud.engine_pids
 cloud.engine_run_min_free_mb
 cloud.engine_tmp_mb
 cloud.plan_max_age_minutes
+cloud.max_concurrent_plans
+cloud.plan_job_retention_hours

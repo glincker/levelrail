@@ -22,9 +22,23 @@ const (
 	KeyCloudEngineRunMinFreeMB    = "cloud.engine_run_min_free_mb"
 	KeyCloudEngineTmpMB           = "cloud.engine_tmp_mb"
 	KeyCloudPlanMaxAgeMinutes     = "cloud.plan_max_age_minutes"
+	KeyCloudMaxConcurrentPlans    = "cloud.max_concurrent_plans"
+	KeyCloudPlanJobRetentionHours = "cloud.plan_job_retention_hours"
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyCloudMaxConcurrentPlans, Category: CategoryDeploys, Kind: KindInt, Default: "2", Env: "APP_CLOUD_MAX_CONCURRENT_PLANS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(1, 64),
+		Title:       "Cloud plans run at once",
+		Description: "How many async cloud plans may run at the same time across all stacks, from 1 to 64. More wait queued. The next plan job uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudPlanJobRetentionHours, Category: CategoryDeploys, Kind: KindInt, Default: "24", Env: "APP_CLOUD_PLAN_JOB_RETENTION_HOURS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(1, 720),
+		Title:       "Cloud plan job retention",
+		Description: "Hours a finished cloud plan job and its masked result are kept, from 1 to 720. Older jobs are removed when a new plan job starts.",
+	})
 	Register(Definition{
 		Key: KeyCloudPlanMaxAgeMinutes, Category: CategoryDeploys, Kind: KindInt, Default: "60", Env: "APP_CLOUD_PLAN_MAX_AGE_MINUTES", Apply: ApplyLive,
 		CheckValue:  intRangeCheck(1, 1440),
