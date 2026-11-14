@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2128 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2131 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -917,6 +917,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}/diff", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleStackDiff", Description: "Diff a revision against the previous one, or against another with the against query."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/reject", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleStackReject", Description: "Reject a revision awaiting approval, with an optional reason. Root only."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/rollback", Ability: "AbilityWrite", Group: "IaC Stacks", Handler: "handleStackRollback", Description: "Apply the documents of revision n as a new revision. History is not rewritten. Honors Idempotency-Key. 503 apply_disabled while the kill switch is off."},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/sync", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleGetStackSync", Description: "Show the git sync settings of a stack and its latest result: commit, plan hash, counts, pending and a code on failure. Never repository content or credentials."},
+	{Method: "PUT", Path: "/api/v1/stacks/{name}/sync", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handlePutStackSync", Description: "Set the git sync of a stack: https or ssh repo_url, branch, relative path, credential_ref naming a connected app, interval_seconds, webhook_only, enabled (off by default). Sync only plans. Root or stack admin; credential_ref needs an administrator. Audited."},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/sync/refresh", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleRefreshStackSync", Description: "Fetch the configured branch and plan it now. Nothing is applied. 409 when sync is off, 429 inside stacks.sync_refresh_min_seconds. Error codes: docs/iac/errors.md."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/unlock", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleStackUnlock", Description: "Release a stuck apply lease. Root only."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/branch-env", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListAppBranchEnv", Description: "Branch-scoped env var overrides (apps_branch_env.go): a narrower, pattern-matched sibling of PUT/DELETE .../preview-env just above, only applied when a preview's own branch matches. POST can carry a secret-marked value, so it's gated at AbilityWriteSensitive, the same tier PUT .../secrets/{key} uses; GET and DELETE never expose or require a value, so they stay at AbilityRead/AbilityWrite."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/branch-env", Ability: "AbilityWriteSensitive", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetAppBranchEnv", Description: ""},

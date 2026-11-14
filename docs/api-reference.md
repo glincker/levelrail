@@ -1575,6 +1575,9 @@ Declarative plan, apply, export, stacks, revisions, approvals and CI trusts.
 | GET | /api/v1/stacks/{name}/plan-jobs/{id} | AbilityRead | handleStackPlanJob |
 | GET | /api/v1/stacks/{name}/cloud-state/quarantine | AbilityRoot | handleListCloudStateQuarantine |
 | POST | /api/v1/stacks/{name}/cloud-state/quarantine/{id}/resolve | AbilityRoot | handleResolveCloudStateQuarantine |
+| GET | /api/v1/stacks/{name}/sync | AbilityRead | handleGetStackSync |
+| PUT | /api/v1/stacks/{name}/sync | AbilityRoot | handlePutStackSync |
+| POST | /api/v1/stacks/{name}/sync/refresh | AbilityRoot | handleRefreshStackSync |
 
 ## Other
 

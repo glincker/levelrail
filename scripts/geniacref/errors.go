@@ -41,6 +41,10 @@ var codeDocs = map[string]codeDoc{
 	iac.CodePlanJobNotFound:          {"No plan job with this id exists for the stack, or it was removed after the retention window.", "Check the job id, or plan again."},
 	iac.CodePlanTimeout:              {"The plan job ran past cloud.engine_timeout_seconds.", "Plan again, or raise cloud.engine_timeout_seconds."},
 	iac.CodeApplyDisabled:            {"Apply is switched off for this control plane or stack.", "Ask an administrator to enable it."},
+	iac.CodeSyncRepoUnreachable:      {"The git repository of a synced stack could not be fetched, or its credential could not be used.", "Check the repo URL, branch and credential_ref, then run a sync refresh."},
+	iac.CodeSyncPathInvalid:          {"The sync path leaves the checkout, points into .git, or holds a symlink.", "Use a relative path with no .. and no symlinks."},
+	iac.CodeSyncLimitsExceeded:       {"The repository or the files under the sync path passed a size or file count limit.", "Trim the path, or raise stacks.sync_max_repo_mb, stacks.sync_max_files or stacks.sync_max_file_kb."},
+	iac.CodeSyncPlanFailed:           {"The documents under the sync path did not validate or could not be planned.", "Run the CLI plan on the same commit to see each issue."},
 }
 
 // renderErrors builds the error code page from the frozen code list.

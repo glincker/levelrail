@@ -314,6 +314,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
 | `APP_STACK_LOCK_RENEW_FRACTION` | [`stacks.lock_renew_fraction`](/runtime-settings#deploys) | `3` |
 | `APP_STACK_LOCK_TTL` | [`stacks.lock_ttl`](/runtime-settings#deploys) | `10m` |
+| `APP_STACK_SYNC_FETCH_TIMEOUT_SECONDS` | [`stacks.sync_fetch_timeout_seconds`](/runtime-settings#deploys) | `120` |
+| `APP_STACK_SYNC_MAX_FILE_KB` | [`stacks.sync_max_file_kb`](/runtime-settings#deploys) | `1024` |
+| `APP_STACK_SYNC_MAX_FILES` | [`stacks.sync_max_files`](/runtime-settings#deploys) | `200` |
+| `APP_STACK_SYNC_MAX_REPO_MB` | [`stacks.sync_max_repo_mb`](/runtime-settings#deploys) | `50` |
+| `APP_STACK_SYNC_MIN_INTERVAL_SECONDS` | [`stacks.sync_min_interval_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_STACK_SYNC_REFRESH_MIN_SECONDS` | [`stacks.sync_refresh_min_seconds`](/runtime-settings#deploys) | `30` |
+| `APP_STACK_SYNC_TICK_SECONDS` | [`stacks.sync_tick_seconds`](/runtime-settings#deploys) | `60` |
 | `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |

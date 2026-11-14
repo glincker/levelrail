@@ -408,3 +408,10 @@ cloud.engine_tmp_mb
 cloud.plan_max_age_minutes
 cloud.max_concurrent_plans
 cloud.plan_job_retention_hours
+stacks.sync_tick_seconds
+stacks.sync_min_interval_seconds
+stacks.sync_max_repo_mb
+stacks.sync_fetch_timeout_seconds
+stacks.sync_max_files
+stacks.sync_max_file_kb
+stacks.sync_refresh_min_seconds

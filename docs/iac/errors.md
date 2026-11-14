@@ -37,3 +37,7 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `interrupted` | The control plane stopped while the plan job ran. | Plan again. |
 | `plan_job_not_found` | No plan job with this id exists for the stack, or it was removed after the retention window. | Check the job id, or plan again. |
 | `plan_timeout` | The plan job ran past cloud.engine_timeout_seconds. | Plan again, or raise cloud.engine_timeout_seconds. |
+| `sync_repo_unreachable` | The git repository of a synced stack could not be fetched, or its credential could not be used. | Check the repo URL, branch and credential_ref, then run a sync refresh. |
+| `sync_path_invalid` | The sync path leaves the checkout, points into .git, or holds a symlink. | Use a relative path with no .. and no symlinks. |
+| `sync_limits_exceeded` | The repository or the files under the sync path passed a size or file count limit. | Trim the path, or raise stacks.sync_max_repo_mb, stacks.sync_max_files or stacks.sync_max_file_kb. |
+| `sync_plan_failed` | The documents under the sync path did not validate or could not be planned. | Run the CLI plan on the same commit to see each issue. |

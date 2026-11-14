@@ -58,6 +58,18 @@ const (
 	CodePlanTimeout = "plan_timeout"
 )
 
+// Git sync codes. They never carry repository content or credentials.
+const (
+	// CodeSyncRepoUnreachable means the sync repository could not be fetched.
+	CodeSyncRepoUnreachable = "sync_repo_unreachable"
+	// CodeSyncPathInvalid means the sync path leaves the checkout or holds a symlink.
+	CodeSyncPathInvalid = "sync_path_invalid"
+	// CodeSyncLimitsExceeded means the repository or its files passed a sync limit.
+	CodeSyncLimitsExceeded = "sync_limits_exceeded"
+	// CodeSyncPlanFailed means the synced documents could not be planned.
+	CodeSyncPlanFailed = "sync_plan_failed"
+)
+
 // AllCodes lists every frozen code, for docs and guard tests.
 var AllCodes = []string{
 	CodeItemFailed, CodePermissionDenied, CodeUnavailable, CodeReadFailed,
@@ -67,4 +79,5 @@ var AllCodes = []string{
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
+	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 }
