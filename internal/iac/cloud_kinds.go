@@ -6,7 +6,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
-const cloudValidateOnlyWarning = "cloud kinds are validated only: planning and apply for them are not available yet"
+const cloudValidateOnlyWarning = "cloud kinds are validated only: this build has no cloud planner installed, so they are not planned or applied"
 
 // isCloudKind reports whether k is one of the cloud provisioning kinds.
 func isCloudKind(k Kind) bool {

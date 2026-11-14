@@ -197,7 +197,10 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 		r.Fields = map[string]any{}
 	case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
 		r.Fields = buildCloud(d, s)
-		r.Warnings = append(r.Warnings, cloudValidateOnlyWarning)
+		// Only warn while no planner is installed; otherwise the items are planned for real.
+		if !CloudPlannerInstalled() {
+			r.Warnings = append(r.Warnings, cloudValidateOnlyWarning)
+		}
 	case KindNode:
 		r.Fields = buildNode(d, s)
 	case KindSetting:

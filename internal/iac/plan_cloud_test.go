@@ -172,3 +172,28 @@ func TestCloudPlanMissingConnectionIsUnavailable(t *testing.T) {
 		}
 	}
 }
+
+func TestCloudItemsCarryNoStaleWarningWhenPlannerReady(t *testing.T) {
+	experimental.Set(experimental.Cloud)
+	t.Cleanup(func() {
+		experimental.Reset()
+		SetCloudPlanner(nil)
+		SetCloudPolicy(nil)
+	})
+	warns := func() []string {
+		res, issues := buildCloudDocs(t, cloudAccountDoc)
+		if len(issues) > 0 {
+			t.Fatal(issues)
+		}
+		return res[0].Warnings
+	}
+	has := func(w []string) bool { return strings.Contains(strings.Join(w, "|"), "cloud kinds are validated only") }
+	if w := warns(); !has(w) {
+		t.Fatalf("without a planner: %v", w)
+	}
+	SetCloudPlanner(fakeCloudPlanner{})
+	SetCloudPolicy(fakePolicy{})
+	if w := warns(); has(w) {
+		t.Fatalf("with a planner: %v", w)
+	}
+}
