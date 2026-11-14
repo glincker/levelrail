@@ -43,7 +43,7 @@ export function IacExportButton(props: Readonly<IacExportButtonProps>) {
             )
           }
         >
-          <CodeGlassIcon className="size-4" />
+          <CodeGlassIcon className="size-4" aria-hidden="true" />
           {exportIac.isPending
             ? t('iacExport.running')
             : t('iacExport.studioButton')}
@@ -66,7 +66,7 @@ export function IacExportButton(props: Readonly<IacExportButtonProps>) {
   return (
     <>
       <Button type="button" variant="outline" size="sm" onClick={openDialog}>
-        <CodeGlassIcon className="size-4" />
+        <CodeGlassIcon className="size-4" aria-hidden="true" />
         {t('iacExport.button')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -83,7 +83,7 @@ export function IacExportButton(props: Readonly<IacExportButtonProps>) {
             </p>
           ) : null}
           {exportIac.error ? (
-            <p className="text-sm text-red-700 dark:text-red-400">
+            <p role="alert" className="text-sm text-tone-danger">
               {exportIac.error.message}
             </p>
           ) : null}

@@ -77,14 +77,62 @@ describe('IacStudio form mode', () => {
 
   it('remembers the chosen view', async () => {
     const { unmount } = render(<IacStudio />)
-    fireEvent.click(screen.getByRole('button', { name: 'Form' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Form' }))
     await screen.findByRole('form')
     unmount()
     render(<IacStudio />)
-    expect(screen.getByRole('button', { name: 'Form' })).toHaveAttribute(
-      'aria-pressed',
+    expect(screen.getByRole('radio', { name: 'Form' })).toHaveAttribute(
+      'aria-checked',
       'true',
     )
+  })
+
+  it('exposes the view toggle as a radiogroup with arrow keys', () => {
+    render(<IacStudio />)
+    const group = screen.getByRole('radiogroup', { name: 'Editor view' })
+    const yamlRadio = screen.getByRole('radio', { name: 'YAML' })
+    const formRadio = screen.getByRole('radio', { name: 'Form' })
+    expect(yamlRadio).toHaveAttribute('tabindex', '0')
+    expect(formRadio).toHaveAttribute('tabindex', '-1')
+    fireEvent.keyDown(group, { key: 'ArrowRight' })
+    expect(formRadio).toHaveAttribute('aria-checked', 'true')
+    expect(formRadio).toHaveFocus()
+    fireEvent.keyDown(group, { key: 'Home' })
+    expect(yamlRadio).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('labels the editor and the polite plan result region', () => {
+    render(<IacStudio />)
+    const editor = screen.getByLabelText('Resource YAML')
+    expect(editor.getAttribute('aria-describedby')).toContain(
+      'iac-studio-result',
+    )
+    const region = screen.getByRole('region', { name: 'Plan result' })
+    expect(region).toHaveAttribute('aria-live', 'polite')
+  })
+
+  it('exposes the view toggle as a radiogroup with arrow keys', () => {
+    render(<IacStudio />)
+    const group = screen.getByRole('radiogroup', { name: 'Editor view' })
+    const yamlRadio = screen.getByRole('radio', { name: 'YAML' })
+    const formRadio = screen.getByRole('radio', { name: 'Form' })
+    expect(yamlRadio).toHaveAttribute('tabindex', '0')
+    expect(formRadio).toHaveAttribute('tabindex', '-1')
+    fireEvent.keyDown(group, { key: 'ArrowRight' })
+    expect(formRadio).toHaveAttribute('aria-checked', 'true')
+    expect(formRadio).toHaveFocus()
+    fireEvent.keyDown(group, { key: 'Home' })
+    expect(yamlRadio).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('labels the editor and the polite plan result region', () => {
+    render(<IacStudio />)
+    const editor = screen.getByLabelText('Resource YAML')
+    expect(editor.getAttribute('aria-describedby')).toContain(
+      'iac-studio-result',
+    )
+    const region = screen.getByRole('region', { name: 'Plan result' })
+    expect(region).toHaveAttribute('aria-live', 'polite')
   })
 
   it('writes form edits back to the YAML', async () => {
@@ -92,11 +140,11 @@ describe('IacStudio form mode', () => {
     fireEvent.change(screen.getByLabelText('Resource YAML'), {
       target: { value: FORM_YAML },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Form' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Form' }))
     const name = await screen.findByRole('textbox', { name: /^Name/ })
     expect(name).toHaveValue('web')
     fireEvent.change(name, { target: { value: 'api' } })
-    fireEvent.click(screen.getByRole('button', { name: 'YAML' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'YAML' }))
     expect(
       screen.getByLabelText<HTMLTextAreaElement>('Resource YAML').value,
     ).toContain('name: api')
@@ -107,7 +155,7 @@ describe('IacStudio form mode', () => {
     fireEvent.change(screen.getByLabelText('Resource YAML'), {
       target: { value: FORM_YAML.replace('web', 'typed') },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Form' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Form' }))
     expect(await screen.findByDisplayValue('typed')).toBeInTheDocument()
   })
 
@@ -117,12 +165,12 @@ describe('IacStudio form mode', () => {
     fireEvent.change(screen.getByLabelText('Resource YAML'), {
       target: { value: multi },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Form' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Form' }))
     await waitFor(() =>
       expect(screen.getByText(/more than one document/)).toBeInTheDocument(),
     )
     expect(screen.getByRole('textbox', { name: /^Name/ })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'YAML' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'YAML' }))
     expect(screen.getByLabelText('Resource YAML')).toHaveValue(multi)
   })
 
@@ -131,7 +179,7 @@ describe('IacStudio form mode', () => {
     fireEvent.change(screen.getByLabelText('Resource YAML'), {
       target: { value: 'kind: [App\n' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Form' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Form' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Edit as YAML' }))
     expect(screen.getByLabelText('Resource YAML')).toBeInTheDocument()
   })

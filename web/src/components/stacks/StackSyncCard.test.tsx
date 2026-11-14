@@ -159,5 +159,10 @@ describe('StackSyncCard', () => {
       expect(screen.queryByDisplayValue('whsec_topsecret')).toBeNull()
     })
     expect(document.body.textContent).not.toContain('whsec_topsecret')
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Rotate webhook secret' }),
+      ).toHaveFocus()
+    })
   })
 })

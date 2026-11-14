@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -50,6 +50,7 @@ const KNOWN_CODES = new Set([
 const COOLDOWN_MS =
   (Number(import.meta.env.VITE_SYNC_REFRESH_COOLDOWN_SECS) || 30) * 1000
 
+const COPIED_MS = 1500
 const EMPTY: StackSyncConfig = {
   repo_url: '',
   branch: 'main',
@@ -208,7 +209,9 @@ function StatusRow({
             {KNOWN_CODES.has(code) ? t(`codes.${code}`) : t('codes.unknown')}
           </span>
           {s?.detail ? (
-            <span className="font-mono text-muted-foreground">{s.detail}</span>
+            <span className="font-mono break-all text-muted-foreground">
+              {s.detail}
+            </span>
           ) : null}
         </div>
       ) : null}
@@ -281,7 +284,12 @@ function CopyRow({ label, value }: Readonly<{ label: string; value: string }>) {
         {label}
       </Label>
       <div className="flex items-center gap-2">
-        <Input id={id} readOnly value={value} className="font-mono text-xs" />
+        <Input
+          id={id}
+          readOnly
+          value={value}
+          className="min-w-0 font-mono text-xs"
+        />
         <Button
           variant="outline"
           size="icon-sm"
@@ -289,6 +297,9 @@ function CopyRow({ label, value }: Readonly<{ label: string; value: string }>) {
           onClick={() => {
             void navigator.clipboard.writeText(value).then(() => {
               setCopied(true)
+              window.setTimeout(() => {
+                setCopied(false)
+              }, COPIED_MS)
             })
           }}
         >
@@ -298,6 +309,9 @@ function CopyRow({ label, value }: Readonly<{ label: string; value: string }>) {
             <CopyGlassIcon aria-hidden="true" />
           )}
         </Button>
+        <span role="status" className="sr-only">
+          {copied ? t('webhook.copied') : ''}
+        </span>
       </div>
     </div>
   )
@@ -312,6 +326,7 @@ function WebhookSection({
   const rotate = useRotateStackSyncSecret(name)
   const [confirming, setConfirming] = useState(false)
   const [revealed, setRevealed] = useState<StackSyncSecret | null>(null)
+  const rotateRef = useRef<HTMLButtonElement>(null)
 
   function closeReveal() {
     setRevealed(null)
@@ -327,6 +342,7 @@ function WebhookSection({
         </Badge>
       </div>
       <Button
+        ref={rotateRef}
         variant="outline"
         size="sm"
         disabled={disabled}
@@ -360,7 +376,8 @@ function WebhookSection({
           if (!open) closeReveal()
         }}
       >
-        <DialogContent>
+        {/* The confirm dialog that opened this one is gone, so focus returns to the trigger by ref. */}
+        <DialogContent finalFocus={rotateRef}>
           <DialogHeader>
             <DialogTitle>{t('webhook.newTitle')}</DialogTitle>
             <DialogDescription className="flex items-center gap-1.5 text-destructive">

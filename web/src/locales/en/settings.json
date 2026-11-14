@@ -3936,6 +3936,8 @@
     "applyDisabled": "Apply is switched off on this instance. Plans still work.",
     "replan": "Plan again",
     "viewLabel": "Editor view",
+    "resultLabel": "Plan result",
+    "copyFailed": "Could not copy to the clipboard",
     "viewYaml": "YAML",
     "viewForm": "Form",
     "formLoading": "Loading the form",

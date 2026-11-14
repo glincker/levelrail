@@ -1,4 +1,13 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import {
+  lazy,
+  memo,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import type { KeyboardEvent, Ref } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -50,12 +59,35 @@ function writeView(v: StudioView) {
   }
 }
 
+// Memoised so a keystroke that keeps the line count does not rebuild the gutter text.
+const LineGutter = memo(function LineGutter({
+  count,
+  gutterRef,
+}: Readonly<{ count: number; gutterRef: Ref<HTMLPreElement> }>) {
+  return (
+    <pre
+      ref={gutterRef}
+      aria-hidden="true"
+      className="max-h-96 min-h-48 overflow-hidden rounded-md border bg-muted/40 px-2 py-2 text-right font-mono text-xs leading-[1.625] text-muted-foreground select-none"
+    >
+      {Array.from({ length: count }, (_, i) => i + 1).join('\n')}
+    </pre>
+  )
+})
+
+const VIEWS: readonly StudioView[] = ['yaml', 'form']
+
 export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
   const { t } = useTranslation('settings')
   const [yaml, setYaml] = useState(seed?.text ?? '')
   const [seedId, setSeedId] = useState(seed?.id)
   const [view, setView] = useState<StudioView>(readView)
   const [copied, setCopied] = useState(false)
+  const gutterRef = useRef<HTMLPreElement>(null)
+  const viewRefs = useRef<Record<StudioView, HTMLButtonElement | null>>({
+    yaml: null,
+    form: null,
+  })
   if (seed && seed.id !== seedId) {
     setSeedId(seed.id)
     setYaml(seed.text)
@@ -64,6 +96,23 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
   const pickView = (v: StudioView) => {
     setView(v)
     writeView(v)
+  }
+  // Radiogroup keys: arrows move the choice and focus, Home and End jump.
+  function onViewKey(e: KeyboardEvent<HTMLDivElement>) {
+    const step = ['ArrowRight', 'ArrowDown'].includes(e.key)
+      ? 1
+      : ['ArrowLeft', 'ArrowUp'].includes(e.key)
+        ? -1
+        : 0
+    let next: StudioView | null = null
+    if (step !== 0) {
+      next = VIEWS[(VIEWS.indexOf(view) + step + VIEWS.length) % VIEWS.length]
+    } else if (e.key === 'Home') next = VIEWS[0]
+    else if (e.key === 'End') next = VIEWS[VIEWS.length - 1]
+    if (!next) return
+    e.preventDefault()
+    pickView(next)
+    viewRefs.current[next]?.focus()
   }
   async function copyYaml() {
     try {
@@ -118,7 +167,7 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
     !applyIac.isPending &&
     yaml === debounced
   const applyCode = applyIac.error?.code
-  const lineCount = Math.max(1, yaml.split('\n').length)
+  const lineCount = useMemo(() => Math.max(1, yaml.split('\n').length), [yaml])
 
   return (
     <div className="space-y-4">
@@ -126,6 +175,9 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
       {seed?.exported && seed.id === seedId ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2 text-xs text-muted-foreground">
           <span>{t('iacStudio.exportedNote')}</span>
+          <span role="status" className="sr-only">
+            {copied ? t('iacStudio.copied') : ''}
+          </span>
           <Button
             type="button"
             size="sm"
@@ -138,17 +190,23 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
         </div>
       ) : null}
       <div
-        role="group"
+        role="radiogroup"
         aria-label={t('iacStudio.viewLabel')}
+        onKeyDown={onViewKey}
         className="inline-flex rounded-md border p-0.5"
       >
-        {(['yaml', 'form'] as const).map((v) => (
+        {VIEWS.map((v) => (
           <Button
             key={v}
+            ref={(el) => {
+              viewRefs.current[v] = el
+            }}
             type="button"
+            role="radio"
             size="sm"
             variant={view === v ? 'secondary' : 'ghost'}
-            aria-pressed={view === v}
+            aria-checked={view === v}
+            tabIndex={view === v ? 0 : -1}
             onClick={() => pickView(v)}
           >
             {t(v === 'yaml' ? 'iacStudio.viewYaml' : 'iacStudio.viewForm')}
@@ -171,27 +229,34 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
         </Suspense>
       ) : (
         <div className="flex gap-2">
-          <pre
-            aria-hidden="true"
-            className="max-h-96 min-h-48 overflow-hidden rounded-md border bg-muted/40 px-2 py-2 text-right font-mono text-xs leading-[1.625] text-muted-foreground select-none"
-          >
-            {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
-          </pre>
+          <LineGutter count={lineCount} gutterRef={gutterRef} />
           <Textarea
             aria-label={t('iacStudio.editor')}
+            aria-describedby="iac-studio-cloud-note iac-studio-result"
+            wrap="off"
+            onScroll={(e) => {
+              if (gutterRef.current)
+                gutterRef.current.scrollTop = e.currentTarget.scrollTop
+            }}
             value={yaml}
             onChange={(e) => setYaml(e.target.value)}
             spellCheck={false}
             placeholder={t('iacStudio.placeholder')}
-            className="max-h-96 min-h-48 flex-1 font-mono text-xs leading-[1.625]"
+            className="max-h-96 min-h-48 min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-[1.625] whitespace-pre"
           />
         </div>
       )}
-      <p className="text-xs text-muted-foreground">
+      <p id="iac-studio-cloud-note" className="text-xs text-muted-foreground">
         {t('iacStudio.cloudNote')}
       </p>
 
-      <div aria-live="polite" className="space-y-3">
+      <div
+        id="iac-studio-result"
+        role="region"
+        aria-label={t('iacStudio.resultLabel')}
+        aria-live="polite"
+        className="space-y-3"
+      >
         {planIac.isPending ? (
           <p className="text-sm text-muted-foreground">
             {t('iacPage.planning')}
@@ -205,7 +270,7 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
                 className="flex flex-wrap items-center gap-2"
               >
                 {i.code ? <IacCodeBadge code={i.code} /> : null}
-                <span className="font-mono text-xs text-tone-danger">
+                <span className="font-mono text-xs break-words text-tone-danger">
                   {i.line > 0 ? `${i.line}: ` : ''}
                   {i.message}
                   {i.path ? ` (${i.path})` : ''}

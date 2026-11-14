@@ -32,7 +32,7 @@ function KeyValueRows({ field, value, disabled, onChange }: Props) {
         return (
           <div
             key={i}
-            className="grid grid-cols-[1fr_1fr_auto_auto] items-center gap-1.5"
+            className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] items-center gap-1.5"
           >
             <Input
               aria-label={t('keyPlaceholder')}
