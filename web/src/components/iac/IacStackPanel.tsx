@@ -6,6 +6,8 @@ import {
   stackHistoryQueryOptions,
   stacksQueryOptions,
 } from '../../queries/stacks'
+import { Button } from '@/components/ui/button'
+import { DriftBadge, DriftSummary } from '../stacks/StackDrift'
 import { StackDiffView } from '../stacks/StackDiffView'
 import type { StackDiffAgainst } from '../../types/stacks'
 import { IacRevisionTimeline } from './IacRevisionTimeline'
@@ -63,7 +65,28 @@ export function IacStackPanel() {
             </option>
           ))}
         </select>
+        <DriftBadge drift={stack?.drift} />
+        {stack?.drift?.status === 'drifted' && stack.latest_revision > 0 ? (
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            onClick={() => {
+              setRevision(stack.latest_revision)
+              setAgainst('live')
+            }}
+          >
+            {t('iacStudio.stack.diffLive')}
+          </Button>
+        ) : null}
       </div>
+      {stack?.drift?.status === 'drifted' ? (
+        <DriftSummary drift={stack.drift} />
+      ) : stack?.drift ? (
+        <p className="text-xs text-muted-foreground">
+          {t('iacStudio.stack.driftNone')}
+        </p>
+      ) : null}
       {history.isPending ? (
         <SkeletonLine />
       ) : history.isError ? (
