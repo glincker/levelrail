@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -109,9 +110,9 @@ type fakeOCISink struct {
 }
 
 func (s *fakeOCISink) Ready(context.Context) error { return s.notReady }
-func (s *fakeOCISink) Store(_ context.Context, _ string, c cloudconn.OracleCredential) error {
+func (s *fakeOCISink) Store(_ context.Context, _ string, c cloudconn.OracleCredential) (string, error) {
 	s.stored = append(s.stored, c)
-	return nil
+	return "aa:bb:cc", nil
 }
 
 func ociTestDeps(t *testing.T, r *fakeOCIRunner, sink *fakeOCISink, env map[string]string) ociConnectDeps {
@@ -312,5 +313,41 @@ func TestCloudConnectOCIPaste(t *testing.T) {
 	code, _, errOut = runConnect(t, ociTestDeps(t, r, sink, env), append(bad, "--compartment-ocid", tComp, "--yes")...)
 	if code == exitOK || len(sink.stored) != 0 || strings.Contains(errOut, keyBody(k)) {
 		t.Fatalf("mismatched fingerprint accepted: %d %s", code, errOut)
+	}
+}
+
+func TestCloudConnectOCIJSON(t *testing.T) {
+	r := &fakeOCIRunner{t: t}
+	sink := &fakeOCISink{}
+	code, out, errOut := runConnect(t, ociTestDeps(t, r, sink, nil), "--region", "us-phoenix-1", "--json")
+	var plan ociResult
+	if code != exitOK || json.Unmarshal([]byte(out), &plan) != nil || !plan.DryRun || len(plan.Steps) < 2 || len(sink.stored) != 0 {
+		t.Fatalf("dry run json: %d %s %s", code, out, errOut)
+	}
+
+	k := connectTestKey(t)
+	code, out, errOut = runConnect(t, ociTestDeps(t, &fakeOCIRunner{t: t}, sink, nil), "--region", "us-phoenix-1", "--json", "--yes")
+	var res ociResult
+	if code != exitOK || json.Unmarshal([]byte(out), &res) != nil || res.DryRun || res.Connection != "oci" || res.FingerprintPrefix != "aa:bb:cc" || res.CompartmentID == "" {
+		t.Fatalf("yes json: %d %s %s", code, out, errOut)
+	}
+	if strings.Contains(out+errOut, keyBody(k)) || strings.Contains(out, "PRIVATE KEY") {
+		t.Fatal("key printed in json")
+	}
+}
+
+func TestCloudConnectOCIJSONRefusesPromptAndReportsErrors(t *testing.T) {
+	k := connectTestKey(t)
+	sink := &fakeOCISink{}
+	deps := ociTestDeps(t, &fakeOCIRunner{t: t}, sink, nil)
+	code, out, _ := runConnect(t, deps, "--paste", "--tenancy", tTenancy, "--region", "us-phoenix-1", "--user-ocid", tUser,
+		"--fingerprint", fpOf(t, &k.PublicKey), "--compartment-ocid", tComp, "--json")
+	var e jsonError
+	if code != exitValidation || json.Unmarshal([]byte(out), &e) != nil || e.Code != errCodeValidation || e.ExitCode != exitValidation {
+		t.Fatalf("prompt not refused: %d %s", code, out)
+	}
+	code, out, _ = runConnect(t, deps, "--name", "Bad Name", "--json")
+	if code != exitValidation || json.Unmarshal([]byte(out), &e) != nil || e.Error == "" {
+		t.Fatalf("bad name: %d %s", code, out)
 	}
 }

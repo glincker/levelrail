@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,5 +30,16 @@ func TestSkillReferencesMatchCommandTree(t *testing.T) {
 	}
 	if len(entries) != len(files) {
 		t.Fatalf("%d committed reference files, %d generated (run scripts/gen-skill-references.sh)", len(entries), len(files))
+	}
+}
+
+func TestDocsJSONFlagMatchesFormatJSON(t *testing.T) {
+	var a, b, errb bytes.Buffer
+	if runDocs("levelrail-cli", []string{"--json"}, &a, &errb, nil) != exitOK || runDocs("levelrail-cli", []string{"--format", "json"}, &b, &errb, nil) != exitOK {
+		t.Fatal(errb.String())
+	}
+	var nodes []docsNode
+	if err := json.Unmarshal(a.Bytes(), &nodes); err != nil || len(nodes) == 0 || a.String() != b.String() {
+		t.Fatalf("--json differs from --format json or is invalid: %v", err)
 	}
 }

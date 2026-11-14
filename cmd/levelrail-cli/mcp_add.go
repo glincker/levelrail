@@ -48,12 +48,13 @@ func mcpClientNames() string {
 
 func mcpUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s mcp add <client> [--mode agent-core|read-only|standard|full] [--dry-run] [--yes]
+  %[1]s mcp add <client> [--mode agent-core|read-only|standard|full] [--dry-run] [--yes] [--json]
 
 Adds the MCP server to a client's config file. Clients: %[2]s.
 Shows a diff and asks before writing; --yes skips the question (needed when
 not on a terminal). The API token is referenced by environment variable and
 never written into the file.
+--json prints {client, config_path, changed, dry_run, diff_summary} and never prompts.
 `, prog, mcpClientNames())
 }
 
@@ -118,6 +119,7 @@ func runMCP(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 	mode := fs.String("mode", agentinit.ModeAgentCore, "MCP tool exposure: agent-core, read-only, standard or full")
 	dryRun := fs.Bool("dry-run", false, "show the diff and change nothing")
 	yes := fs.Bool("yes", false, "write without asking")
+	jsonOut := fs.Bool("json", false, "print the result as JSON; never prompts, needs --yes to write")
 	rest := args[1:]
 	var name string
 	if len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
@@ -129,14 +131,20 @@ func runMCP(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		}
 		return exitUsage
 	}
-	c, ok := mcpClients[name]
-	if !ok || fs.NArg() > 0 {
-		_, _ = fmt.Fprintf(stderr, "unknown or missing client %q, choose one of: %s\n", name, mcpClientNames())
+	fail := func(msg string) int {
+		if *jsonOut {
+			_ = writeJSONValue(stdout, jsonError{Error: msg, Code: errCodeValidation, ExitCode: exitUsage})
+			return exitUsage
+		}
+		_, _ = fmt.Fprintln(stderr, msg)
 		return exitUsage
 	}
+	c, ok := mcpClients[name]
+	if !ok || fs.NArg() > 0 {
+		return fail(fmt.Sprintf("unknown or missing client %q, choose one of: %s", name, mcpClientNames()))
+	}
 	if !agentinit.ValidMode(*mode) {
-		_, _ = fmt.Fprintf(stderr, "--mode must be agent-core, read-only, standard or full, got %q\n", *mode)
-		return exitUsage
+		return fail(fmt.Sprintf("--mode must be agent-core, read-only, standard or full, got %q", *mode))
 	}
 	home, _ := os.UserHomeDir()
 	if h, ok := lookupEnv("HOME"); ok && h != "" {
@@ -150,8 +158,7 @@ func runMCP(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 	}
 	oldBytes, err := os.ReadFile(path) //nolint:gosec // path is a fixed per-client config location
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitUsage
+		return fail(err.Error())
 	}
 	var next string
 	if c.toml {
@@ -160,19 +167,30 @@ func runMCP(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		next, err = mcpEntryJSON(c, string(oldBytes), o)
 	}
 	if err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitUsage
+		return fail(err.Error())
 	}
 	diff := agentinit.Diff(string(oldBytes), next)
+	res := mcpAddResult{Client: c.name, ConfigPath: path, Changed: diff != "", DryRun: *dryRun, DiffSummary: diffSummary(diff)}
 	if diff == "" {
+		if *jsonOut {
+			return mcpWriteJSON(stdout, stderr, res)
+		}
 		_, _ = fmt.Fprintf(stdout, "%s already up to date\n", path)
 		return exitOK
 	}
-	_, _ = fmt.Fprintf(stdout, "%s\n%s", path, diff)
+	if !*jsonOut {
+		_, _ = fmt.Fprintf(stdout, "%s\n%s", path, diff)
+	}
 	if *dryRun {
+		if *jsonOut {
+			return mcpWriteJSON(stdout, stderr, res)
+		}
 		return exitOK
 	}
 	if !*yes {
+		if *jsonOut {
+			return fail("--json does not prompt: pass --yes to write, or --dry-run to preview")
+		}
 		f, isFile := stdinSource.(*os.File)
 		if !isFile || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
 			_, _ = fmt.Fprintln(stderr, "not a terminal: pass --yes to write, or --dry-run to preview")
@@ -186,13 +204,48 @@ func runMCP(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitUsage
+		return fail(err.Error())
 	}
 	if err := os.WriteFile(path, []byte(next), 0o600); err != nil { //nolint:gosec // fixed per-client config location
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitUsage
+		return fail(err.Error())
+	}
+	if *jsonOut {
+		return mcpWriteJSON(stdout, stderr, res)
 	}
 	_, _ = fmt.Fprintf(stderr, "Wrote %s. Set %s in the environment your client starts from.\n", path, agentinit.TokenEnvVar)
 	return exitOK
+}
+
+// mcpAddResult is --json output; it carries counts, never the diff text or any token.
+type mcpAddResult struct {
+	Client      string `json:"client"`
+	ConfigPath  string `json:"config_path"`
+	Changed     bool   `json:"changed"`
+	DryRun      bool   `json:"dry_run"`
+	DiffSummary string `json:"diff_summary"`
+}
+
+func mcpWriteJSON(stdout, stderr io.Writer, v any) int {
+	if err := writeJSONValue(stdout, v); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitNetwork
+	}
+	return exitOK
+}
+
+// diffSummary counts added and removed lines so agents can see the scale of a change.
+func diffSummary(diff string) string {
+	if diff == "" {
+		return "no changes"
+	}
+	var add, del int
+	for _, l := range strings.Split(diff, "\n") {
+		switch {
+		case strings.HasPrefix(l, "+") && !strings.HasPrefix(l, "+++"):
+			add++
+		case strings.HasPrefix(l, "-") && !strings.HasPrefix(l, "---"):
+			del++
+		}
+	}
+	return fmt.Sprintf("%d lines added, %d removed", add, del)
 }

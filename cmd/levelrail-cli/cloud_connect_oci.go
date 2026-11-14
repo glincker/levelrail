@@ -31,6 +31,7 @@ type ociConnectOpts struct {
 	dryRun, yes, paste                                      bool
 	userOCID, fingerprint, compartmentOCID, keyEnv          string
 	apiURL, lrProfile                                       string
+	jsonOut                                                 bool
 }
 
 // ociIDs holds what each step created; empty means not created yet.
@@ -57,6 +58,7 @@ func runCloudConnectOCI(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.StringVar(&o.name, "name", "oci", "Levelrail connection name, also used in the group, user and policy names")
 	fs.BoolVar(&o.dryRun, "dry-run", true, "print the plan and run nothing")
 	fs.BoolVar(&o.yes, "yes", false, "run the plan")
+	fs.BoolVar(&o.jsonOut, "json", false, "print the plan or result as JSON; refuses prompts, needs --yes to act")
 	fs.BoolVar(&o.paste, "paste", false, "store a scoped credential you already made")
 	fs.StringVar(&o.userOCID, "user-ocid", "", "--paste: the dedicated user OCID")
 	fs.StringVar(&o.fingerprint, "fingerprint", "", "--paste: the API key fingerprint")
@@ -77,8 +79,7 @@ func runCloudConnectOCI(prog string, args []string, stdout, stderr io.Writer, lo
 		o.dryRun = false
 	}
 	if !connectNameRe.MatchString(o.name) {
-		_, _ = fmt.Fprintf(stderr, "%s: --name must be lowercase letters, digits and dashes\n", prog)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, "--name must be lowercase letters, digits and dashes")
 	}
 	if d.lookup == nil {
 		d.lookup = lookupEnv
@@ -201,8 +202,7 @@ func firstOCID(kind string, out []byte) string {
 func runOCIBootstrap(ctx context.Context, prog string, o ociConnectOpts, stdout, stderr io.Writer, d ociConnectDeps) int {
 	bin, err := d.lookPath("oci")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: the oci CLI was not found on PATH; install it, run `oci session authenticate`, or use --paste\n", prog)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, "the oci CLI was not found on PATH; install it, run `oci session authenticate`, or use --paste")
 	}
 	red := secretsource.NewRedactor()
 	run := func(args []string) ([]byte, error) {
@@ -215,15 +215,13 @@ func runOCIBootstrap(ctx context.Context, prog string, o ociConnectOpts, stdout,
 		return out, err
 	}
 	if _, err := run(append([]string{"iam", "region", "list"}, ociAuthArgs(o)...)); err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: the oci session for profile %s is missing or expired: %v\nRun: oci session authenticate --profile-name %s, then try again.\n", prog, o.profile, err, o.profile)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, fmt.Sprintf("the oci session for profile %s is missing or expired: %v. Run: oci session authenticate --profile-name %s, then try again.", o.profile, err, o.profile))
 	}
 	if o.tenancy == "" {
 		out, err := run(append([]string{"iam", "availability-domain", "list"}, ociAuthArgs(o)...))
 		o.tenancy = firstOCID("tenancy", out)
 		if err != nil || o.tenancy == "" {
-			_, _ = fmt.Fprintf(stderr, "%s: could not read the tenancy OCID from oci; pass --tenancy\n", prog)
-			return exitValidation
+			return ociFail(stdout, stderr, o, prog, exitValidation, "could not read the tenancy OCID from oci; pass --tenancy")
 		}
 	}
 	if o.parent == "" {
@@ -234,22 +232,25 @@ func runOCIBootstrap(ctx context.Context, prog string, o ociConnectOpts, stdout,
 	}
 	steps, err := ociSteps(o, ociIDs{}, "")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, err.Error())
 	}
-	_, _ = fmt.Fprintf(stdout, "Plan for connection %q (profile %s, region %s):\n", o.name, o.profile, orPlaceholder(o.region, "profile default"))
-	for i, s := range steps {
-		_, _ = fmt.Fprintf(stdout, "%d. %s\n   oci %s\n", i+1, s.title, shellJoin(s.args))
+	if o.jsonOut && (o.dryRun || !o.yes) {
+		return ociPlanJSON(stdout, stderr, o, steps)
 	}
-	_, _ = fmt.Fprintf(stdout, "%d. send tenancy, region, compartment, user, fingerprint and the private key to Levelrail over the authenticated API, then wipe the local copy\n", len(steps)+1)
+	if !o.jsonOut {
+		_, _ = fmt.Fprintf(stdout, "Plan for connection %q (profile %s, region %s):\n", o.name, o.profile, orPlaceholder(o.region, "profile default"))
+		for i, s := range steps {
+			_, _ = fmt.Fprintf(stdout, "%d. %s\n   oci %s\n", i+1, s.title, shellJoin(s.args))
+		}
+		_, _ = fmt.Fprintf(stdout, "%d. send tenancy, region, compartment, user, fingerprint and the private key to Levelrail over the authenticated API, then wipe the local copy\n", len(steps)+1)
+	}
 	if o.dryRun || !o.yes {
 		_, _ = fmt.Fprintln(stdout, "\nDry run: nothing was created. Review the plan, then rerun with --yes.")
 		return exitOK
 	}
 	sink := d.sink(o.apiURL, o.lrProfile)
 	if err := sink.Ready(ctx); err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: %v\nNothing was created.\n", prog, err)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, err.Error()+". Nothing was created.")
 	}
 	return executeOCIPlan(ctx, prog, o, stdout, stderr, d, run, red, sink)
 }
@@ -257,8 +258,7 @@ func runOCIBootstrap(ctx context.Context, prog string, o ociConnectOpts, stdout,
 func executeOCIPlan(ctx context.Context, prog string, o ociConnectOpts, stdout, stderr io.Writer, d ociConnectDeps, run func([]string) ([]byte, error), red *secretsource.Redactor, sink ociCredentialSink) int {
 	key, err := d.genKey()
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: generating the key pair failed\n", prog)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, "generating the key pair failed")
 	}
 	privPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
 	red.Add(privPEM)
@@ -266,8 +266,7 @@ func executeOCIPlan(ctx context.Context, prog string, o ociConnectOpts, stdout, 
 	// Only the public half touches disk; the private key stays in memory and is wiped.
 	dir, err := os.MkdirTemp(d.tempBase, "levelrail-oci-")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: could not create a private temp dir\n", prog)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, "could not create a private temp dir")
 	}
 	defer func() { _ = os.RemoveAll(dir) }()
 	pubDER, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
@@ -276,11 +275,13 @@ func executeOCIPlan(ctx context.Context, prog string, o ociConnectOpts, stdout, 
 	}
 	pubPath := filepath.Join(dir, "public.pem")
 	if err := os.WriteFile(pubPath, pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubDER}), 0o600); err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: could not write the public key\n", prog)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, "could not write the public key")
 	}
 	var ids ociIDs
 	fail := func(step string, err error) int {
+		if o.jsonOut {
+			return ociFail(stdout, stderr, o, prog, exitAPIError, fmt.Sprintf("%s failed: %v. %s", step, err, strings.Join(ociCleanup(o, ids), "; ")))
+		}
 		_, _ = fmt.Fprintf(stderr, "%s: %s failed: %v\n", prog, step, err)
 		printCleanup(stderr, o, ids)
 		return exitAPIError
@@ -294,7 +295,9 @@ func executeOCIPlan(ctx context.Context, prog string, o ociConnectOpts, stdout, 
 			break
 		}
 		s := steps[i]
-		_, _ = fmt.Fprintf(stdout, "[%d/%d] %s\n", i+1, len(steps), s.title)
+		if !o.jsonOut {
+			_, _ = fmt.Fprintf(stdout, "[%d/%d] %s\n", i+1, len(steps), s.title)
+		}
 		out, err := run(s.args)
 		if err != nil {
 			return fail(s.title, err)
@@ -308,11 +311,11 @@ func executeOCIPlan(ctx context.Context, prog string, o ociConnectOpts, stdout, 
 	if err := cloudconn.ValidateOracle(cred); err != nil {
 		return fail("checking the new credential", errors.New(redactOutput(red, err.Error())))
 	}
-	if err := sink.Store(ctx, o.name, cred); err != nil {
+	prefix, err := sink.Store(ctx, o.name, cred)
+	if err != nil {
 		return fail("storing the connection in Levelrail", errors.New(redactOutput(red, err.Error())))
 	}
-	printOCINextSteps(stdout, prog, o.name)
-	return exitOK
+	return ociStored(stdout, stderr, prog, o, prefix, ids.compartment)
 }
 
 func ociCapture(ids *ociIDs, kind string, out []byte) error {
@@ -348,18 +351,19 @@ func ociCapture(ids *ociIDs, kind string, out []byte) error {
 
 func runOCIPaste(ctx context.Context, prog string, o ociConnectOpts, stdout, stderr io.Writer, d ociConnectDeps) int {
 	if o.compartmentOCID == "" || o.compartmentOCID == o.tenancy || strings.HasPrefix(o.compartmentOCID, "ocid1.tenancy.") {
-		_, _ = fmt.Fprintf(stderr, "%s: --compartment-ocid must be a dedicated compartment; the tenancy root is never accepted\n", prog)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, "--compartment-ocid must be a dedicated compartment; the tenancy root is never accepted")
 	}
 	var keyPEM []byte
 	if o.keyEnv != "" {
 		v, ok := d.lookup(o.keyEnv)
 		if !ok || v == "" {
-			_, _ = fmt.Fprintf(stderr, "%s: environment variable %s is empty\n", prog, o.keyEnv)
-			return exitValidation
+			return ociFail(stdout, stderr, o, prog, exitValidation, fmt.Sprintf("environment variable %s is empty", o.keyEnv))
 		}
 		keyPEM = []byte(v)
 	} else {
+		if o.jsonOut && !o.yes {
+			return ociFail(stdout, stderr, o, prog, exitValidation, "--json cannot prompt for the key: pass --key-env, or --yes with the key on stdin")
+		}
 		_, _ = fmt.Fprintln(stderr, "Paste the PEM private key, then press Enter after the END line:")
 		keyPEM = readPEM(d.stdin)
 	}
@@ -367,24 +371,24 @@ func runOCIPaste(ctx context.Context, prog string, o ociConnectOpts, stdout, std
 	cred := cloudconn.OracleCredential{TenancyOCID: o.tenancy, CompartmentOCID: o.compartmentOCID, Region: o.region,
 		Secret: cloudconn.NewOracleSecret(o.userOCID, o.fingerprint, keyPEM)}
 	if err := cloudconn.ValidateOracle(cred); err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, err.Error())
 	}
 	if o.dryRun && !o.yes {
+		if o.jsonOut {
+			return ociWriteJSON(stdout, stderr, ociResult{DryRun: true, Connection: o.name, Region: o.region, CompartmentID: o.compartmentOCID})
+		}
 		_, _ = fmt.Fprintln(stdout, "The credential is valid offline. Dry run: nothing was sent. Rerun with --yes to store it.")
 		return exitOK
 	}
 	sink := d.sink(o.apiURL, o.lrProfile)
 	if err := sink.Ready(ctx); err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
-		return exitValidation
+		return ociFail(stdout, stderr, o, prog, exitValidation, err.Error())
 	}
-	if err := sink.Store(ctx, o.name, cred); err != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: storing the connection failed: %v\n", prog, err)
-		return exitAPIError
+	prefix, err := sink.Store(ctx, o.name, cred)
+	if err != nil {
+		return ociFail(stdout, stderr, o, prog, exitAPIError, fmt.Sprintf("storing the connection failed: %v", err))
 	}
-	printOCINextSteps(stdout, prog, o.name)
-	return exitOK
+	return ociStored(stdout, stderr, prog, o, prefix, o.compartmentOCID)
 }
 
 func readPEM(r io.Reader) []byte {
@@ -450,4 +454,61 @@ func shellJoin(args []string) string {
 		}
 	}
 	return strings.Join(out, " ")
+}
+
+type ociPlanStep struct {
+	Index   int    `json:"index"`
+	Title   string `json:"title"`
+	Command string `json:"command"`
+}
+
+// ociResult is --json output: the plan in a dry run, the stored connection after --yes. Never a key or token.
+type ociResult struct {
+	DryRun            bool          `json:"dry_run"`
+	Connection        string        `json:"connection"`
+	Profile           string        `json:"profile,omitempty"`
+	Region            string        `json:"region"`
+	CompartmentID     string        `json:"compartment_id,omitempty"`
+	FingerprintPrefix string        `json:"fingerprint_prefix,omitempty"`
+	Steps             []ociPlanStep `json:"steps,omitempty"`
+}
+
+func ociWriteJSON(stdout, stderr io.Writer, v any) int {
+	if err := writeJSONValue(stdout, v); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitNetwork
+	}
+	return exitOK
+}
+
+func ociPlanJSON(stdout, stderr io.Writer, o ociConnectOpts, steps []ociStep) int {
+	res := ociResult{DryRun: true, Connection: o.name, Profile: o.profile, Region: o.region}
+	for i, s := range steps {
+		res.Steps = append(res.Steps, ociPlanStep{Index: i + 1, Title: s.title, Command: "oci " + shellJoin(s.args)})
+	}
+	res.Steps = append(res.Steps, ociPlanStep{Index: len(steps) + 1, Title: "send the credential to Levelrail over the authenticated API, then wipe the local copy"})
+	return ociWriteJSON(stdout, stderr, res)
+}
+
+func ociStored(stdout, stderr io.Writer, prog string, o ociConnectOpts, prefix, compartment string) int {
+	if o.jsonOut {
+		return ociWriteJSON(stdout, stderr, ociResult{Connection: o.name, Region: o.region, CompartmentID: compartment, FingerprintPrefix: prefix})
+	}
+	_, _ = fmt.Fprintf(stdout, "Stored connection %s (key fingerprint %s...)\n", o.name, prefix)
+	printOCINextSteps(stdout, prog, o.name)
+	return exitOK
+}
+
+// ociFail reports one failure: the standard JSON error object on stdout in --json mode, a line on stderr otherwise.
+func ociFail(stdout, stderr io.Writer, o ociConnectOpts, prog string, code int, msg string) int {
+	if !o.jsonOut {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, msg)
+		return code
+	}
+	cat := errCodeValidation
+	if code == exitAPIError {
+		cat = errCodeAPI
+	}
+	_ = writeJSONValue(stdout, jsonError{Error: msg, Code: cat, ExitCode: code})
+	return code
 }

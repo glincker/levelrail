@@ -32,6 +32,7 @@ Preview. Uses your local oci CLI session once to create a dedicated compartment,
 API-only user, a policy scoped to that compartment and a key pair made on this machine.
 Only that scoped credential reaches Levelrail. The default is a dry run that prints every
 command; --yes runs them. Root or tenancy admin credentials are never accepted.
+--json prints the plan or the result as JSON and never prompts; it acts only with --yes.
 --paste stores a scoped credential you already made; the key comes from --key-env or stdin.
 `, prog)
 }
@@ -77,7 +78,7 @@ func (execRunner) Run(ctx context.Context, name string, args []string) ([]byte, 
 // ociCredentialSink receives the scoped credential; the API one is the only production path.
 type ociCredentialSink interface {
 	Ready(ctx context.Context) error
-	Store(ctx context.Context, name string, cred cloudconn.OracleCredential) error
+	Store(ctx context.Context, name string, cred cloudconn.OracleCredential) (fingerprintPrefix string, err error)
 }
 
 type ociConnectDeps struct {
@@ -95,7 +96,7 @@ func defaultOCIConnectDeps(prog string, lookupEnv func(string) (string, bool)) o
 		runner:   execRunner{},
 		lookPath: exec.LookPath,
 		sink: func(apiURL, profile string) ociCredentialSink {
-			return apiOCISink{prog: prog, apiURL: apiURL, profile: profile, lookupEnv: lookupEnv, out: os.Stdout}
+			return apiOCISink{prog: prog, apiURL: apiURL, profile: profile, lookupEnv: lookupEnv}
 		},
 		stdin:  os.Stdin,
 		genKey: func() (*rsa.PrivateKey, error) { return rsa.GenerateKey(rand.Reader, ociKeyBits()) },
@@ -107,7 +108,6 @@ func defaultOCIConnectDeps(prog string, lookupEnv func(string) (string, bool)) o
 type apiOCISink struct {
 	prog, apiURL, profile string
 	lookupEnv             func(string) (string, bool)
-	out                   io.Writer
 }
 
 func (s apiOCISink) base() string {
@@ -118,10 +118,10 @@ func (s apiOCISink) base() string {
 func (s apiOCISink) Ready(context.Context) error { return secureTransport(s.base()) }
 
 // Store uploads the bundle once; the key copy is wiped when the call returns.
-func (s apiOCISink) Store(ctx context.Context, name string, cred cloudconn.OracleCredential) error {
+func (s apiOCISink) Store(ctx context.Context, name string, cred cloudconn.OracleCredential) (string, error) {
 	base := s.base()
 	if err := secureTransport(base); err != nil {
-		return err
+		return "", err
 	}
 	profile := resolveProfile(s.profile, s.lookupEnv)
 	key := cred.Secret.KeyPEM()
@@ -131,12 +131,9 @@ func (s apiOCISink) Store(ctx context.Context, name string, cred cloudconn.Oracl
 		UserOCID: cred.Secret.UserOCID, Fingerprint: cred.Secret.Fingerprint,
 	}, key)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if s.out != nil {
-		_, _ = fmt.Fprintf(s.out, "Stored connection %s (key fingerprint %s...)\n", got.Name, got.FingerprintPrefix)
-	}
-	return nil
+	return got.FingerprintPrefix, nil
 }
 
 // secureTransport refuses to send a key over plain http unless the API is on this machine.

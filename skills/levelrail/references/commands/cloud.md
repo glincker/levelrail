@@ -39,6 +39,7 @@ Preview. Uses your local oci CLI session once to create a dedicated compartment,
 API-only user, a policy scoped to that compartment and a key pair made on this machine.
 Only that scoped credential reaches Levelrail. The default is a dry run that prints every
 command; --yes runs them. Root or tenancy admin credentials are never accepted.
+--json prints the plan or the result as JSON and never prompts; it acts only with --yes.
 --paste stores a scoped credential you already made; the key comes from --key-env or stdin.
 ```
 

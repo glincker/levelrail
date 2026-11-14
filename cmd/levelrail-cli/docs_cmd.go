@@ -23,10 +23,11 @@ type docsNode struct {
 
 func docsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s docs [--format markdown|json] [--out-dir DIR]
+  %[1]s docs [--format markdown|json | --json] [--out-dir DIR]
 
 Dumps the command tree with each group's help text. Offline and
 deterministic, so skills and docs can be generated from it.
+--json is the same as --format json.
 --out-dir writes one markdown file per top-level command plus INDEX.md.
 `, prog)
 }
@@ -106,12 +107,16 @@ func runDocs(prog string, args []string, stdout, stderr io.Writer, _ func(string
 	fs.SetOutput(stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, docsUsage(prog)) }
 	format := fs.String("format", "markdown", "markdown or json")
+	jsonFlag := fs.Bool("json", false, "same as --format json")
 	outDir := fs.String("out-dir", "", "write markdown files to this directory")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage
+	}
+	if *jsonFlag {
+		*format = "json"
 	}
 	if fs.NArg() > 0 || (*format != "markdown" && *format != "json") {
 		_, _ = fmt.Fprint(stderr, docsUsage(prog))
