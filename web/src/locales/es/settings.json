@@ -3353,6 +3353,130 @@
       "environment_protected": {
         "message": "Una app se vincularía a un entorno protegido.",
         "fix": "Desprotege el entorno o despliega por la vía normal de aprobación."
+      },
+      "unavailable": {
+        "message": "El plano de control no sirve este tipo de recurso.",
+        "fix": "Comprueba que el plano de control ejecuta una versión que conoce el tipo."
+      },
+      "read_failed": {
+        "message": "No se pudo leer el estado vivo del recurso, así que no se puede comparar.",
+        "fix": "Reintenta. Si se repite, revisa los registros del plano de control."
+      },
+      "schema_version_unsupported": {
+        "message": "La version del documento no es una que este plano de control lea.",
+        "fix": "Usa version: 1."
+      },
+      "ownership_conflict": {
+        "message": "El recurso ya pertenece a otro stack u otra fuente.",
+        "fix": "Aplícalo desde el stack o la fuente que lo posee, o libéralo allí primero."
+      },
+      "plan_hash_version": {
+        "message": "El hash del plan enviado tiene la forma antigua sin clave, que este plano de control ya no acepta.",
+        "fix": "Ejecuta el plan de nuevo para obtener un hash actual."
+      },
+      "stack_source_sync": {
+        "message": "El stack se sincroniza desde una fuente, así que se rechaza la aplicación directa.",
+        "fix": "Cambia la fuente, no el stack."
+      },
+      "apply_disabled": {
+        "message": "Aplicar está desactivado para este plano de control o stack.",
+        "fix": "Pide a un administrador que lo active."
+      },
+      "invalid_request": {
+        "message": "La propia solicitud está mal formada, por ejemplo un campo ausente o ilegible.",
+        "fix": "Corrige la solicitud y envíala de nuevo."
+      },
+      "approval_pending": {
+        "message": "Un plan cloud reemplazaría el plan de motor guardado de una revisión pendiente de aprobación.",
+        "fix": "Aprueba o rechaza antes la revisión indicada, o planifica con supersede=true para retirarla."
+      },
+      "plan_superseded": {
+        "message": "Un plan posterior reemplazó el plan de motor guardado que nombraba esta aprobación.",
+        "fix": "Planifica de nuevo y solicita una nueva aprobación."
+      },
+      "interrupted": {
+        "message": "El plano de control se detuvo mientras se ejecutaba el trabajo de plan.",
+        "fix": "Planifica de nuevo."
+      },
+      "plan_job_not_found": {
+        "message": "No existe un trabajo de plan con este id para el stack, o se eliminó tras el periodo de retención.",
+        "fix": "Comprueba el id del trabajo o planifica de nuevo."
+      },
+      "plan_timeout": {
+        "message": "El trabajo de plan superó cloud.engine_timeout_seconds.",
+        "fix": "Planifica de nuevo o aumenta cloud.engine_timeout_seconds."
+      },
+      "sync_repo_unreachable": {
+        "message": "No se pudo obtener el repositorio git de un stack sincronizado, o no se pudo usar su credencial.",
+        "fix": "Comprueba la URL del repositorio, la rama y credential_ref, y ejecuta una actualización de sincronización."
+      },
+      "sync_path_invalid": {
+        "message": "La ruta de sincronización sale del checkout, apunta a .git o contiene un enlace simbólico.",
+        "fix": "Usa una ruta relativa sin .. y sin enlaces simbólicos."
+      },
+      "sync_limits_exceeded": {
+        "message": "El repositorio o los archivos bajo la ruta de sincronización superaron un límite de tamaño o de cantidad.",
+        "fix": "Reduce la ruta o aumenta stacks.sync_max_repo_mb, stacks.sync_max_files o stacks.sync_max_file_kb."
+      },
+      "sync_plan_failed": {
+        "message": "Los documentos bajo la ruta de sincronización no validaron o no se pudieron planificar.",
+        "fix": "Ejecuta el plan de la CLI sobre el mismo commit para ver cada problema."
+      },
+      "compose_path_invalid": {
+        "message": "spec.compose.path es absoluta, contiene .., una barra invertida o un byte NUL, o pasa por un enlace simbólico.",
+        "fix": "Usa una ruta relativa dentro de la carpeta que aplicas, como compose/shop.yaml."
+      },
+      "compose_ref_missing": {
+        "message": "Una App referencia un archivo compose que no se envió con la solicitud.",
+        "fix": "Aplica desde la carpeta que contiene el archivo con una CLI actual y revisa la ruta."
+      },
+      "compose_too_large": {
+        "message": "Un archivo compose, o todos juntos, supera el límite de tamaño.",
+        "fix": "Divide el proyecto o aumenta iac.compose_max_file_kb o iac.compose_max_total_kb."
+      },
+      "compose_too_many_files": {
+        "message": "La solicitud contiene más archivos compose que el límite.",
+        "fix": "Aplica menos Apps compose a la vez o aumenta iac.compose_max_files."
+      },
+      "compose_mode_conflict": {
+        "message": "Una App define spec.compose y spec.service a la vez.",
+        "fix": "Conserva uno: spec.compose para un proyecto compose, spec.service para un servicio único."
+      },
+      "compose_unsupported_key": {
+        "message": "Un archivo compose referenciado usa una clave que el modo estricto rechaza, como build, env_file, include, extends.file o una clave de nivel superior desconocida.",
+        "fix": "Quita la clave; pon los valores en spec.compose.env y construye las imágenes antes de aplicar."
+      },
+      "compose_rejected": {
+        "message": "Un archivo compose referenciado rompe una regla de protección, como privileged, red del host, un bind mount, un montaje de socket o una entrada extra_hosts de riesgo. El mensaje nombra la regla.",
+        "fix": "Quita el ajuste que nombra la regla; las Apps compose de IaC nunca obtienen acceso al host."
+      },
+      "compose_secret_literal": {
+        "message": "Un archivo compose referenciado contiene algo que parece un secreto literal. El mensaje nombra el servicio y la clave, nunca el valor.",
+        "fix": "Sustituye el valor por ${NAME} y declara NAME en spec.compose.env con un secretRef."
+      },
+      "compose_var_missing": {
+        "message": "Un ${VAR} de un archivo compose referenciado no está declarado en spec.compose.env. Nunca se lee el entorno del host.",
+        "fix": "Declara la variable en spec.compose.env o dale un valor por defecto con ${VAR:-value}."
+      },
+      "compose_no_deploy_unsupported": {
+        "message": "Se pidió no_deploy para un plan que contiene una App compose, y el endpoint compose despliega en cada guardado.",
+        "fix": "Aplica sin no_deploy, o deja la App compose fuera de esta aplicación."
+      },
+      "compose_apply_failed": {
+        "message": "Una App compose se desplegó y luego falló al fijar su proyecto, entorno o etiquetas, o al registrarla en el libro del stack. Un primer despliegue se retira por la ruta de borrado compose (se conservan los volúmenes con nombre); un redespliegue queda en marcha.",
+        "fix": "Corrige la causa indicada en el error, luego planifica y aplica de nuevo; tras un redespliegue fallido, el siguiente plan muestra la deriva."
+      },
+      "sync_secret_in_repo": {
+        "message": "Un documento sincronizado contiene un valor secreto literal. El estado nombra el archivo y la línea, nunca el valor.",
+        "fix": "Sustituye el literal por un secretRef, fija el valor con la API de secretos y rota la credencial filtrada."
+      },
+      "sync_disk_low": {
+        "message": "El disco libre estaba por debajo de stacks.sync_min_free_mb, así que la sincronización no obtuvo nada.",
+        "fix": "Libera disco en el volumen de datos del plano de control o baja el ajuste."
+      },
+      "sync_apply_failed": {
+        "message": "Una aplicación de sincronización fue rechazada o falló y el stack quedó sin cambios.",
+        "fix": "Ejecuta el plan del stack sobre el mismo commit; revisa el bloqueo del stack, las apps protegidas y el ajuste de aplicar."
       }
     }
   },
