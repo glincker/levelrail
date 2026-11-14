@@ -92,14 +92,14 @@ func (a CloudPlannerAdapter) ApplyCloud(ctx context.Context, req iac.CloudApplyR
 const DefaultStack = "default"
 
 // PlanCloud plans one document as a stack of its own; apply uses PlanCloudStack.
-func (a CloudPlannerAdapter) PlanCloud(r iac.CloudResource) (iac.CloudDiff, error) {
-	out := a.PlanCloudStack(DefaultStack, []iac.CloudResource{r})
+func (a CloudPlannerAdapter) PlanCloud(ctx context.Context, r iac.CloudResource) (iac.CloudDiff, error) {
+	out := a.PlanCloudStack(ctx, DefaultStack, []iac.CloudResource{r})
 	return out[0].Diff, out[0].Err
 }
 
 // PlanCloudStack groups the documents by account, plans one module per group and splits
 // the changes back to the documents by resource address.
-func (a CloudPlannerAdapter) PlanCloudStack(stack string, rs []iac.CloudResource) []iac.CloudOutcome {
+func (a CloudPlannerAdapter) PlanCloudStack(ctx context.Context, stack string, rs []iac.CloudResource) []iac.CloudOutcome {
 	out := make([]iac.CloudOutcome, len(rs))
 	groups := map[string][]int{}
 	var order []string
@@ -108,7 +108,7 @@ func (a CloudPlannerAdapter) PlanCloudStack(stack string, rs []iac.CloudResource
 			// An account is a reference, so it stays a no-op once its connection resolves.
 			if a.Accounts == nil {
 				out[i].Err = ErrNotConfigured
-			} else if _, err := a.Accounts.ResolveAccount(context.Background(), r.Name); err != nil {
+			} else if _, err := a.Accounts.ResolveAccount(ctx, r.Name); err != nil {
 				out[i].Err = err
 			} else {
 				out[i].Diff = iac.CloudDiff{Action: "noop"}
@@ -127,7 +127,7 @@ func (a CloudPlannerAdapter) PlanCloudStack(stack string, rs []iac.CloudResource
 	}
 	for _, acct := range order {
 		idx := groups[acct]
-		diffs, err := a.planGroup(StackName(stack), acct, rs, idx)
+		diffs, err := a.planGroup(ctx, StackName(stack), acct, rs, idx)
 		for n, i := range idx {
 			if err != nil {
 				out[i].Err = err
@@ -160,11 +160,10 @@ func StackName(source string) string {
 	return n
 }
 
-func (a CloudPlannerAdapter) planGroup(stack, acct string, rs []iac.CloudResource, idx []int) ([]iac.CloudDiff, error) {
+func (a CloudPlannerAdapter) planGroup(ctx context.Context, stack, acct string, rs []iac.CloudResource, idx []int) ([]iac.CloudDiff, error) {
 	if a.Engine == nil || a.Accounts == nil {
 		return nil, ErrNotConfigured
 	}
-	ctx := context.Background()
 	mod, info, owner, err := a.renderGroup(ctx, stack, acct, rs, idx)
 	if err != nil {
 		return nil, err

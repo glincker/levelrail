@@ -194,15 +194,15 @@ func TestStackPlannedAsOneModuleGolden(t *testing.T) {
 		"account": "oci-test", "cidr": "10.30.0.0/16", "ingress": []any{map[string]any{"port": 443}},
 	}}
 	bucket := iac.CloudResource{Kind: iac.KindCloudBucket, Name: "backups", Spec: map[string]any{"account": "oci-test"}}
-	if out := a.PlanCloudStack("prod", []iac.CloudResource{inst}); out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "lr-net") {
+	if out := a.PlanCloudStack(context.Background(), "prod", []iac.CloudResource{inst}); out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "lr-net") {
 		t.Fatalf("instance without its network must fail clearly, got %v", out[0].Err)
 	}
-	if out := a.PlanCloudStack("prod", []iac.CloudResource{bucket}); out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "spec.namespace") {
+	if out := a.PlanCloudStack(context.Background(), "prod", []iac.CloudResource{bucket}); out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "spec.namespace") {
 		t.Fatalf("bucket without namespace must name the field, got %v", out[0].Err)
 	}
 	bucket.Spec["namespace"] = "lrns"
 	acct := iac.CloudResource{Kind: iac.KindCloudAccount, Name: "oci-test"}
-	out := a.PlanCloudStack("Prod Stack", []iac.CloudResource{inst, acct, net, bucket})
+	out := a.PlanCloudStack(context.Background(), "Prod Stack", []iac.CloudResource{inst, acct, net, bucket})
 	for i, o := range out {
 		if o.Err != nil || o.Diff.Action != "noop" {
 			t.Fatalf("outcome %d = %+v", i, o)
@@ -238,11 +238,11 @@ func TestStackPlanSplitsChangesAndRefusesOrphans(t *testing.T) {
 	a := CloudPlannerAdapter{Engine: cp, Accounts: staticAccounts{}}
 	net := iac.CloudResource{Kind: iac.KindCloudNetwork, Name: "lr-net", Spec: map[string]any{"account": "oci-test", "cidr": "10.30.0.0/16"}}
 	bucket := iac.CloudResource{Kind: iac.KindCloudBucket, Name: "backups", Spec: map[string]any{"account": "oci-test", "namespace": "lrns"}}
-	out := a.PlanCloudStack("prod", []iac.CloudResource{net, bucket})
+	out := a.PlanCloudStack(context.Background(), "prod", []iac.CloudResource{net, bucket})
 	if out[0].Diff.Action != ActionCreate || out[1].Diff.Action != ActionUpdate {
 		t.Fatalf("outcomes = %+v", out)
 	}
-	out = a.PlanCloudStack("prod", []iac.CloudResource{net})
+	out = a.PlanCloudStack(context.Background(), "prod", []iac.CloudResource{net})
 	if out[0].Err == nil || !strings.Contains(out[0].Err.Error(), "destroy") {
 		t.Fatalf("orphan change must refuse, got %+v", out[0])
 	}

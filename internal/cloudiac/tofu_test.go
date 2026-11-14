@@ -32,11 +32,17 @@ type fakeRunner struct {
 	// applyState is the state the fake apply leaves behind; onApply runs first.
 	applyState []byte
 	onApply    func()
+	// hold blocks that step until the context ends, like a hung provider call.
+	hold string
 }
 
-func (f *fakeRunner) Run(_ context.Context, spec SandboxSpec) (RunOutput, error) {
+func (f *fakeRunner) Run(ctx context.Context, spec SandboxSpec) (RunOutput, error) {
 	sub := spec.Args[1]
 	f.calls = append(f.calls, sub)
+	if sub == f.hold {
+		<-ctx.Done()
+		return RunOutput{}, ctx.Err()
+	}
 	for _, m := range spec.Mounts {
 		if m.Target != SandboxStateDir {
 			continue
@@ -321,4 +327,26 @@ func TestPolicyAdapterRefusesIAMAndDestroyCap(t *testing.T) {
 	if !codes[CodeIAMForbidden] || !codes[CodeDestroyCap] {
 		t.Fatalf("refusals = %+v", out)
 	}
+}
+
+func TestTofuPlanTimeoutAndCancelReleaseEverything(t *testing.T) {
+	h := newHarness(t, allPrices, 0)
+	h.seedState(t)
+	h.runner.hold = "plan"
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	_, err := h.eng.PlanDetailed(ctx, testModule(), CredentialHandle{ID: "oci-test"})
+	var ee *Error
+	if !errors.As(err, &ee) || ee.Kind != ErrTimeout || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("timed out plan err = %v, want kind %s", err, ErrTimeout)
+	}
+	h.assertClean(t)
+	gone, stop := context.WithCancel(context.Background())
+	stop()
+	h.runner.calls = nil
+	_, err = h.eng.PlanDetailed(gone, testModule(), CredentialHandle{ID: "oci-test"})
+	if !errors.As(err, &ee) || ee.Kind != ErrCanceled || len(h.runner.calls) != 0 {
+		t.Fatalf("cancelled plan err = %v calls %v, want kind %s and no step", err, h.runner.calls, ErrCanceled)
+	}
+	h.assertClean(t)
 }

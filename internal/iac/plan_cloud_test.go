@@ -1,6 +1,7 @@
 package iac
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ type fakeCloudPlanner struct {
 	err   error
 }
 
-func (f fakeCloudPlanner) PlanCloud(r CloudResource) (CloudDiff, error) {
+func (f fakeCloudPlanner) PlanCloud(_ context.Context, r CloudResource) (CloudDiff, error) {
 	return f.diffs[r.Kind], f.err
 }
 
@@ -155,7 +156,7 @@ func TestCloudPlanReadyPlannerKeepsAccountNoop(t *testing.T) {
 
 type unavailablePlanner struct{ fakeCloudPlanner }
 
-func (unavailablePlanner) PlanCloud(CloudResource) (CloudDiff, error) {
+func (unavailablePlanner) PlanCloud(context.Context, CloudResource) (CloudDiff, error) {
 	return CloudDiff{}, fmt.Errorf("%w: no stored cloud connection named %q", ErrCloudUnavailable, "oci-test")
 }
 

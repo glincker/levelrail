@@ -28,7 +28,7 @@ func (noopEngine) PlanDetailed(context.Context, ModuleSpec, CredentialHandle) (P
 
 func TestCloudAdapterMissingConnectionIsUnavailable(t *testing.T) {
 	a := CloudPlannerAdapter{Engine: noopEngine{}, Accounts: ConnectionAccounts{Conns: connGetter{}}}
-	out := a.PlanCloudStack("s", []iac.CloudResource{
+	out := a.PlanCloudStack(context.Background(), "s", []iac.CloudResource{
 		{Kind: iac.KindCloudAccount, Name: "oci-test"},
 		{Kind: iac.KindCloudBucket, Name: "b", Spec: map[string]any{"account": "oci-test", "namespace": "ns"}},
 	})
@@ -42,7 +42,7 @@ func TestCloudAdapterMissingConnectionIsUnavailable(t *testing.T) {
 func TestCloudAdapterPresentConnectionKeepsAccountNoop(t *testing.T) {
 	g := connGetter{"oci-test": {Name: "oci-test", Provider: cloudconn.ProviderOracle}}
 	a := CloudPlannerAdapter{Engine: noopEngine{}, Accounts: ConnectionAccounts{Conns: g}}
-	out := a.PlanCloudStack("s", []iac.CloudResource{{Kind: iac.KindCloudAccount, Name: "oci-test"}})
+	out := a.PlanCloudStack(context.Background(), "s", []iac.CloudResource{{Kind: iac.KindCloudAccount, Name: "oci-test"}})
 	if out[0].Err != nil || out[0].Diff.Action != "noop" {
 		t.Fatalf("outcome %+v", out[0])
 	}

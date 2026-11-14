@@ -1,13 +1,14 @@
 package iac
 
 import (
+	"context"
 	"strconv"
 	"testing"
 )
 
 type countingPlanner struct{ n *int }
 
-func (c countingPlanner) PlanCloud(r CloudResource) (CloudDiff, error) {
+func (c countingPlanner) PlanCloud(_ context.Context, r CloudResource) (CloudDiff, error) {
 	*c.n++
 	if r.Kind == KindCloudAccount {
 		return CloudDiff{Action: "noop"}, nil

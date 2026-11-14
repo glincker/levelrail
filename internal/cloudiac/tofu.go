@@ -213,7 +213,13 @@ func (e *TofuEngine) begin(ctx context.Context, step Step, spec ModuleSpec, cred
 	if holder == "" {
 		holder = "levelrail-" + string(step)
 	}
+	if cerr := ctxFailure(ctx, step, "lock"); cerr != nil {
+		return nil, cerr
+	}
 	lock, err := d.Locks.AcquireCloudStateLock(ctx, s.account, s.stack, holder, cfg.Timeout()+time.Minute, e.now())
+	if cerr := ctxFailure(ctx, step, "lock"); err != nil && cerr != nil {
+		return nil, cerr
+	}
 	if errors.Is(err, store.ErrCloudStateLocked) {
 		return nil, stepErr(step, ErrLockHeld, "another run holds the state lock for this stack", ErrStateLocked)
 	}
@@ -222,7 +228,14 @@ func (e *TofuEngine) begin(ctx context.Context, step Step, spec ModuleSpec, cred
 	}
 	s.lock = lock
 	s.closers = append(s.closers, func() { _ = d.Locks.ReleaseCloudStateLock(context.WithoutCancel(ctx), lock) })
-	fail := func(err error) (*session, error) { s.close(); return nil, err }
+	// A step that failed because the context ended reports the stable kind, not the store error.
+	fail := func(err error) (*session, error) {
+		s.close()
+		if cerr := ctxFailure(ctx, step, "prepare"); cerr != nil {
+			return nil, cerr
+		}
+		return nil, err
+	}
 
 	held, err := d.State.Quarantined(ctx, s.account, s.stack)
 	if err != nil {
@@ -294,6 +307,9 @@ func (e *TofuEngine) begin(ctx context.Context, step Step, spec ModuleSpec, cred
 func (e *TofuEngine) runSteps(ctx context.Context, s *session, step Step, steps ...[]string) (RunOutput, error) {
 	var last RunOutput
 	for i, args := range steps {
+		if cerr := ctxFailure(ctx, step, args[1]); cerr != nil {
+			return last, cerr
+		}
 		sb := s.sb
 		sb.Args = args
 		out, err := e.deps.Runner.Run(ctx, sb)
@@ -528,8 +544,8 @@ func (c TofuConfig) missing(d TofuDeps) error {
 }
 
 func stepFailure(ctx context.Context, step Step, name string, out RunOutput, err error, redact func(string) string) error {
-	if ctx.Err() != nil {
-		return stepErr(step, ErrCanceled, name+" stopped: "+ctx.Err().Error(), ctx.Err())
+	if cerr := ctxFailure(ctx, step, name); cerr != nil {
+		return cerr
 	}
 	// Redact the whole capped stream before tailing, so the cut cannot split a secret.
 	full := out.Stderr
@@ -736,4 +752,18 @@ func valueString(v any, ok bool) string {
 		return ""
 	}
 	return string(b)
+}
+
+// ctxFailure maps a done context to a stable kind, so callers branch on plan_timeout or
+// canceled instead of parsing text; nil while the context is live.
+func ctxFailure(ctx context.Context, step Step, what string) error {
+	err := ctx.Err()
+	if err == nil {
+		return nil
+	}
+	kind := ErrCanceled
+	if errors.Is(err, context.DeadlineExceeded) {
+		kind = ErrTimeout
+	}
+	return stepErr(step, kind, what+" stopped: "+err.Error(), err)
 }

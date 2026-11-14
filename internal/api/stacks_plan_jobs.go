@@ -392,28 +392,53 @@ func (rt *Router) runPlanJob(r *http.Request, ss StackStore, js stackPlanJobStor
 		return
 	}
 	rt.emitPlanJobEvent(ctx, stackEventPlanStarted, job, nil, store.PlanJobRunning, "")
+	// The job context carries the engine timeout, so the engine stops when the job does and
+	// the slot frees at once instead of waiting for the engine to unwind.
+	jobCtx, cancelJob := context.WithTimeout(planCtx, rt.planJobTimeout(ctx))
+	defer cancelJob()
+	free := func() { endLease(); g.release(job.Stack) }
 	done := make(chan planOutcome, 1)
 	go func() {
-		defer g.release(job.Stack)
-		defer endLease()
-		plan, err := rt.computeStackPlan(planCtx, r, ss, in)
+		plan, err := rt.computeStackPlan(jobCtx, r, ss, in)
 		done <- planOutcome{plan: plan, err: err}
 	}()
-	timeout := time.NewTimer(rt.cloudEngineTimeout(ctx))
-	defer timeout.Stop()
 	select {
 	case o := <-done:
+		ended := jobCtx.Err() != nil
+		free()
+		if ended {
+			rt.finishPlanJobCtx(jobCtx, finish)
+			return
+		}
 		if o.err != nil {
 			rt.logger.Warn("api: cloud plan job failed", slog.String("stack", job.Stack), slog.String("job", job.ID), slog.String("error", o.err.Error()))
 			finish(store.PlanJobFailed, iac.CodeItemFailed, "the plan could not be computed; see the control plane log", nil)
 			return
 		}
 		finish(store.PlanJobDone, "", "", &o.plan)
-	case <-timeout.C:
-		finish(store.PlanJobFailed, iac.CodePlanTimeout, "the plan ran past cloud.engine_timeout_seconds; plan again", nil)
-		// The slot frees only when the engine call returns, so the cap stays real.
-		<-done
+	case <-jobCtx.Done():
+		free()
+		rt.finishPlanJobCtx(jobCtx, finish)
 	}
+}
+
+// planJobTimeoutOverride replaces the engine timeout in tests, since the setting floor is a minute.
+var planJobTimeoutOverride time.Duration
+
+func (rt *Router) planJobTimeout(ctx context.Context) time.Duration {
+	if planJobTimeoutOverride > 0 {
+		return planJobTimeoutOverride
+	}
+	return rt.cloudEngineTimeout(ctx)
+}
+
+// finishPlanJobCtx reports a job whose context ended: past the engine timeout or canceled.
+func (rt *Router) finishPlanJobCtx(ctx context.Context, finish func(status, code, msg string, plan *iac.Plan)) {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		finish(store.PlanJobFailed, iac.CodePlanTimeout, "the plan ran past cloud.engine_timeout_seconds; plan again", nil)
+		return
+	}
+	finish(store.PlanJobFailed, iac.CodeInterrupted, "the plan was canceled; plan again", nil)
 }
 
 func (rt *Router) computeStackPlan(ctx context.Context, r *http.Request, ss StackStore, in planJobInput) (iac.Plan, error) {
@@ -425,7 +450,7 @@ func (rt *Router) computeStackPlan(ctx context.Context, r *http.Request, ss Stac
 	if err != nil {
 		return iac.Plan{}, err
 	}
-	return iac.PlanFor(st, in.res, in.opts), nil
+	return iac.PlanForContext(ctx, st, in.res, in.opts), nil
 }
 
 // emitPlanJobEvent carries the job id, status, code and counts, never a field value.

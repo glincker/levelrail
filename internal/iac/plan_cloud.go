@@ -42,7 +42,7 @@ type CloudDiff struct {
 // CloudPlanner computes the proposed change for a cloud document. The engine
 // implements it; with none set every cloud item fails loudly.
 type CloudPlanner interface {
-	PlanCloud(r CloudResource) (CloudDiff, error)
+	PlanCloud(ctx context.Context, r CloudResource) (CloudDiff, error)
 }
 
 // CloudOutcome is the answer for one document of a stack plan.
@@ -54,7 +54,7 @@ type CloudOutcome struct {
 // CloudStackPlanner plans every cloud document of one stack together, so documents that
 // refer to each other land in one module. The outcomes line up with the input order.
 type CloudStackPlanner interface {
-	PlanCloudStack(stack string, rs []CloudResource) []CloudOutcome
+	PlanCloudStack(ctx context.Context, stack string, rs []CloudResource) []CloudOutcome
 }
 
 // CloudReadiness is optional on a planner: false means it has no engine yet,
@@ -248,7 +248,7 @@ func (p *planner) planCloud(r *Resource) {
 		p.cloudStack = append(p.cloudStack, r)
 		return
 	}
-	diff, err := planner.PlanCloud(CloudResource{Kind: r.Kind, Name: r.Name, Spec: r.Fields})
+	diff, err := planner.PlanCloud(p.ctx, CloudResource{Kind: r.Kind, Name: r.Name, Spec: r.Fields})
 	p.addCloudItem(r, diff, err)
 }
 
@@ -263,7 +263,7 @@ func (p *planner) flushCloudStack() {
 	for i, r := range p.cloudStack {
 		in[i] = CloudResource{Kind: r.Kind, Name: r.Name, Spec: r.Fields}
 	}
-	out := sp.PlanCloudStack(p.opts.Source, in)
+	out := sp.PlanCloudStack(p.ctx, p.opts.Source, in)
 	for i, r := range p.cloudStack {
 		if i >= len(out) {
 			p.failCode(r, CodeItemFailed, "cloud planner returned no answer")

@@ -193,7 +193,7 @@ func Apply(ctx context.Context, d Doer, res []*Resource, opts Options, expectedH
 	if err != nil {
 		return ApplyResult{}, err
 	}
-	plan, items := buildPlan(st, res, opts)
+	plan, items := buildPlan(ctx, st, res, opts)
 	if err := CheckPlanHash(expectedHash, plan); err != nil {
 		return ApplyResult{Plan: plan}, err
 	}

@@ -82,6 +82,8 @@ type item struct {
 }
 
 type planner struct {
+	// ctx bounds the cloud engine calls a plan makes; it is never nil.
+	ctx   context.Context
 	st    *State
 	res   []*Resource
 	opts  Options
@@ -95,12 +97,17 @@ type planner struct {
 
 // PlanFor computes the plan for resources against live state.
 func PlanFor(st *State, res []*Resource, opts Options) Plan {
-	plan, _ := buildPlan(st, res, opts)
+	return PlanForContext(context.Background(), st, res, opts)
+}
+
+// PlanForContext is PlanFor with a context that cancels or times out the cloud engine calls.
+func PlanForContext(ctx context.Context, st *State, res []*Resource, opts Options) Plan {
+	plan, _ := buildPlan(ctx, st, res, opts)
 	return plan
 }
 
-func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
-	p := &planner{st: st, res: res, opts: opts, byKey: map[string]*Resource{}}
+func buildPlan(ctx context.Context, st *State, res []*Resource, opts Options) (Plan, []*item) {
+	p := &planner{ctx: ctx, st: st, res: res, opts: opts, byKey: map[string]*Resource{}}
 	for _, r := range res {
 		p.byKey[r.Key()] = r
 	}

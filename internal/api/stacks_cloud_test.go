@@ -28,7 +28,7 @@ type fakeCloud struct {
 	err     error
 }
 
-func (f *fakeCloud) PlanCloud(r iac.CloudResource) (iac.CloudDiff, error) {
+func (f *fakeCloud) PlanCloud(_ context.Context, r iac.CloudResource) (iac.CloudDiff, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if r.Kind == iac.KindCloudAccount {

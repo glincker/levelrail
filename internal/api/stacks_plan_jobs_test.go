@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -20,18 +21,18 @@ type blockingCloud struct {
 	gate chan struct{}
 }
 
-func (b *blockingCloud) PlanCloud(r iac.CloudResource) (iac.CloudDiff, error) {
+func (b *blockingCloud) PlanCloud(ctx context.Context, r iac.CloudResource) (iac.CloudDiff, error) {
 	if r.Kind != iac.KindCloudAccount {
 		<-b.gate
 	}
-	return b.fakeCloud.PlanCloud(r)
+	return b.fakeCloud.PlanCloud(ctx, r)
 }
 
 // canaryCloud returns a sensitive attribute holding a credential-shaped value.
 type canaryCloud struct{ fakeCloud }
 
-func (c *canaryCloud) PlanCloud(r iac.CloudResource) (iac.CloudDiff, error) {
-	d, err := c.fakeCloud.PlanCloud(r)
+func (c *canaryCloud) PlanCloud(ctx context.Context, r iac.CloudResource) (iac.CloudDiff, error) {
+	d, err := c.fakeCloud.PlanCloud(ctx, r)
 	if r.Kind != iac.KindCloudAccount {
 		d.Attrs = []iac.CloudAttr{{Path: "secret_key", New: planJobCanary, Sensitive: true}}
 	}
@@ -216,5 +217,40 @@ func TestPlanJobNoCredentialCanary(t *testing.T) {
 	}
 	if result == "" || strings.Contains(result+msg, planJobCanary) {
 		t.Fatalf("job row leaks the canary or holds no result")
+	}
+}
+
+// ctxBlockingCloud blocks a bucket plan until its context ends, then keeps unwinding until released.
+type ctxBlockingCloud struct {
+	fakeCloud
+	unwind chan struct{}
+}
+
+func (c *ctxBlockingCloud) PlanCloud(ctx context.Context, r iac.CloudResource) (iac.CloudDiff, error) {
+	if r.Kind != iac.KindCloudAccount {
+		<-ctx.Done()
+		<-c.unwind
+		return iac.CloudDiff{}, ctx.Err()
+	}
+	return c.fakeCloud.PlanCloud(ctx, r)
+}
+
+func TestPlanJobTimeoutFreesSlotWhileEngineUnwinds(t *testing.T) {
+	c := &ctxBlockingCloud{fakeCloud: fakeCloud{action: "create"}, unwind: make(chan struct{})}
+	rt, _, cookie, _ := planJobFixture(t, c)
+	t.Cleanup(func() { close(c.unwind) })
+	planJobTimeoutOverride = 300 * time.Millisecond
+	t.Cleanup(func() { planJobTimeoutOverride = 0 })
+	job := startPlanJob(t, rt, cookie, "", nil)
+	waitPlanJobStatus(t, rt, cookie, job.ID, store.PlanJobFailed)
+	if j, _ := getPlanJob(t, rt, cookie, job.ID); j.Code != iac.CodePlanTimeout {
+		t.Fatalf("timed out job = %+v, want code %s", j, iac.CodePlanTimeout)
+	}
+	g := rt.planGate()
+	g.mu.Lock()
+	running, held := g.running, g.stacks[job.Stack]
+	g.mu.Unlock()
+	if running != 0 || held {
+		t.Fatalf("slot still held after timeout: running=%d stack=%v", running, held)
 	}
 }

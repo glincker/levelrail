@@ -60,7 +60,9 @@ const (
 	ErrCredential  ErrorKind = "credential"
 	ErrProvider    ErrorKind = "provider"
 	ErrCanceled    ErrorKind = "canceled"
-	ErrInternal    ErrorKind = "internal"
+	// ErrTimeout matches iac.CodePlanTimeout so a job can report it without parsing text.
+	ErrTimeout  ErrorKind = "plan_timeout"
+	ErrInternal ErrorKind = "internal"
 )
 
 // Error is a step failure with a redacted message.
