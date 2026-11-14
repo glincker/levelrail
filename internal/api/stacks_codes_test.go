@@ -116,3 +116,18 @@ func TestStackValidationCodes(t *testing.T) {
 		}
 	}
 }
+
+func TestStackNoopV1HashVersion(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	docs := stackTestDocs("ghcr.io/acme/web:1.2.3")
+	if code, _ := stackApply(t, rt, cookie, docs, nil); code != http.StatusOK {
+		t.Fatalf("seed apply: %d", code)
+	}
+	iac.SetV1HashAcceptedSource(func() bool { return false })
+	t.Cleanup(func() { iac.SetV1HashAcceptedSource(nil) })
+	var out iacErrorBody
+	body := stackBody(t, docs, map[string]any{"expected_plan_hash": "deadbeefdeadbeef"})
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/apply", body), &out); code != http.StatusConflict || out.Code != iac.CodePlanHashVersion {
+		t.Fatalf("no-op with a v1 hash and the flag off = %d %+v", code, out)
+	}
+}

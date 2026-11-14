@@ -33,6 +33,15 @@ func v1HashesAccepted() bool {
 
 var v1HashRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
+// CheckHashVersion refuses a v1 shaped hash while the setting disallows it. It
+// needs no plan, so a caller can run it before any short circuit.
+func CheckHashVersion(expected string) error {
+	if v1HashRe.MatchString(expected) && !v1HashesAccepted() {
+		return ErrPlanHashVersion
+	}
+	return nil
+}
+
 // CheckPlanHash compares a submitted hash with the recomputed plan. Empty
 // means no pin. A v1 shaped hash passes only while the setting allows it.
 func CheckPlanHash(expected string, plan Plan) error {

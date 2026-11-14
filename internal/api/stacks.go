@@ -998,6 +998,11 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		}
 	}
 
+	// Before the no-op answer so the version check gives one answer either way.
+	if err := iac.CheckHashVersion(req.ExpectedPlanHash); err != nil {
+		rt.writeStackError(w, run.action, err)
+		return
+	}
 	if run.pending == nil {
 		if cur, same := rt.stackNoop(ctx, ss, run, res, opts, project, rt.iacDoer(r)); same {
 			s := rt.summarizeRevision(ctx, cur)
