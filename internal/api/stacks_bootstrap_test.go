@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -143,5 +144,23 @@ func TestStackBootstrapNoSideEffectOnStalePlan(t *testing.T) {
 	code = iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, iacTestDocs, map[string]any{"expected_plan_hash": plan.Plan.Hash})), &out)
 	if code != http.StatusOK || out.Revision == nil {
 		t.Fatalf("apply with the planned hash = %d %+v", code, out)
+	}
+}
+
+func TestStackBootstrapCloudRefusedLeavesNothing(t *testing.T) {
+	rt, db, cookie, _ := approvalFixture(t)
+	iac.SetCloudPlanner(&fakeCloud{action: "create"})
+	t.Cleanup(func() { iac.SetCloudPlanner(nil) })
+	var out iacErrorBody
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa-cloud/apply", stackBody(t, cloudStackDocs, map[string]any{"project": "shop"})), &out)
+	if code != http.StatusForbidden || out.Code != iac.CodeApprovalRequired || !strings.Contains(out.Error, "without applying") {
+		t.Fatalf("cloud first apply = %d %+v", code, out)
+	}
+	if _, err := db.GetStackByName(t.Context(), "qa-cloud"); err == nil {
+		t.Fatal("a refused cloud first apply created the stack")
+	}
+	var ok stackApplyResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa-plain/apply", stackBody(t, iacTestDocs, nil)), &ok); code != http.StatusOK || ok.Revision == nil {
+		t.Fatalf("non-cloud first apply = %d %+v", code, ok)
 	}
 }

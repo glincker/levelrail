@@ -805,6 +805,11 @@ func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss 
 		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
 		return store.StackRecord{}, false
 	}
+	if resourcesHaveCloud(res) {
+		writeIaCError(w, http.StatusForbidden, iac.CodeApprovalRequired,
+			"a new stack with cloud kinds cannot be applied on first use; create the stack without applying, then plan, have another administrator approve and apply", nil)
+		return store.StackRecord{}, false
+	}
 	// The hash comes from a plan made before the project existed, so it is compared
 	// here, before any row is written; creating first would change the plan.
 	if req.ExpectedPlanHash != "" && !rt.checkNewStackHash(w, r, ss, name, project, res, opts, req) {

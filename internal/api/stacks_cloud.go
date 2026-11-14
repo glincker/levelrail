@@ -104,3 +104,13 @@ func cloudDivergedPayload(stack, actor string, revision int, r iac.CloudRun, max
 	out["quarantine_id"] = r.QuarantineID
 	return out
 }
+
+// resourcesHaveCloud reports whether any document is a cloud kind, so a first apply can be refused before any row exists.
+func resourcesHaveCloud(res []*iac.Resource) bool {
+	for _, r := range res {
+		if iac.IsCloudKind(r.Kind) {
+			return true
+		}
+	}
+	return false
+}
