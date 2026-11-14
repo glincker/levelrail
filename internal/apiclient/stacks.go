@@ -141,6 +141,8 @@ type StackApplyResponse struct {
 type StackApproveRequest struct {
 	Secrets          map[string]string `json:"secrets,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	// ConfirmDestroy is the stack name typed to let the approved plan delete cloud resources.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 // StackRejectResponse is the result of rejecting a pending revision.

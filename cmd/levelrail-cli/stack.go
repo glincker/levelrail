@@ -56,6 +56,7 @@ Commands:
   drift <name>                          declared versus live drift; exit 2 when drifted, 0 when clean
   settings <name> [flags]               show or change --allow-prune, --drift, --require-approval (root only)
   trust add|list|remove <name> ...      OIDC trusts so CI needs no stored token (root only)
+  cloud-state list|recover <name> ...   list or clear quarantined cloud state (root only)
 
 Run '%[1]s stack <command> --help' for the flags of a command.
 `, prog)
@@ -109,6 +110,8 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return stackDrift(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
 		return stackSettings(prog, rest, stdout, stderr, lookupEnv)
+	case "cloud-state":
+		return runStackCloudState(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
 		return runStackTrust(prog, rest, stdout, stderr, lookupEnv)
 	}
@@ -610,6 +613,7 @@ func redactCall(c cliCall, secrets map[string]string) cliCall {
 func stackPlan(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var mf *stackManifestFlags
 	var exitCode *bool
+	var jf *stackJobFlags
 	c, code, ok := parseCLICall(prog, "stack plan", stackCmdUsage(prog, "plan", "<name> -f file|dir [flags]", `
 Prints what an apply would change and changes nothing. Any kind: Stack
 document in the files is removed before sending; it supplies the default
@@ -626,9 +630,15 @@ Flags:
   --allow-env NAMES    names (or PREFIX*) placeholders may read from your environment
   --secret NAME=ENVVAR secret value read from a local environment variable; never printed
   --exit-code          exit 2 when changes are pending
+  --wait-timeout D     how long to wait for an async cloud plan job (default 30m)
+  --supersede          retire a revision awaiting approval that this plan replaces
+
+A cloud plan runs as a job: the command polls it and prints the plan like a
+sync one. Ctrl-C leaves the job running. A failed job exits 1 with its code.
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, true)
 		exitCode = fs.Bool("exit-code", false, "exit 2 when changes are pending")
+		jf = bindStackJobFlags(fs)
 	})
 	if !ok {
 		return code
@@ -648,7 +658,7 @@ Flags:
 	}
 	c = redactCall(c, secrets)
 	req.Secrets = secrets
-	res, raw, err := c.client.PlanStack(context.Background(), pos[0], req)
+	res, raw, err := planStackWait(context.Background(), c, pos[0], req, jf)
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -672,6 +682,7 @@ type stackRunFlags struct {
 	continueOnError *bool
 	idemKey         *string
 	yes             *bool
+	job             *stackJobFlags
 }
 
 func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
@@ -681,6 +692,7 @@ func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
 	f.continueOnError = fs.Bool("continue-on-error", false, "keep applying after an item fails")
 	f.idemKey = fs.String("idempotency-key", "", "make a retry return the stored revision (default: the CI run when set, else random per run)")
 	f.yes = fs.Bool("yes", false, "do not ask for confirmation")
+	f.job = bindStackJobFlags(fs)
 	return f
 }
 
@@ -699,7 +711,7 @@ const stackRunFlagsHelp = `
   --continue-on-error      keep applying after an item fails
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --idempotency-key K      a retry with the same key returns the stored revision
-  --yes                    do not ask for confirmation
+  --yes                    do not ask for confirmation` + stackJobFlagsHelp + `
 `
 
 func stackApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -752,7 +764,7 @@ func stackConfirmPlan(ctx context.Context, c cliCall, rf *stackRunFlags, name st
 			return iacFail(c, errors.New("stdin holds the files, so confirmation is not possible: pass --yes")), true
 		}
 	}
-	plan, _, err := c.client.PlanStack(ctx, name, *req)
+	plan, _, err := planStackWait(ctx, c, name, *req, rf.job)
 	if err != nil {
 		return iacFail(c, err), true
 	}
@@ -839,7 +851,7 @@ Flags:`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagS
 
 func stackApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var mf *stackManifestFlags
-	var expected, idemKey *string
+	var expected, idemKey, confirmDestroy *string
 	c, code, ok := parseCLICall(prog, "stack approve", stackCmdUsage(prog, "approve", "<name> <n> [flags]", `
 Approves a revision that is awaiting approval and applies it. Needs root, and
 the requester cannot approve their own revision. Secrets are never stored with
@@ -849,10 +861,12 @@ Flags:
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --expected-plan-hash H   refuse (409) when the pending revision has another plan hash
   --idempotency-key K      a retry with the same key returns the stored result (default: random per run)
+  --confirm-destroy NAME   the stack name, typed, to let the approved plan delete cloud resources
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, false)
 		expected = fs.String("expected-plan-hash", "", "refuse when the pending revision has another plan hash")
 		idemKey = fs.String("idempotency-key", "", "a retry with the same key returns the stored result")
+		confirmDestroy = fs.String("confirm-destroy", "", "stack name typed to allow cloud deletions")
 	})
 	if !ok {
 		return code
@@ -865,13 +879,16 @@ Flags:
 	if err != nil {
 		return c.fail(err)
 	}
+	if *confirmDestroy != "" && *confirmDestroy != pos[0] {
+		return c.invalid("--confirm-destroy must equal the stack name %q", pos[0])
+	}
 	secrets, err := resolveStackSecrets(mf.secrets, lookupEnv)
 	if err != nil {
 		return iacFail(c, err)
 	}
 	c = redactCall(c, secrets)
 	key := stackIdemKey(*idemKey, lookupEnv, "stack-approve", pos[0], strconv.Itoa(n))
-	res, raw, err := c.client.ApproveStack(apiclient.WithIdempotencyKey(context.Background(), key), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected})
+	res, raw, err := c.client.ApproveStack(apiclient.WithIdempotencyKey(context.Background(), key), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected, ConfirmDestroy: *confirmDestroy})
 	if err != nil {
 		return iacFail(c, err)
 	}
