@@ -72,7 +72,7 @@ provider "levelrail" {
 | `levelrail_setting` | One runtime setting (`key`, `value`); destroy resets it to the default | setting key |
 | `levelrail_node_labels` | Labels and taints on an existing node, by name | node name or ID |
 
-Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values. `levelrail_cron_jobs` lists every scheduled job of one app, with the path and method of http jobs.
+Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values. `levelrail_cron_jobs` lists every scheduled job of one app, with the path and method of http jobs. `levelrail_projects` lists every project with its id and name.
 
 ## Coverage
 
@@ -93,7 +93,7 @@ Gap analysis of what each resource exposes against what the REST API and the IaC
 | `levelrail_status_component` | kind, target, name, order | none |
 | `levelrail_setting` | key and value of any setting that is not marked sensitive | sensitive settings (credentials), which are refused so they never reach state |
 | `levelrail_node_labels` | labels and taints of an existing node | creating or deleting nodes, drains, region, workloads |
-| Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets`, `levelrail_cron_jobs` | listings | filters |
+| Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets`, `levelrail_cron_jobs`, `levelrail_projects` | listings | filters |
 
 Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists, sets and maps on `levelrail_app` (command, labels, published ports, volumes, tags, exec probes, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
 

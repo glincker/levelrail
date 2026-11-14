@@ -57,6 +57,8 @@ data "levelrail_cron_jobs" "web" {
 
 data "levelrail_apps" "all" {}
 
+data "levelrail_projects" "all" {}
+
 data "levelrail_app_secrets" "web" {
   app = levelrail_app.web.name
 }
