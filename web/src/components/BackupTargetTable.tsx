@@ -19,6 +19,7 @@ import {
 } from './BackupTargetEncryption'
 import { useTestBackupTarget } from '../queries/backupTargets'
 import type { BackupTarget } from '../types/backupTarget'
+import { labelOf } from '@/lib/labelOf'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -109,10 +110,10 @@ export function BackupTargetTable({
         <Badge variant="outline" className="gap-1.5">
           <BrandTile
             name={backupTargetBrand(target.provider, target.endpoint)}
-            label={PROVIDER_LABEL[target.provider]}
+            label={labelOf(PROVIDER_LABEL, target.provider)}
             size="xs"
           />
-          {PROVIDER_LABEL[target.provider]}
+          {labelOf(PROVIDER_LABEL, target.provider)}
         </Badge>
       ),
     },

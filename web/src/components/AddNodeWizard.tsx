@@ -42,6 +42,7 @@ import {
   useNodeProviders,
   useNodeProvision,
 } from '../queries/nodeProvision'
+import { labelOf } from '@/lib/labelOf'
 
 type ProviderId = 'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
 type Step =
@@ -370,7 +371,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
       >
         <dl className="grid grid-cols-2 gap-y-2 text-sm">
           <dt className="text-muted-foreground">Provider</dt>
-          <dd>{provider ? PROVIDER_LABELS[provider] : '-'}</dd>
+          <dd>{provider ? labelOf(PROVIDER_LABELS, provider) : '-'}</dd>
           <dt className="text-muted-foreground">Region</dt>
           <dd>{region}</dd>
           <dt className="text-muted-foreground">Size</dt>

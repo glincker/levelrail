@@ -21,6 +21,7 @@ import { useNotificationChannelsOptional } from '../queries/notificationChannels
 import { CreateNotificationChannelDialog } from './CreateNotificationChannelDialog'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import type { AlertRuleKind, CreateAlertRuleRequest } from '../types/alerts'
+import { labelOf } from '@/lib/labelOf'
 
 const DISMISSED_STORAGE_KEY = 'dashboard-alerting-quick-setup-dismissed'
 
@@ -150,7 +151,8 @@ export function AlertingQuickSetupPrompt({
                 <SelectContent>
                   {channels.map((channel) => (
                     <SelectItem key={channel.id} value={channel.id}>
-                      {channel.name} ({CHANNEL_KIND_LABEL[channel.kind]})
+                      {channel.name} (
+                      {labelOf(CHANNEL_KIND_LABEL, channel.kind)})
                     </SelectItem>
                   ))}
                 </SelectContent>
