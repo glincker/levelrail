@@ -3,9 +3,18 @@ import type { ReactElement } from 'react'
 import { render as rtlRender, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import { LoadBalancerOverview } from './LoadBalancerOverview'
 import { AllI18n } from '@/test/allI18n'
+import { stubLayoutSize } from '@/test/layoutSize'
 
 // Every render gets the real en catalogues so assertions read the English copy.
 const render = (ui: ReactElement) => rtlRender(ui, { wrapper: AllI18n })
@@ -111,15 +120,12 @@ function renderPage() {
 
 describe('LoadBalancerOverview', () => {
   // jsdom has no layout, so give the virtualized scroll container a size.
+  let restoreLayout: () => void
   beforeAll(() => {
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
-      configurable: true,
-      value: 600,
-    })
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
-      configurable: true,
-      value: 800,
-    })
+    restoreLayout = stubLayoutSize(800, 600)
+  })
+  afterAll(() => {
+    restoreLayout()
   })
 
   afterEach(() => {
