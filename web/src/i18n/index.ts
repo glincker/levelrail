@@ -32,6 +32,7 @@ export const NAMESPACES = [
   'environments',
   'stacks',
   'iacForm',
+  'stackSync',
   'statusPage',
   'migration',
   'migrate',

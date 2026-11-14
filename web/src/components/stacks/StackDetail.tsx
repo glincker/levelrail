@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -31,6 +31,10 @@ import {
 } from './StackIndicators'
 import { DriftSummary } from './StackDrift'
 import { StackSettingsCard } from './StackSettingsCard'
+
+const StackSyncCard = lazy(() =>
+  import('./StackSyncCard').then((m) => ({ default: m.StackSyncCard })),
+)
 
 export interface StackSelection {
   rev?: number
@@ -219,6 +223,16 @@ export function StackDetail({
         />
       ) : null}
       <StackSettingsCard stack={stack} isRoot={isRoot} />
+      <Suspense fallback={null}>
+        <StackSyncCard
+          name={name}
+          isRoot={isRoot}
+          requireApproval={stack.require_approval}
+          onViewPlan={(rev) => {
+            onSelect({ rev, diff: false })
+          }}
+        />
+      </Suspense>
       <ApproveDialog
         name={name}
         revision={approving}
