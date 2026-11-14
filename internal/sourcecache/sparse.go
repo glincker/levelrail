@@ -295,6 +295,8 @@ func (c *Cache) SparseCheckout(ctx context.Context, repoURL, branch, subPath, to
 	if derr != nil {
 		return step(sparseSizeUnknown)
 	}
+	// Success is logged at debug only, without the URL or token, so a fallback is distinguishable from a hit.
+	c.log.Debug("sourcecache: sparse checkout ok")
 	return Checkout{Dir: dest, Commit: commit, cleanup: removeAll}, nil
 }
 

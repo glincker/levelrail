@@ -511,3 +511,28 @@ func TestStackPruneRequestCannotOverrideAllowPrune(t *testing.T) {
 		t.Fatalf("refused prune left %d revisions, want 1", n)
 	}
 }
+
+func TestStackDestroyProtectedMemberRefusesWithLockedAndKeepsOwnership(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	if err := db.SetAppProtection(t.Context(), "web", "keep", "test"); err != nil {
+		t.Fatal(err)
+	}
+	var out stackDeleteResponse
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/stacks/shop-prod?mode=destroy", ""), &out)
+	if code != http.StatusLocked || len(out.Failed) != 1 || len(out.Forgotten) != 0 {
+		t.Fatalf("destroy = %d %+v, want 423 with nothing forgotten", code, out)
+	}
+	if strings.Contains(out.Failed[0], "App/App/") {
+		t.Fatalf("doubled prefix: %v", out.Failed)
+	}
+}
+
+func TestStackLedgerLabelNoDoublePrefix(t *testing.T) {
+	if got := stackLedgerLabel("App", "App/web"); got != "App/web" {
+		t.Fatalf("got %s", got)
+	}
+	if got := stackLedgerLabel("App", "web"); got != "App/web" {
+		t.Fatalf("got %s", got)
+	}
+}

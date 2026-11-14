@@ -1330,6 +1330,14 @@ func (rt *Router) handleStackUnlock(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rt.stackResource(r.Context(), ss, s, false))
 }
 
+// stackLedgerLabel avoids doubling the kind prefix, since ledger keys already carry it.
+func stackLedgerLabel(kind, key string) string {
+	if strings.HasPrefix(key, kind+"/") {
+		return key
+	}
+	return kind + "/" + key
+}
+
 func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
@@ -1376,9 +1384,9 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 	sort.SliceStable(ledger, func(i, j int) bool {
 		return ledger[i].Kind == string(iac.KindApp) && ledger[j].Kind != string(iac.KindApp)
 	})
-	dbsDeleted := 0
+	dbsDeleted, protectedFails := 0, 0
 	for _, e := range ledger {
-		label := e.Kind + "/" + e.Key
+		label := stackLedgerLabel(e.Kind, e.Key)
 		isDB := e.Kind == string(iac.KindDatabase)
 		if mode != iac.StackDestroy || (e.Kind != string(iac.KindApp) && (!isDB || !deleteData)) {
 			resp.Forgotten = append(resp.Forgotten, label)
@@ -1399,6 +1407,9 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		}
 		if derr != nil && (!errors.As(derr, &se) || se.Status != http.StatusNotFound) {
 			resp.Failed = append(resp.Failed, label+": "+derr.Error())
+			if errors.As(derr, &se) && se.Status == http.StatusLocked {
+				protectedFails++
+			}
 			continue
 		}
 		if isDB {
@@ -1408,7 +1419,13 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		_ = ss.DeleteStackResource(r.Context(), s.ID, e.Kind, e.Key)
 	}
 	if len(resp.Failed) > 0 {
-		writeJSON(w, http.StatusBadGateway, resp)
+		// The stack survives a failed destroy, so its other resources are still owned, not forgotten.
+		resp.Forgotten, resp.DataKept = nil, nil
+		status := http.StatusBadGateway
+		if protectedFails == len(resp.Failed) {
+			status = http.StatusLocked
+		}
+		writeJSON(w, status, resp)
 		return
 	}
 	if _, err := ss.DeleteStack(r.Context(), s.ID, string(mode)); err != nil {
