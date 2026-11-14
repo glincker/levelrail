@@ -58,3 +58,36 @@ describe('IacExportButton', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('IacExportButton studio mode', () => {
+  it('exports everything without env values and hands the YAML over', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          files: [
+            { name: 'a.yaml', kind: 'App', content: 'kind: App\n' },
+            { name: 'b.yaml', kind: 'App', content: 'kind: Database\n' },
+          ],
+        }),
+        { status: 200 },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const onExported = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <IacExportButton onExported={onExported} />
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByRole('button'))
+    await waitFor(() =>
+      expect(onExported).toHaveBeenCalledWith(
+        'kind: App\n---\nkind: Database\n',
+      ),
+    )
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
+      'include_env_values=false',
+    )
+    vi.unstubAllGlobals()
+  })
+})

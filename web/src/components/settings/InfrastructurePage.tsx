@@ -28,7 +28,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { PageBanner } from '@/components/PageBanner'
 import { LazyInfrastructureDiagram } from '@/components/banners/LazyInfraDiagrams'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { IacStudio } from '../iac/IacStudio'
+import { IacStudio, type StudioSeed } from '../iac/IacStudio'
+import { IacExportButton } from '../IacExportButton'
 import { IacTemplateStrip } from '../iac/IacTemplateStrip'
 import { IacExportCard } from '../../components/IacExportCard'
 import { IacPlanView, IacResultView } from '../../components/IacPlanView'
@@ -51,6 +52,8 @@ export function InfrastructurePage() {
   const [confirming, setConfirming] = useState(false)
   const [reviewed, setReviewed] = useState<IacPlan | null>(null)
   const uploadRef = useRef<HTMLInputElement>(null)
+  const [tab, setTab] = useState('files')
+  const [seed, setSeed] = useState<StudioSeed | undefined>()
 
   const files: IacFile[] = [
     ...uploaded,
@@ -126,6 +129,12 @@ export function InfrastructurePage() {
         }
         action={
           <>
+            <IacExportButton
+              onExported={(text) => {
+                setSeed((s) => ({ id: (s?.id ?? 0) + 1, text, exported: true }))
+                setTab('studio')
+              }}
+            />
             <Button
               type="button"
               size="sm"
@@ -141,13 +150,13 @@ export function InfrastructurePage() {
         size={size}
       />
 
-      <Tabs defaultValue="files">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="files">{t('iacStudio.tabFiles')}</TabsTrigger>
           <TabsTrigger value="studio">{t('iacStudio.tabStudio')}</TabsTrigger>
         </TabsList>
         <TabsContent value="studio">
-          <IacStudio />
+          <IacStudio seed={seed} />
         </TabsContent>
         <TabsContent
           value="files"
