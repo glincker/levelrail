@@ -9,7 +9,8 @@ internal/canarypolicy 180
 internal/changes 25
 internal/chaos 171
 internal/cloudflareips 21
-internal/compose 62
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/compose 63
 internal/configtranslate 29
 internal/costbudget 171
 internal/dbparams 46
@@ -20,14 +21,16 @@ internal/deploysafety 48
 internal/deploytrace 46
 internal/dnszones 25
 internal/docker 191
-internal/dockerguard 64
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/dockerguard 65
 internal/email 34
 internal/envredact 71
 internal/extdb 36
 internal/footprint 182
 internal/frameworks 52
 internal/gitprovider/reporef 46
-internal/gitsshkey 21
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/gitsshkey 24
 internal/gpu 170
 internal/loadbalancer 180
 internal/meshpath 46
@@ -41,9 +44,13 @@ internal/quota 170
 internal/reconcile 171
 internal/reconcile/database 45
 internal/rolloutpolicy 180
-internal/runtimesettings 61
-internal/runtimesettings/registrymirror 65
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/runtimesettings 62
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/runtimesettings/registrymirror 66
 internal/secretmask 177
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/sourcecache 23
 internal/spec 179
 internal/spendcap 182
 internal/store 169
@@ -55,9 +62,11 @@ kit/cronexpr 180
 kit/diskspace 47
 kit/ids 83
 kit/netguard 194
-kit/pathfilter 21
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+kit/pathfilter 24
 kit/probe 180
 kit/semver 32
-kit/ticker 30
+# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+kit/ticker 31
 kit/timeutil 171
 kit/upgrade 27
