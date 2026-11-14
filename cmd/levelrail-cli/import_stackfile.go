@@ -54,19 +54,22 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 	fset.StringVar(&f.write, "write", "", "write the documents into this directory instead of printing them")
 	fset.BoolVar(&f.force, "force", false, "overwrite existing files in --write")
 	fset.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
-	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		if len(args) > 0 && (args[0] == "-h" || args[0] == "--help") {
-			_, _ = fmt.Fprint(stderr, stackFileUsage(prog, sub))
-			return exitOK
-		}
-		_, _ = fmt.Fprint(stderr, stackFileUsage(prog, sub))
-		return exitUsage
+	// FILE may come first or after the flags, so unknown flags are reported by the parser.
+	path, rest := "", args
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		path, rest = args[0], args[1:]
 	}
-	path := args[0]
-	if err := fset.Parse(args[1:]); err != nil {
+	if err := fset.Parse(rest); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
+		return exitUsage
+	}
+	if path == "" {
+		path = fset.Arg(0)
+	}
+	if path == "" {
+		_, _ = fmt.Fprint(stderr, stackFileUsage(prog, sub))
 		return exitUsage
 	}
 	data, err := readBoundedFile(path, int64(envInt(lookupEnv, envStackFileMaxBytes, defaultComposeBytes)))
