@@ -267,3 +267,55 @@ func TestStackReviewedHashFirstApplyNewStackNewProject(t *testing.T) {
 		})
 	}
 }
+
+func TestStackBootstrapLateFailureLeavesNothing(t *testing.T) {
+	leak := map[string]any{"secrets": map[string]string{"DB_PASSWORD": "x"}}
+
+	t.Run("new stack and new project", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		code, body := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late1/apply", stackBody(t, iacTestDocs, leak)))
+		if code != http.StatusUnprocessableEntity || !strings.Contains(body, "secret value") {
+			t.Fatalf("apply = %d %s", code, body)
+		}
+		if _, err := db.GetStackByName(t.Context(), "late1"); err == nil {
+			t.Fatal("a late refusal left the stack")
+		}
+		if projects, _ := db.ListProjects(t.Context()); len(projects) != 0 {
+			t.Fatalf("a late refusal left the project: %+v", projects)
+		}
+	})
+
+	t.Run("existing project is untouched", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		if err := db.SaveProject(t.Context(), store.Project{ID: "p-shop", Name: "shop", CreatedAt: "2026-10-25T00:00:00Z"}); err != nil {
+			t.Fatal(err)
+		}
+		code, _ := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late2/apply", stackBody(t, iacTestDocs, leak)))
+		if code != http.StatusUnprocessableEntity {
+			t.Fatalf("apply = %d", code)
+		}
+		if _, err := db.GetStackByName(t.Context(), "late2"); err == nil {
+			t.Fatal("a late refusal left the stack")
+		}
+		if projects, _ := db.ListProjects(t.Context()); len(projects) != 1 || projects[0].ID != "p-shop" {
+			t.Fatalf("existing project changed: %+v", projects)
+		}
+	})
+
+	t.Run("success path keeps the rows", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		var out stackApplyResponse
+		if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late3/apply", stackBody(t, iacTestDocs, nil)), &out); code != http.StatusOK {
+			t.Fatalf("apply = %d", code)
+		}
+		if _, err := db.GetStackByName(t.Context(), "late3"); err != nil {
+			t.Fatalf("stack missing: %v", err)
+		}
+		if projects, _ := db.ListProjects(t.Context()); len(projects) != 1 {
+			t.Fatalf("projects = %+v", projects)
+		}
+	})
+}

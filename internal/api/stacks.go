@@ -774,11 +774,16 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 	checked := false
 	stack, err := ss.GetStackByName(r.Context(), r.PathValue("name"))
 	if errors.Is(err, store.ErrStackNotFound) {
-		stack, ok = rt.createStackOnApply(w, r, ss, req)
+		var made newRows
+		stack, made, ok = rt.createStackOnApply(w, r, ss, req)
 		if !ok {
 			return
 		}
 		checked = true
+		rec := &statusRecorder{ResponseWriter: w}
+		// Some refusals (the revision secret guard) only surface after the rows exist.
+		defer rt.undoFirstApply(r, ss, made, stack, rec)
+		w = rec
 	} else if err != nil {
 		rt.writeStackError(w, "apply", err)
 		return
@@ -786,57 +791,91 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 	rt.runStack(w, r, ss, stackRun{stack: stack, req: req, action: auditStackApply, hashChecked: checked})
 }
 
+// newRows records what one first apply created, so a late refusal removes only that.
+type newRows struct {
+	stack   bool
+	project string
+}
+
+// undoFirstApply deletes the rows this call created when the apply answered an
+// error and left no revision behind. A pre-existing project is never touched.
+func (rt *Router) undoFirstApply(r *http.Request, ss StackStore, made newRows, stack store.StackRecord, rec *statusRecorder) {
+	if rec.status < http.StatusBadRequest {
+		return
+	}
+	ctx := context.WithoutCancel(r.Context())
+	if revs, err := ss.ListStackRevisions(ctx, stack.ID, 1); err != nil || len(revs) > 0 {
+		return
+	}
+	if made.stack {
+		if _, err := ss.DeleteStack(ctx, stack.ID, ""); err != nil && !errors.Is(err, store.ErrStackNotFound) {
+			slog.Warn("api: undo first apply: delete stack failed", slog.String("stack", stack.Name), slog.Any("error", err))
+			return
+		}
+	}
+	if made.project != "" {
+		if err := rt.projects.DeleteProject(ctx, made.project); err != nil && !errors.Is(err, store.ErrProjectNotFound) {
+			slog.Warn("api: undo first apply: delete project failed", slog.String("project", made.project), slog.Any("error", err))
+		}
+	}
+}
+
 // createStackOnApply makes a first apply self-contained: it resolves the project
 // (creating it when the files declare it and the caller may), refuses an empty
 // plan, then creates the stack. Nothing is written before every check passes.
-func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss StackStore, req stackRequest) (store.StackRecord, bool) {
+func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss StackStore, req stackRequest) (store.StackRecord, newRows, bool) {
 	name := r.PathValue("name")
 	if err := iac.ValidateStackName(name); err != nil {
 		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
 	project, create, ok := rt.resolveNewStack(w, r, req)
 	if !ok {
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
 	res, opts, issues := req.iac(name, project, false).build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(name, issues))
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
 	if len(res) == 0 {
 		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
 	if resourcesHaveCloud(res) {
 		writeIaCError(w, http.StatusForbidden, iac.CodeApprovalRequired,
 			"a new stack with cloud kinds cannot be applied on first use; create the stack without applying, then plan, have another administrator approve and apply", nil)
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
 	// The hash comes from a plan made before the project existed, so it is compared
 	// here, before any row is written; creating first would change the plan.
 	if req.ExpectedPlanHash != "" && !rt.checkNewStackHash(w, r, ss, name, project, res, opts, req) {
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
+	var made newRows
 	proj, found := rt.projectByName(r.Context(), project)
 	if create {
 		if proj, ok = rt.createProjectForStack(w, r, project); !ok {
-			return store.StackRecord{}, false
+			return store.StackRecord{}, newRows{}, false
 		}
+		made.project = proj.ID
 	} else if !found {
 		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, missingProjectMessage(project), nil)
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
 	rec, err := rt.createStack(r, ss, stackCreateRequest{Name: name, Project: project}, proj.ID)
 	if errors.Is(err, store.ErrStackExists) {
 		rec, err = ss.GetStackByName(r.Context(), name)
+	} else if err == nil {
+		made.stack = true
 	}
 	if err != nil {
 		rt.writeStackError(w, "create", err)
-		return store.StackRecord{}, false
+		rt.undoFirstApply(r, ss, made, rec, &statusRecorder{status: http.StatusInternalServerError})
+		return store.StackRecord{}, newRows{}, false
 	}
-	return rec, true
+	return rec, made, true
 }
 
 // checkNewStackHash plans a not yet existing stack exactly as the plan endpoint does and compares the hash.
