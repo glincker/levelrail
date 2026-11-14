@@ -20,7 +20,7 @@ levelrail stack sync set infra \
   --enable
 ```
 
-Apply, prune and deploy stay off unless you pass `--apply`, `--prune` and `--deploy`. The command refuses `--prune` or `--deploy` without `--apply`, and it prints a reminder for every one that is off. Check the result any time:
+Apply, prune and deploy stay off unless you pass `--apply`, `--prune` and `--deploy`. `stack sync set` merges with the current settings: flags you leave out keep their value, `--clear-credential` drops the credential, and a new sync needs `--repo`, `--branch` and `--path`. The command refuses `--prune` or `--deploy` without `--apply`, and it prints a reminder for every one that is off. Check the result any time:
 
 ```bash
 levelrail stack sync status infra
@@ -45,7 +45,7 @@ Every command takes `--json`. The REST calls behind them are `GET` and `PUT /api
 levelrail stack sync webhook-secret rotate infra
 ```
 
-The command prints the `secret`, `sync_url` and `refresh_url` (with `--json` as an object with those three keys) and warns on stderr that the secret is not shown again. It is stored sealed and no GET returns it; `levelrail stack sync status infra` only says whether one is set. Rotating again replaces it. Deleting the stack removes it; turning the sync off keeps it, and deliveries signed with the old one stop working. Root or a stack admin can rotate, and each rotation is in the audit log.
+The command prints the `secret`, and the absolute `sync_url` and `refresh_url` built from the dashboard URL setting (the request's own host when none is set), (with `--json` as an object with those three keys) and warns on stderr that the secret is not shown again. It is stored sealed and no GET returns it; `levelrail stack sync status infra` only says whether one is set. Rotating again replaces it. Deleting the stack removes it; turning the sync off keeps it, and deliveries signed with the old one stop working. Root or a stack admin can rotate, and each rotation is in the audit log.
 
 ## 3. Add the webhook
 

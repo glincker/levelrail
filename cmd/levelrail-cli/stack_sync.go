@@ -20,7 +20,7 @@ until you turn them on.
 
 Commands:
   status <stack>                         show the sync settings and the latest result
-  set <stack> --repo URL --branch B ...  set or change the sync (root or stack admin)
+  set <stack> [flags]                    create or change the sync; flags not given keep the current value (root or stack admin)
   refresh <stack>                        fetch the branch and plan it once now
   webhook-secret rotate <stack>          rotate the webhook secret; shown once
 
@@ -138,14 +138,17 @@ func printSyncStatus(w io.Writer, st apiclient.StackSyncStatus) {
 
 func stackSyncSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var repo, branch, path, cred *string
+	var syncFlags *flag.FlagSet
+	var clearCred *bool
 	var interval *int
 	var webhookOnly, apply, prune, deploy, enable, disable *bool
 	c, code, ok := parseCLICall(prog, "stack sync set", stackCmdUsage(prog, "sync set", "<stack> --repo URL --branch B --path P [flags]", `
 Flags:
-  --repo URL            https or ssh git URL (required)
-  --branch B            the only branch that triggers a sync (required)
-  --path P              folder in the repository that holds the documents (default: the root)
+  --repo URL            https or ssh git URL (required for a new sync)
+  --branch B            the only branch that triggers a sync (required for a new sync)
+  --path P              folder in the repository that holds the documents ("" or "." is the root; required for a new sync)
   --credential-ref REF  app:NAME, a connected app whose git credential reads a private repo (administrator)
+  --clear-credential    drop the credential reference
   --interval SECONDS    poll interval, 0 uses the control plane default
   --webhook-only        no polling, only the webhook and a manual refresh
   --apply               apply a pending plan (default off: plan only)
@@ -153,6 +156,8 @@ Flags:
   --deploy              let the apply roll out changed apps (needs --apply)
   --enable, --disable   turn the sync on or off; omitted keeps the current state, new syncs start off
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		syncFlags = fs
+		clearCred = fs.Bool("clear-credential", false, "drop the credential reference")
 		repo = fs.String("repo", "", "git repository URL")
 		branch = fs.String("branch", "", "branch to follow")
 		path = fs.String("path", "", "folder in the repository")
@@ -172,28 +177,64 @@ Flags:
 	if !ok {
 		return code
 	}
-	switch {
-	case *repo == "" || *branch == "":
-		return c.invalid("--repo and --branch are required")
-	case *enable && *disable:
+	given := map[string]bool{}
+	syncFlags.Visit(func(f *flag.Flag) { given[f.Name] = true })
+	if *enable && *disable {
 		return c.invalid("--enable and --disable cannot be used together")
-	case *prune && !*apply:
-		return c.invalid("prune needs apply: a sync that does not apply never prunes")
-	case *deploy && !*apply:
-		return c.invalid("deploy needs apply: a sync that does not apply never deploys")
+	}
+	if (given["prune"] && *prune || given["deploy"] && *deploy) && given["apply"] && !*apply {
+		return c.invalid("prune and deploy need apply: a sync that does not apply never prunes or deploys")
 	}
 	ctx := context.Background()
-	// A failed read only loses the "changed" summary and the keep-enabled default; the PUT reports real errors.
+	// A failed read only loses the "changed" summary; the PUT reports real errors.
 	prev, _, _ := c.client.GetStackSync(ctx, pos[0])
-	cfg := apiclient.StackSyncConfig{RepoURL: *repo, Branch: *branch, Path: *path, CredentialRef: *cred, IntervalSeconds: *interval,
-		WebhookOnly: *webhookOnly, Apply: *apply, Prune: *prune, Deploy: *deploy}
+	switch {
+	case *clearCred && given["credential-ref"]:
+		return c.invalid("--clear-credential and --credential-ref cannot be used together")
+	case prev.Config == nil && (!given["repo"] || !given["branch"] || !given["path"]):
+		return c.invalid("a new sync needs --repo, --branch and --path")
+	}
+	// Absent flags keep the current settings; only the flags given override them.
+	var cfg apiclient.StackSyncConfig
+	if prev.Config != nil {
+		cfg = *prev.Config
+	}
+	if given["repo"] {
+		cfg.RepoURL = *repo
+	}
+	if given["branch"] {
+		cfg.Branch = *branch
+	}
+	if given["path"] {
+		cfg.Path = *path
+	}
+	if given["credential-ref"] {
+		cfg.CredentialRef = *cred
+	}
+	if *clearCred {
+		cfg.CredentialRef = ""
+	}
+	if given["interval"] {
+		cfg.IntervalSeconds = *interval
+	}
+	for name, dst := range map[string]*bool{"webhook-only": &cfg.WebhookOnly, "apply": &cfg.Apply, "prune": &cfg.Prune, "deploy": &cfg.Deploy} {
+		if given[name] {
+			*dst = map[string]bool{"webhook-only": *webhookOnly, "apply": *apply, "prune": *prune, "deploy": *deploy}[name]
+		}
+	}
 	switch {
 	case *enable:
 		cfg.Enabled = true
 	case *disable:
 		cfg.Enabled = false
-	case prev.Config != nil:
-		cfg.Enabled = prev.Config.Enabled
+	}
+	switch {
+	case cfg.RepoURL == "" || cfg.Branch == "":
+		return c.invalid("--repo and --branch are required")
+	case cfg.Prune && !cfg.Apply:
+		return c.invalid("prune needs apply: a sync that does not apply never prunes")
+	case cfg.Deploy && !cfg.Apply:
+		return c.invalid("deploy needs apply: a sync that does not apply never deploys")
 	}
 	info, _, err := c.client.PutStackSync(ctx, pos[0], cfg)
 	if err != nil {

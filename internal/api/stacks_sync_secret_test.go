@@ -65,3 +65,14 @@ func TestStackSyncSecret_FlagAndCleanupOnDelete(t *testing.T) {
 		t.Fatal("delete removed another stack's secret")
 	}
 }
+
+func TestSyncHookOrigin(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "http://control.example.invalid/x", nil)
+	req.Header.Set("X-Forwarded-Host", "evil.example.invalid")
+	if got := (&Router{publicDashboardURL: "https://lr.example.invalid/"}).syncHookOrigin(req); got != "https://lr.example.invalid" {
+		t.Fatalf("with setting = %q", got)
+	}
+	if got := (&Router{}).syncHookOrigin(req); got != "https://control.example.invalid" {
+		t.Fatalf("fallback = %q, want the request Host and never the forwarded one", got)
+	}
+}

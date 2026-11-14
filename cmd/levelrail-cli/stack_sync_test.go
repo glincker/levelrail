@@ -37,7 +37,7 @@ func TestStackSync_SetSendsExplicitFalseAndHidesCredential(t *testing.T) {
 	var calls []string
 	var put map[string]any
 	srv := syncServer(t, &calls, &put)
-	code, out, e := runIaC([]string{"stack", "sync", "set", "infra", "--repo", "https://git.example.invalid/o/r.git", "--branch", "main", "--path", "s", "--credential-ref", "app:" + syncCanary, "--api-url", srv.URL}, nil)
+	code, out, e := runIaC([]string{"stack", "sync", "set", "infra", "--repo", "https://git.example.invalid/o/r.git", "--branch", "main", "--path", "s", "--credential-ref", "app:" + syncCanary, "--apply=false", "--prune=false", "--deploy=false", "--api-url", srv.URL}, nil)
 	if code != exitOK {
 		t.Fatalf("set = %d %s %s", code, out, e)
 	}
@@ -67,20 +67,17 @@ func TestStackSync_SetLocalRefusals(t *testing.T) {
 	srv := syncServer(t, &calls, &put)
 	base := []string{"stack", "sync", "set", "infra", "--repo", "https://git.example.invalid/o/r.git", "--branch", "main", "--api-url", srv.URL}
 	for name, extra := range map[string][]string{
-		"prune without apply":  {"--prune"},
-		"deploy without apply": {"--deploy"},
-		"both toggles":         {"--enable", "--disable"},
+		"prune with apply off":  {"--prune", "--apply=false"},
+		"deploy with apply off": {"--deploy", "--apply=false"},
+		"both toggles":          {"--enable", "--disable"},
 	} {
 		if code, out, _ := runIaC(append(append([]string{}, base...), extra...), nil); code == exitOK {
 			t.Fatalf("%s succeeded: %s", name, out)
 		}
 	}
-	_, out, e := runIaC(append(append([]string{}, base...), "--prune"), nil)
-	if !strings.Contains(out+e, "prune needs apply: a sync that does not apply never prunes") {
+	_, out, e := runIaC(append(append([]string{}, base...), "--prune", "--apply=false"), nil)
+	if !strings.Contains(out+e, "need apply") {
 		t.Fatalf("message = %s %s", out, e)
-	}
-	if code, _, _ := runIaC([]string{"stack", "sync", "set", "infra", "--api-url", srv.URL}, nil); code == exitOK {
-		t.Fatal("set without --repo and --branch succeeded")
 	}
 	if len(calls) != 0 {
 		t.Fatalf("refusals reached the server: %v", calls)
@@ -110,5 +107,40 @@ func TestStackSync_StatusRefreshAndRotate(t *testing.T) {
 	var sec map[string]string
 	if code != exitOK || json.Unmarshal([]byte(out), &sec) != nil || sec["secret"] != "SECRET-once-value" || sec["sync_url"] == "" || sec["refresh_url"] == "" || e != "" {
 		t.Fatalf("rotate --json = %d %q %q", code, out, e)
+	}
+}
+
+func TestStackSync_SetMergesWithCurrentSettings(t *testing.T) {
+	var calls []string
+	var put map[string]any
+	srv := syncServer(t, &calls, &put)
+	code, out, e := runIaC([]string{"stack", "sync", "set", "infra", "--branch", "release", "--api-url", srv.URL}, nil)
+	if code != exitOK {
+		t.Fatalf("set = %d %s %s", code, out, e)
+	}
+	if put["branch"] != "release" || put["repo_url"] != "https://git.example.invalid/o/r.git" || put["path"] != "s" || put["apply"] != true || put["enabled"] != true || put["credential_ref"] != "app:"+syncCanary {
+		t.Fatalf("PUT did not merge: %v", put)
+	}
+	put = nil
+	if code, _, _ = runIaC([]string{"stack", "sync", "set", "infra", "--clear-credential", "--prune=false", "--api-url", srv.URL}, nil); code != exitOK {
+		t.Fatal("clear-credential failed")
+	}
+	if _, has := put["credential_ref"]; has || put["apply"] != true {
+		t.Fatalf("credential not cleared or apply lost: %v", put)
+	}
+}
+
+func TestStackSync_NewSyncNeedsRepoBranchPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPut {
+			t.Error("PUT sent for an incomplete new sync")
+		}
+		_, _ = w.Write([]byte(`{"webhook_secret_set":false}`))
+	}))
+	defer srv.Close()
+	code, out, e := runIaC([]string{"stack", "sync", "set", "infra", "--repo", "https://git.example.invalid/o/r.git", "--branch", "main", "--api-url", srv.URL}, nil)
+	if code == exitOK || !strings.Contains(out+e, "--repo, --branch and --path") {
+		t.Fatalf("set = %d %s %s", code, out, e)
 	}
 }

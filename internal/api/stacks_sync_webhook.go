@@ -56,8 +56,21 @@ func (rt *Router) handleRotateStackSyncWebhookSecret(w http.ResponseWriter, r *h
 	}
 	rt.auditStack(r, auditStackSyncWebhookRotate, map[string]any{"stack": stack.Name})
 	w.Header().Set("Cache-Control", "no-store")
-	base := "/api/v1/hooks/stacks/" + stack.Name
+	base := rt.syncHookOrigin(r) + "/api/v1/hooks/stacks/" + stack.Name
 	writeJSON(w, http.StatusOK, stackSyncWebhookSecretOutput{Secret: secret, SyncURL: base + "/sync", RefreshURL: base + "/refresh"})
+}
+
+// syncHookOrigin is the origin a git host posts to: the configured dashboard URL, else
+// this request's own scheme and Host. Forwarded headers are never trusted here.
+func (rt *Router) syncHookOrigin(r *http.Request) string {
+	if base := rt.dashboardURL(); base != "" {
+		return strings.TrimRight(base, "/")
+	}
+	scheme := "https://"
+	if host := strings.Split(r.Host, ":")[0]; host == "localhost" || host == "127.0.0.1" {
+		scheme = "http://"
+	}
+	return scheme + r.Host
 }
 
 // handleStackSyncWebhook handles POST /api/v1/hooks/stacks/{name}/sync.

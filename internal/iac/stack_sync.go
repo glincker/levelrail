@@ -96,6 +96,14 @@ func validSyncURL(raw string) error {
 	if err != nil || u.Host == "" || strings.HasPrefix(u.Host, "-") {
 		return errors.New("repo_url must be an https or ssh git URL")
 	}
+	if u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(raw, "#") {
+		return errors.New("repo_url must not carry a query string or fragment")
+	}
+	for _, seg := range strings.Split(u.Path, "/") {
+		if seg == ".." {
+			return errors.New("repo_url must not hold a parent segment")
+		}
+	}
 	switch u.Scheme {
 	case "https":
 		if u.User != nil {
