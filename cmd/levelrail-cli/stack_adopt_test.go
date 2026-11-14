@@ -62,7 +62,7 @@ func TestStackAdoptFromExportWritesFileAndRefusesOverwrite(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &res); err != nil || !res.Noop || len(res.Written) != 1 || len(res.Next) == 0 {
 		t.Fatalf("result %+v err %v\n%s", res, err, out)
 	}
-	got, _ := os.ReadFile(filepath.Join(dir, "compose/shop.yaml"))
+	got, _ := os.ReadFile(filepath.Join(dir, "compose/shop.yaml")) //nolint:gosec // test temp dir
 	if string(got) != adoptBody {
 		t.Fatalf("file: %q", got)
 	}
