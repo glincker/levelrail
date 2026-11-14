@@ -119,8 +119,8 @@ func TestComposePruneNeedsLedgerPruneAndConfirm(t *testing.T) {
 	if _, err := Apply(ctx, f, nil, opts, p.Hash); err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Contains(f.writes, "DELETE /api/v1/apps/shop/compose") {
-		t.Fatalf("the teardown must go through the compose delete path: %v", f.writes)
+	if n := countWrites(f.writes, "DELETE /api/v1/apps/shop/compose"); n != 1 {
+		t.Fatalf("the teardown must call the compose delete path once: %v", f.writes)
 	}
 	for _, w := range f.writes {
 		if strings.Contains(w, "other") || strings.Contains(w, "volumes=") {
@@ -141,4 +141,14 @@ func TestComposePruneRefusesProtected(t *testing.T) {
 	if _, err := Apply(ctx, f, nil, Options{Prune: true, ConfirmDestroy: true}, p.Hash); err == nil && slices.Contains(f.writes, "DELETE /api/v1/apps/shop/compose") {
 		t.Fatal("a protected compose app must not be torn down")
 	}
+}
+
+func countWrites(writes []string, want string) int {
+	n := 0
+	for _, w := range writes {
+		if w == want {
+			n++
+		}
+	}
+	return n
 }

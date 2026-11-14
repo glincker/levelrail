@@ -1116,8 +1116,13 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.logger.Warn("api: stack revision status failed", slog.String("error", err.Error()), slog.String("stack", stack.Name))
 	}
 	warnings := run.warnings
+	if aerr == nil && !leaseLost {
+		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, res, out, doer)...)
+	} else {
+		// Nothing reaches the ledger here, so a compose App this apply created would run unowned.
+		warnings = append(warnings, removeUnownedCompose(fin, doer, iac.ComposeCreated(res, out))...)
+	}
 	if aerr == nil {
-		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, res, out)...)
 		rt.auditSettingWeakens(r, stack.Name, rev.Number, out)
 	}
 	rt.auditStack(r, run.action, map[string]any{
@@ -1223,8 +1228,12 @@ func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID
 
 // recordStackLedger claims every declared resource this apply created or
 // confirmed, of any kind, and releases what it pruned.
-func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID string, rev int, res []*iac.Resource, out iac.ApplyResult) []string {
+func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID string, rev int, res []*iac.Resource, out iac.ApplyResult, doer iac.Doer) []string {
 	var warnings []string
+	created := map[string]bool{}
+	for _, n := range iac.ComposeCreated(res, out) {
+		created[n] = true
+	}
 	u := iac.LedgerChanges(stackID, rev, res, out)
 	for _, e := range u.Release {
 		if err := ss.DeleteStackResource(ctx, stackID, string(e.Kind), e.Key); err != nil {
@@ -1235,7 +1244,24 @@ func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID 
 		err := ss.UpsertStackResource(ctx, store.StackLedgerEntry{StackID: stackID, Kind: string(e.Kind), Key: e.Key, LiveID: e.LiveID, SinceRevision: rev})
 		if err != nil {
 			warnings = append(warnings, mapStackStoreError(err).Error())
+			if e.Kind == iac.KindApp && created[e.LiveID] {
+				warnings = append(warnings, removeUnownedCompose(ctx, doer, []string{e.LiveID})...)
+			}
 		}
+	}
+	return warnings
+}
+
+// removeUnownedCompose removes compose Apps whose ledger row could not be
+// written, through the compose delete path that keeps named volumes.
+func removeUnownedCompose(ctx context.Context, doer iac.Doer, names []string) []string {
+	var warnings []string
+	for _, n := range names {
+		if err := iac.RemoveCompose(ctx, doer, n); err != nil {
+			warnings = append(warnings, iac.CodeComposeApplyFailed+": compose app "+n+" has no ledger row and removing it failed: "+err.Error())
+			continue
+		}
+		warnings = append(warnings, iac.CodeComposeApplyFailed+": compose app "+n+" has no ledger row, so the services it deployed were removed")
 	}
 	return warnings
 }
