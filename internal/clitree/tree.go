@@ -541,4 +541,8 @@ func TierOf(verb string) Tier {
 }
 
 // db is the short alias for databases and shares its subtree.
-func init() { Tree["db"] = Tree["databases"] }
+func init() {
+	Tree["db"] = Tree["databases"]
+	// Top-level alias so scripts can create a project before a stack or app.
+	Tree["projects"] = Tree["apps"].Subs["projects"]
+}
