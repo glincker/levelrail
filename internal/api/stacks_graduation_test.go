@@ -156,7 +156,6 @@ func TestStackSecretSurvivesNoEventOrStreamLeak(t *testing.T) {
 	if code != http.StatusOK || out.Revision == nil {
 		t.Fatalf("apply = %d %+v", code, out.Issues)
 	}
-	rt.emitStackEvent(t.Context(), stackEventApplied, "shop-prod", "user:admin", "abcdef0123456789abcdef", out.Revision.Number, []string{"app/web"}, map[string]int{"create": 1})
 	topics := nextChangeTopics(t, stream)
 
 	applyOut, _ := json.Marshal(out)
@@ -168,7 +167,7 @@ func TestStackSecretSurvivesNoEventOrStreamLeak(t *testing.T) {
 			t.Errorf("%s hold the secret value", name)
 		}
 	}
-	if sink.count("stacks.applied") != 1 {
-		t.Fatal("stacks.applied event was not emitted")
+	if n := sink.count("stacks.applied"); n != 1 {
+		t.Fatalf("stacks.applied emitted %d times, want exactly once", n)
 	}
 }
