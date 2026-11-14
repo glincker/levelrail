@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 func writeRefFixture(t *testing.T, dir, rel, body string) {
@@ -44,7 +47,7 @@ func TestImportComposeRefReferenceDryRun(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("code %d: %s", code, errs)
 	}
-	for _, want := range []string{"path: shop/compose.yaml", "- jobs", "SHOP_TITLE: ${{ env.SHOP_TITLE }}", "DB_PASSWORD: ${{ secrets.DB_PASSWORD }}", "compose_unsupported_key", "compose_rejected", "docker-compose.yml is not emitted", "Dry run"} {
+	for _, want := range []string{"path: shop/compose.yaml", "- jobs", "SHOP_TITLE: ${{ env.SHOP_TITLE }}", "DB_PASSWORD: ${{ env.DB_PASSWORD }}", "SECRETS.md", "compose_unsupported_key", "compose_rejected", "docker-compose.yml is not emitted", "Dry run"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output misses %q:\n%s", want, out)
 		}
@@ -71,7 +74,7 @@ func TestImportComposeRefReferenceWriteKeepsComposeAndRefusesOverwrite(t *testin
 		t.Fatalf("code %d: %s %s", code, out, errs)
 	}
 	var res composeRefWriteResult
-	if err := json.Unmarshal([]byte(out), &res); err != nil || len(res.Files) != 3 {
+	if err := json.Unmarshal([]byte(out), &res); err != nil || len(res.Files) != 4 {
 		t.Fatalf("json: %v %s", err, out)
 	}
 	after, _ := os.ReadFile(filepath.Join(dir, "shop/compose.yaml")) //nolint:gosec // test temp dir
@@ -103,5 +106,39 @@ func TestImportComposeRefReferenceNoSecretCanary(t *testing.T) {
 	code, out, errs := runComposeRefCmd(t, dir, "--reference", "--stack", "x")
 	if code != exitOK || strings.Contains(out+errs, canary) {
 		t.Fatalf("code %d, canary leaked:\n%s%s", code, out, errs)
+	}
+}
+
+func TestImportComposeRefReferenceRoundTripsThroughLoader(t *testing.T) {
+	dir := referenceFixture(t)
+	for _, f := range []string{"docker-compose.yml", "bind"} {
+		if err := os.RemoveAll(filepath.Join(dir, f)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	scan, err := scanComposeDir(dir, 4, 1<<20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, _, err := buildReferenceFiles(dir, dir, scan, platformimport.EmitOptions{Stack: "shop", Project: "shop"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var apps []byte
+	for _, f := range files {
+		if f.Name != "SECRETS.md" && strings.Contains(string(f.Content), "secrets.") {
+			t.Errorf("%s emits a secrets reference that plan refuses", f.Name)
+		}
+		if f.Name == platformimport.EmitAppsFile {
+			apps = f.Content
+		}
+	}
+	data, _ := os.ReadFile(filepath.Join(dir, "shop/compose.yaml")) //nolint:gosec // test temp dir
+	docs, issues := iac.ParseDocuments([]iac.Source{{Name: platformimport.EmitAppsFile, Data: apps}})
+	if len(issues) == 0 {
+		_, issues = iac.Build(docs, iac.Options{Vars: map[string]string{"SHOP_TITLE": "x", "DB_PASSWORD": "y"}, Attachments: map[string][]byte{"shop/compose.yaml": data}})
+	}
+	if len(issues) > 0 {
+		t.Fatalf("emitted apps do not load with the env supplied: %v", issues)
 	}
 }

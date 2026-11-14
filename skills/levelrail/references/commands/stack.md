@@ -69,7 +69,7 @@ until you turn them on.
 
 Commands:
   status <stack>                         show the sync settings and the latest result
-  set <stack> --repo URL --branch B ...  set or change the sync (root or stack admin)
+  set <stack> [flags]                    create or change the sync; flags not given keep the current value (root or stack admin)
   refresh <stack>                        fetch the branch and plan it once now
   webhook-secret rotate <stack>          rotate the webhook secret; shown once
 

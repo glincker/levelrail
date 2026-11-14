@@ -21,7 +21,7 @@ spec:
     profiles: [jobs]            # optional compose profiles to enable
     env:                        # values for ${VAR} in the file, never read from your shell
       SHOP_TITLE: My shop
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_PASSWORD: ${{ env.DB_PASSWORD }}   # supplied at apply time with --allow-env DB_PASSWORD or --var
 ```
 
 `spec.compose` and `spec.service` are mutually exclusive. `path` must be relative, inside the folder you apply, with no `..` and no symlink on the way. A working copy lives in `examples/iac/compose-ref/`.
@@ -74,7 +74,7 @@ levelrail-cli import compose-ref ./myproject --reference --stack shop           
 levelrail-cli import compose-ref ./myproject --reference --stack shop --write ./myproject
 ```
 
-The output is validated with the real loader and the strict parser before it is printed or written. A file strict mode would refuse is not emitted; the command prints the code for each refusal as a note. Variables become `${{ env.NAME }}` placeholders, or `${{ secrets.NAME }}` for names that look like secrets. Values are never read. Existing files are kept without `--force`. The file name must look like `compose.yaml` or `docker-compose.yml`.
+The output is validated with the real loader and the strict parser before it is printed or written. A file strict mode would refuse is not emitted; the command prints the code for each refusal as a note. Every variable becomes a `${{ env.NAME }}` placeholder, and names that look like secrets are also listed in `SECRETS.md`; provide each value at apply time with `--allow-env NAME` or `--var NAME=VALUE`. Values are never read. Existing files are kept without `--force`. The file name must look like `compose.yaml` or `docker-compose.yml`.
 
 ## Adopt a running compose app
 
@@ -88,7 +88,7 @@ It writes the current deployed revision to the path the referencing App names, r
 
 ## Limits
 
-- External `secretRef` sources in `spec.compose.env` are refused for now; use a literal, a `${{ env.NAME }}` placeholder or a `${{ secrets.NAME }}` reference.
+- External `secretRef` sources in `spec.compose.env` are refused for now; use a literal or a `${{ env.NAME }}` placeholder. `${{ secrets.NAME }}` is not accepted in `spec.compose.env`.
 - `env_file`, bind mounts, `build:` and `include` are refused.
 - There is no git form (`spec.compose.git`) yet. Reference a file in the folder you apply.
 - A compose App is one compose project: there is no per-service selector. Use profiles for subsets.

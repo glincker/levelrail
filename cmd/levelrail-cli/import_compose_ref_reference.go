@@ -91,11 +91,8 @@ func (a refApp) env() map[string]string {
 	}
 	env := map[string]string{}
 	for _, v := range a.vars {
-		if composeSecretNameRe.MatchString(v) {
-			env[v] = "${{ secrets." + v + " }}"
-		} else {
-			env[v] = "${{ env." + v + " }}"
-		}
+		// Only the env form plans: secrets.X is refused inside spec.compose.env.
+		env[v] = "${{ env." + v + " }}"
 	}
 	return env
 }
@@ -161,6 +158,7 @@ func buildReferenceFiles(root, scanDir string, scan composeScan, o platformimpor
 		}
 	}
 	var buf bytes.Buffer
+	var secretLines []string
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
 	for _, a := range apps {
@@ -171,10 +169,9 @@ func buildReferenceFiles(root, scanDir string, scan composeScan, o platformimpor
 			return nil, nil, err
 		}
 		for _, v := range a.vars {
-			if !composeSecretNameRe.MatchString(v) {
-				notes = append(notes, fmt.Sprintf("%s reads ${%s}: pass it at plan and apply with --var %s=VALUE", a.rel, v, v))
-			} else {
-				notes = append(notes, fmt.Sprintf("%s reads ${%s}: pass it with --secret %s=ENVVAR", a.rel, v, v))
+			notes = append(notes, fmt.Sprintf("%s reads ${%s}: pass it at plan and apply with --allow-env %s or --var %s=VALUE", a.rel, v, v, v))
+			if iac.LooksSecret(v, "") || composeSecretNameRe.MatchString(v) {
+				secretLines = append(secretLines, fmt.Sprintf("- `%s` (read by %s): provide it through --allow-env %s or --var %s=VALUE at apply time", v, a.rel, v, v))
 			}
 		}
 	}
@@ -182,6 +179,10 @@ func buildReferenceFiles(root, scanDir string, scan composeScan, o platformimpor
 		return nil, nil, err
 	}
 	files = append(files, platformimport.EmitFile{Name: platformimport.EmitAppsFile, Content: buf.Bytes()})
+	if len(secretLines) > 0 {
+		doc := "# Secrets to provide\n\nValues are never read or written by the importer.\n\n" + strings.Join(secretLines, "\n") + "\n"
+		files = append(files, platformimport.EmitFile{Name: "SECRETS.md", Content: []byte(doc)})
+	}
 	if err := validateReferenceFiles(files, attach); err != nil {
 		return nil, nil, fmt.Errorf("emitted documents do not validate: %w", err)
 	}
