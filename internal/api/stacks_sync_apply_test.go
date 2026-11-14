@@ -32,8 +32,8 @@ func syncCode(err error) string {
 	return ""
 }
 
-// The second commit updates an app, which needs a protection read the stack
-// scoped token is not allowed yet; until that lands the sync fails closed.
+// The second commit updates the app the first one created, which needs the
+// protection read of an app the stack owns.
 func TestStackSyncApplyTwoCommits(t *testing.T) {
 	rt, db, _ := stackFixture(t)
 	rec := syncApplyRec(t, db, false)
@@ -45,9 +45,12 @@ func TestStackSyncApplyTwoCommits(t *testing.T) {
 	if err != nil || again.Revision != 1 {
 		t.Fatalf("replayed commit = %+v %v", again, err)
 	}
-	_, err = rt.stackSyncApply(t.Context(), rec, syncFiles(stackTestDocs("ghcr.io/acme/web:1.2.4")), strings.Repeat("b", 40))
-	if err != nil && syncCode(err) != iac.CodeSyncApplyFailed {
-		t.Fatalf("second commit code = %v", err)
+	second, err := rt.stackSyncApply(t.Context(), rec, syncFiles(stackTestDocs("ghcr.io/acme/web:1.2.4")), strings.Repeat("b", 40))
+	if err != nil || second.PendingApproval || second.Revision != 2 {
+		t.Fatalf("second commit = %+v %v", second, err)
+	}
+	if svc, err := db.GetDesiredService(t.Context(), "web"); err != nil || svc.Image != "ghcr.io/acme/web:1.2.4" {
+		t.Fatalf("app after second commit = %+v, %v", svc, err)
 	}
 	revs, _ := db.ListStackRevisions(t.Context(), rec.StackID, 5)
 	if len(revs) != 2 || !strings.Contains(revs[0].Actor+revs[1].Actor, stackSyncActorPrefix+"shop-prod") {
@@ -58,6 +61,26 @@ func TestStackSyncApplyTwoCommits(t *testing.T) {
 		if strings.HasPrefix(tk.Name, stackSyncActorPrefix) && tk.RevokedAt == nil {
 			t.Fatalf("sync token %s left usable", tk.ID)
 		}
+	}
+}
+
+func TestStackSyncApplyCannotTouchAnotherStacksApp(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks", jsonBody(t, map[string]any{"name": "blog-prod", "project": "shop"})), nil); code != http.StatusCreated {
+		t.Fatalf("create blog stack = %d", code)
+	}
+	blog, _ := db.GetStackByName(t.Context(), "blog-prod")
+	if err := db.SaveDesiredService(t.Context(), store.DesiredService{Name: "web", Image: "ghcr.io/acme/web:0.0.1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertStackResource(t.Context(), store.StackLedgerEntry{StackID: blog.ID, Kind: "App", Key: "App/web"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rt.stackSyncApply(t.Context(), syncApplyRec(t, db, false), syncFiles(stackTestDocs("ghcr.io/acme/web:9.9.9")), strings.Repeat("f", 40)); err == nil {
+		t.Fatal("sync applied over an app another stack owns")
+	}
+	if svc, _ := db.GetDesiredService(t.Context(), "web"); svc.Image != "ghcr.io/acme/web:0.0.1" {
+		t.Fatalf("other stack's app changed to %s", svc.Image)
 	}
 }
 

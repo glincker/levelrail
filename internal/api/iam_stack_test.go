@@ -403,3 +403,108 @@ func TestStackTokenPlanDoesNotRevealOtherProjectsApps(t *testing.T) {
 		t.Fatalf("existing foreign app %d %q differs from missing app %d %q", foreignCode, foreign, ghostCode, ghost)
 	}
 }
+
+func TestStackTokenReappliesOwnAppAndProtectionStillRefuses(t *testing.T) {
+	rt, db, cookie, tok, _ := stackTokenFixture(t, applyVerbs, []string{AbilityRead, AbilityWrite})
+	apply := func(docs string) (int, stackApplyResponse, string) {
+		var out stackApplyResponse
+		code, raw := rawCall(t, rt, bearerRequest(http.MethodPost, "/api/v1/stacks/shop-prod/apply", stackBody(t, docs, nil), tok))
+		_ = json.Unmarshal([]byte(raw), &out)
+		return code, out, raw
+	}
+	if code, out, raw := apply(iacTestDocs); code != http.StatusOK || out.Revision == nil || out.Revision.Status != store.StackRevApplied {
+		t.Fatalf("first apply = %d %s", code, raw)
+	}
+	v2 := strings.Replace(iacTestDocs, "ghcr.io/acme/web:1.2.3", "ghcr.io/acme/web:1.2.4", 1)
+	code, out, raw := apply(v2)
+	if code != http.StatusOK || out.Revision == nil || out.Revision.Status != store.StackRevApplied || strings.Contains(raw, iac.CodePermissionDenied) {
+		t.Fatalf("second apply of owned app = %d %s", code, raw)
+	}
+	if svc, err := db.GetDesiredService(t.Context(), "web"); err != nil || svc.Image != "ghcr.io/acme/web:1.2.4" {
+		t.Fatalf("app after second apply = %+v, %v", svc, err)
+	}
+
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/protection", `{"reason":"freeze"}`), nil); code != http.StatusOK {
+		t.Fatalf("protect = %d", code)
+	}
+	v3 := strings.Replace(iacTestDocs, "ghcr.io/acme/web:1.2.3", "ghcr.io/acme/web:1.2.5", 1)
+	if code, out, raw := apply(v3); code == http.StatusOK && out.Revision != nil && out.Revision.Status == store.StackRevApplied {
+		t.Fatalf("apply over a protected app succeeded: %s", raw)
+	}
+	if svc, _ := db.GetDesiredService(t.Context(), "web"); svc.Image != "ghcr.io/acme/web:1.2.4" {
+		t.Fatalf("protected app changed to %s", svc.Image)
+	}
+}
+
+func TestStackTokenProtectionReadOnlyForOwnedApps(t *testing.T) {
+	rt, db, _, tok, id := stackTokenFixture(t, applyVerbs, []string{AbilityRead, AbilityWrite})
+	ctx := t.Context()
+	shop, _ := db.GetStackByName(ctx, "shop-prod")
+	blog, _ := db.GetStackByName(ctx, "blog-prod")
+	for _, a := range []struct{ name, project string }{{"web", "p-shop"}, {"loose", "p-shop"}, {"blogapp", "p-blog"}, {"shopblog", "p-shop"}} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: a.name, Image: "nginx", Port: 80, ProjectID: a.project}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// shopblog sits in the shop project but another stack owns it.
+	for _, e := range []store.StackLedgerEntry{{StackID: shop.ID, Kind: "App", Key: "App/web"}, {StackID: blog.ID, Kind: "App", Key: "App/blogapp"}, {StackID: blog.ID, Kind: "App", Key: "App/shopblog"}} {
+		if err := db.UpsertStackResource(ctx, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	call := &stackTokenCall{tokenID: id, stackID: shop.ID, created: map[string]bool{}}
+	planCtx := context.WithValue(ctx, stackTokenCallKey{}, call)
+	applyCtx := iac.WithStackScope(planCtx, iac.StackScope{StackID: shop.ID, StackName: shop.Name, Revision: 1})
+	const prot = "/api/v1/apps/{name}/protection"
+	for _, c := range []struct {
+		name   string
+		ctx    context.Context
+		method string
+		app    string
+		want   int
+	}{
+		{"owned app", planCtx, http.MethodGet, "web", 0},
+		{"owned app in apply", applyCtx, http.MethodGet, "web", 0},
+		{"other stack app", planCtx, http.MethodGet, "blogapp", http.StatusNotFound},
+		{"other stack app in own project", applyCtx, http.MethodGet, "shopblog", http.StatusNotFound},
+		{"unowned app in project", planCtx, http.MethodGet, "loose", http.StatusNotFound},
+		{"missing app", planCtx, http.MethodGet, "ghost", http.StatusNotFound},
+		{"protect in apply", applyCtx, http.MethodPut, "web", http.StatusForbidden},
+		{"unprotect in apply", applyCtx, http.MethodDelete, "web", http.StatusForbidden},
+	} {
+		rec := httptest.NewRecorder()
+		body := ""
+		if c.method == http.MethodPut {
+			body = `{"reason":"x"}`
+		}
+		_, ok := rt.gateStackToken(rec, subRequest(c.ctx, tok, c.method+" "+prot, body, map[string]string{"name": c.app}), id)
+		if c.want == 0 {
+			if !ok {
+				t.Errorf("%s: denied with %d", c.name, rec.Code)
+			}
+			continue
+		}
+		if ok || rec.Code != c.want {
+			t.Errorf("%s: allowed=%v status %d, want %d", c.name, ok, rec.Code, c.want)
+		}
+	}
+
+	// An app created in this call may be read; the mark does not leak to other names.
+	call.markCreated(ledgerKeyOf(iac.KindApp, "fresh"))
+	if _, ok := rt.gateStackToken(httptest.NewRecorder(), subRequest(applyCtx, tok, "GET "+prot, "", map[string]string{"name": "fresh"}), id); !ok {
+		t.Error("protection of an app created in this call denied")
+	}
+
+	// Outside a stack call the route stays closed, as do unrelated routes.
+	for _, c := range []struct{ method, path, body string }{
+		{http.MethodGet, "/api/v1/apps/web/protection", ""},
+		{http.MethodPut, "/api/v1/apps/web/protection", `{"reason":"x"}`},
+		{http.MethodDelete, "/api/v1/apps/web/protection", ""},
+		{http.MethodGet, "/api/v1/apps/web/secrets", ""},
+		{http.MethodGet, "/api/v1/audit-log", ""},
+	} {
+		if code := callWithToken(t, rt, tok, c.method, c.path, c.body); code != http.StatusForbidden {
+			t.Errorf("direct %s %s = %d, want 403", c.method, c.path, code)
+		}
+	}
+}
