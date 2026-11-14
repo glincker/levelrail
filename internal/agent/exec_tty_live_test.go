@@ -248,8 +248,41 @@ func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("the remote shell is still running after Close(): %q", out)
+			t.Fatalf("the remote shell is still running after Close(): %q\n%s", out, closeDiagnostics(ctx, transport, containerID))
 		}
 		time.Sleep(250 * time.Millisecond)
 	}
+}
+
+// closeDiagnostics reports the full process table and the state of every
+// exec in the container, so a CI failure shows why the shell outlived Close.
+func closeDiagnostics(ctx context.Context, transport Transport, containerID string) string {
+	var sb strings.Builder
+	if rc, err := transport.Exec(ctx, containerID, []string{"ps", "-o", "pid,stat,args"}); err != nil {
+		fmt.Fprintf(&sb, "ps pid,stat,args: error %v\n", err)
+	} else {
+		out, _ := io.ReadAll(rc)
+		_ = rc.Close()
+		fmt.Fprintf(&sb, "ps pid,stat,args:\n%s\n", out)
+	}
+	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		fmt.Fprintf(&sb, "exec inspect: no docker client: %v\n", err)
+		return sb.String()
+	}
+	defer func() { _ = cli.Close() }()
+	info, err := cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		fmt.Fprintf(&sb, "container inspect: %v\n", err)
+		return sb.String()
+	}
+	for _, id := range info.ExecIDs {
+		ex, err := cli.ContainerExecInspect(ctx, id)
+		if err != nil {
+			fmt.Fprintf(&sb, "exec %s inspect: %v\n", id, err)
+			continue
+		}
+		fmt.Fprintf(&sb, "exec %s running=%v pid=%d exit=%d\n", id, ex.Running, ex.Pid, ex.ExitCode)
+	}
+	return sb.String()
 }
