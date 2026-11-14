@@ -88,7 +88,9 @@ type planner struct {
 	res   []*Resource
 	opts  Options
 	byKey map[string]*Resource
-	items []*item
+	// domainsByApp indexes Domain documents once so each App plan avoids rescanning every resource.
+	domainsByApp map[string][]string
+	items        []*item
 	// cloudStack holds cloud documents planned together as one stack.
 	cloudStack []*Resource
 	// cloudRuns runs each approved engine plan once, however many items share it.

@@ -30,11 +30,16 @@ func copyFields(in map[string]any) map[string]any {
 // domain list, so the two declaration styles never fight over ownership.
 func (p *planner) desiredDomains(r *Resource) []string {
 	hosts := stringList(r.Fields["domains"])
-	for _, o := range p.res {
-		if o.Kind == KindDomain && stringField(o.Fields, "app") == r.Name {
-			hosts = append(hosts, o.Name)
+	if p.domainsByApp == nil {
+		p.domainsByApp = map[string][]string{}
+		for _, o := range p.res {
+			if o.Kind == KindDomain {
+				app := stringField(o.Fields, "app")
+				p.domainsByApp[app] = append(p.domainsByApp[app], o.Name)
+			}
 		}
 	}
+	hosts = append(hosts, p.domainsByApp[r.Name]...)
 	return sortedUnique(hosts)
 }
 
