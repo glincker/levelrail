@@ -171,6 +171,9 @@ func (rt *Router) stackSyncPlan(ctx context.Context, rec store.StackSyncRecord, 
 	if len(issues) > 0 {
 		return iac.Plan{}, &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: "documents do not validate"}
 	}
+	if ce := syncProjectDropped(req, project, len(res)); ce != nil {
+		return iac.Plan{}, ce
+	}
 	if resourcesHaveCloud(res) {
 		return iac.Plan{}, &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: "cloud kinds are not planned by sync"}
 	}
@@ -512,4 +515,13 @@ func syncApplyRequest(rec store.StackSyncRecord, files []stacksync.File, commit 
 		body.Files[i] = iacFile{Name: f.Name, Content: f.Content}
 	}
 	return body
+}
+
+// syncProjectDropped makes an empty plan loud when the project filter removed
+// every document, instead of letting the sync report "create 0".
+func syncProjectDropped(req stackRequest, project string, resources int) *stacksync.CodedError {
+	if project == "" || resources > 0 || len(stackFileDocs(req)) == 0 {
+		return nil
+	}
+	return &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: emptyStackReason(req, project)}
 }
