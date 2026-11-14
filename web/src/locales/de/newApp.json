@@ -32,7 +32,8 @@
       "emptyTitle": "Keine Repositorys gefunden",
       "emptyBody": "Wir sehen in Ihren verbundenen Konten noch keine Repositorys. Aktualisieren Sie die Liste, nachdem Sie Zugriff gewährt haben, oder fügen Sie oben eine Repository-URL ein.",
       "failedTitle": "Ihre Repositorys konnten nicht aufgelistet werden",
-      "failedBody": "Der Anbieter hat nicht geantwortet. Aktualisieren Sie, um es erneut zu versuchen, prüfen Sie die Verbindung in den Einstellungen oder fügen Sie oben eine Repository-URL ein."
+      "failedBody": "Der Anbieter hat nicht geantwortet. Aktualisieren Sie, um es erneut zu versuchen, prüfen Sie die Verbindung in den Einstellungen oder fügen Sie oben eine Repository-URL ein.",
+      "crashed": "Die Repository-Liste konnte nicht angezeigt werden. Füge stattdessen oben eine Repository-URL ein."
     },
     "git": {
       "title": "Aus Git importieren",
