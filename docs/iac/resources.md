@@ -12,7 +12,7 @@ A file holds one or more YAML documents separated by `---`. Every document has t
 
 ```yaml
 version: 1              # schema version, the only accepted value
-kind: App               # Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule
+kind: App               # Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule, CronJob
 metadata:
   name: web             # unique per kind (see each kind below)
   labels: {}            # free form, for your own tooling; not stored
