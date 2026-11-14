@@ -13,6 +13,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -352,8 +353,21 @@ func gunzipBytes(b []byte) ([]byte, error) {
 	return io.ReadAll(zr)
 }
 
-// minSecretMatchLen mirrors iac.MinSecretMatchLen: shorter values would match ordinary text.
-const minSecretMatchLen = 4
+// defaultSecretMatchMin is the fallback before a runtime setting is attached; shorter values would match ordinary text.
+const defaultSecretMatchMin = 4
+
+var secretMatchMinLive atomic.Pointer[func() int]
+
+// SetSecretMatchMinSource makes the leak guard follow a live setting.
+func SetSecretMatchMinSource(fn func() int) { secretMatchMinLive.Store(&fn) }
+
+// SecretMatchMin is the shortest secret value the leak guard matches by substring.
+func SecretMatchMin() int {
+	if p := secretMatchMinLive.Load(); p != nil {
+		return (*p)()
+	}
+	return defaultSecretMatchMin
+}
 
 // leakedStackSecret mirrors iac.LeakedSecret, sorted so the reported name is stable.
 func leakedStackSecret(secrets map[string]string, docs ...[]byte) (string, bool) {
@@ -362,9 +376,10 @@ func leakedStackSecret(secrets map[string]string, docs ...[]byte) (string, bool)
 		names = append(names, n)
 	}
 	sort.Strings(names)
+	minLen := SecretMatchMin()
 	for _, n := range names {
 		v := secrets[n]
-		if len(v) < minSecretMatchLen {
+		if len(v) < minLen {
 			continue
 		}
 		// Rendered docs and plans are JSON, so also look for the escaped form.

@@ -5,6 +5,7 @@ const (
 	KeyIaCPlanValueMax        = "iac.plan_value_max"
 	KeyStackPruneMaxPercent   = "stacks.prune_max_percent"
 	KeyStackPruneMaxCount     = "stacks.prune_max_count"
+	KeyIaCSecretMatchMinLen   = "iac.secret_match_min_len"
 	KeyHFTimeoutSeconds       = "models.hf_timeout_seconds"
 	KeyHFMaxResponseBytes     = "models.hf_max_response_bytes"
 	KeyHFMaxListedFiles       = "models.hf_max_listed_files"
@@ -27,6 +28,11 @@ func init() {
 		Title:       "Prune guard: item count",
 		Description: "A prune removing more items than this needs allow_mass_prune. From 0 to 100000; 0 means every prune needs the flag.",
 	}, 0, 100000)
+	registerLimit(Definition{
+		Key: KeyIaCSecretMatchMinLen, Category: CategorySecurity, Default: "4", Env: "APP_IAC_SECRET_MATCH_MIN_LEN", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
+		Title:       "Secret leak guard: shortest value",
+		Description: "Shortest secret value a stack document may not contain, in characters. From 1 to 64. Shorter values are only warned about; 1 checks every value but can match ordinary text.",
+	}, 1, 64)
 	registerLimit(Definition{
 		Key: KeyHFTimeoutSeconds, Category: CategoryNetworking, Default: "10", Env: "APP_HF_TIMEOUT_SECONDS", Apply: ApplyRestart,
 		Title:       "Model hub request timeout",

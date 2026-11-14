@@ -144,8 +144,9 @@ func buildPlan(ctx context.Context, st *State, res []*Resource, opts Options) (P
 			plan.Summary.Error++
 		}
 	}
+	minLen := MinSecretMatchLen()
 	for _, v := range opts.Secrets {
-		if v != "" && len(v) < MinSecretMatchLen {
+		if v != "" && len(v) < minLen {
 			plan.Warnings = append(plan.Warnings, ShortSecretWarning)
 			break
 		}

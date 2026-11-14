@@ -81,6 +81,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |
+| `APP_IAC_SECRET_MATCH_MIN_LEN` | [`iac.secret_match_min_len`](/runtime-settings#security) | `4` |
 | `APP_IAC_V1_HASH_ACCEPTED` | [`iac.v1_hash_accepted`](/runtime-settings#security) | `true` |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
 | `APP_NODES_PATCH_ADOPT_LIMIT` | [`nodes.patch_adopt_limit`](/runtime-settings#security) | `20` |
