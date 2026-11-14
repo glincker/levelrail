@@ -452,6 +452,14 @@ type stackManifestFlags struct {
 	values   stringListFlag
 	allowEnv stringListFlag
 	secrets  stringMapFlag
+	// confirmDestroy is set only on plan and apply; nil elsewhere.
+	confirmDestroy *string
+}
+
+const confirmDestroyHelp = "stack name typed to allow deleting compose apps and cloud resources in this run (--yes never implies it)"
+
+func bindConfirmDestroy(fs *flag.FlagSet, f *stackManifestFlags) {
+	f.confirmDestroy = fs.String("confirm-destroy", "", confirmDestroyHelp)
 }
 
 func bindStackManifestFlags(fs *flag.FlagSet, withFiles bool) *stackManifestFlags {
@@ -541,7 +549,10 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(f.files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("pass at least one -f file, directory or -")
 	}
-	all, err := readIaCFilesNamed(f.files, true)
+	if f.confirmDestroy != nil && *f.confirmDestroy != "" && *f.confirmDestroy != name {
+		return apiclient.StackRequest{}, newValidationError("--confirm-destroy must equal the stack name %q", name)
+	}
+	all, attachments, err := readIaCInputNamed(f.files, true)
 	if err != nil {
 		return apiclient.StackRequest{}, err
 	}
@@ -552,7 +563,10 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("the files hold only a Stack document, add the resources to apply")
 	}
-	req := apiclient.StackRequest{Files: files, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken}
+	req := apiclient.StackRequest{Files: files, Attachments: attachments, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken}
+	if f.confirmDestroy != nil {
+		req.ConfirmDestroy = *f.confirmDestroy
+	}
 	if doc != nil {
 		if doc.Metadata.Name != "" && doc.Metadata.Name != name {
 			return apiclient.StackRequest{}, newValidationError("the Stack document is named %q but the command names %q", doc.Metadata.Name, name)
@@ -629,6 +643,7 @@ Flags:
   -f PATH              resource file, directory or "-" for stdin (repeatable)
   --project P          project of the stack (needed when the stack does not exist yet)
   --prune              plan deletions of resources the files no longer declare
+  --confirm-destroy S  stack name typed to allow deleting compose apps and cloud resources in this run
   --allow-weaken       accept Setting documents that weaken a security protection (human root session only)
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable)
   --values FILE.yaml   flat YAML map of placeholder values (repeatable, later wins; beats --var-file)
@@ -643,6 +658,7 @@ A cloud plan runs as a job: the command polls it and prints the plan like a
 sync one. Ctrl-C leaves the job running. A failed job exits 1 with its code.
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, true)
+		bindConfirmDestroy(fs, mf)
 		exitCode = fs.Bool("exit-code", false, "exit 2 when changes are pending")
 		jf = bindStackJobFlags(fs)
 	})
@@ -668,7 +684,7 @@ sync one. Ctrl-C leaves the job running. A failed job exits 1 with its code.
 	if err != nil {
 		return iacFail(c, err)
 	}
-	if rc := c.render(raw, func() { printStackPlan(c.stdout, res) }); rc != exitOK {
+	if rc := c.render(raw, func() { printStackPlan(c.stdout, res); printDestroyHint(c.stdout, prog, pos[0], res.Plan, mf.files) }); rc != exitOK {
 		return rc
 	}
 	switch {
@@ -728,7 +744,11 @@ are filled from GITHUB_* variables or the local checkout. Exit codes: 0 applied,
 1 error, 409/422 or a revision that ended partial or failed.
 
 Flags:
-  -f PATH, --project P, --prune, --allow-weaken, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { rf = bindStackRunFlags(fs, true) })
+  --confirm-destroy S      stack name typed to allow deleting compose apps and cloud resources in this run; --yes does not imply it
+  -f PATH, --project P, --prune, --allow-weaken, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		rf = bindStackRunFlags(fs, true)
+		bindConfirmDestroy(fs, rf.stackManifestFlags)
+	})
 	if !ok {
 		return code
 	}
@@ -749,7 +769,7 @@ Flags:
 	rf.fill(&req, secrets, lookupEnv)
 	ctx := context.Background()
 	if !*rf.yes {
-		if rc, done := stackConfirmPlan(ctx, c, rf, name, &req); done {
+		if rc, done := stackConfirmPlan(ctx, prog, c, rf, name, &req); done {
 			return rc
 		}
 	}
@@ -764,7 +784,7 @@ Flags:
 // stackConfirmPlan prints the plan and asks. It pins the apply to the plan the
 // operator saw unless --expected-plan-hash was given. done is true when the
 // command should stop with rc.
-func stackConfirmPlan(ctx context.Context, c cliCall, rf *stackRunFlags, name string, req *apiclient.StackRequest) (rc int, done bool) {
+func stackConfirmPlan(ctx context.Context, prog string, c cliCall, rf *stackRunFlags, name string, req *apiclient.StackRequest) (rc int, done bool) {
 	for _, f := range rf.files {
 		if f == "-" {
 			return iacFail(c, errors.New("stdin holds the files, so confirmation is not possible: pass --yes")), true
@@ -776,6 +796,7 @@ func stackConfirmPlan(ctx context.Context, c cliCall, rf *stackRunFlags, name st
 	}
 	if !c.jsonOut {
 		printStackPlan(c.stdout, plan)
+		printDestroyHint(c.stderr, prog, name, plan.Plan, rf.files)
 	}
 	if plan.Plan.Summary.Error > 0 && !*rf.continueOnError {
 		_, _ = fmt.Fprintln(c.stderr, "the plan has errors; nothing was applied (use --continue-on-error to apply the rest)")
@@ -1046,4 +1067,20 @@ func stackDrift(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitValidation
 	}
 	return exitOK
+}
+
+// printDestroyHint prints the apply command that confirms deletions when the plan
+// refused them for lack of --confirm-destroy.
+func printDestroyHint(w io.Writer, prog, name string, plan iac.Plan, files []string) {
+	for _, ch := range plan.Changes {
+		if ch.Code != iac.CodeDestroyNotConfirmed {
+			continue
+		}
+		cmd := prog + " stack apply " + name
+		for _, f := range files {
+			cmd += " -f " + f
+		}
+		_, _ = fmt.Fprintf(w, "hint: the plan deletes resources that need a typed confirmation; review it, then re-run with: %s --confirm-destroy %s\n", cmd, name)
+		return
+	}
 }

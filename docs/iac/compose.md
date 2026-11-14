@@ -45,7 +45,9 @@ levelrail-cli apply -f ./myproject --dry-run
 levelrail-cli apply -f ./myproject --yes
 ```
 
-A compose App deploys through the compose deploy path on every apply, so `no_deploy` is refused (`compose_no_deploy_unsupported`). `stack plan` and `stack apply` do not send attachments yet, so use `apply` for compose Apps.
+A compose App deploys through the compose deploy path on every apply, so `no_deploy` is refused (`compose_no_deploy_unsupported`). `stack plan` and `stack apply` send the referenced compose files like `apply` does, with the same size caps and the same refusal of symlinks.
+
+Dropping a compose App from the files plans a delete. Pass `--confirm-destroy <stack name>` to `stack plan` and again to `stack apply` (API: `confirm_destroy`) to allow it in that run; without it the plan carries a `destroy_not_confirmed` item and the CLI prints the command to re-run. `--yes` never implies it. Approval needs the approver to type it again.
 
 ## What strict mode refuses
 

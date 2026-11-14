@@ -125,6 +125,11 @@ func collectIaCEntries(paths []string) ([]iacEntry, error) {
 // reference out of the document list into attachments. Referenced files are
 // read below their root with no symlink on the way.
 func readIaCInput(paths []string) ([]apiclient.IaCFile, map[string]string, error) {
+	return readIaCInputNamed(paths, false)
+}
+
+// readIaCInputNamed is readIaCInput; relative names each document by its path under the -f root.
+func readIaCInputNamed(paths []string, relative bool) ([]apiclient.IaCFile, map[string]string, error) {
 	entries, err := collectIaCEntries(paths)
 	if err != nil {
 		return nil, nil, err
@@ -149,7 +154,11 @@ func readIaCInput(paths []string) ([]apiclient.IaCFile, map[string]string, error
 		}
 		docs, atts, _ := iac.SplitComposeRefs(srcs)
 		for _, d := range docs {
-			files = append(files, display[d.Name])
+			f := display[d.Name]
+			if relative {
+				f.Name = d.Name
+			}
+			files = append(files, f)
 		}
 		for name, data := range atts {
 			if err := checkNoSymlink(root, name); err != nil {
