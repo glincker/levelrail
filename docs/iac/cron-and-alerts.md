@@ -24,7 +24,31 @@ spec:
   enabled: true
 ```
 
-The other fields match the `service.jobs` list of an App: `catchUpLookback`, `cpu`, `memory` and `warnAfter`. HTTP jobs are not available in files yet.
+The other fields match the `service.jobs` list of an App: `catchUpLookback`, `cpu`, `memory` and `warnAfter`.
+
+### HTTP jobs
+
+Instead of a command, a job can call a path on the app itself. Set `http` and leave out `command`, `mode`, `cpu` and `memory`.
+
+```yaml
+version: 1
+kind: CronJob
+metadata: { name: warm-cache }
+spec:
+  app: web
+  schedule: "*/10 * * * *"
+  timeout: 30s
+  http:
+    path: /internal/warm
+    method: POST               # GET (default), POST, PUT, PATCH or DELETE
+    body: '{"full": false}'
+    background: false          # true returns at once and awaits the reply server side
+    headers:
+      - { name: X-Job, value: warm }
+      - { name: Authorization, secretRef: CRON_TOKEN, prefix: "Bearer " }
+```
+
+The request goes to the app, never to an arbitrary URL, so the path must start with a single `/`. A header holds either a literal `value` or a `secretRef` naming an env var of the app, and the secret is read at run time, so no secret text lives in the file. `timeout` bounds the call.
 
 Each job has one owner. Declaring the same job name in an App's `service.jobs` and as a CronJob fails the plan with `ownership_conflict`, and so does a job that the app's own `app.yaml` declares. Jobs created in the dashboard or CLI that no file lists are kept, and removed only by prune.
 
@@ -56,6 +80,7 @@ A bad document fails before anything is planned, with the file, line and a stabl
 | --- | --- |
 | `cron_schedule_invalid` | The schedule is not a valid cron expression. |
 | `cron_job_invalid` | The job name, command, timezone, retries or limits break a rule. |
+| `cron_http_invalid` | The http path, method or a header breaks a rule, or `http` is set with a `command`. |
 | `alert_rule_invalid` | A threshold rule lacks its metric, comparator or threshold. |
 | `ownership_conflict` | The job is declared in two places. |
 

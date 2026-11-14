@@ -694,6 +694,63 @@
       },
       "type": "object"
     },
+    "cronJobHTTP": {
+      "additionalProperties": false,
+      "description": "Call a path on the app instead of running a command. Set either command or http.",
+      "properties": {
+        "background": {
+          "description": "Return at once and let the control plane await the response.",
+          "type": "boolean"
+        },
+        "body": {
+          "description": "Request body sent with the call.",
+          "type": "string"
+        },
+        "headers": {
+          "description": "Request headers. Each holds a literal value or a secretRef naming an app env var, never secret text.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Header name.",
+                "pattern": "^[A-Za-z0-9-]{1,64}$",
+                "type": "string"
+              },
+              "prefix": {
+                "description": "Text placed before the secret, such as Bearer. Only with secretRef.",
+                "type": "string"
+              },
+              "secretRef": {
+                "description": "Name of the app env var that holds the header value.",
+                "type": "string"
+              },
+              "value": {
+                "description": "Literal header value.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "method": {
+          "description": "GET, POST, PUT, PATCH or DELETE. Defaults to GET.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path on the app to call, starting with a single /.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
     "cronJobSpec": {
       "additionalProperties": false,
       "properties": {
@@ -740,6 +797,9 @@
           "description": "Whether the job is scheduled.",
           "type": "boolean"
         },
+        "http": {
+          "$ref": "#/$defs/cronJobHTTP"
+        },
         "memory": {
           "description": "Memory limit for the job container, such as 512Mi.",
           "pattern": "^[0-9]+(Mi|Gi)$",
@@ -785,8 +845,7 @@
       },
       "required": [
         "app",
-        "schedule",
-        "command"
+        "schedule"
       ],
       "type": "object"
     },

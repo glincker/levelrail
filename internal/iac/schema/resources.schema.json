@@ -259,14 +259,42 @@
         "enabled": { "description": "Whether the pipeline runs.", "type": "boolean" }
       }
     },
+    "cronJobHTTP": {
+      "description": "Call a path on the app instead of running a command. Set either command or http.",
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "description": "Path on the app to call, starting with a single /.", "type": "string", "minLength": 1 },
+        "method": { "description": "GET, POST, PUT, PATCH or DELETE. Defaults to GET.", "type": "string" },
+        "body": { "description": "Request body sent with the call.", "type": "string" },
+        "background": { "description": "Return at once and let the control plane await the response.", "type": "boolean" },
+        "headers": {
+          "description": "Request headers. Each holds a literal value or a secretRef naming an app env var, never secret text.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "description": "Header name.", "type": "string", "pattern": "^[A-Za-z0-9-]{1,64}$" },
+              "value": { "description": "Literal header value.", "type": "string" },
+              "secretRef": { "description": "Name of the app env var that holds the header value.", "type": "string" },
+              "prefix": { "description": "Text placed before the secret, such as Bearer. Only with secretRef.", "type": "string" }
+            }
+          }
+        }
+      }
+    },
     "cronJobSpec": {
       "type": "object",
-      "required": ["app", "schedule", "command"],
+      "required": ["app", "schedule"],
       "additionalProperties": false,
       "properties": {
         "app": { "description": "Name of the app the job belongs to.", "type": "string", "minLength": 1 },
         "schedule": { "description": "Cron expression for when the job runs.", "type": "string", "minLength": 1 },
         "command": { "description": "Command to run, as an argument list.", "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "http": { "$ref": "#/$defs/cronJobHTTP" },
         "timezone": { "description": "IANA time zone the schedule is read in. Defaults to UTC.", "type": "string", "minLength": 1 },
         "mode": { "description": "fresh starts a new container from the app image; exec runs inside the running one.", "enum": ["fresh", "exec"] },
         "concurrency": { "description": "Overlap policy when a run is still going.", "enum": ["allow", "forbid", "replace"] },

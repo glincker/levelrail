@@ -26,7 +26,7 @@ func (st *State) liveJobs(app string) map[string]wireJob {
 func cronSpecOut(app string, f jobFields) map[string]any {
 	m := toMap(f)
 	m["app"] = app
-	if f.Mode == spec.JobModeFresh {
+	if f.Mode == spec.JobModeFresh || f.Mode == jobModeHTTP {
 		delete(m, "mode")
 	}
 	if f.Concurrency == "forbid" {
@@ -48,8 +48,12 @@ func buildCron(d *Document, s *issueSink) *Resource {
 	if !cronNameRe.MatchString(d.Name) || strings.HasPrefix(d.Name, spec.ReservedJobNamePrefix) {
 		s.atCode(CodeCronJobInvalid, "metadata.name", "job name %q must be lowercase letters, digits, hyphens or underscores and must not start with %q", d.Name, spec.ReservedJobNamePrefix)
 	}
-	if len(sp.Command) == 0 {
-		s.atCode(CodeCronJobInvalid, "spec.command", "a cron job needs a command")
+	if sp.HTTP == nil && len(sp.Command) == 0 {
+		s.atCode(CodeCronJobInvalid, "spec.command", "a cron job needs a command or an http request")
+	}
+	httpBad := validateCronHTTP(&sp.Job)
+	for _, path := range sortedKeys(httpBad) {
+		s.atCode(CodeCronHTTPInvalid, path, "%s", httpBad[path])
 	}
 	for _, part := range sp.Command {
 		if strings.TrimSpace(part) == "" {
@@ -69,7 +73,7 @@ func buildCron(d *Document, s *issueSink) *Resource {
 	if err := cronexpr.Validate(sp.Schedule, loc, time.Now()); err != nil {
 		s.atCode(CodeCronScheduleInvalid, "spec.schedule", "schedule %q is not a valid cron expression: %v", sp.Schedule, err)
 	}
-	if sp.Mode == spec.JobModeExec && (sp.CPU != 0 || sp.Memory != "") {
+	if sp.HTTP == nil && sp.Mode == spec.JobModeExec && (sp.CPU != 0 || sp.Memory != "") {
 		s.atCode(CodeCronJobInvalid, "spec.mode", "cpu and memory limits apply to fresh-container jobs, not mode: exec")
 	}
 	if sp.Retries < 0 {

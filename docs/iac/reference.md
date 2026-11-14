@@ -192,10 +192,11 @@ No fields.
 | `spec.app` | string | yes | Name of the app the job belongs to. |
 | `spec.catchUp` | `skip`, `run-once` | no | What to do about runs missed while down. |
 | `spec.catchUpLookback` | string | no | How far back missed runs are considered. |
-| `spec.command` | list of string | yes | Command to run, as an argument list. |
+| `spec.command` | list of string | no | Command to run, as an argument list. |
 | `spec.concurrency` | `allow`, `forbid`, `replace` | no | Overlap policy when a run is still going. |
 | `spec.cpu` | number | no | CPU limit for the job container. |
 | `spec.enabled` | boolean | no | Whether the job is scheduled. |
+| `spec.http` | object | no | Call a path on the app instead of running a command. Set either command or http. |
 | `spec.memory` | string | no | Memory limit for the job container, such as 512Mi. |
 | `spec.mode` | `fresh`, `exec` | no | fresh starts a new container from the app image; exec runs inside the running one. |
 | `spec.retries` | integer | no | Retries after a failed run. |

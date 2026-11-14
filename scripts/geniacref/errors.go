@@ -37,6 +37,7 @@ var codeDocs = map[string]codeDoc{
 	iac.CodeInvalidRequest:             {"The request itself is malformed, for example a missing or unreadable field.", "Fix the request and send it again."},
 	iac.CodeInvalidDocument:            {"A document failed validation.", "Read the issue lines; each names the file, line and field."},
 	iac.CodeCronScheduleInvalid:        {"A CronJob schedule is not a valid cron expression.", "Fix spec.schedule, for example `0 3 * * *`."},
+	iac.CodeCronHTTPInvalid:            {"The http request of a CronJob breaks a path, method or header rule, or is set together with a command.", "Read the issue line, keep the path on the app, and give each header a value or a secretRef."},
 	iac.CodeCronJobInvalid:             {"A CronJob name, command, timezone, retries or limits break a rule.", "Read the issue line for the field and fix it."},
 	iac.CodeAlertRuleInvalid:           {"A threshold AlertRule lacks its metric, comparator or threshold.", "Set all three, with a comparator of `>`, `<`, `>=` or `<=`."},
 	iac.CodeApprovalPending:            {"A cloud plan would replace the saved engine plan of a revision awaiting approval.", "Approve or reject the named revision first, or plan with supersede=true to retire it."},

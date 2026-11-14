@@ -48,6 +48,8 @@ const (
 	CodeCronScheduleInvalid = "cron_schedule_invalid"
 	// CodeCronJobInvalid means a CronJob breaks a name, command, timezone or limit rule.
 	CodeCronJobInvalid = "cron_job_invalid"
+	// CodeCronHTTPInvalid means the http request of a CronJob breaks a path, method, header or exclusivity rule.
+	CodeCronHTTPInvalid = "cron_http_invalid"
 	// CodeAlertRuleInvalid means an AlertRule lacks the fields its type needs.
 	CodeAlertRuleInvalid = "alert_rule_invalid"
 )
@@ -121,7 +123,7 @@ var AllCodes = []string{
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument, CodeInvalidName,
-	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeAlertRuleInvalid,
+	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeCronHTTPInvalid, CodeAlertRuleInvalid,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,

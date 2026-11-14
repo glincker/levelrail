@@ -27,6 +27,18 @@ spec:
   command: [node, scripts/cleanup.js]
 ---
 version: 1
+kind: CronJob
+metadata: {name: warm}
+spec:
+  app: web
+  schedule: "*/10 * * * *"
+  http:
+    path: /internal/warm
+    method: POST
+    headers:
+      - {name: Authorization, secretRef: CRON_TOKEN, prefix: "Bearer "}
+---
+version: 1
 kind: AlertRule
 metadata: {name: high-cpu}
 spec: {app: web, type: threshold, metric: cpu_percent, comparator: ">", threshold: 90, for: 5m, channel: ops}

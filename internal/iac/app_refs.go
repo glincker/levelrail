@@ -60,41 +60,52 @@ func splitConnRef(ref string) (db, field string) {
 
 // jobFields is the comparable shape of one scheduled job on both sides.
 type jobFields struct {
-	Schedule        string   `json:"schedule"`
-	Command         []string `json:"command,omitempty"`
-	Timezone        string   `json:"timezone,omitempty"`
-	Mode            string   `json:"mode"`
-	Concurrency     string   `json:"concurrency"`
-	Enabled         bool     `json:"enabled"`
-	Timeout         string   `json:"timeout,omitempty"`
-	Retries         int      `json:"retries,omitempty"`
-	RetryBackoff    string   `json:"retryBackoff,omitempty"`
-	CatchUp         string   `json:"catchUp,omitempty"`
-	CatchUpLookback string   `json:"catchUpLookback,omitempty"`
-	CPU             float64  `json:"cpu,omitempty"`
-	Memory          string   `json:"memory,omitempty"`
-	WarnAfter       string   `json:"warnAfter,omitempty"`
+	Schedule        string         `json:"schedule"`
+	Command         []string       `json:"command,omitempty"`
+	Timezone        string         `json:"timezone,omitempty"`
+	Mode            string         `json:"mode"`
+	Concurrency     string         `json:"concurrency"`
+	Enabled         bool           `json:"enabled"`
+	Timeout         string         `json:"timeout,omitempty"`
+	Retries         int            `json:"retries,omitempty"`
+	RetryBackoff    string         `json:"retryBackoff,omitempty"`
+	CatchUp         string         `json:"catchUp,omitempty"`
+	CatchUpLookback string         `json:"catchUpLookback,omitempty"`
+	CPU             float64        `json:"cpu,omitempty"`
+	Memory          string         `json:"memory,omitempty"`
+	WarnAfter       string         `json:"warnAfter,omitempty"`
+	HTTP            *jobHTTPFields `json:"http,omitempty"`
 }
 
 // wireJob is the jobs API resource, limited to what apply manages.
 type wireJob struct {
-	ID                     string   `json:"id,omitempty"`
-	Name                   string   `json:"name"`
-	Mode                   string   `json:"mode"`
-	Command                []string `json:"command"`
-	Schedule               string   `json:"schedule"`
-	Timezone               string   `json:"timezone,omitempty"`
-	Enabled                bool     `json:"enabled"`
-	ConcurrencyPolicy      string   `json:"concurrency_policy"`
-	TimeoutSeconds         int      `json:"timeout_seconds"`
-	MaxRetries             int      `json:"max_retries"`
-	RetryBackoffSeconds    int      `json:"retry_backoff_seconds"`
-	CatchUp                string   `json:"catch_up,omitempty"`
-	CatchUpLookbackSeconds int      `json:"catch_up_lookback_seconds"`
-	CPULimitMillis         int      `json:"cpu_limit_millis"`
-	MemoryLimitMB          int      `json:"memory_limit_mb"`
-	WarnAfterSeconds       int      `json:"warn_after_seconds"`
-	Source                 string   `json:"source,omitempty"`
+	ID                     string       `json:"id,omitempty"`
+	Name                   string       `json:"name"`
+	Mode                   string       `json:"mode"`
+	Command                []string     `json:"command"`
+	Schedule               string       `json:"schedule"`
+	Timezone               string       `json:"timezone,omitempty"`
+	Enabled                bool         `json:"enabled"`
+	ConcurrencyPolicy      string       `json:"concurrency_policy"`
+	TimeoutSeconds         int          `json:"timeout_seconds"`
+	MaxRetries             int          `json:"max_retries"`
+	RetryBackoffSeconds    int          `json:"retry_backoff_seconds"`
+	CatchUp                string       `json:"catch_up,omitempty"`
+	CatchUpLookbackSeconds int          `json:"catch_up_lookback_seconds"`
+	CPULimitMillis         int          `json:"cpu_limit_millis"`
+	MemoryLimitMB          int          `json:"memory_limit_mb"`
+	WarnAfterSeconds       int          `json:"warn_after_seconds"`
+	Source                 string       `json:"source,omitempty"`
+	HTTP                   *wireJobHTTP `json:"http,omitempty"`
+}
+
+// wireJobHTTP is the request of an http-mode job as the API returns it.
+type wireJobHTTP struct {
+	Method     string           `json:"method,omitempty"`
+	Path       string           `json:"path"`
+	Body       string           `json:"body,omitempty"`
+	Background bool             `json:"background,omitempty"`
+	Headers    []jobHeaderField `json:"headers,omitempty"`
 }
 
 const (
@@ -130,6 +141,9 @@ func jobsFromSpec(jobs []spec.Job, s *issueSink) map[string]jobFields {
 		if j.Mode == spec.JobModeExec {
 			f.Mode = store.ScheduledTaskModeExec
 		}
+		if j.HTTP != nil {
+			f.Mode, f.HTTP = jobModeHTTP, cronHTTPFromSpec(j.HTTP)
+		}
 		if j.Concurrency != "" {
 			f.Concurrency = j.Concurrency
 		}
@@ -159,6 +173,7 @@ func jobFromWire(w wireJob) jobFields {
 	f := jobFields{Schedule: w.Schedule, Command: w.Command, Timezone: w.Timezone, Mode: w.Mode, Concurrency: w.ConcurrencyPolicy,
 		Enabled: w.Enabled, Timeout: secondsString(w.TimeoutSeconds), Retries: w.MaxRetries, RetryBackoff: secondsString(w.RetryBackoffSeconds),
 		CatchUp: w.CatchUp, CatchUpLookback: secondsString(w.CatchUpLookbackSeconds), CPU: float64(w.CPULimitMillis) / 1000, WarnAfter: secondsString(w.WarnAfterSeconds)}
+	f.HTTP = cronHTTPFromWire(w.HTTP)
 	if f.Timezone == "UTC" {
 		f.Timezone = ""
 	}
@@ -183,6 +198,10 @@ func jobBody(name string, f jobFields) map[string]any {
 	if f.Memory != "" {
 		m, _ := parseMemory(f.Memory)
 		b["memory_limit_mb"] = int(m >> 20)
+	}
+	if f.HTTP != nil {
+		b["command"] = []string{}
+		b["http"] = cronHTTPBody(f.HTTP)
 	}
 	return b
 }

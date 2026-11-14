@@ -35,6 +35,7 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `invalid_name` | A resource name breaks the rule the API enforces: lowercase letters, digits and hyphens, starting with a letter, at most 63 characters (64 for an Environment). | Rename the resource in metadata.name. |
 | `cron_schedule_invalid` | A CronJob schedule is not a valid cron expression. | Fix spec.schedule, for example `0 3 * * *`. |
 | `cron_job_invalid` | A CronJob name, command, timezone, retries or limits break a rule. | Read the issue line for the field and fix it. |
+| `cron_http_invalid` | The http request of a CronJob breaks a path, method or header rule, or is set together with a command. | Read the issue line, keep the path on the app, and give each header a value or a secretRef. |
 | `alert_rule_invalid` | A threshold AlertRule lacks its metric, comparator or threshold. | Set all three, with a comparator of `>`, `<`, `>=` or `<=`. |
 | `approval_pending` | A cloud plan would replace the saved engine plan of a revision awaiting approval. | Approve or reject the named revision first, or plan with supersede=true to retire it. |
 | `plan_superseded` | A later plan replaced the saved engine plan this approval named. | Plan again and request a new approval. |
