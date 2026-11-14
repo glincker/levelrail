@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { LinkGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { RouteErrorFallback } from '../../components/RouteErrorFallback'
 import { NewAppAside } from '../../components/newapp/NewAppAside'
 import { NewAppWizard } from '../../components/newapp/NewAppWizard'
 import {
@@ -24,6 +25,8 @@ export const Route = createFileRoute('/apps/new')({
   validateSearch: (search: Record<string, unknown>): NewAppSearch =>
     stringifySearch(search),
   component: NewAppPage,
+  // A crash in the wizard keeps the app shell; the fallback offers reload and report.
+  errorComponent: RouteErrorFallback,
 })
 
 function NewAppPage() {

@@ -26,6 +26,7 @@ import { SampleAppButton } from '../getStarted/SampleAppButton'
 import { MoreWays } from './MoreWays'
 import { PopularTemplatesRow } from './PopularTemplatesRow'
 import { SectionHeading } from './SectionHeading'
+import { ErrorBoundary } from '../ErrorBoundary'
 import { RepoList } from './RepoList'
 
 const RepoImportFlow = lazy(() =>
@@ -228,23 +229,34 @@ export function SourceStep({
                       <Skeleton className="h-11 w-full" />
                     </div>
                   ) : hasProvider || ctx.urlCandidate ? (
-                    <RepoList
-                      repos={repos}
-                      loading={isLoading}
-                      query={ctx.query}
-                      urlCandidate={ctx.urlCandidate}
-                      hasError={hasError}
-                      refreshing={refresh.isPending}
-                      onPick={(repo) => {
-                        if (!busy) ctx.onPick(sourceFromRepo(repo))
-                      }}
-                      onUseUrl={(u) => {
-                        if (!busy) ctx.onUseUrl(u)
-                      }}
-                      onRefresh={() => {
-                        refresh.mutate()
-                      }}
-                    />
+                    <ErrorBoundary
+                      resetKeys={[repos]}
+                      fallback={() => (
+                        <Alert role="alert">
+                          <AlertDescription>
+                            {t('source.repos.crashed')}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    >
+                      <RepoList
+                        repos={repos}
+                        loading={isLoading}
+                        query={ctx.query}
+                        urlCandidate={ctx.urlCandidate}
+                        hasError={hasError}
+                        refreshing={refresh.isPending}
+                        onPick={(repo) => {
+                          if (!busy) ctx.onPick(sourceFromRepo(repo))
+                        }}
+                        onUseUrl={(u) => {
+                          if (!busy) ctx.onUseUrl(u)
+                        }}
+                        onRefresh={() => {
+                          refresh.mutate()
+                        }}
+                      />
+                    </ErrorBoundary>
                   ) : null
                 }
               />

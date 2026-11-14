@@ -32,7 +32,8 @@
       "emptyTitle": "Aucun dépôt trouvé",
       "emptyBody": "Nous ne voyons encore aucun dépôt dans vos comptes connectés. Actualisez la liste après avoir accordé l'accès, ou collez l'URL d'un dépôt ci-dessus.",
       "failedTitle": "Impossible de lister vos dépôts",
-      "failedBody": "Le fournisseur n'a pas répondu. Actualisez pour réessayer, vérifiez la connexion dans les Paramètres, ou collez l'URL d'un dépôt ci-dessus."
+      "failedBody": "Le fournisseur n'a pas répondu. Actualisez pour réessayer, vérifiez la connexion dans les Paramètres, ou collez l'URL d'un dépôt ci-dessus.",
+      "crashed": "La liste des dépôts n'a pas pu être affichée. Collez plutôt l'URL d'un dépôt ci-dessus."
     },
     "git": {
       "title": "Importer depuis Git",

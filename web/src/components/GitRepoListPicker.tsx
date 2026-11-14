@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import {
-  fromGitRepoItem,
   normalizeRepoUrl,
+  toRepoOptions,
   type NormalizedRepoOption,
 } from '../lib/gitRepoOptions'
 import {
@@ -27,7 +27,12 @@ import {
   resolveAccountFilter,
   writeAccountFilter,
 } from '../lib/gitAccounts'
-import { BrandIcon } from './BrandIcon'
+import { BrandIcon, type BrandIconName } from './BrandIcon'
+
+function accountBrand(provider: GitRepoProvider): BrandIconName {
+  if (provider === 'azure_devops') return 'azure'
+  return provider === 'bitbucket_server' ? 'bitbucket' : provider
+}
 
 const SEARCH_DEBOUNCE_MS = 250
 const MAX_OWNER_CHIPS = 8
@@ -122,8 +127,7 @@ export function GitRepoListPicker({
   const first = pages[0]
   const last = pages[pages.length - 1]
   const options = useMemo(
-    () =>
-      pages.flatMap((p) => p.items.map((i) => fromGitRepoItem(provider, i))),
+    () => pages.flatMap((p) => toRepoOptions(p.items, provider)),
     [pages, provider],
   )
   const labels = {
@@ -258,7 +262,7 @@ export function GitRepoListPicker({
                 active={connection === a.connection_id}
                 icon={
                   <BrandIcon
-                    name={a.provider === 'azure_devops' ? 'azure' : a.provider}
+                    name={accountBrand(a.provider)}
                     className="size-3.5"
                   />
                 }

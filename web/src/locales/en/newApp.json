@@ -32,7 +32,8 @@
       "emptyTitle": "No repositories found",
       "emptyBody": "We can't see any repositories in your connected accounts yet. Refresh the list after granting access, or paste a repository URL above.",
       "failedTitle": "Could not list your repositories",
-      "failedBody": "The provider did not answer. Refresh to try again, check the connection in Settings, or paste a repository URL above."
+      "failedBody": "The provider did not answer. Refresh to try again, check the connection in Settings, or paste a repository URL above.",
+      "crashed": "The repository list could not be shown. Paste a repository URL above instead."
     },
     "git": {
       "title": "Import from Git",

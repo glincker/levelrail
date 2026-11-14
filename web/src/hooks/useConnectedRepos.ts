@@ -2,16 +2,9 @@ import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { gitProvidersQueryOptions } from '../queries/gitProviders'
 import { useGitRepoList } from '../queries/gitRepos'
-import {
-  fromGitRepoItem,
-  type NormalizedRepoOption,
-} from '../lib/gitRepoOptions'
+import { toRepoOptions, type NormalizedRepoOption } from '../lib/gitRepoOptions'
 import type { GitProviderName, GitProviderStatus } from '../types/gitProviders'
-import type {
-  GitRepoConnectionFacet,
-  GitRepoItem,
-  GitRepoProvider,
-} from '../types/gitRepos'
+import type { GitRepoConnectionFacet } from '../types/gitRepos'
 
 // A merged list is paged on the server; the new-app list pulls pages until
 // this many pages are loaded, then leaves the rest to search.
@@ -51,9 +44,7 @@ export function useConnectedRepos(): ConnectedRepos {
   const repos = useMemo(() => {
     const out: NormalizedRepoOption[] = []
     for (const page of list.data?.pages ?? []) {
-      for (const item of page.items) {
-        out.push(fromGitRepoItem(providerOf(item), item))
-      }
+      out.push(...toRepoOptions(page.items))
     }
     return out
   }, [list.data])
@@ -74,8 +65,4 @@ export function useConnectedRepos(): ConnectedRepos {
       (first?.errors?.length ?? 0) > 0 ||
       (first?.connections ?? []).some((c) => c.failed),
   }
-}
-
-function providerOf(item: GitRepoItem): GitRepoProvider {
-  return item.provider ?? 'github'
 }

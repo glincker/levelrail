@@ -32,7 +32,8 @@
       "emptyTitle": "Nenhum repositório encontrado",
       "emptyBody": "Ainda não vemos nenhum repositório nas suas contas conectadas. Atualize a lista depois de conceder acesso, ou cole a URL de um repositório acima.",
       "failedTitle": "Não foi possível listar seus repositórios",
-      "failedBody": "O provedor não respondeu. Atualize para tentar de novo, verifique a conexão em Configurações ou cole a URL de um repositório acima."
+      "failedBody": "O provedor não respondeu. Atualize para tentar de novo, verifique a conexão em Configurações ou cole a URL de um repositório acima.",
+      "crashed": "Não foi possível mostrar a lista de repositórios. Cole a URL de um repositório acima."
     },
     "git": {
       "title": "Importar do Git",
