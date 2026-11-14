@@ -164,3 +164,73 @@ func TestStackBootstrapCloudRefusedLeavesNothing(t *testing.T) {
 		t.Fatalf("non-cloud first apply = %d %+v", code, ok)
 	}
 }
+
+func TestStackReviewedHashFirstApply(t *testing.T) {
+	docs := iacTestDocs + "      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}\n---\nversion: 1\nkind: Environment\nmetadata: {name: staging}\nspec: {project: shop}\n"
+	variants := map[string]map[string]any{
+		"plain":     nil,
+		"secrets":   {"secrets": map[string]string{"DB_PASSWORD": "s3cret"}},
+		"no_deploy": {"no_deploy": true},
+		"both":      {"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret"}},
+		"project":   {"project": "shop"},
+		"vars":      {"vars": map[string]string{"X": "1"}},
+	}
+	for name, extra := range variants {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			var plan stackPlanResponse
+			if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/plan", stackBody(t, docs, extra)), &plan); code != http.StatusOK || plan.Plan == nil {
+				t.Fatalf("plan = %d", code)
+			}
+			applyExtra := map[string]any{"expected_plan_hash": plan.Plan.Hash}
+			for k, v := range extra {
+				applyExtra[k] = v
+			}
+			var out stackApplyResponse
+			code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, docs, applyExtra)), &out)
+			if code != http.StatusOK || out.Revision == nil {
+				t.Fatalf("apply with the reviewed hash = %d %+v", code, out)
+			}
+		})
+	}
+}
+
+func TestStackReviewedHashFirstApplyBesideAnotherStack(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	var first stackApplyResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s1/apply", stackBody(t, iacTestDocs, nil)), &first); code != http.StatusOK {
+		t.Fatalf("first stack = %d", code)
+	}
+	docs := strings.NewReplacer("shop", "shop2", "frontend", "frontend2", "web", "web2", "app.example.com", "app2.example.com").Replace(iacTestDocs)
+	extra := map[string]any{"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret"}}
+	var plan stackPlanResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/plan", stackBody(t, docs, extra)), &plan); code != http.StatusOK || plan.Plan == nil {
+		t.Fatalf("plan = %d", code)
+	}
+	extra["expected_plan_hash"] = plan.Plan.Hash
+	var out stackApplyResponse
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/apply", stackBody(t, docs, extra)), &out)
+	if code != http.StatusOK || out.Revision == nil {
+		t.Fatalf("apply with the reviewed hash = %d %+v", code, out)
+	}
+}
+
+func TestStackReviewedHashFirstApplyWithTokens(t *testing.T) {
+	for name, abilities := range map[string][]string{"root": {AbilityRoot}, "write": {AbilityRead, AbilityWrite}} {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			tok := seedApproverToken(t, db, "tok-"+name, abilities)
+			var plan stackPlanResponse
+			if code := tokenPost(t, rt, tok, "/api/v1/stacks/qa1/plan", stackBody(t, iacTestDocs, map[string]any{"no_deploy": true}), &plan); code != http.StatusOK || plan.Plan == nil {
+				t.Fatalf("plan = %d", code)
+			}
+			var out stackApplyResponse
+			body := stackBody(t, iacTestDocs, map[string]any{"no_deploy": true, "expected_plan_hash": plan.Plan.Hash})
+			if code := tokenPost(t, rt, tok, "/api/v1/stacks/qa1/apply", body, &out); code != http.StatusOK || out.Revision == nil {
+				t.Fatalf("apply = %d %+v", code, out)
+			}
+		})
+	}
+}
