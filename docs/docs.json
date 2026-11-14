@@ -449,6 +449,7 @@
               "iac/templates",
               "iac/how-it-works",
               "iac/ci",
+              "iac/cloud-connect",
               "iac/resources",
               "iac/reference",
               "iac/errors",
