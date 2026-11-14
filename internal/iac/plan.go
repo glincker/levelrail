@@ -27,7 +27,9 @@ type Change struct {
 	Fields   []FieldChange `json:"fields,omitempty"`
 	Kept     []FieldChange `json:"kept,omitempty"`
 	Warnings []string      `json:"warnings,omitempty"`
-	Reason   string        `json:"reason,omitempty"`
+	// Services are display only compose preview rows; the plan hash never reads them.
+	Services []ComposeServiceRow `json:"services,omitempty"`
+	Reason   string              `json:"reason,omitempty"`
 	// Code is the frozen machine code of a failed item; empty otherwise.
 	Code string `json:"code,omitempty"`
 	// DependsOn lists the resources this item reads from, applied first.

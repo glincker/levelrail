@@ -298,12 +298,17 @@ func (b *bufferedResponse) Write(p []byte) (int, error) { return b.body.Write(p)
 
 func (l *loopbackDoer) Do(ctx context.Context, method, path string, body, out any) error {
 	var rdr io.Reader
-	if body != nil {
+	ctype := ""
+	if cb, ok := body.(iac.ComposeBody); ok {
+		// The context value marks an IaC compose deploy; no HTTP caller can set it.
+		rdr, ctype = bytes.NewReader(cb.Data), "application/yaml"
+		ctx = context.WithValue(ctx, iacComposeKey{}, iacComposeInput{env: cb.Env})
+	} else if body != nil {
 		raw, err := json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("encode request body: %w", err)
 		}
-		rdr = bytes.NewReader(raw)
+		rdr, ctype = bytes.NewReader(raw), "application/json"
 	}
 	req, err := http.NewRequestWithContext(ctx, method, path, rdr)
 	if err != nil {
@@ -314,8 +319,8 @@ func (l *loopbackDoer) Do(ctx context.Context, method, path string, body, out an
 			req.Header[h] = v
 		}
 	}
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+	if ctype != "" {
+		req.Header.Set("Content-Type", ctype)
 	}
 	req.RemoteAddr, req.Host, req.TLS = l.orig.RemoteAddr, l.orig.Host, l.orig.TLS
 	rec := &bufferedResponse{header: http.Header{}, status: http.StatusOK}

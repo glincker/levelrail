@@ -54,9 +54,8 @@ func (p *planner) planApp(r *Resource) {
 	if p.deniedItem(r, r.Key()) {
 		return
 	}
-	if r.ComposeDigest != "" {
-		// The executor branch lands later; refusing here keeps a half built plan from creating an empty app.
-		p.failCode(r, CodeUnavailable, "compose Apps are validated but cannot be applied yet")
+	if r.compose != nil {
+		p.planComposeApp(r)
 		return
 	}
 	f := copyFields(r.Fields)

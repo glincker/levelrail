@@ -39,6 +39,9 @@ type fakeCP struct {
 	pinDigest bool
 	writes    []string
 	routes    []fakeRoute
+	// composeRevs and lastCompose stand in for the compose deploy endpoint.
+	composeRevs map[string][]map[string]any
+	lastCompose *ComposeBody
 }
 
 func newFake() *fakeCP {
@@ -73,6 +76,9 @@ func (f *fakeCP) Do(_ context.Context, method, path string, body, out any) error
 		return &StatusError{Status: http.StatusForbidden, Message: "forbidden"}
 	}
 	var b map[string]any
+	if cb, ok := body.(ComposeBody); ok {
+		f.lastCompose, body = &cb, nil
+	}
 	if body != nil {
 		raw, _ := json.Marshal(body)
 		_ = json.Unmarshal(raw, &b)
@@ -166,6 +172,7 @@ func (f *fakeCP) buildRoutes() []fakeRoute {
 	}
 	f.appRoutes()
 	f.extraRoutes()
+	f.composeRoutes()
 	return f.routes
 }
 
