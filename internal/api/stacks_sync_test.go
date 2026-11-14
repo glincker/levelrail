@@ -24,7 +24,7 @@ func TestStackSyncRoutesAuthz(t *testing.T) {
 		rt.Handler().ServeHTTP(rec, authedRequest(t, c, method, path, body))
 		return rec
 	}
-	cfg := `{"repo_url":"https://git.example.invalid/org/infra.git","branch":"main","path":"stacks","enabled":false}`
+	cfg := `{"repo_url":"https://git.example.invalid/org/infra.git","branch":"main","path":"stacks","enabled":false,"apply":false,"prune":false,"deploy":false}`
 	for _, c := range []struct{ method, path, body string }{
 		{http.MethodPut, "/api/v1/stacks/infra/sync", cfg},
 		{http.MethodPost, "/api/v1/stacks/infra/sync/refresh", ""},

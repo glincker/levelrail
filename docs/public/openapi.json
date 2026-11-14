@@ -149226,7 +149226,7 @@
         "x-required-ability": "read"
       },
       "put": {
-        "description": "Set the git sync of a stack: https or ssh repo_url, branch, relative path, credential_ref naming a connected app, interval_seconds, webhook_only, enabled (off by default). Sync only plans. Root or stack admin; credential_ref needs an administrator. Audited.\n\nRequires the `root` ability.",
+        "description": "Set the git sync of a stack: https or ssh repo_url, branch, relative path, credential_ref naming a connected app, interval_seconds, webhook_only, enabled (off by default), and apply, prune and deploy, each required and off unless true; prune and deploy need apply. A sync apply runs the manual apply path on a token scoped to this stack, so require_approval leaves it pending. Root or stack admin; credential_ref needs an administrator. Audited.\n\nRequires the `root` ability.",
         "operationId": "handlePutStackSync",
         "parameters": [
           {
@@ -149306,7 +149306,7 @@
             ]
           }
         ],
-        "summary": "Set the git sync of a stack: https or ssh repo_url, branch, relative path, credential_ref naming a connected app, interval_seconds, webhook_only, enabled (off by default).",
+        "summary": "Set the git sync of a stack: https or ssh repo_url, branch, relative path, credential_ref naming a connected app, interval_seconds, webhook_only, enabled (off by default), and apply, prune and deploy, each required and off unless true; prune and deploy need apply.",
         "tags": [
           "IaC Stacks"
         ],
@@ -149315,7 +149315,7 @@
     },
     "/api/v1/stacks/{name}/sync/refresh": {
       "post": {
-        "description": "Fetch the configured branch and plan it now. Nothing is applied. 409 when sync is off, 429 inside stacks.sync_refresh_min_seconds. Error codes: docs/iac/errors.md.\n\nRequires the `root` ability.",
+        "description": "Fetch the configured branch and plan it now; applies only when the stack sync sets apply. 409 when sync is off, 429 inside stacks.sync_refresh_min_seconds. Error codes: docs/iac/errors.md.\n\nRequires the `root` ability.",
         "operationId": "handleRefreshStackSync",
         "parameters": [
           {
@@ -149395,7 +149395,7 @@
             ]
           }
         ],
-        "summary": "Fetch the configured branch and plan it now.",
+        "summary": "Fetch the configured branch and plan it now; applies only when the stack sync sets apply.",
         "tags": [
           "IaC Stacks"
         ],

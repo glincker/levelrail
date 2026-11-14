@@ -46,3 +46,6 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `compose_too_large` | A compose file, or all compose files together, is over the size cap. | Split the project or raise `iac.compose_max_file_kb` or `iac.compose_max_total_kb`. |
 | `compose_too_many_files` | The request holds more compose files than the cap. | Apply fewer compose Apps at once or raise `iac.compose_max_files`. |
 | `compose_mode_conflict` | An App sets both `spec.compose` and `spec.service`. | Keep one: `spec.compose` for a compose project, `spec.service` for a single service. |
+| `sync_secret_in_repo` | A synced document holds a literal secret value. The status names the file and line, never the value. | Replace the literal with a secretRef, set the value with the secrets API, then rotate the leaked credential. |
+| `sync_disk_low` | Free disk was below stacks.sync_min_free_mb, so the sync fetched nothing. | Free disk on the control plane data volume or lower the setting. |
+| `sync_apply_failed` | A sync apply was refused or failed and the stack was left unchanged. | Run the stack plan on the same commit; check the stack lock, protected apps and the apply setting. |

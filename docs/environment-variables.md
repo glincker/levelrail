@@ -322,6 +322,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_SYNC_MAX_FILE_KB` | [`stacks.sync_max_file_kb`](/runtime-settings#deploys) | `1024` |
 | `APP_STACK_SYNC_MAX_FILES` | [`stacks.sync_max_files`](/runtime-settings#deploys) | `200` |
 | `APP_STACK_SYNC_MAX_REPO_MB` | [`stacks.sync_max_repo_mb`](/runtime-settings#deploys) | `50` |
+| `APP_STACK_SYNC_MIN_FREE_MB` | [`stacks.sync_min_free_mb`](/runtime-settings#deploys) | `2048` |
 | `APP_STACK_SYNC_MIN_INTERVAL_SECONDS` | [`stacks.sync_min_interval_seconds`](/runtime-settings#deploys) | `60` |
 | `APP_STACK_SYNC_REFRESH_MIN_SECONDS` | [`stacks.sync_refresh_min_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_STACK_SYNC_TICK_SECONDS` | [`stacks.sync_tick_seconds`](/runtime-settings#deploys) | `60` |

@@ -82,6 +82,12 @@ const (
 	CodeSyncLimitsExceeded = "sync_limits_exceeded"
 	// CodeSyncPlanFailed means the synced documents could not be planned.
 	CodeSyncPlanFailed = "sync_plan_failed"
+	// CodeSyncSecretInRepo means a synced document holds a literal secret value.
+	CodeSyncSecretInRepo = "sync_secret_in_repo"
+	// CodeSyncDiskLow means free disk was below stacks.sync_min_free_mb, so nothing was fetched.
+	CodeSyncDiskLow = "sync_disk_low"
+	// CodeSyncApplyFailed means a sync apply was refused or failed; the stack is unchanged.
+	CodeSyncApplyFailed = "sync_apply_failed"
 )
 
 // AllCodes lists every frozen code, for docs and guard tests.
@@ -96,4 +102,5 @@ var AllCodes = []string{
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
 	CodeComposeModeConflict,
+	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed,
 }

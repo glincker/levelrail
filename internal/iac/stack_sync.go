@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// StackSync is the opt-in git source of a stack. The sync loop only plans from
-// it; apply, prune and deploy on sync stay separate, explicit flags.
+// StackSync is the opt-in git source of a stack. Apply, prune and deploy on
+// sync are separate flags, all off unless the PUT names each one.
 type StackSync struct {
 	RepoURL string `json:"repo_url"`
 	Branch  string `json:"branch"`
@@ -19,6 +19,9 @@ type StackSync struct {
 	IntervalSeconds int    `json:"interval_seconds,omitempty"`
 	WebhookOnly     bool   `json:"webhook_only,omitempty"`
 	Enabled         bool   `json:"enabled"`
+	Apply           bool   `json:"apply"`
+	Prune           bool   `json:"prune"`
+	Deploy          bool   `json:"deploy"`
 }
 
 // MaxSyncIntervalSeconds bounds a per stack interval to one day.
@@ -46,6 +49,12 @@ func (s StackSync) Validate() (string, error) {
 	}
 	if s.CredentialRef != "" && !syncCredRe.MatchString(s.CredentialRef) {
 		return CodeInvalidRequest, errors.New(`credential_ref must name a stored credential as "app:<name>"`)
+	}
+	if s.Prune && !s.Apply {
+		return CodeInvalidRequest, errors.New("prune needs apply: a sync that does not apply never prunes")
+	}
+	if s.Deploy && !s.Apply {
+		return CodeInvalidRequest, errors.New("deploy needs apply: a sync that does not apply never deploys")
 	}
 	if s.IntervalSeconds < 0 || s.IntervalSeconds > MaxSyncIntervalSeconds {
 		return CodeInvalidRequest, errors.New("interval_seconds must be from 0 to 86400")
@@ -100,4 +109,18 @@ func validSyncURL(raw string) error {
 		return errors.New("repo_url must use https or ssh")
 	}
 	return nil
+}
+
+// secretIssueMarker is the text the build gives a literal that looks like a secret.
+const secretIssueMarker = "looks like a secret;"
+
+// SyncSecretIssue returns the first issue that refused a literal secret, so a
+// sync can report its file and line without the value.
+func SyncSecretIssue(issues []Issue) (Issue, bool) {
+	for _, is := range issues {
+		if strings.Contains(is.Message, secretIssueMarker) {
+			return Issue{File: is.File, Line: is.Line, Code: CodeSyncSecretInRepo}, true
+		}
+	}
+	return Issue{}, false
 }
