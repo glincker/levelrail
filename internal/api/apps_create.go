@@ -59,6 +59,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if !rt.enforceSecretPolicy(r.Context(), w, req.EnvironmentID, createLiteralSecretKeys(req)) {
 		return
 	}
+	credentialID, credOK := rt.resolveCreateRegistryCredential(w, r, req.RegistryCredential)
+	if !credOK {
+		return
+	}
 	autoDomain := rt.attachAppsBaseDomain(r.Context(), &req)
 	if len(req.Secrets) > 0 && rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
@@ -134,6 +138,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			desired.VaultEnv[k] = v.store()
 		}
 	}
+	desired.RegistryCredentialID = credentialID
 	// Before admission: a registry round trip must not hold the port lock.
 	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
 
@@ -274,7 +279,13 @@ func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.Desired
 		return res, nil
 	}
 	tr := deploytrace.NewBuffered()
-	got, err := deploy.ResolveImageTraced(ctx, tr, rt.imageResolver, desired.Image, nil, false, "")
+	var auth *docker.RegistryAuth
+	if desired.RegistryCredentialID != "" {
+		if a, aerr := rt.registryAuthFor(ctx, desired.RegistryCredentialID); aerr == nil {
+			auth = a
+		}
+	}
+	got, err := deploy.ResolveImageTraced(ctx, tr, rt.imageResolver, desired.Image, auth, false, "")
 	if err != nil {
 		rt.logger.Warn("api: create app: resolve image failed, deploying it unresolved", slog.String("error", err.Error()), slog.String("name", desired.Name))
 		return res, tr
@@ -285,4 +296,21 @@ func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.Desired
 		desired.ImageID, desired.ImageIDRef = got.LocalID, got.Image
 	}
 	return got, tr
+}
+
+// resolveCreateRegistryCredential maps the credential name to its id; an unknown name fails instead of pulling anonymously.
+func (rt *Router) resolveCreateRegistryCredential(w http.ResponseWriter, r *http.Request, name string) (string, bool) {
+	if name == "" {
+		return "", true
+	}
+	cred, err := rt.registryCredentials.GetRegistryCredentialByName(r.Context(), name)
+	if errors.Is(err, store.ErrRegistryCredentialNotFound) {
+		writeCodedError(w, http.StatusBadRequest, "registry_credential_not_found", fmt.Sprintf("registry credential %q does not exist; create it with registry-credentials create first", name))
+		return "", false
+	}
+	if err != nil {
+		rt.internalError(w, "api: create app: look up registry credential failed", err, slog.String("registry_credential", name))
+		return "", false
+	}
+	return cred.ID, true
 }
