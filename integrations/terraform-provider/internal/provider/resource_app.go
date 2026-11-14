@@ -34,6 +34,15 @@ type appModel struct {
 	ReadinessPath  types.String            `tfsdk:"readiness_path"`
 	LivenessPath   types.String            `tfsdk:"liveness_path"`
 	PublishedPorts []publishedPortModel    `tfsdk:"published_ports"`
+
+	MemoryMB      types.Float64  `tfsdk:"memory_mb"`
+	CPUs          types.Float64  `tfsdk:"cpus"`
+	ReadinessExec []types.String `tfsdk:"readiness_exec"`
+	ReadinessTCP  types.Bool     `tfsdk:"readiness_tcp"`
+	LivenessExec  []types.String `tfsdk:"liveness_exec"`
+	LivenessTCP   types.Bool     `tfsdk:"liveness_tcp"`
+	Volumes       []volumeModel  `tfsdk:"volumes"`
+	Tags          types.Set      `tfsdk:"tags"`
 }
 
 type publishedPortModel struct {
@@ -86,19 +95,46 @@ func (r *appResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				ElementType: types.StringType,
 				Description: "Container labels. Unset leaves live labels untouched.",
 			},
+			"memory_mb": schema.Float64Attribute{
+				Optional:    true,
+				Description: "Memory limit in MiB, for example 256. 0 means no limit. Preferred over memory_bytes; set only one of them.",
+			},
+			"cpus": schema.Float64Attribute{
+				Optional:    true,
+				Description: "CPU limit as a number of CPUs, fractions allowed, for example 0.5. 0 means no limit. Preferred over nano_cpus; set only one of them.",
+			},
 			"memory_bytes": schema.Int64Attribute{
 				Optional: true, Computed: true,
-				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
-				Description:   "Memory limit in bytes. 0 means no limit.",
+				DeprecationMessage: "Use memory_mb instead.",
+				PlanModifiers:      []planmodifier.Int64{unitFollows{sibling: "memory_mb"}},
+				Description:        "Memory limit in bytes. 0 means no limit.",
 			},
 			"nano_cpus": schema.Int64Attribute{
 				Optional: true, Computed: true,
-				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
-				Description:   "CPU limit in billionths of a CPU (1000000000 is one CPU). 0 means no limit.",
+				DeprecationMessage: "Use cpus instead.",
+				PlanModifiers:      []planmodifier.Int64{unitFollows{sibling: "cpus"}},
+				Description:        "CPU limit in billionths of a CPU (1000000000 is one CPU). 0 means no limit.",
 			},
 			"restart":        schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: keep, Description: "Restart policy: no or on-failure[:N]. Empty keeps the app running."},
-			"readiness_path": schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: keep, Description: "HTTP path of the readiness probe. Empty means no probe."},
-			"liveness_path":  schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: keep, Description: "HTTP path of the liveness probe. Empty means no probe."},
+			"readiness_path": schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: probeKeep("readiness"), Description: "HTTP path of the readiness probe. Empty means no probe. Not combined with readiness_exec or readiness_tcp."},
+			"liveness_path":  schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: probeKeep("liveness"), Description: "HTTP path of the liveness probe. Empty means no probe. Not combined with liveness_exec or liveness_tcp."},
+			"readiness_exec": schema.ListAttribute{Optional: true, ElementType: types.StringType, Description: "Readiness probe as a command run inside the container, healthy on exit 0. Unset leaves the live probe untouched."},
+			"readiness_tcp":  schema.BoolAttribute{Optional: true, Description: "Readiness probe that only opens a TCP connection to the app port. Unset leaves the live probe untouched."},
+			"liveness_exec":  schema.ListAttribute{Optional: true, ElementType: types.StringType, Description: "Liveness probe as a command run inside the container, healthy on exit 0. Unset leaves the live probe untouched."},
+			"liveness_tcp":   schema.BoolAttribute{Optional: true, Description: "Liveness probe that only opens a TCP connection to the app port. Unset leaves the live probe untouched."},
+			"volumes": schema.ListNestedAttribute{
+				Optional:    true,
+				Description: "Named volumes mounted into the container. Unset leaves live volumes untouched; an empty list detaches them all.",
+				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+					"name":           schema.StringAttribute{Required: true, Description: "Volume name: lowercase letters, digits and hyphens, starting with a letter."},
+					"container_path": schema.StringAttribute{Required: true, Description: "Absolute mount path inside the container."},
+				}},
+			},
+			"tags": schema.SetAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "Tags on the app, lowercase, as key or key:value. Unset leaves live tags untouched; an empty set removes them all.",
+			},
 			"published_ports": schema.ListNestedAttribute{
 				Optional:    true,
 				Description: "Extra host ports published for the app. Unset leaves live ports untouched.",
@@ -194,19 +230,19 @@ func (m appModel) collectionsBody(body map[string]any) {
 		body["published_ports"] = ports
 	}
 	known := func(v attr.Value) bool { return !v.IsNull() && !v.IsUnknown() }
-	if known(m.MemoryBytes) {
+	if known(m.MemoryMB) {
+		subMap(body, "resources")["memory_bytes"] = mbToBytes(m.MemoryMB.ValueFloat64())
+	} else if known(m.MemoryBytes) {
 		subMap(body, "resources")["memory_bytes"] = m.MemoryBytes.ValueInt64()
 	}
-	if known(m.NanoCPUs) {
+	if known(m.CPUs) {
+		subMap(body, "resources")["nano_cpus"] = cpusToNano(m.CPUs.ValueFloat64())
+	} else if known(m.NanoCPUs) {
 		subMap(body, "resources")["nano_cpus"] = m.NanoCPUs.ValueInt64()
 	}
+	m.probesBody(body)
 	if known(m.Restart) {
 		subMap(body, "health")["restart"] = m.Restart.ValueString()
-	}
-	for key, v := range map[string]types.String{"readiness": m.ReadinessPath, "liveness": m.LivenessPath} {
-		if known(v) && v.ValueString() != "" {
-			subMap(subMap(body, "health"), key)["path"] = v.ValueString()
-		}
 	}
 }
 
@@ -239,6 +275,10 @@ func (r *appResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 	if err := r.client.do(ctx, http.MethodPost, "/api/v1/apps", body, nil); err != nil {
 		resp.Diagnostics.AddError("Create app failed", err.Error())
+		return
+	}
+	if err := r.syncExtras(ctx, plan); err != nil {
+		resp.Diagnostics.AddError("Update app volumes or tags failed", err.Error())
 		return
 	}
 	live, _, err := r.client.getApp(ctx, plan.Name.ValueString())
@@ -294,6 +334,10 @@ func (r *appResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			return
 		}
 	}
+	if err := r.syncExtras(ctx, plan); err != nil {
+		resp.Diagnostics.AddError("Update app volumes or tags failed", err.Error())
+		return
+	}
 	live, _, err := r.client.getApp(ctx, plan.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Read app failed", err.Error())
@@ -324,14 +368,11 @@ func (r *appResource) ImportState(ctx context.Context, req resource.ImportStateR
 func (m *appModel) collectionsFromWire(w wireApp) {
 	m.MemoryBytes = types.Int64Value(w.Resources.MemoryBytes)
 	m.NanoCPUs = types.Int64Value(w.Resources.NanoCPUs)
+	m.unitsFromWire(w)
+	m.probesFromWire(w)
+	m.Volumes = volumesFromWire(m.Volumes, w)
+	m.Tags = tagsFromWire(m.Tags, w)
 	m.Restart = types.StringValue(w.Health.Restart)
-	m.ReadinessPath, m.LivenessPath = types.StringValue(""), types.StringValue("")
-	if w.Health.Readiness != nil {
-		m.ReadinessPath = types.StringValue(w.Health.Readiness.Path)
-	}
-	if w.Health.Liveness != nil {
-		m.LivenessPath = types.StringValue(w.Health.Liveness.Path)
-	}
 	if m.Command != nil {
 		m.Command = make([]types.String, 0, len(w.Command))
 		for _, c := range w.Command {

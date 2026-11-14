@@ -81,7 +81,7 @@ Gap analysis of what each resource exposes against what the REST API and the IaC
 | --- | --- | --- |
 | `levelrail_project` | name | shared env (use `levelrail_environment_variables`) |
 | `levelrail_environment` | project, name, protected | environment env (use `levelrail_environment_variables`) |
-| `levelrail_app` | image, port, replicas, strategy, bind address, env, project, command, labels, memory and CPU limits, restart policy, readiness and liveness paths, published ports | volumes, bind mounts, hooks, exec and TCP probes and probe timings, egress, GPU, tolerations, affinity, tags, database env references, files |
+| `levelrail_app` | image, port, replicas, strategy, bind address, env, project, command, labels, memory (`memory_mb`) and CPU (`cpus`) limits, restart policy, readiness and liveness probes (path, exec or TCP), published ports, named volumes, tags | bind mounts, hooks, probe timings, egress, GPU, tolerations, affinity, database env references, files (they can hold secrets and have no stable read-back of their content) |
 | `levelrail_domain` | app, host | TLS, redirects, headers, WAF, caching, auth gates (not in the IaC Domain schema yet) |
 | `levelrail_database` | engine, version, project, pooler settings | backup schedules, placement, public access (not in the IaC Database schema yet), users |
 | `levelrail_environment_variables` | keys at a project or environment scope | vault-backed variables |
@@ -93,7 +93,9 @@ Gap analysis of what each resource exposes against what the REST API and the IaC
 | `levelrail_node_labels` | labels and taints of an existing node | creating or deleting nodes, drains, region, workloads |
 | Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets` | listings | filters |
 
-Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists and maps on `levelrail_app` (command, labels, published ports, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
+Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists, sets and maps on `levelrail_app` (command, labels, published ports, volumes, tags, exec probes, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
+
+Memory and CPU use friendly units: `memory_mb` (MiB) and `cpus` (fractions allowed, `0.5` is half a CPU). The older `memory_bytes` and `nano_cpus` still work and are deprecated; set only one of each pair. Volumes are applied through the volumes route and tags are lowercase `key` or `key:value`.
 
 ## Complete example
 

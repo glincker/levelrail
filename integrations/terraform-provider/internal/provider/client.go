@@ -248,20 +248,27 @@ type wireApp struct {
 		NanoCPUs    int64 `json:"nano_cpus"`
 	} `json:"resources"`
 	Health struct {
-		Restart   string `json:"restart"`
-		Readiness *struct {
-			Path string `json:"path"`
-		} `json:"readiness"`
-		Liveness *struct {
-			Path string `json:"path"`
-		} `json:"liveness"`
+		Restart   string     `json:"restart"`
+		Readiness *wireProbe `json:"readiness"`
+		Liveness  *wireProbe `json:"liveness"`
 	} `json:"health"`
+	Volumes []struct {
+		Name          string `json:"name"`
+		ContainerPath string `json:"container_path"`
+	} `json:"volumes"`
+	Tags           []string `json:"tags"`
 	PublishedPorts []struct {
 		ContainerPort int64  `json:"container_port"`
 		HostPort      int64  `json:"host_port"`
 		Protocol      string `json:"protocol"`
 		Bind          string `json:"bind"`
 	} `json:"published_ports"`
+}
+
+type wireProbe struct {
+	Path string   `json:"path"`
+	Exec []string `json:"exec"`
+	TCP  bool     `json:"tcp"`
 }
 
 type wireNode struct {

@@ -25,12 +25,19 @@ resource "levelrail_app" "web" {
   strategy   = "rolling"
   project_id = levelrail_project.shop.id
 
-  memory_bytes = 268435456
-  nano_cpus    = 500000000
-  restart      = "on-failure:3"
+  memory_mb = 256
+  cpus      = 0.5
+  restart   = "on-failure:3"
 
   readiness_path = "/"
-  liveness_path  = "/"
+  liveness_tcp   = true
+
+  volumes = [{
+    name           = "cache"
+    container_path = "/var/cache/nginx"
+  }]
+
+  tags = ["team:shop"]
 
   labels = {
     team = "shop"
