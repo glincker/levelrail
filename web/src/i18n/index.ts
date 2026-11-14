@@ -31,6 +31,7 @@ export const NAMESPACES = [
   'alertSetup',
   'environments',
   'stacks',
+  'iacForm',
   'statusPage',
   'migration',
   'migrate',

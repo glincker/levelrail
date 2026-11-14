@@ -32,6 +32,7 @@ import type logBudgets from '../locales/en/logBudgets.json'
 import type alertSetup from '../locales/en/alertSetup.json'
 import type environments from '../locales/en/environments.json'
 import type stacks from '../locales/en/stacks.json'
+import type iacForm from '../locales/en/iacForm.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
 import type uiShared from '../locales/en/uiShared.json'
@@ -182,6 +183,7 @@ declare module 'i18next' {
       alertSetup: typeof alertSetup
       environments: typeof environments
       stacks: typeof stacks
+      iacForm: typeof iacForm
       statusPage: typeof statusPage
       assets: typeof assets
       uiShared: typeof uiShared
