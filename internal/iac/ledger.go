@@ -199,7 +199,7 @@ func parentApp(r *Resource) string {
 		return stringField(r.Fields, "app")
 	case KindLoadBalancer:
 		return r.Name
-	case KindPipeline, KindAlertRule:
+	case KindPipeline, KindAlertRule, KindCronJob:
 		return r.Scope
 	}
 	return ""
@@ -241,6 +241,9 @@ func (p *planner) liveExists(r *Resource) bool {
 		return ok
 	case KindAlertRule:
 		_, ok := st.alerts[r.Scope][r.Name]
+		return ok
+	case KindCronJob:
+		_, ok := st.liveJobs(r.Scope)[r.Name]
 		return ok
 	}
 	return false
@@ -341,7 +344,7 @@ func splitLedgerKey(e LedgerEntry) (Kind, string, string, bool) {
 		return k, "", "", false
 	}
 	switch k {
-	case KindEnvironment, KindPipeline, KindAlertRule:
+	case KindEnvironment, KindPipeline, KindAlertRule, KindCronJob:
 		scope, name, ok := strings.Cut(rest, "/")
 		return k, scope, name, ok && scope != "" && name != ""
 	}
@@ -377,7 +380,7 @@ func (l *Ledger) ledgerApps(res []*Resource, apps map[string]bool) {
 		switch kind {
 		case KindApp, KindLoadBalancer:
 			apps[name] = true
-		case KindPipeline, KindAlertRule:
+		case KindPipeline, KindAlertRule, KindCronJob:
 			apps[scope] = true
 		case KindDomain:
 			if e.LiveID != "" {
@@ -409,6 +412,8 @@ func (l loader) loadLedger(ctx context.Context, lg *Ledger, res []*Resource) err
 			err = l.pipelinesOf(ctx, scope)
 		case KindAlertRule:
 			err = l.alertsOf(ctx, scope)
+		case KindCronJob:
+			err = l.jobsOf(ctx, scope)
 		}
 		if err != nil {
 			return err
@@ -509,6 +514,8 @@ func pruneReadKey(kind Kind, scope, name, liveID string) string {
 		return "pipelines/" + scope
 	case KindAlertRule:
 		return "alerts/" + scope
+	case KindCronJob:
+		return "jobs/" + scope
 	case KindLoadBalancer:
 		return resourceKey(KindLoadBalancer, "", name)
 	case KindDomain:
@@ -535,6 +542,9 @@ func (p *planner) pruneExec(kind Kind, scope, name, liveID string) (func(ctx con
 	case KindAlertRule:
 		a, ok := st.alerts[scope][name]
 		return del("/api/v1/apps/" + esc(scope) + "/alerts/" + esc(a.ID)), ok
+	case KindCronJob:
+		j, ok := st.liveJobs(scope)[name]
+		return del("/api/v1/apps/" + esc(scope) + "/jobs/" + esc(j.ID)), ok && j.Source != jobSourceSpec
 	case KindEnvironment:
 		e, ok := st.envs[envKey(scope, name)]
 		return del("/api/v1/environments/" + esc(e.ID)), ok

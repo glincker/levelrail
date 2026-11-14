@@ -160,7 +160,7 @@ func referencedApps(res []*Resource) map[string]bool {
 			if a, _ := r.Fields["app"].(string); a != "" {
 				out[a] = true
 			}
-		case KindPipeline, KindAlertRule:
+		case KindPipeline, KindAlertRule, KindCronJob:
 			out[r.Scope] = true
 		}
 	}
@@ -371,6 +371,8 @@ func (l loader) scopedOne(ctx context.Context, r *Resource, loadEnvs func(string
 		return l.pipelinesOf(ctx, r.Scope)
 	case KindAlertRule:
 		return l.alertsOf(ctx, r.Scope)
+	case KindCronJob:
+		return l.jobsOf(ctx, r.Scope)
 	}
 	return nil
 }

@@ -694,6 +694,102 @@
       },
       "type": "object"
     },
+    "cronJobSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "description": "Name of the app the job belongs to.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "catchUp": {
+          "description": "What to do about runs missed while down.",
+          "enum": [
+            "skip",
+            "run-once"
+          ]
+        },
+        "catchUpLookback": {
+          "description": "How far back missed runs are considered.",
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "command": {
+          "description": "Command to run, as an argument list.",
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "concurrency": {
+          "description": "Overlap policy when a run is still going.",
+          "enum": [
+            "allow",
+            "forbid",
+            "replace"
+          ]
+        },
+        "cpu": {
+          "description": "CPU limit for the job container.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "enabled": {
+          "description": "Whether the job is scheduled.",
+          "type": "boolean"
+        },
+        "memory": {
+          "description": "Memory limit for the job container, such as 512Mi.",
+          "pattern": "^[0-9]+(Mi|Gi)$",
+          "type": "string"
+        },
+        "mode": {
+          "description": "fresh starts a new container from the app image; exec runs inside the running one.",
+          "enum": [
+            "fresh",
+            "exec"
+          ]
+        },
+        "retries": {
+          "description": "Retries after a failed run.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "retryBackoff": {
+          "description": "Wait between retries.",
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "schedule": {
+          "description": "Cron expression for when the job runs.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "timeout": {
+          "description": "Maximum run time before the job is stopped.",
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "timezone": {
+          "description": "IANA time zone the schedule is read in. Defaults to UTC.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "warnAfter": {
+          "description": "Run time after which a warning is raised.",
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app",
+        "schedule",
+        "command"
+      ],
+      "type": "object"
+    },
     "database": {
       "additionalProperties": false,
       "properties": {
@@ -2777,6 +2873,28 @@
           "spec"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "CronJob"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/cronJobSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
     }
   ],
   "description": "One document of a multi-document resource file read by apply. The $defs of the app.yaml schema are merged in unchanged, so a service under App.spec.service follows exactly the app.yaml service rules.",
@@ -2797,7 +2915,8 @@
         "Domain",
         "LoadBalancer",
         "Pipeline",
-        "AlertRule"
+        "AlertRule",
+        "CronJob"
       ]
     },
     "metadata": {
@@ -2824,6 +2943,7 @@
     "CloudBucket": "beta",
     "CloudInstance": "beta",
     "CloudNetwork": "beta",
+    "CronJob": "beta",
     "Database": "stable",
     "Domain": "stable",
     "Environment": "stable",

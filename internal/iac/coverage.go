@@ -75,6 +75,9 @@ var coverageMatrix = []CoverageRow{
 	{Kind: KindLoadBalancer, Feature: "backends and balancing (beta)", Status: CoverageInFiles},
 	{Kind: KindPipeline, Feature: "pipeline definition (beta)", Status: CoverageInFiles},
 	{Kind: KindAlertRule, Feature: "threshold rules (beta)", Status: CoverageInFiles},
+	{Kind: KindCronJob, Feature: "scheduled commands of an app: schedule, timezone, retries, catch-up, limits (beta)", Status: CoverageInFiles},
+	{Kind: KindCronJob, Feature: "http jobs", Status: CoverageNotYet, Code: CodeSchemaUnknownField, Reason: unknownFn,
+		Probe: "version: 1\nkind: CronJob\nmetadata: {name: tick}\nspec: {app: web, schedule: \"*/5 * * * *\", http: {path: /tick}}\n"},
 }
 
 // CoverageMatrix returns a copy of the matrix, ordered by kind then row.

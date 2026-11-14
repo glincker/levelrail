@@ -8,12 +8,12 @@
   "x-stability": {
     "Project": "stable", "Environment": "stable", "Tag": "stable", "Node": "stable", "Setting": "stable",
     "Database": "stable", "App": "stable", "Domain": "stable",
-    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta",
+    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta", "CronJob": "beta",
     "CloudAccount": "beta", "CloudNetwork": "beta", "CloudInstance": "beta", "CloudBucket": "beta"
   },
   "properties": {
     "version": { "const": 1 },
-    "kind": { "enum": ["Project", "Environment", "Tag", "CloudAccount", "CloudNetwork", "CloudInstance", "CloudBucket", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
+    "kind": { "enum": ["Project", "Environment", "Tag", "CloudAccount", "CloudNetwork", "CloudInstance", "CloudBucket", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule", "CronJob"] },
     "metadata": { "$ref": "#/$defs/metadata" },
     "spec": { "type": "object" }
   },
@@ -33,7 +33,8 @@
     { "if": { "properties": { "kind": { "const": "Domain" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/domainSpec" } } } },
     { "if": { "properties": { "kind": { "const": "LoadBalancer" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/loadbalancer" } } } },
     { "if": { "properties": { "kind": { "const": "Pipeline" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/pipelineSpec" } } } },
-    { "if": { "properties": { "kind": { "const": "AlertRule" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/alertRuleSpec" } } } }
+    { "if": { "properties": { "kind": { "const": "AlertRule" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/alertRuleSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "CronJob" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/cronJobSpec" } } } }
   ],
   "$defs": {
     "metadata": {
@@ -256,6 +257,28 @@
         "app": { "description": "Name of the app the pipeline belongs to.", "type": "string", "minLength": 1 },
         "yaml": { "description": "Pipeline definition as YAML text.", "type": "string", "minLength": 1 },
         "enabled": { "description": "Whether the pipeline runs.", "type": "boolean" }
+      }
+    },
+    "cronJobSpec": {
+      "type": "object",
+      "required": ["app", "schedule", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "app": { "description": "Name of the app the job belongs to.", "type": "string", "minLength": 1 },
+        "schedule": { "description": "Cron expression for when the job runs.", "type": "string", "minLength": 1 },
+        "command": { "description": "Command to run, as an argument list.", "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "timezone": { "description": "IANA time zone the schedule is read in. Defaults to UTC.", "type": "string", "minLength": 1 },
+        "mode": { "description": "fresh starts a new container from the app image; exec runs inside the running one.", "enum": ["fresh", "exec"] },
+        "concurrency": { "description": "Overlap policy when a run is still going.", "enum": ["allow", "forbid", "replace"] },
+        "timeout": { "description": "Maximum run time before the job is stopped.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "retries": { "description": "Retries after a failed run.", "type": "integer", "minimum": 0 },
+        "retryBackoff": { "description": "Wait between retries.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "catchUp": { "description": "What to do about runs missed while down.", "enum": ["skip", "run-once"] },
+        "catchUpLookback": { "description": "How far back missed runs are considered.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "cpu": { "description": "CPU limit for the job container.", "type": "number", "exclusiveMinimum": 0 },
+        "memory": { "description": "Memory limit for the job container, such as 512Mi.", "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "warnAfter": { "description": "Run time after which a warning is raised.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "enabled": { "description": "Whether the job is scheduled.", "type": "boolean" }
       }
     },
     "alertRuleSpec": {

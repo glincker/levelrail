@@ -247,6 +247,8 @@ func (p *planner) planResource(r *Resource) {
 		p.planPipeline(r)
 	case KindAlertRule:
 		p.planAlert(r)
+	case KindCronJob:
+		p.planCron(r)
 	case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
 		p.planCloud(r)
 	}

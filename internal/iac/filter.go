@@ -33,7 +33,7 @@ func FilterProject(docs []*Document, project string) []*Document {
 			keep = d.Name == project
 		case KindEnvironment, KindDatabase, KindApp:
 			keep = specString(d, "project") == project
-		case KindDomain, KindPipeline, KindAlertRule:
+		case KindDomain, KindPipeline, KindAlertRule, KindCronJob:
 			keep = apps[specString(d, "app")]
 		case KindLoadBalancer:
 			keep = apps[d.Name]

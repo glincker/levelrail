@@ -292,6 +292,8 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 		return buildPipeline(d, s)
 	case KindAlertRule:
 		return buildAlert(d, s)
+	case KindCronJob:
+		return buildCron(d, s)
 	}
 	return r
 }
@@ -413,6 +415,16 @@ func buildAlert(d *Document, s *issueSink) *Resource {
 		Enabled               *bool    `yaml:"enabled"`
 	}
 	decodeSpec(d, &sp, s)
+	if sp.Type == "threshold" {
+		switch {
+		case sp.Metric == "":
+			s.atCode(CodeAlertRuleInvalid, "spec.metric", "a threshold rule needs a metric")
+		case sp.Comparator != ">" && sp.Comparator != "<" && sp.Comparator != ">=" && sp.Comparator != "<=":
+			s.atCode(CodeAlertRuleInvalid, "spec.comparator", "comparator %q must be one of >, <, >= or <=", sp.Comparator)
+		case sp.Threshold == nil:
+			s.atCode(CodeAlertRuleInvalid, "spec.threshold", "a threshold rule needs a threshold value")
+		}
+	}
 	f := map[string]any{"type": sp.Type, "enabled": sp.Enabled == nil || *sp.Enabled}
 	putIf(f, "metric", sp.Metric)
 	putIf(f, "comparator", sp.Comparator)

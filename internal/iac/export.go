@@ -385,6 +385,20 @@ func (e *exporter) appExtras(ctx context.Context, l loader, name string) error {
 		f["app"] = name
 		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindAlertRule, Metadata: outMeta{Name: an}, Spec: f})
 	}
+	return e.cronJobs(ctx, l, name)
+}
+
+func (e *exporter) cronJobs(ctx context.Context, l loader, app string) error {
+	if err := l.jobsOf(ctx, app); err != nil {
+		return err
+	}
+	for _, jn := range sortedKeys(e.st.liveJobs(app)) {
+		j := e.st.liveJobs(app)[jn]
+		if j.Source == jobSourceSpec {
+			continue
+		}
+		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindCronJob, Metadata: outMeta{Name: jn}, Spec: cronSpecOut(app, jobFromWire(j))})
+	}
 	return nil
 }
 

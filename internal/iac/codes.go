@@ -44,6 +44,12 @@ const (
 	CodeInvalidDocument          = "invalid_document"
 	// CodeInvalidName means a resource name breaks the rule the API enforces at creation.
 	CodeInvalidName = "invalid_name"
+	// CodeCronScheduleInvalid means a CronJob schedule is not a valid cron expression.
+	CodeCronScheduleInvalid = "cron_schedule_invalid"
+	// CodeCronJobInvalid means a CronJob breaks a name, command, timezone or limit rule.
+	CodeCronJobInvalid = "cron_job_invalid"
+	// CodeAlertRuleInvalid means an AlertRule lacks the fields its type needs.
+	CodeAlertRuleInvalid = "alert_rule_invalid"
 )
 
 // Compose reference codes (ADR 081).
@@ -112,6 +118,7 @@ var AllCodes = []string{
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument, CodeInvalidName,
+	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeAlertRuleInvalid,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
