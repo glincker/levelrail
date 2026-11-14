@@ -56,6 +56,16 @@ const (
 	CodeComposeTooManyFiles = "compose_too_many_files"
 	// CodeComposeModeConflict means an App sets both spec.compose and spec.service.
 	CodeComposeModeConflict = "compose_mode_conflict"
+	// CodeComposeUnsupportedKey means a compose file uses a key strict mode refuses, such as build or env_file.
+	CodeComposeUnsupportedKey = "compose_unsupported_key"
+	// CodeComposeRejected means a compose file breaks a strict guard rule, such as privileged or a host bind.
+	CodeComposeRejected = "compose_rejected"
+	// CodeComposeSecretLiteral means a compose file holds what looks like a literal secret.
+	CodeComposeSecretLiteral = "compose_secret_literal"
+	// CodeComposeVarMissing means a compose ${VAR} is not declared in spec.compose.env.
+	CodeComposeVarMissing = "compose_var_missing"
+	// CodeComposeNoDeployUnsupported means no_deploy was asked for a compose App, which deploys on save.
+	CodeComposeNoDeployUnsupported = "compose_no_deploy_unsupported"
 )
 
 // Async cloud plan job and approval race codes.
@@ -101,6 +111,7 @@ var AllCodes = []string{
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
-	CodeComposeModeConflict,
+	CodeComposeModeConflict, CodeComposeUnsupportedKey, CodeComposeRejected, CodeComposeSecretLiteral,
+	CodeComposeVarMissing, CodeComposeNoDeployUnsupported,
 	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed,
 }

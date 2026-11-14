@@ -3,6 +3,7 @@ package iac
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -10,6 +11,8 @@ import (
 	"sync/atomic"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/GLINCKER/levelrail/internal/compose"
 )
 
 // ComposeLimits are the live gate and caps for compose references.
@@ -196,7 +199,29 @@ func buildComposeApp(d *Document, cn *yaml.Node, hasService bool, project, envir
 	if len(s.issues) > 0 {
 		return nil
 	}
+	declared := map[string]string{}
+	for k := range env {
+		declared[k] = "set"
+	}
+	for _, k := range secrets {
+		declared[k] = "set"
+	}
+	for k := range refs {
+		declared[k] = "set"
+	}
+	cf, ok := strictCompose(data, clean, declared, s)
+	if !ok {
+		return nil
+	}
 	profiles := sortedUnique(cs.Profiles)
+	images := map[string]string{}
+	if _, err := cf.ApplyProfiles(profiles); err != nil {
+		s.atCode(CodeComposeRejected, "spec.compose.profiles", "the profiles do not fit the compose file: %v", err)
+		return nil
+	}
+	for name, svc := range cf.Services {
+		images[name] = svc.Image
+	}
 	names := make([]string, 0, len(env)+len(secrets)+len(refs))
 	for k := range env {
 		names = append(names, "l:"+k)
@@ -230,5 +255,78 @@ func buildComposeApp(d *Document, cn *yaml.Node, hasService bool, project, envir
 	if len(env) > 0 {
 		f["env"] = toMap(env)
 	}
-	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: f, SecretRefs: sortedUnique(secrets), ExistingSecrets: sortedUnique(existing), ComposeDigest: digest}
+	in := &composeInputs{path: clean, profiles: profiles, names: names, env: env, indirect: len(refs) > 0, images: images}
+	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: f, SecretRefs: sortedUnique(secrets), ExistingSecrets: sortedUnique(existing), ComposeDigest: digest, compose: in}
+}
+
+// composeInputs are the parts of a compose App the planner and executor reuse.
+type composeInputs struct {
+	path     string
+	profiles []string
+	names    []string
+	env      map[string]string
+	indirect bool
+	images   map[string]string
+}
+
+// ComposeRefsEnabled reports the live iac.compose_refs gate.
+func ComposeRefsEnabled() bool { return composeLimits().Enabled }
+
+var strictCodes = map[string]string{
+	compose.CodeStrictTooLarge:       CodeComposeTooLarge,
+	compose.CodeStrictUnsupportedKey: CodeComposeUnsupportedKey,
+	compose.CodeStrictRejected:       CodeComposeRejected,
+	compose.CodeStrictSecretLiteral:  CodeComposeSecretLiteral,
+	compose.CodeStrictVarMissing:     CodeComposeVarMissing,
+}
+
+// StrictComposeCheck runs the strict parser, the secret literal scan and the
+// declared variable check; errors carry codes, names and lines, never values.
+func StrictComposeCheck(data []byte, file string, declared map[string]string) (*compose.File, error) {
+	lim := compose.LoadStrictLimits()
+	f, err := compose.ParseStrict(data, lim)
+	if err != nil {
+		return nil, err
+	}
+	if err := compose.ScanSecretLiterals(data, file, lim, LooksSecret); err != nil {
+		return nil, err
+	}
+	if err := compose.CheckDeclaredVars(data, file, lim, declared); err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+// ComposeStrictIssues turns a strict check error into coded issues. An error
+// that is not a strict refusal gets a fixed message, since parser text can quote content.
+func ComposeStrictIssues(file string, err error) []Issue {
+	var list compose.StrictErrors
+	var one *compose.StrictError
+	switch {
+	case err == nil:
+		return nil
+	case errors.As(err, &list):
+	case errors.As(err, &one):
+		list = compose.StrictErrors{one}
+	default:
+		return []Issue{{File: file, Code: CodeComposeRejected, Message: "the compose file could not be parsed as YAML"}}
+	}
+	out := make([]Issue, 0, len(list))
+	for _, e := range list {
+		code := strictCodes[e.Code]
+		if code == "" {
+			code = CodeComposeRejected
+		}
+		out = append(out, Issue{File: file, Line: e.Line, Path: "spec.compose.path", Code: code, Message: e.Error()})
+	}
+	return out
+}
+
+func strictCompose(data []byte, file string, declared map[string]string, s *issueSink) (*compose.File, bool) {
+	f, err := StrictComposeCheck(data, file, declared)
+	if err != nil {
+		s.issues = append(s.issues, ComposeStrictIssues(file, err)...)
+		return nil, false
+	}
+	return f, true
 }

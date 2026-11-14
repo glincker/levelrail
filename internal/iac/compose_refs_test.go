@@ -26,19 +26,19 @@ func buildCompose(t *testing.T, doc string, att map[string][]byte) ([]*Resource,
 
 func TestComposeRefBuild(t *testing.T) {
 	enableCompose(t)
-	att := map[string][]byte{"compose/shop.yaml": []byte("services: {}\n")}
+	att := map[string][]byte{"compose/shop.yaml": []byte("services: {web: {image: nginx}}\n")}
 	res, issues := buildCompose(t, composeDoc, att)
 	if len(issues) > 0 || len(res) != 1 || res[0].ComposeDigest == "" {
 		t.Fatalf("res=%v issues=%v", res, issues)
 	}
 	a := res[0].ComposeDigest
-	att["compose/shop.yaml"] = []byte("services: {a: {}}\n")
+	att["compose/shop.yaml"] = []byte("services: {a: {image: nginx}}\n")
 	res, _ = buildCompose(t, composeDoc, att)
 	if res[0].ComposeDigest == a {
 		t.Fatal("a byte change must change the digest")
 	}
 	swapped := strings.Replace(composeDoc, "[web, api]", "[api, web]", 1)
-	att["compose/shop.yaml"] = []byte("services: {}\n")
+	att["compose/shop.yaml"] = []byte("services: {web: {image: nginx}}\n")
 	res, _ = buildCompose(t, swapped, att)
 	if res[0].ComposeDigest != a {
 		t.Fatal("profile order must not change the digest")
