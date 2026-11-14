@@ -208,6 +208,12 @@ async function connectSource(
     build_path: e.dockerfilePath || undefined,
   }
   const ref = source.providerRef
+  // A connection id means the account owns the repo, whatever kind this build knows.
+  if (ref && ref.kind !== 'github' && ref.connectionId) {
+    await connectRepoAsSource(ref.connectionId, { ...base, repo: ref.repo })
+    await applyBuildOptions(appName, e)
+    return
+  }
   switch (ref?.kind) {
     case 'github':
       await connectGitHubRepoAsSource(ref.owner, ref.repo, base)
@@ -231,6 +237,13 @@ async function connectSource(
       })
       return
   }
+  await applyBuildOptions(appName, e)
+}
+
+async function applyBuildOptions(
+  appName: string,
+  e: NewAppEdits,
+): Promise<void> {
   const spa = e.buildType === 'static' && e.spa
   if (e.baseDirectory !== '' || spa) {
     await setGitBuild(appName, {

@@ -281,13 +281,23 @@ function render(
   return `${base}/new?${parts.join('&')}`
 }
 
+// A bare github.com repo URL (owner/repo, optional .git) maps to its issues page.
+function issuesBase(supportUrl: string): string | null {
+  const trimmed = supportUrl.replace(/\/+$/, '')
+  if (trimmed.endsWith('/issues')) return trimmed
+  const m = /^(https:\/\/github\.com\/[^/?#]+\/[^/?#]+?)(?:\.git)?$/i.exec(
+    trimmed,
+  )
+  return m ? `${m[1]}/issues` : null
+}
+
 export function buildIssueUrl(
   draft: IssueDraft,
   supportUrl: string,
   maxChars: number,
 ): string {
-  const trimmed = supportUrl.replace(/\/+$/, '')
-  if (!trimmed.endsWith('/issues')) return supportUrl
+  const trimmed = issuesBase(supportUrl)
+  if (!trimmed) return supportUrl
   const fields = { ...draft.fields }
   const fits = () =>
     render(trimmed, draft.template, draft.title, fields).length <= maxChars

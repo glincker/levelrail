@@ -21,6 +21,7 @@ import { CreateFlowHeader, CreateFlowShell } from './CreateFlowKit'
 import { useCreateDeployNotifyTarget } from '../queries/deployNotify'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
+import { labelOf } from '@/lib/labelOf'
 
 // Attach-an-already-connected-channel flow, replacing the old "type a
 // URL, pick a kind" form. Mirrors StorageAttachmentCard's empty state.
@@ -132,7 +133,8 @@ export function CreateDeployNotifyTargetDialog({
                 <SelectContent>
                   {channels.map((channel) => (
                     <SelectItem key={channel.id} value={channel.id}>
-                      {channel.name} ({CHANNEL_KIND_LABEL[channel.kind]})
+                      {channel.name} (
+                      {labelOf(CHANNEL_KIND_LABEL, channel.kind)})
                     </SelectItem>
                   ))}
                 </SelectContent>

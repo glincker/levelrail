@@ -77,6 +77,7 @@ import {
   type AlertRuleFormOutput,
 } from '@/lib/alertRuleForm'
 import type { AppVolume } from '../types/appDetail'
+import { labelOf } from '@/lib/labelOf'
 
 // DEFAULT_PATCH_STATUS_THRESHOLD mirrors
 // internal/alerting.DefaultPatchStatusThreshold: display-only copy for
@@ -619,7 +620,8 @@ export function CreateAlertRuleDialog({
                       <SelectContent>
                         {channels.map((channel) => (
                           <SelectItem key={channel.id} value={channel.id}>
-                            {channel.name} ({CHANNEL_KIND_LABEL[channel.kind]})
+                            {channel.name} (
+                            {labelOf(CHANNEL_KIND_LABEL, channel.kind)})
                           </SelectItem>
                         ))}
                       </SelectContent>

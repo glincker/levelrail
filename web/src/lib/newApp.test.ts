@@ -164,6 +164,37 @@ describe('applyNewApp', () => {
     expect(put?.body).toMatchObject({ build_type: 'static', static_spa: true })
   })
 
+  it('routes an unknown provider kind with a connection through the connection call', async () => {
+    const calls = mockApi()
+    const unknown = {
+      provider: 'github',
+      repoUrl: 'https://git.example.test/acme/shop.git',
+      branch: 'main',
+      providerRef: {
+        kind: 'sourcehut',
+        connectionId: 'gc_9',
+        repo: 'acme/shop',
+      },
+    } as unknown as GitRepoSourceValue
+    await applyNewApp(nextAnalysis, unknown, editsFromAnalysis(nextAnalysis))
+    const keys = calls.map((c) => c.key)
+    expect(keys).toContain('POST /api/v1/git-connections/gc_9/use-as-source')
+    expect(keys).not.toContain('PUT /api/v1/apps/shop/git-source')
+  })
+
+  it('keeps the typed URL path for a reference without a connection', async () => {
+    const calls = mockApi()
+    const typed: GitRepoSourceValue = {
+      provider: 'github',
+      repoUrl: 'https://git.example.test/acme/shop.git',
+      branch: 'main',
+    }
+    await applyNewApp(nextAnalysis, typed, editsFromAnalysis(nextAnalysis))
+    const keys = calls.map((c) => c.key)
+    expect(keys).toContain('PUT /api/v1/apps/shop/git-source')
+    expect(keys.some((k) => k.includes('use-as-source'))).toBe(false)
+  })
+
   it('skips app creation when resuming', async () => {
     const calls = mockApi()
     await applyNewApp(

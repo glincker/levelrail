@@ -31,6 +31,7 @@ import {
   MoveDomainDialog,
   ParkDomainDialog,
 } from './DomainLifecycleDialogs'
+import { linkOf } from '@/lib/labelOf'
 
 export function DetailCard({
   title,
@@ -103,20 +104,23 @@ function ProviderHint({ data }: { data: DomainCheckPanelData }) {
         {t('detail.provider.generic')}
       </p>
     )
+  const dnsUrl = linkOf(PROVIDER_DNS_URL, provider)
   return (
     <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
       <span>{t(`detail.provider.${provider}`)}</span>
-      <a
-        href={PROVIDER_DNS_URL[provider]}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="inline-flex items-center gap-1 text-foreground underline underline-offset-2"
-      >
-        {t('detail.provider.open', {
-          name: t(`detail.provider.name.${provider}`),
-        })}
-        <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
-      </a>
+      {dnsUrl ? (
+        <a
+          href={dnsUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex items-center gap-1 text-foreground underline underline-offset-2"
+        >
+          {t('detail.provider.open', {
+            name: t(`detail.provider.name.${provider}`),
+          })}
+          <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+        </a>
+      ) : null}
     </p>
   )
 }
