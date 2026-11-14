@@ -661,7 +661,7 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 	} else {
 		var found bool
 		if proj, found = rt.projectByName(r.Context(), in.Project); !found {
-			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, fmt.Sprintf("project %q was not found", in.Project), nil)
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, fmt.Sprintf("project %q was not found: use 'stack apply' with the project set, which creates it, or create the project in the dashboard first", in.Project), nil)
 			return
 		}
 	}
