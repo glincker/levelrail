@@ -6,6 +6,8 @@ import {
   stackHistoryQueryOptions,
   stacksQueryOptions,
 } from '../../queries/stacks'
+import { StackDiffView } from '../stacks/StackDiffView'
+import type { StackDiffAgainst } from '../../types/stacks'
 import { IacRevisionTimeline } from './IacRevisionTimeline'
 
 // Stack history next to the editor: the first stack is preselected, its revisions read as a timeline.
@@ -15,6 +17,7 @@ export function IacStackPanel() {
   const stacks = useQuery(stacksQueryOptions())
   const [picked, setPicked] = useState<string | null>(null)
   const [revision, setRevision] = useState<number | null>(null)
+  const [against, setAgainst] = useState<StackDiffAgainst>('live')
   const list = stacks.data ?? []
   const name =
     picked && list.some((s) => s.name === picked) ? picked : list[0]?.name
@@ -72,9 +75,24 @@ export function IacStackPanel() {
           revisions={revisions}
           pinned={stack?.pinned_revision}
           selected={current}
-          onSelect={setRevision}
+          onSelect={(n) => {
+            setRevision(n)
+            setAgainst('live')
+          }}
         />
       )}
+      {name && current !== null ? (
+        <StackDiffView
+          key={`${name}/${String(current)}`}
+          name={name}
+          revision={current}
+          against={against}
+          otherRevisions={revisions
+            .map((r) => r.number)
+            .filter((n) => n !== current)}
+          onAgainst={setAgainst}
+        />
+      ) : null}
     </section>
   )
 }

@@ -6,6 +6,7 @@ import type {
   IacPlan,
 } from '../queries/iac'
 import { CodeBlock } from '@/components/ui/code-block'
+import { labelOf } from '../lib/labelOf'
 
 const actionStyle: Record<string, string> = {
   create: 'text-green-700 dark:text-green-400',
@@ -61,8 +62,17 @@ function ChangeRow({ change }: { change: IacChange }) {
   return (
     <li className="rounded-md border border-border p-3">
       <div className="flex flex-wrap items-baseline gap-2 font-mono text-sm">
-        <span className={actionStyle[change.action]}>
-          {actionMark[change.action]}
+        <span className={labelOf(actionStyle, change.action)}>
+          {Object.hasOwn(actionMark, change.action)
+            ? actionMark[change.action]
+            : '?'}
+        </span>
+        <span
+          className={`rounded border px-1.5 text-xs ${labelOf(actionStyle, change.action)}`}
+        >
+          {t(`iacStudio.planAction.${change.action}`, {
+            defaultValue: change.action,
+          })}
         </span>
         <span className="text-foreground">{changeKey(change)}</span>
         {change.file ? (
@@ -134,7 +144,7 @@ export function IacResultView({ results }: { results: IacItemResult[] }) {
     <ul className="space-y-1.5">
       {shown.map((r) => (
         <li key={changeKey(r) + r.action} className="font-mono text-sm">
-          <span className={statusStyle[r.status]}>
+          <span className={labelOf(statusStyle, r.status)}>
             {t(`iacPlan.status.${r.status}`, { defaultValue: r.status })}
           </span>{' '}
           <span className="text-foreground">{changeKey(r)}</span>

@@ -46,6 +46,26 @@ describe('IacPlanView', () => {
     expect(screen.queryByText('Tag/x')).toBeNull()
   })
 
+  it('labels each resource and tolerates an unknown action', () => {
+    render(
+      <IacPlanView
+        plan={{
+          ...plan,
+          changes: [
+            ...plan.changes,
+            {
+              kind: 'Job',
+              name: 'j',
+              action: 'quarantine' as IacPlan['changes'][number]['action'],
+            },
+          ],
+        }}
+      />,
+    )
+    expect(screen.getByText('Update')).toBeTruthy()
+    expect(screen.getByText('quarantine')).toBeTruthy()
+  })
+
   it('says so when nothing changes', () => {
     render(
       <IacPlanView
